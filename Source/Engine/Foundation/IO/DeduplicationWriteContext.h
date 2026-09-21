@@ -11,7 +11,7 @@
 
 class xiiStreamWriter;
 
-/// \brief Serialization Context that de-duplicates objects when writing to a stream. Duplicated objects are identified by their address and
+/// Serialization Context that de-duplicates objects when writing to a stream. Duplicated objects are identified by their address and
 /// only the first occurrence is written to the stream while all subsequence occurrences are just written as an index.
 class XII_FOUNDATION_DLL xiiDeduplicationWriteContext : public xiiSerializationContext<xiiDeduplicationWriteContext>
 {
@@ -21,23 +21,23 @@ public:
   xiiDeduplicationWriteContext();
   ~xiiDeduplicationWriteContext();
 
-  /// \brief Writes a single object to the stream. Can be either a reference or a pointer to the object.
+  /// Writes a single object to the stream. Can be either a reference or a pointer to the object.
   template <typename T>
   xiiResult WriteObject(xiiStreamWriter& ref_stream, const T& obj); // [tested]
 
-  /// \brief Writes a single object to the stream.
+  /// Writes a single object to the stream.
   template <typename T>
   xiiResult WriteObject(xiiStreamWriter& ref_stream, const xiiSharedPtr<T>& pObject); // [tested]
 
-  /// \brief Writes a single object to the stream.
+  /// Writes a single object to the stream.
   template <typename T>
   xiiResult WriteObject(xiiStreamWriter& ref_stream, const xiiUniquePtr<T>& pObject); // [tested]
 
-  /// \brief Writes an array of de-duplicated objects.
+  /// Writes an array of de-duplicated objects.
   template <typename ArrayType, typename ValueType>
   xiiResult WriteArray(xiiStreamWriter& ref_stream, const xiiArrayBase<ValueType, ArrayType>& array); // [tested]
 
-  /// \brief Writes a set of de-duplicated objects.
+  /// Writes a set of de-duplicated objects.
   template <typename KeyType, typename Comparer>
   xiiResult WriteSet(xiiStreamWriter& ref_stream, const xiiSetBase<KeyType, Comparer>& set); // [tested]
 
@@ -48,7 +48,7 @@ public:
     DedupBoth
   };
 
-  /// \brief Writes a map. Mode controls whether key or value or both should de-duplicated.
+  /// Writes a map. Mode controls whether key or value or both should de-duplicated.
   template <typename KeyType, typename ValueType, typename Comparer>
   xiiResult WriteMap(xiiStreamWriter& ref_stream, const xiiMapBase<KeyType, ValueType, Comparer>& map, WriteMapMode mode); // [tested]
 

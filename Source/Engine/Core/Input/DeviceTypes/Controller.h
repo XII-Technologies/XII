@@ -4,7 +4,7 @@
 
 #include <Core/Input/InputDevice.h>
 
-/// \brief This class is the base class for all controller type input devices.
+/// This class is the base class for all controller type input devices.
 ///
 /// This class is derived from xiiInputDevice but adds some interface functions common to most controllers.
 /// This class adds functions to query and modify the state about controller vibration, about the mapping of
@@ -23,7 +23,7 @@ public:
     MaxVibrationSamples       = VibrationSamplesPerSecond * VibrationTrackSeconds, // With constant power-of-two samples some code should get more efficient
   };
 
-  /// \brief Describes which vibration motor to configure.
+  /// Describes which vibration motor to configure.
   struct Motor
   {
     enum Enum
@@ -36,14 +36,14 @@ public:
 
   xiiInputDeviceController();
 
-  /// \brief Enables or disables vibration on the given controller (virtual index).
+  /// Enables or disables vibration on the given controller (virtual index).
   /// If it is disabled, the controller will never vibrate, even if vibration profiles are sent to it.
   void EnableVibration(xiiUInt8 uiVirtual, bool bEnable);
 
-  /// \brief Checks whether vibration is enabled on the given controller (virtual index).
+  /// Checks whether vibration is enabled on the given controller (virtual index).
   bool IsVibrationEnabled(xiiUInt8 uiVirtual) const;
 
-  /// \brief Sets the vibration strength for the given controller and motor. \a fValue is a value between 0 and 1.
+  /// Sets the vibration strength for the given controller and motor. \a fValue is a value between 0 and 1.
   ///
   /// From now on the controller will be vibrating (unless vibration is disabled), until the value is reset to zero.
   /// This kind of vibration is always combined with vibration tracks (the maximum of both values is applied at any
@@ -51,10 +51,10 @@ public:
   /// vibration tracks are convenient for the most common (short) effects.
   void SetVibrationStrength(xiiUInt8 uiVirtual, Motor::Enum motor, float fValue);
 
-  /// \brief Returns the amount of (constant) vibration that is currently set on this controller.
+  /// Returns the amount of (constant) vibration that is currently set on this controller.
   float GetVibrationStrength(xiiUInt8 uiVirtual, Motor::Enum motor);
 
-  /// \brief Sets from which physical controller a virtual controller is supposed to take its input.
+  /// Sets from which physical controller a virtual controller is supposed to take its input.
   ///
   /// If iTakeInputFromPhysical is smaller than zero, the given virtual controller is deactivated (it will generate no input).
   /// If input is taken from a physical controller, that is already mapped to another virtual controller, that virtual controller
@@ -68,19 +68,19 @@ public:
   /// so which physical controller maps to which virtual controller only 'moves around'.
   void SetControllerMapping(xiiUInt8 uiVirtualController, xiiInt8 iTakeInputFromPhysical);
 
-  /// \brief Returns from which physical controller the given virtual controller takes its input. May be negative, which means
+  /// Returns from which physical controller the given virtual controller takes its input. May be negative, which means
   /// the virtual controller is deactivated.
   xiiInt8 GetPhysicalControllerMapping(xiiUInt8 uiVirtual) const;
 
-  /// \brief Returns to which virtual controller the given physical controller pushes its input. May be negative, which means
+  /// Returns to which virtual controller the given physical controller pushes its input. May be negative, which means
   /// the physical controller is not used.
   xiiInt8 GetVirtualControllerMapping(xiiUInt8 uiPhysical) const;
 
-  /// \brief Queries whether the controller with the given physical index is connected to the computer.
+  /// Queries whether the controller with the given physical index is connected to the computer.
   /// This may change at any time.
   virtual bool IsControllerConnected(xiiUInt8 uiPhysical) const = 0;
 
-  /// \brief Adds a short 'vibration track' (a sequence of vibrations) to the given controller.
+  /// Adds a short 'vibration track' (a sequence of vibrations) to the given controller.
   ///
   /// Each controller has a short (typically 2 second) buffer for vibration values, that it will play.
   /// This allows to have different 'tracks' for different events, which are simply set on the controller.
@@ -97,7 +97,7 @@ public:
   void AddVibrationTrack(xiiUInt8 uiVirtual, Motor::Enum motor, float* pVibrationTrackValue, xiiUInt32 uiSamples, float fScalingFactor = 1.0f);
 
 protected:
-  /// \brief Combines the constant vibration and vibration tracks and applies them on each controller.
+  /// Combines the constant vibration and vibration tracks and applies them on each controller.
   ///
   /// This function needs to be called by a derived implementation in its UpdateInputSlotValues() function.
   /// It will call ApplyVibration() for each controller and motor with the current value. It already takes care
@@ -105,7 +105,7 @@ protected:
   void UpdateVibration(xiiTime tTimeDifference);
 
 private:
-  /// \brief Must be implemented by a derived controller implementation. Should set apply the vibration for the given physical controller
+  /// Must be implemented by a derived controller implementation. Should set apply the vibration for the given physical controller
   /// and motor with the given strength.
   ///
   /// A strength value of zero will be passed in whenever no vibration is required. No extra resetting needs to be implemented.

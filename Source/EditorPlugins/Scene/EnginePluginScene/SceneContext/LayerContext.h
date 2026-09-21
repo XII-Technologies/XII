@@ -10,7 +10,7 @@
 
 class xiiDocumentOpenMsgToEngine;
 
-/// \brief Layers that are loaded as sub-documents of a scene share the xiiWorld with their main document scene. Thus, this context attaches itself to its parent xiiSceneContext.
+/// Layers that are loaded as sub-documents of a scene share the xiiWorld with their main document scene. Thus, this context attaches itself to its parent xiiSceneContext.
 class XII_ENGINEPLUGINSCENE_DLL xiiLayerContext : public xiiEngineProcessDocumentContext
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLayerContext, xiiEngineProcessDocumentContext);

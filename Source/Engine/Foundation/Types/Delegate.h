@@ -4,7 +4,7 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief Base class for xiiDelegate
+/// Base class for xiiDelegate
 class xiiDelegateBase
 {
 public:
@@ -20,7 +20,7 @@ protected:
   InstancePtr m_Instance;
 };
 
-/// \brief A generic delegate class which supports static functions and member functions.
+/// A generic delegate class which supports static functions and member functions.
 ///
 /// A delegate is a function pointer that may be used to call both simple C functions, as well
 /// as member functions of some class, which requires a 'this' pointer to go along with.
@@ -81,7 +81,7 @@ struct xiiDelegate : public xiiDelegateBase
 template <typename T>
 struct xiiMakeDelegateHelper;
 
-/// \brief A helper function to create delegates from function pointers.
+/// A helper function to create delegates from function pointers.
 ///
 /// \code{.cpp}
 ///   void foo() { }
@@ -90,7 +90,7 @@ struct xiiMakeDelegateHelper;
 template <typename Function>
 xiiDelegate<Function> xiiMakeDelegate(Function* pFunction);
 
-/// \brief A helper function to create delegates from methods.
+/// A helper function to create delegates from methods.
 ///
 /// \code{.cpp}
 ///   class Example

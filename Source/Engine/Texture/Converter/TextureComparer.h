@@ -4,7 +4,7 @@
 
 #include <Texture/Image/Image.h>
 
-/// \brief Input options for xiiTextureComparer
+/// Input options for xiiTextureComparer
 class XII_TEXTURE_DLL xiiTextureComparerDescription
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureComparerDescription);
@@ -32,7 +32,7 @@ public:
   xiiUInt32 m_MeanSquareErrorThreshold = 100;
 };
 
-/// \brief Compares two images and generates various outputs.
+/// Compares two images and generates various outputs.
 class XII_TEXTURE_DLL xiiTextureComparer
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureComparer);

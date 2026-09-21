@@ -6,7 +6,7 @@
 
 using xiiPointLightComponentManager = xiiComponentManager<class xiiPointLightComponent, xiiBlockStorageType::Compact>;
 
-/// \brief The render data object for point lights.
+/// The render data object for point lights.
 class XII_GRAPHICSCORE_DLL xiiPointLightRenderData : public xiiLightRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPointLightRenderData, xiiLightRenderData);
@@ -18,7 +18,7 @@ public:
   xiiQuat m_qGlobalRotation;
 };
 
-/// \brief A point light component. This represents a light source that emits light in all directions from a single point in space, like a light bulb.
+/// A point light component. This represents a light source that emits light in all directions from a single point in space, like a light bulb.
 class XII_GRAPHICSCORE_DLL xiiPointLightComponent : public xiiLightComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiPointLightComponent, xiiLightComponent, xiiPointLightComponentManager);
@@ -43,22 +43,22 @@ public:
   xiiPointLightComponent();
   ~xiiPointLightComponent();
 
-  /// \brief Sets the radius of the light source. If zero, the radius is automatically determined from the intensity.
+  /// Sets the radius of the light source. If zero, the radius is automatically determined from the intensity.
   void  SetRange(float fRange); // [ property ]
   float GetRange() const;       // [ property ]
 
-  /// \brief Returns the final radius of the light source.
+  /// Returns the final radius of the light source.
   float GetEffectiveRange() const;
 
-  /// \brief Sets the length of the tube. Zero means the light is a point light.
+  /// Sets the length of the tube. Zero means the light is a point light.
   void  SetLength(float fLength); // [ property ]
   float GetLength() const;        // [ property ]
 
-  /// \brief Radius of the tube's cross-section. Affects the size of specular highlights. Zero means the light is a point light.
+  /// Radius of the tube's cross-section. Affects the size of specular highlights. Zero means the light is a point light.
   void  SetRadius(float fRadius); // [ property ]
   float GetRadius() const;        // [ property ]
 
-  /// \brief Sets the radius that is used to determine when to fade out shadows. If zero the radius of the light source is used.
+  /// Sets the radius that is used to determine when to fade out shadows. If zero the radius of the light source is used.
   void  SetShadowFadeOutRange(float fRange); // [ property ]
   float GetShadowFadeOutRange() const;       // [ property ]
 
@@ -73,7 +73,7 @@ protected:
   float m_fShadowFadeOutRange = 0.0f;
 };
 
-/// \brief Visualizer attribute for point lights. Also renders a tube (capsule) when Length or Radius is non-zero.
+/// Visualizer attribute for point lights. Also renders a tube (capsule) when Length or Radius is non-zero.
 class XII_GRAPHICSCORE_DLL xiiPointLightVisualizerAttribute : public xiiVisualizerAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPointLightVisualizerAttribute, xiiVisualizerAttribute);

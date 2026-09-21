@@ -22,7 +22,7 @@ struct xiiPrefabInstantiationOptions
 
   bool m_bForceDynamic = false;
 
-  /// \brief If the prefab has a single root node with this non-empty name, rather than creating a new object, instead the m_hParent object is used.
+  /// If the prefab has a single root node with this non-empty name, rather than creating a new object, instead the m_hParent object is used.
   xiiTempHashedString m_ReplaceNamedRootWithParent;
 
   enum class RandomSeedMode
@@ -41,14 +41,14 @@ struct xiiPrefabInstantiationOptions
   xiiProgress* m_pProgress = nullptr;
 };
 
-/// \brief Reads a world description from a stream. Allows to instantiate that world multiple times
+/// Reads a world description from a stream. Allows to instantiate that world multiple times
 ///        in different locations and different xiiWorld's.
 ///
 /// The reader will ignore unknown component types and skip them during instantiation.
 class XII_CORE_DLL xiiWorldReader
 {
 public:
-  /// \brief A context object is returned from InstantiateWorld or InstantiatePrefab if a maxStepTime greater than zero is specified.
+  /// A context object is returned from InstantiateWorld or InstantiatePrefab if a maxStepTime greater than zero is specified.
   ///
   /// Call the Step() function periodically to complete the instantiation.
   /// Each step will try to spend not more than the given maxStepTime.
@@ -76,7 +76,7 @@ public:
   xiiWorldReader();
   ~xiiWorldReader();
 
-  /// \brief Reads all information about the world from the given stream.
+  /// Reads all information about the world from the given stream.
   ///
   /// Call this once to populate xiiWorldReader with information how to instantiate the world.
   /// Afterwards \a stream can be deleted.
@@ -86,7 +86,7 @@ public:
   /// types. The warnings can be suppressed by setting warningOnUnknownSkip to false.
   xiiResult ReadWorldDescription(xiiStreamReader& ref_stream, bool bWarningOnUnknownSkip = true);
 
-  /// \brief Creates one instance of the world that was previously read by ReadWorldDescription().
+  /// Creates one instance of the world that was previously read by ReadWorldDescription().
   ///
   /// This is identical to calling InstantiatePrefab() with identity values, however, it is a bit
   /// more efficient, as unnecessary computations are skipped.
@@ -102,7 +102,7 @@ public:
   /// has to be valid as long as the instantiation is in progress.
   xiiUniquePtr<InstantiationContextBase> InstantiateWorld(xiiWorld& ref_world, const xiiUInt16* pOverrideTeamID = nullptr, xiiTime maxStepTime = xiiTime::MakeZero(), xiiProgress* pProgress = nullptr);
 
-  /// \brief Creates one instance of the world that was previously read by ReadWorldDescription().
+  /// Creates one instance of the world that was previously read by ReadWorldDescription().
   ///
   /// \param rootTransform is an additional transform that is applied to all root objects.
   /// \param hParent allows to attach the newly created objects immediately to a parent
@@ -119,32 +119,32 @@ public:
   /// has to be valid as long as the instantiation is in progress.
   xiiUniquePtr<InstantiationContextBase> InstantiatePrefab(xiiWorld& ref_world, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
 
-  /// \brief Gives access to the stream of data. Use this inside component deserialization functions to read data.
+  /// Gives access to the stream of data. Use this inside component deserialization functions to read data.
   xiiStreamReader& GetStream() const;
 
-  /// \brief Used during component deserialization to read a handle to a game object.
+  /// Used during component deserialization to read a handle to a game object.
   xiiGameObjectHandle ReadGameObjectHandle();
 
-  /// \brief Used during component deserialization to read a handle to a component.
+  /// Used during component deserialization to read a handle to a component.
   void ReadComponentHandle(xiiComponentHandle& out_hComponent);
 
-  /// \brief Used during component deserialization to query the actual version number with which the
+  /// Used during component deserialization to query the actual version number with which the
   /// given component type was written. The version number is given through the XII_BEGIN_COMPONENT_TYPE
   /// macro. Whenever the serialization of a component changes, that number should be increased.
   xiiUInt32 GetComponentTypeVersion(const xiiRTTI* pRtti) const;
 
-  /// \brief Returns whether world contains a component of given type.
+  /// Returns whether world contains a component of given type.
   bool HasComponentOfType(const xiiRTTI* pRtti) const;
 
-  /// \brief Clears all data.
+  /// Clears all data.
   void ClearAndCompact();
 
-  /// \brief Returns the amount of bytes that are currently allocated on the heap.
+  /// Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const;
 
   using FindComponentTypeCallback = xiiDelegate<const xiiRTTI*(xiiStringView sTypeName)>;
 
-  /// \brief An optional callback to redirect the lookup of a component type name to a xiiRTTI type.
+  /// An optional callback to redirect the lookup of a component type name to a xiiRTTI type.
   ///
   /// If specified, this is used by ALL world readers. The intention is to use this either for logging purposes,
   /// or to implement a whitelist or blacklist for specific component types.

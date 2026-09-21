@@ -17,7 +17,7 @@ class xiiDocument;
 #  undef GetObject
 #endif
 
-/// \brief Standard root object for most documents.
+/// Standard root object for most documents.
 /// m_RootObjects stores what is in the document and m_TempObjects stores transient data used during editing which is not part of the document.
 class XII_TOOLSFOUNDATION_DLL xiiDocumentRoot : public xiiReflectedClass
 {
@@ -27,7 +27,7 @@ class XII_TOOLSFOUNDATION_DLL xiiDocumentRoot : public xiiReflectedClass
   xiiHybridArray<xiiReflectedClass*, 1> m_TempObjects;
 };
 
-/// \brief Implementation detail of xiiDocumentObjectManager.
+/// Implementation detail of xiiDocumentObjectManager.
 class xiiDocumentRootObject : public xiiDocumentStorageObject
 {
 public:
@@ -42,7 +42,7 @@ public:
   virtual void RemoveSubObject(xiiDocumentObject* pObject) override;
 };
 
-/// \brief Used by xiiDocumentObjectManager::m_StructureEvents.
+/// Used by xiiDocumentObjectManager::m_StructureEvents.
 struct xiiDocumentObjectStructureEvent
 {
   xiiDocumentObjectStructureEvent() = default;
@@ -72,7 +72,7 @@ struct xiiDocumentObjectStructureEvent
   xiiVariant               m_NewPropertyIndex;
 };
 
-/// \brief Used by xiiDocumentObjectManager::m_PropertyEvents.
+/// Used by xiiDocumentObjectManager::m_PropertyEvents.
 struct xiiDocumentObjectPropertyEvent
 {
   xiiDocumentObjectPropertyEvent() { m_pObject = nullptr; }
@@ -95,7 +95,7 @@ struct xiiDocumentObjectPropertyEvent
   xiiVariant               m_NewIndex;
 };
 
-/// \brief Used by xiiDocumentObjectManager::m_ObjectEvents.
+/// Used by xiiDocumentObjectManager::m_ObjectEvents.
 struct xiiDocumentObjectEvent
 {
   xiiDocumentObjectEvent() { m_pObject = nullptr; }
@@ -111,11 +111,11 @@ struct xiiDocumentObjectEvent
   const xiiDocumentObject* m_pObject;
 };
 
-/// \brief Represents to content of a document. Every document has exactly one root object under which all objects need to be parented. The default root object is xiiDocumentRoot.
+/// Represents to content of a document. Every document has exactly one root object under which all objects need to be parented. The default root object is xiiDocumentRoot.
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObjectManager
 {
 public:
-  // \brief Storage for the object manager so it can be swapped when using multiple sub documents.
+  // Storage for the object manager so it can be swapped when using multiple sub documents.
   class Storage : public xiiRefCounted
   {
   public:

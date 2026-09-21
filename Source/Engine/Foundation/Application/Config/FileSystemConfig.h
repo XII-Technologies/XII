@@ -14,10 +14,10 @@ public:
   xiiResult Save(xiiStringView sPath = s_sConfigFile);
   void      Load(xiiStringView sPath = s_sConfigFile);
 
-  /// \brief Sets up the data directories that were configured or loaded into this object
+  /// Sets up the data directories that were configured or loaded into this object
   void Apply();
 
-  /// \brief Removes all data directories that were set up by any call to xiiApplicationFileSystemConfig::Apply()
+  /// Removes all data directories that were set up by any call to xiiApplicationFileSystemConfig::Apply()
   static void Clear();
 
   xiiResult CreateDataDirStubFiles();

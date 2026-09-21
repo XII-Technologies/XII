@@ -33,22 +33,22 @@
 
 class xiiFormatString;
 
-/// \brief Assert handler callback. Should return true to trigger a break point or false if the assert should be ignored
+/// Assert handler callback. Should return true to trigger a break point or false if the assert should be ignored
 using xiiAssertHandler = bool (*)(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg);
 
 XII_FOUNDATION_DLL bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg);
 
-/// \brief Gets the current assert handler. The default assert handler shows a dialog on windows or prints to the console on other platforms.
+/// Gets the current assert handler. The default assert handler shows a dialog on windows or prints to the console on other platforms.
 XII_FOUNDATION_DLL xiiAssertHandler xiiGetAssertHandler();
 
-/// \brief Sets the assert handler. It is the responsibility of the user to chain assert handlers if needed.
+/// Sets the assert handler. It is the responsibility of the user to chain assert handlers if needed.
 XII_FOUNDATION_DLL void xiiSetAssertHandler(xiiAssertHandler handler);
 
-/// \brief Called by the assert macros whenever a check failed. Returns true if the user wants to trigger a break point
+/// Called by the assert macros whenever a check failed. Returns true if the user wants to trigger a break point
 XII_FOUNDATION_DLL bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const class xiiFormatString& msg);
 XII_FOUNDATION_DLL bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szMsg);
 
-/// \brief Dummy version of xiiFmt that only takes a single argument
+/// Dummy version of xiiFmt that only takes a single argument
 inline const char* xiiFmt(const char* szFormat)
 {
   return szFormat;
@@ -64,7 +64,7 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 [[noreturn]] void ClangTidyDoNotReturn();
 #  define XII_REPORT_FAILURE(szErrorMsg, ...) ClangTidyDoNotReturn()
 #else
-/// \brief Macro to report a failure when that code is reached. This will ALWAYS be executed, even in release builds, therefore might crash the
+/// Macro to report a failure when that code is reached. This will ALWAYS be executed, even in release builds, therefore might crash the
 /// application (or trigger a debug break).
 #  define XII_REPORT_FAILURE(szErrorMsg, ...)                                                                           \
     do                                                                                                                  \
@@ -84,7 +84,7 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 
 #  define XII_ANALYSIS_ASSUME(bCondition) XII_ASSERT_ALWAYS(bCondition, "")
 #else
-/// \brief Macro to raise an error, if a condition is not met. Allows to write a message using xiiFormatString style. This assert will be triggered, even in
+/// Macro to raise an error, if a condition is not met. Allows to write a message using xiiFormatString style. This assert will be triggered, even in
 /// non-development builds and cannot be deactivated.
 #  define XII_ASSERT_ALWAYS(bCondition, szErrorMsg, ...)                                                                           \
     do                                                                                                                             \
@@ -99,25 +99,25 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
       XII_MSVC_ANALYSIS_WARNING_POP                                                                                                \
     } while (false)
 
-/// \brief Macro to inform the static analysis that the given condition can be assumed to be true. Useful to give additional information to
+/// Macro to inform the static analysis that the given condition can be assumed to be true. Useful to give additional information to
 /// static analysis if it can't figure it out by itself. Will do nothing outside of static analysis runs.
 #  define XII_ANALYSIS_ASSUME(bCondition)
 #endif
 
-/// \brief This type of assert can be used to mark code as 'not (yet) implemented' and makes it easier to find it later on by just searching for these
+/// This type of assert can be used to mark code as 'not (yet) implemented' and makes it easier to find it later on by just searching for these
 /// asserts.
 #define XII_ASSERT_NOT_IMPLEMENTED XII_REPORT_FAILURE("Not implemented")
 
 // Occurrences of XII_ASSERT_DEBUG are compiled out in non-debug builds
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-/// \brief Macro to raise an error, if a condition is not met.
+/// Macro to raise an error, if a condition is not met.
 ///
 /// Allows to write a message using xiiFormatString style.
 /// Compiled out in non-debug builds.
 /// The condition is not evaluated, when this is compiled out, so do not execute important code in it.
 #  define XII_ASSERT_DEBUG XII_ASSERT_ALWAYS
 #else
-/// \brief Macro to raise an error, if a condition is not met.
+/// Macro to raise an error, if a condition is not met.
 ///
 /// Allows to write a message using xiiFormatString style.
 /// Compiled out in non-debug builds.
@@ -129,14 +129,14 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 // Occurrences of XII_ASSERT_DEV are compiled out in non-development builds
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 
-/// \brief Macro to raise an error, if a condition is not met.
+/// Macro to raise an error, if a condition is not met.
 ///
 /// Allows to write a message using xiiFormatString style.
 /// Compiled out in non-development builds.
 /// The condition is not evaluated, when this is compiled out, so do not execute important code in it.
 #  define XII_ASSERT_DEV XII_ASSERT_ALWAYS
 
-/// \brief Macro to raise an error, if a condition is not met.
+/// Macro to raise an error, if a condition is not met.
 ///
 /// Allows to write a message using xiiFormatString style.
 /// Compiled out in non-development builds, however the condition is always evaluated,
@@ -145,14 +145,14 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 
 #else
 
-/// \brief Macro to raise an error, if a condition is not met.
+/// Macro to raise an error, if a condition is not met.
 ///
 /// Allows to write a message using xiiFormatString style.
 /// Compiled out in non-development builds.
 /// The condition is not evaluated, when this is compiled out, so do not execute important code in it.
 #  define XII_ASSERT_DEV(bCondition, szErrorMsg, ...)
 
-/// \brief Macro to raise an error, if a condition is not met.
+/// Macro to raise an error, if a condition is not met.
 ///
 /// Allows to write a message using xiiFormatString style.
 /// Compiled out in non-development builds, however the condition is always evaluated,
@@ -166,7 +166,7 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 
 #if XII_DISABLE_RELEASE_ASSERTS
 
-/// \brief An assert to check conditions even in release builds.
+/// An assert to check conditions even in release builds.
 ///
 /// These asserts can be disabled (and then their condition will not be evaluated),
 /// but this needs to be specifically done by the user by defining XII_DISABLE_RELEASE_ASSERTS.
@@ -175,7 +175,7 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 
 #else
 
-/// \brief An assert to check conditions even in release builds.
+/// An assert to check conditions even in release builds.
 ///
 /// These asserts can be disabled (and then their condition will not be evaluated),
 /// but this needs to be specifically done by the user by defining XII_DISABLE_RELEASE_ASSERTS.
@@ -184,7 +184,7 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
 
 #endif
 
-/// \brief Macro to make unhandled cases in a switch block an error.
+/// Macro to make unhandled cases in a switch block an error.
 #define XII_DEFAULT_CASE_NOT_IMPLEMENTED \
   default:                               \
     XII_ASSERT_NOT_IMPLEMENTED;          \

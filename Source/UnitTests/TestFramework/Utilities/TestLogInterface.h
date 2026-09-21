@@ -4,7 +4,7 @@
 #include <Foundation/Logging/Log.h>
 #include <TestFramework/TestFrameworkDLL.h>
 
-/// \brief A xiiLogInterface that expects and handles error messages during test runs. Can be
+/// A xiiLogInterface that expects and handles error messages during test runs. Can be
 /// used to ensure that expected error messages are produced by the tested functionality.
 /// Expected error messages are not passed on and do not cause tests to fail.
 class XII_TEST_DLL xiiTestLogInterface : public xiiLogInterface
@@ -14,11 +14,11 @@ public:
   ~xiiTestLogInterface();
   virtual void HandleLogMessage(const xiiLoggingEventData& le) override;
 
-  /// \brief Add expected message. Will fail the test when the expected message is not
+  /// Add expected message. Will fail the test when the expected message is not
   /// encountered. Can take an optional count, if messages are expected multiple times
   void ExpectMessage(const char* szMsg, xiiLogMsgType::Enum type = xiiLogMsgType::All, xiiInt32 iCount = 1);
 
-  /// \brief Set the log interface that unhandled messages are forwarded to.
+  /// Set the log interface that unhandled messages are forwarded to.
   void SetParentLog(xiiLogInterface* pInterface) { m_pParentLog = pInterface; }
 
 private:
@@ -35,7 +35,7 @@ private:
   xiiHybridArray<ExpectedMsg, 8> m_ExpectedMessages;
 };
 
-/// \brief A class that sets a custom xiiTestLogInterface as the thread local default log system,
+/// A class that sets a custom xiiTestLogInterface as the thread local default log system,
 /// and resets the previous system when it goes out of scope. The test version passes the previous
 /// xiiLogInterface on to the xiiTestLogInterface to enable passing on unhandled messages.
 ///

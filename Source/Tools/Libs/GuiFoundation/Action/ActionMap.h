@@ -82,7 +82,7 @@ private:
   xiiHybridArray<xiiTreeNode<T>*, 8> m_Children;
 };
 
-/// \brief Defines the structure of how actions are organized in a particular context.
+/// Defines the structure of how actions are organized in a particular context.
 ///
 /// Actions are usually commands that are exposed through UI.
 /// For instance a button in a toolbar or a menu entry.
@@ -106,7 +106,7 @@ public:
   xiiActionMap(xiiStringView sParentMapping);
   ~xiiActionMap();
 
-  /// \brief Adds the given action to into the category or menu identified by sPath.
+  /// Adds the given action to into the category or menu identified by sPath.
   ///
   /// All actions added to the same path will be sorted by 'fOrder' and the ones with the smaller values show up at the top.
   ///
@@ -128,17 +128,17 @@ public:
   /// that takes an additional sSubPath argument.
   void MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, float fOrder);
 
-  /// \brief An overload of MapAction that takes a dedicated sPath and sSubPath argument for convenience.
+  /// An overload of MapAction that takes a dedicated sPath and sSubPath argument for convenience.
   ///
   /// If sPath is a 'global' name of a category, it is searched for (see SearchPathForAction()).
   /// Afterwards sSubPath is appended and the result is forwarded to MapAction() as a single path string.
   void MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, xiiStringView sSubPath, float fOrder);
 
-  /// \brief Hides an action from the action map. The same rules for 'global' names apply as for MapAction().
+  /// Hides an action from the action map. The same rules for 'global' names apply as for MapAction().
   /// If the target action is in this mapping, prefer not calling MapAction in the first place. Use this for actions to be removed that might be in a parent mapping and thus can't be modified directly.
   void HideAction(xiiActionDescriptorHandle hAction, xiiStringView sPath);
 
-  /// \brief Builds an action tree out of all mapped actions of this and any parent mappings.
+  /// Builds an action tree out of all mapped actions of this and any parent mappings.
   const TreeNode*               BuildActionTree();
   const xiiActionMapDescriptor* GetDescriptor(const xiiTreeNode<xiiActionMapDescriptor>* pObject) const;
 
@@ -151,7 +151,7 @@ private:
     float                     m_fOrder;
   };
 
-  /// \brief Searches for an action with the given name and returns the full path to it.
+  /// Searches for an action with the given name and returns the full path to it.
   ///
   /// This is mainly meant to be used with (unique) names to categories (or menus).
   xiiResult SearchPathForAction(xiiStringView sUniqueName, xiiStringBuilder& out_sPath) const;

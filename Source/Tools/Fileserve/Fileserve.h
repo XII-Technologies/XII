@@ -7,7 +7,7 @@
 #include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Types/UniquePtr.h>
 
-/// \brief A stand-alone application for the xiiFileServer.
+/// A stand-alone application for the xiiFileServer.
 ///
 /// If XII_USE_QT is defined, the GUI from the EditorPluginFileserve is used. Otherwise the server runs as a console application.
 ///

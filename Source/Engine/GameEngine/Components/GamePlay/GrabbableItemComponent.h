@@ -21,7 +21,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiGrabbableItemGrabPoint);
 
 using xiiGrabbableItemComponentManager = xiiComponentManager<class xiiGrabbableItemComponent, xiiBlockStorageType::Compact>;
 
-/// \brief Used to define 'grab points' on an object where a player can pick up and hold the item
+/// Used to define 'grab points' on an object where a player can pick up and hold the item
 ///
 /// The grabbable item component is typically added to objects with a dynamic physics actor to mark it as an item that can be
 /// picked up, and to define the anchor points at which the object can be held.

@@ -19,7 +19,7 @@ using xiiSkinnedMeshComponentManager   = xiiComponentManager<class xiiSkinnedMes
 using xiiInstancedMeshComponentManager = xiiComponentManager<class xiiInstancedMeshComponent, xiiBlockStorageType::Compact>;
 using xiiLODMeshComponentManager       = xiiComponentManager<class xiiLODMeshComponent, xiiBlockStorageType::Compact>;
 
-/// \brief Mesh render data flags, used to specify various properties of the mesh render data that can affect how it is rendered.
+/// Mesh render data flags, used to specify various properties of the mesh render data that can affect how it is rendered.
 struct XII_GRAPHICSCORE_DLL xiiMeshRenderDataFlags
 {
   using StorageType = xiiUInt16;
@@ -57,7 +57,7 @@ struct XII_GRAPHICSCORE_DLL xiiMeshRenderDataFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiMeshRenderDataFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshRenderDataFlags);
 
-/// \brief Renderer-facing packet for mesh draws.
+/// Renderer-facing packet for mesh draws.
 ///
 /// The packet is deliberately meshlet/indirect friendly. Render passes can bind the mesh buffer
 /// resources directly, select sections/LODs on GPU, upload instance/skin/morph streams, and emit
@@ -94,7 +94,7 @@ public:
   xiiSharedPtr<xiiGALBuffer> m_pDrawCommandBuffer;      ///< GPU buffer for indirect draw commands, used for indirect rendering to provide draw command data to the GPU.
 };
 
-/// \brief Common functionality for all mesh components.
+/// Common functionality for all mesh components.
 class XII_GRAPHICSCORE_DLL xiiMeshComponentBase : public xiiRenderComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, xiiRenderComponent);
@@ -119,74 +119,74 @@ public:
   xiiMeshComponentBase();
   ~xiiMeshComponentBase();
 
-  /// \brief Sets the mesh resource for this component, used to specify the geometry and materials to render.
+  /// Sets the mesh resource for this component, used to specify the geometry and materials to render.
   void SetMesh(const xiiMeshResourceHandle& hMesh); // [ property ]
 
-  /// \brief Returns a handle to the mesh resource for this component, used to access the geometry and materials for rendering.
+  /// Returns a handle to the mesh resource for this component, used to access the geometry and materials for rendering.
   const xiiMeshResourceHandle& GetMesh() const; // [ property ]
 
-  /// \brief Sets a material override for the material slot at the given index, used to override the material for rendering.
+  /// Sets a material override for the material slot at the given index, used to override the material for rendering.
   void SetMaterialOverride(xiiUInt32 uiMaterialIndex, const xiiMaterialResourceHandle& hMaterial);
 
-  /// \brief Returns a handle to the material override for the material slot at the given index, used to access the overridden material for rendering.
+  /// Returns a handle to the material override for the material slot at the given index, used to access the overridden material for rendering.
   const xiiMaterialResourceHandle& GetMaterialOverride(xiiUInt32 uiMaterialIndex) const;
 
-  /// \brief Clears all material overrides, used to reset the materials to the defaults specified in the mesh resource.
+  /// Clears all material overrides, used to reset the materials to the defaults specified in the mesh resource.
   void ClearMaterialOverrides();
 
-  /// \brief Returns a reference to the array of material overrides for this component, used to access all overridden materials for rendering.
+  /// Returns a reference to the array of material overrides for this component, used to access all overridden materials for rendering.
   xiiArrayPtr<const xiiMaterialResourceHandle> GetMaterialOverrides() const;
 
-  /// \brief Reflection accessor: returns material override count.
+  /// Reflection accessor: returns material override count.
   xiiUInt32 GetMaterialOverrideCount() const; // [ property ]
 
-  /// \brief Reflection accessor: returns the material override resource ID at the given index.
+  /// Reflection accessor: returns the material override resource ID at the given index.
   xiiStringView GetMaterialOverrideFile(xiiUInt32 uiMaterialIndex) const; // [ property ]
 
-  /// \brief Reflection accessor: sets a material override from a resource ID.
+  /// Reflection accessor: sets a material override from a resource ID.
   void SetMaterialOverrideFile(xiiUInt32 uiMaterialIndex, xiiStringView sFile); // [ property ]
 
-  /// \brief Reflection accessor: inserts a material override from a resource ID.
+  /// Reflection accessor: inserts a material override from a resource ID.
   void InsertMaterialOverrideFile(xiiUInt32 uiMaterialIndex, xiiStringView sFile); // [ property ]
 
-  /// \brief Reflection accessor: removes a material override at the given index.
+  /// Reflection accessor: removes a material override at the given index.
   void RemoveMaterialOverrideFile(xiiUInt32 uiMaterialIndex); // [ property ]
 
-  /// \brief Sets the section index for this component, used to select a specific section of the mesh for rendering.
+  /// Sets the section index for this component, used to select a specific section of the mesh for rendering.
   void SetSectionIndex(xiiUInt32 uiSectionIndex); // [ property ]
 
-  /// \brief Returns the section index for this component, used to select a specific section of the mesh for rendering.
+  /// Returns the section index for this component, used to select a specific section of the mesh for rendering.
   xiiUInt32 GetSectionIndex() const; // [ property ]
 
-  /// \brief Sets whether to prefer using mesh shaders for rendering this mesh, if available, used to optimize rendering performance on supported hardware.
+  /// Sets whether to prefer using mesh shaders for rendering this mesh, if available, used to optimize rendering performance on supported hardware.
   void SetPreferMeshShaders(bool bPreferMeshShaders); // [ property ]
 
-  /// \brief Returns whether to prefer using mesh shaders for rendering this mesh, if available, used to determine the rendering path for this mesh.
+  /// Returns whether to prefer using mesh shaders for rendering this mesh, if available, used to determine the rendering path for this mesh.
   bool GetPreferMeshShaders() const; // [ property ]
 
-  /// \brief Sets whether this mesh should be visible to ray tracing, used to control ray tracing visibility for this mesh.
+  /// Sets whether this mesh should be visible to ray tracing, used to control ray tracing visibility for this mesh.
   void SetRayTracingVisible(bool bVisible); // [ property ]
 
-  /// \brief Returns whether this mesh is visible to ray tracing, used to determine ray tracing visibility for this mesh.
+  /// Returns whether this mesh is visible to ray tracing, used to determine ray tracing visibility for this mesh.
   bool GetRayTracingVisible() const; // [ property ]
 
 protected:
-  /// \brief Handles the message for extracting render data for this mesh, used to prepare and submit the render data for this mesh when requested by the renderer.
+  /// Handles the message for extracting render data for this mesh, used to prepare and submit the render data for this mesh when requested by the renderer.
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
 
-  /// \brief Fills the given mesh render data with the appropriate data for rendering this mesh, used to prepare the render data for this mesh based on the mesh resource and component properties.
+  /// Fills the given mesh render data with the appropriate data for rendering this mesh, used to prepare the render data for this mesh based on the mesh resource and component properties.
   virtual void FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const;
 
-  /// \brief Selects the appropriate LOD index for rendering this mesh based on the given mesh resource, used to determine which LOD level of the mesh to render based on distance or performance requirements.
+  /// Selects the appropriate LOD index for rendering this mesh based on the given mesh resource, used to determine which LOD level of the mesh to render based on distance or performance requirements.
   virtual xiiUInt32 SelectLOD(const xiiMeshResource& mesh) const;
 
-  /// \brief Returns the render data caching strategy for this mesh component, used to determine how the render data for this mesh should be cached and reused.
+  /// Returns the render data caching strategy for this mesh component, used to determine how the render data for this mesh should be cached and reused.
   virtual xiiRenderData::Caching::Enum GetRenderDataCaching() const;
 
-  /// \brief Returns the mesh render data flags for this mesh component, used to specify various properties of the mesh render data that can affect how it is rendered.
+  /// Returns the mesh render data flags for this mesh component, used to specify various properties of the mesh render data that can affect how it is rendered.
   virtual xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const;
 
-  /// \brief Updates the local bounds for this mesh component based on the given mesh resource, used to calculate the bounding volume for this mesh for culling and LOD selection.
+  /// Updates the local bounds for this mesh component based on the given mesh resource, used to calculate the bounding volume for this mesh for culling and LOD selection.
   virtual void UpdateLocalBoundsForInstances(xiiBoundingBoxSphere& ref_bounds) const;
 
 protected:
@@ -199,7 +199,7 @@ protected:
   bool      m_bCpuCullingFallback = true;            ///< Whether to use CPU culling as a fallback, used to determine whether to fall back to CPU culling if GPU culling is not available or fails for this mesh.
 };
 
-/// \brief Static mesh component optimized for cached extraction and GPU-driven rendering.
+/// Static mesh component optimized for cached extraction and GPU-driven rendering.
 class XII_GRAPHICSCORE_DLL xiiStaticMeshComponent : public xiiMeshComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiStaticMeshComponent, xiiMeshComponentBase, xiiStaticMeshComponentManager);
@@ -219,7 +219,7 @@ public:
   ~xiiStaticMeshComponent();
 };
 
-/// \brief Default mesh component name used by scenes and tools.
+/// Default mesh component name used by scenes and tools.
 class XII_GRAPHICSCORE_DLL xiiMeshComponent : public xiiStaticMeshComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiMeshComponent, xiiStaticMeshComponent, xiiMeshComponentManager);
@@ -232,7 +232,7 @@ public:
   ~xiiMeshComponent();
 };
 
-/// \brief Dynamic mesh component for frequently updated meshes and per-frame extraction.
+/// Dynamic mesh component for frequently updated meshes and per-frame extraction.
 class XII_GRAPHICSCORE_DLL xiiDynamicMeshComponent : public xiiMeshComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiDynamicMeshComponent, xiiMeshComponentBase, xiiDynamicMeshComponentManager);
@@ -251,7 +251,7 @@ public:
   ~xiiDynamicMeshComponent();
 };
 
-/// \brief Mesh component carrying palette skinning and morph target data.
+/// Mesh component carrying palette skinning and morph target data.
 class XII_GRAPHICSCORE_DLL xiiSkinnedMeshComponent : public xiiDynamicMeshComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSkinnedMeshComponent, xiiDynamicMeshComponent, xiiSkinnedMeshComponentManager);
@@ -277,25 +277,25 @@ public:
   xiiSkinnedMeshComponent();
   ~xiiSkinnedMeshComponent();
 
-  /// \brief Sets the skeleton resource for this skinned mesh component, used to specify the skeleton for skinning this mesh.
+  /// Sets the skeleton resource for this skinned mesh component, used to specify the skeleton for skinning this mesh.
   void SetSkeleton(const xiiSkeletonResourceHandle& hSkeleton); // [ property ]
 
-  /// \brief Returns a handle to the skeleton resource for this skinned mesh component, used to access the skeleton for skinning this mesh.
+  /// Returns a handle to the skeleton resource for this skinned mesh component, used to access the skeleton for skinning this mesh.
   const xiiSkeletonResourceHandle& GetSkeleton() const; // [ property ]
 
-  /// \brief Sets the skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
+  /// Sets the skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
   void SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
 
-  /// \brief Returns a reference to the array of skinning matrices for this skinned mesh component, used to access the skinning transformation data for rendering this mesh.
+  /// Returns a reference to the array of skinning matrices for this skinned mesh component, used to access the skinning transformation data for rendering this mesh.
   xiiArrayPtr<const xiiMat4> GetSkinningMatrices() const;
 
-  /// \brief Sets the morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
+  /// Sets the morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
   void SetMorphWeights(xiiArrayPtr<const float> pWeights);
 
-  /// \brief Returns a reference to the array of morph target weights for this skinned mesh component, used to access the morph target blending data for rendering this mesh.
+  /// Returns a reference to the array of morph target weights for this skinned mesh component, used to access the morph target blending data for rendering this mesh.
   xiiArrayPtr<const float> GetMorphWeights() const;
 
-  /// \brief Clears all skinning and morph target data, used to reset the skinning and morphing state for this mesh.
+  /// Clears all skinning and morph target data, used to reset the skinning and morphing state for this mesh.
   void ClearPose();
 
 protected:
@@ -304,7 +304,7 @@ protected:
   xiiDynamicArray<float>    m_MorphWeights;     ///< Array of morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
 };
 
-/// \brief Instanced mesh component for many local-space instances of one mesh resource.
+/// Instanced mesh component for many local-space instances of one mesh resource.
 class XII_GRAPHICSCORE_DLL xiiInstancedMeshComponent : public xiiMeshComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiInstancedMeshComponent, xiiMeshComponentBase, xiiInstancedMeshComponentManager);
@@ -331,32 +331,32 @@ public:
   xiiInstancedMeshComponent();
   ~xiiInstancedMeshComponent();
 
-  /// \brief Returns the number of instances for this instanced mesh component, used to determine how many instances of this mesh are being rendered.
+  /// Returns the number of instances for this instanced mesh component, used to determine how many instances of this mesh are being rendered.
   xiiUInt32 GetInstanceCount() const;
 
-  /// \brief Returns a reference to the array of instance transforms for this instanced mesh component, used to access the transformation data for rendering each instance of this mesh.
+  /// Returns a reference to the array of instance transforms for this instanced mesh component, used to access the transformation data for rendering each instance of this mesh.
   xiiArrayPtr<const xiiMat4> GetInstanceTransforms() const;
 
-  /// \brief Adds an instance with the given transform to this instanced mesh component, used to specify the transformation for a new instance of this mesh to render.
+  /// Adds an instance with the given transform to this instanced mesh component, used to specify the transformation for a new instance of this mesh to render.
   xiiUInt32 AddInstance(const xiiMat4& transform);
 
-  /// \brief Sets the transform for the instance at the given index, used to update the transformation for a specific instance of this mesh to render.
+  /// Sets the transform for the instance at the given index, used to update the transformation for a specific instance of this mesh to render.
   void SetInstanceTransform(xiiUInt32 uiIndex, const xiiMat4& transform);
 
-  /// \brief Removes the instance at the given index from this instanced mesh component, used to stop rendering a specific instance of this mesh.
+  /// Removes the instance at the given index from this instanced mesh component, used to stop rendering a specific instance of this mesh.
   void RemoveInstance(xiiUInt32 uiIndex);
 
-  /// \brief Sets the number of instances for this instanced mesh component, used to specify how many instances of this mesh to render. If the count is increased, new instances will be added with identity transforms. If the count is decreased, existing instances will be removed from the end.
+  /// Sets the number of instances for this instanced mesh component, used to specify how many instances of this mesh to render. If the count is increased, new instances will be added with identity transforms. If the count is decreased, existing instances will be removed from the end.
   void SetInstanceCount(xiiUInt32 uiCount);
 
-  /// \brief Removes all instances from this instanced mesh component, used to stop rendering all instances of this mesh.
+  /// Removes all instances from this instanced mesh component, used to stop rendering all instances of this mesh.
   void ClearInstances();
 
 protected:
   xiiDynamicArray<xiiMat4> m_InstanceTransforms; ///< Array of instance transforms for this instanced mesh component, used to provide the transformation data for rendering each instance.
 };
 
-/// \brief Mesh component with explicit CPU-side LOD controls.
+/// Mesh component with explicit CPU-side LOD controls.
 class XII_GRAPHICSCORE_DLL xiiLODMeshComponent : public xiiStaticMeshComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiLODMeshComponent, xiiStaticMeshComponent, xiiLODMeshComponentManager);
@@ -373,16 +373,16 @@ public:
   xiiLODMeshComponent();
   ~xiiLODMeshComponent();
 
-  /// \brief Sets the forced LOD index for this mesh component, used to override the automatic LOD selection and force a specific LOD level to be rendered.
+  /// Sets the forced LOD index for this mesh component, used to override the automatic LOD selection and force a specific LOD level to be rendered.
   void SetForcedLOD(xiiUInt32 uiLOD); // [ property ]
 
-  /// \brief Returns the forced LOD index for this mesh component, used to determine if a specific LOD level is being forced for rendering this mesh.
+  /// Returns the forced LOD index for this mesh component, used to determine if a specific LOD level is being forced for rendering this mesh.
   xiiUInt32 GetForcedLOD() const; // [ property ]
 
-  /// \brief Sets the LOD bias for this mesh component, used to adjust the LOD selection for this mesh based on distance or performance requirements.
+  /// Sets the LOD bias for this mesh component, used to adjust the LOD selection for this mesh based on distance or performance requirements.
   void SetLodBias(float fBias); // [ property ]
 
-  /// \brief Returns the LOD bias for this mesh component, used to determine the LOD selection bias for rendering this mesh.
+  /// Returns the LOD bias for this mesh component, used to determine the LOD selection bias for rendering this mesh.
   float GetLodBias() const; // [ property ]
 
 protected:

@@ -4,7 +4,7 @@
 
 #include <Foundation/Types/Delegate.h>
 
-/// \brief This class uses delegates to define a range of values that can be enumerated using a forward iterator.
+/// This class uses delegates to define a range of values that can be enumerated using a forward iterator.
 ///
 /// Can be used to create a contiguous view to elements of a certain type without the need for them to actually
 /// exist in the same space or format. Think of IEnumerable in c# using composition via xiiDelegate instead of derivation.
@@ -30,10 +30,10 @@ public:
   using NextCallback  = xiiDelegate<void(IteratorType&)>;
   using ValueCallback = xiiDelegate<ValueType(const IteratorType&)>;
 
-  /// \brief Initializes the xiiRangeView with the delegates used to enumerate the range.
+  /// Initializes the xiiRangeView with the delegates used to enumerate the range.
   XII_ALWAYS_INLINE xiiRangeView(BeginCallback begin, EndCallback end, NextCallback next, ValueCallback value);
 
-  /// \brief Const iterator, don't use directly, use ranged based for loops or call begin() end().
+  /// Const iterator, don't use directly, use ranged based for loops or call begin() end().
   struct ConstIterator
   {
     XII_DECLARE_POD_TYPE();
@@ -58,7 +58,7 @@ public:
     IteratorType                                 m_Pos;
   };
 
-  /// \brief Iterator, don't use directly, use ranged based for loops or call begin() end().
+  /// Iterator, don't use directly, use ranged based for loops or call begin() end().
   struct Iterator : public ConstIterator
   {
     XII_DECLARE_POD_TYPE();

@@ -42,7 +42,7 @@ struct xiiDynamicTree
 using xiiDynamicTreeObject      = xiiMap<xiiDynamicTree::xiiMultiMapKey, xiiDynamicTree::xiiObjectData>::Iterator;
 using xiiDynamicTreeObjectConst = xiiMap<xiiDynamicTree::xiiMultiMapKey, xiiDynamicTree::xiiObjectData>::ConstIterator;
 
-/// \brief Callback type for object queries. Return "false" to abort a search (e.g. when the desired element has been found).
+/// Callback type for object queries. Return "false" to abort a search (e.g. when the desired element has been found).
 using XII_VISIBLE_OBJ_CALLBACK = bool (*)(void*, xiiDynamicTreeObjectConst);
 
 class xiiDynamicOctree;

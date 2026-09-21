@@ -17,14 +17,14 @@
 class XII_GRAPHICSD3D12_DLL xiiD3D12TypeConversions
 {
 public:
-  /// \brief Helper function to hash D3D12 enumerations.
+  /// Helper function to hash D3D12 enumerations.
   template <typename T, typename R = typename std::underlying_type<T>::type>
   static R GetUnderlyingValue(T value)
   {
     return static_cast<typename std::underlying_type<T>::type>(value);
   }
 
-  /// \brief Helper function to hash D3D12 flags.
+  /// Helper function to hash D3D12 flags.
   template <typename T>
   static auto GetUnderlyingFlagsValue(T value)
   {

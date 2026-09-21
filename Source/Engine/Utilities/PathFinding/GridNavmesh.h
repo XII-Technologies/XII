@@ -6,7 +6,7 @@
 #include <Foundation/Math/Rect.h>
 #include <Utilities/DataStructures/GameGrid.h>
 
-/// \brief Takes a xiiGameGrid and creates an optimized navmesh structure from it, that is more efficient for path searches.
+/// Takes a xiiGameGrid and creates an optimized navmesh structure from it, that is more efficient for path searches.
 class XII_UTILITIES_DLL xiiGridNavmesh
 {
 public:
@@ -36,31 +36,31 @@ public:
     xiiInt32 m_iNeighborArea;
   };
 
-  /// \brief Callback that determines whether the cell with index \a uiCell1 and the cell with index \a uiCell2 represent the same type of
+  /// Callback that determines whether the cell with index \a uiCell1 and the cell with index \a uiCell2 represent the same type of
   /// terrain.
   using CellComparator = bool (*)(xiiUInt32, xiiUInt32, void*);
 
-  /// \brief Callback that determines whether the cell with index \a uiCell is blocked entirely (for every type of unit) and therefore can
+  /// Callback that determines whether the cell with index \a uiCell is blocked entirely (for every type of unit) and therefore can
   /// be optimized away.
   using CellBlocked = bool (*)(xiiUInt32, void*);
 
-  /// \brief Creates the navmesh from the given xiiGameGrid.
+  /// Creates the navmesh from the given xiiGameGrid.
   template <class CellData>
   void CreateFromGrid(const xiiGameGrid<CellData>& grid, CellComparator isSameCellType, void* pPassThroughSame, CellBlocked isCellBlocked, void* pPassThroughBlocked);
 
-  /// \brief Returns the index of the ConvexArea at the given cell coordinates. Negative, if the cell is blocked.
+  /// Returns the index of the ConvexArea at the given cell coordinates. Negative, if the cell is blocked.
   xiiInt32 GetAreaAt(const xiiVec2I32& vCoord) const { return m_NodesGrid.GetCell(vCoord); }
 
-  /// \brief Returns the number of convex areas that this navmesh consists of.
+  /// Returns the number of convex areas that this navmesh consists of.
   xiiUInt32 GetNumConvexAreas() const { return m_ConvexAreas.GetCount(); }
 
-  /// \brief Returns the given convex area by index.
+  /// Returns the given convex area by index.
   const ConvexArea& GetConvexArea(xiiInt32 iArea) const { return m_ConvexAreas[iArea]; }
 
-  /// \brief Returns the number of edges between convex areas.
+  /// Returns the number of edges between convex areas.
   xiiUInt32 GetNumAreaEdges() const { return m_GraphEdges.GetCount(); }
 
-  /// \brief Returns the given area edge by index.
+  /// Returns the given area edge by index.
   const AreaEdge& GetAreaEdge(xiiInt32 iAreaEdge) const { return m_GraphEdges[iAreaEdge]; }
 
 private:

@@ -9,10 +9,10 @@
 #include <Foundation/SimdMath/SimdVec4b.h>
 #include <Foundation/SimdMath/SimdVec4f.h>
 
-/// \brief Enum that describes where in a volume another object is located.
+/// Enum that describes where in a volume another object is located.
 struct xiiVolumePosition
 {
-  /// \brief Enum that describes where in a volume another object is located.
+  /// Enum that describes where in a volume another object is located.
   enum Enum
   {
     Outside,      ///< This indicates that an object is ENTIRELY inside a volume.
@@ -21,7 +21,7 @@ struct xiiVolumePosition
   };
 };
 
-/// \brief Represents the frustum of some camera and can be used for culling objects.
+/// Represents the frustum of some camera and can be used for culling objects.
 ///
 /// The frustum always consists of exactly 6 planes (near, far, left, right, top, bottom).
 ///
@@ -59,33 +59,33 @@ public:
     CORNER_COUNT = 8
   };
 
-  /// \brief The constructor does NOT initialize the frustum planes, make sure to call SetFrustum() before trying to use it.
+  /// The constructor does NOT initialize the frustum planes, make sure to call SetFrustum() before trying to use it.
   xiiFrustum();
   ~xiiFrustum();
 
-  /// \brief Returns an invalid frustum with all planes set to zero.
+  /// Returns an invalid frustum with all planes set to zero.
   [[nodiscard]] static xiiFrustum MakeInvalid();
 
-  /// \brief Sets the frustum manually by specifying the planes directly.
+  /// Sets the frustum manually by specifying the planes directly.
   ///
   /// \note Make sure to pass in the planes in the order of the PlaneType enum, otherwise xiiFrustum may not always work as expected.
   [[nodiscard]] static xiiFrustum MakeFromPlanes(const xiiPlane* pPlanes); // [tested]
 
-  /// \brief Sets the frustum manually by specifying the planes directly.
+  /// Sets the frustum manually by specifying the planes directly.
   ///
   /// \note Make sure to pass in the planes in the order of the PlaneType enum, otherwise xiiFrustum may not always work as expected.
   ///
   /// Returns XII_SUCESS with a valid outFrustum if the operation was successful and XII_FAILURE otherwise.
   [[nodiscard]] static xiiResult TryMakeFromPlanes(xiiFrustum& out_frustum, const xiiPlane* pPlanes);
 
-  /// \brief Creates the frustum by extracting the planes from the given (model-view / projection) matrix.
+  /// Creates the frustum by extracting the planes from the given (model-view / projection) matrix.
   ///
   /// If the matrix is just the projection matrix, the frustum will be in local space. Pass the full ModelViewProjection
   /// matrix to create the frustum in world-space. If the projection matrix contained in ModelViewProjection is an infinite
   /// plane projection matrix, the resulting frustum will yield a far plane with infinite distance.
   [[nodiscard]] static xiiFrustum MakeFromMVP(const xiiMat4& mModelViewProjection, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
-  /// \brief Creates the frustum by extracting the planes from the given (model-view / projection) matrix.
+  /// Creates the frustum by extracting the planes from the given (model-view / projection) matrix.
   ///
   /// If the matrix is just the projection matrix, the frustum will be in local space. Pass the full ModelViewProjection
   /// matrix to create the frustum in world-space. If the projection matrix contained in ModelViewProjection is an infinite
@@ -94,13 +94,13 @@ public:
   /// Returns XII_SUCESS with a valid outFrustum if the operation was successful and XII_FAILURE otherwise.
   [[nodiscard]] static xiiResult TryMakeFromMVP(xiiFrustum& out_frustum, const xiiMat4& mModelViewProjection, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiHandedness::Enum handedness = xiiHandedness::Default);
 
-  /// \brief Creates a frustum from the given camera position, direction vectors and the field-of-view along X and Y.
+  /// Creates a frustum from the given camera position, direction vectors and the field-of-view along X and Y.
   ///
   /// The up vector does not need to be exactly orthogonal to the forwards vector, it will get recomputed properly.
   /// FOV X and Y define the entire field-of-view, so a FOV of 180 degree would mean the entire half-space in front of the camera.
   [[nodiscard]] static xiiFrustum MakeFromFOV(const xiiVec3& vPosition, const xiiVec3& vForwards, const xiiVec3& vUp, xiiAngle fovX, xiiAngle fovY, float fNearPlane, float fFarPlane); // [tested]
 
-  /// \brief Creates a frustum from the given camera position, direction vectors and the field-of-view along X and Y.
+  /// Creates a frustum from the given camera position, direction vectors and the field-of-view along X and Y.
   ///
   /// The up vector does not need to be exactly orthogonal to the forwards vector, it will get recomputed properly.
   /// FOV X and Y define the entire field-of-view, so a FOV of 180 degree would mean the entire half-space in front of the camera.
@@ -108,64 +108,64 @@ public:
   /// Returns XII_SUCESS with a valid outFrustum if the operation was successful and XII_FAILURE otherwise.
   [[nodiscard]] static xiiResult TryMakeFromFOV(xiiFrustum& out_frustum, const xiiVec3& vPosition, const xiiVec3& vForwards, const xiiVec3& vUp, xiiAngle fovX, xiiAngle fovY, float fNearPlane, float fFarPlane);
 
-  /// \brief Creates a frustum from 8 corner points.
+  /// Creates a frustum from 8 corner points.
   ///
   /// Asserts that the frustum is valid after construction. Thus the given points must form a proper frustum.
   [[nodiscard]] static xiiFrustum MakeFromCorners(const xiiVec3 pCorners[FrustumCorner::CORNER_COUNT]);
 
-  /// \brief Creates a frustum from 8 corner points.
+  /// Creates a frustum from 8 corner points.
   ///
   /// Returns XII_SUCESS with a valid outFrustum if the operation was successful and XII_FAILURE otherwise.
   [[nodiscard]] static xiiResult TryMakeFromCorners(xiiFrustum& out_frustum, const xiiVec3 pCorners[FrustumCorner::CORNER_COUNT]);
 
-  /// \brief Returns the n-th plane of the frustum.
+  /// Returns the n-th plane of the frustum.
   const xiiPlane& GetPlane(xiiUInt8 uiPlane) const; // [tested]
 
-  /// \brief Returns the n-th plane of the frustum and allows modification.
+  /// Returns the n-th plane of the frustum and allows modification.
   xiiPlane& AccessPlane(xiiUInt8 uiPlane);
 
-  /// \brief Checks that all planes are valid.
+  /// Checks that all planes are valid.
   bool IsValid() const;
 
-  /// \brief Transforms the frustum by the given matrix. This allows to adjust the frustum to a new orientation when a camera is moved or
+  /// Transforms the frustum by the given matrix. This allows to adjust the frustum to a new orientation when a camera is moved or
   /// when it is necessary to cull from a different position.
   void TransformFrustum(const xiiMat4& mTransform); // [tested]
 
-  /// \brief Returns frustum transformed by given matrix
+  /// Returns frustum transformed by given matrix
   xiiFrustum GetTransformedFrustum(const xiiMat4& mTransform) const; // [tested]
 
-  /// \brief Flips all frustum planes around. Might be necessary after creating the frustum from a mirror projection matrix.
+  /// Flips all frustum planes around. Might be necessary after creating the frustum from a mirror projection matrix.
   void InvertFrustum(); // [tested]
 
-  /// \brief Computes the frustum corner points.
+  /// Computes the frustum corner points.
   ///
   /// Note: If the frustum contains an infinite far plane, the far plane corners (out_points[4..7])
   /// will be at infinity.
   xiiResult ComputeCornerPoints(xiiVec3 out_pPoints[FrustumCorner::CORNER_COUNT]) const; // [tested]
 
-  /// \brief Checks whether the given object is inside or outside the frustum.
+  /// Checks whether the given object is inside or outside the frustum.
   ///
   /// A concave object might be classified as 'intersecting' although it is outside the frustum, if it overlaps the planes just right.
   /// However an object that overlaps the frustum is definitely never classified as 'outside'.
   xiiVolumePosition::Enum GetObjectPosition(const xiiVec3* pVertices, xiiUInt32 uiNumVertices) const; // [tested]
 
-  /// \brief Same as GetObjectPosition(), but applies a transformation to the given object first. This allows to do culling on instanced
+  /// Same as GetObjectPosition(), but applies a transformation to the given object first. This allows to do culling on instanced
   /// objects.
   xiiVolumePosition::Enum GetObjectPosition(const xiiVec3* pVertices, xiiUInt32 uiNumVertices, const xiiMat4& mObjectTransform) const; // [tested]
 
-  /// \brief Checks whether the given object is inside or outside the frustum.
+  /// Checks whether the given object is inside or outside the frustum.
   xiiVolumePosition::Enum GetObjectPosition(const xiiBoundingSphere& sphere) const; // [tested]
 
-  /// \brief Checks whether the given object is inside or outside the frustum.
+  /// Checks whether the given object is inside or outside the frustum.
   xiiVolumePosition::Enum GetObjectPosition(const xiiBoundingBox& box) const; // [tested]
 
-  /// \brief Returns true if the object is fully inside the frustum or partially overlaps it. Returns false when the object is fully outside
+  /// Returns true if the object is fully inside the frustum or partially overlaps it. Returns false when the object is fully outside
   /// the frustum.
   ///
   /// This function is more efficient than GetObjectPosition() and should be preferred when possible.
   bool Overlaps(const xiiSimdBBox& object) const; // [tested]
 
-  /// \brief Returns true if the object is fully inside the frustum or partially overlaps it. Returns false when the object is fully outside
+  /// Returns true if the object is fully inside the frustum or partially overlaps it. Returns false when the object is fully outside
   /// the frustum.
   ///
   /// This function is more efficient than GetObjectPosition() and should be preferred when possible.

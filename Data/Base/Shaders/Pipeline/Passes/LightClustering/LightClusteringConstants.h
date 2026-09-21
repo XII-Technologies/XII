@@ -8,7 +8,7 @@
 #define XII_CLUSTER_TILE_SIZE      16U
 #define XII_CLUSTER_Z_SLICES       24U
 
-/// \brief Constants shared by ClusterGridBuild and LightListBuild passes.
+/// Constants shared by ClusterGridBuild and LightListBuild passes.
 ///
 /// Bound at slot b3 for both cluster-setup dispatch and light-list dispatch.
 DECLARE_CONSTANT_BUFFER_AUTO(xiiLightClusteringConstants)

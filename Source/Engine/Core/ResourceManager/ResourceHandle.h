@@ -7,7 +7,7 @@
 #include <Core/ResourceManager/Implementation/Declarations.h>
 #include <Foundation/Reflection/Reflection.h>
 
-/// \brief If this is set to XII_ON, stack traces are recorded for every resource handle.
+/// If this is set to XII_ON, stack traces are recorded for every resource handle.
 ///
 /// This can be used to find the places that create resource handles but do not properly clean them up.
 #define XII_RESOURCEHANDLE_STACK_TRACES XII_OFF
@@ -32,16 +32,16 @@ XII_ALWAYS_INLINE void MigrateResourceRefCount(xiiResource* pResource, const voi
 }
 #endif
 
-/// \brief The typeless implementation of resource handles. A typed interface is provided by xiiTypedResourceHandle.
+/// The typeless implementation of resource handles. A typed interface is provided by xiiTypedResourceHandle.
 class XII_CORE_DLL xiiTypelessResourceHandle
 {
 public:
   XII_ALWAYS_INLINE xiiTypelessResourceHandle() = default;
 
-  /// \brief [internal] Increases the refcount of the given resource.
+  /// [internal] Increases the refcount of the given resource.
   xiiTypelessResourceHandle(xiiResource* pResource);
 
-  /// \brief Increases the refcount of the given resource
+  /// Increases the refcount of the given resource
   XII_ALWAYS_INLINE xiiTypelessResourceHandle(const xiiTypelessResourceHandle& rhs)
   {
     m_pResource = rhs.m_pResource;
@@ -52,7 +52,7 @@ public:
     }
   }
 
-  /// \brief Move constructor, no refcount change is necessary.
+  /// Move constructor, no refcount change is necessary.
   XII_ALWAYS_INLINE xiiTypelessResourceHandle(xiiTypelessResourceHandle&& rhs)
   {
     m_pResource     = rhs.m_pResource;
@@ -64,44 +64,44 @@ public:
     }
   }
 
-  /// \brief Releases any referenced resource.
+  /// Releases any referenced resource.
   XII_ALWAYS_INLINE ~xiiTypelessResourceHandle() { Invalidate(); }
 
-  /// \brief Returns whether the handle stores a valid pointer to a resource.
+  /// Returns whether the handle stores a valid pointer to a resource.
   XII_ALWAYS_INLINE bool IsValid() const { return m_pResource != nullptr; }
 
-  /// \brief Clears any reference to a resource and reduces its refcount.
+  /// Clears any reference to a resource and reduces its refcount.
   void Invalidate();
 
-  /// \brief Returns the Resource ID hash of the exact resource that this handle points to, without acquiring the resource.
+  /// Returns the Resource ID hash of the exact resource that this handle points to, without acquiring the resource.
   /// The handle must be valid.
   xiiUInt64 GetResourceIDHash() const;
 
-  /// \brief Returns the Resource ID of the exact resource that this handle points to, without acquiring the resource.
+  /// Returns the Resource ID of the exact resource that this handle points to, without acquiring the resource.
   /// If the handle is not valid, an empty string is returned.
   xiiStringView GetResourceID() const;
 
-  /// \brief The returns the resource description, if available, otherwise the resource ID.
+  /// The returns the resource description, if available, otherwise the resource ID.
   /// This is mainly for logging, where you want the more user friendly description, but the ID, if no description is available.
   /// If the handle is not valid, an empty string is returned.
   xiiStringView GetResourceIdOrDescription() const;
 
-  /// \brief Releases the current reference and increases the refcount of the given resource.
+  /// Releases the current reference and increases the refcount of the given resource.
   void operator=(const xiiTypelessResourceHandle& rhs);
 
-  /// \brief Move operator, no refcount change is necessary.
+  /// Move operator, no refcount change is necessary.
   void operator=(xiiTypelessResourceHandle&& rhs);
 
-  /// \brief Checks whether the two handles point to the same resource.
+  /// Checks whether the two handles point to the same resource.
   XII_ALWAYS_INLINE bool operator==(const xiiTypelessResourceHandle& rhs) const { return m_pResource == rhs.m_pResource; }
 
-  /// \brief For storing handles as keys in maps
+  /// For storing handles as keys in maps
   XII_ALWAYS_INLINE bool operator<(const xiiTypelessResourceHandle& rhs) const { return m_pResource < rhs.m_pResource; }
 
-  /// \brief Checks whether the handle points to the given resource.
+  /// Checks whether the handle points to the given resource.
   XII_ALWAYS_INLINE bool operator==(const xiiResource* rhs) const { return m_pResource == rhs; }
 
-  /// \brief Returns the type information of the resource or nullptr if the handle is invalid.
+  /// Returns the type information of the resource or nullptr if the handle is invalid.
   const xiiRTTI* GetResourceType() const;
 
 protected:
@@ -123,7 +123,7 @@ struct xiiHashHelper<xiiTypelessResourceHandle>
   XII_ALWAYS_INLINE static bool Equal(const xiiTypelessResourceHandle& a, const xiiTypelessResourceHandle& b) { return a == b; }
 };
 
-/// \brief The xiiTypedResourceHandle controls access to a xiiResource.
+/// The xiiTypedResourceHandle controls access to a xiiResource.
 ///
 /// All resources must be referenced using xiiTypedResourceHandle instances (instantiated with the proper resource type as the template
 /// argument). You must not store a direct pointer to a resource anywhere. Instead always store resource handles. To actually access a
@@ -141,22 +141,22 @@ class xiiTypedResourceHandle
 public:
   using ResourceType = RESOURCE_TYPE;
 
-  /// \brief A default constructed handle is invalid and does not reference any resource.
+  /// A default constructed handle is invalid and does not reference any resource.
   xiiTypedResourceHandle() = default;
 
-  /// \brief Increases the refcount of the given resource.
+  /// Increases the refcount of the given resource.
   explicit xiiTypedResourceHandle(ResourceType* pResource) :
     m_hTypeless(pResource)
   {
   }
 
-  /// \brief Increases the refcount of the given resource.
+  /// Increases the refcount of the given resource.
   xiiTypedResourceHandle(const xiiTypedResourceHandle<ResourceType>& rhs) :
     m_hTypeless(rhs.m_hTypeless)
   {
   }
 
-  /// \brief Move constructor, no refcount change is necessary.
+  /// Move constructor, no refcount change is necessary.
   xiiTypedResourceHandle(xiiTypedResourceHandle<ResourceType>&& rhs) :
     m_hTypeless(std::move(rhs.m_hTypeless))
   {
@@ -178,57 +178,57 @@ public:
 #endif
   }
 
-  /// \brief Releases the current reference and increases the refcount of the given resource.
+  /// Releases the current reference and increases the refcount of the given resource.
   void operator=(const xiiTypedResourceHandle<ResourceType>& rhs) { m_hTypeless = rhs.m_hTypeless; }
 
-  /// \brief Move operator, no refcount change is necessary.
+  /// Move operator, no refcount change is necessary.
   void operator=(xiiTypedResourceHandle<ResourceType>&& rhs) { m_hTypeless = std::move(rhs.m_hTypeless); }
 
-  /// \brief Checks whether the two handles point to the same resource.
+  /// Checks whether the two handles point to the same resource.
   XII_ALWAYS_INLINE bool operator==(const xiiTypedResourceHandle<ResourceType>& rhs) const { return m_hTypeless == rhs.m_hTypeless; }
 
-  /// \brief Checks whether the two handles point to the same resource.
+  /// Checks whether the two handles point to the same resource.
   XII_ALWAYS_INLINE bool operator!=(const xiiTypedResourceHandle<ResourceType>& rhs) const { return m_hTypeless != rhs.m_hTypeless; }
 
-  /// \brief For storing handles as keys in maps
+  /// For storing handles as keys in maps
   XII_ALWAYS_INLINE bool operator<(const xiiTypedResourceHandle<ResourceType>& rhs) const { return m_hTypeless < rhs.m_hTypeless; }
 
-  /// \brief Checks whether the handle points to the given resource.
+  /// Checks whether the handle points to the given resource.
   XII_ALWAYS_INLINE bool operator==(const xiiResource* rhs) const { return m_hTypeless == rhs; }
 
-  /// \brief Checks whether the handle points to the given resource.
+  /// Checks whether the handle points to the given resource.
   XII_ALWAYS_INLINE bool operator!=(const xiiResource* rhs) const { return m_hTypeless != rhs; }
 
 
-  /// \brief Returns the corresponding typeless resource handle.
+  /// Returns the corresponding typeless resource handle.
   XII_ALWAYS_INLINE operator const xiiTypelessResourceHandle() const { return m_hTypeless; }
 
-  /// \brief Returns the corresponding typeless resource handle.
+  /// Returns the corresponding typeless resource handle.
   XII_ALWAYS_INLINE operator xiiTypelessResourceHandle() { return m_hTypeless; }
 
-  /// \brief Returns whether the handle stores a valid pointer to a resource.
+  /// Returns whether the handle stores a valid pointer to a resource.
   XII_ALWAYS_INLINE bool IsValid() const { return m_hTypeless.IsValid(); }
 
-  /// \brief Returns whether the handle stores a valid pointer to a resource.
+  /// Returns whether the handle stores a valid pointer to a resource.
   XII_ALWAYS_INLINE explicit operator bool() const { return m_hTypeless.IsValid(); }
 
-  /// \brief Clears any reference to a resource and reduces its refcount.
+  /// Clears any reference to a resource and reduces its refcount.
   XII_ALWAYS_INLINE void Invalidate() { m_hTypeless.Invalidate(); }
 
-  /// \brief Returns the Resource ID hash of the exact resource that this handle points to, without acquiring the resource.
+  /// Returns the Resource ID hash of the exact resource that this handle points to, without acquiring the resource.
   /// The handle must be valid.
   XII_ALWAYS_INLINE xiiUInt64 GetResourceIDHash() const { return m_hTypeless.GetResourceIDHash(); }
 
-  /// \brief Returns the Resource ID of the exact resource that this handle points to, without acquiring the resource.
+  /// Returns the Resource ID of the exact resource that this handle points to, without acquiring the resource.
   /// The handle must be valid.
   XII_ALWAYS_INLINE xiiStringView GetResourceID() const { return m_hTypeless.GetResourceID(); }
 
-  /// \brief The returns the resource description, if available, otherwise the resource ID.
+  /// The returns the resource description, if available, otherwise the resource ID.
   /// This is mainly for logging, where you want the more user friendly description, but the ID, if no description is available.
   /// If the handle is not valid, an empty string is returned.
   XII_ALWAYS_INLINE xiiStringView GetResourceIdOrDescription() const { return m_hTypeless.GetResourceIdOrDescription(); }
 
-  /// \brief Attempts to copy the given typeless handle to this handle.
+  /// Attempts to copy the given typeless handle to this handle.
   ///
   /// It is an error to assign a typeless handle that references a resource with a mismatching type.
   void AssignFromTypelessHandle(const xiiTypelessResourceHandle& hHandle)
@@ -285,14 +285,14 @@ private:
   static void ReadHandle(xiiStreamReader& Stream, xiiTypelessResourceHandle& ResourceHandle);
 };
 
-/// \brief Operator to serialize resource handles
+/// Operator to serialize resource handles
 template <typename ResourceType>
 void operator<<(xiiStreamWriter& ref_stream, const xiiTypedResourceHandle<ResourceType>& hValue)
 {
   xiiResourceHandleStreamOperations::WriteHandle(ref_stream, hValue);
 }
 
-/// \brief Operator to deserialize resource handles
+/// Operator to deserialize resource handles
 template <typename ResourceType>
 void operator>>(xiiStreamReader& ref_stream, xiiTypedResourceHandle<ResourceType>& ref_hValue)
 {

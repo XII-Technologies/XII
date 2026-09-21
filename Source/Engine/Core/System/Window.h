@@ -21,7 +21,7 @@ class xiiOpenDdlReaderElement;
 #  include <Core/Platform/NoImpl/WindowDeclaration_NoImpl.h>
 #endif
 
-/// \brief Base class for window output targets
+/// Base class for window output targets
 ///
 /// A window output target is usually tied tightly to a window (\sa xiiWindowBase) and represents the graphics APIs side of the render output.
 /// E.g. in a Vulkan or DirectX implementation this would be a swap chain.
@@ -31,64 +31,64 @@ public:
   xiiWindowOutputTargetBase()          = default;
   virtual ~xiiWindowOutputTargetBase() = default;
 
-  /// \brief Returns whether VSync is enabled for this output target.
+  /// Returns whether VSync is enabled for this output target.
   virtual bool GetVSyncEnabled() const = 0;
 
-  /// \brief Enables or disables VSync for this output target.
+  /// Enables or disables VSync for this output target.
   virtual void SetVSyncEnabled(bool bEnableVSync) = 0;
 
-  /// \brief Presents the current back buffer to the screen. This should be called every frame after rendering is done.
+  /// Presents the current back buffer to the screen. This should be called every frame after rendering is done.
   virtual void PresentImage() = 0;
 
-  /// \brief Resizes the output target to the new size. This should be called when the window is resized.
+  /// Resizes the output target to the new size. This should be called when the window is resized.
   virtual void Resize(const xiiSizeU32& newSize) = 0;
 
-  /// \brief Captures the current back buffer and stores it in the given image. This can be used for screenshots or similar purposes.
+  /// Captures the current back buffer and stores it in the given image. This can be used for screenshots or similar purposes.
   virtual xiiResult CaptureImage(xiiImage& out_image) = 0;
 };
 
-/// \brief Base class of all window classes that have a client area and a native window handle.
+/// Base class of all window classes that have a client area and a native window handle.
 class XII_CORE_DLL xiiWindowBase
 {
 public:
   virtual ~xiiWindowBase() = default;
 
-  /// \brief Returns the size of the client area of the window, i.e. the area that can be drawn into.
+  /// Returns the size of the client area of the window, i.e. the area that can be drawn into.
   virtual xiiSizeU32 GetClientAreaSize() const = 0;
 
-  /// \brief Returns the position and size of the entire window, including borders and title bar.
+  /// Returns the position and size of the entire window, including borders and title bar.
   virtual xiiWindowHandle GetNativeWindowHandle() const = 0;
 
-  /// \brief Whether the window is a fullscreen window or should be one - some platforms may enforce this via the GALSwapchain.
+  /// Whether the window is a fullscreen window or should be one - some platforms may enforce this via the GALSwapchain.
   ///
   /// If bOnlyProperFullscreenMode, the caller accepts borderless windows that cover the entire screen as "fullscreen".
   virtual bool IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const = 0;
 
-  /// \brief Whether the window can potentially be seen by the user.
+  /// Whether the window can potentially be seen by the user.
   ///
   /// Windows that are minimized or hidden are not visible.
   virtual bool IsVisible() const = 0;
 
-  /// \brief Processes all pending window messages, such as input or resize events. This should be called regularly (typically once per frame) to keep the window responsive.
+  /// Processes all pending window messages, such as input or resize events. This should be called regularly (typically once per frame) to keep the window responsive.
   virtual void ProcessWindowMessages() = 0;
 
-  /// \brief Adds a reference to the window. The window will not be destroyed until all references are removed.
+  /// Adds a reference to the window. The window will not be destroyed until all references are removed.
   virtual void AddReference() = 0;
 
-  /// \brief Removes a reference from the window. If this was the last reference, the window will be destroyed.
+  /// Removes a reference from the window. If this was the last reference, the window will be destroyed.
   virtual void RemoveReference() = 0;
 
-  /// \brief Sets the output target for this window.
+  /// Sets the output target for this window.
   ///
   /// Output targets are destroyed before the window to ensure proper cleanup order.
   /// Setting a new output target replaces any existing one.
   virtual void SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget) = 0;
 
-  /// \brief Gets the output target for this window.
+  /// Gets the output target for this window.
   virtual xiiWindowOutputTargetBase* GetOutputTarget() const = 0;
 };
 
-/// \brief Determines how the position and resolution for a window are picked
+/// Determines how the position and resolution for a window are picked
 struct XII_CORE_DLL xiiWindowMode
 {
   using StorageType = xiiUInt8;
@@ -103,14 +103,14 @@ struct XII_CORE_DLL xiiWindowMode
     Default = WindowFixedResolution
   };
 
-  /// \brief Returns whether the window covers an entire monitor. This includes borderless windows and proper fullscreen modes.
+  /// Returns whether the window covers an entire monitor. This includes borderless windows and proper fullscreen modes.
   static constexpr bool IsFullscreen(Enum e) { return e == FullscreenBorderlessNativeResolution || e == FullscreenFixedResolution; }
 };
 
-/// \brief Parameters for creating a window, such as position and resolution
+/// Parameters for creating a window, such as position and resolution
 struct XII_CORE_DLL xiiWindowCreationDescription
 {
-  /// \brief Adjusts the position and size members, depending on the current value of m_WindowMode and m_iMonitor.
+  /// Adjusts the position and size members, depending on the current value of m_WindowMode and m_iMonitor.
   ///
   /// For windowed mode, this does nothing.
   /// For fullscreen modes, the window position is taken from the given monitor.
@@ -196,7 +196,7 @@ struct xiiWindowEvent
   } m_Payload;
 };
 
-/// \brief A simple abstraction for platform specific window creation.
+/// A simple abstraction for platform specific window creation.
 ///
 /// Will handle basic message looping. Notable events can be listened to by overriding the corresponding callbacks.
 /// You should call ProcessWindowMessages every frame to keep the window responsive.
@@ -204,16 +204,16 @@ struct xiiWindowEvent
 class XII_CORE_DLL xiiWindow : public xiiWindowBase
 {
 public:
-  /// \brief Creates empty window instance with standard settings
+  /// Creates empty window instance with standard settings
   ///
   /// You need to call Initialize to actually create a window.
   /// \see xiiWindow::Initialize
   xiiWindow();
 
-  /// \brief Destroys the window if not already done.
+  /// Destroys the window if not already done.
   virtual ~xiiWindow();
 
-  /// \brief Returns the currently active description struct.
+  /// Returns the currently active description struct.
   inline const xiiWindowCreationDescription& GetCreationDescription() const { return m_CreationDescription; }
 
   virtual xiiSizeU32 GetClientAreaSize() const override { return m_CreationDescription.m_Resolution; }
@@ -236,14 +236,14 @@ public:
 
   virtual void ProcessWindowMessages() override;
 
-  /// \brief Creates a new platform specific window with the current settings
+  /// Creates a new platform specific window with the current settings
   ///
   /// Will automatically call xiiWindow::Destroy if window is already initialized.
   ///
   /// \see xiiWindow::Destroy, xiiWindow::Initialize
   xiiResult Initialize();
 
-  /// \brief Creates a new platform specific window with the given settings.
+  /// Creates a new platform specific window with the given settings.
   ///
   /// Will automatically call xiiWindow::Destroy if window is already initialized.
   ///
@@ -258,48 +258,48 @@ public:
     return Initialize();
   }
 
-  /// \brief Gets if the window is up and running.
+  /// Gets if the window is up and running.
   inline bool IsInitialized() const { return m_bInitialized; }
 
-  /// \brief Destroys the window.
+  /// Destroys the window.
   xiiResult Destroy();
 
-  /// \brief Tries to resize the window.
+  /// Tries to resize the window.
   /// Override OnResize to get the actual new window size.
   xiiResult Resize(const xiiSizeU32& newWindowSize);
 
-  /// \brief Called on window resize messages.
+  /// Called on window resize messages.
   ///
   /// \param newWindowSize
   ///   New window size in pixel.
   /// \see OnWindowMessage
   virtual void OnResize(const xiiSizeU32& newWindowSize);
 
-  /// \brief Called when the window position is changed. Not possible on all OSes.
+  /// Called when the window position is changed. Not possible on all OSes.
   virtual void OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY);
 
-  /// \brief Called when the window gets focus or loses focus.
+  /// Called when the window gets focus or loses focus.
   virtual void OnFocus(bool bHasFocus);
 
-  /// \brief Called when the window gets focus or loses focus.
+  /// Called when the window gets focus or loses focus.
   virtual void OnVisibleChange(bool bVisible);
 
-  /// \brief Called when the close button of the window is clicked.
+  /// Called when the close button of the window is clicked.
   virtual void OnClickClose();
 
-  /// \brief Returns the input device that is attached to this window and typically provides mouse / keyboard input.
+  /// Returns the input device that is attached to this window and typically provides mouse / keyboard input.
   xiiStandardInputDevice* GetInputDevice() const { return m_pInputDevice.Borrow(); }
 
   virtual void SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget) override;
 
   virtual xiiWindowOutputTargetBase* GetOutputTarget() const override;
 
-  /// \brief Allows to subscribe to window events.
+  /// Allows to subscribe to window events.
   ///
   /// Note that AddEventHandler() is a const function, so can be called on the returned const xiiEvent reference.
   const xiiEvent<xiiWindowEvent>& GetWindowEvents() const { return m_WindowEvents; }
 
-  /// \brief Returns a number that can be used as a window number in xiiWindowCreationDescription.
+  /// Returns a number that can be used as a window number in xiiWindowCreationDescription.
   ///
   /// This number just increments whenever a xiiWindow is created. It starts at zero.
   static xiiUInt8 GetNextUnusedWindowNumber();

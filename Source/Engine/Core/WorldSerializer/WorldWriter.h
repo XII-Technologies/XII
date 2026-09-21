@@ -6,7 +6,7 @@
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Types/TagSet.h>
 
-/// \brief Stores an entire xiiWorld in a stream.
+/// Stores an entire xiiWorld in a stream.
 ///
 /// Used for exporting a world in binary form either as a level or as a prefab (though there is no
 /// difference).
@@ -14,37 +14,37 @@
 class XII_CORE_DLL xiiWorldWriter
 {
 public:
-  /// \brief Writes all content in \a world to \a stream.
+  /// Writes all content in \a world to \a stream.
   ///
   /// All game objects with tags that overlap with \a pExclude will be ignored.
   void WriteWorld(xiiStreamWriter& ref_stream, xiiWorld& ref_world, const xiiTagSet* pExclude = nullptr);
 
-  /// \brief Only writes the given root objects and all their children to the stream.
+  /// Only writes the given root objects and all their children to the stream.
   void WriteObjects(xiiStreamWriter& ref_stream, const xiiDeque<const xiiGameObject*>& rootObjects);
 
-  /// \brief Only writes the given root objects and all their children to the stream.
+  /// Only writes the given root objects and all their children to the stream.
   void WriteObjects(xiiStreamWriter& ref_stream, xiiArrayPtr<const xiiGameObject*> rootObjects);
 
-  /// \brief Writes the given game object handle to the stream.
+  /// Writes the given game object handle to the stream.
   ///
   /// \note If the handle belongs to an object that is not part of the serialized scene, e.g. an object
   /// that was excluded by a tag, this function will assert.
   void WriteGameObjectHandle(const xiiGameObjectHandle& hObject);
 
-  /// \brief Writes the given component handle to the stream.
+  /// Writes the given component handle to the stream.
   ///
   /// \note If the handle belongs to a component that is not part of the serialized scene, e.g. an object
   /// that was excluded by a tag, this function will assert.
   void WriteComponentHandle(const xiiComponentHandle& hComponent);
 
-  /// \brief Accesses the stream to which data is written. Use this in component serialization functions
+  /// Accesses the stream to which data is written. Use this in component serialization functions
   /// to write data to the stream.
   xiiStreamWriter& GetStream() const { return *m_pStream; }
 
-  /// \brief Returns an array containing all game object pointers that were written to the stream as root objects
+  /// Returns an array containing all game object pointers that were written to the stream as root objects
   const xiiDeque<const xiiGameObject*>& GetAllWrittenRootObjects() const { return m_AllRootObjects; }
 
-  /// \brief Returns an array containing all game object pointers that were written to the stream as child objects
+  /// Returns an array containing all game object pointers that were written to the stream as child objects
   const xiiDeque<const xiiGameObject*>& GetAllWrittenChildObjects() const { return m_AllChildObjects; }
 
 private:

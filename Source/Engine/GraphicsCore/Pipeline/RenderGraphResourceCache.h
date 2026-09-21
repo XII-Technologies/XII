@@ -10,7 +10,7 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
-/// \brief Frame-scoped GPU resource pool dedicated to the render graph's transient resource needs.
+/// Frame-scoped GPU resource pool dedicated to the render graph's transient resource needs.
 ///
 /// Transient resources are GPU textures and buffers that are created for a single frame, used by one
 /// or more render graph passes, and then returned to the pool for reuse in subsequent frames. The cache
@@ -37,45 +37,45 @@ public:
   xiiRenderGraphResourceCache();
   ~xiiRenderGraphResourceCache();
 
-  /// \brief Initializes the cache with the GAL device used to create resources.
+  /// Initializes the cache with the GAL device used to create resources.
   void Initialize(xiiSharedPtr<xiiGALDevice> pDevice);
 
-  /// \brief Releases all pooled and active resources and nulls the device reference.
+  /// Releases all pooled and active resources and nulls the device reference.
   void Shutdown();
 
-  /// \brief Called once at the start of a frame before Execute().
+  /// Called once at the start of a frame before Execute().
   void BeginFrame(xiiUInt64 uiFrameIndex);
 
-  /// \brief Called once at the end of a frame after Execute(). Returns all active resources to the pool.
+  /// Called once at the end of a frame after Execute(). Returns all active resources to the pool.
   void EndFrame();
 
   // Texture
 
-  /// \brief Returns a texture matching the given description, creating one if no pool entry exists.
+  /// Returns a texture matching the given description, creating one if no pool entry exists.
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> AcquireTexture(const xiiGALTextureCreationDescription& description);
 
-  /// \brief Returns a texture to the pool for potential reuse in subsequent frames.
+  /// Returns a texture to the pool for potential reuse in subsequent frames.
   void ReturnTexture(xiiSharedPtr<xiiGALTexture> pTexture);
 
   // Buffer
 
-  /// \brief Returns a buffer matching the given description, creating one if no pool entry exists.
+  /// Returns a buffer matching the given description, creating one if no pool entry exists.
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer> AcquireBuffer(const xiiGALBufferCreationDescription& description);
 
-  /// \brief Returns a buffer to the pool for potential reuse in subsequent frames.
+  /// Returns a buffer to the pool for potential reuse in subsequent frames.
   void ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer);
 
   // Maintenance
 
-  /// \brief Destroys pooled resources that have not been acquired for more than uiMinAgeFrames frames.
+  /// Destroys pooled resources that have not been acquired for more than uiMinAgeFrames frames.
   ///
   /// \param uiMinAgeFrames Resources unused for at least this many frames are released. Default is 4.
   void ReleaseStaleResources(xiiUInt32 uiMinAgeFrames = 4U);
 
-  /// \brief Returns the number of resources currently acquired (not yet returned this frame).
+  /// Returns the number of resources currently acquired (not yet returned this frame).
   [[nodiscard]] xiiUInt32 GetActiveResourceCount() const;
 
-  /// \brief Returns the number of resources sitting idle in the pool.
+  /// Returns the number of resources sitting idle in the pool.
   [[nodiscard]] xiiUInt32 GetPooledResourceCount() const;
 
 private:

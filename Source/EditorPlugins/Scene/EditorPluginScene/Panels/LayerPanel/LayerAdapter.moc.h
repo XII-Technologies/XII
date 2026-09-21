@@ -11,7 +11,7 @@ class xiiScene2Document;
 struct xiiScene2LayerEvent;
 struct xiiDocumentEvent;
 
-/// \brief Custom adapter for layers, used in xiiQtLayerPanel.
+/// Custom adapter for layers, used in xiiQtLayerPanel.
 class XII_EDITORPLUGINSCENE_DLL xiiQtLayerAdapter : public xiiQtDocumentTreeModelAdapter
 {
   Q_OBJECT;
@@ -38,7 +38,7 @@ private:
   xiiUuid                                            m_CurrentActiveLayer;
 };
 
-/// \brief Custom delegate for layers, used in xiiQtLayerPanel.
+/// Custom delegate for layers, used in xiiQtLayerPanel.
 /// Provides buttons to toggle the layer visible / loaded states.
 /// Relies on xiiQtLayerAdapter to trigger updates and provide the LayerGuid.
 class xiiQtLayerDelegate : public xiiQtItemDelegate
@@ -60,7 +60,7 @@ public:
   xiiScene2Document* m_pDocument = nullptr;
 };
 
-/// \brief Custom model for layers, used in xiiQtLayerPanel.
+/// Custom model for layers, used in xiiQtLayerPanel.
 class xiiQtLayerModel : public xiiQtDocumentTreeModel
 {
   Q_OBJECT

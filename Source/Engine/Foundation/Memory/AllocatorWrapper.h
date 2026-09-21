@@ -4,7 +4,7 @@
 
 #include <Foundation/Memory/Allocator.h>
 
-/// \brief Allocator wrapper that should never be used - causes assertion failures.
+/// Allocator wrapper that should never be used - causes assertion failures.
 ///
 /// This wrapper is used as a template parameter to indicate that no allocator
 /// should be used. Any attempt to call GetAllocator() will trigger an assertion.
@@ -18,25 +18,25 @@ struct xiiNullAllocatorWrapper
   }
 };
 
-/// \brief Wrapper for the engine's default general-purpose allocator.
+/// Wrapper for the engine's default general-purpose allocator.
 struct xiiDefaultAllocatorWrapper
 {
   XII_ALWAYS_INLINE static xiiAllocator* GetAllocator() { return xiiFoundation::GetDefaultAllocator(); }
 };
 
-/// \brief Wrapper for the allocator used for static/global objects.
+/// Wrapper for the allocator used for static/global objects.
 struct xiiStaticAllocatorWrapper
 {
   XII_ALWAYS_INLINE static xiiAllocator* GetAllocator() { return xiiFoundation::GetStaticAllocator(); }
 };
 
-/// \brief Wrapper for the allocator that provides memory with specific alignment guarantees.
+/// Wrapper for the allocator that provides memory with specific alignment guarantees.
 struct xiiAlignedAllocatorWrapper
 {
   XII_ALWAYS_INLINE static xiiAllocator* GetAllocator() { return xiiFoundation::GetAlignedAllocator(); }
 };
 
-/// \brief Helper function to facilitate setting the allocator on member containers of a class
+/// Helper function to facilitate setting the allocator on member containers of a class
 /// Allocators can be either template arguments or a ctor parameter. Using the ctor parameter requires the class ctor to reference each member container in the initialization list. This can be very tedious. On the other hand, the template variant only support template parameter so you can't simply pass in a member allocator.
 /// This class solves this problem provided the following rules are followed:
 /// 1. The `xiiAllocator` must be the declared at the earliest in the class, before any container.

@@ -19,11 +19,11 @@ public:
   static bool IsPermutationValueAllowed(xiiStringView sName, const xiiTempHashedString& sHashedName, const xiiTempHashedString& sValue, xiiHashedString& out_sName, xiiHashedString& out_sValue);
   static bool IsPermutationValueAllowed(const xiiHashedString& sName, const xiiHashedString& sValue);
 
-  /// \brief If the given permutation variable is an enum variable, this returns the possible values.
+  /// If the given permutation variable is an enum variable, this returns the possible values.
   /// Returns an empty array for other types of permutation variables.
   static xiiArrayPtr<const xiiGALShaderParser::EnumValue> GetPermutationEnumValues(const xiiHashedString& sName);
 
-  /// \brief Same as GetPermutationEnumValues() but also returns values for other types of variables.
+  /// Same as GetPermutationEnumValues() but also returns values for other types of variables.
   /// E.g. returns TRUE and FALSE for boolean variables.
   static void GetPermutationValues(const xiiHashedString& sName, xiiDynamicArray<xiiHashedString>& out_values);
 

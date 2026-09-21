@@ -12,7 +12,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Query.h>
 
-/// \brief Abstract interface for per-pass GPU timing instrumentation in the render graph.
+/// Abstract interface for per-pass GPU timing instrumentation in the render graph.
 ///
 /// Implement this interface to capture GPU performance data during render graph execution.
 /// The executor calls OnGraphBegin / OnGraphEnd around each queue submission command list,
@@ -24,28 +24,28 @@ public:
   xiiRenderGraphProfiler()          = default;
   virtual ~xiiRenderGraphProfiler() = default;
 
-  /// \brief Called at the start of a submission command list.
+  /// Called at the start of a submission command list.
   virtual void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) = 0;
 
-  /// \brief Called at the end of a submission command list.
+  /// Called at the end of a submission command list.
   virtual void OnGraphEnd(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) = 0;
 
-  /// \brief Called immediately before a pass records its commands. Insert a begin-query here.
+  /// Called immediately before a pass records its commands. Insert a begin-query here.
   virtual void OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) = 0;
 
-  /// \brief Called immediately after a pass records its commands. Insert an end-query here.
+  /// Called immediately after a pass records its commands. Insert an end-query here.
   virtual void OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) = 0;
 
-  /// \brief Called once per frame after all passes have been submitted.
+  /// Called once per frame after all passes have been submitted.
   ///        Implementations should schedule result readback here (with appropriate frame delay).
   virtual void OnFrameEnd(xiiUInt64 uiFrameIndex) = 0;
 
-  /// \brief Returns the last resolved GPU duration for the given pass in milliseconds.
+  /// Returns the last resolved GPU duration for the given pass in milliseconds.
   ///        Returns 0.0f if no data is yet available (warmup frames).
   [[nodiscard]] virtual float GetPassDurationMs(xiiStringView sPassName) const = 0;
 };
 
-/// \brief A concrete render graph profiler that uses GPU Duration queries.
+/// A concrete render graph profiler that uses GPU Duration queries.
 ///
 /// Uses xiiGALQueryType::Duration to bracket each pass with BeginQuery / EndQuery.
 /// Results are read back with a configurable number of frames of delay (default: 2) to avoid GPU stalls.
@@ -60,10 +60,10 @@ public:
   xiiRenderGraphTimestampProfiler();
   ~xiiRenderGraphTimestampProfiler() override;
 
-  /// \brief Initializes the profiler with the device that will be used to create queries.
+  /// Initializes the profiler with the device that will be used to create queries.
   void Initialize(xiiSharedPtr<xiiGALDevice> pDevice);
 
-  /// \brief Releases all GPU queries.
+  /// Releases all GPU queries.
   void Shutdown();
 
   // xiiRenderGraphProfiler interface
@@ -73,10 +73,10 @@ public:
   void OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnFrameEnd(xiiUInt64 uiFrameIndex) override;
 
-  /// \brief Returns the last resolved GPU duration for the given pass in milliseconds.
+  /// Returns the last resolved GPU duration for the given pass in milliseconds.
   [[nodiscard]] float GetPassDurationMs(xiiStringView sPassName) const override;
 
-  /// \brief Returns the last resolved GPU duration for the entire frame in milliseconds.
+  /// Returns the last resolved GPU duration for the entire frame in milliseconds.
   [[nodiscard]] float GetFrameDurationMs() const;
 
 private:

@@ -19,7 +19,7 @@
 class xiiRTTI;
 class xiiPropertyAttribute;
 
-/// \brief Determines whether a type is xiiIsBitflags.
+/// Determines whether a type is xiiIsBitflags.
 template <typename T>
 struct xiiIsBitflags
 {
@@ -32,7 +32,7 @@ struct xiiIsBitflags<xiiBitflags<T>>
   static constexpr bool value = true;
 };
 
-/// \brief Determines whether a type is xiiIsBitflags.
+/// Determines whether a type is xiiIsBitflags.
 template <typename T>
 struct xiiIsEnum
 {
@@ -45,7 +45,7 @@ struct xiiIsEnum<xiiEnum<T>>
   static constexpr bool value = true;
 };
 
-/// \brief Flags used to describe a property and its type.
+/// Flags used to describe a property and its type.
 struct xiiPropertyFlags
 {
   using StorageType = xiiUInt16;
@@ -135,7 +135,7 @@ inline xiiBitflags<xiiPropertyFlags> xiiPropertyFlags::GetParameterFlags<void>()
 
 XII_DECLARE_FLAGS_OPERATORS(xiiPropertyFlags)
 
-/// \brief Describes what category a property belongs to.
+/// Describes what category a property belongs to.
 struct xiiPropertyCategory
 {
   using StorageType = xiiUInt8;
@@ -153,37 +153,37 @@ struct xiiPropertyCategory
   };
 };
 
-/// \brief This is the base interface for all properties in the reflection system. It provides enough information to cast to the next better
+/// This is the base interface for all properties in the reflection system. It provides enough information to cast to the next better
 /// base class.
 class XII_FOUNDATION_DLL xiiAbstractProperty
 {
 public:
-  /// \brief The constructor must get the name of the property. The string must be a compile-time constant.
+  /// The constructor must get the name of the property. The string must be a compile-time constant.
   xiiAbstractProperty(xiiStringView sPropertyName) { m_sPropertyName = sPropertyName; }
 
   virtual ~xiiAbstractProperty();
 
-  /// \brief Returns the name of the property.
+  /// Returns the name of the property.
   xiiStringView GetPropertyName() const { return m_sPropertyName; }
 
-  /// \brief Returns the type information of the constant property. Use this to cast this property to a specific version of
+  /// Returns the type information of the constant property. Use this to cast this property to a specific version of
   /// xiiTypedConstantProperty.
   virtual const xiiRTTI* GetSpecificType() const = 0;
 
-  /// \brief Returns the category of this property. Cast this property to the next higher type for more information.
+  /// Returns the category of this property. Cast this property to the next higher type for more information.
   virtual xiiPropertyCategory::Enum GetCategory() const = 0; // [tested]
 
-  /// \brief Returns the flags of the property.
+  /// Returns the flags of the property.
   const xiiBitflags<xiiPropertyFlags>& GetFlags() const { return m_Flags; };
 
-  /// \brief Adds flags to the property. Returns itself to allow to be called during initialization.
+  /// Adds flags to the property. Returns itself to allow to be called during initialization.
   xiiAbstractProperty* AddFlags(xiiBitflags<xiiPropertyFlags> flags)
   {
     m_Flags.Add(flags);
     return this;
   };
 
-  /// \brief Adds attributes to the property. Returns itself to allow to be called during initialization. Allocate an attribute using
+  /// Adds attributes to the property. Returns itself to allow to be called during initialization. Allocate an attribute using
   /// standard 'new'.
   xiiAbstractProperty* AddAttributes(xiiPropertyAttribute* pAttrib1, xiiPropertyAttribute* pAttrib2 = nullptr, xiiPropertyAttribute* pAttrib3 = nullptr, xiiPropertyAttribute* pAttrib4 = nullptr, xiiPropertyAttribute* pAttrib5 = nullptr, xiiPropertyAttribute* pAttrib6 = nullptr)
   {
@@ -203,10 +203,10 @@ public:
     return this;
   };
 
-  /// \brief Returns the array of property attributes.
+  /// Returns the array of property attributes.
   xiiArrayPtr<const xiiPropertyAttribute* const> GetAttributes() const { return m_Attributes; }
 
-  /// \brief Returns the first attribute that derives from the given type, or nullptr if nothing is found.
+  /// Returns the first attribute that derives from the given type, or nullptr if nothing is found.
   template <typename Type>
   const Type* GetAttributeByType() const;
 
@@ -216,27 +216,27 @@ protected:
   xiiHybridArray<const xiiPropertyAttribute*, 2U, xiiStaticAllocatorWrapper> m_Attributes; // Do not track RTTI data.
 };
 
-/// \brief This is the base class for all constant properties that are stored inside the RTTI data.
+/// This is the base class for all constant properties that are stored inside the RTTI data.
 class XII_FOUNDATION_DLL xiiAbstractConstantProperty : public xiiAbstractProperty
 {
 public:
-  /// \brief Passes the property name through to xiiAbstractProperty.
+  /// Passes the property name through to xiiAbstractProperty.
   xiiAbstractConstantProperty(xiiStringView sPropertyName) :
     xiiAbstractProperty(sPropertyName)
   {
   }
 
-  /// \brief Returns xiiPropertyCategory::Constant.
+  /// Returns xiiPropertyCategory::Constant.
   virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Constant; } // [tested]
 
-  /// \brief Returns a pointer to the constant data or nullptr. See xiiAbstractMemberProperty::GetPropertyPointer for more information.
+  /// Returns a pointer to the constant data or nullptr. See xiiAbstractMemberProperty::GetPropertyPointer for more information.
   virtual void* GetPropertyPointer() const = 0;
 
-  /// \brief Returns the constant value as a xiiVariant
+  /// Returns the constant value as a xiiVariant
   virtual xiiVariant GetConstant() const = 0;
 };
 
-/// \brief This is the base class for all properties that are members of a class. It provides more information about the actual type.
+/// This is the base class for all properties that are members of a class. It provides more information about the actual type.
 ///
 /// If xiiPropertyFlags::Pointer is set as a flag, you must not cast this property to xiiTypedMemberProperty, instead use GetValuePtr and
 /// SetValuePtr. This is because reference and const-ness of the property are only fixed for the pointer but not the type, so the actual
@@ -244,16 +244,16 @@ public:
 class XII_FOUNDATION_DLL xiiAbstractMemberProperty : public xiiAbstractProperty
 {
 public:
-  /// \brief Passes the property name through to xiiAbstractProperty.
+  /// Passes the property name through to xiiAbstractProperty.
   xiiAbstractMemberProperty(xiiStringView sPropertyName) :
     xiiAbstractProperty(sPropertyName)
   {
   }
 
-  /// \brief Returns xiiPropertyCategory::Member.
+  /// Returns xiiPropertyCategory::Member.
   virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Member; }
 
-  /// \brief Returns a pointer to the property data or nullptr. If a valid pointer is returned, that pointer and the information from
+  /// Returns a pointer to the property data or nullptr. If a valid pointer is returned, that pointer and the information from
   /// GetSpecificType() can be used to step deeper into the type (if required).
   ///
   /// You need to pass the pointer to an object on which you are operating. This function is mostly of interest when the property itself is
@@ -266,48 +266,48 @@ public:
   /// 'accessors' (functions to get / set the property value), it is not possible (or useful) to get the property pointer.
   virtual void* GetPropertyPointer(const void* pInstance) const = 0;
 
-  /// \brief Writes the value of this property in pInstance to pObject.
+  /// Writes the value of this property in pInstance to pObject.
   /// pObject needs to point to an instance of this property's type.
   virtual void GetValuePtr(const void* pInstance, void* out_pObject) const = 0;
 
-  /// \brief Sets the value of pObject to the property in pInstance.
+  /// Sets the value of pObject to the property in pInstance.
   /// pObject needs to point to an instance of this property's type.
   virtual void SetValuePtr(void* pInstance, const void* pObject) const = 0;
 };
 
 
-/// \brief The base class for a property that represents an array of values.
+/// The base class for a property that represents an array of values.
 class XII_FOUNDATION_DLL xiiAbstractArrayProperty : public xiiAbstractProperty
 {
 public:
-  /// \brief Passes the property name through to xiiAbstractProperty.
+  /// Passes the property name through to xiiAbstractProperty.
   xiiAbstractArrayProperty(xiiStringView sPropertyName) :
     xiiAbstractProperty(sPropertyName)
   {
   }
 
-  /// \brief Returns xiiPropertyCategory::Array.
+  /// Returns xiiPropertyCategory::Array.
   virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Array; }
 
-  /// \brief Returns number of elements.
+  /// Returns number of elements.
   virtual xiiUInt32 GetCount(const void* pInstance) const = 0;
 
-  /// \brief Writes element at index uiIndex to the target of pObject.
+  /// Writes element at index uiIndex to the target of pObject.
   virtual void GetValue(const void* pInstance, xiiUInt32 uiIndex, void* pObject) const = 0;
 
-  /// \brief Writes the target of pObject to the element at index uiIndex.
+  /// Writes the target of pObject to the element at index uiIndex.
   virtual void SetValue(void* pInstance, xiiUInt32 uiIndex, const void* pObject) const = 0;
 
-  /// \brief Inserts the target of pObject into the array at index uiIndex.
+  /// Inserts the target of pObject into the array at index uiIndex.
   virtual void Insert(void* pInstance, xiiUInt32 uiIndex, const void* pObject) const = 0;
 
-  /// \brief Removes the element in the array at index uiIndex.
+  /// Removes the element in the array at index uiIndex.
   virtual void Remove(void* pInstance, xiiUInt32 uiIndex) const = 0;
 
-  /// \brief Clears the array.
+  /// Clears the array.
   virtual void Clear(void* pInstance) const = 0;
 
-  /// \brief Resizes the array to uiCount.
+  /// Resizes the array to uiCount.
   virtual void SetCount(void* pInstance, xiiUInt32 uiCount) const = 0;
 
   virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) const
@@ -319,79 +319,79 @@ public:
 };
 
 
-/// \brief The base class for a property that represents a set of values.
+/// The base class for a property that represents a set of values.
 ///
 /// The element type must either be a standard type or a pointer.
 class XII_FOUNDATION_DLL xiiAbstractSetProperty : public xiiAbstractProperty
 {
 public:
-  /// \brief Passes the property name through to xiiAbstractProperty.
+  /// Passes the property name through to xiiAbstractProperty.
   xiiAbstractSetProperty(xiiStringView sPropertyName) :
     xiiAbstractProperty(sPropertyName)
   {
   }
 
-  /// \brief Returns xiiPropertyCategory::Set.
+  /// Returns xiiPropertyCategory::Set.
   virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Set; }
 
-  /// \brief Returns whether the set is empty.
+  /// Returns whether the set is empty.
   virtual bool IsEmpty(const void* pInstance) const = 0;
 
-  /// \brief Clears the set.
+  /// Clears the set.
   virtual void Clear(void* pInstance) const = 0;
 
-  /// \brief Inserts the target of pObject into the set.
+  /// Inserts the target of pObject into the set.
   virtual void Insert(void* pInstance, const void* pObject) const = 0;
 
-  /// \brief Removes the target of pObject from the set.
+  /// Removes the target of pObject from the set.
   virtual void Remove(void* pInstance, const void* pObject) const = 0;
 
-  /// \brief Returns whether the target of pObject is in the set.
+  /// Returns whether the target of pObject is in the set.
   virtual bool Contains(const void* pInstance, const void* pObject) const = 0;
 
-  /// \brief Writes the content of the set to out_keys.
+  /// Writes the content of the set to out_keys.
   virtual void GetValues(const void* pInstance, xiiDynamicArray<xiiVariant>& out_keys) const = 0;
 };
 
 
-/// \brief The base class for a property that represents a set of values.
+/// The base class for a property that represents a set of values.
 ///
 /// The element type must either be a standard type or a pointer.
 class XII_FOUNDATION_DLL xiiAbstractMapProperty : public xiiAbstractProperty
 {
 public:
-  /// \brief Passes the property name through to xiiAbstractProperty.
+  /// Passes the property name through to xiiAbstractProperty.
   xiiAbstractMapProperty(xiiStringView sPropertyName) :
     xiiAbstractProperty(sPropertyName)
   {
   }
 
-  /// \brief Returns xiiPropertyCategory::Map.
+  /// Returns xiiPropertyCategory::Map.
   virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Map; }
 
-  /// \brief Returns whether the set is empty.
+  /// Returns whether the set is empty.
   virtual bool IsEmpty(const void* pInstance) const = 0;
 
-  /// \brief Clears the set.
+  /// Clears the set.
   virtual void Clear(void* pInstance) const = 0;
 
-  /// \brief Inserts the target of pObject into the set.
+  /// Inserts the target of pObject into the set.
   virtual void Insert(void* pInstance, xiiStringView sKey, const void* pObject) const = 0;
 
-  /// \brief Removes the target of pObject from the set.
+  /// Removes the target of pObject from the set.
   virtual void Remove(void* pInstance, xiiStringView sKey) const = 0;
 
-  /// \brief Returns whether the target of pObject is in the set.
+  /// Returns whether the target of pObject is in the set.
   virtual bool Contains(const void* pInstance, xiiStringView sKey) const = 0;
 
-  /// \brief Writes element at index uiIndex to the target of pObject.
+  /// Writes element at index uiIndex to the target of pObject.
   virtual bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const = 0;
 
-  /// \brief Writes the content of the set to out_keys.
+  /// Writes the content of the set to out_keys.
   virtual void GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const = 0;
 };
 
-/// \brief Use getArgument<N, Args...>::Type to get the type of the Nth argument in Args.
+/// Use getArgument<N, Args...>::Type to get the type of the Nth argument in Args.
 template <xiiInt32 _Index, class... Args>
 struct getArgument;
 
@@ -407,7 +407,7 @@ struct getArgument<_Index, Head, Tail...>
   using Type = typename getArgument<_Index - 1, Tail...>::Type;
 };
 
-/// \brief Template that allows to probe a function for a parameter and return type.
+/// Template that allows to probe a function for a parameter and return type.
 template <xiiInt32 I, typename FUNC>
 struct xiiFunctionParameterTypeResolver
 {
@@ -449,7 +449,7 @@ struct xiiFunctionParameterTypeResolver<I, R (Class::*)(P...) const>
   using ReturnType    = R;
 };
 
-/// \brief Template that allows to probe a single parameter function for parameter and return type.
+/// Template that allows to probe a single parameter function for parameter and return type.
 template <typename FUNC>
 struct xiiMemberFunctionParameterTypeResolver
 {
@@ -462,7 +462,7 @@ struct xiiMemberFunctionParameterTypeResolver<R (Class::*)(P)>
   using ReturnType    = R;
 };
 
-/// \brief Template that allows to probe a container for its element type.
+/// Template that allows to probe a container for its element type.
 template <typename CONTAINER>
 struct xiiContainerSubTypeResolver
 {
@@ -529,7 +529,7 @@ struct xiiContainerSubTypeResolver<xiiMap<K, T>>
 };
 
 
-/// \brief Describes what kind of function a property is.
+/// Describes what kind of function a property is.
 struct xiiFunctionType
 {
   using StorageType = xiiUInt8;
@@ -544,11 +544,11 @@ struct xiiFunctionType
   };
 };
 
-/// \brief The base class for a property that represents a function.
+/// The base class for a property that represents a function.
 class XII_FOUNDATION_DLL xiiAbstractFunctionProperty : public xiiAbstractProperty
 {
 public:
-  /// \brief Passes the property name through to xiiAbstractProperty.
+  /// Passes the property name through to xiiAbstractProperty.
   xiiAbstractFunctionProperty(xiiStringView sPropertyName) :
     xiiAbstractProperty(sPropertyName)
   {
@@ -556,25 +556,25 @@ public:
 
   virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Function; }
 
-  /// \brief Returns the type of function, see xiiFunctionPropertyType::Enum.
+  /// Returns the type of function, see xiiFunctionPropertyType::Enum.
   virtual xiiFunctionType::Enum GetFunctionType() const = 0;
 
-  /// \brief Returns the type of the return value.
+  /// Returns the type of the return value.
   virtual const xiiRTTI* GetReturnType() const = 0;
 
-  /// \brief Returns property flags of the return value.
+  /// Returns property flags of the return value.
   virtual xiiBitflags<xiiPropertyFlags> GetReturnFlags() const = 0;
 
-  /// \brief Returns the number of arguments.
+  /// Returns the number of arguments.
   virtual xiiUInt32 GetArgumentCount() const = 0;
 
-  /// \brief Returns the type of the given argument.
+  /// Returns the type of the given argument.
   virtual const xiiRTTI* GetArgumentType(xiiUInt32 uiParamIndex) const = 0;
 
-  /// \brief Returns the property flags of the given argument.
+  /// Returns the property flags of the given argument.
   virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const = 0;
 
-  /// \brief Calls the function. Provide the instance on which the function is supposed to be called.
+  /// Calls the function. Provide the instance on which the function is supposed to be called.
   ///
   /// arguments must be the size of GetArgumentCount, the following rules apply for both arguments and return value:
   /// Any standard type must be provided by value, even if it is a pointer to one. Types must match exactly, no ConvertTo is called.
@@ -589,13 +589,13 @@ public:
 
   virtual const xiiRTTI* GetSpecificType() const override { return GetReturnType(); }
 
-  /// \brief Adds flags to the property. Returns itself to allow to be called during initialization.
+  /// Adds flags to the property. Returns itself to allow to be called during initialization.
   xiiAbstractFunctionProperty* AddFlags(xiiBitflags<xiiPropertyFlags> flags)
   {
     return static_cast<xiiAbstractFunctionProperty*>(xiiAbstractProperty::AddFlags(flags));
   }
 
-  /// \brief Adds attributes to the property. Returns itself to allow to be called during initialization. Allocate an attribute using
+  /// Adds attributes to the property. Returns itself to allow to be called during initialization. Allocate an attribute using
   /// standard 'new'.
   xiiAbstractFunctionProperty* AddAttributes(xiiPropertyAttribute* pAttrib1, xiiPropertyAttribute* pAttrib2 = nullptr, xiiPropertyAttribute* pAttrib3 = nullptr, xiiPropertyAttribute* pAttrib4 = nullptr, xiiPropertyAttribute* pAttrib5 = nullptr, xiiPropertyAttribute* pAttrib6 = nullptr)
   {

@@ -13,7 +13,7 @@ class xiiProcessMessage;
 class xiiIpcChannel;
 class xiiLoopThread;
 
-/// \brief Internal sub-system used by xiiIpcChannel.
+/// Internal sub-system used by xiiIpcChannel.
 ///
 /// This sub-system creates a background thread as soon as the first xiiIpcChannel
 /// is added to it. This class should never be needed to be accessed outside
@@ -27,7 +27,7 @@ public:
   virtual ~xiiMessageLoop() = default;
   ;
 
-  /// \brief Needs to be called by newly created channels' constructors.
+  /// Needs to be called by newly created channels' constructors.
   void AddChannel(xiiIpcChannel* pChannel);
 
   void RemoveChannel(xiiIpcChannel* pChannel);
@@ -43,9 +43,9 @@ protected:
   bool ProcessTasks();
   void Quit();
 
-  /// \brief Wake up the message loop when new work comes in.
+  /// Wake up the message loop when new work comes in.
   virtual void WakeUp() = 0;
-  /// \brief Waits until a new message has been processed (sent, received).
+  /// Waits until a new message has been processed (sent, received).
   /// \param timeout If negative, wait indefinitely.
   /// \param pFilter If not null, wait for a message for the specific channel.
   /// \return Returns whether a message was received or the timeout was reached.

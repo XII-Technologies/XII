@@ -4,7 +4,7 @@
 
 #include <EditorFramework/InputContexts/SelectionContext.h>
 
-/// \brief Custom selection context for the scene to allow switching the active layer if an object is clicked that is in a different layer then the active one.
+/// Custom selection context for the scene to allow switching the active layer if an object is clicked that is in a different layer then the active one.
 class xiiSceneSelectionContext : public xiiSelectionContext
 {
 public:

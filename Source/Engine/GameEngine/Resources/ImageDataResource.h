@@ -26,7 +26,7 @@ public:
 
   ~xiiImageDataResource();
 
-  /// \brief Returns the descriptor that was used to create this resource. The data in the descriptor is only valid as long as the resource is loaded.
+  /// Returns the descriptor that was used to create this resource. The data in the descriptor is only valid as long as the resource is loaded.
   const xiiImageDataResourceDescriptor& GetDescriptor() const { return *m_pDescriptor; }
 
 private:

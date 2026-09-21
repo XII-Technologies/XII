@@ -6,7 +6,7 @@
 
 using xiiTagSetBlockStorage = xiiUInt64;
 
-/// \brief The tag class stores the necessary lookup information for a single tag which can be used in conjunction with the tag set.
+/// The tag class stores the necessary lookup information for a single tag which can be used in conjunction with the tag set.
 ///
 /// A tag is the storage for a small amount of lookup information for a single tag. Instances
 /// of xiiTag can be used in checks with the tag set. Note that fetching information for the tag needs to access

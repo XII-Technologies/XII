@@ -13,7 +13,7 @@ class xiiWorld;
 class xiiBlackboard;
 class xiiStateMachineInstance;
 
-/// \brief Base class for a state in a state machine.
+/// Base class for a state in a state machine.
 ///
 /// Note that states are shared between multiple instances and thus
 /// shouldn't modify any data on their own but always operate on the passed instance and instance data.
@@ -36,7 +36,7 @@ public:
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
-  /// \brief Returns whether this state needs additional instance data and if so fills the out_desc.
+  /// Returns whether this state needs additional instance data and if so fills the out_desc.
   ///
   /// \see xiiStateMachineInstanceDataDesc
   virtual bool GetInstanceDataDesc(xiiInstanceDataDesc& out_desc);
@@ -73,7 +73,7 @@ struct xiiStateMachineState_ScriptBaseClassFunctions
   };
 };
 
-/// \brief Base class for a transition in a state machine. The target state of a transition is automatically set
+/// Base class for a transition in a state machine. The target state of a transition is automatically set
 /// once its condition has been met.
 ///
 /// Same as with states, transitions are also shared between multiple instances and thus
@@ -88,13 +88,13 @@ class XII_GAMEENGINE_DLL xiiStateMachineTransition : public xiiReflectedClass
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
-  /// \brief Returns whether this transition needs additional instance data and if so fills the out_desc.
+  /// Returns whether this transition needs additional instance data and if so fills the out_desc.
   ///
   /// \see xiiStateMachineInstanceDataDesc
   virtual bool GetInstanceDataDesc(xiiInstanceDataDesc& out_desc);
 };
 
-/// \brief The state machine description defines the structure of a state machine like e.g.
+/// The state machine description defines the structure of a state machine like e.g.
 /// what states it has and how to transition between them.
 /// Once an instance is created from a description it is not allowed to change the description afterwards.
 class XII_GAMEENGINE_DLL xiiStateMachineDescription : public xiiRefCounted
@@ -105,10 +105,10 @@ public:
   xiiStateMachineDescription();
   ~xiiStateMachineDescription();
 
-  /// \brief Adds the given state to the description and returns the state index.
+  /// Adds the given state to the description and returns the state index.
   xiiUInt32 AddState(xiiUniquePtr<xiiStateMachineState>&& pState);
 
-  /// \brief Adds the given transition between the two given states. A uiFromStateIndex of xiiInvalidIndex generates a transition that can be done from any other possible state.
+  /// Adds the given transition between the two given states. A uiFromStateIndex of xiiInvalidIndex generates a transition that can be done from any other possible state.
   void AddTransition(xiiUInt32 uiFromStateIndex, xiiUInt32 uiToStateIndex, xiiUniquePtr<xiiStateMachineTransition>&& pTransistion);
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
@@ -140,7 +140,7 @@ private:
   xiiInstanceDataAllocator m_InstanceDataAllocator;
 };
 
-/// \brief The state machine instance represents the actual state machine.
+/// The state machine instance represents the actual state machine.
 /// Typically it is created from a description but for small use cases it can also be used without a description.
 class XII_GAMEENGINE_DLL xiiStateMachineInstance
 {
@@ -164,10 +164,10 @@ public:
   void                               SetBlackboard(const xiiSharedPtr<xiiBlackboard>& pBlackboard);
   const xiiSharedPtr<xiiBlackboard>& GetBlackboard() const { return m_pBlackboard; }
 
-  /// \brief Returns how long the state machine is in its current state
+  /// Returns how long the state machine is in its current state
   xiiTime GetTimeInCurrentState() const { return m_TimeInCurrentState; }
 
-  /// \brief Sends a named event that state transitions can react to.
+  /// Sends a named event that state transitions can react to.
   void FireTransitionEvent(xiiStringView sEvent);
 
   xiiStringView GetCurrentTransitionEvent() const { return m_sCurrentTransitionEvent; }

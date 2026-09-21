@@ -23,27 +23,27 @@ struct XII_TOOLSFOUNDATION_DLL xiiToolsTag
 class XII_TOOLSFOUNDATION_DLL xiiToolsTagRegistry
 {
 public:
-  /// \brief Removes all tags that are not specified as 'built-in'.
+  /// Removes all tags that are not specified as 'built-in'.
   static void Clear();
 
-  /// \brief Serializes all tags to a DDL stream.
+  /// Serializes all tags to a DDL stream.
   static void WriteToDDL(xiiStreamWriter& inout_stream);
 
-  /// \brief Reads tags from a DDL stream.
+  /// Reads tags from a DDL stream.
   static xiiStatus ReadFromDDL(xiiStreamReader& inout_stream);
 
 
-  /// \brief Adds a tag to the registry. Returns true if the tag was valid.
+  /// Adds a tag to the registry. Returns true if the tag was valid.
   static bool AddTag(const xiiToolsTag& tag);
 
-  /// \brief Removes a tag by name. Returns true if the tag was removed.
+  /// Removes a tag by name. Returns true if the tag was removed.
   static bool RemoveTag(xiiStringView sName);
 
 
-  /// \brief Retrieves all tags in the registry.
+  /// Retrieves all tags in the registry.
   static void GetAllTags(xiiHybridArray<const xiiToolsTag*, 16>& out_tags);
 
-  /// \brief Retrieves all tags in the given categories.
+  /// Retrieves all tags in the given categories.
   static void GetTagsByCategory(const xiiArrayPtr<xiiStringView>& categories, xiiHybridArray<const xiiToolsTag*, 16>& out_tags);
 
 private:

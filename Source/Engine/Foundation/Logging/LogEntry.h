@@ -9,7 +9,7 @@
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiLogMsgType);
 
-/// \brief A persistent log entry created from a xiiLoggingEventData.
+/// A persistent log entry created from a xiiLoggingEventData.
 /// Allows for a log event to survive for longer than just the event
 /// and is reflected, allowing for it to be sent to remote targets.
 struct XII_FOUNDATION_DLL xiiLogEntry
@@ -26,7 +26,7 @@ struct XII_FOUNDATION_DLL xiiLogEntry
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiLogEntry);
 
-/// \brief A log interface implementation that converts a log event into
+/// A log interface implementation that converts a log event into
 /// a xiiLogEntry and calls a delegate with it.
 ///
 /// A typical use case is to re-route and store log messages in a scope:
@@ -45,7 +45,7 @@ class XII_FOUNDATION_DLL xiiLogEntryDelegate : public xiiLogInterface
 public:
   using Callback = xiiDelegate<void(xiiLogEntry&)>;
 
-  /// \brief Log events will be delegated to the given callback.
+  /// Log events will be delegated to the given callback.
   xiiLogEntryDelegate(Callback callback, xiiLogMsgType::Enum logLevel = xiiLogMsgType::All);
   virtual void HandleLogMessage(const xiiLoggingEventData& le) override;
 

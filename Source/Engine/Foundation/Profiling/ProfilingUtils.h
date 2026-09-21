@@ -7,9 +7,9 @@
 class XII_FOUNDATION_DLL xiiProfilingUtils
 {
 public:
-  /// \brief Captures profiling data via xiiProfilingSystem::Capture and saves it to the giben file location.
+  /// Captures profiling data via xiiProfilingSystem::Capture and saves it to the giben file location.
   static xiiResult SaveProfilingCapture(xiiStringView sCapturePath);
 
-  /// \brief Reads two profiling captures and merges them into one.
+  /// Reads two profiling captures and merges them into one.
   static xiiResult MergeProfilingCaptures(xiiStringView sCapturePath1, xiiStringView sCapturePath2, xiiStringView sMergedCapturePath);
 };

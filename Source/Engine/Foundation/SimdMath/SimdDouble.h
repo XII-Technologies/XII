@@ -10,34 +10,34 @@ class XII_FOUNDATION_DLL xiiSimdDouble
 public:
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default constructor, leaves the data uninitialized.
+  /// Default constructor, leaves the data uninitialized.
   xiiSimdDouble(); // [tested]
 
-  /// \brief Constructs from a given double.
+  /// Constructs from a given double.
   xiiSimdDouble(double f); // [tested]
 
-  /// \brief Constructs from a given float.
+  /// Constructs from a given float.
   xiiSimdDouble(float f); // [tested]
 
-  /// \brief Constructs from a given integer.
+  /// Constructs from a given integer.
   xiiSimdDouble(xiiInt32 i); // [tested]
 
-  /// \brief Constructs from a given integer.
+  /// Constructs from a given integer.
   xiiSimdDouble(xiiUInt32 i); // [tested]
 
-  /// \brief Constructs from given angle.
+  /// Constructs from given angle.
   xiiSimdDouble(xiiAngled a); // [tested]
 
-  /// \brief Constructs from the internal implementation type.
+  /// Constructs from the internal implementation type.
   xiiSimdDouble(xiiInternal::QuadDouble v); // [tested]
 
-  /// \brief Returns the stored number as a standard double.
+  /// Returns the stored number as a standard double.
   operator double() const; // [tested]
 
-  /// \brief Creates a xiiSimdDouble that is initialized to zero.
+  /// Creates a xiiSimdDouble that is initialized to zero.
   [[nodiscard]] static xiiSimdDouble MakeZero(); // [tested]
 
-  /// \brief Creates a xiiSimdDouble that is initialized to Not-A-Number (NaN).
+  /// Creates a xiiSimdDouble that is initialized to Not-A-Number (NaN).
   [[nodiscard]] static xiiSimdDouble MakeNaN(); // [tested]
 
 public:

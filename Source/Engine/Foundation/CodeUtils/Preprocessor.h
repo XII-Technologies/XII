@@ -12,7 +12,7 @@
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Time/Timestamp.h>
 
-/// \brief This object caches files in a tokenized state. It can be shared among xiiPreprocessor instances to improve performance when
+/// This object caches files in a tokenized state. It can be shared among xiiPreprocessor instances to improve performance when
 /// they access the same files.
 class XII_FOUNDATION_DLL xiiTokenizedFileCache
 {
@@ -23,16 +23,16 @@ public:
     xiiTimestamp m_Timestamp;
   };
 
-  /// \brief Checks whether \a sFileName is already in the cache, returns an iterator to it. If the iterator is invalid, the file is not cached yet.
+  /// Checks whether \a sFileName is already in the cache, returns an iterator to it. If the iterator is invalid, the file is not cached yet.
   xiiMap<xiiString, FileData>::ConstIterator Lookup(const xiiString& sFileName) const;
 
-  /// \brief Removes the cached content for \a sFileName from the cache. Should be used when the file content has changed and needs to be re-read.
+  /// Removes the cached content for \a sFileName from the cache. Should be used when the file content has changed and needs to be re-read.
   void Remove(const xiiString& sFileName);
 
-  /// \brief Removes all files from the cache to ensure that they will be re-read.
+  /// Removes all files from the cache to ensure that they will be re-read.
   void Clear();
 
-  /// \brief Stores \a FileContent for the file \a sFileName as the new cached data.
+  /// Stores \a FileContent for the file \a sFileName as the new cached data.
   ///
   //// The file content is tokenized first and all #line directives are evaluated, to update the line number and file origin for each token.
   /// Any errors are written to the given log.
@@ -45,7 +45,7 @@ private:
   xiiMap<xiiString, FileData> m_Cache;
 };
 
-/// \brief xiiPreprocessor implements a standard C preprocessor. It can be used to pre-process files to get the output after macro expansion and #ifdef
+/// xiiPreprocessor implements a standard C preprocessor. It can be used to pre-process files to get the output after macro expansion and #ifdef
 /// handling.
 ///
 /// For a detailed documentation about the C preprocessor, see https://gcc.gnu.org/onlinedocs/cpp/
@@ -64,7 +64,7 @@ private:
 class XII_FOUNDATION_DLL xiiPreprocessor
 {
 public:
-  /// \brief Describes the type of #include that was encountered during preprocessing
+  /// Describes the type of #include that was encountered during preprocessing
   enum IncludeType
   {
     MainFile,        ///< This is used for the very first access to the main source file
@@ -72,18 +72,18 @@ public:
     GlobalInclude    ///< An #include <file> has been encountered
   };
 
-  /// \brief This type of callback is used to read an #include file. \a szAbsoluteFile is the path that the FileLocatorCB reported, the result needs
+  /// This type of callback is used to read an #include file. \a szAbsoluteFile is the path that the FileLocatorCB reported, the result needs
   /// to be stored in \a FileContent.
   using FileOpenCB = xiiDelegate<xiiResult(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification)>;
 
-  /// \brief This type of callback is used to retrieve the absolute path of the \a szIncludeFile when #included inside \a szCurAbsoluteFile.
+  /// This type of callback is used to retrieve the absolute path of the \a szIncludeFile when #included inside \a szCurAbsoluteFile.
   ///
   /// Note that you should ensure that \a out_sAbsoluteFilePath is always identical (including casing and path slashes) when it is supposed to point
   /// to the same file, as this exact name is used for file lookup (and therefore also file caching).
   /// If it is not identical, file caching will not work, and on different OSes the file may be found or not.
   using FileLocatorCB = xiiDelegate<xiiResult(xiiStringView sCurAbsoluteFile, xiiStringView sIncludeFile, IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath)>;
 
-  /// \brief Every time an unknown command (e.g. '#version') is encountered, this callback is used to determine whether the command shall be passed
+  /// Every time an unknown command (e.g. '#version') is encountered, this callback is used to determine whether the command shall be passed
   /// through.
   ///
   /// If the callback returns false, an error is generated and parsing fails. The callback thus acts as a whitelist for all commands that shall be
@@ -92,13 +92,13 @@ public:
 
   using MacroParameters = xiiDeque<xiiTokenParseUtils::TokenStream>;
 
-  /// \brief The event data that the processor broadcasts
+  /// The event data that the processor broadcasts
   ///
   /// Please note that m_pToken contains a lot of interesting information, such as
   /// the current file and line number and of course the current piece of text.
   struct ProcessingEvent
   {
-    /// \brief The event types that the processor broadcasts
+    /// The event types that the processor broadcasts
     enum EventType
     {
       BeginExpansion,  ///< A macro is now going to be expanded
@@ -118,13 +118,13 @@ public:
     xiiStringView   m_sInfo;
   };
 
-  /// \brief Broadcasts events during the processing. This can be used to create detailed callstacks when an error is encountered.
+  /// Broadcasts events during the processing. This can be used to create detailed callstacks when an error is encountered.
   /// It also broadcasts errors and warnings with more detailed information than the log interface allows.
   xiiEvent<const ProcessingEvent&> m_ProcessingEvents;
 
   xiiPreprocessor();
 
-  /// \brief All error output is sent to the given xiiLogInterface.
+  /// All error output is sent to the given xiiLogInterface.
   ///
   /// Note that when the preprocessor encounters any error, it will stop immediately and usually no output is generated.
   /// However, there are also a few cases where only a warning is generated, in this case preprocessing will continue without problems.
@@ -133,33 +133,33 @@ public:
   /// that method should be preferred, because the events carry more information about the current file and line number etc.
   void SetLogInterface(xiiLogInterface* pLog);
 
-  /// \brief Allows to specify a custom cache object that should be used for storing the tokenized result of files.
+  /// Allows to specify a custom cache object that should be used for storing the tokenized result of files.
   ///
   /// This allows to share one cache across multiple instances of xiiPreprocessor and across time. E.g. it makes it possible
   /// to prevent having to read and tokenize include files that are referenced often.
   void SetCustomFileCache(xiiTokenizedFileCache* pFileCache = nullptr);
 
-  /// \brief If set to true, all #pragma commands are passed through to the output, otherwise they are removed.
+  /// If set to true, all #pragma commands are passed through to the output, otherwise they are removed.
   void SetPassThroughPragma(bool bPassThrough) { m_bPassThroughPragma = bPassThrough; }
 
-  /// \brief If set to true, all #line commands are passed through to the output, otherwise they are removed.
+  /// If set to true, all #line commands are passed through to the output, otherwise they are removed.
   void SetPassThroughLine(bool bPassThrough) { m_bPassThroughLine = bPassThrough; }
 
-  /// \brief Sets the callback that is used to determine whether an unknown command is passed through or triggers an error.
+  /// Sets the callback that is used to determine whether an unknown command is passed through or triggers an error.
   void SetPassThroughUnknownCmdsCB(PassThroughUnknownCmdCB callback) { m_PassThroughUnknownCmdCB = callback; }
 
-  /// \brief Sets the callback that is needed to read input data.
+  /// Sets the callback that is needed to read input data.
   ///
   /// The default file open function will just try to open files via xiiFileReader.
   void SetFileOpenFunction(FileOpenCB openAbsFileCB);
 
-  /// \brief Sets the callback that is needed to locate an input file
+  /// Sets the callback that is needed to locate an input file
   ///
   /// The default file locator will assume that the main source file and all files #included in angle brackets can be opened without modification.
   /// Files #included in "" will be appended as relative paths to the path of the file they appeared in.
   void SetFileLocatorFunction(FileLocatorCB locateAbsFileCB);
 
-  /// \brief Adds a #define to the preprocessor, even before any file is processed.
+  /// Adds a #define to the preprocessor, even before any file is processed.
   ///
   /// This allows to have global macros that are always defined for all processed files, such as the current platform etc.
   /// \a szDefinition must be in the form of the text that follows a #define statement. So to define the macro "WIN32", just
@@ -169,12 +169,12 @@ public:
   /// further might fail (including crashing).
   xiiResult AddCustomDefine(xiiStringView sDefinition);
 
-  /// \brief Processes the given file and returns the result as a stream of tokens.
+  /// Processes the given file and returns the result as a stream of tokens.
   ///
   /// This function is useful when you want to further process the output afterwards and thus need it in a tokenized form anyway.
   xiiResult Process(xiiStringView sMainFile, xiiTokenParseUtils::TokenStream& ref_tokenOutput);
 
-  /// \brief Processes the given file and returns the result as a string.
+  /// Processes the given file and returns the result as a string.
   ///
   /// This function creates a string from the tokenized result. If \a bKeepComments is true, all block and line comments
   /// are included in the output string, otherwise they are removed.

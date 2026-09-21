@@ -23,7 +23,7 @@ xiiLogInterface*         xiiGlobalLog::s_pOverrideLog = nullptr;
 static thread_local bool s_bAllowOverrideLog          = true;
 static xiiMutex          s_OverrideLogMutex;
 
-/// \brief The log system that messages are sent to when the user specifies no system himself.
+/// The log system that messages are sent to when the user specifies no system himself.
 static thread_local xiiLogInterface* s_DefaultLogSystem = nullptr;
 
 xiiEventSubscriptionID xiiGlobalLog::AddLogWriter(xiiLoggingEvent::Handler handler)

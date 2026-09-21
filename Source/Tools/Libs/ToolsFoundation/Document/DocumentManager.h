@@ -19,7 +19,7 @@ public:
 
   xiiStatus CanOpenDocument(xiiStringView sFilePath) const;
 
-  /// \brief Creates a new document.
+  /// Creates a new document.
   /// \param szDocumentTypeName Document type to create. See xiiDocumentTypeDescriptor.
   /// \param szPath Absolute path to the document to be created.
   /// \param out_pDocument Out parameter for the resulting xiiDocument. Will be nullptr on failure.
@@ -28,7 +28,7 @@ public:
   /// \return Returns the error in case the operations failed.
   xiiStatus CreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags = xiiDocumentFlags::None, const xiiDocumentObject* pOpenContext = nullptr);
 
-  /// \brief Opens an existing document.
+  /// Opens an existing document.
   /// \param szDocumentTypeName Document type to open. See xiiDocumentTypeDescriptor.
   /// \param szPath Absolute path to the document to be opened.
   /// \param out_pDocument Out parameter for the resulting xiiDocument. Will be nullptr on failure.
@@ -41,18 +41,18 @@ public:
   void              CloseDocument(xiiDocument* pDocument);
   void              EnsureWindowRequested(xiiDocument* pDocument, const xiiDocumentObject* pOpenContext = nullptr);
 
-  /// \brief Returns a list of all currently open documents that are managed by this document manager
+  /// Returns a list of all currently open documents that are managed by this document manager
   const xiiDynamicArray<xiiDocument*>& GetAllOpenDocuments() const { return m_AllOpenDocuments; }
 
   xiiDocument* GetDocumentByPath(xiiStringView sPath) const;
 
   static xiiDocument* GetDocumentByGuid(const xiiUuid& guid);
 
-  /// \brief If the given document is open, it will be closed. User is not asked about it, unsaved changes are discarded. Returns true if the document
+  /// If the given document is open, it will be closed. User is not asked about it, unsaved changes are discarded. Returns true if the document
   /// was open and needed to be closed.
   static bool EnsureDocumentIsClosedInAllManagers(xiiStringView sPath);
 
-  /// \brief If the given document is open, it will be closed. User is not asked about it, unsaved changes are discarded. Returns true if the document
+  /// If the given document is open, it will be closed. User is not asked about it, unsaved changes are discarded. Returns true if the document
   /// was open and needed to be closed. This function only operates on documents opened by this manager. Use EnsureDocumentIsClosedInAllManagers() to
   /// close documents of any type.
   bool EnsureDocumentIsClosed(xiiStringView sPath);

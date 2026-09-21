@@ -6,7 +6,7 @@
 
 #include <Foundation/Communication/Message.h>
 
-/// \brief Message that is sent to all game objects when a scene or prefab is being exported.
+/// Message that is sent to all game objects when a scene or prefab is being exported.
 /// This message can be handled in scripts or custom components to e.g. remove editor only objects/components or save custom data.
 struct XII_GAMEENGINE_DLL xiiMsgExport : public xiiMessage
 {

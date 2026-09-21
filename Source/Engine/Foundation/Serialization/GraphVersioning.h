@@ -20,7 +20,7 @@ class xiiGraphPatch;
 class xiiGraphPatchContext;
 class xiiGraphVersioning;
 
-/// \brief Tuple used for identifying patches and tracking patch progression.
+/// Tuple used for identifying patches and tracking patch progression.
 struct xiiVersionKey
 {
   XII_DECLARE_POD_TYPE();
@@ -36,7 +36,7 @@ struct xiiVersionKey
   xiiUInt32       m_uiTypeVersion;
 };
 
-/// \brief Hash helper class for xiiVersionKey
+/// Hash helper class for xiiVersionKey
 struct xiiGraphVersioningHash
 {
   XII_FORCE_INLINE static xiiUInt32 Hash(const xiiVersionKey& a)
@@ -53,7 +53,7 @@ struct xiiGraphVersioningHash
   }
 };
 
-/// \brief A class that overlaps xiiReflectedTypeDescriptor with the properties needed for patching.
+/// A class that overlaps xiiReflectedTypeDescriptor with the properties needed for patching.
 struct XII_FOUNDATION_DLL xiiTypeVersionInfo
 {
   xiiStringView GetTypeName() const;
@@ -67,24 +67,24 @@ struct XII_FOUNDATION_DLL xiiTypeVersionInfo
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTypeVersionInfo);
 
-/// \brief Handles the patching of a node. Is passed into the patch
+/// Handles the patching of a node. Is passed into the patch
 ///  classes to provide utility functions and track the node's patching progress.
 class XII_FOUNDATION_DLL xiiGraphPatchContext
 {
 public:
-  /// \brief Ensures that the base class named szType is at version uiTypeVersion.
+  /// Ensures that the base class named szType is at version uiTypeVersion.
   ///  If bForcePatch is set, the current version of the base class is reset back to force the execution
   ///  of this patch if necessary. This is mainly necessary for backwards compatibility with patches that
   ///  were written before the type information of all base classes was written to the doc.
   void PatchBaseClass(xiiStringView sType, xiiUInt32 uiTypeVersion, bool bForcePatch = false); // [tested]
 
-  /// \brief Renames current class type.
+  /// Renames current class type.
   void RenameClass(xiiStringView sTypeName); // [tested]
 
-  /// \brief Renames current class type.
+  /// Renames current class type.
   void RenameClass(xiiStringView sTypeName, xiiUInt32 uiVersion);
 
-  /// \brief Changes the base class hierarchy to the given one.
+  /// Changes the base class hierarchy to the given one.
   void ChangeBaseClass(xiiArrayPtr<xiiVersionKey> baseClasses); // [tested]
 
 private:
@@ -103,7 +103,7 @@ private:
   mutable xiiHashTable<xiiHashedString, xiiTypeVersionInfo> m_TypeToInfo;
 };
 
-/// \brief Singleton that allows version patching of xiiAbstractObjectGraph.
+/// Singleton that allows version patching of xiiAbstractObjectGraph.
 ///
 /// Patching is automatically executed of xiiAbstractObjectGraph de-serialize functions.
 class XII_FOUNDATION_DLL xiiGraphVersioning
@@ -114,7 +114,7 @@ public:
   xiiGraphVersioning();
   ~xiiGraphVersioning();
 
-  /// \brief Patches all nodes inside pGraph to the current version. pTypesGraph is the graph of serialized
+  /// Patches all nodes inside pGraph to the current version. pTypesGraph is the graph of serialized
   /// used types in pGraph at the time of saving. If not provided, any base class is assumed to be at max version.
   void PatchGraph(xiiAbstractObjectGraph* pGraph, xiiAbstractObjectGraph* pTypesGraph = nullptr);
 

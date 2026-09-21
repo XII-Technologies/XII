@@ -8,23 +8,23 @@
 
 class xiiLogInterface;
 
-/// \brief A wrapper around xiiExpression infrastructure to evaluate simple math expressions
+/// A wrapper around xiiExpression infrastructure to evaluate simple math expressions
 class XII_FOUNDATION_DLL xiiMathExpression
 {
 public:
-  /// \brief Creates a new invalid math expression.
+  /// Creates a new invalid math expression.
   ///
   /// Need to call Reset before you can do anything with it.
   xiiMathExpression();
 
-  /// \brief Initializes using a given expression.
+  /// Initializes using a given expression.
   ///
   /// If anything goes wrong it is logged and the math expression is in an invalid state.
   /// \param log
   ///   If null, default log interface will be used.
   explicit xiiMathExpression(xiiStringView sExpressionString); // [tested]
 
-  /// \brief Reinitializes using the given expression.
+  /// Reinitializes using the given expression.
   ///
   /// An empty string or nullptr are considered to be 'invalid' expressions.
   void Reset(xiiStringView sExpressionString);
@@ -41,7 +41,7 @@ public:
     float           m_fValue;
   };
 
-  /// \brief Evaluates parsed expression with the given inputs.
+  /// Evaluates parsed expression with the given inputs.
   ///
   /// Only way this function can fail is if the expression was not valid.
   /// \see IsValid

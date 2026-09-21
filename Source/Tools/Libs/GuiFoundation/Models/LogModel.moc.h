@@ -8,7 +8,7 @@
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <QAbstractItemModel>
 
-/// \brief The Qt model that represents log output for a view
+/// The Qt model that represents log output for a view
 class XII_GUIFOUNDATION_DLL xiiQtLogModel : public QAbstractItemModel
 {
   Q_OBJECT
@@ -39,7 +39,7 @@ Q_SIGNALS:
   void NewErrorsOrWarnings(xiiStringView sLatest, bool bError);
 
 private Q_SLOTS:
-  /// \brief Adds queued messages from a different thread to the model.
+  /// Adds queued messages from a different thread to the model.
   void ProcessNewMessages();
 
 private:

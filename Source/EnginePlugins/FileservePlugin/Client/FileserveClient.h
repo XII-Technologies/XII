@@ -15,7 +15,7 @@ namespace xiiDataDirectory
   class FileserveType;
 }
 
-/// \brief Singleton that represents the client side part of a fileserve connection
+/// Singleton that represents the client side part of a fileserve connection
 ///
 /// Whether the fileserve plugin will be enabled is controled by xiiFileserveClient::s_bEnableFileserve
 /// By default this is on, but if switched off, the fileserve client functionality will be disabled.
@@ -37,10 +37,10 @@ public:
 
   /// xiiRemoteToolingInterface
 
-  /// \brief Returns the network connection interface.
+  /// Returns the network connection interface.
   xiiRemoteInterface* GetRemoteInterface() override { return m_pNetwork.Borrow(); }
 
-  /// \brief Can be called at startup to go through multiple sources and search for a valid server address
+  /// Can be called at startup to go through multiple sources and search for a valid server address
   ///
   /// Ie. checks the command line, xiiFileserve.txt in different directories, etc.
   /// For every potential IP it checks whether a fileserve connection could be established (e.g. tries to connect and
@@ -50,7 +50,7 @@ public:
   /// \param timeout Specifies the timeout for checking whether a server can be reached.
   xiiResult SearchForServerAddress(xiiTime timeout = xiiTime::MakeFromSeconds(5));
 
-  /// \brief Waits for a Fileserver application to try to connect to this device and send its own information.
+  /// Waits for a Fileserver application to try to connect to this device and send its own information.
   ///
   /// This can be used when a device has no proper way to know the IP through which to connect to a Fileserver.
   /// Instead the device opens a server connection itself, and waits for the other side to try to connect to it.
@@ -60,18 +60,18 @@ public:
   /// A subsequent call to EnsureConnected() should then succeed.
   xiiResult WaitForServerInfo(xiiTime timeout = xiiTime::MakeFromSeconds(60.0 * 5));
 
-  /// \brief Stores the current connection info to a text file in the user data folder.
+  /// Stores the current connection info to a text file in the user data folder.
   xiiResult SaveCurrentConnectionInfoToDisk() const;
 
-  /// \brief Allows to disable the file serving functionality. Should be called before mounting data directories.
+  /// Allows to disable the file serving functionality. Should be called before mounting data directories.
   ///
   /// Also achieved through the command line argument "-fs_off"
   static void DisabledFileserveClient() { s_bEnableFileserve = false; }
 
-  /// \brief Returns the address through which the Fileserve client tried to connect with the server last.
+  /// Returns the address through which the Fileserve client tried to connect with the server last.
   const char* GetServerConnectionAddress() { return m_sServerConnectionAddress; }
 
-  /// \brief Can be called to ensure a fileserve connection. Otherwise automatically called when a data directory is mounted.
+  /// Can be called to ensure a fileserve connection. Otherwise automatically called when a data directory is mounted.
   ///
   /// The timeout defines how long the code will wait for a connection.
   /// Positive numbers are a regular timeout.
@@ -80,17 +80,17 @@ public:
   /// The timeout can be specified with the command line switch "-fs_timeout X" (in seconds).
   xiiResult EnsureConnected(xiiTime timeout = xiiTime::MakeFromSeconds(-5));
 
-  /// \brief Needs to be called regularly to update the network. By default this is automatically called when the global event
+  /// Needs to be called regularly to update the network. By default this is automatically called when the global event
   /// 'GameApp_UpdatePlugins' is fired, which is done by xiiGameApplication.
   void UpdateClient();
 
-  /// \brief Adds an address that should be tried for connecting with the server.
+  /// Adds an address that should be tried for connecting with the server.
   void AddServerAddressToTry(xiiStringView sAddress);
 
 private:
   friend class xiiDataDirectory::FileserveType;
 
-  /// \brief True by default, can
+  /// True by default, can
   static bool s_bEnableFileserve;
 
   struct FileCacheStatus

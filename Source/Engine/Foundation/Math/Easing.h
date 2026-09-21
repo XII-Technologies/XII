@@ -5,7 +5,7 @@
 #include <Foundation/Math/Declarations.h>
 #include <Foundation/Reflection/Reflection.h>
 
-/// \brief Available Procedural Curve Generators.
+/// Available Procedural Curve Generators.
 ///
 /// Supported easing function types adapted from https://easings.net. To view some of these in action, please
 /// visit the above mentioned source link.
@@ -81,10 +81,10 @@ struct XII_FOUNDATION_DLL xiiEasingFunction
     Default = InLinear
   };
 
-  /// \brief Helper function that returns the function value at the given input.
+  /// Helper function that returns the function value at the given input.
   static double GetValue(xiiEasingFunction::Enum function, double fInput);
 
-  /// \brief Helper function that returns the function value at the given input.
+  /// Helper function that returns the function value at the given input.
   ///
   /// if \a inverse is true, the value (1 - result) is returned.
   static double GetValue(xiiEasingFunction::Enum function, double fInput, bool bInverse);

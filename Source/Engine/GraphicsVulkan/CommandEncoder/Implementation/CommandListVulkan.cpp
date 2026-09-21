@@ -204,7 +204,7 @@ namespace
     return vkAccessFlags;
   }
 
-  /// \brief Checks whether two 1D line segments overlap.
+  /// Checks whether two 1D line segments overlap.
   ///
   /// This function determines if the intervals [min0, max0] and [min1, max1] overlap.
   /// The behavior depends on the template parameter `AllowTouch`:

@@ -20,7 +20,7 @@ public:
   xiiAssetDocumentManager();
   ~xiiAssetDocumentManager();
 
-  /// \brief Opens the asset file and reads the "Header" into the given xiiAssetDocumentInfo.
+  /// Opens the asset file and reads the "Header" into the given xiiAssetDocumentInfo.
   virtual xiiStatus ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& inout_stream) const;
   virtual void      FillOutSubAssetList(const xiiAssetDocumentInfo& assetInfo, xiiDynamicArray<xiiSubAssetData>& out_subAssets) const {}
 
@@ -35,13 +35,13 @@ public:
   /// \name Asset Profile Functions
   ///@{
 public:
-  /// \brief Called by the xiiAssetCurator when the active asset profile changes to re-compute m_uiAssetProfileHash.
+  /// Called by the xiiAssetCurator when the active asset profile changes to re-compute m_uiAssetProfileHash.
   void ComputeAssetProfileHash(const xiiPlatformProfile* pAssetProfile);
 
-  /// \brief Returns the hash that was previously computed through ComputeAssetProfileHash().
+  /// Returns the hash that was previously computed through ComputeAssetProfileHash().
   XII_ALWAYS_INLINE xiiUInt64 GetAssetProfileHash() const { return m_uiAssetProfileHash; }
 
-  /// \brief Returns pAssetProfile, or if that is null, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile().
+  /// Returns pAssetProfile, or if that is null, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile().
   static const xiiPlatformProfile* DetermineFinalTargetProfile(const xiiPlatformProfile* pAssetProfile);
 
 private:
@@ -58,7 +58,7 @@ private:
   /// \name Thumbnail Functions
   ///@{
 public:
-  /// \brief Returns the absolute path to the thumbnail that belongs to the given document.
+  /// Returns the absolute path to the thumbnail that belongs to the given document.
   virtual xiiString GenerateResourceThumbnailPath(xiiStringView sDocumentPath, xiiStringView sSubAssetName = xiiStringView());
   virtual bool      IsThumbnailUpToDate(xiiStringView sDocumentPath, xiiStringView sSubAssetName, xiiUInt64 uiThumbnailHash, xiiUInt32 uiTypeVersion);
 
@@ -69,10 +69,10 @@ public:
   virtual void      AddEntriesToAssetTable(xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const;
   virtual xiiString GetAssetTableEntry(const xiiSubAsset* pSubAsset, xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile) const;
 
-  /// \brief Calls GetRelativeOutputFileName and prepends [DataDir]/AssetCache/ .
+  /// Calls GetRelativeOutputFileName and prepends [DataDir]/AssetCache/ .
   xiiString GetAbsoluteOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDesc, xiiStringView sDocumentPath, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile = nullptr) const;
 
-  /// \brief Relative to 'AssetCache' folder.
+  /// Relative to 'AssetCache' folder.
   virtual xiiString GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDesc, xiiStringView sDataDirectory, xiiStringView sDocumentPath, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile = nullptr) const;
   virtual bool      GeneratesProfileSpecificAssets() const = 0;
 
@@ -96,7 +96,7 @@ public:
   ///@}
 
 
-  /// \brief Called by the editor to try to open a document for the matching picking result
+  /// Called by the editor to try to open a document for the matching picking result
   virtual xiiResult OpenPickedDocument(const xiiDocumentObject* pPickedComponent, xiiUInt32 uiPartIndex) { return XII_FAILURE; }
 
   xiiResult TryOpenAssetDocument(const char* szPathOrGuid);

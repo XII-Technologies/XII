@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Resources/BufferView.h>
 
-/// \brief This describes the buffer access mode.
+/// This describes the buffer access mode.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferMode
 {
   using StorageType = xiiUInt8;
@@ -26,7 +26,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBufferMode);
 
-/// \brief This describes the miscellaneous buffer flags.
+/// This describes the miscellaneous buffer flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscBufferFlags
 {
   using StorageType = xiiUInt8;
@@ -49,7 +49,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALMiscBufferFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMiscBufferFlags);
 
-/// \brief This describes the buffer creation description.
+/// This describes the buffer creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHashableStruct<xiiGALBufferCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -63,7 +63,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
   xiiUInt32                          m_uiElementByteStride = 0U;                           ///< The buffer element stride in bytes. For a structured buffer, this member defines the size of each buffer element. For a formatted buffer and optionally a raw buffer, this member defines the size of the format that will be used for views created for this buffer. For an index buffer, a stride of 2 will set the index buffer format to 16-bits. The default is 0.
 };
 
-/// \brief This describes the buffer initial data.
+/// This describes the buffer initial data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferData
 {
   XII_DECLARE_POD_TYPE();
@@ -88,7 +88,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferData
   xiiGALCommandList* m_pCommandList; ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
 };
 
-/// \brief This describes the sparse buffer properties.
+/// This describes the sparse buffer properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseBufferProperties : public xiiHashableStruct<xiiGALSparseBufferProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -99,25 +99,25 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseBufferProperties : public xiiHasha
                                        ///< \note Offset in the buffer, memory offset and memory size that are used in sparse resource binding command, must be multiples of the block size. In Direct3D11 and Direct3D12, the block size is always 64Kb. In Vulkan, the block size is not documented, but is usually also 64Kb.
 };
 
-/// \brief Interface that defines methods to manipulate a buffer object.
+/// Interface that defines methods to manipulate a buffer object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBuffer : public xiiGALResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBuffer, xiiGALResource);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief This returns the external memory kind flags for this buffer.
+  /// This returns the external memory kind flags for this buffer.
   [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALExternalMemoryKind> GetExternalMemoryKind() const { return m_ExternalMemoryKind; }
 
-  /// \brief This returns the buffer size.
+  /// This returns the buffer size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetSize() const { return m_Description.m_uiSize; }
 
-  /// \brief Returns the calculated memory consumption for buffer.
+  /// Returns the calculated memory consumption for buffer.
   [[nodiscard]] XII_ALWAYS_INLINE virtual xiiUInt64 GetMemoryConsumption() const { return m_Description.m_uiSize; }
 
-  /// \brief This returns the handle of the default view.
+  /// This returns the handle of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALBufferViewType.
   ///
@@ -128,14 +128,14 @@ public:
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
   [[nodiscard]] xiiSharedPtr<xiiGALBufferView> GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType);
 
-  /// \brief This returns the buffer memory properties.
+  /// This returns the buffer memory properties.
   ///
   /// The memory properties are only relevant for persistently mapped buffers.
   /// In particular, if the memory is not coherent, an application must call xiiGALBuffer::FlushMappedRange() to make writes by the CPU available to the GPU, and
   /// call xiiGALBuffer::InvalidateMappedRange() to make writes by the GPU visible to the CPU.
   [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALMemoryPropertyFlags> GetMemoryProperties() const { return m_MemoryPropertyFlags; }
 
-  /// \brief This flushes the specified range of non-coherent memory from the host cache to make it available to the GPU.
+  /// This flushes the specified range of non-coherent memory from the host cache to make it available to the GPU.
   ///
   /// \param uiStartOffset - The offset in bytes from the beginning of the buffer to the start of the memory range to flush.
   /// \param uiSize        - The size in bytes of the memory range to flush.
@@ -146,7 +146,7 @@ public:
   /// \note This method must not be called for Dynamic buffers. When a mapped buffer is unmapped, it is automatically flushed by the engine if necessary.
   virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) = 0;
 
-  /// \brief This invalidates the specified range of non-coherent memory modified by the GPU to make it visible to the CPU.
+  /// This invalidates the specified range of non-coherent memory modified by the GPU to make it visible to the CPU.
   ///
   /// \param uiStartOffset - The offset in bytes from the beginning of the buffer to the start of the memory to invalidate.
   /// \param uiSize        - The size in bytes of the memory range to invalidate.
@@ -157,7 +157,7 @@ public:
   /// \note This method must not be called for Dynamic buffers. When a mapped buffer is unmapped, it is automatically flushed by the engine if necessary.
   virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) = 0;
 
-  /// \brief This creates a new buffer view.
+  /// This creates a new buffer view.
   ///
   /// \param description - The buffer view description. See xiiGALBufferViewCreationDescription.
   ///
@@ -168,7 +168,7 @@ public:
   ///
   [[nodiscard]] xiiSharedPtr<xiiGALBufferView> CreateView(xiiGALBufferViewCreationDescription& description);
 
-  /// \brief This returns the sparse buffer memory properties.
+  /// This returns the sparse buffer memory properties.
   [[nodiscard]] virtual xiiGALSparseBufferProperties GetSparseProperties() const = 0;
 
 protected:

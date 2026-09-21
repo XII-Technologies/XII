@@ -83,7 +83,7 @@ struct xiiArgP
 };
 
 
-/// \brief Formats a given number such that it will be in format [0, base){suffix} with suffix
+/// Formats a given number such that it will be in format [0, base){suffix} with suffix
 /// representing a power of base. Resulting numbers are output with a precision of 2 fractional digits
 /// and fractional digits are subject to rounding, so numbers at the upper boundary of [0, base)
 /// may be rounded up to the next power of base.
@@ -131,7 +131,7 @@ struct xiiArgFileSize : public xiiArgHumanReadable
 };
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-/// \brief Converts a windows HRESULT into an error code and a human-readable error message.
+/// Converts a windows HRESULT into an error code and a human-readable error message.
 /// Pass in `GetLastError()` function or an HRESULT from another error source. Be careful when printing multiple values, a function could clear `GetLastError` as a side-effect so it is best to store it in a temp variable before printing a complex error message.
 /// \sa https://learn.microsoft.com/en-gb/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
 struct xiiArgErrorCode
@@ -148,7 +148,7 @@ XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, co
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
-/// \brief Many Linux APIs will fill out error on failure. This converts the error into an error code and a human-readable error message.
+/// Many Linux APIs will fill out error on failure. This converts the error into an error code and a human-readable error message.
 /// Pass in the linux `errno` symbol. Be careful when printing multiple values, a function could clear `errno` as a side-effect so it is best to store it in a temp variable before printing a complex error message.
 /// You may have to include #include <errno.h> use this.
 /// \sa https://man7.org/linux/man-pages/man3/errno.3.html
@@ -176,7 +176,7 @@ struct xiiArgErrorCode
 XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg);
 #endif
 
-/// \brief Wraps a string that may contain sensitive information, such as user file paths.
+/// Wraps a string that may contain sensitive information, such as user file paths.
 ///
 /// The application can specify a function to scramble this type of information. By default no such function is set.
 /// A general purpose function is provided with 'BuildString_SensitiveUserData_Hash()'
@@ -197,11 +197,11 @@ struct xiiArgSensitive
   using BuildStringCallback = xiiStringView (*)(char*, xiiUInt32, const xiiArgSensitive&);
   XII_FOUNDATION_DLL static BuildStringCallback s_BuildStringCB;
 
-  /// \brief Set s_BuildStringCB to this function to enable scrambling of sensitive data.
+  /// Set s_BuildStringCB to this function to enable scrambling of sensitive data.
   XII_FOUNDATION_DLL static xiiStringView BuildString_SensitiveUserData_Hash(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive& arg);
 };
 
-/// \brief Formats an xiiEnum or xiiBitflags value as its string representation using the reflection system.
+/// Formats an xiiEnum or xiiBitflags value as its string representation using the reflection system.
 ///
 /// By default the value name is output without the type prefix (e.g. "Value1" instead of "MyEnum::Value1"). Set bFullyQualifiedName to true to include the type prefix.
 /// Requires that the enum/bitflags type has been registered with the reflection system via XII_BEGIN_STATIC_REFLECTED_ENUM / XII_BEGIN_STATIC_REFLECTED_BITFLAGS.

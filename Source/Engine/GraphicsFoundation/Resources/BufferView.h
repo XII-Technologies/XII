@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Resources/Resource.h>
 
-/// \brief This describes the buffer view creation description.
+/// This describes the buffer view creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewCreationDescription : public xiiHashableStruct<xiiGALBufferViewCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -17,7 +17,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewCreationDescription : public x
   xiiUInt64                     m_uiByteWidth  = 0U;                              ///< The size in bytes of the referenced buffer region.
 };
 
-/// \brief Interface that defines methods to manipulate a buffer view object.
+/// Interface that defines methods to manipulate a buffer view object.
 ///
 /// \note The buffer view holds strong references to the buffer. The buffer will not be destroyed until all views are released.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResourceView
@@ -25,10 +25,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResourceView
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferView, xiiGALResourceView);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferViewCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief Returns the buffer of which the buffer view is created with.
+  /// Returns the buffer of which the buffer view is created with.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetBuffer() const { return m_pBuffer; }
 
 protected:

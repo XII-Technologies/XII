@@ -11,7 +11,7 @@ XII_MAKE_MEMBERFUNCTION_CHECKER(Reallocate, xiiHasReallocate);
 
 #include <Foundation/Memory/Implementation/AllocatorMixin_inl.h>
 
-/// \brief Policy-based allocator that combines allocation strategies with tracking modes.
+/// Policy-based allocator that combines allocation strategies with tracking modes.
 ///
 /// AllocationPolicy defines how the actual memory is allocated.
 /// TrackingFlags defines how stats about allocations are tracked.

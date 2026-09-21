@@ -6,7 +6,7 @@
 #include <Foundation/Containers/Blob.h>
 #include <Foundation/Containers/DynamicArray.h>
 
-/// \brief Structure to describe an instance data type.
+/// Structure to describe an instance data type.
 ///
 /// Many resources, such as VMs, state machines and visual scripts of various types have shared state (their configuration)
 /// as well as per-instance state (for their execution).
@@ -32,7 +32,7 @@ struct XII_FOUNDATION_DLL xiiInstanceDataDesc
   }
 };
 
-/// \brief Manages complex multi-type instance data allocation with proper construction and destruction.
+/// Manages complex multi-type instance data allocation with proper construction and destruction.
 ///
 /// This allocator is designed for systems that need to allocate heterogeneous data structures
 /// in a single memory block, such as VM instances, state machines, or script execution contexts.
@@ -47,28 +47,28 @@ struct XII_FOUNDATION_DLL xiiInstanceDataDesc
 class XII_FOUNDATION_DLL xiiInstanceDataAllocator
 {
 public:
-  /// \brief Adds the given desc to internal list of data that needs to be allocated and returns the byte offset.
+  /// Adds the given desc to internal list of data that needs to be allocated and returns the byte offset.
   [[nodiscard]] xiiUInt32 AddDesc(const xiiInstanceDataDesc& desc);
 
-  /// \brief Resets all internal state.
+  /// Resets all internal state.
   void ClearDescs();
 
-  /// \brief Constructs the instance data objects, within the pre-allocated memory block.
+  /// Constructs the instance data objects, within the pre-allocated memory block.
   void Construct(xiiByteBlobPtr blobPtr) const;
 
-  /// \brief Destructs the instance data objects.
+  /// Destructs the instance data objects.
   void Destruct(xiiByteBlobPtr blobPtr) const;
 
-  /// \brief Allocates memory and constructs the instance data objects inside it. The returned xiiBlob must be stored somewhere.
+  /// Allocates memory and constructs the instance data objects inside it. The returned xiiBlob must be stored somewhere.
   [[nodiscard]] xiiBlob AllocateAndConstruct() const;
 
-  /// \brief Destructs and deallocates the instance data objects and the given memory block.
+  /// Destructs and deallocates the instance data objects and the given memory block.
   void DestructAndDeallocate(xiiBlob& ref_blob) const;
 
-  /// \brief The total size in bytes taken up by all instance data objects that were added.
+  /// The total size in bytes taken up by all instance data objects that were added.
   xiiUInt32 GetTotalDataSize() const { return m_uiTotalDataSize; }
 
-  /// \brief Retrieves a void pointer to the instance data within the given blob at the given offset, or nullptr if the offset is invalid.
+  /// Retrieves a void pointer to the instance data within the given blob at the given offset, or nullptr if the offset is invalid.
   XII_ALWAYS_INLINE static void* GetInstanceData(const xiiByteBlobPtr& blobPtr, xiiUInt32 uiOffset)
   {
     return (uiOffset != xiiInvalidIndex) ? blobPtr.GetPtr() + uiOffset : nullptr;

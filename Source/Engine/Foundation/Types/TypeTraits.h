@@ -22,7 +22,7 @@ using xiiTypeIsClass          = xiiTraitInt<0>;
 using xiiCompileTimeTrueType  = char;
 using xiiCompileTimeFalseType = xiiInt32;
 
-/// \brief Converts a bool condition to CompileTimeTrue/FalseType
+/// Converts a bool condition to CompileTimeTrue/FalseType
 template <bool cond>
 struct xiiConditionToCompileTimeBool
 {
@@ -35,40 +35,40 @@ struct xiiConditionToCompileTimeBool<true>
   using type = xiiCompileTimeTrueType;
 };
 
-/// \brief Default % operator for T and TypeIsPod which returns a CompileTimeFalseType.
+/// Default % operator for T and TypeIsPod which returns a CompileTimeFalseType.
 template <typename T>
 xiiCompileTimeFalseType operator%(const T&, const xiiTypeIsPod&);
 
-/// \brief If there is an % operator which takes a TypeIsPod and returns a CompileTimeTrueType T is Pod. Default % operator return false.
+/// If there is an % operator which takes a TypeIsPod and returns a CompileTimeTrueType T is Pod. Default % operator return false.
 template <typename T>
 struct xiiIsPodType : public xiiTraitInt<(sizeof(*((T*)0) % *((const xiiTypeIsPod*)0)) == sizeof(xiiCompileTimeTrueType)) ? 1 : 0>
 {
 };
 
-/// \brief Pointers are POD types.
+/// Pointers are POD types.
 template <typename T>
 struct xiiIsPodType<T*> : public xiiTypeIsPod
 {
 };
 
-/// \brief arrays are POD types
+/// arrays are POD types
 template <typename T, xiiInt32 N>
 struct xiiIsPodType<T[N]> : public xiiTypeIsPod
 {
 };
 
-/// \brief Default % operator for T and xiiTypeIsMemRelocatable which returns a CompileTimeFalseType.
+/// Default % operator for T and xiiTypeIsMemRelocatable which returns a CompileTimeFalseType.
 template <typename T>
 xiiCompileTimeFalseType operator%(const T&, const xiiTypeIsMemRelocatable&);
 
-/// \brief If there is an % operator which takes a xiiTypeIsMemRelocatable and returns a CompileTimeTrueType T is Pod. Default % operator
+/// If there is an % operator which takes a xiiTypeIsMemRelocatable and returns a CompileTimeTrueType T is Pod. Default % operator
 /// return false.
 template <typename T>
 struct xiiGetTypeClass : public xiiTraitInt<(sizeof(*((T*)0) % *((const xiiTypeIsMemRelocatable*)0)) == sizeof(xiiCompileTimeTrueType)) ? 2 : xiiIsPodType<T>::value>
 {
 };
 
-/// \brief Static Conversion Test
+/// Static Conversion Test
 template <typename From, typename To>
 struct xiiConversionTest
 {
@@ -80,7 +80,7 @@ struct xiiConversionTest
   static constexpr xiiInt32 sameType = 0;
 };
 
-/// \brief Specialization for above Type.
+/// Specialization for above Type.
 template <typename T>
 struct xiiConversionTest<T, T>
 {
@@ -94,7 +94,7 @@ struct xiiGetStrongestTypeClass : public xiiTraitInt<(T1::value == 0 || T2::valu
 {
 };
 
-/// \brief Helper trait to determine if a type is an enum and provide its underlying type.
+/// Helper trait to determine if a type is an enum and provide its underlying type.
 template <typename T, typename = void>
 struct xiiEnumUnderlyingType : std::false_type
 {
@@ -107,7 +107,7 @@ struct xiiEnumUnderlyingType<T, std::enable_if_t<std::is_enum_v<T>>> : std::true
   using UnderlyingType = std::underlying_type_t<T>;
 };
 
-/// \brief Custom trait to determine if a type is a valid atomic-compatible integer or has an underlying type.
+/// Custom trait to determine if a type is a valid atomic-compatible integer or has an underlying type.
 template <typename T>
 struct xiiAtomicIntegerTraits
 {
@@ -121,7 +121,7 @@ public:
   using UnderlyingType        = std::conditional_t<IsEnum, EnumUnderlyingType, T>;
 };
 
-/// \brief General trait to check atomic compatibility (only valid integral types or enums).
+/// General trait to check atomic compatibility (only valid integral types or enums).
 template <typename T>
 struct xiiAtomicCompatible
 {
@@ -136,28 +136,28 @@ template <typename T> using xii_atomic_underlying_t             = typename xiiAt
 
 #ifdef __INTELLISENSE__
 
-/// \brief Embed this into a class to mark it as a POD type.
+/// Embed this into a class to mark it as a POD type.
 /// POD types will get special treatment from allocators and container classes, such that they are faster to construct and copy.
 #  define XII_DECLARE_POD_TYPE()
 
-/// \brief Embed this into a class to mark it as memory relocatable.
+/// Embed this into a class to mark it as memory relocatable.
 /// Memory relocatable types will get special treatment from allocators and container classes, such that they are faster to construct and
 /// copy. A type is memory relocatable if it does not have any internal references. e.g: struct example { char[16] buffer; char* pCur;
 /// example() pCur(buffer) {} }; A memory relocatable type also must not give out any pointers to its own location. If these two conditions
 /// are met, a type is memory relocatable.
 #  define XII_DECLARE_MEM_RELOCATABLE_TYPE()
 
-/// \brief mark a class as memory relocatable if the passed type is relocatable or pod.
+/// mark a class as memory relocatable if the passed type is relocatable or pod.
 #  define XII_DECLARE_MEM_RELOCATABLE_TYPE_CONDITIONAL(T)
 
-// \brief embed this into a class to automatically detect which type class it belongs to
+// embed this into a class to automatically detect which type class it belongs to
 // This macro is only guaranteed to work for classes / structs which don't have any constructor / destructor / assignment operator!
 // As arguments you have to list the types of all the members of the class / struct.
 #  define XII_DETECT_TYPE_CLASS(...)
 
 #else
 
-/// \brief Embed this into a class to mark it as a POD type.
+/// Embed this into a class to mark it as a POD type.
 /// POD types will get special treatment from allocators and container classes, such that they are faster to construct and copy.
 #  define XII_DECLARE_POD_TYPE()                                \
     xiiCompileTimeTrueType operator%(const xiiTypeIsPod&) const \
@@ -165,7 +165,7 @@ template <typename T> using xii_atomic_underlying_t             = typename xiiAt
       return {};                                                \
     }
 
-/// \brief Embed this into a class to mark it as memory relocatable.
+/// Embed this into a class to mark it as memory relocatable.
 /// Memory relocatable types will get special treatment from allocators and container classes, such that they are faster to construct and
 /// copy. A type is memory relocatable if it does not have any internal references. e.g: struct example { char[16] buffer; char* pCur;
 /// example() pCur(buffer) {} }; A memory relocatable type also must not give out any pointers to its own location. If these two conditions
@@ -176,7 +176,7 @@ template <typename T> using xii_atomic_underlying_t             = typename xiiAt
       return {};                                                           \
     }
 
-/// \brief mark a class as memory relocatable if the passed type is relocatable or pod.
+/// mark a class as memory relocatable if the passed type is relocatable or pod.
 #  define XII_DECLARE_MEM_RELOCATABLE_TYPE_CONDITIONAL(T)                                                                                          \
     typename xiiConditionToCompileTimeBool<xiiGetTypeClass<T>::value == xiiTypeIsMemRelocatable::value || xiiIsPodType<T>::value>::type operator%( \
       const xiiTypeIsMemRelocatable&) const                                                                                                        \
@@ -192,7 +192,7 @@ template <typename T> using xii_atomic_underlying_t             = typename xiiAt
 #  define XII_DETECT_TYPE_CLASS_6(T1, T2, T3, T4, T5, T6) \
     xiiGetStrongestTypeClass<XII_DETECT_TYPE_CLASS_4(T1, T2, T3, T4), XII_DETECT_TYPE_CLASS_2(T5, T6)>
 
-// \brief embed this into a class to automatically detect which type class it belongs to
+// embed this into a class to automatically detect which type class it belongs to
 // This macro is only guaranteed to work for classes / structs which don't have any constructor / destructor / assignment operator!
 // As arguments you have to list the types of all the members of the class / struct.
 #  define XII_DETECT_TYPE_CLASS(...)                                                                                                       \
@@ -203,7 +203,7 @@ template <typename T> using xii_atomic_underlying_t             = typename xiiAt
     }
 #endif
 
-/// \brief Defines a type T as Pod.
+/// Defines a type T as Pod.
 /// POD types will get special treatment from allocators and container classes, such that they are faster to construct and copy.
 #define XII_DEFINE_AS_POD_TYPE(T)              \
   template <>                                  \
@@ -229,32 +229,32 @@ XII_DEFINE_AS_POD_TYPE(unsigned long);
 XII_DEFINE_AS_POD_TYPE(long);
 XII_DEFINE_AS_POD_TYPE(std::byte);
 
-/// \brief Checks inheritance at compile time.
+/// Checks inheritance at compile time.
 #define XII_IS_DERIVED_FROM_STATIC(BaseClass, DerivedClass) \
   (xiiConversionTest<const DerivedClass*, const BaseClass*>::exists && !xiiConversionTest<const BaseClass*, const void*>::sameType)
 
-/// \brief Checks whether A and B are the same type
+/// Checks whether A and B are the same type
 #define XII_IS_SAME_TYPE(TypeA, TypeB) xiiConversionTest<TypeA, TypeB>::sameType
 
 template <typename T>
 struct xiiTypeTraits
 {
-  /// \brief Removes const qualifier
+  /// Removes const qualifier
   using NonConstType = typename std::remove_const<T>::type;
 
-  /// \brief Removes reference
+  /// Removes reference
   using NonReferenceType = typename std::remove_reference<T>::type;
 
-  /// \brief Removes pointer
+  /// Removes pointer
   using NonPointerType = typename std::remove_pointer<T>::type;
 
-  /// \brief Removes reference and const qualifier
+  /// Removes reference and const qualifier
   using NonConstReferenceType = typename std::remove_const<typename std::remove_reference<T>::type>::type;
 
-  /// \brief Removes reference and pointer qualifier
+  /// Removes reference and pointer qualifier
   using NonReferencePointerType = typename std::remove_pointer<typename std::remove_reference<T>::type>::type;
 
-  /// \brief Removes reference, const and pointer qualifier
+  /// Removes reference, const and pointer qualifier
   /// Note that this removes the const and reference of the type pointed too, not of the pointer.
   using NonConstReferencePointerType = typename std::remove_const<typename std::remove_reference<typename std::remove_pointer<T>::type>::type>::type;
 };

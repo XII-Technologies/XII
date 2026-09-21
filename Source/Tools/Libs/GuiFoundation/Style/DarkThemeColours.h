@@ -6,7 +6,7 @@
 
 #include <QColor>
 
-/// \brief Defines the color scheme for a dark-themed Qt GUI.
+/// Defines the color scheme for a dark-themed Qt GUI.
 ///
 /// This struct encapsulates all the relevant QColor values used in a dark theme, corresponding to various QPalette roles.
 /// It provides a centralized way to manage and apply consistent styling across the application.

@@ -7,32 +7,32 @@
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
-/// \brief Base class for all GAL resources (textures, buffers, etc).
+/// Base class for all GAL resources (textures, buffers, etc).
 class XII_GRAPHICSFOUNDATION_DLL xiiGALResource : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALResource, xiiGALDeviceObject);
 
 public:
-  /// \brief This sets the buffer usage state.
+  /// This sets the buffer usage state.
   ///
   /// \note This method does not perform state transition, but resets the buffer state to the given value.
   ///       This method should be used after manually managing the buffer state to hand over state management back to the engine.
   virtual void SetResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) { m_ResourceState = stateFlags; }
 
-  /// \brief This returns the buffer state.
+  /// This returns the buffer state.
   [[nodiscard]] XII_ALWAYS_INLINE virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const { return m_ResourceState; }
 
-  /// \brief This returns true if the resource is in known state by the engine.
+  /// This returns true if the resource is in known state by the engine.
   [[nodiscard]] XII_ALWAYS_INLINE bool IsInKnownState() const { return m_ResourceState != xiiGALResourceStateFlags::Unknown; }
 
-  /// \brief This returns true if the given resource state is set.
+  /// This returns true if the given resource state is set.
   [[nodiscard]] XII_ALWAYS_INLINE bool CheckState(xiiBitflags<xiiGALResourceStateFlags> resourceState) const
   {
     XII_ASSERT_DEV(IsInKnownState(), "Resource state is unknown.");
     return m_ResourceState.AreAllSet(resourceState);
   }
 
-  /// \brief This returns true if any of the given resource state are set.
+  /// This returns true if any of the given resource state are set.
   [[nodiscard]] XII_ALWAYS_INLINE bool CheckAnyState(xiiBitflags<xiiGALResourceStateFlags> resourceState) const
   {
     XII_ASSERT_DEV(IsInKnownState(), "Resource state is unknown.");
@@ -49,7 +49,7 @@ protected:
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceState;
 };
 
-/// \brief Base class for all GAL resource views (texture and buffer views).
+/// Base class for all GAL resource views (texture and buffer views).
 class XII_GRAPHICSFOUNDATION_DLL xiiGALResourceView : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALResourceView, xiiGALDeviceObject);

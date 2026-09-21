@@ -117,10 +117,10 @@ public:
   ~xiiCurveGroupData();
   xiiCurveGroupData& operator=(const xiiCurveGroupData& rhs) = delete;
 
-  /// \brief Makes a deep copy of rhs.
+  /// Makes a deep copy of rhs.
   void CloneFrom(const xiiCurveGroupData& rhs);
 
-  /// \brief Clears the curve and deallocates the curve data, if it is owned (e.g. if it was created through CloneFrom())
+  /// Clears the curve and deallocates the curve data, if it is owned (e.g. if it was created through CloneFrom())
   void Clear();
 
   /// Can be set to false for cases where the instance is only supposed to act like a container for passing curve pointers around

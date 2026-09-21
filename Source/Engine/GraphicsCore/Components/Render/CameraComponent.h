@@ -88,7 +88,7 @@ public:
   float GetOrthoDimension() const { return m_fOrthoDimension; } // [ property ]
   void  SetOrthoDimension(float fVal);                          // [ property ]
 
-  /// \brief Per-camera render scale baseline (1.0 = native resolution).
+  /// Per-camera render scale baseline (1.0 = native resolution).
   float GetRenderScale() const { return m_fRenderScale; } // [ property ]
   void  SetRenderScale(float fVal);                       // [ property ]
 

@@ -29,27 +29,27 @@ public:
   xiiFileSystemMirror();
   ~xiiFileSystemMirror();
 
-  /// \brief Adds the directory, and all files in it recursively.
+  /// Adds the directory, and all files in it recursively.
   xiiResult AddDirectory(xiiStringView sPath, bool* out_pDirectoryExistsAlready = nullptr);
 
-  /// \brief Adds a file. Creates directories if they do not exist.
+  /// Adds a file. Creates directories if they do not exist.
   xiiResult AddFile(xiiStringView sPath, const T& value, bool* out_pFileExistsAlready, T* out_pOldValue);
 
-  /// \brief Removes a file.
+  /// Removes a file.
   xiiResult RemoveFile(xiiStringView sPath);
 
-  /// \brief Removes a directory. Deletes any files & directories inside.
+  /// Removes a directory. Deletes any files & directories inside.
   xiiResult RemoveDirectory(xiiStringView sPath);
 
-  /// \brief Moves a directory. Any files & folders inside are moved with it.
+  /// Moves a directory. Any files & folders inside are moved with it.
   xiiResult MoveDirectory(xiiStringView sFromPath, xiiStringView sToPath);
 
   using EnumerateFunc = xiiDelegate<void(const xiiStringBuilder& path, Type type)>;
 
-  /// \brief Enumerates the files & directories under the given path
+  /// Enumerates the files & directories under the given path
   xiiResult Enumerate(xiiStringView sPath, EnumerateFunc callbackFunc);
 
-  /// \brief On success, out_Type will contains the type of the object (file or folder).
+  /// On success, out_Type will contains the type of the object (file or folder).
   xiiResult GetType(xiiStringView sPath, Type& out_type);
 
 private:

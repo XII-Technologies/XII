@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
-/// \brief This describes the pipeline resource property flags.
+/// This describes the pipeline resource property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceFlags
 {
   using StorageType = xiiUInt8;
@@ -46,7 +46,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALPipelineResourceFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineResourceFlags);
 
-/// \brief This describes an immutable sampler used by a graphics pipeline.
+/// This describes an immutable sampler used by a graphics pipeline.
 ///
 /// An immutable sampler is compiled into the pipeline state and cannot be modified. It is generally more efficient than a regular sampler and should be used whenever possible.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALImmutableSamplerDescription : public xiiHashableStruct<xiiGALImmutableSamplerDescription>
@@ -58,7 +58,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALImmutableSamplerDescription : public xii
   xiiGALSamplerCreationDescription m_SamplerDescription;                       ///< The sampler creation description. See xiiGALSamplerCreationDescription for details.
 };
 
-/// \brief This describes the pipeline resource information.
+/// This describes the pipeline resource information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceDescription : public xiiHashableStruct<xiiGALPipelineResourceDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -68,13 +68,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceDescription : public xii
                                                                                                         ///
                                                                                                         ///  \remarks There may be multiple resources with the same name in different shader stages, but the stages specified for different resources with the same name must not overlap.
   xiiUInt32                                m_uiArraySize           = 0U;                                ///< The resource array size (must be set to 1 for non-array resources). The default is 0.
-  xiiUInt32                                m_uiBindSet             = 0U;                                ///< \brief The resource bind set, for descriptor sets.
-  xiiUInt32                                m_uiBindSlot            = 0U;                                ///< \brief The resource bind slot in the bind set.
+  xiiUInt32                                m_uiBindSet             = 0U;                                ///< The resource bind set, for descriptor sets.
+  xiiUInt32                                m_uiBindSlot            = 0U;                                ///< The resource bind slot in the bind set.
   xiiEnum<xiiGALShaderResourceType>        m_ResourceType          = xiiGALShaderResourceType::Unknown; ///< The resource type, see xiiGALShaderResourceType. The default is xiiGALShaderResourceType::Unknown.
   xiiBitflags<xiiGALPipelineResourceFlags> m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None; ///< Special resource flags, see xiiGALPipelineResourceFlags. The default is xiiGALPipelineResourceFlags::None.
 };
 
-/// \brief Describes a push constant range to include in the pipeline layout for this signature.
+/// Describes a push constant range to include in the pipeline layout for this signature.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPushConstantRange
 {
   xiiUInt32                     m_uiOffset     = 0U;                        ///< Byte offset of the push constant range.
@@ -84,7 +84,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPushConstantRange
   XII_ALWAYS_INLINE bool operator==(const xiiGALPushConstantRange& rhs) const = default;
 };
 
-/// \brief This describes the pipeline resource signature creation description.
+/// This describes the pipeline resource signature creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceSignatureCreationDescription
 {
   xiiUInt32                                             m_uiBindingIndex = 0U; ///< The binding index that this resource signature uses. Every resource signature must be assign to one signature slot. The total number of slots is given by XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT constant. All resource signatures used by a pipeline state must be assigned to different slots.
@@ -95,16 +95,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceSignatureCreationDescrip
   XII_ALWAYS_INLINE bool operator==(const xiiGALPipelineResourceSignatureCreationDescription& rhs) const = default;
 };
 
-/// \brief Interface that defines methods of the pipeline resource signature.
+/// Interface that defines methods of the pipeline resource signature.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceSignature : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignature, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALPipelineResourceSignatureCreationDescription& GetDescription() const { return m_Description; };
 
-  /// \brief Returns true if this pipeline resource signature is compatible with the given pipeline resource signature.
+  /// Returns true if this pipeline resource signature is compatible with the given pipeline resource signature.
   [[nodiscard]] virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const;
 
 protected:

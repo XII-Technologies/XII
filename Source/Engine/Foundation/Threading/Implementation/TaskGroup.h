@@ -30,7 +30,7 @@ private:
   }
 #endif
 
-  /// \brief Puts the calling thread to sleep until this group is fully finished.
+  /// Puts the calling thread to sleep until this group is fully finished.
   void WaitForFinish(xiiTaskGroupID group) const;
   void Reuse(xiiTaskPriority::Enum priority, xiiOnTaskGroupFinishedCallback callback);
 

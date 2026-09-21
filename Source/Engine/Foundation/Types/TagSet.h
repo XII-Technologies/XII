@@ -9,7 +9,7 @@
 class xiiTag;
 using xiiTagSetBlockStorage = xiiUInt64;
 
-/// \brief A dynamic collection of tags featuring fast lookups.
+/// A dynamic collection of tags featuring fast lookups.
 ///
 /// This class can be used to store a (dynamic) collection of tags. Tags are registered within
 /// the global tag registry and allocated a bit index. The tag set allows comparatively fast lookups
@@ -27,57 +27,57 @@ public:
 
   bool operator==(const xiiTagSetTemplate& other) const;
 
-  /// \brief Adds the given tag to the set.
+  /// Adds the given tag to the set.
   void Set(const xiiTag& tag); // [tested]
 
-  /// \brief Removes the given tag.
+  /// Removes the given tag.
   void Remove(const xiiTag& tag); // [tested]
 
-  /// \brief Returns true, if the given tag is in the set.
+  /// Returns true, if the given tag is in the set.
   bool IsSet(const xiiTag& tag) const; // [tested]
 
-  /// \brief Returns true if this tag set contains any tag set in the given other tag set.
+  /// Returns true if this tag set contains any tag set in the given other tag set.
   bool IsAnySet(const xiiTagSetTemplate& otherSet) const; // [tested]
 
-  /// \brief Returns how many tags are in this set.
+  /// Returns how many tags are in this set.
   xiiUInt32 GetNumTagsSet() const;
 
-  /// \brief True if the tag set never contained any tag or was cleared.
+  /// True if the tag set never contained any tag or was cleared.
   bool IsEmpty() const;
 
-  /// \brief Removes all tags from the set
+  /// Removes all tags from the set
   void Clear();
 
-  /// \brief Adds the tag with the given name. If the tag does not exist, it will be registered.
+  /// Adds the tag with the given name. If the tag does not exist, it will be registered.
   void SetByName(xiiStringView sTag);
 
-  /// \brief Removes the given tag. If it doesn't exist, nothing happens.
+  /// Removes the given tag. If it doesn't exist, nothing happens.
   void RemoveByName(xiiStringView sTag);
 
-  /// \brief Checks whether the named tag is part of this set. Returns false if the tag does not exist.
+  /// Checks whether the named tag is part of this set. Returns false if the tag does not exist.
   bool IsSetByName(xiiStringView sTag) const;
 
-  /// \brief Checks whether the named tag is part of this set. Returns false if the tag does not exist.
+  /// Checks whether the named tag is part of this set. Returns false if the tag does not exist.
   bool IsSetByName(const xiiTempHashedString& sTag) const;
 
-  /// \brief Allows to iterate over all tags in this set
+  /// Allows to iterate over all tags in this set
   class Iterator
   {
   public:
     Iterator(const xiiTagSetTemplate<BlockStorageAllocator>* pSet, bool bEnd = false);
 
-    /// \brief Returns a reference to the current tag
+    /// Returns a reference to the current tag
     const xiiTag& operator*() const;
 
-    /// \brief Returns a pointer to the current tag
+    /// Returns a pointer to the current tag
     const xiiTag* operator->() const;
 
-    /// \brief Returns whether the iterator is still pointing to a valid item
+    /// Returns whether the iterator is still pointing to a valid item
     XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != 0xFFFFFFFF; }
 
     XII_ALWAYS_INLINE bool operator==(const Iterator& rhs) const { return m_pTagSet == rhs.m_pTagSet && m_uiIndex == rhs.m_uiIndex; }
 
-    /// \brief Advances the iterator to the next item
+    /// Advances the iterator to the next item
     void operator++();
 
   private:
@@ -87,13 +87,13 @@ public:
     xiiUInt32                                       m_uiIndex = 0;
   };
 
-  /// \brief Returns an iterator to list all tags in this set
+  /// Returns an iterator to list all tags in this set
   Iterator GetIterator() const { return Iterator(this); }
 
-  /// \brief Writes the tag set state to a stream. Tags itself are serialized as strings.
+  /// Writes the tag set state to a stream. Tags itself are serialized as strings.
   void Save(xiiStreamWriter& ref_stream) const;
 
-  /// \brief Reads the tag set state from a stream and registers the tags with the given registry.
+  /// Reads the tag set state from a stream and registers the tags with the given registry.
   void Load(xiiStreamReader& ref_stream, xiiTagRegistry& ref_registry);
 
 private:

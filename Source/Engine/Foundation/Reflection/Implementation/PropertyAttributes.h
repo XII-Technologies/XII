@@ -8,32 +8,32 @@
 #include <Foundation/Math/ColorScheme.h>
 #include <Foundation/Reflection/Reflection.h>
 
-/// \brief Base class of all attributes can be used to decorate a RTTI property.
+/// Base class of all attributes can be used to decorate a RTTI property.
 class XII_FOUNDATION_DLL xiiPropertyAttribute : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPropertyAttribute, xiiReflectedClass);
 };
 
-/// \brief A property attribute that indicates that the property may not be modified through the UI
+/// A property attribute that indicates that the property may not be modified through the UI
 class XII_FOUNDATION_DLL xiiReadOnlyAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiReadOnlyAttribute, xiiPropertyAttribute);
 };
 
-/// \brief A property attribute that indicates that the property is not to be shown in the UI
+/// A property attribute that indicates that the property is not to be shown in the UI
 class XII_FOUNDATION_DLL xiiHiddenAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiHiddenAttribute, xiiPropertyAttribute);
 };
 
-/// \brief A property attribute that indicates that the property is not to be serialized
+/// A property attribute that indicates that the property is not to be serialized
 /// and whatever it points to only exists temporarily while running or in editor.
 class XII_FOUNDATION_DLL xiiTemporaryAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTemporaryAttribute, xiiPropertyAttribute);
 };
 
-/// \brief Used to categorize types (e.g. add component menu)
+/// Used to categorize types (e.g. add component menu)
 class XII_FOUNDATION_DLL xiiCategoryAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCategoryAttribute, xiiPropertyAttribute);
@@ -51,7 +51,7 @@ private:
   xiiUntrackedString m_sCategory;
 };
 
-/// \brief A property attribute that indicates that this feature is still in development and should not be shown to all users.
+/// A property attribute that indicates that this feature is still in development and should not be shown to all users.
 class XII_FOUNDATION_DLL xiiInDevelopmentAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiInDevelopmentAttribute, xiiPropertyAttribute);
@@ -74,7 +74,7 @@ public:
   xiiInt32 m_Phase = Phase::Beta;
 };
 
-/// \brief Used for dynamic titles of visual script nodes.
+/// Used for dynamic titles of visual script nodes.
 /// E.g. "Set Bool Property '{Name}'" will allow the title to by dynamic
 /// by reading the current value of the 'Name' property.
 class XII_FOUNDATION_DLL xiiTitleAttribute : public xiiPropertyAttribute
@@ -94,7 +94,7 @@ private:
   xiiUntrackedString m_sTitle;
 };
 
-/// \brief Used to colorize types
+/// Used to colorize types
 class XII_FOUNDATION_DLL xiiColorAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiColorAttribute, xiiPropertyAttribute);
@@ -112,13 +112,13 @@ private:
   xiiColor m_Color;
 };
 
-/// \brief A property attribute that indicates that the alpha channel of a xiiColorGammaUB or xiiColor should be exposed in the UI.
+/// A property attribute that indicates that the alpha channel of a xiiColorGammaUB or xiiColor should be exposed in the UI.
 class XII_FOUNDATION_DLL xiiExposeColorAlphaAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiExposeColorAlphaAttribute, xiiPropertyAttribute);
 };
 
-/// \brief Used for any property shown as a line edit (int, float, vector etc).
+/// Used for any property shown as a line edit (int, float, vector etc).
 class XII_FOUNDATION_DLL xiiSuffixAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSuffixAttribute, xiiPropertyAttribute);
@@ -136,7 +136,7 @@ private:
   xiiUntrackedString m_sSuffix;
 };
 
-/// \brief Used to show a text instead of the minimum value of a property.
+/// Used to show a text instead of the minimum value of a property.
 class XII_FOUNDATION_DLL xiiMinValueTextAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMinValueTextAttribute, xiiPropertyAttribute);
@@ -154,7 +154,7 @@ private:
   xiiUntrackedString m_sText;
 };
 
-/// \brief Sets the default value of the property.
+/// Sets the default value of the property.
 class XII_FOUNDATION_DLL xiiDefaultValueAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDefaultValueAttribute, xiiPropertyAttribute);
@@ -239,7 +239,7 @@ private:
   xiiVariant m_Value;
 };
 
-/// \brief A property attribute that allows to define min and max values for the UI. Min or max may be set to an invalid variant to indicate
+/// A property attribute that allows to define min and max values for the UI. Min or max may be set to an invalid variant to indicate
 /// unbounded values in one direction.
 class XII_FOUNDATION_DLL xiiClampValueAttribute : public xiiPropertyAttribute
 {
@@ -260,7 +260,7 @@ private:
   xiiVariant m_MaxValue;
 };
 
-/// \brief Used to categorize properties into groups
+/// Used to categorize properties into groups
 class XII_FOUNDATION_DLL xiiGroupAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGroupAttribute, xiiPropertyAttribute);
@@ -280,7 +280,7 @@ private:
   float              m_fOrder = -1.0f;
 };
 
-/// \brief Derive from this class if you want to define an attribute that replaces the property type widget.
+/// Derive from this class if you want to define an attribute that replaces the property type widget.
 ///
 /// Using this attribute affects both member properties as well as elements in a container but not the container widget.
 /// When creating a property widget, the property grid will look for an attribute of this type and use
@@ -292,7 +292,7 @@ class XII_FOUNDATION_DLL xiiTypeWidgetAttribute : public xiiPropertyAttribute
   XII_ADD_DYNAMIC_REFLECTION(xiiTypeWidgetAttribute, xiiPropertyAttribute);
 };
 
-/// \brief Derive from this class if you want to define an attribute that replaces the property widget of containers.
+/// Derive from this class if you want to define an attribute that replaces the property widget of containers.
 ///
 /// Using this attribute affects the container widget but not container elements.
 /// Only derive from this class if you want to replace the container widget itself, in every other case
@@ -302,7 +302,7 @@ class XII_FOUNDATION_DLL xiiContainerWidgetAttribute : public xiiPropertyAttribu
   XII_ADD_DYNAMIC_REFLECTION(xiiContainerWidgetAttribute, xiiPropertyAttribute);
 };
 
-/// \brief Add this attribute to a tag set member property to make it use the tag set editor
+/// Add this attribute to a tag set member property to make it use the tag set editor
 /// and define the categories it will use as a ; separated list of category names.
 ///
 /// Usage: XII_SET_MEMBER_PROPERTY("Tags", m_Tags)->AddAttributes(new xiiTagSetWidgetAttribute("Category1;Category2")),
@@ -323,13 +323,13 @@ private:
   xiiUntrackedString m_sTagFilter;
 };
 
-/// \brief This attribute indicates that a widget should not use temporary transactions when changing the value.
+/// This attribute indicates that a widget should not use temporary transactions when changing the value.
 class XII_FOUNDATION_DLL xiiNoTemporaryTransactionsAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiNoTemporaryTransactionsAttribute, xiiPropertyAttribute);
 };
 
-/// \brief Add this attribute to a variant map property to make it map to the exposed parameters
+/// Add this attribute to a variant map property to make it map to the exposed parameters
 /// of an asset. For this, the member property name of the asset reference needs to be passed in.
 /// The exposed parameters of the currently set asset on that property will be used as the source.
 ///
@@ -353,7 +353,7 @@ private:
   xiiUntrackedString m_sParametersSource;
 };
 
-/// \brief Add this attribute to an embedded class or container property to make it retrieve its default values from a dynamic meta info object on an asset.
+/// Add this attribute to an embedded class or container property to make it retrieve its default values from a dynamic meta info object on an asset.
 ///
 /// The default values are retrieved from the asset meta data of the currently set asset on that property.
 ///
@@ -387,7 +387,7 @@ private:
 };
 
 
-/// \brief Sets the allowed actions on a container.
+/// Sets the allowed actions on a container.
 class XII_FOUNDATION_DLL xiiContainerAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiContainerAttribute, xiiPropertyAttribute);
@@ -409,7 +409,7 @@ private:
   bool m_bCanMove   = false;
 };
 
-/// \brief Defines how a reference set by xiiFileBrowserAttribute and xiiAssetBrowserAttribute is treated.
+/// Defines how a reference set by xiiFileBrowserAttribute and xiiAssetBrowserAttribute is treated.
 ///
 /// A few examples to explain the flags:
 /// ## Input for a mesh: **Transform | Thumbnail**
@@ -455,7 +455,7 @@ struct xiiDependencyFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiDependencyFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiDependencyFlags);
 
-/// \brief A property attribute that indicates that the string property should display a file browsing button.
+/// A property attribute that indicates that the string property should display a file browsing button.
 ///
 /// Allows to specify the title for the browse dialog and the allowed file types.
 /// Usage: XII_MEMBER_PROPERTY("File", m_sFilePath)->AddAttributes(new xiiFileBrowserAttribute("Choose a File", "*.txt")),
@@ -492,7 +492,7 @@ private:
   xiiBitflags<xiiDependencyFlags> m_DependencyFlags;
 };
 
-/// \brief Indicates that the string property should allow to browse for an file (or programs) outside the project directories.
+/// Indicates that the string property should allow to browse for an file (or programs) outside the project directories.
 ///
 /// Allows to specify the title for the browse dialog and the allowed file types.
 /// Usage: XII_MEMBER_PROPERTY("File", m_sFilePath)->AddAttributes(new xiiFileBrowserAttribute("Choose a File", "*.exe")),
@@ -515,7 +515,7 @@ private:
   xiiUntrackedString m_sTypeFilter;
 };
 
-/// \brief A property attribute that indicates that the string property is actually an asset reference.
+/// A property attribute that indicates that the string property is actually an asset reference.
 ///
 /// Allows to specify the allowed asset types, separated with ;
 /// Usage: XII_MEMBER_PROPERTY("Texture", m_sTexture)->AddAttributes(new xiiAssetBrowserAttribute("Texture 2D;Texture 3D")),
@@ -557,7 +557,7 @@ private:
   xiiBitflags<xiiDependencyFlags> m_DependencyFlags;
 };
 
-/// \brief Can be used on integer properties to display them as enums. The valid enum values and their names may change at runtime.
+/// Can be used on integer properties to display them as enums. The valid enum values and their names may change at runtime.
 ///
 /// See xiiDynamicEnum for details.
 class XII_FOUNDATION_DLL xiiDynamicEnumAttribute : public xiiTypeWidgetAttribute
@@ -577,7 +577,7 @@ private:
   xiiUntrackedString m_sDynamicEnumName;
 };
 
-/// \brief Can be used on string properties to display them as enums. The valid enum values and their names may change at runtime.
+/// Can be used on string properties to display them as enums. The valid enum values and their names may change at runtime.
 ///
 /// See xiiDynamicStringEnum for details.
 class XII_FOUNDATION_DLL xiiDynamicStringEnumAttribute : public xiiTypeWidgetAttribute
@@ -597,7 +597,7 @@ private:
   xiiUntrackedString m_sDynamicEnumName;
 };
 
-/// \brief Can be used on integer properties to display them as bitflags. The valid bitflags and their names may change at runtime.
+/// Can be used on integer properties to display them as bitflags. The valid bitflags and their names may change at runtime.
 class XII_FOUNDATION_DLL xiiDynamicBitflagsAttribute : public xiiTypeWidgetAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDynamicBitflagsAttribute, xiiTypeWidgetAttribute);
@@ -920,7 +920,7 @@ class XII_FOUNDATION_DLL xiiConeVisualizerAttribute : public xiiVisualizerAttrib
 public:
   xiiConeVisualizerAttribute();
 
-  /// \brief Attribute to add on an RTTI type to add a cone visualizer for specific properties.
+  /// Attribute to add on an RTTI type to add a cone visualizer for specific properties.
   ///
   /// sRadiusProperty may be nullptr, in which case it is assumed to be 1
   /// fScale will be multiplied with value of sRadiusProperty to determine the size of the cone
@@ -946,7 +946,7 @@ class XII_FOUNDATION_DLL xiiCameraVisualizerAttribute : public xiiVisualizerAttr
 public:
   xiiCameraVisualizerAttribute();
 
-  /// \brief Attribute to add on an RTTI type to add a camera cone visualizer.
+  /// Attribute to add on an RTTI type to add a camera cone visualizer.
   xiiCameraVisualizerAttribute(xiiStringView sModeProperty, xiiStringView sFovProperty, xiiStringView sOrthoDimProperty, xiiStringView sNearPlaneProperty, xiiStringView sFarPlaneProperty);
 
   const xiiUntrackedString& GetModeProperty() const { return m_sProperty1; }
@@ -987,7 +987,7 @@ const Type* xiiAbstractProperty::GetAttributeByType() const
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A property attribute that specifies the max size of an array. If it is reached, no further elemets are allowed to be added.
+/// A property attribute that specifies the max size of an array. If it is reached, no further elemets are allowed to be added.
 class XII_FOUNDATION_DLL xiiMaxArraySizeAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMaxArraySizeAttribute, xiiPropertyAttribute);
@@ -1007,7 +1007,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief If this attribute is set, the UI is encouraged to prevent the user from creating duplicates of the same thing.
+/// If this attribute is set, the UI is encouraged to prevent the user from creating duplicates of the same thing.
 ///
 /// For arrays of objects this means that multiple objects of the same type are not allowed.
 class XII_FOUNDATION_DLL xiiPreventDuplicatesAttribute : public xiiPropertyAttribute
@@ -1020,13 +1020,13 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Attribute for types that should not be exposed to the scripting framework.
+/// Attribute for types that should not be exposed to the scripting framework.
 class XII_FOUNDATION_DLL xiiExcludeFromScript : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiExcludeFromScript, xiiPropertyAttribute);
 };
 
-/// \brief Attribute to mark a function up to be exposed to the scripting system. Arguments specify the names of the function parameters.
+/// Attribute to mark a function up to be exposed to the scripting system. Arguments specify the names of the function parameters.
 class XII_FOUNDATION_DLL xiiScriptableFunctionAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiScriptableFunctionAttribute, xiiPropertyAttribute);
@@ -1050,7 +1050,7 @@ private:
   xiiHybridArray<xiiUInt8, 6>           m_ArgTypes;
 };
 
-/// \brief Wrapper Attribute to add an attribute to a function argument
+/// Wrapper Attribute to add an attribute to a function argument
 class XII_FOUNDATION_DLL xiiFunctionArgumentAttributes : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiFunctionArgumentAttributes, xiiPropertyAttribute);
@@ -1069,7 +1069,7 @@ private:
   xiiHybridArray<const xiiPropertyAttribute*, 4> m_ArgAttributes;
 };
 
-/// \brief Used to mark an array or (unsigned)int property as source for dynamic pin generation on nodes
+/// Used to mark an array or (unsigned)int property as source for dynamic pin generation on nodes
 class XII_FOUNDATION_DLL xiiDynamicPinAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDynamicPinAttribute, xiiPropertyAttribute);
@@ -1086,7 +1086,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Used to mark that a component provides functionality that is executed with a long operation in the editor.
+/// Used to mark that a component provides functionality that is executed with a long operation in the editor.
 ///
 /// \a szOpTypeName must be the class name of a class derived from xiiLongOpProxy.
 /// Once a component is added to a scene with this attribute, the named long op will appear in the UI and can be executed.
@@ -1108,7 +1108,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A property attribute that indicates that the string property is actually a game object reference.
+/// A property attribute that indicates that the string property is actually a game object reference.
 class XII_FOUNDATION_DLL xiiGameObjectReferenceAttribute : public xiiTypeWidgetAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGameObjectReferenceAttribute, xiiTypeWidgetAttribute);
@@ -1119,7 +1119,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Displays the value range as an image, allowing users to pick a value like on a slider.
+/// Displays the value range as an image, allowing users to pick a value like on a slider.
 ///
 /// This attribute always has to be combined with a xiiClampValueAttribute to define the min and max value range.
 /// The constructor takes the name of an image generator. The generator is used to build the QImage used for the slider background.
@@ -1142,7 +1142,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Attribute that turns a string property into a selector for an RTTI type.
+/// Attribute that turns a string property into a selector for an RTTI type.
 ///
 /// The base type defines what types to display.
 /// For example if "xiiComponent" is passed in, only types derived from xiiComponent are listed.

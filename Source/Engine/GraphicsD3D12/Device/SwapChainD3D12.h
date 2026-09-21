@@ -8,7 +8,7 @@
 
 struct IDXGISwapChain3;
 
-/// \brief This describes how an image is stretched to fit a given monitor's resolution.
+/// This describes how an image is stretched to fit a given monitor's resolution.
 /// \sa <a href = "https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173066(v=vs.85)">DXGI_MODE_SCALING enumeration on MSDN</a>,
 struct XII_GRAPHICSD3D12_DLL xiiGALScalingModeD3D12
 {
@@ -28,7 +28,7 @@ struct XII_GRAPHICSD3D12_DLL xiiGALScalingModeD3D12
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSD3D12_DLL, xiiGALScalingModeD3D12);
 
-/// \brief This describes the method the raster uses to create an image on a surface.
+/// This describes the method the raster uses to create an image on a surface.
 /// \sa <a href = "https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173067(v=vs.85)">DXGI_MODE_SCANLINE_ORDER enumeration on MSDN</a>,
 struct XII_GRAPHICSD3D12_DLL xiiGALScanLineOrderD3D12
 {
@@ -49,7 +49,7 @@ struct XII_GRAPHICSD3D12_DLL xiiGALScanLineOrderD3D12
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSD3D12_DLL, xiiGALScanLineOrderD3D12);
 
-/// \brief This describes the display mode attributes.
+/// This describes the display mode attributes.
 struct XII_GRAPHICSD3D12_DLL xiiGALDisplayModeDescriptionD3D12 : public xiiHashableStruct<xiiGALDisplayModeDescriptionD3D12>
 {
   XII_DECLARE_POD_TYPE();
@@ -62,7 +62,7 @@ struct XII_GRAPHICSD3D12_DLL xiiGALDisplayModeDescriptionD3D12 : public xiiHasha
   xiiEnum<xiiGALScanLineOrderD3D12> m_ScanLineOrder            = xiiGALScanLineOrderD3D12::Unspecified; ///< The scanline drawing mode.
 };
 
-/// \brief This describes the full screen mode description.
+/// This describes the full screen mode description.
 struct XII_GRAPHICSD3D12_DLL xiiGALFullScreenModeDescriptionD3D12 : public xiiHashableStruct<xiiGALFullScreenModeDescriptionD3D12>
 {
   XII_DECLARE_POD_TYPE();

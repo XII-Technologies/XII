@@ -10,7 +10,7 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <GraphicsCore/Declarations.h>
 
-/// \brief Base class for components to push generic render data.
+/// Base class for components to push generic render data.
 class XII_GRAPHICSCORE_DLL xiiRenderData : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderData, xiiReflectedClass);

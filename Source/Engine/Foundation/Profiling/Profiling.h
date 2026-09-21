@@ -11,7 +11,7 @@
 class xiiStreamWriter;
 class xiiThread;
 
-/// \brief This class encapsulates a profiling scope.
+/// This class encapsulates a profiling scope.
 ///
 /// The constructor creates a new scope in the profiling system and the destructor pops the scope.
 /// You shouldn't need to use this directly, just use the macro XII_PROFILE_SCOPE provided below.
@@ -28,7 +28,7 @@ protected:
   xiiTime       m_Timeout;
 };
 
-/// \brief This class implements a profiling scope similar to xiiProfilingScope, but with additional sub-scopes which can be added easily without
+/// This class implements a profiling scope similar to xiiProfilingScope, but with additional sub-scopes which can be added easily without
 /// introducing actual C++ scopes.
 ///
 /// The constructor pushes one surrounding scope on the stack and then a nested scope as the first section.
@@ -57,7 +57,7 @@ protected:
   xiiTime       m_CurSectionBeginTime;
 };
 
-/// \brief Helper functionality of the profiling system.
+/// Helper functionality of the profiling system.
 class XII_FOUNDATION_DLL xiiProfilingSystem
 {
 public:
@@ -85,7 +85,7 @@ public:
     xiiUInt64                 m_uiThreadId = 0;
   };
 
-  /// \brief Helper struct to hold GPU profiling data.
+  /// Helper struct to hold GPU profiling data.
   struct GPUScope
   {
     XII_DECLARE_POD_TYPE();
@@ -112,12 +112,12 @@ public:
 
     xiiDynamicArray<xiiDynamicArray<GPUScope>> m_GPUScopes;
 
-    /// \brief Writes profiling data as JSON to the output stream.
+    /// Writes profiling data as JSON to the output stream.
     xiiResult Write(xiiStreamWriter& ref_outputStream) const;
 
     void Clear();
 
-    /// \brief Concatenates all given ProfilingData instances into one merge struct
+    /// Concatenates all given ProfilingData instances into one merge struct
     static void Merge(ProfilingData& out_merged, xiiArrayPtr<const ProfilingData*> inputs);
   };
 
@@ -126,21 +126,21 @@ public:
 
   static void Capture(xiiProfilingSystem::ProfilingData& out_capture, bool bClearAfterCapture = false);
 
-  /// \brief Scopes are discarded if their duration is shorter than the specified threshold. Default is 0.1ms.
+  /// Scopes are discarded if their duration is shorter than the specified threshold. Default is 0.1ms.
   static void SetDiscardThreshold(xiiTime threshold);
 
   using ScopeTimeoutDelegate = xiiDelegate<void(xiiStringView sName, xiiStringView sFunctionName, xiiTime duration)>;
 
-  /// \brief Sets a callback that is triggered when a profiling scope takes longer than desired.
+  /// Sets a callback that is triggered when a profiling scope takes longer than desired.
   static void SetScopeTimeoutCallback(ScopeTimeoutDelegate callback);
 
-  /// \brief Should be called once per frame to capture the timestamp of the new frame.
+  /// Should be called once per frame to capture the timestamp of the new frame.
   static void StartNewFrame();
 
-  /// \brief Adds a new scoped event for the calling thread in the profiling system
+  /// Adds a new scoped event for the calling thread in the profiling system
   static void AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
 
-  /// \brief Get current frame counter
+  /// Get current frame counter
   static xiiUInt64 GetFrameCount();
 
 private:
@@ -148,26 +148,26 @@ private:
   friend xiiUInt32 RunThread(xiiThread* pThread);
 
   static void Initialize();
-  /// \brief Removes profiling data of dead threads.
+  /// Removes profiling data of dead threads.
   static void Reset();
 
-  /// \brief Sets the name of the current thread.
+  /// Sets the name of the current thread.
   static void SetThreadName(xiiStringView sThreadName);
-  /// \brief Removes the current thread from the profiling system.
+  /// Removes the current thread from the profiling system.
   ///  Needs to be called before the thread exits to be able to release profiling memory of dead threads on Reset.
   static void RemoveThread();
 
 public:
-  /// \brief Initialized internal data structures for GPU profiling data. Needs to be called before adding any data.
+  /// Initialized internal data structures for GPU profiling data. Needs to be called before adding any data.
   static void InitializeGPUData(xiiUInt32 uiGpuCount = 1);
 
-  /// \brief Adds a GPU profiling scope in the internal event ringbuffer.
+  /// Adds a GPU profiling scope in the internal event ringbuffer.
   static void AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 uiGpuIndex = 0);
 };
 
 #if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)
 
-/// \brief Profiles the current scope using the given name.
+/// Profiles the current scope using the given name.
 ///
 /// It is allowed to nest XII_PROFILE_SCOPE, also with XII_PROFILE_LIST_SCOPE. However XII_PROFILE_SCOPE should start and end within the same list scope
 /// section.
@@ -179,14 +179,14 @@ public:
 #  define XII_PROFILE_SCOPE(szScopeName) \
     xiiProfilingScope XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, xiiTime::MakeZero())
 
-/// \brief Same as XII_PROFILE_SCOPE but if the scope takes longer than 'Timeout', the xiiProfilingSystem's timeout callback is executed.
+/// Same as XII_PROFILE_SCOPE but if the scope takes longer than 'Timeout', the xiiProfilingSystem's timeout callback is executed.
 ///
 /// This can be used to log an error or save a callstack, etc. when a scope exceeds an expected amount of time.
 ///
 /// \sa xiiProfilingSystem::SetScopeTimeoutCallback()
 #  define XII_PROFILE_SCOPE_WITH_TIMEOUT(szScopeName, Timeout) xiiProfilingScope XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szScopeName, XII_SOURCE_FUNCTION, Timeout)
 
-/// \brief Profiles the current scope using the given name as the overall list scope name and the section name for the first section in the list.
+/// Profiles the current scope using the given name as the overall list scope name and the section name for the first section in the list.
 ///
 /// Use XII_PROFILE_LIST_NEXT_SECTION to start a new section in the list scope.
 ///
@@ -200,7 +200,7 @@ public:
 #  define XII_PROFILE_LIST_SCOPE(szListName, szFirstSectionName) \
     xiiProfilingListScope XII_PP_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(szListName, szFirstSectionName, XII_SOURCE_FUNCTION)
 
-/// \brief Starts a new section in a XII_PROFILE_LIST_SCOPE
+/// Starts a new section in a XII_PROFILE_LIST_SCOPE
 ///
 /// \sa xiiProfilingListScope
 /// \sa XII_PROFILE_LIST_SCOPE

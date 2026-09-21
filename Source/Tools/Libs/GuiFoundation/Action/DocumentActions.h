@@ -32,7 +32,7 @@ public:
 };
 
 
-/// \brief Standard document actions.
+/// Standard document actions.
 class XII_GUIFOUNDATION_DLL xiiDocumentAction : public xiiButtonAction
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDocumentAction, xiiButtonAction);

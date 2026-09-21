@@ -70,7 +70,7 @@ public:
 
   virtual void FindVisibleObjects(const xiiFrustum& frustum, const QueryParams& queryParams, xiiDynamicArray<const xiiGameObject*>& out_objects, IsOccludedFunc isOccluded, xiiVisibilityState::Enum visType) const = 0;
 
-  /// \brief Retrieves a state describing how visible the object is.
+  /// Retrieves a state describing how visible the object is.
   ///
   /// An object may be invisible, fully visible, or indirectly visible (through shadows or reflections).
   ///

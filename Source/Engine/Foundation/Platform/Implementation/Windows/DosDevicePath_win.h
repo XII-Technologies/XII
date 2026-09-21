@@ -8,7 +8,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Strings/StringConversion.h>
 
-/// \brief Converts an absolute path to a 'DOS device path'
+/// Converts an absolute path to a 'DOS device path'
 ///
 /// https://docs.microsoft.com/dotnet/standard/io/file-path-formats#dos-device-paths
 ///

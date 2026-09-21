@@ -4,7 +4,7 @@
 
 #include <Foundation/IO/Stream.h>
 
-/// \brief A stream reader that wraps another stream to track how many bytes are read from it.
+/// A stream reader that wraps another stream to track how many bytes are read from it.
 class XII_FOUNDATION_DLL xiiStreamReaderWithStats : public xiiStreamReader
 {
 public:
@@ -39,7 +39,7 @@ public:
   xiiUInt64 m_uiBytesSkipped = 0;
 };
 
-/// \brief A stream writer that wraps another stream to track how many bytes are written to it.
+/// A stream writer that wraps another stream to track how many bytes are written to it.
 class XII_FOUNDATION_DLL xiiStreamWriterWithStats : public xiiStreamWriter
 {
 public:

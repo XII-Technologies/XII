@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Shader/InputLayout.h>
 
-/// \brief This describes the shader resource type.
+/// This describes the shader resource type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceType
 {
   using StorageType = xiiUInt8;
@@ -33,7 +33,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderResourceType);
 
-/// \brief This describes texture type of the shader resource type.
+/// This describes texture type of the shader resource type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderTextureType
 {
   using StorageType = xiiUInt8;
@@ -59,7 +59,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderTextureType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderTextureType);
 
-/// \brief This describes the primitive type of a shader code variable.
+/// This describes the primitive type of a shader code variable.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
 {
   using StorageType = xiiUInt8;
@@ -93,7 +93,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
     Default = Unknown
   };
 
-  /// \brief This returns the size of the shader primitive data type.
+  /// This returns the size of the shader primitive data type.
   XII_ALWAYS_INLINE static xiiUInt32 GetPrimitiveTypeSize(xiiGALShaderPrimitiveType::Enum type)
   {
     switch (type)
@@ -141,7 +141,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
     return 0;
   }
 
-  /// \brief This returns true if the given shader primitive data type is a number representation, else false.
+  /// This returns true if the given shader primitive data type is a number representation, else false.
   XII_ALWAYS_INLINE static bool IsNumberType(xiiGALShaderPrimitiveType::Enum type)
   {
     switch (type)
@@ -174,7 +174,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderPrimitiveType);
 
-/// \brief This describes the class type of a shader code variable.
+/// This describes the class type of a shader code variable.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableClassType
 {
   using StorageType = xiiUInt8;
@@ -196,7 +196,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableClassType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderVariableClassType);
 
-/// \brief This describes shader code variable.
+/// This describes shader code variable.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHashableStruct<xiiGALShaderVariableDescription>
 {
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
@@ -210,11 +210,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHa
   xiiUInt32                                        m_uiArraySize   = 0U;                                     ///< The array size.
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Members;                                                ///< For a structure, an array of member variables.
 
-  /// \brief This copies the data in a variant into into its destination, given its structure in the shader variable description.
+  /// This copies the data in a variant into into its destination, given its structure in the shader variable description.
   static void CopyDataFromVariant(xiiUInt8* pDestination, const xiiVariant* pValue, const xiiGALShaderVariableDescription& description);
 };
 
-/// \brief This describes shader resource.
+/// This describes shader resource.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHashableStruct<xiiGALShaderResourceDescription>
 {
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
@@ -230,7 +230,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHa
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                                           ///< An array of member variables for shader constant buffer, or push constants.
 };
 
-/// \brief This class wraps shader byte code storage.
+/// This class wraps shader byte code storage.
 ///
 /// Since byte code can have different requirements for alignment, padding etc. this class manages it.
 /// Also since byte code is shared between multiple shaders (e.g. same vertex shaders for different pixel shaders)
@@ -244,7 +244,7 @@ public:
 
   xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& pByteCode);
 
-  /// \brief This returns a raw pointer to the shader bytecode.
+  /// This returns a raw pointer to the shader bytecode.
   [[nodiscard]] XII_ALWAYS_INLINE const void* GetByteCode() const
   {
     if (m_ByteCode.IsEmpty())
@@ -253,13 +253,13 @@ public:
     return m_ByteCode.GetData();
   };
 
-  /// \brief This returns the size of the shader bytecode.
+  /// This returns the size of the shader bytecode.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetSize() const { return m_ByteCode.GetCount(); };
 
-  /// \brief This returns true if the shader bytecode is not empty, else returns false.
+  /// This returns true if the shader bytecode is not empty, else returns false.
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !m_ByteCode.IsEmpty(); }
 
-  /// \brief This retrieves the shader resource description of the resource with the given name.
+  /// This retrieves the shader resource description of the resource with the given name.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALShaderResourceDescription* GetDescription(const xiiTempHashedString& sName) const
   {
     for (const auto& binding : m_ShaderResourceBindings)

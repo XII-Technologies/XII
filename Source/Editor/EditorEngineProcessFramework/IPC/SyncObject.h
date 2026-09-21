@@ -26,7 +26,7 @@ public:
 
   xiiUuid GetGuid() const { return m_SyncObjectGuid; }
 
-  // \brief One-time setup on the engine side.
+  // One-time setup on the engine side.
   // \returns Whether the sync object is pickable via uiNextComponentPickingID.
   virtual bool SetupForEngine(xiiWorld* pWorld, xiiUInt32 uiNextComponentPickingID) { return false; }
   virtual void UpdateForEngine(xiiWorld* pWorld) {}

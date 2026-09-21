@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 
-/// \brief This describes the occlusion query data.
+/// This describes the occlusion query data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataOcclusion : public xiiHashableStruct<xiiGALQueryDataOcclusion>
 {
   XII_DECLARE_POD_TYPE();
@@ -15,7 +15,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataOcclusion : public xiiHashableS
   xiiUInt64                m_uiSampleCount = 0U;                         ///< The number of samples that passed the depth and stencil tests in between begin / end query.
 };
 
-/// \brief This describes the binary occlusion query data.
+/// This describes the binary occlusion query data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataBinaryOcclusion : public xiiHashableStruct<xiiGALQueryDataBinaryOcclusion>
 {
   XII_DECLARE_POD_TYPE();
@@ -24,7 +24,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataBinaryOcclusion : public xiiHas
   bool                     m_bAnySamplesPassed = false;                            ///< Indicates if at least one sample passed depth and stencil testing in between begin / end query.
 };
 
-/// \brief This describes the timestamp query data.
+/// This describes the timestamp query data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataTimestamp : public xiiHashableStruct<xiiGALQueryDataTimestamp>
 {
   XII_DECLARE_POD_TYPE();
@@ -34,7 +34,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataTimestamp : public xiiHashableS
   xiiUInt64                m_uiFrequency = 0U;                         ///< The counter frequency, in Hz (ticks/second). If there was an error while getting the timestamp, this value will be 0.
 };
 
-/// \brief This describes the pipeline statistics query data.
+/// This describes the pipeline statistics query data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataPipelineStatistics : public xiiHashableStruct<xiiGALQueryDataPipelineStatistics>
 {
   XII_DECLARE_POD_TYPE();
@@ -53,7 +53,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataPipelineStatistics : public xii
   xiiUInt64                m_uiCSInvocations       = 0U;                                  ///< Number of times a compute shader was invoked.
 };
 
-/// \brief This describes the duration query data.
+/// This describes the duration query data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataDuration : public xiiHashableStruct<xiiGALQueryDataDuration>
 {
   XII_DECLARE_POD_TYPE();
@@ -63,7 +63,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataDuration : public xiiHashableSt
   xiiUInt64                m_uiFrequency = 0U;                        ///< The counter frequency, in Hz (ticks/second). If there was an error while getting the timestamp, this value will be 0.
 };
 
-/// \brief This describes the query creation description.
+/// This describes the query creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryCreationDescription : public xiiHashableStruct<xiiGALQueryCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -71,7 +71,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryCreationDescription : public xiiHas
   xiiEnum<xiiGALQueryType> m_Type = xiiGALQueryType::Undefined; ///< Query type.
 };
 
-/// \brief Interface that defines methods to manipulate a query object.
+/// Interface that defines methods to manipulate a query object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALQuery : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALQuery, xiiGALDeviceObject);
@@ -84,10 +84,10 @@ public:
     Ended     ///< The query has completed.
   };
 
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueryCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief This retrieves the query data.
+  /// This retrieves the query data.
   ///
   /// \param pData           - The pointer to the query data structure. This must be a pointer to one of Occlusion, BinaryOcclusion, Timestamp, PipelineStatistics, and Duration structures. An application may provide nullptr to only check the query status.
   /// \param uiDataSize      - The size of the data structure.
@@ -98,10 +98,10 @@ public:
   /// \note  In Direct3D11 backend timestamp queries will only be available after FinishFrame is called for the frame in which they were collected. If AutoInvalidate is set to true, and the data have been retrieved, an application must not call GetData() until it begins and ends the query again.
   [[nodiscard]] virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) = 0;
 
-  /// \brief This invalidates the query and releases the associated resources.
+  /// This invalidates the query and releases the associated resources.
   virtual void Invalidate();
 
-  /// \brief This retrieves the current query state.
+  /// This retrieves the current query state.
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQuery::QueryState GetQueryState() const { return m_QueryState; }
 
 protected:

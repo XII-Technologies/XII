@@ -56,13 +56,13 @@ namespace xiiInternal
 
       operator const xiiGameObject*() const;
 
-      /// \brief Advances the iterator to the next object. The iterator will not be valid anymore, if the last object is reached.
+      /// Advances the iterator to the next object. The iterator will not be valid anymore, if the last object is reached.
       void Next();
 
-      /// \brief Checks whether this iterator points to a valid object.
+      /// Checks whether this iterator points to a valid object.
       bool IsValid() const;
 
-      /// \brief Shorthand for 'Next'
+      /// Shorthand for 'Next'
       void operator++();
 
     private:
@@ -81,13 +81,13 @@ namespace xiiInternal
 
       operator xiiGameObject*();
 
-      /// \brief Advances the iterator to the next object. The iterator will not be valid anymore, if the last object is reached.
+      /// Advances the iterator to the next object. The iterator will not be valid anymore, if the last object is reached.
       void Next();
 
-      /// \brief Checks whether this iterator points to a valid object.
+      /// Checks whether this iterator points to a valid object.
       bool IsValid() const;
 
-      /// \brief Shorthand for 'Next'
+      /// Shorthand for 'Next'
       void operator++();
 
     private:
@@ -246,7 +246,7 @@ namespace xiiInternal
     bool      m_bSimulateWorld                    = true;
     bool      m_bReportErrorWhenStaticObjectMoves = true;
 
-    /// \brief Maps some data (given as void*) to a xiiGameObjectHandle. Only available in special situations (e.g. Editor use cases).
+    /// Maps some data (given as void*) to a xiiGameObjectHandle. Only available in special situations (e.g. Editor use cases).
     xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle, xiiStringView)> m_GameObjectReferenceResolver;
 
     struct ResourceReloadContext

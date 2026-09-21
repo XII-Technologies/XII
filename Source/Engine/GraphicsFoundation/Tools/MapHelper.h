@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 
 /// \class xiiGALMapHelper
-/// \brief Helper class that automates resource mapping and unmapping.
+/// Helper class that automates resource mapping and unmapping.
 ///
 /// This class simplifies the process of mapping and unmapping resources within a command list.
 /// It automatically maps the specified resource upon construction and unmaps it upon destruction.
@@ -29,10 +29,10 @@ class xiiGALMapHelper
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALMapHelper);
 
 public:
-  /// \brief Default constructor.
+  /// Default constructor.
   xiiGALMapHelper();
 
-  /// \brief Constructs the helper and maps the specified resource.
+  /// Constructs the helper and maps the specified resource.
   ///
   /// \param pCommandList - Pointer to the command list.
   /// \param hBuffer      - Handle to the buffer resource.
@@ -40,7 +40,7 @@ public:
   /// \param mapFlags     - Mapping flags.
   xiiGALMapHelper(xiiGALCommandList* pCommandList, xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
 
-  /// \brief Constructs the helper and maps the specified resource.
+  /// Constructs the helper and maps the specified resource.
   ///
   /// \param commandList - Reference to the command list.
   /// \param hBuffer     - Handle to the buffer resource.
@@ -48,22 +48,22 @@ public:
   /// \param mapFlags    - Mapping flags.
   xiiGALMapHelper(xiiGALCommandList& commandList, xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
 
-  /// \brief Move constructor.
+  /// Move constructor.
   ///
   /// \param other - The other helper object to move from.
   xiiGALMapHelper(xiiGALMapHelper&& other) noexcept;
 
-  /// \brief Destructor, automatically unmaps the resource.
+  /// Destructor, automatically unmaps the resource.
   ~xiiGALMapHelper();
 
-  /// \brief Move assignment operator.
+  /// Move assignment operator.
   ///
   /// \param other - The other helper object to move from.
   ///
   /// \return Reference to this object.
   xiiGALMapHelper<DataType>& operator=(xiiGALMapHelper&& other) noexcept;
 
-  /// \brief Maps the specified resource.
+  /// Maps the specified resource.
   ///
   /// \param pCommandList - Pointer to the command list.
   /// \param hBuffer      - Handle to the buffer resource.
@@ -73,28 +73,28 @@ public:
   /// \return Result of the operation.
   xiiResult Map(xiiGALCommandList* pCommandList, xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
 
-  /// \brief Unmaps the specified resource.
+  /// Unmaps the specified resource.
   ///
   /// \return Result of the operation.
   xiiResult Unmap();
 
-  /// \brief Implicit conversion to DataType pointer.
+  /// Implicit conversion to DataType pointer.
   operator DataType*();
 
-  /// \brief Implicit conversion to const DataType pointer.
+  /// Implicit conversion to const DataType pointer.
   operator const DataType*() const;
 
-  /// \brief Provides direct access to the mapped data.
+  /// Provides direct access to the mapped data.
   ///
   /// \return Pointer to the mapped data.
   DataType* operator->();
 
-  /// \brief Provides direct access to the mapped data (const version).
+  /// Provides direct access to the mapped data (const version).
   ///
   /// \return Pointer to the mapped data.
   const DataType* operator->() const;
 
-  /// \brief Returns a pointer to the mapped buffer data.
+  /// Returns a pointer to the mapped buffer data.
   ///
   /// This function provides direct access to the memory where the buffer is mapped.
   /// It is typically used for reading from or writing to GPU buffer memory directly, assuming the buffer has been properly mapped beforehand.

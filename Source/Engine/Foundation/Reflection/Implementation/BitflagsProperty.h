@@ -7,7 +7,7 @@
 #include <Foundation/Reflection/Implementation/EnumProperty.h>
 #include <Foundation/Reflection/Implementation/StaticRTTI.h>
 
-/// \brief [internal] An implementation of xiiTypedEnumProperty that uses custom getter / setter functions to access a bitflags property.
+/// [internal] An implementation of xiiTypedEnumProperty that uses custom getter / setter functions to access a bitflags property.
 template <typename Class, typename EnumType, typename Type>
 class xiiBitflagsAccessorProperty : public xiiTypedEnumProperty<EnumType>
 {
@@ -16,7 +16,7 @@ public:
   using GetterFunc = Type (Class::*)() const;
   using SetterFunc = void (Class::*)(Type value);
 
-  /// \brief Constructor.
+  /// Constructor.
   xiiBitflagsAccessorProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter) :
     xiiTypedEnumProperty<EnumType>(sPropertyName)
   {
@@ -56,7 +56,7 @@ private:
 };
 
 
-/// \brief [internal] An implementation of xiiTypedEnumProperty that accesses the bitflags property data directly.
+/// [internal] An implementation of xiiTypedEnumProperty that accesses the bitflags property data directly.
 template <typename Class, typename EnumType, typename Type>
 class xiiBitflagsMemberProperty : public xiiTypedEnumProperty<EnumType>
 {
@@ -65,7 +65,7 @@ public:
   using SetterFunc  = void (*)(Class* pInstance, Type value);
   using PointerFunc = void* (*)(const Class* pInstance);
 
-  /// \brief Constructor.
+  /// Constructor.
   xiiBitflagsMemberProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter, PointerFunc pointer) :
     xiiTypedEnumProperty<EnumType>(sPropertyName)
   {

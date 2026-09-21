@@ -15,7 +15,7 @@ public:
   xiiCurve1DAssetDocument(xiiStringView sDocumentPath);
   ~xiiCurve1DAssetDocument();
 
-  /// \brief Fills out the xiiCurve1D structure with an exact copy of the data in the asset.
+  /// Fills out the xiiCurve1D structure with an exact copy of the data in the asset.
   /// Does NOT yet sort the control points, so before evaluating the curve, that must be called manually.
   void FillCurve(xiiUInt32 uiCurveIdx, xiiCurve1D& out_result) const;
 

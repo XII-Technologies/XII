@@ -8,7 +8,7 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
 
-/// \brief This system allows to automatically distribute tasks onto a number of worker threads.
+/// This system allows to automatically distribute tasks onto a number of worker threads.
 ///
 /// By deriving from xiiTask you can create your own task types. These can be executed through this task system.
 /// You can run a single task using the 'StartSingleTask' function. For more complex setups, it is possible
@@ -30,15 +30,15 @@ public:
   ///@{
 
 public:
-  /// \brief A helper function to insert a single task into the system and start it right away. Returns ID of the Group into which the task
+  /// A helper function to insert a single task into the system and start it right away. Returns ID of the Group into which the task
   /// has been put.
   static xiiTaskGroupID StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum priority, xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
 
-  /// \brief A helper function to insert a single task into the system and start it right away. Returns ID of the Group into which the task
+  /// A helper function to insert a single task into the system and start it right away. Returns ID of the Group into which the task
   /// has been put. This overload allows to additionally specify a single dependency.
   static xiiTaskGroupID StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum priority, xiiTaskGroupID dependency, xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
 
-  /// \brief Call this function once at the end of a frame. It will ensure that all tasks for 'this frame' get finished properly.
+  /// Call this function once at the end of a frame. It will ensure that all tasks for 'this frame' get finished properly.
   ///
   /// Calling this function is crucial for several reasons. It is the central function to execute 'main thread' tasks.
   /// Otherwise these tasks might never get executed. It also changes the priority of all 'next frame' tasks to 'this frame',
@@ -56,7 +56,7 @@ public:
   /// There is however no guarantee that they are indeed all finished, as that would introduce unnecessary stalls.
   static void FinishFrameTasks(); // [tested]
 
-  /// \brief This function will try to remove the given task from the work queue, to prevent it from being executed.
+  /// This function will try to remove the given task from the work queue, to prevent it from being executed.
   ///
   /// The function will return XII_SUCCESS, if the task could be removed and thus its execution could be prevented.
   /// It will also return XII_SUCCESS, if the task was already finished and nothing needed to be done.
@@ -81,27 +81,27 @@ public:
     xiiUInt32             m_uiInvocation    = 0;
   };
 
-  /// \brief Broadcasts xiiThreadEvent::ClearThreadLocals on all worker threads.
+  /// Broadcasts xiiThreadEvent::ClearThreadLocals on all worker threads.
   static void BroadcastClearThreadLocalsEvent();
 
 private:
-  /// \brief Searches for a task of priority between \a FirstPriority and \a LastPriority (inclusive).
+  /// Searches for a task of priority between \a FirstPriority and \a LastPriority (inclusive).
   static TaskData GetNextTask(xiiTaskPriority::Enum FirstPriority, xiiTaskPriority::Enum LastPriority, bool bOnlyTasksThatNeverWait, const xiiTaskGroupID& WaitingForGroup, xiiAtomicInteger32* pWorkerState);
 
-  /// \brief Executes some task of priority between \a FirstPriority and \a LastPriority (inclusive). Returns true, if any such task was available.
+  /// Executes some task of priority between \a FirstPriority and \a LastPriority (inclusive). Returns true, if any such task was available.
   static bool ExecuteTask(xiiTaskPriority::Enum FirstPriority, xiiTaskPriority::Enum LastPriority, bool bOnlyTasksThatNeverWait, const xiiTaskGroupID& WaitingForGroup, xiiAtomicInteger32* pWorkerState);
 
-  /// \brief Called whenever a task has been finished/canceled. Makes sure that groups are marked as finished when all tasks are done.
+  /// Called whenever a task has been finished/canceled. Makes sure that groups are marked as finished when all tasks are done.
   static void TaskHasFinished(xiiSharedPtr<xiiTask>&& pTask, xiiTaskGroup* pGroup);
 
-  /// \brief Moves all 'next frame' tasks into the 'this frame' queues.
+  /// Moves all 'next frame' tasks into the 'this frame' queues.
   static void ReprioritizeFrameTasks();
 
-  /// \brief Executes tasks of priority 'SomeFrameMainThread', as long as the last duration between frames is no longer than fSmoothFrameMS.
+  /// Executes tasks of priority 'SomeFrameMainThread', as long as the last duration between frames is no longer than fSmoothFrameMS.
   static void ExecuteSomeFrameTasks(xiiTime smoothFrameTime);
 
 
-  /// \brief Helps executing tasks that are suitable for the calling thread. Returns true if a task was found and executed.
+  /// Helps executing tasks that are suitable for the calling thread. Returns true if a task was found and executed.
   static bool HelpExecutingTasks(const xiiTaskGroupID& WaitingForGroup);
 
   ///@}
@@ -110,17 +110,17 @@ private:
   ///@{
 
 public:
-  /// \brief Creates a new task group for one-time use. Groups need to be recreated every time a task is supposed to be inserted into the
+  /// Creates a new task group for one-time use. Groups need to be recreated every time a task is supposed to be inserted into the
   /// system.
   ///
   /// All tasks that are added to this group will be run with the same given \a Priority.
   /// Once all tasks in the group are finished and thus the group is finished, an optional \a Callback can be executed.
   static xiiTaskGroupID CreateTaskGroup(xiiTaskPriority::Enum priority, xiiOnTaskGroupFinishedCallback callback = xiiOnTaskGroupFinishedCallback()); // [tested]
 
-  /// \brief Adds a task to the given task group. The group must not yet have been started.
+  /// Adds a task to the given task group. The group must not yet have been started.
   static void AddTaskToGroup(xiiTaskGroupID group, const xiiSharedPtr<xiiTask>& pTask); // [tested]
 
-  /// \brief Adds a dependency on another group to \a Group. This means \a Group will not be execute before \a DependsOn has finished.
+  /// Adds a dependency on another group to \a Group. This means \a Group will not be execute before \a DependsOn has finished.
   ///
   /// \note Be careful with dependencies and task priorities. A task that has to execute 'this frame' should never depend on a task
   /// that needs only finish 'next frame', this might introduce very long and unnecessary waits.
@@ -130,22 +130,22 @@ public:
   /// won't get scheduled for execution, at all, until all its dependencies are actually finished.
   static void AddTaskGroupDependency(xiiTaskGroupID group, xiiTaskGroupID dependsOn); // [tested]
 
-  /// \brief Same as AddTaskGroupDependency() but batches multiple dependency additions
+  /// Same as AddTaskGroupDependency() but batches multiple dependency additions
   static void AddTaskGroupDependencyBatch(xiiArrayPtr<const xiiTaskGroupDependency> batch);
 
-  /// \brief Starts the task group. After this no further modifications on the group (new tasks or dependencies) are allowed.
+  /// Starts the task group. After this no further modifications on the group (new tasks or dependencies) are allowed.
   static void StartTaskGroup(xiiTaskGroupID group); // [tested]
 
-  /// \brief Same as StartTaskGroup() but batches multiple actions
+  /// Same as StartTaskGroup() but batches multiple actions
   static void StartTaskGroupBatch(xiiArrayPtr<const xiiTaskGroupID> batch);
 
-  /// \brief Returns whether the given \a Group id refers to a task group that has been finished already.
+  /// Returns whether the given \a Group id refers to a task group that has been finished already.
   ///
   /// There is no time frame in which group IDs are valid. You may call this function at any time, even 10 minutes later,
   /// and it will correctly determine the results.
   static bool IsTaskGroupFinished(xiiTaskGroupID group); // [tested]
 
-  /// \brief Cancels all the tasks in the given group.
+  /// Cancels all the tasks in the given group.
   ///
   /// XII_SUCCESS is returned, if all tasks were already finished or could be removed without waiting for any of them.
   /// XII_FAILURE is returned, if at least one task was being processed by another thread and could not be removed without waiting.
@@ -153,14 +153,14 @@ public:
   /// If bWaitForIt is true, the function returns only after it is guaranteed that all tasks are properly terminated.
   static xiiResult CancelGroup(xiiTaskGroupID group, xiiOnTaskRunning::Enum onTaskRunning = xiiOnTaskRunning::WaitTillFinished); // [tested]
 
-  /// \brief Blocks until all tasks in the given group have finished.
+  /// Blocks until all tasks in the given group have finished.
   ///
   /// If you need to wait for some other task to finish, this should always be the preferred method to do so.
   /// WaitForGroup will put the current thread to sleep and use thread signals to only wake it up again once the group is indeed
   /// finished. This is the most efficient way to wait for a task.
   static void WaitForGroup(xiiTaskGroupID group); // [tested]
 
-  /// \brief Blocks the current thread until the given delegate returns true.
+  /// Blocks the current thread until the given delegate returns true.
   ///
   /// If possible, prefer to use WaitForGroup() to wait for some task to finish, as that is the most efficient way.
   /// If not possible, prefer to use WaitForCondition() instead of rolling your own busy-loop for polling some state.
@@ -170,10 +170,10 @@ public:
   static void WaitForCondition(xiiDelegate<bool()> condition);
 
 private:
-  /// \brief Takes all the tasks in the given group and schedules them for execution, by inserting them into the proper task lists.
+  /// Takes all the tasks in the given group and schedules them for execution, by inserting them into the proper task lists.
   static void ScheduleGroupTasks(xiiTaskGroup* pGroup, bool bHighPriority);
 
-  /// \brief Is called whenever a dependency of pGroup has finished. Once all dependencies are finished, the group's tasks will get scheduled.
+  /// Is called whenever a dependency of pGroup has finished. Once all dependencies are finished, the group's tasks will get scheduled.
   static void DependencyHasFinished(xiiTaskGroup* pGroup);
 
   ///@}
@@ -182,7 +182,7 @@ private:
   ///@{
 
 public:
-  /// \brief Sets the number of threads to use for the different task categories.
+  /// Sets the number of threads to use for the different task categories.
   ///
   /// \a uiShortTasks and \a uiLongTasks must be at least 1 and should not exceed the number of available CPU cores.
   /// There will always be exactly one additional thread for file access tasks (xiiTaskPriority::FileAccess).
@@ -195,38 +195,38 @@ public:
   /// it is a good idea to just use the default settings.
   static void SetWorkerThreadCount(xiiInt32 iShortTasks = -1, xiiInt32 iLongTasks = -1); // [tested]
 
-  /// \brief Returns the maximum number of threads that should work on the given type of task at the same time.
+  /// Returns the maximum number of threads that should work on the given type of task at the same time.
   static xiiUInt32 GetWorkerThreadCount(xiiWorkerThreadType::Enum type);
 
-  /// \brief Returns the number of threads that have been allocated to potentially work on the given type of task.
+  /// Returns the number of threads that have been allocated to potentially work on the given type of task.
   ///
   /// CAREFUL! This is not the number of threads that will be active at the same time. Use GetWorkerThreadCount() for that.
   /// This is the maximum number of threads that may jump in, if too many threads are blocked. This number will change dynamically
   /// at runtime to prevent deadlocks and it can grow very, very large.
   static xiiUInt32 GetNumAllocatedWorkerThreads(xiiWorkerThreadType::Enum type);
 
-  /// \brief Returns the (thread local) type of tasks that would be executed on this thread
+  /// Returns the (thread local) type of tasks that would be executed on this thread
   static xiiWorkerThreadType::Enum GetCurrentThreadWorkerType();
 
-  /// \brief Returns the utilization (0.0 to 1.0) of the given thread. Note: This will only be valid, if FinishFrameTasks() is called once
+  /// Returns the utilization (0.0 to 1.0) of the given thread. Note: This will only be valid, if FinishFrameTasks() is called once
   /// per frame.
   ///
   /// Also optionally returns the number of tasks that were finished during the last frame.
   static double GetThreadUtilization(xiiWorkerThreadType::Enum type, xiiUInt32 uiThreadIndex, xiiUInt32* pNumTasksExecuted = nullptr);
 
-  /// \brief [internal] Wakes up or allocates up to \a uiNumThreads, unless enough threads are currently active and not blocked
+  /// [internal] Wakes up or allocates up to \a uiNumThreads, unless enough threads are currently active and not blocked
   static void WakeUpThreads(xiiWorkerThreadType::Enum type, xiiUInt32 uiNumThreads);
 
 private:
   friend class xiiTaskWorkerThread;
 
-  /// \brief Allocates \a uiAddThreads additional threads of \a type
+  /// Allocates \a uiAddThreads additional threads of \a type
   static void AllocateThreads(xiiWorkerThreadType::Enum type, xiiUInt32 uiAddThreads);
 
-  /// \brief Shuts down all worker threads. Does NOT finish the remaining tasks that were not started yet. Does not clear them either, though.
+  /// Shuts down all worker threads. Does NOT finish the remaining tasks that were not started yet. Does not clear them either, though.
   static void StopWorkerThreads();
 
-  /// \brief Uses a thread local variable to know the current thread type and to decide the range of task priorities that it may execute
+  /// Uses a thread local variable to know the current thread type and to decide the range of task priorities that it may execute
   static void DetermineTasksToExecuteOnThread(xiiTaskPriority::Enum& out_FirstPriority, xiiTaskPriority::Enum& out_LastPriority);
 
 private:
@@ -277,10 +277,10 @@ private:
   ///@{
 
 public:
-  /// \brief Writes the internal state of the xiiTaskSystem as a DGML graph.
+  /// Writes the internal state of the xiiTaskSystem as a DGML graph.
   static void WriteStateSnapshotToDGML(xiiDGMLGraph& ref_graph);
 
-  /// \brief Convenience function to write the task graph snapshot to a file. If no path is given, the file is written to
+  /// Convenience function to write the task graph snapshot to a file. If no path is given, the file is written to
   /// ":appdata/TaskGraphs/__date__.dgml"
   static void WriteStateSnapshotToFile(xiiStringView sPath = {});
 
@@ -291,7 +291,7 @@ private:
   ///@{
 
 public:
-  /// \brief Sets the target frame time that is supposed to not be exceeded.
+  /// Sets the target frame time that is supposed to not be exceeded.
   ///
   /// \see FinishFrameTasks() for more details.
   static void SetTargetFrameTime(xiiTime targetFrameTime = xiiTime::MakeFromSeconds(1.0 / 40.0) /* 40 FPS -> 25 ms */);

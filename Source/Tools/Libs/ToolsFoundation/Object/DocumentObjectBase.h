@@ -18,7 +18,7 @@ public:
 
   // Accessors
   const xiiUuid& GetGuid() const { return m_Guid; }
-  /// \brief Returns the RTTI type of the object that is represented by this xiiDocumentObject.
+  /// Returns the RTTI type of the object that is represented by this xiiDocumentObject.
   const xiiRTTI* GetType() const { return GetTypeAccessor().GetType(); }
 
   const xiiDocumentObjectManager* GetDocumentObjectManager() const { return m_pDocumentObjectManager; }

@@ -2,7 +2,7 @@
 
 #pragma once
 
-/// \brief Selection specifying file lock behavior on open
+/// Selection specifying file lock behavior on open
 struct xiiFileShareMode
 {
   enum Enum
@@ -13,7 +13,7 @@ struct xiiFileShareMode
   };
 };
 
-/// \brief For file seek operations this enum defines from which relative position the seek position is described.
+/// For file seek operations this enum defines from which relative position the seek position is described.
 struct xiiFileSeekMode
 {
   enum Enum

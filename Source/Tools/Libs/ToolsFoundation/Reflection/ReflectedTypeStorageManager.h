@@ -8,7 +8,7 @@
 class xiiReflectedTypeStorageAccessor;
 class xiiDocumentObject;
 
-/// \brief Manages all xiiReflectedTypeStorageAccessor instances.
+/// Manages all xiiReflectedTypeStorageAccessor instances.
 ///
 /// This class takes care of patching all xiiReflectedTypeStorageAccessor instances when their
 /// xiiRTTI is modified. It also provides the mapping from property name to the data
@@ -37,7 +37,7 @@ private:
       xiiVariant                m_DefaultValue;
     };
 
-    /// \brief Flattens all POD type properties of the given xiiRTTI into m_PathToStorageInfoTable.
+    /// Flattens all POD type properties of the given xiiRTTI into m_PathToStorageInfoTable.
     ///
     /// The functions first adds all parent class properties and then adds its own properties.
     /// POD type properties are added under the current path.

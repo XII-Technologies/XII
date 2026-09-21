@@ -52,7 +52,7 @@ public:
   virtual void Execute(const xiiVariant& value) override {};
 };
 
-/// \brief An action that represents a sub-menu. Can be within a menu bar, or the menu of a tool button).
+/// An action that represents a sub-menu. Can be within a menu bar, or the menu of a tool button).
 ///
 /// This class can be used directly, but then every menu entry has to be mapped individually into the menu.
 /// It is often more convenient to use derived types which already set up the content of the menu.
@@ -69,7 +69,7 @@ public:
   virtual void Execute(const xiiVariant& value) override {};
 };
 
-/// \brief A menu action whose content is determined when opening the menu.
+/// A menu action whose content is determined when opening the menu.
 ///
 /// Every time this menu gets opened, GetEntries() is executed,
 /// with the state of the previous menu items.
@@ -122,7 +122,7 @@ public:
   virtual void GetEntries(xiiDynamicArray<Item>& out_entries) = 0;
 };
 
-/// \brief An action that is displayed as a tool button that is clickable but also has a sub-menu that can be opened for selecting a different action.
+/// An action that is displayed as a tool button that is clickable but also has a sub-menu that can be opened for selecting a different action.
 class XII_GUIFOUNDATION_DLL xiiDynamicActionAndMenuAction : public xiiDynamicMenuAction
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDynamicActionAndMenuAction, xiiDynamicMenuAction);
@@ -151,7 +151,7 @@ protected:
   bool m_bVisible;
 };
 
-/// \brief A menu that lists all values of an enum type.
+/// A menu that lists all values of an enum type.
 class XII_GUIFOUNDATION_DLL xiiEnumerationMenuAction : public xiiDynamicMenuAction
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEnumerationMenuAction, xiiDynamicMenuAction);
@@ -166,7 +166,7 @@ protected:
   const xiiRTTI* m_pEnumerationType;
 };
 
-/// \brief The standard button action.
+/// The standard button action.
 class XII_GUIFOUNDATION_DLL xiiButtonAction : public xiiNamedAction
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiButtonAction, xiiNamedAction);
@@ -213,7 +213,7 @@ protected:
   bool m_bVisible;
 };
 
-/// \brief An action that represents an integer value within a fixed range, and gets displayed as a slider.
+/// An action that represents an integer value within a fixed range, and gets displayed as a slider.
 class XII_GUIFOUNDATION_DLL xiiSliderAction : public xiiNamedAction
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSliderAction, xiiNamedAction);

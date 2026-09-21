@@ -42,10 +42,10 @@ public:
     Error,
   };
 
-  /// \brief Helper function to instantiate a prefab without having to deal with resource acquisition.
+  /// Helper function to instantiate a prefab without having to deal with resource acquisition.
   static xiiPrefabResource::InstantiateResult InstantiatePrefab(const xiiPrefabResourceHandle& hPrefab, bool bBlockTillLoaded, xiiWorld& ref_world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options = {}, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues = nullptr);
 
-  /// \brief Creates an instance of this prefab in the given world.
+  /// Creates an instance of this prefab in the given world.
   void InstantiatePrefab(xiiWorld& ref_world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues = nullptr);
 
   void ApplyExposedParameterValues(const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues, const xiiDynamicArray<xiiGameObject*>& createdChildObjects, const xiiDynamicArray<xiiGameObject*>& createdRootObjects) const;

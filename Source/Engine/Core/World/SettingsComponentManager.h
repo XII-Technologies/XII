@@ -5,7 +5,7 @@
 #include <Core/World/ComponentManager.h>
 #include <Foundation/Types/UniquePtr.h>
 
-/// \brief A component manager that does no update at all on components and expects only a single instance to be created per world.
+/// A component manager that does no update at all on components and expects only a single instance to be created per world.
 ///
 /// Easy access to this single component is provided through the GetSingletonComponent() function.
 /// If a second component is created, the manager will log an error. The first created component will be used as the 'singleton',
@@ -20,7 +20,7 @@ public:
   xiiSettingsComponentManager(xiiWorld* pWorld);
   ~xiiSettingsComponentManager();
 
-  /// \brief Returns the first component of this type that has been created.
+  /// Returns the first component of this type that has been created.
   ComponentType*       GetSingletonComponent();
   const ComponentType* GetSingletonComponent() const;
 

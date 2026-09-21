@@ -10,7 +10,7 @@ class xiiScriptWorldModule;
 
 using xiiScriptCoroutineId = xiiGenericId<20, 12>;
 
-/// \brief A handle to a script coroutine which can be used to determine whether a coroutine is still running
+/// A handle to a script coroutine which can be used to determine whether a coroutine is still running
 /// even after the underlying coroutine object has already been deleted.
 ///
 /// \sa xiiScriptWorldModule::CreateCoroutine, xiiScriptWorldModule::IsCoroutineFinished
@@ -22,7 +22,7 @@ struct xiiScriptCoroutineHandle
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiScriptCoroutineHandle);
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiScriptCoroutineHandle);
 
-/// \brief Base class of script coroutines.
+/// Base class of script coroutines.
 ///
 /// A coroutine is a function that can be distributed over multiple frames and behaves similar to a mini state machine.
 /// That is why coroutines are actually individual objects that keep track of their state rather than simple functions.
@@ -95,7 +95,7 @@ private:
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiScriptCoroutine);
 
-/// \brief Base class of coroutines which are implemented in C++ to allow automatic unpacking of the arguments from variants
+/// Base class of coroutines which are implemented in C++ to allow automatic unpacking of the arguments from variants
 template <typename Derived, class... Args>
 class xiiTypedScriptCoroutine : public xiiScriptCoroutine
 {
@@ -112,7 +112,7 @@ private:
   }
 };
 
-/// \brief Mode that decides what should happen if a new coroutine is created while there is already another coroutine running with the same name
+/// Mode that decides what should happen if a new coroutine is created while there is already another coroutine running with the same name
 /// on a given instance.
 ///
 /// \sa xiiScriptWorldModule::CreateCoroutine
@@ -132,7 +132,7 @@ struct xiiScriptCoroutineCreationMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiScriptCoroutineCreationMode);
 
-/// \brief A coroutine type that stores a custom allocator.
+/// A coroutine type that stores a custom allocator.
 ///
 /// The custom allocator allows to pass more data to the created coroutine object than the default allocator.
 /// E.g. this is used to pass the visual script graph to a visual script coroutine without the user needing to know
@@ -148,7 +148,7 @@ private:
   xiiUniquePtr<xiiRTTIAllocator> m_pAllocatorStorage;
 };
 
-/// \brief A function property that creates an instance of the given coroutine type and starts it immediately.
+/// A function property that creates an instance of the given coroutine type and starts it immediately.
 class XII_CORE_DLL xiiScriptCoroutineFunctionProperty : public xiiScriptFunctionProperty
 {
 public:
@@ -179,7 +179,7 @@ protected:
   xiiEnum<xiiScriptCoroutineCreationMode> m_CreationMode;
 };
 
-/// \brief A message handler that creates an instance of the given coroutine type and starts it immediately.
+/// A message handler that creates an instance of the given coroutine type and starts it immediately.
 class XII_CORE_DLL xiiScriptCoroutineMessageHandler : public xiiScriptMessageHandler
 {
 public:
@@ -194,7 +194,7 @@ protected:
   xiiEnum<xiiScriptCoroutineCreationMode> m_CreationMode;
 };
 
-/// \brief HashHelper implementation so coroutine handles can be used as key in a hash table. Also needed to store in a variant.
+/// HashHelper implementation so coroutine handles can be used as key in a hash table. Also needed to store in a variant.
 template <>
 struct xiiHashHelper<xiiScriptCoroutineHandle>
 {
@@ -203,7 +203,7 @@ struct xiiHashHelper<xiiScriptCoroutineHandle>
   XII_ALWAYS_INLINE static bool Equal(xiiScriptCoroutineHandle a, xiiScriptCoroutineHandle b) { return a == b; }
 };
 
-/// \brief Currently not implemented as it is not needed for coroutine handles.
+/// Currently not implemented as it is not needed for coroutine handles.
 XII_ALWAYS_INLINE void operator<<(xiiStreamWriter& ref_stream, const xiiScriptCoroutineHandle& hValue)
 {
   XII_IGNORE_UNUSED(ref_stream);

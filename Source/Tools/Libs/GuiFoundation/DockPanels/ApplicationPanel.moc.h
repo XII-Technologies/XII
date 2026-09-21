@@ -15,7 +15,7 @@ namespace ads
   class CDockManager;
 }
 
-/// \brief Base class for all panels that are supposed to be application wide (not tied to some document).
+/// Base class for all panels that are supposed to be application wide (not tied to some document).
 class XII_GUIFOUNDATION_DLL xiiQtApplicationPanel : public ads::CDockWidget
 {
 public:

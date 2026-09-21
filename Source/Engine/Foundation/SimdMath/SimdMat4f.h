@@ -4,7 +4,7 @@
 
 #include <Foundation/SimdMath/SimdVec4f.h>
 
-/// \brief A 4x4 matrix class
+/// A 4x4 matrix class
 class XII_FOUNDATION_DLL xiiSimdMat4f
 {
 public:
@@ -12,50 +12,50 @@ public:
 
   xiiSimdMat4f();
 
-  /// \brief Returns a zero matrix.
+  /// Returns a zero matrix.
   [[nodiscard]] static xiiSimdMat4f MakeZero();
 
-  /// \brief Returns an identity matrix.
+  /// Returns an identity matrix.
   [[nodiscard]] static xiiSimdMat4f MakeIdentity();
 
-  /// \brief Creates a matrix from 16 values that are in row-major layout.
+  /// Creates a matrix from 16 values that are in row-major layout.
   [[nodiscard]] static xiiSimdMat4f MakeFromRowMajorArray(const float* const pData);
 
-  /// \brief Creates a matrix from 16 values that are in column-major layout.
+  /// Creates a matrix from 16 values that are in column-major layout.
   [[nodiscard]] static xiiSimdMat4f MakeFromColumnMajorArray(const float* const pData);
 
-  /// \brief Creates a matrix from 4 column vectors.
+  /// Creates a matrix from 4 column vectors.
   [[nodiscard]] static xiiSimdMat4f MakeFromColumns(const xiiSimdVec4f& vCol0, const xiiSimdVec4f& vCol1, const xiiSimdVec4f& vCol2, const xiiSimdVec4f& vCol3);
 
-  /// \brief Creates a matrix from 16 values. Naming is "column-n row-m"
+  /// Creates a matrix from 16 values. Naming is "column-n row-m"
   [[nodiscard]] static xiiSimdMat4f MakeFromValues(float f1r1, float f2r1, float f3r1, float f4r1, float f1r2, float f2r2, float f3r2, float f4r2, float f1r3, float f2r3, float f3r3, float f4r3, float f1r4, float f2r4, float f3r4, float f4r4);
 
   void GetAsArray(float* out_pData, xiiMatrixLayout::Enum layout) const; // [tested]
 
 public:
-  /// \brief Transposes this matrix.
+  /// Transposes this matrix.
   void Transpose(); // [tested]
 
-  /// \brief Returns the transpose of this matrix.
+  /// Returns the transpose of this matrix.
   xiiSimdMat4f GetTranspose() const; // [tested]
 
-  /// \brief Inverts this matrix. Return value indicates whether the matrix could be inverted.
+  /// Inverts this matrix. Return value indicates whether the matrix could be inverted.
   xiiResult Invert(const xiiSimdFloat& fEpsilon = xiiMath::SmallEpsilon<float>()); // [tested]
 
-  /// \brief Returns the inverse of this matrix.
+  /// Returns the inverse of this matrix.
   xiiSimdMat4f GetInverse(const xiiSimdFloat& fEpsilon = xiiMath::SmallEpsilon<float>()) const; // [tested]
 
 public:
-  /// \brief Equality Check with epsilon
+  /// Equality Check with epsilon
   bool IsEqual(const xiiSimdMat4f& rhs, const xiiSimdFloat& fEpsilon) const; // [tested]
 
-  /// \brief Checks whether this is an identity matrix.
+  /// Checks whether this is an identity matrix.
   bool IsIdentity(const xiiSimdFloat& fEpsilon = xiiMath::DefaultEpsilon<float>()) const; // [tested]
 
-  /// \brief Checks whether all components are finite numbers.
+  /// Checks whether all components are finite numbers.
   bool IsValid() const; // [tested]
 
-  /// \brief Checks whether any component is NaN.
+  /// Checks whether any component is NaN.
   bool IsNaN() const; // [tested]
 
 public:
@@ -63,10 +63,10 @@ public:
   void GetRows(xiiSimdVec4f& ref_vRow0, xiiSimdVec4f& ref_vRow1, xiiSimdVec4f& ref_vRow2, xiiSimdVec4f& ref_vRow3) const;   // [tested]
 
 public:
-  /// \brief Matrix-vector multiplication, assuming the 4th component of the vector is one (default behavior).
+  /// Matrix-vector multiplication, assuming the 4th component of the vector is one (default behavior).
   [[nodiscard]] xiiSimdVec4f TransformPosition(const xiiSimdVec4f& v) const; // [tested]
 
-  /// \brief Matrix-vector multiplication, assuming the 4th component of the vector is zero. So, rotation/scaling only.
+  /// Matrix-vector multiplication, assuming the 4th component of the vector is zero. So, rotation/scaling only.
   [[nodiscard]] xiiSimdVec4f TransformDirection(const xiiSimdVec4f& v) const; // [tested]
 
   [[nodiscard]] xiiSimdMat4f operator*(const xiiSimdMat4f& rhs) const; // [tested]

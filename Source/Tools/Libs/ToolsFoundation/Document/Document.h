@@ -26,7 +26,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiObjectAccessorChangeEvent
   xiiObjectAccessorBase* m_pNewObjectAccessor = nullptr;
 };
 
-/// \brief Stores meta data for document objects, such as prefab information and visibility in the editor.
+/// Stores meta data for document objects, such as prefab information and visibility in the editor.
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObjectMetaData : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDocumentObjectMetaData, xiiReflectedClass);
@@ -55,7 +55,7 @@ enum class xiiManipulatorSearchStrategy : xiiUInt8
   ChildrenOfSelectedObject ///< Search for manipulators on the children of the selected object.
 };
 
-/// \brief Base class for all editable documents in the editor. Handles state, object management, undo/redo, and more.
+/// Base class for all editable documents in the editor. Handles state, object management, undo/redo, and more.
 class XII_TOOLSFOUNDATION_DLL xiiDocument : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDocument, xiiReflectedClass);
@@ -85,13 +85,13 @@ public:
   /// \name Main / Sub-Document Functions
   ///@{
 
-  /// \brief Returns whether this document is a main document, i.e. self contained.
+  /// Returns whether this document is a main document, i.e. self contained.
   bool IsMainDocument() const { return m_pHostDocument == this; }
-  /// \brief Returns whether this document is a sub-document, i.e. is part of another document.
+  /// Returns whether this document is a sub-document, i.e. is part of another document.
   bool IsSubDocument() const { return m_pHostDocument != this; }
-  /// \brief In case this is a sub-document, returns the main document this belongs to. Otherwise 'this' is returned.
+  /// In case this is a sub-document, returns the main document this belongs to. Otherwise 'this' is returned.
   const xiiDocument* GetMainDocument() const { return m_pHostDocument; }
-  /// \brief At any given time, only the active sub-document can be edited. This returns the active sub-document which can also be this document itself. Changes to the active sub-document are generally triggered by xiiDocumentObjectStructureEvent::Type::AfterReset.
+  /// At any given time, only the active sub-document can be edited. This returns the active sub-document which can also be this document itself. Changes to the active sub-document are generally triggered by xiiDocumentObjectStructureEvent::Type::AfterReset.
   const xiiDocument* GetActiveSubDocument() const { return m_pActiveSubDocument; }
   xiiDocument*       GetMainDocument() { return m_pHostDocument; }
   xiiDocument*       GetActiveSubDocument() { return m_pActiveSubDocument; }
@@ -105,38 +105,38 @@ protected:
   ///@{
 
 public:
-  /// \brief Returns the absolute path to the document.
+  /// Returns the absolute path to the document.
   xiiStringView GetDocumentPath() const { return m_sDocumentPath; }
 
-  /// \brief Saves the document, if it is modified.
+  /// Saves the document, if it is modified.
   /// If bForce is true, the document will be written, even if it is not considered modified.
   xiiStatus SaveDocument(bool bForce = false);
-  /// \brief Callback type for asynchronous save operations.
+  /// Callback type for asynchronous save operations.
   using AfterSaveCallback = xiiDelegate<void(xiiDocument*, xiiStatus)>;
-  /// \brief Saves the document asynchronously. Calls the callback when done.
+  /// Saves the document asynchronously. Calls the callback when done.
   xiiTaskGroupID SaveDocumentAsync(AfterSaveCallback callback, bool bForce = false);
-  /// \brief Updates the document path after a rename operation.
+  /// Updates the document path after a rename operation.
   void DocumentRenamed(xiiStringView sNewDocumentPath);
 
-  /// \brief Reads a document from disk and parses its header, objects, and types.
+  /// Reads a document from disk and parses its header, objects, and types.
   static xiiStatus ReadDocument(xiiStringView sDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes);
-  /// \brief Reads and registers types from the given object graph.
+  /// Reads and registers types from the given object graph.
   static xiiStatus ReadAndRegisterTypes(const xiiAbstractObjectGraph& types);
 
-  /// \brief Loads the document from disk.
+  /// Loads the document from disk.
   xiiStatus LoadDocument() { return InternalLoadDocument(); }
 
-  /// \brief Brings the corresponding window to the front.
+  /// Brings the corresponding window to the front.
   void EnsureVisible();
 
-  /// \brief Returns the document manager that owns this document.
+  /// Returns the document manager that owns this document.
   xiiDocumentManager* GetDocumentManager() const { return m_pDocumentManager; }
 
   bool HasWindowBeenRequested() const { return m_bWindowRequested; }
 
   const xiiDocumentTypeDescriptor* GetDocumentTypeDescriptor() const { return m_pTypeDescriptor; }
 
-  /// \brief Returns the document's type name. Same as GetDocumentTypeDescriptor()->m_sDocumentTypeName.
+  /// Returns the document's type name. Same as GetDocumentTypeDescriptor()->m_sDocumentTypeName.
   xiiStringView GetDocumentTypeName() const
   {
     if (m_pTypeDescriptor == nullptr)
@@ -150,7 +150,7 @@ public:
 
   const xiiDocumentInfo* GetDocumentInfo() const { return m_pDocumentInfo; }
 
-  /// \brief Asks the document whether a restart of the engine process is allowed at this time.
+  /// Asks the document whether a restart of the engine process is allowed at this time.
   ///
   /// Documents that are currently interacting with the engine process (active play-the-game mode) should return false.
   /// All others should return true.
@@ -161,7 +161,7 @@ public:
   /// \name Clipboard Functions
   ///@{
 
-  /// \brief Information about a pasted object, including its parent and index.
+  /// Information about a pasted object, including its parent and index.
   struct PasteInfo
   {
     XII_DECLARE_POD_TYPE();
@@ -171,11 +171,11 @@ public:
     xiiInt32           m_Index   = -1;      ///< The index at which to insert the object.
   };
 
-  /// \brief Whether this document supports pasting the given mime format into it
+  /// Whether this document supports pasting the given mime format into it
   virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const {}
-  /// \brief Creates the abstract graph of data to be copied and returns the mime type for the clipboard to identify the data
+  /// Creates the abstract graph of data to be copied and returns the mime type for the clipboard to identify the data
   virtual bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const { return false; };
-  /// \brief Pastes objects from the given object graph into the document.
+  /// Pastes objects from the given object graph into the document.
   virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType)
   {
     return false;
@@ -185,10 +185,10 @@ public:
   /// \name Inter Document Communication
   ///@{
 
-  /// \brief This will deliver the message to all open documents. The documents may respond, e.g. by modifying the content of the message.
+  /// This will deliver the message to all open documents. The documents may respond, e.g. by modifying the content of the message.
   void BroadcastInterDocumentMessage(xiiReflectedClass* pMessage, xiiDocument* pSender);
 
-  /// \brief Called on all documents when BroadcastInterDocumentMessage() is called.
+  /// Called on all documents when BroadcastInterDocumentMessage() is called.
   ///
   /// Use the RTTI information to identify whether the message is of interest.
   virtual void OnInterDocumentMessage(xiiReflectedClass* pMessage, xiiDocument* pSender) {}
@@ -197,7 +197,7 @@ public:
   /// \name Editing Functionality
   ///@{
 
-  /// \brief Allows to return a single input context that currently overrides all others (in priority).
+  /// Allows to return a single input context that currently overrides all others (in priority).
   ///
   /// Used to implement custom tools that need to have priority over selection and camera movement.
   virtual xiiEditorInputContext* GetEditorInputContextOverride() { return nullptr; }
@@ -206,27 +206,27 @@ public:
   /// \name Misc Functions
   ///@{
 
-  /// \brief Deletes all currently selected objects in the document.
+  /// Deletes all currently selected objects in the document.
   virtual void DeleteSelectedObjects() const;
 
-  /// \brief Returns the set of unknown object types encountered during loading.
+  /// Returns the set of unknown object types encountered during loading.
   const xiiSet<xiiString>& GetUnknownObjectTypes() const { return m_UnknownObjectTypes; }
-  /// \brief Returns the number of unknown object type instances encountered during loading.
+  /// Returns the number of unknown object type instances encountered during loading.
   xiiUInt32 GetUnknownObjectTypeInstances() const { return m_uiUnknownObjectTypeInstances; }
 
-  /// \brief If disabled, this document will not be put into the recent files list.
+  /// If disabled, this document will not be put into the recent files list.
   void SetAddToResetFilesList(bool b) { m_bAddToRecentFilesList = b; }
 
-  /// \brief Whether this document shall be put into the recent files list.
+  /// Whether this document shall be put into the recent files list.
   bool GetAddToRecentFilesList() const { return m_bAddToRecentFilesList; }
 
-  /// \brief Broadcasts a status message event. The window that displays the document may show this in some form, e.g. in the status bar.
+  /// Broadcasts a status message event. The window that displays the document may show this in some form, e.g. in the status bar.
   void ShowDocumentStatus(const xiiFormatString& msg) const;
 
-  /// \brief Tries to compute the position and rotation for an object in the document. Returns XII_SUCCESS if it was possible.
+  /// Tries to compute the position and rotation for an object in the document. Returns XII_SUCCESS if it was possible.
   virtual xiiResult ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_result) const;
 
-  /// \brief Needed by xiiManipulatorManager to know where to look for the manipulator attributes.
+  /// Needed by xiiManipulatorManager to know where to look for the manipulator attributes.
   ///
   /// Override this function for document types that use manipulators.
   /// The xiiManipulatorManager will assert that the document type doesn't return 'None' once it is in use.
@@ -236,53 +236,53 @@ public:
   /// \name Prefab Functions
   ///@{
 
-  /// \brief Whether the document allows to create prefabs in it. This may not be allowed for prefab documents themselves, to prevent nested prefabs.
+  /// Whether the document allows to create prefabs in it. This may not be allowed for prefab documents themselves, to prevent nested prefabs.
   virtual bool ArePrefabsAllowed() const { return true; }
 
-  /// \brief Updates ALL prefabs in the document with the latest changes. Merges the current prefab templates with the instances in the document.
+  /// Updates ALL prefabs in the document with the latest changes. Merges the current prefab templates with the instances in the document.
   virtual void UpdatePrefabs();
 
-  /// \brief Resets the given objects to their template prefab state, if they have local modifications.
+  /// Resets the given objects to their template prefab state, if they have local modifications.
   void RevertPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection);
 
-  /// \brief Removes the link between a prefab instance and its template, turning the instance into a regular object.
+  /// Removes the link between a prefab instance and its template, turning the instance into a regular object.
   virtual void UnlinkPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection);
 
-  /// \brief Creates a prefab document from the current selection.
+  /// Creates a prefab document from the current selection.
   virtual xiiStatus CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
-  /// \brief Creates a prefab document from the given root objects.
+  /// Creates a prefab document from the given root objects.
   virtual xiiStatus CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
 
-  /// \brief Replaces the given object by a prefab instance. Returns new guid of replaced object.
+  /// Replaces the given object by a prefab instance. Returns new guid of replaced object.
   virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiStringView sPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab);
-  /// \brief Reverts the given object to its prefab state. Returns new guid of reverted object.
+  /// Reverts the given object to its prefab state. Returns new guid of reverted object.
   virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject);
 
   ///@}
 
 public:
-  /// \brief Meta data for all document objects.
+  /// Meta data for all document objects.
   xiiUniquePtr<xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>> m_DocumentObjectMetaData;
 
-  /// \brief Event for document-specific notifications.
+  /// Event for document-specific notifications.
   mutable xiiEvent<const xiiDocumentEvent&> m_EventsOne;
-  /// \brief Static event for notifications across all documents.
+  /// Static event for notifications across all documents.
   static xiiEvent<const xiiDocumentEvent&> s_EventsAny;
 
-  /// \brief Event for object accessor change notifications.
+  /// Event for object accessor change notifications.
   mutable xiiEvent<const xiiObjectAccessorChangeEvent&> m_ObjectAccessorChangeEvents;
 
 protected:
   void SetModified(bool b);
   void SetReadOnly(bool b);
-  /// \brief Internal save implementation. Returns a task group ID for async save.
+  /// Internal save implementation. Returns a task group ID for async save.
   virtual xiiTaskGroupID InternalSaveDocument(AfterSaveCallback callback);
-  /// \brief Internal load implementation. Loads the document from disk.
+  /// Internal load implementation. Loads the document from disk.
   virtual xiiStatus InternalLoadDocument();
-  /// \brief Creates the document info structure. Must be implemented by derived classes.
+  /// Creates the document info structure. Must be implemented by derived classes.
   virtual xiiDocumentInfo* CreateDocumentInfo() = 0;
 
-  /// \brief Hook to execute additional code after successfully saving a document. E.g. manual asset transform can be done here.
+  /// Hook to execute additional code after successfully saving a document. E.g. manual asset transform can be done here.
   virtual void InternalAfterSaveDocument() {}
 
   virtual void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const;
@@ -298,7 +298,7 @@ protected:
   /// \name Prefab Functions
   ///@{
 
-  /// \brief Recursively updates all prefab instances starting from the given object.
+  /// Recursively updates all prefab instances starting from the given object.
   virtual void UpdatePrefabsRecursive(xiiDocumentObject* pObject);
   virtual void UpdatePrefabObject(xiiDocumentObject* pObject, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, xiiStringView sBasePrefab);
 
@@ -320,10 +320,10 @@ private:
 
   void SetupDocumentInfo(const xiiDocumentTypeDescriptor* pTypeDescriptor);
 
-  /// \brief The document manager that owns this document.
+  /// The document manager that owns this document.
   xiiDocumentManager* m_pDocumentManager = nullptr;
 
-  /// \brief The absolute path to the document file.
+  /// The absolute path to the document file.
   xiiString m_sDocumentPath;
   bool      m_bModified             = true;
   bool      m_bReadOnly             = false;
@@ -331,9 +331,9 @@ private:
   bool      m_bAddToRecentFilesList = true;
   xiiTime   m_ModifiedTime;
 
-  /// \brief Set of unknown object types encountered during loading.
+  /// Set of unknown object types encountered during loading.
   xiiSet<xiiString> m_UnknownObjectTypes;
-  /// \brief Number of unknown object type instances encountered during loading.
+  /// Number of unknown object type instances encountered during loading.
   xiiUInt32 m_uiUnknownObjectTypeInstances = 0U;
 
   xiiTaskGroupID m_ActiveSaveTask;

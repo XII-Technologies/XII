@@ -49,21 +49,21 @@ public:
 
   static void ParsePermutationVariableConfiguration(xiiStringView sPermutationVarConfig, xiiVariant& out_defaultValue, EnumDefinition& out_enumDefinition);
 
-  /// \brief Tries to find shader resource declarations inside the shader source.
+  /// Tries to find shader resource declarations inside the shader source.
   ///
   /// Used by the shader compiler implementations to generate resource mappings to sets/slots without creating conflicts across shader stages. For a list of supported resource declarations and possible pitfalls, please refer to https://docs.xiitechnologies.com/graphics/shaders/shader-resources.html.
   /// \param sShaderStageSource The shader source to parse.
   /// \param out_Resources The shader resources found inside the source.
   static void ParseShaderResources(xiiStringView sShaderStageSource, xiiDynamicArray<xiiGALShaderResourceDefinition>& out_resources);
 
-  /// \brief Delegate to creates a new declaration and register binding for a specific shader xiiGALShaderResourceDefinition.
+  /// Delegate to creates a new declaration and register binding for a specific shader xiiGALShaderResourceDefinition.
   /// \param sPlatform The platform for which the shader is being compiled. Will be one of the values returned by GetSupportedPlatforms.
   /// \param sDeclaration The shader resource declaration without any attributes, e.g. "Texture2D DiffuseTexture"
   /// \param binding The binding that needs to be set on the output out_sDeclaration.
   /// \param out_sDeclaration The new declaration that changes sDeclaration according to the provided 'binding', e.g. "Texture2D DiffuseTexture : register(t0, space5)"
   using CreateResourceDeclaration = xiiDelegate<void(xiiStringView, xiiStringView, const xiiGALShaderResourceDescription&, xiiStringBuilder&)>;
 
-  /// \brief Merges the shader resource bindings of all used shader stages.
+  /// Merges the shader resource bindings of all used shader stages.
   ///
   /// The function can fail if a shader resource of the same name has different signatures in two stages. E.g. the type, slot or set is different. Shader resources must be uniquely identified via name.
   /// \param spd The shader currently being processed.
@@ -72,10 +72,10 @@ public:
   /// \return Returns failure if the shader stages could not be merged.
   static xiiResult MergeShaderResourceBindings(const xiiGALShaderProgramData& spd, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& out_bindings, xiiLogInterface* pLog);
 
-  /// \brief Makes sure that bindings fulfills the basic requirements that the graphics abstraction layer (GAL) has for resource bindings in a shader, e.g. that each binding has a set / slot set.
+  /// Makes sure that bindings fulfills the basic requirements that the graphics abstraction layer (GAL) has for resource bindings in a shader, e.g. that each binding has a set / slot set.
   static xiiResult SanityCheckShaderResourceBindings(const xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& bindings, xiiLogInterface* pLog);
 
-  /// \brief Creates a new shader source code that patches all shader resources to contain fixed set / slot bindings.
+  /// Creates a new shader source code that patches all shader resources to contain fixed set / slot bindings.
   /// \param sPlatform The platform for which the shader should be patched.
   /// \param sShaderStageSource The original shader source code that should be patched.
   /// \param resources A list of all shader resources that need to be patched within sShaderStageSource.

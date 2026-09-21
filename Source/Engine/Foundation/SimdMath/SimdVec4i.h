@@ -6,7 +6,7 @@
 
 class xiiSimdVec4u;
 
-/// \brief A SIMD 4-component vector class of signed 32b integers
+/// A SIMD 4-component vector class of signed 32b integers
 class XII_FOUNDATION_DLL xiiSimdVec4i
 {
 public:
@@ -20,7 +20,7 @@ public:
 
   xiiSimdVec4i(xiiInternal::QuadInt v); // [tested]
 
-  /// \brief Creates a xiiSimdVec4i that is initialized to zero.
+  /// Creates a xiiSimdVec4i that is initialized to zero.
   [[nodiscard]] static xiiSimdVec4i MakeZero(); // [tested]
 
   void Set(xiiInt32 iXyzw); // [tested]
@@ -55,7 +55,7 @@ public:
   template <xiiSwizzle::Enum s>
   xiiSimdVec4i Get() const; // [tested]
 
-  ///\brief x = this[s0], y = this[s1], z = other[s2], w = other[s3]
+  ///x = this[s0], y = this[s1], z = other[s2], w = other[s3]
   template <xiiSwizzle::Enum s>
   [[nodiscard]] xiiSimdVec4i GetCombined(const xiiSimdVec4i& other) const; // [tested]
 

@@ -9,13 +9,13 @@
 
 class XII_FOUNDATION_DLL xiiDataTransfer;
 
-/// \brief A small wrapper class around a xiiTelemetryMessage for sending a 'data transfer'. See xiiDataTransfer for more details.
+/// A small wrapper class around a xiiTelemetryMessage for sending a 'data transfer'. See xiiDataTransfer for more details.
 class XII_FOUNDATION_DLL xiiDataTransferObject
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiDataTransferObject);
 
 public:
-  /// \brief xiiDataTransferObject instances should always be created on the stack and should be very short lived.
+  /// xiiDataTransferObject instances should always be created on the stack and should be very short lived.
   ///
   /// \param BelongsTo
   ///   The xiiDataTransfer through which the data is going to be sent shortly.
@@ -31,15 +31,15 @@ public:
   ///   as you might want to send data with mime type 'text/json' but store it on disk as '.savegame'.
   xiiDataTransferObject(xiiDataTransfer& ref_belongsTo, xiiStringView sObjectName, xiiStringView sMimeType, xiiStringView sFileExtension);
 
-  /// \brief The destructor will assert if the data has not been transmitted.
+  /// The destructor will assert if the data has not been transmitted.
   ~xiiDataTransferObject();
 
-  /// \brief Returns the stream writer that you need to use to write the data into the object.
+  /// Returns the stream writer that you need to use to write the data into the object.
   ///
   /// When finished writing all data to the object, you should call Transmit().
   xiiStreamWriter& GetWriter() { return m_Msg.GetWriter(); }
 
-  /// \brief Will initiate the data transfer.
+  /// Will initiate the data transfer.
   void Transmit();
 
 private:
@@ -50,7 +50,7 @@ private:
   xiiTelemetryMessage m_Msg;
 };
 
-/// \brief A 'data transfer' is a blob of data that an application can send to connected tools such as xiiInspector upon request.
+/// A 'data transfer' is a blob of data that an application can send to connected tools such as xiiInspector upon request.
 ///
 /// Data transfers can be used to allow an application to send large amounts of data to tools such as xiiInspector, which can then
 /// display or process them somehow. An example usage is to send a screenshot or the different textures of the G-Buffer for analysis.
@@ -76,22 +76,22 @@ private:
 class XII_FOUNDATION_DLL xiiDataTransfer
 {
 public:
-  /// \brief By default the data transfer is deactivated.
+  /// By default the data transfer is deactivated.
   xiiDataTransfer();
 
-  /// \brief Deactivates the data transfer (sends this info via xiiTelemetry).
+  /// Deactivates the data transfer (sends this info via xiiTelemetry).
   virtual ~xiiDataTransfer();
 
-  /// \brief Disables the data transfer. It will not show up in xiiInspector anymore and calling Transfer() on it will be ignored.
+  /// Disables the data transfer. It will not show up in xiiInspector anymore and calling Transfer() on it will be ignored.
   void DisableDataTransfer();
 
-  /// \brief Enables the data transfer. It will show up with the given name in xiiInspector.
+  /// Enables the data transfer. It will show up with the given name in xiiInspector.
   void EnableDataTransfer(xiiStringView sDataName);
 
-  /// \brief Sets the IsTransferRequested() state to true. Ignored if the data transfer is disabled.
+  /// Sets the IsTransferRequested() state to true. Ignored if the data transfer is disabled.
   void RequestDataTransfer();
 
-  /// \brief Returns whether the data transfer has been requested. Always returns false while the data transfer is disabled.
+  /// Returns whether the data transfer has been requested. Always returns false while the data transfer is disabled.
   ///
   /// If bReset is set to false, the request state will not be reset, which can be used to 'peek' at the current state.
   /// By default the request state is reset to false afterwards, the application should answer the request.
@@ -102,7 +102,7 @@ private:
 
   void SendStatus();
 
-  /// \brief The data in the given xiiDataTransferObject is sent via xiiTelemetry to all connected tools, which can then display or process it.
+  /// The data in the given xiiDataTransferObject is sent via xiiTelemetry to all connected tools, which can then display or process it.
   void Transfer(xiiDataTransferObject& Object);
 
 private:

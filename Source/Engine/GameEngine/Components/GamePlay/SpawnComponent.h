@@ -61,17 +61,17 @@ public:
   xiiSpawnComponent();
   ~xiiSpawnComponent();
 
-  /// \brief Checks whether the last spawn time was long enough ago that a call to TriggerManualSpawn() would succeed.
+  /// Checks whether the last spawn time was long enough ago that a call to TriggerManualSpawn() would succeed.
   bool CanTriggerManualSpawn() const; // [ scriptable ]
 
-  /// \brief Spawns a new object, unless the minimum spawn delay has not been reached between calls to this function.
+  /// Spawns a new object, unless the minimum spawn delay has not been reached between calls to this function.
   ///
   /// Manual spawns and continuous (scheduled) spawns are independent from each other regarding minimum spawn delays.
   /// If this function is called in too short intervals, it is ignored and false is returned.
   /// Returns true, if an object was spawned.
   bool TriggerManualSpawn(bool bIgnoreSpawnDelay = false, const xiiVec3& vLocalOffset = xiiVec3::MakeZero()); // [ scriptable ]
 
-  /// \brief Unless a spawn is already scheduled, this will schedule one within the configured time frame.
+  /// Unless a spawn is already scheduled, this will schedule one within the configured time frame.
   ///
   /// If continuous spawning is enabled, this will kick off the first spawn and then continue indefinitely.
   /// To stop continuously spawning, remove the continuous spawn flag.

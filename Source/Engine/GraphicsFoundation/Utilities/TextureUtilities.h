@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/Resources/Texture.h>
 
-/// \brief This describes the mip level properties.
+/// This describes the mip level properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMipLevelProperties : public xiiHashableStruct<xiiGALMipLevelProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -17,7 +17,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMipLevelProperties : public xiiHashableS
   xiiUInt64  m_uiMipSize        = 0;                ///< The total mip level data size in bytes.
 };
 
-/// \brief This describes the information required to perform a copy operation between a buffer and a texture.
+/// This describes the information required to perform a copy operation between a buffer and a texture.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferToTextureCopyDescription : public xiiHashableStruct<xiiGALBufferToTextureCopyDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -34,30 +34,30 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferToTextureCopyDescription : public 
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureUtilities
 {
 public:
-  /// \brief Returns true if all components of the xiiGALTextureComponentMapping are xiiGALTextureComponentSwizzle::Identity.
+  /// Returns true if all components of the xiiGALTextureComponentMapping are xiiGALTextureComponentSwizzle::Identity.
   [[nodiscard]] static bool IsIdentityComponentMapping(const xiiGALTextureComponentMapping& mapping);
 
-  /// \brief This returns the basic texture information for a particular format.
+  /// This returns the basic texture information for a particular format.
   ///
   /// \param format - The texture format for which to provide the information.
   ///
   /// \return A const reference to the xiiGALResourceFormatDescription structure containing the texture format description.
   [[nodiscard]] static const xiiGALResourceFormatDescription& GetResourceFormatProperties(xiiEnum<xiiGALResourceFormat> format);
 
-  /// \brief This returns the multi-planar format information for a particular format.
+  /// This returns the multi-planar format information for a particular format.
   ///
   /// \param format - The texture format for which to provide the information.
   ///
   /// \return A const reference to the xiiGALMultiPlanarFormatDescription structure containing the multi-planar format description.
   [[nodiscard]] static const xiiGALMultiPlanarFormatDescription& GetMultiPlanarFormatProperties(xiiEnum<xiiGALResourceFormat> format);
 
-  /// \brief Returns true if the given format is a multi-planar format.
+  /// Returns true if the given format is a multi-planar format.
   [[nodiscard]] static XII_ALWAYS_INLINE bool IsCompressed(xiiEnum<xiiGALResourceFormat> format)
   {
     return !xiiGALResourceFormat::IsMultiplanar(format) && GetResourceFormatProperties(format).IsCompressed();
   }
 
-  /// \brief Returns the number of components for a given texture format.
+  /// Returns the number of components for a given texture format.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetComponentCount(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -66,7 +66,7 @@ public:
     return GetResourceFormatProperties(format).m_uiComponentCount;
   }
 
-  /// \brief Returns the bits per component for a given texture format.
+  /// Returns the bits per component for a given texture format.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerComponent(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -75,7 +75,7 @@ public:
     return GetResourceFormatProperties(format).m_uiComponentSize * 8U;
   }
 
-  /// \brief Returns the bytes per block for a given texture format. For most formats, this is equal to the bytes per pixel. For compressed formats, this is the total number of bytes in a compression block.
+  /// Returns the bytes per block for a given texture format. For most formats, this is equal to the bytes per pixel. For compressed formats, this is the total number of bytes in a compression block.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBytesPerBlock(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -86,13 +86,13 @@ public:
     return GetResourceFormatProperties(format).GetElementSize();
   }
 
-  /// \brief Returns the bits per block for a given texture format. For most formats, this is equal to the bits per pixel. For compressed formats, this is the total number of bits in a compression block.
+  /// Returns the bits per block for a given texture format. For most formats, this is equal to the bits per pixel. For compressed formats, this is the total number of bits in a compression block.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerBlock(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     return GetBytesPerBlock(format, uiPlaneIndex) * 8U;
   }
 
-  /// \brief Returns the bits per pixel for a given texture format. For compressed formats, this is the average bits per pixel across a block.
+  /// Returns the bits per pixel for a given texture format. For compressed formats, this is the average bits per pixel across a block.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerPixel(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -103,7 +103,7 @@ public:
     return properties.IsCompressed() ? (properties.GetElementSize() * 8U) / properties.GetTexelsPerBlock() : properties.GetElementSize() * 8U;
   }
 
-  /// \brief Returns the exact bits per pixel for a given texture format. For compressed formats, this may be a fractional value.
+  /// Returns the exact bits per pixel for a given texture format. For compressed formats, this may be a fractional value.
   [[nodiscard]] static XII_ALWAYS_INLINE float GetExactBitsPerPixel(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -114,7 +114,7 @@ public:
     return properties.IsCompressed() ? static_cast<float>(properties.GetElementSize() * 8U) / static_cast<float>(properties.GetTexelsPerBlock()) : static_cast<float>(properties.GetElementSize() * 8U);
   }
 
-  /// \brief Returns the block width for a given texture format. For most formats, this is 1. For compressed formats, this may be greater than 1.
+  /// Returns the block width for a given texture format. For most formats, this is 1. For compressed formats, this may be greater than 1.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlockWidth(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     XII_IGNORE_UNUSED(uiPlaneIndex);
@@ -122,7 +122,7 @@ public:
     return xiiGALResourceFormat::IsMultiplanar(format) ? 1U : GetResourceFormatProperties(format).GetBlockWidth();
   }
 
-  /// \brief Returns the block height for a given texture format. For most formats, this is 1. For compressed formats, this may be greater than 1.
+  /// Returns the block height for a given texture format. For most formats, this is 1. For compressed formats, this may be greater than 1.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlockHeight(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     XII_IGNORE_UNUSED(uiPlaneIndex);
@@ -130,7 +130,7 @@ public:
     return xiiGALResourceFormat::IsMultiplanar(format) ? 1U : GetResourceFormatProperties(format).GetBlockHeight();
   }
 
-  /// \brief Returns the block depth for a given texture format. For most formats, this is 1. For 3D textures, this may be greater than 1.
+  /// Returns the block depth for a given texture format. For most formats, this is 1. For 3D textures, this may be greater than 1.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlockDepth(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     XII_IGNORE_UNUSED(format);
@@ -139,7 +139,7 @@ public:
     return 1U;
   }
 
-  /// \brief Returns true if the format requires first-level block alignment (i.e., if the block width or height is greater than 1).
+  /// Returns true if the format requires first-level block alignment (i.e., if the block width or height is greater than 1).
   [[nodiscard]] static XII_ALWAYS_INLINE bool RequiresFirstLevelBlockAlignment(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -150,7 +150,7 @@ public:
     return properties.GetBlockWidth() > 1U || properties.GetBlockHeight() > 1U;
   }
 
-  /// \brief Returns the sub-format for a given multi-planar texture format and plane index.
+  /// Returns the sub-format for a given multi-planar texture format and plane index.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetPlaneSubFormat(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -161,7 +161,7 @@ public:
     return format;
   }
 
-  /// \brief Returns the component type for a given texture format.
+  /// Returns the component type for a given texture format.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormatComponentType> GetComponentType(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -170,22 +170,22 @@ public:
     return GetResourceFormatProperties(format).m_ComponentType;
   }
 
-  /// \brief This returns the sparse texture format information for the given texture format, resource dimension and sample count.
+  /// This returns the sparse texture format information for the given texture format, resource dimension and sample count.
   [[nodiscard]] static const xiiGALSparseTextureProperties GetSparseTextureProperties(xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount);
 
-  /// \brief This returns the mip level size of a given texture. This is typically used when retrieving the frame buffer size for a particular texture.
+  /// This returns the mip level size of a given texture. This is typically used when retrieving the frame buffer size for a particular texture.
   [[nodiscard]] static xiiVec3U32 GetMipLevelSize(xiiUInt32 uiMipLevelSize, const xiiGALTextureCreationDescription& textureDescription);
 
-  /// \brief This returns the mip size for a given mip level.
+  /// This returns the mip size for a given mip level.
   [[nodiscard]] static xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel);
 
-  /// \brief This returns the mip level properties for a given texture and mip level.
+  /// This returns the mip level properties for a given texture and mip level.
   [[nodiscard]] static xiiGALMipLevelProperties GetMipLevelProperties(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel);
 
-  /// \brief This returns the number of mip levels for a given texture.
+  /// This returns the number of mip levels for a given texture.
   [[nodiscard]] static xiiUInt32 GetMipLevelCount(const xiiGALTextureCreationDescription& textureDescription);
 
-  /// \brief Returns an offset from the beginning of the buffer backing a staging texture to the specified location within the given subresource.
+  /// Returns an offset from the beginning of the buffer backing a staging texture to the specified location within the given subresource.
   ///
   /// \param textureDescription - Staging texture description.
   /// \param uiArraySlice       - Array slice.
@@ -219,17 +219,17 @@ public:
   ///
   [[nodiscard]] static xiiUInt64 GetStagingTextureLocationOffset(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevel, xiiUInt32 uiAlignment, xiiUInt32 uiLocationX, xiiUInt32 uiLocationY, xiiUInt32 uiLocationZ);
 
-  /// \brief Returns an offset from the beginning of the buffer backing a staging texture to the given subresource.
+  /// Returns an offset from the beginning of the buffer backing a staging texture to the given subresource.
   /// Texels within subresources are assumed to be tightly packed. There is no padding except between whole subresources.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt64 GetStagingTextureSubresourceOffset(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevel, xiiUInt32 uiAlignment)
   {
     return GetStagingTextureLocationOffset(textureDescription, uiArraySlice, uiMipLevel, uiAlignment, 0, 0, 0);
   }
 
-  /// \brief Computes the information required to perform a copy operation between a buffer and a texture.
+  /// Computes the information required to perform a copy operation between a buffer and a texture.
   static xiiGALBufferToTextureCopyDescription GetBufferToTextureCopyDescription(xiiGALResourceFormat::Enum format, const xiiBoundingBoxU32& region, xiiUInt32 uiRowStrideAlignment);
 
-  /// \brief Copies texture subresource data on the CPU.
+  /// Copies texture subresource data on the CPU.
   ///
   /// \param sourceSubresource        - Source subresource data.
   /// \param uiRowCount               - The number of rows in the subresource.
@@ -240,49 +240,49 @@ public:
   /// \param uiDestinationDepthStride - Destination subresource depth stride, in bytes.
   static void CopyTextureSubresource(const xiiGALTextureSubResourceData& sourceSubresource, xiiUInt32 uiRowCount, xiiUInt32 uiDepthSliceCount, xiiUInt64 uiRowSize, void* pDestinationData, xiiUInt64 uiDestinationRowStride, xiiUInt64 uiDestinationDepthStride);
 
-  /// \brief Returns the total memory size required to store the staging texture data.
+  /// Returns the total memory size required to store the staging texture data.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt64 GetStagingTextureDataSize(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiAlignment = 4U)
   {
     return GetStagingTextureSubresourceOffset(textureDescription, textureDescription.m_uiArraySizeOrDepth, 0, uiAlignment);
   }
 
-  /// \brief This returns the default texture view type for a source format and the view type that are matched with the bind flags.
+  /// This returns the default texture view type for a source format and the view type that are matched with the bind flags.
   ///
   /// \param format    - The source texture format.
   /// \param viewType  - The view type to be created.
   /// \param bindFlags - The texture bind flags.
   [[nodiscard]] static xiiEnum<xiiGALResourceFormat> GetDefaultTextureViewFormat(xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALTextureViewType> viewType, xiiBitflags<xiiGALBindFlags> bindFlags);
 
-  /// \brief Returns the default texture 1D creation description.
+  /// Returns the default texture 1D creation description.
   [[nodiscard]] static xiiGALTextureCreationDescription GetDefaultTexture1DDescription() noexcept;
 
-  /// \brief Returns the default texture 2D creation description.
+  /// Returns the default texture 2D creation description.
   [[nodiscard]] static xiiGALTextureCreationDescription GetDefaultTexture2DDescription() noexcept;
 
-  /// \brief Returns the default texture 3D creation description.
+  /// Returns the default texture 3D creation description.
   [[nodiscard]] static xiiGALTextureCreationDescription GetDefaultTexture3DDescription() noexcept;
 
-  /// \brief Returns the default texture cube creation description.
+  /// Returns the default texture cube creation description.
   [[nodiscard]] static xiiGALTextureCreationDescription GetDefaultTextureCubeDescription() noexcept;
 
-  /// \brief Returns the total number of subresources for the given texture description.
+  /// Returns the total number of subresources for the given texture description.
   XII_ALWAYS_INLINE static xiiUInt32 GetSubResourceCount(const xiiGALTextureCreationDescription& description) noexcept { return description.m_uiMipLevels * description.m_uiArraySizeOrDepth; }
 
-  /// \brief Returns the required row pitch for the given texture description and mip level.
+  /// Returns the required row pitch for the given texture description and mip level.
   XII_ALWAYS_INLINE static xiiUInt32 GetRequiredRowPitch(const xiiGALTextureCreationDescription& description, xiiUInt32 uiMipLevel)
   {
     const xiiGALMipLevelProperties mipLevelProperties = GetMipLevelProperties(description, uiMipLevel);
     return static_cast<xiiUInt32>(mipLevelProperties.m_uiRowSize);
   }
 
-  /// \brief Returns the required slice pitch for the given texture description and mip level.
+  /// Returns the required slice pitch for the given texture description and mip level.
   XII_ALWAYS_INLINE static xiiUInt32 GetRequiredSlicePitch(const xiiGALTextureCreationDescription& description, xiiUInt32 uiMipLevel)
   {
     const xiiGALMipLevelProperties mipLevelProperties = GetMipLevelProperties(description, uiMipLevel);
     return static_cast<xiiUInt32>(mipLevelProperties.m_uiDepthSliceSize);
   }
 
-  /// \brief Fills the out_subresourceData array with zero-initialized data pointers for all subresources of the given texture description.
+  /// Fills the out_subresourceData array with zero-initialized data pointers for all subresources of the given texture description.
   [[nodiscard]] static xiiGALTextureData GetZeroMemoryInitialData(const xiiGALTextureCreationDescription description, xiiHybridArray<xiiGALTextureSubResourceData, 2U>& out_subresourceData, xiiDynamicArray<xiiUInt8>& out_Data);
 
   static void CopySubresourceToMemory(const xiiGALTextureCreationDescription& description, const xiiGALMappedTextureSubresource& subresourceData, const xiiGALTextureMipLevelData& mipLevelData, xiiArrayPtr<xiiUInt8> pTargetData, xiiUInt32 uiTargetRowStride);

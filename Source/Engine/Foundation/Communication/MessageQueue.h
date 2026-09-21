@@ -7,7 +7,7 @@
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 
-/// \brief Implementation of a message queue on top of a deque.
+/// Implementation of a message queue on top of a deque.
 ///
 /// Enqueue and TryDequeue/TryPeek methods are thread safe all the others are not. To ensure
 /// thread safety for all methods the queue can be locked using xiiLock like a mutex.
@@ -28,63 +28,63 @@ public:
   };
 
 protected:
-  /// \brief No memory is allocated during construction.
+  /// No memory is allocated during construction.
   xiiMessageQueueBase(xiiAllocator* pAllocator); // [tested]
 
-  /// \brief No memory is allocated during construction.
+  /// No memory is allocated during construction.
   xiiMessageQueueBase(const xiiMessageQueueBase& rhs, xiiAllocator* pAllocator);
 
-  /// \brief Destructor.
+  /// Destructor.
   ~xiiMessageQueueBase(); // [tested]
 
-  /// \brief Assignment operator.
+  /// Assignment operator.
   void operator=(const xiiMessageQueueBase& rhs);
 
 public:
-  /// \brief Returns the element at the given index. Not thread safe.
+  /// Returns the element at the given index. Not thread safe.
   Entry& operator[](xiiUInt32 uiIndex); // [tested]
 
-  /// \brief Returns the element at the given index. Not thread safe.
+  /// Returns the element at the given index. Not thread safe.
   const Entry& operator[](xiiUInt32 uiIndex) const; // [tested]
 
-  /// \brief Returns the number of active elements in the queue.
+  /// Returns the number of active elements in the queue.
   xiiUInt32 GetCount() const;
 
-  /// \brief Returns true, if the queue does not contain any elements.
+  /// Returns true, if the queue does not contain any elements.
   bool IsEmpty() const;
 
-  /// \brief Destructs all elements and sets the count to zero. Does not deallocate any data.
+  /// Destructs all elements and sets the count to zero. Does not deallocate any data.
   void Clear();
 
-  /// \brief Expands the queue so it can at least store the given capacity.
+  /// Expands the queue so it can at least store the given capacity.
   void Reserve(xiiUInt32 uiCount);
 
-  /// \brief Tries to compact the array to avoid wasting memory.The resulting capacity is at least 'GetCount' (no elements get removed).
+  /// Tries to compact the array to avoid wasting memory.The resulting capacity is at least 'GetCount' (no elements get removed).
   void Compact();
 
-  /// \brief Enqueues the given message and meta-data. This method is thread safe.
+  /// Enqueues the given message and meta-data. This method is thread safe.
   void Enqueue(xiiMessage* pMessage, const MetaDataType& metaData); // [tested]
 
-  /// \brief Dequeues the first element if the queue is not empty and returns true. Returns false if the queue is empty. This method is thread safe.
+  /// Dequeues the first element if the queue is not empty and returns true. Returns false if the queue is empty. This method is thread safe.
   bool TryDequeue(xiiMessage*& out_pMessage, MetaDataType& out_metaData); // [tested]
 
-  /// \brief Gives the first element if the queue is not empty and returns true. Returns false if the queue is empty. This method is thread safe.
+  /// Gives the first element if the queue is not empty and returns true. Returns false if the queue is empty. This method is thread safe.
   bool TryPeek(xiiMessage*& out_pMessage, MetaDataType& out_metaData); // [tested]
 
-  /// \brief Returns the first element in the queue. Not thread safe.
+  /// Returns the first element in the queue. Not thread safe.
   Entry& Peek();
 
-  /// \brief Removes the first element from the queue. Not thread safe.
+  /// Removes the first element from the queue. Not thread safe.
   void Dequeue();
 
-  /// \brief Sort with explicit comparer. Not thread safe.
+  /// Sort with explicit comparer. Not thread safe.
   template <typename Comparer>
   void Sort(const Comparer& comparer); // [tested]
 
-  /// \brief Acquires an exclusive lock on the queue. Do not use this method directly but use xiiLock instead.
+  /// Acquires an exclusive lock on the queue. Do not use this method directly but use xiiLock instead.
   void Lock(); // [tested]
 
-  /// \brief Releases a lock that has been previously acquired. Do not use this method directly but use xiiLock instead.
+  /// Releases a lock that has been previously acquired. Do not use this method directly but use xiiLock instead.
   void Unlock(); // [tested]
 
 private:
@@ -92,7 +92,7 @@ private:
   xiiMutex                                 m_Mutex;
 };
 
-/// \brief \see xiiMessageQueueBase
+/// \see xiiMessageQueueBase
 template <typename MetaDataType, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 class xiiMessageQueue : public xiiMessageQueueBase<MetaDataType>
 {

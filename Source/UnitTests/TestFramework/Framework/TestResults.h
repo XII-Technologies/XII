@@ -10,7 +10,7 @@
 
 struct xiiTestOutput
 {
-  /// \brief Defines the type of output message for xiiTestOutputMessage.
+  /// Defines the type of output message for xiiTestOutputMessage.
   enum Enum
   {
     InvalidType = -1,
@@ -34,7 +34,7 @@ struct xiiTestOutput
   static Enum              FromString(const char* szName);
 };
 
-/// \brief A message of type xiiTestOutput::Enum, stored in xiiResult.
+/// A message of type xiiTestOutput::Enum, stored in xiiResult.
 struct xiiTestErrorMessage
 {
   xiiTestErrorMessage() = default;
@@ -47,7 +47,7 @@ struct xiiTestErrorMessage
   std::string m_sMessage;
 };
 
-/// \brief A message of type xiiTestOutput::Enum, stored in xiiResult.
+/// A message of type xiiTestOutput::Enum, stored in xiiResult.
 struct xiiTestOutputMessage
 {
   xiiTestOutputMessage() = default;
@@ -59,7 +59,7 @@ struct xiiTestOutputMessage
 
 struct xiiTestResultQuery
 {
-  /// \brief Defines what information should be accumulated over the sub-tests in xiiTestEntry::GetSubTestCount.
+  /// Defines what information should be accumulated over the sub-tests in xiiTestEntry::GetSubTestCount.
   enum Enum
   {
     Count,
@@ -69,7 +69,7 @@ struct xiiTestResultQuery
   };
 };
 
-/// \brief Stores the results of a test run. Used by both xiiTestEntry and xiiSubTestEntry.
+/// Stores the results of a test run. Used by both xiiTestEntry and xiiSubTestEntry.
 struct xiiTestResultData
 {
   xiiTestResultData() = default;

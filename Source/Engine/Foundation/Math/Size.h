@@ -4,7 +4,7 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief A simple size class templated on the type for width and height.
+/// A simple size class templated on the type for width and height.
 ///
 template <typename Type>
 class xiiSizeTemplate
@@ -20,21 +20,21 @@ public:
 
   // *** Constructors ***
 public:
-  /// \brief Default constructor does not initialize the data.
+  /// Default constructor does not initialize the data.
   xiiSizeTemplate();
 
-  /// \brief Constructor to set all values.
+  /// Constructor to set all values.
   xiiSizeTemplate(Type width, Type height);
 
-  /// \brief Static function that returns a zero-size.
+  /// Static function that returns a zero-size.
   [[nodiscard]] static constexpr xiiSizeTemplate<Type> MakeZero() { return xiiSizeTemplate<Type>(0, 0); }
 
-  /// \brief Returns a size initialized to x,y.
+  /// Returns a size initialized to x,y.
   [[nodiscard]] static constexpr xiiSizeTemplate<Type> Make(Type x, Type y) { return xiiSizeTemplate<Type>(x, y); }
 
   // *** Common Functions ***
 public:
-  /// \brief Returns true if the area described by the size is non zero
+  /// Returns true if the area described by the size is non zero
   bool HasNonZeroArea() const;
 };
 

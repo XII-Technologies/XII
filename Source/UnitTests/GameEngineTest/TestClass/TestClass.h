@@ -26,7 +26,7 @@ public:
   virtual xiiString FindProjectDirectory() const final override;
   virtual xiiString GetProjectDataDirectoryPath() const final override;
   const xiiImage&   GetLastScreenshot() { return m_LastScreenshot; }
-  /// \brief Camera must have a global key named "Camera4" if `uiCameraNumber` was 4.
+  /// Camera must have a global key named "Camera4" if `uiCameraNumber` was 4.
   void SwitchToCamera(xiiUInt32 uiCameraNumber);
 
   xiiResult LoadScene(xiiStringView sSceneFile);

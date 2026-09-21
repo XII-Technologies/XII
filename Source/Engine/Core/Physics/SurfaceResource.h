@@ -42,7 +42,7 @@ public:
   void* m_pPhysicsMaterialPhysX = nullptr;
   void* m_pPhysicsMaterialJolt  = nullptr;
 
-  /// \brief Spawns the prefab that was defined for the given interaction at the given position and using the configured orientation.
+  /// Spawns the prefab that was defined for the given interaction at the given position and using the configured orientation.
   /// Returns false, if the interaction type was not defined in this surface or any of its base surfaces
   bool InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHandle hObject, const xiiVec3& vPosition, const xiiVec3& vSurfaceNormal, const xiiVec3& vIncomingDirection, const xiiTempHashedString& sInteraction, const xiiUInt16* pOverrideTeamID, float fImpulseSqr = 0.0f) const;
 

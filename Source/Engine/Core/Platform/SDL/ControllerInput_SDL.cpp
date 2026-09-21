@@ -12,7 +12,7 @@
 
 #  include <SDL3/SDL.h>
 
-/// \brief An implementation of xiiInputDeviceController that handles Game Controllers.
+/// An implementation of xiiInputDeviceController that handles Game Controllers.
 class XII_CORE_DLL xiiControllerInputSDL : public xiiInputDeviceController
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiControllerInputSDL, xiiInputDeviceController);

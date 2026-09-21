@@ -9,11 +9,11 @@
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Time/Time.h>
 
-/// \brief Use this helper macro to easily create a scoped logging group. Will generate unique variable names to make the static code
+/// Use this helper macro to easily create a scoped logging group. Will generate unique variable names to make the static code
 /// analysis happy.
 #define XII_LOG_BLOCK xiiLogBlock XII_PP_CONCAT(_logblock_, XII_SOURCE_LINE)
 
-/// \brief Use this helper macro to easily mute all logging in a scope.
+/// Use this helper macro to easily mute all logging in a scope.
 #define XII_LOG_BLOCK_MUTE()                                        \
   xiiMuteLog        XII_PP_CONCAT(_logmuteblock_, XII_SOURCE_LINE); \
   xiiLogSystemScope XII_PP_CONCAT(_logscope_, XII_SOURCE_LINE)(&XII_PP_CONCAT(_logmuteblock_, XII_SOURCE_LINE))
@@ -22,7 +22,7 @@
 class xiiLogBlock;
 
 
-/// \brief Describes the types of events that xiiLog sends.
+/// Describes the types of events that xiiLog sends.
 struct XII_FOUNDATION_DLL xiiLogMsgType
 {
   using StorageType = xiiInt8;
@@ -47,45 +47,45 @@ struct XII_FOUNDATION_DLL xiiLogMsgType
   };
 };
 
-/// \brief The data that is sent through xiiLogInterface.
+/// The data that is sent through xiiLogInterface.
 struct XII_FOUNDATION_DLL xiiLoggingEventData
 {
-  /// \brief The type of information that is sent.
+  /// The type of information that is sent.
   xiiLogMsgType::Enum m_EventType = xiiLogMsgType::None;
 
-  /// \brief How many "levels" to indent.
+  /// How many "levels" to indent.
   xiiUInt8 m_uiIndentation = 0;
 
-  /// \brief The information text.
+  /// The information text.
   xiiStringView m_sText;
 
-  /// \brief An optional tag extracted from the log-string (if it started with "[SomeTag]Logging String.") Can be used by log-writers for
+  /// An optional tag extracted from the log-string (if it started with "[SomeTag]Logging String.") Can be used by log-writers for
   /// additional configuration, or simply be ignored.
   xiiStringView m_sTag;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  /// \brief Used by log-blocks for profiling the duration of the block
+  /// Used by log-blocks for profiling the duration of the block
   double m_fSeconds = 0;
 #endif
 };
 
 using xiiLoggingEvent = xiiEvent<const xiiLoggingEventData&, xiiMutex>;
 
-/// \brief Base class for all logging classes.
+/// Base class for all logging classes.
 ///
 /// You can derive from this class to create your own logging system,
 /// which you can pass to the functions in xiiLog.
 class XII_FOUNDATION_DLL xiiLogInterface
 {
 public:
-  /// \brief Override this function to handle logging events.
+  /// Override this function to handle logging events.
   virtual void HandleLogMessage(const xiiLoggingEventData& le) = 0;
 
-  /// \brief LogLevel is between xiiLogEventType::None and xiiLogEventType::All and defines which messages will be logged and which will be
+  /// LogLevel is between xiiLogEventType::None and xiiLogEventType::All and defines which messages will be logged and which will be
   /// filtered out.
   XII_ALWAYS_INLINE void SetLogLevel(xiiLogMsgType::Enum logLevel) { m_LogLevel = logLevel; }
 
-  /// \brief Returns the currently set log level.
+  /// Returns the currently set log level.
   XII_ALWAYS_INLINE xiiLogMsgType::Enum GetLogLevel() { return m_LogLevel; }
 
 private:
@@ -98,7 +98,7 @@ private:
 };
 
 
-/// \brief Used to ignore all log messages.
+/// Used to ignore all log messages.
 /// \sa XII_LOG_BLOCK_MUTE
 class xiiMuteLog : public xiiLogInterface
 {
@@ -112,7 +112,7 @@ public:
 };
 
 
-/// \brief This is the standard log system that xiiLog sends all messages to.
+/// This is the standard log system that xiiLog sends all messages to.
 ///
 /// It allows to register log writers, such that you can be informed of all log messages and write them
 /// to different outputs.
@@ -121,16 +121,16 @@ class XII_FOUNDATION_DLL xiiGlobalLog : public xiiLogInterface
 public:
   virtual void HandleLogMessage(const xiiLoggingEventData& le) override;
 
-  /// \brief Allows to register a function as an event receiver.
+  /// Allows to register a function as an event receiver.
   static xiiEventSubscriptionID AddLogWriter(xiiLoggingEvent::Handler handler);
 
-  /// \brief Unregisters a previously registered receiver. It is an error to unregister a receiver that was not registered.
+  /// Unregisters a previously registered receiver. It is an error to unregister a receiver that was not registered.
   static void RemoveLogWriter(xiiLoggingEvent::Handler handler);
 
-  /// \brief Unregisters a previously registered receiver. It is an error to unregister a receiver that was not registered.
+  /// Unregisters a previously registered receiver. It is an error to unregister a receiver that was not registered.
   static void RemoveLogWriter(xiiEventSubscriptionID& ref_subscriptionID);
 
-  /// \brief Returns how many message of the given type occurred.
+  /// Returns how many message of the given type occurred.
   static xiiUInt32 GetMessageCount(xiiLogMsgType::Enum messageType) { return s_uiMessageCount[messageType]; }
 
   /// xiiLogInterfaces are thread_local and therefore a dedicated xiiGlobalLog is created per thread.
@@ -142,10 +142,10 @@ public:
   static void SetGlobalLogOverride(xiiLogInterface* pInterface);
 
 private:
-  /// \brief Counts the number of messages of each type.
+  /// Counts the number of messages of each type.
   static xiiAtomicInteger32 s_uiMessageCount[xiiLogMsgType::ENUM_COUNT];
 
-  /// \brief Manages all the Event Handlers for the logging events.
+  /// Manages all the Event Handlers for the logging events.
   static xiiLoggingEvent s_LoggingEvent;
 
   static xiiLogInterface* s_pOverrideLog;
@@ -157,7 +157,7 @@ private:
   xiiGlobalLog() = default;
 };
 
-/// \brief Static class that allows to write out logging information.
+/// Static class that allows to write out logging information.
 ///
 /// This class takes logging information, prepares it and then broadcasts it to all interested code
 /// via the event interface. It does not write anything on disk or somewhere else, itself. Instead it
@@ -168,112 +168,112 @@ private:
 class XII_FOUNDATION_DLL xiiLog
 {
 public:
-  /// \brief Allows to change which logging system is used by default on the current thread. If nothing is set, xiiGlobalLog is used.
+  /// Allows to change which logging system is used by default on the current thread. If nothing is set, xiiGlobalLog is used.
   ///
   /// Replacing the log system on a thread does not delete the previous system, so it can be reinstated later again.
   /// This can be used to temporarily route all logging to a custom system.
   static void SetThreadLocalLogSystem(xiiLogInterface* pInterface);
 
-  /// \brief Returns the currently set default logging system, or a thread local instance of xiiGlobalLog, if nothing else was set.
+  /// Returns the currently set default logging system, or a thread local instance of xiiGlobalLog, if nothing else was set.
   static xiiLogInterface* GetThreadLocalLogSystem();
 
-  /// \brief Sets the default log level which is used by all xiiLogInterface's that have their log level set to xiiLogMsgType::GlobalDefault
+  /// Sets the default log level which is used by all xiiLogInterface's that have their log level set to xiiLogMsgType::GlobalDefault
   static void SetDefaultLogLevel(xiiLogMsgType::Enum logLevel);
 
-  /// \brief Returns the currently set default log level.
+  /// Returns the currently set default log level.
   static xiiLogMsgType::Enum GetDefaultLogLevel();
 
-  /// \brief An error that needs to be fixed as soon as possible.
+  /// An error that needs to be fixed as soon as possible.
   static void Error(xiiLogInterface* pInterface, const xiiFormatString& string);
 
-  /// \brief An error that needs to be fixed as soon as possible.
+  /// An error that needs to be fixed as soon as possible.
   template <typename... ARGS>
   static void Error(xiiStringView sFormat, ARGS&&... args)
   {
     Error(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Overload of Error() to output messages to a specific log.
+  /// Overload of Error() to output messages to a specific log.
   template <typename... ARGS>
   static void Error(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
     Error(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Not an error, but definitely a big problem, that should be looked into very soon.
+  /// Not an error, but definitely a big problem, that should be looked into very soon.
   static void SeriousWarning(xiiLogInterface* pInterface, const xiiFormatString& string);
 
-  /// \brief Not an error, but definitely a big problem, that should be looked into very soon.
+  /// Not an error, but definitely a big problem, that should be looked into very soon.
   template <typename... ARGS>
   static void SeriousWarning(xiiStringView sFormat, ARGS&&... args)
   {
     SeriousWarning(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Overload of SeriousWarning() to output messages to a specific log.
+  /// Overload of SeriousWarning() to output messages to a specific log.
   template <typename... ARGS>
   static void SeriousWarning(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
     SeriousWarning(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief A potential problem or a performance warning. Might be possible to ignore it.
+  /// A potential problem or a performance warning. Might be possible to ignore it.
   static void Warning(xiiLogInterface* pInterface, const xiiFormatString& string);
 
-  /// \brief A potential problem or a performance warning. Might be possible to ignore it.
+  /// A potential problem or a performance warning. Might be possible to ignore it.
   template <typename... ARGS>
   static void Warning(xiiStringView sFormat, ARGS&&... args)
   {
     Warning(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Overload of Warning() to output messages to a specific log.
+  /// Overload of Warning() to output messages to a specific log.
   template <typename... ARGS>
   static void Warning(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
     Warning(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Status information that something was completed successfully.
+  /// Status information that something was completed successfully.
   static void Success(xiiLogInterface* pInterface, const xiiFormatString& string);
 
-  /// \brief Status information that something was completed successfully.
+  /// Status information that something was completed successfully.
   template <typename... ARGS>
   static void Success(xiiStringView sFormat, ARGS&&... args)
   {
     Success(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Overload of Success() to output messages to a specific log.
+  /// Overload of Success() to output messages to a specific log.
   template <typename... ARGS>
   static void Success(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
     Success(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Status information that is important.
+  /// Status information that is important.
   static void Info(xiiLogInterface* pInterface, const xiiFormatString& string);
 
-  /// \brief Status information that is important.
+  /// Status information that is important.
   template <typename... ARGS>
   static void Info(xiiStringView sFormat, ARGS&&... args)
   {
     Info(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Overload of Info() to output messages to a specific log.
+  /// Overload of Info() to output messages to a specific log.
   template <typename... ARGS>
   static void Info(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
     Info(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Status information that is nice to have during development.
+  /// Status information that is nice to have during development.
   ///
   /// This function is compiled out in non-development builds.
   static void Dev(xiiLogInterface* pInterface, const xiiFormatString& string);
 
-  /// \brief Status information that is nice to have during development.
+  /// Status information that is nice to have during development.
   ///
   /// This function is compiled out in non-development builds.
   template <typename... ARGS>
@@ -282,19 +282,19 @@ public:
     Dev(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Overload of Dev() to output messages to a specific log.
+  /// Overload of Dev() to output messages to a specific log.
   template <typename... ARGS>
   static void Dev(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
     Dev(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Status information during debugging. Very verbose. Usually only temporarily added to the code.
+  /// Status information during debugging. Very verbose. Usually only temporarily added to the code.
   ///
   /// This function is compiled out in non-debug builds.
   static void Debug(xiiLogInterface* pInterface, const xiiFormatString& string);
 
-  /// \brief Status information during debugging. Very verbose. Usually only temporarily added to the code.
+  /// Status information during debugging. Very verbose. Usually only temporarily added to the code.
   ///
   /// This function is compiled out in non-debug builds.
   template <typename... ARGS>
@@ -303,14 +303,14 @@ public:
     Debug(GetThreadLocalLogSystem(), xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Overload of Debug() to output messages to a specific log.
+  /// Overload of Debug() to output messages to a specific log.
   template <typename... ARGS>
   static void Debug(xiiLogInterface* pInterface, xiiStringView sFormat, ARGS&&... args)
   {
     Debug(pInterface, xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Instructs log writers to flush their caches, to ensure all log output (even non-critical information) is written.
+  /// Instructs log writers to flush their caches, to ensure all log output (even non-critical information) is written.
   ///
   /// On some log writers this has no effect.
   /// Do not call this too frequently as it incurs a performance penalty.
@@ -328,11 +328,11 @@ public:
   /// \return Returns true if the flush is executed.
   static bool Flush(xiiUInt32 uiNumNewMsgThreshold = 0, xiiTime timeIntervalThreshold = xiiTime::MakeFromSeconds(10), xiiLogInterface* pInterface = GetThreadLocalLogSystem());
 
-  /// \brief Usually called internally by the other log functions, but can be called directly, if the message type is already known.
+  /// Usually called internally by the other log functions, but can be called directly, if the message type is already known.
   /// pInterface must be != nullptr.
   static void BroadcastLoggingEvent(xiiLogInterface* pInterface, xiiLogMsgType::Enum type, xiiStringView sString);
 
-  /// \brief Calls low-level OS functionality to print a string to the typical outputs, e.g. printf and OutputDebugString.
+  /// Calls low-level OS functionality to print a string to the typical outputs, e.g. printf and OutputDebugString.
   ///
   /// Use this function to log unrecoverable errors like asserts, crash handlers etc.
   /// This function is meant for short term debugging when actual printing to the console is desired. Code using it should be temporary.
@@ -340,23 +340,23 @@ public:
   /// overhead.
   static void Print(const char* szText);
 
-  /// \brief Calls low-level OS functionality to print a string to the typical outputs. Forwards to Print.
+  /// Calls low-level OS functionality to print a string to the typical outputs. Forwards to Print.
   /// \note This function uses actual printf formatting, not xiiFormatString syntax.
   /// \sa xiiLog::Print
   static void Printf(const char* szFormat, ...);
 
-  /// \brief Signature of the custom print function used by xiiLog::SetCustomPrintFunction.
+  /// Signature of the custom print function used by xiiLog::SetCustomPrintFunction.
   using PrintFunction = void (*)(const char* szText);
 
-  /// \brief Sets a custom function that is called in addition to the default behavior of xiiLog::Print.
+  /// Sets a custom function that is called in addition to the default behavior of xiiLog::Print.
   static void SetCustomPrintFunction(PrintFunction func);
 
-  /// \brief Shows a simple message box using the OS functionality.
+  /// Shows a simple message box using the OS functionality.
   ///
   /// This should only be used for critical information that can't be conveyed in another way.
   static void OsMessageBox(const xiiFormatString& text);
 
-  /// \brief This enum is used in context of outputting timestamp information to indicate a formatting for said timestamps.
+  /// This enum is used in context of outputting timestamp information to indicate a formatting for said timestamps.
   enum class TimestampMode
   {
     None     = 0, ///< No timestamp will be added at all.
@@ -371,10 +371,10 @@ private:
   // Needed to call 'EndLogBlock'
   friend class xiiLogBlock;
 
-  /// \brief Which messages to filter out by default.
+  /// Which messages to filter out by default.
   static xiiLogMsgType::Enum s_DefaultLogLevel;
 
-  /// \brief Ends grouping log messages.
+  /// Ends grouping log messages.
   static void EndLogBlock(xiiLogInterface* pInterface, xiiLogBlock* pBlock);
 
   static void WriteBlockHeader(xiiLogInterface* pInterface, xiiLogBlock* pBlock);
@@ -383,11 +383,11 @@ private:
 };
 
 
-/// \brief Instances of this class will group messages in a scoped block together.
+/// Instances of this class will group messages in a scoped block together.
 class XII_FOUNDATION_DLL xiiLogBlock
 {
 public:
-  /// \brief Creates a named grouping block for log messages.
+  /// Creates a named grouping block for log messages.
   ///
   /// Use the szContextInfo to pass in a string that can give additional context information (e.g. a file name).
   /// This string must point to valid memory until after the log block object is destroyed.
@@ -399,7 +399,7 @@ public:
   /// This constructor will output the log block data to the xiiGlobalLog.
   xiiLogBlock(xiiStringView sName, xiiStringView sContextInfo = {});
 
-  /// \brief Creates a named grouping block for log messages.
+  /// Creates a named grouping block for log messages.
   ///
   /// This variant of the constructor takes an explicit xiiLogInterface to write the log messages to.
   xiiLogBlock(xiiLogInterface* pInterface, xiiStringView sName, xiiStringView sContextInfo = {});
@@ -420,19 +420,19 @@ private:
 #endif
 };
 
-/// \brief A class that sets a custom xiiLogInterface as the thread local default log system,
+/// A class that sets a custom xiiLogInterface as the thread local default log system,
 /// and resets the previous system when it goes out of scope.
 class XII_FOUNDATION_DLL xiiLogSystemScope
 {
 public:
-  /// \brief The given xiiLogInterface is passed to xiiLog::SetThreadLocalLogSystem().
+  /// The given xiiLogInterface is passed to xiiLog::SetThreadLocalLogSystem().
   explicit xiiLogSystemScope(xiiLogInterface* pInterface)
   {
     m_pPrevious = xiiLog::GetThreadLocalLogSystem();
     xiiLog::SetThreadLocalLogSystem(pInterface);
   }
 
-  /// \brief Resets the previous xiiLogInterface through xiiLog::SetThreadLocalLogSystem()
+  /// Resets the previous xiiLogInterface through xiiLog::SetThreadLocalLogSystem()
   ~xiiLogSystemScope() { xiiLog::SetThreadLocalLogSystem(m_pPrevious); }
 
 protected:
@@ -443,7 +443,7 @@ private:
 };
 
 
-/// \brief A simple log interface implementation that gathers all messages in a string buffer.
+/// A simple log interface implementation that gathers all messages in a string buffer.
 class xiiLogSystemToBuffer : public xiiLogInterface
 {
 public:

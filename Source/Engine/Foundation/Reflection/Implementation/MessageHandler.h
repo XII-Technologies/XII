@@ -9,7 +9,7 @@
 
 class xiiMessage;
 
-/// \brief The base class for all message handlers that a type provides.
+/// The base class for all message handlers that a type provides.
 class XII_FOUNDATION_DLL xiiAbstractMessageHandler
 {
 public:
@@ -93,7 +93,7 @@ namespace xiiInternal
         m_bIsConst          = true;
       }
 
-      /// \brief Casts the given message to the type of this message handler, then passes that to the class instance.
+      /// Casts the given message to the type of this message handler, then passes that to the class instance.
       static void Dispatch(xiiAbstractMessageHandler* pSelf, const void* pInstance, xiiMessage& ref_msg)
       {
         XII_IGNORE_UNUSED(pSelf);

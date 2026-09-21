@@ -13,7 +13,7 @@ class xiiQtLogModel;
 struct xiiLoggingEventData;
 class xiiPreferences;
 
-/// \brief The application wide panel that shows the engine log output and the editor log output
+/// The application wide panel that shows the engine log output and the editor log output
 class XII_EDITORFRAMEWORK_DLL xiiQtLogPanel : public xiiQtApplicationPanel, public Ui_LogPanel
 {
   Q_OBJECT

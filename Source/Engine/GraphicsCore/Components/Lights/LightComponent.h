@@ -21,7 +21,7 @@ public:
   bool             m_bCastShadows;
 };
 
-/// \brief Base class for light components.
+/// Base class for light components.
 class XII_GRAPHICSCORE_DLL xiiLightComponent : public xiiRenderComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiLightComponent, xiiRenderComponent);
@@ -54,13 +54,13 @@ public:
 
   void OnMsgSetColor(xiiMsgSetColor& ref_msg); // [ msg handler ]
 
-  /// \brief Calculates how far a light source would shine given the specified range and intensity.
+  /// Calculates how far a light source would shine given the specified range and intensity.
   ///
   /// If fRange is zero, the range needed for the given intensity is returned.
   /// Otherwise the smaller value of that and fRange is returned.
   static float CalculateEffectiveRange(float fRange, float fIntensity);
 
-  /// \brief Calculates how large on screen (relative height) the light source would be.
+  /// Calculates how large on screen (relative height) the light source would be.
   static float CalculateScreenSpaceSize(const xiiBoundingSphere& sphere, const xiiCamera& camera);
 
 protected:

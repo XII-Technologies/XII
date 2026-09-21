@@ -4,7 +4,7 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief Default heap memory allocation policy.
+/// Default heap memory allocation policy.
 ///
 /// \see xiiAllocatorWithPolicy
 class xiiAllocationPolicyHeap

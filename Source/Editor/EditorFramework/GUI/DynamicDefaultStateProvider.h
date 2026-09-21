@@ -9,7 +9,7 @@
 class xiiDynamicDefaultValueAttribute;
 class xiiPropertyPath;
 
-/// \brief Retrieves the dynamic default state of an object or container attributed with xiiDynamicDefaultValueAttribute from an asset's meta data.
+/// Retrieves the dynamic default state of an object or container attributed with xiiDynamicDefaultValueAttribute from an asset's meta data.
 class XII_EDITORFRAMEWORK_DLL xiiDynamicDefaultStateProvider : public xiiDefaultStateProvider
 {
 public:

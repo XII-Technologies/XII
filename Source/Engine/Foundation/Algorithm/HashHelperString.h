@@ -8,7 +8,7 @@
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/StringUtils.h>
 
-/// \brief Hash helper to be used as a template argument to xiiHashTable / xiiHashSet for case insensitive string keys.
+/// Hash helper to be used as a template argument to xiiHashTable / xiiHashSet for case insensitive string keys.
 struct XII_FOUNDATION_DLL xiiHashHelperString_NoCase
 {
   static xiiUInt32 Hash(xiiStringView sValue); // [tested]

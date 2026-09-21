@@ -13,7 +13,7 @@ struct xiiAssetCuratorEvent;
 class xiiTask;
 struct xiiAssetInfo;
 
-/// \brief Asset table class. Persistent cache for an asset table.
+/// Asset table class. Persistent cache for an asset table.
 ///
 /// The following assumptions need to be true for this cache to work:
 /// 1. xiiAssetDocumentManager::AddEntriesToAssetTable does never change over time
@@ -40,21 +40,21 @@ struct xiiAssetTable
   void      AddManagerResource(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType);
 };
 
-/// \brief Keeps track of all asset tables and their state as well as reloading modified resources.
+/// Keeps track of all asset tables and their state as well as reloading modified resources.
 class XII_EDITORFRAMEWORK_DLL xiiAssetTableWriter
 {
 public:
   xiiAssetTableWriter(const xiiApplicationFileSystemConfig& fileSystemConfig);
   ~xiiAssetTableWriter();
 
-  /// \brief Needs to be called every frame. Handles update delays to allow compacting multiple changes.
+  /// Needs to be called every frame. Handles update delays to allow compacting multiple changes.
   void MainThreadTick();
 
-  /// \brief Marks an asset that needs to be reloaded in the engine process.
+  /// Marks an asset that needs to be reloaded in the engine process.
   /// The requests are batched and sent out via MainThreadTick.
   void NeedsReloadResource(const xiiUuid& assetGuid);
 
-  /// \brief Writes the asset table for each data dir for the given asset profile.
+  /// Writes the asset table for each data dir for the given asset profile.
   xiiResult WriteAssetTables(const xiiPlatformProfile* pAssetProfile, bool bForce);
 
 private:

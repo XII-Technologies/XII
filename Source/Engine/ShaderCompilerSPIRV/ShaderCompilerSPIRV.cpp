@@ -15,7 +15,7 @@
 
 #include <dxcapi.h>
 
-/// \brief Smart COM pointer to automatically manage AddRef/Release.
+/// Smart COM pointer to automatically manage AddRef/Release.
 template <typename T>
 struct xiiComPtr
 {

@@ -7,7 +7,7 @@
 #include <Foundation/Memory/TemporaryAllocator.h>
 #include <Foundation/Types/PointerWithFlags.h>
 
-/// \brief Implementation of a dynamically growing array.
+/// Implementation of a dynamically growing array.
 ///
 /// Best-case performance for the PushBack operation is O(1) if the xiiDynamicArray doesn't need to be expanded.
 /// In the worst case, PushBack is O(n).
@@ -16,27 +16,27 @@ template <typename T>
 class xiiDynamicArrayBase : public xiiArrayBase<T, xiiDynamicArrayBase<T>>
 {
 protected:
-  /// \brief Creates an empty array. Does not allocate any data yet.
+  /// Creates an empty array. Does not allocate any data yet.
   explicit xiiDynamicArrayBase(xiiAllocator* pAllocator); // [tested]
 
   xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Creates a copy of the given array.
+  /// Creates a copy of the given array.
   xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Moves the given array into this one.
+  /// Moves the given array into this one.
   xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Creates a copy of the given array.
+  /// Creates a copy of the given array.
   xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Destructor.
+  /// Destructor.
   ~xiiDynamicArrayBase(); // [tested]
 
-  /// \brief Copies the data from some other contiguous array into this one.
+  /// Copies the data from some other contiguous array into this one.
   void operator=(const xiiDynamicArrayBase<T>& rhs); // [tested]
 
-  /// \brief Moves the data from some other contiguous array into this one.
+  /// Moves the data from some other contiguous array into this one.
   void operator=(xiiDynamicArrayBase<T>&& rhs) noexcept; // [tested]
 
   T*       GetElementsPtr();
@@ -45,20 +45,20 @@ protected:
   friend class xiiArrayBase<T, xiiDynamicArrayBase<T>>;
 
 public:
-  /// \brief Expands the array so it can at least store the given capacity.
+  /// Expands the array so it can at least store the given capacity.
   void Reserve(xiiUInt32 uiCapacity); // [tested]
 
-  /// \brief Tries to compact the array to avoid wasting memory. The resulting capacity is at least 'GetCount' (no elements get removed). Will
+  /// Tries to compact the array to avoid wasting memory. The resulting capacity is at least 'GetCount' (no elements get removed). Will
   /// deallocate all data, if the array is empty.
   void Compact(); // [tested]
 
-  /// \brief Returns the allocator that is used by this instance.
+  /// Returns the allocator that is used by this instance.
   xiiAllocator* GetAllocator() const { return const_cast<xiiAllocator*>(m_pAllocator.GetPtr()); }
 
-  /// \brief Returns the amount of bytes that are currently allocated on the heap.
+  /// Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
 
-  /// \brief swaps the contents of this array with another one
+  /// swaps the contents of this array with another one
   void Swap(xiiDynamicArrayBase<T>& other); // [tested]
 
 private:
@@ -78,7 +78,7 @@ private:
   void SetCapacity(xiiUInt32 uiCapacity);
 };
 
-/// \brief \see xiiDynamicArrayBase
+/// \see xiiDynamicArrayBase
 template <typename T, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 class xiiDynamicArray : public xiiDynamicArrayBase<T>
 {

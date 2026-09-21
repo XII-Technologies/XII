@@ -28,7 +28,7 @@ class xiiView;
 struct xiiViewData;
 class xiiRenderGraph;
 
-/// \brief Opaque handle to a virtual texture resource declared in the render graph.
+/// Opaque handle to a virtual texture resource declared in the render graph.
 struct XII_GRAPHICSCORE_DLL xiiRGTextureHandle : public xiiHashableStruct<xiiRGTextureHandle>
 {
   XII_DECLARE_POD_TYPE();
@@ -36,13 +36,13 @@ struct XII_GRAPHICSCORE_DLL xiiRGTextureHandle : public xiiHashableStruct<xiiRGT
   xiiUInt32 m_uiIndex   = xiiInvalidIndex; ///< Index into the graph's resource table.
   xiiUInt16 m_uiVersion = 0U;              ///< Write version - read dependencies track this.
 
-  /// \brief Returns whether this handle references a valid texture resource in the graph.
+  /// Returns whether this handle references a valid texture resource in the graph.
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool operator==(const xiiRGTextureHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex && m_uiVersion == rhs.m_uiVersion; }
 };
 
-/// \brief Opaque handle to a virtual buffer resource declared in the render graph.
+/// Opaque handle to a virtual buffer resource declared in the render graph.
 struct XII_GRAPHICSCORE_DLL xiiRGBufferHandle : public xiiHashableStruct<xiiRGBufferHandle>
 {
   XII_DECLARE_POD_TYPE();
@@ -50,24 +50,24 @@ struct XII_GRAPHICSCORE_DLL xiiRGBufferHandle : public xiiHashableStruct<xiiRGBu
   xiiUInt32 m_uiIndex   = xiiInvalidIndex; ///< Index into the graph's resource table.
   xiiUInt16 m_uiVersion = 0U;              ///< Write version - read dependencies track this.
 
-  /// \brief Returns whether this handle references a valid buffer resource in the graph.
+  /// Returns whether this handle references a valid buffer resource in the graph.
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool operator==(const xiiRGBufferHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex && m_uiVersion == rhs.m_uiVersion; }
 };
 
-/// \brief Opaque handle to a registered render pass.
+/// Opaque handle to a registered render pass.
 struct XII_GRAPHICSCORE_DLL xiiRGPassHandle : public xiiHashableStruct<xiiRGPassHandle>
 {
   XII_DECLARE_POD_TYPE();
 
   xiiUInt32 m_uiIndex = xiiInvalidIndex; ///< Index into the graph's pass table.
 
-  /// \brief Returns whether this handle references a valid pass in the graph.
+  /// Returns whether this handle references a valid pass in the graph.
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
 };
 
-/// \brief Describes a resource state barrier synthesized during compilation.
+/// Describes a resource state barrier synthesized during compilation.
 struct XII_GRAPHICSCORE_DLL xiiRGBarrierDescription : public xiiHashableStruct<xiiRGBarrierDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -84,7 +84,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGBarrierDescription : public xiiHashableStruct<x
   xiiEnum<xiiGALStateTransitionFlags>   m_TransitionFlags   = xiiGALStateTransitionFlags::None;     ///< Additional flags for the barrier, such as whether to discard content or update internal resource state. Only relevant for immediate barriers and split-barrier ends.
 };
 
-/// \brief Represents a group of consecutive passes merged into a single native render pass.
+/// Represents a group of consecutive passes merged into a single native render pass.
 ///
 /// Within a group, passes share the same set of render-target and depth-stencil attachments.
 /// The GPU never resolves tiles between passes in the group, which is critical for performance on tile-based architectures.
@@ -96,7 +96,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGMergeGroup
   xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
 };
 
-/// \brief A batch of passes submitted together to a single command queue.
+/// A batch of passes submitted together to a single command queue.
 ///
 /// The executor creates one command list per submission, records all passes, then submits it to the target queue.
 /// Cross-queue dependencies are expressed via xiiGALFence signals and device-side waits inlined into the command list before the first consuming pass.
@@ -111,7 +111,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGQueueSubmission
   xiiHybridArray<xiiUInt64, 2>                 m_WaitValues;           ///< Fence values to wait for on m_WaitFences, indexed parallel to m_WaitFences.
 };
 
-/// \brief A fully compiled render pass ready for execution.
+/// A fully compiled render pass ready for execution.
 struct XII_GRAPHICSCORE_DLL xiiRGCompiledPass
 {
   xiiHashedString                            m_sName;                               ///< Debug name for this pass, used in profiling and diagnostics.
@@ -130,7 +130,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGCompiledPass
   xiiDelegate<void(class xiiRGPassContext&)> m_ExecuteDelegate;                     ///< The execute callback records GPU commands for this pass into the command list provided by the context, using the resolved resources and blackboard data. The callback must not modify the graph or its resources, as it may be executed multiple times during the frame (e.g. for multi-GPU or split-frame rendering).
 };
 
-/// \brief Controls optional features of the render graph compiler.
+/// Controls optional features of the render graph compiler.
 struct XII_GRAPHICSCORE_DLL xiiRGCompileSettings : public xiiHashableStruct<xiiRGCompileSettings>
 {
   XII_DECLARE_POD_TYPE();
@@ -143,7 +143,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGCompileSettings : public xiiHashableStruct<xiiR
   xiiUInt32 m_uiCacheSalt          = 0U;    ///< Invalidate the compile cache without changing the graph.
 };
 
-/// \brief Per-compile statistics for diagnostics and HUD display.
+/// Per-compile statistics for diagnostics and HUD display.
 struct XII_GRAPHICSCORE_DLL xiiRGStatistics : public xiiHashableStruct<xiiRGStatistics>
 {
   XII_DECLARE_POD_TYPE();
@@ -161,7 +161,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGStatistics : public xiiHashableStruct<xiiRGStat
   bool      m_bUsedCachedCompile      = false; ///< Whether the compiler was able to skip work by reusing a cached execution plan from a previous compile with the same graph signature.
 };
 
-/// \brief Execution context passed to every pass's execute callback.
+/// Execution context passed to every pass's execute callback.
 ///
 /// Provides access to resolved GPU resources, the command list, the blackboard, the resource cache, and optional profiling / view data.
 class XII_GRAPHICSCORE_DLL xiiRGPassContext
@@ -169,28 +169,28 @@ class XII_GRAPHICSCORE_DLL xiiRGPassContext
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRGPassContext);
 
 public:
-  /// \brief Returns the command list for this pass to record GPU commands into.
+  /// Returns the command list for this pass to record GPU commands into.
   [[nodiscard]] xiiGALCommandList& GetCommandList() const;
 
-  /// \brief Resolves a virtual texture handle to its actual GPU texture for this frame.
+  /// Resolves a virtual texture handle to its actual GPU texture for this frame.
   [[nodiscard]] xiiGALTexture* GetTexture(xiiRGTextureHandle hTexture) const;
 
-  /// \brief Resolves a virtual buffer handle to its actual GPU buffer for this frame.
+  /// Resolves a virtual buffer handle to its actual GPU buffer for this frame.
   [[nodiscard]] xiiGALBuffer* GetBuffer(xiiRGBufferHandle hBuffer) const;
 
-  /// \brief Returns the per-frame blackboard for typed inter-pass data exchange.
+  /// Returns the per-frame blackboard for typed inter-pass data exchange.
   [[nodiscard]] xiiRenderGraphBlackboard& GetBlackboard() const;
 
-  /// \brief Returns the resource cache for transient GPU resource allocation.
+  /// Returns the resource cache for transient GPU resource allocation.
   [[nodiscard]] xiiRenderGraphResourceCache& GetResourceCache() const;
 
-  /// \brief Returns the current view (may be null for headless passes).
+  /// Returns the current view (may be null for headless passes).
   [[nodiscard]] const xiiView* GetView() const;
 
-  /// \brief Returns the frame index for the current execution.
+  /// Returns the frame index for the current execution.
   [[nodiscard]] xiiUInt64 GetFrameIndex() const;
 
-  /// \brief Returns the pass name for labeling / assertions.
+  /// Returns the pass name for labeling / assertions.
   [[nodiscard]] xiiHashedString GetPassName() const;
 
 private:
@@ -210,7 +210,7 @@ private:
   xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>>  m_ResolvedBuffers;
 };
 
-/// \brief Declarative API used inside a pass's setup callback to declare resource usage.
+/// Declarative API used inside a pass's setup callback to declare resource usage.
 ///
 /// Each call to Read* or Write* records a dependency edge in the graph's dependency table and advances the resource version on writes.
 /// The builder may only be used within the setup callback passed to xiiRenderGraph::AddPass().
@@ -219,55 +219,55 @@ class XII_GRAPHICSCORE_DLL xiiRGBuilder
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRGBuilder);
 
 public:
-  /// \brief Declares a new transient texture resource owned by the graph.
+  /// Declares a new transient texture resource owned by the graph.
   ///        Returns a handle pointing to version 0 (unwritten). Normally followed immediately by WriteTexture() to register the first write.
   [[nodiscard]] xiiRGTextureHandle DeclareTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description);
 
-  /// \brief Imports an externally-owned texture as a read-only graph resource.
+  /// Imports an externally-owned texture as a read-only graph resource.
   [[nodiscard]] xiiRGTextureHandle ImportTexture(xiiStringView sName, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> currentState);
 
-  /// \brief Declares a read dependency on the given texture at its current version.
+  /// Declares a read dependency on the given texture at its current version.
   ///        Creates a dependency edge: this pass depends on the last writer.
   [[nodiscard]] xiiRGTextureHandle ReadTexture(xiiRGTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Read a previously declared/imported texture by name. This is less efficient than using the handle directly, so prefer to store the handle if you need to read the same resource multiple times.
+  /// Read a previously declared/imported texture by name. This is less efficient than using the handle directly, so prefer to store the handle if you need to read the same resource multiple times.
   [[nodiscard]] xiiRGTextureHandle ReadTexture(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Declares a write to the given texture, bumping its version.
+  /// Declares a write to the given texture, bumping its version.
   ///        Returns the new versioned handle - store this, not the input handle.
   [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiRGTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Declares a new transient texture resource owned by the graph and registers the first write in one call.
+  /// Declares a new transient texture resource owned by the graph and registers the first write in one call.
   [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
 
-  /// \brief Declares a new transient buffer resource owned by the graph.
+  /// Declares a new transient buffer resource owned by the graph.
   ///        Returns a handle pointing to version 0 (unwritten). Normally followed immediately by WriteBuffer() to register the first write.
   [[nodiscard]] xiiRGBufferHandle DeclareBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description);
 
-  /// \brief Imports an externally-owned buffer as a read-only graph resource.
+  /// Imports an externally-owned buffer as a read-only graph resource.
   [[nodiscard]] xiiRGBufferHandle ImportBuffer(xiiStringView sName, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> currentState);
 
-  /// \brief Declares a read dependency on the given buffer at its current version.
+  /// Declares a read dependency on the given buffer at its current version.
   ///        Creates a dependency edge: this pass depends on the last writer.
   [[nodiscard]] xiiRGBufferHandle ReadBuffer(xiiRGBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Read a previously declared/imported buffer by name. This is less efficient than using the handle directly, so prefer to store the handle if you need to read the same resource multiple times.
+  /// Read a previously declared/imported buffer by name. This is less efficient than using the handle directly, so prefer to store the handle if you need to read the same resource multiple times.
   [[nodiscard]] xiiRGBufferHandle ReadBuffer(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Declares a write to the given buffer, bumping its version.
+  /// Declares a write to the given buffer, bumping its version.
   ///        Returns the new versioned handle - store this, not the input handle.
   [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiRGBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Declares a new transient buffer resource owned by the graph and registers the first write in one call.
+  /// Declares a new transient buffer resource owned by the graph and registers the first write in one call.
   [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
 
-  /// \brief Marks this pass as having side effects that prevent it from being culled.
+  /// Marks this pass as having side effects that prevent it from being culled.
   ///        Call this for passes that write to swap-chain images, initiate readbacks, etc.
   void SetPassSideEffects(bool bHasSideEffects);
 
-  /// \brief Controls whether this pass participates in render-pass merge groups.
+  /// Controls whether this pass participates in render-pass merge groups.
   ///        Default is true. Set to false if the pass must stand alone (e.g. readback).
   void SetPassAllowMerge(bool bAllowMerge);
 
@@ -280,7 +280,7 @@ private:
   xiiUInt32       m_uiPassIndex;
 };
 
-/// \brief Advanced high-performance render graph.
+/// Advanced high-performance render graph.
 ///
 /// ## Usage per frame
 /// \code{.cpp}
@@ -321,11 +321,11 @@ public:
   xiiRenderGraph();
   ~xiiRenderGraph();
 
-  /// \brief Begins graph setup for the given frame index.
+  /// Begins graph setup for the given frame index.
   ///        Clears all pass registrations and resource declarations from the previous frame.
   void BeginSetup(xiiUInt64 uiFrameIndex);
 
-  /// \brief Registers a typed pass and immediately invokes its setup callback.
+  /// Registers a typed pass and immediately invokes its setup callback.
   ///
   /// \tparam TPassData - Plain data struct holding per-frame data and resource handles. Must be default-constructible. Lifetime is managed by the graph.
   ///
@@ -339,10 +339,10 @@ public:
   template <typename TPassData>
   std::pair<TPassData*, xiiRGPassHandle> AddPass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, xiiDelegate<void(TPassData&, xiiRGBuilder&)> setupDelegate, xiiDelegate<void(const TPassData&, xiiRGPassContext&)> executeDelegate, bool bHasSideEffects = false);
 
-  /// \brief Finalizes the setup phase. Must be called after all AddPass calls.
+  /// Finalizes the setup phase. Must be called after all AddPass calls.
   void EndSetup();
 
-  /// \brief Compiles the render graph.
+  /// Compiles the render graph.
   ///
   /// Runs all 7 compiler phases:
   ///   A. Resource versioning (already completed during AddPass setup callbacks).
@@ -360,7 +360,7 @@ public:
   [[nodiscard]] xiiResult Compile(const xiiRGCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
 
 
-  /// \brief Executes the compiled render graph.
+  /// Executes the compiled render graph.
   ///
   /// For each xiiRGQueueSubmission:
   ///   1. Acquires the xiiGALCommandQueue via pDevice->GetCommandQueue(queueFlags).
@@ -389,25 +389,25 @@ public:
   [[nodiscard]] xiiResult Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler = nullptr, xiiStringBuilder* out_pError = nullptr);
 
 
-  /// \brief Returns the graph's compile-time statistics, populated after Compile() and useful for diagnostics.
+  /// Returns the graph's compile-time statistics, populated after Compile() and useful for diagnostics.
   [[nodiscard]] const xiiRGStatistics& GetStatistics() const;
 
-  /// \brief Returns the list of compiled passes, in execution order, with all metadata needed for execution and profiling.
+  /// Returns the list of compiled passes, in execution order, with all metadata needed for execution and profiling.
   [[nodiscard]] xiiArrayPtr<const xiiRGCompiledPass> GetCompiledPasses() const;
 
-  /// \brief Returns the list of resource barriers synthesized by the compiler, in the order they are emitted during execution.
+  /// Returns the list of resource barriers synthesized by the compiler, in the order they are emitted during execution.
   [[nodiscard]] xiiArrayPtr<const xiiRGBarrierDescription> GetBarriers() const;
 
-  /// \brief Returns the list of render pass merge groups synthesized by the compiler.
+  /// Returns the list of render pass merge groups synthesized by the compiler.
   [[nodiscard]] xiiArrayPtr<const xiiRGMergeGroup> GetMergeGroups() const;
 
-  /// \brief Returns the list of queue submissions synthesized by the compiler, in execution order.
+  /// Returns the list of queue submissions synthesized by the compiler, in execution order.
   [[nodiscard]] xiiArrayPtr<const xiiRGQueueSubmission> GetQueueSubmissions() const;
 
-  /// \brief Serializes the compiled graph to a DOT string for Graphviz visualization.
+  /// Serializes the compiled graph to a DOT string for Graphviz visualization.
   [[nodiscard]] xiiResult DumpToDot(xiiStringBuilder& out_sDot) const;
 
-  /// \brief True if the graph has been compiled and not yet invalidated.
+  /// True if the graph has been compiled and not yet invalidated.
   [[nodiscard]] bool IsCompiled() const;
 
 private:

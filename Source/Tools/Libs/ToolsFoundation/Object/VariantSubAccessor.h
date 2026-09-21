@@ -6,23 +6,23 @@
 
 class xiiDocumentObject;
 
-/// \brief Accessor for a sub-tree on an xiiVariant property.
+/// Accessor for a sub-tree on an xiiVariant property.
 /// The tools foundation code uses an xiiDocumentObject, one of its xiiAbstractProperty and an optional xiiVariant index to reference to properties. Any deeper hierarchies must be built from additional objects. This principle prevents the GUI to reference anything inside an xiiVariant that stores an VariantArray or VariantDictionary as xiiVariant is a pure value type and cannot store additional objects on the tool side. To work around this, this class creates a view one level deeper into an xiiVariant. This is done by calling SetSubItems which for each object in the map moves the view into the sub-tree referenced by the given value of the map.
 class XII_TOOLSFOUNDATION_DLL xiiVariantSubAccessor : public xiiObjectProxyAccessor
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiVariantSubAccessor, xiiObjectProxyAccessor);
 
 public:
-  /// \brief Constructor
+  /// Constructor
   /// \param pSource The original accessor that is going to be proxied. By chaining this class an xiiVariant can be explored deeper and deeper.
   /// \param pProp The xiiVariant property that is going to be proxied. Only this property is allowed to be accessed by the accessor functions.
   xiiVariantSubAccessor(xiiObjectAccessorBase* pSource, const xiiAbstractProperty* pProp);
-  /// \brief Sets the sub-tree indices for the selected objects.
+  /// Sets the sub-tree indices for the selected objects.
   /// \param subItemMap Object to index map. Note that as this is in the ToolsFoundation it cannot use the xiiPropertySelection class.
   void SetSubItems(const xiiMap<const xiiDocumentObject*, xiiVariant>& subItemMap);
-  /// \brief Returns the property this accessor wraps.
+  /// Returns the property this accessor wraps.
   const xiiAbstractProperty* GetRootProperty() const { return m_pProp; }
-  /// \brief How many level deep the view is inside the property.
+  /// How many level deep the view is inside the property.
   xiiInt32 GetDepth() const;
   /// Builds a path up the hierarchy of wrapped xiiVariantSubAccessor objects to determine the path to the current sub-tree of the xiiVariant.
   /// \param pObject The object for which the path should be computed

@@ -9,7 +9,7 @@
 
 class xiiCameraComponent;
 
-/// \brief xiiFallbackGameState is an xiiGameState that can handle existing worlds when no other game state is available.
+/// xiiFallbackGameState is an xiiGameState that can handle existing worlds when no other game state is available.
 ///
 /// This game state returns a priority of 'Fallback' in DeterminePriority() and therefore only takes over when
 /// no other game state is available.
@@ -28,11 +28,11 @@ public:
 
   virtual void OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset) override;
 
-  /// \brief Reports true for xiiFallbackGameState only, not for derived types.
+  /// Reports true for xiiFallbackGameState only, not for derived types.
   virtual bool IsFallbackGameState() const override;
 
 protected:
-  /// \brief Called by SwitchToLoadingScreen() to setup a new world that acts as the loading screen while waiting for another scene to finish loading.
+  /// Called by SwitchToLoadingScreen() to setup a new world that acts as the loading screen while waiting for another scene to finish loading.
   virtual void      ConfigureInputActions() override;
   virtual xiiResult SpawnPlayer(xiiStringView sStartPosition, const xiiTransform& startPositionOffset) override;
 

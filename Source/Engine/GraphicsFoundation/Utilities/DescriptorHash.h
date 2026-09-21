@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-/// \brief Provides hash functions for GAL descriptor objects.
+/// Provides hash functions for GAL descriptor objects.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDescriptorHash
 {
 public:

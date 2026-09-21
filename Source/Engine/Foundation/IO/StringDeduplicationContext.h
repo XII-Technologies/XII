@@ -11,7 +11,7 @@
 class xiiStreamWriter;
 class xiiStreamReader;
 
-/// \brief This class allows for automatic deduplication of strings written to a stream.
+/// This class allows for automatic deduplication of strings written to a stream.
 /// To use, create an object of this type on the stack, call Begin() and use the returned
 /// xiiStreamWriter for subsequent serialization operations. Call End() once you want to finish writing
 /// deduplicated strings. For a sample see StreamOperationsTest.cpp
@@ -20,24 +20,24 @@ class XII_FOUNDATION_DLL xiiStringDeduplicationWriteContext : public xiiSerializ
   XII_DECLARE_SERIALIZATION_CONTEXT(xiiStringDeduplicationWriteContext);
 
 public:
-  /// \brief Setup the write context to perform string deduplication.
+  /// Setup the write context to perform string deduplication.
   xiiStringDeduplicationWriteContext(xiiStreamWriter& ref_originalStream);
   ~xiiStringDeduplicationWriteContext();
 
-  /// \brief Call this method to begin string deduplicaton. You need to use the returned stream writer for subsequent serialization operations until
+  /// Call this method to begin string deduplicaton. You need to use the returned stream writer for subsequent serialization operations until
   /// End() is called.
   xiiStreamWriter& Begin();
 
-  /// \brief Ends the string deduplication and writes the string table to the original stream
+  /// Ends the string deduplication and writes the string table to the original stream
   xiiResult End();
 
-  /// \brief Internal method to serialize a string.
+  /// Internal method to serialize a string.
   void SerializeString(const xiiStringView& sString, xiiStreamWriter& ref_writer);
 
-  /// \brief Returns the number of unique strings which were serialized with this instance.
+  /// Returns the number of unique strings which were serialized with this instance.
   xiiUInt32 GetUniqueStringCount() const;
 
-  /// \brief Returns the original stream that was passed to the constructor.
+  /// Returns the original stream that was passed to the constructor.
   xiiStreamWriter& GetOriginalStream() { return m_OriginalStream; }
 
 protected:
@@ -49,17 +49,17 @@ protected:
   xiiMap<xiiHybridString<64>, xiiUInt32> m_DeduplicatedStrings;
 };
 
-/// \brief This class to restore strings written to a stream using a xiiStringDeduplicationWriteContext.
+/// This class to restore strings written to a stream using a xiiStringDeduplicationWriteContext.
 class XII_FOUNDATION_DLL xiiStringDeduplicationReadContext : public xiiSerializationContext<xiiStringDeduplicationReadContext>
 {
   XII_DECLARE_SERIALIZATION_CONTEXT(xiiStringDeduplicationReadContext);
 
 public:
-  /// \brief Setup the string table used internally.
+  /// Setup the string table used internally.
   xiiStringDeduplicationReadContext(xiiStreamReader& ref_stream);
   ~xiiStringDeduplicationReadContext();
 
-  /// \brief Internal method to deserialize a string.
+  /// Internal method to deserialize a string.
   xiiStringView DeserializeString(xiiStreamReader& ref_reader);
 
 protected:

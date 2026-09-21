@@ -8,7 +8,7 @@
 
 class xiiRTTI;
 
-/// \brief Do not cast into this class or any of its derived classes, use xiiTypedArrayProperty instead.
+/// Do not cast into this class or any of its derived classes, use xiiTypedArrayProperty instead.
 template <typename Type>
 class xiiTypedArrayProperty : public xiiAbstractArrayProperty
 {
@@ -24,7 +24,7 @@ public:
   virtual const xiiRTTI* GetSpecificType() const override { return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferencePointerType>(); }
 };
 
-/// \brief Specialization of xiiTypedArrayProperty to retain the pointer in const char*.
+/// Specialization of xiiTypedArrayProperty to retain the pointer in const char*.
 template <>
 class xiiTypedArrayProperty<const char*> : public xiiAbstractArrayProperty
 {
@@ -217,7 +217,7 @@ private:
   GetContainerFunc      m_Getter;
 };
 
-/// \brief Read only version of xiiMemberArrayProperty that does not call any functions that modify the array. This is needed to reflect xiiArrayPtr members.
+/// Read only version of xiiMemberArrayProperty that does not call any functions that modify the array. This is needed to reflect xiiArrayPtr members.
 template <typename Class, typename Container, typename Type>
 class xiiMemberArrayReadOnlyProperty : public xiiTypedArrayProperty<typename xiiTypeTraits<Type>::NonConstReferenceType>
 {

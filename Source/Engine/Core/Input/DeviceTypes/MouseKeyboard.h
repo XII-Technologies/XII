@@ -5,7 +5,7 @@
 #include <Core/Input/InputDevice.h>
 #include <Foundation/Math/Vec2.h>
 
-/// \brief Specifies how to restrict movement of the Operating System mouse
+/// Specifies how to restrict movement of the Operating System mouse
 struct xiiMouseCursorClipMode
 {
   enum Enum
@@ -19,7 +19,7 @@ struct xiiMouseCursorClipMode
   };
 };
 
-/// \brief This is the base class for all input devices that handle mouse and keyboard input.
+/// This is the base class for all input devices that handle mouse and keyboard input.
 ///
 /// This class is derived from xiiInputDevice but adds interface functions to handle mouse and keyboard input.
 class XII_CORE_DLL xiiInputDeviceMouseKeyboard : public xiiInputDevice
@@ -29,13 +29,13 @@ class XII_CORE_DLL xiiInputDeviceMouseKeyboard : public xiiInputDevice
 public:
   xiiInputDeviceMouseKeyboard() { m_vMouseScale.Set(1.0f); }
 
-  /// \brief Shows or hides the mouse cursor inside the application window.
+  /// Shows or hides the mouse cursor inside the application window.
   virtual void SetShowMouseCursor(bool bShow) = 0;
 
-  /// \brief Returns whether the mouse cursor is shown.
+  /// Returns whether the mouse cursor is shown.
   virtual bool GetShowMouseCursor() const = 0;
 
-  /// \brief Will trap the mouse inside the application window. Should usually be enabled, to prevent accidental task switches.
+  /// Will trap the mouse inside the application window. Should usually be enabled, to prevent accidental task switches.
   ///
   /// Especially on multi-monitor systems, the mouse can easily leave the application window (even in fullscreen mode).
   /// Do NOT use this function when you have multiple windows and require absolute mouse positions.
@@ -43,19 +43,19 @@ public:
   /// \sa xiiMouseCursorClipMode
   virtual void SetClipMouseCursor(xiiMouseCursorClipMode::Enum mode) = 0;
 
-  /// \brief Returns whether the mouse is confined to the application window or not.
+  /// Returns whether the mouse is confined to the application window or not.
   virtual xiiMouseCursorClipMode::Enum GetClipMouseCursor() const = 0;
 
-  /// \brief Sets the scaling factor that is applied on all (relative) mouse input.
+  /// Sets the scaling factor that is applied on all (relative) mouse input.
   virtual void SetMouseSpeed(const xiiVec2& vScale) { m_vMouseScale = vScale; }
 
-  /// \brief Returns the scaling factor that is applied on all (relative) mouse input.
+  /// Returns the scaling factor that is applied on all (relative) mouse input.
   xiiVec2 GetMouseSpeed() const { return m_vMouseScale; }
 
-  /// \brief Returns the number of the xiiWindow over which the mouse moved last.
+  /// Returns the number of the xiiWindow over which the mouse moved last.
   static xiiInt32 GetWindowNumberMouseIsOver() { return s_iMouseIsOverWindowNumber; }
 
-  /// \brief Returns if the associated xiiWindow has focus
+  /// Returns if the associated xiiWindow has focus
   bool IsFocused() { return m_bIsFocused; }
 
 protected:

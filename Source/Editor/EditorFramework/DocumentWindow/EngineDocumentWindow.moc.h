@@ -31,7 +31,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiEngineWindowEvent
   xiiQtEngineViewWidget* m_pView = nullptr;
 };
 
-/// \brief Base class for all document windows that need a connection to the engine process, and might want to render 3D content.
+/// Base class for all document windows that need a connection to the engine process, and might want to render 3D content.
 ///
 /// This class has a xiiEditorEngineConnection object for sending messages between the editor and the engine process.
 /// It also allows to embed xiiQtEngineViewWidget objects into the UI, which enable 3D rendering by the engine process.
@@ -48,10 +48,10 @@ public:
 
   xiiAssetDocument* GetDocument() const;
 
-  /// \brief Returns the xiiQtEngineViewWidget over which the mouse currently hovers
+  /// Returns the xiiQtEngineViewWidget over which the mouse currently hovers
   xiiQtEngineViewWidget* GetHoveredViewWidget() const;
 
-  /// \brief Returns the xiiQtEngineViewWidget that has the input focus
+  /// Returns the xiiQtEngineViewWidget that has the input focus
   xiiQtEngineViewWidget* GetFocusedViewWidget() const;
 
   xiiQtEngineViewWidget* GetViewWidgetByID(xiiUInt32 uiViewID) const;

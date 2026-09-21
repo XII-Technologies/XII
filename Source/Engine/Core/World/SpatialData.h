@@ -45,19 +45,19 @@ struct xiiSpatialData
     XII_ALWAYS_INLINE xiiUInt32 GetBitmask() const { return m_uiValue != xiiSmallInvalidIndex ? static_cast<xiiUInt32>(XII_BIT(m_uiValue)) : 0; }
   };
 
-  /// \brief Registers a spatial data category under the given name.
+  /// Registers a spatial data category under the given name.
   ///
   /// If the same category was already registered before, it returns that instead.
   /// Asserts that there are no more than 32 unique categories.
   XII_CORE_DLL static Category RegisterCategory(xiiStringView sCategoryName, const xiiBitflags<Flags>& flags);
 
-  /// \brief Returns either an existing category with the given name or xiiInvalidSpatialDataCategory.
+  /// Returns either an existing category with the given name or xiiInvalidSpatialDataCategory.
   XII_CORE_DLL static Category FindCategory(xiiStringView sCategoryName);
 
-  /// \brief Returns the name of the given category.
+  /// Returns the name of the given category.
   XII_CORE_DLL static const xiiHashedString& GetCategoryName(Category category);
 
-  /// \brief Returns the flags for the given category.
+  /// Returns the flags for the given category.
   XII_CORE_DLL static const xiiBitflags<Flags>& GetCategoryFlags(Category category);
 
 private:
@@ -78,7 +78,7 @@ struct XII_CORE_DLL xiiDefaultSpatialDataCategories
   static xiiSpatialData::Category OcclusionDynamic;
 };
 
-/// \brief When an object is 'seen' by a view and thus tagged as 'visible', this enum describes what kind of observer triggered this.
+/// When an object is 'seen' by a view and thus tagged as 'visible', this enum describes what kind of observer triggered this.
 ///
 /// This is used to determine how important certain updates, such as animations, are to execute.
 /// E.g. when a 'shadow view' or 'reflection view' is the only thing that observes an object, animations / particle effects and so on,

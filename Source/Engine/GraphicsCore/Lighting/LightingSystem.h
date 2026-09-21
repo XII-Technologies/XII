@@ -18,7 +18,7 @@ class xiiGALDevice;
 class xiiRenderGraphBlackboard;
 class xiiView;
 
-/// \brief CPU-side settings for the clustered lighting data path.
+/// CPU-side settings for the clustered lighting data path.
 struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
 {
   XII_DECLARE_POD_TYPE();
@@ -39,7 +39,7 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   float     m_fVolumetricAnisotropy    = 0.45f;
 };
 
-/// \brief Light representation consumed by clustered lighting shaders.
+/// Light representation consumed by clustered lighting shaders.
 ///
 /// The layout is intentionally 16-byte aligned and mirrors Data/Base/Shaders/Pipeline/LightingData.h.
 struct XII_GRAPHICSCORE_DLL xiiGpuLightData
@@ -58,7 +58,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuLightData
 
 static_assert(sizeof(xiiGpuLightData) == 128);
 
-/// \brief Per-view lighting system that owns extracted light data and GAL upload resources.
+/// Per-view lighting system that owns extracted light data and GAL upload resources.
 class XII_GRAPHICSCORE_DLL xiiLightingSystem
 {
 public:

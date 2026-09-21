@@ -5,7 +5,7 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Threading/Implementation/ThreadingDeclarations.h>
 
-/// \brief Provides a simple mechanism for mutual exclusion to prevent multiple threads from accessing a shared resource simultaneously.
+/// Provides a simple mechanism for mutual exclusion to prevent multiple threads from accessing a shared resource simultaneously.
 ///
 /// This can be used to protect code that is not thread-safe against race conditions.
 /// To ensure that mutexes are always properly released, use the xiiLock class or XII_LOCK macro.
@@ -19,18 +19,18 @@ public:
   xiiMutex();
   ~xiiMutex();
 
-  /// \brief Acquires an exclusive lock for this mutex object
+  /// Acquires an exclusive lock for this mutex object
   void Lock();
 
-  /// \brief Attempts to acquire an exclusive lock for this mutex object. Returns true on success.
+  /// Attempts to acquire an exclusive lock for this mutex object. Returns true on success.
   ///
   /// If the mutex is already acquired by another thread, the function returns immediately and returns false.
   xiiResult TryLock();
 
-  /// \brief Releases a lock that has been previously acquired
+  /// Releases a lock that has been previously acquired
   void Unlock();
 
-  /// \brief Returns true, if the mutex is currently acquired. Can be used to assert that a lock was entered.
+  /// Returns true, if the mutex is currently acquired. Can be used to assert that a lock was entered.
   ///
   /// Obviously, this check is not thread-safe and should not be used to check whether a mutex could be locked without blocking.
   /// Use TryLock for that instead.
@@ -43,20 +43,20 @@ private:
   xiiInt32       m_iLockCount = 0;
 };
 
-/// \brief A dummy mutex that does no locking.
+/// A dummy mutex that does no locking.
 ///
 /// Used when a mutex object needs to be passed to some code (such as allocators), but thread-synchronization
 /// is actually not necessary.
 class XII_FOUNDATION_DLL xiiNoMutex
 {
 public:
-  /// \brief Implements the 'Acquire' interface function, but does nothing.
+  /// Implements the 'Acquire' interface function, but does nothing.
   XII_ALWAYS_INLINE void Lock() {}
 
-  /// \brief Implements the 'TryLock' interface function, but does nothing.
+  /// Implements the 'TryLock' interface function, but does nothing.
   XII_ALWAYS_INLINE xiiResult TryLock() { return XII_SUCCESS; }
 
-  /// \brief Implements the 'Release' interface function, but does nothing.
+  /// Implements the 'Release' interface function, but does nothing.
   XII_ALWAYS_INLINE void Unlock() {}
 
   XII_ALWAYS_INLINE bool IsLocked() const { return false; }

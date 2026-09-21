@@ -10,16 +10,16 @@
 
 #include <GraphicsFoundation/States/PipelineState.h>
 
-/// \brief A cache from pipeline descriptor to handle which holds a reference to each pipeline that is never freed until shutdown.
+/// A cache from pipeline descriptor to handle which holds a reference to each pipeline that is never freed until shutdown.
 class XII_GRAPHICSCORE_DLL xiiGALPipelineCache
 {
   XII_DECLARE_SINGLETON(xiiGALPipelineCache);
 
 public:
-  /// \brief Creates a pipeline or retrieves it from the cache.
+  /// Creates a pipeline or retrieves it from the cache.
   static xiiSharedPtr<xiiGALGraphicsPipelineState> GetPipeline(const xiiGALGraphicsPipelineStateCreationDescription& description);
 
-  /// \brief Creates a pipeline or retrieves it from the cache.
+  /// Creates a pipeline or retrieves it from the cache.
   static xiiSharedPtr<xiiGALComputePipelineState> GetPipeline(const xiiGALComputePipelineStateCreationDescription& description);
 
 private:

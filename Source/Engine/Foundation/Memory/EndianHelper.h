@@ -4,11 +4,11 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief Collection of helper methods when working with endianness "problems".
+/// Collection of helper methods when working with endianness "problems".
 struct XII_FOUNDATION_DLL xiiEndianHelper
 {
 
-  /// \brief Returns true if called on a big endian system, false otherwise.
+  /// Returns true if called on a big endian system, false otherwise.
   ///
   /// \note Note that usually the compile time decisions with the defines XII_PLATFORM_LITTLE_ENDIAN, XII_PLATFORM_BIG_ENDIAN is preferred.
   static inline bool IsBigEndian()
@@ -17,12 +17,12 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
     return (*(char*)&i) == 0;
   }
 
-  /// \brief Returns true if called on a little endian system, false otherwise.
+  /// Returns true if called on a little endian system, false otherwise.
   ///
   /// \note Note that usually the compile time decisions with the defines XII_PLATFORM_LITTLE_ENDIAN, XII_PLATFORM_BIG_ENDIAN is preferred.
   static inline bool IsLittleEndian() { return !IsBigEndian(); }
 
-  /// \brief Switches endianness of the given array of words (16 bit values).
+  /// Switches endianness of the given array of words (16 bit values).
   static inline void SwitchWords(xiiUInt16* pWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; ++i)
@@ -31,7 +31,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
     }
   }
 
-  /// \brief Switches endianness of the given array of double words (32 bit values).
+  /// Switches endianness of the given array of double words (32 bit values).
   static inline void SwitchDWords(xiiUInt32* pDWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; ++i)
@@ -40,7 +40,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
     }
   }
 
-  /// \brief Switches endianness of the given array of quad words (64 bit values).
+  /// Switches endianness of the given array of quad words (64 bit values).
   static inline void SwitchQWords(xiiUInt64* pQWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; ++i)
@@ -49,19 +49,19 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
     }
   }
 
-  /// \brief Returns a single switched word (16 bit value).
+  /// Returns a single switched word (16 bit value).
   static XII_ALWAYS_INLINE xiiUInt16 Switch(xiiUInt16 uiWord) // [tested]
   {
     return (((uiWord & 0xFF) << 8) | ((uiWord >> 8) & 0xFF));
   }
 
-  /// \brief Returns a single switched double word (32 bit value).
+  /// Returns a single switched double word (32 bit value).
   static XII_ALWAYS_INLINE xiiUInt32 Switch(xiiUInt32 uiDWord) // [tested]
   {
     return (((uiDWord & 0xFF) << 24) | (((uiDWord >> 8) & 0xFF) << 16) | (((uiDWord >> 16) & 0xFF) << 8) | ((uiDWord >> 24) & 0xFF));
   }
 
-  /// \brief Returns a single switched quad word (64 bit value).
+  /// Returns a single switched quad word (64 bit value).
   static XII_ALWAYS_INLINE xiiUInt64 Switch(xiiUInt64 uiQWord) // [tested]
   {
     return (((uiQWord & 0xFF) << 56) | ((uiQWord & 0xFF00) << 40) | ((uiQWord & 0xFF0000) << 24) | ((uiQWord & 0xFF000000) << 8) |
@@ -69,7 +69,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
             ((uiQWord & 0xFF00000000000000) >> 56));
   }
 
-  /// \brief Switches a value in place (template accepts pointers for 2, 4 & 8 byte data types)
+  /// Switches a value in place (template accepts pointers for 2, 4 & 8 byte data types)
   template <typename T>
   static void SwitchInPlace(T* pValue) // [tested]
   {
@@ -186,7 +186,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
 #endif
 
 
-  /// \brief Switches a given struct according to the layout described in the szFormat parameter
+  /// Switches a given struct according to the layout described in the szFormat parameter
   ///
   /// The format string may contain the characters:
   ///  - c, b for a member of 1 byte
@@ -195,14 +195,14 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   ///  - q for a member of 8 bytes (DWORD, xiiUInt64)
   static void SwitchStruct(void* pDataPointer, const char* szFormat);
 
-  /// \brief Templated helper method for SwitchStruct
+  /// Templated helper method for SwitchStruct
   template <typename T>
   static void SwitchStruct(T* pDataPointer, const char* szFormat) // [tested]
   {
     SwitchStruct(static_cast<void*>(pDataPointer), szFormat);
   }
 
-  /// \brief Switches a given set of struct according to the layout described in the szFormat parameter
+  /// Switches a given set of struct according to the layout described in the szFormat parameter
   ///
   /// The format string may contain the characters:
   ///  - c, b for a member of 1 byte
@@ -211,7 +211,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   ///  - q for a member of 8 bytes (DWORD, xiiUInt64)
   static void SwitchStructs(void* pDataPointer, const char* szFormat, xiiUInt32 uiStride, xiiUInt32 uiCount); // [tested]
 
-  /// \brief Templated helper method for SwitchStructs
+  /// Templated helper method for SwitchStructs
   template <typename T>
   static void SwitchStructs(T* pDataPointer, const char* szFormat, xiiUInt32 uiCount) // [tested]
   {

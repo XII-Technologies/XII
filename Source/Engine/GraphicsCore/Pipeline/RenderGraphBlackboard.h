@@ -9,7 +9,7 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/Variant.h>
 
-/// \brief Thread-safe per-frame key-value store for inter-pass data exchange in the render graph.
+/// Thread-safe per-frame key-value store for inter-pass data exchange in the render graph.
 ///
 /// Passes and external systems write typed values during graph setup or before Execute(). During
 /// Execute(), all parallel pass threads may safely read concurrently via TryGet() and Contains().
@@ -22,31 +22,31 @@
 class XII_GRAPHICSCORE_DLL xiiRenderGraphBlackboard
 {
 public:
-  /// \brief Stores a typed value under the given key. Replaces any previously stored value. Not thread-safe, must be called before Execute().
+  /// Stores a typed value under the given key. Replaces any previously stored value. Not thread-safe, must be called before Execute().
   template <typename T>
   void Set(xiiStringView sKey, const T& value);
 
-  /// \brief Stores a typed value by move. Not thread-safe, must be called before Execute().
+  /// Stores a typed value by move. Not thread-safe, must be called before Execute().
   template <typename T>
   void Set(xiiStringView sKey, T&& value);
 
-  /// \brief Attempts to retrieve and cast a value to type T. Thread-safe, safe to call from parallel execute threads.
+  /// Attempts to retrieve and cast a value to type T. Thread-safe, safe to call from parallel execute threads.
   ///
   /// \returns True if the key exists and the stored value is of type T, false otherwise.
   template <typename T>
   [[nodiscard]] bool TryGet(xiiStringView sKey, T& out_value) const;
 
-  /// \brief Returns a typed reference to the stored value. Thread-safe, safe to call from parallel execute threads.
+  /// Returns a typed reference to the stored value. Thread-safe, safe to call from parallel execute threads.
   template <typename T>
   [[nodiscard]] const T& GetRef(xiiStringView sKey) const;
 
-  /// \brief Returns true if the given key is present. Thread-safe, safe to call from parallel execute threads.
+  /// Returns true if the given key is present. Thread-safe, safe to call from parallel execute threads.
   [[nodiscard]] bool Contains(xiiStringView sKey) const;
 
-  /// \brief Removes the entry for the given key. Not thread-safe.
+  /// Removes the entry for the given key. Not thread-safe.
   void Remove(xiiStringView sKey);
 
-  /// \brief Clears all entries. Not thread-safe.
+  /// Clears all entries. Not thread-safe.
   void Clear();
 
 private:

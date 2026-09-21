@@ -54,7 +54,7 @@ private:
 
   void ReportError(const xiiToken* pToken, const xiiFormatString& message);
 
-  /// \brief Checks whether all outputs have been written
+  /// Checks whether all outputs have been written
   xiiResult CheckOutputs();
 
   Options m_Options;

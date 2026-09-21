@@ -15,7 +15,7 @@ struct XII_CORE_DLL xiiColorGradientResourceDescriptor
 
 using xiiColorGradientResourceHandle = xiiTypedResourceHandle<class xiiColorGradientResource>;
 
-/// \brief A resource that stores a single color gradient. The data is stored in the descriptor.
+/// A resource that stores a single color gradient. The data is stored in the descriptor.
 class XII_CORE_DLL xiiColorGradientResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiColorGradientResource, xiiResource);
@@ -25,7 +25,7 @@ class XII_CORE_DLL xiiColorGradientResource : public xiiResource
 public:
   xiiColorGradientResource();
 
-  /// \brief Returns all the data that is stored in this resource.
+  /// Returns all the data that is stored in this resource.
   const xiiColorGradientResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
 
   inline xiiColor Evaluate(double x) const

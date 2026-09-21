@@ -5,7 +5,7 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Math/Vec2.h>
 
-/// \brief A simple rectangle class templated on the type for x, y and width, height.
+/// A simple rectangle class templated on the type for x, y and width, height.
 ///
 template <typename Type>
 class xiiRectTemplate
@@ -24,34 +24,34 @@ public:
 
   // *** Constructors ***
 public:
-  /// \brief Default constructor does not initialize the data.
+  /// Default constructor does not initialize the data.
   xiiRectTemplate();
 
-  /// \brief Constructor to set all values.
+  /// Constructor to set all values.
   xiiRectTemplate(Type x, Type y, Type width, Type height);
 
-  /// \brief Initializes x and y with zero, width and height with the given values.
+  /// Initializes x and y with zero, width and height with the given values.
   xiiRectTemplate(Type width, Type height);
 
-  /// \brief Initializes x and y from pos, width and height from vSize.
+  /// Initializes x and y from pos, width and height from vSize.
   xiiRectTemplate(const xiiVec2Template<Type>& vTopLeftPosition, const xiiVec2Template<Type>& vSize);
 
-  /// \brief Creates an 'invalid' rect.
+  /// Creates an 'invalid' rect.
   ///
   /// IsValid() will return false.
   /// It is possible to make an invalid rect valid using ExpandToInclude().
   [[nodiscard]] static xiiRectTemplate<Type> MakeInvalid();
 
-  /// \brief Creates a rect that is located at the origin and has zero size. This is a 'valid' rect.
+  /// Creates a rect that is located at the origin and has zero size. This is a 'valid' rect.
   [[nodiscard]] static xiiRectTemplate<Type> MakeZero();
 
-  /// \brief Creates a rect that is the intersection of the two provided rects.
+  /// Creates a rect that is the intersection of the two provided rects.
   ///
   /// If the two rects don't overlap, the result will be a valid rect, but have zero area.
   /// See IsValid() and HasNonZeroArea().
   [[nodiscard]] static xiiRectTemplate<Type> MakeIntersection(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1);
 
-  /// \brief Creates a rect that is the union of the two provided rects.
+  /// Creates a rect that is the union of the two provided rects.
   ///
   /// This is the same as constructing a bounding box around the two rects.
   [[nodiscard]] static xiiRectTemplate<Type> MakeUnion(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1);
@@ -80,70 +80,70 @@ public:
   /// The larger value along y. Same as Bottom().
   Type GetY2() const { return y + height; }
 
-  /// \brief Returns the minimum corner position. Same as GetTopLeft().
+  /// Returns the minimum corner position. Same as GetTopLeft().
   xiiVec2Template<Type> GetMinCorner() const { return xiiVec2Template<Type>(x, y); }
 
-  /// \brief Returns the maximum corner position. Same as GetBottomRight().
+  /// Returns the maximum corner position. Same as GetBottomRight().
   xiiVec2Template<Type> GetMaxCorner() const { return xiiVec2Template<Type>(x + width, y + height); }
 
-  /// \brief Returns the top left corner. Same as GetMinCorner().
+  /// Returns the top left corner. Same as GetMinCorner().
   xiiVec2Template<Type> GetTopLeft() const { return xiiVec2Template<Type>(x, y); }
 
-  /// \brief Returns the top right corner.
+  /// Returns the top right corner.
   xiiVec2Template<Type> GetTopRight() const { return xiiVec2Template<Type>(x + width, y); }
 
-  /// \brief Returns the bottom left corner.
+  /// Returns the bottom left corner.
   xiiVec2Template<Type> GetBottomLeft() const { return xiiVec2Template<Type>(x, y + height); }
 
-  /// \brief Returns the bottom right corner. Same as GetMaxCorner().
+  /// Returns the bottom right corner. Same as GetMaxCorner().
   xiiVec2Template<Type> GetBottomRight() const { return xiiVec2Template<Type>(x + width, y + height); }
 
-  /// \brief Returns the center point of the rectangle.
+  /// Returns the center point of the rectangle.
   xiiVec2Template<Type> GetCenter() const { return xiiVec2Template<Type>(x + width / 2, y + height / 2); }
 
-  /// \brief Returns the width and height as a vec2.
+  /// Returns the width and height as a vec2.
   xiiVec2Template<Type> GetExtents() const { return xiiVec2Template<Type>(width, height); }
 
-  /// \brief Returns the half width and half height as a vec2.
+  /// Returns the half width and half height as a vec2.
   xiiVec2Template<Type> GetHalfExtents() const { return xiiVec2Template<Type>(width / 2, height / 2); }
 
-  /// \brief Increases the size of the rect in all directions.
+  /// Increases the size of the rect in all directions.
   void Grow(Type xy);
 
   // *** Common Functions ***
 public:
   [[nodiscard]] bool operator==(const xiiRectTemplate<Type>& rhs) const;
 
-  /// \brief Checks whether the position and size contain valid values.
+  /// Checks whether the position and size contain valid values.
   [[nodiscard]] bool IsValid() const;
 
-  /// \brief Returns true if the area of the rectangle is non zero
+  /// Returns true if the area of the rectangle is non zero
   [[nodiscard]] bool HasNonZeroArea() const;
 
-  /// \brief Returns true if the rectangle contains the provided point
+  /// Returns true if the rectangle contains the provided point
   [[nodiscard]] bool Contains(const xiiVec2Template<Type>& vPoint) const;
 
-  /// \brief Returns true if the rectangle contains the provided rectangle completely (no intersecting edges).
+  /// Returns true if the rectangle contains the provided rectangle completely (no intersecting edges).
   [[nodiscard]] bool Contains(const xiiRectTemplate<Type>& r) const;
 
-  /// \brief Returns true if the rectangle overlaps the provided rectangle.
+  /// Returns true if the rectangle overlaps the provided rectangle.
   /// Also returns true if the rectangles are contained within each other completely (no intersecting edges).
   [[nodiscard]] bool Overlaps(const xiiRectTemplate<Type>& other) const;
 
-  /// \brief Extends this rectangle so that the provided rectangle is completely contained within it.
+  /// Extends this rectangle so that the provided rectangle is completely contained within it.
   void ExpandToInclude(const xiiRectTemplate<Type>& other);
 
-  /// \brief Extends this rectangle so that the provided point is contained within it.
+  /// Extends this rectangle so that the provided point is contained within it.
   void ExpandToInclude(const xiiVec2Template<Type>& other);
 
-  /// \brief Clips this rect so that it is fully inside the provided rectangle.
+  /// Clips this rect so that it is fully inside the provided rectangle.
   void Clip(const xiiRectTemplate<Type>& clipRect);
 
-  /// \brief The given point is clamped to the area of the rect, i.e. it will be either inside the rect or on its edge and it will have the closest
+  /// The given point is clamped to the area of the rect, i.e. it will be either inside the rect or on its edge and it will have the closest
   /// possible distance to the original point.
   [[nodiscard]] const xiiVec2Template<Type> GetClampedPoint(const xiiVec2Template<Type>& vPoint) const;
 
-  /// \brief Clamps the given rect to the area of this rect and returns it.
+  /// Clamps the given rect to the area of this rect and returns it.
   ///
   /// If the input rect is entirely outside this rect, the result will be reduced to a point or a line closest to the input rect.
   [[nodiscard]] const xiiRectTemplate<Type> GetClampedRect(const xiiRectTemplate<Type>& r) const
@@ -153,13 +153,13 @@ public:
     return xiiRectTemplate<Type>(vNewMin, vNewMax - vNewMin);
   }
 
-  /// \brief Sets the center of the rectangle.
+  /// Sets the center of the rectangle.
   void SetCenter(Type tX, Type tY);
 
-  /// \brief Moves the rectangle.
+  /// Moves the rectangle.
   void Translate(Type tX, Type tY);
 
-  /// \brief Scales width and height, and moves the position as well.
+  /// Scales width and height, and moves the position as well.
   void Scale(Type sX, Type sY);
 };
 

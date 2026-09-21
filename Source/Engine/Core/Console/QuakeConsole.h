@@ -6,7 +6,7 @@
 
 struct xiiLoggingEventData;
 
-/// \brief A Quake-style console for in-game configuration of xiiCVar and xiiConsoleFunction.
+/// A Quake-style console for in-game configuration of xiiCVar and xiiConsoleFunction.
 ///
 /// The console displays the recent log activity and allows to modify cvars and call console functions.
 /// It supports auto-completion of known keywords.
@@ -25,19 +25,19 @@ public:
   /// \name Configuration
   /// @{
 
-  /// \brief Adjusts how many strings the console will keep in memory at maximum.
+  /// Adjusts how many strings the console will keep in memory at maximum.
   void SetMaxConsoleStrings(xiiUInt32 uiMax) { m_uiMaxConsoleStrings = xiiMath::Clamp<xiiUInt32>(uiMax, 0, 100000); }
 
-  /// \brief Returns how many strings the console will keep in memory at maximum.
+  /// Returns how many strings the console will keep in memory at maximum.
   xiiUInt32 GetMaxConsoleStrings() const { return m_uiMaxConsoleStrings; }
 
-  /// \brief Enables or disables that the output from xiiGlobalLog is displayed in the console. Enabled by default.
+  /// Enables or disables that the output from xiiGlobalLog is displayed in the console. Enabled by default.
   virtual void EnableLogOutput(bool bEnable);
 
-  /// \brief Writes the state of the console (history, bound keys) to the stream.
+  /// Writes the state of the console (history, bound keys) to the stream.
   virtual void SaveState(xiiStreamWriter& ref_stream) const;
 
-  /// \brief Reads the state of the console (history, bound keys) from the stream.
+  /// Reads the state of the console (history, bound keys) from the stream.
   virtual void LoadState(xiiStreamReader& ref_stream);
 
   /// @}
@@ -47,10 +47,10 @@ public:
 
 
 
-  /// \brief Executes the given command using the current command interpreter.
+  /// Executes the given command using the current command interpreter.
   virtual void ExecuteCommand(xiiStringView sInput) override;
 
-  /// \brief Binds \a szCommand to \a szKey. Calling ExecuteBoundKey() with this key will then run that command.
+  /// Binds \a szCommand to \a szKey. Calling ExecuteBoundKey() with this key will then run that command.
   ///
   /// A key can be any arbitrary string. However, it might make sense to either use the standard ASCII characters A-Z and a-z, which allows
   /// to trigger actions by the press of any of those buttons.
@@ -59,10 +59,10 @@ public:
   /// If you use such virtual key names, it makes also sense to listen to the auto-complete event and suggest those key names there.
   void BindKey(xiiStringView sKey, xiiStringView sCommand);
 
-  /// \brief Removes the key binding.
+  /// Removes the key binding.
   void UnbindKey(xiiStringView sKey);
 
-  /// \brief Executes the command that was bound to this key.
+  /// Executes the command that was bound to this key.
   void ExecuteBoundKey(xiiStringView sKey);
 
   /// @}
@@ -70,34 +70,34 @@ public:
   /// \name Input Handling
   /// @{
 
-  /// \brief Inserts one character at the caret position into the console input line.
+  /// Inserts one character at the caret position into the console input line.
   ///
   /// This function also calls ProcessInputCharacter and FilterInputCharacter. By default this already reacts on Tab, Enter and ESC
   /// and filters out all non ASCII characters.
   void AddInputCharacter(xiiUInt32 uiChar);
 
-  /// \brief Clears the input line of the console.
+  /// Clears the input line of the console.
   void ClearInputLine();
 
-  /// \brief Returns the current content of the input line.
+  /// Returns the current content of the input line.
   xiiStringView GetInputLine() const { return m_sInputLine; }
 
-  /// \brief Returns the position (in characters) of the caret.
+  /// Returns the position (in characters) of the caret.
   xiiInt32 GetCaretPosition() const { return m_iCaretPosition; }
 
-  /// \brief Moves the caret in the text. Its position will be clamped to the length of the current input line text.
+  /// Moves the caret in the text. Its position will be clamped to the length of the current input line text.
   void MoveCaret(xiiInt32 iMoveOffset);
 
-  /// \brief Deletes the character following the caret position.
+  /// Deletes the character following the caret position.
   void DeleteNextCharacter();
 
-  /// \brief Scrolls the contents of the console up or down. Will be clamped to the available range.
+  /// Scrolls the contents of the console up or down. Will be clamped to the available range.
   void Scroll(xiiInt32 iLines);
 
-  /// \brief Returns the current scroll position. This must be used during rendering to start with the proper line.
+  /// Returns the current scroll position. This must be used during rendering to start with the proper line.
   xiiUInt32 GetScrollPosition() const { return m_iScrollPosition; }
 
-  /// \brief This function implements input handling (via xiiInputManager) for the console.
+  /// This function implements input handling (via xiiInputManager) for the console.
   ///
   /// If the console is 'open' (ie. has full focus), it will handle more input for caret movement etc.
   /// However, in the 'closed' state, it will still execute bound keys and commands from the history.
@@ -115,13 +115,13 @@ public:
   /// \name Console Content
   /// @{
 
-  /// \brief Adds a string to the console.
+  /// Adds a string to the console.
   virtual void AddConsoleString(xiiStringView sText, xiiConsoleString::Type type = xiiConsoleString::Type::Default) override;
 
-  /// \brief Returns all current console strings. Use GetScrollPosition() to know which one should be displayed as the first one.
+  /// Returns all current console strings. Use GetScrollPosition() to know which one should be displayed as the first one.
   const xiiDeque<xiiConsoleString>& GetConsoleStrings() const;
 
-  /// \brief Deletes all console strings, making the console empty.
+  /// Deletes all console strings, making the console empty.
   void ClearConsoleStrings();
 
 
@@ -131,23 +131,23 @@ public:
   /// @{
 
 
-  /// \brief Returns a nice string containing all the important information about the cvar.
+  /// Returns a nice string containing all the important information about the cvar.
   static xiiString GetFullInfoAsString(xiiCVar* pCVar);
 
-  /// \brief Returns the value of the cvar as a string.
+  /// Returns the value of the cvar as a string.
   static const xiiString GetValueAsString(xiiCVar* pCVar);
 
   /// @}
 
 protected:
-  /// \brief Deletes the character at the given position in the input line.
+  /// Deletes the character at the given position in the input line.
   void RemoveCharacter(xiiUInt32 uiInputLinePosition);
 
-  /// \brief Makes sure the caret position is clamped to the input line length.
+  /// Makes sure the caret position is clamped to the input line length.
   void ClampCaretPosition();
 
 
-  /// \brief The function that is used to read xiiGlobalLog messages.
+  /// The function that is used to read xiiGlobalLog messages.
   void LogHandler(const xiiLoggingEventData& data);
 
   xiiInt32         m_iCaretPosition;

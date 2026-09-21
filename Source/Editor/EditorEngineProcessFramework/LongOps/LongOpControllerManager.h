@@ -6,7 +6,7 @@
 
 class xiiLongOpProxy;
 
-/// \brief Events about all known long ops. Broadcast by xiiLongOpControllerManager.
+/// Events about all known long ops. Broadcast by xiiLongOpControllerManager.
 struct xiiLongOpControllerEvent
 {
   enum class Type
@@ -20,7 +20,7 @@ struct xiiLongOpControllerEvent
   xiiUuid m_OperationGuid; ///< Use xiiLongOpControllerManager::GetOperation() to resolve the GUID to the actual long op.
 };
 
-/// \brief The LongOp controller is active in the editor process and manages which long ops are available, running, etc.
+/// The LongOp controller is active in the editor process and manages which long ops are available, running, etc.
 ///
 /// All available long ops are registered with the controller, typically automatically by the xiiLongOpsAdapter,
 /// although it is theoretically possible to register additional long ops.
@@ -36,7 +36,7 @@ public:
   xiiLongOpControllerManager();
   ~xiiLongOpControllerManager();
 
-  /// \brief Holds all information about the proxy long op on the editor side
+  /// Holds all information about the proxy long op on the editor side
   struct ProxyOpInfo
   {
     xiiUniquePtr<xiiLongOpProxy> m_pProxyOp;
@@ -51,29 +51,29 @@ public:
     bool  m_bIsRunning  = false;                  ///< Whether the long op is currently being executed.
   };
 
-  /// \brief Events about the state of all available long ops.
+  /// Events about the state of all available long ops.
   xiiEvent<const xiiLongOpControllerEvent&> m_Events;
 
-  /// \brief Typically called by xiiLongOpsAdapter when a component that has a xiiLongOpAttribute is added to a scene
+  /// Typically called by xiiLongOpsAdapter when a component that has a xiiLongOpAttribute is added to a scene
   void RegisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, xiiStringView sLongOpType);
 
-  /// \brief Typically called by xiiLongOpsAdapter when a component that has a xiiLongOpAttribute is removed from a scene
+  /// Typically called by xiiLongOpsAdapter when a component that has a xiiLongOpAttribute is removed from a scene
   void UnregisterLongOp(const xiiUuid& documentGuid, const xiiUuid& componentGuid, xiiStringView sLongOpType);
 
-  /// \brief Starts executing the given long op. Typically called by the xiiQtLongOpsPanel.
+  /// Starts executing the given long op. Typically called by the xiiQtLongOpsPanel.
   void StartOperation(xiiUuid opGuid);
 
-  /// \brief Cancels a given long op. Typically called by the xiiQtLongOpsPanel.
+  /// Cancels a given long op. Typically called by the xiiQtLongOpsPanel.
   void CancelOperation(xiiUuid opGuid);
 
-  /// \brief Cancels and deletes all operations linked to the given document. Makes sure to wait for all canceled ops.
+  /// Cancels and deletes all operations linked to the given document. Makes sure to wait for all canceled ops.
   /// Typically called by the xiiLongOpsAdapter when a document is about to be closed.
   void CancelAndRemoveAllOpsForDocument(const xiiUuid& documentGuid);
 
-  /// \brief Returns a pointer to the given long op, or null if the GUID does not exist.
+  /// Returns a pointer to the given long op, or null if the GUID does not exist.
   ProxyOpInfo* GetOperation(const xiiUuid& opGuid);
 
-  /// \brief Gives access to all currently available long ops. Make sure the lock m_Mutex (of the xiiLongOpManager base class) while accessing this.
+  /// Gives access to all currently available long ops. Make sure the lock m_Mutex (of the xiiLongOpManager base class) while accessing this.
   const xiiDynamicArray<xiiUniquePtr<ProxyOpInfo>>& GetOperations() const { return m_ProxyOps; }
 
 private:

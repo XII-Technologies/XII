@@ -5,7 +5,7 @@
 #include <Core/CoreDLL.h>
 #include <Foundation/Types/Bitflags.h>
 
-/// \brief This struct defines the different states a key can be in.
+/// This struct defines the different states a key can be in.
 ///        All keys always go through the states 'Pressed' and 'Released', even if they are active for only one frame.
 ///        A key is 'Down' when it is pressed for at least two frames. It is 'Up' when it is not pressed for at least two frames.
 struct XII_CORE_DLL xiiKeyState
@@ -18,14 +18,14 @@ struct XII_CORE_DLL xiiKeyState
     Down      ///< Key is pressed down for longer than one frame now.
   };
 
-  /// \brief Computes the new key state from a previous key state and whether it is currently pressed or not.
+  /// Computes the new key state from a previous key state and whether it is currently pressed or not.
   static xiiKeyState::Enum GetNewKeyState(xiiKeyState::Enum prevState, bool bKeyDown);
 };
 
 // clang-format off
 // off for the entire file
 
-/// \brief These flags are specified when registering an input slot (by a device), to define some capabilities and restrictions of the hardware.
+/// These flags are specified when registering an input slot (by a device), to define some capabilities and restrictions of the hardware.
 ///
 /// By default you do not need to use these flags at all. However, when presenting the user with a list of 'possible' buttons to press to map to an
 /// action, these flags can be used to filter out unwanted slots.

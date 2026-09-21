@@ -15,7 +15,7 @@ public:
   virtual ~xiiAssetDocumentInfo();
   xiiAssetDocumentInfo(xiiAssetDocumentInfo&& rhs);
   void operator=(xiiAssetDocumentInfo&& rhs);
-  /// \brief Creates a clone without meta data.
+  /// Creates a clone without meta data.
   void CreateShallowClone(xiiAssetDocumentInfo& out_docInfo) const;
   void ClearMetaData();
 
@@ -38,10 +38,10 @@ public:
   const xiiString& GetAssetsDocumentTags() const;
   void             SetAssetsDocumentTags(const xiiString& sTags);
 
-  /// \brief Returns an object from m_MetaInfo of the given base type, or nullptr if none exists
+  /// Returns an object from m_MetaInfo of the given base type, or nullptr if none exists
   const xiiReflectedClass* GetMetaInfo(const xiiRTTI* pType) const;
 
-  /// \brief Returns an object from m_MetaInfo of the given base type, or nullptr if none exists
+  /// Returns an object from m_MetaInfo of the given base type, or nullptr if none exists
   template <typename T>
   const T* GetMetaInfo() const
   {

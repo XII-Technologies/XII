@@ -2,7 +2,7 @@
 
 #pragma once
 
-/// \brief Manages a lock (e.g. a mutex) and ensures that it is properly released as the lock object goes out of scope.
+/// Manages a lock (e.g. a mutex) and ensures that it is properly released as the lock object goes out of scope.
 template <typename T>
 class xiiLock
 {
@@ -23,5 +23,5 @@ private:
   T& m_Lock;
 };
 
-/// \brief Shortcut for xiiLock<Type> l(lock)
+/// Shortcut for xiiLock<Type> l(lock)
 #define XII_LOCK(lock) xiiLock<decltype(lock)> XII_PP_CONCAT(l_, XII_SOURCE_LINE)(lock)

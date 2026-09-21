@@ -8,13 +8,13 @@
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
-/// \brief A special constant used to indicate that the render pass is unused.
+/// A special constant used to indicate that the render pass is unused.
 #define XII_GAL_ATTACHMENT_UNUSED 0xFFFFFFFFU
 
-/// \brief A special sub pass index value expanding synchronization scope outside a sub pass.
+/// A special sub pass index value expanding synchronization scope outside a sub pass.
 #define XII_GAL_SUBPASS_EXTERNAL 0xFFFFFFFFU
 
-/// \brief This describes the render pass load operation.
+/// This describes the render pass load operation.
 ///
 /// Vulkan counterpart: [VkAttachmentLoadOp](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkAttachmentLoadOp).
 /// D3D12 counterpart: [D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE](https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_render_pass_beginning_access_type).
@@ -36,7 +36,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentLoadOperation
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALAttachmentLoadOperation);
 
-/// \brief This describes the render pass store operation.
+/// This describes the render pass store operation.
 ///
 /// Vulkan counterpart: [VkAttachmentStoreOp](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkAttachmentStoreOp).
 /// D3D12 counterpart: [D3D12_RENDER_PASS_ENDING_ACCESS_TYPE](https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_render_pass_ending_access_type).
@@ -57,7 +57,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentStoreOperation
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALAttachmentStoreOperation);
 
-/// \brief This describes the depth resolve mode for a multi-sampled depth attachment.
+/// This describes the depth resolve mode for a multi-sampled depth attachment.
 ///
 /// Vulkan counterpart: [VkResolveModeFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkResolveModeFlagBits).
 /// D3D12 counterpart: [D3D12_RESOLVE_MODE](https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_resolve_mode).
@@ -81,7 +81,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDepthResolveMode);
 
-/// \brief This describes the render pass attachment creation description.
+/// This describes the render pass attachment creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassAttachmentDescription : public xiiHashableStruct<xiiGALRenderPassAttachmentDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -96,7 +96,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassAttachmentDescription : public
   xiiBitflags<xiiGALResourceStateFlags>   m_FinalStateFlags       = xiiGALResourceStateFlags::Unknown;     ///< The state the attachment texture sub-resource will be transitioned to when a render pass instance ends. The default is xiiGALResourceStateFlags::Unknown.
 };
 
-/// \brief This describes the render pass attachment reference.
+/// This describes the render pass attachment reference.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public xiiHashableStruct<xiiGALAttachmentReferenceDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -112,7 +112,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public 
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceStateFlags = xiiGALResourceStateFlags::Unknown; ///< The state of the attachment during the sub pass.
 };
 
-/// \brief This describes the depth resolve attachment.
+/// This describes the depth resolve attachment.
 ///
 /// Vulkan counterpart: [VkSubpassDescriptionDepthStencilResolve](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkSubpassDescriptionDepthStencilResolve).
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveDescription : public xiiHashableStruct<xiiGALDepthResolveDescription>
@@ -131,7 +131,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveDescription : public xiiHash
   xiiEnum<xiiGALDepthResolveMode>      m_StencilMode; ///< The stencil resolve mode.
 };
 
-/// \brief This describes the shading rate attachment.
+/// This describes the shading rate attachment.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : public xiiHashableStruct<xiiGALShadingRateAttachmentDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -147,7 +147,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : publi
   xiiSizeU32                           m_TileSize = xiiSizeU32(0U, 0U); ///< Each texel in the attachment contains shading rate for the whole tile. The size must be a power-of-two value between xiiGALShadingRateProperties::MinTileSize and xiiGALShadingRateProperties::MaxTileSize. Keep zero (default) to use the default tile size.
 };
 
-/// \brief This describes the render pass sub pass.
+/// This describes the render pass sub pass.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription
 {
   xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_InputAttachments;        ///< An array of input attachments.
@@ -161,7 +161,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription
   XII_ALWAYS_INLINE bool operator==(const xiiGALSubPassDescription& rhs) const = default;
 };
 
-/// \brief This describes the sub pass dependency.
+/// This describes the sub pass dependency.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xiiHashableStruct<xiiGALSubPassDependencyDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -174,7 +174,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xi
   xiiBitflags<xiiGALAccessFlags>        m_DestinationAccessFlags = xiiGALAccessFlags::None;             ///< The xiiGALAccessFlags that specifies the destination access flag. The default is xiiGALAccessFlags::None.
 };
 
-/// \brief This describes the render pass creation description.
+/// This describes the render pass creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription
 {
   xiiDynamicArray<xiiGALRenderPassAttachmentDescription> m_Attachments;  ///< An array of sub pass attachments.
@@ -184,13 +184,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription
   XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassCreationDescription& rhs) const = default;
 };
 
-/// \brief Interface that defines methods to manipulate a render pass object.
+/// Interface that defines methods to manipulate a render pass object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPass : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRenderPass, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALRenderPassCreationDescription& GetDescription() const { return m_Description; }
 
 protected:

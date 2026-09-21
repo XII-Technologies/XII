@@ -7,7 +7,7 @@
 #include <GraphicsFoundation/Declarations/Constants.h>
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 
-/// \brief This describes the blend factor.
+/// This describes the blend factor.
 ///
 /// [D3D11_BLEND]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476086(v=vs.85).aspx
 /// [D3D12_BLEND]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770338(v=vs.85).aspx
@@ -46,7 +46,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendFactor
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBlendFactor);
 
-/// \brief This describes the blend operation.
+/// This describes the blend operation.
 ///
 /// [D3D11_BLEND_OP]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476088(v=vs.85).aspx
 /// [D3D12_BLEND_OP]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770340(v=vs.85).aspx
@@ -73,7 +73,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendOperation
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBlendOperation);
 
-/// \brief This describes the color component write flags.
+/// This describes the color component write flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALColorMask
 {
   using StorageType = xiiUInt8;
@@ -110,7 +110,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALColorMask);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALColorMask);
 
-/// \brief This describes the logic operation.
+/// This describes the logic operation.
 ///
 /// [D3D12_LOGIC_OP]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770379(v=vs.85).aspx
 /// It generally mirrors [D3D12_LOGIC_OP][] enum, and is only available on the DirectX backend.
@@ -146,7 +146,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALLogicOperation
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALLogicOperation);
 
-/// \brief This describes the blend state for a single render target.
+/// This describes the blend state for a single render target.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xiiHashableStruct<xiiGALRenderTargetBlendDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -161,7 +161,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xi
   xiiBitflags<xiiGALColorMask>  m_ColorMask             = xiiGALColorMask::RGBA;     ///< Render target color write mask. The default is default is RGBA.
 };
 
-/// \brief This describes the blend state for all render targets in the graphics pipeline.
+/// This describes the blend state for all render targets in the graphics pipeline.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription
 {
   XII_ALWAYS_INLINE bool operator==(const xiiGALBlendStateCreationDescription& rhs) const = default;
@@ -173,13 +173,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription
   xiiHybridArray<xiiGALRenderTargetBlendDescription, 2U> m_RenderTargets;                                      ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
 };
 
-/// \brief Interface that defines methods to manipulate a blend state object.
+/// Interface that defines methods to manipulate a blend state object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBlendState : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBlendState, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBlendStateCreationDescription& GetDescription() const { return m_Description; };
 
 protected:

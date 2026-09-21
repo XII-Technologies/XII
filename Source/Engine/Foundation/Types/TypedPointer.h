@@ -6,7 +6,7 @@
 
 class xiiRTTI;
 
-/// \brief A typed raw pointer.
+/// A typed raw pointer.
 ///
 /// Common use case is the storage of object pointers inside a xiiVariant.
 /// Has the same lifetime concerns that any other raw pointer.

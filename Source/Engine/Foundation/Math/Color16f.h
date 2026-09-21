@@ -5,7 +5,7 @@
 #include <Foundation/Math/Color.h>
 #include <Foundation/Math/Float16.h>
 
-/// \brief A 16bit per channel float color storage format.
+/// A 16bit per channel float color storage format.
 ///
 /// For any calculations or conversions use xiiColor.
 /// \see xiiColor
@@ -24,26 +24,26 @@ public:
 
   // *** Constructors ***
 public:
-  /// \brief default-constructed color is uninitialized (for speed)
+  /// default-constructed color is uninitialized (for speed)
   xiiColorLinear16f(); // [tested]
 
-  /// \brief Initializes the color with r, g, b, a
+  /// Initializes the color with r, g, b, a
   xiiColorLinear16f(xiiFloat16 r, xiiFloat16 g, xiiFloat16 b, xiiFloat16 a); // [tested]
 
-  /// \brief Initializes the color with xiiColor
+  /// Initializes the color with xiiColor
   xiiColorLinear16f(const xiiColor& color); // [tested]
 
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   // *** Functions ***
 public:
-  /// \brief Conversion to xiiColor.
+  /// Conversion to xiiColor.
   xiiColor ToLinearFloat() const; // [tested]
 
-  /// \brief Conversion to const xiiFloat16*.
+  /// Conversion to const xiiFloat16*.
   const xiiFloat16* GetData() const { return &r; }
 
-  /// \brief Conversion to xiiFloat16* - use with care!
+  /// Conversion to xiiFloat16* - use with care!
   xiiFloat16* GetData() { return &r; }
 };
 

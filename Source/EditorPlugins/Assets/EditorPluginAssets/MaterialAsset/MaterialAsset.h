@@ -115,15 +115,15 @@ public:
 
   xiiStatus WriteMaterialAsset(xiiStreamWriter& inout_stream, const xiiPlatformProfile* pAssetProfile, bool bEmbedLowResData) const;
 
-  /// \brief Will make sure that the visual shader is rebuilt.
+  /// Will make sure that the visual shader is rebuilt.
   /// Typically called during asset transformation, but can be triggered manually to enforce getting visual shader node changes in.
   xiiStatus RecreateVisualShaderFile(const xiiAssetFileHeader& assetHeader);
 
-  /// \brief If shader compilation failed this will modify the output shader file such that transforming it again, will trigger a full
+  /// If shader compilation failed this will modify the output shader file such that transforming it again, will trigger a full
   /// regeneration Otherwise the AssetCurator would early out
   void TagVisualShaderFileInvalid(const xiiPlatformProfile* pAssetProfile, const char* szError);
 
-  /// \brief Deletes all Visual Shader nodes that are not connected to the output
+  /// Deletes all Visual Shader nodes that are not connected to the output
   void RemoveDisconnectedNodes();
 
   static xiiUuid GetLitBaseMaterial();

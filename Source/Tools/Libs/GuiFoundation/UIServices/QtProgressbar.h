@@ -13,7 +13,7 @@ class QWinTaskbarButton;
 class xiiProgress;
 struct xiiProgressEvent;
 
-/// \brief A Qt implementation to display the state of a xiiProgress instance.
+/// A Qt implementation to display the state of a xiiProgress instance.
 ///
 /// Create a single instance of this at application startup and link it to a xiiProgress instance.
 /// Whenever the instance's progress state changes, this class will display a simple progress bar.
@@ -23,7 +23,7 @@ public:
   xiiQtProgressbar();
   ~xiiQtProgressbar();
 
-  /// \brief Sets the xiiProgress instance that should be visualized.
+  /// Sets the xiiProgress instance that should be visualized.
   void SetProgressbar(xiiProgress* pProgress);
 
   bool IsProcessingEvents() const { return m_iNestedProcessEvents > 0; }

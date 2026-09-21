@@ -12,7 +12,7 @@
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 #include <ToolsFoundation/Reflection/ReflectedType.h>
 
-/// \brief Describes the current meta state of a property for display purposes in the property grid
+/// Describes the current meta state of a property for display purposes in the property grid
 struct xiiPropertyUiState
 {
   enum Visibility
@@ -32,7 +32,7 @@ struct xiiPropertyUiState
   xiiString  m_sNewLabelText;
 };
 
-/// \brief Event that is broadcast whenever information about how to present properties is required
+/// Event that is broadcast whenever information about how to present properties is required
 struct xiiPropertyMetaStateEvent
 {
   /// The object for which the information is queried
@@ -43,7 +43,7 @@ struct xiiPropertyMetaStateEvent
   xiiMap<xiiString, xiiPropertyUiState>* m_pPropertyStates = nullptr;
 };
 
-/// \brief Event that is broadcast whenever information about how to present elements in a container is required
+/// Event that is broadcast whenever information about how to present elements in a container is required
 struct xiiContainerElementMetaStateEvent
 {
   /// The object for which the information is queried
@@ -55,7 +55,7 @@ struct xiiContainerElementMetaStateEvent
   xiiHashTable<xiiVariant, xiiPropertyUiState>* m_pContainerElementStates = nullptr;
 };
 
-/// \brief This class allows to query additional information about how to present properties in the property grid
+/// This class allows to query additional information about how to present properties in the property grid
 ///
 /// The property grid calls GetTypePropertiesState() and GetContainerElementsState() with the current selection of xiiDocumentObject's.
 /// This triggers the xiiPropertyMetaStateEvent to be broadcast, which allows for other code to determine additional
@@ -67,18 +67,18 @@ class XII_GUIFOUNDATION_DLL xiiPropertyMetaState
 public:
   xiiPropertyMetaState();
 
-  /// \brief Queries the property meta state for a single xiiDocumentObject
+  /// Queries the property meta state for a single xiiDocumentObject
   void GetTypePropertiesState(const xiiDocumentObject* pObject, xiiMap<xiiString, xiiPropertyUiState>& out_propertyStates);
 
-  /// \brief Queries the property meta state for a multi selection of xiiDocumentObject's
+  /// Queries the property meta state for a multi selection of xiiDocumentObject's
   ///
   /// This will query the information for every single selected object and then merge the result into one.
   void GetTypePropertiesState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiMap<xiiString, xiiPropertyUiState>& out_propertyStates);
 
-  /// \brief Queries the meta state for the elements of a single container property on one xiiDocumentObject.
+  /// Queries the meta state for the elements of a single container property on one xiiDocumentObject.
   void GetContainerElementsState(const xiiDocumentObject* pObject, xiiStringView sProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates);
 
-  /// \brief Queries the meta state for the elements of a single container property on a multi selection of xiiDocumentObjects.
+  /// Queries the meta state for the elements of a single container property on a multi selection of xiiDocumentObjects.
   ///
   /// This will query the information for every single selected object and then merge the result into one.
   void GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiStringView sProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates);

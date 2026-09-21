@@ -10,7 +10,7 @@
 
 class xiiWorld;
 
-/// \brief Runtime type information for script classes, extending xiiRTTI with script-specific functionality.
+/// Runtime type information for script classes, extending xiiRTTI with script-specific functionality.
 ///
 /// Manages type metadata for script classes including function properties and message handlers.
 /// Supports reference counting and provides efficient storage for small numbers of functions and message handlers through inplace storage optimization.
@@ -91,5 +91,5 @@ struct XII_CORE_DLL xiiScriptAllocator
   static xiiAllocator* GetAllocator();
 };
 
-/// \brief creates a new instance of type using the script allocator
+/// creates a new instance of type using the script allocator
 #define XII_SCRIPT_NEW(type, ...) XII_NEW(xiiScriptAllocator::GetAllocator(), type, __VA_ARGS__)

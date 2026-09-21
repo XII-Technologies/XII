@@ -9,7 +9,7 @@
 class xiiDocument;
 class xiiCommandTransaction;
 
-/// \brief Interface for a command
+/// Interface for a command
 ///
 /// Commands are the only objects that have non-const access to any data structures (contexts, documents etc.).
 /// Thus, any modification must go through a command and the xiiCommandHistory is the only class capable of executing commands.

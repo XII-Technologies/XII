@@ -13,7 +13,7 @@ class xiiQtFileserveActivityModel;
 class xiiQtFileserveAllFilesModel;
 enum class xiiFileserveActivityType;
 
-/// \brief A GUI for the xiiFileServer
+/// A GUI for the xiiFileServer
 ///
 /// By default the file server does run at startup. Using the command line option "-fs_nostart" prevents that.
 class XII_EDITORPLUGINFILESERVE_DLL xiiQtFileserveWidget : public QWidget, public Ui_xiiQtFileserveWidget

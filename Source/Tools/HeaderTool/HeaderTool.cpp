@@ -15,7 +15,7 @@
 #include <Foundation/Strings/String.h>
 #include <Foundation/Strings/StringBuilder.h>
 
-// \brief Build tool that exports the Engine Source Header Files into a specified directory.
+// Build tool that exports the Engine Source Header Files into a specified directory.
 class xiiHeaderTool : public xiiApplication
 {
 private:

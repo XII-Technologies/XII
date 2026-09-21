@@ -7,16 +7,16 @@
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
-/// \brief The maximum number of layout elements.
+/// The maximum number of layout elements.
 #define XII_GAL_MAX_LAYOUT_ELEMENTS 16
 
-/// \brief The value which indicates that element offsets be computed automatically, see xiiGALLayoutElement::m_uiRelativeOffset.
+/// The value which indicates that element offsets be computed automatically, see xiiGALLayoutElement::m_uiRelativeOffset.
 #define XII_GAL_LAYOUT_ELEMENT_AUTO_OFFSET 0xFFFFFFFFU
 
-/// \brief The value which indicates that element stride be computed automatically, see xiiGALLayoutElement::m_uiStride.
+/// The value which indicates that element stride be computed automatically, see xiiGALLayoutElement::m_uiStride.
 #define XII_GAL_LAYOUT_ELEMENT_AUTO_STRIDE 0xFFFFFFFFU
 
-/// \brief This describes the input frequency.
+/// This describes the input frequency.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputElementFrequency
 {
   using StorageType = xiiUInt8;
@@ -35,7 +35,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputElementFrequency
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALInputElementFrequency);
 
-/// \brief This describes the vertex attribute semantic.
+/// This describes the vertex attribute semantic.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutSemantic
 {
   using StorageType = xiiUInt8;
@@ -82,7 +82,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutSemantic
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALInputLayoutSemantic);
 
-/// \brief Shader Vertex Input Attributes.
+/// Shader Vertex Input Attributes.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALVertexInputLayout
 {
   XII_DECLARE_POD_TYPE();
@@ -92,7 +92,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALVertexInputLayout
   xiiEnum<xiiGALResourceFormat>      m_Format          = xiiGALResourceFormat::Unknown;
 };
 
-/// \brief This describes a single element in the input layout.
+/// This describes a single element in the input layout.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct<xiiGALLayoutElement>
 {
   XII_DECLARE_POD_TYPE();
@@ -113,19 +113,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct
   xiiUInt32                            m_uiInstanceDataStepRate = 1U;                                     ///< The number of instances to draw using the same per-instance data before advancing in the buffer by one element. The default is 1.
 };
 
-/// \brief This describes the input layout creation description.
+/// This describes the input layout creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutCreationDescription : public xiiHashableStruct<xiiGALInputLayoutCreationDescription>
 {
   xiiStaticArray<xiiGALLayoutElement, XII_GAL_MAX_LAYOUT_ELEMENTS> m_LayoutElements; ///< The input layout elements.
 };
 
-/// \brief Interface that defines methods to manipulate an input layout object.
+/// Interface that defines methods to manipulate an input layout object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayout : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayout, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALInputLayoutCreationDescription& GetDescription() const { return m_Description; };
 
 protected:

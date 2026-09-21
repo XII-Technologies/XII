@@ -4,7 +4,7 @@
 
 #include <Foundation/Math/Declarations.h>
 
-/// \brief Implements fixed point arithmetic for fractional values.
+/// Implements fixed point arithmetic for fractional values.
 ///
 /// Advantages over float and double are mostly that the computations are entirely integer-based and therefore
 /// have a predictable (i.e. deterministic) result, independent from floating point settings, SSE support and
@@ -24,66 +24,66 @@ template <xiiUInt8 DecimalBits>
 class xiiFixedPoint
 {
 public:
-  /// \brief Default constructor does not do any initialization.
+  /// Default constructor does not do any initialization.
   XII_ALWAYS_INLINE xiiFixedPoint() = default; // [tested]
 
-  /// \brief Construct from an integer.
+  /// Construct from an integer.
   /* implicit */ xiiFixedPoint(xiiInt32 iIntVal) { *this = iIntVal; } // [tested]
 
-  /// \brief Construct from a float.
+  /// Construct from a float.
   /* implicit */ xiiFixedPoint(float fVal) { *this = fVal; } // [tested]
 
-  /// \brief Construct from a double.
+  /// Construct from a double.
   /* implicit */ xiiFixedPoint(double fVal) { *this = fVal; } // [tested]
 
-  /// \brief Assignment from an integer.
+  /// Assignment from an integer.
   const xiiFixedPoint<DecimalBits>& operator=(xiiInt32 iVal); // [tested]
 
-  /// \brief Assignment from a float.
+  /// Assignment from a float.
   const xiiFixedPoint<DecimalBits>& operator=(float fVal); // [tested]
 
-  /// \brief Assignment from a double.
+  /// Assignment from a double.
   const xiiFixedPoint<DecimalBits>& operator=(double fVal); // [tested]
 
-  /// \brief Implicit conversion to int (the fractional part is dropped).
+  /// Implicit conversion to int (the fractional part is dropped).
   xiiInt32 ToInt() const; // [tested]
 
-  /// \brief Implicit conversion to float.
+  /// Implicit conversion to float.
   float ToFloat() const; // [tested]
 
-  /// \brief Implicit conversion to double.
+  /// Implicit conversion to double.
   double ToDouble() const; // [tested]
 
-  /// \brief 'Equality' comparison.
+  /// 'Equality' comparison.
   bool operator==(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue == rhs.m_iValue; } // [tested]
 
-  /// \brief Comparison operator.
+  /// Comparison operator.
   std::strong_ordering operator<=>(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue <=> rhs.m_iValue; } // [tested]
 
   const xiiFixedPoint<DecimalBits> operator-() const { return xiiFixedPoint<DecimalBits>(-m_iValue, true); }
 
-  /// \brief += operator
+  /// += operator
   void operator+=(const xiiFixedPoint<DecimalBits>& rhs) { m_iValue += rhs.m_iValue; } // [tested]
 
-  /// \brief -= operator
+  /// -= operator
   void operator-=(const xiiFixedPoint<DecimalBits>& rhs) { m_iValue -= rhs.m_iValue; } // [tested]
 
-  /// \brief *= operator
+  /// *= operator
   void operator*=(const xiiFixedPoint<DecimalBits>& rhs); // [tested]
 
-  /// \brief /= operator
+  /// /= operator
   void operator/=(const xiiFixedPoint<DecimalBits>& rhs); // [tested]
 
-  /// \brief *= operator with integers (more efficient)
+  /// *= operator with integers (more efficient)
   void operator*=(xiiInt32 rhs) { m_iValue *= rhs; } // [tested]
 
-  /// \brief /= operator with integers (more efficient)
+  /// /= operator with integers (more efficient)
   void operator/=(xiiInt32 rhs) { m_iValue /= rhs; } // [tested]
 
-  /// \brief Returns the underlying integer value. Mostly useful for serialization (or tests).
+  /// Returns the underlying integer value. Mostly useful for serialization (or tests).
   xiiInt32 GetRawValue() const { return m_iValue; }
 
-  /// \brief Sets the underlying integer value. Mostly useful for serialization (or tests).
+  /// Sets the underlying integer value. Mostly useful for serialization (or tests).
   void SetRawValue(xiiInt32 iVal) { m_iValue = iVal; }
 
 private:

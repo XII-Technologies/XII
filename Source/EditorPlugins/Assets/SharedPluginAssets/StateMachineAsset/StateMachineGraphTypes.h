@@ -9,7 +9,7 @@
 class xiiStateMachineState;
 class xiiStateMachineTransition;
 
-/// \brief A connection that represents a state machine transition. Since we can't chose different connection
+/// A connection that represents a state machine transition. Since we can't chose different connection
 /// types in the Editor we allow the user to switch the type in the properties.
 class XII_SHAREDPLUGINASSETS_DLL xiiStateMachineConnection : public xiiDocumentObject_ConnectionBase
 {
@@ -19,13 +19,13 @@ public:
   xiiStateMachineTransition* m_pType = nullptr;
 };
 
-/// \brief Base class for nodes in the state machine graph
+/// Base class for nodes in the state machine graph
 class XII_SHAREDPLUGINASSETS_DLL xiiStateMachineNodeBase : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineNodeBase, xiiReflectedClass);
 };
 
-/// \brief A node that represents a state machine state. We don't use xiiStateMachineState directly to allow
+/// A node that represents a state machine state. We don't use xiiStateMachineState directly to allow
 /// the user to switch the type in the properties similar to what we do with transitions.
 class XII_SHAREDPLUGINASSETS_DLL xiiStateMachineNode : public xiiStateMachineNodeBase
 {
@@ -37,7 +37,7 @@ public:
   bool                  m_bIsInitialState = false;
 };
 
-/// \brief A node that represents "any" state machine state. This can be used if a transition with the same conditions
+/// A node that represents "any" state machine state. This can be used if a transition with the same conditions
 /// is possible from any other state in the state machine. Instead of creating many connections with the same properties
 /// an "any" state can be used to make the graph much easier to read and to maintain.
 ///

@@ -7,11 +7,11 @@
 
 namespace xiiLogWriter
 {
-  /// \brief This log-writer will broadcast all messages through xiiTelemetry, such that external applications can display the log messages.
+  /// This log-writer will broadcast all messages through xiiTelemetry, such that external applications can display the log messages.
   class Telemetry
   {
   public:
-    /// \brief Register this at xiiLog to broadcast all log messages through xiiTelemetry.
+    /// Register this at xiiLog to broadcast all log messages through xiiTelemetry.
     static void LogMessageHandler(const xiiLoggingEventData& eventData)
     {
       xiiTelemetryMessage msg;

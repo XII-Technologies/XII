@@ -9,7 +9,7 @@
 template <typename KeyType, typename ValueType, typename Hasher>
 class xiiHashTableBase;
 
-/// \brief Const iterator.
+/// Const iterator.
 template <typename KeyType, typename ValueType, typename Hasher>
 struct xiiHashTableBaseConstIterator
 {
@@ -23,25 +23,25 @@ struct xiiHashTableBaseConstIterator
 
   xiiHashTableBaseConstIterator() = default;
 
-  /// \brief Checks whether this iterator points to a valid element.
+  /// Checks whether this iterator points to a valid element.
   bool IsValid() const; // [tested]
 
-  /// \brief Checks whether the two iterators point to the same element.
+  /// Checks whether the two iterators point to the same element.
   bool operator==(const xiiHashTableBaseConstIterator& rhs) const;
 
-  /// \brief Returns the 'key' of the element that this iterator points to.
+  /// Returns the 'key' of the element that this iterator points to.
   const KeyType& Key() const; // [tested]
 
-  /// \brief Returns the 'value' of the element that this iterator points to.
+  /// Returns the 'value' of the element that this iterator points to.
   const ValueType& Value() const; // [tested]
 
-  /// \brief Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
+  /// Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
   void Next(); // [tested]
 
-  /// \brief Shorthand for 'Next'
+  /// Shorthand for 'Next'
   void operator++(); // [tested]
 
-  /// \brief Returns '*this' to enable foreach
+  /// Returns '*this' to enable foreach
   XII_ALWAYS_INLINE xiiHashTableBaseConstIterator& operator*() { return *this; } // [tested]
 
 protected:
@@ -79,28 +79,28 @@ public:
   }
 };
 
-/// \brief Iterator with write access.
+/// Iterator with write access.
 template <typename KeyType, typename ValueType, typename Hasher>
 struct xiiHashTableBaseIterator : public xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Creates a new iterator from another.
+  /// Creates a new iterator from another.
   XII_ALWAYS_INLINE xiiHashTableBaseIterator(const xiiHashTableBaseIterator& rhs); // [tested]
 
-  /// \brief Assigns one iterator no another.
+  /// Assigns one iterator no another.
   XII_ALWAYS_INLINE void operator=(const xiiHashTableBaseIterator& rhs); // [tested]
 
   // this is required to pull in the const version of this function
   using xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>::Value;
 
-  /// \brief Returns the 'value' of the element that this iterator points to.
+  /// Returns the 'value' of the element that this iterator points to.
   XII_FORCE_INLINE ValueType& Value(); // [tested]
 
-  /// \brief Returns the 'value' of the element that this iterator points to.
+  /// Returns the 'value' of the element that this iterator points to.
   XII_FORCE_INLINE ValueType& Value() const;
 
-  /// \brief Returns '*this' to enable foreach
+  /// Returns '*this' to enable foreach
   XII_ALWAYS_INLINE xiiHashTableBaseIterator& operator*() { return *this; } // [tested]
 
 private:
@@ -141,7 +141,7 @@ public:
   }
 };
 
-/// \brief Implementation of a hashtable which stores key/value pairs.
+/// Implementation of a hashtable which stores key/value pairs.
 ///
 /// The hashtable maps keys to values by using the hash of the key as an index into the table.
 /// This implementation uses linear-probing to resolve hash collisions which means all key/value pairs are stored
@@ -159,120 +159,120 @@ public:
   using ConstIterator = xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>;
 
 protected:
-  /// \brief Creates an empty hashtable. Does not allocate any data yet.
+  /// Creates an empty hashtable. Does not allocate any data yet.
   explicit xiiHashTableBase(xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Creates a copy of the given hashtable.
+  /// Creates a copy of the given hashtable.
   xiiHashTableBase(const xiiHashTableBase<KeyType, ValueType, Hasher>& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Moves data from an existing hashtable into this one.
+  /// Moves data from an existing hashtable into this one.
   xiiHashTableBase(xiiHashTableBase<KeyType, ValueType, Hasher>&& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Destructor.
+  /// Destructor.
   ~xiiHashTableBase(); // [tested]
 
-  /// \brief Copies the data from another hashtable into this one.
+  /// Copies the data from another hashtable into this one.
   void operator=(const xiiHashTableBase<KeyType, ValueType, Hasher>& rhs); // [tested]
 
-  /// \brief Moves data from an existing hashtable into this one.
+  /// Moves data from an existing hashtable into this one.
   void operator=(xiiHashTableBase<KeyType, ValueType, Hasher>&& rhs); // [tested]
 
 public:
-  /// \brief Compares this table to another table.
+  /// Compares this table to another table.
   bool operator==(const xiiHashTableBase<KeyType, ValueType, Hasher>& rhs) const; // [tested]
 
-  /// \brief Expands the hashtable by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the given
+  /// Expands the hashtable by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the given
   /// number of entries.
   void Reserve(xiiUInt32 uiCapacity); // [tested]
 
-  /// \brief Tries to compact the hashtable to avoid wasting memory.
+  /// Tries to compact the hashtable to avoid wasting memory.
   ///
   /// The resulting capacity is at least 'GetCount' (no elements get removed).
   /// Will deallocate all data, if the hashtable is empty.
   void Compact(); // [tested]
 
-  /// \brief Returns the number of active entries in the table.
+  /// Returns the number of active entries in the table.
   xiiUInt32 GetCount() const; // [tested]
 
-  /// \brief Returns true, if the hashtable does not contain any elements.
+  /// Returns true, if the hashtable does not contain any elements.
   bool IsEmpty() const; // [tested]
 
-  /// \brief Clears the table.
+  /// Clears the table.
   void Clear(); // [tested]
 
-  /// \brief Inserts the key value pair or replaces value if an entry with the given key already exists.
+  /// Inserts the key value pair or replaces value if an entry with the given key already exists.
   ///
   /// Returns true if an existing value was replaced and optionally writes out the old value to out_oldValue.
   template <typename CompatibleKeyType, typename CompatibleValueType>
   bool Insert(CompatibleKeyType&& key, CompatibleValueType&& value, ValueType* out_pOldValue = nullptr); // [tested]
 
-  /// \brief Removes the entry with the given key. Returns whether an entry was removed and optionally writes out the old value to out_oldValue.
+  /// Removes the entry with the given key. Returns whether an entry was removed and optionally writes out the old value to out_oldValue.
   template <typename CompatibleKeyType>
   bool Remove(const CompatibleKeyType& key, ValueType* out_pOldValue = nullptr); // [tested]
 
-  /// \brief Erases the key/value pair at the given Iterator. Returns an iterator to the element after the given iterator.
+  /// Erases the key/value pair at the given Iterator. Returns an iterator to the element after the given iterator.
   Iterator Remove(const Iterator& pos); // [tested]
 
-  /// \brief Cannot remove an element with just a xiiHashTableBaseConstIterator
+  /// Cannot remove an element with just a xiiHashTableBaseConstIterator
   void Remove(const ConstIterator& pos) = delete;
 
-  /// \brief Returns whether an entry with the given key was found and if found writes out the corresponding value to out_value.
+  /// Returns whether an entry with the given key was found and if found writes out the corresponding value to out_value.
   template <typename CompatibleKeyType>
   bool TryGetValue(const CompatibleKeyType& key, ValueType& out_value) const; // [tested]
 
-  /// \brief Returns whether an entry with the given key was found and if found writes out the pointer to the corresponding value to out_pValue.
+  /// Returns whether an entry with the given key was found and if found writes out the pointer to the corresponding value to out_pValue.
   template <typename CompatibleKeyType>
   bool TryGetValue(const CompatibleKeyType& key, const ValueType*& out_pValue) const; // [tested]
 
-  /// \brief Returns whether an entry with the given key was found and if found writes out the pointer to the corresponding value to out_pValue.
+  /// Returns whether an entry with the given key was found and if found writes out the pointer to the corresponding value to out_pValue.
   template <typename CompatibleKeyType>
   bool TryGetValue(const CompatibleKeyType& key, ValueType*& out_pValue) const; // [tested]
 
-  /// \brief Searches for key, returns a xiiHashTableBaseConstIterator to it or an invalid iterator, if no such key is found. O(1) operation.
+  /// Searches for key, returns a xiiHashTableBaseConstIterator to it or an invalid iterator, if no such key is found. O(1) operation.
   template <typename CompatibleKeyType>
   ConstIterator Find(const CompatibleKeyType& key) const;
 
-  /// \brief Searches for key, returns an Iterator to it or an invalid iterator, if no such key is found. O(1) operation.
+  /// Searches for key, returns an Iterator to it or an invalid iterator, if no such key is found. O(1) operation.
   template <typename CompatibleKeyType>
   Iterator Find(const CompatibleKeyType& key);
 
-  /// \brief Returns a pointer to the value of the entry with the given key if found, otherwise returns nullptr.
+  /// Returns a pointer to the value of the entry with the given key if found, otherwise returns nullptr.
   template <typename CompatibleKeyType>
   const ValueType* GetValue(const CompatibleKeyType& key) const; // [tested]
 
-  /// \brief Returns a pointer to the value of the entry with the given key if found, otherwise returns nullptr.
+  /// Returns a pointer to the value of the entry with the given key if found, otherwise returns nullptr.
   template <typename CompatibleKeyType>
   ValueType* GetValue(const CompatibleKeyType& key); // [tested]
 
-  /// \brief Returns the value to the given key if found or creates a new entry with the given key and a default constructed value.
+  /// Returns the value to the given key if found or creates a new entry with the given key and a default constructed value.
   ValueType& operator[](const KeyType& key); // [tested]
 
-  /// \brief Returns the value stored at the given key. If none exists, one is created. \a bExisted indicates whether an element needed to be created.
+  /// Returns the value stored at the given key. If none exists, one is created. \a bExisted indicates whether an element needed to be created.
   ValueType& FindOrAdd(const KeyType& key, bool* out_pExisted = nullptr); // [tested]
 
-  /// \brief Returns if an entry with given key exists in the table.
+  /// Returns if an entry with given key exists in the table.
   template <typename CompatibleKeyType>
   bool Contains(const CompatibleKeyType& key) const; // [tested]
 
-  /// \brief Returns an Iterator to the very first element.
+  /// Returns an Iterator to the very first element.
   Iterator GetIterator(); // [tested]
 
-  /// \brief Returns an Iterator to the first element that is not part of the hash-table. Needed to support range based for loops.
+  /// Returns an Iterator to the first element that is not part of the hash-table. Needed to support range based for loops.
   Iterator GetEndIterator(); // [tested]
 
-  /// \brief Returns a constant Iterator to the very first element.
+  /// Returns a constant Iterator to the very first element.
   ConstIterator GetIterator() const; // [tested]
 
-  /// \brief Returns a xiiHashTableBaseConstIterator to the first element that is not part of the hash-table. Needed to support range based for loops.
+  /// Returns a xiiHashTableBaseConstIterator to the first element that is not part of the hash-table. Needed to support range based for loops.
   ConstIterator GetEndIterator() const; // [tested]
 
-  /// \brief Returns the allocator that is used by this instance.
+  /// Returns the allocator that is used by this instance.
   xiiAllocator* GetAllocator() const;
 
-  /// \brief Returns the amount of bytes that are currently allocated on the heap.
+  /// Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
 
-  /// \brief Swaps this map with the other one.
+  /// Swaps this map with the other one.
   void Swap(xiiHashTableBase<KeyType, ValueType, Hasher>& other); // [tested]
 
 private:
@@ -325,7 +325,7 @@ private:
   void MarkEntryAsDeleted(xiiUInt32 uiEntryIndex);
 };
 
-/// \brief \see xiiHashTableBase
+/// \see xiiHashTableBase
 template <typename KeyType, typename ValueType, typename Hasher = xiiHashHelper<KeyType>, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 class xiiHashTable : public xiiHashTableBase<KeyType, ValueType, Hasher>
 {

@@ -25,7 +25,7 @@ QT_END_NAMESPACE
 
 QT_USE_NAMESPACE
 
-/// \brief Main window for the test framework GUI.
+/// Main window for the test framework GUI.
 class XII_TEST_DLL xiiQtTestGUI : public QMainWindow, public Ui_qtTestGUI
 {
   Q_OBJECT

@@ -12,7 +12,7 @@ class QLabel;
 struct xiiToolsProjectEvent;
 class xiiQtCuratorControl;
 
-/// \brief The application wide panel that shows and asset browser.
+/// The application wide panel that shows and asset browser.
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserPanel : public xiiQtApplicationPanel, public Ui_AssetBrowserPanel
 {
   Q_OBJECT

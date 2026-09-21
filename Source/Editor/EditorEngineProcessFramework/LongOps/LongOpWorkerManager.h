@@ -12,7 +12,7 @@ class xiiLongOpWorker;
 struct xiiProgressEvent;
 using xiiDataBuffer = xiiDynamicArray<xiiUInt8>;
 
-/// \brief The LongOp worker manager is active in the engine process of the editor.
+/// The LongOp worker manager is active in the engine process of the editor.
 ///
 /// This class has no public functionality, it communicates with the xiiLongOpControllerManager
 /// and executes the xiiLongOpWorker's that are named by the respective xiiLongOpProxy's.

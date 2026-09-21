@@ -4,7 +4,7 @@
 
 #include <Shaders/Common/ShaderResourceMacros.h>
 
-/// \brief Per-frame shadow cascade data used by shadow map rasterization and shadow sampling.
+/// Per-frame shadow cascade data used by shadow map rasterization and shadow sampling.
 ///
 /// Written by ShadowCascadeSetup compute pass, read by directional shadow depth passes
 /// and DirectLighting compute pass.

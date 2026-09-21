@@ -102,7 +102,7 @@ public:
   xiiGameObjectDocument(xiiStringView sDocumentPath, xiiDocumentObjectManager* pObjectManager, xiiAssetDocEngineConnection engineConnectionType = xiiAssetDocEngineConnection::FullObjectMirroring);
   ~xiiGameObjectDocument();
 
-  /// \brief In case a document consists of multiple layers, this redirection is necessary to execute actions on the active layer.
+  /// In case a document consists of multiple layers, this redirection is necessary to execute actions on the active layer.
   virtual xiiGameObjectDocument* GetRedirectedGameObjectDoc() { return this; }
 
   virtual xiiEditorInputContext* GetEditorInputContextOverride() override;
@@ -116,16 +116,16 @@ protected:
   /// \name Gizmo
   ///@{
 public:
-  /// \brief Makes an edit tool of the given type active. Allocates a new one, if necessary. Only works when SetEditToolConfigDelegate() is set.
+  /// Makes an edit tool of the given type active. Allocates a new one, if necessary. Only works when SetEditToolConfigDelegate() is set.
   void SetActiveEditTool(const xiiRTTI* pEditToolType);
 
-  /// \brief Returns the currently active edit tool (nullptr for none).
+  /// Returns the currently active edit tool (nullptr for none).
   xiiGameObjectEditTool* GetActiveEditTool() const { return m_pActiveEditTool; }
 
-  /// \brief Checks whether an edit tool of the given type, or nullptr for none, is active.
+  /// Checks whether an edit tool of the given type, or nullptr for none, is active.
   bool IsActiveEditTool(const xiiRTTI* pEditToolType) const;
 
-  /// \brief Needs to be called by some higher level code (usually the DocumentWindow) to react to newly created edit tools to configure them (call
+  /// Needs to be called by some higher level code (usually the DocumentWindow) to react to newly created edit tools to configure them (call
   /// xiiGameObjectEditTool::ConfigureTool()).
   void SetEditToolConfigDelegate(xiiDelegate<void(xiiGameObjectEditTool*)> configDelegate);
 
@@ -135,7 +135,7 @@ public:
   void SetGizmoMoveParentOnly(bool bMoveParent);
   bool GetGizmoMoveParentOnly() const;
 
-  /// \brief Finds all objects that are selected at the top level, ie. none of their parents is selected.
+  /// Finds all objects that are selected at the top level, ie. none of their parents is selected.
   ///
   /// Additionally stores the current transformation. Useful to store this at the start of an operation
   /// to then do modifications on this base transformation every frame.
@@ -160,14 +160,14 @@ public:
   void TriggerFocusOnSelection(bool bAllViews) const;
   void TriggerSnapPivotToGrid() const;
   void TriggerSnapEachObjectToGrid() const;
-  /// \brief Moves the editor camera to the same position as the selected object
+  /// Moves the editor camera to the same position as the selected object
   void SnapCameraToObject();
-  /// \brief Moves the camera to the current picking position
+  /// Moves the camera to the current picking position
   void MoveCameraHere();
 
   void ScheduleSendObjectSelection();
 
-  /// \brief Sends the current object selection, but only if it was modified or specifically tagged for resending with ScheduleSendObjectSelection().
+  /// Sends the current object selection, but only if it was modified or specifically tagged for resending with ScheduleSendObjectSelection().
   void SendObjectSelection();
 
   ///@}
@@ -198,9 +198,9 @@ public:
   bool GetPickTransparent() const { return m_bPickTransparent; }
   void SetPickTransparent(bool b);
 
-  /// \brief Specifies which object is the 'active parent', which is the object under which newly created objects should be parented.
+  /// Specifies which object is the 'active parent', which is the object under which newly created objects should be parented.
   void SetActiveParent(xiiUuid object);
-  /// \brief Returns the object under which newly created objects should be parented.
+  /// Returns the object under which newly created objects should be parented.
   ///
   /// \note The object may not exist anymore! So check with the ObjectManager first.
   xiiUuid GetActiveParent() const { return m_ActiveParent; }
@@ -213,40 +213,40 @@ private:
   ///@{
 
 public:
-  /// \brief Sets the new global transformation of the given object.
+  /// Sets the new global transformation of the given object.
   /// The transformationChanges bitmask (of type TransformationChanges) allows to tell the system that, e.g. only translation has changed and thus
   /// some work can be spared.
   void SetGlobalTransform(const xiiDocumentObject* pObject, const xiiTransform& t, xiiUInt8 uiTransformationChanges) const;
 
-  /// \brief Same as SetGlobalTransform, except that all children will keep their current global transform (thus their local transforms are adjusted)
+  /// Same as SetGlobalTransform, except that all children will keep their current global transform (thus their local transforms are adjusted)
   void SetGlobalTransformParentOnly(const xiiDocumentObject* pObject, const xiiTransform& t, xiiUInt8 uiTransformationChanges) const;
 
-  /// \brief Returns a cached value for the global transform of the given object, if available. Otherwise it calls ComputeGlobalTransform().
+  /// Returns a cached value for the global transform of the given object, if available. Otherwise it calls ComputeGlobalTransform().
   xiiTransform GetGlobalTransform(const xiiDocumentObject* pObject) const;
 
-  /// \brief Retrieves the local transform property values from the object and combines it into one xiiTransform
+  /// Retrieves the local transform property values from the object and combines it into one xiiTransform
   static xiiTransform     QueryLocalTransform(const xiiDocumentObject* pObject);
   static xiiSimdTransform QueryLocalTransformSimd(const xiiDocumentObject* pObject);
 
-  /// \brief Computes the global transform of the parent and combines it with the local transform of the given object.
+  /// Computes the global transform of the parent and combines it with the local transform of the given object.
   /// This function does not return a cached value, but always computes it. It does update the internal cache for later reads though.
   xiiTransform ComputeGlobalTransform(const xiiDocumentObject* pObject) const;
 
-  /// \brief Traverses the pObject hierarchy up until it hits a xiiGameObject, then computes the global transform of that.
+  /// Traverses the pObject hierarchy up until it hits a xiiGameObject, then computes the global transform of that.
   virtual xiiResult ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_result) const override;
 
   ///@}
   /// \name Node Names
   ///@{
 
-  /// \brief Generates a good name for pObject. Queries the "Name" property, child components and asset properties, if necessary.
+  /// Generates a good name for pObject. Queries the "Name" property, child components and asset properties, if necessary.
   void DetermineNodeName(const xiiDocumentObject* pObject, const xiiUuid& prefabGuid, xiiStringBuilder& out_sResult, QIcon* out_pIcon = nullptr) const;
 
-  /// \brief Similar to DetermineNodeName() but prefers to return the last cached value from scene meta data. This is more efficient, but may give an
+  /// Similar to DetermineNodeName() but prefers to return the last cached value from scene meta data. This is more efficient, but may give an
   /// outdated result.
   void QueryCachedNodeName(const xiiDocumentObject* pObject, xiiStringBuilder& out_sResult, xiiUuid* out_pPrefabGuid = nullptr, QIcon* out_pIcon = nullptr) const;
 
-  /// \brief Creates a full "path" to a scene object for display in UIs. No guarantee for uniqueness.
+  /// Creates a full "path" to a scene object for display in UIs. No guarantee for uniqueness.
   void GenerateFullDisplayName(const xiiDocumentObject* pRoot, xiiStringBuilder& out_sFullPath) const;
 
   ///@}
@@ -259,7 +259,7 @@ public:
 
 protected:
   void InvalidateGlobalTransformValue(const xiiDocumentObject* pObject) const;
-  /// \brief Sends the current state of the scene to the engine process. This is typically done after scene load or when the world might have deviated
+  /// Sends the current state of the scene to the engine process. This is typically done after scene load or when the world might have deviated
   /// on the engine side (after play the game etc.)
   virtual void SendGameWorldToEngine();
 

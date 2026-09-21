@@ -15,7 +15,7 @@ struct xiiGALDeviceCreationDescription;
 
 // TODO: update comments below
 
-/// \brief The base class for all typical game applications made with xiiEngine
+/// The base class for all typical game applications made with xiiEngine
 ///
 /// While xiiApplication is an abstraction for the operating system entry point,
 /// xiiGameApplication extends this to implement startup and tear down functionality
@@ -48,17 +48,17 @@ public:
   xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath = {});
   ~xiiGameApplication();
 
-  /// \brief Returns the xiiGameApplication singleton
+  /// Returns the xiiGameApplication singleton
   static xiiGameApplication* GetGameApplicationInstance() { return s_pGameApplicationInstance; }
 
-  /// \brief Returns the active renderer of the current app. Either the default or overridden via -render command line flag.
+  /// Returns the active renderer of the current app. Either the default or overridden via -render command line flag.
   static xiiStringView GetActiveRenderer();
 
-  /// \brief When the graphics device is created, by default the game application will pick a platform specific implementation. This
+  /// When the graphics device is created, by default the game application will pick a platform specific implementation. This
   /// function allows to override that by setting a custom function that creates a graphics device.
   static void SetOverrideDefaultDeviceCreator(xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> creator);
 
-  /// \brief Implementation of xiiGameApplicationBase::FindProjectDirectory to define the 'project' special data directory.
+  /// Implementation of xiiGameApplicationBase::FindProjectDirectory to define the 'project' special data directory.
   ///
   /// The default implementation will try to resolve m_sAppProjectPath to an absolute path. m_sAppProjectPath can be absolute itself,
   /// relative to ">sdk/" or relative to xiiOSFile::GetApplicationDirectory().
@@ -67,10 +67,10 @@ public:
   /// Alternatively, xiiGameApplication::FindProjectDirectory() must be overwritten.
   virtual xiiString FindProjectDirectory() const override;
 
-  /// \brief Used at runtime (by the editor) to reload input maps. Forwards to Init_ConfigureInput()
+  /// Used at runtime (by the editor) to reload input maps. Forwards to Init_ConfigureInput()
   void ReinitializeInputConfig();
 
-  /// \brief Returns the project path that was given to the constructor (or modified by an overridden implementation).
+  /// Returns the project path that was given to the constructor (or modified by an overridden implementation).
   xiiStringView GetAppProjectPath() const { return m_sAppProjectPath; }
 
 protected:
@@ -86,7 +86,7 @@ protected:
   virtual void Run_PresentImage() override;
   virtual void Run_FinishFrame() override;
 
-  /// \brief Stores what is given to the constructor
+  /// Stores what is given to the constructor
   xiiString m_sAppProjectPath;
   bool      m_bIgnoreErrors = false;
 

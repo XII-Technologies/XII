@@ -34,7 +34,7 @@ protected:
   const xiiWorld* m_pOwnerWorld;
 };
 
-/// \brief Helper class to convert between two xiiCoordinateSystem spaces.
+/// Helper class to convert between two xiiCoordinateSystem spaces.
 ///
 /// All functions will do an identity transform until SetConversion is called to set up
 /// the conversion. Afterwards the convert functions can be used to convert between
@@ -44,23 +44,23 @@ protected:
 class XII_CORE_DLL xiiCoordinateSystemConversion
 {
 public:
-  /// \brief Creates a new conversion that until set up, does identity conversions.
+  /// Creates a new conversion that until set up, does identity conversions.
   xiiCoordinateSystemConversion(); // [tested]
 
-  /// \brief Set up the source and target coordinate systems.
+  /// Set up the source and target coordinate systems.
   void SetConversion(const xiiCoordinateSystem& source, const xiiCoordinateSystem& target); // [tested]
-  /// \brief Returns the equivalent point in the target coordinate system.
+  /// Returns the equivalent point in the target coordinate system.
   xiiVec3 ConvertSourcePosition(const xiiVec3& vPos) const; // [tested]
-  /// \brief Returns the equivalent rotation in the target coordinate system.
+  /// Returns the equivalent rotation in the target coordinate system.
   xiiQuat ConvertSourceRotation(const xiiQuat& qOrientation) const; // [tested]
-  /// \brief Returns the equivalent length in the target coordinate system.
+  /// Returns the equivalent length in the target coordinate system.
   float ConvertSourceLength(float fLength) const; // [tested]
 
-  /// \brief Returns the equivalent point in the source coordinate system.
+  /// Returns the equivalent point in the source coordinate system.
   xiiVec3 ConvertTargetPosition(const xiiVec3& vPos) const; // [tested]
-  /// \brief Returns the equivalent rotation in the source coordinate system.
+  /// Returns the equivalent rotation in the source coordinate system.
   xiiQuat ConvertTargetRotation(const xiiQuat& qOrientation) const; // [tested]
-  /// \brief Returns the equivalent length in the source coordinate system.
+  /// Returns the equivalent length in the source coordinate system.
   float ConvertTargetLength(float fLength) const; // [tested]
 
 private:

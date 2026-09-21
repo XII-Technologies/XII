@@ -8,7 +8,7 @@
 #include <Core/System/WindowManager.h>
 #include <Foundation/Configuration/Singleton.h>
 
-/// \brief The mode in which the editor engine process application is running. In primary mode, the application runs in the same process as the editor and does not create a window or view for rendering the editor viewport.
+/// The mode in which the editor engine process application is running. In primary mode, the application runs in the same process as the editor and does not create a window or view for rendering the editor viewport.
 /// In remote mode, the application runs in a separate process and creates a window and view that can be used to render the editor viewport.
 enum class xiiEditorEngineProcessMode : xiiUInt8
 {
@@ -16,7 +16,7 @@ enum class xiiEditorEngineProcessMode : xiiUInt8
   Remote,       ///< The application runs in a separate process and creates a window and view that can be used to render the editor viewport.
 };
 
-/// \brief The main application class for the editor engine process. It is responsible for creating a window and view that can be used to render the editor viewport in a remote process.
+/// The main application class for the editor engine process. It is responsible for creating a window and view that can be used to render the editor viewport in a remote process.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEditorEngineProcessApp
 {
   XII_DECLARE_SINGLETON(xiiEditorEngineProcessApp);
@@ -26,16 +26,16 @@ public:
 
   ~xiiEditorEngineProcessApp();
 
-  /// \brief Switches the application to remote mode, which creates a window and view that can be used to render the editor viewport in a remote process.
+  /// Switches the application to remote mode, which creates a window and view that can be used to render the editor viewport in a remote process.
   void SetRemoteMode();
 
-  /// \brief Creates a window and view that can be used to render the editor viewport in a remote process. This is called when the application is switched to remote mode.
+  /// Creates a window and view that can be used to render the editor viewport in a remote process. This is called when the application is switched to remote mode.
   virtual xiiRegisteredWindowHandle CreateRemoteWindow();
 
-  /// \brief Destroys the remote window and view, if they exist.
+  /// Destroys the remote window and view, if they exist.
   void DestroyRemoteWindow();
 
-  /// \brief Returns true if the application is in remote mode.
+  /// Returns true if the application is in remote mode.
   XII_ALWAYS_INLINE bool IsRemoteMode() const { return m_Mode == xiiEditorEngineProcessMode::Remote; }
 
 protected:

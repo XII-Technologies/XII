@@ -13,7 +13,7 @@ class xiiRTTI;
 class xiiReflectedClass;
 class xiiVariant;
 
-/// \brief Flags that describe a reflected type.
+/// Flags that describe a reflected type.
 struct xiiTypeFlags
 {
   using StorageType = xiiUInt8;
@@ -50,7 +50,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiTypeFlags)
 
 namespace xiiInternal
 {
-  /// \brief [internal] Helper struct for accessing static RTTI data.
+  /// [internal] Helper struct for accessing static RTTI data.
   template <typename T>
   struct xiiStaticRTTI
   {
@@ -115,7 +115,7 @@ namespace xiiInternal
   };
 } // namespace xiiInternal
 
-/// \brief Use this function, specialized with the type that you are interested in, to get the static RTTI data for some type.
+/// Use this function, specialized with the type that you are interested in, to get the static RTTI data for some type.
 template <typename T>
 XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 {
@@ -127,7 +127,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 #define XII_NO_LINKAGE
 
-/// \brief Declares a type to be statically reflectable. Insert this into the header of a type to enable reflection on it.
+/// Declares a type to be statically reflectable. Insert this into the header of a type to enable reflection on it.
 /// This is not needed if the type is already dynamically reflectable.
 #define XII_DECLARE_REFLECTABLE_TYPE(Linkage, TYPE)                   \
   namespace xiiInternal                                               \
@@ -151,7 +151,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
     };                                                                \
   }
 
-/// \brief Insert this into a class/struct to enable properties that are private members.
+/// Insert this into a class/struct to enable properties that are private members.
 /// All types that have dynamic reflection (\see XII_ADD_DYNAMIC_REFLECTION) already have this ability.
 #define XII_ALLOW_PRIVATE_PROPERTIES(SELF) friend xiiRTTI GetRTTI(SELF*)
 
@@ -186,7 +186,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 /// \endcond
 
-/// \brief Implements the necessary functionality for a type to be statically reflectable.
+/// Implements the necessary functionality for a type to be statically reflectable.
 ///
 /// \param Type
 ///   The type for which the reflection functionality should be implemented.
@@ -205,7 +205,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   XII_RTTIINFO_GETRTTI_IMPL_BEGIN(Type, BaseType, AllocatorType)
 
 
-/// \brief Ends the reflection code block that was opened with XII_BEGIN_STATIC_REFLECTED_TYPE.
+/// Ends the reflection code block that was opened with XII_BEGIN_STATIC_REFLECTED_TYPE.
 #define XII_END_STATIC_REFLECTED_TYPE                                                                                                                      \
   ;                                                                                                                                                        \
   return xiiRTTI(GetTypeName((OwnType*)0), xiiGetStaticRTTI<OwnBaseType>(), sizeof(OwnType), GetTypeVersion((OwnType*)0),                                  \
@@ -213,44 +213,44 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   }
 
 
-/// \brief Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the properties.
+/// Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the properties.
 #define XII_BEGIN_PROPERTIES static const xiiAbstractProperty* PropertyList[] =
 
 
 
-/// \brief Ends the block to declare properties that was started with XII_BEGIN_PROPERTIES.
+/// Ends the block to declare properties that was started with XII_BEGIN_PROPERTIES.
 #define XII_END_PROPERTIES \
   ;                        \
   Properties = PropertyList
 
-/// \brief Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the functions.
+/// Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the functions.
 #define XII_BEGIN_FUNCTIONS static const xiiAbstractFunctionProperty* FunctionList[] =
 
 
 
-/// \brief Ends the block to declare functions that was started with XII_BEGIN_FUNCTIONS.
+/// Ends the block to declare functions that was started with XII_BEGIN_FUNCTIONS.
 #define XII_END_FUNCTIONS \
   ;                       \
   Functions = FunctionList
 
-/// \brief Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the attributes.
+/// Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the attributes.
 #define XII_BEGIN_ATTRIBUTES static const xiiPropertyAttribute* AttributeList[] =
 
 
 
-/// \brief Ends the block to declare attributes that was started with XII_BEGIN_ATTRIBUTES.
+/// Ends the block to declare attributes that was started with XII_BEGIN_ATTRIBUTES.
 #define XII_END_ATTRIBUTES \
   ;                        \
   Attributes = AttributeList
 
-/// \brief Within a XII_BEGIN_FUNCTIONS / XII_END_FUNCTIONS; block, this adds a member or static function property stored inside the RTTI
+/// Within a XII_BEGIN_FUNCTIONS / XII_END_FUNCTIONS; block, this adds a member or static function property stored inside the RTTI
 /// data.
 ///
 /// \param Function
 ///   The function to be executed, must match the C++ function name.
 #define XII_FUNCTION_PROPERTY(Function) (new xiiFunctionProperty<decltype(&OwnType::Function)>(XII_PP_STRINGIFY(Function), &OwnType::Function))
 
-/// \brief Within a XII_BEGIN_FUNCTIONS / XII_END_FUNCTIONS; block, this adds a member or static function property stored inside the RTTI
+/// Within a XII_BEGIN_FUNCTIONS / XII_END_FUNCTIONS; block, this adds a member or static function property stored inside the RTTI
 /// data. Use this version if you need to change the name of the function or need to cast the function to one of its overload versions.
 ///
 /// \param PropertyName
@@ -263,7 +263,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 /// \internal Used by XII_SCRIPT_FUNCTION_PROPERTY
 #define _XII_SCRIPT_FUNCTION_PARAM(type, name) xiiScriptableFunctionAttribute::ArgType::type, name
 
-/// \brief Convenience macro to declare a function that can be called from scripts.
+/// Convenience macro to declare a function that can be called from scripts.
 ///
 /// \param Function
 ///   The function to be executed, must match the C++ function name including the class name e.g. 'CLASS::NAME'.
@@ -279,7 +279,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 #define XII_SCRIPT_FUNCTION_PROPERTY(Function, ...) \
   XII_FUNCTION_PROPERTY(Function)->AddAttributes(new xiiScriptableFunctionAttribute(XII_EXPAND_ARGS_PAIR_COMMA(_XII_SCRIPT_FUNCTION_PARAM, ##__VA_ARGS__)))
 
-/// \brief Within a XII_BEGIN_FUNCTIONS / XII_END_FUNCTIONS; block, this adds a constructor function property stored inside the RTTI data.
+/// Within a XII_BEGIN_FUNCTIONS / XII_END_FUNCTIONS; block, this adds a constructor function property stored inside the RTTI data.
 ///
 /// \param Function
 ///   The function to be executed in the form of CLASS::FUNCTION_NAME.
@@ -289,7 +289,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 // [internal] Helper macro to get the return type of a getter function.
 #define XII_GETTER_TYPE(Class, GetterFunc) decltype(std::declval<Class>().GetterFunc())
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom getter / setter functions.
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom getter / setter functions.
 ///
 /// \param PropertyName
 ///   The unique (in this class) name under which the property should be registered.
@@ -303,14 +303,14 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 #define XII_ACCESSOR_PROPERTY(PropertyName, Getter, Setter) \
   (new xiiAccessorProperty<OwnType, XII_GETTER_TYPE(OwnType, OwnType::Getter)>(PropertyName, &OwnType::Getter, &OwnType::Setter))
 
-/// \brief Same as XII_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
+/// Same as XII_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
 #define XII_ACCESSOR_PROPERTY_READ_ONLY(PropertyName, Getter) \
   (new xiiAccessorProperty<OwnType, XII_GETTER_TYPE(OwnType, OwnType::Getter)>(PropertyName, &OwnType::Getter, nullptr))
 
 // [internal] Helper macro to get the return type of a array getter function.
 #define XII_ARRAY_GETTER_TYPE(Class, GetterFunc) decltype(std::declval<Class>().GetterFunc(0))
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom functions to access an array.
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom functions to access an array.
 ///
 /// \param PropertyName
 ///   The unique (in this class) name under which the property should be registered.
@@ -328,7 +328,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   (new xiiAccessorArrayProperty<OwnType, XII_ARRAY_GETTER_TYPE(OwnType, OwnType::Getter)>(  \
     PropertyName, &OwnType::GetCount, &OwnType::Getter, &OwnType::Setter, &OwnType::Insert, &OwnType::Remove))
 
-/// \brief Same as XII_ARRAY_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
+/// Same as XII_ARRAY_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
 #define XII_ARRAY_ACCESSOR_PROPERTY_READ_ONLY(PropertyName, GetCount, Getter)              \
   (new xiiAccessorArrayProperty<OwnType, XII_ARRAY_GETTER_TYPE(OwnType, OwnType::Getter)>( \
     PropertyName, &OwnType::GetCount, &OwnType::Getter, nullptr, nullptr, nullptr))
@@ -338,7 +338,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 #define XII_SET_CONTAINER_SUB_TYPE(Class, GetterFunc) \
   xiiContainerSubTypeResolver<xiiTypeTraits<decltype(std::declval<Class>().GetterFunc())>::NonConstReferenceType>::Type
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom functions to access a set.
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom functions to access a set.
 ///
 /// \param PropertyName
 ///   The unique (in this class) name under which the property should be registered.
@@ -354,12 +354,12 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   (new xiiAccessorSetProperty<OwnType, xiiFunctionParameterTypeResolver<0, decltype(&OwnType::Insert)>::ParameterType, \
                               XII_SET_CONTAINER_TYPE(OwnType, GetValues)>(PropertyName, &OwnType::GetValues, &OwnType::Insert, &OwnType::Remove))
 
-/// \brief Same as XII_SET_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
+/// Same as XII_SET_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
 #define XII_SET_ACCESSOR_PROPERTY_READ_ONLY(PropertyName, GetValues)                                                                \
   (new xiiAccessorSetProperty<OwnType, XII_SET_CONTAINER_SUB_TYPE(OwnType, GetValues), XII_SET_CONTAINER_TYPE(OwnType, GetValues)>( \
     PropertyName, &OwnType::GetValues, nullptr, nullptr))
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom functions to for write access to a
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom functions to for write access to a
 /// map.
 ///   Use this if you have a xiiHashTable or xiiMap to expose directly and just want to be informed of write operations.
 ///
@@ -377,7 +377,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   (new xiiWriteAccessorMapProperty<OwnType, xiiFunctionParameterTypeResolver<1, decltype(&OwnType::Insert)>::ParameterType, \
                                    XII_SET_CONTAINER_TYPE(OwnType, GetContainer)>(PropertyName, &OwnType::GetContainer, &OwnType::Insert, &OwnType::Remove))
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom functions to access a map.
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom functions to access a map.
 ///   Use this if you you want to hide the implementation details of the map from the user.
 ///
 /// \param PropertyName
@@ -400,7 +400,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   (new xiiAccessorMapProperty<OwnType, xiiFunctionParameterTypeResolver<1, decltype(&OwnType::Insert)>::ParameterType, \
                               XII_SET_CONTAINER_TYPE(OwnType, GetKeyRange)>(PropertyName, &OwnType::GetKeyRange, &OwnType::GetValue, &OwnType::Insert, &OwnType::Remove))
 
-/// \brief Same as XII_MAP_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
+/// Same as XII_MAP_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
 #define XII_MAP_ACCESSOR_PROPERTY_READ_ONLY(PropertyName, GetKeyRange, GetValue)                                                                      \
   (new xiiAccessorMapProperty<OwnType,                                                                                                                \
                               xiiTypeTraits<xiiFunctionParameterTypeResolver<1, decltype(&OwnType::GetValue)>::ParameterType>::NonConstReferenceType, \
@@ -408,7 +408,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom getter / setter functions.
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that uses custom getter / setter functions.
 ///
 /// \param PropertyName
 ///   The unique (in this class) name under which the property should be registered.
@@ -421,15 +421,15 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 #define XII_ENUM_ACCESSOR_PROPERTY(PropertyName, EnumType, Getter, Setter) \
   (new xiiEnumAccessorProperty<OwnType, EnumType, XII_GETTER_TYPE(OwnType, OwnType::Getter)>(PropertyName, &OwnType::Getter, &OwnType::Setter))
 
-/// \brief Same as XII_ENUM_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
+/// Same as XII_ENUM_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
 #define XII_ENUM_ACCESSOR_PROPERTY_READ_ONLY(PropertyName, EnumType, Getter) \
   (new xiiEnumAccessorProperty<OwnType, EnumType, XII_GETTER_TYPE(OwnType, OwnType::Getter)>(PropertyName, &OwnType::Getter, nullptr))
 
-/// \brief Same as XII_ENUM_ACCESSOR_PROPERTY, but for bitfields.
+/// Same as XII_ENUM_ACCESSOR_PROPERTY, but for bitfields.
 #define XII_BITFLAGS_ACCESSOR_PROPERTY(PropertyName, BitflagsType, Getter, Setter) \
   (new xiiBitflagsAccessorProperty<OwnType, BitflagsType, XII_GETTER_TYPE(OwnType, OwnType::Getter)>(PropertyName, &OwnType::Getter, &OwnType::Setter))
 
-/// \brief Same as XII_BITFLAGS_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
+/// Same as XII_BITFLAGS_ACCESSOR_PROPERTY, but no setter is provided, thus making the property read-only.
 #define XII_BITFLAGS_ACCESSOR_PROPERTY_READ_ONLY(PropertyName, BitflagsType, Getter) \
   (new xiiBitflagsAccessorProperty<OwnType, BitflagsType, XII_GETTER_TYPE(OwnType, OwnType::Getter)>(PropertyName, &OwnType::Getter, nullptr))
 
@@ -440,7 +440,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 #define XII_MEMBER_CONTAINER_SUB_TYPE(Class, Member) \
   xiiContainerSubTypeResolver<xiiTypeTraits<decltype(std::declval<Class>().Member)>::NonConstReferenceType>::Type
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that actually exists as a member.
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that actually exists as a member.
 ///
 /// \param PropertyName
 ///   The unique (in this class) name under which the property should be registered.
@@ -456,46 +456,46 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
                                                                         &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::SetValue, \
                                                                         &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetPropertyPointer))
 
-/// \brief Same as XII_MEMBER_PROPERTY, but the property is read-only.
+/// Same as XII_MEMBER_PROPERTY, but the property is read-only.
 #define XII_MEMBER_PROPERTY_READ_ONLY(PropertyName, MemberName)                                                                                                                       \
   (new xiiMemberProperty<OwnType, XII_MEMBER_TYPE(OwnType, MemberName)>(PropertyName,                                                                                                 \
                                                                         &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetValue, nullptr, \
                                                                         &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetPropertyPointer))
 
-/// \brief Same as XII_MEMBER_PROPERTY, but the property is an array (xiiHybridArray, xiiDynamicArray or xiiDeque).
+/// Same as XII_MEMBER_PROPERTY, but the property is an array (xiiHybridArray, xiiDynamicArray or xiiDeque).
 #define XII_ARRAY_MEMBER_PROPERTY(PropertyName, MemberName)                                                                                                                                                                                         \
   (new xiiMemberArrayProperty<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), XII_MEMBER_CONTAINER_SUB_TYPE(OwnType, MemberName)>(PropertyName,                                                                                                      \
                                                                                                                                  &xiiArrayPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetConstContainer, \
                                                                                                                                  &xiiArrayPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetContainer))
 
-/// \brief Same as XII_MEMBER_PROPERTY, but the property is a read-only array (xiiArrayPtr, xiiHybridArray, xiiDynamicArray or xiiDeque).
+/// Same as XII_MEMBER_PROPERTY, but the property is a read-only array (xiiArrayPtr, xiiHybridArray, xiiDynamicArray or xiiDeque).
 #define XII_ARRAY_MEMBER_PROPERTY_READ_ONLY(PropertyName, MemberName)                                                                     \
   (new xiiMemberArrayReadOnlyProperty<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), XII_MEMBER_CONTAINER_SUB_TYPE(OwnType, MemberName)>( \
     PropertyName, &xiiArrayPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetConstContainer))
 
-/// \brief Same as XII_MEMBER_PROPERTY, but the property is a set (xiiSet, xiiHashSet).
+/// Same as XII_MEMBER_PROPERTY, but the property is a set (xiiSet, xiiHashSet).
 #define XII_SET_MEMBER_PROPERTY(PropertyName, MemberName)                                                                                                                                                                                       \
   (new xiiMemberSetProperty<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), XII_MEMBER_CONTAINER_SUB_TYPE(OwnType, MemberName)>(PropertyName,                                                                                                    \
                                                                                                                                &xiiSetPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetConstContainer, \
                                                                                                                                &xiiSetPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetContainer))
 
-/// \brief Same as XII_MEMBER_PROPERTY, but the property is a read-only set (xiiSet, xiiHashSet).
+/// Same as XII_MEMBER_PROPERTY, but the property is a read-only set (xiiSet, xiiHashSet).
 #define XII_SET_MEMBER_PROPERTY_READ_ONLY(PropertyName, MemberName)                                                             \
   (new xiiMemberSetProperty<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), XII_MEMBER_CONTAINER_SUB_TYPE(OwnType, MemberName)>( \
     PropertyName, &xiiSetPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetConstContainer, nullptr))
 
-/// \brief Same as XII_MEMBER_PROPERTY, but the property is a map (xiiMap, xiiHashTable).
+/// Same as XII_MEMBER_PROPERTY, but the property is a map (xiiMap, xiiHashTable).
 #define XII_MAP_MEMBER_PROPERTY(PropertyName, MemberName)                                                                                                                                                                                       \
   (new xiiMemberMapProperty<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), XII_MEMBER_CONTAINER_SUB_TYPE(OwnType, MemberName)>(PropertyName,                                                                                                    \
                                                                                                                                &xiiMapPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetConstContainer, \
                                                                                                                                &xiiMapPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetContainer))
 
-/// \brief Same as XII_MEMBER_PROPERTY, but the property is a read-only map (xiiMap, xiiHashTable).
+/// Same as XII_MEMBER_PROPERTY, but the property is a read-only map (xiiMap, xiiHashTable).
 #define XII_MAP_MEMBER_PROPERTY_READ_ONLY(PropertyName, MemberName)                                                             \
   (new xiiMemberMapProperty<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), XII_MEMBER_CONTAINER_SUB_TYPE(OwnType, MemberName)>( \
     PropertyName, &xiiMapPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetConstContainer, nullptr))
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that actually exists as a member.
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a property that actually exists as a member.
 ///
 /// \param PropertyName
 ///   The unique (in this class) name under which the property should be registered.
@@ -513,20 +513,20 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
                                                                                       &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::SetValue, \
                                                                                       &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetPropertyPointer))
 
-/// \brief Same as XII_ENUM_MEMBER_PROPERTY, but the property is read-only.
+/// Same as XII_ENUM_MEMBER_PROPERTY, but the property is read-only.
 #define XII_ENUM_MEMBER_PROPERTY_READ_ONLY(PropertyName, EnumType, MemberName)                                                                                                                      \
   (new xiiEnumMemberProperty<OwnType, EnumType, XII_MEMBER_TYPE(OwnType, MemberName)>(PropertyName,                                                                                                 \
                                                                                       &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetValue, nullptr, \
                                                                                       &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetPropertyPointer))
 
-/// \brief Same as XII_ENUM_MEMBER_PROPERTY, but for bitfields.
+/// Same as XII_ENUM_MEMBER_PROPERTY, but for bitfields.
 #define XII_BITFLAGS_MEMBER_PROPERTY(PropertyName, BitflagsType, MemberName)                                                                                                                       \
   (new xiiBitflagsMemberProperty<OwnType, BitflagsType, XII_MEMBER_TYPE(OwnType, MemberName)>(PropertyName,                                                                                        \
                                                                                               &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetValue, \
                                                                                               &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::SetValue, \
                                                                                               &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetPropertyPointer))
 
-/// \brief Same as XII_ENUM_MEMBER_PROPERTY_READ_ONLY, but for bitfields.
+/// Same as XII_ENUM_MEMBER_PROPERTY_READ_ONLY, but for bitfields.
 #define XII_BITFLAGS_MEMBER_PROPERTY_READ_ONLY(PropertyName, BitflagsType, MemberName)                                                                                                                      \
   (new xiiBitflagsMemberProperty<OwnType, BitflagsType, XII_MEMBER_TYPE(OwnType, MemberName)>(PropertyName,                                                                                                 \
                                                                                               &xiiPropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetValue, nullptr, \
@@ -534,7 +534,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 
 
-/// \brief Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a constant property stored inside the RTTI data.
+/// Within a XII_BEGIN_PROPERTIES / XII_END_PROPERTIES; block, this adds a constant property stored inside the RTTI data.
 ///
 /// \param PropertyName
 ///   The unique (in this class) name under which the property should be registered.
@@ -547,25 +547,25 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 // [internal] Helper macro
 #define XII_ENUM_VALUE_TO_CONSTANT_PROPERTY(name) XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(name), (Storage)name),
 
-/// \brief Within a XII_BEGIN_STATIC_REFLECTED_ENUM / XII_END_STATIC_REFLECTED_ENUM block, this converts a
+/// Within a XII_BEGIN_STATIC_REFLECTED_ENUM / XII_END_STATIC_REFLECTED_ENUM block, this converts a
 /// list of enum values into constant RTTI properties.
 #define XII_ENUM_CONSTANTS(...) XII_EXPAND_ARGS(XII_ENUM_VALUE_TO_CONSTANT_PROPERTY, ##__VA_ARGS__)
 
-/// \brief Within a XII_BEGIN_STATIC_REFLECTED_ENUM / XII_END_STATIC_REFLECTED_ENUM block, this converts a
+/// Within a XII_BEGIN_STATIC_REFLECTED_ENUM / XII_END_STATIC_REFLECTED_ENUM block, this converts a
 /// an enum value into a constant RTTI property.
 #define XII_ENUM_CONSTANT(Value) XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Value), (Storage)Value)
 
-/// \brief Within a XII_BEGIN_STATIC_REFLECTED_BITFLAGS / XII_END_STATIC_REFLECTED_BITFLAGS block, this converts a
+/// Within a XII_BEGIN_STATIC_REFLECTED_BITFLAGS / XII_END_STATIC_REFLECTED_BITFLAGS block, this converts a
 /// list of bitflags into constant RTTI properties.
 #define XII_BITFLAGS_CONSTANTS(...) XII_EXPAND_ARGS(XII_ENUM_VALUE_TO_CONSTANT_PROPERTY, ##__VA_ARGS__)
 
-/// \brief Within a XII_BEGIN_STATIC_REFLECTED_BITFLAGS / XII_END_STATIC_REFLECTED_BITFLAGS block, this converts a
+/// Within a XII_BEGIN_STATIC_REFLECTED_BITFLAGS / XII_END_STATIC_REFLECTED_BITFLAGS block, this converts a
 /// an bitflags into a constant RTTI property.
 #define XII_BITFLAGS_CONSTANT(Value) XII_CONSTANT_PROPERTY(XII_PP_STRINGIFY(Value), (Storage)Value)
 
 
 
-/// \brief Implements the necessary functionality for an enum to be statically reflectable.
+/// Implements the necessary functionality for an enum to be statically reflectable.
 ///
 /// \param Type
 ///   The enum struct used by xiiEnum for which reflection should be defined.
@@ -588,7 +588,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   XII_END_STATIC_REFLECTED_TYPE
 
 
-/// \brief Implements the necessary functionality for bitflags to be statically reflectable.
+/// Implements the necessary functionality for bitflags to be statically reflectable.
 ///
 /// \param Type
 ///   The bitflags struct used by xiiBitflags for which reflection should be defined.
@@ -612,18 +612,18 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 
 
-/// \brief Within an XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the message
+/// Within an XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the message
 /// handlers.
 #define XII_BEGIN_MESSAGEHANDLERS static xiiAbstractMessageHandler* HandlerList[] =
 
 
-/// \brief Ends the block to declare message handlers that was started with XII_BEGIN_MESSAGEHANDLERS.
+/// Ends the block to declare message handlers that was started with XII_BEGIN_MESSAGEHANDLERS.
 #define XII_END_MESSAGEHANDLERS \
   ;                             \
   MessageHandlers = HandlerList
 
 
-/// \brief Within an XII_BEGIN_MESSAGEHANDLERS / XII_END_MESSAGEHANDLERS; block, this adds another message handler.
+/// Within an XII_BEGIN_MESSAGEHANDLERS / XII_END_MESSAGEHANDLERS; block, this adds another message handler.
 ///
 /// \param MessageType
 ///   The type of message that this handler function accepts. You may add 'const' in front of it.
@@ -636,17 +636,17 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
                                                                                                                     &OwnType::FunctionName>()
 
 
-/// \brief Within an XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the message
+/// Within an XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the message
 /// senders.
 #define XII_BEGIN_MESSAGESENDERS static xiiMessageSenderInfo SenderList[] =
 
 
-/// \brief Ends the block to declare message senders that was started with XII_BEGIN_MESSAGESENDERS.
+/// Ends the block to declare message senders that was started with XII_BEGIN_MESSAGESENDERS.
 #define XII_END_MESSAGESENDERS \
   ;                            \
   MessageSenders = SenderList;
 
-/// \brief Within an XII_BEGIN_MESSAGESENDERS / XII_END_MESSAGESENDERS block, this adds another message sender.
+/// Within an XII_BEGIN_MESSAGESENDERS / XII_END_MESSAGESENDERS block, this adds another message sender.
 ///
 /// \param MemberName
 ///   The name of the member variable that should get exposed as a message sender.

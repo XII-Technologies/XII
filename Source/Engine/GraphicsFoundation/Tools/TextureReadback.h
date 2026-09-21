@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-/// \brief Helper to read back GPU compute outputs from textures into CPU-readable staging textures.
+/// Helper to read back GPU compute outputs from textures into CPU-readable staging textures.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureReadback
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALTextureReadback);
@@ -56,21 +56,21 @@ public:
   xiiGALTextureReadback(xiiGALDevice* pDevice);
   ~xiiGALTextureReadback();
 
-  /// \brief Enqueue a readback from a texture into an internal staging texture.
+  /// Enqueue a readback from a texture into an internal staging texture.
   ///
   /// Records copy commands on the provided command list and signals an internal fence.
   void Enqueue(xiiGALCommandList* pCommandList, const ReadbackRequest& request);
 
-  /// \brief Returns true if the oldest pending readback has completed on the GPU.
+  /// Returns true if the oldest pending readback has completed on the GPU.
   [[nodiscard]] bool HasCompleted() const;
 
-  /// \brief Retrieves the oldest completed readback capture (if any). Non-blocking.
+  /// Retrieves the oldest completed readback capture (if any). Non-blocking.
   [[nodiscard]] ReadbackCapture GetCompleted();
 
-  /// \brief Blocks until at least one pending readback completes.
+  /// Blocks until at least one pending readback completes.
   void WaitForNextCompleted();
 
-  /// \brief Recycle a staging texture back into the internal pool for reuse.
+  /// Recycle a staging texture back into the internal pool for reuse.
   void RecycleStagingTexture(xiiGALTexture* pStagingTexture);
 
 private:

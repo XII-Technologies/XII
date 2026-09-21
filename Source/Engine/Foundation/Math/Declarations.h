@@ -15,7 +15,7 @@
 #define XII_DECLARE_IF_FLOAT_TYPE   template <typename = typename std::enable_if<std::is_floating_point_v<Type> == true>>
 #define XII_IMPLEMENT_IF_FLOAT_TYPE template <typename ENABLE_IF_FLOAT>
 
-/// \brief Simple helper union to store ints and floats to modify their bit patterns.
+/// Simple helper union to store ints and floats to modify their bit patterns.
 union xiiIntFloatUnion
 {
   constexpr xiiIntFloatUnion(float fInit) :
@@ -32,7 +32,7 @@ union xiiIntFloatUnion
   float     f;
 };
 
-/// \brief Simple helper union to store ints and doubles to modify their bit patterns.
+/// Simple helper union to store ints and doubles to modify their bit patterns.
 union xiiInt64DoubleUnion
 {
   constexpr xiiInt64DoubleUnion(double fInit) :
@@ -48,7 +48,7 @@ union xiiInt64DoubleUnion
   double    f;
 };
 
-/// \brief Enum to describe which memory layout is used to store a matrix in a float array.
+/// Enum to describe which memory layout is used to store a matrix in a float array.
 ///
 /// All xiiMatX classes use column-major format internally. That means they contain one array
 /// of, e.g. 16 elements, and the first elements represent the first column, then the second column, etc.
@@ -69,7 +69,7 @@ struct xiiMatrixLayout
   };
 };
 
-/// \brief Describes for which depth range a projection matrix is constructed.
+/// Describes for which depth range a projection matrix is constructed.
 ///
 /// Different Rendering APIs use different depth ranges.
 /// E.g. OpenGL uses -1 for the near plane and +1 for the far plane.
@@ -82,13 +82,13 @@ struct xiiClipSpaceDepthRange
     ZeroToOne,     ///< Near plane at 0, far plane at 1
   };
 
-  /// \brief Holds the default value for the projection depth range on each platform.
+  /// Holds the default value for the projection depth range on each platform.
   /// This can be overridden by renderers to ensure the proper range is used when they become active.
   /// On Windows/D3D this is initialized with 'ZeroToOne' by default on all other platforms/OpenGL it is initialized with 'MinusOneToOne' by default.
   XII_FOUNDATION_DLL static Enum Default;
 };
 
-/// \brief Specifies whether a projection matrix should flip the result along the Y axis or not.
+/// Specifies whether a projection matrix should flip the result along the Y axis or not.
 ///
 /// Mostly needed to compensate for differing Y texture coordinate conventions. Ie. on some platforms
 /// the Y texture coordinate origin is at the lower left and on others on the upper left. To prevent having
@@ -106,13 +106,13 @@ struct xiiClipSpaceYMode
              ///< conventions, this can be used to compensate, by rendering images flipped to render targets.
   };
 
-  /// \brief Holds the platform default value for the clip space Y mode when rendering to a texture.
+  /// Holds the platform default value for the clip space Y mode when rendering to a texture.
   /// This can be overridden by renderers to ensure the proper mode is used when they become active.
   /// On Windows/D3D this is initialized with 'Regular' by default on all other platforms/OpenGL it is initialized with 'Flipped' by default.
   XII_FOUNDATION_DLL static Enum RenderToTextureDefault;
 };
 
-/// \brief For selecting a left-handed or right-handed convention
+/// For selecting a left-handed or right-handed convention
 struct xiiHandedness
 {
   enum Enum
@@ -121,7 +121,7 @@ struct xiiHandedness
     RightHanded,
   };
 
-  /// \brief Holds the default handedness value to use. XII uses 'LeftHanded' by default.
+  /// Holds the default handedness value to use. XII uses 'LeftHanded' by default.
   XII_FOUNDATION_DLL static Enum Default /*= xiiHandedness::LeftHanded*/;
 };
 
@@ -252,12 +252,12 @@ using xiiRectReal   = xiiRectTemplate<xiiReal>;
 class xiiFrustum;
 
 
-/// \brief An enum that allows to select on of the six main axis (positive / negative)
+/// An enum that allows to select on of the six main axis (positive / negative)
 struct XII_FOUNDATION_DLL xiiBasisAxis
 {
   using StorageType = xiiInt8;
 
-  /// \brief An enum that allows to select on of the six main axis (positive / negative)
+  /// An enum that allows to select on of the six main axis (positive / negative)
   enum Enum : StorageType
   {
     PositiveX,
@@ -270,37 +270,37 @@ struct XII_FOUNDATION_DLL xiiBasisAxis
     Default = PositiveX
   };
 
-  /// \brief Returns the vector for the given axis. E.g. (1, 0, 0) or (0, -1, 0), etc.
+  /// Returns the vector for the given axis. E.g. (1, 0, 0) or (0, -1, 0), etc.
   static xiiVec3 GetBasisVector(xiiBasisAxis::Enum basisAxis);
 
-  /// \brief Returns the vector for the given axis. E.g. (1, 0, 0) or (0, -1, 0), etc.
+  /// Returns the vector for the given axis. E.g. (1, 0, 0) or (0, -1, 0), etc.
   static xiiVec3d GetBasisVectorDouble(xiiBasisAxis::Enum basisAxis);
 
-  /// \brief Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
+  /// Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
   static xiiMat3 CalculateTransformationMatrix(xiiBasisAxis::Enum forwardDir, xiiBasisAxis::Enum rightDir, xiiBasisAxis::Enum dir, float fUniformScale = 1.0f, float fScaleX = 1.0f, float fScaleY = 1.0f, float fScaleZ = 1.0f);
 
-  /// \brief Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
+  /// Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
   static xiiMat3d CalculateTransformationMatrix(xiiBasisAxis::Enum forwardDir, xiiBasisAxis::Enum rightDir, xiiBasisAxis::Enum dir, double fUniformScale = 1.0, double fScaleX = 1.0, double fScaleY = 1.0, double fScaleZ = 1.0);
 
-  /// \brief Returns a quaternion that rotates from 'identity' to 'axis'
+  /// Returns a quaternion that rotates from 'identity' to 'axis'
   static xiiQuat GetBasisRotation(xiiBasisAxis::Enum identity, xiiBasisAxis::Enum axis);
 
-  /// \brief Returns a quaternion that rotates from 'identity' to 'axis'
+  /// Returns a quaternion that rotates from 'identity' to 'axis'
   static xiiQuatd GetBasisRotationDouble(xiiBasisAxis::Enum identity, xiiBasisAxis::Enum axis);
 
-  /// \brief Returns a quaternion that rotates from 'PositiveX' to 'axis'
+  /// Returns a quaternion that rotates from 'PositiveX' to 'axis'
   static xiiQuat GetBasisRotation_PosX(xiiBasisAxis::Enum axis);
 
-  /// \brief Returns a quaternion that rotates from 'PositiveX' to 'axis'
+  /// Returns a quaternion that rotates from 'PositiveX' to 'axis'
   static xiiQuatd GetBasisRotationDouble_PosX(xiiBasisAxis::Enum axis);
 
-  /// \brief Returns the axis that is orthogonal to axis1 and axis2. If 'flip' is set, it returns the negated axis.
+  /// Returns the axis that is orthogonal to axis1 and axis2. If 'flip' is set, it returns the negated axis.
   ///
   /// If axis1 and axis2 are not orthogonal to each other, the value of axis1 is returned as the result.
   static xiiBasisAxis::Enum GetOrthogonalAxis(xiiBasisAxis::Enum axis1, xiiBasisAxis::Enum axis2, bool bFlip);
 };
 
-/// \brief An enum that represents the operator of a comparison
+/// An enum that represents the operator of a comparison
 struct XII_FOUNDATION_DLL xiiComparisonOperator
 {
   using StorageType = xiiUInt8;
@@ -317,7 +317,7 @@ struct XII_FOUNDATION_DLL xiiComparisonOperator
     Default = Equal
   };
 
-  /// \brief Compares a to b with the given operator. This function only needs the == and < operator for T.
+  /// Compares a to b with the given operator. This function only needs the == and < operator for T.
   template <typename T>
   static bool Compare(xiiComparisonOperator::Enum cmp, const T& a, const T& b); // [tested]
 };

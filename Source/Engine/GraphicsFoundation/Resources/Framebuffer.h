@@ -7,7 +7,7 @@
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
-/// \brief This describes the frame buffer creation description.
+/// This describes the frame buffer creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFramebufferCreationDescription
 {
   xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;                            ///< The handle to the render pass that the frame buffer will be compatible with.
@@ -18,13 +18,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFramebufferCreationDescription
   XII_ALWAYS_INLINE bool operator==(const xiiGALFramebufferCreationDescription& rhs) const = default;
 };
 
-/// \brief Interface that defines methods to manipulate a frame buffer object.
+/// Interface that defines methods to manipulate a frame buffer object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALFramebuffer : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALFramebuffer, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALFramebufferCreationDescription& GetDescription() const { return m_Description; }
 
 protected:

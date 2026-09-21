@@ -7,7 +7,7 @@
 #include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
-/// \brief Creates a swapchain and keeps it up to date with the window.
+/// Creates a swapchain and keeps it up to date with the window.
 ///
 /// If the window is resized or xiiGameApplication::cvar_AppVSync changes and onSwapChainChanged is valid, the swapchain is destroyed and recreated. It is up the the application to respond to the OnSwapChainChanged callback and update any references to the swap-chain, e.g. uses in xiiView or uses as render targets in xiiGALRenderTargetSetup.
 ///
@@ -15,7 +15,7 @@
 class XII_GAMEENGINE_DLL xiiWindowOutputTargetGAL : public xiiWindowOutputTargetBase
 {
 public:
-  /// \brief Returns the current swapchain. This can be used by the application to access the back buffer texture for rendering, e.g. by using it as a render target.
+  /// Returns the current swapchain. This can be used by the application to access the back buffer texture for rendering, e.g. by using it as a render target.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSwapChain* GetSwapChain() const { return m_pSwapChain; }
 
 public:

@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
 
-/// \brief The xiiGALDevice class is the primary interface for interactions with rendering APIs.
+/// The xiiGALDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
 /// Redundant state changes are prevented at the platform independent level in the non-virtual functions.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject
@@ -16,20 +16,20 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDevice, xiiGALObject);
 
 public:
-  /// \brief Initialize device.
+  /// Initialize device.
   xiiResult Initialize();
 
-  /// \brief Begins a render frame.
+  /// Begins a render frame.
   void BeginFrame();
 
-  /// \brief Ends a render frame.
+  /// Ends a render frame.
   void EndFrame();
 
 public:
   /// \name Factory Methods.
   ///@{
 
-  /// \brief This creates a swap chain object.
+  /// This creates a swap chain object.
   ///
   /// \param description - The swap chain description. See xiiGALSwapChainCreationDescription.
   ///
@@ -37,7 +37,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALSwapChain> CreateSwapChain(const xiiGALSwapChainCreationDescription& description);
 
 
-  /// \brief This creates a command list object.
+  /// This creates a command list object.
   ///
   /// \param description - The command list description. See xiiGALCommandListCreationDescription.
   ///
@@ -45,7 +45,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALCommandList> CreateCommandList(const xiiGALCommandListCreationDescription& description);
 
 
-  /// \brief This creates a new blend state object.
+  /// This creates a new blend state object.
   ///
   /// \param description - The blend state description. See xiiGALBlendStateCreationDescription.
   ///
@@ -53,7 +53,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALBlendState> CreateBlendState(const xiiGALBlendStateCreationDescription& description);
 
 
-  /// \brief This creates a new depth stencil state object.
+  /// This creates a new depth stencil state object.
   ///
   /// \param description - The depth stencil state description. See xiiGALDepthStencilStateCreationDescription.
   ///
@@ -61,7 +61,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALDepthStencilState> CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description);
 
 
-  /// \brief This creates a new rasterizer state object.
+  /// This creates a new rasterizer state object.
   ///
   /// \param description - The rasterizer state description. See xiiGALRasterizerStateCreationDescription.
   ///
@@ -69,7 +69,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALRasterizerState> CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description);
 
 
-  /// \brief This creates a new shader object.
+  /// This creates a new shader object.
   ///
   /// \param description - The shader description. See xiiGALShaderCreationDescription.
   ///
@@ -77,7 +77,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALShader> CreateShader(const xiiGALShaderCreationDescription& description);
 
 
-  /// \brief This creates a new buffer object.
+  /// This creates a new buffer object.
   ///
   /// \param description               - The buffer description. See xiiGALBufferCreationDescription.
   /// \param pInitialData              - The pointer to the xiiGALBufferData structure that describes the initial buffer data or nullptr if no data is provided.
@@ -91,7 +91,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer> CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind = xiiGALExternalMemoryKind::None);
 
 
-  /// \brief This creates a new texture object.
+  /// This creates a new texture object.
   ///
   /// \param description               - The texture description. See xiiGALTextureCreationDescription.
   /// \param pInitialData              - The pointer to the xiiGALTextureData structure that describes the initial texture data or nullptr if no data is provided.
@@ -108,7 +108,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind = xiiGALExternalMemoryKind::None);
 
 
-  /// \brief This creates a new sampler object.
+  /// This creates a new sampler object.
   ///
   /// \param description - The sampler description. See xiiGALSamplerCreationDescription.
   ///
@@ -118,7 +118,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALSampler> CreateSampler(const xiiGALSamplerCreationDescription& description);
 
 
-  /// \brief This creates a new query object.
+  /// This creates a new query object.
   ///
   /// \param description - The query description. See xiiGALQueryCreationDescription.
   ///
@@ -126,7 +126,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALQuery> CreateQuery(const xiiGALQueryCreationDescription& description);
 
 
-  /// \brief This creates a new fence object.
+  /// This creates a new fence object.
   ///
   /// \param description - The fence description. See xiiGALFenceCreationDescription.
   ///
@@ -134,7 +134,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALFence> CreateFence(const xiiGALFenceCreationDescription& description);
 
 
-  /// \brief This creates a new render pass object.
+  /// This creates a new render pass object.
   ///
   /// \param description - The render pass description. See xiiGALRenderPassCreationDescription.
   ///
@@ -142,7 +142,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALRenderPass> CreateRenderPass(const xiiGALRenderPassCreationDescription& description);
 
 
-  /// \brief This creates a new frame buffer object.
+  /// This creates a new frame buffer object.
   ///
   /// \param description - The frame buffer description. See xiiGALFramebufferCreationDescription.
   ///
@@ -150,7 +150,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALFramebuffer> CreateFramebuffer(const xiiGALFramebufferCreationDescription& description);
 
 
-  /// \brief This creates a new bottom-level acceleration structure object.
+  /// This creates a new bottom-level acceleration structure object.
   ///
   /// \param description - The bottom-level acceleration structure description. See xiiGALBottomLevelASCreationDescription.
   ///
@@ -158,7 +158,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALBottomLevelAS> CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description);
 
 
-  /// \brief This creates a new top-level acceleration structure object.
+  /// This creates a new top-level acceleration structure object.
   ///
   /// \param description - The top-level acceleration structure description. See xiiGALTopLevelASCreationDescription.
   ///
@@ -166,7 +166,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALTopLevelAS> CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description);
 
 
-  /// \brief This creates a new pipeline resource signature object.
+  /// This creates a new pipeline resource signature object.
   ///
   /// \param description - The pipeline resource signature description. See xiiGALPipelineResourceSignatureCreationDescription.
   ///
@@ -174,7 +174,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALPipelineResourceSignature> CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description);
 
 
-  /// \brief This creates a new graphics pipeline state object.
+  /// This creates a new graphics pipeline state object.
   ///
   /// \param description - The graphics pipeline state description. See xiiGALGraphicsPipelineStateCreationDescription.
   ///
@@ -182,7 +182,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALGraphicsPipelineState> CreateGraphicsPipelineState(const xiiGALGraphicsPipelineStateCreationDescription& description);
 
 
-  /// \brief This creates a new compute pipeline state object.
+  /// This creates a new compute pipeline state object.
   ///
   /// \param description - The compute pipeline state description. See xiiGALComputePipelineStateCreationDescription.
   ///
@@ -190,7 +190,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALComputePipelineState> CreateComputePipelineState(const xiiGALComputePipelineStateCreationDescription& description);
 
 
-  /// \brief This creates a new ray tracing pipeline state object.
+  /// This creates a new ray tracing pipeline state object.
   ///
   /// \param description - The ray tracing pipeline state description. See xiiGALRayTracingPipelineStateCreationDescription.
   ///
@@ -198,7 +198,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALRayTracingPipelineState> CreateRayTracingPipelineState(const xiiGALRayTracingPipelineStateCreationDescription& description);
 
 
-  /// \brief This creates a new tile pipeline state object.
+  /// This creates a new tile pipeline state object.
   ///
   /// \param description - The tile pipeline state description. See xiiGALTilePipelineStateCreationDescription.
   ///
@@ -207,7 +207,7 @@ public:
 
   ///@}
 
-  /// \brief Waits until all outstanding operations on the GPU are complete and destroys any pending resources and GPU objects.
+  /// Waits until all outstanding operations on the GPU are complete and destroys any pending resources and GPU objects.
   ///
   /// \note The method blocks the execution of the calling thread until the GPU is idle.
   ///
@@ -216,41 +216,41 @@ public:
   void WaitIdle();
 
 public:
-  /// \brief Registers event handlers.
+  /// Registers event handlers.
   static xiiEvent<const xiiGALDeviceEvent&, xiiMutex> s_Events;
 
-  /// \brief Returns the creation description for this device.
+  /// Returns the creation description for this device.
   [[nodiscard]] const xiiGALDeviceCreationDescription& GetDescription() const;
 
-  /// \brief Retrieves a pointer to the compute queue if available, null otherwise.
+  /// Retrieves a pointer to the compute queue if available, null otherwise.
   ///
   /// \param queueType - The queue type that has the required feature.
   ///
   /// \note The default graphics queue is guaranteed to exist, for a successful device initialization.
   [[nodiscard]] virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Graphics) const = 0;
 
-  /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
+  /// This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
   [[nodiscard]] const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
 
-  /// \brief This retrieves the device feature states. See xiiGALDeviceFeatures.
+  /// This retrieves the device feature states. See xiiGALDeviceFeatures.
   [[nodiscard]] const xiiGALDeviceFeatures& GetFeatures() const;
 
-  /// \brief This retrieves the device limits. See xiiGALDeviceLimits.
+  /// This retrieves the device limits. See xiiGALDeviceLimits.
   [[nodiscard]] const xiiGALDeviceLimits& GetLimits() const;
 
-  /// \brief This retrieves the device graphics API type. See xiiGALGraphicsDeviceType.
+  /// This retrieves the device graphics API type. See xiiGALGraphicsDeviceType.
   [[nodiscard]] xiiEnum<xiiGALGraphicsDeviceType> GetGraphicsDeviceType() const;
 
-  /// \brief This returns critical section lock.
+  /// This returns critical section lock.
   [[nodiscard]] xiiMutex& GetMutex() const;
 
-  /// \brief Sets a default graphics device.
+  /// Sets a default graphics device.
   static void SetDefaultDevice(xiiSharedPtr<xiiGALDevice> pDefaultDevice);
 
-  /// \brief Retrieves the default device. This will be nullptr if none is set.
+  /// Retrieves the default device. This will be nullptr if none is set.
   [[nodiscard]] static xiiSharedPtr<xiiGALDevice> GetDefaultDevice();
 
-  /// \brief This returns true if there is a set default device.
+  /// This returns true if there is a set default device.
   [[nodiscard]] static bool HasDefaultDevice();
 
 protected:
@@ -258,10 +258,10 @@ protected:
 
   virtual ~xiiGALDevice();
 
-  /// \brief Initialization after device capabilities are known.
+  /// Initialization after device capabilities are known.
   xiiResult PostInitialize();
 
-  /// \brief Asserts that either this device supports multi-threaded resource creation, or that this function is executed on the main thread.
+  /// Asserts that either this device supports multi-threaded resource creation, or that this function is executed on the main thread.
   void VerifyMultithreadedAccess() const;
 
   xiiGALDeviceCreationDescription m_Description;

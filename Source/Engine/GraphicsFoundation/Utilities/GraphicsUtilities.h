@@ -11,12 +11,12 @@
 class XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsUtilities
 {
 public:
-  /// \brief This converts swap chain usage flags to bind flags.
+  /// This converts swap chain usage flags to bind flags.
   [[nodiscard]] static xiiBitflags<xiiGALBindFlags> SwapChainUsageFlagsToBindFlags(xiiBitflags<xiiGALSwapChainUsageFlags> swapChainUsageFlags);
 
-  /// \brief This returns the valid pipeline resource flags for a given shader resource type.
+  /// This returns the valid pipeline resource flags for a given shader resource type.
   [[nodiscard]] static xiiBitflags<xiiGALPipelineResourceFlags> GetValidPipelineResourceFlags(xiiEnum<xiiGALShaderResourceType> type);
 
-  /// \brief Returns the default sampler creation description.
+  /// Returns the default sampler creation description.
   [[nodiscard]] static xiiGALSamplerCreationDescription GetDefaultSamplerDescription() noexcept;
 };

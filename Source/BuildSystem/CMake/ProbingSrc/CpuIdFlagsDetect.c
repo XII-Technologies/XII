@@ -64,7 +64,7 @@ static void cpuidex(int pCpuInfo[4], int iFunctionID, int iSubFunctionID)
 }
 #endif
 
-/// \brief Helper: on Apple platforms, query sysctl boolean values for CPU features.
+/// Helper: on Apple platforms, query sysctl boolean values for CPU features.
 #if defined(__APPLE__)
 static int sysctl_bool(const char* szName)
 {
@@ -97,7 +97,7 @@ static void print_apple_arm_features(void)
 }
 #endif
 
-/// \brief Generic ARM detection for Linux and Windows.
+/// Generic ARM detection for Linux and Windows.
 static void print_generic_arm_features(void)
 {
 #if defined(__linux__)
@@ -163,7 +163,7 @@ static void print_generic_arm_features(void)
 #endif
 }
 #if defined(HAVE_X86_CPUID)
-/// \brief Extract x86/x64 feature detection and printing into its own function.
+/// Extract x86/x64 feature detection and printing into its own function.
 static void print_x86_features(void)
 {
   int cpuInfo[4];
@@ -224,7 +224,7 @@ int main(void)
 #elif defined(__aarch64__) || defined(__arm64__)
   print_generic_arm_features();
 #else
-  /// \brief No CPU feature detection available on this platform.
+  /// No CPU feature detection available on this platform.
 #endif
   return 0;
 }

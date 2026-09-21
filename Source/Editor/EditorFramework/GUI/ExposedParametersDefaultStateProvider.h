@@ -10,7 +10,7 @@ class xiiExposedParametersAttribute;
 class xiiExposedParameterCommandAccessor;
 class xiiExposedParametersAsTypeCommandAccessor;
 
-/// \brief Default state provider handling variant maps with the xiiExposedParametersAttribute set. Reflects the default value defined in the xiiExposedParameter.
+/// Default state provider handling variant maps with the xiiExposedParametersAttribute set. Reflects the default value defined in the xiiExposedParameter.
 class XII_EDITORFRAMEWORK_DLL xiiExposedParametersDefaultStateProvider : public xiiDefaultStateProvider
 {
 public:
@@ -34,7 +34,7 @@ protected:
   const xiiAbstractProperty*           m_pParameterSourceProp = nullptr;
 };
 
-/// \brief Default state provider handling variant maps with the xiiExposedParametersAttribute set that are visualized as their respective phantom type.
+/// Default state provider handling variant maps with the xiiExposedParametersAttribute set that are visualized as their respective phantom type.
 /// This class builds on top of xiiExposedParametersDefaultStateProvider and only adds the logic to redirect the phantom type + phantom property requested into the actual underlying variant map of the exposed parameters.
 /// The provider is only valid if the target accessor is of type xiiExposedParametersAsTypeCommandAccessor.
 class XII_EDITORFRAMEWORK_DLL xiiExposedParametersAsTypeDefaultStateProvider : public xiiExposedParametersDefaultStateProvider

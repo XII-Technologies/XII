@@ -8,7 +8,7 @@
 
 #include <GraphicsFoundation/Device/Device.h>
 
-/// \brief This describes the graphics device implementation.
+/// This describes the graphics device implementation.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceImplementationDescription
 {
   xiiEnum<xiiGALGraphicsDeviceType> m_APIType = xiiGALGraphicsDeviceType::Null; ///< The graphics API type of the implementation.

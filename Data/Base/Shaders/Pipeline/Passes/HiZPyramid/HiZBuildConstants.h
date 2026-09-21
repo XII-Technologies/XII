@@ -4,7 +4,7 @@
 
 #include <Shaders/Common/ShaderResourceMacros.h>
 
-/// \brief Per-dispatch constants for one mip level of Hi-Z pyramid reduction.
+/// Per-dispatch constants for one mip level of Hi-Z pyramid reduction.
 ///
 /// Bound at slot b3 for each individual dispatch in the per-mip loop.
 /// The execute callback uploads a fresh instance for each mip.

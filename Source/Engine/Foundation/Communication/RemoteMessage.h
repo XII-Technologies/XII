@@ -8,7 +8,7 @@
 
 /// \todo Add move semantics for xiiRemoteMessage
 
-/// \brief Encapsulates all the data that is transmitted when sending or receiving a message with xiiRemoteInterface
+/// Encapsulates all the data that is transmitted when sending or receiving a message with xiiRemoteInterface
 class XII_FOUNDATION_DLL xiiRemoteMessage
 {
 public:
@@ -21,14 +21,14 @@ public:
   /// \name Sending
   ///@{
 
-  /// \brief For setting the message IDs before sending it
+  /// For setting the message IDs before sending it
   XII_ALWAYS_INLINE void SetMessageID(xiiUInt32 uiSystemID, xiiUInt32 uiMessageID)
   {
     m_uiSystemID = uiSystemID;
     m_uiMsgID    = uiMessageID;
   }
 
-  /// \brief Returns a stream writer to append data to the message
+  /// Returns a stream writer to append data to the message
   XII_ALWAYS_INLINE xiiStreamWriter& GetWriter() { return m_Writer; }
 
 
@@ -37,7 +37,7 @@ public:
   /// \name Receiving
   ///@{
 
-  /// \brief Returns a stream reader for reading the message data
+  /// Returns a stream reader for reading the message data
   XII_ALWAYS_INLINE xiiStreamReader& GetReader() { return m_Reader; }
   XII_ALWAYS_INLINE xiiUInt32        GetApplicationID() const { return m_uiApplicationID; }
   XII_ALWAYS_INLINE xiiUInt32        GetSystemID() const { return m_uiSystemID; }
@@ -61,7 +61,7 @@ private:
   xiiMemoryStreamWriter            m_Writer;
 };
 
-/// \brief Base class for IPC messages transmitted by xiiIpcChannel.
+/// Base class for IPC messages transmitted by xiiIpcChannel.
 class XII_FOUNDATION_DLL xiiProcessMessage : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiProcessMessage, xiiReflectedClass);

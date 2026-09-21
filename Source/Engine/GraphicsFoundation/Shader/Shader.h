@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
-/// \brief This describes the shader creation description.
+/// This describes the shader creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHashableStruct<xiiGALShaderCreationDescription>
 {
   xiiGALShaderCreationDescription() :
@@ -37,16 +37,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
   xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCode;                               ///< The shader byte code. See xiiGALShaderByteCode.
 };
 
-/// \brief Interface that defines methods to manipulate a shader object.
+/// Interface that defines methods to manipulate a shader object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALShader : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALShader, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALShaderCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief This returns the vertex input layout of the vertex shader.
+  /// This returns the vertex input layout of the vertex shader.
   XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALVertexInputLayout> GetVertexInputLayout() const
   {
     if (m_Description.m_ShaderType == xiiGALShaderType::Vertex)
@@ -56,7 +56,7 @@ public:
     return {};
   }
 
-  /// \brief This creates a new input layout object.
+  /// This creates a new input layout object.
   ///
   /// \param description - The input layout description. See xiiGALInputLayoutCreationDescription.
   ///

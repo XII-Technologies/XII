@@ -14,7 +14,7 @@ class xiiWindowBase;
 
 struct xiiWindowCreationDescription;
 
-/// \brief Allows custom code to inject logic at specific points during initialization or during shutdown.
+/// Allows custom code to inject logic at specific points during initialization or during shutdown.
 ///
 /// The events are listed in the order in which they typically happen.
 struct xiiGameApplicationStaticEvent
@@ -48,7 +48,7 @@ struct xiiGameApplicationExecutionEvent
   Type m_Type;
 };
 
-/// \brief The xiiGameApplicationBase class is the base class for all game applications. It provides common functionality for managing the game state, taking screenshots, and capturing frames.
+/// The xiiGameApplicationBase class is the base class for all game applications. It provides common functionality for managing the game state, taking screenshots, and capturing frames.
 class XII_CORE_DLL xiiGameApplicationBase : public xiiApplication
 {
 public:
@@ -61,7 +61,7 @@ public:
   ///@{
 
 public:
-  /// \brief Returns the xiiGameApplicationBase singleton
+  /// Returns the xiiGameApplicationBase singleton
   static xiiGameApplicationBase* GetGameApplicationBaseInstance() { return s_pGameApplicationBaseInstance; }
 
 protected:
@@ -72,16 +72,16 @@ protected:
   ///@{
 
 public:
-  /// \brief Does a profiling capture and writes it to disk at ':appdata'
+  /// Does a profiling capture and writes it to disk at ':appdata'
   void TakeProfilingCapture();
 
-  /// \brief Schedules a screenshot to be taken at the end of the frame.
+  /// Schedules a screenshot to be taken at the end of the frame.
   ///
   /// After taking a screenshot, StoreScreenshot() is executed, which may decide where to write the result to.
   void TakeScreenshot();
 
 protected:
-  /// \brief Called with the result from taking a screenshot. The default implementation writes the image to disk at ':appdata/Screenshots'
+  /// Called with the result from taking a screenshot. The default implementation writes the image to disk at ':appdata/Screenshots'
   virtual void StoreScreenshot(xiiImage&& image, xiiStringView sContext = {});
 
   void ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pOutputTarget, xiiStringView sContext = {});
@@ -95,13 +95,13 @@ protected:
   ///@{
 
 public:
-  /// \brief Schedules a frame capture if the corresponding plugin is loaded.
+  /// Schedules a frame capture if the corresponding plugin is loaded.
   ///
   /// If continuous capture mode is enabled the currently running frame capture is persisted (and not discarded).
   /// Otherwise, the next frame will be captured and persisted.
   void CaptureFrame();
 
-  /// \brief Controls if frame captures are taken continuously (without being persisted) or only on-demand.
+  /// Controls if frame captures are taken continuously (without being persisted) or only on-demand.
   ///
   /// If continuous frame capture is enabled, calling CaptureFrame() will persist the result of the frame capture that is
   /// currently in progress. If continuous frame capture is disabled, CaptureFrame() will capture and persist the next frame.
@@ -110,7 +110,7 @@ public:
   void SetContinuousFrameCapture(bool bEnable);
   bool GetContinousFrameCapture() const;
 
-  /// \brief Get the absolute base output path for frame captures.
+  /// Get the absolute base output path for frame captures.
   virtual xiiResult GetAbsFrameCaptureOutputPath(xiiStringBuilder& ref_sOutputPath);
 
 protected:
@@ -126,7 +126,7 @@ protected:
   /// \name GameState
   ///@{
 public:
-  /// \brief Creates and activates the game state for this application.
+  /// Creates and activates the game state for this application.
   ///
   /// If the application already has a world (such as the editor), it can pass this to the newly created game state.
   /// Otherwise the game state should create its own world.
@@ -138,23 +138,23 @@ public:
   /// Broadcasts global event: AfterGameStateActivation(xiiGameStateBase*)
   void ActivateGameState(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset);
 
-  /// \brief Deactivates and destroys the active game state.
+  /// Deactivates and destroys the active game state.
   ///
   /// Broadcasts local event: xiiGameApplicationStaticEvent::BeforeGameStateDeactivated
   /// Broadcasts global event: BeforeGameStateDeactivation(xiiGameStateBase*)
   void DeactivateGameState();
 
-  /// \brief Returns the currently active game state. Could be nullptr.
+  /// Returns the currently active game state. Could be nullptr.
   xiiGameStateBase* GetActiveGameState() const { return m_pGameState.Borrow(); }
 
 protected:
-  /// \brief Creates a game state for the application to use.
+  /// Creates a game state for the application to use.
   ///
   /// The default implementation will query all available game states for the best match.
   /// By overriding this, one can also just create a specific game state directly.
   virtual xiiUniquePtr<xiiGameStateBase> CreateGameState();
 
-  /// \brief Allows to override whether a game state is created and activated at application startup.
+  /// Allows to override whether a game state is created and activated at application startup.
   ///
   /// The default implementation just calls ActivateGameState(), but applications that run inside the editor override this to do nothing,
   /// as they only want the game state to become active during simulation, not during editing.
@@ -166,7 +166,7 @@ protected:
   /// \name Platform Profile
   ///@{
 public:
-  /// \brief Returns the xiiPlatformProfile that has been loaded for this application
+  /// Returns the xiiPlatformProfile that has been loaded for this application
   const xiiPlatformProfile& GetPlatformProfile() const { return m_PlatformProfile; }
 
 
@@ -180,33 +180,33 @@ protected:
   virtual xiiResult BeforeCoreSystemsStartup() override;
   virtual void      AfterCoreSystemsStartup() override;
 
-  /// \brief Returns the target of the 'project' special data directory.
+  /// Returns the target of the 'project' special data directory.
   ///
   /// The return value of this function will be passed into xiiFileSystem::SetSpecialDirectory.
   /// Afterwards, any path starting with the special directory marker (">project/") will point
   /// into this directory.
   virtual xiiString FindProjectDirectory() const = 0;
 
-  /// \brief Returns the target of the 'base' data directory.
+  /// Returns the target of the 'base' data directory.
   ///
   /// Path needs to start with a special directory marker (">marker/").
   /// This is passed into the target of the 'base' data directory. Target defaults to ">sdk/Data/Base".
   virtual xiiString GetBaseDataDirectoryPath() const;
 
-  /// \brief Returns the target of the 'project' data directory.
+  /// Returns the target of the 'project' data directory.
   ///
   /// Path needs to start with a special directory marker (">marker/").
   /// This is passed into the target of the 'project' data directory. Target defaults to ">project/".
   virtual xiiString GetProjectDataDirectoryPath() const;
 
-  /// \brief Executes all 'BaseInit_' functions. Typically done very early, before core system startup
+  /// Executes all 'BaseInit_' functions. Typically done very early, before core system startup
   virtual void ExecuteBaseInitFunctions();
   virtual void BaseInit_ConfigureLogging();
 
   xiiEventSubscriptionID m_LogToConsoleID = 0;
   xiiEventSubscriptionID m_LogToVsID      = 0;
 
-  /// \brief Executes all 'Init_' functions. Typically done after core system startup
+  /// Executes all 'Init_' functions. Typically done after core system startup
   virtual void ExecuteInitFunctions();
   virtual void Init_PlatformProfile_SetPreferred();
   virtual void Init_ConfigureTelemetry();
@@ -256,7 +256,7 @@ protected:
   virtual void Run_BeforeWorldUpdate();
   virtual void Run_AfterWorldUpdate();
   virtual void Run_UpdatePlugins();
-  /// \brief This function can be used to present the final image to a window. It is run at the end of the rendering phase. It can also be used to inspect the swap-chain e.g. for screenshot purposes before presenting.
+  /// This function can be used to present the final image to a window. It is run at the end of the rendering phase. It can also be used to inspect the swap-chain e.g. for screenshot purposes before presenting.
   virtual void Run_PresentImage();
   virtual void Run_FinishFrame();
 

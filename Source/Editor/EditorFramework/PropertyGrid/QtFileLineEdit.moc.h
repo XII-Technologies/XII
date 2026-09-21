@@ -8,7 +8,7 @@
 
 class xiiQtFilePropertyWidget;
 
-/// \brief A QLineEdit that is used by xiiQtFilePropertyWidget
+/// A QLineEdit that is used by xiiQtFilePropertyWidget
 class XII_EDITORFRAMEWORK_DLL xiiQtFileLineEdit : public QLineEdit
 {
   Q_OBJECT

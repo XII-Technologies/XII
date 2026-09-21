@@ -15,7 +15,7 @@ class xiiEditorEngineViewMsg;
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
 
-/// \brief Represents the window inside the editor process, into which the engine process renders
+/// Represents the window inside the editor process, into which the engine process renders
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEditorProcessViewWindow : public xiiWindowBase
 {
 public:
@@ -47,7 +47,7 @@ private:
   xiiAtomicInteger32 m_iReferenceCount = 0;
 };
 
-/// \brief Represents a view context in the engine process that is used to render a view for an editor document. It is responsible for creating a view, setting up the render target and handling view messages from the editor process.
+/// Represents a view context in the engine process that is used to render a view for an editor document. It is responsible for creating a view, setting up the render target and handling view messages from the editor process.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessViewContext
 {
 public:
@@ -62,7 +62,7 @@ public:
   virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
   virtual void Redraw(bool bRenderEditorGizmos);
 
-  /// \brief Focuses camera on the given object
+  /// Focuses camera on the given object
   static bool FocusCameraOnObject(xiiCamera& inout_camera, const xiiBoundingBoxSphere& objectBounds, float fFov, const xiiVec3& vViewDir);
 
   xiiViewHandle GetViewHandle() const { return m_hView; }
@@ -74,7 +74,7 @@ protected:
 
   virtual void SetCamera(const xiiViewRedrawMsgToEngine* pMsg);
 
-  /// \brief Create the actual view.
+  /// Create the actual view.
   virtual xiiViewHandle CreateView() = 0;
 
 protected:

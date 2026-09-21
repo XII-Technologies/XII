@@ -7,7 +7,7 @@
 
 class xiiObjectAccessorBase;
 
-/// \brief Writes the state of a xiiDocumentObject to an abstract graph.
+/// Writes the state of a xiiDocumentObject to an abstract graph.
 ///
 /// This information can then be applied to another xiiDocument object through xiiDocumentObjectConverterReader,
 /// or to entirely different class using xiiRttiConverterReader.
@@ -37,7 +37,7 @@ private:
 };
 
 
-/// \brief Reads document objects from an abstract graph and reconstructs them in a document.
+/// Reads document objects from an abstract graph and reconstructs them in a document.
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObjectConverterReader
 {
 public:

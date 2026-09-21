@@ -40,7 +40,7 @@ class xiiComponent;
 
 struct xiiMsgDeleteGameObject;
 
-/// \brief Internal game object id used by xiiGameObjectHandle.
+/// Internal game object id used by xiiGameObjectHandle.
 struct xiiGameObjectId
 {
   using StorageType = xiiUInt64;
@@ -69,7 +69,7 @@ struct xiiGameObjectId
   };
 };
 
-/// \brief A handle to a game object.
+/// A handle to a game object.
 ///
 /// Never store a direct pointer to a game object. Always store a handle instead. A pointer to a game object can
 /// be received by calling xiiWorld::TryGetObject with the handle.
@@ -82,7 +82,7 @@ struct xiiGameObjectHandle
   friend class xiiGameObject;
 };
 
-/// \brief HashHelper implementation so game object handles can be used as key in a hash table.
+/// HashHelper implementation so game object handles can be used as key in a hash table.
 template <>
 struct xiiHashHelper<xiiGameObjectHandle>
 {
@@ -95,7 +95,7 @@ struct xiiHashHelper<xiiGameObjectHandle>
   XII_ALWAYS_INLINE static bool Equal(xiiGameObjectHandle a, xiiGameObjectHandle b) { return a == b; }
 };
 
-/// \brief Currently not implemented as it is not needed for game object handles.
+/// Currently not implemented as it is not needed for game object handles.
 XII_CORE_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiGameObjectHandle& hValue);
 XII_CORE_DLL void operator>>(xiiStreamReader& ref_stream, xiiGameObjectHandle& ref_hValue);
 
@@ -104,7 +104,7 @@ XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiGameObjectHandle);
 #define XII_COMPONENT_TYPE_INDEX_BITS (24 - XII_WORLD_INDEX_BITS)
 #define XII_MAX_COMPONENT_TYPES       (1 << XII_COMPONENT_TYPE_INDEX_BITS)
 
-/// \brief Internal component id used by xiiComponentHandle.
+/// Internal component id used by xiiComponentHandle.
 struct xiiComponentId
 {
   using StorageType = xiiUInt64;
@@ -135,7 +135,7 @@ struct xiiComponentId
   };
 };
 
-/// \brief A handle to a component.
+/// A handle to a component.
 ///
 /// Never store a direct pointer to a component. Always store a handle instead. A pointer to a component can
 /// be received by calling xiiWorld::TryGetComponent or TryGetComponent on the corresponding component manager.
@@ -149,7 +149,7 @@ struct xiiComponentHandle
   friend class xiiComponent;
 };
 
-/// \brief A typed handle to a component.
+/// A typed handle to a component.
 ///
 /// This should be preferred if the component type to be stored inside the handle is known, as it provides
 /// compile time checks against wrong usages (e.g. assigning unrelated types) and more clearly conveys intent.
@@ -177,7 +177,7 @@ struct xiiTypedComponentHandle : public xiiComponentHandle
   }
 };
 
-/// \brief HashHelper implementation so component handles can be used as key in a hashtable.
+/// HashHelper implementation so component handles can be used as key in a hashtable.
 template <>
 struct xiiHashHelper<xiiComponentHandle>
 {
@@ -190,14 +190,14 @@ struct xiiHashHelper<xiiComponentHandle>
   XII_ALWAYS_INLINE static bool Equal(xiiComponentHandle a, xiiComponentHandle b) { return a == b; }
 };
 
-/// \brief Currently not implemented as it is not needed for component handles.
+/// Currently not implemented as it is not needed for component handles.
 XII_CORE_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiComponentHandle& hValue);
 XII_CORE_DLL void operator>>(xiiStreamReader& ref_stream, xiiComponentHandle& ref_hValue);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiComponentHandle);
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiComponentHandle);
 
-/// \brief Internal flags of game objects or components.
+/// Internal flags of game objects or components.
 struct xiiObjectFlags
 {
   using StorageType = xiiUInt32;
@@ -270,7 +270,7 @@ struct xiiObjectFlags
 
 XII_DECLARE_FLAGS_OPERATORS(xiiObjectFlags);
 
-/// \brief Specifies the mode of an object. This enum is only used in the editor.
+/// Specifies the mode of an object. This enum is only used in the editor.
 ///
 /// \sa xiiObjectFlags
 struct xiiObjectMode
@@ -288,7 +288,7 @@ struct xiiObjectMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiObjectMode);
 
-/// \brief Specifies the mode of a component. Dynamic components may change an object's transform, static components must not.
+/// Specifies the mode of a component. Dynamic components may change an object's transform, static components must not.
 ///
 /// \sa xiiObjectFlags
 struct xiiComponentMode
@@ -306,7 +306,7 @@ struct xiiComponentMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiComponentMode);
 
-/// \brief Specifies at which phase the queued message should be processed.
+/// Specifies at which phase the queued message should be processed.
 struct xiiObjectMsgQueueType
 {
   using StorageType = xiiUInt8;
@@ -325,7 +325,7 @@ struct xiiObjectMsgQueueType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiObjectMsgQueueType);
 
-/// \brief Certain components may delete themselves or their owner when they are finished with their main purpose
+/// Certain components may delete themselves or their owner when they are finished with their main purpose
 struct XII_CORE_DLL xiiOnComponentFinishedAction
 {
   using StorageType = xiiUInt8;
@@ -339,7 +339,7 @@ struct XII_CORE_DLL xiiOnComponentFinishedAction
     Default = None
   };
 
-  /// \brief Call this when a component is 'finished' with its work.
+  /// Call this when a component is 'finished' with its work.
   ///
   /// Pass in the desired action (usually configured by the user) and the 'this' pointer of the component.
   /// The helper function will delete this component and maybe also attempt to delete the entire object.
@@ -347,7 +347,7 @@ struct XII_CORE_DLL xiiOnComponentFinishedAction
   /// until the last component has finished it's work.
   static void HandleFinishedAction(xiiComponent* pComponent, xiiOnComponentFinishedAction::Enum action);
 
-  /// \brief Call this function in a message handler for xiiMsgDeleteGameObject messages.
+  /// Call this function in a message handler for xiiMsgDeleteGameObject messages.
   ///
   /// This is needed to coordinate object deletion across multiple components that use the
   /// xiiOnComponentFinishedAction mechanism.
@@ -358,7 +358,7 @@ struct XII_CORE_DLL xiiOnComponentFinishedAction
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiOnComponentFinishedAction);
 
-/// \brief Same as xiiOnComponentFinishedAction, but additionally includes 'Restart'
+/// Same as xiiOnComponentFinishedAction, but additionally includes 'Restart'
 struct XII_CORE_DLL xiiOnComponentFinishedAction2
 {
   using StorageType = xiiUInt8;
@@ -373,16 +373,16 @@ struct XII_CORE_DLL xiiOnComponentFinishedAction2
     Default = None
   };
 
-  /// \brief See xiiOnComponentFinishedAction::HandleFinishedAction()
+  /// See xiiOnComponentFinishedAction::HandleFinishedAction()
   static void HandleFinishedAction(xiiComponent* pComponent, xiiOnComponentFinishedAction2::Enum action);
 
-  /// \brief See xiiOnComponentFinishedAction::HandleDeleteObjectMsg()
+  /// See xiiOnComponentFinishedAction::HandleDeleteObjectMsg()
   static void HandleDeleteObjectMsg(xiiMsgDeleteGameObject& ref_msg, xiiEnum<xiiOnComponentFinishedAction2>& ref_action);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiOnComponentFinishedAction2);
 
-/// \brief Used as return value of visitor functions to define whether calling function should stop or continue visiting.
+/// Used as return value of visitor functions to define whether calling function should stop or continue visiting.
 struct xiiVisitorExecution
 {
   enum Enum

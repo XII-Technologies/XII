@@ -58,7 +58,7 @@ public:
 
   static xiiInt64 TickFromTime(xiiTime time);
 
-  /// \brief Fills out the xiiColorGradient structure with an exact copy of the data in the asset.
+  /// Fills out the xiiColorGradient structure with an exact copy of the data in the asset.
   /// Does NOT yet sort the control points, so before evaluating the color gradient, that must be called manually.
   void     FillGradientData(xiiColorGradient& out_result) const;
   xiiColor Evaluate(xiiInt64 iTick) const;

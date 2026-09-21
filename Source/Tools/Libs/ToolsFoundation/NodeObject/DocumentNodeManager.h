@@ -103,7 +103,7 @@ struct xiiNodePropertyValue
   xiiVariant      m_Value;
 };
 
-/// \brief Describes a template that will be used to create new nodes. In most cases this only contains the type
+/// Describes a template that will be used to create new nodes. In most cases this only contains the type
 /// but it can also contain properties that are pre-filled when the node is created.
 ///
 /// For example in visual script this allows us to have one generic node type for setting reflected properties
@@ -118,7 +118,7 @@ struct xiiNodeCreationTemplate
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Base class for all node connections. Derive from this class and overwrite xiiDocumentNodeManager::GetConnectionType
+/// Base class for all node connections. Derive from this class and overwrite xiiDocumentNodeManager::GetConnectionType
 /// if you need custom properties for connections.
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObject_ConnectionBase : public xiiReflectedClass
 {
@@ -141,7 +141,7 @@ public:
   xiiDocumentNodeManager();
   virtual ~xiiDocumentNodeManager();
 
-  /// \brief For node documents this function is called instead of GetCreateableTypes to get a list for the node creation menu.
+  /// For node documents this function is called instead of GetCreateableTypes to get a list for the node creation menu.
   ///
   /// \see xiiNodeCreationTemplate
   virtual void GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const;
@@ -191,10 +191,10 @@ public:
   bool PasteObjects(const xiiArrayPtr<xiiDocument::PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec2& vPickedPosition, bool bAllowPickedPosition);
 
 protected:
-  /// \brief Tests whether pTarget can be reached from pSource by following the pin connections
+  /// Tests whether pTarget can be reached from pSource by following the pin connections
   bool CanReachNode(const xiiDocumentObject* pSource, const xiiDocumentObject* pTarget, xiiSet<const xiiDocumentObject*>& Visited) const;
 
-  /// \brief Returns true if adding a connection between the two pins would create a circular graph
+  /// Returns true if adding a connection between the two pins would create a circular graph
   bool WouldConnectionCreateCircle(const xiiPin& source, const xiiPin& target) const;
 
   xiiResult ResolveConnection(const xiiUuid& sourceObject, const xiiUuid& targetObject, xiiStringView sourcePin, xiiStringView targetPin, const xiiPin*& out_pSourcePin, const xiiPin*& out_pTargetPin) const;

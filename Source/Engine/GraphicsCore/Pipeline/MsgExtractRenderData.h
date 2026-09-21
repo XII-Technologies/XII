@@ -10,7 +10,7 @@
 
 class xiiView;
 
-/// \brief Sent to components or component managers to request them to extract their render data into the given structure.
+/// Sent to components or component managers to request them to extract their render data into the given structure.
 struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgExtractRenderData, xiiMessage);
@@ -18,10 +18,10 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
 public:
   using SubmitRenderDataFunction = void (*)(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
 
-  /// \brief Adds a single extracted render data item.
+  /// Adds a single extracted render data item.
   void AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
 
-  /// \brief Pushes a batch of extracted data safely to the internal list.
+  /// Pushes a batch of extracted data safely to the internal list.
   void AddRenderDataBatch(const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
 
 public:

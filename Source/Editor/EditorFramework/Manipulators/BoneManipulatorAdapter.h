@@ -14,7 +14,7 @@
 
 struct xiiGizmoEvent;
 
-/// \brief Makes an array of xiiExposedBone properties editable in the viewport
+/// Makes an array of xiiExposedBone properties editable in the viewport
 ///
 /// Enabled by attaching the xiiBoneManipulatorAttribute.
 class xiiBoneManipulatorAdapter : public xiiManipulatorAdapter

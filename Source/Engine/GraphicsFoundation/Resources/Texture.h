@@ -9,7 +9,7 @@
 
 class xiiStreamWriter;
 
-/// \brief This describes the miscellaneous texture flags.
+/// This describes the miscellaneous texture flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
 {
   using StorageType = xiiUInt8;
@@ -46,24 +46,24 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALMiscTextureFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMiscTextureFlags);
 
-/// \brief This describes the texture creation description.
+/// This describes the texture creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiHashableStruct<xiiGALTextureCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Returns true if the texture is a 1D texture or a 1D texture array.
+  /// Returns true if the texture is a 1D texture or a 1D texture array.
   XII_ALWAYS_INLINE bool Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }
 
-  /// \brief Returns true if the texture is a 2D texture or a 2D texture array.
+  /// Returns true if the texture is a 2D texture or a 2D texture array.
   XII_ALWAYS_INLINE bool Is2D() const { return m_Type == xiiGALResourceDimension::Texture2D || m_Type == xiiGALResourceDimension::Texture2DArray; }
 
-  /// \brief Returns true if the texture is a 3D texture.
+  /// Returns true if the texture is a 3D texture.
   XII_ALWAYS_INLINE bool Is3D() const { return m_Type == xiiGALResourceDimension::Texture3D; }
 
-  /// \brief Returns true if the texture is a cube map or a cube map array.
+  /// Returns true if the texture is a cube map or a cube map array.
   XII_ALWAYS_INLINE bool IsCube() const { return m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
 
-  /// \brief Returns true if the texture is a 1D array, 2D array, cube map or cube map array.
+  /// Returns true if the texture is a 1D array, 2D array, cube map or cube map array.
   XII_ALWAYS_INLINE bool IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
 
   xiiEnum<xiiGALResourceDimension>    m_Type                  = xiiGALResourceDimension::Undefined; ///< Texture type. The default is Undefined.
@@ -80,7 +80,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   void*                               m_pExistingNativeObject = nullptr;                            ///< Used to encapsulate existing native textures in objects usable by the GAL.
 };
 
-/// \brief This describes the data for one texture sub-resource.
+/// This describes the data for one texture sub-resource.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureSubResourceData
 {
   XII_ALWAYS_INLINE xiiGALTextureSubResourceData() :
@@ -103,7 +103,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureSubResourceData
   xiiUInt64           m_uiDepthStride; ///< For 3D textures, the depth slice stride in bytes.
 };
 
-/// \brief This describes the initial data to store in the texture.
+/// This describes the initial data to store in the texture.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData
 {
   XII_ALWAYS_INLINE xiiGALTextureData() :
@@ -125,7 +125,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData
   xiiGALCommandList*                              m_pCommandList;  ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
 };
 
-/// \brief This describes the mapped texture sub-resource data.
+/// This describes the mapped texture sub-resource data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMappedTextureSubresource : public xiiHashableStruct<xiiGALMappedTextureSubresource>
 {
   XII_DECLARE_POD_TYPE();
@@ -135,7 +135,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMappedTextureSubresource : public xiiHas
   xiiUInt64 m_uiDepthStride = 0U;      ///< For 3D textures, the depth stride in bytes.
 };
 
-/// \brief This describes the mapped texture sub-resource mip-level data.
+/// This describes the mapped texture sub-resource mip-level data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureMipLevelData : public xiiHashableStruct<xiiGALTextureMipLevelData>
 {
   XII_DECLARE_POD_TYPE();
@@ -144,7 +144,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureMipLevelData : public xiiHashable
   xiiUInt32 m_uiArraySlice = 0U; ///< The texture array slice. Default is 0.
 };
 
-/// \brief This describes the sparse texture properties.
+/// This describes the sparse texture properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHashableStruct<xiiGALSparseTextureProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -166,25 +166,25 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHash
   xiiBitflags<xiiGALSparseTextureFlags> m_Flags = xiiGALSparseTextureFlags::None; ///< Flags that describe additional packing modes. The default is None.
 };
 
-/// \brief Interface that defines methods to manipulate a texture object.
+/// Interface that defines methods to manipulate a texture object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTexture : public xiiGALResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTexture, xiiGALResource);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief Returns the external memory kind flags for this texture.
+  /// Returns the external memory kind flags for this texture.
   [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALExternalMemoryKind> GetExternalMemoryKind() const { return m_ExternalMemoryDescription.m_Type; }
 
-  /// \brief Returns the external memory description for this texture.
+  /// Returns the external memory description for this texture.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALExternalMemoryDescription& GetExternalMemoryDescription() const { return m_ExternalMemoryDescription; }
 
-  /// \brief Returns the calculated memory consumption for texture.
+  /// Returns the calculated memory consumption for texture.
   [[nodiscard]] virtual xiiUInt64 GetMemoryConsumption() const;
 
-  /// \brief This returns the reference-counted pointer of the default view.
+  /// This returns the reference-counted pointer of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALTextureViewType.
   ///
@@ -193,10 +193,10 @@ public:
   /// \note The function **increases** the reference counter for the returned interface.
   [[nodiscard]] xiiSharedPtr<xiiGALTextureView> GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
-  /// \brief This returns the sparse texture properties.
+  /// This returns the sparse texture properties.
   [[nodiscard]] virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
 
-  /// \brief This creates a new texture view.
+  /// This creates a new texture view.
   ///
   /// \param description - The texture view description. See xiiGALTextureViewCreationDescription.
   ///

@@ -123,7 +123,7 @@ namespace
     };
   };
 
-  /// \brief Returns the red mask for a given texture format.
+  /// Returns the red mask for a given texture format.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetRedMask(xiiEnum<xiiGALResourceFormat> format)
   {
     switch (format)
@@ -145,7 +145,7 @@ namespace
     }
   }
 
-  /// \brief Returns the green mask for a given texture format.
+  /// Returns the green mask for a given texture format.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetGreenMask(xiiEnum<xiiGALResourceFormat> format)
   {
     switch (format)
@@ -166,7 +166,7 @@ namespace
     }
   }
 
-  /// \brief Returns the blue mask for a given texture format.
+  /// Returns the blue mask for a given texture format.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlueMask(xiiEnum<xiiGALResourceFormat> format)
   {
     switch (format)
@@ -187,7 +187,7 @@ namespace
     }
   }
 
-  /// \brief Returns the alpha mask for a given texture format.
+  /// Returns the alpha mask for a given texture format.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetAlphaMask(xiiEnum<xiiGALResourceFormat> format)
   {
     switch (format)
@@ -204,7 +204,7 @@ namespace
     }
   }
 
-  /// \brief This returns the texture format for a given pixel mask and bits per pixel.
+  /// This returns the texture format for a given pixel mask and bits per pixel.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> FromPixelMask(xiiUInt32 uiRedMask, xiiUInt32 uiGreenMask, xiiUInt32 uiBlueMask, xiiUInt32 uiAlphaMask, xiiUInt32 uiBitsPerPixel)
   {
     if (uiBitsPerPixel == 32U)

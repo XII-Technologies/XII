@@ -6,7 +6,7 @@
 #include <Foundation/Math/Vec3.h>
 #include <Utilities/UtilitiesDLL.h>
 
-/// \brief Enum values for success and failure. To be used by functions as return values mostly, instead of bool.
+/// Enum values for success and failure. To be used by functions as return values mostly, instead of bool.
 struct xiiCallbackResult
 {
   enum Enum
@@ -16,7 +16,7 @@ struct xiiCallbackResult
   };
 };
 
-/// \brief Enum values for the result of some rasterization functions.
+/// Enum values for the result of some rasterization functions.
 struct xiiRasterizationResult
 {
   enum Enum
@@ -28,13 +28,13 @@ struct xiiRasterizationResult
 
 namespace xii2DGridUtils
 {
-  /// \brief The callback declaration for the function that needs to be passed to the various rasterization functions.
+  /// The callback declaration for the function that needs to be passed to the various rasterization functions.
   using XII_RASTERIZED_POINT_CALLBACK = xiiCallbackResult::Enum (*)(xiiInt32, xiiInt32, void*);
 
-  /// \brief The callback declaration for the function that needs to be passed to RasterizeBlobWithDistance().
+  /// The callback declaration for the function that needs to be passed to RasterizeBlobWithDistance().
   using XII_RASTERIZED_BLOB_CALLBACK = xiiCallbackResult::Enum (*)(xiiInt32, xiiInt32, void*, xiiUInt8);
 
-  /// \brief Computes all the points on a 2D line and calls a function to report every point.
+  /// Computes all the points on a 2D line and calls a function to report every point.
   ///
   /// The function implements Bresenham's algorithm for line rasterization. The first point to be reported through the
   /// callback is always the start position, the last point is always the end position.
@@ -47,7 +47,7 @@ namespace xii2DGridUtils
   /// This function does not do any dynamic memory allocations internally.
   XII_UTILITIES_DLL xiiRasterizationResult::Enum ComputePointsOnLine(xiiInt32 iStartX, xiiInt32 iStartY, xiiInt32 iEndX, xiiInt32 iEndY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr);
 
-  /// \brief Computes all the points on a 2D line and calls a function to report every point.
+  /// Computes all the points on a 2D line and calls a function to report every point.
   ///
   /// Contrary to ComputePointsOnLine() this function does not do diagonal steps but inserts horizontal or vertical steps, such that
   /// reported cells are always connected by an edge.
@@ -59,7 +59,7 @@ namespace xii2DGridUtils
   /// has no effect on whether the line continues or aborts.
   XII_UTILITIES_DLL xiiRasterizationResult::Enum ComputePointsOnLineConservative(xiiInt32 iStartX, xiiInt32 iStartY, xiiInt32 iEndX, xiiInt32 iEndY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr, bool bVisitBothNeighbors = false);
 
-  /// \brief Computes all the points on a 2D circle and calls a function to report every point.
+  /// Computes all the points on a 2D circle and calls a function to report every point.
   ///
   /// The points are reported in a rather chaotic order (ie. when one draws a line from point to point, it does not yield a circle shape).
   /// The callback may abort the operation by returning xiiCallbackResult::Stop.
@@ -67,7 +67,7 @@ namespace xii2DGridUtils
   /// This function does not do any dynamic memory allocations internally.
   XII_UTILITIES_DLL xiiRasterizationResult::Enum ComputePointsOnCircle(xiiInt32 iStartX, xiiInt32 iStartY, xiiUInt32 uiRadius, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr);
 
-  /// \brief Starts at the given point and then fills all surrounding cells until a border is detected.
+  /// Starts at the given point and then fills all surrounding cells until a border is detected.
   ///
   /// The callback should return xiiCallbackResult::Continue for each cell that has not been visited so far and for which all four direct
   /// neighbors should be visited. If the flood-fill algorithm leaves the valid area, the callback must return xiiCallbackResult::Stop to
@@ -82,10 +82,10 @@ namespace xii2DGridUtils
   /// several operations, which will reduce the amount of memory allocations that need to be done.
   XII_UTILITIES_DLL xiiUInt32 FloodFill(xiiInt32 iStartX, xiiInt32 iStartY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr, xiiDeque<xiiVec2I32>* pTempArray = nullptr);
 
-  /// \brief Same as FloodFill() but also visits the diagonal neighbors, ie. all eight neighboring cells.
+  /// Same as FloodFill() but also visits the diagonal neighbors, ie. all eight neighboring cells.
   XII_UTILITIES_DLL xiiUInt32 FloodFillDiag(xiiInt32 iStartX, xiiInt32 iStartY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr, xiiDeque<xiiVec2I32>* pTempArray = nullptr);
 
-  /// \brief Describes the different circle types that can be rasterized
+  /// Describes the different circle types that can be rasterized
   enum xiiBlobType : xiiUInt8
   {
     Point1x1,    ///< The circle has just one point at the center
@@ -99,7 +99,7 @@ namespace xii2DGridUtils
     Circle15x15, ///< Circle with 177 points
   };
 
-  /// \brief Rasterizes a circle of limited dimensions and calls the given callback for each point.
+  /// Rasterizes a circle of limited dimensions and calls the given callback for each point.
   ///
   /// See xiiCircleType for the available circle types. Those circles are handcrafted to have good looking shapes at low resolutions.
   /// This type of circle is not meant for actually rendering circles, but for doing area operations and overlapping checks for game
@@ -111,11 +111,11 @@ namespace xii2DGridUtils
   /// xiiCallbackResult::Stop.
   XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeBlob(xiiInt32 iPosX, xiiInt32 iPosY, xiiBlobType type, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr);
 
-  /// \brief Same as RasterizeBlob(), but the distance from the center is passed through to the callback, which can use this information to
+  /// Same as RasterizeBlob(), but the distance from the center is passed through to the callback, which can use this information to
   /// adjust what it is doing.
   XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeBlobWithDistance(xiiInt32 iPosX, xiiInt32 iPosY, xiiBlobType type, XII_RASTERIZED_BLOB_CALLBACK callback, void* pPassThrough = nullptr);
 
-  /// \brief Rasterizes a circle of any size (unlike RasterizeBlob()), though finding the right radius values for nice looking small circles
+  /// Rasterizes a circle of any size (unlike RasterizeBlob()), though finding the right radius values for nice looking small circles
   /// can be more difficult.
   ///
   /// This function rasterizes a full circle. The radius is a float value, ie. you can use fractional values to shave off cells at the
@@ -126,7 +126,7 @@ namespace xii2DGridUtils
   XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeCircle(xiiInt32 iPosX, xiiInt32 iPosY, float fRadius, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr);
 
 
-  /// \brief Computes which points are visible from the start position by tracing lines radially outwards.
+  /// Computes which points are visible from the start position by tracing lines radially outwards.
   ///
   /// The center start position is at iPosX, iPosY and uiRadius defines the maximum distance that an object can see.
   /// uiWidth and uiHeight define the maximum coordinates at which the end of the grid is reached (and thus the line tracing can early out
@@ -139,7 +139,7 @@ namespace xii2DGridUtils
   /// allocations, you can pass in your own array, that can be reused for many queries.
   XII_UTILITIES_DLL void ComputeVisibleArea(xiiInt32 iPosX, xiiInt32 iPosY, xiiUInt16 uiRadius, xiiUInt32 uiWidth, xiiUInt32 uiHeight, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr, xiiDynamicArray<xiiUInt8>* pTempArray = nullptr);
 
-  /// \brief Computes which points are visible from the start position by tracing lines radially outwards. Limits the computation to a cone.
+  /// Computes which points are visible from the start position by tracing lines radially outwards. Limits the computation to a cone.
   ///
   /// This function works exactly like ComputeVisibleArea() but limits the computation to a cone that is defined by vDirection and
   /// ConeAngle.

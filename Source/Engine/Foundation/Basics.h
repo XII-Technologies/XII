@@ -68,7 +68,7 @@ public:
   static xiiAllocator* s_pDefaultAllocator;
   static xiiAllocator* s_pAlignedAllocator;
 
-  /// \brief The default allocator can be used for any kind of allocation if no alignment is required
+  /// The default allocator can be used for any kind of allocation if no alignment is required
   XII_ALWAYS_INLINE static xiiAllocator* GetDefaultAllocator()
   {
     if (s_bIsInitialized)
@@ -77,7 +77,7 @@ public:
       return GetStaticAllocator();
   }
 
-  /// \brief The aligned allocator should be used for all allocations which need alignment
+  /// The aligned allocator should be used for all allocations which need alignment
   XII_ALWAYS_INLINE static xiiAllocator* GetAlignedAllocator()
   {
     XII_ASSERT_RELEASE(s_pAlignedAllocator != nullptr, "xiiFoundation must have been initialized before this function can be called. This "
@@ -87,7 +87,7 @@ public:
     return s_pAlignedAllocator;
   }
 
-  /// \brief Returns the allocator that is used by global data and static members before the default allocator is created.
+  /// Returns the allocator that is used by global data and static members before the default allocator is created.
   static xiiAllocator* GetStaticAllocator();
 
 private:

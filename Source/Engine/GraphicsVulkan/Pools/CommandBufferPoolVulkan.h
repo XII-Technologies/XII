@@ -63,14 +63,14 @@ public:
     xiiDynamicArray<InFlightCommandBuffer> m_InFlightCommandBuffers;
     xiiMutex                               m_Mutex;
 
-    /// \brief Push a command buffer back into this thread's free list. Immediate return to free-list
+    /// Push a command buffer back into this thread's free list. Immediate return to free-list
     void Push(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary);
 
-    /// \brief Defer recycle: GPU is still using it.
+    /// Defer recycle: GPU is still using it.
     void PushInFlight(vk::CommandBuffer vkCommandBuffer, xiiGALCommandListDataVulkan&& commandListData, bool bIsSecondary, xiiUInt64 uiFenceValue);
   };
 
-  /// \brief RAII handle for a VkCommandBuffer allocated from this pool.
+  /// RAII handle for a VkCommandBuffer allocated from this pool.
   /// On destruction: if not submitted, returns it immediately to free-list.
   /// If submitted via xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit, the command buffer is moved out and not auto-recycled.
   struct AutoCommandBuffer
@@ -116,7 +116,7 @@ public:
       }
     }
 
-    /// \brief Implicit conversion so you can pass it directly to vk calls.
+    /// Implicit conversion so you can pass it directly to vk calls.
     XII_ALWAYS_INLINE operator vk::CommandBuffer() const { return m_vkCommandBuffer; }
 
     XII_ALWAYS_INLINE vk::CommandBuffer Get() const { return m_vkCommandBuffer; }
@@ -129,26 +129,26 @@ public:
     bool              m_bIsSecondary    = false;
   };
 
-  /// \brief Allocate a primary-level command buffer for the current thread.
+  /// Allocate a primary-level command buffer for the current thread.
   AutoCommandBuffer AllocatePrimaryCommandBuffer();
 
-  /// \brief Allocate a secondary-level command buffer for the current thread
+  /// Allocate a secondary-level command buffer for the current thread
   AutoCommandBuffer AllocateSecondaryCommandBuffer();
 
   /// Submit wrapper: after vkQueueSubmit(..., fence), call this to defer recycling.
   void RecycleAfterSubmit(AutoCommandBuffer&& commandBuffer, xiiGALCommandListDataVulkan&& commandListData, xiiUInt64 uiFenceValue);
 
-  /// \brief Poll fences and reclaim any completed buffers.
+  /// Poll fences and reclaim any completed buffers.
   /// Call at the start of each frame or from a dedicated thread.
   void ReclaimCompleted();
 
-  /// \brief Resets *all* underlying VkCommandPools, invalidating prerecorded buffers.
+  /// Resets *all* underlying VkCommandPools, invalidating prerecorded buffers.
   /// Freelist is cleared; next allocate will re‐create new buffers.
   /// Hard reset all pools (invalidates *all* buffers, in-flight or free).
   void ResetPools();
 
 private:
-  /// \brief Constructs a multithreaded command‐buffer pool.
+  /// Constructs a multithreaded command‐buffer pool.
   /// pDeviceVulkan           – Vulkan device implementation.
   /// pCommandQueueVulkan     - The command queue.
   /// poolCreateFlags         – Flags for vkCreateCommandPool (e.g. RESET_COMMAND_BUFFER_BIT)
@@ -157,7 +157,7 @@ private:
 
   ~xiiGALCommandBufferPoolVulkan();
 
-  /// \brief Get or create the thread-pool for this thread ID.
+  /// Get or create the thread-pool for this thread ID.
   ThreadPool& GetOrCreateThreadPool();
 
 private:

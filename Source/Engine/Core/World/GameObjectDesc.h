@@ -8,7 +8,7 @@
 #include <Foundation/Types/TagSet.h>
 #include <Foundation/Types/Uuid.h>
 
-/// \brief Describes the initial state of a game object.
+/// Describes the initial state of a game object.
 struct XII_CORE_DLL xiiGameObjectDescription
 {
   XII_DECLARE_POD_TYPE();

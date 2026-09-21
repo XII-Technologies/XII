@@ -7,7 +7,7 @@
 #include <Foundation/Math/Mat3.h>
 #include <Foundation/Math/Transform.h>
 
-/// \brief A wrapper class that converts a xiiMat3 into the correct data layout for shaders.
+/// A wrapper class that converts a xiiMat3 into the correct data layout for shaders.
 class xiiShaderMat3
 {
 public:
@@ -33,7 +33,7 @@ private:
   float m_Data[12];
 };
 
-/// \brief A wrapper class that converts a xiiMat4 into the correct data layout for shaders.
+/// A wrapper class that converts a xiiMat4 into the correct data layout for shaders.
 class xiiShaderMat4
 {
 public:
@@ -52,7 +52,7 @@ private:
   float m_Data[16];
 };
 
-/// \brief A wrapper class that converts a xiiTransform into the correct data layout for shaders.
+/// A wrapper class that converts a xiiTransform into the correct data layout for shaders.
 class xiiShaderTransform
 {
 public:
@@ -114,7 +114,7 @@ private:
   float m_Data[12];
 };
 
-/// \brief A wrapper class that converts a bool into the correct data layout for shaders.
+/// A wrapper class that converts a bool into the correct data layout for shaders.
 class xiiShaderBool
 {
 public:

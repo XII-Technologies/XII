@@ -17,11 +17,11 @@ using xiiDataBuffer        = xiiDynamicArray<xiiUInt8>;
 using xiiVariantArray      = xiiDynamicArray<xiiVariant>;
 using xiiVariantDictionary = xiiHashTable<xiiString, xiiVariant>;
 
-/// \brief This enum describes the type of data that is currently stored inside the variant.
+/// This enum describes the type of data that is currently stored inside the variant.
 struct xiiVariantType
 {
   using StorageType = xiiUInt8;
-  /// \brief This enum describes the type of data that is currently stored inside the variant.
+  /// This enum describes the type of data that is currently stored inside the variant.
   /// Note that changes to this enum require an increase of the reflection version and either
   /// patches to the serializer or a re-export of binary data that contains xiiVariants.
   enum Enum : StorageType
@@ -109,7 +109,7 @@ struct xiiVariantClass
   };
 };
 
-/// \brief A helper struct to convert the C++ type, which is passed as the template argument, into one of the xiiVariant::Type enum values.
+/// A helper struct to convert the C++ type, which is passed as the template argument, into one of the xiiVariant::Type enum values.
 template <typename T>
 struct xiiVariantTypeDeduction
 {
@@ -121,7 +121,7 @@ struct xiiVariantTypeDeduction
   static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::Invalid;
 };
 
-/// \brief Declares a custom variant type, allowing it to be stored by value inside a xiiVariant.
+/// Declares a custom variant type, allowing it to be stored by value inside a xiiVariant.
 ///
 /// Needs to be called from the same header that defines the type.
 /// \sa XII_DEFINE_CUSTOM_VARIANT_TYPE

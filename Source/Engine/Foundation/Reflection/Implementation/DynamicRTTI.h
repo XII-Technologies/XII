@@ -6,7 +6,7 @@
 
 #include <Foundation/Reflection/Implementation/StaticRTTI.h>
 
-/// \brief This needs to be put into the class declaration of EVERY dynamically reflectable class.
+/// This needs to be put into the class declaration of EVERY dynamically reflectable class.
 ///
 /// This macro extends a class, such that it is now able to return its own type information via GetDynamicRTTI(),
 /// which is a virtual function, that is reimplemented on each type. A class needs to be derived from xiiReflectedClass
@@ -51,7 +51,7 @@ public:                                                  \
 #endif
 
 
-/// \brief Implements the necessary functionality for a type to be dynamically reflectable.
+/// Implements the necessary functionality for a type to be dynamically reflectable.
 ///
 /// \param Type
 ///   The type for which the reflection functionality should be implemented.
@@ -67,21 +67,21 @@ public:                                                  \
   xiiRTTI Type::s_RTTI = GetRTTI((Type*)0);                            \
   XII_RTTIINFO_GETRTTI_IMPL_BEGIN(Type, Type::SUPER, AllocatorType)
 
-/// \brief Ends the reflection code block that was opened with XII_BEGIN_DYNAMIC_REFLECTED_TYPE.
+/// Ends the reflection code block that was opened with XII_BEGIN_DYNAMIC_REFLECTED_TYPE.
 #define XII_END_DYNAMIC_REFLECTED_TYPE                                                                                                             \
   return xiiRTTI(GetTypeName((OwnType*)0), xiiGetStaticRTTI<OwnBaseType>(), sizeof(OwnType), GetTypeVersion((OwnType*)0),                          \
                  xiiVariant::TypeDeduction<OwnType>::value, flags, &Allocator, Properties, Functions, Attributes, MessageHandlers, MessageSenders, \
                  XII_REFLECTION_DEBUG_GETPARENTFUNC);                                                                                              \
   }
 
-/// \brief Same as XII_BEGIN_DYNAMIC_REFLECTED_TYPE but forces the type to be treated as abstract by reflection even though it might not be abstract from a C++ perspective.
+/// Same as XII_BEGIN_DYNAMIC_REFLECTED_TYPE but forces the type to be treated as abstract by reflection even though it might not be abstract from a C++ perspective.
 #define XII_BEGIN_ABSTRACT_DYNAMIC_REFLECTED_TYPE(Type, Version)      \
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(Type, Version, xiiRTTINoAllocator) \
     flags.Add(xiiTypeFlags::Abstract);
 
 #define XII_END_ABSTRACT_DYNAMIC_REFLECTED_TYPE XII_END_DYNAMIC_REFLECTED_TYPE
 
-/// \brief All classes that should be dynamically reflectable, need to be derived from this base class.
+/// All classes that should be dynamically reflectable, need to be derived from this base class.
 class XII_FOUNDATION_DLL xiiReflectedClass : public xiiNoBase
 {
   XII_ADD_DYNAMIC_REFLECTION_NO_GETTER(xiiReflectedClass, xiiNoBase);
@@ -93,10 +93,10 @@ public:
   XII_ALWAYS_INLINE xiiReflectedClass()          = default;
   XII_ALWAYS_INLINE virtual ~xiiReflectedClass() = default;
 
-  /// \brief Returns whether the type of this instance is of the given type or derived from it.
+  /// Returns whether the type of this instance is of the given type or derived from it.
   bool IsInstanceOf(const xiiRTTI* pType) const;
 
-  /// \brief Returns whether the type of this instance is of the given type or derived from it.
+  /// Returns whether the type of this instance is of the given type or derived from it.
   template <typename T>
   XII_ALWAYS_INLINE bool IsInstanceOf() const
   {

@@ -10,7 +10,7 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Threading/ThreadUtils.h>
 
-/// \brief Represents a typed block of memory with fixed size, typically used for bulk allocations.
+/// Represents a typed block of memory with fixed size, typically used for bulk allocations.
 ///
 /// This wrapper provides type-safe access to a block of memory that can hold multiple elements
 /// of type T. The block has a fixed capacity determined by SizeInBytes and sizeof(T).
@@ -27,15 +27,15 @@ struct xiiDataBlock
     CAPACITY      = SIZE_IN_BYTES / sizeof(T)
   };
 
-  /// \brief Constructs a data block wrapping the given memory region.
+  /// Constructs a data block wrapping the given memory region.
   xiiDataBlock(T* pData, xiiUInt32 uiCount);
 
-  /// \brief Reserves space for one element at the end of the block.
+  /// Reserves space for one element at the end of the block.
   ///
   /// Returns pointer to the reserved element, or nullptr if the block is full.
   T* ReserveBack();
 
-  /// \brief Removes and returns pointer to the last element in the block.
+  /// Removes and returns pointer to the last element in the block.
   ///
   /// Returns nullptr if the block is empty.
   T* PopBack();
@@ -43,14 +43,14 @@ struct xiiDataBlock
   bool IsEmpty() const;
   bool IsFull() const;
 
-  /// \brief Provides access to elements by index within the used range.
+  /// Provides access to elements by index within the used range.
   T& operator[](xiiUInt32 uiIndex) const;
 
   T*        m_pData;
   xiiUInt32 m_uiCount;
 };
 
-/// \brief Specialized allocator for fixed-size memory blocks, optimized for bulk allocations.
+/// Specialized allocator for fixed-size memory blocks, optimized for bulk allocations.
 ///
 /// This allocator manages memory in large chunks called "SuperBlocks" (16 blocks each) and
 /// provides individual blocks of the specified size on demand. It's designed for scenarios
@@ -71,7 +71,7 @@ public:
   xiiLargeBlockAllocator(xiiStringView sName, xiiAllocator* pParent, xiiAllocatorTrackingMode mode = xiiAllocatorTrackingMode::Default);
   ~xiiLargeBlockAllocator();
 
-  /// \brief Allocates a new typed block capable of holding elements of type T.
+  /// Allocates a new typed block capable of holding elements of type T.
   ///
   /// Returns a typed wrapper around a raw memory block. The block can hold
   /// BlockSizeInByte / sizeof(T) elements. If allocation fails, returns an
@@ -79,14 +79,14 @@ public:
   template <typename T>
   xiiDataBlock<T, BlockSizeInByte> AllocateBlock();
 
-  /// \brief Deallocates a previously allocated block.
+  /// Deallocates a previously allocated block.
   template <typename T>
   void DeallocateBlock(xiiDataBlock<T, BlockSizeInByte>& ref_block);
 
-  /// \brief Returns the name of this allocator instance.
+  /// Returns the name of this allocator instance.
   xiiStringView GetName() const;
 
-  /// \brief Returns the unique identifier for this allocator instance.
+  /// Returns the unique identifier for this allocator instance.
   xiiAllocatorId GetId() const;
 
   const xiiAllocator::Stats& GetStats() const;

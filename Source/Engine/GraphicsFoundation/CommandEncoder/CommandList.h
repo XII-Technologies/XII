@@ -13,7 +13,7 @@
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
-/// \brief Specifies flags for configuring the behavior of a GAL command list.
+/// Specifies flags for configuring the behavior of a GAL command list.
 ///
 /// This enum encapsulates flags used when creating or modifying command list behavior within the Graphics Abstraction Layer (GAL).
 /// These flags determine how a command list can be recorded, submitted, and reused in a rendering pipeline.
@@ -41,7 +41,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandListFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandListFlags);
 
-/// \brief This describes the pipeline state shading rate flags.
+/// This describes the pipeline state shading rate flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
 {
   using StorageType = xiiUInt8;
@@ -64,7 +64,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSetVertexBufferFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSetVertexBufferFlags);
 
-/// \brief This describes the resource state transition type.
+/// This describes the resource state transition type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionType
 {
   using StorageType = xiiUInt8;
@@ -83,7 +83,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALStateTransitionType);
 
-/// \brief Resource state transition flags.
+/// Resource state transition flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionFlags
 {
   using StorageType = xiiUInt8;
@@ -112,7 +112,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALStateTransitionFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALStateTransitionFlags);
 
-/// \brief This describes the resource state transition mode.
+/// This describes the resource state transition mode.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionMode
 {
   using StorageType = xiiUInt8;
@@ -140,7 +140,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALStateTransitionMode);
 
-/// \brief This describes the viewport. A viewport defines the rendering area within a graphical output. It specifies the position, size, and depth range of the viewport to control how the scene is displayed.
+/// This describes the viewport. A viewport defines the rendering area within a graphical output. It specifies the position, size, and depth range of the viewport to control how the scene is displayed.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiGALViewport>
 {
   XII_DECLARE_POD_TYPE();
@@ -165,7 +165,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiG
   float m_fMaxDepth = 1.0f; ///< Maximum depth of the viewport range. The far clipping plane's depth value. Typically set to 1.0.
 };
 
-/// \brief This describes the viewport.
+/// This describes the viewport.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiHashableStruct<xiiGALBeginRenderPassDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -187,7 +187,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiH
   xiiStaticArray<xiiGALOptimizedClearValue, 4U> m_ClearValues;
 };
 
-/// \brief This describes the resource state barrier description.
+/// This describes the resource state barrier description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -214,7 +214,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionDescription
   xiiBitflags<xiiGALStateTransitionFlags> m_TransitionFlags = xiiGALStateTransitionFlags::None;  ///< State transition flags, see xiiGALStateTransitionFlags.
 };
 
-/// \brief This describes multi-sampled texture resolve command arguments.
+/// This describes multi-sampled texture resolve command arguments.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResolveTextureSubresourceDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -235,7 +235,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResolveTextureSubresourceDescription
   xiiEnum<xiiGALResourceFormat>      m_Format                           = xiiGALResourceFormat::Unknown;   ///< If one or both textures are typeless, specifies the type of the typeless texture. If both texture formats are not typeless, in which case they must be identical, this member must be either xiiGALResourceFormat::Unknown, or match this format.
 };
 
-/// \brief Describes parameters for issuing non-indexed draw calls.
+/// Describes parameters for issuing non-indexed draw calls.
 ///
 /// Defines the vertex and instance counts, as well as starting locations, for issuing a basic GPU draw call. Used in graphics command encoding where geometry is streamed directly from vertex buffers.
 ///
@@ -244,10 +244,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized draw description (0 vertices, 1 instance).
+  /// Default-initialized draw description (0 vertices, 1 instance).
   XII_ALWAYS_INLINE xiiGALDrawDescription() = default;
 
-  /// \brief Constructs a draw description with specified parameters.
+  /// Constructs a draw description with specified parameters.
   ///
   /// \param uiVertexCount           - Number of vertices to draw.
   /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
@@ -264,7 +264,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawDescription
   xiiUInt32 m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
 };
 
-/// \brief Describes parameters for issuing indexed draw calls.
+/// Describes parameters for issuing indexed draw calls.
 ///
 /// Defines the index and instance counts, index type, and offsets required for issuing GPU draw calls using an index buffer. Used in graphics command encoding for geometry instancing and reuse.
 ///
@@ -273,10 +273,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized indexed draw description (0 indices, 1 instance).
+  /// Default-initialized indexed draw description (0 indices, 1 instance).
   XII_ALWAYS_INLINE xiiGALDrawIndexedDescription() = default;
 
-  /// \brief Constructs an indexed draw description with specified parameters.
+  /// Constructs an indexed draw description with specified parameters.
   ///
   /// \param uiIndexCount            - Number of indices to process.
   /// \param IndexType               - Type of index data (e.g., 16-bit or 32-bit unsigned int).
@@ -297,7 +297,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedDescription
   xiiUInt32                m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to the vertex shader.
 };
 
-/// \brief Describes parameters for issuing indirect non-indexed draw calls.
+/// Describes parameters for issuing indirect non-indexed draw calls.
 ///
 /// Used to issue multiple draw calls from a GPU buffer containing draw arguments. Supports optional counter buffer for dynamic draw count.
 ///
@@ -306,10 +306,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndirectDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized indirect draw description.
+  /// Default-initialized indirect draw description.
   XII_ALWAYS_INLINE xiiGALDrawIndirectDescription() = default;
 
-  /// \brief Constructs an indirect draw description with specified parameters.
+  /// Constructs an indirect draw description with specified parameters.
   ///
   /// \param pBuffer                      - Buffer containing draw arguments.
   /// \param uiDrawCount                  - Number of draws to execute.
@@ -334,7 +334,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndirectDescription
   xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
 };
 
-/// \brief Describes parameters for issuing indirect indexed draw calls.
+/// Describes parameters for issuing indirect indexed draw calls.
 ///
 /// Used to issue multiple indexed draw calls from a GPU buffer containing draw arguments. Supports optional counter buffer and index type specification.
 ///
@@ -343,10 +343,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedIndirectDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized indexed indirect draw description.
+  /// Default-initialized indexed indirect draw description.
   XII_ALWAYS_INLINE xiiGALDrawIndexedIndirectDescription() = default;
 
-  /// \brief Constructs an indexed indirect draw description with specified parameters.
+  /// Constructs an indexed indirect draw description with specified parameters.
   ///
   /// \param indexType                    - Type of index data (e.g., 16-bit or 32-bit).
   /// \param pBuffer                      - Buffer containing draw arguments.
@@ -373,7 +373,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawIndexedIndirectDescription
   xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
 };
 
-/// \brief Describes parameters for issuing mesh shader draw calls.
+/// Describes parameters for issuing mesh shader draw calls.
 ///
 /// Specifies the number of workgroups to dispatch for a meshlet-driven pipeline. Used for explicit, non-indirect mesh shader draws.
 ///
@@ -382,10 +382,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized mesh draw description (1 group on X axis).
+  /// Default-initialized mesh draw description (1 group on X axis).
   XII_ALWAYS_INLINE xiiGALDrawMeshDescription() = default;
 
-  /// \brief Constructs a draw mesh description with specified thread group dimensions.
+  /// Constructs a draw mesh description with specified thread group dimensions.
   ///
   /// \param uiThreadGroupCountX - Number of thread groups along X.
   XII_ALWAYS_INLINE explicit xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX) :
@@ -393,13 +393,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshDescription
   {
   }
 
-  /// \brief Constructs a draw mesh description with X/Y group counts.
+  /// Constructs a draw mesh description with X/Y group counts.
   XII_ALWAYS_INLINE xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY) :
     m_uiThreadGroupCountX(uiThreadGroupCountX), m_uiThreadGroupCountY(uiThreadGroupCountY)
   {
   }
 
-  /// \brief Constructs a draw mesh description with full 3D group dimensions.
+  /// Constructs a draw mesh description with full 3D group dimensions.
   XII_ALWAYS_INLINE xiiGALDrawMeshDescription(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) :
     m_uiThreadGroupCountX(uiThreadGroupCountX), m_uiThreadGroupCountY(uiThreadGroupCountY), m_uiThreadGroupCountZ(uiThreadGroupCountZ)
   {
@@ -410,7 +410,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshDescription
   xiiUInt32 m_uiThreadGroupCountZ = 1U; ///< Mesh thread groups along Z.
 };
 
-/// \brief Describes parameters for issuing indirect mesh shader draw calls.
+/// Describes parameters for issuing indirect mesh shader draw calls.
 ///
 /// Pulls mesh dispatch arguments from a GPU buffer, with optional draw count via counter buffer.
 ///
@@ -419,10 +419,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshIndirectDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized indirect mesh draw description.
+  /// Default-initialized indirect mesh draw description.
   XII_ALWAYS_INLINE xiiGALDrawMeshIndirectDescription() = default;
 
-  /// \brief Constructs an indirect mesh draw description with specified parameters.
+  /// Constructs an indirect mesh draw description with specified parameters.
   ///
   /// \param pBuffer                      - Buffer containing mesh dispatch arguments.
   /// \param uiCommandCount               - Number of draws to execute.
@@ -445,7 +445,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawMeshIndirectDescription
   xiiEnum<xiiGALStateTransitionMode> m_CounterBufferStateTransition = xiiGALStateTransitionMode::None; ///< State transition mode.
 };
 
-/// \brief Represents a single non-indexed draw entry in a multi-draw call.
+/// Represents a single non-indexed draw entry in a multi-draw call.
 ///
 /// Specifies the number of vertices and the start vertex offset for one draw invocation.
 ///
@@ -454,10 +454,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawItem
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized multi-draw item (0 vertices).
+  /// Default-initialized multi-draw item (0 vertices).
   XII_ALWAYS_INLINE xiiGALMultiDrawItem() = default;
 
-  /// \brief Constructs a multi-draw item with specified vertex count and offset.
+  /// Constructs a multi-draw item with specified vertex count and offset.
   ///
   /// \param uiVertexCount         - Number of vertices to draw.
   /// \param uiStartVertexLocation - Starting vertex offset in the bound vertex buffer.
@@ -470,7 +470,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawItem
   xiiUInt32 m_uiStartVertexLocation = 0U; ///< Starting vertex offset in the bound vertex buffer.
 };
 
-/// \brief Describes parameters for issuing a multi-draw call with unindexed geometry.
+/// Describes parameters for issuing a multi-draw call with unindexed geometry.
 ///
 /// Provides an array of draw items and instance information for batched rendering.
 ///
@@ -479,10 +479,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized multi-draw description.
+  /// Default-initialized multi-draw description.
   XII_ALWAYS_INLINE xiiGALMultiDrawDescription() = default;
 
-  /// \brief Constructs a multi-draw description with specified items and parameters.
+  /// Constructs a multi-draw description with specified items and parameters.
   ///
   /// \param pDrawItems              - Pointer to draw item array.
   /// \param uiInstanceCount         - Number of instances to render. Defaults to 1.
@@ -497,7 +497,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawDescription
   xiiUInt32                              m_uiFirstInstanceLocation = 0U; ///< First instance ID passed to vertex shader.
 };
 
-/// \brief Represents a single indexed draw entry in a multi-draw call.
+/// Represents a single indexed draw entry in a multi-draw call.
 ///
 /// Specifies the number of indices, the first index offset, and base vertex for one draw invocation.
 ///
@@ -506,10 +506,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedItem
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized indexed draw item (0 indices).
+  /// Default-initialized indexed draw item (0 indices).
   XII_ALWAYS_INLINE xiiGALMultiDrawIndexedItem() = default;
 
-  /// \brief Constructs a multi-draw indexed item with specified index parameters.
+  /// Constructs a multi-draw indexed item with specified index parameters.
   ///
   /// \param uiIndexCount         - Number of indices to draw.
   /// \param uiFirstIndexLocation - Start index in the bound index buffer.
@@ -524,7 +524,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedItem
   xiiUInt32 m_uiBaseVertex         = 0U; ///< Value added to each index before vertex fetch.
 };
 
-/// \brief Describes parameters for issuing a multi-draw call with indexed geometry.
+/// Describes parameters for issuing a multi-draw call with indexed geometry.
 ///
 /// Provides an array of indexed draw items and instance-level information for batched rendering.
 ///
@@ -533,10 +533,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized indexed multi-draw description.
+  /// Default-initialized indexed multi-draw description.
   XII_ALWAYS_INLINE xiiGALMultiDrawIndexedDescription() = default;
 
-  /// \brief Constructs an indexed multi-draw description with specified items and parameters.
+  /// Constructs an indexed multi-draw description with specified items and parameters.
   ///
   /// \param pDrawItems              - Pointer to indexed draw item array.
   /// \param IndexType               - Type of index data (e.g. 16-bit or 32-bit).
@@ -553,7 +553,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiDrawIndexedDescription
   xiiUInt32                                     m_uiFirstInstanceLocation = 0U;                         ///< First instance ID passed to vertex shader.
 };
 
-/// \brief Describes parameters for issuing a compute dispatch call.
+/// Describes parameters for issuing a compute dispatch call.
 ///
 /// Specifies the number of thread groups to launch in each dimension. Metal-specific thread group sizes may be optionally provided for backend tuning.
 ///
@@ -562,10 +562,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized compute dispatch (1 group in each dimension).
+  /// Default-initialized compute dispatch (1 group in each dimension).
   XII_ALWAYS_INLINE xiiGALDispatchComputeDescription() = default;
 
-  /// \brief Constructs a compute dispatch with specified group counts.
+  /// Constructs a compute dispatch with specified group counts.
   ///
   /// \param uiGroupCountX - Number of thread groups along X.
   /// \param uiGroupCountY - Number of thread groups along Y.
@@ -584,7 +584,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeDescription
   xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
 };
 
-/// \brief Describes parameters for issuing an indirect compute dispatch call.
+/// Describes parameters for issuing an indirect compute dispatch call.
 ///
 /// Dispatch arguments are read from a GPU buffer. Metal-specific thread group sizes may be optionally provided for backend tuning.
 ///
@@ -593,10 +593,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeIndirectDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized indirect compute dispatch.
+  /// Default-initialized indirect compute dispatch.
   XII_ALWAYS_INLINE xiiGALDispatchComputeIndirectDescription() = default;
 
-  /// \brief Constructs an indirect compute dispatch with specified parameters.
+  /// Constructs an indirect compute dispatch with specified parameters.
   ///
   /// \param pBuffer                  - Buffer containing dispatch arguments.
   /// \param bufferTransitionMode     - Resource state transition mode for the buffer.
@@ -615,7 +615,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeIndirectDescription
   xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
 };
 
-/// \brief Describes one shader binding table (SBT) region.
+/// Describes one shader binding table (SBT) region.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingSBTRegionDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -625,7 +625,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingSBTRegionDescription
   xiiUInt64 m_uiStride = 0U; ///< Byte stride between SBT records in this region.
 };
 
-/// \brief Describes parameters for issuing a ray tracing dispatch.
+/// Describes parameters for issuing a ray tracing dispatch.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -648,7 +648,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysDescription
   xiiEnum<xiiGALStateTransitionMode>   m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::None; ///< SBT buffer state transition mode.
 };
 
-/// \brief Describes parameters for issuing an indirect ray tracing dispatch.
+/// Describes parameters for issuing an indirect ray tracing dispatch.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysIndirectDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -671,7 +671,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysIndirectDescription
   xiiEnum<xiiGALStateTransitionMode>   m_ArgumentBufferTransitionMode     = xiiGALStateTransitionMode::None; ///< Indirect argument buffer state transition mode.
 };
 
-/// \brief Describes parameters for updating shader binding table records from a ray tracing pipeline.
+/// Describes parameters for updating shader binding table records from a ray tracing pipeline.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALUpdateSBTDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -692,7 +692,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALUpdateSBTDescription
   xiiEnum<xiiGALStateTransitionMode> m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::Transition; ///< SBT buffer state transition mode.
 };
 
-/// \brief BLAS triangle build input data for one geometry description.
+/// BLAS triangle build input data for one geometry description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleBuildDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -707,7 +707,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleBuildDescription
   xiiUInt32     m_uiPrimitiveCount     = 0U;      ///< Primitive count for this build; if zero, the BLAS max primitive count is used.
 };
 
-/// \brief BLAS axis-aligned bounding-box build input data for one geometry description.
+/// BLAS axis-aligned bounding-box build input data for one geometry description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxBuildDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -718,7 +718,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxBuildDescription
   xiiUInt32     m_uiBoxCount          = 0U;      ///< Number of boxes for this build; if zero, the BLAS max box count is used.
 };
 
-/// \brief Describes parameters for building or updating a bottom-level acceleration structure.
+/// Describes parameters for building or updating a bottom-level acceleration structure.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildBLASDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -733,7 +733,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildBLASDescription
   xiiEnum<xiiGALStateTransitionMode>                     m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
 };
 
-/// \brief Describes parameters for building or updating a top-level acceleration structure.
+/// Describes parameters for building or updating a top-level acceleration structure.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildTLASDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -749,7 +749,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildTLASDescription
   xiiEnum<xiiGALStateTransitionMode>        m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
 };
 
-/// \brief AS copy mode for BLAS and TLAS copy commands.
+/// AS copy mode for BLAS and TLAS copy commands.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALASCopyMode
 {
   using StorageType = xiiUInt8;
@@ -767,7 +767,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALASCopyMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALASCopyMode);
 
-/// \brief Describes parameters for copying a BLAS.
+/// Describes parameters for copying a BLAS.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCopyBLASDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -778,7 +778,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCopyBLASDescription
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for both source and destination AS.
 };
 
-/// \brief Describes parameters for copying a TLAS.
+/// Describes parameters for copying a TLAS.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCopyTLASDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -789,7 +789,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCopyTLASDescription
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for both source and destination AS.
 };
 
-/// \brief Describes parameters for writing BLAS compacted size into a buffer.
+/// Describes parameters for writing BLAS compacted size into a buffer.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALWriteBLASCompactedSizeDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -800,7 +800,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWriteBLASCompactedSizeDescription
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for source AS and destination buffer.
 };
 
-/// \brief Describes parameters for writing TLAS compacted size into a buffer.
+/// Describes parameters for writing TLAS compacted size into a buffer.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALWriteTLASCompactedSizeDescription
 {
   XII_DECLARE_POD_TYPE();
@@ -811,7 +811,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWriteTLASCompactedSizeDescription
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for source AS and destination buffer.
 };
 
-/// \brief Describes parameters for issuing a tile-based compute dispatch.
+/// Describes parameters for issuing a tile-based compute dispatch.
 ///
 /// Used for tile shaders or compute workloads that operate on screen-space tiles.
 ///
@@ -820,10 +820,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchTileDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default-initialized tile dispatch (1x1 tile).
+  /// Default-initialized tile dispatch (1x1 tile).
   XII_ALWAYS_INLINE xiiGALDispatchTileDescription() = default;
 
-  /// \brief Constructs a tile dispatch with specified tile dimensions and flags.
+  /// Constructs a tile dispatch with specified tile dimensions and flags.
   ///
   /// \param uiThreadsPerTileX - Threads per tile along X.
   /// \param uiThreadsPerTileY - Threads per tile along Y.
@@ -836,7 +836,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchTileDescription
   xiiUInt32 m_uiThreadsPerTileY = 1U; ///< Threads per tile along Y.
 };
 
-/// \brief This describes the command list API call counters.
+/// This describes the command list API call counters.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
 {
   XII_DECLARE_POD_TYPE();
@@ -898,7 +898,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCounters
   }
 };
 
-/// \brief This describes the command list statistics.
+/// This describes the command list statistics.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListStatistics
 {
   XII_DECLARE_POD_TYPE();
@@ -917,26 +917,26 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListStatistics
     m_CommandListCounters += rhs.m_CommandListCounters;
   }
 
-  /// \brief This returns the total number of triangles drawn.
+  /// This returns the total number of triangles drawn.
   XII_ALWAYS_INLINE constexpr xiiUInt32 GetTotalTriangleCount() const
   {
     return m_PrimitiveCounters[xiiGALPrimitiveTopology::TriangleList] + m_PrimitiveCounters[xiiGALPrimitiveTopology::TriangleStrip] + m_PrimitiveCounters[xiiGALPrimitiveTopology::TriangleStripAdjacent];
   }
 
-  /// \brief This returns the total number of lines drawn.
+  /// This returns the total number of lines drawn.
   XII_ALWAYS_INLINE constexpr xiiUInt32 GetTotalLineCount() const
   {
     return m_PrimitiveCounters[xiiGALPrimitiveTopology::LineList] + m_PrimitiveCounters[xiiGALPrimitiveTopology::LineStrip] + m_PrimitiveCounters[xiiGALPrimitiveTopology::LineStripAdjacent];
   }
 
-  /// \brief This returns the total number of points drawn.
+  /// This returns the total number of points drawn.
   XII_ALWAYS_INLINE constexpr xiiUInt32 GetTotalPointCount() const
   {
     return m_PrimitiveCounters[xiiGALPrimitiveTopology::PointList];
   }
 };
 
-/// \brief Describes the parameters for creating a GAL command list.
+/// Describes the parameters for creating a GAL command list.
 ///
 /// This structure is used to configure a command list in the Graphics Abstraction Layer (GAL).
 /// It defines which queue capabilities this command list targets and how it behaves in terms of submission and encoding.
@@ -946,32 +946,32 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public 
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Specifies the functional capabilities required by this command list.
+  /// Specifies the functional capabilities required by this command list.
   ///
   /// This bitmask defines which domains the command list can operate in (such as graphics, compute, or copy), and is used to validate that recorded commands are compatible with the submission queue.
   ///
   /// For example, command lists with graphics draw calls must declare support for the Graphics flag.
   xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags = xiiGALCommandQueueFlags::None;
 
-  /// \brief Flags controlling command list submission and recording behavior.
+  /// Flags controlling command list submission and recording behavior.
   ///
   /// These flags define whether the command list is secondary, supports multiple submissions, or is immediately submitted after encoding.
   /// Use these flags to optimize command list lifetimes and submission patterns.
   xiiBitflags<xiiGALCommandListFlags> m_Flags = xiiGALCommandListFlags::None;
 
-  /// \brief Specifies the render pass to be used when recording this command list.
+  /// Specifies the render pass to be used when recording this command list.
   ///
   /// The render pass defines the sequence of rendering operations and attachment formats.
   /// This must match the layout expected by the framebuffer. Required for command lists that record graphics operations within a render pass scope.
   xiiGALRenderPass* m_pRenderPass = nullptr;
 
-  /// \brief Specifies the framebuffer associated with the selected render pass.
+  /// Specifies the framebuffer associated with the selected render pass.
   ///
   /// The framebuffer provides the actual image attachments used during rendering.
   /// It must be compatible with the render pass and is required when submitting graphics commands that depend on render targets.
   xiiGALFramebuffer* m_pFramebuffer = nullptr;
 
-  /// \brief Indicates the subpass within the render pass that this command list targets.
+  /// Indicates the subpass within the render pass that this command list targets.
   ///
   /// Used to determine which subpass to begin encoding commands in.
   /// If multiple subpasses are defined in the render pass, this value selects the active one during recording.
@@ -979,88 +979,88 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public 
   xiiUInt32 m_uiSubPassIndex = 0U;
 };
 
-/// \brief Interface that defines methods to manipulate a command list object.
+/// Interface that defines methods to manipulate a command list object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandList, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListCreationDescription& GetDescription() const { return m_Description; };
 
-  /// \brief This returns the command list statistics.
+  /// This returns the command list statistics.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListStatistics& GetCommandListStatistics() const { return m_CommandListStatistics; };
 
 public:
-  /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
+  /// Begins the command list for recording commands. This method should be called before any command is issued.
   ///
   /// \remarks This method is called automatically when using xiiGALCommandQueue::BeginCommandList to request a command list.
   void Begin();
 
-  /// \brief Ends the command list. This method should be called after all commands are issued.
+  /// Ends the command list. This method should be called after all commands are issued.
   ///
   /// \remarks This method is called automatically when using xiiGALCommandQueue::Submit execute a command list.
   void End();
 
-  /// \brief Resets the command list. This method is used to clear all commands that have been recorded in the command list.
+  /// Resets the command list. This method is used to clear all commands that have been recorded in the command list.
   ///
   /// \remarks This method can be called only if the command list has not yet been submitted for execution.
   void Reset();
 
-  /// \brief Submits a secondary command list to a primary command list for execution.
+  /// Submits a secondary command list to a primary command list for execution.
   void Submit(xiiGALCommandList* pSecondaryCommandList);
 
   // State functions.
 
-  /// \brief Sets the pipeline state object for the command list.
+  /// Sets the pipeline state object for the command list.
   ///
   /// \param pPipelineState - The handle to the pipeline state object.
   void SetPipelineState(xiiGALPipelineState* pPipelineState);
 
-  /// \brief Writes push constant data to the command list.
+  /// Writes push constant data to the command list.
   ///
   /// \param uiOffset - Byte offset into the push constant block.
   /// \param pData    - Pointer to the source data.
   void PushConstants(xiiUInt32 uiOffset, xiiArrayPtr<xiiUInt8> pData);
 
-  /// \brief Sets the stencil reference value used in the stencil test.
+  /// Sets the stencil reference value used in the stencil test.
   ///
   /// \param uiStencilRef - Stencil reference value.
   void SetStencilRef(xiiUInt32 uiStencilRef);
 
-  /// \brief Sets the blend factors used in the blend state.
+  /// Sets the blend factors used in the blend state.
   ///
   /// \param blendFactor - The blend factors represented by a xiiColor.
   void SetBlendFactor(const xiiColor& blendFactor);
 
-  /// \brief Sets the viewports used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
+  /// Sets the viewports used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
   ///
   /// \param pViewports - The array of viewports structures, describing the viewports to bind.
   void SetViewports(xiiArrayPtr<const xiiGALViewport> pViewports);
 
-  /// \brief Sets a single viewport for the rasterizer stage. This simplifies the process when only one viewport is needed.
+  /// Sets a single viewport for the rasterizer stage. This simplifies the process when only one viewport is needed.
   ///
   /// \param viewport - The viewport structure describing the area to bind.
   XII_ALWAYS_INLINE void SetViewport(const xiiGALViewport& viewport) { SetViewports(xiiMakeArrayPtr(&viewport, 1U)); }
 
-  /// \brief Sets the scissor rectangles used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
+  /// Sets the scissor rectangles used in the rasterizer stage. This defines the area of the render target to which the rasterizer will clip.
   ///
   /// \param pRects - The array of rectangle structures, describing the scissor rectangles to bind.
   void SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects);
 
-  /// \brief Sets a single scissor rectangle for the rasterizer stage. This simplifies the process when only one scissor rectangle is needed.
+  /// Sets a single scissor rectangle for the rasterizer stage. This simplifies the process when only one scissor rectangle is needed.
   ///
   /// \param rect - The rectangle describing the area to bind.
   XII_ALWAYS_INLINE void SetScissorRect(const xiiRectU32& rect) { SetScissorRects(xiiMakeArrayPtr(&rect, 1U)); }
 
-  /// \brief Sets the index buffer for the input-assembler stage of the pipeline. This contains the indices into the vertex buffers.
+  /// Sets the index buffer for the input-assembler stage of the pipeline. This contains the indices into the vertex buffers.
   ///
   /// \param pIndexBuffer   - The handle to the index buffer object. The index buffer must be created with the xiiGALBindFlags::IndexBuffer bind flag.
   /// \param uiByteOffset   - The byte offset into the index buffer. That is, from the beginning of the buffer to the start of the index data.
   /// \param transitionMode - Resource state transition mode. Specifies whether the buffer state should be transitioned to the required state automatically.
   void SetIndexBuffer(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset = 0U, xiiEnum<xiiGALStateTransitionMode> transitionMode = xiiGALStateTransitionMode::Transition);
 
-  /// \brief Sets the vertex buffers for the input-assembler stage of the pipeline. This contains the vertex data.
+  /// Sets the vertex buffers for the input-assembler stage of the pipeline. This contains the vertex data.
   ///
   /// \param uiStartSlot    - The starting slot for the vertex buffers, which is the first input slot for binding. The first vertex buffer is explicitly bound to the start slot; each additional vertex buffer in the array is implicitly bound to each subsequent input slot.
   /// \param pVertexBuffers - The array of handles to the vertex buffer objects. The vertex buffers must be created with the xiiGALBindFlags::VertexBuffer bind flag.
@@ -1069,19 +1069,19 @@ public:
   /// \param transitionMode - Resource state transition mode. Specifies whether the buffer state should be transitioned to the required state automatically.
   void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets = {}, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None, xiiEnum<xiiGALStateTransitionMode> transitionMode = xiiGALStateTransitionMode::Transition);
 
-  /// \brief This is used to set the constant (uniform) buffer for a shader resource.
+  /// This is used to set the constant (uniform) buffer for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param pConstantBuffer    - The handle to the constant (uniform) buffer object to set.
   void SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer);
 
-  /// \brief This is used to set the buffer view for a shader resource.
+  /// This is used to set the buffer view for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param pBufferView        - The handle to the buffer view object to set.
   void SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView);
 
-  /// \brief This is used to set the texture view for a shader resource.
+  /// This is used to set the texture view for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param pTextureView       - The handle to the texture view object to set.
@@ -1093,25 +1093,25 @@ public:
   /// \param pBufferView        - The handle to the buffer view object to set.
   void SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView);
 
-  /// \brief This is used to set the texture view for an unordered access.
+  /// This is used to set the texture view for an unordered access.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param pTextureView       - The handle to the texture view object to set.
   void SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView);
 
-  /// \brief This is used to set the sampler for a sampler resource.
+  /// This is used to set the sampler for a sampler resource.
   ///
   /// \param bindingInformation - This describes the binding information for the sampler resource, see xiiGALPipelineResourceDescription for details.
   /// \param pSampler           - The handle to the sampler object to set.
   void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler);
 
-  /// \brief Binds a top-level acceleration structure to a shader resource slot.
+  /// Binds a top-level acceleration structure to a shader resource slot.
   ///
   /// \param bindingInformation - Resource binding metadata from pipeline resource signature.
   /// \param pTopLevelAS        - The top-level acceleration structure to bind.
   void SetAccelerationStructure(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTopLevelAS* pTopLevelAS);
 
-  /// \brief Resolves and sets a constant buffer for the given resource name.
+  /// Resolves and sets a constant buffer for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
   ///
@@ -1120,7 +1120,7 @@ public:
   /// \param shaderStages    - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiGALBuffer* pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
-  /// \brief Resolves and sets a shader resource buffer view for the given resource name.
+  /// Resolves and sets a shader resource buffer view for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
   ///
@@ -1129,7 +1129,7 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetShaderResourceBufferView(const xiiTempHashedString& sResourceName, xiiGALBufferView* pBufferView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
-  /// \brief Resolves and sets a shader resource texture view for the given resource name.
+  /// Resolves and sets a shader resource texture view for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
   ///
@@ -1138,7 +1138,7 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetShaderResourceTextureView(const xiiTempHashedString& sResourceName, xiiGALTextureView* pTextureView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
-  /// \brief Resolves and sets an unordered access buffer view for the given resource name.
+  /// Resolves and sets an unordered access buffer view for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
   ///
@@ -1147,7 +1147,7 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetUnorderedAccessBufferView(const xiiTempHashedString& sResourceName, xiiGALBufferView* pBufferView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
-  /// \brief Resolves and sets an unordered access texture view for the given resource name.
+  /// Resolves and sets an unordered access texture view for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
   ///
@@ -1156,7 +1156,7 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetUnorderedAccessTextureView(const xiiTempHashedString& sResourceName, xiiGALTextureView* pTextureView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
-  /// \brief Resolves and sets a sampler for the given resource name.
+  /// Resolves and sets a sampler for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
   ///
@@ -1165,7 +1165,7 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiGALSampler* pSampler, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
-  /// \brief Resolves and sets a top-level acceleration structure for the given resource name.
+  /// Resolves and sets a top-level acceleration structure for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
   ///
@@ -1174,18 +1174,18 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetAccelerationStructure(const xiiTempHashedString& sResourceName, xiiGALTopLevelAS* pTopLevelAS, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
-  /// \brief This commits the pipeline shader resources to the GPU, and ensures that all necessary state transitions are performed.
+  /// This commits the pipeline shader resources to the GPU, and ensures that all necessary state transitions are performed.
   ///
   /// \param mode - The state transition mode. The default is xiiGALStateTransitionMode::Transition.
   xiiResult CommitShaderResources(xiiEnum<xiiGALStateTransitionMode> mode = xiiGALStateTransitionMode::Transition);
 
-  /// \brief This clears the specified render target view to the specified color.
+  /// This clears the specified render target view to the specified color.
   ///
   /// \param pRenderTargetView - The handle to the render target view object. The view must be a xiiGALTextureViewType::RenderTarget.
   /// \param clearColor        - The color to which to clear the render target view.
   void ClearRenderTargetView(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor);
 
-  /// \brief This clears the specified depth stencil view to the specified depth and stencil values.
+  /// This clears the specified depth stencil view to the specified depth and stencil values.
   ///
   /// \param pDepthStencilView - The handle to the depth stencil view object. The view must be a xiiGALTextureViewType::DepthStencil.
   /// \param bClearDepth       - Whether to clear the depth portion of the buffer.
@@ -1194,20 +1194,20 @@ public:
   /// \param uiStencilClear    - The value to which to clear the stencil portion of the buffer with.
   void ClearDepthStencilView(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear);
 
-  /// \brief This begins a render pass, which contains a collection of attachments, subpasses, and dependencies between the subpasses, and describes how the attachments are used over the course of the subpasses.
+  /// This begins a render pass, which contains a collection of attachments, subpasses, and dependencies between the subpasses, and describes how the attachments are used over the course of the subpasses.
   ///
   /// \param beginRenderPass - The description of the render pass. See xiiGALBeginRenderPassDescription for more information.
   void BeginRenderPass(const xiiGALBeginRenderPassDescription& beginRenderPass);
 
-  /// \brief This transitions to the next subpass of the begun render pass.
+  /// This transitions to the next subpass of the begun render pass.
   void NextSubpass();
 
-  /// \brief This ends a render pass that has already begun.
+  /// This ends a render pass that has already begun.
   void EndRenderPass();
 
   // Draw functions.
 
-  /// \brief Issues a non-indexed draw call using the specified parameters.
+  /// Issues a non-indexed draw call using the specified parameters.
   ///
   /// Executes a basic draw using vertex buffers without indexing.
   ///
@@ -1216,7 +1216,7 @@ public:
   /// \see xiiGALDrawDescription
   void Draw(const xiiGALDrawDescription& description);
 
-  /// \brief Issues an indexed draw call using the specified parameters.
+  /// Issues an indexed draw call using the specified parameters.
   ///
   /// Uses an index buffer to reference geometry vertices and enables instancing.
   ///
@@ -1225,7 +1225,7 @@ public:
   /// \see xiiGALDrawIndexedDescription
   void DrawIndexed(const xiiGALDrawIndexedDescription& description);
 
-  /// \brief Issues an indirect draw call based on arguments stored in a GPU buffer.
+  /// Issues an indirect draw call based on arguments stored in a GPU buffer.
   ///
   /// Supports multi-draw and optional counter buffer for dynamic draw count.
   ///
@@ -1234,7 +1234,7 @@ public:
   /// \see xiiGALDrawIndirectDescription
   void DrawIndirect(const xiiGALDrawIndirectDescription& description);
 
-  /// \brief Issues an indexed indirect draw call based on arguments stored in a GPU buffer.
+  /// Issues an indexed indirect draw call based on arguments stored in a GPU buffer.
   ///
   /// Uses index data and indirect arguments pulled from a structured GPU buffer.
   ///
@@ -1243,7 +1243,7 @@ public:
   /// \see xiiGALDrawIndexedIndirectDescription
   void DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescription& description);
 
-  /// \brief Issues a draw call that dispatches GPU mesh shaders directly.
+  /// Issues a draw call that dispatches GPU mesh shaders directly.
   ///
   /// Typically used when mesh shading pipelines are active and task amplification is desired.
   ///
@@ -1252,7 +1252,7 @@ public:
   /// \see xiiGALDrawMeshDescription
   void DrawMesh(const xiiGALDrawMeshDescription& description);
 
-  /// \brief Issues an indirect mesh shader draw using arguments stored in a GPU buffer.
+  /// Issues an indirect mesh shader draw using arguments stored in a GPU buffer.
   ///
   /// Supports GPU-driven workflows for meshlets with optional counter buffer.
   ///
@@ -1261,7 +1261,7 @@ public:
   /// \see xiiGALDrawMeshIndirectDescription
   void DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription& description);
 
-  /// \brief Executes a batch of non-indexed draw calls using an array of parameters.
+  /// Executes a batch of non-indexed draw calls using an array of parameters.
   ///
   /// Enables multi-draw submission without index buffers, with per-draw configurations.
   ///
@@ -1270,7 +1270,7 @@ public:
   /// \see xiiGALMultiDrawDescription
   void MultiDraw(const xiiGALMultiDrawDescription& description);
 
-  /// \brief Executes a batch of indexed draw calls using an array of parameters.
+  /// Executes a batch of indexed draw calls using an array of parameters.
   ///
   /// Supports per-item base vertex and index range offsets across draws.
   ///
@@ -1281,7 +1281,7 @@ public:
 
   // Dispatch functions.
 
-  /// \brief Dispatches a compute workload using the specified thread group dimensions.
+  /// Dispatches a compute workload using the specified thread group dimensions.
   ///
   /// Synchronously encodes compute workload dimensions per axis.
   ///
@@ -1290,7 +1290,7 @@ public:
   /// \see xiiGALDispatchComputeDescription
   void DispatchCompute(const xiiGALDispatchComputeDescription& description);
 
-  /// \brief Dispatches a compute workload using arguments stored in a GPU buffer.
+  /// Dispatches a compute workload using arguments stored in a GPU buffer.
   ///
   /// Enables GPU-controlled compute invocation for async workloads or culling passes.
   ///
@@ -1299,61 +1299,61 @@ public:
   /// \see xiiGALDispatchComputeIndirectDescription
   void DispatchComputeIndirect(const xiiGALDispatchComputeIndirectDescription& description);
 
-  /// \brief Dispatches rays using the currently bound ray tracing pipeline.
+  /// Dispatches rays using the currently bound ray tracing pipeline.
   void TraceRays(const xiiGALTraceRaysDescription& description);
 
-  /// \brief Dispatches rays indirectly using dimensions sourced from a GPU buffer.
+  /// Dispatches rays indirectly using dimensions sourced from a GPU buffer.
   void TraceRaysIndirect(const xiiGALTraceRaysIndirectDescription& description);
 
-  /// \brief Updates SBT records from ray tracing shader group handles.
+  /// Updates SBT records from ray tracing shader group handles.
   void UpdateSBT(const xiiGALUpdateSBTDescription& description);
 
-  /// \brief Builds or updates a BLAS.
+  /// Builds or updates a BLAS.
   void BuildBLAS(const xiiGALBuildBLASDescription& description);
 
-  /// \brief Builds or updates a TLAS.
+  /// Builds or updates a TLAS.
   void BuildTLAS(const xiiGALBuildTLASDescription& description);
 
-  /// \brief Copies a BLAS (clone or compact).
+  /// Copies a BLAS (clone or compact).
   void CopyBLAS(const xiiGALCopyBLASDescription& description);
 
-  /// \brief Copies a TLAS (clone or compact).
+  /// Copies a TLAS (clone or compact).
   void CopyTLAS(const xiiGALCopyTLASDescription& description);
 
-  /// \brief Writes BLAS compacted size into a destination buffer.
+  /// Writes BLAS compacted size into a destination buffer.
   void WriteBLASCompactedSize(const xiiGALWriteBLASCompactedSizeDescription& description);
 
-  /// \brief Writes TLAS compacted size into a destination buffer.
+  /// Writes TLAS compacted size into a destination buffer.
   void WriteTLASCompactedSize(const xiiGALWriteTLASCompactedSizeDescription& description);
 
   // Query functions.
 
-  /// \brief Begins a query.
+  /// Begins a query.
   ///
   /// \param pQuery - The handle to the query object.
   void BeginQuery(xiiGALQuery* pQuery);
 
-  /// \brief Ends a query.
+  /// Ends a query.
   ///
   /// \param pQuery - The handle to the query object.
   void EndQuery(xiiGALQuery* pQuery);
 
   // Buffer methods.
 
-  /// \brief Updates a buffer.
+  /// Updates a buffer.
   ///
   /// \param pBuffer             - The handle to the buffer object.
   /// \param uiDestinationOffset - Byte offset into the buffer where the update should start.
   /// \param pSourceData         - Pointer to the source data.
   void UpdateBuffer(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData);
 
-  /// \brief Copies the entire contents of the source buffer to the destination buffer.
+  /// Copies the entire contents of the source buffer to the destination buffer.
   ///
   /// \param pSourceBuffer      - The handle to the source buffer object.
   /// \param pDestinationBuffer - The handle to the destination buffer object.
   void CopyBuffer(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer);
 
-  /// \brief Copies a region from the source buffer to the destination buffer.
+  /// Copies a region from the source buffer to the destination buffer.
   ///
   /// \param pSourceBuffer       - The handle to the source buffer object.
   /// \param uiSourceOffset      - Byte offset into the source buffer where the copy should start.
@@ -1362,7 +1362,7 @@ public:
   /// \param uiSize              - Size in bytes of the region to copy.
   void CopyBufferRegion(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize);
 
-  /// \brief Maps a buffer into the CPU's address space.
+  /// Maps a buffer into the CPU's address space.
   ///
   /// \param pBuffer     - The handle to the buffer object.
   /// \param mapType     - Specifies the CPU's access pattern for the map operation. See xiiGALMapType for details.
@@ -1370,7 +1370,7 @@ public:
   /// \param pMappedData - Pointer to the mapped data.
   xiiResult MapBuffer(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData);
 
-  /// \brief Unmaps a buffer from the CPU's address space.
+  /// Unmaps a buffer from the CPU's address space.
   ///
   /// \param pBuffer - The handle to the buffer object.
   /// \param mapType - Specifies the CPU's access pattern for the map operation. See xiiGALMapType for details.
@@ -1378,7 +1378,7 @@ public:
 
   // Texture methods.
 
-  /// \brief Updates a texture.
+  /// Updates a texture.
   ///
   /// \param pTexture            - The handle to the texture object.
   /// \param textureMiplevelData - Specifies the subresource to update. See xiiGALTextureMipLevelData for details.
@@ -1386,13 +1386,13 @@ public:
   /// \param subresourceData     - Specifies the new data. See xiiGALTextureSubResourceData for details.
   void UpdateTexture(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData);
 
-  /// \brief Copies the entire contents of the source texture to the destination texture.
+  /// Copies the entire contents of the source texture to the destination texture.
   ///
   /// \param pSourceTexture      - The handle to the source texture object.
   /// \param pDestinationTexture - The handle to the destination texture object.
   void CopyTexture(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture);
 
-  /// \brief Copies a region from the source texture to the destination texture.
+  /// Copies a region from the source texture to the destination texture.
   ///
   /// \param pSourceTexture          - The handle to the source texture object.
   /// \param sourceMipLevelData      - Specifies the subresource in the source texture. See xiiGALTextureMipLevelData for details.
@@ -1402,7 +1402,7 @@ public:
   /// \param vDestinationPoint       - Specifies the point within the destination subresource where the region should be copied to.
   void CopyTextureRegion(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint);
 
-  /// \brief Resolves a multisampled source texture into a non-multisampled destination texture.
+  /// Resolves a multisampled source texture into a non-multisampled destination texture.
   ///
   /// This operation performs a resolve from a multi-sampled texture (typically used for anti-aliasing) into a non-multi-sampled texture, commonly used for presenting or further processing.
   ///
@@ -1411,14 +1411,14 @@ public:
   /// \param description         - Structure that specifies the source and destination subresources, including mip levels, array slices, resource formats, and texture state transitions. See xiiGALResolveTextureSubresourceDescription for details.
   void ResolveTextureSubResource(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description);
 
-  /// \brief Generates mipmap levels for a texture.
+  /// Generates mipmap levels for a texture.
   ///
   /// \param pTextureView - The handle to the texture view object. The texture view must be of type xiiGALTextureViewType::ShaderResource.
   ///
   /// \remarks This method must only be called on a shader resource view. The texture must be created with xiiGALMiscTextureFlags::GenerateMips.
   void GenerateMips(xiiGALTextureView* pTextureView);
 
-  /// \brief Maps a texture subresource into the address space of the command list.
+  /// Maps a texture subresource into the address space of the command list.
   ///
   /// \param pTexture            - The handle to the texture object. This is the texture that contains the subresource to map.
   /// \param textureMipLevelData - Specifies the subresource to map. This is the mipmap level of the texture to map.
@@ -1428,7 +1428,7 @@ public:
   /// \param mappedData          - Receives information about the resource data when the function returns.
   xiiResult MapTextureSubresource(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData);
 
-  /// \brief Unmaps a texture subresource from the address space of the command list.
+  /// Unmaps a texture subresource from the address space of the command list.
   ///
   /// \param pTexture            - The handle to the texture object.
   /// \param textureMipLevelData - Specifies the subresource to unmap.
@@ -1436,7 +1436,7 @@ public:
 
   // Shading rate methods.
 
-  /// \brief Sets the fragment shading rate for subsequent draw calls.
+  /// Sets the fragment shading rate for subsequent draw calls.
   ///
   /// Configures the base shading rate and combiner logic used to resolve per-primitive and screen-space (texture-based) shading rates. This allows dynamic control over rendering performance and visual fidelity by adjusting the number of pixels shaded per fragment.
   ///
@@ -1451,7 +1451,7 @@ public:
 
   // Resource methods.
 
-  /// \brief Transitions the resource states.
+  /// Transitions the resource states.
   ///
   /// \param pResourceBarriers - Pointer to the array of resource barriers.
   ///
@@ -1472,7 +1472,7 @@ public:
 
   // Fence functions.
 
-  /// \brief Tells the GPU to set a fence to a specified value after all previous work has completed.
+  /// Tells the GPU to set a fence to a specified value after all previous work has completed.
   ///
   /// \param pFence  - The fence to signal.
   /// \param uiValue - The value to set the fence to. This value must be greater than the previously signalled value on the same fence.
@@ -1480,7 +1480,7 @@ public:
   /// \note The fence will be signalled when the command list is submitted. If an application needs to wait for the fence in a loop, it must submit the command list after signalling the fence.
   void EnqueueSignal(xiiGALFence* pFence, xiiUInt64 uiValue);
 
-  /// \brief Waits until the specified fence reaches or exceeds the specified value, on the device.
+  /// Waits until the specified fence reaches or exceeds the specified value, on the device.
   ///
   /// \param pFence  - The fence to wait. The fence must be created with type xiiGALFenceType::General.
   /// \param uiValue - The value that the command list is waiting for the fence to reach.
@@ -1492,26 +1492,26 @@ public:
 
   // Debug functions.
 
-  /// \brief Begins a new debug group with a specified name and color.
+  /// Begins a new debug group with a specified name and color.
   ///
   /// \param sName - The name of the debug group.
   /// \param color - The color associated with the debug group.
   void BeginDebugGroup(xiiStringView sName, const xiiColor& color = xiiColor::White);
 
-  /// \brief Ends the current debug group.
+  /// Ends the current debug group.
   void EndDebugGroup();
 
-  /// \brief Inserts a debug label into the command list.
+  /// Inserts a debug label into the command list.
   ///
   /// \param sName - The name of the debug label.
   /// \param color - The color associated with the debug label.
   void InsertDebugLabel(xiiStringView sName, const xiiColor& color = xiiColor::White);
 
-  /// \brief Invalidates the current state of the command list. It is typically called when the command list is reset or when the pipeline state is changed.
+  /// Invalidates the current state of the command list. It is typically called when the command list is reset or when the pipeline state is changed.
   void InvalidateState();
 
 public:
-  /// \brief Enum class representing the state of a command list recording.
+  /// Enum class representing the state of a command list recording.
   enum class RecordingState : xiiUInt8
   {
     Reset = 0U, ///< The command list has been reset and is ready to be recorded again.
@@ -1523,10 +1523,10 @@ public:
 
   XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };
 
-  /// \brief This returns the command list recording state.
+  /// This returns the command list recording state.
   [[nodiscard]] XII_ALWAYS_INLINE RecordingState GetRecordingState() const { return m_RecordingState; };
 
-  /// \brief This returns the command list statistics.
+  /// This returns the command list statistics.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListStatistics& GetStatistics() const { return m_CommandListStatistics; };
 
 protected:

@@ -30,7 +30,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiUpdateRate);
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Helper class to schedule work in intervals typically larger than the duration of one frame
+/// Helper class to schedule work in intervals typically larger than the duration of one frame
 ///
 /// Tries to maintain an even workload per frame and also keep the given interval for a work as best as possible.
 /// A typical use case would be e.g. component update functions that don't need to be called every frame.
@@ -61,7 +61,7 @@ protected:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief \see xiiIntervalSchedulerBase
+/// \see xiiIntervalSchedulerBase
 template <typename T>
 class xiiIntervalScheduler : public xiiIntervalSchedulerBase
 {
@@ -81,7 +81,7 @@ public:
   // reference to the work that should be run and time passed since this work has been last run.
   using RunWorkCallback = xiiDelegate<void(const T&, xiiTime)>;
 
-  /// \brief Advances the scheduler by deltaTime and triggers runWorkCallback for each work that should be run during this update step.
+  /// Advances the scheduler by deltaTime and triggers runWorkCallback for each work that should be run during this update step.
   /// Since it is not possible to maintain the exact interval all the time the actual delta time for the work is also passed to runWorkCallback.
   void Update(xiiTime deltaTime, RunWorkCallback runWorkCallback);
 

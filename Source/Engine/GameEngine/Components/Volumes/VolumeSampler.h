@@ -6,7 +6,7 @@
 #include <Foundation/Types/Variant.h>
 #include <GameEngine/GameEngineDLL.h>
 
-/// \brief A volume sampler is used to sample the registered values from volumes at a given position. It also takes care of interpolation over time of those values.
+/// A volume sampler is used to sample the registered values from volumes at a given position. It also takes care of interpolation over time of those values.
 class XII_GAMEENGINE_DLL xiiVolumeSampler
 {
 public:

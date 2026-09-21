@@ -10,13 +10,13 @@
 
 #include <GraphicsFoundation/Resources/RenderPass.h>
 
-/// \brief A cache from pipeline descriptor to handle which holds a reference to each pipeline that is never freed until shutdown.
+/// A cache from pipeline descriptor to handle which holds a reference to each pipeline that is never freed until shutdown.
 class XII_GRAPHICSCORE_DLL xiiGALRenderPassCache
 {
   XII_DECLARE_SINGLETON(xiiGALRenderPassCache);
 
 public:
-  /// \brief Creates a render pass or retrieves it from the cache.
+  /// Creates a render pass or retrieves it from the cache.
   static xiiSharedPtr<xiiGALRenderPass> GetRenderPass(const xiiGALRenderPassCreationDescription& description);
 
 private:

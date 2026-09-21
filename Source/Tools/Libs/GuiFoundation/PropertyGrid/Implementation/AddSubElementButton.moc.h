@@ -10,7 +10,7 @@ class QHBoxLayout;
 class QPushButton;
 class QMenu;
 
-/// \brief Used by container widgets to add new elements to the container.
+/// Used by container widgets to add new elements to the container.
 class XII_GUIFOUNDATION_DLL xiiQtAddSubElementButton : public xiiQtPropertyWidget
 {
   Q_OBJECT

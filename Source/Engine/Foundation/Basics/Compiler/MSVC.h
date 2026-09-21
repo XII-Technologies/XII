@@ -86,7 +86,7 @@
 
 #  define XII_WARNING_DISABLE_MSVC(_x)
 
-/// \brief Define some macros to work with the MSVC analysis warning.
+/// Define some macros to work with the MSVC analysis warning.
 #  define XII_MSVC_ANALYSIS_WARNING_PUSH
 #  define XII_MSVC_ANALYSIS_WARNING_POP
 #  define XII_MSVC_ANALYSIS_WARNING_DISABLE(warningNumber)

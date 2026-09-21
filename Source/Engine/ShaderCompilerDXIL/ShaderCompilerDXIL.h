@@ -26,7 +26,7 @@ protected:
   virtual bool PermitCombinedImageSamplers() const { return true; }
 
 private:
-  /// \brief Sets fixed set / slot bindings to each resource.
+  /// Sets fixed set / slot bindings to each resource.
   /// The end result will have these properties:
   /// 1. Every binding name has a unique set / slot.
   /// 2. Bindings that already had a fixed set or slot (e.g. != -1) should not have these changed.

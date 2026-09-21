@@ -6,7 +6,7 @@
 
 using xiiDirectionalLightComponentManager = xiiComponentManager<class xiiDirectionalLightComponent, xiiBlockStorageType::Compact>;
 
-/// \brief The render data object for directional lights.
+/// The render data object for directional lights.
 class XII_GRAPHICSCORE_DLL xiiDirectionalLightRenderData : public xiiLightRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDirectionalLightRenderData, xiiLightRenderData);
@@ -15,7 +15,7 @@ public:
   xiiVec3 m_vDirection;
 };
 
-/// \brief A directional light component. This represents a light source that is infinitely far away and shines in a specific direction, like the sun.
+/// A directional light component. This represents a light source that is infinitely far away and shines in a specific direction, like the sun.
 ///
 /// The direction of the light is determined by the forward direction of the game object transform. The position of the game object has no effect on the lighting.
 class XII_GRAPHICSCORE_DLL xiiDirectionalLightComponent : public xiiLightComponent

@@ -4,7 +4,7 @@
 
 #include <Foundation/Serialization/RttiConverter.h>
 
-/// \brief The xiiApplyNativePropertyChangesContext takes care of generating guids for native pointers that match those of the xiiAbstractObjectGraph that was passed in. This allows native changes to be tracked and applied to the object graph at a later point.
+/// The xiiApplyNativePropertyChangesContext takes care of generating guids for native pointers that match those of the xiiAbstractObjectGraph that was passed in. This allows native changes to be tracked and applied to the object graph at a later point.
 /// \sa xiiAbstractObjectGraph::ModifyNodeViaNativeCounterpart
 class XII_FOUNDATION_DLL xiiApplyNativePropertyChangesContext : public xiiRttiConverterContext
 {

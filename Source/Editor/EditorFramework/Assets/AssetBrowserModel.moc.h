@@ -17,7 +17,7 @@ struct xiiAssetCuratorEvent;
 struct xiiSubAsset;
 class xiiQtAssetFilter;
 
-/// \brief Interface class of the asset filter used to decide which items are shown in the asset browser.
+/// Interface class of the asset filter used to decide which items are shown in the asset browser.
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetFilter : public QObject
 {
   Q_OBJECT
@@ -30,7 +30,7 @@ Q_SIGNALS:
   void FilterChanged();
 };
 
-/// \brief Each item in the asset browser can be multiple things at the same time as described by these flags.
+/// Each item in the asset browser can be multiple things at the same time as described by these flags.
 /// Retrieved via user role xiiQtAssetBrowserModel::UserRoles::ItemFlags.
 struct XII_EDITORFRAMEWORK_DLL xiiAssetBrowserItemFlags
 {
@@ -57,7 +57,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiAssetBrowserItemFlags
 };
 XII_DECLARE_FLAGS_OPERATORS(xiiAssetBrowserItemFlags);
 
-/// \brief Model of the item view in the asset browser.
+/// Model of the item view in the asset browser.
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserModel : public QAbstractItemModel, public QEnableSharedFromThis<xiiQtAssetBrowserModel>
 {
   Q_OBJECT

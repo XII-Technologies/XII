@@ -41,7 +41,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief This base component represents a xiiBlackboard, which can be used to share state between multiple components and objects.
+/// This base component represents a xiiBlackboard, which can be used to share state between multiple components and objects.
 ///
 /// The derived implementations may either create their own blackboards or reference other blackboards.
 class XII_GAMEENGINE_DLL xiiBlackboardComponent : public xiiComponent
@@ -66,7 +66,7 @@ public:
   xiiBlackboardComponent();
   ~xiiBlackboardComponent();
 
-  /// \brief Try to find a xiiBlackboardComponent on pSearchObject or its parents with the given name and returns its blackboard.
+  /// Try to find a xiiBlackboardComponent on pSearchObject or its parents with the given name and returns its blackboard.
   ///
   /// The blackboard name is only checked if the given name is not empty. If no matching blackboard component is found,
   /// the function will call xiiBlackboard::GetOrCreateGlobal() with the given name. Thus if you provide a name, you will always get a result, either from a component or from the global storage.
@@ -74,7 +74,7 @@ public:
   /// \sa xiiBlackboard::GetOrCreateGlobal()
   static xiiSharedPtr<xiiBlackboard> FindBlackboard(xiiGameObject* pSearchObject, xiiStringView sBlackboardName = xiiStringView());
 
-  /// \brief Returns the blackboard owned by this component
+  /// Returns the blackboard owned by this component
   const xiiSharedPtr<xiiBlackboard>& GetBoard();
   xiiSharedPtr<const xiiBlackboard>  GetBoard() const;
 
@@ -99,7 +99,7 @@ protected:
 
 using xiiLocalBlackboardComponentManager = xiiComponentManager<class xiiLocalBlackboardComponent, xiiBlockStorageType::Compact>;
 
-/// \brief This component creates its own xiiBlackboard, and thus locally holds state.
+/// This component creates its own xiiBlackboard, and thus locally holds state.
 class XII_GAMEENGINE_DLL xiiLocalBlackboardComponent : public xiiBlackboardComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiLocalBlackboardComponent, xiiBlackboardComponent, xiiLocalBlackboardComponentManager);
@@ -172,7 +172,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiGlobalBlackboardInitMode);
 
 using xiiGlobalBlackboardComponentManager = xiiComponentManager<class xiiGlobalBlackboardComponent, xiiBlockStorageType::Compact>;
 
-/// \brief This component references a global blackboard by name. If necessary, the blackboard will be created.
+/// This component references a global blackboard by name. If necessary, the blackboard will be created.
 ///
 /// This allows to initialize a global blackboard with known values.
 class XII_GAMEENGINE_DLL xiiGlobalBlackboardComponent : public xiiBlackboardComponent

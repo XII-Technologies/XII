@@ -7,11 +7,11 @@
 namespace xiiLogWriter
 {
 
-  /// \brief A simple log writer that outputs all log messages to visual studios output window
+  /// A simple log writer that outputs all log messages to visual studios output window
   class XII_FOUNDATION_DLL VisualStudio
   {
   public:
-    /// \brief Register this at xiiLog to write all log messages to visual studios output window.
+    /// Register this at xiiLog to write all log messages to visual studios output window.
     static void LogMessageHandler(const xiiLoggingEventData& eventData);
   };
 } // namespace xiiLogWriter

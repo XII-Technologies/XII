@@ -5,7 +5,7 @@
 #include <Foundation/SimdMath/SimdDouble.h>
 #include <Foundation/SimdMath/SimdVec4b.h>
 
-/// \brief A 4-component SIMD vector class
+/// A 4-component SIMD vector class
 class XII_FOUNDATION_DLL xiiSimdVec4d
 {
 public:
@@ -21,10 +21,10 @@ public:
 
   xiiSimdVec4d(xiiInternal::QuadDouble v); // [tested]
 
-  /// \brief Creates a xiiSimdVec4d that is initialized to zero.
+  /// Creates a xiiSimdVec4d that is initialized to zero.
   [[nodiscard]] static xiiSimdVec4d MakeZero(); // [tested]
 
-  /// \brief Creates a xiiSimdVec4d that is initialized to Not-A-Number (NaN).
+  /// Creates a xiiSimdVec4d that is initialized to Not-A-Number (NaN).
   [[nodiscard]] static xiiSimdVec4d MakeNaN(); // [tested]
 
   void Set(double fXyzw); // [tested]
@@ -104,7 +104,7 @@ public:
   template <xiiSwizzle::Enum s>
   xiiSimdVec4d Get() const; // [tested]
 
-  ///\brief x = this[s0], y = this[s1], z = other[s2], w = other[s3]
+  ///x = this[s0], y = this[s1], z = other[s2], w = other[s3]
   template <xiiSwizzle::Enum s>
   [[nodiscard]] xiiSimdVec4d GetCombined(const xiiSimdVec4d& other) const; // [tested]
 
@@ -164,10 +164,10 @@ public:
   template <xiiInt32 N>
   [[nodiscard]] xiiSimdDouble Dot(const xiiSimdVec4d& v) const; // [tested]
 
-  ///\brief 3D cross product, w is ignored.
+  ///3D cross product, w is ignored.
   [[nodiscard]] xiiSimdVec4d CrossRH(const xiiSimdVec4d& v) const; // [tested]
 
-  ///\brief Generates an arbitrary vector such that Dot<3>(GetOrthogonalVector()) == 0
+  ///Generates an arbitrary vector such that Dot<3>(GetOrthogonalVector()) == 0
   [[nodiscard]] xiiSimdVec4d GetOrthogonalVector() const; // [tested]
 
   [[nodiscard]] static xiiSimdVec4d MulAdd(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c);  // [tested]

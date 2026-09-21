@@ -2,7 +2,7 @@
 
 #pragma once
 
-/// \brief Compile-time string keys for the per-view render graph blackboard.
+/// Compile-time string keys for the per-view render graph blackboard.
 ///
 /// All passes share this header to avoid typos and ensure consistent key names.
 namespace xiiRGBlackboardKeys

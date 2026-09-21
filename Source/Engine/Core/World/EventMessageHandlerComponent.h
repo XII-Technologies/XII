@@ -7,7 +7,7 @@
 
 struct xiiEventMessage;
 
-/// \brief Base class for components that want to handle 'event messages'
+/// Base class for components that want to handle 'event messages'
 ///
 /// Event messages are messages that are 'broadcast' to indicate something happened on a component,
 /// e.g. a trigger that got activated or an animation that finished playing. These messages are 'bubbled up'
@@ -31,27 +31,27 @@ protected:
   // xiiEventMessageHandlerComponent
 
 public:
-  /// \brief Keep the constructor private or protected in derived classes, so it cannot be called manually.
+  /// Keep the constructor private or protected in derived classes, so it cannot be called manually.
   xiiEventMessageHandlerComponent();
   ~xiiEventMessageHandlerComponent();
 
-  /// \brief Sets the debug output object flag. The effect is type specific, most components will not do anything different.
+  /// Sets the debug output object flag. The effect is type specific, most components will not do anything different.
   void SetDebugOutput(bool bEnable);
 
-  /// \brief Gets the debug output object flag.
+  /// Gets the debug output object flag.
   bool GetDebugOutput() const;
 
-  /// \brief Registers or de-registers this component as a global event handler.
+  /// Registers or de-registers this component as a global event handler.
   void SetGlobalEventHandlerMode(bool bEnable); // [ property ]
 
-  /// \brief Returns whether this component is registered as a global event handler.
+  /// Returns whether this component is registered as a global event handler.
   bool GetGlobalEventHandlerMode() const { return m_bIsGlobalEventHandler; } // [ property ]
 
-  /// \brief Sets whether unhandled event messages should be passed to parent objects or not.
+  /// Sets whether unhandled event messages should be passed to parent objects or not.
   void SetPassThroughUnhandledEvents(bool bPassThrough);                               // [ property ]
   bool GetPassThroughUnhandledEvents() const { return m_bPassThroughUnhandledEvents; } // [ property ]
 
-  /// \brief Returns all global event handler for the given world.
+  /// Returns all global event handler for the given world.
   static xiiArrayPtr<xiiComponentHandle> GetAllGlobalEventHandler(const xiiWorld* pWorld);
 
   static void ClearGlobalEventHandlersForWorld(const xiiWorld* pWorld);

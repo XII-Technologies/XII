@@ -10,7 +10,7 @@ class xiiVisualScriptExecutionContext;
 
 struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptNodeDescription
 {
-  /// \brief Native node types for visual script graphs.
+  /// Native node types for visual script graphs.
   /// Editor only types are not supported at runtime and will be replaced by the visual script compiler during asset transform.
   struct XII_VISUALSCRIPTPLUGIN_DLL Type
   {

@@ -4,7 +4,7 @@
 
 #include <Utilities/DataStructures/Implementation/DynamicTree.h>
 
-/// \brief A loose Octree implementation that is very lightweight on RAM.
+/// A loose Octree implementation that is very lightweight on RAM.
 ///
 /// This Octree does not store any bookkeeping information per node.\n
 /// Memory usage is linear in the number of objects inserted.\n
@@ -32,13 +32,13 @@
 /// data that changes frequently at run-time.
 class XII_UTILITIES_DLL xiiDynamicOctree
 {
-  /// \brief The amount that cells overlap (this is a loose octree). Typically set to 10%.
+  /// The amount that cells overlap (this is a loose octree). Typically set to 10%.
   static const float s_fLooseOctreeFactor;
 
 public:
   xiiDynamicOctree();
 
-  /// \brief Initializes the tree with a fixed size and minimum node dimensions.
+  /// Initializes the tree with a fixed size and minimum node dimensions.
   ///
   /// \param vCenter
   ///   The center position of the tree.
@@ -57,13 +57,13 @@ public:
   ///   on the finest level (and roughly 1500000 nodes in total).
   void CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, float fMinNodeSize); // [tested]
 
-  /// \brief Returns true when there are no objects stored inside the tree.
+  /// Returns true when there are no objects stored inside the tree.
   bool IsEmpty() const { return m_NodeMap.IsEmpty(); } // [tested]
 
-  /// \brief Returns the number of objects that have been inserted into the tree.
+  /// Returns the number of objects that have been inserted into the tree.
   xiiUInt32 GetCount() const { return m_NodeMap.GetCount(); } // [tested]
 
-  /// \brief Adds an object at position vCenter with bounding-box dimensions vHalfExtents to the tree. If the object is outside the tree and
+  /// Adds an object at position vCenter with bounding-box dimensions vHalfExtents to the tree. If the object is outside the tree and
   /// bOnlyIfInside is true, nothing will be inserted.
   ///
   /// Returns XII_SUCCESS when an object is inserted, XII_FAILURE when the object was rejected. The latter can only happen when bOnlyIfInside
@@ -72,17 +72,17 @@ public:
   /// RemoveObjectsOfType() one can also remove all objects with the same iObjectType value, if needed.
   xiiResult InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, xiiInt32 iObjectType, xiiInt32 iObjectInstance, xiiDynamicTreeObject* out_pObject = nullptr, bool bOnlyIfInside = false); // [tested]
 
-  /// \brief Calls the Callback for every object that is inside the View-frustum. pPassThrough is passed to the Callback for custom
+  /// Calls the Callback for every object that is inside the View-frustum. pPassThrough is passed to the Callback for custom
   /// purposes.
   void FindVisibleObjects(const xiiFrustum& viewfrustum, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough) const;
 
-  /// \brief Returns all objects that are located in a node that overlaps with the given point.
+  /// Returns all objects that are located in a node that overlaps with the given point.
   ///
   /// \note This function will most likely also return objects that do not overlap with the point itself, because they are located
   /// in a node that overlaps with the point. You might need to do more thorough overlap checks to filter those out.
   void FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough = nullptr) const; // [tested]
 
-  /// \brief Returns all objects that are located in a node that overlaps with the rectangle with center vPoint and half edge length
+  /// Returns all objects that are located in a node that overlaps with the rectangle with center vPoint and half edge length
   /// fRadius.
   ///
   /// \note This function will most likely also return objects that do not overlap with the rectangle itself, because they are located
@@ -90,53 +90,53 @@ public:
   void FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK callback,
                           void* pPassThrough = nullptr) const; // [tested]
 
-  /// \brief Removes the given Object. Attention: This is an O(n) operation.
+  /// Removes the given Object. Attention: This is an O(n) operation.
   void RemoveObject(xiiInt32 iObjectType, xiiInt32 iObjectInstance); // [tested]
 
-  /// \brief Removes the given Object. This is an O(1) operation.
+  /// Removes the given Object. This is an O(1) operation.
   void RemoveObject(xiiDynamicTreeObject obj); // [tested]
 
-  /// \brief Removes all Objects of the given Type. This is an O(n) operation.
+  /// Removes all Objects of the given Type. This is an O(n) operation.
   void RemoveObjectsOfType(xiiInt32 iObjectType); // [tested]
 
-  /// \brief Removes all Objects, but the tree stays intact.
+  /// Removes all Objects, but the tree stays intact.
   void RemoveAllObjects()
   {
     m_NodeMap.Clear();
     m_uiMultiMapCounter = 1;
   } // [tested]
 
-  /// \brief Returns the tree's adjusted (square) AABB.
+  /// Returns the tree's adjusted (square) AABB.
   const xiiBoundingBox& GetBoundingBox() const { return m_BBox; } // [tested]
 
 private:
-  /// \brief Recursively checks in which node an object is located and stores it at the node where it fits best.
+  /// Recursively checks in which node an object is located and stores it at the node where it fits best.
   bool InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalfExtents, const xiiDynamicTree::xiiObjectData& Obj, float minx, float maxx, float miny, float maxy, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiDynamicTreeObject* out_Object);
 
-  /// \brief Recursively checks which nodes are visible and calls the callback for each object at those nodes.
+  /// Recursively checks which nodes are visible and calls the callback for each object at those nodes.
   void FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float miny, float maxy, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const;
 
-  /// \brief Recursively checks in which node a point is located and calls the callback for all objects at those nodes.
+  /// Recursively checks in which node a point is located and calls the callback for all objects at those nodes.
   bool FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float miny, float maxy, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const;
 
-  /// \brief Recursively checks which node(s) a circle touches and calls the callback for all objects at those nodes.
+  /// Recursively checks which node(s) a circle touches and calls the callback for all objects at those nodes.
   bool FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float miny, float maxy, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const;
 
-  /// \brief The tree depth, used for finding a nodes unique ID
+  /// The tree depth, used for finding a nodes unique ID
   xiiUInt32 m_uiMaxTreeDepth = 0;
 
-  // \brief Also used for finding a nodes unique ID
+  // Also used for finding a nodes unique ID
   xiiUInt32 m_uiAddIDTopLevel = 0;
 
-  /// \brief The square bounding Box (to prevent long thin nodes)
+  /// The square bounding Box (to prevent long thin nodes)
   xiiBoundingBox m_BBox;
 
-  /// \brief The actual bounding box (to discard objects that are outside the world)
+  /// The actual bounding box (to discard objects that are outside the world)
   float m_fRealMinX = 0, m_fRealMaxX = 0, m_fRealMinY = 0, m_fRealMaxY = 0, m_fRealMinZ = 0, m_fRealMaxZ = 0;
 
-  /// \brief Used to turn the map into a multi-map.
+  /// Used to turn the map into a multi-map.
   xiiUInt32 m_uiMultiMapCounter = 0;
 
-  /// \brief Every node has a unique index, the map allows to store many objects at each node, using that index
+  /// Every node has a unique index, the map allows to store many objects at each node, using that index
   xiiMap<xiiDynamicTree::xiiMultiMapKey, xiiDynamicTree::xiiObjectData> m_NodeMap;
 };

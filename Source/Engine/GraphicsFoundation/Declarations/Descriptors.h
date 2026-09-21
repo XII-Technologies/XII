@@ -13,7 +13,7 @@
 
 class xiiWindowBase;
 
-/// \brief This describes the device features.
+/// This describes the device features.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruct<xiiGALDeviceFeatures>
 {
   XII_DECLARE_POD_TYPE();
@@ -66,7 +66,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_ExternalFence                      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared fences across multiple devices or APIs.
 };
 
-/// \brief This describes the optimized depth-stencil clear value.
+/// This describes the optimized depth-stencil clear value.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilClearValue : public xiiHashableStruct<xiiGALDepthStencilClearValue>
 {
   XII_DECLARE_POD_TYPE();
@@ -75,7 +75,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilClearValue : public xiiHasha
   xiiUInt8 m_uiStencil = 0U;   ///< Stencil clear value.
 };
 
-/// \brief This describes the optimized color clear value.
+/// This describes the optimized color clear value.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashableStruct<xiiGALOptimizedClearValue>
 {
   XII_DECLARE_POD_TYPE();
@@ -85,7 +85,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashable
   xiiGALDepthStencilClearValue  m_DepthStencil;                                   ///< Depth stencil clear value.
 };
 
-/// \brief This describes the swap chain creation description.
+/// This describes the swap chain creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xiiHashableStruct<xiiGALSwapChainCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -101,7 +101,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                  ///< Default stencil value, which is used as the optimized clear value in D3D12.
 };
 
-/// \brief This describes the texture properties.
+/// This describes the texture properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureProperties : public xiiHashableStruct<xiiGALTextureProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -119,7 +119,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureProperties : public xiiHashableSt
   bool      m_bTextureView2DOn3DSupported = false; ///< Indicates if device supports 2D views from 3D texture.
 };
 
-/// \brief This describes the texture sampler properties.
+/// This describes the texture sampler properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerProperties : public xiiHashableStruct<xiiGALSamplerProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -129,7 +129,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerProperties : public xiiHashableSt
   bool      m_bLODBiasSupported            = false; ///< Indicates if device supports MIP load bias.
 };
 
-/// \brief This describes the sampler properties.
+/// This describes the sampler properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveOperationProperties : public xiiHashableStruct<xiiGALWaveOperationProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -140,7 +140,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveOperationProperties : public xiiHash
   xiiBitflags<xiiGALWaveFeature> m_WaveFeatures          = xiiGALWaveFeature::Unknown; ///< Indicates which groups of wave operations are supported by this device.
 };
 
-/// \brief This describes the buffer properties.
+/// This describes the buffer properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferProperties : public xiiHashableStruct<xiiGALBufferProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -149,7 +149,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferProperties : public xiiHashableStr
   xiiUInt32 m_uiStructuredBufferOffsetAlignment = 0U; ///< The minimum required alignment, in bytes, for the structured buffer offsets.
 };
 
-/// \brief This describes the ray tracing properties.
+/// This describes the ray tracing properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProperties : public xiiHashableStruct<xiiGALRayTracingProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -172,7 +172,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProperties : public xiiHashabl
   xiiUInt32 m_uiShaderGroupBaseAlignment = 0U; ///< Internal usage.
 };
 
-/// \brief This describes the mesh shader properties.
+/// This describes the mesh shader properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMeshShaderProperties : public xiiHashableStruct<xiiGALMeshShaderProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -183,7 +183,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMeshShaderProperties : public xiiHashabl
   xiiUInt32 m_uiMaxThreadGroupTotalCount = 0U; ///< The total maximum number of mesh shader groups per draw command.
 };
 
-/// \brief This describes the compute shader properties.
+/// This describes the compute shader properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputeShaderProperties : public xiiHashableStruct<xiiGALComputeShaderProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -200,7 +200,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputeShaderProperties : public xiiHash
   xiiUInt32 m_uiMaxThreadGroupCountZ = 0U; ///< The maximum number of thread groups that can be dispatched in Z dimension.
 };
 
-/// \brief This describes the graphics device creation description.
+/// This describes the graphics device creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHashableStruct<xiiGALDeviceCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -211,7 +211,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHa
   xiiGALDeviceFeatures                 m_DeviceFeatures;                                             ///< Device features that the application requires. The optimal device features depend on the specific needs of the application and the capabilities of the target hardware. For example, if the application relies heavily on compute shaders, it would be important to require support for compute shaders in the device features. Similarly, if the application uses ray tracing, it would need to require support for ray tracing. It's important to carefully consider which features are necessary for the application's functionality and performance requirements, as requiring unsupported features may lead to device creation failure or suboptimal performance.
 };
 
-/// \brief This describes the device memory properties.
+/// This describes the device memory properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceMemoryProperties : public xiiHashableStruct<xiiGALDeviceMemoryProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -224,7 +224,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceMemoryProperties : public xiiHasha
   xiiBitflags<xiiGALBindFlags>     m_MemorylessTextureBindFlags  = xiiGALBindFlags::None;     ///< Indicates if device supports color and depth attachments in on-chip memory. If supported, it will be combination of the following flags: RenderTarget, DepthStencil, InputAttachment.
 };
 
-/// \brief This describes a combination of a shading rate and multi-sampling mode.
+/// This describes a combination of a shading rate and multi-sampling mode.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStruct<xiiGALShadingRateMode>
 {
   XII_DECLARE_POD_TYPE();
@@ -233,7 +233,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
   xiiBitflags<xiiGALSampleCount>      m_SampleBits  = xiiGALSampleCount::None;      ///< The combination of supported sample counts.
 };
 
-/// \brief This describes the shading rate properties.
+/// This describes the shading rate properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties
 {
   xiiHybridArray<xiiGALShadingRateMode, 2U>     m_Modes;                                                                    ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
@@ -247,7 +247,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties
   xiiUInt32                                     m_uiMaxSubSampledArraySlices = 0U;                                          ///< Maximum size of the texture array created with texture subsampled flag.
 };
 
-/// \brief This describes the draw command properties.
+/// This describes the draw command properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandProperties : public xiiHashableStruct<xiiGALDrawCommandProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -257,7 +257,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandProperties : public xiiHashab
   xiiUInt32                                     m_uiMaxDrawIndirectCount = 0U;                                     ///< Maximum supported draw commands counter for indirect and indexed indirect draw commands.
 };
 
-/// \brief This describes the sparse memory properties.
+/// This describes the sparse memory properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHashableStruct<xiiGALSparseResourceProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -269,7 +269,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHas
   xiiBitflags<xiiGALBindFlags>                     m_BindFlags           = xiiGALBindFlags::None;                     ///< Allowed bind flags for sparse buffer.
 };
 
-/// \brief This describes the command queue properties.
+/// This describes the command queue properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHashableStruct<xiiGALCommandQueueProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -279,7 +279,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHasha
   xiiUInt32                            m_TextureCopyGranularity[3U] = {};                            ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
-/// \brief Describes the resource and feature‐limits exposed the device.
+/// Describes the resource and feature‐limits exposed the device.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceLimits : public xiiHashableStruct<xiiGALDeviceLimits>
 {
   xiiUInt32 m_uiMaxConstantBuffers    = 0U; ///< Maximum number of constant (uniform) buffers that can be bound at once.
@@ -314,7 +314,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceLimits : public xiiHashableStruct<
   xiiUInt32 m_uiMaxComputeSharedMemorySize     = 0U; ///< Maximum shared memory size (in bytes) available to a compute workgroup.
 };
 
-/// \brief Describes the properties and capabilities of a graphics device adapter.
+/// Describes the properties and capabilities of a graphics device adapter.
 ///
 /// This struct provides detailed information about a physical graphics adapter, including its vendor identity, hardware features, and supported limits.
 /// Populated during adapter enumeration by the backend API (e.g., Vulkan or D3D12).
@@ -342,7 +342,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceAdapterDescription
   xiiHybridArray<xiiGALCommandQueueProperties, 3U> m_CommandQueueProperties;                                    ///< List of command queue families and their properties (e.g., graphics, compute, transfer). Each entry describes the capabilities and priorities of a queue family available on this adapter.
 };
 
-/// \brief This describes the graphics abstraction layer device events.
+/// This describes the graphics abstraction layer device events.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEvent : public xiiHashableStruct<xiiGALDeviceEvent>
 {
   XII_DECLARE_POD_TYPE();
@@ -351,33 +351,33 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEvent : public xiiHashableStruct<x
   xiiGALDevice*                  m_pDevice = nullptr;
 };
 
-/// \brief This describes the invariant texture format attributes. These attributes are intrinsic to the texture format itself and do not depend on the format support.
+/// This describes the invariant texture format attributes. These attributes are intrinsic to the texture format itself and do not depend on the format support.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHashableStruct<xiiGALResourceFormatDescription>
 {
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Returns true if the format is block-compressed (BC, ETC, ASTC, etc.).
+  /// Returns true if the format is block-compressed (BC, ETC, ASTC, etc.).
   XII_ALWAYS_INLINE bool IsCompressed() const { return m_ComponentType == xiiGALResourceFormatComponentType::Compressed; }
 
-  /// \brief Returns the number of bytes per texel (non-compressed) or per block (compressed).
+  /// Returns the number of bytes per texel (non-compressed) or per block (compressed).
   XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (IsCompressed() ? 1 : m_uiComponentCount); }
 
-  /// \brief Returns the number of bits per texel (non-compressed) or per block (compressed).
+  /// Returns the number of bits per texel (non-compressed) or per block (compressed).
   XII_ALWAYS_INLINE xiiUInt32 GetBitsPerPixel() const { return GetElementSize() * 8U; }
 
-  /// \brief Returns the width of a compression block (4 for BC formats).
+  /// Returns the width of a compression block (4 for BC formats).
   XII_ALWAYS_INLINE xiiUInt32 GetBlockWidth() const { return IsCompressed() ? m_uiBlockWidth : 1; }
 
-  /// \brief Returns the height of a compression block (4 for BC formats).
+  /// Returns the height of a compression block (4 for BC formats).
   XII_ALWAYS_INLINE xiiUInt32 GetBlockHeight() const { return IsCompressed() ? m_uiBlockHeight : 1; }
 
-  /// \brief Returns how many blocks are needed horizontally for a given width.
+  /// Returns how many blocks are needed horizontally for a given width.
   XII_ALWAYS_INLINE xiiUInt32 GetBlockCountX(xiiUInt32 uiWidth) const { return (uiWidth + GetBlockWidth() - 1) / GetBlockWidth(); }
 
-  /// \brief Returns how many blocks are needed vertically for a given height.
+  /// Returns how many blocks are needed vertically for a given height.
   XII_ALWAYS_INLINE xiiUInt32 GetBlockCountY(xiiUInt32 uiHeight) const { return (uiHeight + GetBlockHeight() - 1) / GetBlockHeight(); }
 
-  /// \brief Returns the number of bytes in one row of texels or blocks.
+  /// Returns the number of bytes in one row of texels or blocks.
   XII_ALWAYS_INLINE xiiUInt32 GetRowPitch(xiiUInt32 uiWidth) const
   {
     if (!IsCompressed())
@@ -387,16 +387,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
     return GetBlockCountX(uiWidth) * GetElementSize();
   }
 
-  /// \brief Returns the number of bytes in one 2D slice (height * rowPitch).
+  /// Returns the number of bytes in one 2D slice (height * rowPitch).
   XII_ALWAYS_INLINE xiiUInt64 GetSlicePitch(xiiUInt32 uiWidth, xiiUInt32 uiHeight) const { return GetRowPitch(uiWidth) * (IsCompressed() ? GetBlockCountY(uiHeight) : uiHeight); }
 
-  /// \brief Returns the number of texels per block (16 for BC1–BC5).
+  /// Returns the number of texels per block (16 for BC1–BC5).
   XII_ALWAYS_INLINE xiiUInt32 GetTexelsPerBlock() const { return GetBlockWidth() * GetBlockHeight(); }
 
-  /// \brief Returns true if the format is typeless.
+  /// Returns true if the format is typeless.
   XII_ALWAYS_INLINE bool IsTypeless() const { return m_bIsTypeless; }
 
-  /// \brief Returns true if the format is UNorm or SNorm.
+  /// Returns true if the format is UNorm or SNorm.
   XII_ALWAYS_INLINE bool IsNormalized() const { return m_ComponentType == xiiGALResourceFormatComponentType::UnsignedNormalized || m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized; }
 
   xiiEnum<xiiGALResourceFormat>              m_Format           = xiiGALResourceFormat::Unknown;                ///< Texture format.
@@ -408,7 +408,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
   xiiUInt8                                   m_uiBlockHeight    = 0U;                                           ///< For block-compressed formats, the compression block height.
 };
 
-/// \brief This describes the multi-planar format attributes. These attributes are intrinsic to the multi-planar format itself and do not depend on the format support.
+/// This describes the multi-planar format attributes. These attributes are intrinsic to the multi-planar format itself and do not depend on the format support.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xiiHashableStruct<xiiGALMultiPlanarFormatDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -421,13 +421,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     float                         m_fHeightFactor     = 1.0f;                          ///< Height scaling relative to full resolution (0.5 for chroma).
   };
 
-  /// \brief Returns the number of planes in this multi-planar format.
+  /// Returns the number of planes in this multi-planar format.
   XII_ALWAYS_INLINE xiiUInt32 GetPlaneCount() const { return m_Planes.GetCount(); }
 
-  /// \brief Returns true if the specified plane index is valid.
+  /// Returns true if the specified plane index is valid.
   XII_ALWAYS_INLINE bool HasPlane(xiiUInt32 uiPlane) const { return uiPlane < m_Planes.GetCount(); }
 
-  /// \brief Returns the description of the specified plane.
+  /// Returns the description of the specified plane.
   XII_ALWAYS_INLINE const Plane& GetPlane(xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -435,7 +435,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return m_Planes[uiPlane];
   }
 
-  /// \brief Returns the width of the specified plane, given the full resolution width.
+  /// Returns the width of the specified plane, given the full resolution width.
   XII_ALWAYS_INLINE xiiUInt32 GetPlaneWidth(xiiUInt32 uiFullWidth, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -443,7 +443,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return static_cast<xiiUInt32>(uiFullWidth * m_Planes[uiPlane].m_fWidthFactor);
   }
 
-  /// \brief Returns the height of the specified plane, given the full resolution height.
+  /// Returns the height of the specified plane, given the full resolution height.
   XII_ALWAYS_INLINE xiiUInt32 GetPlaneHeight(xiiUInt32 uiFullHeight, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -451,7 +451,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return static_cast<xiiUInt32>(uiFullHeight * m_Planes[uiPlane].m_fHeightFactor);
   }
 
-  /// \brief Returns the row pitch (in bytes) of the specified plane, given the full resolution width.
+  /// Returns the row pitch (in bytes) of the specified plane, given the full resolution width.
   XII_ALWAYS_INLINE xiiUInt32 GetPlaneRowPitch(xiiUInt32 uiFullWidth, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -462,7 +462,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return uiWidth * p.m_uiBytesPerElement;
   }
 
-  /// \brief Returns the slice pitch (in bytes) of the specified plane, given the full resolution width and height.
+  /// Returns the slice pitch (in bytes) of the specified plane, given the full resolution width and height.
   XII_ALWAYS_INLINE xiiUInt64 GetPlaneSlicePitch(xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -472,7 +472,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return static_cast<xiiUInt64>(GetPlaneRowPitch(uiFullWidth, uiPlane)) * uiHeight;
   }
 
-  /// \brief Returns true if the multi-planar format description is valid.
+  /// Returns true if the multi-planar format description is valid.
   XII_ALWAYS_INLINE bool IsValid() const
   {
     if (!xiiGALResourceFormat::IsMultiplanar(m_Format))
@@ -493,7 +493,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return true;
   }
 
-  /// \brief Returns the total size (in bytes) of all planes, given the full resolution width and height.
+  /// Returns the total size (in bytes) of all planes, given the full resolution width and height.
   XII_ALWAYS_INLINE xiiUInt64 GetTotalSize(xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight) const
   {
     xiiUInt64 uiTotalSize = 0ULL;
@@ -509,7 +509,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
   xiiStaticArray<Plane, 4>      m_Planes;                                 ///< Array of formats for each plane.
 };
 
-/// \brief This describes the external memory description.
+/// This describes the external memory description.
 ///
 /// Used to import external memory handles into the graphics device. This is useful for interop scenarios where memory is shared between different APIs or processes.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryDescription : public xiiHashableStruct<xiiGALExternalMemoryDescription>

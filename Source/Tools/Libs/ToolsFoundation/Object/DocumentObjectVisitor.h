@@ -9,11 +9,11 @@
 class xiiDocumentObjectManager;
 class xiiDocumentObject;
 
-/// \brief Implements visitor pattern for content of the document object manager.
+/// Implements visitor pattern for content of the document object manager.
 class XII_TOOLSFOUNDATION_DLL xiiDocumentObjectVisitor
 {
 public:
-  /// \brief Constructor
+  /// Constructor
   ///
   /// \param pManager
   ///   Manager that will be iterated through.
@@ -24,7 +24,7 @@ public:
   xiiDocumentObjectVisitor(const xiiDocumentObjectManager* pManager, xiiStringView sChildrenProperty = "Children", xiiStringView sRootProperty = "Children");
 
   using VisitorFunction = xiiDelegate<bool(const xiiDocumentObject*)>;
-  /// \brief Executes depth first traversal starting at the given node.
+  /// Executes depth first traversal starting at the given node.
   ///
   /// \param pObject
   ///   Object to start traversal at.

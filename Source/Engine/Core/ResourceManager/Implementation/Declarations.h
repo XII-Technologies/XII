@@ -17,7 +17,7 @@ class xiiStreamReader;
 template <typename ResourceType>
 class xiiTypedResourceHandle;
 
-/// \brief These events may be sent by a specific xiiResource or by the xiiResourceManager
+/// These events may be sent by a specific xiiResource or by the xiiResourceManager
 struct xiiResourceEvent
 {
   enum class Type
@@ -37,7 +37,7 @@ struct xiiResourceEvent
   xiiResource* m_pResource = nullptr;
 };
 
-/// \brief Events sent by the xiiResourceManager
+/// Events sent by the xiiResourceManager
 struct xiiResourceManagerEvent
 {
   enum class Type
@@ -49,12 +49,12 @@ struct xiiResourceManagerEvent
   Type m_Type;
 };
 
-/// \brief The flags of a xiiResource instance.
+/// The flags of a xiiResource instance.
 struct xiiResourceFlags
 {
   using StorageType = xiiUInt16;
 
-  /// \brief The flags of a xiiResource instance.
+  /// The flags of a xiiResource instance.
   enum Enum : StorageType
   {
     UpdateOnMainThread   = XII_BIT(0), ///< After loading the resource data on a thread, it must be uploaded on the main thread. Use this for resources which require a context that is only available on the main thread.
@@ -88,7 +88,7 @@ struct xiiResourceFlags
 
 XII_DECLARE_FLAGS_OPERATORS(xiiResourceFlags);
 
-/// \brief Describes the state in which a resource can be in.
+/// Describes the state in which a resource can be in.
 enum class xiiResourceState : xiiUInt8
 {
   Invalid,               ///< Initial state
@@ -97,7 +97,7 @@ enum class xiiResourceState : xiiUInt8
   Loaded,                ///< The resource is fully loaded.
 };
 
-/// \brief Describes in which loading state a resource currently is, and how many different quality levels there are
+/// Describes in which loading state a resource currently is, and how many different quality levels there are
 struct xiiResourceLoadDescription
 {
   xiiResourceState m_State = xiiResourceState::Invalid;
@@ -108,7 +108,7 @@ struct xiiResourceLoadDescription
   xiiUInt8 m_uiQualityLevelsLoadable = 0xFF; // invalid
 };
 
-/// \brief Describes what data of a resource needs to be accessed and thus how much of the resource needs to be loaded.
+/// Describes what data of a resource needs to be accessed and thus how much of the resource needs to be loaded.
 ///
 /// \note Inspect the xiiResourceAcquireResult to know whether acquisition failed or whether a fallback was returned.
 enum class xiiResourceAcquireMode
@@ -129,7 +129,7 @@ enum class xiiResourceAcquireMode
                                   ///< The calling code signals with this that it can handle the situation.
 };
 
-/// \brief Indicates whether acquiring a resource was successful.
+/// Indicates whether acquiring a resource was successful.
 enum class xiiResourceAcquireResult
 {
   None,            ///< No result available, ie the resource could not be loaded, not even a missing fallback was available, the resource pointer is

@@ -5,7 +5,7 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Math/Vec4.h>
 
-/// \brief xiiColor represents an RGBA color in linear color space. Values are stored as float, allowing HDR values and full precision color
+/// xiiColor represents an RGBA color in linear color space. Values are stored as float, allowing HDR values and full precision color
 /// modifications.
 ///
 /// xiiColor is the central class to handle colors throughout the engine. With floating point precision it can handle any value, including HDR colors.
@@ -207,32 +207,32 @@ public:
 
   // *** Static Functions ***
 public:
-  /// \brief Returns a color with all four RGBA components set to Not-A-Number (NaN).
+  /// Returns a color with all four RGBA components set to Not-A-Number (NaN).
   [[nodiscard]] static xiiColor MakeNaN();
 
-  /// \brief Returns a color with all four RGBA components set to zero. This is different to xiiColor::Black, which has alpha still set to 1.0.
+  /// Returns a color with all four RGBA components set to zero. This is different to xiiColor::Black, which has alpha still set to 1.0.
   [[nodiscard]] static xiiColor MakeZero();
 
-  /// \brief Returns a color with the given r, g, b, a values. The values must be given in a linear color space.
+  /// Returns a color with the given r, g, b, a values. The values must be given in a linear color space.
   [[nodiscard]] static xiiColor MakeRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0f);
 
   // *** Constructors ***
 public:
-  /// \brief default-constructed color is uninitialized (for speed)
+  /// default-constructed color is uninitialized (for speed)
   xiiColor(); // [tested]
 
-  /// \brief Initializes the color with r, g, b, a. The color values must be given in a linear color space.
+  /// Initializes the color with r, g, b, a. The color values must be given in a linear color space.
   ///
   /// To initialize the color from a Gamma color space, e.g. when using a color value that was determined with a color picker,
   /// use the constructor that takes a xiiColorGammaUB object for initialization.
   constexpr xiiColor(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0f); // [tested]
 
-  /// \brief Initializes this color from a xiiColorLinearUB object.
+  /// Initializes this color from a xiiColorLinearUB object.
   ///
   /// Prefer to either use linear colors with floating point precision, or to use xiiColorGammaUB for 8 bit per pixel colors in gamma space.
   xiiColor(const xiiColorLinearUB& cc); // [tested]
 
-  /// \brief Initializes this color from a xiiColorGammaUB object.
+  /// Initializes this color from a xiiColorGammaUB object.
   ///
   /// This should be the preferred method when hard-coding colors in source code.
   xiiColor(const xiiColorGammaUB& cc); // [tested]
@@ -245,183 +245,183 @@ public:
   }
 #endif
 
-  /// \brief Sets the RGB components, ignores alpha.
+  /// Sets the RGB components, ignores alpha.
   void SetRGB(float fLinearRed, float fLinearGreen, float fLinearBlue); // [tested]
 
-  /// \brief Sets all four RGBA components.
+  /// Sets all four RGBA components.
   void SetRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0f); // [tested]
 
   // *** Conversion Operators/Functions ***
 public:
-  /// \brief Returns a color created from the kelvin temperature. https://wikipedia.org/wiki/Color_temperature
+  /// Returns a color created from the kelvin temperature. https://wikipedia.org/wiki/Color_temperature
   /// Originally inspired from https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
   /// But with heavy modification to better fit the mapping shown out in https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
   /// Physically accurate clipping points are 6580K for Red and 6560K for G and B. but approximated to 6570k for all to give a better mapping.
   [[nodiscard]] static xiiColor MakeFromKelvin(xiiUInt32 uiKelvin);
 
-  /// \brief Sets this color from a HSV (hue, saturation, value) format.
+  /// Sets this color from a HSV (hue, saturation, value) format.
   ///
   /// \a hue is in range [0; 360], \a sat and \a val are in range [0; 1]
   [[nodiscard]] static xiiColor MakeHSV(float fHue, float fSat, float fVal); // [tested]
 
-  /// \brief Converts the color part to HSV format.
+  /// Converts the color part to HSV format.
   ///
   /// \a hue is in range [0; 360], \a sat and \a val are in range [0; 1]
   void GetHSV(float& out_fHue, float& out_fSat, float& out_fValue) const; // [tested]
 
-  /// \brief Conversion to const float*
+  /// Conversion to const float*
   const float* GetData() const { return &r; }
 
-  /// \brief Conversion to float*
+  /// Conversion to float*
   float* GetData() { return &r; }
 
-  /// \brief Returns the 4 color values packed in a xiiVec4
+  /// Returns the 4 color values packed in a xiiVec4
   const xiiVec4 GetAsVec4() const;
 
-  /// \brief Helper function to convert a float color value from gamma space to linear color space.
+  /// Helper function to convert a float color value from gamma space to linear color space.
   static float GammaToLinear(float fGamma); // [tested]
-  /// \brief Helper function to convert a float color value from linear space to gamma color space.
+  /// Helper function to convert a float color value from linear space to gamma color space.
   static float LinearToGamma(float fGamma); // [tested]
 
-  /// \brief Helper function to convert a float RGB color value from gamma space to linear color space.
+  /// Helper function to convert a float RGB color value from gamma space to linear color space.
   static xiiVec3 GammaToLinear(const xiiVec3& vGamma); // [tested]
-  /// \brief Helper function to convert a float RGB color value from linear space to gamma color space.
+  /// Helper function to convert a float RGB color value from linear space to gamma color space.
   static xiiVec3 LinearToGamma(const xiiVec3& vGamma); // [tested]
 
   // *** Color specific functions ***
 public:
-  /// \brief Returns if the color is in the Range [0; 1] on all 4 channels.
+  /// Returns if the color is in the Range [0; 1] on all 4 channels.
   bool IsNormalized() const; // [tested]
 
-  /// \brief Calculates the average of the RGB channels.
+  /// Calculates the average of the RGB channels.
   float CalcAverageRGB() const;
 
-  /// \brief Computes saturation.
+  /// Computes saturation.
   float GetSaturation() const; // [tested]
 
-  /// \brief Computes the perceived luminance. Assumes linear color space (http://en.wikipedia.org/wiki/Luminance_%28relative%29).
+  /// Computes the perceived luminance. Assumes linear color space (http://en.wikipedia.org/wiki/Luminance_%28relative%29).
   float GetLuminance() const; /// [tested]
 
-  /// \brief Performs a simple (1.0 - color) inversion on all four channels.
+  /// Performs a simple (1.0 - color) inversion on all four channels.
   ///
   /// Using this function on non-normalized colors will lead to negative results.
   /// \see xiiColor IsNormalized
   xiiColor GetInvertedColor() const; // [tested]
 
-  /// \brief Calculates the complementary color for this color (hue shifted by 180 degrees). The complementary color will have the same alpha.
+  /// Calculates the complementary color for this color (hue shifted by 180 degrees). The complementary color will have the same alpha.
   xiiColor GetComplementaryColor() const; // [tested]
 
-  /// \brief Multiplies the given factor into red, green and blue, but not alpha.
+  /// Multiplies the given factor into red, green and blue, but not alpha.
   void ScaleRGB(float fFactor);
 
-  /// \brief Multiplies the given factor into red, green, blue and also alpha.
+  /// Multiplies the given factor into red, green, blue and also alpha.
   void ScaleRGBA(float fFactor);
 
-  /// \brief Returns 1 for an LDR color (all ´RGB components < 1). Otherwise the value of the largest component. Ignores alpha.
+  /// Returns 1 for an LDR color (all ´RGB components < 1). Otherwise the value of the largest component. Ignores alpha.
   float ComputeHdrMultiplier() const;
 
-  /// \brief Returns the base-2 logarithm of ComputeHdrMultiplier().
+  /// Returns the base-2 logarithm of ComputeHdrMultiplier().
   /// 0 for LDR colors, +1, +2, etc. for HDR colors.
   float ComputeHdrExposureValue() const;
 
-  /// \brief Raises 2 to the power \a ev and multiplies RGB with that factor.
+  /// Raises 2 to the power \a ev and multiplies RGB with that factor.
   void ApplyHdrExposureValue(float fEv);
 
-  /// \brief If this is an HDR color, the largest component value is used to normalize RGB to LDR range. Alpha is unaffected.
+  /// If this is an HDR color, the largest component value is used to normalize RGB to LDR range. Alpha is unaffected.
   void NormalizeToLdrRange();
 
-  /// \brief Returns a darker color by converting the color to HSV, dividing the *value* by fFactor and converting it back.
+  /// Returns a darker color by converting the color to HSV, dividing the *value* by fFactor and converting it back.
   xiiColor GetDarker(float fFactor = 2.0f) const;
 
   // *** Numeric properties ***
 public:
-  /// \brief Returns true, if any of \a r, \a g, \a b or \a a is NaN.
+  /// Returns true, if any of \a r, \a g, \a b or \a a is NaN.
   bool IsNaN() const; // [tested]
 
-  /// \brief Checks that all components are finite numbers.
+  /// Checks that all components are finite numbers.
   bool IsValid() const; // [tested]
 
   // *** Operators ***
 public:
-  /// \brief Converts the color from xiiColorLinearUB to linear float values.
+  /// Converts the color from xiiColorLinearUB to linear float values.
   void operator=(const xiiColorLinearUB& cc); // [tested]
 
-  /// \brief Converts the color from xiiColorGammaUB to linear float values. Gamma is correctly converted to linear space.
+  /// Converts the color from xiiColorGammaUB to linear float values. Gamma is correctly converted to linear space.
   void operator=(const xiiColorGammaUB& cc); // [tested]
 
-  /// \brief Adds \a rhs component-wise to this color.
+  /// Adds \a rhs component-wise to this color.
   void operator+=(const xiiColor& rhs); // [tested]
 
-  /// \brief Subtracts \a rhs component-wise from this vector.
+  /// Subtracts \a rhs component-wise from this vector.
   void operator-=(const xiiColor& rhs); // [tested]
 
-  /// \brief Multiplies \a rhs component-wise with this color.
+  /// Multiplies \a rhs component-wise with this color.
   void operator*=(const xiiColor& rhs); // [tested]
 
-  /// \brief Multiplies all components of this color with f.
+  /// Multiplies all components of this color with f.
   void operator*=(float f); // [tested]
 
-  /// \brief Divides all components of this color by f.
+  /// Divides all components of this color by f.
   void operator/=(float f); // [tested]
 
-  /// \brief Transforms the RGB components by the matrix. Alpha has no influence on the computation and will stay unmodified. The fourth row of the
+  /// Transforms the RGB components by the matrix. Alpha has no influence on the computation and will stay unmodified. The fourth row of the
   /// matrix is ignored.
   ///
   /// This operation can be used to do basic color correction.
   void operator*=(const xiiMat4& rhs); // [tested]
 
-  /// \brief Equality Check (bitwise). Only compares RGB, ignores Alpha.
+  /// Equality Check (bitwise). Only compares RGB, ignores Alpha.
   bool IsIdenticalRGB(const xiiColor& rhs) const; // [tested]
 
-  /// \brief Equality Check (bitwise). Compares all four components.
+  /// Equality Check (bitwise). Compares all four components.
   bool IsIdenticalRGBA(const xiiColor& rhs) const; // [tested]
 
-  /// \brief Equality Check with epsilon. Only compares RGB, ignores Alpha.
+  /// Equality Check with epsilon. Only compares RGB, ignores Alpha.
   bool IsEqualRGB(const xiiColor& rhs, float fEpsilon) const; // [tested]
 
-  /// \brief Equality Check with epsilon. Compares all four components.
+  /// Equality Check with epsilon. Compares all four components.
   bool IsEqualRGBA(const xiiColor& rhs, float fEpsilon) const; // [tested]
 
-  /// \brief Returns the current color but with changes the alpha value to the given value.
+  /// Returns the current color but with changes the alpha value to the given value.
   xiiColor WithAlpha(float fAlpha) const;
 
-  /// \brief Packs the 4 color values as uint8 into a single uint32 with A in the least significant bits and R in the most significant ones.
+  /// Packs the 4 color values as uint8 into a single uint32 with A in the least significant bits and R in the most significant ones.
   [[nodiscard]] xiiUInt32 ToRGBA8() const;
 
-  /// \brief Packs the 4 color values as uint8 into a single uint32 with R in the least significant bits and A in the most significant ones.
+  /// Packs the 4 color values as uint8 into a single uint32 with R in the least significant bits and A in the most significant ones.
   [[nodiscard]] xiiUInt32 ToABGR8() const;
 };
 
 // *** Operators ***
 
-/// \brief Component-wise addition.
+/// Component-wise addition.
 const xiiColor operator+(const xiiColor& c1, const xiiColor& c2); // [tested]
 
-/// \brief Component-wise subtraction.
+/// Component-wise subtraction.
 const xiiColor operator-(const xiiColor& c1, const xiiColor& c2); // [tested]
 
-/// \brief Component-wise multiplication.
+/// Component-wise multiplication.
 const xiiColor operator*(const xiiColor& c1, const xiiColor& c2); // [tested]
 
-/// \brief Returns a scaled color.
+/// Returns a scaled color.
 const xiiColor operator*(float f, const xiiColor& c); // [tested]
 
-/// \brief Returns a scaled color. Will scale all components.
+/// Returns a scaled color. Will scale all components.
 const xiiColor operator*(const xiiColor& c, float f); // [tested]
 
-/// \brief Returns a scaled color. Will scale all components.
+/// Returns a scaled color. Will scale all components.
 const xiiColor operator/(const xiiColor& c, float f); // [tested]
 
-/// \brief Transforms the RGB components by the matrix. Alpha has no influence on the computation and will stay unmodified. The fourth row of the
+/// Transforms the RGB components by the matrix. Alpha has no influence on the computation and will stay unmodified. The fourth row of the
 /// matrix is ignored.
 ///
 /// This operation can be used to do basic color correction.
 const xiiColor operator*(const xiiMat4& lhs, const xiiColor& rhs); // [tested]
 
-/// \brief Returns true, if both colors are identical in all components.
+/// Returns true, if both colors are identical in all components.
 bool operator==(const xiiColor& c1, const xiiColor& c2); // [tested]
 
-/// \brief Strict weak ordering. Useful for sorting colors into a map.
+/// Strict weak ordering. Useful for sorting colors into a map.
 bool operator<(const xiiColor& c1, const xiiColor& c2); // [tested]
 
 static_assert(sizeof(xiiColor) == 16);

@@ -6,24 +6,24 @@
 #include <Foundation/Configuration/Plugin.h>
 #include <Foundation/Types/Delegate.h>
 
-/// \brief Helper class to capture the current stack and print a captured stack
+/// Helper class to capture the current stack and print a captured stack
 class XII_FOUNDATION_DLL xiiStackTracer
 {
 public:
-  /// \brief Captures the current stack trace.
+  /// Captures the current stack trace.
   ///
   /// The trace will contain not more than ref_trace.GetCount() entries.
   /// [Windows] If called in an exception handler, set pContext to PEXCEPTION_POINTERS::ContextRecord.
   /// Returns the actual number of captured entries.
   static xiiUInt32 GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pContext = nullptr);
 
-  /// \brief Callback-function to print a text somewhere
+  /// Callback-function to print a text somewhere
   using PrintFunc = xiiDelegate<void(const char* szText)>;
 
-  /// \brief Print a stack trace
+  /// Print a stack trace
   static void ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFunc printFunc);
 
-  /// \brief Print a stack trace without resolving it
+  /// Print a stack trace without resolving it
   static void PrintStackTrace(const xiiArrayPtr<void*>& trace, PrintFunc printFunc);
 
 private:

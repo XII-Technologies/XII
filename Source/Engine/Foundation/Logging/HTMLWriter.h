@@ -8,7 +8,7 @@
 namespace xiiLogWriter
 {
 
-  /// \brief A log writer that writes out log messages to an HTML file.
+  /// A log writer that writes out log messages to an HTML file.
   ///
   /// Create an instance of this class, register the LogMessageHandler at xiiLog and pass the pointer
   /// to the instance as the pPassThrough argument to it.
@@ -17,20 +17,20 @@ namespace xiiLogWriter
   public:
     ~HTML();
 
-    /// \brief Register this at xiiLog to write all log messages to an HTML file.
+    /// Register this at xiiLog to write all log messages to an HTML file.
     void LogMessageHandler(const xiiLoggingEventData& eventData);
 
-    /// \brief Opens the given file for writing the log. From now on all incoming log messages are written into it.
+    /// Opens the given file for writing the log. From now on all incoming log messages are written into it.
     void BeginLog(xiiStringView sFile, xiiStringView sAppTitle);
 
-    /// \brief Closes the HTML file and stops logging the incoming message.
+    /// Closes the HTML file and stops logging the incoming message.
     void EndLog();
 
-    /// \brief Returns the name of the log-file that was really opened. Might be slightly different than what was given to BeginLog, to allow parallel
+    /// Returns the name of the log-file that was really opened. Might be slightly different than what was given to BeginLog, to allow parallel
     /// execution of the same application.
     const xiiFileWriter& GetOpenedLogFile() const;
 
-    /// \brief Allows to indicate in what form timestamps should be added to log messages.
+    /// Allows to indicate in what form timestamps should be added to log messages.
     void SetTimestampMode(xiiLog::TimestampMode mode);
 
   private:

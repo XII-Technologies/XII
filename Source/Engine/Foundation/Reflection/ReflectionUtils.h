@@ -8,23 +8,23 @@
 class xiiVariant;
 class xiiAbstractProperty;
 
-/// \brief Helper functions for handling reflection related operations.
+/// Helper functions for handling reflection related operations.
 class XII_FOUNDATION_DLL xiiReflectionUtils
 {
 public:
   static const xiiRTTI* GetCommonBaseType(const xiiRTTI* pRtti1, const xiiRTTI* pRtti2);
 
-  /// \brief Returns whether a type can be stored directly inside a xiiVariant.
+  /// Returns whether a type can be stored directly inside a xiiVariant.
   static bool IsBasicType(const xiiRTTI* pRtti);
 
-  /// \brief Returns whether the property is a non-ptr basic type or custom type.
+  /// Returns whether the property is a non-ptr basic type or custom type.
   static bool IsValueType(const xiiAbstractProperty* pProp);
 
-  /// \brief Returns the RTTI type matching the variant's type.
+  /// Returns the RTTI type matching the variant's type.
   static const xiiRTTI* GetTypeFromVariant(const xiiVariant& value);
   static const xiiRTTI* GetTypeFromVariant(xiiVariantType::Enum type);
 
-  /// \brief Sets the Nth component of the vector to the given value.
+  /// Sets the Nth component of the vector to the given value.
   ///
   /// vector's type needs to be in between xiiVariant::Type::Vector2 and xiiVariant::Type::Vector4U.
   static xiiUInt32 GetComponentCount(xiiVariantType::Enum type);
@@ -49,14 +49,14 @@ public:
   static const xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiUInt32 uiPropertyIndex);
   static const xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName); // [tested] via ToolsFoundation
 
-  /// \brief Gathers all RTTI types that are derived from pBaseRtti.
+  /// Gathers all RTTI types that are derived from pBaseRtti.
   ///
   /// This includes all classes that have pBaseRtti as a base class, either direct or indirect.
   ///
   /// \sa GatherDependentTypes
   static void GatherTypesDerivedFromClass(const xiiRTTI* pBaseRtti, xiiSet<const xiiRTTI*>& out_types);
 
-  /// \brief Gathers all RTTI types that pRtti depends on and adds them to inout_types.
+  /// Gathers all RTTI types that pRtti depends on and adds them to inout_types.
   ///
   /// Dependencies are either member properties or base classes. The output contains the transitive closure of the dependencies.
   /// Note that inout_typesAsSet is not cleared when this function is called.
@@ -64,7 +64,7 @@ public:
   /// The last entry is the lowest in the chain and has no dependencies on its own.
   static void GatherDependentTypes(const xiiRTTI* pRtti, xiiSet<const xiiRTTI*>& inout_typesAsSet, xiiDynamicArray<const xiiRTTI*>* out_pTypesAsStack = nullptr);
 
-  /// \brief Sorts the input types according to their dependencies.
+  /// Sorts the input types according to their dependencies.
   ///
   /// Types that have no dependences come first in the output followed by types that have their dependencies met by
   /// the previous entries in the output.
@@ -84,19 +84,19 @@ public:
     };
   };
 
-  /// \brief Converts an enum or bitfield value into its string representation.
+  /// Converts an enum or bitfield value into its string representation.
   ///
   /// The type of pEnumerationRtti will be automatically detected. The syntax of out_sOutput equals MSVC debugger output.
   static bool EnumerationToString(const xiiRTTI* pEnumerationRtti, xiiInt64 iValue, xiiStringBuilder& out_sOutput, xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default); // [tested]
 
-  /// \brief Helper template to shorten the call for xiiEnums
+  /// Helper template to shorten the call for xiiEnums
   template <typename T>
   static bool EnumerationToString(xiiEnum<T> value, xiiStringBuilder& out_sOutput, xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default)
   {
     return EnumerationToString(xiiGetStaticRTTI<T>(), value.GetValue(), out_sOutput, conversionMode);
   }
 
-  /// \brief Helper template to shorten the call for xiiBitflags
+  /// Helper template to shorten the call for xiiBitflags
   template <typename T>
   static bool BitflagsToString(xiiBitflags<T> value, xiiStringBuilder& out_sOutput, xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default)
   {
@@ -109,15 +109,15 @@ public:
     xiiInt32  m_iValue = 0;
   };
 
-  /// \brief If the given type is an enum, \a entries will be filled with all available keys (strings) and values (integers).
+  /// If the given type is an enum, \a entries will be filled with all available keys (strings) and values (integers).
   static void GetEnumKeysAndValues(const xiiRTTI* pEnumerationRtti, xiiDynamicArray<EnumKeyValuePair>& ref_entries, xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default);
 
-  /// \brief Converts an enum or bitfield in its string representation to its value.
+  /// Converts an enum or bitfield in its string representation to its value.
   ///
   /// The type of pEnumerationRtti will be automatically detected. The syntax of sValue must equal the MSVC debugger output.
   static bool StringToEnumeration(const xiiRTTI* pEnumerationRtti, xiiStringView sValue, xiiInt64& out_iValue); // [tested]
 
-  /// \brief Helper template to shorten the call for xiiEnums
+  /// Helper template to shorten the call for xiiEnums
   template <typename T>
   static bool StringToEnumeration(xiiStringView sValue, xiiEnum<T>& out_value)
   {
@@ -127,22 +127,22 @@ public:
     return retval;
   }
 
-  /// \brief Returns the default value (Enum::Default) for the given enumeration type.
+  /// Returns the default value (Enum::Default) for the given enumeration type.
   static xiiInt64 DefaultEnumerationValue(const xiiRTTI* pEnumerationRtti); // [tested]
 
-  /// \brief Makes sure the given value is valid under the given enumeration type.
+  /// Makes sure the given value is valid under the given enumeration type.
   ///
   /// Invalid bitflag bits are removed and an invalid enum value is replaced by the default value.
   static xiiInt64 MakeEnumerationValid(const xiiRTTI* pEnumerationRtti, xiiInt64 iValue); // [tested]
 
-  /// \brief Templated convenience function that calls IsEqual and automatically deduces the type.
+  /// Templated convenience function that calls IsEqual and automatically deduces the type.
   template <typename T>
   static bool IsEqual(const T* pObject, const T* pObject2)
   {
     return IsEqual(pObject, pObject2, xiiGetStaticRTTI<T>());
   }
 
-  /// \brief Compares pObject with pObject2 of type pType and returns whether they are equal.
+  /// Compares pObject with pObject2 of type pType and returns whether they are equal.
   ///
   /// In case a class derived from xiiReflectedClass is passed in the correct derived type
   /// will automatically be determined so it is not necessary to put the exact type into pType,
@@ -150,26 +150,26 @@ public:
   /// actually have a different type.
   static bool IsEqual(const void* pObject, const void* pObject2, const xiiRTTI* pType); // [tested]
 
-  /// \brief Compares property pProp of pObject and pObject2 and returns whether it is equal in both.
+  /// Compares property pProp of pObject and pObject2 and returns whether it is equal in both.
   static bool IsEqual(const void* pObject, const void* pObject2, const xiiAbstractProperty* pProp);
 
-  /// \brief Deletes pObject using the allocator found in the owning property's type.
+  /// Deletes pObject using the allocator found in the owning property's type.
   static void DeleteObject(void* pObject, const xiiAbstractProperty* pOwnerProperty);
 
-  /// \brief Returns a global default initialization value for the given variant type.
+  /// Returns a global default initialization value for the given variant type.
   static xiiVariant GetDefaultVariantFromType(xiiVariant::Type::Enum type); // [tested]
 
-  /// \brief Returns the default value for the specific type
+  /// Returns the default value for the specific type
   static xiiVariant GetDefaultVariantFromType(const xiiRTTI* pRtti);
 
-  /// \brief Returns the default value for the specific type of the given property.
+  /// Returns the default value for the specific type of the given property.
   static xiiVariant GetDefaultValue(const xiiAbstractProperty* pProperty, xiiVariant index = xiiVariant());
 
 
-  /// \brief Sets all member properties in \a pObject of type \a pRtti to the value returned by xiiToolsReflectionUtils::GetDefaultValue()
+  /// Sets all member properties in \a pObject of type \a pRtti to the value returned by xiiToolsReflectionUtils::GetDefaultValue()
   static void SetAllMemberPropertiesToDefault(const xiiRTTI* pRtti, void* pObject);
 
-  /// \brief If pAttrib is valid and its min/max values are compatible, value will be clamped to them.
+  /// If pAttrib is valid and its min/max values are compatible, value will be clamped to them.
   /// Returns false if a clamp attribute exists but no clamp code was executed.
   static xiiResult ClampValue(xiiVariant& value, const xiiClampValueAttribute* pAttrib);
 };

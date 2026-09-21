@@ -45,7 +45,7 @@ struct xiiFileserverEvent
   xiiFileserveFileState m_FileState        = xiiFileserveFileState::None;
 };
 
-/// \brief A file server allows to serve files from a host PC to another process that is potentially on another device.
+/// A file server allows to serve files from a host PC to another process that is potentially on another device.
 ///
 /// This is mostly useful for mobile devices, that do not have access to the data on the development machine.
 /// Typically every change to a file would require packaging the app and deploying it to the device again.
@@ -64,29 +64,29 @@ class XII_FILESERVEPLUGIN_DLL xiiFileserver
 public:
   xiiFileserver();
 
-  /// \brief Starts listening for client connections. Uses the configured port.
+  /// Starts listening for client connections. Uses the configured port.
   void StartServer();
 
-  /// \brief Disconnects all clients.
+  /// Disconnects all clients.
   void StopServer();
 
-  /// \brief Has to be executed regularly to serve clients and keep the connection alive.
+  /// Has to be executed regularly to serve clients and keep the connection alive.
   bool UpdateServer();
 
-  /// \brief Whether the server was started.
+  /// Whether the server was started.
   bool IsServerRunning() const;
 
-  /// \brief Overrides the current port setting. May only be called when the server is currently not running.
+  /// Overrides the current port setting. May only be called when the server is currently not running.
   void SetPort(xiiUInt16 uiPort);
 
-  /// \brief Returns the currently set port. If the command line option "-fs_port X" was used, this will return that value, otherwise the default is
+  /// Returns the currently set port. If the command line option "-fs_port X" was used, this will return that value, otherwise the default is
   /// 1042.
   xiiUInt16 GetPort() const { return m_uiPort; }
 
-  /// \brief The server broadcasts events about its activity
+  /// The server broadcasts events about its activity
   xiiEvent<const xiiFileserverEvent&> m_Events;
 
-  /// \brief Broadcasts to all clients that they should reload their resources
+  /// Broadcasts to all clients that they should reload their resources
   void BroadcastReloadResourcesCommand();
 
   static xiiResult SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& myIPs, xiiTime timeout = xiiTime::MakeFromSeconds(10));

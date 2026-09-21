@@ -11,7 +11,7 @@
 class xiiQtLogModel;
 class xiiQtSearchWidget;
 
-/// \brief The application wide panel that shows the engine log output and the editor log output
+/// The application wide panel that shows the engine log output and the editor log output
 class XII_GUIFOUNDATION_DLL xiiQtLogWidget : public QWidget, public Ui_LogWidget
 {
   Q_OBJECT
@@ -43,6 +43,6 @@ private:
   xiiQtLogModel* m_pLog;
   void           ScrollToBottomIfAtEnd(int iNumElements);
 
-  /// \brief List of callbacks invoked when the user double clicks a log message
+  /// List of callbacks invoked when the user double clicks a log message
   static xiiMap<xiiString, LogItemContextActionCallback> s_LogCallbacks;
 };

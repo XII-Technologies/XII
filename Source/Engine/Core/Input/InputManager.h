@@ -7,10 +7,10 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/Map.h>
 
-/// \brief A struct that defines how to register an input action.
+/// A struct that defines how to register an input action.
 struct XII_CORE_DLL xiiInputActionConfig
 {
-  /// \brief Change this value to adjust how many input slots may trigger the same action.
+  /// Change this value to adjust how many input slots may trigger the same action.
   enum
   {
     MaxInputSlotAlternatives = 3
@@ -18,7 +18,7 @@ struct XII_CORE_DLL xiiInputActionConfig
 
   xiiInputActionConfig();
 
-  /// \brief If this is set to true, the value of the action is scaled by the time difference since the last input update. Default is true.
+  /// If this is set to true, the value of the action is scaled by the time difference since the last input update. Default is true.
   ///
   /// You should enable this, if the value of the triggered action is used to modify how much to e.g. move or rotate something.
   /// For example, if an action 'RotateLeft' will rotate the player to the left, then he should rotate each frame an amount that is
@@ -35,18 +35,18 @@ struct XII_CORE_DLL xiiInputActionConfig
   /// scaling altogether.
   bool m_bApplyTimeScaling;
 
-  /// \brief Which input slots will trigger this action.
+  /// Which input slots will trigger this action.
   xiiString m_sInputSlotTrigger[MaxInputSlotAlternatives];
 
-  /// \brief This scale is applied to the input slot value (before time scaling). Positive values mean a linear scaling, negative values an
+  /// This scale is applied to the input slot value (before time scaling). Positive values mean a linear scaling, negative values an
   /// exponential scaling (i.e SlotValue = xiiMath::Pow(SlotValue, -ScaleValue)). Default is 1.0f.
   float m_fInputSlotScale[MaxInputSlotAlternatives];
 
-  /// \brief For Input Areas: If this is set, the input slot with the given name must have a value between m_fFilterXMinValue and
+  /// For Input Areas: If this is set, the input slot with the given name must have a value between m_fFilterXMinValue and
   /// m_fFilterXMaxValue. Otherwise this action will not be triggered.
   xiiString m_sFilterByInputSlotX[MaxInputSlotAlternatives];
 
-  /// \brief For Input Areas: If this is set, the input slot with the given name must have a value between m_fFilterYMinValue and
+  /// For Input Areas: If this is set, the input slot with the given name must have a value between m_fFilterYMinValue and
   /// m_fFilterYMaxValue. Otherwise this action will not be triggered.
   xiiString m_sFilterByInputSlotY[MaxInputSlotAlternatives];
 
@@ -58,7 +58,7 @@ struct XII_CORE_DLL xiiInputActionConfig
   float m_fFilteredPriority; ///< =large negative value; For Input Areas: If two input actions overlap and they have different priorities,
                              ///< the one with the larger priority will be triggered. Otherwise both are triggered.
 
-  /// \brief For Input Areas: Describes what happens when an action is currently triggered, but the input slots used for filtering leave
+  /// For Input Areas: Describes what happens when an action is currently triggered, but the input slots used for filtering leave
   /// their min/max values.
   enum OnLeaveArea
   {
@@ -66,7 +66,7 @@ struct XII_CORE_DLL xiiInputActionConfig
     KeepFocus, ///< The input action will keep focus and continue to return xiiKeyState::Down, until all trigger slots are actually released.
   };
 
-  /// \brief For Input Areas: Describes what happens when any trigger slot is already active will the input slots that are used for
+  /// For Input Areas: Describes what happens when any trigger slot is already active will the input slots that are used for
   /// filtering enter the valid ranges.
   enum OnEnterArea
   {
@@ -80,7 +80,7 @@ struct XII_CORE_DLL xiiInputActionConfig
   OnEnterArea m_OnEnterArea; ///< =ActivateImmediately
 };
 
-/// \brief The central class to set up and query the state of all input.
+/// The central class to set up and query the state of all input.
 ///
 /// The xiiInputManager is the central hub through which you can configure which keys will trigger which actions. You can query in which
 /// state an action is (inactive (up), active (down), just recently activated (pressed) or just recently deactivated (released)). You can
@@ -92,52 +92,52 @@ struct XII_CORE_DLL xiiInputActionConfig
 class XII_CORE_DLL xiiInputManager
 {
 public:
-  /// \brief Updates the state of the input manager. This should be called exactly once each frame.
+  /// Updates the state of the input manager. This should be called exactly once each frame.
   ///
   /// \param tTimeDifference The time elapsed since the last update. This will affect the value scaling of actions that
   /// use frame time scaling and is necessary to update controller vibration tracks.
   static void Update(xiiTime timeDifference); // [tested]
 
-  /// \brief Changes the display name of an input slot.
+  /// Changes the display name of an input slot.
   static void SetInputSlotDisplayName(xiiStringView sInputSlot, xiiStringView sDefaultDisplayName); // [tested]
 
-  /// \brief Returns the display name that was assigned to the given input slot.
+  /// Returns the display name that was assigned to the given input slot.
   static xiiStringView GetInputSlotDisplayName(xiiStringView sInputSlot); // [tested]
 
-  /// \brief A shortcut to get the display name of the input slot bound to a given action
+  /// A shortcut to get the display name of the input slot bound to a given action
   ///
   /// If iTrigger is set, the name of that trigger (0 .. xiiInputActionConfig::MaxInputSlotAlternatives) will be used.
   /// If iTrigger is less than 0, the first valid trigger is used.
   /// If iTrigger is outside the valid range or no valid trigger is bound, nullptr is returned.
   static xiiStringView GetInputSlotDisplayName(xiiStringView sInputSet, xiiStringView sAction, xiiInt32 iTrigger = -1);
 
-  /// \brief Sets the dead zone for the given input slot. As long as the hardware reports values lower than this, the input slot will report
+  /// Sets the dead zone for the given input slot. As long as the hardware reports values lower than this, the input slot will report
   /// a value of zero.
   static void SetInputSlotDeadZone(xiiStringView sInputSlot, float fDeadZone); // [tested]
 
-  /// \brief Returns the dead zone value for the given input slot.
+  /// Returns the dead zone value for the given input slot.
   static float GetInputSlotDeadZone(xiiStringView sInputSlot); // [tested]
 
-  /// \brief Returns the flags for the given input slot.
+  /// Returns the flags for the given input slot.
   static xiiBitflags<xiiInputSlotFlags> GetInputSlotFlags(xiiStringView sInputSlot); // [tested]
 
-  /// \brief Returns the current key state of the given input slot and optionally also returns its full value.
+  /// Returns the current key state of the given input slot and optionally also returns its full value.
   ///
   /// Do not use this function, unless you really, really need the value of exactly this key.
   /// Prefer to map your key to an action and then use GetInputActionState(). That method is more robust and extensible.
   static xiiKeyState::Enum GetInputSlotState(xiiStringView sInputSlot, float* pValue = nullptr); // [tested]
 
-  /// \brief Returns an array that contains all the names of all currently known input slots.
+  /// Returns an array that contains all the names of all currently known input slots.
   static void RetrieveAllKnownInputSlots(xiiDynamicArray<xiiStringView>& out_inputSlots);
 
-  /// \brief Returns the last typed character as the OS has reported it. Thus supports Unicode etc.
+  /// Returns the last typed character as the OS has reported it. Thus supports Unicode etc.
   ///
   /// If \a bResetCurrent is true, the internal last character will be reset to '\0'.
   /// If it is false, the internal state will not be changed. This should only be used, if the calling code does not do anything meaningful
   /// with the value.
   static xiiUInt32 RetrieveLastCharacter(bool bResetCurrent = true); // [tested]
 
-  /// \brief Makes sure that hardware input is processed at this moment, which allows to do this more often than Update() is called.
+  /// Makes sure that hardware input is processed at this moment, which allows to do this more often than Update() is called.
   ///
   /// When you have a game where you are doing relatively few game updates (including processing input), for example only 20 times
   /// per second, it is possible to 'miss' input. PollHardware() allows to introduce sampling the hardware state more often to prevent this.
@@ -147,12 +147,12 @@ public:
   /// on the input states.
   static void PollHardware();
 
-  /// \brief If \a szInputSlot is used in any action in \a szInputSet, it will be removed from all of them.
+  /// If \a szInputSlot is used in any action in \a szInputSet, it will be removed from all of them.
   ///
   /// This should be used to reset the usage of an input slot before it is bound to another input action.
   static void ClearInputMapping(xiiStringView sInputSet, xiiStringView sInputSlot); // [tested]
 
-  /// \brief This is the one function to set up which input actions are available and by which input slots (keys) they are triggered.
+  /// This is the one function to set up which input actions are available and by which input slots (keys) they are triggered.
   ///
   /// \param szInputSet
   ///   'Input Sets' are sets of actions that are disjunct from each other. That means the same input slot (key, mouse button, etc.) can
@@ -179,42 +179,42 @@ public:
   ///   (for example touch input) but only in different areas of the screen, this should be set to false.
   static void SetInputActionConfig(xiiStringView sInputSet, xiiStringView sAction, const xiiInputActionConfig& config, bool bClearPreviousInputMappings); // [tested]
 
-  /// \brief Returns the configuration for the given input action in the given input set. Returns a default configuration, if the action
+  /// Returns the configuration for the given input action in the given input set. Returns a default configuration, if the action
   /// does not exist.
   static xiiInputActionConfig GetInputActionConfig(xiiStringView sInputSet, xiiStringView sAction); // [tested]
 
-  /// \brief Deletes all state associated with the given input action.
+  /// Deletes all state associated with the given input action.
   ///
   /// It is not necessary to call this function for cleanup.
   static void RemoveInputAction(xiiStringView sInputSet, xiiStringView sAction); // [tested]
 
-  /// \brief Returns the current state and value of the given input action.
+  /// Returns the current state and value of the given input action.
   ///
   /// This is the one function that is called repeatedly at runtime to figure out which actions are active and thus which game-play
   /// functions to execute. You can (and should) use the /a pValue to scale game play features (e.g. how fast to drive).
   static xiiKeyState::Enum GetInputActionState(xiiStringView sInputSet, xiiStringView sAction, float* pValue = nullptr, xiiInt8* pTriggeredSlot = nullptr); // [tested]
 
-  /// \brief Sets the display name for the given action.
+  /// Sets the display name for the given action.
   static void SetActionDisplayName(xiiStringView sAction, xiiStringView sDisplayName); // [tested]
 
-  /// \brief Returns the display name for the given action, or the action name itself, if no special display name was specified yet.
+  /// Returns the display name for the given action, or the action name itself, if no special display name was specified yet.
   static const xiiString GetActionDisplayName(xiiStringView sAction); // [tested]
 
-  /// \brief Returns the names of all currently registered input sets.
+  /// Returns the names of all currently registered input sets.
   static void GetAllInputSets(xiiDynamicArray<xiiString>& out_inputSetNames); // [tested]
 
-  /// \brief Returns the names of all input actions in the given input set.
+  /// Returns the names of all input actions in the given input set.
   static void GetAllInputActions(xiiStringView sInputSetName, xiiDynamicArray<xiiString>& out_inputActions); // [tested]
 
-  /// \brief This can be used to pass input exclusively to this input set and no others.
+  /// This can be used to pass input exclusively to this input set and no others.
   ///
   /// Querying input from other input sets will always return 'key up'.
   static void SetExclusiveInputSet(xiiStringView sExclusiveSet) { s_sExclusiveInputSet = sExclusiveSet; }
 
-  /// \brief Returns whether any input set gets input exclusively.
+  /// Returns whether any input set gets input exclusively.
   static xiiStringView GetExclusiveInputSet() { return s_sExclusiveInputSet; }
 
-  /// \brief This function allows to 'inject' input state for one frame.
+  /// This function allows to 'inject' input state for one frame.
   ///
   /// This can be useful to emulate certain keys, e.g. for virtual devices.
   /// Note that it usually makes more sense to actually have another input device, however this can be used to
@@ -225,25 +225,25 @@ public:
   /// Note that when the input is injected after xiiInputManager::Update was called, its effect will be delayed by one frame.
   static void InjectInputSlotValue(xiiStringView sInputSlot, float fValue); // [tested]
 
-  /// \brief Checks whether any input slot has been triggered in this frame, which has all \a MustHaveFlags and has none of the \a
+  /// Checks whether any input slot has been triggered in this frame, which has all \a MustHaveFlags and has none of the \a
   /// MustNotHaveFlags.
   ///
   /// This function can be used in a UI to wait for user input and then assign that input to a certain action.
   static xiiStringView GetPressedInputSlot(xiiInputSlotFlags::Enum mustHaveFlags, xiiInputSlotFlags::Enum mustNotHaveFlags); // [tested]
 
-  /// \brief Mostly for internal use. Converts a scan-code value to the string that is used inside the engine for that key.
+  /// Mostly for internal use. Converts a scan-code value to the string that is used inside the engine for that key.
   static xiiStringView ConvertScanCodeToEngineName(xiiUInt8 uiScanCode, bool bIsExtendedKey);
 
-  /// \brief Helper for retrieving the input slot string for touch point with a given index.
+  /// Helper for retrieving the input slot string for touch point with a given index.
   static xiiStringView GetInputSlotTouchPoint(xiiUInt32 uiIndex);
 
-  /// \brief Helper for retrieving the input slot string for touch point x position with a given index.
+  /// Helper for retrieving the input slot string for touch point x position with a given index.
   static xiiStringView GetInputSlotTouchPointPositionX(xiiUInt32 uiIndex);
 
-  /// \brief Helper for retrieving the input slot string for touch point y position with a given index.
+  /// Helper for retrieving the input slot string for touch point y position with a given index.
   static xiiStringView GetInputSlotTouchPointPositionY(xiiUInt32 uiIndex);
 
-  /// \brief The data that is broadcast when certain events occur.
+  /// The data that is broadcast when certain events occur.
   struct InputEventData
   {
     enum EventType
@@ -260,24 +260,24 @@ public:
 
   using xiiEventInput = xiiEvent<const InputEventData&>;
 
-  /// \brief Adds an event handler that is called for input events.
+  /// Adds an event handler that is called for input events.
   static xiiEventSubscriptionID AddEventHandler(xiiEventInput::Handler handler) { return s_InputEvents.AddEventHandler(handler); }
 
-  /// \brief Removes a previously added event handler.
+  /// Removes a previously added event handler.
   static void RemoveEventHandler(xiiEventInput::Handler handler) { s_InputEvents.RemoveEventHandler(handler); }
   static void RemoveEventHandler(xiiEventSubscriptionID id) { s_InputEvents.RemoveEventHandler(id); }
 
 private:
   friend class xiiInputDevice;
 
-  /// \brief Registers an input slot with the given name and a default display name.
+  /// Registers an input slot with the given name and a default display name.
   ///
   /// If the input slot was already registered before, the display name is only changed, it the previous registration did not
   /// specify a display name different from the input slot name.
   static void RegisterInputSlot(xiiStringView sName, xiiStringView sDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags);
 
 private:
-  /// \brief Stores the current state for one input slot.
+  /// Stores the current state for one input slot.
   struct xiiInputSlot
   {
     xiiInputSlot();
@@ -290,7 +290,7 @@ private:
     xiiBitflags<xiiInputSlotFlags> m_SlotFlags;        ///< Describes the capabilities of the slot.
   };
 
-  /// \brief The data that is stored for each action.
+  /// The data that is stored for each action.
   struct xiiActionData
   {
     xiiActionData();
@@ -307,7 +307,7 @@ private:
   using xiiInputSetMap   = xiiMap<xiiString, xiiActionMap>;  ///< Maps input set names to their data.
   using xiiInputSlotsMap = xiiMap<xiiString, xiiInputSlot>;  ///< Maps input slot names to their data.
 
-  /// \brief The internal data of the xiiInputManager. Not allocated until it is actually required.
+  /// The internal data of the xiiInputManager. Not allocated until it is actually required.
   struct InternalData
   {
     xiiInputSetMap               s_ActionMapping;      ///< Maps input set names to their data.
@@ -316,30 +316,30 @@ private:
     xiiMap<xiiString, float>     s_InjectedInputSlots;
   };
 
-  /// \brief The last (Unicode) character that was typed by the user, as reported by the OS (on Windows: WM_CHAR).
+  /// The last (Unicode) character that was typed by the user, as reported by the OS (on Windows: WM_CHAR).
   static xiiUInt32 s_uiLastCharacter;
 
   static bool s_bInputSlotResetRequired;
 
-  /// \brief If not empty, all input for other input sets is returned as inactive ('key up')
+  /// If not empty, all input for other input sets is returned as inactive ('key up')
   static xiiString s_sExclusiveInputSet;
 
-  /// \brief Resets all input slot value to zero.
+  /// Resets all input slot value to zero.
   static void ResetInputSlotValues();
 
-  /// \brief Queries all known devices for their input slot values and stores the maximum values inside the input manager.
+  /// Queries all known devices for their input slot values and stores the maximum values inside the input manager.
   static void GatherDeviceInputSlotValues();
 
-  /// \brief Uses the previously queried input slot values to update their overall state.
+  /// Uses the previously queried input slot values to update their overall state.
   static void UpdateInputSlotStates();
 
-  /// \brief Uses the previously queried input slot values to update the state (and value) of all input actions.
+  /// Uses the previously queried input slot values to update the state (and value) of all input actions.
   static void UpdateInputActions(xiiTime tTimeDifference);
 
-  /// \brief Updates the state of all input actions in the given input set.
+  /// Updates the state of all input actions in the given input set.
   static void UpdateInputActions(xiiStringView sInputSet, xiiActionMap& Actions, xiiTime tTimeDifference);
 
-  /// \brief Returns an iterator to the (next) action that should get triggered by the given slot.
+  /// Returns an iterator to the (next) action that should get triggered by the given slot.
   ///
   /// This may return several actions (when called repeatedly) when their are several actions with the same priority.
   static xiiActionMap::Iterator GetBestAction(xiiActionMap& Actions, const xiiString& sSlot, const xiiActionMap::Iterator& itFirst);

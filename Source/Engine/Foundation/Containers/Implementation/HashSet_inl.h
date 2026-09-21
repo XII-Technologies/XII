@@ -1,6 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-/// \brief Value used by containers for indices to indicate an invalid index.
+/// Value used by containers for indices to indicate an invalid index.
 
 #ifndef xiiInvalidIndex
 #  define xiiInvalidIndex 0xFFFFFFFF

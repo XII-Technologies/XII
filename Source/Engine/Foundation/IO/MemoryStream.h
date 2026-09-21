@@ -15,42 +15,42 @@ class xiiMemoryStreamWriter;
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Instances of this class act as storage for memory streams
+/// Instances of this class act as storage for memory streams
 class XII_FOUNDATION_DLL xiiMemoryStreamStorageInterface
 {
 public:
   xiiMemoryStreamStorageInterface();
   virtual ~xiiMemoryStreamStorageInterface();
 
-  /// \brief Returns the number of bytes that are currently stored. Asserts that the stored amount is less than 4GB.
+  /// Returns the number of bytes that are currently stored. Asserts that the stored amount is less than 4GB.
   xiiUInt32 GetStorageSize32() const
   {
     XII_ASSERT_ALWAYS(GetStorageSize64() <= xiiMath::MaxValue<xiiUInt32>(), "The memory stream storage object has grown beyond 4GB. The code using it has to be adapted to support this.");
     return (xiiUInt32)GetStorageSize64();
   }
 
-  /// \brief Returns the number of bytes that are currently stored.
+  /// Returns the number of bytes that are currently stored.
   virtual xiiUInt64 GetStorageSize64() const = 0; // [tested]
 
-  /// \brief Clears the entire storage. All readers and writers must be reset to start from the beginning again.
+  /// Clears the entire storage. All readers and writers must be reset to start from the beginning again.
   virtual void Clear() = 0;
 
-  /// \brief Deallocates any allocated memory that's not needed to hold the currently stored data.
+  /// Deallocates any allocated memory that's not needed to hold the currently stored data.
   virtual void Compact() = 0;
 
-  /// \brief Returns the amount of bytes that are currently allocated on the heap.
+  /// Returns the amount of bytes that are currently allocated on the heap.
   virtual xiiUInt64 GetHeapMemoryUsage() const = 0;
 
-  /// \brief Copies all data from the given stream into the storage.
+  /// Copies all data from the given stream into the storage.
   void ReadAll(xiiStreamReader& ref_stream, xiiUInt64 uiMaxBytes = xiiMath::MaxValue<xiiUInt64>());
 
-  /// \brief Reserves N bytes of storage.
+  /// Reserves N bytes of storage.
   virtual void Reserve(xiiUInt64 uiBytes) = 0;
 
-  /// \brief Writes the entire content of the storage to the provided stream.
+  /// Writes the entire content of the storage to the provided stream.
   virtual xiiResult CopyToStream(xiiStreamWriter& ref_stream) const = 0;
 
-  /// \brief Returns a read-only xiiArrayPtr that represents a contiguous area in memory which starts at the given first byte.
+  /// Returns a read-only xiiArrayPtr that represents a contiguous area in memory which starts at the given first byte.
   ///
   /// This piece of memory can be read/copied/modified in one operation (memcpy etc).
   /// The next byte after this slice may be located somewhere entirely different in memory.
@@ -74,14 +74,14 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Templated implementation of xiiMemoryStreamStorageInterface that adapts most standard XII containers to the interface.
+/// Templated implementation of xiiMemoryStreamStorageInterface that adapts most standard XII containers to the interface.
 ///
 /// Note that xiiMemoryStreamContainerStorage assumes contiguous storage, so using a xiiDeque for storage will not work.
 template <typename CONTAINER>
 class xiiMemoryStreamContainerStorage : public xiiMemoryStreamStorageInterface
 {
 public:
-  /// \brief Creates the storage object for a memory stream. Use \a uiInitialCapacity to reserve some memory up front.
+  /// Creates the storage object for a memory stream. Use \a uiInitialCapacity to reserve some memory up front.
   xiiMemoryStreamContainerStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()) :
     m_Storage(pAllocator)
   {
@@ -120,7 +120,7 @@ public:
     return xiiArrayPtr<xiiUInt8>(m_Storage.GetData() + uiStartByte, m_Storage.GetCount() - static_cast<xiiUInt32>(uiStartByte));
   }
 
-  /// \brief The data is guaranteed to be contiguous.
+  /// The data is guaranteed to be contiguous.
   const xiiUInt8* GetData() const { return m_Storage.GetData(); }
 
 private:
@@ -152,7 +152,7 @@ public:
   }
 };
 
-/// \brief The default implementation for memory stream storage.
+/// The default implementation for memory stream storage.
 ///
 /// This implementation of xiiMemoryStreamStorageInterface handles use cases both from very small to extremely large storage needs.
 /// It starts out with some inplace memory that can accommodate small amounts of data.
@@ -199,7 +199,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Wrapper around an existing container to implement xiiMemoryStreamStorageInterface
+/// Wrapper around an existing container to implement xiiMemoryStreamStorageInterface
 template <typename CONTAINER>
 class xiiMemoryStreamContainerWrapperStorage : public xiiMemoryStreamStorageInterface
 {
@@ -281,20 +281,20 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A reader which can access a memory stream.
+/// A reader which can access a memory stream.
 ///
 /// Please note that the functions exposed by this object are not thread safe! If access to the same xiiMemoryStreamStorage object from
 /// multiple threads is desired please create one instance of xiiMemoryStreamReader per thread.
 class XII_FOUNDATION_DLL xiiMemoryStreamReader : public xiiStreamReader
 {
 public:
-  /// \brief Pass the memory storage object from which to read from.
+  /// Pass the memory storage object from which to read from.
   /// Pass nullptr if you are going to set the storage stream later via SetStorage().
   xiiMemoryStreamReader(const xiiMemoryStreamStorageInterface* pStreamStorage = nullptr);
 
   ~xiiMemoryStreamReader();
 
-  /// \brief Sets the storage object upon which to operate. Resets the read position to zero.
+  /// Sets the storage object upon which to operate. Resets the read position to zero.
   /// Pass nullptr if you want to detach from any previous storage stream, for example to ensure its reference count gets properly reduced.
   void SetStorage(const xiiMemoryStreamStorageInterface* pStreamStorage)
   {
@@ -302,25 +302,25 @@ public:
     m_uiReadPosition = 0;
   }
 
-  /// \brief Reads either uiBytesToRead or the amount of remaining bytes in the stream into pReadBuffer.
+  /// Reads either uiBytesToRead or the amount of remaining bytes in the stream into pReadBuffer.
   ///
   /// It is valid to pass nullptr for pReadBuffer, in this case the memory stream position is only advanced by the given number of bytes.
   virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override; // [tested]
 
-  /// \brief Skips bytes in the stream (e.g. for skipping objects which can't be serialized due to missing information etc.)
+  /// Skips bytes in the stream (e.g. for skipping objects which can't be serialized due to missing information etc.)
   virtual xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override; // [tested]
 
-  /// \brief Sets the read position to be used
+  /// Sets the read position to be used
   void SetReadPosition(xiiUInt64 uiReadPosition); // [tested]
 
-  /// \brief Returns the current read position
+  /// Returns the current read position
   xiiUInt64 GetReadPosition() const { return m_uiReadPosition; }
 
-  /// \brief Returns the total available bytes in the memory stream
+  /// Returns the total available bytes in the memory stream
   xiiUInt32 GetByteCount32() const; // [tested]
   xiiUInt64 GetByteCount64() const; // [tested]
 
-  /// \brief Allows to set a string as the source of information in the memory stream for debug purposes.
+  /// Allows to set a string as the source of information in the memory stream for debug purposes.
   void SetDebugSourceInformation(xiiStringView sDebugSourceInformation);
 
 private:
@@ -336,18 +336,18 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A writer which can access a memory stream
+/// A writer which can access a memory stream
 ///
 /// Please note that the functions exposed by this object are not thread safe!
 class XII_FOUNDATION_DLL xiiMemoryStreamWriter : public xiiStreamWriter
 {
 public:
-  /// \brief Pass the memory storage object to which to write to.
+  /// Pass the memory storage object to which to write to.
   xiiMemoryStreamWriter(xiiMemoryStreamStorageInterface* pStreamStorage = nullptr);
 
   ~xiiMemoryStreamWriter();
 
-  /// \brief Sets the storage object upon which to operate. Resets the write position to the end of the storage stream.
+  /// Sets the storage object upon which to operate. Resets the write position to the end of the storage stream.
   /// Pass nullptr if you want to detach from any previous storage stream, for example to ensure its reference count gets properly reduced.
   void SetStorage(xiiMemoryStreamStorageInterface* pStreamStorage)
   {
@@ -357,18 +357,18 @@ public:
       m_uiWritePosition = m_pStreamStorage->GetStorageSize64();
   }
 
-  /// \brief Copies uiBytesToWrite from pWriteBuffer into the memory stream.
+  /// Copies uiBytesToWrite from pWriteBuffer into the memory stream.
   ///
   /// pWriteBuffer must be a valid buffer and must hold that much data.
   virtual xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]
 
-  /// \brief Sets the write position to be used
+  /// Sets the write position to be used
   void SetWritePosition(xiiUInt64 uiWritePosition); // [tested]
 
-  /// \brief Returns the current write position
+  /// Returns the current write position
   xiiUInt64 GetWritePosition() const { return m_uiWritePosition; }
 
-  /// \brief Returns the total stored bytes in the memory stream
+  /// Returns the total stored bytes in the memory stream
   xiiUInt32 GetByteCount32() const; // [tested]
   xiiUInt64 GetByteCount64() const; // [tested]
 
@@ -383,16 +383,16 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Maps a raw chunk of memory to the xiiStreamReader interface.
+/// Maps a raw chunk of memory to the xiiStreamReader interface.
 class XII_FOUNDATION_DLL xiiRawMemoryStreamReader : public xiiStreamReader
 {
 public:
   xiiRawMemoryStreamReader();
 
-  /// \brief Initialize the raw memory reader with the chunk of memory that is the data storage.
+  /// Initialize the raw memory reader with the chunk of memory that is the data storage.
   xiiRawMemoryStreamReader(const void* pData, xiiUInt64 uiDataSize); // [tested]
 
-  /// \brief Initialize the raw memory reader with the chunk of memory from a standard XII container.
+  /// Initialize the raw memory reader with the chunk of memory from a standard XII container.
   /// \note The container must store the data in a contiguous array.
   template <typename CONTAINER>
   xiiRawMemoryStreamReader(const CONTAINER& container) // [tested]
@@ -410,24 +410,24 @@ public:
     Reset(static_cast<const xiiUInt8*>(container.GetData()), container.GetCount());
   }
 
-  /// \brief Reads either uiBytesToRead or the amount of remaining bytes in the stream into pReadBuffer.
+  /// Reads either uiBytesToRead or the amount of remaining bytes in the stream into pReadBuffer.
   ///
   /// It is valid to pass nullptr for pReadBuffer, in this case the memory stream position is only advanced by the given number of bytes.
   virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override; // [tested]
 
-  /// \brief Skips bytes in the stream (e.g. for skipping objects which can't be serialized due to missing information etc.)
+  /// Skips bytes in the stream (e.g. for skipping objects which can't be serialized due to missing information etc.)
   virtual xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override; // [tested]
 
-  /// \brief Sets the read position to be used
+  /// Sets the read position to be used
   void SetReadPosition(xiiUInt64 uiReadPosition); // [tested]
 
-  /// \brief Returns the current read position in the raw memory block
+  /// Returns the current read position in the raw memory block
   xiiUInt64 GetReadPosition() const { return m_uiReadPosition; }
 
-  /// \brief Returns the total available bytes in the memory stream
+  /// Returns the total available bytes in the memory stream
   xiiUInt64 GetByteCount() const; // [tested]
 
-  /// \brief Allows to set a string as the source of information in the memory stream for debug purposes.
+  /// Allows to set a string as the source of information in the memory stream for debug purposes.
   void SetDebugSourceInformation(xiiStringView sDebugSourceInformation);
 
 private:
@@ -444,16 +444,16 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 
-/// \brief Maps a raw chunk of memory to the xiiStreamReader interface.
+/// Maps a raw chunk of memory to the xiiStreamReader interface.
 class XII_FOUNDATION_DLL xiiRawMemoryStreamWriter : public xiiStreamWriter
 {
 public:
   xiiRawMemoryStreamWriter(); // [tested]
 
-  /// \brief Initialize the raw memory reader with the chunk of memory that is the data storage.
+  /// Initialize the raw memory reader with the chunk of memory that is the data storage.
   xiiRawMemoryStreamWriter(void* pData, xiiUInt64 uiDataSize); // [tested]
 
-  /// \brief Initialize the raw memory reader with the chunk of memory from a standard XII container.
+  /// Initialize the raw memory reader with the chunk of memory from a standard XII container.
   /// \note The container must store the data in a contiguous array.
   template <typename CONTAINER>
   xiiRawMemoryStreamWriter(CONTAINER& ref_container) // [tested]
@@ -471,16 +471,16 @@ public:
     Reset(static_cast<xiiUInt8*>(ref_container.GetData()), ref_container.GetCount());
   }
 
-  /// \brief Returns the total available bytes in the memory stream
+  /// Returns the total available bytes in the memory stream
   xiiUInt64 GetStorageSize() const; // [tested]
 
-  /// \brief Returns the number of bytes written to the storage
+  /// Returns the number of bytes written to the storage
   xiiUInt64 GetNumWrittenBytes() const; // [tested]
 
-  /// \brief Allows to set a string as the source of information in the memory stream for debug purposes.
+  /// Allows to set a string as the source of information in the memory stream for debug purposes.
   void SetDebugSourceInformation(xiiStringView sDebugSourceInformation);
 
-  /// \brief Copies uiBytesToWrite from pWriteBuffer into the memory stream.
+  /// Copies uiBytesToWrite from pWriteBuffer into the memory stream.
   ///
   /// pWriteBuffer must be a valid buffer and must hold that much data.
   virtual xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]

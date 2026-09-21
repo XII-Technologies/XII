@@ -10,7 +10,7 @@
 #include <Foundation/Time/Time.h>
 #include <Foundation/Utilities/EnumerableClass.h>
 
-/// \brief The base class for all input device types.
+/// The base class for all input device types.
 ///
 /// An input device is the abstraction of one or more types of input. It is not linked to one physical device.
 /// For example an input device can represent mouse AND keyboard (through one class). Another input device
@@ -45,13 +45,13 @@ class XII_CORE_DLL xiiInputDevice : public xiiEnumerable<xiiInputDevice, xiiRefl
   XII_ADD_DYNAMIC_REFLECTION(xiiInputDevice, xiiReflectedClass);
 
 public:
-  /// \brief Default Constructor.
+  /// Default Constructor.
   xiiInputDevice();
 
-  /// \brief Allows to query current input values for the given slot
+  /// Allows to query current input values for the given slot
   float GetInputSlotState(xiiStringView sSlot) const;
 
-  /// \brief Returns true, if the device was 'used' during the last frame, ie. when it generated input due to some user interaction.
+  /// Returns true, if the device was 'used' during the last frame, ie. when it generated input due to some user interaction.
   ///
   /// This can be used to figure out which device the user is currently using, for example whether mouse/keyboard or a controller is in use.
   bool HasDeviceBeenUsedLastFrame() const;
@@ -59,7 +59,7 @@ public:
 private:
   friend class xiiInputManager;
 
-  /// \brief If this type of input device handles character input (typed text with all its formatting), this function returns the last typed
+  /// If this type of input device handles character input (typed text with all its formatting), this function returns the last typed
   /// character.
   ///
   /// An input device that handles keyboard input should also have a way to query the real typed character. I.e. by default only the
@@ -69,23 +69,23 @@ private:
   /// itself, but instead query this information from the OS, which will also handle localization.
   xiiUInt32 RetrieveLastCharacter();
 
-  /// \brief Calls UpdateHardwareState() on all devices.
+  /// Calls UpdateHardwareState() on all devices.
   static void UpdateAllHardwareStates(xiiTime tTimeDifference);
 
-  /// \brief Calls Initialize() and UpdateInputSlotValues() on all devices.
+  /// Calls Initialize() and UpdateInputSlotValues() on all devices.
   static void UpdateAllDevices();
 
-  /// \brief Calls ResetInputSlotValues() on all devices.
+  /// Calls ResetInputSlotValues() on all devices.
   static void ResetAllDevices();
 
-  /// \brief Calls RetrieveLastCharacter() on all devices. Returns the first non-null character that any device returned.
+  /// Calls RetrieveLastCharacter() on all devices. Returns the first non-null character that any device returned.
   static xiiUInt32 RetrieveLastCharacterFromAllDevices();
 
 protected:
-  /// \brief Calls RegisterInputSlot() on the xiiInputManager and passes the parameters through.
+  /// Calls RegisterInputSlot() on the xiiInputManager and passes the parameters through.
   static void RegisterInputSlot(xiiStringView sName, xiiStringView sDefaultDisplayName, xiiBitflags<xiiInputSlotFlags> SlotFlags); // [tested]
 
-  /// \brief Stores all the values for all input slots that this device handles.
+  /// Stores all the values for all input slots that this device handles.
   ///
   /// A derived class needs to fill out this map every frame. There are two ways this map can be filled out.
   /// For devices where you can query the complete state at one point in time (e.g. controllers), you can update the entire
@@ -99,14 +99,14 @@ protected:
   /// will reset to zero anyway.
   xiiMap<xiiString, float> m_InputSlotValues; // [tested]
 
-  /// \brief If this input device type handles character input, it should write the last typed character into this variable.
+  /// If this input device type handles character input, it should write the last typed character into this variable.
   /// The xiiInputManager calls RetrieveLastCharacter() to query what the user typed last.
   xiiUInt32 m_uiLastCharacter; // [tested]
 
-  /// \brief Override this if you need to do device specific initialization before the first use.
+  /// Override this if you need to do device specific initialization before the first use.
   virtual void InitializeDevice() = 0;
 
-  /// \brief Override this, if you need to query the state of the hardware to update the input slots.
+  /// Override this, if you need to query the state of the hardware to update the input slots.
   ///
   /// \note This function might be called multiple times before ResetInputSlotValues() is called.
   /// This will be the case when xiiInputManager::PollHardware is used to make more frequent hardware updates
@@ -115,22 +115,22 @@ protected:
   /// to be called in tandem with this function and it will be fine.
   virtual void UpdateInputSlotValues() = 0;
 
-  /// \brief Override this, if you need to reset certain input slot values to zero, after the xiiInputManager is finished with the current
+  /// Override this, if you need to reset certain input slot values to zero, after the xiiInputManager is finished with the current
   /// frame update.
   virtual void ResetInputSlotValues() {}; // [tested]
 
-  /// \brief Override this to register all the input slots that this device exposes.
+  /// Override this to register all the input slots that this device exposes.
   ///
   /// This is called once during initialization. It needs to call RegisterInputSlot() once for every input slot that this device
   /// exposes to the system.
   virtual void RegisterInputSlots() = 0; // [tested]
 
-  /// \brief This function is called once after xiiInputManager::Update with the same time delta value.
+  /// This function is called once after xiiInputManager::Update with the same time delta value.
   /// It allows to update hardware state, such as the vibration of gamepad motors.
   virtual void UpdateHardwareState(xiiTime tTimeDifference) { XII_IGNORE_UNUSED(tTimeDifference); }
 
 private:
-  /// \brief Calls InitializeDevice() when the device is not yet initialized.
+  /// Calls InitializeDevice() when the device is not yet initialized.
   void Initialize();
   bool m_bInitialized            = false;
   bool m_bGeneratedInputRecently = false;

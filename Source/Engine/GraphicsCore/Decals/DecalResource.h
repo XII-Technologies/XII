@@ -13,7 +13,7 @@
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
-/// \brief G-Buffer channels a decal may write.
+/// G-Buffer channels a decal may write.
 struct XII_GRAPHICSCORE_DLL xiiDecalChannelMask
 {
   using StorageType = xiiUInt16;
@@ -42,7 +42,7 @@ struct XII_GRAPHICSCORE_DLL xiiDecalChannelMask
 XII_DECLARE_FLAGS_OPERATORS(xiiDecalChannelMask);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDecalChannelMask);
 
-/// \brief Renderer-facing decal classification.
+/// Renderer-facing decal classification.
 struct XII_GRAPHICSCORE_DLL xiiDecalProjectionMode
 {
   using StorageType = xiiUInt8;
@@ -60,7 +60,7 @@ struct XII_GRAPHICSCORE_DLL xiiDecalProjectionMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDecalProjectionMode);
 
-/// \brief One atlas source entry and its packed UV metadata.
+/// One atlas source entry and its packed UV metadata.
 struct XII_GRAPHICSCORE_DLL xiiDecalAtlasEntry
 {
   xiiHashedString m_sDecalId; ///< Unique identifier for the decal, used for lookup.
@@ -81,7 +81,7 @@ struct XII_GRAPHICSCORE_DLL xiiDecalAtlasEntry
   xiiVec4 m_vTextureMetrics = xiiVec4(1.0f / 256.0f, 1.0f / 256.0f, 256.0f, 256.0f); ///< Texture metrics for this decal, used for sampling and mipmap calculations. xy = texel size (1 / original texture size), zw = packed pixel size (original texture size + padding, in pixels).
 };
 
-/// \brief Descriptor used to build a packed decal atlas resource at runtime or by tools.
+/// Descriptor used to build a packed decal atlas resource at runtime or by tools.
 struct XII_GRAPHICSCORE_DLL xiiDecalAtlasResourceDescriptor
 {
   xiiSizeU16                          m_AtlasSize        = xiiSizeU16(2048, 2048); ///< Size of the atlas texture to create. This should be a power of two for optimal mipmapping, but it is not strictly required.
@@ -93,7 +93,7 @@ struct XII_GRAPHICSCORE_DLL xiiDecalAtlasResourceDescriptor
   void Load(xiiStreamReader& ref_stream);
 };
 
-/// \brief Packed decal atlas with metadata mapping decal IDs to UV rectangles.
+/// Packed decal atlas with metadata mapping decal IDs to UV rectangles.
 class XII_GRAPHICSCORE_DLL xiiDecalAtlasResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDecalAtlasResource, xiiResource);
@@ -105,34 +105,34 @@ class XII_GRAPHICSCORE_DLL xiiDecalAtlasResource final : public xiiResource
 public:
   xiiDecalAtlasResource();
 
-  /// \brief Returns the descriptor used to create this atlas, which contains the metadata for all entries.
+  /// Returns the descriptor used to create this atlas, which contains the metadata for all entries.
   XII_ALWAYS_INLINE const xiiDecalAtlasResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
 
-  /// \brief Returns the array of entries in this atlas, which contains the metadata for all entries.
+  /// Returns the array of entries in this atlas, which contains the metadata for all entries.
   XII_ALWAYS_INLINE xiiArrayPtr<const xiiDecalAtlasEntry> GetEntries() const { return m_Descriptor.m_Entries; }
 
-  /// \brief Returns the GPU texture for the given channel. All channels are packed into the same atlas, so this returns the same texture for all channels.
+  /// Returns the GPU texture for the given channel. All channels are packed into the same atlas, so this returns the same texture for all channels.
   XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pAlbedoAtlasTexture; }
 
-  /// \brief Returns the GPU texture for the albedo channel.
+  /// Returns the GPU texture for the albedo channel.
   XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetAlbedoTexture() const { return m_pAlbedoAtlasTexture; }
 
-  /// \brief Returns the GPU texture for the normal channel.
+  /// Returns the GPU texture for the normal channel.
   XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetNormalTexture() const { return m_pNormalAtlasTexture; }
 
-  /// \brief Returns the GPU texture for the material channel.
+  /// Returns the GPU texture for the material channel.
   XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetMaterialTexture() const { return m_pMaterialAtlasTexture; }
 
-  /// \brief Returns the GPU texture for the emissive channel.
+  /// Returns the GPU texture for the emissive channel.
   XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetEmissiveTexture() const { return m_pEmissiveAtlasTexture; }
 
-  /// \brief Returns the sampler state used for sampling the atlas textures.
+  /// Returns the sampler state used for sampling the atlas textures.
   XII_ALWAYS_INLINE xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pAtlasSampler; }
 
-  /// \brief Tries to find the atlas entry for the given decal ID. Returns true if found, false otherwise.
+  /// Tries to find the atlas entry for the given decal ID. Returns true if found, false otherwise.
   bool TryGetAtlasEntry(const xiiTempHashedString& sDecalId, const xiiDecalAtlasEntry*& out_pEntry) const;
 
-  /// \brief Tries to find the atlas entry for the given decal ID. Returns true if found, false otherwise.
+  /// Tries to find the atlas entry for the given decal ID. Returns true if found, false otherwise.
   bool TryGetAtlasEntry(const xiiHashedString& sDecalId, const xiiDecalAtlasEntry*& out_pEntry) const;
 
 private:
@@ -156,7 +156,7 @@ private:
   xiiUInt32                   m_uiMemoryGPU = 0U;      ///< Memory usage of the GPU resources for this atlas, used for tracking and reporting memory usage.
 };
 
-/// \brief Per-decal material defaults shared by projected and mesh decals.
+/// Per-decal material defaults shared by projected and mesh decals.
 struct XII_GRAPHICSCORE_DLL xiiDecalResourceDescriptor
 {
   xiiHashedString m_sDecalId; ///< Unique identifier for the decal, used for lookup in the atlas resource.
@@ -185,7 +185,7 @@ struct XII_GRAPHICSCORE_DLL xiiDecalResourceDescriptor
   void Load(xiiStreamReader& ref_stream);
 };
 
-/// \brief Decal material resource. Components can override any per-instance parameter after referencing this resource.
+/// Decal material resource. Components can override any per-instance parameter after referencing this resource.
 class XII_GRAPHICSCORE_DLL xiiDecalResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDecalResource, xiiResource);
@@ -197,7 +197,7 @@ class XII_GRAPHICSCORE_DLL xiiDecalResource final : public xiiResource
 public:
   xiiDecalResource();
 
-  /// \brief Returns the descriptor used to create this decal, which contains all the parameters for this decal.
+  /// Returns the descriptor used to create this decal, which contains all the parameters for this decal.
   XII_ALWAYS_INLINE const xiiDecalResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
 
 private:

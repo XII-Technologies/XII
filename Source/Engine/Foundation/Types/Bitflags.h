@@ -8,7 +8,7 @@
 #include <Foundation/Containers/Implementation/BitIterator.h>
 #include <Foundation/Types/Enum.h>
 
-/// \brief The xiiBitflags class allows you to work with type-safe bitflags.
+/// The xiiBitflags class allows you to work with type-safe bitflags.
 ///
 /// xiiBitflags takes a struct as its template parameter, which contains an enum for the available flag values.
 /// xiiBitflags wraps this type in a way which enables the compiler to do type-checks. This makes it very easy
@@ -90,13 +90,13 @@ private:
 public:
   using ConstIterator = xiiBitIterator<Enum, false>;
 
-  /// \brief Constructor. Initializes the flags to the default value.
+  /// Constructor. Initializes the flags to the default value.
   XII_ALWAYS_INLINE xiiBitflags() :
     m_Value(static_cast<StorageType>(T::Default)) // [tested]
   {
   }
 
-  /// \brief Converts the incoming type to xiiBitflags<T>
+  /// Converts the incoming type to xiiBitflags<T>
   XII_ALWAYS_INLINE xiiBitflags(Enum flag1) // [tested]
   {
     m_Value = (StorageType)flag1;
@@ -104,134 +104,134 @@ public:
 
   XII_ALWAYS_INLINE void operator=(Enum flag1) { m_Value = (StorageType)flag1; }
 
-  /// \brief Comparison operator.
+  /// Comparison operator.
   XII_ALWAYS_INLINE constexpr bool operator==(const StorageType rhs) const // [tested]
   {
     return m_Value == rhs;
   }
 
-  /// \brief Comparison operator.
+  /// Comparison operator.
   XII_ALWAYS_INLINE constexpr bool operator==(const xiiBitflags<T>& rhs) const
   {
     return m_Value == rhs.m_Value;
   }
 
-  /// \brief Clears all flags
+  /// Clears all flags
   XII_ALWAYS_INLINE void Clear() // [tested]
   {
     m_Value = 0;
   }
 
-  /// \brief Checks if certain flags are set within the bitfield.
+  /// Checks if certain flags are set within the bitfield.
   XII_ALWAYS_INLINE bool IsSet(Enum flag) const // [tested]
   {
     return (m_Value & flag) != 0;
   }
 
-  /// \brief Returns whether all the given flags are set.
+  /// Returns whether all the given flags are set.
   XII_ALWAYS_INLINE bool AreAllSet(const xiiBitflags<T>& rhs) const // [tested]
   {
     return (m_Value & rhs.m_Value) == rhs.m_Value;
   }
 
-  /// \brief Returns whether none of the given flags is set.
+  /// Returns whether none of the given flags is set.
   XII_ALWAYS_INLINE bool AreNoneSet(const xiiBitflags<T>& rhs) const // [tested]
   {
     return (m_Value & rhs.m_Value) == 0;
   }
 
-  /// \brief  Returns whether any of the given flags is set.
+  ///  Returns whether any of the given flags is set.
   XII_ALWAYS_INLINE bool IsAnySet(const xiiBitflags<T>& rhs) const // [tested]
   {
     return (m_Value & rhs.m_Value) != 0;
   }
 
-  /// \brief Returns whether there are strictly any of the given flags set.
+  /// Returns whether there are strictly any of the given flags set.
   XII_ALWAYS_INLINE bool IsStrictlyAnySet(const xiiBitflags<T>& rhs) const
   {
     return ((m_Value & rhs.m_Value) != 0) && ((m_Value & ~rhs.m_Value) == 0);
   }
 
-  /// \brief Sets the given flag.
+  /// Sets the given flag.
   XII_ALWAYS_INLINE void Add(const xiiBitflags<T>& rhs) // [tested]
   {
     m_Value |= rhs.m_Value;
   }
 
-  /// \brief Removes the given flag.
+  /// Removes the given flag.
   XII_ALWAYS_INLINE void Remove(const xiiBitflags<T>& rhs) // [tested]
   {
     m_Value &= (~rhs.m_Value);
   }
 
-  /// \brief Toggles the state of the given flag.
+  /// Toggles the state of the given flag.
   XII_ALWAYS_INLINE void Toggle(const xiiBitflags<T>& rhs) // [tested]
   {
     m_Value ^= rhs.m_Value;
   }
 
-  /// \brief Sets or clears the given flag.
+  /// Sets or clears the given flag.
   XII_ALWAYS_INLINE void AddOrRemove(const xiiBitflags<T>& rhs, bool bState) // [tested]
   {
     m_Value = (bState) ? m_Value | rhs.m_Value : m_Value & (~rhs.m_Value);
   }
 
-  /// \brief Returns an object that has the flags of \a this and \a rhs combined.
+  /// Returns an object that has the flags of \a this and \a rhs combined.
   XII_ALWAYS_INLINE xiiBitflags<T> operator|(const xiiBitflags<T>& rhs) const // [tested]
   {
     return xiiBitflags<T>(m_Value | rhs.m_Value);
   }
 
-  /// \brief Returns an object that has the flags that were set both in \a this and \a rhs.
+  /// Returns an object that has the flags that were set both in \a this and \a rhs.
   XII_ALWAYS_INLINE xiiBitflags<T> operator&(const xiiBitflags<T>& rhs) const // [tested]
   {
     return xiiBitflags<T>(m_Value & rhs.m_Value);
   }
 
-  /// \brief Modifies \a this to also contain the bits from \a rhs.
+  /// Modifies \a this to also contain the bits from \a rhs.
   XII_ALWAYS_INLINE void operator|=(const xiiBitflags<T>& rhs) // [tested]
   {
     m_Value |= rhs.m_Value;
   }
 
-  /// \brief Modifies \a this to only contain the bits that were set in \a this and \a rhs.
+  /// Modifies \a this to only contain the bits that were set in \a this and \a rhs.
   XII_ALWAYS_INLINE void operator&=(const xiiBitflags<T>& rhs) // [tested]
   {
     m_Value &= rhs.m_Value;
   }
 
-  /// \brief Returns the stored value as the underlying integer type.
+  /// Returns the stored value as the underlying integer type.
   XII_ALWAYS_INLINE StorageType GetValue() const // [tested]
   {
     return m_Value;
   }
 
-  /// \brief Overwrites the flags with a new value.
+  /// Overwrites the flags with a new value.
   XII_ALWAYS_INLINE void SetValue(StorageType value) // [tested]
   {
     m_Value = value;
   }
 
-  /// \brief Returns true if not a single bit is set.
+  /// Returns true if not a single bit is set.
   XII_ALWAYS_INLINE bool IsNoFlagSet() const // [tested]
   {
     return m_Value == 0;
   }
 
-  /// \brief Returns true if any bitflag is set.
+  /// Returns true if any bitflag is set.
   XII_ALWAYS_INLINE bool IsAnyFlagSet() const // [tested]
   {
     return m_Value != 0;
   }
 
-  /// \brief Returns a constant iterator to the very first set bit.
+  /// Returns a constant iterator to the very first set bit.
   /// Note that due to the way iterating through bits is accelerated, changes to the bitflags will not affect the iterator after creation.
   XII_ALWAYS_INLINE ConstIterator GetIterator() const // [tested]
   {
     return ConstIterator((Enum)m_Value);
   }
 
-  /// \brief Returns an invalid iterator. Needed to support range based for loops.
+  /// Returns an invalid iterator. Needed to support range based for loops.
   XII_ALWAYS_INLINE ConstIterator GetEndIterator() const // [tested]
   {
     return ConstIterator();
@@ -276,7 +276,7 @@ typename xiiBitflags<T>::ConstIterator cend(const xiiBitflags<T>& container)
   return container.GetEndIterator();
 }
 
-/// \brief This macro will define the operator| and operator& function that is required for class \a FlagsType to work with xiiBitflags.
+/// This macro will define the operator| and operator& function that is required for class \a FlagsType to work with xiiBitflags.
 /// See class xiiBitflags for more information.
 #define XII_DECLARE_FLAGS_OPERATORS(FlagsType)                                      \
   inline xiiBitflags<FlagsType> operator|(FlagsType::Enum lhs, FlagsType::Enum rhs) \
@@ -291,7 +291,7 @@ typename xiiBitflags<T>::ConstIterator cend(const xiiBitflags<T>& container)
 
 
 
-/// \brief This macro allows to conveniently declare a bitflag type that can be used with the xiiBitflags class.
+/// This macro allows to conveniently declare a bitflag type that can be used with the xiiBitflags class.
 ///
 /// Usage: XII_DECLARE_FLAGS(xiiUInt32, FlagsTypeName, Flag1Name, Flag2Name, Flag3Name, Flag4Name, ...)
 ///

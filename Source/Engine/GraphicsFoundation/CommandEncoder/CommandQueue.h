@@ -7,7 +7,7 @@
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Declarations/Object.h>
 
-/// \brief This describes the fence creation description.
+/// This describes the fence creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueCreationDescription : public xiiHashableStruct<xiiGALCommandQueueCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -15,25 +15,25 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueCreationDescription : public
   xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags = xiiGALCommandQueueFlags::None; ///< The command queue flags.
 };
 
-/// \brief Interface that defines methods to manipulate a command queue object.
+/// Interface that defines methods to manipulate a command queue object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueue : public xiiGALObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueue, xiiGALObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandQueueCreationDescription& GetDescription() const { return m_Description; };
 
-  /// \brief This returns the device for this object.
+  /// This returns the device for this object.
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDevice* GetDevice() const { return m_pDevice; };
 
-  /// \brief This returns the value of the internal fence that will be signaled the next time.
+  /// This returns the value of the internal fence that will be signaled the next time.
   virtual xiiUInt64 GetNextFenceValue() const = 0;
 
-  /// \brief This returns the last completed value of the internal fence.
+  /// This returns the last completed value of the internal fence.
   virtual xiiUInt64 GetCompletedFenceValue() = 0;
 
-  /// \brief Submits a recorded command list to the GPU queue for execution.
+  /// Submits a recorded command list to the GPU queue for execution.
   ///
   /// \note Command list must be compatible with the queue's flag configuration.
   /// Invalid or misconfigured lists may trigger assertions in development builds.
@@ -43,7 +43,7 @@ public:
   /// \return The fence value that can be used to query GPU completion status for this submission.
   virtual xiiUInt64 Submit(xiiGALCommandList* pCommandList);
 
-  /// \brief This blocks execution until all pending GPU commands are complete.
+  /// This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() = 0;
 
 protected:

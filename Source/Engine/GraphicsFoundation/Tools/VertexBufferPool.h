@@ -7,13 +7,13 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 
-/// \brief A templated vertex buffer pool that manages dynamic vertex allocations.
+/// A templated vertex buffer pool that manages dynamic vertex allocations.
 /// This divides its memory into one or more chunks to minimize reallocation and supports thread-safe allocation, update, and tracking of vertex usage.
 template <typename VertexType, typename MutexType = xiiNoMutex, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 class xiiGALVertexBufferPool
 {
 public:
-  /// \brief A handle for a vertex allocation.
+  /// A handle for a vertex allocation.
   struct AllocationHandle
   {
     XII_DECLARE_POD_TYPE();
@@ -23,7 +23,7 @@ public:
     xiiUInt32 m_uiCount      = 0; ///< Number of vertices allocated.
   };
 
-  /// \brief Aggregated usage statistics for the pool.
+  /// Aggregated usage statistics for the pool.
   struct UsageStatistics
   {
     XII_DECLARE_POD_TYPE();
@@ -33,32 +33,32 @@ public:
     xiiUInt32 m_uiAllocationCount = 0; ///< The number of active allocations.
   };
 
-  /// \brief Constructs the vertex buffer pool.
+  /// Constructs the vertex buffer pool.
   ///
   /// \param uiInitialChunkSize - The number of vertices in the first (and minimum) chunk.
   /// \param uiExpansionFactor  - Determines the size of new chunks (e.g. 2 means double the previous chunk).
   xiiGALVertexBufferPool(xiiStringView sName = {}, xiiAllocator* pAllocator = AllocatorWrapper::GetAllocator(), xiiUInt32 uiInitialChunkSize = 1024, xiiUInt32 uiExpansionFactor = 2U);
   ~xiiGALVertexBufferPool();
 
-  /// \brief Allocates a block of vertices from the pool.
+  /// Allocates a block of vertices from the pool.
   ///
   /// \param uiCount - The number of vertices requested.
   ///
   /// \return An AllocationHandle that describes where the vertices live.
   AllocationHandle Allocate(xiiUInt32 uiCount);
 
-  /// \brief Updates the data stored in a given allocation.
+  /// Updates the data stored in a given allocation.
   ///
   /// \param handle - The allocation handle previously returned by Allocate().
   /// \param pData  - An array containing the new vertex data.
   void Update(const AllocationHandle& handle, xiiArrayPtr<const VertexType> pData, xiiSharedPtr<xiiGALCommandList> pCommandList);
 
-  /// \brief Returns a read-only pointer to the allocated vertex data.
+  /// Returns a read-only pointer to the allocated vertex data.
   ///
   /// \note Use with caution – modifications via the pointer are not protected by the pool’s mutex.
   xiiArrayPtr<const VertexType> GetAllocationPointer(const AllocationHandle& handle) const;
 
-  // \brief Retrieve a GPU buffer pointer to allow binding to a pipeline. For a specific allocation, you can query the chunk’s buffer.
+  // Retrieve a GPU buffer pointer to allow binding to a pipeline. For a specific allocation, you can query the chunk’s buffer.
   xiiSharedPtr<xiiGALBuffer> GetGPUBuffer(const AllocationHandle& handle) const;
 
   void Reset();
@@ -66,7 +66,7 @@ public:
   xiiGALVertexBufferPool::UsageStatistics GetUsageStatistics() const;
 
 private:
-  /// \brief Represents a single memory chunk in the pool.
+  /// Represents a single memory chunk in the pool.
   struct Chunk
   {
     explicit Chunk(xiiAllocator* pAllocator, xiiUInt32 uiCapacity, xiiSharedPtr<xiiGALDevice> pDevice) :

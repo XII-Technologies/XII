@@ -17,7 +17,7 @@ class xiiTaskSystemThreadState;
 class xiiDGMLGraph;
 class xiiAllocator;
 
-/// \brief Describes the priority with which to execute a task.
+/// Describes the priority with which to execute a task.
 ///
 /// For tasks that you start this frame and that need to finish within the same frame,
 /// use 'EarlyThisFrame', 'ThisFrame' or 'LateThisFrame'.\n
@@ -76,7 +76,7 @@ struct xiiTaskPriority
   // clang-format on
 };
 
-/// \brief Enum that describes what to do when waiting for or canceling tasks, that have already started execution.
+/// Enum that describes what to do when waiting for or canceling tasks, that have already started execution.
 struct xiiOnTaskRunning
 {
   using StorageType = xiiUInt8;
@@ -106,17 +106,17 @@ struct xiiWorkerThreadType
   static const char* GetThreadTypeName(xiiWorkerThreadType::Enum threadType);
 };
 
-/// \brief Given out by xiiTaskSystem::CreateTaskGroup to identify a task group.
+/// Given out by xiiTaskSystem::CreateTaskGroup to identify a task group.
 class XII_FOUNDATION_DLL xiiTaskGroupID
 {
 public:
   XII_ALWAYS_INLINE xiiTaskGroupID()  = default;
   XII_ALWAYS_INLINE ~xiiTaskGroupID() = default;
 
-  /// \brief Returns false, if the GroupID does not reference a valid xiiTaskGroup
+  /// Returns false, if the GroupID does not reference a valid xiiTaskGroup
   XII_ALWAYS_INLINE bool IsValid() const { return m_pTaskGroup != nullptr; }
 
-  /// \brief Resets the GroupID into an invalid state.
+  /// Resets the GroupID into an invalid state.
   XII_ALWAYS_INLINE void Invalidate() { m_pTaskGroup = nullptr; }
 
   XII_ALWAYS_INLINE bool operator==(const xiiTaskGroupID& other) const
@@ -140,10 +140,10 @@ private:
   xiiTaskGroup* m_pTaskGroup = nullptr;
 };
 
-/// \brief Callback type when a task group has been finished (or canceled).
+/// Callback type when a task group has been finished (or canceled).
 using xiiOnTaskGroupFinishedCallback = xiiDelegate<void(xiiTaskGroupID)>;
 
-/// \brief Callback type when a task has been finished (or canceled).
+/// Callback type when a task has been finished (or canceled).
 using xiiOnTaskFinishedCallback = xiiDelegate<void(const xiiSharedPtr<xiiTask>&)>;
 
 struct xiiTaskGroupDependency
@@ -154,7 +154,7 @@ struct xiiTaskGroupDependency
   xiiTaskGroupID m_DependsOn;
 };
 
-/// \brief Whether a task may wait for the completion of another task.
+/// Whether a task may wait for the completion of another task.
 ///
 /// This is an optimization hint for the xiiTaskSystem. Tasks that never wait on other tasks
 /// can be executed more efficiently (without launching a dedicated thread), as they cannot produce
@@ -166,7 +166,7 @@ enum class xiiTaskNesting
   Never,
 };
 
-/// \brief Settings for xiiTaskSystem::ParallelFor invocations.
+/// Settings for xiiTaskSystem::ParallelFor invocations.
 struct XII_FOUNDATION_DLL xiiParallelForParams
 {
   xiiParallelForParams() = default; // do not remove, needed for Clang

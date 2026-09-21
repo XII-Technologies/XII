@@ -8,20 +8,20 @@ class xiiHashedString;
 
 namespace xiiCollectionUtils
 {
-  /// \brief Adds all files from \a szAbsPathToFolder and \a szFileExtension to \a collection
+  /// Adds all files from \a szAbsPathToFolder and \a szFileExtension to \a collection
   ///
   /// The files are added as new entries using szAssetTypeName as the resource type identifier (see xiiResourceManager::RegisterResourceForAssetType).
   /// \a szStripPrefix is stripped from the file system paths and \a szPrependPrefix is prepended.
   XII_CORE_DLL void AddFiles(xiiCollectionResourceDescriptor& ref_collection, xiiStringView sAssetTypeName, xiiStringView sAbsPathToFolder, xiiStringView sFileExtension, xiiStringView sStripPrefix, xiiStringView sPrependPrefix);
 
-  /// \brief Merges all collections from the input array into the target result collection. Resource entries will be de-duplicated by resource ID
+  /// Merges all collections from the input array into the target result collection. Resource entries will be de-duplicated by resource ID
   /// string.
   XII_CORE_DLL void MergeCollections(xiiCollectionResourceDescriptor& ref_result, xiiArrayPtr<const xiiCollectionResourceDescriptor*> inputCollections);
 
-  /// \brief Special case of xiiCollectionUtils::MergeCollections which outputs unique entries from input collection into the result collection
+  /// Special case of xiiCollectionUtils::MergeCollections which outputs unique entries from input collection into the result collection
   XII_CORE_DLL void DeDuplicateEntries(xiiCollectionResourceDescriptor& ref_result, const xiiCollectionResourceDescriptor& input);
 
-  /// \brief Extracts info (i.e. resource ID as file path) from the passed handle and adds it as a new resource entry. Does not add an entry if the
+  /// Extracts info (i.e. resource ID as file path) from the passed handle and adds it as a new resource entry. Does not add an entry if the
   /// resource handle is not valid.
   ///
   /// The resource type identifier must be passed explicity as szAssetTypeName (see xiiResourceManager::RegisterResourceForAssetType). To determine the

@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-/// \brief This class provides functionality to capture images from the GPU, typically used for screenshots, debugging or analysis purposes.
+/// This class provides functionality to capture images from the GPU, typically used for screenshots, debugging or analysis purposes.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALImageCapture
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALImageCapture);
@@ -21,16 +21,16 @@ public:
   xiiGALImageCapture(xiiSharedPtr<xiiGALDevice> pDevice);
   ~xiiGALImageCapture();
 
-  /// \brief Retrieves the device associated with this image capture instance.
+  /// Retrieves the device associated with this image capture instance.
   [[nodiscard]] xiiSharedPtr<xiiGALDevice> GetDevice() const { return m_pDevice; }
 
-  /// \brief Retrieves the oldest available capture texture, if any.
+  /// Retrieves the oldest available capture texture, if any.
   [[nodiscard]] CaptureDescription GetCapture();
 
-  /// \brief Checks if there is a texture available for capture.
+  /// Checks if there is a texture available for capture.
   [[nodiscard]] bool HasCapture();
 
-  /// \brief Returns the number of textures that are currently available for capture.
+  /// Returns the number of textures that are currently available for capture.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetPendingCaptureCount() const
   {
     XII_LOCK(m_PendingTexturesMutex);
@@ -38,13 +38,13 @@ public:
     return m_PendingTextures.GetCount();
   }
 
-  /// \brief Captures the current frame from the specified swap chain and command list.
+  /// Captures the current frame from the specified swap chain and command list.
   void Capture(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiUInt32 uiFrameIndex);
 
-  /// \brief Waits on the capture fence until the completed value is reached.
+  /// Waits on the capture fence until the completed value is reached.
   void WaitForCompletedValue();
 
-  /// \brief Recycles a staging texture that is no longer needed.
+  /// Recycles a staging texture that is no longer needed.
   void RecycleStagingTexture(xiiSharedPtr<xiiGALTexture>&& pStagingTexture);
 
 private:

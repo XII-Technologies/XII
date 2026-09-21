@@ -4,22 +4,22 @@
 
 /// \file
 
-/// \brief Used in conjunction with XII_ENABLED and XII_DISABLED for safe checks. Define something to XII_ON or XII_OFF to work with those macros.
+/// Used in conjunction with XII_ENABLED and XII_DISABLED for safe checks. Define something to XII_ON or XII_OFF to work with those macros.
 #define XII_ON =
 
-/// \brief Used in conjunction with XII_ENABLED and XII_DISABLED for safe checks. Define something to XII_ON or XII_OFF to work with those macros.
+/// Used in conjunction with XII_ENABLED and XII_DISABLED for safe checks. Define something to XII_ON or XII_OFF to work with those macros.
 #define XII_OFF !
 
-/// \brief Used in conjunction with XII_ON and XII_OFF for safe checks. Use #if XII_ENABLED(x) or #if XII_DISABLED(x) in conditional compilation.
+/// Used in conjunction with XII_ON and XII_OFF for safe checks. Use #if XII_ENABLED(x) or #if XII_DISABLED(x) in conditional compilation.
 #define XII_ENABLED(x) (1 XII_PP_CONCAT(x, =) 1)
 
-/// \brief Used in conjunction with XII_ON and XII_OFF for safe checks. Use #if XII_ENABLED(x) or #if XII_DISABLED(x) in conditional compilation.
+/// Used in conjunction with XII_ON and XII_OFF for safe checks. Use #if XII_ENABLED(x) or #if XII_DISABLED(x) in conditional compilation.
 #define XII_DISABLED(x) (1 XII_PP_CONCAT(x, =) 2)
 
-/// \brief Checks whether x AND y are both defined as XII_ON or XII_OFF. Usually used to check whether configurations overlap, to issue an error.
+/// Checks whether x AND y are both defined as XII_ON or XII_OFF. Usually used to check whether configurations overlap, to issue an error.
 #define XII_IS_NOT_EXCLUSIVE(x, y) ((1 XII_PP_CONCAT(x, =) 1) == (1 XII_PP_CONCAT(y, =) 1))
 
-/// \brief Checks that exactly one of x, y and z is defined as XII_ON.
+/// Checks that exactly one of x, y and z is defined as XII_ON.
 #define XII_IS_NOT_EXCLUSIVE3(x, y, z) ((XII_ENABLED(x) + XII_ENABLED(y) + XII_ENABLED(z)) != 1)
 
 
@@ -82,7 +82,7 @@
 #define XII_USE_STRING_VALIDATION XII_OFF
 
 // Hashed String
-/// \brief Ref counting on hashed strings adds the possibility to cleanup unused strings. Since ref counting has a performance overhead it is disabled by default.
+/// Ref counting on hashed strings adds the possibility to cleanup unused strings. Since ref counting has a performance overhead it is disabled by default.
 #define XII_HASHED_STRING_REF_COUNTING XII_OFF
 
 // Math Debug Checks

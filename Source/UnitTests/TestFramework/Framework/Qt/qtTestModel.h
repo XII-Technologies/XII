@@ -12,7 +12,7 @@
 
 class xiiQtTestFramework;
 
-/// \brief Helper class that stores the test hierarchy used in xiiQtTestModel.
+/// Helper class that stores the test hierarchy used in xiiQtTestModel.
 class xiiQtTestModelEntry
 {
 public:
@@ -52,7 +52,7 @@ private:
   std::deque<xiiQtTestModelEntry*> m_SubEntries;
 };
 
-/// \brief A Model that lists all unit tests and sub-tests in a tree.
+/// A Model that lists all unit tests and sub-tests in a tree.
 class XII_TEST_DLL xiiQtTestModel : public QAbstractItemModel
 {
   Q_OBJECT

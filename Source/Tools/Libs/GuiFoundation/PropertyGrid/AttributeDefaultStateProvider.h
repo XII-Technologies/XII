@@ -6,7 +6,7 @@
 
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
 
-/// \brief This is the fall back default state provider which handles the default state set via the xiiDefaultAttribute on the reflected type.
+/// This is the fall back default state provider which handles the default state set via the xiiDefaultAttribute on the reflected type.
 class XII_GUIFOUNDATION_DLL xiiAttributeDefaultStateProvider : public xiiDefaultStateProvider
 {
 public:

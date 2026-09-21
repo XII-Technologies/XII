@@ -9,7 +9,7 @@
 
 class xiiTempHashedString;
 
-/// \brief This class is optimized to take nearly no memory (sizeof(void*)) and to allow very fast checks whether two strings are identical.
+/// This class is optimized to take nearly no memory (sizeof(void*)) and to allow very fast checks whether two strings are identical.
 ///
 /// Internally only a reference to the string data is stored. The data itself is stored in a central location, where no duplicates are
 /// possible. Thus two identical strings will result in identical xiiHashedString objects, which makes equality comparisons very easy
@@ -39,7 +39,7 @@ public:
   using HashedType    = StringStorage::Iterator;
 
 #if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
-  /// \brief This will remove all hashed strings from the central storage, that are not referenced anymore.
+  /// This will remove all hashed strings from the central storage, that are not referenced anymore.
   ///
   /// All hashed string values are stored in a central location and xiiHashedString just references them. Those strings are then
   /// reference counted. Once some string is not referenced anymore, its ref count reaches zero, but it will not be removed from
@@ -53,27 +53,27 @@ public:
 
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
-  /// \brief Initializes this string to the empty string.
+  /// Initializes this string to the empty string.
   xiiHashedString(); // [tested]
 
-  /// \brief Copies the given xiiHashedString.
+  /// Copies the given xiiHashedString.
   xiiHashedString(const xiiHashedString& rhs); // [tested]
 
-  /// \brief Moves the given xiiHashedString.
+  /// Moves the given xiiHashedString.
   xiiHashedString(xiiHashedString&& rhs); // [tested]
 
 #if XII_ENABLED(XII_HASHED_STRING_REF_COUNTING)
-  /// \brief Releases the reference to the internal data. Does NOT deallocate any data, even if this held the last reference to some string.
+  /// Releases the reference to the internal data. Does NOT deallocate any data, even if this held the last reference to some string.
   ~xiiHashedString();
 #endif
 
-  /// \brief Copies the given xiiHashedString.
+  /// Copies the given xiiHashedString.
   void operator=(const xiiHashedString& rhs); // [tested]
 
-  /// \brief Moves the given xiiHashedString.
+  /// Moves the given xiiHashedString.
   void operator=(xiiHashedString&& rhs); // [tested]
 
-  /// \brief Assigning a new string from a string constant is a slow operation, but the hash computation can happen at compile time.
+  /// Assigning a new string from a string constant is a slow operation, but the hash computation can happen at compile time.
   ///
   /// If you need to create an object to compare xiiHashedString objects against, prefer to use xiiTempHashedString. It will only compute
   /// the strings hash value, but does not require any thread synchronization.
@@ -83,54 +83,54 @@ public:
   template <size_t N>
   void Assign(char (&string)[N]) = delete;
 
-  /// \brief Assigning a new string from a non-hashed string is a very slow operation, this should be used rarely.
+  /// Assigning a new string from a non-hashed string is a very slow operation, this should be used rarely.
   ///
   /// If you need to create an object to compare xiiHashedString objects against, prefer to use xiiTempHashedString. It will only compute
   /// the strings hash value, but does not require any thread synchronization.
   void Assign(xiiStringView sString); // [tested]
 
-  /// \brief Comparing whether two hashed strings are identical is just a pointer comparison. This operation is what xiiHashedString is
+  /// Comparing whether two hashed strings are identical is just a pointer comparison. This operation is what xiiHashedString is
   /// optimized for.
   ///
   /// \note Comparing between xiiHashedString objects is always error-free, so even if two string had the same hash value, although they are
   /// different, this comparison function will not report they are the same.
   bool operator==(const xiiHashedString& rhs) const; // [tested]
 
-  /// \brief Compares this string object to a xiiTempHashedString object. This should be used whenever some object needs to be found
+  /// Compares this string object to a xiiTempHashedString object. This should be used whenever some object needs to be found
   /// and the string to compare against is not yet a xiiHashedString object.
   bool operator==(const xiiTempHashedString& rhs) const; // [tested]
 
-  /// \brief This operator allows sorting objects by hash value, not by alphabetical order.
+  /// This operator allows sorting objects by hash value, not by alphabetical order.
   bool operator<(const xiiHashedString& rhs) const; // [tested]
 
-  /// \brief This operator allows sorting objects by hash value, not by alphabetical order.
+  /// This operator allows sorting objects by hash value, not by alphabetical order.
   bool operator<(const xiiTempHashedString& rhs) const; // [tested]
 
-  /// \brief Gives access to the actual string data, so you can do all the typical (read-only) string operations on it.
+  /// Gives access to the actual string data, so you can do all the typical (read-only) string operations on it.
   const xiiString& GetString() const; // [tested]
 
-  /// \brief Gives access to the actual string data, so you can do all the typical (read-only) string operations on it.
+  /// Gives access to the actual string data, so you can do all the typical (read-only) string operations on it.
   const char* GetData() const;
 
-  /// \brief Returns the hash of the stored string.
+  /// Returns the hash of the stored string.
   xiiUInt64 GetHash() const; // [tested]
 
-  /// \brief Returns whether the string is empty.
+  /// Returns whether the string is empty.
   bool IsEmpty() const;
 
-  /// \brief Resets the string to the empty string.
+  /// Resets the string to the empty string.
   void Clear();
 
-  /// \brief Returns a string view to this string's data.
+  /// Returns a string view to this string's data.
   XII_ALWAYS_INLINE operator xiiStringView() const { return GetString().GetView(); }
 
-  /// \brief Returns a string view to this string's data.
+  /// Returns a string view to this string's data.
   XII_ALWAYS_INLINE xiiStringView GetView() const { return GetString().GetView(); }
 
-  /// \brief Returns a pointer to the internal Utf8 string.
+  /// Returns a pointer to the internal Utf8 string.
   XII_ALWAYS_INLINE operator const char*() const { return GetData(); }
 
-  // \brief Since we allow to cast implicitly to const char*, we need these overloads to not do a pure pointer comparison.
+  // Since we allow to cast implicitly to const char*, we need these overloads to not do a pure pointer comparison.
   XII_ALWAYS_INLINE bool operator==(const char* szString) const { return GetString().GetView() == xiiStringView(szString); }
 
 private:
@@ -140,21 +140,21 @@ private:
   HashedType m_Data;
 };
 
-// \brief Since we allow to cast implicitly to const char*, we need these overloads to not do a pure pointer comparison.
+// Since we allow to cast implicitly to const char*, we need these overloads to not do a pure pointer comparison.
 XII_ALWAYS_INLINE bool operator==(const char* szString, const xiiHashedString& rhs)
 {
   return rhs.GetView() == xiiStringView(szString);
 }
 
-/// \brief Helper function to create a xiiHashedString. This can be used to initialize static hashed string variables.
+/// Helper function to create a xiiHashedString. This can be used to initialize static hashed string variables.
 template <size_t N>
 xiiHashedString xiiMakeHashedString(const char (&string)[N]);
 
-/// \brief Helper function to create a xiiHashedString. This can be used to initialize static hashed string variables.
+/// Helper function to create a xiiHashedString. This can be used to initialize static hashed string variables.
 xiiHashedString xiiMakeHashedString(xiiStringView sString);
 
 
-/// \brief A class to use together with xiiHashedString for quick comparisons with temporary strings that need not be stored further.
+/// A class to use together with xiiHashedString for quick comparisons with temporary strings that need not be stored further.
 ///
 /// Whenever you have objects that use xiiHashedString members and you need to compare against them with some temporary string,
 /// prefer to use xiiTempHashedString instead of xiiHashedString, as the latter requires thread synchronization to actually set up the
@@ -166,53 +166,53 @@ class XII_FOUNDATION_DLL xiiTempHashedString
 public:
   xiiTempHashedString(); // [tested]
 
-  /// \brief Creates a xiiTempHashedString object from the given string constant. The hash can be computed at compile time.
+  /// Creates a xiiTempHashedString object from the given string constant. The hash can be computed at compile time.
   template <size_t N>
   constexpr xiiTempHashedString(const char (&string)[N]); // [tested]
 
   template <size_t N>
   xiiTempHashedString(char (&string)[N]) = delete;
 
-  /// \brief Creates a xiiTempHashedString object from the given string. Computes the hash of the given string during runtime, which might be slow.
+  /// Creates a xiiTempHashedString object from the given string. Computes the hash of the given string during runtime, which might be slow.
   explicit xiiTempHashedString(xiiStringView sString); // [tested]
 
-  /// \brief Copies the hash from rhs.
+  /// Copies the hash from rhs.
   xiiTempHashedString(const xiiTempHashedString& rhs); // [tested]
 
-  /// \brief Copies the hash from the xiiHashedString.
+  /// Copies the hash from the xiiHashedString.
   xiiTempHashedString(const xiiHashedString& rhs); // [tested]
 
   explicit xiiTempHashedString(xiiUInt32 uiHash) = delete;
 
-  /// \brief Copies the hash from the 64 bit integer.
+  /// Copies the hash from the 64 bit integer.
   explicit xiiTempHashedString(xiiUInt64 uiHash);
 
-  /// \brief The hash of the given string can be computed at compile time.
+  /// The hash of the given string can be computed at compile time.
   template <size_t N>
   void operator=(const char (&string)[N]); // [tested]
 
-  /// \brief Computes and stores the hash of the given string during runtime, which might be slow.
+  /// Computes and stores the hash of the given string during runtime, which might be slow.
   void operator=(xiiStringView sString); // [tested]
 
-  /// \brief Copies the hash from rhs.
+  /// Copies the hash from rhs.
   void operator=(const xiiTempHashedString& rhs); // [tested]
 
-  /// \brief Copies the hash from the xiiHashedString.
+  /// Copies the hash from the xiiHashedString.
   void operator=(const xiiHashedString& rhs); // [tested]
 
-  /// \brief Compares the two objects by their hash value. Might report incorrect equality, if two strings have the same hash value.
+  /// Compares the two objects by their hash value. Might report incorrect equality, if two strings have the same hash value.
   bool operator==(const xiiTempHashedString& rhs) const; // [tested]
 
-  /// \brief This operator allows soring objects by hash value, not by alphabetical order.
+  /// This operator allows soring objects by hash value, not by alphabetical order.
   bool operator<(const xiiTempHashedString& rhs) const; // [tested]
 
-  /// \brief Checks whether the xiiTempHashedString represents the empty string.
+  /// Checks whether the xiiTempHashedString represents the empty string.
   bool IsEmpty() const; // [tested]
 
-  /// \brief Resets the string to the empty string.
+  /// Resets the string to the empty string.
   void Clear(); // [tested]
 
-  /// \brief Returns the hash of the stored string.
+  /// Returns the hash of the stored string.
   xiiUInt64 GetHash() const; // [tested]
 
 private:

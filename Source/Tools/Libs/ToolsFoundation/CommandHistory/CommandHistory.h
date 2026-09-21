@@ -49,13 +49,13 @@ struct xiiCommandHistoryEvent
   const xiiDocument* m_pDocument;
 };
 
-/// \brief Stores the undo / redo stacks of transactions done on a document.
+/// Stores the undo / redo stacks of transactions done on a document.
 class XII_TOOLSFOUNDATION_DLL xiiCommandHistory
 {
 public:
   xiiEvent<const xiiCommandHistoryEvent&, xiiMutex> m_Events;
 
-  // \brief Storage for the command history so it can be swapped when using multiple sub documents.
+  // Storage for the command history so it can be swapped when using multiple sub documents.
   class Storage : public xiiRefCounted
   {
   public:
@@ -86,11 +86,11 @@ public:
   void CancelTransaction() { EndTransaction(true); }
   void FinishTransaction() { EndTransaction(false); }
 
-  /// \brief Returns true, if between StartTransaction / EndTransaction. False during Undo/Redo.
+  /// Returns true, if between StartTransaction / EndTransaction. False during Undo/Redo.
   bool IsInTransaction() const { return !m_pHistoryStorage->m_TransactionStack.IsEmpty(); }
   bool IsInUndoRedo() const { return m_bIsInUndoRedo; }
 
-  /// \brief Call this to start a series of transactions that typically change the same value over and over (e.g. dragging an object to a position).
+  /// Call this to start a series of transactions that typically change the same value over and over (e.g. dragging an object to a position).
   /// Every time a new transaction is started, the previous one is undone first. At the end of a series of temporary transactions, only the last
   /// transaction will be stored as a single undo step. Call this first and then start a transaction inside it.
   void BeginTemporaryCommands(xiiStringView sDisplayString, bool bFireEventsWhenUndoingTempCommands = false);

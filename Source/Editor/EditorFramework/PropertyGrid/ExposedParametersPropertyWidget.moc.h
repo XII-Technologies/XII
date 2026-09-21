@@ -13,7 +13,7 @@ class QToolButton;
 class QAction;
 struct xiiPhantomRttiManagerEvent;
 
-/// \brief Helper accessor to pretend all exposed parameters always have a value defined.
+/// Helper accessor to pretend all exposed parameters always have a value defined.
 /// The exposed parameters are stored as just a sparse map. Only the elements that are overwritten from their defaults are actually stored in the component.
 /// Thus, requesting the value of an exposed parameter that has not been overwritten results in failure.
 /// To fix this, this class will automatically return the default value of an exposed parameter.
@@ -44,7 +44,7 @@ public:
   const xiiAbstractProperty* m_pParameterSourceProp = nullptr;
 };
 
-/// \brief Accessor to pretend the exposed parameters map property is an object of the generated phantom type.
+/// Accessor to pretend the exposed parameters map property is an object of the generated phantom type.
 /// This fake type accessor is created by taking the property name and redirecting to the exposed parameter map's element under that name.
 /// As long as no code path is looking at the actual type of the object this works with any property widget.
 /// An xiiQtTypeWidget constructed with the exposed parameter type and this accessor will produce a normal type widget that looks like the exposed parameter type but redirects all read / writes into the exposed parameter map property.
@@ -70,11 +70,11 @@ protected:
   xiiStatus GetSubValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant& out_value);
   xiiStatus SetSubValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiDelegate<xiiStatus(xiiVariant& subValue)>& func);
 
-  /// \brief Make sure that any property retrieved via this accessor matches the expected property type to make sure no invalid data is passed into one of the property widgets generated under the type widget.
+  /// Make sure that any property retrieved via this accessor matches the expected property type to make sure no invalid data is passed into one of the property widgets generated under the type widget.
   void PatchPropertyType(xiiVariant& ref_value, const xiiAbstractProperty* pProp);
 };
 
-/// \brief Custom widget for properties annotated with the xiiExposedParametersAttribute attribute.
+/// Custom widget for properties annotated with the xiiExposedParametersAttribute attribute.
 /// Technically exposed parameters are stored as an xiiVariantDictionary but that leaves much to be desired for usability.
 /// This class uses xiiExposedParameterCommandAccessor to always show all exposed parameters in the dictionary even if none were overwritten.
 /// Additionally, xiiExposedParametersAsTypeCommandAccessor is used to project the exposed parameters into a phantom type widget to make editing exposed parameters indistinguishable from editing a normal type object.

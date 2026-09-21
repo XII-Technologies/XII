@@ -12,7 +12,7 @@
 
 using xiiConfigFileResourceHandle = xiiTypedResourceHandle<class xiiConfigFileResource>;
 
-/// \brief This resource loads config files containing key/value pairs
+/// This resource loads config files containing key/value pairs
 ///
 /// The config files usually use the file extension '.xiiConfig'.
 ///
@@ -55,34 +55,34 @@ public:
   xiiConfigFileResource();
   ~xiiConfigFileResource();
 
-  /// \brief Returns the 'int' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
+  /// Returns the 'int' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
   xiiInt32 GetInt(xiiTempHashedString sName) const;
 
-  /// \brief Returns the 'float' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
+  /// Returns the 'float' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
   float GetFloat(xiiTempHashedString sName) const;
 
-  /// \brief Returns the 'double' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
+  /// Returns the 'double' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
   double GetDouble(xiiTempHashedString sName) const;
 
-  /// \brief Returns the 'bool' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
+  /// Returns the 'bool' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
   bool GetBool(xiiTempHashedString sName) const;
 
-  /// \brief Returns the 'string' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
+  /// Returns the 'string' variable with the given name. Logs an error, if the variable doesn't exist in the config file.
   const char* GetString(xiiTempHashedString sName) const;
 
-  /// \brief Returns the 'int' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
+  /// Returns the 'int' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
   xiiInt32 GetInt(xiiTempHashedString sName, xiiInt32 iFallback) const;
 
-  /// \brief Returns the 'float' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
+  /// Returns the 'float' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
   float GetFloat(xiiTempHashedString sName, float fFallback) const;
 
-  /// \brief Returns the 'double' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
+  /// Returns the 'double' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
   double GetDouble(xiiTempHashedString sName, double fFallback) const;
 
-  /// \brief Returns the 'bool' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
+  /// Returns the 'bool' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
   bool GetBool(xiiTempHashedString sName, bool bFallback) const;
 
-  /// \brief Returns the 'string' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
+  /// Returns the 'string' variable with the given name. Returns the 'fallback' value, if the variable doesn't exist in the config file.
   const char* GetString(xiiTempHashedString sName, const char* szFallback) const;
 
 protected:

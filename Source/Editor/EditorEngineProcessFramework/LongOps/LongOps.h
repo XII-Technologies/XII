@@ -12,7 +12,7 @@ class xiiProgress;
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Proxy long ops represent a long operation on the editor side.
+/// Proxy long ops represent a long operation on the editor side.
 ///
 /// Proxy long ops have little functionality other than naming which xiiLongOpWorker to execute
 /// in the engine process and to feed it with the necessary parameters.
@@ -23,20 +23,20 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiLongOpProxy : public xiiReflectedC
   XII_ADD_DYNAMIC_REFLECTION(xiiLongOpProxy, xiiReflectedClass);
 
 public:
-  /// \brief Called once by xiiLongOpControllerManager::RegisterLongOp() to inform the proxy
+  /// Called once by xiiLongOpControllerManager::RegisterLongOp() to inform the proxy
   /// to which xiiDocument and component (xiiDocumentObject) it is linked.
   virtual void InitializeRegistered(const xiiUuid& documentGuid, const xiiUuid& componentGuid) {}
 
-  /// \brief Called by the xiiQtLongOpsPanel to determine the display string to be shown in the UI.
+  /// Called by the xiiQtLongOpsPanel to determine the display string to be shown in the UI.
   virtual xiiStringView GetDisplayName() const = 0;
 
-  /// \brief Called every time the long op shall be executed
+  /// Called every time the long op shall be executed
   /// \param out_sReplicationOpType must name the xiiLongOpWorker that shall be executed in the engine process.
   /// \param config can be optionally written to. The data is transmitted to the xiiLongOpWorker on the other side
   /// and fed to it in xiiLongOpWorker::InitializeExecution().
   virtual void GetReplicationInfo(xiiStringBuilder& out_sReplicationOpType, xiiStreamWriter& inout_config) = 0;
 
-  /// \brief Called once the corresponding xiiLongOpWorker has finished.
+  /// Called once the corresponding xiiLongOpWorker has finished.
   /// \param result Whether the operation succeeded or failed (e.g. via user cancellation).
   /// \param resultData Optional data written by xiiLongOpWorker::Execute().
   virtual void Finalize(xiiResult result, const xiiDataBuffer& resultData) {}
@@ -44,7 +44,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Worker long ops are executed by the editor engine process.
+/// Worker long ops are executed by the editor engine process.
 ///
 /// They typically do the actual long processing. Since they run in the engine process, they have access
 /// to the runtime scene graph and resources but not the editor representation of the scene.
@@ -56,13 +56,13 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiLongOpWorker : public xiiReflected
   XII_ADD_DYNAMIC_REFLECTION(xiiLongOpWorker, xiiReflectedClass);
 
 public:
-  /// \brief Called within the engine processes main thread.
+  /// Called within the engine processes main thread.
   /// The function may lock the xiiWorld from the given scene document and extract vital information.
   /// It should try to be as quick as possible and leave the heavy lifting to Execute(), which will run on a background thread.
   /// If this function return failure, the long op is canceled right away.
   virtual xiiResult InitializeExecution(xiiStreamReader& ref_config, const xiiUuid& documentGuid) { return XII_SUCCESS; }
 
-  /// \brief Executed in a separete thread after InitializeExecution(). This should do the work that takes a while.
+  /// Executed in a separete thread after InitializeExecution(). This should do the work that takes a while.
   ///
   /// This function may write the result data directly to disk. Everything that is written to \a proxydata
   /// will be transmitted back to the proxy long op and given to xiiLongOpProxy::Finalize(). Since this requires IPC bandwidth

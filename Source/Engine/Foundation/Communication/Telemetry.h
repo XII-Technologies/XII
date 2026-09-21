@@ -15,10 +15,10 @@
 class XII_FOUNDATION_DLL xiiTelemetry
 {
 public:
-  /// \brief The port over which xiiTelemetry will connect.
+  /// The port over which xiiTelemetry will connect.
   static xiiUInt16 s_uiPort /* = 1040*/;
 
-  /// \brief Defines how the xiiTelemetry system was configured.
+  /// Defines how the xiiTelemetry system was configured.
   enum ConnectionMode
   {
     None,   ///< Not configured yet, at all.
@@ -26,7 +26,7 @@ public:
     Client, ///< Set up as a Client, i.e. this is a tool that gathers information from a Server, usually for debugging/inspection use cases.
   };
 
-  /// \brief Describes how to send messages.
+  /// Describes how to send messages.
   enum TransmitMode
   {
     Reliable,   ///< Messages should definitely arrive at the target, if necessary they are send several times, until the target acknowledged it.
@@ -37,7 +37,7 @@ public:
   /// \name Connection Configuration
   /// @{
 
-  /// \brief Starts a connection as a 'Client' to one server.
+  /// Starts a connection as a 'Client' to one server.
   ///
   /// \param szConnectTo String that contains a host name or IP address to connect to. If empty, 'localhost' is used.
   ///
@@ -47,12 +47,12 @@ public:
   /// This function will set the xiiTelemetry connection mode to 'Client'. This is mutually exclusive with CreateServer().
   static xiiResult ConnectToServer(xiiStringView sConnectTo = {});
 
-  /// \brief Opens a connection as a server.
+  /// Opens a connection as a server.
   ///
   /// Other applications can then connect to this application using ConnectToServer() with the IP of this machine.
   static void CreateServer();
 
-  /// \brief Closes any connection previously opened using ConnectToServer() or CreateServer().
+  /// Closes any connection previously opened using ConnectToServer() or CreateServer().
   ///
   /// This will remove all queued incoming and outgoing messages (though it might send some of them still).
   /// It will not reset the state of which messages are filtered out or which callbacks to fire.
@@ -77,37 +77,37 @@ public:
   /// \name Querying State
   /// @{
 
-  /// \brief Returns whether the telemetry system is set up as Server, Client or not initialized at all.
+  /// Returns whether the telemetry system is set up as Server, Client or not initialized at all.
   static ConnectionMode GetConnectionMode() { return s_ConnectionMode; }
 
-  /// \brief Returns whether a Client has an active connection to a Server.
+  /// Returns whether a Client has an active connection to a Server.
   static bool IsConnectedToServer() { return s_bConnectedToServer; }
 
-  /// \brief Returns whether a Server has an active connection to at least one Client.
+  /// Returns whether a Server has an active connection to at least one Client.
   static bool IsConnectedToClient() { return s_bConnectedToClient; }
 
-  /// \brief Returns whether a connection to another application has been made. Does not differentiate between Server and Client mode.
+  /// Returns whether a connection to another application has been made. Does not differentiate between Server and Client mode.
   static bool IsConnectedToOther();
 
-  /// \brief Returns the last round trip time ('Ping') to the Server. Only meaningful if there is an active connection (see IsConnectedToServer() ).
+  /// Returns the last round trip time ('Ping') to the Server. Only meaningful if there is an active connection (see IsConnectedToServer() ).
   static xiiTime GetPingToServer() { return s_PingToServer; }
 
-  /// \brief Returns the name of the machine on which the Server is running. Only meaningful if there is an active connection (see
+  /// Returns the name of the machine on which the Server is running. Only meaningful if there is an active connection (see
   /// IsConnectedToServer() ).
   static xiiStringView GetServerName() { return s_sServerName; }
 
-  /// \brief Sets the name of the telemetry server. This is broadcast to connected clients, which can display this string for usability.
+  /// Sets the name of the telemetry server. This is broadcast to connected clients, which can display this string for usability.
   ///
   /// Usually this would be used to send the application name, to make it easier to see to which app the tool is connected,
   /// but setting a custom name can be used to add important details, e.g. whether the app is running in single-player or multi-player mode etc.
   /// The server name can be changed at any time.
   static void SetServerName(xiiStringView sName);
 
-  /// \brief Returns the IP address of the machine on which the Server is running. Only meaningful if there is an active connection (see
+  /// Returns the IP address of the machine on which the Server is running. Only meaningful if there is an active connection (see
   /// IsConnectedToServer() ).
   static xiiStringView GetServerIP() { return s_sServerIP; }
 
-  /// \brief Returns a 'unique' ID for the application instance to which this Client is connected.
+  /// Returns a 'unique' ID for the application instance to which this Client is connected.
   ///
   /// Only meaningful if there is an active connection (see IsConnectedToServer() ).
   /// This can be used when a connection got lost and a Client had to reconnect to the Server, to check whether the instance that the Client connected
@@ -115,7 +115,7 @@ public:
   /// and start from scratch.
   static xiiUInt32 GetServerID() { return s_uiServerID; }
 
-  /// \brief Returns the internal mutex used to synchronize all telemetry data access.
+  /// Returns the internal mutex used to synchronize all telemetry data access.
   ///
   /// This can be used to block all threads from accessing telemetry data, thus stopping the application.
   /// This can be useful when you want to implement some operation that is fully synchronous with some external tool and you want to
@@ -127,7 +127,7 @@ public:
   /// \name Processing Messages
   /// @{
 
-  /// \brief Checks whether any message for the system with the given ID exists and returns that.
+  /// Checks whether any message for the system with the given ID exists and returns that.
   ///
   /// If no message for the given system is available, XII_FAILURE is returned.
   /// This function will not poll the network to check whether new messages arrived.
@@ -137,7 +137,7 @@ public:
   /// Also it might fill up other message queues which might lead to messages getting discarded.
   static xiiResult RetrieveMessage(xiiUInt32 uiSystemID, xiiTelemetryMessage& out_message);
 
-  /// \brief Polls the network for new incoming messages and ensures outgoing messages are sent.
+  /// Polls the network for new incoming messages and ensures outgoing messages are sent.
   ///
   /// Usually it is not necessary to call this function manually, as a worker thread will do that periodically already.
   /// However, if you are waiting for a specific message (see RetrieveMessage() ), you can call this function in a loop
@@ -149,10 +149,10 @@ public:
 
   static void AcceptMessagesForSystem(xiiUInt32 uiSystemID, bool bAccept, ProcessMessagesCallback callback = nullptr, void* pPassThrough = nullptr);
 
-  /// \brief Call this once per frame to process queued messages and to send the PerFrameUpdate event.
+  /// Call this once per frame to process queued messages and to send the PerFrameUpdate event.
   static void PerFrameUpdate();
 
-  /// \brief Specifies how many reliable messages from a system might get queued when no recipient is available yet.
+  /// Specifies how many reliable messages from a system might get queued when no recipient is available yet.
   ///
   /// \param uiSystemID The ID for the system that sends the messages.
   /// \param uiMaxQueued The maximum number of reliable messages that get queued and delivered later, once
@@ -182,10 +182,10 @@ public:
 
   using xiiEventTelemetry = xiiEvent<const TelemetryEventData&, xiiMutex>;
 
-  /// \brief Adds an event handler that is called for every xiiTelemetry event.
+  /// Adds an event handler that is called for every xiiTelemetry event.
   static void AddEventHandler(xiiEventTelemetry::Handler handler) { s_TelemetryEvents.AddEventHandler(handler); }
 
-  /// \brief Removes a previously added event handler.
+  /// Removes a previously added event handler.
   static void RemoveEventHandler(xiiEventTelemetry::Handler handler) { s_TelemetryEvents.RemoveEventHandler(handler); }
 
   /// @}

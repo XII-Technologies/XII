@@ -100,10 +100,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 struct xiiComparePanels
 {
-  /// \brief Returns true if a is less than b
+  /// Returns true if a is less than b
   XII_ALWAYS_INLINE bool Less(const xiiDynamicMenuAction::Item& p1, const xiiDynamicMenuAction::Item& p2) const { return p1.m_sDisplay < p2.m_sDisplay; }
 
-  /// \brief Returns true if a is equal to b
+  /// Returns true if a is equal to b
   XII_ALWAYS_INLINE bool Equal(const xiiDynamicMenuAction::Item& p1, const xiiDynamicMenuAction::Item& p2) const
   {
     return p1.m_sDisplay == p2.m_sDisplay;

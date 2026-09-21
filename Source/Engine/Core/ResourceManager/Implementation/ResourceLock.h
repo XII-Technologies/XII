@@ -4,7 +4,7 @@
 
 #include <Core/ResourceManager/Implementation/Declarations.h>
 
-/// \brief Helper class to acquire and release a resource safely.
+/// Helper class to acquire and release a resource safely.
 ///
 /// The constructor calls xiiResourceManager::BeginAcquireResource, the destructor makes sure to call xiiResourceManager::EndAcquireResource.
 /// The instance of this class can be used like a pointer to the resource.

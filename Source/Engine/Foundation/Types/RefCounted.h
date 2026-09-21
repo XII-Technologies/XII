@@ -7,7 +7,7 @@
 class XII_FOUNDATION_DLL xiiRefCountingImpl
 {
 public:
-  /// \brief Constructor
+  /// Constructor
   xiiRefCountingImpl() = default; // [tested]
 
   xiiRefCountingImpl(const xiiRefCountingImpl& rhs) // [tested]
@@ -24,25 +24,25 @@ public:
     // Do not copy the reference count.
   }
 
-  /// \brief Increments the reference counter. Returns the new reference count.
+  /// Increments the reference counter. Returns the new reference count.
   inline xiiUInt32 AddRef() const // [tested]
   {
     return xiiAtomicUtils::Increment(m_uiRefCount);
   }
 
-  /// \brief Decrements the reference counter. Returns the new reference count.
+  /// Decrements the reference counter. Returns the new reference count.
   inline xiiUInt32 ReleaseRef() const // [tested]
   {
     return xiiAtomicUtils::Decrement(m_uiRefCount);
   }
 
-  /// \brief Returns true if the reference count is greater than 0, false otherwise.
+  /// Returns true if the reference count is greater than 0, false otherwise.
   inline bool IsReferenced() const // [tested]
   {
     return m_uiRefCount > 0;
   }
 
-  /// \brief Returns the current reference count.
+  /// Returns the current reference count.
   inline xiiUInt32 GetRefCount() const // [tested]
   {
     return m_uiRefCount;
@@ -52,15 +52,15 @@ private:
   mutable xiiUInt32 m_uiRefCount = 0U; ///< Stores the current reference count.
 };
 
-/// \brief Base class for reference counted objects.
+/// Base class for reference counted objects.
 class XII_FOUNDATION_DLL xiiRefCounted : public xiiRefCountingImpl
 {
 public:
-  /// \brief Adds a virtual destructor.
+  /// Adds a virtual destructor.
   virtual ~xiiRefCounted() = default;
 };
 
-/// \brief Stores a pointer to a reference counted object and automatically increases / decreases the reference count.
+/// Stores a pointer to a reference counted object and automatically increases / decreases the reference count.
 ///
 /// Note that no automatic deletion etc. happens, this is just to have shared base functionality for reference
 /// counted objects. The actual action which, should happen once an object is no longer referenced, obliges
@@ -69,13 +69,13 @@ template <typename T>
 class xiiScopedRefPointer
 {
 public:
-  /// \brief Constructor.
+  /// Constructor.
   xiiScopedRefPointer() :
     m_pReferencedObject(nullptr)
   {
   }
 
-  /// \brief Constructor, increases the ref count of the given object.
+  /// Constructor, increases the ref count of the given object.
   xiiScopedRefPointer(T* pReferencedObject) :
     m_pReferencedObject(pReferencedObject)
   {
@@ -89,10 +89,10 @@ public:
     AddReferenceIfValid();
   }
 
-  /// \brief Destructor - releases the reference on the ref-counted object (if there is one).
+  /// Destructor - releases the reference on the ref-counted object (if there is one).
   ~xiiScopedRefPointer() { ReleaseReferenceIfValid(); }
 
-  /// \brief Assignment operator, decreases the ref count of the currently referenced object and increases the ref count of the newly
+  /// Assignment operator, decreases the ref count of the currently referenced object and increases the ref count of the newly
   /// assigned object.
   void operator=(T* pNewReference)
   {
@@ -106,7 +106,7 @@ public:
     AddReferenceIfValid();
   }
 
-  /// \brief Assignment operator, decreases the ref count of the currently referenced object and increases the ref count of the newly
+  /// Assignment operator, decreases the ref count of the currently referenced object and increases the ref count of the newly
   /// assigned object.
   void operator=(const xiiScopedRefPointer<T>& other)
   {
@@ -120,20 +120,20 @@ public:
     AddReferenceIfValid();
   }
 
-  /// \brief Returns the referenced object (may be nullptr).
+  /// Returns the referenced object (may be nullptr).
   operator const T*() const { return m_pReferencedObject; }
 
-  /// \brief Returns the referenced object (may be nullptr).
+  /// Returns the referenced object (may be nullptr).
   operator T*() { return m_pReferencedObject; }
 
-  /// \brief Returns the referenced object (may be nullptr).
+  /// Returns the referenced object (may be nullptr).
   const T* operator->() const
   {
     XII_ASSERT_DEV(m_pReferencedObject != nullptr, "Pointer is nullptr.");
     return m_pReferencedObject;
   }
 
-  /// \brief Returns the referenced object (may be nullptr)
+  /// Returns the referenced object (may be nullptr)
   T* operator->()
   {
     XII_ASSERT_DEV(m_pReferencedObject != nullptr, "Pointer is nullptr.");
@@ -141,7 +141,7 @@ public:
   }
 
 private:
-  /// \brief Internal helper function to add a reference on the current object (if != nullptr)
+  /// Internal helper function to add a reference on the current object (if != nullptr)
   inline void AddReferenceIfValid()
   {
     if (m_pReferencedObject != nullptr)
@@ -150,7 +150,7 @@ private:
     }
   }
 
-  /// \brief Internal helper function to release a reference on the current object (if != nullptr)
+  /// Internal helper function to release a reference on the current object (if != nullptr)
   inline void ReleaseReferenceIfValid()
   {
     if (m_pReferencedObject != nullptr)

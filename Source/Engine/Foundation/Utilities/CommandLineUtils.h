@@ -7,7 +7,7 @@
 #include <Foundation/Strings/String.h>
 #include <Foundation/Strings/StringBuilder.h>
 
-/// \brief This is a helper class to parse command lines.
+/// This is a helper class to parse command lines.
 ///
 /// Initialize it using SetCommandLine(). Then query for command line options using GetStringOption(), GetBoolOption(), GetIntOption()
 /// or GetFloatOption()
@@ -20,46 +20,46 @@ public:
     PreferOsArgs, ///< On Windows, ignore argc/argv and instead query the global arguments from the OS. Necessary to properly support Unicode strings in arguments.
   };
 
-  /// \brief Returns one global instance of xiiCommandLineUtils.
+  /// Returns one global instance of xiiCommandLineUtils.
   static xiiCommandLineUtils* GetGlobalInstance();
 
-  /// \brief Splits a string into the classic argc/argv string.
+  /// Splits a string into the classic argc/argv string.
   ///
   /// Useful for platforms where command line args come in as a single string.
   /// \param addExecutableDir
   ///   Adds executable path as first parameter (just as it would normally be in 'int main(argc, argv)').
   static void SplitCommandLineString(const char* szCommandString, bool bAddExecutableDir, xiiDynamicArray<xiiString>& out_args, xiiDynamicArray<const char*>& out_argsV);
 
-  /// \brief Initializes xiiCommandLineUtils from the parameter arguments that were passed to the application.
+  /// Initializes xiiCommandLineUtils from the parameter arguments that were passed to the application.
   void SetCommandLine(xiiUInt32 uiArgc, const char** pArgv, ArgMode mode = UseArgcArgv); // [tested]
 
-  /// \brief Overload for non-const argv versions.
+  /// Overload for non-const argv versions.
   void SetCommandLine(xiiUInt32 uiArgc, char** pArgv, ArgMode mode = UseArgcArgv)
   {
     SetCommandLine(uiArgc, const_cast<const char**>(pArgv), mode);
   }
 
-  /// \brief Initializes xiiCommandLineUtils from a list of already split up commands.
+  /// Initializes xiiCommandLineUtils from a list of already split up commands.
   void SetCommandLine(xiiArrayPtr<xiiString> commands);
 
-  /// \brief Initializes xiiCommandLineUtils by querying the command line parameters directly from the OS.
+  /// Initializes xiiCommandLineUtils by querying the command line parameters directly from the OS.
   ///
   /// This function is not available on all platforms.
   void SetCommandLine();
 
-  /// \brief Returns the split up command line.
+  /// Returns the split up command line.
   const xiiDynamicArray<xiiString>& GetCommandLineArray() const;
 
-  /// \brief Assembles the original command line from the split up string representation.
+  /// Assembles the original command line from the split up string representation.
   xiiString GetCommandLineString() const;
 
-  /// \brief Returns the total number of command line parameters (excluding the program path, which is often passed as the first parameter).
+  /// Returns the total number of command line parameters (excluding the program path, which is often passed as the first parameter).
   xiiUInt32 GetParameterCount() const; // [tested]
 
-  /// \brief Returns the n-th parameter string that was passed to the application.
+  /// Returns the n-th parameter string that was passed to the application.
   const xiiString& GetParameter(xiiUInt32 uiParam) const; // [tested]
 
-  /// \brief Returns the index at which the given option string can be found in the parameter list.
+  /// Returns the index at which the given option string can be found in the parameter list.
   ///
   /// \param szOption
   ///   The name of the command line option. Must start with a hyphen (-)
@@ -71,20 +71,20 @@ public:
   ///  Otherwise the index at which the option can be found. This can be passed to GetParameter() or GetStringOptionArguments().
   xiiInt32 GetOptionIndex(xiiStringView sOption, bool bCaseSensitive = false) const; // [tested]
 
-  /// \brief Returns whether the requested option is specified, at all.
+  /// Returns whether the requested option is specified, at all.
   bool HasOption(xiiStringView sOption, bool bCaseSensitive = false) const;
 
-  /// \brief Returns how many arguments follow behind the option with the name \a szOption.
+  /// Returns how many arguments follow behind the option with the name \a szOption.
   ///
   /// Everything that does not start with a hyphen is considered to be an additional parameter for the option.
   xiiUInt32 GetStringOptionArguments(xiiStringView sOption, bool bCaseSensitive = false) const; // [tested]
 
-  /// \brief Returns the n-th parameter to the command line option with the name \a szOption.
+  /// Returns the n-th parameter to the command line option with the name \a szOption.
   ///
   /// If the option does not exist or does not have that many parameters, \a szDefault is returned.
   xiiStringView GetStringOption(xiiStringView sOption, xiiUInt32 uiArgument = 0, xiiStringView sDefault = {}, bool bCaseSensitive = false) const; // [tested]
 
-  /// \brief Similar to GetStringOption() but assumes that the strings represent paths and concatenates the current working directory if a relative
+  /// Similar to GetStringOption() but assumes that the strings represent paths and concatenates the current working directory if a relative
   /// path is given.
   ///
   /// To check how many arguments are available, use GetStringOptionArguments().
@@ -95,7 +95,7 @@ public:
   /// If szDefault is a relative path, it will be concatenated with the CWD just as any user provided option would.
   const xiiString GetAbsolutePathOption(xiiStringView sOption, xiiUInt32 uiArgument = 0, xiiStringView sDefault = {}, bool bCaseSensitive = false) const;
 
-  /// \brief Returns a boolean interpretation of the option \a szOption or bDefault if it cannot be found.
+  /// Returns a boolean interpretation of the option \a szOption or bDefault if it cannot be found.
   ///
   /// \param szOption
   ///   The name of the option to search for. All option-names must start with a hyphen.
@@ -112,7 +112,7 @@ public:
   ///   If that conversion fails, bDefault is returned.
   bool GetBoolOption(xiiStringView sOption, bool bDefault = false, bool bCaseSensitive = false) const; // [tested]
 
-  /// \brief Returns an integer interpretation of the option \a szOption or iDefault if it cannot be found.
+  /// Returns an integer interpretation of the option \a szOption or iDefault if it cannot be found.
   ///
   /// \param szOption
   ///   The name of the option to search for. All option-names must start with a hyphen.
@@ -129,10 +129,10 @@ public:
   ///   If that conversion fails or there is no such option or no parameter follows it, iDefault is returned.
   xiiInt32 GetIntOption(xiiStringView sOption, xiiInt32 iDefault = 0, bool bCaseSensitive = false) const; // [tested]
 
-  /// \brief Same as GetIntOption() but assumes the value is a uint32.
+  /// Same as GetIntOption() but assumes the value is a uint32.
   xiiUInt32 GetUIntOption(xiiStringView sOption, xiiUInt32 uiDefault = 0, bool bCaseSensitive = false) const; // [tested]
 
-  /// \brief Returns a float interpretation of the option \a szOption or fDefault if it cannot be found.
+  /// Returns a float interpretation of the option \a szOption or fDefault if it cannot be found.
   ///
   /// \param szOption
   ///   The name of the option to search for. All option-names must start with a hyphen.
@@ -149,7 +149,7 @@ public:
   ///   If that conversion fails or there is no such option or no parameter follows it, fDefault is returned.
   double GetFloatOption(xiiStringView sOption, double fDefault = 0.0, bool bCaseSensitive = false) const; // [tested]
 
-  /// \brief This allows to append an argument programmatically, that wasn't actually set through the command line.
+  /// This allows to append an argument programmatically, that wasn't actually set through the command line.
   ///
   /// This can be useful when the command-line is a method to configure something, which might be hidden away in a plugin,
   /// and we have no other easy way to configure it.

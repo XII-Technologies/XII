@@ -18,7 +18,7 @@ public:
   xiiAngle m_OuterSpotAngle;
 };
 
-/// \brief A spot light component. This represents a light source that emits light in a cone shape, like a flashlight or a spotlight on a stage.
+/// A spot light component. This represents a light source that emits light in a cone shape, like a flashlight or a spotlight on a stage.
 class XII_GRAPHICSCORE_DLL xiiSpotLightComponent : public xiiLightComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSpotLightComponent, xiiLightComponent, xiiSpotLightComponentManager);
@@ -43,26 +43,26 @@ public:
   xiiSpotLightComponent();
   ~xiiSpotLightComponent();
 
-  /// \brief Sets the radius (or length of the cone) of the lightsource. If zero, it is automatically determined from the intensity.
+  /// Sets the radius (or length of the cone) of the lightsource. If zero, it is automatically determined from the intensity.
   void  SetRange(float fRange); // [ property ]
   float GetRange() const;       // [ property ]
 
-  /// \brief Returns the final radius of the lightsource.
+  /// Returns the final radius of the lightsource.
   float GetEffectiveRange() const;
 
   /// Radius of the emitter disc at the spot light's origin. A non-zero value produces softer specular highlights and area-light style shading. Does not affect attenuation.
   void  SetRadius(float fRadius); // [ property ]
   float GetRadius() const;        // [ property ]
 
-  /// \brief Sets the radius that is used to determine when to fade out shadows. If zero the radius of the lightsource is used.
+  /// Sets the radius that is used to determine when to fade out shadows. If zero the radius of the lightsource is used.
   void  SetShadowFadeOutRange(float fRange); // [ property ]
   float GetShadowFadeOutRange() const;       // [ property ]
 
-  /// \brief Sets the inner angle where the spotlight has equal brightness.
+  /// Sets the inner angle where the spotlight has equal brightness.
   void     SetInnerSpotAngle(xiiAngle spotAngle); // [ property ]
   xiiAngle GetInnerSpotAngle() const;             // [ property ]
 
-  /// \brief Sets the outer angle of the spotlight's cone. The light will fade out between the inner and outer angle.
+  /// Sets the outer angle of the spotlight's cone. The light will fade out between the inner and outer angle.
   void     SetOuterSpotAngle(xiiAngle spotAngle); // [ property ]
   xiiAngle GetOuterSpotAngle() const;             // [ property ]
 
@@ -79,7 +79,7 @@ protected:
   xiiAngle m_OuterSpotAngle      = xiiAngle::MakeFromDegree(30.0f);
 };
 
-/// \brief Visualizer attribute for spot lights. Also renders a cone when the range is non-zero.
+/// Visualizer attribute for spot lights. Also renders a cone when the range is non-zero.
 class XII_GRAPHICSCORE_DLL xiiSpotLightVisualizerAttribute : public xiiVisualizerAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSpotLightVisualizerAttribute, xiiVisualizerAttribute);

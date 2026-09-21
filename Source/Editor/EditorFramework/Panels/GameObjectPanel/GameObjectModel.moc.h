@@ -12,7 +12,7 @@
 class xiiSceneDocument;
 
 
-/// \brief Custom delegate for game objects, used in xiiQtGameObjectWidget.
+/// Custom delegate for game objects, used in xiiQtGameObjectWidget.
 ///
 /// Renders additional icons to display stats.
 class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectDelegate : public xiiQtItemDelegate

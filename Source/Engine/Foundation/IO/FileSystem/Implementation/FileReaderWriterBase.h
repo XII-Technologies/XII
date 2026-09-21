@@ -35,7 +35,7 @@ public:
   /// Returns true, if the file is currently open.
   bool IsOpen() const { return m_pDataDirReader != nullptr; }
 
-  /// \brief Returns the current total size of the file.
+  /// Returns the current total size of the file.
   xiiUInt64 GetFileSize() const { return m_pDataDirReader->GetFileSize(); }
 
 protected:
@@ -77,7 +77,7 @@ public:
   /// Returns true, if the file is currently open.
   bool IsOpen() const { return m_pDataDirWriter != nullptr; }
 
-  /// \brief Returns the current total size of the file.
+  /// Returns the current total size of the file.
   xiiUInt64 GetFileSize() const { return m_pDataDirWriter->GetFileSize(); } // [tested]
 
 protected:

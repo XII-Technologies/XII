@@ -22,7 +22,7 @@ class QLabel;
 class QSlider;
 class xiiAction;
 
-/// \brief Glue class that maps xiiActions to QActions. QActions are only created if the xiiAction is actually mapped somewhere. Document and Global actions are manually executed and don't solely rely on Qt's ShortcutContext setting to prevent ambiguous action shortcuts.
+/// Glue class that maps xiiActions to QActions. QActions are only created if the xiiAction is actually mapped somewhere. Document and Global actions are manually executed and don't solely rely on Qt's ShortcutContext setting to prevent ambiguous action shortcuts.
 class XII_GUIFOUNDATION_DLL xiiQtProxy : public QObject
 {
   Q_OBJECT
@@ -36,7 +36,7 @@ public:
   virtual void SetAction(xiiAction* pAction);
   xiiAction*   GetAction() { return m_pAction; }
 
-  /// \brief Converts the QKeyEvent into a shortcut and tries to find a matching action in the document and global action list.
+  /// Converts the QKeyEvent into a shortcut and tries to find a matching action in the document and global action list.
   ///
   /// Document actions are not mapped as ShortcutContext::WindowShortcut because docking allows for multiple documents to be mapped into the same window. Instead, ShortcutContext::WidgetWithChildrenShortcut is used to prevent ambiguous action shortcuts and the actions are executed manually via filtering QEvent::ShortcutOverride at the dock widget level.
   /// The function always has to be called two times:

@@ -5,7 +5,7 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Time/Time.h>
 
-/// \brief Defines the SI units of time that can be used with xiiTimestamp.
+/// Defines the SI units of time that can be used with xiiTimestamp.
 struct xiiSIUnitOfTime
 {
   using StorageType = xiiUInt8;
@@ -19,7 +19,7 @@ struct xiiSIUnitOfTime
   };
 };
 
-/// \brief The timestamp class encapsulates a date in time as microseconds since Unix epoch.
+/// The timestamp class encapsulates a date in time as microseconds since Unix epoch.
 ///
 /// The value is represented by a xiiInt64 and allows storing time stamps from roughly -291030 BC to 293970 AC.
 ///
@@ -39,7 +39,7 @@ public:
     };
   };
 
-  /// \brief Returns the current timestamp. Returned value will always be valid.
+  /// Returns the current timestamp. Returned value will always be valid.
   ///
   /// Depending on the platform the precision varies between seconds and nanoseconds.
   static const xiiTimestamp CurrentTimestamp(); // [tested]
@@ -48,24 +48,24 @@ public:
 
   // *** Constructors ***
 public:
-  /// \brief Creates an invalidated timestamp.
+  /// Creates an invalidated timestamp.
   xiiTimestamp(); // [tested]
 
-  /// \brief Returns an invalid timestamp
+  /// Returns an invalid timestamp
   [[nodiscard]] static xiiTimestamp MakeInvalid() { return xiiTimestamp(); }
 
-  /// \brief Returns a timestamp initialized from 'iTimeValue' in 'unitOfTime' since Unix epoch.
+  /// Returns a timestamp initialized from 'iTimeValue' in 'unitOfTime' since Unix epoch.
   [[nodiscard]] static xiiTimestamp MakeFromInt(xiiInt64 iTimeValue, xiiSIUnitOfTime::Enum unitOfTime);
 
   // *** Public Functions ***
 public:
-  /// \brief Returns whether the timestamp is valid.
+  /// Returns whether the timestamp is valid.
   bool IsValid() const; // [tested]
 
-  /// \brief Returns the number of 'unitOfTime' since Unix epoch.
+  /// Returns the number of 'unitOfTime' since Unix epoch.
   xiiInt64 GetInt64(xiiSIUnitOfTime::Enum unitOfTime) const; // [tested]
 
-  /// \brief Returns whether this timestamp is considered equal to 'rhs' in the given mode.
+  /// Returns whether this timestamp is considered equal to 'rhs' in the given mode.
   ///
   /// Use CompareMode::FileTime when working with file time stamps across platforms.
   /// It will use the lowest resolution supported by all platforms to make sure the
@@ -74,19 +74,19 @@ public:
 
   // *** Operators ***
 public:
-  /// \brief Adds the time value of "timeSpan" to this data value.
+  /// Adds the time value of "timeSpan" to this data value.
   void operator+=(const xiiTime& timeSpan); // [tested]
 
-  /// \brief Subtracts the time value of "timeSpan" from this date value.
+  /// Subtracts the time value of "timeSpan" from this date value.
   void operator-=(const xiiTime& timeSpan); // [tested]
 
-  /// \brief Returns the time span between this timestamp and "other".
+  /// Returns the time span between this timestamp and "other".
   const xiiTime operator-(const xiiTimestamp& other) const; // [tested]
 
-  /// \brief Returns a timestamp that is "timeSpan" further into the future from this timestamp.
+  /// Returns a timestamp that is "timeSpan" further into the future from this timestamp.
   const xiiTimestamp operator+(const xiiTime& timeSpan) const; // [tested]
 
-  /// \brief Returns a timestamp that is "timeSpan" further into the past from this timestamp.
+  /// Returns a timestamp that is "timeSpan" further into the past from this timestamp.
   const xiiTimestamp operator-(const xiiTime& timeSpan) const; // [tested]
 
 
@@ -95,47 +95,47 @@ private:
 
   XII_ALLOW_PRIVATE_PROPERTIES(xiiTimestamp);
 
-  /// \brief The date is stored as microseconds since Unix epoch.
+  /// The date is stored as microseconds since Unix epoch.
   xiiInt64 m_iTimestamp = XII_INVALID_TIME_STAMP;
 };
 
-/// \brief Returns a timestamp that is "timeSpan" further into the future from "timestamp".
+/// Returns a timestamp that is "timeSpan" further into the future from "timestamp".
 const xiiTimestamp operator+(xiiTime& ref_timeSpan, const xiiTimestamp& timestamp);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTimestamp);
 
-/// \brief The xiiDateTime class can be used to convert xiiTimestamp into a human readable form.
+/// The xiiDateTime class can be used to convert xiiTimestamp into a human readable form.
 ///
 /// Note: As xiiTimestamp is microseconds since Unix epoch, the values in this class will always be
 /// in UTC.
 class XII_FOUNDATION_DLL xiiDateTime
 {
 public:
-  /// \brief Creates an empty date time instance with an invalid date.
+  /// Creates an empty date time instance with an invalid date.
   ///
   /// Day, Month and Year will be invalid and must be set.
   xiiDateTime(); // [tested]
   ~xiiDateTime();
 
-  /// \brief Checks whether all values are within valid ranges.
+  /// Checks whether all values are within valid ranges.
   bool IsValid() const;
 
-  /// \brief Returns a date time that is all zero.
+  /// Returns a date time that is all zero.
   [[nodiscard]] static xiiDateTime MakeZero() { return xiiDateTime(); }
 
-  /// \brief Sets this instance to the given timestamp.
+  /// Sets this instance to the given timestamp.
   ///
   /// This calls SetFromTimestamp() internally and asserts that the conversion succeeded.
   /// Use SetFromTimestamp() directly, if you need to be able to react to invalid data.
   [[nodiscard]] static xiiDateTime MakeFromTimestamp(xiiTimestamp timestamp);
 
-  /// \brief Converts this instance' values into a xiiTimestamp.
+  /// Converts this instance' values into a xiiTimestamp.
   ///
   /// The conversion is done via the OS and can fail for values that are outside the supported range.
   /// In this case, the returned value will be invalid. Anything after 1970 and before the not so distant future should be safe.
   [[nodiscard]] const xiiTimestamp GetTimestamp() const; // [tested]
 
-  /// \brief Sets this instance to the given timestamp.
+  /// Sets this instance to the given timestamp.
   ///
   /// The conversion is done via the OS and will fail for invalid dates and values outside the supported range, in which case XII_FAILURE will be returned.
   /// Anything after 1970 and before the not so distant future should be safe.
@@ -143,52 +143,52 @@ public:
 
   // *** Accessors ***
 public:
-  /// \brief Returns the currently set year.
+  /// Returns the currently set year.
   xiiUInt32 GetYear() const; // [tested]
 
-  /// \brief Sets the year to the given value.
+  /// Sets the year to the given value.
   void SetYear(xiiInt16 iYear); // [tested]
 
-  /// \brief Returns the currently set month.
+  /// Returns the currently set month.
   xiiUInt8 GetMonth() const; // [tested]
 
-  /// \brief Sets the month to the given value. Asserts that the value is in the valid range [1, 12].
+  /// Sets the month to the given value. Asserts that the value is in the valid range [1, 12].
   void SetMonth(xiiUInt8 uiMonth); // [tested]
 
-  /// \brief Returns the currently set day.
+  /// Returns the currently set day.
   xiiUInt8 GetDay() const; // [tested]
 
-  /// \brief Sets the day to the given value. Asserts that the value is in the valid range [1, 31].
+  /// Sets the day to the given value. Asserts that the value is in the valid range [1, 31].
   void SetDay(xiiUInt8 uiDay); // [tested]
 
-  /// \brief Returns the currently set day of week.
+  /// Returns the currently set day of week.
   xiiUInt8 GetDayOfWeek() const;
 
-  /// \brief Sets the day of week to the given value. Asserts that the value is in the valid range [0, 6].
+  /// Sets the day of week to the given value. Asserts that the value is in the valid range [0, 6].
   void SetDayOfWeek(xiiUInt8 uiDayOfWeek);
 
-  /// \brief Returns the currently set hour.
+  /// Returns the currently set hour.
   xiiUInt8 GetHour() const; // [tested]
 
-  /// \brief Sets the hour to the given value. Asserts that the value is in the valid range [0, 23].
+  /// Sets the hour to the given value. Asserts that the value is in the valid range [0, 23].
   void SetHour(xiiUInt8 uiHour); // [tested]
 
-  /// \brief Returns the currently set minute.
+  /// Returns the currently set minute.
   xiiUInt8 GetMinute() const; // [tested]
 
-  /// \brief Sets the minute to the given value. Asserts that the value is in the valid range [0, 59].
+  /// Sets the minute to the given value. Asserts that the value is in the valid range [0, 59].
   void SetMinute(xiiUInt8 uiMinute); // [tested]
 
-  /// \brief Returns the currently set second.
+  /// Returns the currently set second.
   xiiUInt8 GetSecond() const; // [tested]
 
-  /// \brief Sets the second to the given value. Asserts that the value is in the valid range [0, 59].
+  /// Sets the second to the given value. Asserts that the value is in the valid range [0, 59].
   void SetSecond(xiiUInt8 uiSecond); // [tested]
 
-  /// \brief Returns the currently set microseconds.
+  /// Returns the currently set microseconds.
   xiiUInt32 GetMicroseconds() const; // [tested]
 
-  /// \brief Sets the microseconds to the given value. Asserts that the value is in the valid range [0, 999999].
+  /// Sets the microseconds to the given value. Asserts that the value is in the valid range [0, 999999].
   void SetMicroseconds(xiiUInt32 uiMicroSeconds); // [tested]
 
 private:
@@ -224,7 +224,7 @@ struct xiiArgDateTime
     DefaultTextual = TextualDate | ShowSeconds,
   };
 
-  /// \brief Initialized a formatting object for a xiiDateTime instance.
+  /// Initialized a formatting object for a xiiDateTime instance.
   ///
   /// \param dateTime The xiiDateTime instance to format.
   /// \param uiFormattingFlags The formatting flags to use.

@@ -7,7 +7,7 @@
 
 using xiiSurfaceResourceHandle = xiiTypedResourceHandle<class xiiSurfaceResource>;
 
-/// \brief Classifies the facing of an individual raycast hit
+/// Classifies the facing of an individual raycast hit
 enum class xiiPhysicsHitType : xiiInt8
 {
   Undefined         = -1, ///< Returned if the respective physics binding does not provide this information
@@ -15,7 +15,7 @@ enum class xiiPhysicsHitType : xiiInt8
   TriangleBackFace  = 1,  ///< The raycast hit the back face of a triangle
 };
 
-/// \brief Used for raycast and sweep tests
+/// Used for raycast and sweep tests
 struct xiiPhysicsCastResult
 {
   xiiVec3 m_vPosition;
@@ -38,7 +38,7 @@ struct xiiPhysicsCastResultArray
   xiiHybridArray<xiiPhysicsCastResult, 16> m_Results;
 };
 
-/// \brief Used to report overlap query results
+/// Used to report overlap query results
 struct xiiPhysicsOverlapResult
 {
   XII_DECLARE_POD_TYPE();
@@ -58,7 +58,7 @@ struct xiiPhysicsOverlapResultArray
   xiiHybridArray<xiiPhysicsOverlapResult, 16> m_Results;
 };
 
-/// \brief Flags for selecting which types of physics shapes should be included in things like overlap queries and raycasts.
+/// Flags for selecting which types of physics shapes should be included in things like overlap queries and raycasts.
 ///
 /// This is mainly for optimization purposes. It is up to the physics integration to support some or all of these flags.
 ///

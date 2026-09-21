@@ -6,7 +6,7 @@
 #include <Foundation/Types/RangeView.h>
 #include <GameEngine/Components/StateMachine/StateMachine.h>
 
-/// \brief A state machine state implementation that can be scripted using e.g. visual scripting.
+/// A state machine state implementation that can be scripted using e.g. visual scripting.
 class XII_GAMEENGINE_DLL xiiStateMachineState_Script : public xiiStateMachineState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineState_Script, xiiStateMachineState);

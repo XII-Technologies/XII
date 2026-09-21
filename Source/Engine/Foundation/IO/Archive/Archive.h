@@ -8,14 +8,14 @@
 
 class xiiRawMemoryStreamReader;
 
-/// \brief Compression modes for xiiArchive file entries
+/// Compression modes for xiiArchive file entries
 enum class xiiArchiveCompressionMode : xiiUInt8
 {
   Uncompressed = 0U,
   Compressed_zstd,
 };
 
-/// \brief Data for a single file entry in a xiiArchive file
+/// Data for a single file entry in a xiiArchive file
 class XII_FOUNDATION_DLL xiiArchiveEntry
 {
 public:
@@ -29,7 +29,7 @@ public:
   xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
-/// \brief Helper class to store a hashed string for quick lookup in the archive TOC
+/// Helper class to store a hashed string for quick lookup in the archive TOC
 ///
 /// Stores a hash of the lower case string for quick comparison.
 /// Additionally stores an offset into the xiiArchiveTOC::m_AllPathStrings array for final validation, to prevent hash collisions.
@@ -54,7 +54,7 @@ public:
 void operator<<(xiiStreamWriter& ref_stream, const xiiArchiveStoredString& value);
 void operator>>(xiiStreamReader& ref_stream, xiiArchiveStoredString& value);
 
-/// \brief Helper class for looking up path strings in xiiArchiveTOC::FindEntry()
+/// Helper class for looking up path strings in xiiArchiveTOC::FindEntry()
 ///
 /// Only works together with xiiArchiveStoredString.
 class xiiArchiveLookupString
@@ -74,7 +74,7 @@ public:
   const xiiDynamicArray<xiiUInt8>& m_ArchiveAllPathStrings;
 };
 
-/// \brief Functions to enable xiiHashTable to 1) store xiiArchiveStoredString and 2) lookup strings efficiently with a xiiArchiveLookupString
+/// Functions to enable xiiHashTable to 1) store xiiArchiveStoredString and 2) lookup strings efficiently with a xiiArchiveLookupString
 template <>
 struct xiiHashHelper<xiiArchiveStoredString>
 {
@@ -91,7 +91,7 @@ struct xiiHashHelper<xiiArchiveStoredString>
   }
 };
 
-/// \brief Table-of-contents for a xiiArchive file
+/// Table-of-contents for a xiiArchive file
 class XII_FOUNDATION_DLL xiiArchiveTOC
 {
 public:
@@ -102,7 +102,7 @@ public:
   /// one large array holding all path strings for the file entries, to reduce allocations
   xiiDynamicArray<xiiUInt8> m_AllPathStrings;
 
-  /// \brief Returns the entry index for the given file or xiiInvalidIndex, if not found.
+  /// Returns the entry index for the given file or xiiInvalidIndex, if not found.
   xiiUInt32 FindEntry(xiiStringView sFile) const;
 
   xiiUInt32 AddPathString(xiiStringView sPathString);

@@ -7,7 +7,7 @@
 #include <Foundation/Reflection/Implementation/AbstractProperty.h>
 #include <Foundation/Reflection/Implementation/StaticRTTI.h>
 
-/// \brief The base class for all typed member properties. Ie. once the type of a property is determined, it can be cast to the proper
+/// The base class for all typed member properties. Ie. once the type of a property is determined, it can be cast to the proper
 /// version of this.
 ///
 /// For example, when you have a pointer to a xiiAbstractMemberProperty and it returns that the property is of type 'int', you can cast the
@@ -16,40 +16,40 @@ template <typename Type>
 class xiiTypedConstantProperty : public xiiAbstractConstantProperty
 {
 public:
-  /// \brief Passes the property name through to xiiAbstractMemberProperty.
+  /// Passes the property name through to xiiAbstractMemberProperty.
   xiiTypedConstantProperty(xiiStringView sPropertyName) :
     xiiAbstractConstantProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
   }
 
-  /// \brief Returns the actual type of the property. You can then compare that with known types, eg. compare it to xiiGetStaticRTTI<int>()
+  /// Returns the actual type of the property. You can then compare that with known types, eg. compare it to xiiGetStaticRTTI<int>()
   /// to see whether this is an int property.
   virtual const xiiRTTI* GetSpecificType() const override // [tested]
   {
     return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferenceType>();
   }
 
-  /// \brief Returns the value of the property. Pass the instance pointer to the surrounding class along.
+  /// Returns the value of the property. Pass the instance pointer to the surrounding class along.
   virtual Type GetValue() const = 0;
 };
 
-/// \brief [internal] An implementation of xiiTypedConstantProperty that accesses the property data directly.
+/// [internal] An implementation of xiiTypedConstantProperty that accesses the property data directly.
 template <typename Type>
 class xiiConstantProperty : public xiiTypedConstantProperty<Type>
 {
 public:
-  /// \brief Constructor.
+  /// Constructor.
   xiiConstantProperty(xiiStringView sPropertyName, Type value) :
     xiiTypedConstantProperty<Type>(sPropertyName), m_Value(value)
   {
     XII_ASSERT_DEBUG(this->m_Flags.IsSet(xiiPropertyFlags::StandardType), "Only constants that can be put in a xiiVariant are currently supported!");
   }
 
-  /// \brief Returns a pointer to the member property.
+  /// Returns a pointer to the member property.
   virtual void* GetPropertyPointer() const override { return (void*)&m_Value; }
 
-  /// \brief Returns the value of the property. Pass the instance pointer to the surrounding class along.
+  /// Returns the value of the property. Pass the instance pointer to the surrounding class along.
   virtual Type GetValue() const override // [tested]
   {
     return m_Value;

@@ -48,7 +48,7 @@ class xiiFileSystemModel;
 
 #endif
 
-/// \brief Custom mutex that allows to profile the time in the curator lock.
+/// Custom mutex that allows to profile the time in the curator lock.
 class xiiCuratorMutex : public xiiMutex
 {
 public:
@@ -108,7 +108,7 @@ private:
   XII_DISALLOW_COPY_AND_ASSIGN(xiiAssetInfo);
 };
 
-/// \brief Information about an asset or sub-asset.
+/// Information about an asset or sub-asset.
 struct XII_EDITORFRAMEWORK_DLL xiiSubAsset
 {
   xiiStringView GetName() const;
@@ -152,9 +152,9 @@ public:
   /// \name Setup
   ///@{
 
-  /// \brief Starts init task. Need to call WaitForInitialize to finish before loading docs.
+  /// Starts init task. Need to call WaitForInitialize to finish before loading docs.
   void StartInitialize(const xiiApplicationFileSystemConfig& cfg);
-  /// \brief Waits for init task to finish.
+  /// Waits for init task to finish.
   void WaitForInitialize();
   void Deinitialize();
 
@@ -165,43 +165,43 @@ public:
   ///@{
 
 public:
-  /// \brief The main platform on which development happens. E.g. "Default".
+  /// The main platform on which development happens. E.g. "Default".
   ///
   /// TODO: review this concept
   const xiiPlatformProfile* GetDevelopmentAssetProfile() const;
 
-  /// \brief The currently active target platform for asset processing.
+  /// The currently active target platform for asset processing.
   const xiiPlatformProfile* GetActiveAssetProfile() const;
 
-  /// \brief Returns the index of the currently active asset platform configuration
+  /// Returns the index of the currently active asset platform configuration
   xiiUInt32 GetActiveAssetProfileIndex() const;
 
-  /// \brief Returns xiiInvalidIndex if no config with the given name exists. Name comparison is case insensitive.
+  /// Returns xiiInvalidIndex if no config with the given name exists. Name comparison is case insensitive.
   xiiUInt32 FindAssetProfileByName(const char* szPlatform);
 
   xiiUInt32 GetNumAssetProfiles() const;
 
-  /// \brief Always returns a valid config. E.g. even if xiiInvalidIndex is passed in, it will fall back to the default config (at index 0).
+  /// Always returns a valid config. E.g. even if xiiInvalidIndex is passed in, it will fall back to the default config (at index 0).
   const xiiPlatformProfile* GetAssetProfile(xiiUInt32 uiIndex) const;
 
-  /// \brief Always returns a valid config. E.g. even if xiiInvalidIndex is passed in, it will fall back to the default config (at index 0).
+  /// Always returns a valid config. E.g. even if xiiInvalidIndex is passed in, it will fall back to the default config (at index 0).
   xiiPlatformProfile* GetAssetProfile(xiiUInt32 uiIndex);
 
-  /// \brief Adds a new profile. The name should be set afterwards to a unique name.
+  /// Adds a new profile. The name should be set afterwards to a unique name.
   xiiPlatformProfile* CreateAssetProfile();
 
-  /// \brief Deletes the given asset profile, if possible.
+  /// Deletes the given asset profile, if possible.
   ///
   /// The function fails when the given profile is the main profile (at index 0),
   /// or it is the currently active profile.
   xiiResult DeleteAssetProfile(xiiPlatformProfile* pProfile);
 
-  /// \brief Switches the currently active asset target platform.
+  /// Switches the currently active asset target platform.
   ///
   /// Broadcasts xiiAssetCuratorEvent::Type::ActivePlatformChanged on change.
   void SetActiveAssetProfileByIndex(xiiUInt32 uiIndex, bool bForceReevaluation = false);
 
-  /// \brief Saves the current asset configurations. Returns failure if the output file could not be written to.
+  /// Saves the current asset configurations. Returns failure if the output file could not be written to.
   xiiResult SaveAssetProfiles();
 
   void SaveRuntimeProfiles();
@@ -222,7 +222,7 @@ public:
   xiiDateTime GetLastFullTransformDate() const;
   void        StoreFullTransformDate();
 
-  /// \brief Transforms all assets and writes the lookup tables. If the given platform is empty, the active platform is used.
+  /// Transforms all assets and writes the lookup tables. If the given platform is empty, the active platform is used.
   xiiStatus          TransformAllAssets(xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus CreateThumbnail(const xiiUuid& assetGuid);
@@ -233,7 +233,7 @@ public:
   /// So we must update them when the user does something 'significant' like doing TransformAllAssets or a scene export.
   void TransformAssetsForSceneExport(const xiiPlatformProfile* pAssetProfile = nullptr);
 
-  /// \brief Writes the asset lookup table for the given platform, or the currently active platform if nullptr is passed.
+  /// Writes the asset lookup table for the given platform, or the currently active platform if nullptr is passed.
   xiiResult WriteAssetTables(const xiiPlatformProfile* pAssetProfile = nullptr, bool bForce = false);
 
   ///@}
@@ -241,46 +241,46 @@ public:
   ///@{
   using xiiLockedSubAsset = xiiLockedObject<xiiMutex, const xiiSubAsset>;
 
-  /// \brief Tries to find the asset information for an asset identified through a string.
+  /// Tries to find the asset information for an asset identified through a string.
   ///
   /// The string may be a stringyfied asset GUID or a relative or absolute path. The function will try all possibilities.
   /// If no asset can be found, an empty/invalid xiiAssetInfo is returned.
   /// If bExhaustiveSearch is set the function will go through all known assets and find the closest match.
   const xiiLockedSubAsset FindSubAsset(xiiStringView sPathOrGuid, bool bExhaustiveSearch = false) const;
 
-  /// \brief Same as GetAssteInfo, but wraps the return value into a xiiLockedSubAsset struct
+  /// Same as GetAssteInfo, but wraps the return value into a xiiLockedSubAsset struct
   const xiiLockedSubAsset GetSubAsset(const xiiUuid& assetGuid) const;
 
   using xiiLockedSubAssetTable = xiiLockedObject<xiiMutex, const xiiHashTable<xiiUuid, xiiSubAsset>>;
 
-  /// \brief Returns the table of all known assets in a locked structure
+  /// Returns the table of all known assets in a locked structure
   const xiiLockedSubAssetTable GetKnownSubAssets() const;
 
   using xiiLockedAssetTable = xiiLockedObject<xiiMutex, const xiiHashTable<xiiUuid, xiiAssetInfo*>>;
 
-  /// \brief Returns the table of all known assets in a locked structure
+  /// Returns the table of all known assets in a locked structure
   const xiiLockedAssetTable GetKnownAssets() const;
 
-  /// \brief Computes the combined hash for the asset and its dependencies. Returns 0 if anything went wrong.
+  /// Computes the combined hash for the asset and its dependencies. Returns 0 if anything went wrong.
   xiiUInt64 GetAssetDependencyHash(xiiUuid assetGuid);
 
-  /// \brief Computes the combined hash for the asset and its references. Returns 0 if anything went wrong.
+  /// Computes the combined hash for the asset and its references. Returns 0 if anything went wrong.
   xiiUInt64 GetAssetReferenceHash(xiiUuid assetGuid);
 
   xiiAssetInfo::TransformState IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, xiiUInt64& out_uiPackageHash, bool bForce = false);
-  /// \brief Returns the number of assets in the system and how many are in what transform state
+  /// Returns the number of assets in the system and how many are in what transform state
   void GetAssetTransformStats(xiiUInt32& out_uiNumAssets, xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT>& out_count);
 
-  /// \brief Iterates over all known data directories and returns the absolute path to the directory in which this asset is located
+  /// Iterates over all known data directories and returns the absolute path to the directory in which this asset is located
   xiiString FindDataDirectoryForAsset(xiiStringView sAbsoluteAssetPath) const;
 
-  /// \brief Uses knowledge about all existing files on disk to find the best match for a file. Very slow.
+  /// Uses knowledge about all existing files on disk to find the best match for a file. Very slow.
   ///
   /// \param sFile
   ///   File name (may include a path) to search for. Will be modified both on success and failure to give a 'reasonable' result.
   xiiResult FindBestMatchForFile(xiiStringBuilder& ref_sFile, xiiArrayPtr<xiiString> allowedFileExtensions) const;
 
-  /// \brief Finds all uses, either as references or dependencies to a given asset.
+  /// Finds all uses, either as references or dependencies to a given asset.
   ///
   /// Technically this finds all references and dependencies to this asset but in practice there are no uses of transform dependencies between assets right now so the result is a list of references and can be referred to as such.
   ///
@@ -292,12 +292,12 @@ public:
   ///   If set, will also find indirect uses of the asset.
   void FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, bool bTransitive) const;
 
-  /// \brief Returns all assets that use a file for transform. Use this to e.g. figure which assets still reference a .tga file in the project.
+  /// Returns all assets that use a file for transform. Use this to e.g. figure which assets still reference a .tga file in the project.
   /// \param sAbsolutePath Absolute path to any file inside a data directory.
   /// \param ref_uses List of assets that use 'sAbsolutePath'. Any previous content of the set is not removed.
   void FindAllUses(xiiStringView sAbsolutePath, xiiSet<xiiUuid>& ref_uses) const;
 
-  /// \brief Returns whether a file is referenced, i.e. used for transforming an asset. Use this to e.g. figure out whether a .tga file is still in use by any asset.
+  /// Returns whether a file is referenced, i.e. used for transforming an asset. Use this to e.g. figure out whether a .tga file is still in use by any asset.
   /// \param sAbsolutePath Absolute path to any file inside a data directory.
   /// \return True, if at least one asset references the given file.
   bool IsReferenced(xiiStringView sAbsolutePath) const;
@@ -307,13 +307,13 @@ public:
   /// \name Manual and Automatic Change Notification
   ///@{
 
-  /// \brief Allows to tell the system of a new or changed file, that might be of interest to the Curator.
+  /// Allows to tell the system of a new or changed file, that might be of interest to the Curator.
   void NotifyOfFileChange(xiiStringView sAbsolutePath);
-  /// \brief Allows to tell the system to re-evaluate an assets status.
+  /// Allows to tell the system to re-evaluate an assets status.
   void NotifyOfAssetChange(const xiiUuid& assetGuid);
   void UpdateAssetLastAccessTime(const xiiUuid& assetGuid);
 
-  /// \brief Checks file system for any changes. Call in case the file system watcher does not pick up certain changes.
+  /// Checks file system for any changes. Call in case the file system watcher does not pick up certain changes.
   void CheckFileSystem();
 
   void NeedsReloadResources(const xiiUuid& assetGuid);
@@ -326,13 +326,13 @@ public:
   /// \name Utilities
   ///@{
 
-  /// \brief Generates one transitive hull for all the dependencies that are enabled. The set will contain dependencies that are reachable via any combination of enabled reference types.
+  /// Generates one transitive hull for all the dependencies that are enabled. The set will contain dependencies that are reachable via any combination of enabled reference types.
   void GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>& inout_deps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
 
-  /// \brief Generates one inverse transitive hull for all the types dependencies that are enabled. The set will contain inverse dependencies that can reach the given asset (pAssetInfo) via any combination of the enabled reference types. As only assets can have dependencies, the inverse hull is always just asset GUIDs.
+  /// Generates one inverse transitive hull for all the types dependencies that are enabled. The set will contain inverse dependencies that can reach the given asset (pAssetInfo) via any combination of the enabled reference types. As only assets can have dependencies, the inverse hull is always just asset GUIDs.
   void GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false) const;
 
-  /// \brief Generates a DGML graph of all transform and thumbnail dependencies.
+  /// Generates a DGML graph of all transform and thumbnail dependencies.
   void WriteDependencyDGML(const xiiUuid& guid, xiiStringView sOutputFile) const;
 
   ///@}
@@ -346,18 +346,18 @@ private:
 
   xiiTransformStatus ProcessAsset(xiiAssetInfo* pAssetInfo, const xiiPlatformProfile* pAssetProfile, xiiBitflags<xiiTransformFlags> transformFlags);
   xiiStatus          ResaveAsset(xiiAssetInfo* pAssetInfo);
-  /// \brief Returns the asset info for the asset with the given GUID or nullptr if no such asset exists.
+  /// Returns the asset info for the asset with the given GUID or nullptr if no such asset exists.
   xiiAssetInfo*       GetAssetInfo(const xiiUuid& assetGuid);
   const xiiAssetInfo* GetAssetInfo(const xiiUuid& assetGuid) const;
 
   xiiSubAsset* GetSubAssetInternal(const xiiUuid& assetGuid);
 
-  /// \brief Returns the asset info for the asset with the given (stringyfied) GUID or nullptr if no such asset exists.
+  /// Returns the asset info for the asset with the given (stringyfied) GUID or nullptr if no such asset exists.
   xiiAssetInfo* GetAssetInfo(const xiiString& sAssetGuid);
 
   void OnFileChangedEvent(const xiiFileChangedEvent& e);
 
-  /// \brief Some assets are vital for the engine to run. Each data directory can contain a [DataDirName].xiiCollectionAsset
+  /// Some assets are vital for the engine to run. Each data directory can contain a [DataDirName].xiiCollectionAsset
   ///   that has all its references transformed before any other documents are loaded.
   void ProcessAllCoreAssets();
 
@@ -409,7 +409,7 @@ private:
   ///@{
 
 public:
-  /// \brief Deletes all files in all asset caches, except for the asset outputs that exceed the threshold.
+  /// Deletes all files in all asset caches, except for the asset outputs that exceed the threshold.
   ///
   /// -> OutputReliability::Perfect -> deletes everything
   /// -> OutputReliability::Good -> keeps the 'Perfect' files

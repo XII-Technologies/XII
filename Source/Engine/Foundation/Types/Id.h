@@ -6,7 +6,7 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief Declares an id type, see generic id below how to use this
+/// Declares an id type, see generic id below how to use this
 #define XII_DECLARE_ID_TYPE(name, instanceIndexBits, generationBits)                                           \
   static constexpr StorageType MAX_INSTANCES             = (1ULL << instanceIndexBits);                        \
   static constexpr StorageType INVALID_INSTANCE_INDEX    = MAX_INSTANCES - 1;                                  \
@@ -42,7 +42,7 @@
   }
 
 
-/// \brief A generic id class that holds an id combined of an instance index and a generation counter.
+/// A generic id class that holds an id combined of an instance index and a generation counter.
 ///
 /// \todo Document this better.
 template <xiiUInt32 InstanceIndexBits, xiiUInt32 GenerationBits>

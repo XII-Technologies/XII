@@ -7,7 +7,7 @@
 #include <Foundation/Threading/Implementation/TaskSystemDeclarations.h>
 #include <Foundation/Types/RefCounted.h>
 
-/// \brief Base class for custom tasks.
+/// Base class for custom tasks.
 class XII_FOUNDATION_DLL xiiTask : public xiiRefCounted
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiTask);
@@ -16,7 +16,7 @@ public:
   xiiTask();
   virtual ~xiiTask();
 
-  /// \brief Sets the most important task properties. This has to be done before the task is added to a task group for the first time.
+  /// Sets the most important task properties. This has to be done before the task is added to a task group for the first time.
   ///
   /// \param sTaskName
   ///  Will be displayed in profiling tools and is useful for debugging.
@@ -29,7 +29,7 @@ public:
   /// The most common use case for this is to deallocate the task at that time.
   void ConfigureTask(xiiStringView sTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback callback = xiiOnTaskFinishedCallback()); // [tested]
 
-  /// \brief Changes the multiplicity of this task.
+  /// Changes the multiplicity of this task.
   ///
   /// This has to be set before the task is scheduled, ie. before the task group that the task belongs to
   /// has all its dependencies fulfilled and has its tasks queued for execution.
@@ -46,7 +46,7 @@ public:
   /// \sa SetMultiplicity
   xiiUInt32 GetMultiplicity() const { return m_uiMultiplicity; } // [tested]
 
-  /// \brief Returns whether the task has been finished. This includes being canceled.
+  /// Returns whether the task has been finished. This includes being canceled.
   ///
   /// \note This function is only reliable when you KNOW that the task has not been reused.
   /// So that limits its usage to the time frame while the task is in use, and it should only
@@ -56,17 +56,17 @@ public:
   /// has finished, even minutes later.
   bool IsTaskFinished() const { return m_iRemainingRuns == 0; } // [tested]
 
-  /// \brief Can be used inside an overridden 'Execute' function to terminate execution prematurely.
+  /// Can be used inside an overridden 'Execute' function to terminate execution prematurely.
   bool HasBeenCanceled() const { return m_bCancelExecution; } // [tested]
 
 protected:
-  /// \brief Override this to implement the task's supposed functionality.
+  /// Override this to implement the task's supposed functionality.
   ///
   /// This function is called for tasks that do not use multiplicity.
   /// They are executed a single time for each time they are added to the xiiTaskSystem.
   virtual void Execute() {} // [tested]
 
-  /// \brief Override this to implement the task's supposed functionality.
+  /// Override this to implement the task's supposed functionality.
   ///
   /// This function is called for tasks that use multiplicity.
   /// A task that uses multiplicity is automatically run N times by the xiiTaskSystem,
@@ -84,30 +84,30 @@ private:
 
   void Reset();
 
-  /// \brief Called by xiiTaskSystem to execute the task. Calls 'Execute' internally.
+  /// Called by xiiTaskSystem to execute the task. Calls 'Execute' internally.
   void Run(xiiUInt32 uiInvocation);
 
-  /// \brief Decremented when a task is finished, set to zero when canceled.
+  /// Decremented when a task is finished, set to zero when canceled.
   xiiAtomicInteger32 m_iRemainingRuns;
 
-  /// \brief Set to true when the task is SUPPOSED to cancel. Whether the task is able to do that, depends on its implementation.
+  /// Set to true when the task is SUPPOSED to cancel. Whether the task is able to do that, depends on its implementation.
   bool m_bCancelExecution = false;
 
-  /// \brief Whether this task has been scheduled for execution already, or is still waiting for dependencies to finish.
+  /// Whether this task has been scheduled for execution already, or is still waiting for dependencies to finish.
   bool m_bTaskIsScheduled = false;
 
-  /// \brief Double buffers the state whether this task uses multiplicity, since it can't read m_uiMultiplicity while the task is scheduled.
+  /// Double buffers the state whether this task uses multiplicity, since it can't read m_uiMultiplicity while the task is scheduled.
   bool m_bUsesMultiplicity = false;
 
   xiiUInt32 m_uiMultiplicity = 0;
 
-  /// \brief Whether this task may wait (indirectly) on other tasks. See xiiTaskNesting.
+  /// Whether this task may wait (indirectly) on other tasks. See xiiTaskNesting.
   xiiTaskNesting m_NestingMode = xiiTaskNesting::Maybe;
 
-  /// \brief Optional callback to be fired when the task has finished or was canceled.
+  /// Optional callback to be fired when the task has finished or was canceled.
   xiiOnTaskFinishedCallback m_OnTaskFinished;
 
-  /// \brief The parent group to which this task belongs.
+  /// The parent group to which this task belongs.
   xiiTaskGroupID m_BelongsToGroup;
 
   xiiString m_sTaskName;

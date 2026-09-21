@@ -66,47 +66,47 @@ public:
   static bool IsProjectClosing() { return (GetSingleton() != nullptr && GetSingleton()->m_bIsClosing); }
   static void CloseProject();
   static void SaveProjectState();
-  /// \brief Returns true when the project can be closed. Uses xiiToolsProjectRequest::Type::CanCloseProject event.
+  /// Returns true when the project can be closed. Uses xiiToolsProjectRequest::Type::CanCloseProject event.
   static bool CanCloseProject();
-  /// \brief Returns true when the given list of documents can be closed. Uses xiiToolsProjectRequest::Type::CanCloseDocuments event.
+  /// Returns true when the given list of documents can be closed. Uses xiiToolsProjectRequest::Type::CanCloseDocuments event.
   static bool CanCloseDocuments(xiiArrayPtr<xiiDocument*> documents);
-  /// \brief Returns the unique ID of the container window this document should use for its window. Uses
+  /// Returns the unique ID of the container window this document should use for its window. Uses
   /// xiiToolsProjectRequest::Type::SuggestContainerWindow event.
   static xiiInt32 SuggestContainerWindow(xiiDocument* pDoc);
-  /// \brief Resolve document GUID into an absolute path.
+  /// Resolve document GUID into an absolute path.
   xiiStringBuilder GetPathForDocumentGuid(const xiiUuid& guid);
   static xiiStatus OpenProject(xiiStringView sProjectPath);
   static xiiStatus CreateProject(xiiStringView sProjectPath);
 
-  /// \brief Broadcasts the SaveAll event, though otherwise has no direct effect.
+  /// Broadcasts the SaveAll event, though otherwise has no direct effect.
   static void BroadcastSaveAll();
 
-  /// \brief Sent when global project configuration data was changed and thus certain menus would need to update their content (or just deselect any
+  /// Sent when global project configuration data was changed and thus certain menus would need to update their content (or just deselect any
   /// item, forcing the user to reselect and thus update state)
   static void BroadcastConfigChanged();
 
-  /// \brief Returns the path to the 'xiiProject' file
+  /// Returns the path to the 'xiiProject' file
   const xiiString& GetProjectFile() const { return m_sProjectPath; }
 
-  /// \brief Returns the short name of the project (extracted from the path).
+  /// Returns the short name of the project (extracted from the path).
   ///
   /// \param bSanitize Whether to replace whitespace and other problematic characters, such that it can be used in code.
   const xiiString GetProjectName(bool bSanitize) const;
 
-  /// \brief Returns the path in which the 'xiiProject' file is stored
+  /// Returns the path in which the 'xiiProject' file is stored
   xiiString GetProjectDirectory() const;
 
-  /// \brief Returns the directory path in which project settings etc. should be stored
+  /// Returns the directory path in which project settings etc. should be stored
   xiiString GetProjectDataFolder() const;
 
-  /// \brief Starts at the  given document and then searches the tree upwards until it finds a xiiProject file.
+  /// Starts at the  given document and then searches the tree upwards until it finds a xiiProject file.
   static xiiString FindProjectDirectoryForDocument(xiiStringView sDocumentPath);
 
   bool IsDocumentInAllowedRoot(xiiStringView sDocumentPath, xiiString* out_pRelativePath = nullptr) const;
 
   void AddAllowedDocumentRoot(xiiStringView sPath);
 
-  /// \brief Makes sure the given sub-folder exists inside the project directory
+  /// Makes sure the given sub-folder exists inside the project directory
   void CreateSubFolder(xiiStringView sFolder) const;
 
 private:

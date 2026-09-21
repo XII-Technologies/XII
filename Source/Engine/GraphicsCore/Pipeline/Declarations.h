@@ -4,7 +4,7 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-/// \brief Defines the shading quality levels used in rendering operations.
+/// Defines the shading quality levels used in rendering operations.
 ///
 /// This enumeration allows rendering systems or materials to selectively enable or disable visual features depending on the desired quality level.
 /// Lower settings may omit expensive effects (e.g., shadows, complex lighting), while higher levels offer more realistic and detailed shading.
@@ -35,7 +35,7 @@ struct XII_GRAPHICSCORE_DLL xiiShadingQualityLevel
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiShadingQualityLevel);
 
-/// \brief Usage hint of a camera/view.
+/// Usage hint of a camera/view.
 ///
 /// This enumeration provides context about how a camera or view is intended to be used by the rendering system.
 /// It enables systems (renderers, culling, post-processing, profiling, etc.) to adapt behavior depending on the role of the view.
@@ -82,7 +82,7 @@ struct XII_GRAPHICSCORE_DLL xiiCameraUsageHint
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiCameraUsageHint);
 
-/// \brief Selects a visualization or debug rendering mode for a view.
+/// Selects a visualization or debug rendering mode for a view.
 ///
 /// This enumeration controls how the scene is shaded for debugging, visualization, or profiling purposes.
 /// Modes range from simple wireframe and overdraw visualizations to material/G-Buffer channel inspection, lighting-only renders, and ray-tracing-specific diagnostics.
@@ -158,7 +158,7 @@ class xiiViewHandle
   friend class xiiRenderWorldModule;
 };
 
-/// \brief HashHelper implementation so view handles can be used as key in a hashtable.
+/// HashHelper implementation so view handles can be used as key in a hashtable.
 template <>
 struct xiiHashHelper<xiiViewHandle>
 {

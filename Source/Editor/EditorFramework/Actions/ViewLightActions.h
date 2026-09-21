@@ -7,7 +7,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <GuiFoundation/Action/BaseActions.h>
 
-/// \brief Actions for configuring the engine view light settings.
+/// Actions for configuring the engine view light settings.
 class XII_EDITORFRAMEWORK_DLL xiiViewLightActions
 {
 public:

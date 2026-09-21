@@ -13,7 +13,7 @@
 
 class xiiImage;
 
-/// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTexture3DResource> to create textures from data in memory.
+/// Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTexture3DResource> to create textures from data in memory.
 struct XII_GRAPHICSCORE_DLL xiiTexture3DResourceDescriptor
 {
   xiiGALTextureCreationDescription          m_TextureDescription         = xiiGALTextureUtilities::GetDefaultTexture2DDescription(); ///< Texture creation description.

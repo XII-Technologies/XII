@@ -9,7 +9,7 @@
 
 class xiiStreamWriter;
 
-/// \brief This describes the sampler flags.
+/// This describes the sampler flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerFlags
 {
   using StorageType = xiiUInt8;
@@ -34,7 +34,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSamplerFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSamplerFlags);
 
-/// \brief This describes the sampler creation description.
+/// This describes the sampler creation description.
 ///
 /// To create an anisotropic filter, all three filters must either be xiiGALFilterType::Anisotropic or xiiGALFilterType::ComparisonAnisotropic.
 ///
@@ -65,13 +65,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerCreationDescription : public xiiH
   float                             m_fMaxLOD            = xiiMath::MaxValue<float>();      ///< Specifies the maximum value that LOD is clamped to before accessing the texture MIP levels. The default is xiiMath::MaxValue<float>().
 };
 
-/// \brief Interface that defines methods to manipulate a texture sampler object used to perform texture filtering.
+/// Interface that defines methods to manipulate a texture sampler object used to perform texture filtering.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALSampler : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALSampler, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSamplerCreationDescription& GetDescription() const { return m_Description; }
 
 protected:

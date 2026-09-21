@@ -52,17 +52,17 @@ public:
 
   virtual void AutoComplete(xiiCommandInterpreterState& inout_state);
 
-  /// \brief Iterates over all cvars and finds all that start with the string \a szVariable.
+  /// Iterates over all cvars and finds all that start with the string \a szVariable.
   static void FindPossibleCVars(xiiStringView sVariable, xiiDeque<xiiString>& ref_commonStrings, xiiDeque<xiiConsoleString>& ref_consoleStrings);
 
-  /// \brief Iterates over all console functions and finds all that start with the string \a szVariable.
+  /// Iterates over all console functions and finds all that start with the string \a szVariable.
   static void FindPossibleFunctions(xiiStringView sVariable, xiiDeque<xiiString>& ref_commonStrings, xiiDeque<xiiConsoleString>& ref_consoleStrings);
 
-  /// \brief Returns the prefix string that is common to all strings in the \a vStrings array.
+  /// Returns the prefix string that is common to all strings in the \a vStrings array.
   static const xiiString FindCommonString(const xiiDeque<xiiString>& strings);
 };
 
-/// \brief The event data that is broadcast by the console
+/// The event data that is broadcast by the console
 struct xiiConsoleEvent
 {
   enum class Type : xiiInt32
@@ -72,7 +72,7 @@ struct xiiConsoleEvent
 
   Type m_Type;
 
-  /// \brief The console string that was just added.
+  /// The console string that was just added.
   const xiiConsoleString* m_AddedpConsoleString;
 };
 
@@ -86,11 +86,11 @@ public:
   /// @{
 
 public:
-  /// \brief Grants access to subscribe and unsubscribe from console events.
+  /// Grants access to subscribe and unsubscribe from console events.
   const xiiEvent<const xiiConsoleEvent&>& Events() const { return m_Events; }
 
 protected:
-  /// \brief The console event variable, to attach to.
+  /// The console event variable, to attach to.
   xiiEvent<const xiiConsoleEvent&> m_Events;
 
   /// @}
@@ -99,7 +99,7 @@ protected:
   /// @{
 
 public:
-  /// \brief Returns the mutex that's used to prevent multi-threaded access
+  /// Returns the mutex that's used to prevent multi-threaded access
   xiiMutex& GetMutex() const { return m_Mutex; }
 
   static void        SetMainConsole(xiiConsole* pConsole);
@@ -117,21 +117,21 @@ private:
   /// @{
 
 public:
-  /// \brief Replaces the current command interpreter.
+  /// Replaces the current command interpreter.
   ///
   /// This base class doesn't set any default interpreter, but derived classes may do so.
   void SetCommandInterpreter(const xiiSharedPtr<xiiCommandInterpreter>& pInterpreter) { m_pCommandInterpreter = pInterpreter; }
 
-  /// \brief Returns the currently used command interpreter.
+  /// Returns the currently used command interpreter.
   const xiiSharedPtr<xiiCommandInterpreter>& GetCommandInterpreter() const { return m_pCommandInterpreter; }
 
-  /// \brief Auto-completes the given text.
+  /// Auto-completes the given text.
   ///
   /// Returns true, if the string was modified in any way.
   /// Adds additional strings to the console output, if there are further auto-completion suggestions.
   virtual bool AutoComplete(xiiStringBuilder& ref_sText);
 
-  /// \brief Executes the given input string.
+  /// Executes the given input string.
   ///
   /// The command is forwarded to the set command interpreter.
   virtual void ExecuteCommand(xiiStringView sInput);
@@ -145,7 +145,7 @@ protected:
   /// @{
 
 public:
-  /// \brief Adds a string to the console.
+  /// Adds a string to the console.
   ///
   /// The base class only broadcasts an event, but does not store the string anywhere.
   virtual void AddConsoleString(xiiStringView sText, xiiConsoleString::Type type = xiiConsoleString::Type::Default);
@@ -156,21 +156,21 @@ public:
   /// @{
 
 public:
-  /// \brief Adds an item to the input history.
+  /// Adds an item to the input history.
   void AddToInputHistory(xiiStringView sText);
 
-  /// \brief Returns the current input history.
+  /// Returns the current input history.
   ///
   /// Make sure to lock the console's mutex while working with the history.
   const xiiStaticArray<xiiString, 16>& GetInputHistory() const { return m_InputHistory; }
 
-  /// \brief Replaces the input line by the next (or previous) history item.
+  /// Replaces the input line by the next (or previous) history item.
   void RetrieveInputHistory(xiiInt32 iHistoryUp, xiiStringBuilder& ref_sResult);
 
-  /// \brief Writes the current input history to a text file.
+  /// Writes the current input history to a text file.
   xiiResult SaveInputHistory(xiiStringView sFile);
 
-  /// \brief Reads the text file and appends all lines to the input history.
+  /// Reads the text file and appends all lines to the input history.
   void LoadInputHistory(xiiStringView sFile);
 
 protected:

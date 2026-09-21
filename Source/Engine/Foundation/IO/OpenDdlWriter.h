@@ -8,7 +8,7 @@
 // TODO
 // Write primitives in HEX (esp. float)
 
-/// \brief The base class for OpenDDL writers.
+/// The base class for OpenDDL writers.
 ///
 /// Declares a common interface for writing OpenDDL files.
 class XII_FOUNDATION_DLL xiiOpenDdlWriter
@@ -28,79 +28,79 @@ public:
     Exact,    ///< Float values are printed as HEX, representing the exact binary data.
   };
 
-  /// \brief Constructor
+  /// Constructor
   xiiOpenDdlWriter();
 
   virtual ~xiiOpenDdlWriter() = default;
 
-  /// \brief All output is written to this binary stream.
+  /// All output is written to this binary stream.
   void SetOutputStream(xiiStreamWriter* pOutput) { m_pOutput = pOutput; } // [tested]
 
-  /// \brief Configures how much whitespace is output.
+  /// Configures how much whitespace is output.
   void SetCompactMode(bool bCompact) { m_bCompactMode = bCompact; } // [tested]
 
-  /// \brief Configures how verbose the type strings are going to be written.
+  /// Configures how verbose the type strings are going to be written.
   void SetPrimitiveTypeStringMode(TypeStringMode mode) { m_TypeStringMode = mode; }
 
-  /// \brief Configures how float values are output.
+  /// Configures how float values are output.
   void SetFloatPrecisionMode(FloatPrecisionMode mode) { m_FloatPrecisionMode = mode; }
 
-  /// \brief Returns how float values are output.
+  /// Returns how float values are output.
   FloatPrecisionMode GetFloatPrecisionMode() const { return m_FloatPrecisionMode; }
 
-  /// \brief Allows to set the indentation. Negative values are possible.
+  /// Allows to set the indentation. Negative values are possible.
   /// This makes it possible to set the indentation e.g. to -2, thus the output will only have indentation after a level of 3 has been reached.
   void SetIndentation(xiiInt8 iIndentation) { m_iIndentation = iIndentation; }
 
-  /// \brief Begins outputting an object.
+  /// Begins outputting an object.
   void BeginObject(xiiStringView sType, xiiStringView sName = {}, bool bGlobalName = false, bool bSingleLine = false); // [tested]
 
-  /// \brief Ends outputting an object.
+  /// Ends outputting an object.
   void EndObject(); // [tested]
 
-  /// \brief Begins outputting a list of primitives of the given type.
+  /// Begins outputting a list of primitives of the given type.
   void BeginPrimitiveList(xiiOpenDdlPrimitiveType type, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
-  /// \brief Ends outputting the list of primitives.
+  /// Ends outputting the list of primitives.
   void EndPrimitiveList(); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteBool(const bool* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteInt8(const xiiInt8* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteInt16(const xiiInt16* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteInt32(const xiiInt32* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteInt64(const xiiInt64* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteUInt8(const xiiUInt8* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteUInt16(const xiiUInt16* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteUInt32(const xiiUInt32* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteUInt64(const xiiUInt64* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteFloat(const float* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a number of values to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteDouble(const double* pValues, xiiUInt32 uiCount = 1); // [tested]
 
-  /// \brief Writes a single string to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
+  /// Writes a single string to the primitive list. Can be called multiple times between BeginPrimitiveList() / EndPrimitiveList().
   void WriteString(const xiiStringView& sString); // [tested]
 
-  /// \brief Writes a single string to the primitive list, but the value is a HEX representation of the given binary data.
+  /// Writes a single string to the primitive list, but the value is a HEX representation of the given binary data.
   void WriteBinaryAsString(const void* pData, xiiUInt32 uiBytes);
 
 

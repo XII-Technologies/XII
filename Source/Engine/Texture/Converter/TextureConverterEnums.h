@@ -92,7 +92,7 @@ struct xiiTextureConverterTargetPlatform
   using StorageType = xiiUInt8;
 };
 
-/// \brief Defines which channel of another texture to read to get a value
+/// Defines which channel of another texture to read to get a value
 struct xiiTextureConverterChannelValue
 {
   enum Enum
@@ -107,7 +107,7 @@ struct xiiTextureConverterChannelValue
   };
 };
 
-/// \brief Defines which filter kernel is used to approximate the x/y bump map gradients
+/// Defines which filter kernel is used to approximate the x/y bump map gradients
 struct xiiTextureConverterBumpMapFilter
 {
   enum Enum

@@ -4,7 +4,7 @@
 
 #include <Foundation/Threading/TaskSystem.h>
 
-/// \brief A simple task implementation that calls a delegate function.
+/// A simple task implementation that calls a delegate function.
 template <typename T>
 class xiiDelegateTask final : public xiiTask
 {

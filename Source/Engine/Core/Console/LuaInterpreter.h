@@ -9,7 +9,7 @@
 class XII_CORE_DLL xiiCommandInterpreterLua : public xiiCommandInterpreter
 {
 public:
-  /// \brief The default interpreter used by xiiConsole. Uses Lua for parsing and execution.
+  /// The default interpreter used by xiiConsole. Uses Lua for parsing and execution.
   ///
   /// The Lua interpreter can modify xiiCVar variables and call xiiConsoleFunction functions.
   ///

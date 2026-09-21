@@ -24,7 +24,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStateResourceDescriptor
   xiiUInt32 CalculateHash() const;
 };
 
-/// \brief Serialized state of a shader permutation.
+/// Serialized state of a shader permutation.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPermutationBinary
 {
 public:

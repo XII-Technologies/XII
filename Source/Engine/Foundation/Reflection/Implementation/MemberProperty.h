@@ -12,7 +12,7 @@
 // ***** Base class for accessing properties *****
 
 
-/// \brief The base class for all typed member properties. I.e. once the type of a property is determined, it can be cast to the proper
+/// The base class for all typed member properties. I.e. once the type of a property is determined, it can be cast to the proper
 /// version of this.
 ///
 /// For example, when you have a pointer to a xiiAbstractMemberProperty and it returns that the property is of type 'int', you can cast the
@@ -21,7 +21,7 @@ template <typename Type>
 class xiiTypedMemberProperty : public xiiAbstractMemberProperty
 {
 public:
-  /// \brief Passes the property name through to xiiAbstractMemberProperty.
+  /// Passes the property name through to xiiAbstractMemberProperty.
   xiiTypedMemberProperty(xiiStringView sPropertyName) :
     xiiAbstractMemberProperty(sPropertyName)
   {
@@ -29,17 +29,17 @@ public:
     static_assert(!std::is_pointer<Type>::value || xiiVariant::TypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid, "Pointer to standard types are not supported.");
   }
 
-  /// \brief Returns the actual type of the property. You can then compare that with known types, eg. compare it to xiiGetStaticRTTI<int>()
+  /// Returns the actual type of the property. You can then compare that with known types, eg. compare it to xiiGetStaticRTTI<int>()
   /// to see whether this is an int property.
   virtual const xiiRTTI* GetSpecificType() const override // [tested]
   {
     return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferencePointerType>();
   }
 
-  /// \brief Returns the value of the property. Pass the instance pointer to the surrounding class along.
+  /// Returns the value of the property. Pass the instance pointer to the surrounding class along.
   virtual Type GetValue(const void* pInstance) const = 0; // [tested]
 
-  /// \brief Modifies the value of the property. Pass the instance pointer to the surrounding class along.
+  /// Modifies the value of the property. Pass the instance pointer to the surrounding class along.
   ///
   /// \note Make sure the property is not read-only before calling this, otherwise an assert will fire.
   virtual void SetValue(void* pInstance, Type value) const = 0; // [tested]
@@ -48,7 +48,7 @@ public:
   virtual void SetValuePtr(void* pInstance, const void* pObject) const override { SetValue(pInstance, *static_cast<const Type*>(pObject)); };
 };
 
-/// \brief Specialization of xiiTypedMemberProperty for const char*.
+/// Specialization of xiiTypedMemberProperty for const char*.
 ///
 /// This works because xiiTypedMemberProperty< typename xiiTypeTraits<Type>::NonConstReferenceType > in xiiAccessorProperty
 /// does not actually remove the constness of the type but of the pointer, so const char* is not affected.
@@ -78,7 +78,7 @@ public:
 // *******************************************************************
 // ***** Class for properties that use custom accessor functions *****
 
-/// \brief [internal] An implementation of xiiTypedMemberProperty that uses custom getter / setter functions to access a property.
+/// [internal] An implementation of xiiTypedMemberProperty that uses custom getter / setter functions to access a property.
 template <typename Class, typename Type>
 class xiiAccessorProperty : public xiiTypedMemberProperty<typename xiiTypeTraits<Type>::NonConstReferenceType>
 {
@@ -87,7 +87,7 @@ public:
   using GetterFunc = Type (Class::*)() const;
   using SetterFunc = void (Class::*)(Type value);
 
-  /// \brief Constructor.
+  /// Constructor.
   xiiAccessorProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter) :
     xiiTypedMemberProperty<RealType>(sPropertyName)
   {
@@ -100,7 +100,7 @@ public:
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
   }
 
-  /// \brief Always returns nullptr; once a property is modified through accessors, there is no point in giving more direct access to
+  /// Always returns nullptr; once a property is modified through accessors, there is no point in giving more direct access to
   /// others.
   virtual void* GetPropertyPointer(const void* pInstance) const override
   {
@@ -110,13 +110,13 @@ public:
     return nullptr;
   }
 
-  /// \brief Returns the value of the property. Pass the instance pointer to the surrounding class along.
+  /// Returns the value of the property. Pass the instance pointer to the surrounding class along.
   virtual RealType GetValue(const void* pInstance) const override // [tested]
   {
     return (static_cast<const Class*>(pInstance)->*m_Getter)();
   }
 
-  /// \brief Modifies the value of the property. Pass the instance pointer to the surrounding class along.
+  /// Modifies the value of the property. Pass the instance pointer to the surrounding class along.
   ///
   /// \note Make sure the property is not read-only before calling this, otherwise an assert will fire.
   virtual void SetValue(void* pInstance, RealType value) const override // [tested]
@@ -136,7 +136,7 @@ private:
 // *************************************************************
 // ***** Classes for properties that are accessed directly *****
 
-/// \brief [internal] Helper class to generate accessor functions for (private) members of another class
+/// [internal] Helper class to generate accessor functions for (private) members of another class
 template <typename Class, typename Type, Type Class::* Member>
 struct xiiPropertyAccessor
 {
@@ -148,7 +148,7 @@ struct xiiPropertyAccessor
 };
 
 
-/// \brief [internal] An implementation of xiiTypedMemberProperty that accesses the property data directly.
+/// [internal] An implementation of xiiTypedMemberProperty that accesses the property data directly.
 template <typename Class, typename Type>
 class xiiMemberProperty : public xiiTypedMemberProperty<Type>
 {
@@ -157,7 +157,7 @@ public:
   using SetterFunc  = void (*)(Class* pInstance, Type value);
   using PointerFunc = void* (*)(const Class* pInstance);
 
-  /// \brief Constructor.
+  /// Constructor.
   xiiMemberProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter, PointerFunc pointer) :
     xiiTypedMemberProperty<Type>(sPropertyName)
   {
@@ -171,13 +171,13 @@ public:
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
   }
 
-  /// \brief Returns a pointer to the member property.
+  /// Returns a pointer to the member property.
   virtual void* GetPropertyPointer(const void* pInstance) const override { return m_Pointer(static_cast<const Class*>(pInstance)); }
 
-  /// \brief Returns the value of the property. Pass the instance pointer to the surrounding class along.
+  /// Returns the value of the property. Pass the instance pointer to the surrounding class along.
   virtual Type GetValue(const void* pInstance) const override { return m_Getter(static_cast<const Class*>(pInstance)); }
 
-  /// \brief Modifies the value of the property. Pass the instance pointer to the surrounding class along.
+  /// Modifies the value of the property. Pass the instance pointer to the surrounding class along.
   ///
   /// \note Make sure the property is not read-only before calling this, otherwise an assert will fire.
   virtual void SetValue(void* pInstance, Type value) const override

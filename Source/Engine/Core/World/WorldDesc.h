@@ -11,7 +11,7 @@
 
 class xiiTimeStepSmoothing;
 
-/// \brief Describes the initial state of a world.
+/// Describes the initial state of a world.
 struct xiiWorldDescription
 {
   XII_DECLARE_POD_TYPE();

@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Resources/Resource.h>
 
-/// \brief This describes the acceleration structure build flags.
+/// This describes the acceleration structure build flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingBuildASFlags
 {
   using StorageType = xiiUInt8;
@@ -37,7 +37,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingBuildASFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingBuildASFlags);
 
-/// \brief This describes the bottom level acceleration structure triangles.
+/// This describes the bottom level acceleration structure triangles.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleDescription : public xiiHashableStruct<xiiGALBLASTriangleDescription>
 {
   xiiString                m_sGeometryName;                                    ///< The geometry name used to map triangle data. The default is an empty string view.
@@ -52,14 +52,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleDescription : public xiiHash
   xiiEnum<xiiGALValueType> m_IndexType           = xiiGALValueType::Undefined; ///< The index type of this geometry. This must be UInt16, UInt32 or Undefined. If Undefined, then the vertex array is used instead of the indexed vertices. The default is Undefined.
 };
 
-/// \brief This describes the bottom level acceleration structure axis-aligned bounding box.
+/// This describes the bottom level acceleration structure axis-aligned bounding box.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxDescription : public xiiHashableStruct<xiiGALBLASBoundingBoxDescription>
 {
   xiiString m_sGeometryName;      ///< The geometry name. This is used to map axis-aligned bounding box data to this geometry. The default is an empty string view.
   xiiUInt32 m_uiMaxBoxCount = 0U; ///< The maximum axis-aligned bounding box (AABB) count. The default is 0.
 };
 
-/// \brief This describes bottom level acceleration structure creation description.
+/// This describes bottom level acceleration structure creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASCreationDescription : public xiiHashableStruct<xiiGALBottomLevelASCreationDescription>
 {
   xiiDynamicArray<xiiGALBLASTriangleDescription>    m_Triangles;                                            ///< Array of triangle geometry descriptions.
@@ -68,7 +68,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASCreationDescription : publi
   xiiUInt64                                         m_uiCompactedSize = 0U;                                 ///< Compacted size, if this acceleration structure will be the target of a compacted copy operation. The default is 0.
 };
 
-/// \brief This describes the scratch buffer information for the acceleration structure.
+/// This describes the scratch buffer information for the acceleration structure.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALScratchBufferSizeDescription : public xiiHashableStruct<xiiGALScratchBufferSizeDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -77,16 +77,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALScratchBufferSizeDescription : public xi
   xiiUInt64 m_uiUpdate = 0U; ///< Scratch buffer size for acceleration structure updating. May be zero if acceleration structure was created without raytracing build allow update flag or with a non-zero compacted size. The default is 0.
 };
 
-/// \brief Interface that defines methods to manipulate a bottom level acceleration structure (BLAS) object.
+/// Interface that defines methods to manipulate a bottom level acceleration structure (BLAS) object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelAS, xiiGALResource);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBottomLevelASCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
+  /// This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
   /// \param sName - The geometry name that is specified in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
@@ -95,7 +95,7 @@ public:
   /// \note Access to the BLAS must be externally synchronized.
   [[nodiscard]] xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const;
 
-  /// \brief This returns the geometry index that can be used in a shader binding table.
+  /// This returns the geometry index that can be used in a shader binding table.
   ///
   /// \param sName - The geometry name that is specified in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
@@ -104,14 +104,14 @@ public:
   /// \note Access to the BLAS must be externally synchronized.
   [[nodiscard]] xiiUInt32 GetGeometryIndex(xiiStringView sName) const;
 
-  /// \brief This returns the geometry count that was used to build the acceleration structure.
+  /// This returns the geometry count that was used to build the acceleration structure.
   ///
   /// \return The number of geometries that was used to build the acceleration structure.
   ///
   /// \note Access to the BLAS must be externally synchronized.
   [[nodiscard]] xiiUInt32 GetActualGeometryCount() const;
 
-  /// \brief This returns the scratch buffer information for the current acceleration structure.
+  /// This returns the scratch buffer information for the current acceleration structure.
   ///
   /// \return The scratch buffer size description, see xiiGALScratchBufferSizeDescription.
   [[nodiscard]] const xiiGALScratchBufferSizeDescription& GetScratchBufferSizeDescription() const;

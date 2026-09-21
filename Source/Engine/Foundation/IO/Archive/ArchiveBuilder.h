@@ -7,7 +7,7 @@
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Types/Delegate.h>
 
-/// \brief Utility class to build a xiiArchive file from files/folders on disk
+/// Utility class to build a xiiArchive file from files/folders on disk
 ///
 /// All functionality for writing a xiiArchive file is available through xiiArchiveUtils.
 class XII_FOUNDATION_DLL xiiArchiveBuilder
@@ -35,19 +35,19 @@ public:
     Compress_zstd_highest, ///< Add the file and try out compression. If compression does not help, the file will end up uncompressed in the archive.
   };
 
-  /// \brief Custom decider whether to include a file into the archive
+  /// Custom decider whether to include a file into the archive
   using InclusionCallback = xiiDelegate<InclusionMode(xiiStringView)>;
 
-  /// \brief Iterates over all files in a folder and adds them to m_Entries for later.
+  /// Iterates over all files in a folder and adds them to m_Entries for later.
   ///
   /// The callback can be used to exclude certain files or to deactivate compression on them.
   /// \note If no callback is given, the default is to store all files uncompressed!
   void AddFolder(xiiStringView sAbsFolderPath, xiiArchiveCompressionMode defaultMode = xiiArchiveCompressionMode::Uncompressed, InclusionCallback callback = InclusionCallback());
 
-  /// \brief Overwrites the given file with the archive
+  /// Overwrites the given file with the archive
   xiiResult WriteArchive(xiiStringView sFile) const;
 
-  /// \brief Writes the previously gathered files to the file stream
+  /// Writes the previously gathered files to the file stream
   xiiResult WriteArchive(xiiStreamWriter& ref_stream) const;
 
 protected:

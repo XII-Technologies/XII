@@ -6,7 +6,7 @@
 
 #include <Foundation/Threading/AtomicUtils.h>
 
-/// \brief Integer class that can be manipulated in an atomic (i.e. thread-safe) fashion.
+/// Integer class that can be manipulated in an atomic (i.e. thread-safe) fashion.
 template <typename T>
   requires xii_is_atomic_compatible_v<T>
 class xiiAtomicInteger
@@ -14,31 +14,31 @@ class xiiAtomicInteger
 public:
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Initializes the value to zero.
+  /// Initializes the value to zero.
   xiiAtomicInteger(); // [tested]
 
-  /// \brief Initializes the object with a value.
+  /// Initializes the object with a value.
   xiiAtomicInteger(const T value); // [tested]
 
-  /// \brief Copy-constructor.
+  /// Copy-constructor.
   xiiAtomicInteger(const xiiAtomicInteger<T>& value); // [tested]
 
-  /// \brief Assigns a new integer value to this object.
+  /// Assigns a new integer value to this object.
   xiiAtomicInteger& operator=(T value); // [tested]
 
-  /// \brief Assignment operator.
+  /// Assignment operator.
   xiiAtomicInteger& operator=(const xiiAtomicInteger& value); // [tested]
 
-  /// \brief Increments the internal value and returns the incremented value.
+  /// Increments the internal value and returns the incremented value.
   T Increment(); // [tested]
 
-  /// \brief Decrements the internal value and returns the decremented value.
+  /// Decrements the internal value and returns the decremented value.
   T Decrement(); // [tested]
 
-  /// \brief Increments the internal value and returns the value immediately before the increment.
+  /// Increments the internal value and returns the value immediately before the increment.
   T PostIncrement(); // [tested]
 
-  /// \brief Decrements the internal value and returns the value immediately before the decrement.
+  /// Decrements the internal value and returns the value immediately before the decrement.
   T PostDecrement(); // [tested]
 
   void Add(T x);      // [tested]
@@ -51,13 +51,13 @@ public:
   void Min(T x); // [tested]
   void Max(T x); // [tested]
 
-  /// \brief Sets the internal value to x and returns the original internal value.
+  /// Sets the internal value to x and returns the original internal value.
   T Set(T x); // [tested]
 
-  /// \brief Sets the internal value to x if the internal value is equal to expected and returns true, otherwise does nothing and returns false.
+  /// Sets the internal value to x if the internal value is equal to expected and returns true, otherwise does nothing and returns false.
   bool TestAndSet(T expected, T x); // [tested]
 
-  /// \brief If this is equal to *expected*, it is set to *value*. Otherwise it won't be modified. Always returns the previous value of this before the modification.
+  /// If this is equal to *expected*, it is set to *value*. Otherwise it won't be modified. Always returns the previous value of this before the modification.
   T CompareAndSwap(T expected, T x); // [tested]
 
   operator T() const; // [tested]
@@ -66,33 +66,33 @@ private:
   xii_atomic_underlying_t<T> m_Value;
 };
 
-/// \brief An atomic boolean variable. This is just a wrapper around an atomic int32 for convenience.
+/// An atomic boolean variable. This is just a wrapper around an atomic int32 for convenience.
 class xiiAtomicBool
 {
 public:
-  /// \brief Initializes the bool to 'false'.
+  /// Initializes the bool to 'false'.
   xiiAtomicBool(); // [tested]
   ~xiiAtomicBool();
 
-  /// \brief Initializes the object with a value.
+  /// Initializes the object with a value.
   xiiAtomicBool(bool value); // [tested]
 
-  /// \brief Copy-constructor.
+  /// Copy-constructor.
   xiiAtomicBool(const xiiAtomicBool& rhs);
 
-  /// \brief Sets the bool to the given value and returns its previous value.
+  /// Sets the bool to the given value and returns its previous value.
   bool Set(bool value); // [tested]
 
-  /// \brief Sets the bool to the given value.
+  /// Sets the bool to the given value.
   void operator=(bool value); // [tested]
 
-  /// \brief Sets the bool to the given value.
+  /// Sets the bool to the given value.
   void operator=(const xiiAtomicBool& rhs);
 
-  /// \brief Returns the current value.
+  /// Returns the current value.
   operator bool() const; // [tested]
 
-  /// \brief Sets the internal value to \a newValue if the internal value is equal to \a expected and returns true, otherwise does nothing and returns false.
+  /// Sets the internal value to \a newValue if the internal value is equal to \a expected and returns true, otherwise does nothing and returns false.
   bool TestAndSet(bool bExpected, bool bNewValue);
 
 private:

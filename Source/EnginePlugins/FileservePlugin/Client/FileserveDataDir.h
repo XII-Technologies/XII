@@ -28,17 +28,17 @@ namespace xiiDataDirectory
     virtual void InternalClose() override;
   };
 
-  /// \brief A data directory type to handle access to files that are served from a network host.
+  /// A data directory type to handle access to files that are served from a network host.
   class XII_FILESERVEPLUGIN_DLL FileserveType : public FolderType
   {
   public:
-    /// \brief The factory that can be registered at xiiFileSystem to create data directories of this type.
+    /// The factory that can be registered at xiiFileSystem to create data directories of this type.
     static xiiDataDirectoryType* Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiDataDirUsage usage);
 
-    /// \brief [internal] Makes sure the redirection config files are up to date and then reloads them.
+    /// [internal] Makes sure the redirection config files are up to date and then reloads them.
     virtual void ReloadExternalConfigs() override;
 
-    /// \brief [internal] Called by FileserveDataDirectoryWriter when it is finished to upload the written file to the server
+    /// [internal] Called by FileserveDataDirectoryWriter when it is finished to upload the written file to the server
     void FinishedWriting(FolderWriter* pWriter);
 
   protected:
@@ -48,7 +48,7 @@ namespace xiiDataDirectory
     virtual void                    RemoveDataDirectory() override;
     virtual void                    DeleteFile(xiiStringView sFile) override;
     virtual bool                    ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir) override;
-    /// \brief Limitation: Fileserve does not handle folders, only files. If someone stats a folder, this will fail.
+    /// Limitation: Fileserve does not handle folders, only files. If someone stats a folder, this will fail.
     virtual xiiResult     GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
     virtual FolderReader* CreateFolderReader() const override;
     virtual FolderWriter* CreateFolderWriter() const override;

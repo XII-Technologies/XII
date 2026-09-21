@@ -25,10 +25,10 @@ public:
 
   static void WriteDiff(const xiiDeque<xiiAbstractGraphDiffOperation>& mergedDiff, xiiStringBuilder& out_sText);
 
-  /// \brief Merges diffs of left and right graphs relative to their base graph. Conflicts prefer the right graph.
+  /// Merges diffs of left and right graphs relative to their base graph. Conflicts prefer the right graph.
   static void Merge(const xiiAbstractObjectGraph& baseGraph, const xiiAbstractObjectGraph& leftGraph, const xiiAbstractObjectGraph& rightGraph, xiiDeque<xiiAbstractGraphDiffOperation>& out_mergedDiff);
 
-  /// \brief Merges diffs of left and right graphs relative to their base graph. Conflicts prefer the right graph. Base and left are provided as
+  /// Merges diffs of left and right graphs relative to their base graph. Conflicts prefer the right graph. Base and left are provided as
   /// serialized DDL graphs and the right graph is build directly from pRight and its PrefabSeed.
   static void Merge(xiiStringView sBase, xiiStringView sLeft, xiiDocumentObject* pRight, bool bRightIsNotPartOfPrefab, const xiiUuid& prefabSeed, xiiStringBuilder& out_sNewGraph);
 

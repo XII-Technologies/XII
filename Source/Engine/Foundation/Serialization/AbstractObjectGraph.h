@@ -38,7 +38,7 @@ public:
 
   void ClearProperties();
 
-  // \brief Inlines a custom variant type. Use to patch properties that have been turned into custom variant type.
+  // Inlines a custom variant type. Use to patch properties that have been turned into custom variant type.
   // \sa XII_DEFINE_CUSTOM_VARIANT_TYPE, XII_DECLARE_CUSTOM_VARIANT_TYPE
   xiiResult InlineProperty(xiiStringView sName);
 
@@ -138,11 +138,11 @@ public:
   const xiiMap<xiiUuid, xiiAbstractObjectNode*>& GetAllNodes() const { return m_Nodes; }
   xiiMap<xiiUuid, xiiAbstractObjectNode*>&       GetAllNodes() { return m_Nodes; }
 
-  /// \brief Remaps all node guids by adding the given seed, or if bRemapInverse is true, by subtracting it/
+  /// Remaps all node guids by adding the given seed, or if bRemapInverse is true, by subtracting it/
   ///   This is mostly used to remap prefab instance graphs to their prefab template graph.
   void ReMapNodeGuids(const xiiUuid& seedGuid, bool bRemapInverse = false);
 
-  /// \brief Tries to remap the guids of this graph to those in rhsGraph by walking in both down the hierarchy, starting at root and
+  /// Tries to remap the guids of this graph to those in rhsGraph by walking in both down the hierarchy, starting at root and
   /// rhsRoot.
   ///
   ///  Note that in case of array properties the remapping assumes element indices to be equal
@@ -151,16 +151,16 @@ public:
   ///  applying native side changes to the original xiiDocumentObject hierarchy using diffs.
   void ReMapNodeGuidsToMatchGraph(xiiAbstractObjectNode* pRoot, const xiiAbstractObjectGraph& rhsGraph, const xiiAbstractObjectNode* pRhsRoot);
 
-  /// \brief Finds everything accessible by the given root node.
+  /// Finds everything accessible by the given root node.
   void FindTransitiveHull(const xiiUuid& rootGuid, xiiSet<xiiUuid>& out_reachableNodes) const;
-  /// \brief Deletes everything not accessible by the given root node.
+  /// Deletes everything not accessible by the given root node.
   void PruneGraph(const xiiUuid& rootGuid);
 
-  /// \brief Allows for a given node to be modified as a native object.
+  /// Allows for a given node to be modified as a native object.
   /// Once the callback exits any changes to the sub-hierarchy of the given root node will be written back to the node objects.
   void ModifyNodeViaNativeCounterpart(xiiAbstractObjectNode* pRootNode, xiiDelegate<void(void*, const xiiRTTI*)> callback);
 
-  /// \brief Allows to copy a node from another graph into this graph.
+  /// Allows to copy a node from another graph into this graph.
   xiiAbstractObjectNode* CopyNodeIntoGraph(const xiiAbstractObjectNode* pNode);
 
   xiiAbstractObjectNode* CopyNodeIntoGraph(const xiiAbstractObjectNode* pNode, FilterFunction& ref_filter);

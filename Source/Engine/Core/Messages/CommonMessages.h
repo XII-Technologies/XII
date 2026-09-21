@@ -6,7 +6,7 @@
 #include <Core/World/Declarations.h>
 #include <Foundation/Communication/Message.h>
 
-/// \brief Common message for components that can be toggled between playing and paused states
+/// Common message for components that can be toggled between playing and paused states
 struct XII_CORE_DLL xiiMsgSetPlaying : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetPlaying, xiiMessage);
@@ -14,13 +14,13 @@ struct XII_CORE_DLL xiiMsgSetPlaying : public xiiMessage
   bool m_bPlay = true;
 };
 
-/// \brief Common message for components that can or need to be canceled immediately
+/// Common message for components that can or need to be canceled immediately
 struct XII_CORE_DLL xiiMsgInterruptPlaying : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgInterruptPlaying, xiiMessage);
 };
 
-/// \brief Basic message to set some generic parameter to a float value.
+/// Basic message to set some generic parameter to a float value.
 struct XII_CORE_DLL xiiMsgSetFloatParameter : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetFloatParameter, xiiMessage);
@@ -29,7 +29,7 @@ struct XII_CORE_DLL xiiMsgSetFloatParameter : public xiiMessage
   float     m_fValue = 0.0f;
 };
 
-/// \brief Basic message to set some generic parameter to a double value.
+/// Basic message to set some generic parameter to a double value.
 struct XII_CORE_DLL xiiMsgSetDoubleParameter : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetDoubleParameter, xiiMessage);
@@ -38,7 +38,7 @@ struct XII_CORE_DLL xiiMsgSetDoubleParameter : public xiiMessage
   double    m_fValue = 0.0;
 };
 
-/// \brief Basic message to set some generic parameter to a xiiReal value.
+/// Basic message to set some generic parameter to a xiiReal value.
 struct XII_CORE_DLL xiiMsgSetRealParameter : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetRealParameter, xiiMessage);
@@ -47,7 +47,7 @@ struct XII_CORE_DLL xiiMsgSetRealParameter : public xiiMessage
   xiiReal   m_fValue = static_cast<xiiReal>(0);
 };
 
-/// \brief For use in scripts to signal a custom event that some game event has occurred.
+/// For use in scripts to signal a custom event that some game event has occurred.
 ///
 /// This is a simple message for simple use cases. Create custom messages for more elaborate cases where a string is not sufficient
 /// information.
@@ -60,7 +60,7 @@ struct XII_CORE_DLL xiiMsgGenericEvent : public xiiEventMessage
   xiiVariant      m_Value;
 };
 
-/// \brief Sent when an animation reached its end (either forwards or backwards playing)
+/// Sent when an animation reached its end (either forwards or backwards playing)
 ///
 /// This is sent regardless of whether the animation is played once, looped or back and forth,
 /// ie. it should be sent at each 'end' point, even when it then starts another cycle.

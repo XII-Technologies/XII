@@ -36,16 +36,16 @@ struct xiiThreadEvent
   xiiThread* m_pThread = nullptr;
 };
 
-/// \brief This class is the base class for platform independent long running threads
+/// This class is the base class for platform independent long running threads
 ///
 /// Used by deriving from this class and overriding the Run() method.
 class XII_FOUNDATION_DLL xiiThread : public xiiOSThread
 {
 public:
-  /// \brief Returns the current xiiThread if the current platform thread is a xiiThread. Returns nullptr otherwise.
+  /// Returns the current xiiThread if the current platform thread is a xiiThread. Returns nullptr otherwise.
   static const xiiThread* GetCurrentThread();
 
-  /// \brief Describes the thread status
+  /// Describes the thread status
   enum xiiThreadStatus
   {
     Created = 0,
@@ -53,29 +53,29 @@ public:
     Finished
   };
 
-  /// \brief Initializes the runnable class
+  /// Initializes the runnable class
   xiiThread(xiiStringView sName = "xiiThread", xiiUInt32 uiStackSize = 128 * 1024);
 
-  /// \brief Destructor checks if the thread is deleted while still running, which is not allowed as this is a data hazard
+  /// Destructor checks if the thread is deleted while still running, which is not allowed as this is a data hazard
   virtual ~xiiThread();
 
-  /// \brief Returns the thread status
+  /// Returns the thread status
   inline xiiThreadStatus GetThreadStatus() const { return m_ThreadStatus; }
 
-  /// \brief Helper function to determine if the thread is running
+  /// Helper function to determine if the thread is running
   inline bool IsRunning() const { return m_ThreadStatus == Running; }
 
-  /// \brief Returns the thread name
+  /// Returns the thread name
   inline xiiStringView GetThreadName() const { return m_sName; }
 
-  /// \brief These events inform about threads starting and finishing.
+  /// These events inform about threads starting and finishing.
   ///
   /// The events are raised on the executing thread! That means thread-specific code may be executed during the event callback,
   /// e.g. to set up thread-local functionality.
   static xiiEvent<const xiiThreadEvent&, xiiMutex> s_ThreadEvents;
 
 private:
-  /// \brief The run function can be used to implement a long running task in a thread in a platform independent way
+  /// The run function can be used to implement a long running task in a thread in a platform independent way
   virtual xiiUInt32 Run() = 0;
 
   volatile xiiThreadStatus m_ThreadStatus = Created;

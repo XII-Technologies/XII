@@ -278,13 +278,13 @@ public:
   void                         SetTextureCubeBinding(xiiStringView sName, const xiiTextureCubeResourceHandle& value);
   xiiTextureCubeResourceHandle GetTextureCubeBinding(const xiiTempHashedString& sName);
 
-  /// \brief Copies current description to the loading description so the material is not modified on reset.
+  /// Copies current description to the loading description so the material is not modified on reset.
   void         PreserveCurrentDescription();
   virtual void ResetResource() override;
 
   const xiiMaterialResourceDescriptor& GetCurrentDescription() const;
 
-  /// \brief Use these enum values together with GetDefaultMaterialFileName() to get the default file names for these material types.
+  /// Use these enum values together with GetDefaultMaterialFileName() to get the default file names for these material types.
   enum class DefaultMaterialType
   {
     Fullbright,
@@ -295,7 +295,7 @@ public:
     MissingMaterial
   };
 
-  /// \brief Returns the default material file name for the given type (materials in Data/Base/Materials/BaseMaterials).
+  /// Returns the default material file name for the given type (materials in Data/Base/Materials/BaseMaterials).
   static xiiStringView GetDefaultMaterialFileName(DefaultMaterialType materialType);
 
 private:

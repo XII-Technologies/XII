@@ -19,7 +19,7 @@ public:
   xiiStandardInputDevice(xiiUInt32 uiWindowNumber, SDL_Window* windowHandle);
   ~xiiStandardInputDevice();
 
-  /// \brief This function needs to be called by all Windows functions, to pass the input information through to this input device.
+  /// This function needs to be called by all Windows functions, to pass the input information through to this input device.
   void WindowMessage(void* pMessage);
 
   virtual void                         SetShowMouseCursor(bool bShow) override;

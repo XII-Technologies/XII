@@ -9,7 +9,7 @@
 
 /// \todo Fix docs and unit tests
 
-/// \brief A class that represents position, rotation and scaling via a position vector, a quaternion and a scale vector.
+/// A class that represents position, rotation and scaling via a position vector, a quaternion and a scale vector.
 ///
 /// Scale is applied first, then rotation and finally translation is added. Thus scale and rotation are always in 'local space',
 /// i.e. applying a rotation to the xiiTransformTemplate will rotate objects in place around their local center.
@@ -45,60 +45,60 @@ public:
 
   // *** Constructors ***
 public:
-  /// \brief Default constructor: Does not do any initialization.
+  /// Default constructor: Does not do any initialization.
   xiiTransformTemplate() = default;
 
-  /// \brief Initializes the transform from the given position, rotation and scale.
+  /// Initializes the transform from the given position, rotation and scale.
   explicit xiiTransformTemplate(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation = xiiQuatTemplate<Type>::MakeIdentity(), const xiiVec3Template<Type>& vScale = xiiVec3Template<Type>(1)); // [tested]
 
-  /// \brief Creates a transform from the given position, rotation and scale.
+  /// Creates a transform from the given position, rotation and scale.
   [[nodiscard]] static xiiTransformTemplate<Type> Make(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation = xiiQuatTemplate<Type>::MakeIdentity(), const xiiVec3Template<Type>& vScale = xiiVec3Template<Type>(1));
 
-  /// \brief Creates an identity transform.
+  /// Creates an identity transform.
   [[nodiscard]] static xiiTransformTemplate<Type> MakeIdentity();
 
-  /// \brief Creates a transform from the given matrix.
+  /// Creates a transform from the given matrix.
   ///
   /// \note This operation always succeeds, even though the matrix may be complete garbage (e.g. a zero matrix)
   /// or may not be representable as a transform (containing shearing).
   /// Also be careful with mirroring. The transform may or may not be able to represent that.
   [[nodiscard]] static xiiTransformTemplate<Type> MakeFromMat4(const xiiMat4Template<Type>& mMat);
 
-  /// \brief Creates a transform that is the local transformation needed to get from the parent's transform to the child's.
+  /// Creates a transform that is the local transformation needed to get from the parent's transform to the child's.
   [[nodiscard]] static xiiTransformTemplate<Type> MakeLocalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& globalTransformChild); // [tested]
 
-  /// \brief Creates a transform that is the global transform, that is reached by applying the child's local transform to the parent's global one.
+  /// Creates a transform that is the global transform, that is reached by applying the child's local transform to the parent's global one.
   [[nodiscard]] static xiiTransformTemplate<Type> MakeGlobalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& localTransformChild); // [tested]
 
-  /// \brief Sets the position to be zero and the rotation to identity.
+  /// Sets the position to be zero and the rotation to identity.
   void SetIdentity(); // [tested]
 
-  /// \brief Returns the scale component with maximum magnitude.
+  /// Returns the scale component with maximum magnitude.
   Type GetMaxScale() const;
 
-  /// \brief Returns whether this transform contains negative scaling aka mirroring.
+  /// Returns whether this transform contains negative scaling aka mirroring.
   bool ContainsNegativeScale() const;
 
-  /// \brief Returns whether this transform contains uniform scaling.
+  /// Returns whether this transform contains uniform scaling.
   bool ContainsUniformScale() const;
 
-  /// \brief Checks that all components are valid (no NaN, only finite numbers).
+  /// Checks that all components are valid (no NaN, only finite numbers).
   bool IsValid() const;
 
   // *** Equality ***
 public:
-  /// \brief Equality Check (bitwise)
+  /// Equality Check (bitwise)
   bool IsIdentical(const xiiTransformTemplate& rhs) const; // [tested]
 
-  /// \brief Equality Check with epsilon
+  /// Equality Check with epsilon
   bool IsEqual(const xiiTransformTemplate& rhs, Type fEpsilon) const; // [tested]
 
   // *** Inverse ***
 public:
-  /// \brief Inverts this transform.
+  /// Inverts this transform.
   void Invert(); // [tested]
 
-  /// \brief Returns the inverse of this transform.
+  /// Returns the inverse of this transform.
   const xiiTransformTemplate GetInverse() const; // [tested]
 
   [[nodiscard]] xiiVec3Template<Type> TransformPosition(const xiiVec3Template<Type>& v) const;  // [tested]
@@ -109,33 +109,33 @@ public:
 
   // *** Conversion operations ***
 public:
-  /// \brief Returns the transformation as a matrix.
+  /// Returns the transformation as a matrix.
   const xiiMat4Template<Type> GetAsMat4() const; // [tested]
 };
 
 // *** free functions ***
 
-/// \brief Transforms the vector v by the transform.
+/// Transforms the vector v by the transform.
 template <typename Type>
 const xiiVec3Template<Type> operator*(const xiiTransformTemplate<Type>& t, const xiiVec3Template<Type>& v); // [tested]
 
-/// \brief Rotates the transform by the given quaternion. Multiplies q from the left with t.
+/// Rotates the transform by the given quaternion. Multiplies q from the left with t.
 template <typename Type>
 const xiiTransformTemplate<Type> operator*(const xiiQuatTemplate<Type>& q, const xiiTransformTemplate<Type>& t); // [tested]
 
-/// \brief Rotates the transform by the given quaternion. Multiplies q from the right with t.
+/// Rotates the transform by the given quaternion. Multiplies q from the right with t.
 template <typename Type>
 const xiiTransformTemplate<Type> operator*(const xiiTransformTemplate<Type>& t, const xiiQuatTemplate<Type>& q);
 
-/// \brief Translates the xiiTransform by the vector. This will move the object in global space.
+/// Translates the xiiTransform by the vector. This will move the object in global space.
 template <typename Type>
 const xiiTransformTemplate<Type> operator+(const xiiTransformTemplate<Type>& t, const xiiVec3Template<Type>& v); // [tested]
 
-/// \brief Translates the xiiTransform by the vector. This will move the object in global space.
+/// Translates the xiiTransform by the vector. This will move the object in global space.
 template <typename Type>
 const xiiTransformTemplate<Type> operator-(const xiiTransformTemplate<Type>& t, const xiiVec3Template<Type>& v); // [tested]
 
-/// \brief Concatenates the two transforms. This is the same as a matrix multiplication, thus not commutative.
+/// Concatenates the two transforms. This is the same as a matrix multiplication, thus not commutative.
 template <typename Type>
 const xiiTransformTemplate<Type> operator*(const xiiTransformTemplate<Type>& t1, const xiiTransformTemplate<Type>& t2); // [tested]
 

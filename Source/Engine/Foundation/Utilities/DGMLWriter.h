@@ -7,7 +7,7 @@
 
 class xiiFormatString;
 
-/// \brief This class encapsulates building a DGML compatible graph.
+/// This class encapsulates building a DGML compatible graph.
 class XII_FOUNDATION_DLL xiiDGMLGraph
 {
 public:
@@ -51,26 +51,26 @@ public:
     NodeShape m_Shape = NodeShape::Rectangle;
   };
 
-  /// \brief Constructor for the graph.
+  /// Constructor for the graph.
   xiiDGMLGraph(Direction graphDirection = Direction::LeftToRight, Layout graphLayout = Layout::Tree);
 
-  /// \brief Adds a node to the graph.
+  /// Adds a node to the graph.
   /// Adds a node to the graph and returns the node id which can be used to reference the node later to add connections etc.
   NodeId AddNode(xiiStringView sTitle, const NodeDesc* pDesc = nullptr);
 
-  /// \brief Adds a DGML node that can act as a group for other nodes
+  /// Adds a DGML node that can act as a group for other nodes
   NodeId AddGroup(xiiStringView sTitle, GroupType type, const NodeDesc* pDesc = nullptr);
 
-  /// \brief Inserts a node into an existing group node.
+  /// Inserts a node into an existing group node.
   void AddNodeToGroup(NodeId node, NodeId group);
 
-  /// \brief Adds a directed connection to the graph (an arrow pointing from source to target node).
+  /// Adds a directed connection to the graph (an arrow pointing from source to target node).
   ConnectionId AddConnection(NodeId source, NodeId target, xiiStringView sLabel = {});
 
-  /// \brief Adds a property type. All properties currently use the data type 'string'
+  /// Adds a property type. All properties currently use the data type 'string'
   PropertyId AddPropertyType(xiiStringView sName);
 
-  /// \brief Adds a property of the specified type with the given value to a node
+  /// Adds a property of the specified type with the given value to a node
   void AddNodeProperty(NodeId node, PropertyId property, const xiiFormatString& fmt);
 
 protected:
@@ -114,13 +114,13 @@ protected:
   Layout m_Layout;
 };
 
-/// \brief This class encapsulates the output of DGML compatible graphs to files and streams.
+/// This class encapsulates the output of DGML compatible graphs to files and streams.
 class XII_FOUNDATION_DLL xiiDGMLGraphWriter
 {
 public:
-  /// \brief Helper method to write the graph to a file.
+  /// Helper method to write the graph to a file.
   static xiiResult WriteGraphToFile(xiiStringView sFileName, const xiiDGMLGraph& graph);
 
-  /// \brief Writes the graph as a DGML formatted document to the given string builder.
+  /// Writes the graph as a DGML formatted document to the given string builder.
   static xiiResult WriteGraphToString(xiiStringBuilder& ref_sStringBuilder, const xiiDGMLGraph& graph);
 };

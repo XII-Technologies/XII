@@ -4,7 +4,7 @@
 
 #include <EditorFramework/DragDrop/ComponentDragDropHandler.h>
 
-/// \brief Base class for drag and drop handler that drop on a xiiSceneLayer.
+/// Base class for drag and drop handler that drop on a xiiSceneLayer.
 class xiiLayerDragDropHandler : public xiiDragDropHandler
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLayerDragDropHandler, xiiDragDropHandler);

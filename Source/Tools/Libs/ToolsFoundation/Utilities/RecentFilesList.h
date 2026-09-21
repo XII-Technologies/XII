@@ -7,7 +7,7 @@
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Strings/String.h>
 
-/// \brief Maintains a list of recently used files and the container window ID they previously resided in.
+/// Maintains a list of recently used files and the container window ID they previously resided in.
 class XII_TOOLSFOUNDATION_DLL xiiRecentFilesList
 {
 public:
@@ -16,7 +16,7 @@ public:
   {
   }
 
-  /// \brief Struct that defines the file and container window of the recent file list.
+  /// Struct that defines the file and container window of the recent file list.
   struct RecentFile
   {
     RecentFile() :
@@ -32,19 +32,19 @@ public:
     xiiInt32  m_iContainerWindow;
   };
 
-  /// \brief Moves the inserted file to the front with the given container ID.
+  /// Moves the inserted file to the front with the given container ID.
   void Insert(xiiStringView sFile, xiiInt32 iContainerWindow);
 
-  /// \brief Returns all files in the list.
+  /// Returns all files in the list.
   const xiiDeque<RecentFile>& GetFileList() const { return m_Files; }
 
-  /// \brief Clears the list.
+  /// Clears the list.
   void Clear() { m_Files.Clear(); }
 
-  /// \brief Saves the recent files list to the given file. Uses a simple text file format (one line per item).
+  /// Saves the recent files list to the given file. Uses a simple text file format (one line per item).
   void Save(xiiStringView sFile);
 
-  /// \brief Loads the recent files list from the given file. Uses a simple text file format (one line per item).
+  /// Loads the recent files list from the given file. Uses a simple text file format (one line per item).
   void Load(xiiStringView sFile);
 
 private:

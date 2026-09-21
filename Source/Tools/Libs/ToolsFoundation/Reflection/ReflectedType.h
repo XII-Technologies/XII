@@ -15,7 +15,7 @@ class xiiRTTI;
 class xiiPhantomRttiManager;
 class xiiReflectedTypeStorageManager;
 
-/// \brief Event message used by the xiiPhantomRttiManager.
+/// Event message used by the xiiPhantomRttiManager.
 struct XII_TOOLSFOUNDATION_DLL xiiPhantomTypeChange
 {
   const xiiRTTI* m_pChangedType = nullptr;
@@ -40,14 +40,14 @@ struct XII_TOOLSFOUNDATION_DLL xiiAttributeHolder
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiAttributeHolder);
 
-/// \brief Stores the description of a reflected property in a serializable form, used by xiiReflectedTypeDescriptor.
+/// Stores the description of a reflected property in a serializable form, used by xiiReflectedTypeDescriptor.
 struct XII_TOOLSFOUNDATION_DLL xiiReflectedPropertyDescriptor : public xiiAttributeHolder
 {
   xiiReflectedPropertyDescriptor() = default;
   xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags);
   xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags, xiiArrayPtr<const xiiPropertyAttribute* const> attributes); // [tested]
 
-  /// \brief Initialize to a constant.
+  /// Initialize to a constant.
   xiiReflectedPropertyDescriptor(xiiStringView sName, const xiiVariant& constantValue, xiiArrayPtr<const xiiPropertyAttribute* const> attributes); // [tested]
   xiiReflectedPropertyDescriptor(const xiiReflectedPropertyDescriptor& rhs);
   ~xiiReflectedPropertyDescriptor();
@@ -73,7 +73,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiFunctionArgumentDescriptor
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiFunctionArgumentDescriptor);
 
-/// \brief Stores the description of a reflected function in a serializable form, used by xiiReflectedTypeDescriptor.
+/// Stores the description of a reflected function in a serializable form, used by xiiReflectedTypeDescriptor.
 struct XII_TOOLSFOUNDATION_DLL xiiReflectedFunctionDescriptor : public xiiAttributeHolder
 {
   xiiReflectedFunctionDescriptor();
@@ -93,7 +93,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiReflectedFunctionDescriptor : public xiiAttrib
 XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiReflectedFunctionDescriptor);
 
 
-/// \brief Stores the description of a reflected type in a serializable form. Used by xiiPhantomRttiManager to add new types.
+/// Stores the description of a reflected type in a serializable form. Used by xiiPhantomRttiManager to add new types.
 struct XII_TOOLSFOUNDATION_DLL xiiReflectedTypeDescriptor : public xiiAttributeHolder
 {
   ~xiiReflectedTypeDescriptor();

@@ -9,7 +9,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Reflection/Reflection.h>
 
-/// \brief A base class for user-defined data assets.
+/// A base class for user-defined data assets.
 ///
 /// Allows users to define their own asset types that can be created, edited and referenced in the editor without writing an editor plugin.
 ///
@@ -25,14 +25,14 @@ class XII_CORE_DLL xiiCustomData : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiCustomData, xiiReflectedClass);
 
 public:
-  /// \brief Loads the serialized custom data using a robust serialization-based method.
+  /// Loads the serialized custom data using a robust serialization-based method.
   ///
   /// This function does not need to be overridden. It will work, even if the properties change.
   /// It is only virtual in case you want to hook into the deserialization process.
   virtual void Load(class xiiAbstractObjectGraph& ref_graph, class xiiRttiConverterContext& ref_context, const class xiiAbstractObjectNode* pRootNode);
 };
 
-/// \brief Base class for resources that represent different implementations of xiiCustomData.
+/// Base class for resources that represent different implementations of xiiCustomData.
 ///
 /// These resources are automatically generated using these macros:
 ///   XII_DECLARE_CUSTOM_DATA_RESOURCE(YourCustomData)
@@ -60,7 +60,7 @@ protected:
   xiiResourceLoadDescription         UpdateContent_Internal(xiiStreamReader* pStream, const xiiRTTI& rtti);
 };
 
-/// \brief Template resource type for sub-classed xiiCustomData types.
+/// Template resource type for sub-classed xiiCustomData types.
 ///
 /// See xiiCustomDataResourceBase for details.
 template <typename T>
@@ -70,7 +70,7 @@ public:
   xiiCustomDataResource();
   ~xiiCustomDataResource();
 
-  /// \brief Provides read access to the custom data type.
+  /// Provides read access to the custom data type.
   ///
   /// Returns nullptr, if the resource wasn't loaded successfully.
   const T* GetData() const { return GetLoadingState() == xiiResourceState::Loaded ? reinterpret_cast<const T*>(m_Data) : nullptr; }
@@ -91,7 +91,7 @@ private:
   };
 };
 
-/// \brief Helper macro to declare a xiiCustomDataResource<T> and a matching resource handle
+/// Helper macro to declare a xiiCustomDataResource<T> and a matching resource handle
 ///
 /// See xiiCustomDataResourceBase for details.
 #define XII_DECLARE_CUSTOM_DATA_RESOURCE(SELF)                               \
@@ -103,7 +103,7 @@ private:
                                                                              \
   using SELF##ResourceHandle = xiiTypedResourceHandle<SELF##Resource>
 
-/// \brief Helper macro to define a xiiCustomDataResource<T>
+/// Helper macro to define a xiiCustomDataResource<T>
 ///
 /// See xiiCustomDataResourceBase for details.
 #define XII_DEFINE_CUSTOM_DATA_RESOURCE(SELF)                                                  \

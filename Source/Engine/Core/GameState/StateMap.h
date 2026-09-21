@@ -6,7 +6,7 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Strings/HashedString.h>
 
-/// \brief A simple registry that stores name/value pairs of types that are common to store game state
+/// A simple registry that stores name/value pairs of types that are common to store game state
 ///
 class XII_CORE_DLL xiiStateMap
 {

@@ -114,6 +114,6 @@ private:
   QSharedPointer<xiiQtAssetBrowserModel> m_pModel  = nullptr;
   xiiQtAssetBrowserFilter*               m_pFilter = nullptr;
 
-  /// \brief After creating a new asset and renaming it, we want to open it as well.
+  /// After creating a new asset and renaming it, we want to open it as well.
   bool m_bOpenAfterRename = false;
 };

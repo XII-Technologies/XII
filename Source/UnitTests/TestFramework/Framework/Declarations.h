@@ -10,7 +10,7 @@
 class xiiTestFramework;
 class xiiTestBaseClass;
 
-/// \brief Stores the identification of a sub-test.
+/// Stores the identification of a sub-test.
 struct xiiSubTestEntry
 {
   xiiSubTestEntry() = default;
@@ -20,7 +20,7 @@ struct xiiSubTestEntry
   bool        m_bEnableTest        = true;
 };
 
-/// \brief Stores the identification of a test.
+/// Stores the identification of a test.
 struct xiiTestEntry
 {
   xiiTestEntry() = default;

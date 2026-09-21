@@ -15,7 +15,7 @@
 
 using xiiParticleGraphResourceHandle = xiiTypedResourceHandle<class xiiParticleGraphResource>;
 
-/// \brief Attribute data format used by particle graph pins and GPU attribute streams.
+/// Attribute data format used by particle graph pins and GPU attribute streams.
 struct XII_GRAPHICSCORE_DLL xiiParticleAttributeFormat
 {
   using StorageType = xiiUInt8;
@@ -41,7 +41,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleAttributeFormat
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleAttributeFormat);
 
-/// \brief Built-in particle attribute semantics. Custom attributes are named by xiiParticleGraphPinDesc::m_sAttributeName.
+/// Built-in particle attribute semantics. Custom attributes are named by xiiParticleGraphPinDesc::m_sAttributeName.
 struct XII_GRAPHICSCORE_DLL xiiParticleAttributeSemantic
 {
   using StorageType = xiiUInt8;
@@ -76,7 +76,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleAttributeSemantic
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleAttributeSemantic);
 
-/// \brief High-level graph node category for editor grouping and compile scheduling.
+/// High-level graph node category for editor grouping and compile scheduling.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphNodeCategory
 {
   using StorageType = xiiUInt8;
@@ -103,7 +103,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphNodeCategory
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphNodeCategory);
 
-/// \brief Where and how often a particle graph node executes.
+/// Where and how often a particle graph node executes.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphSchedule
 {
   using StorageType = xiiUInt8;
@@ -128,7 +128,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphSchedule
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphSchedule);
 
-/// \brief Node capabilities and compiler hints.
+/// Node capabilities and compiler hints.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphNodeFlags
 {
   using StorageType = xiiUInt16;
@@ -166,7 +166,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphNodeFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiParticleGraphNodeFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphNodeFlags);
 
-/// \brief One input or output pin visible in the particle graph editor.
+/// One input or output pin visible in the particle graph editor.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphPinDesc
 {
   xiiHashedString                       m_sName;                 ///< Unique identifier for this pin within its node. For attribute pins, this is the name of the particle attribute. For parameter pins, this is the name of the parameter.
@@ -181,7 +181,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphPinDesc
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphPinDesc);
 
-/// \brief Artist/scientist-facing parameter exposed by a particle graph node.
+/// Artist/scientist-facing parameter exposed by a particle graph node.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphParameterDesc
 {
   xiiHashedString m_sName;               ///< Unique identifier for this parameter within its node. This is used for connecting to pins and for referencing the parameter in code. It should be unique among all parameters of the same node.
@@ -197,7 +197,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphParameterDesc
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphParameterDesc);
 
-/// \brief A particle graph node. Nodes map to compute kernels, tool-only annotations, or custom engine callbacks.
+/// A particle graph node. Nodes map to compute kernels, tool-only annotations, or custom engine callbacks.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphNodeDesc
 {
   xiiUuid                                m_NodeId;       ///< Unique identifier for this node instance. This is used for connecting links and referencing the node in code. It should be generated when the node is created and remain stable for the lifetime of the node.
@@ -222,7 +222,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphNodeDesc
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphNodeDesc);
 
-/// \brief Directed connection between two particle graph pins.
+/// Directed connection between two particle graph pins.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphLinkDesc
 {
   xiiUuid         m_SourceNode;      ///< Unique identifier of the source node for this link. This should correspond to the m_NodeId of an existing node in the graph.
@@ -234,7 +234,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphLinkDesc
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphLinkDesc);
 
-/// \brief Editor annotation/grouping data for DCC-style graph tooling.
+/// Editor annotation/grouping data for DCC-style graph tooling.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphGroupDesc
 {
   xiiUuid                  m_GroupId;                             ///< Unique identifier for this group instance. This is used for referencing the group in code and should be generated when the group is created and remain stable for the lifetime of the group.
@@ -247,31 +247,31 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphGroupDesc
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphGroupDesc);
 
-/// \brief Serializable particle graph descriptor. It is intentionally data-only so tools can round-trip it losslessly.
+/// Serializable particle graph descriptor. It is intentionally data-only so tools can round-trip it losslessly.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphResourceDescriptor
 {
-  /// \brief Adds a new node to the graph with the specified description and returns its unique identifier. The node description should have a unique m_NodeId, but if it is not set, a new one will be generated. The caller is responsible for ensuring that the node description is valid and that the m_NodeId is unique within this graph.
+  /// Adds a new node to the graph with the specified description and returns its unique identifier. The node description should have a unique m_NodeId, but if it is not set, a new one will be generated. The caller is responsible for ensuring that the node description is valid and that the m_NodeId is unique within this graph.
   xiiUuid AddNode(const xiiParticleGraphNodeDesc& node);
 
-  /// \brief Removes the node with the specified unique identifier from the graph, along with any links connected to it. Returns true if the node was found and removed, or false if no node with the specified ID exists in the graph. The caller is responsible for ensuring that any references to this node (e.g., in links or groups) are also updated or removed as necessary.
+  /// Removes the node with the specified unique identifier from the graph, along with any links connected to it. Returns true if the node was found and removed, or false if no node with the specified ID exists in the graph. The caller is responsible for ensuring that any references to this node (e.g., in links or groups) are also updated or removed as necessary.
   bool RemoveNode(const xiiUuid& nodeId);
 
-  /// \brief Adds a new directed link between the specified source and target pins of the source and target nodes. The link description should reference valid node IDs and pin names that exist in this graph. The caller is responsible for ensuring that the link description is valid and that the source and target nodes and pins exist in this graph.
+  /// Adds a new directed link between the specified source and target pins of the source and target nodes. The link description should reference valid node IDs and pin names that exist in this graph. The caller is responsible for ensuring that the link description is valid and that the source and target nodes and pins exist in this graph.
   void AddLink(const xiiParticleGraphLinkDesc& link);
 
-  /// \brief Removes the directed link between the specified source and target pins of the source and target nodes. Returns true if the link was found and removed, or false if no such link exists in the graph. The caller is responsible for ensuring that any references to this link (e.g., in node implementations) are also updated or removed as necessary.
+  /// Removes the directed link between the specified source and target pins of the source and target nodes. Returns true if the link was found and removed, or false if no such link exists in the graph. The caller is responsible for ensuring that any references to this link (e.g., in node implementations) are also updated or removed as necessary.
   void Clear();
 
-  /// \brief Finds a node in the graph by its unique identifier. Returns a pointer to the node description if found, or nullptr if no node with the specified ID exists in the graph. The caller should not modify the returned node description directly, as it is owned by the graph. Instead, use the non-const version of this function to modify nodes.
+  /// Finds a node in the graph by its unique identifier. Returns a pointer to the node description if found, or nullptr if no node with the specified ID exists in the graph. The caller should not modify the returned node description directly, as it is owned by the graph. Instead, use the non-const version of this function to modify nodes.
   [[nodiscard]] const xiiParticleGraphNodeDesc* FindNode(const xiiUuid& nodeId) const;
 
-  /// \brief Finds a node in the graph by its unique identifier. Returns a pointer to the node description if found, or nullptr if no node with the specified ID exists in the graph. The caller can modify the returned node description directly, as it is owned by the graph.
+  /// Finds a node in the graph by its unique identifier. Returns a pointer to the node description if found, or nullptr if no node with the specified ID exists in the graph. The caller can modify the returned node description directly, as it is owned by the graph.
   [[nodiscard]] xiiParticleGraphNodeDesc* FindNode(const xiiUuid& nodeId);
 
-  /// \brief Validates the integrity of the graph, checking for issues such as missing nodes, invalid links, duplicate IDs, and other potential problems. If the graph is valid, returns success. If the graph is invalid, returns failure and optionally fills out_pError with a description of the first encountered issue. The caller can use this function to ensure that the graph is well-formed before attempting to compile or execute it.
+  /// Validates the integrity of the graph, checking for issues such as missing nodes, invalid links, duplicate IDs, and other potential problems. If the graph is valid, returns success. If the graph is invalid, returns failure and optionally fills out_pError with a description of the first encountered issue. The caller can use this function to ensure that the graph is well-formed before attempting to compile or execute it.
   [[nodiscard]] xiiResult Validate(xiiStringBuilder* out_pError = nullptr) const;
 
-  /// \brief Computes a hash value for the compute pipeline that would be generated from this graph. This can be used for caching and quick comparisons of graph configurations. The hash should take into account the structure of the graph, the types and connections of nodes, and any relevant parameters that would affect the generated compute shader. The exact hashing algorithm is up to the implementation, but it should produce the same hash for graphs that are functionally equivalent in terms of their compute behavior.
+  /// Computes a hash value for the compute pipeline that would be generated from this graph. This can be used for caching and quick comparisons of graph configurations. The hash should take into account the structure of the graph, the types and connections of nodes, and any relevant parameters that would affect the generated compute shader. The exact hashing algorithm is up to the implementation, but it should produce the same hash for graphs that are functionally equivalent in terms of their compute behavior.
   [[nodiscard]] xiiUInt64 ComputePipelineHash() const;
 
   void Save(xiiStreamWriter& ref_stream) const;
@@ -290,7 +290,7 @@ public:
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphResourceDescriptor);
 
-/// \brief Resource wrapper around a DCC-authored GPU particle graph.
+/// Resource wrapper around a DCC-authored GPU particle graph.
 class XII_GRAPHICSCORE_DLL xiiParticleGraphResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiParticleGraphResource, xiiResource);
@@ -303,10 +303,10 @@ public:
   xiiParticleGraphResource();
   ~xiiParticleGraphResource();
 
-  /// \brief Returns a const reference to the descriptor that defines the contents of this particle graph resource.
+  /// Returns a const reference to the descriptor that defines the contents of this particle graph resource.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiParticleGraphResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
 
-  /// \brief Returns a hash value for the compute pipeline generated from this graph, which can be used for caching and quick comparisons of graph configurations.
+  /// Returns a hash value for the compute pipeline generated from this graph, which can be used for caching and quick comparisons of graph configurations.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetPipelineHash() const { return m_uiPipelineHash; }
 
 private:

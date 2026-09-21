@@ -4,7 +4,7 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief This class provides functions to do atomic operations.
+/// This class provides functions to do atomic operations.
 ///
 /// Atomic operations are generally faster than mutexes, and should therefore be preferred whenever possible.
 /// However only the operations in themselves are atomic, once you execute several of them in sequence,
@@ -16,7 +16,7 @@
 struct XII_FOUNDATION_DLL xiiAtomicUtils
 {
   /// Helper variable templates for easier usage
-  /// \brief Reads the atomic value.
+  /// Reads the atomic value.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -26,7 +26,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T Read(const T& ref_value);
 
-  /// \brief Atomically exchanges the value and returns the old one.
+  /// Atomically exchanges the value and returns the old one.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -37,7 +37,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T Exchange(T& ref_value, T newValue);
 
-  /// \brief Atomically increments the value and returns the new value.
+  /// Atomically increments the value and returns the new value.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -47,7 +47,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T Increment(T& ref_value);
 
-  /// \brief Atomically decrements the value and returns the new value.
+  /// Atomically decrements the value and returns the new value.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -57,7 +57,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T Decrement(T& ref_value);
 
-  /// \brief Atomically increments the value and returns the original value.
+  /// Atomically increments the value and returns the original value.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -67,7 +67,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T PostIncrement(T& ref_value);
 
-  /// \brief Atomically decrements the value and returns the original value.
+  /// Atomically decrements the value and returns the original value.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -77,7 +77,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T PostDecrement(T& ref_value);
 
-  /// \brief Atomically adds a value to the reference and returns the new value.
+  /// Atomically adds a value to the reference and returns the new value.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -88,7 +88,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T Add(T& ref_value, T addend);
 
-  /// \brief Atomically subtracts a value from the reference and returns the new value.
+  /// Atomically subtracts a value from the reference and returns the new value.
   ///
   /// \tparam T         - Type of the atomic value.
   /// \param ref_value  - Reference to the atomic value.
@@ -99,7 +99,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T Subtract(T& ref_value, T subtrahend);
 
-  /// \brief Performs an atomic bitwise AND operation.
+  /// Performs an atomic bitwise AND operation.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -110,7 +110,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T And(T& ref_value, T operand);
 
-  /// \brief Performs an atomic bitwise OR operation.
+  /// Performs an atomic bitwise OR operation.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -121,7 +121,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T Or(T& ref_value, T operand);
 
-  /// \brief Performs an atomic bitwise XOR operation.
+  /// Performs an atomic bitwise XOR operation.
   ///
   /// \tparam T        - Type of the atomic value.
   /// \param ref_value - Reference to the atomic value.
@@ -132,7 +132,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T Xor(T& ref_value, T operand);
 
-  /// \brief Performs an atomic compare-and-exchange operation.
+  /// Performs an atomic compare-and-exchange operation.
   ///
   /// \tparam T           - Type of the atomic value.
   /// \param ref_value    - Reference to the atomic value.
@@ -144,7 +144,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
     requires xii_is_atomic_compatible_v<T>
   static T CompareExchange(T& ref_value, T expected, T desired);
 
-  // \brief Performs an atomic compare-and-exchange operation.
+  // Performs an atomic compare-and-exchange operation.
   ///
   /// \param pDestination - Pointer to the atomic value.
   /// \param pExpected    - Pointer to the expected value.

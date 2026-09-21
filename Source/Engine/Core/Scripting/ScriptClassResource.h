@@ -9,7 +9,7 @@
 class xiiWorld;
 using xiiScriptClassResourceHandle = xiiTypedResourceHandle<class xiiScriptClassResource>;
 
-/// \brief Resource representing a script class with its type information and instantiation capabilities.
+/// Resource representing a script class with its type information and instantiation capabilities.
 ///
 /// Base class for script resources that define class types for scripting languages. Manages script type creation, instantiation, and coroutine type handling.
 /// Derived classes implement language-specific instantiation logic.

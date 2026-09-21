@@ -11,7 +11,7 @@
 class xiiStreamReader;
 class xiiStreamWriter;
 
-/// \brief Flags for entries in xiiBlackboard.
+/// Flags for entries in xiiBlackboard.
 struct XII_CORE_DLL xiiBlackboardEntryFlags
 {
   using StorageType = xiiUInt16;
@@ -57,7 +57,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiBlackboardEntryFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiBlackboardEntryFlags);
 
 
-/// \brief A blackboard is a key/value store that provides OnChange events to be informed when a value changes.
+/// A blackboard is a key/value store that provides OnChange events to be informed when a value changes.
 ///
 /// Blackboards are used to gather typically small pieces of data. Some systems write the data, other systems read it.
 /// Through the blackboard, arbitrary systems can interact.
@@ -74,7 +74,7 @@ public:
 
   bool IsGlobalBlackboard() const { return m_bIsGlobal; }
 
-  /// \brief Factory method to create a new blackboard.
+  /// Factory method to create a new blackboard.
   ///
   /// Since blackboards use shared ownership we need to make sure that blackboards are created in xiiCore.dll.
   /// Some compilers (MSVC) create local v-tables which can become stale if a blackboard was registered as global but the DLL
@@ -83,7 +83,7 @@ public:
   /// See https://groups.google.com/g/microsoft.public.vc.language/c/atSh_2VSc2w/m/EgJ3r_7OzVUJ?pli=1
   static xiiSharedPtr<xiiBlackboard> Create(xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
-  /// \brief Factory method to get access to a globally registered blackboard.
+  /// Factory method to get access to a globally registered blackboard.
   ///
   /// If a blackboard with that name was already created globally before, its reference is returned.
   /// Otherwise it will be created and permanently registered under that name.
@@ -94,10 +94,10 @@ public:
   /// clear all its values.
   static xiiSharedPtr<xiiBlackboard> GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
-  /// \brief Finds a global blackboard with the given name.
+  /// Finds a global blackboard with the given name.
   static xiiSharedPtr<xiiBlackboard> FindGlobal(const xiiTempHashedString& sBlackboardName);
 
-  /// \brief Changes the name of the blackboard.
+  /// Changes the name of the blackboard.
   ///
   /// \note For global blackboards this has no effect under which name they are found. A global blackboard continues to
   /// be found by the name under which it was originally registered.
@@ -123,16 +123,16 @@ public:
     const Entry*    m_pEntry;
   };
 
-  /// \brief Removes the named entry. Does nothing, if no such entry exists.
+  /// Removes the named entry. Does nothing, if no such entry exists.
   void RemoveEntry(const xiiHashedString& sName);
 
-  ///  \brief Removes all entries.
+  ///  Removes all entries.
   void RemoveAllEntries();
 
-  /// \brief Returns whether an entry with the given name already exists.
+  /// Returns whether an entry with the given name already exists.
   bool HasEntry(const xiiTempHashedString& sName) const;
 
-  /// \brief Sets the value of the named entry. If the entry doesn't exist, yet, it will be created with default flags.
+  /// Sets the value of the named entry. If the entry doesn't exist, yet, it will be created with default flags.
   ///
   /// If the 'OnChangeEvent' flag is set for this entry, OnEntryEvent() will be broadcast.
   /// However, if the new value is no different to the old, no event will be broadcast.
@@ -143,7 +143,7 @@ public:
   /// DO NOT RECREATE the xiiHashedString every time, though.
   void SetEntryValue(xiiStringView sName, const xiiVariant& value);
 
-  /// \brief Overload of SetEntryValue() that takes a xiiHashedString rather than a xiiStringView.
+  /// Overload of SetEntryValue() that takes a xiiHashedString rather than a xiiStringView.
   ///
   /// Using this function is more efficient, if you access the blackboard often, but you must ensure
   /// to only create the xiiHashedString once and cache it for reuse.
@@ -151,50 +151,50 @@ public:
   /// prefer to use the other overload.
   void SetEntryValue(const xiiHashedString& sName, const xiiVariant& value);
 
-  /// \brief Returns a pointer to the named entry, or nullptr if no such entry was registered.
+  /// Returns a pointer to the named entry, or nullptr if no such entry was registered.
   const Entry* GetEntry(const xiiTempHashedString& sName) const;
 
-  /// \brief Returns the flags of the named entry, or xiiBlackboardEntryFlags::Invalid, if no such entry was registered.
+  /// Returns the flags of the named entry, or xiiBlackboardEntryFlags::Invalid, if no such entry was registered.
   xiiBitflags<xiiBlackboardEntryFlags> GetEntryFlags(const xiiTempHashedString& sName) const;
 
-  /// \brief Sets the flags of an existing entry. Returns XII_FAILURE, if it wasn't created via SetEntryValue() or SetEntryValue() before.
+  /// Sets the flags of an existing entry. Returns XII_FAILURE, if it wasn't created via SetEntryValue() or SetEntryValue() before.
   xiiResult SetEntryFlags(const xiiTempHashedString& sName, xiiBitflags<xiiBlackboardEntryFlags> flags);
 
-  /// \brief Returns the value of the named entry, or the fallback xiiVariant, if no such entry was registered.
+  /// Returns the value of the named entry, or the fallback xiiVariant, if no such entry was registered.
   xiiVariant GetEntryValue(const xiiTempHashedString& sName, const xiiVariant& fallback = xiiVariant()) const;
 
-  /// \brief For the editor to know what index an element had, so that it can pass through exposed properties (which are given by index).
+  /// For the editor to know what index an element had, so that it can pass through exposed properties (which are given by index).
   xiiResult SetEditorIndex(const xiiTempHashedString& sName, xiiUInt8 uiEditorIndex);
 
-  /// \brief Searches for the first item that has the previously set index. Returns an empty string, if none was found.
+  /// Searches for the first item that has the previously set index. Returns an empty string, if none was found.
   xiiHashedString FindNameForEditorIndex(xiiUInt8 uiEditorIndex) const;
 
-  /// \brief Increments the value of the named entry. Returns the incremented value or an invalid variant if the entry does not exist or is not a number type.
+  /// Increments the value of the named entry. Returns the incremented value or an invalid variant if the entry does not exist or is not a number type.
   xiiVariant IncrementEntryValue(const xiiTempHashedString& sName);
 
-  /// \brief Decrements the value of the named entry. Returns the decremented value or an invalid variant if the entry does not exist or is not a number type.
+  /// Decrements the value of the named entry. Returns the decremented value or an invalid variant if the entry does not exist or is not a number type.
   xiiVariant DecrementEntryValue(const xiiTempHashedString& sName);
 
-  /// \brief Grants read access to the entire map of entries.
+  /// Grants read access to the entire map of entries.
   const xiiHashTable<xiiHashedString, Entry>& GetAllEntries() const { return m_Entries; }
 
-  /// \brief Allows you to register to the OnEntryEvent. This is broadcast whenever an entry is modified that has the flag xiiBlackboardEntryFlags::OnChangeEvent.
+  /// Allows you to register to the OnEntryEvent. This is broadcast whenever an entry is modified that has the flag xiiBlackboardEntryFlags::OnChangeEvent.
   const xiiEvent<const EntryEvent&>& OnEntryEvent() const { return m_EntryEvents; }
 
-  /// \brief This counter is increased every time an entry is added or removed (but not when it is modified).
+  /// This counter is increased every time an entry is added or removed (but not when it is modified).
   ///
   /// Comparing this value to a previous known value allows to quickly detect whether the set of entries has changed.
   xiiUInt32 GetBlackboardChangeCounter() const { return m_uiBlackboardChangeCounter; }
 
-  /// \brief This counter is increased every time any entry's value is modified.
+  /// This counter is increased every time any entry's value is modified.
   ///
   /// Comparing this value to a previous known value allows to quickly detect whether any entry has changed recently.
   xiiUInt32 GetBlackboardEntryChangeCounter() const { return m_uiBlackboardEntryChangeCounter; }
 
-  /// \brief Stores all entries that have the 'Save' flag in the stream.
+  /// Stores all entries that have the 'Save' flag in the stream.
   xiiResult Serialize(xiiStreamWriter& ref_stream) const;
 
-  /// \brief Restores entries from the stream.
+  /// Restores entries from the stream.
   ///
   /// If the blackboard already contains entries, the deserialized data is ADDED to the blackboard.
   /// If deserialized entries overlap with existing ones, the deserialized entries will overwrite the existing ones (both values and flags).

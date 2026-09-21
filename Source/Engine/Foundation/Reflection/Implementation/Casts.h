@@ -10,7 +10,7 @@ XII_WARNING_PUSH()
 XII_WARNING_DISABLE_CLANG("-Wunused-local-typedef")
 XII_WARNING_DISABLE_GCC("-Wunused-local-typedefs")
 
-/// \brief Casts the given object to the given type with no runtime cost (like C++ static_cast).
+/// Casts the given object to the given type with no runtime cost (like C++ static_cast).
 /// This function will assert when the object is not an instance of the given type.
 /// E.g. DerivedType* d = xiiStaticCast<DerivedType*>(pObj);
 template <typename T>
@@ -22,7 +22,7 @@ XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass* pObject)
   return static_cast<T>(pObject);
 }
 
-/// \brief Casts the given object to the given type with no runtime cost (like C++ static_cast).
+/// Casts the given object to the given type with no runtime cost (like C++ static_cast).
 /// This function will assert when the object is not an instance of the given type.
 /// E.g. const DerivedType* d = xiiStaticCast<const DerivedType*>(pConstObj);
 template <typename T>
@@ -34,7 +34,7 @@ XII_ALWAYS_INLINE T xiiStaticCast(const xiiReflectedClass* pObject)
   return static_cast<T>(pObject);
 }
 
-/// \brief Casts the given object to the given type with no runtime cost (like C++ static_cast).
+/// Casts the given object to the given type with no runtime cost (like C++ static_cast).
 /// This function will assert when the object is not an instance of the given type.
 /// E.g. DerivedType& d = xiiStaticCast<DerivedType&>(obj);
 template <typename T>
@@ -46,7 +46,7 @@ XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass& ref_object)
   return static_cast<T>(ref_object);
 }
 
-/// \brief Casts the given object to the given type with no runtime cost (like C++ static_cast).
+/// Casts the given object to the given type with no runtime cost (like C++ static_cast).
 /// This function will assert when the object is not an instance of the given type.
 /// E.g. const DerivedType& d = xiiStaticCast<const DerivedType&>(constObj);
 template <typename T>
@@ -58,7 +58,7 @@ XII_ALWAYS_INLINE T xiiStaticCast(const xiiReflectedClass& object)
   return static_cast<T>(object);
 }
 
-/// \brief Casts the given object to the given type with by checking if the object is actually an instance of the given type (like C++
+/// Casts the given object to the given type with by checking if the object is actually an instance of the given type (like C++
 /// dynamic_cast). This function will return a nullptr if the object is not an instance of the given type.
 /// E.g. DerivedType* d = xiiDynamicCast<DerivedType*>(pObj);
 template <typename T>
@@ -75,7 +75,7 @@ XII_ALWAYS_INLINE T xiiDynamicCast(xiiReflectedClass* pObject)
   return nullptr;
 }
 
-/// \brief Casts the given object to the given type with by checking if the object is actually an instance of the given type (like C++
+/// Casts the given object to the given type with by checking if the object is actually an instance of the given type (like C++
 /// dynamic_cast). This function will return a nullptr if the object is not an instance of the given type.
 /// E.g. const DerivedType* d = xiiDynamicCast<const DerivedType*>(pConstObj);
 template <typename T>

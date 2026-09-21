@@ -10,7 +10,7 @@
 #include <GraphicsCore/Debug/DebugRendererContext.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 
-/// \brief Batch of extracted render data, intended to be populated by component managers sequentially per-batch.
+/// Batch of extracted render data, intended to be populated by component managers sequentially per-batch.
 struct XII_GRAPHICSCORE_DLL xiiRenderDataBatch
 {
   xiiArrayPtr<xiiRenderData*> m_Data;
@@ -110,49 +110,49 @@ struct XII_GRAPHICSCORE_DLL xiiRenderDataBatch
   }
 };
 
-/// \brief A thread-safe structure for components to push their extracted render data batches into.
+/// A thread-safe structure for components to push their extracted render data batches into.
 class XII_GRAPHICSCORE_DLL xiiExtractedRenderData
 {
 public:
-  /// \brief Returns all extracted render data, sorted by sorting key.
+  /// Returns all extracted render data, sorted by sorting key.
   XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetAllRenderData() const { return m_SortedAllRenderData; }
 
-  /// \brief Returns extracted render data marked static during extraction, sorted by sorting key.
+  /// Returns extracted render data marked static during extraction, sorted by sorting key.
   XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetStaticRenderData() const { return m_SortedStaticRenderData; }
 
-  /// \brief Returns extracted render data marked dynamic during extraction, sorted by sorting key.
+  /// Returns extracted render data marked dynamic during extraction, sorted by sorting key.
   XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetDynamicRenderData() const { return m_SortedDynamicRenderData; }
 
-  /// \brief Returns a debug context that can be used for rendering debug visualization related to the world in which the data was extracted. The geometry rendered in this context is rendered in all views for that scene.
+  /// Returns a debug context that can be used for rendering debug visualization related to the world in which the data was extracted. The geometry rendered in this context is rendered in all views for that scene.
   XII_ALWAYS_INLINE const xiiDebugRendererContext& GetWorldDebugContext() const { return m_WorldDebugContext; }
 
-  /// \brief Returns a debug context that can be used for rendering debug visualization related to the view for which the data was extracted. The geometry rendered in this context is only rendered in this view.
+  /// Returns a debug context that can be used for rendering debug visualization related to the view for which the data was extracted. The geometry rendered in this context is only rendered in this view.
   XII_ALWAYS_INLINE const xiiDebugRendererContext& GetViewDebugContext() const { return m_ViewDebugContext; }
 
 public:
   xiiExtractedRenderData();
 
-  /// \brief Initializes the extracted render data with a world debug context. The geometry rendered in this context is rendered in all views for that scene.
+  /// Initializes the extracted render data with a world debug context. The geometry rendered in this context is rendered in all views for that scene.
   xiiExtractedRenderData(const xiiWorld* pWorld);
 
-  /// \brief Initializes the extracted render data with a view debug context. The geometry rendered in this context is only rendered in this view.
+  /// Initializes the extracted render data with a view debug context. The geometry rendered in this context is only rendered in this view.
   xiiExtractedRenderData(const xiiViewHandle& hView);
 
-  /// \brief Initializes the extracted render data with both a world and view debug context. The geometry rendered in the world context is rendered in all views for that scene, while the geometry rendered in the view context is only rendered in this view.
+  /// Initializes the extracted render data with both a world and view debug context. The geometry rendered in the world context is rendered in all views for that scene, while the geometry rendered in the view context is only rendered in this view.
   xiiExtractedRenderData(const xiiWorld* pWorld, const xiiViewHandle& hView);
 
   ~xiiExtractedRenderData();
 
-  /// \brief Adds a single extracted render data item without assigning a category.
+  /// Adds a single extracted render data item without assigning a category.
   void AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
 
-  /// \brief Pushes a batch of extracted data safely to the internal list without assigning a category.
+  /// Pushes a batch of extracted data safely to the internal list without assigning a category.
   void AddRenderDataBatch(const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
 
-  /// \brief Clears the internal arrays entirely. Called at the start of extreme frame extraction.
+  /// Clears the internal arrays entirely. Called at the start of extreme frame extraction.
   void Clear();
 
-  /// \brief Sorts the underlying render data by sorting key for cache-efficient render execution.
+  /// Sorts the underlying render data by sorting key for cache-efficient render execution.
   void SortAndBatches();
 
 private:

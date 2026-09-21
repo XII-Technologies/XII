@@ -8,28 +8,28 @@
 struct xiiTime;
 class xiiThread;
 
-/// \brief Contains general thread functions.
+/// Contains general thread functions.
 class XII_FOUNDATION_DLL xiiThreadUtils
 {
 public:
-  /// \brief Suspends execution of the current thread.
+  /// Suspends execution of the current thread.
   static void YieldTimeSlice();
 
-  /// \brief Give resources to other hardware threads on the same processor. Does nothing if the processor has no hardware threads.
+  /// Give resources to other hardware threads on the same processor. Does nothing if the processor has no hardware threads.
   static void YieldHardwareThread();
 
-  /// \brief Suspends the execution of the current thread for the given amount of time. (Precision may vary according to OS)
+  /// Suspends the execution of the current thread for the given amount of time. (Precision may vary according to OS)
   static void Sleep(const xiiTime& duration); // [tested]
 
-  /// \brief Helper function to check if the current thread is the main thread (e.g. the thread which initialized the foundation library)
+  /// Helper function to check if the current thread is the main thread (e.g. the thread which initialized the foundation library)
   static bool IsMainThread();
 
-  /// \brief Returns an identifier for the currently running thread.
+  /// Returns an identifier for the currently running thread.
   static xiiThreadID GetCurrentThreadID();
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, ThreadUtils);
 
-  /// \brief Initialization functionality of the threading system (called by foundation startup and thus private)
+  /// Initialization functionality of the threading system (called by foundation startup and thus private)
   static void Initialize();
 };

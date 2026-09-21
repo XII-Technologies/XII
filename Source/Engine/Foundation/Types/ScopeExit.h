@@ -6,7 +6,7 @@
 
 /// \file
 
-/// \brief Macro to execute a piece of code when the current scope closes.
+/// Macro to execute a piece of code when the current scope closes.
 #define XII_SCOPE_EXIT(code) auto XII_PP_CONCAT(scopeExit_, XII_SOURCE_LINE) = xiiMakeScopeExit([&]() { code; })
 
 /// \internal Helper class to implement XII_SCOPE_EXIT

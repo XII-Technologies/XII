@@ -12,7 +12,7 @@ struct xiiRGBarrierDescription;
 struct xiiRGMergeGroup;
 struct xiiRGQueueSubmission;
 
-/// \brief Static utility class for render graph debugging and visualization.
+/// Static utility class for render graph debugging and visualization.
 ///
 /// Provides methods to serialize a compiled render graph into human-readable formats suitable for offline visualization with Graphviz or similar tools.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphDebug
@@ -20,7 +20,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphDebug
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphDebug);
 
 public:
-  /// \brief Generates a DOT-language description of the compiled render graph.
+  /// Generates a DOT-language description of the compiled render graph.
   ///
   /// The output contains:
   ///  - One node per compiled (non-culled) pass, labeled with the pass name and queue index.

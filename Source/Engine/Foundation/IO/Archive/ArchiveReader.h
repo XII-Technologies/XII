@@ -9,37 +9,37 @@
 class xiiRawMemoryStreamReader;
 class xiiStreamReader;
 
-/// \brief A utility class for reading from xiiArchive files
+/// A utility class for reading from xiiArchive files
 class XII_FOUNDATION_DLL xiiArchiveReader
 {
 public:
-  /// \brief Opens the given file and validates that it is a valid archive file.
+  /// Opens the given file and validates that it is a valid archive file.
   xiiResult OpenArchive(xiiStringView sPath);
 
-  /// \brief Returns the table-of-contents for the previously opened archive.
+  /// Returns the table-of-contents for the previously opened archive.
   const xiiArchiveTOC& GetArchiveTOC();
 
-  /// \brief Extracts the given entry to the target folder.
+  /// Extracts the given entry to the target folder.
   ///
   /// Calls ExtractFileProgressCallback() to report progress.
   xiiResult ExtractFile(xiiUInt32 uiEntryIdx, xiiStringView sTargetFolder) const;
 
-  /// \brief Extracts all files to the target folder.
+  /// Extracts all files to the target folder.
   ///
   /// Calls ExtractNextFileCallback() for every file that is being extracted.
   xiiResult ExtractAllFiles(xiiStringView sTargetFolder) const;
 
-  /// \brief Sets up \a memReader for reading the raw (potentially compressed) data that is stored for the given entry in the archive.
+  /// Sets up \a memReader for reading the raw (potentially compressed) data that is stored for the given entry in the archive.
   void ConfigureRawMemoryStreamReader(xiiUInt32 uiEntryIdx, xiiRawMemoryStreamReader& ref_memReader) const;
 
-  /// \brief Creates a reader that will decompress the given file entry.
+  /// Creates a reader that will decompress the given file entry.
   xiiUniquePtr<xiiStreamReader> CreateEntryReader(xiiUInt32 uiEntryIdx) const;
 
 protected:
-  /// \brief Called by ExtractAllFiles() for progress reporting. Return false to abort.
+  /// Called by ExtractAllFiles() for progress reporting. Return false to abort.
   virtual bool ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const;
 
-  /// \brief Called by ExtractFile() for progress reporting. Return false to abort.
+  /// Called by ExtractFile() for progress reporting. Return false to abort.
   virtual bool ExtractFileProgressCallback(xiiUInt64 uiBytesWritten, xiiUInt64 uiTotalBytes) const;
 
   xiiMemoryMappedFile m_MemFile;

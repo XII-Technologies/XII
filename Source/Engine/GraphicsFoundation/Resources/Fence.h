@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 
-/// \brief This describes the fence type.
+/// This describes the fence type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFenceType
 {
   using StorageType = xiiUInt8;
@@ -24,7 +24,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFenceType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFenceType);
 
-/// \brief This describes the fence creation description.
+/// This describes the fence creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFenceCreationDescription : public xiiHashableStruct<xiiGALFenceCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -32,7 +32,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFenceCreationDescription : public xiiHas
   xiiEnum<xiiGALFenceType> m_Type = xiiGALFenceType::CpuWaitOnly; ///< The fence type.
 };
 
-/// \brief Interface that defines methods to manipulate a fence object.
+/// Interface that defines methods to manipulate a fence object.
 ///
 /// \remarks When a fence that was previously signaled by IDeviceContext::EnqueueSignal() is destroyed, it may block the GPU until all prior commands have completed execution.
 ///
@@ -42,15 +42,15 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALFence : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALFence, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALFenceCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief This returns the last completed value signaled by the GPU.
+  /// This returns the last completed value signaled by the GPU.
   ///
   /// \remarks In Direct3D11 backend, this method is not thread-safe (even if the fence object is protected by a mutex) and must only be called by the same thread that signals the fence via an enqueue.
   [[nodiscard]] virtual xiiUInt64 GetCompletedValue() = 0;
 
-  /// \brief This sets the fence to the specified value.
+  /// This sets the fence to the specified value.
   ///
   /// \param uiValue - The new value the fence should reach. The value must be greater than the current value of the fence.
   ///
@@ -59,19 +59,19 @@ public:
   /// \note The fence must have been created with type General.
   virtual void Signal(xiiUInt64 uiValue) = 0;
 
-  /// \brief This waits until the fence reaches or exceeds the specified value on the host.
+  /// This waits until the fence reaches or exceeds the specified value on the host.
   ///
   /// \param uiValue - The value that the fence is waiting to reach.
   ///
   /// \note The method blocks the execution of the calling thread until the wait is complete.
   virtual void Wait(xiiUInt64 uiValue) = 0;
 
-  /// \brief Validates fence signal.
+  /// Validates fence signal.
   ///
   /// \param uiValue - The enqueued value.
   void ValidateFenceSignal(xiiUInt64 uiValue);
 
-  /// \brief Validates device wait for fence.
+  /// Validates device wait for fence.
   ///
   /// \param uiValue - The enqueued value.
   void ValidateDeviceWaitForFence(xiiUInt64 uiValue);

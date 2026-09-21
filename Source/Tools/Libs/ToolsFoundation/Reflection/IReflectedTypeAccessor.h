@@ -8,11 +8,11 @@
 class xiiDocumentObject;
 struct xiiStatus;
 
-/// \brief Provides access to the properties of a xiiRTTI compatible data storage.
+/// Provides access to the properties of a xiiRTTI compatible data storage.
 class XII_TOOLSFOUNDATION_DLL xiiIReflectedTypeAccessor
 {
 public:
-  /// \brief Constructor for the xiiIReflectedTypeAccessor.
+  /// Constructor for the xiiIReflectedTypeAccessor.
   ///
   /// It is a valid implementation to pass an invalid handle. Note that in this case there is no way to determine
   /// what is actually stored inside. However, it can be useful to use e.g. the xiiReflectedTypeDirectAccessor
@@ -22,13 +22,13 @@ public:
   {
   } // [tested]
 
-  /// \brief Returns the xiiRTTI* of the wrapped instance type.
+  /// Returns the xiiRTTI* of the wrapped instance type.
   const xiiRTTI* GetType() const { return m_pRtti; } // [tested]
 
-  /// \brief Returns the value of the property defined by its path. Return value is invalid iff the path was invalid.
+  /// Returns the value of the property defined by its path. Return value is invalid iff the path was invalid.
   virtual const xiiVariant GetValue(xiiStringView sProperty, xiiVariant index = xiiVariant(), xiiStatus* pRes = nullptr) const = 0;
 
-  /// \brief Sets a property defined by its path to the given value. Returns whether the operation was successful.
+  /// Sets a property defined by its path to the given value. Returns whether the operation was successful.
   virtual bool SetValue(xiiStringView sProperty, const xiiVariant& value, xiiVariant index = xiiVariant()) = 0;
 
   virtual xiiInt32 GetCount(xiiStringView sProperty) const                                       = 0;

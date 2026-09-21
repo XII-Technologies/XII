@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 
-/// \brief This describes the fill mode.
+/// This describes the fill mode.
 ///
 /// [D3D11_FILL_MODE]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476131(v=vs.85).aspx
 /// [D3D12_FILL_MODE]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770366(v=vs.85).aspx
@@ -30,7 +30,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFillMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFillMode);
 
-/// \brief This describes the cull mode.
+/// This describes the cull mode.
 ///
 /// [D3D11_CULL_MODE]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476108(v=vs.85).aspx
 /// [D3D12_CULL_MODE]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770354(v=vs.85).aspx
@@ -55,7 +55,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCullMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCullMode);
 
-/// \brief This describes the rasterizer state creation description.
+/// This describes the rasterizer state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerStateCreationDescription : public xiiHashableStruct<xiiGALRasterizerStateCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -71,13 +71,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerStateCreationDescription : pub
   float                   m_fSlopeScaledDepthBias  = 0.0f;                  ///< Scalar that scales the given pixel's slope before adding to the pixel's depth. The default is 0.
 };
 
-/// \brief Interface that defines methods to manipulate a rasterizer state object.
+/// Interface that defines methods to manipulate a rasterizer state object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerState : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRasterizerState, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALRasterizerStateCreationDescription& GetDescription() const { return m_Description; }
 
 protected:

@@ -27,13 +27,13 @@ public:
   /// Override this function to add additional information to the test configuration
   virtual void UpdateConfiguration(xiiTestConfiguration& ref_config) const /*override*/;
 
-  /// \brief Implement this to add support for image comparisons. See XII_TEST_IMAGE_MSG.
+  /// Implement this to add support for image comparisons. See XII_TEST_IMAGE_MSG.
   virtual xiiResult GetImage(xiiImage& ref_img, const xiiSubTestEntry& subTest, xiiUInt32 uiImageNumber) { return XII_FAILURE; }
 
-  /// \brief Implement this to add support for depth buffer image comparisons. See XII_TEST_DEPTH_IMAGE_MSG.
+  /// Implement this to add support for depth buffer image comparisons. See XII_TEST_DEPTH_IMAGE_MSG.
   virtual xiiResult GetDepthImage(xiiImage& ref_img, const xiiSubTestEntry& subTest, xiiUInt32 uiImageNumber) { return XII_FAILURE; }
 
-  /// \brief Used to map the 'number' for an image comparison, to a string used for finding the comparison image.
+  /// Used to map the 'number' for an image comparison, to a string used for finding the comparison image.
   ///
   /// By default image comparison screenshots are called 'TestName_SubTestName_XYZ'
   /// This can be fully overridden to use any other file name.

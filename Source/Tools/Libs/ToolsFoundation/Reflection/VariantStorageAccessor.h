@@ -7,7 +7,7 @@
 
 struct xiiStatus;
 
-/// \brief Helper class to modify an xiiVariant as if it was a container.
+/// Helper class to modify an xiiVariant as if it was a container.
 /// GetValue and SetValue are valid for all variant types.
 /// The remaining accessor functions require an VariantArray or VariantDictionary type.
 class XII_TOOLSFOUNDATION_DLL xiiVariantStorageAccessor

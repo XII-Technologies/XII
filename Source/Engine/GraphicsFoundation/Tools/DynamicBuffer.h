@@ -17,22 +17,22 @@ public:
   xiiGALDynamicBuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBufferCreationDescription& description);
   ~xiiGALDynamicBuffer();
 
-  /// \brief Returns the buffer description.
+  /// Returns the buffer description.
   [[nodiscard]] xiiGALBufferCreationDescription GetDescription() const;
 
-  /// \brief Returns a reference-counted pointer to the buffer object.
+  /// Returns a reference-counted pointer to the buffer object.
   ///
   /// \remarks If the buffer has not been initialized, the method returns null.
   ///          If the buffer may need to be updated (resized or initialized), use the Update() method.
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer> GetBuffer() const;
 
-  /// \brief Returns the dynamic buffer version. The version is incremented whenever a new internal buffer is created.
+  /// Returns the dynamic buffer version. The version is incremented whenever a new internal buffer is created.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetVersion() const { return m_Version; }
 
-  /// \brief Returns true if the buffer must be updated before use (e.g., it has been resized, but the internal buffer has not been initialized or updated). When update is not pending, Update() may be called with null command list.
+  /// Returns true if the buffer must be updated before use (e.g., it has been resized, but the internal buffer has not been initialized or updated). When update is not pending, Update() may be called with null command list.
   [[nodiscard]] bool PendingUpdate() const;
 
-  /// \brief Resizes the buffer to the new size.
+  /// Resizes the buffer to the new size.
   ///
   /// \param pCommandList    - The command list that will be used to copy existing contents to the new buffer. This parameter may be null (see remarks).
   /// \param uiNewSize       - The new buffer size. This may be zero.
@@ -45,7 +45,7 @@ public:
   ///          If uiNewSize is zero, the internal buffer will be released.
   xiiSharedPtr<xiiGALBuffer> Resize(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiUInt64 uiNewSize, bool bDiscardContent = false);
 
-  /// \brief Updates the internal buffer object, initializing or resizing as necessary.
+  /// Updates the internal buffer object, initializing or resizing as necessary.
   ///
   /// \param pCommandList - The command list that will be used to copy existing contents to the new buffer. This parameter may be null (see remarks).
   ///

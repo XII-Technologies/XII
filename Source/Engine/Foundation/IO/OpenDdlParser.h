@@ -9,7 +9,7 @@
 
 class xiiLogInterface;
 
-/// \brief The primitive data types that OpenDDL supports
+/// The primitive data types that OpenDDL supports
 enum class xiiOpenDdlPrimitiveType
 {
   Bool,
@@ -30,7 +30,7 @@ enum class xiiOpenDdlPrimitiveType
   Custom
 };
 
-/// \brief A low level parser for the OpenDDL format. It can incrementally parse the structure, individual blocks can be skipped.
+/// A low level parser for the OpenDDL format. It can incrementally parse the structure, individual blocks can be skipped.
 ///
 /// The document structure is returned through virtual functions that need to be overridden.
 class XII_FOUNDATION_DLL xiiOpenDdlParser
@@ -39,44 +39,44 @@ public:
   xiiOpenDdlParser();
   virtual ~xiiOpenDdlParser() = default;
 
-  /// \brief Whether an error occurred during parsing that resulted in cancellation of further parsing.
+  /// Whether an error occurred during parsing that resulted in cancellation of further parsing.
   bool HadFatalParsingError() const { return m_bHadFatalParsingError; } // [tested]
 
 protected:
-  /// \brief Sets a xiiLogInterface through which errors and warnings are reported.
+  /// Sets a xiiLogInterface through which errors and warnings are reported.
   void SetLogInterface(xiiLogInterface* pLog) { m_pLogInterface = pLog; }
 
-  /// \brief Data is returned in larger chunks, to reduce the number of function calls. The cache size determines the maximum chunk size per primitive
+  /// Data is returned in larger chunks, to reduce the number of function calls. The cache size determines the maximum chunk size per primitive
   /// type.
   ///
   /// Default cache size is 4 KB. That means up to 1000 integers may be returned in one chunk (or 500 doubles).
   /// It does not help to increase the chunk size, when the input data doesn't use such large data lists.
   void SetCacheSize(xiiUInt32 uiSizeInKB);
 
-  /// \brief Configures the parser to read from the given stream. This can only be called once on a parser instance.
+  /// Configures the parser to read from the given stream. This can only be called once on a parser instance.
   void SetInputStream(xiiStreamReader& stream, xiiUInt32 uiFirstLineOffset = 0); // [tested]
 
-  /// \brief Call this to parse the next piece of the document. This may trigger a callback through which data is returned.
+  /// Call this to parse the next piece of the document. This may trigger a callback through which data is returned.
   ///
   /// This function returns false when the end of the document has been reached, or a fatal parsing error has been reported.
   bool ContinueParsing(); // [tested]
 
-  /// \brief Calls ContinueParsing() in a loop until that returns false.
+  /// Calls ContinueParsing() in a loop until that returns false.
   xiiResult ParseAll(); // [tested]
 
-  /// \brief Skips the rest of the currently open object. No OnEndObject() call will be done for this object either.
+  /// Skips the rest of the currently open object. No OnEndObject() call will be done for this object either.
   void SkipRestOfObject();
 
-  /// \brief Can be used to prevent parsing the rest of the document.
+  /// Can be used to prevent parsing the rest of the document.
   void StopParsing();
 
-  /// \brief Outputs that a parsing error was detected (via OnParsingError) and stops further parsing, if bFatal is set to true.
+  /// Outputs that a parsing error was detected (via OnParsingError) and stops further parsing, if bFatal is set to true.
   void ParsingError(xiiStringView sMessage, bool bFatal);
 
   xiiLogInterface* m_pLogInterface;
 
 protected:
-  /// \brief Called when something unexpected is encountered in the document.
+  /// Called when something unexpected is encountered in the document.
   ///
   /// The error message describes what was expected and what was encountered.
   /// If bFatal is true, the error has left the parser in an unrecoverable state and thus it will not continue parsing.
@@ -90,49 +90,49 @@ protected:
     XII_IGNORE_UNUSED(uiColumn);
   }
 
-  /// \brief Called when a new object is encountered.
+  /// Called when a new object is encountered.
   virtual void OnBeginObject(xiiStringView sType, xiiStringView sName, bool bGlobalName) = 0;
 
-  /// \brief Called when the end of an object is encountered.
+  /// Called when the end of an object is encountered.
   virtual void OnEndObject() = 0;
 
-  /// \brief Called when a new primitive object is encountered.
+  /// Called when a new primitive object is encountered.
   virtual void OnBeginPrimitiveList(xiiOpenDdlPrimitiveType type, xiiStringView sName, bool bGlobalName) = 0;
 
-  /// \brief Called when the end of a primitive object is encountered.
+  /// Called when the end of a primitive object is encountered.
   virtual void OnEndPrimitiveList() = 0;
 
   /// \todo Currently not supported
   // virtual void OnBeginPrimitiveArrayList(xiiOpenDdlPrimitiveType type, xiiUInt32 uiGroupSize) = 0;
   // virtual void OnEndPrimitiveArrayList() = 0;
 
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveBool(xiiUInt32 count, const bool* pData, bool bThisIsAll) = 0;
 
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveInt8(xiiUInt32 count, const xiiInt8* pData, bool bThisIsAll) = 0;
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveInt16(xiiUInt32 count, const xiiInt16* pData, bool bThisIsAll) = 0;
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveInt32(xiiUInt32 count, const xiiInt32* pData, bool bThisIsAll) = 0;
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveInt64(xiiUInt32 count, const xiiInt64* pData, bool bThisIsAll) = 0;
 
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveUInt8(xiiUInt32 count, const xiiUInt8* pData, bool bThisIsAll) = 0;
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveUInt16(xiiUInt32 count, const xiiUInt16* pData, bool bThisIsAll) = 0;
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveUInt32(xiiUInt32 count, const xiiUInt32* pData, bool bThisIsAll) = 0;
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveUInt64(xiiUInt32 count, const xiiUInt64* pData, bool bThisIsAll) = 0;
 
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveFloat(xiiUInt32 count, const float* pData, bool bThisIsAll) = 0;
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveDouble(xiiUInt32 count, const double* pData, bool bThisIsAll) = 0;
 
-  /// \brief Called when data for a primitive type is available. More than one value may be reported at a time.
+  /// Called when data for a primitive type is available. More than one value may be reported at a time.
   virtual void OnPrimitiveString(xiiUInt32 count, const xiiStringView* pData, bool bThisIsAll) = 0;
 
 private:

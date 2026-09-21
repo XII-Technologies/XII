@@ -2,7 +2,7 @@
 
 #pragma once
 
-/// \brief Provides access to an object while managing a lock (e.g. a mutex) that ensures that during its lifetime the access to the object
+/// Provides access to an object while managing a lock (e.g. a mutex) that ensures that during its lifetime the access to the object
 /// happens under the lock.
 template <typename T, typename O>
 class xiiLockedObject
@@ -43,7 +43,7 @@ public:
     }
   }
 
-  /// \brief Whether the encapsulated object exists at all or is nullptr
+  /// Whether the encapsulated object exists at all or is nullptr
   XII_ALWAYS_INLINE bool isValid() const { return m_pObject != nullptr; }
 
   O* Borrow() { return m_pObject; }

@@ -22,7 +22,7 @@ using xiiActionId      = xiiGenericId<24, 8>;
 using CreateActionFunc = xiiAction* (*)(const xiiActionContext&);
 using DeleteActionFunc = void (*)(xiiAction*);
 
-/// \brief Handle for a xiiAction.
+/// Handle for a xiiAction.
 ///
 /// xiiAction can be invalidated at runtime so don't store them.
 class XII_GUIFOUNDATION_DLL xiiActionDescriptorHandle

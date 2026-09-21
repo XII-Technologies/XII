@@ -17,7 +17,7 @@ struct XII_GAMEENGINE_DLL xiiBlackboardTemplateResourceDescriptor
   xiiDynamicArray<xiiBlackboardEntry> m_Entries;
 };
 
-/// \brief Describes the initial state of a blackboard.
+/// Describes the initial state of a blackboard.
 ///
 /// Used by xiiBlackboardComponent to initialize its blackboard from.
 class XII_GAMEENGINE_DLL xiiBlackboardTemplateResource : public xiiResource

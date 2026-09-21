@@ -5,7 +5,7 @@
 #include <Core/World/WorldModule.h>
 #include <Foundation/SimdMath/SimdVec4f.h>
 
-/// \brief Defines the strength / speed of wind. Inspired by the Beaufort Scale.
+/// Defines the strength / speed of wind. Inspired by the Beaufort Scale.
 ///
 /// See https://en.wikipedia.org/wiki/Beaufort_scale
 struct XII_CORE_DLL xiiWindStrength
@@ -28,7 +28,7 @@ struct XII_CORE_DLL xiiWindStrength
     Default = LightBreeze
   };
 
-  /// \brief Maps the wind strength name to a meters per second speed value as defined by the Beaufort Scale.
+  /// Maps the wind strength name to a meters per second speed value as defined by the Beaufort Scale.
   ///
   /// The value only defines how fast wind moves, how much it affects an object, like bending it, depends
   /// on additional factors like stiffness and is thus object specific.
@@ -48,7 +48,7 @@ public:
   virtual xiiVec3      GetWindAt(const xiiVec3& vPosition) const = 0;
   virtual xiiSimdVec4f GetWindAtSimd(const xiiSimdVec4f& vPosition) const;
 
-  /// \brief Computes a 'fluttering' wind motion orthogonal to an object direction.
+  /// Computes a 'fluttering' wind motion orthogonal to an object direction.
   ///
   /// This is used to apply sideways or upwards wind forces on an object, such that it flutters in the wind,
   /// even when the wind is constant.

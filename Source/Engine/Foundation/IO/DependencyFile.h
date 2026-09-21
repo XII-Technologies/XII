@@ -8,7 +8,7 @@
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Time/Timestamp.h>
 
-/// \brief This class represents a set of files of which one wants to know when any one of them changes.
+/// This class represents a set of files of which one wants to know when any one of them changes.
 ///
 /// xiiDependencyFile stores a list of files that are the 'dependency set'. It can be serialized.
 /// Through HasAnyFileChanged() one can detect whether any of the files has changed, since the last call to StoreCurrentTimeStamp().
@@ -18,36 +18,36 @@ class XII_FOUNDATION_DLL xiiDependencyFile
 public:
   xiiDependencyFile();
 
-  /// \brief Clears all files that were added with AddFileDependency()
+  /// Clears all files that were added with AddFileDependency()
   void Clear();
 
-  /// \brief Adds one file as a dependency to the list
+  /// Adds one file as a dependency to the list
   void AddFileDependency(xiiStringView sFile);
 
-  /// \brief Allows read access to all currently stored file dependencies
+  /// Allows read access to all currently stored file dependencies
   const xiiHybridArray<xiiString, 16>& GetFileDependencies() const { return m_AssetTransformDependencies; }
 
-  /// \brief Writes the current state to a stream. Note that you probably should call StoreCurrentTimeStamp() before this, to serialize the latest
+  /// Writes the current state to a stream. Note that you probably should call StoreCurrentTimeStamp() before this, to serialize the latest
   /// file stamp
   xiiResult WriteDependencyFile(xiiStreamWriter& ref_stream) const;
 
-  /// \brief Reads the state from a stream. Call HasAnyFileChanged() afterwards to determine whether anything has changed since when the data was
+  /// Reads the state from a stream. Call HasAnyFileChanged() afterwards to determine whether anything has changed since when the data was
   /// serialized.
   xiiResult ReadDependencyFile(xiiStreamReader& ref_stream);
 
-  /// \brief Writes the current state to a file. Note that you probably should call StoreCurrentTimeStamp() before this, to serialize the latest file
+  /// Writes the current state to a file. Note that you probably should call StoreCurrentTimeStamp() before this, to serialize the latest file
   /// stamp
   xiiResult WriteDependencyFile(xiiStringView sFile) const;
 
-  /// \brief Reads the state from a file. Call HasAnyFileChanged() afterwards to determine whether anything has changed since when the data was
+  /// Reads the state from a file. Call HasAnyFileChanged() afterwards to determine whether anything has changed since when the data was
   /// serialized.
   xiiResult ReadDependencyFile(xiiStringView sFile);
 
-  /// \brief Retrieves the current file time stamps from the filesystem and determines whether any file has changed since the last call to
+  /// Retrieves the current file time stamps from the filesystem and determines whether any file has changed since the last call to
   /// StoreCurrentTimeStamp() (or ReadDependencyFile())
   bool HasAnyFileChanged() const;
 
-  /// \brief Retrieves the current file time stamps from the filesystem and stores it for later comparison. This value is also serialized through
+  /// Retrieves the current file time stamps from the filesystem and stores it for later comparison. This value is also serialized through
   /// WriteDependencyFile(), so it should be called before that, to store the latest state.
   void StoreCurrentTimeStamp();
 

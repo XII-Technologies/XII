@@ -31,7 +31,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiSpawnBoxComponentFlags);
 
 using xiiSpawnBoxComponentManager = xiiComponentManager<class xiiSpawnBoxComponent, xiiBlockStorageType::Compact>;
 
-/// \brief This component spawns prefabs inside a box.
+/// This component spawns prefabs inside a box.
 ///
 /// The prefabs are spawned over a fixed duration.
 /// The number of prefabs to spawn over the time duration is randomly chosen.
@@ -57,7 +57,7 @@ protected:
   // xiiSpawnBoxComponent
 
 public:
-  /// \brief When called, the component starts spawning the chosen number of prefabs over the set duration.
+  /// When called, the component starts spawning the chosen number of prefabs over the set duration.
   ///
   /// If this is called while the component is already active, the internal state is reset and it starts over.
   void StartSpawning(); // [ scriptable ]

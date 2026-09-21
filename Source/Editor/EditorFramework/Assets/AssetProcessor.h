@@ -21,7 +21,7 @@ struct xiiAssetCuratorEvent;
 class xiiTask;
 struct xiiAssetInfo;
 
-/// \brief Log for all background processing results
+/// Log for all background processing results
 class xiiAssetProcessorLog : public xiiLogInterface
 {
 public:
@@ -102,7 +102,7 @@ private:
   xiiDynamicArray<xiiString>            m_TransitiveHull;
 };
 
-/// \brief Background asset processing is handled by this class.
+/// Background asset processing is handled by this class.
 /// Creates EditorProcessor processes.
 class XII_EDITORFRAMEWORK_DLL xiiAssetProcessor
 {

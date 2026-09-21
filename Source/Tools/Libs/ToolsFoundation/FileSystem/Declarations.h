@@ -17,7 +17,7 @@
 
 #endif
 
-/// \brief Information about a single file on disk. The file might be a document or any other file found in the data directories.
+/// Information about a single file on disk. The file might be a document or any other file found in the data directories.
 struct XII_TOOLSFOUNDATION_DLL xiiFileStatus
 {
   enum class Status : xiiUInt8

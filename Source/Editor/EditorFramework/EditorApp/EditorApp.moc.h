@@ -89,47 +89,47 @@ public:
   // External Tools
   //
 
-  /// \brief Searches for an external tool.
+  /// Searches for an external tool.
   ///
   /// Either uses one from the precompiled tools folder, or from the currently compiled binaries, depending where it finds one.
   /// If the editor preference is set to use precompiled tools, that folder is preferred, otherwise the other folder is preferred.
   xiiString FindToolApplication(const char* szToolName);
 
-  /// \brief Executes an external tool as found by FindToolApplication().
+  /// Executes an external tool as found by FindToolApplication().
   ///
   /// The applications output is parsed and forwarded to the given log interface. A custom log level is applied first.
   /// If the tool cannot be found or it takes longer to execute than the allowed timeout, the function returns failure.
   xiiStatus ExecuteTool(const char* szTool, const QStringList& arguments, xiiUInt32 uiSecondsTillTimeout, xiiLogInterface* pLogOutput = nullptr, xiiLogMsgType::Enum logLevel = xiiLogMsgType::WarningMsg, const char* szCWD = nullptr);
 
-  /// \brief Creates the string with which to run Fileserve for the currently open project.
+  /// Creates the string with which to run Fileserve for the currently open project.
   xiiString BuildFileserveCommandLine() const;
 
-  /// \brief Launches Fileserve with the settings for the current project.
+  /// Launches Fileserve with the settings for the current project.
   void RunFileserve();
 
-  /// \brief Launches xiiInspector.
+  /// Launches xiiInspector.
   void RunInspector();
 
-  /// \brief Launches Tracy.
+  /// Launches Tracy.
   void RunTracy();
 
   //
   //
   //
 
-  /// \brief Returns whether we are between StartupEditor and ShutdownEditor.
+  /// Returns whether we are between StartupEditor and ShutdownEditor.
   bool IsRunning() const { return m_bIsRunning; }
 
-  /// \brief Can be set via the command line option '-safe'. In this mode the editor will not automatically load recent documents
+  /// Can be set via the command line option '-safe'. In this mode the editor will not automatically load recent documents
   bool IsInSafeMode() const { return m_StartupFlags.IsSet(StartupFlags::SafeMode); }
 
-  /// \brief Returns true if the the app shouldn't display anything. This is the case in an EditorProcessor.
+  /// Returns true if the the app shouldn't display anything. This is the case in an EditorProcessor.
   bool IsInHeadlessMode() const { return m_StartupFlags.IsSet(StartupFlags::Headless); }
 
-  /// \brief Returns true if the editor is started in run in test mode.
+  /// Returns true if the editor is started in run in test mode.
   bool IsInUnitTestMode() const { return m_StartupFlags.IsSet(StartupFlags::UnitTest); }
 
-  /// \brief Returns true if the editor is started in run in background mode.
+  /// Returns true if the editor is started in run in background mode.
   bool IsBackgroundMode() const { return m_StartupFlags.IsSet(StartupFlags::Background); }
 
   const xiiPluginBundleSet& GetPluginBundles() const { return m_PluginBundles; }
@@ -143,10 +143,10 @@ public:
 
   void SaveSettings();
 
-  /// \brief Writes a file containing all the currently open documents
+  /// Writes a file containing all the currently open documents
   void SaveOpenDocumentsList();
 
-  /// \brief Reads the list of last open documents in the current project.
+  /// Reads the list of last open documents in the current project.
   xiiRecentFilesList LoadOpenDocumentsList();
 
   void     InitQt(xiiInt32 iArgc, char** pArgv);
@@ -183,7 +183,7 @@ public:
 
   xiiResult CreateOrOpenProject(bool bCreate, xiiStringView sFile);
 
-  /// \brief If this project is remote, ie coming from another repository that is not checked-out by default, make sure it exists locally on disk.
+  /// If this project is remote, ie coming from another repository that is not checked-out by default, make sure it exists locally on disk.
   ///
   /// Adjusts inout_sFilePath from pointing to a xiiRemoteProject file to a xiiProject file, if necessary.
   /// If the project is already local, it always succeeds.
@@ -196,10 +196,10 @@ public:
   void LoadPluginBundleDlls(const char* szProjectFile);
   void DetectAvailablePluginBundles(xiiStringView sSearchDirectory);
 
-  /// \brief Launches a new instance of the editor to open the given project.
+  /// Launches a new instance of the editor to open the given project.
   void LaunchEditor(const char* szProject, bool bCreate);
 
-  /// \brief Adds a data directory as a hard dependency to the project. Should be used by plugins to ensure their required data is
+  /// Adds a data directory as a hard dependency to the project. Should be used by plugins to ensure their required data is
   /// available. The path must be relative to the SdkRoot folder.
   void AddPluginDataDirDependency(const char* szSdkRootRelativePath, const char* szRootName = nullptr, bool bWriteable = false);
 
@@ -218,13 +218,13 @@ public:
 
   xiiStatus SaveTagRegistry();
 
-  /// \brief Reads the known input slots from disk and adds them to the existing list.
+  /// Reads the known input slots from disk and adds them to the existing list.
   ///
   /// All input slots to be exposed by the editor are stored in 'Shared/Tools/xiiEditor/InputSlots'
   /// as txt files. Each line names one input slot.
   void GetKnownInputSlots(xiiDynamicArray<xiiString>& slots) const;
 
-  /// \brief Instructs the engine to reload its resources
+  /// Instructs the engine to reload its resources
   void ReloadEngineResources();
 
   void RestartEngineProcessIfPluginsChanged(bool bForce);

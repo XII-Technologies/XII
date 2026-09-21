@@ -11,7 +11,7 @@ class xiiStreamReader;
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Threading/Mutex.h>
 
-/// \brief The tag registry for tags in tag sets.
+/// The tag registry for tags in tag sets.
 ///
 /// Normal usage of the tag registry is to get the global tag registry instance via xiiTagRegistry::GetGlobalRegistry()
 /// and to use this instance to register and get tags.
@@ -26,25 +26,25 @@ public:
 
   static xiiTagRegistry& GetGlobalRegistry();
 
-  /// \brief Ensures the tag with the given name exists and returns a pointer to it.
+  /// Ensures the tag with the given name exists and returns a pointer to it.
   const xiiTag& RegisterTag(xiiStringView sTagString); // [tested]
 
-  /// \brief Ensures the tag with the given name exists and returns a pointer to it.
+  /// Ensures the tag with the given name exists and returns a pointer to it.
   const xiiTag& RegisterTag(const xiiHashedString& sTagString); // [tested]
 
-  /// \brief Searches for a tag with the given name and returns a pointer to it
+  /// Searches for a tag with the given name and returns a pointer to it
   const xiiTag* GetTagByName(const xiiTempHashedString& sTagString) const; // [tested]
 
-  /// \brief Searches for a tag with the given murmur hash. This function is only for backwards compatibility.
+  /// Searches for a tag with the given murmur hash. This function is only for backwards compatibility.
   const xiiTag* GetTagByMurmurHash(xiiUInt32 uiMurmurHash) const;
 
-  /// \brief Returns the tag with the given index.
+  /// Returns the tag with the given index.
   const xiiTag* GetTagByIndex(xiiUInt32 uiIndex) const;
 
-  /// \brief Returns the number of registered tags.
+  /// Returns the number of registered tags.
   xiiUInt32 GetNumTags() const;
 
-  /// \brief Loads the saved state and integrates it into this registry. Does not discard previously registered tag information. This function is only
+  /// Loads the saved state and integrates it into this registry. Does not discard previously registered tag information. This function is only
   /// for backwards compatibility.
   xiiResult Load(xiiStreamReader& ref_stream);
 

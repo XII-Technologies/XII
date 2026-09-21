@@ -9,7 +9,7 @@
 
 using xiiForwardEventsToGameStateComponentManager = xiiComponentManager<class xiiForwardEventsToGameStateComponent, xiiBlockStorageType::Compact>;
 
-/// \brief This event handler component forwards any message that it receives to the active xiiGameStateBase.
+/// This event handler component forwards any message that it receives to the active xiiGameStateBase.
 ///
 /// Game states can have message handlers just like any other reflected type.
 /// However, since they are not part of the xiiWorld, messages are not delivered to them.

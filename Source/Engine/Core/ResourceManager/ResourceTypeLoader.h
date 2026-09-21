@@ -7,7 +7,7 @@
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Time/Timestamp.h>
 
-/// \brief Data returned by xiiResourceTypeLoader implementations.
+/// Data returned by xiiResourceTypeLoader implementations.
 struct XII_CORE_DLL xiiResourceLoadData
 {
   /// Additional (optional) description that can help during debugging (e.g. the final file path).
@@ -23,7 +23,7 @@ struct XII_CORE_DLL xiiResourceLoadData
   void* m_pCustomLoaderData = nullptr;
 };
 
-/// \brief Base class for all resource loaders.
+/// Base class for all resource loaders.
 ///
 /// A resource loader handles preparing the data before the resource is updated with the data.
 /// Resource loaders are always executed on a separate thread.
@@ -33,7 +33,7 @@ public:
   xiiResourceTypeLoader()          = default;
   virtual ~xiiResourceTypeLoader() = default;
 
-  /// \brief Override this function to implement the resource loading.
+  /// Override this function to implement the resource loading.
   ///
   /// This function should take the information from \a pResource, e.g. which file to load, and do the loading work.
   /// It should allocate temporary storage for the loaded data and encode it in a memory stream, such that the
@@ -42,11 +42,11 @@ public:
   /// \sa xiiResourceLoadData
   virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) = 0;
 
-  /// \brief This function is called when the resource has been updated with the data from the resource loader and the loader can deallocate
+  /// This function is called when the resource has been updated with the data from the resource loader and the loader can deallocate
   /// any temporary memory.
   virtual void CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) = 0;
 
-  /// \brief If this function returns true, a resource is unloaded and loaded again to update its content.
+  /// If this function returns true, a resource is unloaded and loaded again to update its content.
   ///
   /// Call xiiResource::GetLoadedFileModificationTime() to query the file modification time that was returned
   /// through xiiResourceLoadData::m_LoadedFileModificationDate.
@@ -57,7 +57,7 @@ public:
   }
 };
 
-/// \brief A default implementation of xiiResourceTypeLoader for standard file loading.
+/// A default implementation of xiiResourceTypeLoader for standard file loading.
 ///
 /// The loader will interpret the xiiResource 'resource ID' as a path, read that full file into a memory stream.
 /// The file modification data is stored as well.
@@ -71,7 +71,7 @@ public:
 };
 
 
-/// \brief A resource loader that is mainly used to update a resource on the fly with custom data, e.g. in an editor
+/// A resource loader that is mainly used to update a resource on the fly with custom data, e.g. in an editor
 ///
 /// Use like this:
 /// Allocate a xiiResourceLoaderFromMemory instance on the heap, using XII_DEFAULT_NEW and store the result in a

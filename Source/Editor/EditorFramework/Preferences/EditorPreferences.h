@@ -7,7 +7,7 @@
 
 class xiiEngineViewLightSettings;
 
-/// \brief Stores editor specific preferences for the current user
+/// Stores editor specific preferences for the current user
 class XII_EDITORFRAMEWORK_DLL xiiEditorPreferencesUser : public xiiPreferences
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEditorPreferencesUser, xiiPreferences);

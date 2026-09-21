@@ -6,7 +6,7 @@
 
 using xiiSkyAtmosphereComponentManager = xiiComponentManager<class xiiSkyAtmosphereComponent, xiiBlockStorageType::Compact>;
 
-/// \brief The light scattering technique to use for evaluating light scattering.
+/// The light scattering technique to use for evaluating light scattering.
 struct xiiLightScatteringTechnique
 {
   using StorageType = xiiUInt8;
@@ -23,7 +23,7 @@ struct xiiLightScatteringTechnique
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightScatteringTechnique);
 
-/// \brief The method to use for processing shadow map cascades when rendering light scattering.
+/// The method to use for processing shadow map cascades when rendering light scattering.
 struct xiiLightScatteringCascadeProcessingMode
 {
   using StorageType = xiiUInt8;
@@ -41,7 +41,7 @@ struct xiiLightScatteringCascadeProcessingMode
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightScatteringCascadeProcessingMode);
 
-/// \brief The criterion to use for detecting discontinuities when refining the sample locations for light scattering.
+/// The criterion to use for detecting discontinuities when refining the sample locations for light scattering.
 struct xiiLightScatteringRefinementCriterion
 {
   using StorageType = xiiUInt8;
@@ -58,7 +58,7 @@ struct xiiLightScatteringRefinementCriterion
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightScatteringRefinementCriterion);
 
-/// \brief The method to use for evaluating extinction when attenuating background.
+/// The method to use for evaluating extinction when attenuating background.
 struct xiiLightScatteringExtinctionEvaluationMode
 {
   using StorageType = xiiUInt8;
@@ -75,7 +75,7 @@ struct xiiLightScatteringExtinctionEvaluationMode
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightScatteringExtinctionEvaluationMode);
 
-/// \brief The method to use for evaluating a single light scattering.
+/// The method to use for evaluating a single light scattering.
 struct xiiLightScatteringSingleEvaluationMode
 {
   using StorageType = xiiUInt8;
@@ -110,7 +110,7 @@ struct xiiLightScatteringHighOrderEvaluationMode
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightScatteringHighOrderEvaluationMode);
 
-/// \brief A sky atmosphere component. This represents a sky atmosphere that is rendered in the background of the scene.
+/// A sky atmosphere component. This represents a sky atmosphere that is rendered in the background of the scene.
 class XII_GRAPHICSCORE_DLL xiiSkyAtmosphereRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSkyAtmosphereRenderData, xiiRenderData);

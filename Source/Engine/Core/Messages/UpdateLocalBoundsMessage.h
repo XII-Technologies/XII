@@ -17,7 +17,7 @@ struct XII_CORE_DLL xiiMsgUpdateLocalBounds : public xiiMessage
     m_uiSpatialDataCategoryBitmask |= category.GetBitmask();
   }
 
-  ///\brief Enforces the object to be always visible. Note that you can't set this flag to false again,
+  ///Enforces the object to be always visible. Note that you can't set this flag to false again,
   ///  because the same message is sent to multiple components and should accumulate the bounds.
   XII_ALWAYS_INLINE void SetAlwaysVisible(xiiSpatialData::Category category)
   {

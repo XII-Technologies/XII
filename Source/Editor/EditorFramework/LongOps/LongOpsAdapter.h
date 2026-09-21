@@ -10,7 +10,7 @@ struct xiiDocumentObjectStructureEvent;
 struct xiiPhantomRttiManagerEvent;
 class xiiRTTI;
 
-/// \brief This singleton lives in the editor process and monitors all xiiSceneDocument's for components with the xiiLongOpAttribute.
+/// This singleton lives in the editor process and monitors all xiiSceneDocument's for components with the xiiLongOpAttribute.
 ///
 /// All such components will be automatically registered in the xiiLongOpControllerManager, such that their functionality
 /// is exposed to the user.

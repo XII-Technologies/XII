@@ -32,7 +32,7 @@ struct xiiQtDocumentWindowEvent
   xiiQtDocumentWindow* m_pWindow;
 };
 
-/// \brief Base class for all document windows. Handles the most basic document window management.
+/// Base class for all document windows. Handles the most basic document window management.
 class XII_GUIFOUNDATION_DLL xiiQtDocumentWindow : public QMainWindow
 {
   Q_OBJECT
@@ -55,7 +55,7 @@ public:
 
   xiiStringView GetUniqueName() const { return m_sUniqueName; }
 
-  /// \brief The 'GroupName' is used for serializing window layouts. It should be unique among different window types.
+  /// The 'GroupName' is used for serializing window layouts. It should be unique among different window types.
   virtual xiiStringView GetWindowLayoutGroupName() const = 0;
 
   xiiDocument* GetDocument() const { return m_pDocument; }
@@ -80,16 +80,16 @@ public:
   static xiiQtDocumentWindow* FindWindowByDocument(const xiiDocument* pDocument);
   xiiQtContainerWindow*       GetContainerWindow() const;
 
-  /// \brief Shows the given message for the given duration in the statusbar, then shows the permanent message again.
+  /// Shows the given message for the given duration in the statusbar, then shows the permanent message again.
   void ShowTemporaryStatusBarMsg(const xiiFormatString& text, xiiTime duration = xiiTime::MakeFromSeconds(5));
 
-  /// \brief Sets which text to show permanently in the statusbar. Set an empty string to clear the message.
+  /// Sets which text to show permanently in the statusbar. Set an empty string to clear the message.
   void SetPermanentStatusBarMsg(const xiiFormatString& text);
 
-  /// \brief For unit tests to take a screenshot of the window (may include multiple views) to do image comparisons.
+  /// For unit tests to take a screenshot of the window (may include multiple views) to do image comparisons.
   virtual void CreateImageCapture(xiiStringView sOutputPath);
 
-  /// \brief In 'safe' mode we want to prevent the documents from using the stored window layout state
+  /// In 'safe' mode we want to prevent the documents from using the stored window layout state
   static bool s_bAllowRestoreWindowLayout;
 
 protected:

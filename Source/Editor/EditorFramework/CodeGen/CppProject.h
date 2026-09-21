@@ -114,7 +114,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiPreferences
 
   static xiiStatus OpenSolution(const xiiCppSettings& cfg);
 
-  /// \brief Attempts to launch the configured code editor with the specified file and line number
+  /// Attempts to launch the configured code editor with the specified file and line number
   static xiiStatus OpenInCodeEditor(const xiiStringView& sFileName, xiiInt32 iLineNumber);
 
   static xiiStringView CompilerToString(xiiCompiler::Enum compiler);
@@ -157,7 +157,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiPreferences
 
   static bool IsBuildRequired();
 
-  /// \brief Fired when a notable change has been made.
+  /// Fired when a notable change has been made.
   static xiiEvent<const xiiCppSettings&> s_ChangeEvents;
 
   static void LoadPreferences();

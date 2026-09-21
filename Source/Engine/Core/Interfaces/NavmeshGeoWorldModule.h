@@ -11,7 +11,7 @@ struct xiiNavmeshTriangle
   const xiiSurfaceResource* m_pSurface = nullptr;
 };
 
-/// \brief A world module that retrieves triangle data that should be used for building navmeshes at runtime.
+/// A world module that retrieves triangle data that should be used for building navmeshes at runtime.
 ///
 /// If a physics engine is active, it usually automatically provides such a world module to retrieve the triangle data
 /// through physics queries.

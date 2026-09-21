@@ -10,7 +10,7 @@
 class xiiOpenDdlWriter;
 class xiiOpenDdlReader;
 
-/// \brief A plugin bundle lists all the files and information needed to get one feature plugin working
+/// A plugin bundle lists all the files and information needed to get one feature plugin working
 /// both in the editor and the runtime.
 ///
 /// So it lists the editor DLLs, the runtime DLLs, all the additional transitive dependencies that need to be packaged,
@@ -37,35 +37,35 @@ struct XII_EDITORFRAMEWORK_DLL xiiPluginBundle
   xiiHybridArray<xiiString, 1> m_ExclusiveFeatures;   ///< If two bundles have the same string in this list, they can't be activated at the same time. So for example only one bundle with the feature 'Sound' or 'Physics' may be activated simultaneously. Only enforced by the UI.
   xiiHybridArray<xiiString, 1> m_EnabledInTemplates;  ///< In which project templates this plugin should be active by default.
 
-  /// \brief Reads the bundle description, but not the state.
+  /// Reads the bundle description, but not the state.
   xiiResult ReadBundleFromDDL(xiiOpenDdlReader& ref_ddl);
 
-  /// \brief Writes only the bundle's state to a DDL file.
+  /// Writes only the bundle's state to a DDL file.
   void WriteStateToDDL(xiiOpenDdlWriter& ref_ddl, xiiStringView sOwnName) const;
 
-  /// \brief Reads only the bundle's state from a DDL file.
+  /// Reads only the bundle's state from a DDL file.
   void ReadStateFromDDL(xiiOpenDdlReader& ref_ddl, xiiStringView sOwnName);
 
-  /// \brief Checks whether two bundles have the same state.
+  /// Checks whether two bundles have the same state.
   bool IsStateEqual(const xiiPluginBundle& rhs) const
   {
     return m_bSelected == rhs.m_bSelected && m_bLoadCopy == rhs.m_bLoadCopy;
   }
 };
 
-/// \brief Contains multiple xiiPluginBundle's.
+/// Contains multiple xiiPluginBundle's.
 struct XII_EDITORFRAMEWORK_DLL xiiPluginBundleSet
 {
   xiiMap<xiiString, xiiPluginBundle, xiiCompareString_NoCase> m_Plugins;
 
   void SetFromTemplate(xiiStringView sTemplateName);
 
-  /// \brief Writes the state of all bundles to a DDL file.
+  /// Writes the state of all bundles to a DDL file.
   void WriteStateToDDL(xiiOpenDdlWriter& ref_ddl) const;
 
-  /// \brief Reads the state of all bundles from a DDL file.
+  /// Reads the state of all bundles from a DDL file.
   void ReadStateFromDDL(xiiOpenDdlReader& ref_ddl);
 
-  /// \brief Checks whether two bundle sets have the same state.
+  /// Checks whether two bundle sets have the same state.
   bool IsStateEqual(const xiiPluginBundleSet& rhs) const;
 };

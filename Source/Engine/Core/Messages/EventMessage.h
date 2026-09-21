@@ -5,7 +5,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Communication/Message.h>
 
-/// \brief Base class for all messages that are sent as 'events'
+/// Base class for all messages that are sent as 'events'
 struct XII_CORE_DLL xiiEventMessage : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiEventMessage, xiiMessage);
@@ -33,7 +33,7 @@ namespace xiiInternal
   };
 } // namespace xiiInternal
 
-/// \brief A message sender that sends all messages to the next component derived from xiiEventMessageHandlerComponent
+/// A message sender that sends all messages to the next component derived from xiiEventMessageHandlerComponent
 ///   up in the hierarchy starting with the given search object. If none is found the message is sent to
 ///   all components registered as global event message handler. The receiver is cached after the first send/post call.
 template <typename EventMessageType>

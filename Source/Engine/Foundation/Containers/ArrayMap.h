@@ -4,7 +4,7 @@
 
 #include <Foundation/Containers/DynamicArray.h>
 
-/// \brief An associative container, similar to xiiMap, but all data is stored in a sorted contiguous array, which makes frequent lookups more
+/// An associative container, similar to xiiMap, but all data is stored in a sorted contiguous array, which makes frequent lookups more
 /// efficient.
 ///
 /// Prefer this container over xiiMap when you modify the container less often than you look things up (which is in most cases), and when
@@ -29,83 +29,83 @@ public:
     XII_ALWAYS_INLINE bool operator==(const Pair& rhs) const { return key == rhs.key; }
   };
 
-  /// \brief Constructor.
+  /// Constructor.
   explicit xiiArrayMapBase(xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Copy-Constructor.
+  /// Copy-Constructor.
   xiiArrayMapBase(const xiiArrayMapBase& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Copy assignment operator.
+  /// Copy assignment operator.
   void operator=(const xiiArrayMapBase& rhs); // [tested]
 
-  /// \brief Returns the number of elements stored in the map.
+  /// Returns the number of elements stored in the map.
   xiiUInt32 GetCount() const; // [tested]
 
-  /// \brief True if the map contains no elements.
+  /// True if the map contains no elements.
   bool IsEmpty() const; // [tested]
 
-  /// \brief Purges all elements from the map.
+  /// Purges all elements from the map.
   void Clear(); // [tested]
 
-  /// \brief Always inserts a new value under the given key. Duplicates are allowed.
+  /// Always inserts a new value under the given key. Duplicates are allowed.
   /// Returns the index of the newly added element.
   template <typename CompatibleKeyType, typename CompatibleValueType>
   xiiUInt32 Insert(CompatibleKeyType&& key, CompatibleValueType&& value); // [tested]
 
-  /// \brief Ensures the internal data structure is sorted. This is done automatically every time a lookup needs to be made.
+  /// Ensures the internal data structure is sorted. This is done automatically every time a lookup needs to be made.
   void Sort() const; // [tested]
 
-  /// \brief Returns an index to one element with the given key. If the key is inserted multiple times, there is no guarantee which one is returned.
+  /// Returns an index to one element with the given key. If the key is inserted multiple times, there is no guarantee which one is returned.
   /// Returns xiiInvalidIndex when no such element exists.
   template <typename CompatibleKeyType>
   xiiUInt32 Find(const CompatibleKeyType& key) const; // [tested]
 
-  /// \brief Returns the index to the first element with a key equal or larger than the given key.
+  /// Returns the index to the first element with a key equal or larger than the given key.
   /// Returns xiiInvalidIndex when no such element exists.
   /// If there are multiple keys with the same value, the one at the smallest index is returned.
   template <typename CompatibleKeyType>
   xiiUInt32 LowerBound(const CompatibleKeyType& key) const; // [tested]
 
-  /// \brief Returns the index to the first element with a key that is LARGER than the given key.
+  /// Returns the index to the first element with a key that is LARGER than the given key.
   /// Returns xiiInvalidIndex when no such element exists.
   /// If there are multiple keys with the same value, the one at the smallest index is returned.
   template <typename CompatibleKeyType>
   xiiUInt32 UpperBound(const CompatibleKeyType& key) const; // [tested]
 
-  /// \brief Returns the key that is stored at the given index.
+  /// Returns the key that is stored at the given index.
   const KEY& GetKey(xiiUInt32 uiIndex) const; // [tested]
 
-  /// \brief Returns the value that is stored at the given index.
+  /// Returns the value that is stored at the given index.
   const VALUE& GetValue(xiiUInt32 uiIndex) const; // [tested]
 
-  /// \brief Returns the value that is stored at the given index.
+  /// Returns the value that is stored at the given index.
   VALUE& GetValue(xiiUInt32 uiIndex); // [tested]
 
-  /// \brief Returns a reference to the map data array.
+  /// Returns a reference to the map data array.
   xiiDynamicArray<Pair>& GetData();
 
-  /// \brief Returns a constant reference to the map data array.
+  /// Returns a constant reference to the map data array.
   const xiiDynamicArray<Pair>& GetData() const;
 
-  /// \brief Returns the value stored at the given key. If none exists, one is created. \a bExisted indicates whether an element needed to be created.
+  /// Returns the value stored at the given key. If none exists, one is created. \a bExisted indicates whether an element needed to be created.
   template <typename CompatibleKeyType>
   VALUE& FindOrAdd(const CompatibleKeyType& key, bool* out_pExisted = nullptr); // [tested]
 
-  /// \brief Same as FindOrAdd.
+  /// Same as FindOrAdd.
   template <typename CompatibleKeyType>
   VALUE& operator[](const CompatibleKeyType& key); // [tested]
 
-  /// \brief Returns the key/value pair at the given index.
+  /// Returns the key/value pair at the given index.
   const Pair& GetPair(xiiUInt32 uiIndex) const; // [tested]
 
-  /// \brief Removes the element at the given index.
+  /// Removes the element at the given index.
   ///
   /// If the map is sorted and bKeepSorted is true, the element will be removed such that the map stays sorted.
   /// This is only useful, if only a single (or very few) elements are removed before the next lookup. If multiple values
   /// are removed, or new values are going to be inserted, as well, \a bKeepSorted should be left to false.
   void RemoveAtAndCopy(xiiUInt32 uiIndex, bool bKeepSorted = false);
 
-  /// \brief Removes one element with the given key. Returns true, if one was found and removed. If the same key exists multiple times, you need to
+  /// Removes one element with the given key. Returns true, if one was found and removed. If the same key exists multiple times, you need to
   /// call this function multiple times to remove them all.
   ///
   /// If the map is sorted and bKeepSorted is true, the element will be removed such that the map stays sorted.
@@ -114,24 +114,24 @@ public:
   template <typename CompatibleKeyType>
   bool RemoveAndCopy(const CompatibleKeyType& key, bool bKeepSorted = false); // [tested]
 
-  /// \brief Returns whether an element with the given key exists.
+  /// Returns whether an element with the given key exists.
   template <typename CompatibleKeyType>
   bool Contains(const CompatibleKeyType& key) const; // [tested]
 
-  /// \brief Returns whether an element with the given key and value already exists.
+  /// Returns whether an element with the given key and value already exists.
   template <typename CompatibleKeyType>
   bool Contains(const CompatibleKeyType& key, const VALUE& value) const; // [tested]
 
-  /// \brief Reserves enough memory to store \a size elements.
+  /// Reserves enough memory to store \a size elements.
   void Reserve(xiiUInt32 uiSize); // [tested]
 
-  /// \brief Compacts the internal memory to not waste any space.
+  /// Compacts the internal memory to not waste any space.
   void Compact(); // [tested]
 
-  /// \brief Compares the two containers for equality.
+  /// Compares the two containers for equality.
   bool operator==(const xiiArrayMapBase<KEY, VALUE>& rhs) const; // [tested]
 
-  /// \brief Returns the amount of bytes that are currently allocated on the heap.
+  /// Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const { return m_Data.GetHeapMemoryUsage(); } // [tested]
 
   using const_iterator         = typename xiiDynamicArray<Pair>::const_iterator;
@@ -144,7 +144,7 @@ private:
   mutable xiiDynamicArray<Pair> m_Data;
 };
 
-/// \brief See xiiArrayMapBase for details.
+/// See xiiArrayMapBase for details.
 template <typename KEY, typename VALUE, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 class xiiArrayMap : public xiiArrayMapBase<KEY, VALUE>
 {

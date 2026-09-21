@@ -6,7 +6,7 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Memory/AllocatorWrapper.h>
 
-/// \brief Implementation of a hashset.
+/// Implementation of a hashset.
 ///
 /// The hashset stores values by using the hash as an index into the table.
 /// This implementation uses linear-probing to resolve hash collisions which means all values are stored
@@ -20,26 +20,26 @@ template <typename KeyType, typename Hasher>
 class xiiHashSetBase
 {
 public:
-  /// \brief Const iterator.
+  /// Const iterator.
   class ConstIterator
   {
   public:
-    /// \brief Checks whether this iterator points to a valid element.
+    /// Checks whether this iterator points to a valid element.
     bool IsValid() const; // [tested]
 
-    /// \brief Checks whether the two iterators point to the same element.
+    /// Checks whether the two iterators point to the same element.
     bool operator==(const typename xiiHashSetBase<KeyType, Hasher>::ConstIterator& rhs) const;
 
-    /// \brief Returns the 'key' of the element that this iterator points to.
+    /// Returns the 'key' of the element that this iterator points to.
     const KeyType& Key() const; // [tested]
 
-    /// \brief Returns the 'key' of the element that this iterator points to.
+    /// Returns the 'key' of the element that this iterator points to.
     XII_ALWAYS_INLINE const KeyType& operator*() const { return Key(); } // [tested]
 
-    /// \brief Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
+    /// Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
     void Next(); // [tested]
 
-    /// \brief Shorthand for 'Next'
+    /// Shorthand for 'Next'
     void operator++(); // [tested]
 
   protected:
@@ -55,91 +55,91 @@ public:
   };
 
 protected:
-  /// \brief Creates an empty hashset. Does not allocate any data yet.
+  /// Creates an empty hashset. Does not allocate any data yet.
   explicit xiiHashSetBase(xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Creates a copy of the given hashset.
+  /// Creates a copy of the given hashset.
   xiiHashSetBase(const xiiHashSetBase<KeyType, Hasher>& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Moves data from an existing hashtable into this one.
+  /// Moves data from an existing hashtable into this one.
   xiiHashSetBase(xiiHashSetBase<KeyType, Hasher>&& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Destructor.
+  /// Destructor.
   ~xiiHashSetBase(); // [tested]
 
-  /// \brief Copies the data from another hashset into this one.
+  /// Copies the data from another hashset into this one.
   void operator=(const xiiHashSetBase<KeyType, Hasher>& rhs); // [tested]
 
-  /// \brief Moves data from an existing hashset into this one.
+  /// Moves data from an existing hashset into this one.
   void operator=(xiiHashSetBase<KeyType, Hasher>&& rhs); // [tested]
 
 public:
-  /// \brief Compares this table to another table.
+  /// Compares this table to another table.
   bool operator==(const xiiHashSetBase<KeyType, Hasher>& rhs) const; // [tested]
 
-  /// \brief Expands the hashset by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the
+  /// Expands the hashset by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the
   /// given number of entries.
   void Reserve(xiiUInt32 uiCapacity); // [tested]
 
-  /// \brief Tries to compact the hashset to avoid wasting memory.
+  /// Tries to compact the hashset to avoid wasting memory.
   ///
   /// The resulting capacity is at least 'GetCount' (no elements get removed).
   /// Will deallocate all data, if the hashset is empty.
   void Compact(); // [tested]
 
-  /// \brief Returns the number of active entries in the table.
+  /// Returns the number of active entries in the table.
   xiiUInt32 GetCount() const; // [tested]
 
-  /// \brief Returns true, if the hashset does not contain any elements.
+  /// Returns true, if the hashset does not contain any elements.
   bool IsEmpty() const; // [tested]
 
-  /// \brief Clears the table.
+  /// Clears the table.
   void Clear(); // [tested]
 
-  /// \brief Inserts the key. Returns whether the key was already existing.
+  /// Inserts the key. Returns whether the key was already existing.
   template <typename CompatibleKeyType>
   bool Insert(CompatibleKeyType&& key); // [tested]
 
-  /// \brief Removes the entry with the given key. Returns if an entry was removed.
+  /// Removes the entry with the given key. Returns if an entry was removed.
   template <typename CompatibleKeyType>
   bool Remove(const CompatibleKeyType& key); // [tested]
 
-  /// \brief Erases the key at the given Iterator. Returns an iterator to the element after the given iterator.
+  /// Erases the key at the given Iterator. Returns an iterator to the element after the given iterator.
   ConstIterator Remove(const ConstIterator& pos); // [tested]
 
-  /// \brief Returns if an entry with given key exists in the table.
+  /// Returns if an entry with given key exists in the table.
   template <typename CompatibleKeyType>
   bool Contains(const CompatibleKeyType& key) const; // [tested]
 
-  /// \brief Checks whether all keys of the given set are in the container.
+  /// Checks whether all keys of the given set are in the container.
   bool ContainsSet(const xiiHashSetBase<KeyType, Hasher>& operand) const; // [tested]
 
-  /// \brief Makes this set the union of itself and the operand.
+  /// Makes this set the union of itself and the operand.
   void Union(const xiiHashSetBase<KeyType, Hasher>& operand); // [tested]
 
-  /// \brief Makes this set the difference of itself and the operand, i.e. subtracts operand.
+  /// Makes this set the difference of itself and the operand, i.e. subtracts operand.
   void Difference(const xiiHashSetBase<KeyType, Hasher>& operand); // [tested]
 
-  /// \brief Makes this set the intersection of itself and the operand.
+  /// Makes this set the intersection of itself and the operand.
   void Intersection(const xiiHashSetBase<KeyType, Hasher>& operand); // [tested]
 
-  /// \brief Returns a constant Iterator to the very first element.
+  /// Returns a constant Iterator to the very first element.
   ConstIterator GetIterator() const; // [tested]
 
-  /// \brief Returns a constant Iterator to the first element that is not part of the hashset. Needed to implement range based for loop
+  /// Returns a constant Iterator to the first element that is not part of the hashset. Needed to implement range based for loop
   /// support.
   ConstIterator GetEndIterator() const;
 
-  /// \brief Returns the allocator that is used by this instance.
+  /// Returns the allocator that is used by this instance.
   xiiAllocator* GetAllocator() const;
 
-  /// \brief Returns the amount of bytes that are currently allocated on the heap.
+  /// Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
 
-  /// \brief Swaps this map with the other one.
+  /// Swaps this map with the other one.
   void Swap(xiiHashSetBase<KeyType, Hasher>& other); // [tested]
 
-  /// \brief Searches for key, returns a ConstIterator to it or an invalid iterator, if no such key is found. O(1) operation.
+  /// Searches for key, returns a ConstIterator to it or an invalid iterator, if no such key is found. O(1) operation.
   template <typename CompatibleKeyType>
   ConstIterator Find(const CompatibleKeyType& key) const;
 
@@ -184,7 +184,7 @@ private:
   void MarkEntryAsDeleted(xiiUInt32 uiEntryIndex);
 };
 
-/// \brief \see xiiHashSetBase
+/// \see xiiHashSetBase
 template <typename KeyType, typename Hasher = xiiHashHelper<KeyType>, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 class xiiHashSet : public xiiHashSetBase<KeyType, Hasher>
 {

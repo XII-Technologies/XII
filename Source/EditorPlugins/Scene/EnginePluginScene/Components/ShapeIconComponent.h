@@ -7,7 +7,7 @@
 
 using xiiShapeIconComponentManager = xiiComponentManager<class xiiShapeIconComponent, xiiBlockStorageType::Compact>;
 
-/// \brief This is a dummy component that the editor creates on all 'empty' nodes for the sole purpose to render a shape icon and enable picking.
+/// This is a dummy component that the editor creates on all 'empty' nodes for the sole purpose to render a shape icon and enable picking.
 ///
 /// Though in the future one could potentially use them for other editor functionality, such as displaying the object name or some other useful text.
 class XII_ENGINEPLUGINSCENE_DLL xiiShapeIconComponent : public xiiComponent

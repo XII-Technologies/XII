@@ -16,14 +16,14 @@ class xiiTaskWorkerThread final : public xiiThread
   ///@{
 
 public:
-  /// \brief Tells the worker thread what tasks to execute and which thread index it has.
+  /// Tells the worker thread what tasks to execute and which thread index it has.
   xiiTaskWorkerThread(xiiWorkerThreadType::Enum threadType, xiiUInt32 uiThreadNumber);
   ~xiiTaskWorkerThread();
 
-  /// \brief Deactivates the thread. Returns failure, if the thread is currently still running.
+  /// Deactivates the thread. Returns failure, if the thread is currently still running.
   xiiResult DeactivateWorker();
 
-  /// \brief Broadcasts xiiThreadEvent::ClearThreadLocals on this thread.
+  /// Broadcasts xiiThreadEvent::ClearThreadLocals on this thread.
   void BroadcastClearThreadLocalsEvent();
 
   void WaitForBroadcastClearTLS();
@@ -45,10 +45,10 @@ private:
   ///@{
 
 public:
-  /// \brief Returns the last utilization value (0 - 1 range). Optionally returns how many tasks it executed recently.
+  /// Returns the last utilization value (0 - 1 range). Optionally returns how many tasks it executed recently.
   double GetThreadUtilization(xiiUInt32* pNumTasksExecuted = nullptr);
 
-  /// \brief Computes the thread utilization by dividing the thread active time by the time that has passed since the last update.
+  /// Computes the thread utilization by dividing the thread active time by the time that has passed since the last update.
   void UpdateThreadUtilization(xiiTime timePassed);
 
 private:
@@ -65,7 +65,7 @@ private:
   ///@{
 
 public:
-  /// \brief If the thread is currently idle, this will wake it up and return XII_SUCCESS.
+  /// If the thread is currently idle, this will wake it up and return XII_SUCCESS.
   xiiTaskWorkerState WakeUpIfIdle();
 
 private:

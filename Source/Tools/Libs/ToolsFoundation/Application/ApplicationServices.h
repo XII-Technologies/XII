@@ -15,26 +15,26 @@ class XII_TOOLSFOUNDATION_DLL xiiApplicationServices
 public:
   xiiApplicationServices();
 
-  /// \brief A writable folder in which application specific user data may be stored.
+  /// A writable folder in which application specific user data may be stored.
   xiiString GetApplicationUserDataFolder() const;
 
-  /// \brief A read-only folder in which application specific data may be located.
+  /// A read-only folder in which application specific data may be located.
   xiiString GetApplicationDataFolder() const;
 
-  /// \brief The writable location where the application should store preferences (user specific settings).
+  /// The writable location where the application should store preferences (user specific settings).
   xiiString GetApplicationPreferencesFolder() const;
 
-  /// \brief The writable location where preferences for the current xiiToolsProject should be stored (user specific settings).
+  /// The writable location where preferences for the current xiiToolsProject should be stored (user specific settings).
   xiiString GetProjectPreferencesFolder() const;
 
   xiiString GetProjectPreferencesFolder(xiiStringView sProjectFilePath) const;
 
-  /// \brief The writable location where preferences for the given xiiDocument should be stored (user specific settings).
+  /// The writable location where preferences for the given xiiDocument should be stored (user specific settings).
   xiiString GetDocumentPreferencesFolder(const xiiDocument* pDocument) const;
 
-  /// \brief The read-only folder where pre-compiled binaries for external tools can be found.
+  /// The read-only folder where pre-compiled binaries for external tools can be found.
   xiiString GetPrecompiledToolsFolder(bool bUsePrecompiledTools) const;
 
-  /// \brief The folder under which the sample projects are stored.
+  /// The folder under which the sample projects are stored.
   xiiString GetSampleProjectsFolder() const;
 };

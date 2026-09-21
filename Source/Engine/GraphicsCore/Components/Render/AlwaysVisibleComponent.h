@@ -8,7 +8,7 @@
 
 using xiiAlwaysVisibleComponentManager = xiiComponentManager<class xiiAlwaysVisibleComponent, xiiBlockStorageType::Compact>;
 
-/// \brief Attaching this component to a game object makes the renderer consider it always visible, ie. disables culling
+/// Attaching this component to a game object makes the renderer consider it always visible, ie. disables culling
 class XII_GRAPHICSCORE_DLL xiiAlwaysVisibleComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiAlwaysVisibleComponent, xiiRenderComponent, xiiAlwaysVisibleComponentManager);

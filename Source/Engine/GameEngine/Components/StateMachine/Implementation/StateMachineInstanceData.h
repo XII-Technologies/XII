@@ -10,7 +10,7 @@
 
 namespace xiiStateMachineInternal
 {
-  /// \brief Helper class to manage instance data for compound states or transitions
+  /// Helper class to manage instance data for compound states or transitions
   struct XII_GAMEENGINE_DLL Compound
   {
     XII_ALWAYS_INLINE xiiUInt32 GetBaseOffset() const { return m_InstanceDataOffsets.GetUserData<xiiUInt32>(); }

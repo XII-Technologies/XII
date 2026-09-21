@@ -10,7 +10,7 @@
 class xiiLogInterface;
 class xiiStreamReader;
 
-/// \brief Simple implementation to read Adobe CUBE LUT files
+/// Simple implementation to read Adobe CUBE LUT files
 ///
 /// Currently only reads 3D LUTs as this is the data we need for our lookup textures in the tone mapping step.
 class xiiAdobeCUBEReader

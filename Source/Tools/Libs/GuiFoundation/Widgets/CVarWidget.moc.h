@@ -83,7 +83,7 @@ public:
   xiiDeque<Entry>         m_AllEntries;
 };
 
-/// \brief Data used by xiiQtCVarWidget to represent CVar states
+/// Data used by xiiQtCVarWidget to represent CVar states
 struct XII_GUIFOUNDATION_DLL xiiCVarWidgetData
 {
   mutable bool m_bNewEntry = true;
@@ -100,7 +100,7 @@ struct XII_GUIFOUNDATION_DLL xiiCVarWidgetData
   xiiString m_sValue;
 };
 
-/// \brief Displays CVar values in a table and allows to modify them.
+/// Displays CVar values in a table and allows to modify them.
 class XII_GUIFOUNDATION_DLL xiiQtCVarWidget : public QWidget, public Ui_CVarWidget
 {
   Q_OBJECT
@@ -109,13 +109,13 @@ public:
   xiiQtCVarWidget(QWidget* pParent);
   ~xiiQtCVarWidget();
 
-  /// \brief Clears the table
+  /// Clears the table
   void Clear();
 
-  /// \brief Recreates the full UI. This is necessary when elements were added or removed.
+  /// Recreates the full UI. This is necessary when elements were added or removed.
   void RebuildCVarUI(const xiiMap<xiiString, xiiCVarWidgetData>& cvars);
 
-  /// \brief Updates the existing UI. This is sufficient if values changed only.
+  /// Updates the existing UI. This is sufficient if values changed only.
   void UpdateCVarUI(const xiiMap<xiiString, xiiCVarWidgetData>& cvars);
 
   void AddConsoleStrings(const xiiStringBuilder& sEncoded);

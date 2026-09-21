@@ -6,7 +6,7 @@
 
 #include <Foundation/Reflection/Implementation/AbstractProperty.h>
 
-/// \brief Do not cast into this class or any of its derived classes, use xiiAbstractSetProperty instead.
+/// Do not cast into this class or any of its derived classes, use xiiAbstractSetProperty instead.
 template <typename Type>
 class xiiTypedSetProperty : public xiiAbstractSetProperty
 {
@@ -20,7 +20,7 @@ public:
   virtual const xiiRTTI* GetSpecificType() const override { return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferencePointerType>(); }
 };
 
-/// \brief Specialization of xiiTypedArrayProperty to retain the pointer in const char*.
+/// Specialization of xiiTypedArrayProperty to retain the pointer in const char*.
 template <>
 class xiiTypedSetProperty<const char*> : public xiiAbstractSetProperty
 {

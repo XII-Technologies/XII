@@ -18,7 +18,7 @@ struct xiiMsgExtractRenderData;
 
 using xiiParticleSystemComponentManager = xiiComponentManager<class xiiParticleSystemComponent, xiiBlockStorageType::FreeList>;
 
-/// \brief Constants shared by the CPU runtime and shader-side particle layouts.
+/// Constants shared by the CPU runtime and shader-side particle layouts.
 struct XII_GRAPHICSCORE_DLL xiiParticleSystemConstants
 {
   static constexpr xiiUInt32 s_uiDefaultMaxParticles    = 1024U * 1024U;
@@ -28,7 +28,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleSystemConstants
   static constexpr xiiUInt32 s_uiMaxSupportedParticles  = 16U * 1024U * 1024U;
 };
 
-/// \brief Simulation space for particle data.
+/// Simulation space for particle data.
 struct XII_GRAPHICSCORE_DLL xiiParticleSimulationSpace
 {
   using StorageType = xiiUInt8;
@@ -47,7 +47,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleSimulationSpace
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSimulationSpace);
 
-/// \brief Feature flags controlling runtime allocation and pass scheduling.
+/// Feature flags controlling runtime allocation and pass scheduling.
 struct XII_GRAPHICSCORE_DLL xiiParticleSystemFlags
 {
   using StorageType = xiiUInt32;
@@ -91,7 +91,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleSystemFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiParticleSystemFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemFlags);
 
-/// \brief GPU particle state. Keep in sync with Data/Base/Shaders/Pipeline/GPUParticleSimulate.xiiShader.
+/// GPU particle state. Keep in sync with Data/Base/Shaders/Pipeline/GPUParticleSimulate.xiiShader.
 struct alignas(16) XII_GRAPHICSCORE_DLL xiiParticleGPUState
 {
   XII_DECLARE_POD_TYPE();
@@ -111,7 +111,7 @@ struct alignas(16) XII_GRAPHICSCORE_DLL xiiParticleGPUState
 
 static_assert((sizeof(xiiParticleGPUState) % 16U) == 0U);
 
-/// \brief GPU counters consumed by emit, compact, simulate, render and readback passes.
+/// GPU counters consumed by emit, compact, simulate, render and readback passes.
 struct XII_GRAPHICSCORE_DLL xiiParticleGPUCounters
 {
   XII_DECLARE_POD_TYPE();
@@ -122,29 +122,29 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGPUCounters
   xiiUInt32 m_uiEventCount        = 0U; ///< Number of events emitted in the current frame. This is updated by the GPU during simulation passes when events are emitted, and can be used for debugging or for implementing features such as event throttling based on demand. The exact semantics of this count (e.g., whether it includes events that were emitted but not yet processed) are defined by the particle graph and may depend on the enabled features (e.g., EnableEvents).
 };
 
-/// \brief Runtime descriptor for large GPU particle simulations.
+/// Runtime descriptor for large GPU particle simulations.
 struct XII_GRAPHICSCORE_DLL xiiParticleSystemDescriptor
 {
-  /// \brief Returns the center of the local bounding volume.
+  /// Returns the center of the local bounding volume.
   XII_ALWAYS_INLINE xiiVec3 GetLocalBoundsCenter() const { return m_LocalBounds.m_vCenter; }
 
-  /// \brief Sets the center of the local bounding volume. This should be set to the expected center of the particle distribution in the system's local space (e.g., the emitter position) for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume.
+  /// Sets the center of the local bounding volume. This should be set to the expected center of the particle distribution in the system's local space (e.g., the emitter position) for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume.
   XII_ALWAYS_INLINE void SetLocalBoundsCenter(xiiVec3 vCenter) { m_LocalBounds.m_vCenter = vCenter; }
 
-  /// \brief Returns the half extents of the local bounding box. This should be set to a tight fit around the expected particle distribution in the system's local space for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume (e.g., if GPUCulling is enabled, the graph may automatically update the bounds based on particle behavior).
+  /// Returns the half extents of the local bounding box. This should be set to a tight fit around the expected particle distribution in the system's local space for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume (e.g., if GPUCulling is enabled, the graph may automatically update the bounds based on particle behavior).
   XII_ALWAYS_INLINE xiiVec3 GetLocalBoundsHalfExtents() const { return m_LocalBounds.m_vBoxHalfExtents; }
 
-  /// \brief Sets the half extents of the local bounding box. This should be set to a tight fit around the expected particle distribution in the system's local space for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume (e.g., if GPUCulling is enabled, the graph may automatically update the bounds based on particle behavior). The sphere radius is automatically updated to encompass the box, so it is not necessary to set it separately unless you want a different value for specific use cases (e.g., using a larger sphere radius for effects with long trails or fast-moving particles).
+  /// Sets the half extents of the local bounding box. This should be set to a tight fit around the expected particle distribution in the system's local space for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume (e.g., if GPUCulling is enabled, the graph may automatically update the bounds based on particle behavior). The sphere radius is automatically updated to encompass the box, so it is not necessary to set it separately unless you want a different value for specific use cases (e.g., using a larger sphere radius for effects with long trails or fast-moving particles).
   XII_ALWAYS_INLINE void SetLocalBoundsHalfExtents(xiiVec3 vHalfExtents)
   {
     m_LocalBounds.m_vBoxHalfExtents = vHalfExtents.CompMax(xiiVec3::MakeZero());
     m_LocalBounds.m_fSphereRadius   = m_LocalBounds.m_vBoxHalfExtents.GetLength();
   }
 
-  /// \brief Returns the radius of the local bounding sphere. This should be set to a value that encompasses the expected particle distribution in the system's local space for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume (e.g., if GPUCulling is enabled, the graph may automatically update the bounds based on particle behavior).
+  /// Returns the radius of the local bounding sphere. This should be set to a value that encompasses the expected particle distribution in the system's local space for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume (e.g., if GPUCulling is enabled, the graph may automatically update the bounds based on particle behavior).
   XII_ALWAYS_INLINE float GetLocalBoundsRadius() const { return m_LocalBounds.m_fSphereRadius; }
 
-  /// \brief Sets the radius of the local bounding sphere. This should be set to a value that encompasses the expected particle distribution in the system's local space for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume (e.g., if GPUCulling is enabled, the graph may automatically update the bounds based on particle behavior). The box half extents are automatically updated to encompass the sphere, so it is not necessary to set them separately unless you want different values for specific use cases (e.g., using a larger box for effects with long trails or fast-moving particles).
+  /// Sets the radius of the local bounding sphere. This should be set to a value that encompasses the expected particle distribution in the system's local space for best culling performance, but may be overridden by the particle graph if it has specific requirements for the bounding volume (e.g., if GPUCulling is enabled, the graph may automatically update the bounds based on particle behavior). The box half extents are automatically updated to encompass the sphere, so it is not necessary to set them separately unless you want different values for specific use cases (e.g., using a larger box for effects with long trails or fast-moving particles).
   XII_ALWAYS_INLINE void SetLocalBoundsRadius(float fRadius) { m_LocalBounds.m_fSphereRadius = xiiMath::Max(0.0f, fRadius); }
 
   void Save(xiiStreamWriter& ref_stream) const;
@@ -168,7 +168,7 @@ public:
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemDescriptor);
 
-/// \brief Renderer-facing packet for GPU particle systems.
+/// Renderer-facing packet for GPU particle systems.
 class XII_GRAPHICSCORE_DLL xiiParticleRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiParticleRenderData, xiiRenderData);
@@ -185,7 +185,7 @@ public:
   xiiParticleSystemRuntime* m_pRuntime = nullptr; ///< Pointer to the particle system runtime that owns the resources and manages the simulation for this render data. This can be used by the renderer to access additional information or functionality related to the particle system, such as updating simulation parameters or triggering events.
 };
 
-/// \brief Render graph pass data used by xiiParticleSystemRuntime::AddSimulationPasses().
+/// Render graph pass data used by xiiParticleSystemRuntime::AddSimulationPasses().
 struct XII_GRAPHICSCORE_DLL xiiParticleSimulationPassData
 {
   xiiRGBufferHandle m_hParticleStateRead;      ///< Buffer handle for reading the current particle state. This is bound as a read-only resource in simulation passes and contains the state of all particles at the start of the pass. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation.
@@ -206,83 +206,83 @@ struct XII_GRAPHICSCORE_DLL xiiParticleSimulationPassData
 
 using xiiParticleGraphNodeExecutor = xiiDelegate<void(const xiiParticleGraphNodeDesc&, const xiiParticleSimulationPassData&, xiiRGPassContext&)>;
 
-/// \brief Persistent GPU runtime for one particle system. Owns large buffers and registers graph passes.
+/// Persistent GPU runtime for one particle system. Owns large buffers and registers graph passes.
 class XII_GRAPHICSCORE_DLL xiiParticleSystemRuntime
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiParticleSystemRuntime);
 
 public:
-  /// \brief Returns the current capacity of the particle system, which is determined by the size of the allocated GPU buffers and the limits defined in the descriptor. This can be used for debugging or for making decisions about how to configure emitters or other aspects of the particle graph based on the available capacity.
+  /// Returns the current capacity of the particle system, which is determined by the size of the allocated GPU buffers and the limits defined in the descriptor. This can be used for debugging or for making decisions about how to configure emitters or other aspects of the particle graph based on the available capacity.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetParticleCapacity() const { return m_uiParticleCapacity; }
 
-  /// \brief Returns the current capacity for events in the particle system, which is determined by the size of the allocated GPU buffers and the limits defined in the descriptor. This can be used for debugging or for making decisions about how to configure event emitters or other aspects of the particle graph based on the available capacity for events.
+  /// Returns the current capacity for events in the particle system, which is determined by the size of the allocated GPU buffers and the limits defined in the descriptor. This can be used for debugging or for making decisions about how to configure event emitters or other aspects of the particle graph based on the available capacity for events.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetEventCapacity() const { return m_uiEventCapacity; }
 
-  /// \brief Returns the current capacity for neighbor pairs in the particle system, which is determined by the size of the allocated GPU buffers and the limits defined in the descriptor. This can be used for debugging or for making decisions about how to configure particle interactions or other aspects of the particle graph based on the available capacity for neighbor pairs.
+  /// Returns the current capacity for neighbor pairs in the particle system, which is determined by the size of the allocated GPU buffers and the limits defined in the descriptor. This can be used for debugging or for making decisions about how to configure particle interactions or other aspects of the particle graph based on the available capacity for neighbor pairs.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetNeighborPairCapacity() const { return m_uiNeighborPairCapacity; }
 
-  /// \brief Returns the current particle state buffer for reading, which contains the state of all particles at the start of the current frame. This buffer is updated by the GPU during simulation passes and should be used for rendering or readback operations that need to access the current state of particles. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
+  /// Returns the current particle state buffer for reading, which contains the state of all particles at the start of the current frame. This buffer is updated by the GPU during simulation passes and should be used for rendering or readback operations that need to access the current state of particles. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetCurrentParticleStateBuffer() const;
 
-  /// \brief Returns the next particle state buffer for writing, which is used for updating the state of all particles during simulation passes. This buffer is updated by the GPU during simulation passes and should be used for rendering or readback operations that need to access the updated state of particles after simulation. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
+  /// Returns the next particle state buffer for writing, which is used for updating the state of all particles during simulation passes. This buffer is updated by the GPU during simulation passes and should be used for rendering or readback operations that need to access the updated state of particles after simulation. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetNextParticleStateBuffer() const;
 
-  /// \brief Returns the alive index buffer, which contains the indices of currently alive particles. This buffer is updated by the GPU during simulation passes and should be used for rendering or readback operations that need to access the list of active particles. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
+  /// Returns the alive index buffer, which contains the indices of currently alive particles. This buffer is updated by the GPU during simulation passes and should be used for rendering or readback operations that need to access the list of active particles. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetAliveIndexBuffer() const { return m_pAliveIndexBuffer; }
 
-  /// \brief Returns the dead index buffer, which contains the indices of currently dead particles. This buffer is updated by the GPU during simulation passes and can be used for debugging or for implementing features such as emitter throttling based on available capacity. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
+  /// Returns the dead index buffer, which contains the indices of currently dead particles. This buffer is updated by the GPU during simulation passes and can be used for debugging or for implementing features such as emitter throttling based on available capacity. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetDeadIndexBuffer() const { return m_pDeadIndexBuffer; }
 
-  /// \brief Returns the counters buffer, which contains various counters related to the particle system (e.g., alive count, dead count, spawn request count, event count). This buffer is updated by the GPU during simulation passes and can be read by the renderer for rendering or debugging purposes. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
+  /// Returns the counters buffer, which contains various counters related to the particle system (e.g., alive count, dead count, spawn request count, event count). This buffer is updated by the GPU during simulation passes and can be read by the renderer for rendering or debugging purposes. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for rendering and simulation.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetCountersBuffer() const { return m_pCountersBuffer; }
 
-  /// \brief Returns the event buffer, which contains events emitted by particles during simulation passes. This buffer is updated by the GPU during simulation passes when event support is enabled, and can be read by the renderer or by game logic for processing events. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and event processing.
+  /// Returns the event buffer, which contains events emitted by particles during simulation passes. This buffer is updated by the GPU during simulation passes when event support is enabled, and can be read by the renderer or by game logic for processing events. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and event processing.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetEventBuffer() const { return m_pEventBuffer; }
 
-  /// \brief Returns the sort key buffer, which contains keys used for sorting particles (e.g., by depth or by ID). This buffer is updated by the GPU during simulation passes when sorting is enabled, and can be read by the renderer for rendering or debugging purposes. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and rendering.
+  /// Returns the sort key buffer, which contains keys used for sorting particles (e.g., by depth or by ID). This buffer is updated by the GPU during simulation passes when sorting is enabled, and can be read by the renderer for rendering or debugging purposes. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and rendering.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetSortKeyBuffer() const { return m_pSortKeyBuffer; }
 
-  /// \brief Returns the grid cell buffer, which contains the spatial partitioning of particles into grid cells when GPU-based neighbor searching is enabled. This buffer is updated by the GPU during simulation passes when neighbor searching is enabled, and can be read by the renderer or by game logic for processing particle interactions. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and neighbor searching.
+  /// Returns the grid cell buffer, which contains the spatial partitioning of particles into grid cells when GPU-based neighbor searching is enabled. This buffer is updated by the GPU during simulation passes when neighbor searching is enabled, and can be read by the renderer or by game logic for processing particle interactions. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and neighbor searching.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetGridCellBuffer() const { return m_pGridCellBuffer; }
 
-  /// \brief Returns the grid cell range buffer, which contains the start and end indices of particles in each grid cell when GPU-based neighbor searching is enabled. This buffer is updated by the GPU during simulation passes when neighbor searching is enabled, and can be read by the renderer or by game logic for processing particle interactions. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and neighbor searching.
+  /// Returns the grid cell range buffer, which contains the start and end indices of particles in each grid cell when GPU-based neighbor searching is enabled. This buffer is updated by the GPU during simulation passes when neighbor searching is enabled, and can be read by the renderer or by game logic for processing particle interactions. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and neighbor searching.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetGridCellRangeBuffer() const { return m_pGridCellRangeBuffer; }
 
-  /// \brief Returns the neighbor pair buffer, which contains pairs of neighboring particles when GPU-based neighbor searching is enabled. This buffer is updated by the GPU during simulation passes when neighbor searching is enabled, and can be read by the renderer or by game logic for processing particle interactions. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and neighbor searching.
+  /// Returns the neighbor pair buffer, which contains pairs of neighboring particles when GPU-based neighbor searching is enabled. This buffer is updated by the GPU during simulation passes when neighbor searching is enabled, and can be read by the renderer or by game logic for processing particle interactions. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and neighbor searching.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetNeighborPairBuffer() const { return m_pNeighborPairBuffer; }
 
-  /// \brief Returns the draw indirect buffer, which contains the arguments for indirect draw calls. This buffer is updated by the GPU during simulation passes when indirect drawing is enabled, and can be read by the renderer for rendering. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and rendering.
+  /// Returns the draw indirect buffer, which contains the arguments for indirect draw calls. This buffer is updated by the GPU during simulation passes when indirect drawing is enabled, and can be read by the renderer for rendering. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and rendering.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetDrawIndirectBuffer() const { return m_pDrawIndirectBuffer; }
 
-  /// \brief Returns the dispatch indirect buffer, which contains the arguments for indirect dispatch calls (e.g., for culling or sorting). This buffer is updated by the GPU during simulation passes when async compute or GPU culling is enabled, and can be read by the renderer for rendering or by game logic for processing. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and any compute passes that use it.
+  /// Returns the dispatch indirect buffer, which contains the arguments for indirect dispatch calls (e.g., for culling or sorting). This buffer is updated by the GPU during simulation passes when async compute or GPU culling is enabled, and can be read by the renderer for rendering or by game logic for processing. The exact layout of this buffer is defined by the particle graph and should be compatible with the shader code used for simulation and any compute passes that use it.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetDispatchIndirectBuffer() const { return m_pDispatchIndirectBuffer; }
 
 public:
   xiiParticleSystemRuntime();
   ~xiiParticleSystemRuntime();
 
-  /// \brief Initializes the runtime with the given device and descriptor, creating necessary GPU resources. Returns failure if initialization fails (e.g., due to insufficient GPU resources or invalid descriptor parameters), in which case the runtime should not be used.
+  /// Initializes the runtime with the given device and descriptor, creating necessary GPU resources. Returns failure if initialization fails (e.g., due to insufficient GPU resources or invalid descriptor parameters), in which case the runtime should not be used.
   [[nodiscard]] xiiResult Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiParticleSystemDescriptor& descriptor);
 
-  /// \brief Shuts down the runtime and releases all GPU resources. After calling this, the runtime should not be used unless it is re-initialized.
+  /// Shuts down the runtime and releases all GPU resources. After calling this, the runtime should not be used unless it is re-initialized.
   void Shutdown();
 
-  /// \brief Ensures that the runtime has sufficient capacity for the given descriptor, resizing GPU buffers if necessary. Returns failure if resizing fails (e.g., due to insufficient GPU resources), in which case the runtime may be left in a valid but potentially under-provisioned state.
+  /// Ensures that the runtime has sufficient capacity for the given descriptor, resizing GPU buffers if necessary. Returns failure if resizing fails (e.g., due to insufficient GPU resources), in which case the runtime may be left in a valid but potentially under-provisioned state.
   [[nodiscard]] xiiResult EnsureCapacity(const xiiParticleSystemDescriptor& descriptor);
 
-  /// \brief Returns whether the runtime has been successfully initialized and is ready for use. This checks whether necessary GPU resources have been created and are valid, but does not guarantee that the runtime is fully provisioned for a specific descriptor (e.g., if EnsureCapacity has not been called or has failed).
+  /// Returns whether the runtime has been successfully initialized and is ready for use. This checks whether necessary GPU resources have been created and are valid, but does not guarantee that the runtime is fully provisioned for a specific descriptor (e.g., if EnsureCapacity has not been called or has failed).
   [[nodiscard]] bool IsInitialized() const;
 
-  /// \brief Resets the simulation state, clearing all particles and events. This can be used to restart the simulation or to clear out any existing state before starting a new effect. If a command list is provided, the reset operations will be recorded on that command list; otherwise, they will be executed immediately on the current context.
+  /// Resets the simulation state, clearing all particles and events. This can be used to restart the simulation or to clear out any existing state before starting a new effect. If a command list is provided, the reset operations will be recorded on that command list; otherwise, they will be executed immediately on the current context.
   void ResetSimulationState(xiiGALCommandList* pCommandList = nullptr);
 
-  /// \brief Swaps the current and next particle state buffers, typically called at the end of a simulation pass to prepare for the next frame. This should be called after all simulation passes have been executed for the current frame, and before any rendering or readback operations that need to access the updated particle state. If double buffering is not enabled, this function may have no effect.
+  /// Swaps the current and next particle state buffers, typically called at the end of a simulation pass to prepare for the next frame. This should be called after all simulation passes have been executed for the current frame, and before any rendering or readback operations that need to access the updated particle state. If double buffering is not enabled, this function may have no effect.
   void SwapParticleStateBuffers();
 
-  /// \brief Sets the node executor delegate, which is responsible for executing the logic of each particle graph node during simulation passes. This delegate will be called for each node in the graph that needs to be executed during a simulation pass, and should contain the logic for setting up shader parameters, dispatching compute shaders, and any other necessary operations to execute the node's behavior. The exact semantics of this delegate (e.g., how it's called and what it should do) are defined by the particle graph and may depend on the enabled features of the particle system.
+  /// Sets the node executor delegate, which is responsible for executing the logic of each particle graph node during simulation passes. This delegate will be called for each node in the graph that needs to be executed during a simulation pass, and should contain the logic for setting up shader parameters, dispatching compute shaders, and any other necessary operations to execute the node's behavior. The exact semantics of this delegate (e.g., how it's called and what it should do) are defined by the particle graph and may depend on the enabled features of the particle system.
   void SetNodeExecutor(xiiParticleGraphNodeExecutor executor);
 
-  /// \brief Adds the necessary simulation passes to the given render graph for executing the particle graph defined in the descriptor. This should be called during render graph construction, and will set up passes for emitting, simulating, and processing particles according to the logic defined in the particle graph resource. The sNamePrefix parameter can be used to give unique names to the passes for debugging purposes. Returns failure if adding the passes fails (e.g., due to invalid graph resources or issues with the render graph), in which case the render graph may be left in a valid but incomplete state.
+  /// Adds the necessary simulation passes to the given render graph for executing the particle graph defined in the descriptor. This should be called during render graph construction, and will set up passes for emitting, simulating, and processing particles according to the logic defined in the particle graph resource. The sNamePrefix parameter can be used to give unique names to the passes for debugging purposes. Returns failure if adding the passes fails (e.g., due to invalid graph resources or issues with the render graph), in which case the render graph may be left in a valid but incomplete state.
   [[nodiscard]] xiiResult AddSimulationPasses(xiiRenderGraph& ref_graph, xiiStringView sNamePrefix, const xiiParticleSystemDescriptor& descriptor);
 
 private:
@@ -317,7 +317,7 @@ private:
   xiiUInt32 m_uiReadBufferIndex      = 0U; ///< The index of the current read buffer in the double buffer for particle state. This is used to determine which buffer to read from and which buffer to write to during simulation passes, and is swapped at the end of each frame when SwapParticleStateBuffers() is called.
 };
 
-/// \brief Scene component that exposes a GPU particle system to extraction and tooling.
+/// Scene component that exposes a GPU particle system to extraction and tooling.
 class XII_GRAPHICSCORE_DLL xiiParticleSystemComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiParticleSystemComponent, xiiRenderComponent, xiiParticleSystemComponentManager);
@@ -341,22 +341,22 @@ public:
   xiiParticleSystemComponent();
   ~xiiParticleSystemComponent();
 
-  /// \brief Sets the descriptor for the particle system, which defines the behavior of the simulation and rendering. This can be called at any time to update the configuration of the particle system, but changes will only take effect after PrepareRuntimeResources() is called to ensure that the runtime has sufficient resources for the new descriptor. The exact semantics of changing the descriptor (e.g., whether it resets the simulation state or requires re-initialization) are defined by the implementation of the component and runtime.
+  /// Sets the descriptor for the particle system, which defines the behavior of the simulation and rendering. This can be called at any time to update the configuration of the particle system, but changes will only take effect after PrepareRuntimeResources() is called to ensure that the runtime has sufficient resources for the new descriptor. The exact semantics of changing the descriptor (e.g., whether it resets the simulation state or requires re-initialization) are defined by the implementation of the component and runtime.
   void SetDescriptor(const xiiParticleSystemDescriptor& descriptor);
 
-  /// \brief Returns the current descriptor for the particle system, which contains the configuration for the simulation and rendering. This can be used for reference or for making decisions about how to configure emitters or other aspects of the particle graph based on the current settings. The exact semantics of the descriptor (e.g., whether it reflects pending changes that have not yet been applied to the runtime) are defined by the implementation of the component and runtime.
+  /// Returns the current descriptor for the particle system, which contains the configuration for the simulation and rendering. This can be used for reference or for making decisions about how to configure emitters or other aspects of the particle graph based on the current settings. The exact semantics of the descriptor (e.g., whether it reflects pending changes that have not yet been applied to the runtime) are defined by the implementation of the component and runtime.
   const xiiParticleSystemDescriptor& GetDescriptor() const;
 
-  /// \brief Sets the particle graph resource handle, which defines the logic of the simulation and rendering. This can be called at any time to update the behavior of the particle system, but changes will only take effect after PrepareRuntimeResources() is called to ensure that the runtime has sufficient resources for the new graph. The exact semantics of changing the graph (e.g., whether it resets the simulation state or requires re-initialization) are defined by the implementation of the component and runtime.
+  /// Sets the particle graph resource handle, which defines the logic of the simulation and rendering. This can be called at any time to update the behavior of the particle system, but changes will only take effect after PrepareRuntimeResources() is called to ensure that the runtime has sufficient resources for the new graph. The exact semantics of changing the graph (e.g., whether it resets the simulation state or requires re-initialization) are defined by the implementation of the component and runtime.
   void SetParticleGraph(const xiiParticleGraphResourceHandle& hGraph);
 
-  /// \brief Returns the current particle graph resource handle, which defines the logic of the simulation and rendering. This can be used for reference or for making decisions about how to configure emitters or other aspects of the particle graph based on the current graph. The exact semantics of the graph (e.g., whether it reflects pending changes that have not yet been applied to the runtime) are defined by the implementation of the component and runtime.
+  /// Returns the current particle graph resource handle, which defines the logic of the simulation and rendering. This can be used for reference or for making decisions about how to configure emitters or other aspects of the particle graph based on the current graph. The exact semantics of the graph (e.g., whether it reflects pending changes that have not yet been applied to the runtime) are defined by the implementation of the component and runtime.
   const xiiParticleGraphResourceHandle& GetParticleGraph() const;
 
-  /// \brief Prepares the runtime resources for the particle system based on the current descriptor and graph settings. This should be called after setting the descriptor and graph to ensure that the runtime has sufficient resources for simulation and rendering. Returns failure if resource preparation fails (e.g., due to insufficient GPU resources or invalid descriptor/graph parameters), in which case the runtime may be left in an uninitialized or partially initialized state.
+  /// Prepares the runtime resources for the particle system based on the current descriptor and graph settings. This should be called after setting the descriptor and graph to ensure that the runtime has sufficient resources for simulation and rendering. Returns failure if resource preparation fails (e.g., due to insufficient GPU resources or invalid descriptor/graph parameters), in which case the runtime may be left in an uninitialized or partially initialized state.
   [[nodiscard]] xiiResult PrepareRuntimeResources(xiiSharedPtr<xiiGALDevice> pDevice) const;
 
-  /// \brief Returns a reference to the particle system runtime, which manages the GPU resources and simulation for this particle system. This can be used for accessing buffers, adding simulation passes, or other operations related to the runtime. The exact semantics of the runtime (e.g., whether it reflects pending changes that have not yet been applied to GPU resources) are defined by the implementation of the component and runtime.
+  /// Returns a reference to the particle system runtime, which manages the GPU resources and simulation for this particle system. This can be used for accessing buffers, adding simulation passes, or other operations related to the runtime. The exact semantics of the runtime (e.g., whether it reflects pending changes that have not yet been applied to GPU resources) are defined by the implementation of the component and runtime.
   [[nodiscard]] xiiParticleSystemRuntime& GetRuntime() const { return m_Runtime; }
 
 protected:

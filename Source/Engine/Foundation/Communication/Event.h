@@ -7,17 +7,17 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/Delegate.h>
 
-/// \brief Identifies an event subscription. Zero is always an invalid subscription ID.
+/// Identifies an event subscription. Zero is always an invalid subscription ID.
 using xiiEventSubscriptionID = xiiUInt32;
 
-/// \brief Specifies the type of xiiEvent implementation to use
+/// Specifies the type of xiiEvent implementation to use
 enum class xiiEventType
 {
   Default,        /// Default implementation. Does not support modifying the event while broadcasting.
   CopyOnBroadcast /// CopyOnBroadcast implementation. Supports modifying the event while broadcasting.
 };
 
-/// \brief This class propagates event information to registered event handlers.
+/// This class propagates event information to registered event handlers.
 ///
 /// An event can be anything that "happens" that might be of interest to other code, such
 /// that it can react on it in some way.
@@ -38,15 +38,15 @@ template <typename EventData, typename MutexType, xiiEventType EventType>
 class xiiEventBase
 {
 protected:
-  /// \brief Constructor.
+  /// Constructor.
   xiiEventBase(xiiAllocator* pAllocator);
   ~xiiEventBase();
 
 public:
-  /// \brief Notification callback type for events.
+  /// Notification callback type for events.
   using Handler = xiiDelegate<void(EventData)>;
 
-  /// \brief An object that can be passed to xiiEvent::AddEventHandler to store the subscription information
+  /// An object that can be passed to xiiEvent::AddEventHandler to store the subscription information
   /// and automatically remove the event handler upon destruction.
   class Unsubscriber
   {
@@ -71,7 +71,7 @@ public:
       other.Clear();
     }
 
-    /// \brief If the unsubscriber holds a valid subscription, it will be removed from the target xiiEvent.
+    /// If the unsubscriber holds a valid subscription, it will be removed from the target xiiEvent.
     void Unsubscribe()
     {
       if (m_SubscriptionID == 0)
@@ -81,10 +81,10 @@ public:
       Clear();
     }
 
-    /// \brief Checks whether this unsubscriber has a valid subscription.
+    /// Checks whether this unsubscriber has a valid subscription.
     bool IsSubscribed() const { return m_SubscriptionID != 0; }
 
-    /// \brief Resets the unsubscriber. Use when the target xiiEvent may have been destroyed and automatic unsubscription cannot be executed
+    /// Resets the unsubscriber. Use when the target xiiEvent may have been destroyed and automatic unsubscription cannot be executed
     /// anymore.
     void Clear()
     {
@@ -99,7 +99,7 @@ public:
     xiiEventSubscriptionID                               m_SubscriptionID = 0;
   };
 
-  /// \brief Implementation specific constants.
+  /// Implementation specific constants.
   enum
   {
     /// Whether the uiMaxRecursionDepth parameter to Broadcast() is supported in this implementation or not.
@@ -111,37 +111,37 @@ public:
     MaxRecursionDepthDefault = RecursionDepthSupported ? 0 : 255
   };
 
-  /// \brief This function will broadcast to all registered users, that this event has just happened.
+  /// This function will broadcast to all registered users, that this event has just happened.
   ///  Setting uiMaxRecursionDepth will allow you to permit recursions. When broadcasting consider up to what depth
   ///  you want recursions to be permitted. By default no recursion is allowed.
   void Broadcast(EventData pEventData, xiiUInt8 uiMaxRecursionDepth = MaxRecursionDepthDefault); // [tested]
 
-  /// \brief Adds a function as an event handler. All handlers will be notified in the order that they were registered.
+  /// Adds a function as an event handler. All handlers will be notified in the order that they were registered.
   ///
   /// The return value can be stored and used to remove the event handler later again.
   xiiEventSubscriptionID AddEventHandler(Handler handler) const; // [tested]
 
-  /// \brief An overload that adds an event handler and initializes the given \a Unsubscriber object.
+  /// An overload that adds an event handler and initializes the given \a Unsubscriber object.
   ///
   /// When the Unsubscriber is destroyed, it will automatically remove the event handler.
   void AddEventHandler(Handler handler, Unsubscriber& ref_unsubscriber) const; // [tested]
 
-  /// \brief Removes a previously registered handler. It is an error to remove a handler that was not registered.
+  /// Removes a previously registered handler. It is an error to remove a handler that was not registered.
   void RemoveEventHandler(const Handler& handler) const; // [tested]
 
-  /// \brief Removes a previously registered handler via the returned subscription ID.
+  /// Removes a previously registered handler via the returned subscription ID.
   ///
   /// The ID will be reset to zero.
   /// If this is called with a zero ID, nothing happens.
   void RemoveEventHandler(xiiEventSubscriptionID& ref_id) const;
 
-  /// \brief Checks whether an event handler has already been registered.
+  /// Checks whether an event handler has already been registered.
   bool HasEventHandler(const Handler& handler) const;
 
-  /// \brief Removes all registered event handlers.
+  /// Removes all registered event handlers.
   void Clear();
 
-  /// \brief Returns true, if no event handlers are registered.
+  /// Returns true, if no event handlers are registered.
   bool IsEmpty() const;
 
   // it would be a problem if the xiiEvent moves in memory, for instance the Unsubscriber's would point to invalid memory
@@ -164,16 +164,16 @@ private:
     xiiEventSubscriptionID m_SubscriptionID;
   };
 
-  /// \brief A dynamic array allows to have zero overhead as long as no event handlers are registered.
+  /// A dynamic array allows to have zero overhead as long as no event handlers are registered.
   mutable xiiDynamicArray<HandlerData> m_EventHandlers;
 };
 
-/// \brief Can be used when xiiEvent is used without any additional data
+/// Can be used when xiiEvent is used without any additional data
 struct xiiNoEventData
 {
 };
 
-/// \brief \see xiiEventBase
+/// \see xiiEventBase
 template <typename EventData, typename MutexType = xiiNoMutex, typename AllocatorWrapper = xiiDefaultAllocatorWrapper, xiiEventType EventType = xiiEventType::Default>
 class xiiEvent : public xiiEventBase<EventData, MutexType, EventType>
 {

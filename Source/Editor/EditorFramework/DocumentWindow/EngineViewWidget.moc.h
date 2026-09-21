@@ -33,7 +33,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiObjectPickingResult
   xiiVec3   m_vPickingRayStart;
 };
 
-/// \brief Base class for views that show engine output
+/// Base class for views that show engine output
 class XII_EDITORFRAMEWORK_DLL xiiQtEngineViewWidget : public QWidget
 {
   Q_OBJECT
@@ -42,27 +42,27 @@ public:
   xiiQtEngineViewWidget(QWidget* pParent, xiiQtEngineDocumentWindow* pDocumentWindow, xiiEngineViewConfig* pViewConfig);
   ~xiiQtEngineViewWidget();
 
-  /// \brief Add input contexts in the order in which they are supposed to be processed
+  /// Add input contexts in the order in which they are supposed to be processed
   xiiHybridArray<xiiEditorInputContext*, 8> m_InputContexts;
 
-  /// \brief Returns the ID of this view
+  /// Returns the ID of this view
   xiiUInt32                  GetViewID() const { return m_uiViewID; }
   xiiQtEngineDocumentWindow* GetDocumentWindow() const { return m_pDocumentWindow; }
 
-  /// \brief Sends the redraw message to the engine
+  /// Sends the redraw message to the engine
   virtual void SyncToEngine();
 
   void GetCameraMatrices(xiiMat4& out_mViewMatrix, xiiMat4& out_mProjectionMatrix) const;
 
   xiiEngineViewConfig* m_pViewConfig;
 
-  /// \brief Called every frame to move the camera to its current target (focus on selection, etc.)
+  /// Called every frame to move the camera to its current target (focus on selection, etc.)
   void UpdateCameraInterpolation();
 
-  /// \brief The view's camera will be interpolated to the given coordinates
+  /// The view's camera will be interpolated to the given coordinates
   void InterpolateCameraTo(const xiiVec3& vPosition, const xiiVec3& vDirection, float fFovOrDim, const xiiVec3* pNewUpDirection = nullptr, bool bImmediate = false);
 
-  /// \brief If disabled, no picking takes place in this view.
+  /// If disabled, no picking takes place in this view.
   ///
   /// Disabled in views that do not need picking (material asset, particle asset, etc.)
   /// and when the mouse is outside a view, to prevent useless picking.
@@ -70,35 +70,35 @@ public:
 
   void SetPickTransparent(bool bEnable);
 
-  /// \brief Disabled during drag&drop operations, to prevent picking against the dragged object.
+  /// Disabled during drag&drop operations, to prevent picking against the dragged object.
   virtual bool IsPickingAgainstSelectionAllowed() const { return !m_bInDragAndDropOperation; }
 
-  /// \brief Holds information about the viewport that the user just now hovered over and what object was picked last
+  /// Holds information about the viewport that the user just now hovered over and what object was picked last
   struct InteractionContext
   {
     xiiQtEngineViewWidget*        m_pLastHoveredViewWidget = nullptr;
     const xiiObjectPickingResult* m_pLastPickingResult     = nullptr;
   };
 
-  /// \brief Returns the latest information about what viewport the user interacted with.
+  /// Returns the latest information about what viewport the user interacted with.
   static const InteractionContext& GetInteractionContext() { return s_InteractionContext; }
 
-  /// \brief Overrides the InteractionContext with custom values. Mostly useful for injecting procedural user interaction for unit tests.
+  /// Overrides the InteractionContext with custom values. Mostly useful for injecting procedural user interaction for unit tests.
   static void SetInteractionContext(const InteractionContext& ctxt) { s_InteractionContext = ctxt; }
 
-  /// \brief Supposed to open a context menu at the given position. Derived classes must implement OnOpenContextMenu and do the actual work there.
+  /// Supposed to open a context menu at the given position. Derived classes must implement OnOpenContextMenu and do the actual work there.
   void OpenContextMenu(QPoint globalPos);
 
-  /// \brief Starts a picking operation for the given pixel position in this view. Returns the most recent picking information in the meantime.
+  /// Starts a picking operation for the given pixel position in this view. Returns the most recent picking information in the meantime.
   const xiiObjectPickingResult& PickObject(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY) const;
 
-  /// \brief Similar to PickObject, but computes the intersection with the given plane instead.
+  /// Similar to PickObject, but computes the intersection with the given plane instead.
   xiiResult PickPlane(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY, const xiiPlane& plane, xiiVec3& out_vPosition) const;
 
-  /// \brief Processes incoming messages from the engine that are meant for this particular view. Mostly picking results.
+  /// Processes incoming messages from the engine that are meant for this particular view. Mostly picking results.
   void HandleViewMessage(const xiiEditorEngineViewMsg* pMsg);
 
-  /// \brief Returns a plane that can be used for picking, when nothing else is available
+  /// Returns a plane that can be used for picking, when nothing else is available
   /// Orthographic views would typically return their projection planes, perspective views may return the ground plane
   virtual xiiPlane GetFallbackPickingPlane(xiiVec3 vPointOnPlane = xiiVec3(0)) const;
 
@@ -109,7 +109,7 @@ public:
   void TakeScreenshot(xiiStringView sOutputPath) const;
 
 protected:
-  /// \brief Used to deactivate shortcuts
+  /// Used to deactivate shortcuts
   virtual bool eventFilter(QObject* object, QEvent* event) override;
 
   virtual void          paintEvent(QPaintEvent* event) override;
@@ -167,7 +167,7 @@ protected:
   static InteractionContext s_InteractionContext;
 };
 
-/// \brief Wraps and decorates a view widget with a toolbar and layout.
+/// Wraps and decorates a view widget with a toolbar and layout.
 class XII_EDITORFRAMEWORK_DLL xiiQtViewWidgetContainer : public ads::CDockWidget
 {
   Q_OBJECT

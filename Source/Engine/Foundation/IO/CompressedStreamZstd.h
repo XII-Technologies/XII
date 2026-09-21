@@ -8,7 +8,7 @@
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
 
-/// \brief A stream reader that will decompress data that was stored using the xiiCompressedStreamWriterZstd.
+/// A stream reader that will decompress data that was stored using the xiiCompressedStreamWriterZstd.
 ///
 /// The reader takes another reader as its source for the compressed data (e.g. a file or a memory stream).
 class XII_FOUNDATION_DLL xiiCompressedStreamReaderZstd : public xiiStreamReader
@@ -16,18 +16,18 @@ class XII_FOUNDATION_DLL xiiCompressedStreamReaderZstd : public xiiStreamReader
 public:
   xiiCompressedStreamReaderZstd(); // [tested]
 
-  /// \brief Takes an input stream as the source from which to read the compressed data.
+  /// Takes an input stream as the source from which to read the compressed data.
   xiiCompressedStreamReaderZstd(xiiStreamReader* pInputStream); // [tested]
 
   ~xiiCompressedStreamReaderZstd(); // [tested]
 
-  /// \brief Configures the reader to decompress the data from the given input stream.
+  /// Configures the reader to decompress the data from the given input stream.
   ///
   /// Calling this a second time on the same instance is valid and allows to reuse the decoder, which is more efficient than creating a new
   /// one.
   void SetInputStream(xiiStreamReader* pInputStream); // [tested]
 
-  /// \brief Reads either uiBytesToRead or the amount of remaining bytes in the stream into pReadBuffer.
+  /// Reads either uiBytesToRead or the amount of remaining bytes in the stream into pReadBuffer.
   ///
   /// It is valid to pass nullptr for pReadBuffer, in this case the memory stream position is only advanced by the given number of bytes.
   /// However, since this is a compressed stream, the decompression still needs to be done, so this won't save any time.
@@ -51,7 +51,7 @@ private:
   /*ZSTD_inBuffer*/ InBufferImpl m_InBuffer;
 };
 
-/// \brief A stream writer that will compress all incoming data and then passes it on into another stream.
+/// A stream writer that will compress all incoming data and then passes it on into another stream.
 ///
 /// The stream uses an internal cache of 255 Bytes to compress data, before it passes that on to the output stream.
 /// It does not need to compress the entire data first, and it will not do any dynamic memory allocations.
@@ -62,7 +62,7 @@ private:
 class XII_FOUNDATION_DLL xiiCompressedStreamWriterZstd final : public xiiStreamWriter
 {
 public:
-  /// \brief Specifies the compression level of the stream.
+  /// Specifies the compression level of the stream.
   enum class Compression
   {
     Fastest = 1,
@@ -76,13 +76,13 @@ public:
 
   xiiCompressedStreamWriterZstd();
 
-  /// \brief The constructor takes another stream writer to pass the output into, and a compression level.
+  /// The constructor takes another stream writer to pass the output into, and a compression level.
   xiiCompressedStreamWriterZstd(xiiStreamWriter* pOutputStream, xiiUInt32 uiMaxNumWorkerThreads, Compression ratio = Compression::Default, xiiUInt32 uiCompressionCacheSizeKB = 4); // [tested]
 
-  /// \brief Calls FinishCompressedStream() internally.
+  /// Calls FinishCompressedStream() internally.
   ~xiiCompressedStreamWriterZstd(); // [tested]
 
-  /// \brief Configures to which other xiiStreamWriter the compressed data should be passed along.
+  /// Configures to which other xiiStreamWriter the compressed data should be passed along.
   ///
   /// Also configures how strong the compression should be and how much data (in KB) should be cached internally before passing it
   /// to the compressor. Adjusting this cache size is only of interest, if the compressed output needs to be consumed as quickly as possible
@@ -95,12 +95,12 @@ public:
   /// allocate internal structures once that final decision is made.
   void SetOutputStream(xiiStreamWriter* pOutputStream, xiiUInt32 uiMaxNumWorkerThreads, Compression ratio = Compression::Default, xiiUInt32 uiCompressionCacheSizeKB = 4); // [tested]
 
-  /// \brief Compresses \a uiBytesToWrite from \a pWriteBuffer.
+  /// Compresses \a uiBytesToWrite from \a pWriteBuffer.
   ///
   /// Will output bursts of 256 bytes to the output stream every once in a while.
   virtual xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]
 
-  /// \brief Finishes the stream and writes all remaining data to the output stream.
+  /// Finishes the stream and writes all remaining data to the output stream.
   ///
   /// After calling this function, no more data can be written to the stream. GetCompressedSize() will return the final compressed size
   /// of the data.
@@ -108,10 +108,10 @@ public:
   /// which is not the case for FinishCompressedStream().
   xiiResult FinishCompressedStream(); // [tested]
 
-  /// \brief Returns the size of the data in its uncompressed state.
+  /// Returns the size of the data in its uncompressed state.
   xiiUInt64 GetUncompressedSize() const { return m_uiUncompressedSize; } // [tested]
 
-  /// \brief Returns the current compressed size of the data.
+  /// Returns the current compressed size of the data.
   ///
   /// This value is only accurate after FinishCompressedStream() has been called. Before that it is only a rough value, because a lot of
   /// data might still be cached and not yet accounted for. Note that GetCompressedSize() returns the compressed size of the data, not the
@@ -119,12 +119,12 @@ public:
   /// zero terminator byte).
   xiiUInt64 GetCompressedSize() const { return m_uiCompressedSize; } // [tested]
 
-  /// \brief Returns the exact number of bytes written to the output stream so far.
+  /// Returns the exact number of bytes written to the output stream so far.
   ///
   /// This includes bytes written for bookkeeping. It is strictly larger than GetCompressedSize().
   xiiUInt64 GetWrittenBytes() const { return m_uiWrittenBytes; } // [tested]
 
-  /// \brief Flushes the internal compressor caches and writes the compressed data to the stream.
+  /// Flushes the internal compressor caches and writes the compressed data to the stream.
   ///
   /// All data that was written to the compressed stream should now also be readable from the output.
   /// However, the stream is not considered 'finished' after a Flush(), since the compressor may write additional data to indicate the end.

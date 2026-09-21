@@ -13,10 +13,10 @@ class XII_GRAPHICSD3D12_DLL xiiGALCommandQueueD3D12 final : public xiiGALCommand
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueueD3D12, xiiGALCommandQueue);
 
 public:
-  /// \brief This returns the value of the internal fence that will be signaled the next time.
+  /// This returns the value of the internal fence that will be signaled the next time.
   XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue; }
 
-  /// \brief This returns the last completed value of the internal fence.
+  /// This returns the last completed value of the internal fence.
   virtual xiiUInt64 GetCompletedFenceValue() override final;
 
   XII_ALWAYS_INLINE ID3D12CommandQueue* GetD3D12CommandQueue() const { return m_QueueInformation.m_pCommandQueue; }
@@ -25,7 +25,7 @@ public:
 
   virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList) override final;
 
-  /// \brief This blocks execution until all pending GPU commands are complete.
+  /// This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
 protected:

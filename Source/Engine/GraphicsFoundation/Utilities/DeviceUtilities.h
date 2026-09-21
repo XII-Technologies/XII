@@ -6,14 +6,14 @@
 
 #include <GraphicsFoundation/Resources/Buffer.h>
 
-/// \brief Provides utility functions that are common with interfacing with the GAL device.
+/// Provides utility functions that are common with interfacing with the GAL device.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceUtilities
 {
 public:
-  /// \brief This returns the graphics adapter vendor type from the given ID.
+  /// This returns the graphics adapter vendor type from the given ID.
   [[nodiscard]] static xiiEnum<xiiGALGraphicsAdapterVendor> GetVendorFromID(xiiUInt32 uiID);
 
-  /// \brief Creates a vertex buffer with the given vertex size and vertex count.
+  /// Creates a vertex buffer with the given vertex size and vertex count.
   ///
   /// \param pDevice        - The device associated with the buffer.
   /// \param uiVertexSize   - The size of a single vertex in the buffer.
@@ -29,7 +29,7 @@ public:
     UInt,   ///< 32 bit indices are used to select which vertices shall form a primitive.
   };
 
-  /// \brief Creates an index buffer with the given index type and index count.
+  /// Creates an index buffer with the given index type and index count.
   ///
   /// \param pDevice        - The device associated with the buffer.
   /// \param indexType      - The index buffer type. See xiiGALDeviceUtilities::IndexType for details.
@@ -38,28 +38,28 @@ public:
   /// \param bDataIsMutable - Specifies whether the buffer should be considered immutable in its usage.
   [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateIndexBuffer(xiiGALDevice* pDevice, IndexType indexType, xiiUInt32 uiIndexCount, xiiArrayPtr<xiiUInt8> pInitialData = xiiArrayPtr<xiiUInt8>(), bool bDataIsMutable = false);
 
-  /// \brief Creates a constant buffer with the given size.
+  /// Creates a constant buffer with the given size.
   ///
   /// \param  pDevice     - The device associated with the buffer.
   /// \param uiBufferSize - The size of the buffer in bytes.
   /// \param sDebugName   - Optional debug name for the buffer.
   [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName = {});
 
-  /// \brief Creates a staging buffer with the given size.
+  /// Creates a staging buffer with the given size.
   ///
   /// \param  pDevice     - The device associated with the buffer.
   /// \param uiBufferSize - The size of the buffer in bytes.
   /// \param sDebugName   - Optional debug name for the buffer.
   [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> CreateStagingBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize, xiiStringView sDebugName = {});
 
-  /// \brief Creates a render target description with the given parameters.
+  /// Creates a render target description with the given parameters.
   ///
   /// \param size          - The size (width and height) of the render target.
   /// \param format        - The render target format. See xiiGALResourceFormat for details.
   /// \param uiSampleCount - The number of samples in the render target. The default is xiiGALSampleCount::OneSample.
   [[nodiscard]] static xiiGALTextureCreationDescription CreateRenderTargetDescription(xiiSizeU32 size, xiiGALResourceFormat::Enum format, xiiUInt32 uiSampleCount = xiiGALSampleCount::OneSample);
 
-  /// \brief Maps a buffer and updates it with the provided source data.
+  /// Maps a buffer and updates it with the provided source data.
   ///
   /// \param pCommandList        - Pointer to the command list.
   /// \param hBuffer             - Handle to the buffer to be updated.

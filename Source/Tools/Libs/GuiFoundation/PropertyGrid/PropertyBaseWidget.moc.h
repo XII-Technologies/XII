@@ -27,7 +27,7 @@ class QMimeData;
 struct xiiCommandHistoryEvent;
 class xiiObjectAccessorBase;
 
-/// \brief Base class for all property widgets
+/// Base class for all property widgets
 class XII_GUIFOUNDATION_DLL xiiQtPropertyWidget : public QWidget
 {
   Q_OBJECT;
@@ -39,32 +39,32 @@ public:
   void                       Init(xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, const xiiAbstractProperty* pProp);
   const xiiAbstractProperty* GetProperty() const { return m_pProp; }
 
-  /// \brief This is called whenever the selection in the editor changes and thus the widget may need to display a different value.
+  /// This is called whenever the selection in the editor changes and thus the widget may need to display a different value.
   ///
   /// If the array holds more than one element, the user selected multiple objects. In this case, the code should check whether
   /// the values differ across the selected objects and if so, the widget should display "multiple values".
   virtual void                                   SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items);
   const xiiHybridArray<xiiPropertySelection, 8>& GetSelection() const { return m_Items; }
 
-  /// \brief If this returns true (default), a QLabel is created and the text that GetLabel() returns is displayed.
+  /// If this returns true (default), a QLabel is created and the text that GetLabel() returns is displayed.
   virtual bool HasLabel() const { return true; }
 
-  /// \brief The return value is used to display a label, if HasLabel() returns true.
+  /// The return value is used to display a label, if HasLabel() returns true.
   virtual const char* GetLabel(xiiStringBuilder& ref_sTmp) const;
 
   virtual void ExtendContextMenu(QMenu& ref_menu);
 
-  /// \brief Whether the variable that the widget represents is currently set to the default value or has been modified.
+  /// Whether the variable that the widget represents is currently set to the default value or has been modified.
   virtual void SetIsDefault(bool bIsDefault) { m_bIsDefault = bIsDefault; }
 
-  /// \brief If the property is of type xiiVariant this function returns whether all items have the same type.
+  /// If the property is of type xiiVariant this function returns whether all items have the same type.
   /// If true is returned, out_Type contains the common type. Note that 'invalid' can be a common type.
   bool GetCommonVariantSubType(const xiiHybridArray<xiiPropertySelection, 8>& items, const xiiAbstractProperty* pProperty, xiiVariantType::Enum& out_type);
 
   xiiVariant GetCommonValue(const xiiHybridArray<xiiPropertySelection, 8>& items, const xiiAbstractProperty* pProperty);
   void       PrepareToDie();
 
-  /// \brief By default disables the widget, but can be overridden to make a widget more interactable (for example to be able to copy text from it).
+  /// By default disables the widget, but can be overridden to make a widget more interactable (for example to be able to copy text from it).
   virtual void SetReadOnly(bool bReadOnly = true);
 
 public:
@@ -98,7 +98,7 @@ private:
 };
 
 
-/// \brief Fallback widget for all property types for which no other widget type is registered
+/// Fallback widget for all property types for which no other widget type is registered
 class XII_GUIFOUNDATION_DLL xiiQtUnsupportedPropertyWidget : public xiiQtPropertyWidget
 {
   Q_OBJECT;
@@ -116,7 +116,7 @@ protected:
 };
 
 
-/// \brief Base class for most 'simple' property type widgets. Implements some of the standard functionality.
+/// Base class for most 'simple' property type widgets. Implements some of the standard functionality.
 class XII_GUIFOUNDATION_DLL xiiQtStandardPropertyWidget : public xiiQtPropertyWidget
 {
   Q_OBJECT;
@@ -138,7 +138,7 @@ protected:
 };
 
 
-/// \brief Base class for more 'advanced' property type widgets for Pointer or Class type properties.
+/// Base class for more 'advanced' property type widgets for Pointer or Class type properties.
 /// Implements some of xiiQtTypeWidget functionality at property widget level.
 class XII_GUIFOUNDATION_DLL xiiQtEmbeddedClassPropertyWidget : public xiiQtPropertyWidget
 {
@@ -197,7 +197,7 @@ protected:
   xiiQtTypeWidget*   m_pTypeWidget;
 };
 
-/// \brief Used for property types that are pointers.
+/// Used for property types that are pointers.
 class XII_GUIFOUNDATION_DLL xiiQtPropertyPointerWidget : public xiiQtPropertyWidget
 {
   Q_OBJECT;
@@ -229,7 +229,7 @@ protected:
 };
 
 
-/// \brief Base class for all container properties
+/// Base class for all container properties
 class XII_GUIFOUNDATION_DLL xiiQtPropertyContainerWidget : public xiiQtPropertyWidget
 {
   Q_OBJECT;
@@ -271,7 +271,7 @@ protected:
   void                         UpdateElements();
   virtual void                 GetRequiredElements(xiiDynamicArray<xiiVariant>& out_keys) const;
   virtual void                 UpdatePropertyMetaState();
-  /// \brief Some containers like xiiVariant can be both a map or an array so we can't reply on the property type alone. For these containers, this method can be overwritten to retrieve the category from something other than `m_pProp->GetCategory()`.
+  /// Some containers like xiiVariant can be both a map or an array so we can't reply on the property type alone. For these containers, this method can be overwritten to retrieve the category from something other than `m_pProp->GetCategory()`.
   virtual xiiPropertyCategory::Enum GetContainerCategory() const;
 
   void         Clear();

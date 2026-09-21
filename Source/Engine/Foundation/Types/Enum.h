@@ -4,7 +4,7 @@
 
 /// \file
 
-/// \brief A custom enum implementation that allows to define the underlying storage type to control its memory footprint.
+/// A custom enum implementation that allows to define the underlying storage type to control its memory footprint.
 ///
 /// Advantages over a simple C++ enum:
 /// 1) Storage type can be defined
@@ -41,65 +41,65 @@ public:
   using SelfType    = xiiEnum<Derived>;
   using StorageType = typename Derived::StorageType;
 
-  /// \brief Default constructor
+  /// Default constructor
   XII_ALWAYS_INLINE xiiEnum() :
     m_Value((StorageType)Derived::Default)
   {
   } // [tested]
 
-  /// \brief Copy constructor
+  /// Copy constructor
   XII_ALWAYS_INLINE xiiEnum(const SelfType& rh) :
     m_Value(rh.m_Value)
   {
   }
 
-  /// \brief Construct from a C++ enum, and implicit conversion from enum type
+  /// Construct from a C++ enum, and implicit conversion from enum type
   XII_ALWAYS_INLINE xiiEnum(typename Derived::Enum init) :
     m_Value((StorageType)init)
   {
   } // [tested]
 
-  /// \brief Assignment operator
+  /// Assignment operator
   XII_ALWAYS_INLINE void operator=(const SelfType& rh) // [tested]
   {
     m_Value = rh.m_Value;
   }
 
-  /// \brief Assignment operator.
+  /// Assignment operator.
   XII_ALWAYS_INLINE void operator=(const typename Derived::Enum value) // [tested]
   {
     m_Value = (StorageType)value;
   }
 
-  /// \brief Comparison operator.
+  /// Comparison operator.
   XII_ALWAYS_INLINE constexpr bool operator==(const SelfType& rhs) const { return m_Value == rhs.m_Value; }
 
-  /// \brief Comparison operator.
+  /// Comparison operator.
   XII_ALWAYS_INLINE constexpr std::strong_ordering operator<=>(const SelfType& rhs) const { return m_Value <=> rhs.m_Value; }
 
-  /// \brief Comparison operator.
+  /// Comparison operator.
   XII_ALWAYS_INLINE constexpr bool operator==(typename Derived::Enum value) const { return m_Value == (StorageType)value; }
 
-  /// \brief Comparison operator.
+  /// Comparison operator.
   XII_ALWAYS_INLINE constexpr std::strong_ordering operator<=>(typename Derived::Enum value) const { return m_Value <=> (StorageType)value; }
 
   /// brief Bitwise operators
   XII_ALWAYS_INLINE SelfType operator|(const SelfType& rhs) const { return static_cast<typename Derived::Enum>(m_Value | (StorageType)rhs.m_Value); } // [tested]
   XII_ALWAYS_INLINE SelfType operator&(const SelfType& rhs) const { return static_cast<typename Derived::Enum>(m_Value & (StorageType)rhs.m_Value); } // [tested]
 
-  /// \brief Implicit conversion to enum type.
+  /// Implicit conversion to enum type.
   XII_ALWAYS_INLINE constexpr operator typename Derived::Enum() const // [tested]
   {
     return static_cast<typename Derived::Enum>(m_Value);
   }
 
-  /// \brief Returns the enum value as an integer
+  /// Returns the enum value as an integer
   XII_ALWAYS_INLINE StorageType GetValue() const // [tested]
   {
     return m_Value;
   }
 
-  /// \brief Sets the enum value through an integer
+  /// Sets the enum value through an integer
   XII_ALWAYS_INLINE void SetValue(StorageType value) // [tested]
   {
     m_Value = value;
@@ -114,7 +114,7 @@ private:
   case name:                           \
     return XII_PP_STRINGIFY(name);
 
-/// \brief Helper macro to generate a 'ToString' function for enum values.
+/// Helper macro to generate a 'ToString' function for enum values.
 ///
 /// Usage: XII_ENUM_TO_STRING(Value1, Value2, Value3, Value4)
 /// Embed it into a struct (which defines the enums).

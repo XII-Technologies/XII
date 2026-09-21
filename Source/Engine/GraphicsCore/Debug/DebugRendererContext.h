@@ -9,16 +9,16 @@
 class xiiWorld;
 class xiiViewHandle;
 
-/// \brief Used in xiiDebugRenderer to determine where debug geometry should be rendered.
+/// Used in xiiDebugRenderer to determine where debug geometry should be rendered.
 class XII_GRAPHICSCORE_DLL xiiDebugRendererContext
 {
 public:
   xiiDebugRendererContext() = default;
 
-  /// \brief If this constructor is used, the geometry is rendered in all views for that scene.
+  /// If this constructor is used, the geometry is rendered in all views for that scene.
   xiiDebugRendererContext(const xiiWorld* pWorld);
 
-  /// \brief If this constructor is used, the geometry is only rendered in this view.
+  /// If this constructor is used, the geometry is only rendered in this view.
   xiiDebugRendererContext(const xiiViewHandle& hView);
 
   XII_ALWAYS_INLINE bool operator==(const xiiDebugRendererContext& other) const { return m_uiId == other.m_uiId; }

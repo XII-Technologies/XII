@@ -12,7 +12,7 @@ struct xiiMsgComponentInternalTrigger;
 using xiiTimedDeathComponentManager = xiiComponentManager<class xiiTimedDeathComponent, xiiBlockStorageType::Compact>;
 using xiiPrefabResourceHandle       = xiiTypedResourceHandle<class xiiPrefabResource>;
 
-/// \brief This component deletes the object it is attached to after a timeout.
+/// This component deletes the object it is attached to after a timeout.
 ///
 /// \note The timeout must be set immediately after component creation. Once the component
 /// has been initialized (start of the next frame), changing the values has no effect.
@@ -29,7 +29,7 @@ public:
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
-  /// \brief Once this function has been executed, the timeout for deletion is fixed and cannot be reset.
+  /// Once this function has been executed, the timeout for deletion is fixed and cannot be reset.
   virtual void OnSimulationStarted() override;
 
 

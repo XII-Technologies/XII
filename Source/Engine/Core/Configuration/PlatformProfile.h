@@ -10,7 +10,7 @@ class xiiChunkStreamReader;
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Base class for configuration objects that store e.g. asset transform settings or runtime configuration information
+/// Base class for configuration objects that store e.g. asset transform settings or runtime configuration information
 class XII_CORE_DLL xiiProfileConfigData : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiProfileConfigData, xiiReflectedClass);
@@ -60,7 +60,7 @@ public:
   xiiResult SaveForRuntime(xiiStringView sFile) const;
   xiiResult LoadForRuntime(xiiStringView sFile);
 
-  /// \brief Returns a number indicating when the profile counter changed last. By storing and comparing this value, other code can update their state if necessary.
+  /// Returns a number indicating when the profile counter changed last. By storing and comparing this value, other code can update their state if necessary.
   xiiUInt32 GetLastModificationCounter() const { return m_uiLastModificationCounter; }
 
 private:

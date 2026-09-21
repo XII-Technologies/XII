@@ -14,7 +14,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiActiveDocumentChange
   const xiiDocument* m_pNewDocument;
 };
 
-/// \brief Tracks existing and active xiiDocument.
+/// Tracks existing and active xiiDocument.
 ///
 /// While the IDocumentManager manages documents of a certain context,
 /// this class simply keeps track of the overall number of documents and the currently active one.

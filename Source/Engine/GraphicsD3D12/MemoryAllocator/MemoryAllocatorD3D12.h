@@ -4,7 +4,7 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
-/// \brief Flags used to configure Direct3D 12 memory allocation behavior.
+/// Flags used to configure Direct3D 12 memory allocation behavior.
 ///
 /// These flags guide the D3D12 Memory Allocator (D3D12MA) or custom allocation logic in selecting memory types, strategies, and mapping behavior for D3D12 resources.
 struct XII_GRAPHICSD3D12_DLL xiiD3D12AllocationFlags
@@ -42,7 +42,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiD3D12AllocationFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSD3D12_DLL, xiiD3D12AllocationFlags);
 
-/// \brief Preferred memory heap types for Direct3D 12 allocations.
+/// Preferred memory heap types for Direct3D 12 allocations.
 struct XII_GRAPHICSD3D12_DLL xiiD3D12MemoryHeapType
 {
   using StorageType = xiiUInt32;
@@ -59,7 +59,7 @@ struct XII_GRAPHICSD3D12_DLL xiiD3D12MemoryHeapType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSD3D12_DLL, xiiD3D12MemoryHeapType);
 
-/// \brief Flags used to configure Direct3D 12 memory heap properties.
+/// Flags used to configure Direct3D 12 memory heap properties.
 struct XII_GRAPHICSD3D12_DLL xiiD3D12MemoryHeapFlags
 {
   using StorageType = xiiUInt32;
@@ -109,7 +109,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiD3D12MemoryHeapFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSD3D12_DLL, xiiD3D12MemoryHeapFlags);
 
-/// \brief Describes the parameters used to create a Direct3D 12 memory allocation.
+/// Describes the parameters used to create a Direct3D 12 memory allocation.
 struct XII_GRAPHICSD3D12_DLL xiiD3D12MemoryAllocationCreateInfo
 {
   xiiBitflags<xiiD3D12AllocationFlags> m_Flags;               ///< Flags that control allocation strategy and behavior.
@@ -118,7 +118,7 @@ struct XII_GRAPHICSD3D12_DLL xiiD3D12MemoryAllocationCreateInfo
   void*                                m_pUserData = nullptr; ///< Optional user data pointer that can be associated with the allocation. This can be used to store custom metadata or context information relevant to the allocation, which may be useful for debugging, profiling, or custom allocation logic.
 };
 
-/// \brief Direct3D 12 memory allocator wrapper.
+/// Direct3D 12 memory allocator wrapper.
 ///
 /// Provides high-level allocation and resource management for D3D12 buffers and images.
 /// Internally wraps D3D12 Memory Allocator (D3D12MA) and custom logic to simplify memory handling.
@@ -129,16 +129,16 @@ public:
 
   ~xiiD3D12MemoryAllocator();
 
-  /// \brief Constructs the memory allocator with D3D12 device.
+  /// Constructs the memory allocator with D3D12 device.
   ///
   /// \param pDeviceD3D12         - The D3D12 device implementation.
   /// \param uiPreferredBlockSize - Optional preferred block size for allocations (Set to 0 to use default, which is currently 64 MiB.).
   xiiResult Initialize(xiiGALDeviceD3D12* pDeviceD3D12, xiiUInt32 uiPreferredBlockSize = 0U);
 
-  /// \brief Cleans up internal resources.
+  /// Cleans up internal resources.
   void DeInitialize();
 
-  /// \brief Creates a D3D12 buffer resource with the specified description and memory allocation parameters.
+  /// Creates a D3D12 buffer resource with the specified description and memory allocation parameters.
   ///
   ///  \param resourceDescription  - D3D12 resource description defining the buffer properties (size, usage, etc.).
   ///  \param allocationCreateInfo - Parameters that control how memory should be allocated for the buffer, including heap type, flags, and optional user data.
@@ -146,13 +146,13 @@ public:
   ///  \param out_pAllocation      - Output pointer to the memory allocation info.
   xiiResult CreateBuffer(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation);
 
-  /// \brief Destroys a D3D12 buffer resource and frees its associated memory allocation.
+  /// Destroys a D3D12 buffer resource and frees its associated memory allocation.
   ///
   ///  \param pResource  - Pointer to the buffer resource to destroy.
   ///  \param pAllocation - The memory allocation info for the buffer.
   void DestroyBuffer(ID3D12Resource*& pResource, xiiD3D12Allocation& pAllocation);
 
-  /// \brief Creates a D3D12 image resource with the specified description and memory allocation parameters.
+  /// Creates a D3D12 image resource with the specified description and memory allocation parameters.
   ///
   /// \param resourceDescription  - D3D12 resource description defining the image properties (dimensions, format, usage, etc.).
   /// \param allocationCreateInfo - Parameters that control how memory should be allocated for the image including heap type, flags, and optional user data.
@@ -161,7 +161,7 @@ public:
   /// \param out_pAllocation      - Output pointer to the memory allocation info.
   xiiResult CreateImage(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, const xiiGALOptimizedClearValue* pOptimizedClearValue, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation);
 
-  /// \brief Destroys a D3D12 image resource and frees its associated memory allocation.
+  /// Destroys a D3D12 image resource and frees its associated memory allocation.
   ///
   /// \param pResource  - Pointer to the image resource to destroy.
   /// \param pAllocation - The memory allocation info for the image.

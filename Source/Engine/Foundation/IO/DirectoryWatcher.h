@@ -13,7 +13,7 @@
 
 struct xiiDirectoryWatcherImpl;
 
-/// \brief Which action has been performed on a file.
+/// Which action has been performed on a file.
 enum class xiiDirectoryWatcherAction
 {
   None,           ///< No operation occurred.
@@ -35,13 +35,13 @@ enum class xiiDirectoryWatcherType
 class XII_FOUNDATION_DLL xiiDirectoryWatcher
 {
 public:
-  /// \brief What to watch out for.
+  /// What to watch out for.
   struct Watch
   {
     using StorageType                 = xiiUInt8;
     constexpr static xiiUInt8 Default = 0;
 
-    /// \brief Enum values
+    /// Enum values
     enum Enum : StorageType
     {
       Writes         = XII_BIT(0), ///< Watch for writes.

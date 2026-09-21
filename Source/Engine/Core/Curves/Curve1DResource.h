@@ -5,7 +5,7 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Tracks/Curve1D.h>
 
-/// \brief A curve resource can contain more than one curve, but all of the same type.
+/// A curve resource can contain more than one curve, but all of the same type.
 struct XII_CORE_DLL xiiCurve1DResourceDescriptor
 {
   xiiDynamicArray<xiiCurve1D> m_Curves;
@@ -16,7 +16,7 @@ struct XII_CORE_DLL xiiCurve1DResourceDescriptor
 
 using xiiCurve1DResourceHandle = xiiTypedResourceHandle<class xiiCurve1DResource>;
 
-/// \brief A resource that stores 1D curves. The curves are stored in the descriptor.
+/// A resource that stores 1D curves. The curves are stored in the descriptor.
 class XII_CORE_DLL xiiCurve1DResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCurve1DResource, xiiResource);
@@ -26,7 +26,7 @@ class XII_CORE_DLL xiiCurve1DResource : public xiiResource
 public:
   xiiCurve1DResource();
 
-  /// \brief Returns all the data that is stored in this resource.
+  /// Returns all the data that is stored in this resource.
   const xiiCurve1DResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
 
 private:

@@ -5,7 +5,7 @@
 #include <Core/CoreDLL.h>
 #include <Foundation/Communication/Message.h>
 
-/// \brief Describes how a color should be applied to another color.
+/// Describes how a color should be applied to another color.
 struct xiiSetColorMode
 {
   using StorageType = xiiUInt32;
@@ -26,7 +26,7 @@ struct xiiSetColorMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiSetColorMode);
 
-/// \brief A message to modify the main color of some thing.
+/// A message to modify the main color of some thing.
 ///
 /// Components that handle this message use it to change their main color.
 /// For instance a light component may change its light color, a mesh component will change the main mesh color.
@@ -34,16 +34,16 @@ struct XII_CORE_DLL xiiMsgSetColor : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetColor, xiiMessage);
 
-  /// \brief The color to apply to the target.
+  /// The color to apply to the target.
   xiiColor m_Color;
 
-  /// \brief The mode with which to apply the color to the target.
+  /// The mode with which to apply the color to the target.
   xiiEnum<xiiSetColorMode> m_Mode;
 
-  /// \brief Applies m_Color using m_Mode to the given color.
+  /// Applies m_Color using m_Mode to the given color.
   void ModifyColor(xiiColor& ref_color) const;
 
-  /// \brief Applies m_Color using m_Mode to the given color.
+  /// Applies m_Color using m_Mode to the given color.
   void ModifyColor(xiiColorGammaUB& ref_color) const;
 
   virtual void Serialize(xiiStreamWriter& ref_stream) const override;

@@ -4,7 +4,7 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
-/// \brief Preferred memory usage hints for Vulkan allocations using VMA.
+/// Preferred memory usage hints for Vulkan allocations using VMA.
 ///
 /// These usage modes guide VMA in selecting the most suitable memory type based on the intended access patterns and performance goals.
 struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryUsage
@@ -26,7 +26,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryUsage
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiVulkanMemoryUsage);
 
-/// \brief Flags used to configure Vulkan memory allocation behavior.
+/// Flags used to configure Vulkan memory allocation behavior.
 ///
 /// These flags guide the Vulkan Memory Allocator (VMA) or custom allocation logic in selecting memory types, strategies, and mapping behavior.
 struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateFlags
@@ -72,7 +72,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiVulkanAllocationCreateFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiVulkanAllocationCreateFlags);
 
-/// \brief Abstract representation of Vulkan memory property flags.
+/// Abstract representation of Vulkan memory property flags.
 ///
 /// Helps describe physical device memory types in a readable and type-safe way.
 struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryPropertyFlags
@@ -106,7 +106,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiVulkanMemoryPropertyFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiVulkanMemoryPropertyFlags);
 
-/// \brief Describes the parameters used to create a Vulkan memory allocation.
+/// Describes the parameters used to create a Vulkan memory allocation.
 ///
 /// This structure defines how memory should be allocated, including usage hints, allocation strategy flags, and optional user metadata.
 struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateInfo
@@ -119,7 +119,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateInfo
   bool                                        m_bExportSharedAllocation = false;   ///< If true, the allocation will be created with exportable handle capabilities for sharing between Vulkan devices or APIs.
 };
 
-/// \brief Describes a Vulkan memory allocation and its associated metadata.
+/// Describes a Vulkan memory allocation and its associated metadata.
 ///
 /// This structure holds information about a Vulkan memory block, including the device memory handle, offset, size, memory type, mapped pointer, user data, and optional debug name.
 struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationInfo
@@ -133,7 +133,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationInfo
   const char*      m_szName;         ///< Optional debug name for the allocation, used for profiling or diagnostics.
 };
 
-/// \brief Reports memory usage statistics for Vulkan allocations.
+/// Reports memory usage statistics for Vulkan allocations.
 ///
 /// This structure provides an overview of memory consumption, including the number of blocks and allocations, as well as their total sizes in bytes.
 struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryStatistics
@@ -144,7 +144,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryStatistics
   xiiUInt64 m_uiAllocationBytes = 0U; ///< Total size in bytes of all active allocations.
 };
 
-/// \brief Vulkan memory allocator wrapper.
+/// Vulkan memory allocator wrapper.
 ///
 /// Provides high-level allocation and resource management for Vulkan buffers and images.
 /// Internally wraps Vulkan Memory Allocator (VMA) and custom logic to simplify memory handling.
@@ -157,16 +157,16 @@ public:
 
   ~xiiVulkanMemoryAllocator();
 
-  /// \brief Constructs the memory allocator with Vulkan instance, physical device, and logical device.
+  /// Constructs the memory allocator with Vulkan instance, physical device, and logical device.
   ///
   /// \param pDeviceVulkan        - The Vulkan device implementation.
   /// \param uiPreferredBlockSize - Optional preferred block size for allocations.
   vk::Result Initialize(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiPreferredBlockSize = 0U);
 
-  /// \brief Cleans up internal resources.
+  /// Cleans up internal resources.
   void DeInitialize();
 
-  /// \brief Creates a Vulkan buffer and allocates memory for it.
+  /// Creates a Vulkan buffer and allocates memory for it.
   ///
   /// \param vkBufferCreateInfo   - Buffer creation parameters.
   /// \param allocationCreateInfo - Allocation configuration.
@@ -175,13 +175,13 @@ public:
   /// \param pAllocationInfo      - Optional pointer to receive detailed allocation info.
   vk::Result CreateBuffer(const vk::BufferCreateInfo& vkBufferCreateInfo, const xiiVulkanAllocationCreateInfo& allocationCreateInfo, vk::Buffer& out_buffer, xiiVulkanAllocation& out_allocation, xiiVulkanAllocationInfo* pAllocationInfo = nullptr) const;
 
-  /// \brief Destroys a Vulkan buffer and frees its associated memory.
+  /// Destroys a Vulkan buffer and frees its associated memory.
   ///
   /// \param vkBuffer   - Buffer to destroy.
   /// \param allocation - Allocation handle to free.
   void DestroyBuffer(vk::Buffer& vkBuffer, xiiVulkanAllocation& allocation) const;
 
-  /// \brief Creates a Vulkan image and allocates memory for it.
+  /// Creates a Vulkan image and allocates memory for it.
   ///
   /// \param vkImageCreateInfo    - Image creation parameters.
   /// \param allocationCreateInfo - Allocation configuration.
@@ -190,34 +190,34 @@ public:
   /// \param pAllocationInfo      - Optional pointer to receive detailed allocation info.
   vk::Result CreateImage(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiVulkanAllocationCreateInfo& allocationCreateInfo, vk::Image& out_image, xiiVulkanAllocation& out_allocation, xiiVulkanAllocationInfo* pAllocationInfo = nullptr) const;
 
-  /// \brief Destroys a Vulkan image and frees its associated memory.
+  /// Destroys a Vulkan image and frees its associated memory.
   ///
   /// \param vkImage    - Image to destroy.
   /// \param allocation - Allocation handle to free.
   void DestroyImage(vk::Image& vkImage, xiiVulkanAllocation& allocation) const;
 
-  /// \brief Retrieves detailed information about a memory allocation.
+  /// Retrieves detailed information about a memory allocation.
   ///
   /// \param allocation - Allocation handle.
   ///
   /// \return Allocation metadata including offset, size, and mapped pointer.
   xiiVulkanAllocationInfo GetAllocationInfo(xiiVulkanAllocation allocation) const;
 
-  /// \brief Returns the memory property flags for a given allocation.
+  /// Returns the memory property flags for a given allocation.
   ///
   /// \param allocation - Allocation handle.
   ///
   /// \return Vulkan memory property flags (e.g., host-visible, coherent).
   vk::MemoryPropertyFlags GetMemoryPropertyFlags(xiiVulkanAllocation allocation) const;
 
-  /// \brief Sets user-defined metadata for a memory allocation.
+  /// Sets user-defined metadata for a memory allocation.
   ///
   /// \param allocation - Allocation handle.
   ///
   /// \param pUserData Pointer to user data string.
   void SetAllocationUserData(xiiVulkanAllocation allocation, const char* pUserData) const;
 
-  /// \brief Maps a memory allocation to a CPU-accessible pointer.
+  /// Maps a memory allocation to a CPU-accessible pointer.
   ///
   /// \param allocation - Allocation handle.
   /// \param pData      - Output pointer to mapped memory.
@@ -225,12 +225,12 @@ public:
   /// \return Vulkan result code.
   vk::Result MapMemory(xiiVulkanAllocation allocation, void** pData) const;
 
-  /// \brief Unmaps a previously mapped memory allocation.
+  /// Unmaps a previously mapped memory allocation.
   ///
   /// \param allocation - Allocation handle.
   void UnmapMemory(xiiVulkanAllocation allocation) const;
 
-  /// \brief Flushes a memory allocation to ensure GPU visibility.
+  /// Flushes a memory allocation to ensure GPU visibility.
   ///
   /// \param allocation - Allocation handle.
   /// \param offset     - Byte offset to flush from.
@@ -239,7 +239,7 @@ public:
   /// \return Vulkan result code.
   vk::Result FlushAllocation(xiiVulkanAllocation allocation, vk::DeviceSize offset = 0U, vk::DeviceSize size = vk::WholeSize) const;
 
-  /// \brief Invalidates a memory allocation to ensure CPU visibility.
+  /// Invalidates a memory allocation to ensure CPU visibility.
   ///
   /// \param allocation - Allocation handle.
   /// \param offset     - Byte offset to invalidate from.
@@ -248,7 +248,7 @@ public:
   /// \return Vulkan result code.
   vk::Result InvalidateAllocation(xiiVulkanAllocation allocation, vk::DeviceSize offset = 0U, vk::DeviceSize size = vk::WholeSize) const;
 
-  /// \brief Returns current memory usage statistics.
+  /// Returns current memory usage statistics.
   ///
   /// \return Struct containing block and allocation counts and sizes.
   xiiVulkanMemoryStatistics GetStatistics() const;

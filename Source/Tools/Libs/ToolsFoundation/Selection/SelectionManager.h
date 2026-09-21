@@ -8,7 +8,7 @@
 class xiiDocument;
 struct xiiDocumentObjectStructureEvent;
 
-/// \brief Event describing changes to the selection in the selection manager.
+/// Event describing changes to the selection in the selection manager.
 struct xiiSelectionManagerEvent
 {
   enum class Type
@@ -31,14 +31,14 @@ struct xiiSelectionEntry
   xiiUInt32                m_uiSelectionOrder = 0; // the index at which this item was in the selection
 };
 
-/// \brief Selection Manager stores a set of selected document objects.
+/// Selection Manager stores a set of selected document objects.
 class XII_TOOLSFOUNDATION_DLL xiiSelectionManager
 {
 public:
-  /// \brief Event that is broadcast when the selection changes.
+  /// Event that is broadcast when the selection changes.
   xiiCopyOnBroadcastEvent<const xiiSelectionManagerEvent&> m_Events;
 
-  /// \brief Storage for the selection so it can be swapped when using multiple sub documents.
+  /// Storage for the selection so it can be swapped when using multiple sub documents.
   class Storage : public xiiRefCounted
   {
   public:
@@ -59,7 +59,7 @@ public:
   void SetSelection(const xiiDeque<const xiiDocumentObject*>& selection);
   void ToggleObject(const xiiDocumentObject* pObject);
 
-  /// \brief Sets a separate selection (temporarily), which is sent to the engine but not propagated to the editor.
+  /// Sets a separate selection (temporarily), which is sent to the engine but not propagated to the editor.
   ///
   /// This is used for cases where temporarily the engine should use a different selection than the editor.
   /// Currently this is used during drag-and-drop, to already show the dragged object as selected and especially to exclude it from picking,
@@ -68,28 +68,28 @@ public:
   /// To clear a runtime override selection, simply set an empty selection.
   void SetRuntimeOverrideSelection(const xiiDeque<const xiiDocumentObject*>& selection);
 
-  /// \brief Returns the current runtime override selection.
+  /// Returns the current runtime override selection.
   ///
   /// Valid, if the selection is non-empty.
   /// See SetRuntimeOverrideSelection() for details.
   const xiiDeque<const xiiDocumentObject*>& GetRuntimeOverrideSelection() const { return m_RuntimeOverrideSelection; }
 
-  /// \brief Returns the last selected object in the selection or null if empty.
+  /// Returns the last selected object in the selection or null if empty.
   const xiiDocumentObject* GetCurrentObject() const;
 
-  /// \brief Returns the selection in the same order the objects were added to the list.
+  /// Returns the selection in the same order the objects were added to the list.
   const xiiDeque<const xiiDocumentObject*>& GetSelection() const { return m_pSelectionStorage->m_SelectionList; }
 
   bool IsSelectionEmpty() const { return m_pSelectionStorage->m_SelectionList.IsEmpty(); }
 
-  /// \brief Returns the subset of selected items which have no parent selected.
+  /// Returns the subset of selected items which have no parent selected.
   ///
   /// I.e. if an object is selected and one of its ancestors is selected, it is culled from the list.
   /// Items are returned in the order of appearance in an expanded scene tree.
   /// Their order in the selection is returned through xiiSelectionEntry.
   void GetTopLevelSelection(xiiDynamicArray<xiiSelectionEntry>& out_entries) const;
 
-  /// \brief Same as GetTopLevelSelection() but additionally requires that all objects are derived from type pBase.
+  /// Same as GetTopLevelSelection() but additionally requires that all objects are derived from type pBase.
   void GetTopLevelSelectionOfType(const xiiRTTI* pBase, xiiDynamicArray<xiiSelectionEntry>& out_entries) const;
 
   bool IsSelected(const xiiDocumentObject* pObject) const;

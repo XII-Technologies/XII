@@ -17,7 +17,7 @@
 
 class xiiGeometry;
 
-/// \brief Input layout semantic for mesh vertex streams, used to identify the purpose of a vertex stream and how it should be interpreted by the renderer.
+/// Input layout semantic for mesh vertex streams, used to identify the purpose of a vertex stream and how it should be interpreted by the renderer.
 struct XII_GRAPHICSCORE_DLL xiiMeshVertexSemantic
 {
   using StorageType = xiiUInt8;
@@ -45,7 +45,7 @@ struct XII_GRAPHICSCORE_DLL xiiMeshVertexSemantic
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshVertexSemantic);
 
-/// \brief Precision and storage format for mesh vertex streams, used to identify the data type and layout of a vertex stream and how it should be interpreted by the renderer.
+/// Precision and storage format for mesh vertex streams, used to identify the data type and layout of a vertex stream and how it should be interpreted by the renderer.
 struct XII_GRAPHICSCORE_DLL xiiMeshVertexStreamFormat
 {
   using StorageType = xiiUInt8;
@@ -69,7 +69,7 @@ struct XII_GRAPHICSCORE_DLL xiiMeshVertexStreamFormat
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshVertexStreamFormat);
 
-/// \brief CPU/GPU vertex layout entry for xiiMeshBufferResource.
+/// CPU/GPU vertex layout entry for xiiMeshBufferResource.
 ///
 /// This describes the layout of a single vertex stream, including its semantic meaning, data format, byte offset from the start of the vertex, and stride between vertices.
 struct XII_GRAPHICSCORE_DLL xiiMeshVertexStream
@@ -85,7 +85,7 @@ struct XII_GRAPHICSCORE_DLL xiiMeshVertexStream
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-/// \brief Full fidelity authoring vertex used by AddCommonStreams() and geometry conversion.
+/// Full fidelity authoring vertex used by AddCommonStreams() and geometry conversion.
 ///
 /// The renderer is expected to read the declared stream layout. Mesh shader paths usually bind this
 /// as a structured SRV, while fallback vertex pipelines can bind the same buffer as a vertex buffer.
@@ -103,7 +103,7 @@ struct XII_GRAPHICSCORE_DLL xiiMeshPackedVertex
   xiiColorLinearUB m_BoneWeights0  = xiiColorLinearUB(255, 0, 0, 0);       ///< The bone weights for skinning this vertex, where each component represents the weight of the corresponding bone index in m_vBoneIndices0, normalized to the [0, 1] range and packed into an unsigned byte format for compact storage.
 };
 
-/// \brief GPU-visible meshlet header.
+/// GPU-visible meshlet header.
 ///
 /// The first four fields are laid out for compact structured-buffer consumption. The bounds and cone
 /// are duplicated from authoring data so compute culling and mesh shaders do not need CPU-side lookups.
@@ -127,7 +127,7 @@ struct XII_GRAPHICSCORE_DLL xiiMeshlet
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-/// \brief DrawMeshIndirect-compatible command payload.
+/// DrawMeshIndirect-compatible command payload.
 struct XII_GRAPHICSCORE_DLL xiiMeshDrawCommand
 {
   XII_DECLARE_POD_TYPE();
@@ -140,7 +140,7 @@ struct XII_GRAPHICSCORE_DLL xiiMeshDrawCommand
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-/// \brief Per-instance data consumed by GPU culling and mesh shading passes.
+/// Per-instance data consumed by GPU culling and mesh shading passes.
 struct XII_GRAPHICSCORE_DLL xiiMeshInstanceData
 {
   XII_DECLARE_POD_TYPE();
@@ -155,51 +155,51 @@ struct XII_GRAPHICSCORE_DLL xiiMeshInstanceData
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-/// \brief Descriptor for creating an xiiMeshBufferResource, containing all necessary information and data to initialize a mesh buffer resource, including vertex stream layout, vertex and index data, meshlet data, and resource usage flags.
+/// Descriptor for creating an xiiMeshBufferResource, containing all necessary information and data to initialize a mesh buffer resource, including vertex stream layout, vertex and index data, meshlet data, and resource usage flags.
 struct XII_GRAPHICSCORE_DLL xiiMeshBufferResourceDescriptor
 {
 public:
-  /// \brief Returns the vertex data for this mesh buffer resource descriptor, used to access the raw vertex data that will be uploaded to the GPU for rendering this mesh. The returned array pointer contains the vertex data in a tightly packed format based on the vertex stream layout and formats specified in this descriptor, and can be used for direct memory copying to GPU buffers or for CPU-side processing of the vertex data before uploading it to the GPU.
+  /// Returns the vertex data for this mesh buffer resource descriptor, used to access the raw vertex data that will be uploaded to the GPU for rendering this mesh. The returned array pointer contains the vertex data in a tightly packed format based on the vertex stream layout and formats specified in this descriptor, and can be used for direct memory copying to GPU buffers or for CPU-side processing of the vertex data before uploading it to the GPU.
   xiiArrayPtr<xiiUInt8> GetVertexData();
 
-  /// \brief Returns the vertex data for this mesh buffer resource descriptor, used to access the raw vertex data that will be uploaded to the GPU for rendering this mesh. The returned array pointer contains the vertex data in a tightly packed format based on the vertex stream layout and formats specified in this descriptor, and can be used for direct memory copying to GPU buffers or for CPU-side processing of the vertex data before uploading it to the GPU.
+  /// Returns the vertex data for this mesh buffer resource descriptor, used to access the raw vertex data that will be uploaded to the GPU for rendering this mesh. The returned array pointer contains the vertex data in a tightly packed format based on the vertex stream layout and formats specified in this descriptor, and can be used for direct memory copying to GPU buffers or for CPU-side processing of the vertex data before uploading it to the GPU.
   xiiArrayPtr<const xiiUInt8> GetVertexData() const;
 
-  /// \brief Returns the index data for this mesh buffer resource descriptor, used to access the raw index data that will be uploaded to the GPU for rendering this mesh. The returned array pointer contains the index data in a tightly packed format based on the index format specified in this descriptor, and can be used for direct memory copying to GPU buffers or for CPU-side processing of the index data before uploading it to the GPU.
+  /// Returns the index data for this mesh buffer resource descriptor, used to access the raw index data that will be uploaded to the GPU for rendering this mesh. The returned array pointer contains the index data in a tightly packed format based on the index format specified in this descriptor, and can be used for direct memory copying to GPU buffers or for CPU-side processing of the index data before uploading it to the GPU.
   xiiArrayPtr<xiiUInt8> GetIndexData();
 
-  /// \brief Returns the index data for this mesh buffer resource descriptor, used to access the raw index data that will be uploaded to the GPU for rendering this mesh. The returned array pointer contains the index data in a tightly packed format based on the index format specified in this descriptor, and can be used for direct memory copying to GPU buffers or for CPU-side processing of the index data before uploading it to the GPU.
+  /// Returns the index data for this mesh buffer resource descriptor, used to access the raw index data that will be uploaded to the GPU for rendering this mesh. The returned array pointer contains the index data in a tightly packed format based on the index format specified in this descriptor, and can be used for direct memory copying to GPU buffers or for CPU-side processing of the index data before uploading it to the GPU.
   xiiArrayPtr<const xiiUInt8> GetIndexData() const;
 
-  /// \brief Returns the vertex count for this mesh buffer resource descriptor, used to identify the number of vertices in this mesh and to calculate the required memory size for the vertex data based on the vertex stream layout and formats specified in this descriptor. The vertex count is typically determined by the number of unique vertices in the geometry data used to create this mesh buffer resource descriptor.
+  /// Returns the vertex count for this mesh buffer resource descriptor, used to identify the number of vertices in this mesh and to calculate the required memory size for the vertex data based on the vertex stream layout and formats specified in this descriptor. The vertex count is typically determined by the number of unique vertices in the geometry data used to create this mesh buffer resource descriptor.
   xiiUInt32 GetVertexCount() const;
 
-  /// \brief Returns the index count for this mesh buffer resource descriptor, used to identify the number of indices in this mesh and to calculate the required memory size for the index data based on the index format specified in this descriptor. The index count is typically determined by the number of primitives (triangles, lines, etc.) in the geometry data used to create this mesh buffer resource descriptor, multiplied by the number of vertices per primitive (e.g., 3 for triangles).
+  /// Returns the index count for this mesh buffer resource descriptor, used to identify the number of indices in this mesh and to calculate the required memory size for the index data based on the index format specified in this descriptor. The index count is typically determined by the number of primitives (triangles, lines, etc.) in the geometry data used to create this mesh buffer resource descriptor, multiplied by the number of vertices per primitive (e.g., 3 for triangles).
   xiiUInt32 GetIndexCount() const;
 
-  /// \brief Returns the primitive count for this mesh buffer resource descriptor, used to identify the number of primitives (triangles, lines, etc.) in this mesh and to calculate the required memory size for the index data based on the index format specified in this descriptor. The primitive count is typically determined by the number of primitives in the geometry data used to create this mesh buffer resource descriptor.
+  /// Returns the primitive count for this mesh buffer resource descriptor, used to identify the number of primitives (triangles, lines, etc.) in this mesh and to calculate the required memory size for the index data based on the index format specified in this descriptor. The primitive count is typically determined by the number of primitives in the geometry data used to create this mesh buffer resource descriptor.
   xiiUInt32 GetPrimitiveCount() const;
 
-  /// \brief Returns the vertex data size for this mesh buffer resource descriptor, used to identify the total memory size of the vertex data for this mesh based on the vertex count and the vertex stream layout and formats specified in this descriptor. The vertex data size is typically calculated as the vertex count multiplied by the vertex stride, where the vertex stride is determined by the sum of the sizes of all vertex streams in the vertex layout, taking into account any padding or alignment requirements based on the formats of the vertex streams.
+  /// Returns the vertex data size for this mesh buffer resource descriptor, used to identify the total memory size of the vertex data for this mesh based on the vertex count and the vertex stream layout and formats specified in this descriptor. The vertex data size is typically calculated as the vertex count multiplied by the vertex stride, where the vertex stride is determined by the sum of the sizes of all vertex streams in the vertex layout, taking into account any padding or alignment requirements based on the formats of the vertex streams.
   xiiUInt32 GetVertexDataSize() const;
 
-  /// \brief Returns the index data size for this mesh buffer resource descriptor, used to identify the total memory size of the index data for this mesh based on the index count and the index format specified in this descriptor. The index data size is typically calculated as the index count multiplied by the index stride, where the index stride is determined by the size of the index format (e.g., 2 bytes for 16-bit indices, 4 bytes for 32-bit indices).
+  /// Returns the index data size for this mesh buffer resource descriptor, used to identify the total memory size of the index data for this mesh based on the index count and the index format specified in this descriptor. The index data size is typically calculated as the index count multiplied by the index stride, where the index stride is determined by the size of the index format (e.g., 2 bytes for 16-bit indices, 4 bytes for 32-bit indices).
   xiiUInt32 GetIndexDataSize() const;
 
-  /// \brief Returns the vertex stride for this mesh buffer resource descriptor, used to identify the byte stride between vertices in the vertex data based on the vertex stream layout and formats specified in this descriptor. The vertex stride is typically calculated as the sum of the sizes of all vertex streams in the vertex layout, taking into account any padding or alignment requirements based on the formats of the vertex streams.
+  /// Returns the vertex stride for this mesh buffer resource descriptor, used to identify the byte stride between vertices in the vertex data based on the vertex stream layout and formats specified in this descriptor. The vertex stride is typically calculated as the sum of the sizes of all vertex streams in the vertex layout, taking into account any padding or alignment requirements based on the formats of the vertex streams.
   xiiUInt32 GetVertexStride() const;
 
-  /// \brief Returns the bounding box sphere for this mesh buffer resource descriptor, used to identify the spatial bounds of this mesh for frustum culling, collision detection, and other spatial queries during rendering. The bounding box sphere is typically calculated based on the vertex positions in the geometry data used to create this mesh buffer resource descriptor, and can be used for efficient culling and intersection tests during rendering.
+  /// Returns the bounding box sphere for this mesh buffer resource descriptor, used to identify the spatial bounds of this mesh for frustum culling, collision detection, and other spatial queries during rendering. The bounding box sphere is typically calculated based on the vertex positions in the geometry data used to create this mesh buffer resource descriptor, and can be used for efficient culling and intersection tests during rendering.
   const xiiBoundingBoxSphere& GetBounds() const;
 
 public:
-  /// \brief Default constructor.
+  /// Default constructor.
   xiiMeshBufferResourceDescriptor();
 
-  /// \brief Clears all data from this descriptor, resetting it to an empty state.
+  /// Clears all data from this descriptor, resetting it to an empty state.
   void Clear();
 
-  /// \brief Adds a vertex stream to this mesh buffer resource descriptor with the specified semantic, format, byte offset, and stride.
+  /// Adds a vertex stream to this mesh buffer resource descriptor with the specified semantic, format, byte offset, and stride.
   ///
   /// \param semantic The semantic meaning of the vertex stream, used to identify how the renderer should interpret the data in this stream.
   /// \param format The data format of the vertex stream, used to identify the type and layout of the vertex data for correct interpretation by the renderer.
@@ -207,47 +207,47 @@ public:
   /// \param uiStride The byte stride between vertices for this vertex stream, used to calculate the memory address of this stream's data for each vertex when vertices are tightly packed or interleaved.
   void AddStream(xiiEnum<xiiMeshVertexSemantic> semantic, xiiEnum<xiiMeshVertexStreamFormat> format, xiiUInt16 uiOffset, xiiUInt16 uiStride);
 
-  /// \brief Adds a set of common vertex streams (position, normal, tangent, texcoord0, texcoord1, color0, bone indices, bone weights) to this mesh buffer resource descriptor with standard formats and offsets for use with the provided geometry.
+  /// Adds a set of common vertex streams (position, normal, tangent, texcoord0, texcoord1, color0, bone indices, bone weights) to this mesh buffer resource descriptor with standard formats and offsets for use with the provided geometry.
   void AddCommonStreams();
 
-  /// \brief Allocates memory for the vertex and index data in this mesh buffer resource descriptor based on the specified vertex count, primitive count, and index format.
+  /// Allocates memory for the vertex and index data in this mesh buffer resource descriptor based on the specified vertex count, primitive count, and index format.
   ///
   /// \param uiVertexCount The number of vertices in the mesh, used to calculate the required memory size for the vertex data based on the vertex stream layout and formats.
   /// \param uiPrimitiveCount The number of primitives in the mesh, used to calculate the required memory size for the index data based on the index format.
   /// \param bUse32BitIndices Whether to use 32-bit unsigned integers for the index data, which allows for more than 65535 vertices but increases memory usage. If false, 16-bit unsigned integers will be used, which limits the maximum vertex count to 65535 but reduces memory usage.
   void AllocateStreams(xiiUInt32 uiVertexCount, xiiUInt32 uiPrimitiveCount, bool bUse32BitIndices = true);
 
-  /// \brief Allocates memory for the vertex and index data in this mesh buffer resource descriptor based on the provided geometry, including vertex count, primitive count, and index format inferred from the geometry data.
+  /// Allocates memory for the vertex and index data in this mesh buffer resource descriptor based on the provided geometry, including vertex count, primitive count, and index format inferred from the geometry data.
   ///
   /// \param geometry The geometry data used to determine the vertex count, primitive count, and index format for allocating the vertex and index streams in this mesh buffer resource descriptor. The vertex count is typically determined by the number of unique vertices in the geometry, while the primitive count is determined by the number of primitives (triangles, lines, etc.) in the geometry. The index format is determined based on whether the vertex count exceeds 65535, which would require 32-bit indices instead of 16-bit indices.
   /// \param topology The primitive topology of the geometry, used to determine how the primitives are defined and rendered (e.g., triangle list, triangle strip, line list, etc.) and may influence how the vertex and index data is organized in memory for optimal rendering performance.
   /// \param bBuildMeshlets Whether to build meshlets for this geometry, which can improve rendering performance by allowing for more efficient culling and draw call batching, but may increase memory usage and build time. If true, meshlets will be built based on the geometry data and included in this mesh buffer resource descriptor. If false, no meshlets will be built and the mesh will be rendered using traditional vertex and index buffers without meshlet-based culling or batching optimizations.
   void AllocateStreamsFromGeometry(const xiiGeometry& geometry, xiiEnum<xiiGALPrimitiveTopology> topology, bool bBuildMeshlets = true);
 
-  /// \brief Sets the vertex and index data for this mesh buffer resource descriptor, copying the provided data into the internal storage of this descriptor and updating the vertex count, index count, and vertex stride based on the provided data and the vertex stream layout and formats specified in this descriptor.
+  /// Sets the vertex and index data for this mesh buffer resource descriptor, copying the provided data into the internal storage of this descriptor and updating the vertex count, index count, and vertex stride based on the provided data and the vertex stream layout and formats specified in this descriptor.
   ///
   /// \param pData The raw vertex data to be copied into this mesh buffer resource descriptor, formatted according to the vertex stream layout and formats specified in this descriptor. The data should be tightly packed based on the vertex stream layout, with each vertex's data organized according to the specified offsets and strides for each vertex stream. The size of the data should match the expected vertex data size based on the vertex count and vertex stride for this descriptor.
   /// \param uiVertexCount The number of vertices represented by the provided vertex data, used to update the vertex count for this mesh buffer resource descriptor and to validate that the size of the provided vertex data matches the expected vertex data size based on the vertex count and vertex stride for this descriptor.
   /// \param uiVertexStride The byte stride between vertices in the provided vertex data, used to validate that the vertex data is organized according to the vertex stream layout and formats specified in this descriptor, and to calculate the expected vertex data size based on the vertex count and vertex stride for this descriptor. The vertex stride should match the expected vertex stride calculated from the vertex stream layout and formats specified in this descriptor to ensure correct interpretation of the vertex data by the renderer.
   void SetVertexData(xiiArrayPtr<const xiiUInt8> pData, xiiUInt32 uiVertexCount, xiiUInt32 uiVertexStride);
 
-  /// \brief Sets the vertex and index data for this mesh buffer resource descriptor, copying the provided data into the internal storage of this descriptor and updating the vertex count, index count, and vertex stride based on the provided data and the vertex stream layout and formats specified in this descriptor.
+  /// Sets the vertex and index data for this mesh buffer resource descriptor, copying the provided data into the internal storage of this descriptor and updating the vertex count, index count, and vertex stride based on the provided data and the vertex stream layout and formats specified in this descriptor.
   ///
   /// \param pData The raw index data to be copied into this mesh buffer resource descriptor, formatted according to the index format specified in this descriptor. The data should be tightly packed based on the index format, with each index represented as either a 16-bit unsigned integer or a 32-bit unsigned integer depending on the index format specified in this descriptor. The size of the data should match the expected index data size based on the index count and index stride for this descriptor.
   /// \param uiIndexCount The number of indices represented by the provided index data, used to update the index count for this mesh buffer resource descriptor and to validate that the size of the provided index data matches the expected index data size based on the index count and index stride for this descriptor.
   /// \param indexType The data format of the index data, used to validate that the index data is organized according to the index format specified in this descriptor, and to calculate the expected index data size based on the index count and index stride for this descriptor. The index type should match the expected index format specified in this descriptor (e.g., 16-bit unsigned integer or 32-bit unsigned integer) to ensure correct interpretation of the index data by the renderer.
   void SetIndexData(xiiArrayPtr<const xiiUInt8> pData, xiiUInt32 uiIndexCount, xiiEnum<xiiGALValueType> indexType);
 
-  /// \brief Builds meshlets for this mesh buffer resource descriptor based on the vertex and index data, vertex stream layout, and specified maximum vertices and primitives per meshlet. Meshlets are small clusters of geometry that can be efficiently culled and rendered by modern GPU pipelines, improving rendering performance by reducing draw calls and enabling more efficient culling. The meshlet building process typically involves clustering the geometry into meshlets based on spatial locality and other heuristics, and generating the necessary data for each meshlet such as vertex remapping, primitive indices, and material indices.
+  /// Builds meshlets for this mesh buffer resource descriptor based on the vertex and index data, vertex stream layout, and specified maximum vertices and primitives per meshlet. Meshlets are small clusters of geometry that can be efficiently culled and rendered by modern GPU pipelines, improving rendering performance by reducing draw calls and enabling more efficient culling. The meshlet building process typically involves clustering the geometry into meshlets based on spatial locality and other heuristics, and generating the necessary data for each meshlet such as vertex remapping, primitive indices, and material indices.
   ///
   /// \param uiMaxVertices The maximum number of unique vertices allowed in each meshlet, used to control the size of the meshlets and to ensure that the vertex remapping data for each meshlet can fit within the specified limits for efficient GPU processing. A common value for this parameter is 64, which allows for efficient GPU processing while still providing good culling granularity.
   /// \param uiMaxPrimitives The maximum number of primitives (triangles, lines, etc.) allowed in each meshlet, used to control the size of the meshlets and to ensure that the primitive index data for each meshlet can fit within the specified limits for efficient GPU processing. A common value for this parameter is 124, which allows for efficient GPU processing while still providing good culling granularity. The specific values for these parameters may need to be adjusted based on the target hardware capabilities and the complexity of the geometry being processed to achieve optimal rendering performance.
   void BuildMeshlets(xiiUInt32 uiMaxVertices = 64U, xiiUInt32 uiMaxPrimitives = 124U);
 
-  /// \brief Computes the bounding box sphere for this mesh buffer resource descriptor based on the vertex positions in the vertex data and the vertex stream layout specified in this descriptor. The bounding box sphere is typically calculated by iterating through the vertex positions in the vertex data, applying any necessary transformations based on the vertex stream layout, and computing the minimum enclosing sphere that contains all the vertex positions. This bounding box sphere can then be used for efficient frustum culling, collision detection, and other spatial queries during rendering.
+  /// Computes the bounding box sphere for this mesh buffer resource descriptor based on the vertex positions in the vertex data and the vertex stream layout specified in this descriptor. The bounding box sphere is typically calculated by iterating through the vertex positions in the vertex data, applying any necessary transformations based on the vertex stream layout, and computing the minimum enclosing sphere that contains all the vertex positions. This bounding box sphere can then be used for efficient frustum culling, collision detection, and other spatial queries during rendering.
   void ComputeBounds();
 
-  /// \brief Sets the bounding box sphere for this mesh buffer resource descriptor, allowing for manual specification of the spatial bounds of this mesh. This can be useful in cases where the bounding box sphere has been precomputed or optimized based on specific requirements, or when the vertex data is not available for computing the bounds directly. The provided bounding box sphere should encompass all the vertex positions in the geometry represented by this mesh buffer resource descriptor to ensure correct culling and spatial queries during rendering.
+  /// Sets the bounding box sphere for this mesh buffer resource descriptor, allowing for manual specification of the spatial bounds of this mesh. This can be useful in cases where the bounding box sphere has been precomputed or optimized based on specific requirements, or when the vertex data is not available for computing the bounds directly. The provided bounding box sphere should encompass all the vertex positions in the geometry represented by this mesh buffer resource descriptor to ensure correct culling and spatial queries during rendering.
   ///
   /// \param bounds The bounding box sphere to be set for this mesh buffer resource descriptor, used to identify the spatial bounds of this mesh for frustum culling, collision detection, and other spatial queries during rendering. The bounding box sphere should be defined in object space and should encompass all the vertex positions in the geometry represented by this mesh buffer resource descriptor to ensure correct culling and spatial queries during rendering.
   void SetBounds(const xiiBoundingBoxSphere& bounds);
@@ -280,7 +280,7 @@ private:
   xiiBoundingBoxSphere m_Bounds         = xiiBoundingBoxSphere::MakeInvalid(); ///< The bounding box sphere for this mesh, used to identify the spatial bounds of this mesh for frustum culling, collision detection, and other spatial queries during rendering. The bounding box sphere is typically calculated based on the vertex positions in the geometry data used to create this mesh buffer resource descriptor, and can be used for efficient culling and intersection tests during rendering.
 };
 
-/// \brief Resource class for mesh buffers, responsible for managing the GPU resources and data associated with a mesh, including vertex and index buffers, meshlet buffers, and draw command buffers. This resource class handles the loading, unloading, and updating of the mesh data on the GPU, as well as providing access to the mesh data and properties for rendering and other operations.
+/// Resource class for mesh buffers, responsible for managing the GPU resources and data associated with a mesh, including vertex and index buffers, meshlet buffers, and draw command buffers. This resource class handles the loading, unloading, and updating of the mesh data on the GPU, as well as providing access to the mesh data and properties for rendering and other operations.
 class XII_GRAPHICSCORE_DLL xiiMeshBufferResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshBufferResource, xiiResource);
@@ -293,61 +293,61 @@ public:
   xiiMeshBufferResource();
   ~xiiMeshBufferResource();
 
-  /// \brief Returns the mesh buffer resource descriptor for this mesh buffer resource, used to identify the properties and data of this mesh buffer resource for rendering and other operations. The mesh buffer resource descriptor contains information about the vertex stream layout, vertex and index data, meshlet data, and other properties of this mesh buffer resource that are essential for correctly interpreting the mesh data and for configuring the rendering pipeline for this mesh.
+  /// Returns the mesh buffer resource descriptor for this mesh buffer resource, used to identify the properties and data of this mesh buffer resource for rendering and other operations. The mesh buffer resource descriptor contains information about the vertex stream layout, vertex and index data, meshlet data, and other properties of this mesh buffer resource that are essential for correctly interpreting the mesh data and for configuring the rendering pipeline for this mesh.
   const xiiMeshBufferResourceDescriptor& GetDescriptor() const;
 
-  /// \brief Returns the bounding box sphere for this mesh buffer resource, used to identify the spatial bounds of this mesh for frustum culling, collision detection, and other spatial queries during rendering. The bounding box sphere is typically calculated based on the vertex positions in the geometry data used to create this mesh buffer resource, and can be used for efficient culling and intersection tests during rendering.
+  /// Returns the bounding box sphere for this mesh buffer resource, used to identify the spatial bounds of this mesh for frustum culling, collision detection, and other spatial queries during rendering. The bounding box sphere is typically calculated based on the vertex positions in the geometry data used to create this mesh buffer resource, and can be used for efficient culling and intersection tests during rendering.
   const xiiBoundingBoxSphere& GetBounds() const;
 
-  /// \brief Returns the vertex count for this mesh buffer resource, used to identify the number of vertices in this mesh and to calculate the required memory size for the vertex data based on the vertex stream layout and formats specified in this resource. The vertex count is typically determined by the number of unique vertices in the geometry data used to create this mesh buffer resource.
+  /// Returns the vertex count for this mesh buffer resource, used to identify the number of vertices in this mesh and to calculate the required memory size for the vertex data based on the vertex stream layout and formats specified in this resource. The vertex count is typically determined by the number of unique vertices in the geometry data used to create this mesh buffer resource.
   xiiUInt32 GetVertexCount() const;
 
-  /// \brief Returns the index count for this mesh buffer resource, used to identify the number of indices in this mesh and to calculate the required memory size for the index data based on the index format specified in this resource. The index count is typically determined by the number of primitives (triangles, lines, etc.) in the geometry data used to create this mesh buffer resource, multiplied by the number of vertices per primitive (e.g., 3 for triangles).
+  /// Returns the index count for this mesh buffer resource, used to identify the number of indices in this mesh and to calculate the required memory size for the index data based on the index format specified in this resource. The index count is typically determined by the number of primitives (triangles, lines, etc.) in the geometry data used to create this mesh buffer resource, multiplied by the number of vertices per primitive (e.g., 3 for triangles).
   xiiUInt32 GetIndexCount() const;
 
-  /// \brief Returns the primitive count for this mesh buffer resource, used to identify the number of primitives (triangles, lines, etc.) in this mesh and to calculate the required memory size for the index data based on the index format specified in this resource. The primitive count is typically determined by the number of primitives in the geometry data used to create this mesh buffer resource.
+  /// Returns the primitive count for this mesh buffer resource, used to identify the number of primitives (triangles, lines, etc.) in this mesh and to calculate the required memory size for the index data based on the index format specified in this resource. The primitive count is typically determined by the number of primitives in the geometry data used to create this mesh buffer resource.
   xiiUInt32 GetPrimitiveCount() const;
 
-  /// \brief Returns the meshlet count for this mesh buffer resource, used to identify the number of meshlets in this mesh and to calculate the required memory size for the meshlet data based on the maximum vertices and primitives per meshlet specified in the mesh buffer resource descriptor. The meshlet count is typically determined by the number of meshlets generated from the geometry data used to create this mesh buffer resource, based on the specified maximum vertices and primitives per meshlet.
+  /// Returns the meshlet count for this mesh buffer resource, used to identify the number of meshlets in this mesh and to calculate the required memory size for the meshlet data based on the maximum vertices and primitives per meshlet specified in the mesh buffer resource descriptor. The meshlet count is typically determined by the number of meshlets generated from the geometry data used to create this mesh buffer resource, based on the specified maximum vertices and primitives per meshlet.
   xiiUInt32 GetMeshletCount() const;
 
-  /// \brief Returns the vertex stride for this mesh buffer resource, used to identify the byte stride between vertices in the vertex data based on the vertex stream layout and formats specified in this resource. The vertex stride is typically calculated as the sum of the sizes of all vertex streams in the vertex layout, taking into account any padding or alignment requirements based on the formats of the vertex streams.
+  /// Returns the vertex stride for this mesh buffer resource, used to identify the byte stride between vertices in the vertex data based on the vertex stream layout and formats specified in this resource. The vertex stride is typically calculated as the sum of the sizes of all vertex streams in the vertex layout, taking into account any padding or alignment requirements based on the formats of the vertex streams.
   xiiUInt32 GetVertexStride() const;
 
-  /// \brief Returns the primitive topology for this mesh buffer resource, used to identify how the primitives in this mesh are defined and rendered (e.g., triangle list, triangle strip, line list, etc.) and may influence how the vertex and index data is organized in memory for optimal rendering performance.
+  /// Returns the primitive topology for this mesh buffer resource, used to identify how the primitives in this mesh are defined and rendered (e.g., triangle list, triangle strip, line list, etc.) and may influence how the vertex and index data is organized in memory for optimal rendering performance.
   xiiEnum<xiiGALPrimitiveTopology> GetTopology() const;
 
-  /// \brief Returns the index format for this mesh buffer resource, used to identify how the index data is organized and interpreted by the renderer (e.g., 16-bit unsigned integer or 32-bit unsigned integer) and to calculate the expected index data size based on the index count and index stride for this resource.
+  /// Returns the index format for this mesh buffer resource, used to identify how the index data is organized and interpreted by the renderer (e.g., 16-bit unsigned integer or 32-bit unsigned integer) and to calculate the expected index data size based on the index count and index stride for this resource.
   xiiEnum<xiiGALValueType> GetIndexType() const;
 
-  /// \brief Returns the vertex stream layout for this mesh buffer resource, used to identify the semantic meaning, data format, byte offset, and stride for each vertex stream in the vertex data, which is essential for correctly interpreting the vertex data and for configuring the vertex input layout for rendering this mesh.
+  /// Returns the vertex stream layout for this mesh buffer resource, used to identify the semantic meaning, data format, byte offset, and stride for each vertex stream in the vertex data, which is essential for correctly interpreting the vertex data and for configuring the vertex input layout for rendering this mesh.
   xiiArrayPtr<const xiiMeshVertexStream> GetVertexStreams() const;
 
-  /// \brief Returns the meshlet data for this mesh buffer resource, used for GPU-driven rendering techniques such as mesh shaders or compute shader-based rendering to enable more efficient culling and draw call batching. Each meshlet contains information about the primitives and vertices it contains, as well as its bounding sphere and normal cone for culling purposes. The meshlet data will be uploaded to the GPU for use in rendering this mesh with GPU-driven techniques, and can also be retained in CPU memory if m_bKeepCpuMeshData is true for CPU-side processing or other operations that require access to the meshlet data on the CPU.
+  /// Returns the meshlet data for this mesh buffer resource, used for GPU-driven rendering techniques such as mesh shaders or compute shader-based rendering to enable more efficient culling and draw call batching. Each meshlet contains information about the primitives and vertices it contains, as well as its bounding sphere and normal cone for culling purposes. The meshlet data will be uploaded to the GPU for use in rendering this mesh with GPU-driven techniques, and can also be retained in CPU memory if m_bKeepCpuMeshData is true for CPU-side processing or other operations that require access to the meshlet data on the CPU.
   xiiArrayPtr<const xiiMeshlet> GetMeshlets() const;
 
-  /// \brief Returns the vertex remapping data for the meshlets in this mesh buffer resource, used to remap the vertex indices for each meshlet to a compact set of unique vertices that are referenced by the primitives in that meshlet. This data is essential for GPU-driven rendering techniques such as mesh shaders or compute shader-based rendering, where each meshlet may reference a different subset of vertices for optimal culling and rendering performance. The vertex remapping data will be uploaded to the GPU for use in rendering this mesh with GPU-driven techniques, and can also be retained in CPU memory if m_bKeepCpuMeshData is true for CPU-side processing or other operations that require access to the vertex remapping data on the CPU.
+  /// Returns the vertex remapping data for the meshlets in this mesh buffer resource, used to remap the vertex indices for each meshlet to a compact set of unique vertices that are referenced by the primitives in that meshlet. This data is essential for GPU-driven rendering techniques such as mesh shaders or compute shader-based rendering, where each meshlet may reference a different subset of vertices for optimal culling and rendering performance. The vertex remapping data will be uploaded to the GPU for use in rendering this mesh with GPU-driven techniques, and can also be retained in CPU memory if m_bKeepCpuMeshData is true for CPU-side processing or other operations that require access to the vertex remapping data on the CPU.
   xiiArrayPtr<const xiiUInt32> GetMeshletVertexRemap() const;
 
-  /// \brief Returns the primitive index data for the meshlets in this mesh buffer resource, used to identify the primitives (triangles, lines, etc.) that belong to each meshlet for rendering and culling purposes in GPU-driven rendering techniques such as mesh shaders or compute shader-based rendering. This data is essential for GPU-driven rendering techniques, where each meshlet may reference a different subset of primitives for optimal culling and rendering performance. The primitive index data will be uploaded to the GPU for use in rendering this mesh with GPU-driven techniques, and can also be retained in CPU memory if m_bKeepCpuMeshData is true for CPU-side processing or other operations that require access to the primitive index data on the CPU.
+  /// Returns the primitive index data for the meshlets in this mesh buffer resource, used to identify the primitives (triangles, lines, etc.) that belong to each meshlet for rendering and culling purposes in GPU-driven rendering techniques such as mesh shaders or compute shader-based rendering. This data is essential for GPU-driven rendering techniques, where each meshlet may reference a different subset of primitives for optimal culling and rendering performance. The primitive index data will be uploaded to the GPU for use in rendering this mesh with GPU-driven techniques, and can also be retained in CPU memory if m_bKeepCpuMeshData is true for CPU-side processing or other operations that require access to the primitive index data on the CPU.
   xiiArrayPtr<const xiiUInt8> GetMeshletPrimitiveIndices() const;
 
-  /// \brief Returns the GPU vertex buffer for this mesh buffer resource, used to identify the GPU resource that contains the vertex data for this mesh and to bind it for rendering. The vertex buffer is typically created from the vertex data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
+  /// Returns the GPU vertex buffer for this mesh buffer resource, used to identify the GPU resource that contains the vertex data for this mesh and to bind it for rendering. The vertex buffer is typically created from the vertex data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
   xiiSharedPtr<xiiGALBuffer> GetVertexBuffer() const;
 
-  /// \brief Returns the GPU index buffer for this mesh buffer resource, used to identify the GPU resource that contains the index data for this mesh and to bind it for rendering. The index buffer is typically created from the index data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
+  /// Returns the GPU index buffer for this mesh buffer resource, used to identify the GPU resource that contains the index data for this mesh and to bind it for rendering. The index buffer is typically created from the index data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
   xiiSharedPtr<xiiGALBuffer> GetIndexBuffer() const;
 
-  /// \brief Returns the GPU meshlet buffer for this mesh buffer resource, used to identify the GPU resource that contains the meshlet data for this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The meshlet buffer is typically created from the meshlet data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
+  /// Returns the GPU meshlet buffer for this mesh buffer resource, used to identify the GPU resource that contains the meshlet data for this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The meshlet buffer is typically created from the meshlet data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
   xiiSharedPtr<xiiGALBuffer> GetMeshletBuffer() const;
 
-  /// \brief Returns the GPU vertex remapping buffer for the meshlets in this mesh buffer resource, used to identify the GPU resource that contains the vertex remapping data for the meshlets in this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The vertex remapping buffer is typically created from the vertex remapping data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
+  /// Returns the GPU vertex remapping buffer for the meshlets in this mesh buffer resource, used to identify the GPU resource that contains the vertex remapping data for the meshlets in this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The vertex remapping buffer is typically created from the vertex remapping data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
   xiiSharedPtr<xiiGALBuffer> GetMeshletVertexRemapBuffer() const;
 
-  /// \brief Returns the GPU primitive index buffer for the meshlets in this mesh buffer resource, used to identify the GPU resource that contains the primitive index data for the meshlets in this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The primitive index buffer is typically created from the primitive index data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
+  /// Returns the GPU primitive index buffer for the meshlets in this mesh buffer resource, used to identify the GPU resource that contains the primitive index data for the meshlets in this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The primitive index buffer is typically created from the primitive index data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
   xiiSharedPtr<xiiGALBuffer> GetMeshletPrimitiveIndexBuffer() const;
 
-  /// \brief Returns the GPU draw command buffer for this mesh buffer resource, used to identify the GPU resource that contains the draw command data for this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The draw command buffer is typically created from the draw command data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
+  /// Returns the GPU draw command buffer for this mesh buffer resource, used to identify the GPU resource that contains the draw command data for this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The draw command buffer is typically created from the draw command data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
   xiiSharedPtr<xiiGALBuffer> GetDrawCommandBuffer() const;
 
 private:

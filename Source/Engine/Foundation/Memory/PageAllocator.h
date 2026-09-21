@@ -5,7 +5,7 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Memory/Allocator.h>
 
-/// \brief Low-level memory allocator that manages whole memory pages from the operating system.
+/// Low-level memory allocator that manages whole memory pages from the operating system.
 ///
 /// This allocator requests memory directly from the OS in page-aligned chunks, typically 4KB or larger.
 /// It's designed for scenarios where you need large, aligned memory blocks with minimal overhead.
@@ -20,12 +20,12 @@
 class XII_FOUNDATION_DLL xiiPageAllocator
 {
 public:
-  /// \brief Allocates a page-aligned memory block of at least the specified size.
+  /// Allocates a page-aligned memory block of at least the specified size.
   static void* AllocatePage(size_t uiSize);
 
-  /// \brief Deallocates a memory block previously allocated with AllocatePage.
+  /// Deallocates a memory block previously allocated with AllocatePage.
   static void DeallocatePage(void* pPtr);
 
-  /// \brief Returns the allocator identifier for tracking and debugging purposes.
+  /// Returns the allocator identifier for tracking and debugging purposes.
   static xiiAllocatorId GetId();
 };

@@ -10,7 +10,7 @@
 
 class xiiQtTestFramework;
 
-/// \brief Delegate for xiiQtTestModel which shows bars for the test durations.
+/// Delegate for xiiQtTestModel which shows bars for the test durations.
 class XII_TEST_DLL xiiQtTestDelegate : public QStyledItemDelegate
 {
   Q_OBJECT

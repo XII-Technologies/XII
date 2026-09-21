@@ -7,7 +7,7 @@
 #include <Foundation/Types/Variant.h>
 #include <Foundation/Utilities/EnumerableClass.h>
 
-/// \brief Base class for all types of xiiConsoleFunction, represents functions to be exposed to xiiConsole.
+/// Base class for all types of xiiConsoleFunction, represents functions to be exposed to xiiConsole.
 ///
 /// Console functions are similar to xiiCVar's in that they can be executed from the xiiConsole.
 /// A console function can wrap many different types of functions with differing number and types of parameters.
@@ -40,25 +40,25 @@ class XII_CORE_DLL xiiConsoleFunctionBase : public xiiEnumerable<xiiConsoleFunct
   XII_DECLARE_ENUMERABLE_CLASS(xiiConsoleFunctionBase);
 
 public:
-  /// \brief The constructor takes the function name and description as it should appear in the console.
+  /// The constructor takes the function name and description as it should appear in the console.
   xiiConsoleFunctionBase(xiiStringView sFunctionName, xiiStringView sDescription) :
     m_sFunctionName(sFunctionName), m_sDescription(sDescription)
   {
   }
 
-  /// \brief Returns the name of the function as it should be exposed in the console.
+  /// Returns the name of the function as it should be exposed in the console.
   xiiStringView GetName() const { return m_sFunctionName; }
 
-  /// \brief Returns the description of the function as it should appear in the console.
+  /// Returns the description of the function as it should appear in the console.
   xiiStringView GetDescription() const { return m_sDescription; }
 
-  /// \brief Returns the number of parameters that this function takes.
+  /// Returns the number of parameters that this function takes.
   virtual xiiUInt32 GetNumParameters() const = 0;
 
-  /// \brief Returns the type of the n-th parameter.
+  /// Returns the type of the n-th parameter.
   virtual xiiVariant::Type::Enum GetParameterType(xiiUInt32 uiParam) const = 0;
 
-  /// \brief Calls the function. Each parameter must be put into a xiiVariant and all of them are passed along as an array.
+  /// Calls the function. Each parameter must be put into a xiiVariant and all of them are passed along as an array.
   ///
   /// Returns XII_FAILURE, if the number of parameters did not match, or any parameter was not convertible to the actual type that
   /// the function expects.
@@ -70,7 +70,7 @@ private:
 };
 
 
-/// \brief Implements the functionality of xiiConsoleFunctionBase for functions with different parameter types. See xiiConsoleFunctionBase for more
+/// Implements the functionality of xiiConsoleFunctionBase for functions with different parameter types. See xiiConsoleFunctionBase for more
 /// details.
 template <typename R>
 class xiiConsoleFunction : public xiiConsoleFunctionBase

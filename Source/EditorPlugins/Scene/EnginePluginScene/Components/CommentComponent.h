@@ -8,7 +8,7 @@
 
 using xiiCommentComponentManager = xiiComponentManager<class xiiCommentComponent, xiiBlockStorageType::Compact>;
 
-/// \brief This component is for adding notes to objects in a scene.
+/// This component is for adding notes to objects in a scene.
 ///
 /// These comments are solely to explain things to other people that look at the scene or prefab structure.
 /// They are not meant for use at runtime. Therefore, all instances of xiiCommentComponent are automatically stripped from a scene during export.

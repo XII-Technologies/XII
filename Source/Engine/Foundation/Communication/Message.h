@@ -10,7 +10,7 @@ using xiiMessageId = xiiUInt16;
 class xiiStreamWriter;
 class xiiStreamReader;
 
-/// \brief Base class for all message types. Each message type has it's own id which is used to dispatch messages efficiently.
+/// Base class for all message types. Each message type has it's own id which is used to dispatch messages efficiently.
 ///
 /// To implement a custom message type derive from xiiMessage and add XII_DECLARE_MESSAGE_TYPE to the type declaration.
 /// XII_IMPLEMENT_MESSAGE_TYPE needs to be added to a cpp.
@@ -43,19 +43,19 @@ public:
 
   virtual ~xiiMessage() = default;
 
-  /// \brief Derived message types can override this method to influence sorting order. Smaller keys are processed first.
+  /// Derived message types can override this method to influence sorting order. Smaller keys are processed first.
   virtual xiiInt32 GetSortingKey() const { return 0; }
 
-  /// \brief Returns the id for this message type.
+  /// Returns the id for this message type.
   XII_ALWAYS_INLINE xiiMessageId GetId() const { return m_Id; }
 
-  /// \brief Returns the size in byte of this message.
+  /// Returns the size in byte of this message.
   XII_ALWAYS_INLINE xiiUInt16 GetSize() const { return m_uiSize; }
 
-  /// \brief Calculates a hash of the message.
+  /// Calculates a hash of the message.
   XII_ALWAYS_INLINE xiiUInt64 GetHash() const { return xiiHashingUtils::xxHash64(this, m_uiSize); }
 
-  /// \brief Implement this for efficient transmission across process boundaries (e.g. network transfer etc.)
+  /// Implement this for efficient transmission across process boundaries (e.g. network transfer etc.)
   ///
   /// If the message is only ever sent within the same process between nodes of the same xiiWorld,
   /// this does not need to be implemented.
@@ -106,14 +106,14 @@ protected:
   //
 
 public:
-  /// \brief Writes msg to stream in such a way that ReplicatePackedMessage() can restore it even in another process
+  /// Writes msg to stream in such a way that ReplicatePackedMessage() can restore it even in another process
   ///
   /// For this to work the message type has to have the Serialize and Deserialize functions implemented.
   ///
   /// \note This is NOT used by xiiWorld. Within the same process messages can be dispatched more efficiently.
   static void PackageForTransfer(const xiiMessage& msg, xiiStreamWriter& ref_stream);
 
-  /// \brief Restores a message that was written by PackageForTransfer()
+  /// Restores a message that was written by PackageForTransfer()
   ///
   /// If the message type is unknown, nullptr is returned.
   /// \see PackageForTransfer()
@@ -122,7 +122,7 @@ public:
 private:
 };
 
-/// \brief Add this macro to the declaration of your custom message type.
+/// Add this macro to the declaration of your custom message type.
 #define XII_DECLARE_MESSAGE_TYPE(messageType, baseType)                              \
 private:                                                                             \
   XII_ADD_DYNAMIC_REFLECTION(messageType, baseType);                                 \
@@ -145,10 +145,10 @@ public:                                                                         
   {                                                                                  \
   }
 
-/// \brief Implements the given message type. Add this macro to a cpp outside of the type declaration.
+/// Implements the given message type. Add this macro to a cpp outside of the type declaration.
 #define XII_IMPLEMENT_MESSAGE_TYPE(messageType) xiiMessageId messageType::MSG_ID = messageType::GetTypeMsgId();
 
-/// \brief Base class for all message senders.
+/// Base class for all message senders.
 template <typename T>
 struct xiiMessageSenderBase
 {

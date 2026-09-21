@@ -2,19 +2,19 @@
 
 #pragma once
 
-/// \brief Checks if KeyFunc provides a GetKey(Element) method.
+/// Checks if KeyFunc provides a GetKey(Element) method.
 template <typename KeyFunc, typename Element>
 concept HasGetKey = requires(const KeyFunc& f, const Element& e) {
   { f.GetKey(e) } -> std::convertible_to<uint64_t>;
 };
 
-/// \brief Checks if KeyFunc can be called with an Element (i.e. provides operator()).
+/// Checks if KeyFunc can be called with an Element (i.e. provides operator()).
 template <typename KeyFunc, typename Element>
 concept CallableKey = requires(const KeyFunc& f, const Element& e) {
   { f(e) } -> std::convertible_to<uint64_t>;
 };
 
-/// \brief Provides radix keys for radix sort.
+/// Provides radix keys for radix sort.
 ///
 /// By default, it supports unsigned integers, signed integers (by flipping the sign bit), and enums (by using their underlying type).
 /// For other types, a custom key extractor must be provided.
@@ -47,7 +47,7 @@ struct DefaultRadixKeyExtractor
   }
 };
 
-/// \brief Extracts the radix key from an element using the provided KeyFunc, which can either provide a GetKey(Element) method or be callable with operator()(Element).
+/// Extracts the radix key from an element using the provided KeyFunc, which can either provide a GetKey(Element) method or be callable with operator()(Element).
 template <typename Element, typename KeyFunc>
 constexpr xiiUInt64 ExtractRadixKey(const KeyFunc& keyFunc, const Element& value)
 {

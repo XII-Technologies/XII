@@ -6,7 +6,7 @@
 
 using xiiRectangleAreaLightComponentManager = xiiComponentManager<class xiiRectangleAreaLightComponent, xiiBlockStorageType::Compact>;
 
-/// \brief The render data object for rectangle area lights.
+/// The render data object for rectangle area lights.
 class XII_GRAPHICSCORE_DLL xiiRectangleAreaLightRenderData : public xiiLightRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRectangleAreaLightRenderData, xiiLightRenderData);
@@ -40,7 +40,7 @@ public:
   xiiRectangleAreaLightComponent();
   ~xiiRectangleAreaLightComponent();
 
-  /// \brief Sets the extents of the rectangle area light. The light is emitted from a rectangle centered on the position of the component, with the normal facing in negative X direction.
+  /// Sets the extents of the rectangle area light. The light is emitted from a rectangle centered on the position of the component, with the normal facing in negative X direction.
   void    SetExtents(xiiVec2 vExtents); // [ property ]
   xiiVec2 GetExtents() const;           // [ property ]
 
@@ -52,7 +52,7 @@ protected:
   xiiVec2 m_vExtents = xiiVec2(1.0f, 1.0f);
 };
 
-/// \brief Visualizer attribute for rectangle area lights.
+/// Visualizer attribute for rectangle area lights.
 class xiiRectangleAreaLightVisualizerAttribute : public xiiVisualizerAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRectangleAreaLightVisualizerAttribute, xiiVisualizerAttribute);

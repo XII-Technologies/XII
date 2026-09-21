@@ -12,7 +12,7 @@ class xiiStreamWriter;
 class xiiStreamReader;
 class xiiVariantTypeInfo;
 
-/// \brief Variant type registry allows for custom variant type infos to be accessed.
+/// Variant type registry allows for custom variant type infos to be accessed.
 ///
 /// Custom variant types are defined via the XII_DECLARE_CUSTOM_VARIANT_TYPE and XII_DEFINE_CUSTOM_VARIANT_TYPE macros.
 /// \sa XII_DECLARE_CUSTOM_VARIANT_TYPE, XII_DEFINE_CUSTOM_VARIANT_TYPE
@@ -21,7 +21,7 @@ class XII_FOUNDATION_DLL xiiVariantTypeRegistry
   XII_DECLARE_SINGLETON(xiiVariantTypeRegistry);
 
 public:
-  /// \brief Find the variant type info for the given xiiRTTI type.
+  /// Find the variant type info for the given xiiRTTI type.
   /// \return xiiVariantTypeInfo if one exits for the given type, otherwise nullptr.
   const xiiVariantTypeInfo* FindVariantTypeInfo(const xiiRTTI* pType) const;
   ~xiiVariantTypeRegistry();
@@ -36,7 +36,7 @@ private:
   xiiHashTable<const xiiRTTI*, const xiiVariantTypeInfo*> m_TypeInfos;
 };
 
-/// \brief Defines functions to allow the full feature set of xiiVariant to be used.
+/// Defines functions to allow the full feature set of xiiVariant to be used.
 /// \sa XII_DEFINE_CUSTOM_VARIANT_TYPE, xiiVariantTypeRegistry
 class XII_FOUNDATION_DLL xiiVariantTypeInfo : public xiiEnumerable<xiiVariantTypeInfo>
 {
@@ -51,7 +51,7 @@ public:
   XII_DECLARE_ENUMERABLE_CLASS(xiiVariantTypeInfo);
 };
 
-/// \brief Helper template used by XII_DEFINE_CUSTOM_VARIANT_TYPE.
+/// Helper template used by XII_DEFINE_CUSTOM_VARIANT_TYPE.
 /// \sa XII_DEFINE_CUSTOM_VARIANT_TYPE
 template <typename T>
 class xiiVariantTypeInfoT : public xiiVariantTypeInfo
@@ -78,7 +78,7 @@ class xiiVariantTypeInfoT : public xiiVariantTypeInfo
   }
 };
 
-/// \brief Defines a custom variant type, allowing it to be serialized and compared. The type needs to be declared first before using this macro.
+/// Defines a custom variant type, allowing it to be serialized and compared. The type needs to be declared first before using this macro.
 ///
 /// The given type must implement xiiHashHelper and xiiStreamWriter / xiiStreamReader operators.
 /// Macros should be placed in any cpp. Note that once a custom type is defined, it is considered a value type and will be passed by value. It must be linked into every editor and engine dll to allow serialization. Thus it should only be used for common types in base libraries.

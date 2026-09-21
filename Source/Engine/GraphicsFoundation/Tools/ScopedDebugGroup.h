@@ -7,7 +7,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 /// \class xiiGALScopedDebugGroup
-/// \brief A helper class for managing debug groups in a command list.
+/// A helper class for managing debug groups in a command list.
 ///
 /// This class allows developers to create scoped debug groups, which can be useful
 /// for debugging and profiling graphics commands. When instantiated, it marks the
@@ -28,34 +28,34 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALScopedDebugGroup
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALScopedDebugGroup);
 
 public:
-  /// \brief Default constructor.
+  /// Default constructor.
   ///
   /// \note Initializes an empty debug group.
   xiiGALScopedDebugGroup() noexcept;
 
-  /// \brief Constructs a debug group with the specified name and color.
+  /// Constructs a debug group with the specified name and color.
   ///
   /// \param pCommandList - Pointer to the command list where the debug group is applied.
   /// \param sName        - Name of the debug group for debugging and profiling purposes.
   /// \param color        - Color used for visual representation (defaults to black).
   xiiGALScopedDebugGroup(xiiGALCommandList* pCommandList, xiiStringView sName, xiiColor color = xiiColor::White);
 
-  /// \brief Constructs a debug group with the specified name and color.
+  /// Constructs a debug group with the specified name and color.
   ///
   /// \param commandList - Reference to the command list where the debug group is applied.
   /// \param sName       - Name of the debug group for debugging and profiling purposes.
   /// \param color       - Color used for visual representation (defaults to black).
   xiiGALScopedDebugGroup(xiiGALCommandList& commandList, xiiStringView sName, xiiColor color = xiiColor::White);
 
-  /// \brief Destructor, automatically ends the debug group.
+  /// Destructor, automatically ends the debug group.
   ~xiiGALScopedDebugGroup();
 
-  /// \brief Move constructor.
+  /// Move constructor.
   ///
   /// \param rhs - Another debug group to move from.
   xiiGALScopedDebugGroup(xiiGALScopedDebugGroup&& rhs) noexcept;
 
-  /// \brief Move assignment operator.
+  /// Move assignment operator.
   ///
   /// \param rhs - Another debug group to move from.
   ///

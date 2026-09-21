@@ -10,12 +10,12 @@
 
 using xiiInputComponentManager = xiiComponentManagerSimple<class xiiInputComponent, xiiComponentUpdateType::WhenSimulating>;
 
-/// \brief Which types of input events are broadcast
+/// Which types of input events are broadcast
 struct XII_GAMEENGINE_DLL xiiInputMessageGranularity
 {
   using StorageType = xiiInt8;
 
-  /// \brief Which types of input events are broadcast
+  /// Which types of input events are broadcast
   enum Enum
   {
     PressOnly,           ///< Key pressed events are sent, but nothing else
@@ -28,7 +28,7 @@ struct XII_GAMEENGINE_DLL xiiInputMessageGranularity
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiInputMessageGranularity);
 
-/// \brief xiiInputComponent raises this event when it detects input
+/// xiiInputComponent raises this event when it detects input
 struct XII_GAMEENGINE_DLL xiiMsgInputActionTriggered : public xiiEventMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgInputActionTriggered, xiiEventMessage);
@@ -47,7 +47,7 @@ private:
   void        SetInputAction(const char* szInputAction) { m_sInputAction.Assign(szInputAction); }
 };
 
-/// \brief This component polls all input events from the given input set every frame and broadcasts the information to components on the same game
+/// This component polls all input events from the given input set every frame and broadcasts the information to components on the same game
 /// object.
 ///
 /// To deactivate input handling, just deactivate the entire component.
@@ -73,7 +73,7 @@ public:
   xiiInputComponent();
   ~xiiInputComponent();
 
-  /// \brief Returns the amount to which szInputAction is active (0 to 1).
+  /// Returns the amount to which szInputAction is active (0 to 1).
   ///
   /// If bOnlyKeyPressed is set to true, only key press events return a non-zero value,
   /// ie key down and key released events are ignored.

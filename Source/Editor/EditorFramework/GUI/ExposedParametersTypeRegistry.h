@@ -13,7 +13,7 @@ struct xiiPhantomRttiManagerEvent;
 class xiiExposedParameters;
 struct xiiAssetCuratorEvent;
 
-/// \brief Lazily converts xiiExposedParameters into phantom types.
+/// Lazily converts xiiExposedParameters into phantom types.
 /// Call GetExposedParametersType to create a type for a sub-asset ID.
 class xiiExposedParametersTypeRegistry
 {
@@ -22,10 +22,10 @@ class xiiExposedParametersTypeRegistry
 public:
   xiiExposedParametersTypeRegistry();
   ~xiiExposedParametersTypeRegistry();
-  /// \brief Returns null if the curator can find the asset or if the asset
+  /// Returns null if the curator can find the asset or if the asset
   /// does not have any xiiExposedParameters meta data.
   const xiiRTTI* GetExposedParametersType(xiiStringView sResource);
-  /// \brief All exposed parameter types derive from this.
+  /// All exposed parameter types derive from this.
   const xiiRTTI* GetExposedParametersBaseType() const { return m_pBaseType; }
 
 private:

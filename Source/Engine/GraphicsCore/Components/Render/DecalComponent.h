@@ -11,7 +11,7 @@ struct xiiMsgExtractRenderData;
 
 using xiiDecalComponentManager = xiiComponentManager<class xiiDecalComponent, xiiBlockStorageType::Compact>;
 
-/// \brief Renderer-facing packet for both projected deferred decals and mesh decals.
+/// Renderer-facing packet for both projected deferred decals and mesh decals.
 class XII_GRAPHICSCORE_DLL xiiDecalRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDecalRenderData, xiiRenderData);
@@ -54,7 +54,7 @@ public:
   xiiUInt32 m_uiMeshletCount   = 0U; ///< The number of meshlets for this decal in the mesh buffer, used for rendering. This is only valid for mesh decals, and is ignored for projected deferred decals. The meshlet count is used to determine how many meshlets in the mesh buffer belong to this decal, and is used together with the first meshlet index to render the correct portion of the mesh buffer for this decal when using meshlet-based rendering.
 };
 
-/// \brief Places a decal projector or mesh decal into the render world.
+/// Places a decal projector or mesh decal into the render world.
 class XII_GRAPHICSCORE_DLL xiiDecalComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiDecalComponent, xiiRenderComponent, xiiDecalComponentManager);
@@ -78,107 +78,107 @@ public:
   xiiDecalComponent();
   ~xiiDecalComponent();
 
-  /// \brief Sets the projection mode for this decal, used to determine how the decal should be rendered. This can be either projected deferred decals or mesh decals, and determines whether the decal is rendered as a projected box in the world or as a mesh with its own geometry.
+  /// Sets the projection mode for this decal, used to determine how the decal should be rendered. This can be either projected deferred decals or mesh decals, and determines whether the decal is rendered as a projected box in the world or as a mesh with its own geometry.
   void SetProjectionMode(xiiEnum<xiiDecalProjectionMode> mode); // [property]
 
-  /// \brief Returns the projection mode for this decal, used to determine how the decal should be rendered. This can be either projected deferred decals or mesh decals, and determines whether the decal is rendered as a projected box in the world or as a mesh with its own geometry.
+  /// Returns the projection mode for this decal, used to determine how the decal should be rendered. This can be either projected deferred decals or mesh decals, and determines whether the decal is rendered as a projected box in the world or as a mesh with its own geometry.
   xiiEnum<xiiDecalProjectionMode> GetProjectionMode() const; // [property]
 
-  /// \brief Sets the decal resource for this decal, used for rendering. The decal resource contains the textures and properties for this decal, and is used to render the decal in the world. If an atlas is used, the textures from the atlas entry in the decal atlas resource will be used instead of the textures from the decal resource, but the properties from the decal resource will still be used.
+  /// Sets the decal resource for this decal, used for rendering. The decal resource contains the textures and properties for this decal, and is used to render the decal in the world. If an atlas is used, the textures from the atlas entry in the decal atlas resource will be used instead of the textures from the decal resource, but the properties from the decal resource will still be used.
   void SetDecal(const xiiDecalResourceHandle& hDecal); // [property]
 
-  /// \brief Returns the decal resource for this decal, used for rendering. The decal resource contains the textures and properties for this decal, and is used to render the decal in the world. If an atlas is used, the textures from the atlas entry in the decal atlas resource will be used instead of the textures from the decal resource, but the properties from the decal resource will still be used.
+  /// Returns the decal resource for this decal, used for rendering. The decal resource contains the textures and properties for this decal, and is used to render the decal in the world. If an atlas is used, the textures from the atlas entry in the decal atlas resource will be used instead of the textures from the decal resource, but the properties from the decal resource will still be used.
   const xiiDecalResourceHandle& GetDecal() const; // [property]
 
-  /// \brief Sets the decal atlas resource for this decal, used for rendering. The decal atlas resource contains the atlas textures and properties for this decal, and is used to render the decal in the world. If an atlas is used, the textures from the atlas entry in the decal atlas resource will be used instead of the textures from the decal resource, but the properties from the decal resource will still be used.
+  /// Sets the decal atlas resource for this decal, used for rendering. The decal atlas resource contains the atlas textures and properties for this decal, and is used to render the decal in the world. If an atlas is used, the textures from the atlas entry in the decal atlas resource will be used instead of the textures from the decal resource, but the properties from the decal resource will still be used.
   void SetAtlas(const xiiDecalAtlasResourceHandle& hAtlas); // [property]
 
-  /// \brief Returns the decal atlas resource for this decal, used for rendering. The decal atlas resource contains the atlas textures and properties for this decal, and is used to render the decal in the world. If an atlas is used, the textures from the atlas entry in the decal atlas resource will be used instead of the textures from the decal resource, but the properties from the decal resource will still be used.
+  /// Returns the decal atlas resource for this decal, used for rendering. The decal atlas resource contains the atlas textures and properties for this decal, and is used to render the decal in the world. If an atlas is used, the textures from the atlas entry in the decal atlas resource will be used instead of the textures from the decal resource, but the properties from the decal resource will still be used.
   const xiiDecalAtlasResourceHandle& GetAtlas() const; // [property]
 
-  /// \brief Sets the atlas ID for this decal, used to look up the correct atlas entry in the decal atlas resource for rendering. The atlas ID is used to find the corresponding entry in the decal atlas resource, which contains the UV rectangle and other properties for this decal when using an atlas. If no atlas is used, this is ignored.
+  /// Sets the atlas ID for this decal, used to look up the correct atlas entry in the decal atlas resource for rendering. The atlas ID is used to find the corresponding entry in the decal atlas resource, which contains the UV rectangle and other properties for this decal when using an atlas. If no atlas is used, this is ignored.
   void SetAtlasId(xiiStringView sAtlasId); // [property]
 
-  /// \brief Returns the atlas ID for this decal, used to look up the correct atlas entry in the decal atlas resource for rendering. The atlas ID is used to find the corresponding entry in the decal atlas resource, which contains the UV rectangle and other properties for this decal when using an atlas. If no atlas is used, this is ignored.
+  /// Returns the atlas ID for this decal, used to look up the correct atlas entry in the decal atlas resource for rendering. The atlas ID is used to find the corresponding entry in the decal atlas resource, which contains the UV rectangle and other properties for this decal when using an atlas. If no atlas is used, this is ignored.
   xiiStringView GetAtlasId() const; // [property]
 
-  /// \brief Sets the mesh resource for this decal, used for rendering mesh decals. The mesh resource contains the geometry and materials for the mesh decal, and is used to render the decal as a mesh in the world. This is only valid if the projection mode is set to Mesh, and is ignored for projected deferred decals.
+  /// Sets the mesh resource for this decal, used for rendering mesh decals. The mesh resource contains the geometry and materials for the mesh decal, and is used to render the decal as a mesh in the world. This is only valid if the projection mode is set to Mesh, and is ignored for projected deferred decals.
   void SetMesh(const xiiMeshResourceHandle& hMesh);
 
-  /// \brief Returns the mesh resource for this decal, used for rendering mesh decals. The mesh resource contains the geometry and materials for the mesh decal, and is used to render the decal as a mesh in the world. This is only valid if the projection mode is set to Mesh, and is ignored for projected deferred decals.
+  /// Returns the mesh resource for this decal, used for rendering mesh decals. The mesh resource contains the geometry and materials for the mesh decal, and is used to render the decal as a mesh in the world. This is only valid if the projection mode is set to Mesh, and is ignored for projected deferred decals.
   const xiiMeshResourceHandle& GetMesh() const;
 
-  /// \brief Sets the extents of this decal in world space, used for rendering projected deferred decals. The extents define the size of the box used to project the decal onto the scene, with the center of the box being the position of the decal component in the world. This is only valid if the projection mode is set to Projected, and is ignored for mesh decals.
+  /// Sets the extents of this decal in world space, used for rendering projected deferred decals. The extents define the size of the box used to project the decal onto the scene, with the center of the box being the position of the decal component in the world. This is only valid if the projection mode is set to Projected, and is ignored for mesh decals.
   void SetExtents(xiiVec3 vExtents); // [property]
 
-  /// \brief Returns the extents of this decal in world space, used for rendering projected deferred decals. The extents define the size of the box used to project the decal onto the scene, with the center of the box being the position of the decal component in the world. This is only valid if the projection mode is set to Projected, and is ignored for mesh decals.
+  /// Returns the extents of this decal in world space, used for rendering projected deferred decals. The extents define the size of the box used to project the decal onto the scene, with the center of the box being the position of the decal component in the world. This is only valid if the projection mode is set to Projected, and is ignored for mesh decals.
   xiiVec3 GetExtents() const; // [property]
 
-  /// \brief Sets the UV offset for this decal, used for rendering. The UV offset is added to the UV coordinates of the decal textures, and can be used to animate the decal or to adjust the placement of the textures on the decal geometry.
+  /// Sets the UV offset for this decal, used for rendering. The UV offset is added to the UV coordinates of the decal textures, and can be used to animate the decal or to adjust the placement of the textures on the decal geometry.
   void SetUVOffset(xiiVec2 vOffset); // [property]
 
-  /// \brief Returns the UV offset for this decal, used for rendering. The UV offset is added to the UV coordinates of the decal textures, and can be used to animate the decal or to adjust the placement of the textures on the decal geometry.
+  /// Returns the UV offset for this decal, used for rendering. The UV offset is added to the UV coordinates of the decal textures, and can be used to animate the decal or to adjust the placement of the textures on the decal geometry.
   xiiVec2 GetUVOffset() const; // [property]
 
-  /// \brief Sets the UV scale for this decal, used for rendering. The UV scale is multiplied with the UV coordinates of the decal textures, and can be used to tile the decal textures across the decal geometry or to adjust the placement of the textures on the decal geometry.
+  /// Sets the UV scale for this decal, used for rendering. The UV scale is multiplied with the UV coordinates of the decal textures, and can be used to tile the decal textures across the decal geometry or to adjust the placement of the textures on the decal geometry.
   void SetUVScale(xiiVec2 vScale); // [property]
 
-  /// \brief Returns the UV scale for this decal, used for rendering. The UV scale is multiplied with the UV coordinates of the decal textures, and can be used to tile the decal textures across the decal geometry or to adjust the placement of the textures on the decal geometry.
+  /// Returns the UV scale for this decal, used for rendering. The UV scale is multiplied with the UV coordinates of the decal textures, and can be used to tile the decal textures across the decal geometry or to adjust the placement of the textures on the decal geometry.
   xiiVec2 GetUVScale() const; // [property]
 
-  /// \brief Sets the tint color for this decal, used for rendering. The tint color is multiplied with the albedo texture of the decal, and can be used to change the color of the decal without modifying the texture itself.
+  /// Sets the tint color for this decal, used for rendering. The tint color is multiplied with the albedo texture of the decal, and can be used to change the color of the decal without modifying the texture itself.
   void SetTint(xiiColor tint); // [property]
 
-  /// \brief Returns the tint color for this decal, used for rendering. The tint color is multiplied with the albedo texture of the decal, and can be used to change the color of the decal without modifying the texture itself.
+  /// Returns the tint color for this decal, used for rendering. The tint color is multiplied with the albedo texture of the decal, and can be used to change the color of the decal without modifying the texture itself.
   xiiColor GetTint() const; // [property]
 
-  /// \brief Sets the channel mask for this decal, used for rendering. The channel mask is used to specify which channels of the decal textures should be used for rendering, and can be used to optimize rendering by only using the necessary channels of the textures.
+  /// Sets the channel mask for this decal, used for rendering. The channel mask is used to specify which channels of the decal textures should be used for rendering, and can be used to optimize rendering by only using the necessary channels of the textures.
   void SetChannelMask(xiiBitflags<xiiDecalChannelMask> mask); // [property]
 
-  /// \brief Returns the channel mask for this decal, used for rendering. The channel mask is used to specify which channels of the decal textures should be used for rendering, and can be used to optimize rendering by only using the necessary channels of the textures.
+  /// Returns the channel mask for this decal, used for rendering. The channel mask is used to specify which channels of the decal textures should be used for rendering, and can be used to optimize rendering by only using the necessary channels of the textures.
   xiiBitflags<xiiDecalChannelMask> GetChannelMask() const; // [property]
 
-  /// \brief Sets the opacity of this decal, used for rendering. The opacity is multiplied with the alpha channel of the albedo texture of the decal, and can be used to make the decal more transparent or more opaque without modifying the texture itself.
+  /// Sets the opacity of this decal, used for rendering. The opacity is multiplied with the alpha channel of the albedo texture of the decal, and can be used to make the decal more transparent or more opaque without modifying the texture itself.
   void SetOpacity(float fOpacity); // [property]
 
-  /// \brief Returns the opacity of this decal, used for rendering. The opacity is multiplied with the alpha channel of the albedo texture of the decal, and can be used to make the decal more transparent or more opaque without modifying the texture itself.
+  /// Returns the opacity of this decal, used for rendering. The opacity is multiplied with the alpha channel of the albedo texture of the decal, and can be used to make the decal more transparent or more opaque without modifying the texture itself.
   float GetOpacity() const; // [property]
 
-  /// \brief Sets the normal blend factor for this decal, used for rendering. The normal blend factor is used to blend the normal map of the decal with the underlying surface normals, and can be used to adjust the strength of the normal map effect of the decal.
+  /// Sets the normal blend factor for this decal, used for rendering. The normal blend factor is used to blend the normal map of the decal with the underlying surface normals, and can be used to adjust the strength of the normal map effect of the decal.
   void SetNormalBlend(float fNormalBlend); // [property]
 
-  /// \brief Returns the normal blend factor for this decal, used for rendering. The normal blend factor is used to blend the normal map of the decal with the underlying surface normals, and can be used to adjust the strength of the normal map effect of the decal.
+  /// Returns the normal blend factor for this decal, used for rendering. The normal blend factor is used to blend the normal map of the decal with the underlying surface normals, and can be used to adjust the strength of the normal map effect of the decal.
   float GetNormalBlend() const; // [property]
 
-  /// \brief Sets the roughness of this decal, used for rendering. The roughness is used to specify the roughness value for the material of the decal, and can be used to make the decal appear more glossy or more rough without modifying the material texture itself.
+  /// Sets the roughness of this decal, used for rendering. The roughness is used to specify the roughness value for the material of the decal, and can be used to make the decal appear more glossy or more rough without modifying the material texture itself.
   void SetRoughness(float fRoughness); // [property]
 
-  /// \brief Returns the roughness of this decal, used for rendering. The roughness is used to specify the roughness value for the material of the decal, and can be used to make the decal appear more glossy or more rough without modifying the material texture itself.
+  /// Returns the roughness of this decal, used for rendering. The roughness is used to specify the roughness value for the material of the decal, and can be used to make the decal appear more glossy or more rough without modifying the material texture itself.
   float GetRoughness() const; // [property]
 
-  /// \brief Sets the metallic of this decal, used for rendering. The metallic is used to specify the metallic value for the material of the decal, and can be used to make the decal appear more metallic or more non-metallic without modifying the material texture itself.
+  /// Sets the metallic of this decal, used for rendering. The metallic is used to specify the metallic value for the material of the decal, and can be used to make the decal appear more metallic or more non-metallic without modifying the material texture itself.
   void SetMetallic(float fMetallic); // [property]
 
-  /// \brief Returns the metallic of this decal, used for rendering. The metallic is used to specify the metallic value for the material of the decal, and can be used to make the decal appear more metallic or more non-metallic without modifying the material texture itself.
+  /// Returns the metallic of this decal, used for rendering. The metallic is used to specify the metallic value for the material of the decal, and can be used to make the decal appear more metallic or more non-metallic without modifying the material texture itself.
   float GetMetallic() const; // [property]
 
-  /// \brief Sets the emissive intensity of this decal, used for rendering. The emissive intensity is multiplied with the emissive texture of the decal, and can be used to make the decal appear more emissive or less emissive without modifying the texture itself.
+  /// Sets the emissive intensity of this decal, used for rendering. The emissive intensity is multiplied with the emissive texture of the decal, and can be used to make the decal appear more emissive or less emissive without modifying the texture itself.
   void SetEmissive(float fEmissive); // [property]
 
-  /// \brief Returns the emissive intensity of this decal, used for rendering. The emissive intensity is multiplied with the emissive texture of the decal, and can be used to make the decal appear more emissive or less emissive without modifying the texture itself.
+  /// Returns the emissive intensity of this decal, used for rendering. The emissive intensity is multiplied with the emissive texture of the decal, and can be used to make the decal appear more emissive or less emissive without modifying the texture itself.
   float GetEmissive() const; // [property]
 
-  /// \brief Sets the priority of this decal, used for rendering. The priority is used to determine the rendering order of decals when multiple decals overlap, with higher priority decals being rendered on top of lower priority decals. The priority can be used to ensure that important decals are always visible, while less important decals can be faded out or occluded by higher priority decals.
+  /// Sets the priority of this decal, used for rendering. The priority is used to determine the rendering order of decals when multiple decals overlap, with higher priority decals being rendered on top of lower priority decals. The priority can be used to ensure that important decals are always visible, while less important decals can be faded out or occluded by higher priority decals.
   void SetPriority(xiiUInt8 uiPriority); // [property]
 
-  /// \brief Returns the priority of this decal, used for rendering. The priority is used to determine the rendering order of decals when multiple decals overlap, with higher priority decals being rendered on top of lower priority decals. The priority can be used to ensure that important decals are always visible, while less important decals can be faded out or occluded by higher priority decals.
+  /// Returns the priority of this decal, used for rendering. The priority is used to determine the rendering order of decals when multiple decals overlap, with higher priority decals being rendered on top of lower priority decals. The priority can be used to ensure that important decals are always visible, while less important decals can be faded out or occluded by higher priority decals.
   xiiUInt8 GetPriority() const; // [property]
 
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
 
 private:
-  /// \brief Fills the mesh range data for this decal render data based on the provided mesh resource, used for rendering mesh decals. This is used to determine the correct portion of the mesh buffer to render for this decal when using meshlet-based rendering.
+  /// Fills the mesh range data for this decal render data based on the provided mesh resource, used for rendering mesh decals. This is used to determine the correct portion of the mesh buffer to render for this decal when using meshlet-based rendering.
   void FillMeshRange(xiiDecalRenderData& ref_renderData, const xiiMeshResource& mesh) const;
 
 private:

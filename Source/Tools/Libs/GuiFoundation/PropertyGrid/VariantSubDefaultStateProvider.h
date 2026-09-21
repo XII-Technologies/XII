@@ -8,7 +8,7 @@
 
 class xiiVariantSubAccessor;
 
-// \brief Default value provider for xiiVariantSubAccessor.
+// Default value provider for xiiVariantSubAccessor.
 class XII_GUIFOUNDATION_DLL xiiVariantSubDefaultStateProvider : public xiiDefaultStateProvider
 {
 public:

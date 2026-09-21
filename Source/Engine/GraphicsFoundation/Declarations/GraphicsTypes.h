@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Declarations/Constants.h>
 
-/// \brief Defines the graphics device.
+/// Defines the graphics device.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceType
 {
   using StorageType = xiiUInt8;
@@ -26,7 +26,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsDeviceType);
 
-/// \brief This describes the graphics device feature state.
+/// This describes the graphics device feature state.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatureState
 {
   using StorageType = xiiUInt8;
@@ -46,7 +46,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatureState
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceFeatureState);
 
-/// \brief This describes the graphics device adapter vendor.
+/// This describes the graphics device adapter vendor.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsAdapterVendor
 {
   using StorageType = xiiUInt8;
@@ -73,7 +73,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsAdapterVendor
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsAdapterVendor);
 
-/// \brief This describes common validation levels that translate to specific settings for different backends.
+/// This describes common validation levels that translate to specific settings for different backends.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceValidationLevel
 {
   using StorageType = xiiUInt8;
@@ -113,7 +113,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEventType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceEventType);
 
-/// \brief This describes the represented value type. It is used by the buffer description
+/// This describes the represented value type. It is used by the buffer description
 /// to describe the value type of a formatted buffer, and also used to specify the index type
 /// for an indexed draw call.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALValueType
@@ -138,7 +138,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALValueType
     Default = Undefined
   };
 
-  /// \brief This returns the size in bytes, of the given value type.
+  /// This returns the size in bytes, of the given value type.
   XII_ALWAYS_INLINE static xiiUInt32 GetSize(const xiiGALValueType::Enum type)
   {
     switch (type)
@@ -171,7 +171,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALValueType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALValueType);
 
-/// \brief This describes the shader stage.
+/// This describes the shader stage.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderType
 {
   using StorageType = xiiUInt32;
@@ -229,10 +229,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderType
     StorageType AllRayTracing : 1;
   };
 
-  /// \brief Retrieves the shader stage index of a single shader stage.
+  /// Retrieves the shader stage index of a single shader stage.
   static xiiUInt32 GetStageIndex(xiiGALShaderType::Enum stage);
 
-  /// \brief Returns a the stage flag for a given stage index.
+  /// Returns a the stage flag for a given stage index.
   static xiiGALShaderType::Enum GetStageFlag(xiiUInt32 uiIndex);
 
   static const char* Names[ENUM_COUNT];
@@ -246,7 +246,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderType);
 
 /// [D3D11_BIND_FLAG]: https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_bind_flag
 ///
-/// \brief This describes which parts of the pipeline a resource can be bound to.
+/// This describes which parts of the pipeline a resource can be bound to.
 /// It generally mirrors [D3D11_BIND_FLAG][] enumeration. It is used by the buffer description to describe
 /// the bind flags for a buffer, and also used in the texture description to describe the bind flags for a texture.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindFlags
@@ -325,7 +325,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceUsage
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceUsage);
 
-/// \brief This describes the allowed CPU access mode flags when mapping a resource.
+/// This describes the allowed CPU access mode flags when mapping a resource.
 /// This is used by the buffer and texture descriptions to describe the CPU access mode for buffers and textures.
 ///
 /// \note Only resources with xiiGALResourceUsage::Dynamic can be mapped.
@@ -355,7 +355,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCPUAccessFlag);
 
 /// [D3D11_MAP]: https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_map
 ///
-/// \brief This describes how a mapped resource will be accessed. It generally mirrors the [D3D11_MAP][] enumeration.
+/// This describes how a mapped resource will be accessed. It generally mirrors the [D3D11_MAP][] enumeration.
 /// It is used to describe a texture or buffer mapping type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapType
 {
@@ -375,7 +375,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMapType);
 
-/// \brief This describes special arguments for a map operation. This is used to describe addition map flags
+/// This describes special arguments for a map operation. This is used to describe addition map flags
 /// when mapping buffers and textures.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapFlags
 {
@@ -406,7 +406,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALMapFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMapFlags);
 
-/// \brief This describes the resorurce dimension. This is used by the texture description to describe the texture type,
+/// This describes the resorurce dimension. This is used by the texture description to describe the texture type,
 /// and the texture view description to describe the texture view type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimension
 {
@@ -432,7 +432,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimension
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceDimension);
 
-/// \brief This describes the texture view type used by the texture view description.
+/// This describes the texture view type used by the texture view description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewType
 {
   using StorageType = xiiInt8;
@@ -455,7 +455,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureViewType);
 
-/// \brief This describes the buffer view type used by the buffer view description.
+/// This describes the buffer view type used by the buffer view description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewType
 {
   using StorageType = xiiInt8;
@@ -474,7 +474,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBufferViewType);
 
-/// \brief This describes the available texture formats and generally mirrors the DXGI_FORMAT enumeratinon.
+/// This describes the available texture formats and generally mirrors the DXGI_FORMAT enumeratinon.
 /// The table below provides detailed information on each format. Most of these formats are widely supported by all modern
 /// APIs (DX10+, OpenGL3.3+ and OpenGLES3.0+). Specific requirements are additionally indicated.
 /// \sa <a href = "https://docs.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format">DXGI_FORMAT enumeration on MSDN.</a>,
@@ -598,16 +598,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     Default = Unknown
   };
 
-  /// \brief Returns whether the given texture format is a depth format.
+  /// Returns whether the given texture format is a depth format.
   XII_ALWAYS_INLINE static bool IsDepthFormat(xiiGALResourceFormat::Enum format) { return format == D16UNormalized || format == D24UNormalizedS8UInt || format == D32Float || format == D32FloatS8X24UInt; }
 
-  /// \brief Returns whether the given texture format is a stencil format
+  /// Returns whether the given texture format is a stencil format
   XII_ALWAYS_INLINE static bool IsStencilFormat(xiiGALResourceFormat::Enum format) { return format == D24UNormalizedS8UInt || format == D32FloatS8X24UInt; }
 
-  /// \brief Returns whether the given texture format is a sRGB format.
+  /// Returns whether the given texture format is a sRGB format.
   XII_ALWAYS_INLINE static bool IsSrgb(xiiGALResourceFormat::Enum format) { return format == RGBA8UNormalizedSRGB || format == BGRX8UNormalizedSRGB || format == BGRA8UNormalizedSRGB || format == BC1UNormalizedSRGB || format == BC2UNormalizedSRGB || format == BC3UNormalizedSRGB || format == BC7UNormalizedSRGB; }
 
-  /// \brief Returns true if the given texture format is a typeless format, otherwise returns false.
+  /// Returns true if the given texture format is a typeless format, otherwise returns false.
   XII_ALWAYS_INLINE static bool IsTypeless(xiiGALResourceFormat::Enum format)
   {
     switch (format)
@@ -640,7 +640,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     }
   }
 
-  /// \brief Returns true if the given texture format is a multi-planar format, otherwise returns false.
+  /// Returns true if the given texture format is a multi-planar format, otherwise returns false.
   XII_ALWAYS_INLINE static bool IsMultiplanar(xiiGALResourceFormat::Enum format)
   {
     switch (format)
@@ -656,7 +656,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     }
   }
 
-  /// \brief Returns the linear (non-sRGB) version of the given format if it exists, otherwise returns the given format.
+  /// Returns the linear (non-sRGB) version of the given format if it exists, otherwise returns the given format.
   XII_ALWAYS_INLINE static xiiGALResourceFormat::Enum AsLinear(xiiGALResourceFormat::Enum format)
   {
     switch (format)
@@ -680,7 +680,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     }
   }
 
-  /// \brief Returns the sRGB version of the given format if it exists, otherwise returns the given format.
+  /// Returns the sRGB version of the given format if it exists, otherwise returns the given format.
   XII_ALWAYS_INLINE static xiiGALResourceFormat::Enum AsSrgb(xiiGALResourceFormat::Enum format)
   {
     switch (format)
@@ -707,7 +707,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceFormat);
 
-/// \brief This describes the filter type.
+/// This describes the filter type.
 ///
 /// \note On D3D11, comparison filters only work with textures that have the following formats
 /// R32_FLOAT_X8X24_TYPELESS, R32_FLOAT, R24_UNORM_X8_TYPELESS, R16_UNORM.
@@ -736,10 +736,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFilterType
     Default = Unknown
   };
 
-  /// \brief Returns true if the given filter type is a comparison filter type, else false.
+  /// Returns true if the given filter type is a comparison filter type, else false.
   XII_ALWAYS_INLINE static bool IsComparisonFilter(xiiGALFilterType::Enum e) { return e == ComparisonPoint || e == ComparisonLinear || e == ComparisonAnisotropic; }
 
-  /// \brief Returns true if the given filter type is an anisotropic filter type, else false.
+  /// Returns true if the given filter type is an anisotropic filter type, else false.
   XII_ALWAYS_INLINE static bool IsAnisotropicFilter(xiiGALFilterType::Enum e) { return e == Anisotropic || e == ComparisonAnisotropic || e == MinimumAnisotropic || e == MaximumAnisotropic; }
 };
 
@@ -748,7 +748,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFilterType);
 /// [D3D11_TEXTURE_ADDRESS_MODE]: https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_texture_address_mode
 /// [D3D12_TEXTURE_ADDRESS_MODE]: https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_texture_address_mode
 ///
-/// \brief This describes the texture address mode. It defines a technique for resolving texture coordinates that
+/// This describes the texture address mode. It defines a technique for resolving texture coordinates that
 /// are outside  of the boundries of a texture. The enumeration generally mirrors [D3D11_TEXTURE_ADDRESS_MODE][]/[D3D12_TEXTURE_ADDRESS_MODE][] enumeration.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureAddressMode
 {
@@ -774,7 +774,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureAddressMod
 /// [D3D11_COMPARISON_FUNC]: https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_comparison_func
 /// [D3D12_COMPARISON_FUNC]: https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_comparison_func
 ///
-/// \brief This describes a comparison function.
+/// This describes a comparison function.
 /// This enumeration defines a comparison function. It generally mirrors [D3D11_COMPARISON_FUNC]/[D3D12_COMPARISON_FUNC] enumeration.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALComparisonFunction
 {
@@ -800,7 +800,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComparisonFunction
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALComparisonFunction);
 
-/// \brief This describes the topology of how vertices are interpreted by the pipeline.
+/// This describes the topology of how vertices are interpreted by the pipeline.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
 {
   using StorageType = xiiInt8;
@@ -993,7 +993,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPrimitiveTopology);
 
-/// \brief This describes memory property flags.
+/// This describes memory property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryPropertyFlags
 {
   using StorageType = xiiUInt8;
@@ -1016,7 +1016,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALMemoryPropertyFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMemoryPropertyFlags);
 
-/// \brief This describes the hardware adapter type.
+/// This describes the hardware adapter type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceAdapterType
 {
   using StorageType = xiiUInt8;
@@ -1036,7 +1036,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceAdapterType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceAdapterType);
 
-/// \brief This describes the method the raster uses to create an image on a surface.
+/// This describes the method the raster uses to create an image on a surface.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainUsageFlags
 {
   using StorageType = xiiUInt8;
@@ -1065,7 +1065,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSwapChainUsageFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSwapChainUsageFlags);
 
-/// \brief This describes the transform applied to the image content prior to presentation.
+/// This describes the transform applied to the image content prior to presentation.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSurfaceTransform
 {
   using StorageType = xiiUInt8;
@@ -1090,7 +1090,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSurfaceTransform
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSurfaceTransform);
 
-/// \brief This describes a query type.
+/// This describes a query type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryType
 {
   using StorageType = xiiUInt8;
@@ -1112,7 +1112,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALQueryType);
 
-/// \brief This describes the wave feature types.
+/// This describes the wave feature types.
 ///
 /// In Vulkan backend, you should check which features are supported by device.
 /// In DirectX12 backend, all shader model 6.0 wave functions are supported if WaveOp feature is enabled.
@@ -1152,7 +1152,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALWaveFeature);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALWaveFeature);
 
-/// \brief This describes the ray tracing capability flags.
+/// This describes the ray tracing capability flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingCapabilityFlags
 {
   using StorageType = xiiUInt8;
@@ -1179,7 +1179,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingCapabilityFlags);
 
-/// \brief This describes common validation flags.
+/// This describes common validation flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALValidationFlags
 {
   using StorageType = xiiUInt8;
@@ -1206,7 +1206,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALValidationFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALValidationFlags);
 
-/// \brief This describes the command queue type.
+/// This describes the command queue type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueFlags
 {
   using StorageType = xiiUInt8;
@@ -1239,7 +1239,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandQueueFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueueFlags);
 
-/// \brief This describes the queue priority.
+/// This describes the queue priority.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueuePriority
 {
   using StorageType = xiiUInt8;
@@ -1260,7 +1260,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueuePriority
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueuePriority);
 
-/// \brief This describes how shading rates coming from the different sources (base rate, primitive rate and VRS image rate) are combined.
+/// This describes how shading rates coming from the different sources (base rate, primitive rate and VRS image rate) are combined.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCombinerFlags
 {
   using StorageType = xiiUInt8;
@@ -1292,7 +1292,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRateCombinerFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCombinerFlags);
 
-/// \brief This describes the shading rate texture format supported by the device.
+/// This describes the shading rate texture format supported by the device.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateFormat
 {
   using StorageType = xiiUInt8;
@@ -1312,7 +1312,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateFormat
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateFormat);
 
-/// \brief This describes the base shading rate along a horizontal or vertical axis.
+/// This describes the base shading rate along a horizontal or vertical axis.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAxis
 {
   using StorageType = xiiUInt8;
@@ -1331,7 +1331,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAxis
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateAxis);
 
-/// \brief This describes the shading rate for both the horizontal and vertical axes.
+/// This describes the shading rate for both the horizontal and vertical axes.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateFlags
 {
   using StorageType = xiiUInt8;
@@ -1369,7 +1369,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRateFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateFlags);
 
-/// \brief This describes the sample count.
+/// This describes the sample count.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
 {
   using StorageType = xiiUInt8;
@@ -1407,7 +1407,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSampleCount);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
 
-/// \brief This describes the shading rate capability flags.
+/// This describes the shading rate capability flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
 {
   using StorageType = xiiUInt16;
@@ -1458,7 +1458,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRateCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCapabilityFlags);
 
-/// \brief This describes the access pattern of the shading rate texture.
+/// This describes the access pattern of the shading rate texture.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateTextureAccess
 {
   using StorageType = xiiUInt8;
@@ -1478,7 +1478,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateTextureAccess
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateTextureAccess);
 
-/// \brief This describes the draw command compatibilty flags.
+/// This describes the draw command compatibilty flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandCapabilityFlags
 {
   using StorageType = xiiUInt8;
@@ -1509,7 +1509,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALDrawCommandCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDrawCommandCapabilityFlags);
 
-/// \brief Sparse memory capability flags.
+/// Sparse memory capability flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceCapabilityFlags
 {
   using StorageType = xiiUInt32;
@@ -1566,7 +1566,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSparseResourceCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseResourceCapabilityFlags);
 
-/// \brief This describes the texture format component type.
+/// This describes the texture format component type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatComponentType
 {
   using StorageType = xiiUInt8;
@@ -1593,7 +1593,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatComponentType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceFormatComponentType);
 
-/// \brief This describes the device support of a particular resource dimension for a given texture format.
+/// This describes the device support of a particular resource dimension for a given texture format.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimensionCapabilityFlags
 {
   using StorageType = xiiUInt32;
@@ -1630,7 +1630,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALResourceDimensionCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceDimensionCapabilityFlags);
 
-/// \brief This describes the sparse texture packing mode.
+/// This describes the sparse texture packing mode.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureFlags
 {
   using StorageType = xiiUInt8;
@@ -1657,7 +1657,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSparseTextureFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseTextureFlags);
 
-/// \brief This describes the pipeline stage flags.
+/// This describes the pipeline stage flags.
 ///
 /// These flags mirror [VkPipelineStageFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkPipelineStageFlagBits)
 /// enum and only have effect in a Vulkan graphics implementation.
@@ -1725,7 +1725,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALPipelineStageFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineStageFlags);
 
-/// \brief This describes the access flags.
+/// This describes the access flags.
 ///
 /// The flags mirror [VkAccessFlags](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkAccessFlags)
 /// enum and only have effect in a Vulkan graphics implementation.
@@ -1793,7 +1793,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALAccessFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALAccessFlags);
 
-/// \brief This describes the resource usage state.
+/// This describes the resource usage state.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
 {
   using StorageType = xiiUInt32;
@@ -1862,7 +1862,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALResourceStateFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceStateFlags);
 
-/// \brief This describes the swap chain present mode.
+/// This describes the swap chain present mode.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
 {
   using StorageType = xiiUInt8;
@@ -1880,7 +1880,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPresentMode);
 
-/// \brief This describes the external memory kind.
+/// This describes the external memory kind.
 ///
 /// These kinds mirror [VkExternalMemoryFeatureFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkExternalMemoryFeatureFlagBits).
 ///
@@ -1911,7 +1911,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryKind
 XII_DECLARE_FLAGS_OPERATORS(xiiGALExternalMemoryKind);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALExternalMemoryKind);
 
-/// \brief This describes the external memory usage flags.
+/// This describes the external memory usage flags.
 ///
 /// These flags mirror [VkExternalMemoryHandleTypeFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkExternalMemoryHandleTypeFlagBits).
 ///

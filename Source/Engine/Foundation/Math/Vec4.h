@@ -5,7 +5,7 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Math/Vec3.h>
 
-/// \brief A 4-component vector class.
+/// A 4-component vector class.
 template <typename Type>
 class xiiVec4Template
 {
@@ -21,23 +21,23 @@ public:
 
   // *** Constructors ***
 public:
-  /// \brief Default-constructed vector is uninitialized (for speed)
+  /// Default-constructed vector is uninitialized (for speed)
   xiiVec4Template(); // [tested]
 
-  /// \brief Initializes the vector with x,y,z,w
+  /// Initializes the vector with x,y,z,w
   xiiVec4Template(Type x, Type y, Type z, Type w); // [tested]
 
-  /// \brief Initializes the vector from a vec3 and a float.
+  /// Initializes the vector from a vec3 and a float.
   xiiVec4Template(xiiVec3Template<Type> vXyz, Type w);
 
-  /// \brief Initializes all 4 components with xyzw
+  /// Initializes all 4 components with xyzw
   explicit xiiVec4Template(Type v); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
-  /// \brief Returns a vector with all components set to Not-a-Number (NaN).
+  /// Returns a vector with all components set to Not-a-Number (NaN).
   XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static constexpr xiiVec4Template<Type> MakeNaN() { return xiiVec4Template<Type>(xiiMath::NaN<Type>()); }
 
-  /// \brief Returns a vector with all components set to zero.
+  /// Returns a vector with all components set to zero.
   [[nodiscard]] static constexpr xiiVec4Template<Type> MakeZero() { return xiiVec4Template<Type>(0); } // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
@@ -49,116 +49,116 @@ public:
 
   // *** Conversions ***
 public:
-  /// \brief Returns a xiiVec2Template with x and y from this vector.
+  /// Returns a xiiVec2Template with x and y from this vector.
   const xiiVec2Template<Type> GetAsVec2() const; // [tested]
 
-  /// \brief Returns a xiiVec3Template with x,y and z from this vector.
+  /// Returns a xiiVec3Template with x,y and z from this vector.
   const xiiVec3Template<Type> GetAsVec3() const; // [tested]
 
-  /// \brief Returns the data as an array.
+  /// Returns the data as an array.
   const Type* GetData() const { return &x; }
 
-  /// \brief Returns the data as an array.
+  /// Returns the data as an array.
   Type* GetData() { return &x; }
 
   // *** Functions to set the vector to specific values ***
 public:
-  /// \brief Sets all 4 components to this value.
+  /// Sets all 4 components to this value.
   void Set(Type xyzw); // [tested]
 
-  /// \brief Sets the vector to these values.
+  /// Sets the vector to these values.
   void Set(Type x, Type y, Type z, Type w); // [tested]
 
-  /// \brief Sets the vector to all zero.
+  /// Sets the vector to all zero.
   void SetZero(); // [tested]
 
   // *** Functions dealing with length ***
 public:
-  /// \brief Returns the length of the vector.
+  /// Returns the length of the vector.
   XII_DECLARE_IF_FLOAT_TYPE Type GetLength() const; // [tested]
 
-  /// \brief Returns the squared length. Faster, since no square-root is taken. Useful, if one only wants to compare the lengths of two
+  /// Returns the squared length. Faster, since no square-root is taken. Useful, if one only wants to compare the lengths of two
   /// vectors.
   Type GetLengthSquared() const; // [tested]
 
-  /// \brief Normalizes this vector and returns its previous length in one operation. More efficient than calling GetLength and then
+  /// Normalizes this vector and returns its previous length in one operation. More efficient than calling GetLength and then
   /// Normalize.
   XII_DECLARE_IF_FLOAT_TYPE Type GetLengthAndNormalize(); // [tested]
 
-  /// \brief Returns a normalized version of this vector, leaves the vector itself unchanged.
+  /// Returns a normalized version of this vector, leaves the vector itself unchanged.
   XII_DECLARE_IF_FLOAT_TYPE const xiiVec4Template<Type> GetNormalized() const; // [tested]
 
-  /// \brief Normalizes this vector.
+  /// Normalizes this vector.
   XII_DECLARE_IF_FLOAT_TYPE void Normalize(); // [tested]
 
-  /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
+  /// Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
   XII_DECLARE_IF_FLOAT_TYPE xiiResult NormalizeIfNotZero(const xiiVec4Template<Type>& vFallback = xiiVec4Template<Type>(1, 0, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
 
-  /// \brief Returns, whether this vector is (0, 0, 0, 0).
+  /// Returns, whether this vector is (0, 0, 0, 0).
   bool IsZero() const; // [tested]
 
-  /// \brief Returns, whether this vector is (0, 0, 0, 0).
+  /// Returns, whether this vector is (0, 0, 0, 0).
   bool IsZero(Type fEpsilon) const; // [tested]
 
-  /// \brief Returns, whether the squared length of this vector is between 0.999f and 1.001f.
+  /// Returns, whether the squared length of this vector is between 0.999f and 1.001f.
   XII_DECLARE_IF_FLOAT_TYPE bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
 
-  /// \brief Returns true, if any of x, y, z or w is NaN.
+  /// Returns true, if any of x, y, z or w is NaN.
   bool IsNaN() const; // [tested]
 
-  /// \brief Checks that all components are finite numbers.
+  /// Checks that all components are finite numbers.
   bool IsValid() const; // [tested]
 
-  /// \brief Returns the distance between two this position and rhs.
+  /// Returns the distance between two this position and rhs.
   XII_DECLARE_IF_FLOAT_TYPE Type GetDistanceTo(const xiiVec4Template<Type>& rhs) const; // [tested]
 
-  /// \brief Returns the squared distance between this position and rhs.
+  /// Returns the squared distance between this position and rhs.
   XII_DECLARE_IF_FLOAT_TYPE Type GetSquaredDistanceTo(const xiiVec4Template<Type>& rhs) const; // [tested]
 
 
   // *** Operators ***
 public:
-  /// \brief Returns the negation of this vector.
+  /// Returns the negation of this vector.
   const xiiVec4Template<Type> operator-() const; // [tested]
 
-  /// \brief Adds cc component-wise to this vector.
+  /// Adds cc component-wise to this vector.
   void operator+=(const xiiVec4Template<Type>& vCc); // [tested]
 
-  /// \brief Subtracts cc component-wise from this vector.
+  /// Subtracts cc component-wise from this vector.
   void operator-=(const xiiVec4Template<Type>& vCc); // [tested]
 
-  /// \brief Multiplies all components of this vector with f.
+  /// Multiplies all components of this vector with f.
   void operator*=(Type f); // [tested]
 
-  /// \brief Divides all components of this vector by f.
+  /// Divides all components of this vector by f.
   void operator/=(Type f); // [tested]
 
-  /// \brief Equality Check (bitwise).
+  /// Equality Check (bitwise).
   bool IsIdentical(const xiiVec4Template<Type>& rhs) const; // [tested]
 
-  /// \brief Equality Check with epsilon.
+  /// Equality Check with epsilon.
   bool IsEqual(const xiiVec4Template<Type>& rhs, Type fEpsilon) const; // [tested]
 
 
   // *** Common vector operations ***
 public:
-  /// \brief Returns the dot-product of the two vectors (commutative, order does not matter).
+  /// Returns the dot-product of the two vectors (commutative, order does not matter).
   Type Dot(const xiiVec4Template<Type>& rhs) const; // [tested]
 
-  /// \brief Returns the component-wise minimum of *this and rhs.
+  /// Returns the component-wise minimum of *this and rhs.
   const xiiVec4Template<Type> CompMin(const xiiVec4Template<Type>& rhs) const; // [tested]
 
-  /// \brief Returns the component-wise maximum of *this and rhs.
+  /// Returns the component-wise maximum of *this and rhs.
   const xiiVec4Template<Type> CompMax(const xiiVec4Template<Type>& rhs) const; // [tested]
 
-  /// \brief Returns the component-wise clamped value of *this between low and high.
+  /// Returns the component-wise clamped value of *this between low and high.
   const xiiVec4Template<Type> CompClamp(const xiiVec4Template<Type>& vLow, const xiiVec4Template<Type>& vHigh) const; // [tested]
 
-  /// \brief Returns the component-wise multiplication of *this and rhs.
+  /// Returns the component-wise multiplication of *this and rhs.
   const xiiVec4Template<Type> CompMul(const xiiVec4Template<Type>& rhs) const; // [tested]
 
-  /// \brief Returns the component-wise division of *this and rhs.
+  /// Returns the component-wise division of *this and rhs.
   const xiiVec4Template<Type> CompDiv(const xiiVec4Template<Type>& rhs) const; // [tested]
 
   /// brief Returns the component-wise absolute of *this.
@@ -188,7 +188,7 @@ const xiiVec4Template<Type> operator/(const xiiVec4Template<Type>& v, Type f); /
 template <typename Type>
 bool operator==(const xiiVec4Template<Type>& v1, const xiiVec4Template<Type>& v2); // [tested]
 
-/// \brief Strict weak ordering. Useful for sorting vertices into a map.
+/// Strict weak ordering. Useful for sorting vertices into a map.
 template <typename Type>
 bool operator<(const xiiVec4Template<Type>& v1, const xiiVec4Template<Type>& v2); // [tested]
 

@@ -11,7 +11,7 @@
 
 struct xiiLongOpControllerEvent;
 
-/// \brief This panel listens to events from xiiLongOpControllerManager and displays all currently known long operations
+/// This panel listens to events from xiiLongOpControllerManager and displays all currently known long operations
 class XII_EDITORFRAMEWORK_DLL xiiQtLongOpsPanel : public xiiQtApplicationPanel, public Ui_LongOpsPanel
 {
   Q_OBJECT

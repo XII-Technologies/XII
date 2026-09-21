@@ -4,7 +4,7 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief A wrapper around a raw pointer that allows to use the lower N bits for flags
+/// A wrapper around a raw pointer that allows to use the lower N bits for flags
 ///
 /// When accessing the pointer, the lower N bits are masked off.
 /// Typically one can safely store 3 bits in the lower bits of a pointer as most data is 8 byte aligned,
@@ -24,13 +24,13 @@ private:
   void* m_pPtr = nullptr;
 
 public:
-  /// \brief Initializes the pointer and flags with zero.
+  /// Initializes the pointer and flags with zero.
   xiiPointerWithFlags() = default;
 
-  /// \brief Initializes the pointer and flags.
+  /// Initializes the pointer and flags.
   explicit xiiPointerWithFlags(PtrType* pPtr, xiiUInt8 uiFlags = 0) { SetPtrAndFlags(pPtr, uiFlags); }
 
-  /// \brief Changes the pointer and flags.
+  /// Changes the pointer and flags.
   void SetPtrAndFlags(PtrType* pPtr, xiiUInt8 uiFlags)
   {
     const std::uintptr_t isrc = *reinterpret_cast<std::uintptr_t*>(&pPtr);
@@ -39,21 +39,21 @@ public:
     iptr = (isrc & PtrMask) | (uiFlags & FlagsMask);
   }
 
-  /// \brief Returns the masked off pointer value.
+  /// Returns the masked off pointer value.
   const PtrType* GetPtr() const
   {
     const std::uintptr_t& iptr = *reinterpret_cast<const std::uintptr_t*>(&m_pPtr);
     return reinterpret_cast<const PtrType*>(iptr & PtrMask); // mask off lower N bits
   }
 
-  /// \brief Returns the masked off pointer value.
+  /// Returns the masked off pointer value.
   PtrType* GetPtr()
   {
     std::uintptr_t& iptr = *reinterpret_cast<std::uintptr_t*>(&m_pPtr);
     return reinterpret_cast<PtrType*>(iptr & PtrMask); // mask off lower N bits
   }
 
-  /// \brief Changes the pointer value only. Flags stay unchanged.
+  /// Changes the pointer value only. Flags stay unchanged.
   void SetPtr(PtrType* pPtr)
   {
     const std::uintptr_t isrc = *reinterpret_cast<std::uintptr_t*>(&pPtr);
@@ -64,14 +64,14 @@ public:
     iptr = (isrc & PtrMask) | (iptr & FlagsMask);
   }
 
-  /// \brief Returns the flags value only.
+  /// Returns the flags value only.
   xiiUInt8 GetFlags() const
   {
     const std::uintptr_t& iptr = *reinterpret_cast<const std::uintptr_t*>(&m_pPtr);
     return static_cast<xiiUInt8>(iptr & FlagsMask);
   }
 
-  /// \brief Changes only the flags value. The given value must fit into the reserved bits.
+  /// Changes only the flags value. The given value must fit into the reserved bits.
   void SetFlags(xiiUInt8 uiFlags)
   {
     XII_ASSERT_DEBUG(uiFlags <= FlagsMask, "The flag value {} requires more than {} bits", uiFlags, NumFlagBits);
@@ -81,16 +81,16 @@ public:
     iptr = (iptr & PtrMask) | (uiFlags & FlagsMask);
   }
 
-  /// \brief Returns the masked off pointer value.
+  /// Returns the masked off pointer value.
   operator PtrType*() { return GetPtr(); }
 
-  /// \brief Returns the masked off pointer value.
+  /// Returns the masked off pointer value.
   operator const PtrType*() const { return GetPtr(); }
 
-  /// \brief Changes the pointer value only. Flags stay unchanged.
+  /// Changes the pointer value only. Flags stay unchanged.
   void operator=(PtrType* pPtr) { SetPtr(pPtr); }
 
-  /// \brief Compares the pointer part for equality (flags are ignored).
+  /// Compares the pointer part for equality (flags are ignored).
   template <typename = typename std::enable_if<std::is_const<PtrType>::value == false>>
   bool operator==(const PtrType* pPtr) const
   {
@@ -102,24 +102,24 @@ public:
     return GetPtr() == rhs.GetPtr();
   }
 
-  /// \brief Compares the pointer part for equality (flags are ignored)
+  /// Compares the pointer part for equality (flags are ignored)
   bool operator==(PtrType* pPtr) const { return GetPtr() == pPtr; }
 
-  /// \brief Compares the pointer part for equality (flags are ignored)
+  /// Compares the pointer part for equality (flags are ignored)
   bool operator==(std::nullptr_t) const { return GetPtr() == nullptr; }
 
-  /// \brief Checks whether the pointer part is not nullptr (flags are ignored)
+  /// Checks whether the pointer part is not nullptr (flags are ignored)
   explicit operator bool() const { return GetPtr() != nullptr; }
 
-  /// \brief Dereferences the pointer.
+  /// Dereferences the pointer.
   const PtrType* operator->() const { return GetPtr(); }
 
-  /// \brief Dereferences the pointer.
+  /// Dereferences the pointer.
   PtrType* operator->() { return GetPtr(); }
 
-  /// \brief Dereferences the pointer.
+  /// Dereferences the pointer.
   const PtrType& operator*() const { return *GetPtr(); }
 
-  /// \brief Dereferences the pointer.
+  /// Dereferences the pointer.
   PtrType& operator*() { return *GetPtr(); }
 };

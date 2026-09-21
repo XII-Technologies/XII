@@ -19,7 +19,7 @@
 #define XII_GLOBALEVENT_UNLOAD_PLUGIN_BEGIN "xiiStartup_UnloadPlugin_Begin"
 #define XII_GLOBALEVENT_UNLOAD_PLUGIN_END   "xiiStartup_UnloadPlugin_End"
 
-/// \brief The startup system makes sure to initialize and shut down all known subsystems in the proper order.
+/// The startup system makes sure to initialize and shut down all known subsystems in the proper order.
 ///
 /// Each subsystem can define on which other subsystems (or entire group) it is dependent (i.e. which other code it needs in an initialized
 /// state, before it can run itself). The startup system will sort all subsystems by their dependencies and then initialize
@@ -84,7 +84,7 @@ public:
   // There is actually no 'Base Shutdown', everything that is initialized in 'Base Startup' should not require
   // any explicit shutdown.
 
-  /// \brief Stores the xiiStringView as a tag. Does not copy the string, so this must be a string embedded in the application code.
+  /// Stores the xiiStringView as a tag. Does not copy the string, so this must be a string embedded in the application code.
   ///
   /// Before executing the startup routines an application should set tags that allow plugins to identify the context in which they are running.
   /// This makes it possible for the startup functions to conditionally configure things.
@@ -96,30 +96,30 @@ public:
   /// editor, editorprocessor, fileserve, etc.
   static void AddApplicationTag(xiiStringView sTag);
 
-  /// \brief Query whether a tag was added with AddApplicationTag()
+  /// Query whether a tag was added with AddApplicationTag()
   static bool HasApplicationTag(xiiStringView sTag);
 
-  /// \brief Runs the 'base' startup sequence of all subsystems in the proper order.
+  /// Runs the 'base' startup sequence of all subsystems in the proper order.
   ///
   /// Run this, if you only require very low level systems to be initialized. Otherwise prefer StartupCore.
   /// There is NO ShutdownBaseSystems, everything that gets initialized during the 'Base Startup' should not need any deinitialization.
   /// This function is automatically called by StartupCore, if it hasn't been called before already.
   static void StartupBaseSystems() { Startup(xiiStartupStage::BaseSystems); }
 
-  /// \brief Runs the 'core' startup sequence of all subsystems in the proper order.
+  /// Runs the 'core' startup sequence of all subsystems in the proper order.
   ///
   /// Run this BEFORE any window and graphics context have been created.
   /// Broadcasts the global event XII_GLOBALEVENT_STARTUP_CORESYSTEMS_BEGIN and XII_GLOBALEVENT_STARTUP_CORESYSTEMS_END
   static void StartupCoreSystems() { Startup(xiiStartupStage::CoreSystems); }
 
-  /// \brief Runs the 'core' shutdown sequence of all subsystems in the proper order (reversed startup order).
+  /// Runs the 'core' shutdown sequence of all subsystems in the proper order (reversed startup order).
   ///
   /// Call this AFTER window and graphics context have been destroyed already, shortly before application exit.
   /// Makes sure that the 'high level' shutdown has been run first.
   /// Broadcasts the global event XII_GLOBALEVENT_SHUTDOWN_CORESYSTEMS_BEGIN and XII_GLOBALEVENT_SHUTDOWN_CORESYSTEMS_END
   static void ShutdownCoreSystems() { Shutdown(xiiStartupStage::CoreSystems); }
 
-  /// \brief Runs the 'high level' startup sequence of all subsystems in the proper order.
+  /// Runs the 'high level' startup sequence of all subsystems in the proper order.
   ///
   /// Run this AFTER a window and graphics context have been created, such that anything that depends on that
   /// can now do its initialization.
@@ -127,23 +127,23 @@ public:
   /// Broadcasts the global event XII_GLOBALEVENT_STARTUP_HIGHLEVELSYSTEMS_BEGIN and XII_GLOBALEVENT_STARTUP_HIGHLEVELSYSTEMS_END
   static void StartupHighLevelSystems() { Startup(xiiStartupStage::HighLevelSystems); }
 
-  /// \brief Runs the 'high level' shutdown sequence of all subsystems in the proper order (reversed startup order).
+  /// Runs the 'high level' shutdown sequence of all subsystems in the proper order (reversed startup order).
   ///
   /// Run this BEFORE the window and graphics context have been destroyed, such that code that requires those
   /// can do its deinitialization first.
   /// Broadcasts the global event XII_GLOBALEVENT_SHUTDOWN_HIGHLEVELSYSTEMS_BEGIN and XII_GLOBALEVENT_SHUTDOWN_HIGHLEVELSYSTEMS_END
   static void ShutdownHighLevelSystems() { Shutdown(xiiStartupStage::HighLevelSystems); }
 
-  /// \brief Output info about all known subsystems via the logging system (can change when DLLs are loaded dynamically).
+  /// Output info about all known subsystems via the logging system (can change when DLLs are loaded dynamically).
   static void PrintAllSubsystems();
 
-  /// \brief Calls StartupBaseSystems(), StartupCoreSystems() or StartupHighLevelSystems() again, depending on what was done last.
+  /// Calls StartupBaseSystems(), StartupCoreSystems() or StartupHighLevelSystems() again, depending on what was done last.
   ///
   /// This can be used to first unload plugins and reload them, and then reinit the engine to the state that it was in again.
   static void ReinitToCurrentState();
 
 private:
-  /// \brief Unloads all subsystems from the given plugin AND all subsystems that directly or indirectly depend on them.
+  /// Unloads all subsystems from the given plugin AND all subsystems that directly or indirectly depend on them.
   ///
   /// This can be used to shutdown all systems from certain DLLs before that DLL is unloaded (and possibly reloaded).
   /// Broadcasts the global event XII_GLOBALEVENT_UNLOAD_PLUGIN_BEGIN and XII_GLOBALEVENT_UNLOAD_PLUGIN_END and passes szPluginName in the first event

@@ -28,7 +28,7 @@ struct xiiIterateBits
   DataType m_Data = {};
 };
 
-/// \brief Helper class to iterate over the bit values of an integer.
+/// Helper class to iterate over the bit values of an integer.
 /// The class can iterate over the bits of any unsigned integer type that is equal to or smaller than xiiUInt64.
 /// \code{.cpp}
 ///    xiiUInt64 bits = 0b1101;
@@ -48,7 +48,7 @@ struct xiiIterateBitValues : public xiiIterateBits<DataType, false, ReturnType>
   }
 };
 
-/// \brief Helper class to iterate over the bit indices of an integer.
+/// Helper class to iterate over the bit indices of an integer.
 /// The class can iterate over the bits of any unsigned integer type that is equal to or smaller than xiiUInt64.
 /// \code{.cpp}
 ///    xiiUInt64 bits = 0b1101;

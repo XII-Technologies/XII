@@ -7,7 +7,7 @@
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/UniquePtr.h>
 
-/// \brief [internal] Worker task for loading resources (typically from disk).
+/// [internal] Worker task for loading resources (typically from disk).
 class XII_CORE_DLL xiiResourceManagerWorkerDataLoad final : public xiiTask
 {
 public:
@@ -22,7 +22,7 @@ private:
   virtual void Execute() override;
 };
 
-/// \brief [internal] Worker task for uploading resource data.
+/// [internal] Worker task for uploading resource data.
 /// Depending on the resource type, this may get scheduled to run on the main thread or on any thread.
 class XII_CORE_DLL xiiResourceManagerWorkerUpdateContent final : public xiiTask
 {

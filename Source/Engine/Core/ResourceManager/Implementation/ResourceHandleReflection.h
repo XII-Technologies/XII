@@ -5,7 +5,7 @@
 #include <Core/CoreDLL.h>
 #include <Core/ResourceManager/ResourceManager.h>
 
-/// \brief Adds two member functions to a class, GetXyzFile() and SetXyzFile() with Xyz being equal to 'name', which allow to access the handle through strings.
+/// Adds two member functions to a class, GetXyzFile() and SetXyzFile() with Xyz being equal to 'name', which allow to access the handle through strings.
 ///
 /// This macro is just for convenience, so that one doesn't need to write this boilerplate code by hand for every resource handle that
 /// should be exposed through the reflection system.
@@ -31,7 +31,7 @@
     return member.GetResourceID();                                                      \
   }
 
-/// \brief Same as XII_ADD_RESOURCEHANDLE_ACCESSORS, but calls 'setterFunc' instead of assigning to 'member' directly.
+/// Same as XII_ADD_RESOURCEHANDLE_ACCESSORS, but calls 'setterFunc' instead of assigning to 'member' directly.
 ///
 /// This can be used, if the setter should do additional validation or bookkeeping.
 #define XII_ADD_RESOURCEHANDLE_ACCESSORS_WITH_SETTER(name, member, setterFunc)             \
@@ -53,7 +53,7 @@
   }
 
 
-/// \brief [internal] Helper class to generate accessor functions for (private) resource handle members
+/// [internal] Helper class to generate accessor functions for (private) resource handle members
 template <typename Class, typename Type, Type Class::* Member>
 struct xiiResourceHandlePropertyAccessor
 {
@@ -80,7 +80,7 @@ struct xiiResourceHandlePropertyAccessor
   }
 };
 
-/// \brief Similar to XII_MEMBER_PROPERTY, but makes it convenient to expose resource handle properties
+/// Similar to XII_MEMBER_PROPERTY, but makes it convenient to expose resource handle properties
 #define XII_RESOURCE_MEMBER_PROPERTY(PropertyName, MemberName)                                                                                                      \
   (new xiiMemberProperty<OwnType, xiiStringView>(PropertyName,                                                                                                      \
                                                  &xiiResourceHandlePropertyAccessor<OwnType, XII_MEMBER_TYPE(OwnType, MemberName), &OwnType::MemberName>::GetValue, \
@@ -89,7 +89,7 @@ struct xiiResourceHandlePropertyAccessor
 
 
 
-/// \brief [internal] An implementation of xiiTypedMemberProperty that uses custom getter / setter functions to access a property.
+/// [internal] An implementation of xiiTypedMemberProperty that uses custom getter / setter functions to access a property.
 template <typename Class, typename Type>
 class xiiResourceAccessorProperty : public xiiTypedMemberProperty<xiiStringView>
 {
@@ -147,7 +147,7 @@ private:
   SetterFunc m_Setter;
 };
 
-/// \brief Similar to XII_RESOURCE_MEMBER_PROPERTY, but takes a getter and setter function that access the resource handle.
+/// Similar to XII_RESOURCE_MEMBER_PROPERTY, but takes a getter and setter function that access the resource handle.
 ///
 /// This can be used to control what other things should happen, if a handle gets modified.
 #define XII_RESOURCE_ACCESSOR_PROPERTY(PropertyName, Getter, Setter) \

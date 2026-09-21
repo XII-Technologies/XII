@@ -44,7 +44,7 @@ private:
   xiiMat4 m_mInvViewProj;
 };
 
-/// \brief Scale gizmo version that only uses boxes that can be composited with
+/// Scale gizmo version that only uses boxes that can be composited with
 /// rotate and translate gizmos without major overlap.
 /// Used by the xiiTransformManipulatorAdapter.
 class XII_EDITORFRAMEWORK_DLL xiiManipulatorScaleGizmo : public xiiScaleGizmo

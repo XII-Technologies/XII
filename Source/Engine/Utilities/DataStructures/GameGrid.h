@@ -8,7 +8,7 @@
 #include <Foundation/Math/Vec3.h>
 #include <Utilities/UtilitiesDLL.h>
 
-/// \brief xiiGameGrid is a general purpose 2D grid structure that has several convenience functions which are often required when working
+/// xiiGameGrid is a general purpose 2D grid structure that has several convenience functions which are often required when working
 /// with a grid.
 template <class CellData>
 class xiiGameGrid
@@ -23,10 +23,10 @@ public:
 
   xiiGameGrid();
 
-  /// \brief Clears all data and reallocates the grid with the given dimensions.
+  /// Clears all data and reallocates the grid with the given dimensions.
   void CreateGrid(xiiUInt16 uiSizeX, xiiUInt16 uiSizeY);
 
-  /// \brief Sets the lower left position of the grid in world space coordinates and the cell size.
+  /// Sets the lower left position of the grid in world space coordinates and the cell size.
   ///
   /// Together with the grid size, these values determine the final world space dimensions.
   /// The rotation defines how the grid is rotated in world space. An identity rotation means that grid cell coordinates (X, Y)
@@ -34,7 +34,7 @@ public:
   /// Other rotations allow to rotate the grid into other planes, such as XZ, if that is more convenient.
   void SetWorldSpaceDimensions(const xiiVec3& vLowerLeftCorner, const xiiVec3& vCellSize, Orientation ori = InPlaneXZ);
 
-  /// \brief Sets the lower left position of the grid in world space coordinates and the cell size.
+  /// Sets the lower left position of the grid in world space coordinates and the cell size.
   ///
   /// Together with the grid size, these values determine the final world space dimensions.
   /// The rotation defines how the grid is rotated in world space. An identity rotation means that grid cell coordinates (X, Y)
@@ -42,72 +42,72 @@ public:
   /// Other rotations allow to rotate the grid into other planes, such as XZ, if that is more convenient.
   void SetWorldSpaceDimensions(const xiiVec3& vLowerLeftCorner, const xiiVec3& vCellSize, const xiiMat3& mRotation);
 
-  /// \brief Returns the size of each cell.
+  /// Returns the size of each cell.
   xiiVec3 GetCellSize() const { return m_vLocalSpaceCellSize; }
 
-  /// \brief Returns the coordinate of the cell at the given world-space position. The world space dimension must be set for this to work.
+  /// Returns the coordinate of the cell at the given world-space position. The world space dimension must be set for this to work.
   /// The indices might be outside valid ranges (negative, larger than the maximum size).
   xiiVec2I32 GetCellAtWorldPosition(const xiiVec3& vWorldSpacePos) const;
 
-  /// \brief Returns the number of cells along the X axis.
+  /// Returns the number of cells along the X axis.
   xiiUInt16 GetGridSizeX() const { return m_uiGridSizeX; }
 
-  /// \brief Returns the number of cells along the Y axis.
+  /// Returns the number of cells along the Y axis.
   xiiUInt16 GetGridSizeY() const { return m_uiGridSizeY; }
 
-  /// \brief Returns the world-space bounding box of the grid, as specified via SetWorldDimensions.
+  /// Returns the world-space bounding box of the grid, as specified via SetWorldDimensions.
   xiiBoundingBox GetWorldBoundingBox() const;
 
-  /// \brief Returns the total number of cells.
+  /// Returns the total number of cells.
   xiiUInt32 GetNumCells() const { return m_uiGridSizeX * m_uiGridSizeY; }
 
-  /// \brief Gives access to a cell by cell index.
+  /// Gives access to a cell by cell index.
   CellData& GetCell(xiiUInt32 uiIndex) { return m_Cells[uiIndex]; }
 
-  /// \brief Gives access to a cell by cell index.
+  /// Gives access to a cell by cell index.
   const CellData& GetCell(xiiUInt32 uiIndex) const { return m_Cells[uiIndex]; }
 
-  /// \brief Gives access to a cell by cell coordinates.
+  /// Gives access to a cell by cell coordinates.
   CellData& GetCell(const xiiVec2I32& vCoord) { return m_Cells[ConvertCellCoordinateToIndex(vCoord)]; }
 
-  /// \brief Gives access to a cell by cell coordinates.
+  /// Gives access to a cell by cell coordinates.
   const CellData& GetCell(const xiiVec2I32& vCoord) const { return m_Cells[ConvertCellCoordinateToIndex(vCoord)]; }
 
-  /// \brief Converts a cell index into a 2D cell coordinate.
+  /// Converts a cell index into a 2D cell coordinate.
   xiiVec2I32 ConvertCellIndexToCoordinate(xiiUInt32 uiIndex) const { return xiiVec2I32(uiIndex % m_uiGridSizeX, uiIndex / m_uiGridSizeX); }
 
-  /// \brief Converts a cell coordinate into a cell index.
+  /// Converts a cell coordinate into a cell index.
   xiiUInt32 ConvertCellCoordinateToIndex(const xiiVec2I32& vCoord) const { return vCoord.y * m_uiGridSizeX + vCoord.x; }
 
-  /// \brief Returns the lower left world space position of the cell with the given coordinates.
+  /// Returns the lower left world space position of the cell with the given coordinates.
   xiiVec3 GetCellWorldSpaceOrigin(const xiiVec2I32& vCoord) const;
   xiiVec3 GetCellLocalSpaceOrigin(const xiiVec2I32& vCoord) const;
 
-  /// \brief Returns the center world space position of the cell with the given coordinates.
+  /// Returns the center world space position of the cell with the given coordinates.
   xiiVec3 GetCellWorldSpaceCenter(const xiiVec2I32& vCoord) const;
   xiiVec3 GetCellLocalSpaceCenter(const xiiVec2I32& vCoord) const;
 
-  /// \brief Checks whether the given cell coordinate is inside valid ranges.
+  /// Checks whether the given cell coordinate is inside valid ranges.
   bool IsValidCellCoordinate(const xiiVec2I32& vCoord) const;
 
-  /// \brief Casts a world space ray through the grid and determines which cell is hit (if any).
+  /// Casts a world space ray through the grid and determines which cell is hit (if any).
   /// \note The picked cell is determined from where the ray hits the 'ground plane', ie. the plane that goes through the world space
   /// origin.
   bool PickCell(const xiiVec3& vRayStartPos, const xiiVec3& vRayDirNorm, xiiVec2I32* out_pCellCoord, xiiVec3* out_pIntersection = nullptr) const;
 
-  /// \brief Returns the lower left corner position in world space of the grid
+  /// Returns the lower left corner position in world space of the grid
   const xiiVec3& GetWorldSpaceOrigin() const { return m_vWorldSpaceOrigin; }
 
-  /// \brief Returns the matrix used to rotate coordinates from grid space to world space
+  /// Returns the matrix used to rotate coordinates from grid space to world space
   const xiiMat3& GetRotationToWorldSpace() const { return m_mRotateToWorldspace; }
 
-  /// \brief Returns the matrix used to rotate coordinates from world space to grid space
+  /// Returns the matrix used to rotate coordinates from world space to grid space
   const xiiMat3& GetRotationToGridSpace() const { return m_mRotateToGridspace; }
 
-  /// \brief Tests where and at which cell the given world space ray intersects the grids bounding box
+  /// Tests where and at which cell the given world space ray intersects the grids bounding box
   bool GetRayIntersection(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, xiiVec2I32& out_vCellCoord) const;
 
-  /// \brief Tests whether a ray would hit the grid bounding box, if it were expanded by a constant.
+  /// Tests whether a ray would hit the grid bounding box, if it were expanded by a constant.
   bool GetRayIntersectionExpandedBBox(const xiiVec3& vRayStartWorldSpace, const xiiVec3& vRayDirNormalizedWorldSpace, float fMaxLength, float& out_fIntersection, const xiiVec3& vExpandBBoxByThis) const;
 
   xiiResult Serialize(xiiStreamWriter& ref_stream) const;

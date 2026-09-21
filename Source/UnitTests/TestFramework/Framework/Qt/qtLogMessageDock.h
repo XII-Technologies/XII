@@ -15,7 +15,7 @@ struct xiiTestResultData;
 class xiiQtLogMessageModel;
 class xiiTestFrameworkResult;
 
-/// \brief Dock widget that lists the output of a given xiiResult struct.
+/// Dock widget that lists the output of a given xiiResult struct.
 class XII_TEST_DLL xiiQtLogMessageDock : public QDockWidget, public Ui_qtLogMessageDock
 {
   Q_OBJECT
@@ -32,7 +32,7 @@ private:
   xiiQtLogMessageModel* m_pModel;
 };
 
-/// \brief Model used by xiiQtLogMessageDock to list the output entries in xiiResult.
+/// Model used by xiiQtLogMessageDock to list the output entries in xiiResult.
 class XII_TEST_DLL xiiQtLogMessageModel : public QAbstractItemModel
 {
   Q_OBJECT

@@ -5,7 +5,7 @@
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Gizmos/GizmoBase.h>
 
-/// \brief The click gizmo displays a simple shape that can be clicked.
+/// The click gizmo displays a simple shape that can be clicked.
 ///
 /// This can be used to provide the user with a way to select which part to edit further.
 class XII_EDITORFRAMEWORK_DLL xiiClickGizmo : public xiiGizmo

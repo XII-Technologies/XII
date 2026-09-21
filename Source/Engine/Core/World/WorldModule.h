@@ -33,13 +33,13 @@ protected:
   virtual ~xiiWorldModule();
 
 public:
-  /// \brief Returns the corresponding world to this module.
+  /// Returns the corresponding world to this module.
   xiiWorld* GetWorld();
 
-  /// \brief Returns the corresponding world to this module.
+  /// Returns the corresponding world to this module.
   const xiiWorld* GetWorld() const;
 
-  /// \brief Same as GetWorld()->GetIndex(). Needed to break circular include dependencies.
+  /// Same as GetWorld()->GetIndex(). Needed to break circular include dependencies.
   xiiUInt32 GetWorldIndex() const;
 
 protected:
@@ -53,10 +53,10 @@ protected:
     xiiUInt32 m_uiComponentCount      = 0;
   };
 
-  /// \brief Update function delegate.
+  /// Update function delegate.
   using UpdateFunction = xiiDelegate<void(const UpdateContext&)>;
 
-  /// \brief Description of an update function that can be registered at the world.
+  /// Description of an update function that can be registered at the world.
   struct UpdateFunctionDesc
   {
     UpdateFunctionDesc(const UpdateFunction& function, xiiStringView sFunctionName) :
@@ -74,35 +74,35 @@ protected:
     float                              m_fPriority                 = 0.0f;  ///< Higher priority (higher number) means that this function is called earlier than a function with lower priority.
   };
 
-  /// \brief Registers the given update function at the world.
+  /// Registers the given update function at the world.
   void RegisterUpdateFunction(const UpdateFunctionDesc& desc);
 
-  /// \brief De-registers the given update function from the world. Note that only the m_Function and the m_Phase of the description have to
+  /// De-registers the given update function from the world. Note that only the m_Function and the m_Phase of the description have to
   /// be valid for de-registration.
   void DeregisterUpdateFunction(const UpdateFunctionDesc& desc);
 
-  /// \brief Returns the allocator used by the world.
+  /// Returns the allocator used by the world.
   xiiAllocator* GetAllocator();
 
-  /// \brief Returns the block allocator used by the world.
+  /// Returns the block allocator used by the world.
   xiiInternal::WorldLargeBlockAllocator* GetBlockAllocator();
 
-  /// \brief Returns whether the world simulation is enabled.
+  /// Returns whether the world simulation is enabled.
   bool GetWorldSimulationEnabled() const;
 
 protected:
-  /// \brief This method is called after the constructor. A derived type can override this method to do initialization work. Typically this
+  /// This method is called after the constructor. A derived type can override this method to do initialization work. Typically this
   /// is the method where updates function are registered.
   virtual void Initialize() {}
 
-  /// \brief This method is called before the destructor. A derived type can override this method to do deinitialization work.
+  /// This method is called before the destructor. A derived type can override this method to do deinitialization work.
   virtual void Deinitialize() {}
 
-  /// \brief This method is called at the start of the next world update when the world is simulated. This method will be called after the
+  /// This method is called at the start of the next world update when the world is simulated. This method will be called after the
   /// initialization method.
   virtual void OnSimulationStarted() {}
 
-  /// \brief Called by xiiWorld::Clear(). Can be used to clear cached data when a world is completely cleared of objects (but not deleted).
+  /// Called by xiiWorld::Clear(). Can be used to clear cached data when a world is completely cleared of objects (but not deleted).
   virtual void WorldClear() {}
 
   xiiWorld* const m_pWorld;
@@ -110,7 +110,7 @@ protected:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Helper class to get component type ids and create new instances of world modules from rtti.
+/// Helper class to get component type ids and create new instances of world modules from rtti.
 class XII_CORE_DLL xiiWorldModuleFactory
 {
 public:
@@ -119,13 +119,13 @@ public:
   template <typename ModuleType, typename RTTIType>
   xiiWorldModuleTypeId RegisterWorldModule();
 
-  /// \brief Returns the module type id to the given rtti module/component type.
+  /// Returns the module type id to the given rtti module/component type.
   xiiWorldModuleTypeId GetTypeId(const xiiRTTI* pRtti);
 
-  /// \brief Creates a new instance of the world module with the given type id and world.
+  /// Creates a new instance of the world module with the given type id and world.
   xiiWorldModule* CreateWorldModule(xiiUInt16 uiTypeId, xiiWorld* pWorld);
 
-  /// \brief Register explicit a mapping of a world module interface to a specific implementation.
+  /// Register explicit a mapping of a world module interface to a specific implementation.
   ///
   /// This is necessary if there are multiple implementations of the same interface.
   /// If there is only one implementation for an interface this implementation is registered automatically.
@@ -159,7 +159,7 @@ private:
   xiiHashTable<xiiString, xiiString> m_InterfaceImplementations;
 };
 
-/// \brief Add this macro to the declaration of your module type.
+/// Add this macro to the declaration of your module type.
 #define XII_DECLARE_WORLD_MODULE()                       \
 public:                                                  \
   static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId() \
@@ -170,11 +170,11 @@ public:                                                  \
 private:                                                 \
   static xiiWorldModuleTypeId s_TypeId;
 
-/// \brief Implements the given module type. Add this macro to a cpp outside of the type declaration.
+/// Implements the given module type. Add this macro to a cpp outside of the type declaration.
 #define XII_IMPLEMENT_WORLD_MODULE(moduleType) \
   xiiWorldModuleTypeId moduleType::s_TypeId = xiiWorldModuleFactory::GetInstance()->RegisterWorldModule<moduleType, moduleType>();
 
-/// \brief Helper macro to create an update function description with proper name
+/// Helper macro to create an update function description with proper name
 #define XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(func, instance) xiiWorldModule::UpdateFunctionDesc(xiiWorldModule::UpdateFunction(&func, instance), #func)
 
 #include <Core/World/Implementation/WorldModule_inl.h>

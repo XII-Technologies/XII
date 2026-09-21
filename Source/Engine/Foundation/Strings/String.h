@@ -12,7 +12,7 @@
 class xiiStringBuilder;
 class xiiStreamReader;
 
-/// \brief A string class for storing and passing around strings.
+/// A string class for storing and passing around strings.
 ///
 /// This class only allows read-access to its data. It does not allow modifications.
 /// To build / modify strings, use the xiiStringBuilder class.
@@ -29,110 +29,110 @@ template <xiiUInt16 Size>
 struct xiiHybridStringBase : public xiiStringBase<xiiHybridStringBase<Size>>
 {
 protected:
-  /// \brief Creates an empty string.
+  /// Creates an empty string.
   xiiHybridStringBase(xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   xiiHybridStringBase(const xiiHybridStringBase& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Moves the data from \a rhs.
+  /// Moves the data from \a rhs.
   xiiHybridStringBase(xiiHybridStringBase&& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   xiiHybridStringBase(const char* rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   xiiHybridStringBase(const wchar_t* rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   xiiHybridStringBase(const xiiStringView& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   xiiHybridStringBase(const xiiStringBuilder& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Moves the data from \a rhs.
+  /// Moves the data from \a rhs.
   xiiHybridStringBase(xiiStringBuilder&& rhs, xiiAllocator* pAllocator); // [tested]
 
-  /// \brief Destructor.
+  /// Destructor.
   ~xiiHybridStringBase(); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   void operator=(const xiiHybridStringBase& rhs); // [tested]
 
-  /// \brief Moves the data from \a rhs.
+  /// Moves the data from \a rhs.
   void operator=(xiiHybridStringBase&& rhs); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   void operator=(const char* rhs); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   void operator=(const wchar_t* rhs); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   void operator=(const xiiStringView& rhs); // [tested]
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   void operator=(const xiiStringBuilder& rhs); // [tested]
 
-  /// \brief Moves the data from \a rhs.
+  /// Moves the data from \a rhs.
   void operator=(xiiStringBuilder&& rhs); // [tested]
 
 #if XII_ENABLED(XII_INTEROP_STL_STRINGS)
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   xiiHybridStringBase(const std::string_view& rhs, xiiAllocator* pAllocator);
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   xiiHybridStringBase(const std::string& rhs, xiiAllocator* pAllocator);
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   void operator=(const std::string_view& rhs);
 
-  /// \brief Copies the data from \a rhs.
+  /// Copies the data from \a rhs.
   void operator=(const std::string& rhs);
 #endif
 
 public:
-  /// \brief Resets this string to an empty string.
+  /// Resets this string to an empty string.
   ///
   /// This will not deallocate any previously allocated data, but reuse that memory.
   void Clear(); // [tested]
 
-  /// \brief Returns a pointer to the internal Utf8 string.
+  /// Returns a pointer to the internal Utf8 string.
   const char* GetData() const; // [tested]
 
-  /// \brief Returns the amount of bytes that this string takes (excluding the '\0' terminator).
+  /// Returns the amount of bytes that this string takes (excluding the '\0' terminator).
   xiiUInt32 GetElementCount() const; // [tested]
 
-  /// \brief Returns the number of characters in this string. Might be less than GetElementCount, if it contains Utf8
+  /// Returns the number of characters in this string. Might be less than GetElementCount, if it contains Utf8
   /// multi-byte characters.
   ///
   /// \note This is a slow operation, as it has to run through the entire string to count the Unicode characters.
   /// Only call this once and use the result as long as the string doesn't change. Don't call this in a loop.
   xiiUInt32 GetCharacterCount() const; // [tested]
 
-  /// \brief Returns a view to a sub-string of this string, starting at character uiFirstCharacter, up until uiFirstCharacter +
+  /// Returns a view to a sub-string of this string, starting at character uiFirstCharacter, up until uiFirstCharacter +
   /// uiNumCharacters.
   ///
   /// Note that this view will only be valid as long as this xiiHybridString lives.
   /// Once the original string is destroyed, all views to them will point into invalid memory.
   xiiStringView GetSubString(xiiUInt32 uiFirstCharacter, xiiUInt32 uiNumCharacters) const; // [tested]
 
-  /// \brief Returns a view to the sub-string containing the first uiNumCharacters characters of this string.
+  /// Returns a view to the sub-string containing the first uiNumCharacters characters of this string.
   ///
   /// Note that this view will only be valid as long as this xiiHybridString lives.
   /// Once the original string is destroyed, all views to them will point into invalid memory.
   xiiStringView GetFirst(xiiUInt32 uiNumCharacters) const; // [tested]
 
-  /// \brief Returns a view to the sub-string containing the last uiNumCharacters characters of this string.
+  /// Returns a view to the sub-string containing the last uiNumCharacters characters of this string.
   ///
   /// Note that this view will only be valid as long as this xiiHybridString lives.
   /// Once the original string is destroyed, all views to them will point into invalid memory.
   xiiStringView GetLast(xiiUInt32 uiNumCharacters) const; // [tested]
 
-  /// \brief Replaces the current string with the content from the stream. Reads the stream to its end.
+  /// Replaces the current string with the content from the stream. Reads the stream to its end.
   void ReadAll(xiiStreamReader& ref_stream);
 
-  /// \brief Returns the amount of bytes that are currently allocated on the heap.
+  /// Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const { return m_Data.GetHeapMemoryUsage(); }
 
 private:
@@ -142,7 +142,7 @@ private:
 };
 
 
-/// \brief \see xiiHybridStringBase
+/// \see xiiHybridStringBase
 template <xiiUInt16 Size, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 struct xiiHybridString : public xiiHybridStringBase<Size>
 {
@@ -178,7 +178,7 @@ public:
 #endif
 };
 
-/// \brief String that uses the static allocator to prevent leak reports in RTTI attributes.
+/// String that uses the static allocator to prevent leak reports in RTTI attributes.
 using xiiUntrackedString = xiiHybridString<32U, xiiStaticAllocatorWrapper>;
 
 using xiiDynamicString = xiiHybridString<1U>;
@@ -222,10 +222,10 @@ struct xiiCompareString_NoCase
 
 struct CompareConstChar
 {
-  /// \brief Returns true if a is less than b
+  /// Returns true if a is less than b
   static XII_ALWAYS_INLINE bool Less(const char* a, const char* b) { return xiiStringUtils::Compare(a, b) < 0; }
 
-  /// \brief Returns true if a is equal to b
+  /// Returns true if a is equal to b
   static XII_ALWAYS_INLINE bool Equal(const char* a, const char* b) { return xiiStringUtils::IsEqual(a, b); }
 };
 

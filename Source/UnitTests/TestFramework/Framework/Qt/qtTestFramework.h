@@ -8,7 +8,7 @@
 #  include <TestFramework/Framework/TestFramework.h>
 #  include <TestFramework/TestFrameworkDLL.h>
 
-/// \brief Derived xiiTestFramework which signals the GUI to update whenever a new tests result comes in.
+/// Derived xiiTestFramework which signals the GUI to update whenever a new tests result comes in.
 class XII_TEST_DLL xiiQtTestFramework : public QObject, public xiiTestFramework
 {
   Q_OBJECT

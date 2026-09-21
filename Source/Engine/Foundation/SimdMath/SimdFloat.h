@@ -10,31 +10,31 @@ class XII_FOUNDATION_DLL xiiSimdFloat
 public:
   XII_DECLARE_POD_TYPE();
 
-  /// \brief Default constructor, leaves the data uninitialized.
+  /// Default constructor, leaves the data uninitialized.
   xiiSimdFloat(); // [tested]
 
-  /// \brief Constructs from a given float.
+  /// Constructs from a given float.
   xiiSimdFloat(float f); // [tested]
 
-  /// \brief Constructs from a given integer.
+  /// Constructs from a given integer.
   xiiSimdFloat(xiiInt32 i); // [tested]
 
-  /// \brief Constructs from a given integer.
+  /// Constructs from a given integer.
   xiiSimdFloat(xiiUInt32 i); // [tested]
 
-  /// \brief Constructs from given angle.
+  /// Constructs from given angle.
   xiiSimdFloat(xiiAngle a); // [tested]
 
-  /// \brief Constructs from the internal implementation type.
+  /// Constructs from the internal implementation type.
   xiiSimdFloat(xiiInternal::QuadFloat v); // [tested]
 
-  /// \brief Returns the stored number as a standard float.
+  /// Returns the stored number as a standard float.
   operator float() const; // [tested]
 
-  /// \brief Creates a xiiSimdFloat that is initialized to zero.
+  /// Creates a xiiSimdFloat that is initialized to zero.
   [[nodiscard]] static xiiSimdFloat MakeZero(); // [tested]
 
-  /// \brief Creates a xiiSimdFloat that is initialized to Not-A-Number (NaN).
+  /// Creates a xiiSimdFloat that is initialized to Not-A-Number (NaN).
   [[nodiscard]] static xiiSimdFloat MakeNaN(); // [tested]
 
 public:

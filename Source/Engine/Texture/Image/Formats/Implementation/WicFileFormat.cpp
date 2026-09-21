@@ -22,7 +22,7 @@ XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiWicFileFormat> g_Wi
 
 namespace
 {
-  /// \brief Try to init COM, return true if we are the first(!) to successfully do so
+  /// Try to init COM, return true if we are the first(!) to successfully do so
   bool InitializeCOM()
   {
     HRESULT hResult = CoInitializeEx(NULL, COINIT_MULTITHREADED);

@@ -22,7 +22,7 @@ struct XII_CORE_DLL xiiTriggerState
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiTriggerState);
 
-/// \brief For internal use by components to trigger some known behavior. Usually components will post this message to themselves with a
+/// For internal use by components to trigger some known behavior. Usually components will post this message to themselves with a
 /// delay, e.g. to trigger self destruction.
 struct XII_CORE_DLL xiiMsgComponentInternalTrigger : public xiiMessage
 {
@@ -34,7 +34,7 @@ struct XII_CORE_DLL xiiMsgComponentInternalTrigger : public xiiMessage
   xiiInt32 m_iPayload = 0;
 };
 
-/// \brief Sent when something enters or leaves a trigger
+/// Sent when something enters or leaves a trigger
 struct XII_CORE_DLL xiiMsgTriggerTriggered : public xiiEventMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgTriggerTriggered, xiiEventMessage);

@@ -6,31 +6,31 @@
 
 #include <GraphicsFoundation/Resources/Texture.h>
 
-/// \brief Interface that defines methods to manipulate a swap chain object.
+/// Interface that defines methods to manipulate a swap chain object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALSwapChain, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSwapChainCreationDescription& GetDescription() const { return m_Description; };
 
-  /// \brief This retrieves the current back buffer texture.
+  /// This retrieves the current back buffer texture.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const { return m_pBackBufferTexture; };
 
-  /// \brief This retrieves the current swap chain size.
+  /// This retrieves the current swap chain size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_CurrentSize; };
 
-  /// \brief This sets the present mode.
+  /// This sets the present mode.
   XII_ALWAYS_INLINE void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode) { m_PresentMode = presentMode; };
 
-  /// \brief This retrieves the current present mode.
+  /// This retrieves the current present mode.
   [[nodiscard]] XII_ALWAYS_INLINE xiiEnum<xiiGALPresentMode> GetPresentMode() const { return m_PresentMode; };
 
-  /// \brief This presents a rendered image to the screen. Additionally, acquires the next render target for presenting on where supported.
+  /// This presents a rendered image to the screen. Additionally, acquires the next render target for presenting on where supported.
   virtual void Present() = 0;
 
-  /// \brief This changes the swap chain size.
+  /// This changes the swap chain size.
   ///
   /// \param newSize      - The new logical swap chain width and height (not accounting for the pre-transform), in pixels.
   /// \param newTransform - The new surface transform.

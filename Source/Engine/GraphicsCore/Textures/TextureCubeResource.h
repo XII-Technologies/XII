@@ -16,7 +16,7 @@
 
 using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCubeResource>;
 
-/// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTextureCubeResource> to create textures from data in memory.
+/// Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTextureCubeResource> to create textures from data in memory.
 struct XII_GRAPHICSCORE_DLL xiiTextureCubeResourceDescriptor
 {
   xiiGALTextureCreationDescription          m_TextureDescription         = xiiGALTextureUtilities::GetDefaultTexture2DDescription(); ///< Texture creation description.

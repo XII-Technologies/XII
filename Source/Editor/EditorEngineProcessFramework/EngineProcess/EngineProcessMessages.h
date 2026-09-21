@@ -18,7 +18,7 @@
 
 ///////////////////////////////////// xiiEditorEngineMsg /////////////////////////////////////
 
-/// \brief Base class for all messages between editor and engine that are not bound to any document
+/// Base class for all messages between editor and engine that are not bound to any document
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEditorEngineMsg : public xiiProcessMessage
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEditorEngineMsg, xiiProcessMessage);
@@ -49,7 +49,7 @@ public:
   float                          m_fDevicePixelRatio = 1.0f;
 };
 
-/// \brief Sent to remote processes to shut them down.
+/// Sent to remote processes to shut them down.
 /// Local processes are simply killed through QProcess::close, but remote processes have to close themselves.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiShutdownProcessMsgToEngine : public xiiEditorEngineMsg
 {
@@ -148,7 +148,7 @@ public:
 
 ///////////////////////////////////// xiiEditorEngineDocumentMsg /////////////////////////////////////
 
-/// \brief Base class for all messages that are tied to some document.
+/// Base class for all messages that are tied to some document.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEditorEngineDocumentMsg : public xiiProcessMessage
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEditorEngineDocumentMsg, xiiProcessMessage);
@@ -204,7 +204,7 @@ public:
   xiiUInt32 m_uiViewID;
 };
 
-/// \brief For very simple uses cases where a custom message would be too much
+/// For very simple uses cases where a custom message would be too much
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiDocumentConfigMsgToEngine : public xiiEditorEngineDocumentMsg
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDocumentConfigMsgToEngine, xiiEditorEngineDocumentMsg);
@@ -228,7 +228,7 @@ public:
   xiiVariant m_DocumentMetaData;
 };
 
-/// \brief Used to reset the engine side to an empty document before sending the full document state over
+/// Used to reset the engine side to an empty document before sending the full document state over
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiDocumentClearMsgToEngine : public xiiEditorEngineDocumentMsg
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDocumentClearMsgToEngine, xiiEditorEngineDocumentMsg);
@@ -574,7 +574,7 @@ public:
   xiiInt32  m_iPurpose; /// passed through from xiiQuerySelectionBBoxMsgToEngine
 };
 
-/// \brief Send between editor documents, such that one document can know about objects in another document.
+/// Send between editor documents, such that one document can know about objects in another document.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiGatherObjectsOfTypeMsgInterDoc : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGatherObjectsOfTypeMsgInterDoc, xiiReflectedClass);

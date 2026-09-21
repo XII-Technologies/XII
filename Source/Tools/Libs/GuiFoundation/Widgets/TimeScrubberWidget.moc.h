@@ -21,16 +21,16 @@ public:
   explicit xiiQtTimeScrubberWidget(QWidget* pParent);
   ~xiiQtTimeScrubberWidget();
 
-  /// \brief Sets the duration in 'ticks'. There are 4800 ticks per second.
+  /// Sets the duration in 'ticks'. There are 4800 ticks per second.
   void SetDuration(xiiUInt64 uiNumTicks);
 
-  /// \brief Sets the duration.
+  /// Sets the duration.
   void SetDuration(xiiTime time);
 
-  /// \brief Sets the current position in 'ticks'. There are 4800 ticks per second.
+  /// Sets the current position in 'ticks'. There are 4800 ticks per second.
   void SetScrubberPosition(xiiUInt64 uiTick);
 
-  /// \brief Sets the current position.
+  /// Sets the current position.
   void SetScrubberPosition(xiiTime time);
 
 Q_SIGNALS:
@@ -57,10 +57,10 @@ class XII_GUIFOUNDATION_DLL xiiQtTimeScrubberToolbar : public QToolBar
 public:
   explicit xiiQtTimeScrubberToolbar(QWidget* pParent);
 
-  /// \brief Sets the duration in 'ticks'. There are 4800 ticks per second.
+  /// Sets the duration in 'ticks'. There are 4800 ticks per second.
   void SetDuration(xiiUInt64 uiNumTicks);
 
-  /// \brief Sets the current position in 'ticks'. There are 4800 ticks per second.
+  /// Sets the current position in 'ticks'. There are 4800 ticks per second.
   void SetScrubberPosition(xiiUInt64 uiTick);
 
   void SetButtonState(bool bPlaying, bool bRepeatEnabled);

@@ -5,7 +5,7 @@
 #include <EditorFramework/Preferences/Preferences.h>
 #include <Foundation/Strings/String.h>
 
-/// \brief Stores project specific preferences for the current user
+/// Stores project specific preferences for the current user
 class XII_EDITORFRAMEWORK_DLL xiiProjectPreferencesUser : public xiiPreferences
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiProjectPreferencesUser, xiiPreferences);

@@ -6,7 +6,7 @@
 #include <Foundation/IO/FileSystem/Implementation/FileReaderWriterBase.h>
 #include <Foundation/IO/Stream.h>
 
-/// \brief The default class to use to write data to a file, implements the xiiStreamWriter interface.
+/// The default class to use to write data to a file, implements the xiiStreamWriter interface.
 ///
 /// This file writer buffers writes up to a certain amount of bytes (configurable).
 /// It closes the file automatically once it goes out of scope.
@@ -15,27 +15,27 @@ class XII_FOUNDATION_DLL xiiFileWriter : public xiiFileWriterBase
   XII_DISALLOW_COPY_AND_ASSIGN(xiiFileWriter);
 
 public:
-  /// \brief Constructor, does nothing.
+  /// Constructor, does nothing.
   xiiFileWriter() = default;
 
-  /// \brief Destructor, closes the file, if it is still open (RAII).
+  /// Destructor, closes the file, if it is still open (RAII).
   ~xiiFileWriter() { Close(); }
 
-  /// \brief Opens the given file for writing. Returns XII_SUCCESS if the file could be opened. A cache is created to speed up small writes.
+  /// Opens the given file for writing. Returns XII_SUCCESS if the file could be opened. A cache is created to speed up small writes.
   ///
   /// You should typically not disable bAllowFileEvents, unless you need to prevent recursive file events,
   /// which is only the case, if you are doing file accesses from within a File Event Handler.
   xiiResult Open(xiiStringView sFile, xiiUInt32 uiCacheSize = 1024 * 1024, xiiFileShareMode::Enum fileShareMode = xiiFileShareMode::Default, bool bAllowFileEvents = true);
 
-  /// \brief Closes the file, if it is open.
+  /// Closes the file, if it is open.
   void Close();
 
-  /// \brief Writes the given number of bytes to the file. Returns XII_SUCCESS if all bytes were successfully written.
+  /// Writes the given number of bytes to the file. Returns XII_SUCCESS if all bytes were successfully written.
   ///
   /// As this class buffers writes with an internal cache, XII_SUCCESS does NOT mean that the data is actually written to disk.
   virtual xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override;
 
-  /// \brief Will write anything that's currently in the write-cache to disk. Will decrease performance if used excessively.
+  /// Will write anything that's currently in the write-cache to disk. Will decrease performance if used excessively.
   ///
   /// \note Flush only guarantees that the data is sent through the OS file functions. It does not guarantee that the OS
   /// actually wrote the data on the disk, it might still use buffer itself and thus an application that crashes might

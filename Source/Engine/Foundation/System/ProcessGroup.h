@@ -5,7 +5,7 @@
 #if XII_ENABLED(XII_SUPPORTS_PROCESSES)
 #  include <Foundation/System/Process.h>
 
-/// \brief Process groups are used to tie multiple processes together and ensure they get terminated either on demand or when the
+/// Process groups are used to tie multiple processes together and ensure they get terminated either on demand or when the
 /// application crashes
 ///
 /// On Windows when a xiiProcessGroup instance is destroyed (either normally or due to a crash), all processes that have
@@ -18,27 +18,27 @@ class XII_FOUNDATION_DLL xiiProcessGroup
   XII_DISALLOW_COPY_AND_ASSIGN(xiiProcessGroup);
 
 public:
-  /// \brief Creates a process group. The name is only used for debugging purposes.
+  /// Creates a process group. The name is only used for debugging purposes.
   xiiProcessGroup(xiiStringView sGroupName = {});
   ~xiiProcessGroup();
 
-  /// \brief Launches a new process in the group.
+  /// Launches a new process in the group.
   xiiResult Launch(const xiiProcessOptions& opt);
 
-  /// \brief Waits for all the processes in the group to terminate.
+  /// Waits for all the processes in the group to terminate.
   ///
   /// Returns XII_SUCCESS only if all processes have shut down.
   /// In all other cases, e.g. if the optional timeout is reached,
   /// XII_FAILURE is returned.
   xiiResult WaitToFinish(xiiTime timeout = xiiTime::MakeZero());
 
-  /// \brief Tries to kill all processes associated with this group.
+  /// Tries to kill all processes associated with this group.
   ///
   /// Sends a kill command to all processes and then waits indefinitely for them to terminate.
   /// Note: iForcedExitCode is only supported on Windows.
   xiiResult TerminateAll(xiiInt32 iForcedExitCode = -2);
 
-  /// \brief Returns the container holding all processes of this group.
+  /// Returns the container holding all processes of this group.
   ///
   /// This can be used to query per-process information such as exit codes.
   const xiiHybridArray<xiiProcess, 8>& GetProcesses() const;

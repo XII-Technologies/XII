@@ -109,7 +109,7 @@ struct xiiToneMappingData;
 
 struct xiiFinalBlitData;
 
-/// \brief Encapsulates a view on the given world through the given camera
+/// Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
 /// The view owns its entire rendering pipeline: every pass's persistent GPU resources
@@ -122,7 +122,7 @@ class XII_GRAPHICSCORE_DLL xiiView : public xiiReflectedClass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiView);
 
 private:
-  /// \brief Use xiiRenderWorldModule::CreateView to create a view.
+  /// Use xiiRenderWorldModule::CreateView to create a view.
   xiiView(xiiWorld* pWorld);
   ~xiiView();
 
@@ -137,7 +137,7 @@ public:
   xiiGALTextureView* GetRenderTargetView() const;
   void               SetRenderTargetView(xiiGALTextureView* pRenderTargetView);
 
-  /// \brief Sets the swapchain that this view will be rendering into.
+  /// Sets the swapchain that this view will be rendering into.
   const xiiGALSwapChain* GetSwapChain() const;
   void                   SetSwapChain(const xiiGALSwapChain* pSwapChain);
 
@@ -160,44 +160,44 @@ public:
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
 
-  /// \brief Sets the per-view render scale factor (1.0 = native).
+  /// Sets the per-view render scale factor (1.0 = native).
   ///        This integrates with dynamic resolution as a baseline multiplier.
   void SetRenderScale(float fRenderScale);
 
-  /// \brief Returns the configured per-view render scale factor (1.0 = native).
+  /// Returns the configured per-view render scale factor (1.0 = native).
   float GetRenderScale() const;
 
-  /// \brief Returns the dynamic render scale applied to this view (1.0 = native viewport resolution).
+  /// Returns the dynamic render scale applied to this view (1.0 = native viewport resolution).
   float GetRenderResolutionScale() const;
 
-  /// \brief Returns the dynamic internal render resolution width for this view.
+  /// Returns the dynamic internal render resolution width for this view.
   xiiUInt32 GetRenderResolutionWidth() const;
 
-  /// \brief Returns the dynamic internal render resolution height for this view.
+  /// Returns the dynamic internal render resolution height for this view.
   xiiUInt32 GetRenderResolutionHeight() const;
 
   const xiiViewData& GetData() const;
 
   bool IsValid() const;
 
-  /// \brief Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
+  /// Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
   ///
   /// fNormalizedScreenPosX and fNormalizedScreenPosY are expected to be in [0; 1] range (normalized screen coordinates).
   /// If no ray can be computed, EZ_FAILURE is returned.
   xiiResult ComputePickingRay(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const;
 
-  /// \brief Calculates the normalized screen-space coordinate ([0; 1] range) that the given world-space point projects to.
+  /// Calculates the normalized screen-space coordinate ([0; 1] range) that the given world-space point projects to.
   ///
   /// Returns EZ_FAILURE, if the point could not be projected into screen-space.
   xiiResult ComputeScreenSpacePos(const xiiVec3& vWorldPos, xiiVec3& out_vScreenPosNormalized) const;
 
-  /// \brief Calculates the world-space position that the given normalized screen-space coordinate maps to
+  /// Calculates the world-space position that the given normalized screen-space coordinate maps to
   xiiResult ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos) const;
 
-  /// \brief Converts a screen-space position from pixel coordinates to normalized coordinates.
+  /// Converts a screen-space position from pixel coordinates to normalized coordinates.
   void ConvertScreenPixelPosToNormalizedPos(xiiVec3& inout_vPixelPos);
 
-  /// \brief Converts a screen-space position from normalized coordinates to pixel coordinates.
+  /// Converts a screen-space position from normalized coordinates to pixel coordinates.
   void ConvertScreenNormalizedPosToPixelPos(xiiVec3& inout_vNormalizedPos);
 
   const xiiMat4& GetProjectionMatrix(xiiCameraEye eye) const;
@@ -229,7 +229,7 @@ public:
   xiiRenderGraphResourceCache&       GetResourceCache() { return m_ResourceCache; }
   const xiiRenderGraphResourceCache& GetResourceCache() const { return m_ResourceCache; }
 
-  /// \brief Returns the per-view GPU timestamp profiler. Used by xiiRenderWorldModule to pass into graph execution.
+  /// Returns the per-view GPU timestamp profiler. Used by xiiRenderWorldModule to pass into graph execution.
   xiiRenderGraphTimestampProfiler& GetProfiler() { return m_ViewPassResources.m_Profiler; }
 
 private:
@@ -241,7 +241,7 @@ private:
   void UpdateCachedMatrices() const;
   void UpdateRenderResolutionState() const;
 
-  /// \brief Populates the render graph for default (non-custom) views.
+  /// Populates the render graph for default (non-custom) views.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
   void BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
@@ -456,7 +456,7 @@ private:
   void SetupFinalBlit(xiiFinalBlitData& data, xiiRGBuilder& builder);
   void ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& context);
 
-  /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
+  /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
   static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
 

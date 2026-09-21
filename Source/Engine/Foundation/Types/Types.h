@@ -48,7 +48,7 @@ static_assert(sizeof(long long int) == 8);
 static_assert(sizeof(void*) == XII_ALIGNMENT_MINIMUM);
 static_assert(alignof(void*) == XII_ALIGNMENT_MINIMUM);
 
-/// \brief Enum values representing success or failure states.
+/// Enum values representing success or failure states.
 ///
 /// Typically used to return execution status from functions, as an alternative to using plain booleans.
 enum xiiResultEnum : xiiUInt8
@@ -57,7 +57,7 @@ enum xiiResultEnum : xiiUInt8
   XII_SUCCESS       ///< Indicates that the operation succeeded.
 };
 
-/// \brief Encapsulates a result state (success or failure), with [[nodiscard]] enforcement.
+/// Encapsulates a result state (success or failure), with [[nodiscard]] enforcement.
 ///
 /// Provides clearer semantics than using raw booleans and encourages consistent status checking in functions and APIs.
 /// Also includes convenience utilities for asserting or ignoring result values.
@@ -67,7 +67,7 @@ public:
   /// \name Constructors and Assignments
   /// @{
 
-  /// \brief Constructs a result from an enum value.
+  /// Constructs a result from an enum value.
   ///
   /// Example:
   /// \code
@@ -78,10 +78,10 @@ public:
   {
   }
 
-  /// \brief Assigns a new result state.
+  /// Assigns a new result state.
   XII_ALWAYS_INLINE void operator=(xiiResultEnum rhs) { m_E = rhs; }
 
-  /// \brief Compares the result to another enum value.
+  /// Compares the result to another enum value.
   XII_ALWAYS_INLINE bool operator==(xiiResultEnum cmp) const { return m_E == cmp; }
 
   /// @}
@@ -89,10 +89,10 @@ public:
   /// \name Status Queries
   /// @{
 
-  /// \brief Returns true if the result indicates success.
+  /// Returns true if the result indicates success.
   [[nodiscard]] XII_ALWAYS_INLINE bool Succeeded() const { return m_E == XII_SUCCESS; }
 
-  /// \brief Returns true if the result indicates failure.
+  /// Returns true if the result indicates failure.
   [[nodiscard]] XII_ALWAYS_INLINE bool Failed() const { return m_E == XII_FAILURE; }
 
   /// @}
@@ -100,12 +100,12 @@ public:
   /// \name Control and Assertions
   /// @{
 
-  /// \brief Suppresses compiler warnings when intentionally ignoring the result.
+  /// Suppresses compiler warnings when intentionally ignoring the result.
   ///
   /// To be used when result checking isn't necessary, e.g., in best-effort cleanup code.
   XII_ALWAYS_INLINE void IgnoreResult() {}
 
-  /// \brief Asserts that the result indicates success.
+  /// Asserts that the result indicates success.
   ///
   /// If the result is failure, the program terminates.
   /// \param szMsg Optional short message for assertion failure.
@@ -119,7 +119,7 @@ private:
   xiiResultEnum m_E;
 };
 
-/// \brief Explicit conversion to xiiResult, can be overloaded for arbitrary types.
+/// Explicit conversion to xiiResult, can be overloaded for arbitrary types.
 ///
 /// This is intentionally not done via casting operator overload (or even additional constructors) since this usually comes with a
 /// considerable data loss.
@@ -128,7 +128,7 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiResult result)
   return result;
 }
 
-/// \brief Helper macro to call functions that return xiiStatus or xiiResult in a function that returns xiiStatus (or xiiResult) as well.
+/// Helper macro to call functions that return xiiStatus or xiiResult in a function that returns xiiStatus (or xiiResult) as well.
 /// If the called function fails, its return value is returned from the calling scope.
 #define XII_SUCCEED_OR_RETURN(code) \
   do                                \
@@ -138,7 +138,7 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiResult result)
       return s;                     \
   } while (false)
 
-/// \brief Like XII_SUCCEED_OR_RETURN, but with error logging.
+/// Like XII_SUCCEED_OR_RETURN, but with error logging.
 #define XII_SUCCEED_OR_RETURN_LOG(code)                                        \
   do                                                                           \
   {                                                                            \
@@ -150,7 +150,7 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiResult result)
     }                                                                          \
   } while (false)
 
-/// \brief Like XII_SUCCEED_OR_RETURN, but with custom error logging.
+/// Like XII_SUCCEED_OR_RETURN, but with custom error logging.
 #define XII_SUCCEED_OR_RETURN_CUSTOM_LOG(code, log)                              \
   do                                                                             \
   {                                                                              \
@@ -166,24 +166,24 @@ XII_ALWAYS_INLINE xiiResult xiiToResult(xiiResult result)
 
 class xiiRTTI;
 
-/// \brief Dummy type to pass to templates and macros that expect a base type for a class that has no base.
+/// Dummy type to pass to templates and macros that expect a base type for a class that has no base.
 class xiiNoBase
 {
 public:
   static const xiiRTTI* GetStaticRTTI() { return nullptr; }
 };
 
-/// \brief Dummy type to pass to templates and macros that expect a base type for an enum class.
+/// Dummy type to pass to templates and macros that expect a base type for an enum class.
 class xiiEnumBase
 {
 };
 
-/// \brief Dummy type to pass to templates and macros that expect a base type for an bitflags class.
+/// Dummy type to pass to templates and macros that expect a base type for an bitflags class.
 class xiiBitflagsBase
 {
 };
 
-/// \brief Helper struct to get a storage type from a size in byte.
+/// Helper struct to get a storage type from a size in byte.
 template <size_t SizeInByte>
 struct xiiSizeToType;
 /// \cond

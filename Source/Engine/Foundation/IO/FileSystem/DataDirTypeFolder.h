@@ -13,7 +13,7 @@ namespace xiiDataDirectory
   class FolderReader;
   class FolderWriter;
 
-  /// \brief A data directory type to handle access to ordinary files.
+  /// A data directory type to handle access to ordinary files.
   ///
   /// Register the 'Factory' function at xiiFileSystem to allow it to mount local directories.
   class XII_FOUNDATION_DLL FolderType : public xiiDataDirectoryType
@@ -21,7 +21,7 @@ namespace xiiDataDirectory
   public:
     ~FolderType();
 
-    /// \brief The factory that can be registered at xiiFileSystem to create data directories of this type.
+    /// The factory that can be registered at xiiFileSystem to create data directories of this type.
     static xiiDataDirectoryType* Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiDataDirUsage usage);
 
     /// A 'redirection file' is an optional file located inside a data directory that lists which file access is redirected to which other
@@ -36,7 +36,7 @@ namespace xiiDataDirectory
     /// access.
     static xiiString s_sRedirectionPrefix;
 
-    /// \brief When s_sRedirectionFile and s_sRedirectionPrefix are used to enable file redirection, this will reload those config files.
+    /// When s_sRedirectionFile and s_sRedirectionPrefix are used to enable file redirection, this will reload those config files.
     virtual void ReloadExternalConfigs() override;
 
     virtual const xiiString128& GetRedirectedDataDirectoryPath() const override { return m_sRedirectedDataDirPath; }
@@ -55,10 +55,10 @@ namespace xiiDataDirectory
     virtual FolderReader*           CreateFolderReader() const;
     virtual FolderWriter*           CreateFolderWriter() const;
 
-    /// \brief Called by 'xiiDataDirectoryType_Folder::Factory'
+    /// Called by 'xiiDataDirectoryType_Folder::Factory'
     virtual xiiResult InternalInitializeDataDirectory(xiiStringView sDirectory) override;
 
-    /// \brief Marks the given reader/writer as reusable.
+    /// Marks the given reader/writer as reusable.
     virtual void OnReaderWriterClose(xiiDataDirectoryReaderWriterBase* pClosed) override;
 
     void LoadRedirectionFile();
@@ -73,7 +73,7 @@ namespace xiiDataDirectory
   };
 
 
-  /// \brief Handles reading from ordinary files.
+  /// Handles reading from ordinary files.
   class XII_FOUNDATION_DLL FolderReader : public xiiDataDirectoryReader
   {
     XII_DISALLOW_COPY_AND_ASSIGN(FolderReader);
@@ -99,7 +99,7 @@ namespace xiiDataDirectory
     xiiOSFile m_File;
   };
 
-  /// \brief Handles writing to ordinary files.
+  /// Handles writing to ordinary files.
   class XII_FOUNDATION_DLL FolderWriter : public xiiDataDirectoryWriter
   {
     XII_DISALLOW_COPY_AND_ASSIGN(FolderWriter);

@@ -11,7 +11,7 @@
 
 class xiiQtAssetPropertyWidget;
 
-/// \brief A QLineEdit that is used by xiiQtAssetPropertyWidget
+/// A QLineEdit that is used by xiiQtAssetPropertyWidget
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetLineEdit : public QLineEdit
 {
   Q_OBJECT

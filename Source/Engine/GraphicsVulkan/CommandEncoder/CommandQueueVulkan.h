@@ -16,10 +16,10 @@ class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALComma
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueueVulkan, xiiGALCommandQueue);
 
 public:
-  /// \brief This returns the value of the internal fence that will be signaled the next time.
+  /// This returns the value of the internal fence that will be signaled the next time.
   XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue; }
 
-  /// \brief This returns the last completed value of the internal fence.
+  /// This returns the last completed value of the internal fence.
   virtual xiiUInt64 GetCompletedFenceValue() override final;
 
   XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
@@ -28,7 +28,7 @@ public:
 
   virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList) override final;
 
-  /// \brief This blocks execution until all pending GPU commands are complete.
+  /// This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
 protected:

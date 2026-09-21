@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Resources/Resource.h>
 
-/// \brief This describes the unordered access view flags.
+/// This describes the unordered access view flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALUnorderedAccessViewFlags
 {
   using StorageType = xiiUInt8;
@@ -33,7 +33,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALUnorderedAccessViewFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALUnorderedAccessViewFlags);
 
-/// \brief This describes the texture view flags.
+/// This describes the texture view flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewFlags
 {
   using StorageType = xiiUInt8;
@@ -56,7 +56,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALTextureViewFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureViewFlags);
 
-/// \brief This describes the texture component swizzle.
+/// This describes the texture component swizzle.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureComponentSwizzle
 {
   using StorageType = xiiUInt8;
@@ -79,7 +79,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureComponentSwizzle
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureComponentSwizzle);
 
-/// \brief This describes the per-channel texture component mapping.
+/// This describes the per-channel texture component mapping.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureComponentMapping : public xiiHashableStruct<xiiGALTextureComponentMapping>
 {
   XII_DECLARE_POD_TYPE();
@@ -90,7 +90,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureComponentMapping : public xiiHash
   xiiEnum<xiiGALTextureComponentSwizzle> m_A = xiiGALTextureComponentSwizzle::Identity; ///< Defines the component placed in the alpha component of the output vector.
 };
 
-/// \brief This describes the texture view creation description.
+/// This describes the texture view creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewCreationDescription : public xiiHashableStruct<xiiGALTextureViewCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -107,7 +107,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewCreationDescription : public 
   xiiGALTextureComponentMapping               m_ComponentSwizzle;                                                        ///< Texture component swizzle.
 };
 
-/// \brief Interface that defines methods to manipulate a texture view object.
+/// Interface that defines methods to manipulate a texture view object.
 ///
 /// \note The texture view holds strong references to the texture. The texture will not be destroyed until all views are released.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureView : public xiiGALResourceView
@@ -115,10 +115,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureView : public xiiGALResourceView
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureView, xiiGALResourceView);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureViewCreationDescription& GetDescription() const { return m_Description; }
 
-  /// \brief Returns the texture of which the texture view is created with.
+  /// Returns the texture of which the texture view is created with.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetTexture() const { return m_pTexture; }
 
 protected:

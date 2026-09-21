@@ -4,7 +4,7 @@
 
 #include <Foundation/SimdMath/SimdVec4i.h>
 
-/// \brief A SIMD 4-component vector class of unsigned 32b integers
+/// A SIMD 4-component vector class of unsigned 32b integers
 class XII_FOUNDATION_DLL xiiSimdVec4u
 {
 public:
@@ -18,7 +18,7 @@ public:
 
   xiiSimdVec4u(xiiInternal::QuadUInt v); // [tested]
 
-  /// \brief Creates a xiiSimdVec4u that is initialized to zero.
+  /// Creates a xiiSimdVec4u that is initialized to zero.
   [[nodiscard]] static xiiSimdVec4u MakeZero(); // [tested]
 
   void Set(xiiUInt32 uiXyzw); // [tested]

@@ -7,7 +7,7 @@
 #include <Core/Messages/UpdateLocalBoundsMessage.h>
 #include <Core/World/World.h>
 
-/// \brief Base class for objects that should be rendered.
+/// Base class for objects that should be rendered.
 class XII_GRAPHICSCORE_DLL xiiRenderComponent : public xiiComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiRenderComponent, xiiComponent);
@@ -27,19 +27,19 @@ public:
   xiiRenderComponent();
   ~xiiRenderComponent();
 
-  /// \brief Called by xiiRenderComponent::OnUpdateLocalBounds().
+  /// Called by xiiRenderComponent::OnUpdateLocalBounds().
   ///
   /// If XII_SUCCESS is returned, out_bounds and out_bAlwaysVisible will be integrated into the xiiMsgUpdateLocalBounds ref_msg,
   /// otherwise the out values are simply ignored.
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& out_bounds, bool& out_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) = 0;
 
-  /// \brief Call this when some value was modified that affects the size of the local bounding box and it should be recomputed.
+  /// Call this when some value was modified that affects the size of the local bounding box and it should be recomputed.
   void TriggerLocalBoundsUpdate();
 
-  /// \brief Computes a unique ID for the given component, that is usually given to the renderer to distinguish objects.
+  /// Computes a unique ID for the given component, that is usually given to the renderer to distinguish objects.
   static xiiUInt32 GetUniqueIdForRendering(const xiiComponent& component, xiiUInt32 uiInnerIndex = 0, xiiUInt32 uiInnerIndexShift = 24);
 
-  /// \brief Computes a unique ID for the given component, that is usually given to the renderer to distinguish objects.
+  /// Computes a unique ID for the given component, that is usually given to the renderer to distinguish objects.
   XII_ALWAYS_INLINE xiiUInt32 GetUniqueIdForRendering(xiiUInt32 uiInnerIndex = 0, xiiUInt32 uiInnerIndexShift = 24) const { return GetUniqueIdForRendering(*this, uiInnerIndex, uiInnerIndexShift); }
 
 protected:

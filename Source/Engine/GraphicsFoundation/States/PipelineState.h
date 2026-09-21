@@ -11,7 +11,7 @@
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-/// \brief This describes the shader variable property flags.
+/// This describes the shader variable property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableFlags
 {
   using StorageType = xiiUInt8;
@@ -40,7 +40,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALShaderVariableFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderVariableFlags);
 
-/// \brief This describes the pipeline state shading rate flags.
+/// This describes the pipeline state shading rate flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineShadingRateFlags
 {
   using StorageType = xiiUInt8;
@@ -65,7 +65,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALPipelineShadingRateFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineShadingRateFlags);
 
-/// \brief This describes the shader variable property flags.
+/// This describes the shader variable property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineType
 {
   using StorageType = xiiUInt8;
@@ -88,7 +88,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineType);
 
-/// \brief This describes the sample information.
+/// This describes the sample information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleDescription : public xiiHashableStruct<xiiGALSampleDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -97,7 +97,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleDescription : public xiiHashableSt
   xiiUInt8 m_uiQuality = 0U; ///< The sample quality.
 };
 
-/// \brief This describes the shader variable information.
+/// This describes the shader variable information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : public xiiHashableStruct<xiiGALShaderResourceVariableDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -107,7 +107,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : publ
   xiiBitflags<xiiGALShaderVariableFlags> m_Flags        = xiiGALShaderVariableFlags::None; ///< The shader variable flags.
 };
 
-/// \brief This describes graphics pipeline information.
+/// This describes graphics pipeline information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription
 {
   XII_ALWAYS_INLINE bool operator==(const xiiGALGraphicsPipelineDescription& rhs) const = default;
@@ -125,7 +125,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription
   xiiGALSampleDescription                     m_SampleDescription;                                         ///< Multi-sampling parameters.
 };
 
-/// \brief This describes the ray tracing general shader group information.
+/// This describes the ray tracing general shader group information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingGeneralShaderGroupDescription
 {
   XII_ALWAYS_INLINE bool operator==(const xiiGALRayTracingGeneralShaderGroupDescription& rhs) const = default;
@@ -134,7 +134,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingGeneralShaderGroupDescription
   xiiSharedPtr<xiiGALShader> m_pShader; ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayGeneration, xiiGALShaderType::RayMiss, or xiiGALShaderType::Callable. This must not be invalid.
 };
 
-/// \brief This describes the ray tracing general shader group information.
+/// This describes the ray tracing general shader group information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingTriangleHitShaderGroupDescription
 {
   XII_ALWAYS_INLINE bool operator==(const xiiGALRayTracingTriangleHitShaderGroupDescription& rhs) const = default;
@@ -144,7 +144,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingTriangleHitShaderGroupDescript
   xiiSharedPtr<xiiGALShader> m_pAnyHitShader;     ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
 };
 
-/// \brief This describes the ray tracing general shader group information.
+/// This describes the ray tracing general shader group information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescription
 {
   XII_ALWAYS_INLINE bool operator==(const xiiGALRayTracingProceduralHitShaderGroupDescription& rhs) const = default;
@@ -155,7 +155,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescri
   xiiSharedPtr<xiiGALShader> m_pAnyHitShader;       ///< The reference-counted pointer to the shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
 };
 
-/// \brief This describes the ray tracing pipeline information.
+/// This describes the ray tracing pipeline information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public xiiHashableStruct<xiiGALRayTracingPipelineDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -164,7 +164,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public x
   xiiUInt8  m_uiMaxRecursionDepth = 0U; ///< Number of recursive calls of TraceRay() in HLSL. Zero means no tracing of rays at all, only ray-gen shader will be executed. See Device MaxRayTracingRecursionDepth.
 };
 
-/// \brief This describes the tile pipeline information.
+/// This describes the tile pipeline information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription
 {
   XII_ALWAYS_INLINE bool operator==(const xiiGALTilePipelineDescription& rhs) const = default;
@@ -173,7 +173,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription
   xiiHybridArray<xiiEnum<xiiGALResourceFormat>, 2U> m_RenderTargetFormats;                        ///< The render target formats.
 };
 
-/// \brief This describes the pipeline state creation description.
+/// This describes the pipeline state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription
 {
   xiiEnum<xiiGALPipelineType>                   m_PipelineType;               ///< The pipeline type. The default is xiiGALPipelineType::Graphics.
@@ -181,20 +181,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription
 
   XII_ALWAYS_INLINE bool operator==(const xiiGALPipelineStateCreationDescription& rhs) const = default;
 
-  /// \brief Returns true if this pipeline state is a graphics pipeline.
+  /// Returns true if this pipeline state is a graphics pipeline.
   XII_ALWAYS_INLINE constexpr bool IsAnyGraphicsPipeline() const { return m_PipelineType == xiiGALPipelineType::Graphics || m_PipelineType == xiiGALPipelineType::Mesh; }
 
-  /// \brief Returns true if this pipeline state is a compute pipeline.
+  /// Returns true if this pipeline state is a compute pipeline.
   XII_ALWAYS_INLINE constexpr bool IsComputePipeline() const { return m_PipelineType == xiiGALPipelineType::Compute; }
 
-  /// \brief Returns true if this pipeline state is a ray tracing pipeline.
+  /// Returns true if this pipeline state is a ray tracing pipeline.
   XII_ALWAYS_INLINE constexpr bool IsRayTracingPipeline() const { return m_PipelineType == xiiGALPipelineType::RayTracing; }
 
-  /// \brief Returns true if this pipeline state is a tile pipeline.
+  /// Returns true if this pipeline state is a tile pipeline.
   XII_ALWAYS_INLINE constexpr bool IsTilePipeline() const { return m_PipelineType == xiiGALPipelineType::Tile; }
 };
 
-/// \brief This describes the graphics pipeline state creation description.
+/// This describes the graphics pipeline state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineStateCreationDescription : public xiiGALPipelineStateCreationDescription
 {
   xiiGALGraphicsPipelineStateCreationDescription() noexcept
@@ -214,7 +214,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineStateCreationDescription
   xiiSharedPtr<xiiGALShader>        m_pMeshShader;          ///< The reference-counted pointer to the mesh shader to be used with the pipeline.
 };
 
-/// \brief This describes the compute pipeline state creation description.
+/// This describes the compute pipeline state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputePipelineStateCreationDescription : public xiiGALPipelineStateCreationDescription
 {
   xiiGALComputePipelineStateCreationDescription() noexcept
@@ -227,7 +227,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputePipelineStateCreationDescription 
   xiiSharedPtr<xiiGALShader> m_pComputeShader; ///< The reference-counted pointer to the compute shader to be used with the pipeline.
 };
 
-/// \brief This describes the mesh pipeline state creation description.
+/// This describes the mesh pipeline state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineStateCreationDescription : public xiiGALPipelineStateCreationDescription
 {
   xiiGALRayTracingPipelineStateCreationDescription() noexcept
@@ -246,7 +246,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineStateCreationDescripti
   xiiUInt32                                                            m_uiMaximumPayloadSize   = 0U; ///< In Direct3D12, the maximum payload size in bytes. If zero then maximum allowed size will be used.
 };
 
-/// \brief This describes the mesh pipeline state creation description.
+/// This describes the mesh pipeline state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineStateCreationDescription : public xiiGALPipelineStateCreationDescription
 {
   xiiGALTilePipelineStateCreationDescription() noexcept
@@ -260,13 +260,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineStateCreationDescription : p
   xiiSharedPtr<xiiGALShader>    m_pTileShader;  ///< The reference-counted pointer to the tile shader to be used with the pipeline.
 };
 
-/// \brief Interface that defines methods to manipulate a pipeline state object.
+/// Interface that defines methods to manipulate a pipeline state object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineState : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineState, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALPipelineStateCreationDescription& GetDescription() const { return m_Description; };
 
 protected:
@@ -281,13 +281,13 @@ protected:
   xiiGALPipelineStateCreationDescription m_Description;
 };
 
-/// \brief Interface that defines methods to manipulate a graphics pipeline state object.
+/// Interface that defines methods to manipulate a graphics pipeline state object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineState : public xiiGALPipelineState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALGraphicsPipelineState, xiiGALPipelineState);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALGraphicsPipelineStateCreationDescription& GetDescription() const { return m_Description; };
 
 protected:
@@ -304,13 +304,13 @@ protected:
   xiiGALGraphicsPipelineStateCreationDescription m_Description;
 };
 
-/// \brief Interface that defines methods to manipulate a compute pipeline state object.
+/// Interface that defines methods to manipulate a compute pipeline state object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALComputePipelineState : public xiiGALPipelineState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALComputePipelineState, xiiGALPipelineState);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALComputePipelineStateCreationDescription& GetDescription() const { return m_Description; };
 
 protected:
@@ -327,13 +327,13 @@ protected:
   xiiGALComputePipelineStateCreationDescription m_Description;
 };
 
-/// \brief Interface that defines methods to manipulate a ray tracing pipeline state object.
+/// Interface that defines methods to manipulate a ray tracing pipeline state object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineState : public xiiGALPipelineState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRayTracingPipelineState, xiiGALPipelineState);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALRayTracingPipelineStateCreationDescription& GetDescription() const { return m_Description; };
 
 protected:
@@ -350,13 +350,13 @@ protected:
   xiiGALRayTracingPipelineStateCreationDescription m_Description;
 };
 
-/// \brief Interface that defines methods to manipulate a tile pipeline state object.
+/// Interface that defines methods to manipulate a tile pipeline state object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineState : public xiiGALPipelineState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTilePipelineState, xiiGALPipelineState);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTilePipelineStateCreationDescription& GetDescription() const { return m_Description; };
 
 protected:

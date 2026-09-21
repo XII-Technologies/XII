@@ -5,7 +5,7 @@
 #include <Core/Utils/Blackboard.h>
 #include <GameEngine/Components/StateMachine/StateMachineResource.h>
 
-/// \brief A state machine state implementation that represents another state machine nested within this state. This can be used to build hierarchical state machines.
+/// A state machine state implementation that represents another state machine nested within this state. This can be used to build hierarchical state machines.
 class XII_GAMEENGINE_DLL xiiStateMachineState_NestedStateMachine : public xiiStateMachineState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineState_NestedStateMachine, xiiStateMachineState);
@@ -26,7 +26,7 @@ public:
   void                                 SetResource(const xiiStateMachineResourceHandle& hResource); // [ property ]
   const xiiStateMachineResourceHandle& GetResource() const { return m_hResource; }                  // [ property ]
 
-  /// \brief Defines which state should be used as initial state after the state machine was instantiated.
+  /// Defines which state should be used as initial state after the state machine was instantiated.
   /// If empty the state machine resource defines the initial state.
   void        SetInitialState(const char* szName);                // [ property ]
   const char* GetInitialState() const { return m_sInitialState; } // [ property ]
@@ -46,7 +46,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A state machine state implementation that combines multiple sub states into one.
+/// A state machine state implementation that combines multiple sub states into one.
 ///
 /// Can be used to build states in a more modular way. All calls are simply redirected to all sub states,
 /// e.g. when entered it calls OnEnter on all its sub states.
@@ -75,7 +75,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief An enum that represents the operator of a comparison
+/// An enum that represents the operator of a comparison
 struct XII_GAMEENGINE_DLL xiiStateMachineLogicOperator
 {
   using StorageType = xiiUInt8;
@@ -93,7 +93,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GAMEENGINE_DLL, xiiStateMachineLogicOperator);
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A state machine transition implementation that checks the instance's blackboard for the given conditions.
+/// A state machine transition implementation that checks the instance's blackboard for the given conditions.
 class XII_GAMEENGINE_DLL xiiStateMachineTransition_BlackboardConditions : public xiiStateMachineTransition
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineTransition_BlackboardConditions, xiiStateMachineTransition);
@@ -113,7 +113,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A state machine transition implementation that triggers after the given time
+/// A state machine transition implementation that triggers after the given time
 class XII_GAMEENGINE_DLL xiiStateMachineTransition_Timeout : public xiiStateMachineTransition
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineTransition_Timeout, xiiStateMachineTransition);
@@ -132,7 +132,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A state machine transition implementation that combines multiple sub transition into one.
+/// A state machine transition implementation that combines multiple sub transition into one.
 ///
 /// Can be used to build transitions in a more modular way. All calls are simply redirected to all sub transitions
 /// and then combined with the given logic operator (AND, OR).
@@ -160,7 +160,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief A state machine transition implementation that triggers when a 'transition event' is sent.
+/// A state machine transition implementation that triggers when a 'transition event' is sent.
 class XII_GAMEENGINE_DLL xiiStateMachineTransition_TransitionEvent : public xiiStateMachineTransition
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiStateMachineTransition_TransitionEvent, xiiStateMachineTransition);

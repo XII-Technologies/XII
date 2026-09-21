@@ -6,14 +6,14 @@
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/Bitflags.h>
 
-/// \brief Helper class to manage the top level exception handler.
+/// Helper class to manage the top level exception handler.
 ///
 /// A default exception handler is provided but not set by default.
 /// The default implementation will write the exception and callstack to the output
 /// and create a memory dump using WriteDump that create a dump file in the folder
 /// specified via SetExceptionHandler.
 
-/// \brief This class allows to hook into the OS top-level exception handler to handle application crashes
+/// This class allows to hook into the OS top-level exception handler to handle application crashes
 ///
 /// Derive from this class to implement custom behavior. Call xiiCrashHandler::SetCrashHandler() to
 /// register which instance to use.
@@ -34,7 +34,7 @@ private:
   static xiiCrashHandler* s_pActiveHandler;
 };
 
-/// \brief A default implementation of xiiCrashHandler that tries to write a mini-dump and prints the callstack.
+/// A default implementation of xiiCrashHandler that tries to write a mini-dump and prints the callstack.
 ///
 /// To use it, call xiiCrashHandler::SetCrashHandler(&xiiCrashHandler_WriteMiniDump::g_Instance);
 /// Do not forget to also specify the dump-file path, otherwise writing dump-files is skipped.
@@ -67,13 +67,13 @@ public:
 public:
   xiiCrashHandler_WriteMiniDump();
 
-  /// \brief Sets the raw path for the dump-file to write
+  /// Sets the raw path for the dump-file to write
   void SetFullDumpFilePath(xiiStringView sFullAbsDumpFilePath);
 
-  /// \brief Sets the dump-file path to "{szAbsDirectoryPath}/{szAppName}_{cur-date}.tmp"
+  /// Sets the dump-file path to "{szAbsDirectoryPath}/{szAppName}_{cur-date}.tmp"
   void SetDumpFilePath(xiiStringView sAbsDirectoryPath, xiiStringView sAppName, xiiBitflags<PathFlags> flags = PathFlags::Default);
 
-  /// \brief Sets the dump-file path to "{xiiOSFile::GetApplicationDirectory()}/{szAppName}_{cur-date}.tmp"
+  /// Sets the dump-file path to "{xiiOSFile::GetApplicationDirectory()}/{szAppName}_{cur-date}.tmp"
   void SetDumpFilePath(xiiStringView sAppName, xiiBitflags<PathFlags> flags = PathFlags::Default);
 
   virtual void HandleCrash(void* pOsSpecificData) override;

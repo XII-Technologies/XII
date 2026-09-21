@@ -55,7 +55,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderWorldModuleExtractionEvent
   xiiUInt64 m_uiFrameCounter = 0;
 };
 
-/// \brief Central world module that owns all render views and drives the per-frame render graph compilation and execution.
+/// Central world module that owns all render views and drives the per-frame render graph compilation and execution.
 ///
 /// ## Render graph construction
 /// Each frame, for views that do not have a custom RenderGraphBuilder set, the module delegates to
@@ -93,41 +93,41 @@ public:
 
   virtual void OnSimulationStarted() override;
 
-  /// \brief Creates a new view and assumes ownership.
+  /// Creates a new view and assumes ownership.
   ///
   /// The view is registered for render-data extraction and render-graph execution from the next frame onward.
   xiiViewHandle CreateView(xiiStringView sName, xiiView*& out_pView);
 
-  /// \brief Destroys a view. The view must have been created by this module.
+  /// Destroys a view. The view must have been created by this module.
   void DestroyView(const xiiViewHandle& hView);
 
-  /// \brief Retrieves a view by its handle. Returns false if the handle is invalid.
+  /// Retrieves a view by its handle. Returns false if the handle is invalid.
   bool TryGetView(const xiiViewHandle& hView, xiiView*& out_pView) const;
 
-  /// \brief Retrieves a view by its usage hint. If multiple views share the same hint, the first one found is returned.
+  /// Retrieves a view by its usage hint. If multiple views share the same hint, the first one found is returned.
   xiiView* GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint = {}) const;
 
-  /// \brief Creates render data that is only valid for this frame. The data is automatically deleted after the frame has been rendered.
+  /// Creates render data that is only valid for this frame. The data is automatically deleted after the frame has been rendered.
   template <typename T>
   T* CreateRenderDataForThisFrame(const xiiComponent* pComponent) const;
 
-  /// \brief Invalidates cached static render data for one object.
+  /// Invalidates cached static render data for one object.
   ///
   /// The component handle is accepted for compatibility with existing call sites.
   /// Static cache invalidation is keyed by object identity.
   void DeleteCachedRenderData(xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent);
 
-  /// \brief Invalidates cached static render data for an object and all children.
+  /// Invalidates cached static render data for an object and all children.
   void DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pObject);
 
-  /// \brief Clears all cached static render data for every view.
+  /// Clears all cached static render data for every view.
   void DeleteAllCachedRenderData();
 
 public:
-  /// \brief Events that external code can subscribe to. The events are triggered when a view is created or deleted.
+  /// Events that external code can subscribe to. The events are triggered when a view is created or deleted.
   XII_ALWAYS_INLINE xiiEvent<xiiViewEvent, xiiMutex>& GetViewEvents();
 
-  /// \brief Events that external code can subscribe to. The events are triggered when a view is processed for render data extraction, before and after the extraction process.
+  /// Events that external code can subscribe to. The events are triggered when a view is processed for render data extraction, before and after the extraction process.
   XII_ALWAYS_INLINE static const xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex>& GetRenderEvents();
 
 private:

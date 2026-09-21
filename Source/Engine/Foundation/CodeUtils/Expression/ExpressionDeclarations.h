@@ -55,7 +55,7 @@ namespace xiiExpression
   using Inputs     = xiiArrayPtr<xiiArrayPtr<const Register>>; // Inputs are in SOA form, means inner array contains all values for one input parameter, one for each instance.
   using GlobalData = xiiHashTable<xiiHashedString, xiiVariant>;
 
-  /// \brief Describes an input or output stream for a expression VM
+  /// Describes an input or output stream for a expression VM
   struct StreamDesc
   {
     xiiHashedString               m_sName;
@@ -70,7 +70,7 @@ namespace xiiExpression
     xiiResult Deserialize(xiiStreamReader& ref_stream);
   };
 
-  /// \brief Describes an expression function and its signature, e.g. how many input parameter it has and their type
+  /// Describes an expression function and its signature, e.g. how many input parameter it has and their type
   struct FunctionDesc
   {
     using TypeList = xiiSmallArray<xiiEnum<xiiExpression::RegisterType>, 8>;
@@ -98,7 +98,7 @@ namespace xiiExpression
 
 } // namespace xiiExpression
 
-/// \brief Describes an external function that can be called in expressions.
+/// Describes an external function that can be called in expressions.
 ///  These functions need to be state-less and thread-safe.
 struct xiiExpressionFunction
 {
@@ -116,7 +116,7 @@ struct XII_FOUNDATION_DLL xiiDefaultExpressionFunctions
   static xiiExpressionFunction s_PerlinNoiseFunc;
 };
 
-/// \brief Add this attribute a string property that should be interpreted as expression source.
+/// Add this attribute a string property that should be interpreted as expression source.
 ///
 /// The Inputs/Outputs property reference another array property on the same object that contains objects
 /// with a name and a type property that can be used for real time error checking of the expression source.

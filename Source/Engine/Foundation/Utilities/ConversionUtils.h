@@ -12,13 +12,13 @@
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Uuid.h>
 
-/// \brief This namespace contains functions to convert between different types.
+/// This namespace contains functions to convert between different types.
 ///
 /// Contains helper functions to convert from strings to numerical values.
 /// To convert from numerical values to strings, use xiiStringBuilder::Format, which provides a rich set of formatting options.
 namespace xiiConversionUtils
 {
-  /// \brief Parses szString and converts it to an integer value. Returns XII_FAILURE if the string contains no parsable integer value.
+  /// Parses szString and converts it to an integer value. Returns XII_FAILURE if the string contains no parsable integer value.
   ///
   /// \param szString
   ///   If szString is nullptr or an empty string or starts with an some non-whitespace and non-sign character, XII_FAILURE is returned.
@@ -39,15 +39,15 @@ namespace xiiConversionUtils
   ///   XII_FAILURE if the string starts with something that can not be interpreted as an integer.
   XII_FOUNDATION_DLL xiiResult StringToInt(xiiStringView sText, xiiInt32& out_iRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
-  /// \brief Same as StringToInt() but expects the string to be a uint32.
+  /// Same as StringToInt() but expects the string to be a uint32.
   ///
   /// If the parsed value is a valid int but outside the uint32 value range, the function returns XII_FAILURE.
   XII_FOUNDATION_DLL xiiResult StringToUInt(xiiStringView sText, xiiUInt32& out_uiRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
-  /// \brief Same as StringToInt but converts to a 64bit integer value instead.
+  /// Same as StringToInt but converts to a 64bit integer value instead.
   XII_FOUNDATION_DLL xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_iRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
-  /// \brief Parses szString and converts it to a double value. Returns XII_FAILURE if the string contains no parseable floating point value.
+  /// Parses szString and converts it to a double value. Returns XII_FAILURE if the string contains no parseable floating point value.
   ///
   /// \param szString
   ///   If szString is nullptr or an empty string or starts with some non-whitespace and non-sign character, XII_FAILURE is returned.
@@ -82,7 +82,7 @@ namespace xiiConversionUtils
   ///   detecting the validity, the sign and where the value ends and then use atof to parse only that substring with maximum precision.
   XII_FOUNDATION_DLL xiiResult StringToFloat(xiiStringView sText, double& out_fRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
-  /// \brief Parses szString and checks that the first word it finds starts with a phrase that can be interpreted as a boolean value.
+  /// Parses szString and checks that the first word it finds starts with a phrase that can be interpreted as a boolean value.
   ///
   /// \param szString
   ///   If szString starts with whitespace characters, they are skipped. XII_SUCCESS is returned (and out_Res is filled with true/false),
@@ -104,7 +104,7 @@ namespace xiiConversionUtils
   XII_FOUNDATION_DLL xiiResult StringToBool(xiiStringView sText, bool& out_bRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
 
-  /// \brief Parses \a szText and tries to find up to \a uiNumFloats float values to extract. Skips all characters that cannot be
+  /// Parses \a szText and tries to find up to \a uiNumFloats float values to extract. Skips all characters that cannot be
   /// interpreted as numbers.
   ///
   /// This function can be used to convert string representations of vectors or other more complex numbers. It will parse the string from
@@ -125,18 +125,18 @@ namespace xiiConversionUtils
   ///   The number of successfully extracted values (and thus valid values in out_pFloats).
   XII_FOUNDATION_DLL xiiUInt32 ExtractFloatsFromString(xiiStringView sText, xiiUInt32 uiNumFloats, float* out_pFloats, const char** out_pLastParsePosition = nullptr); // [tested]
 
-  /// \brief Converts a hex character ('0', '1', ... '9', 'A'/'a', ... 'F'/'f') to the corresponding int value 0 - 15.
+  /// Converts a hex character ('0', '1', ... '9', 'A'/'a', ... 'F'/'f') to the corresponding int value 0 - 15.
   ///
   /// \note Returns -1 for invalid HEX characters.
   XII_FOUNDATION_DLL xiiInt8 HexCharacterToIntValue(xiiUInt32 uiCharacter); // [tested]
 
-  /// \brief Same as ConvertHexStringToUInt() with uiMaxHexCharacters set to 8.
+  /// Same as ConvertHexStringToUInt() with uiMaxHexCharacters set to 8.
   XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt32(xiiStringView sHex, xiiUInt32& out_uiResult); // [tested]
 
-  /// \brief Same as ConvertHexStringToUInt() with uiMaxHexCharacters set to 16.
+  /// Same as ConvertHexStringToUInt() with uiMaxHexCharacters set to 16.
   XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt64(xiiStringView sHex, xiiUInt64& out_uiResult); // [tested]
 
-  /// \brief Converts a hex string (i.e. 0xAABBCCDD) into its uint64 value.
+  /// Converts a hex string (i.e. 0xAABBCCDD) into its uint64 value.
   ///
   /// "0x" at the beginning is ignored.
   /// Empty strings are interpreted as 'valid', representing the value 0 (returns XII_SUCCESS).
@@ -145,7 +145,7 @@ namespace xiiConversionUtils
   /// If the first uiMaxHexCharacters (after the '0x') contain any non-HEX characters, parsing is interrupted and XII_FAILURE is returned.
   XII_FOUNDATION_DLL xiiResult ConvertHexStringToUInt(xiiStringView sHex, xiiUInt64& out_uiResult, xiiUInt32 uiMaxHexCharacters, xiiUInt32* pTotalCharactersParsed); // [tested]
 
-  /// \brief Converts a HEX string to a binary value.
+  /// Converts a HEX string to a binary value.
   ///
   /// "0x" or "0X" at the start is allowed and will be skipped.
   /// A maximum of \a uiBinaryBuffer bytes is written to \a pBinary.
@@ -158,7 +158,7 @@ namespace xiiConversionUtils
   /// be invalid and there is no error reported.
   XII_FOUNDATION_DLL void ConvertHexToBinary(xiiStringView sText, xiiUInt8* pBinary, xiiUInt32 uiBinaryBuffer); // [tested]
 
-  /// \brief Converts a binary stream to a HEX string.
+  /// Converts a binary stream to a HEX string.
   ///
   /// The result is returned by calling a lambda to append to an output container.
   /// The lambda signature must be:
@@ -167,162 +167,162 @@ namespace xiiConversionUtils
   template <typename APPEND_CONTAINER_LAMBDA>
   inline void ConvertBinaryToHex(const void* pBinaryData, xiiUInt32 uiBytes, APPEND_CONTAINER_LAMBDA append); // [tested]
 
-  /// \brief Converts a string that was written with xiiConversionUtils::ToString(xiiUuid) back to a xiiUuid object.
+  /// Converts a string that was written with xiiConversionUtils::ToString(xiiUuid) back to a xiiUuid object.
   XII_FOUNDATION_DLL xiiUuid ConvertStringToUuid(xiiStringView sText); // [tested]
 
-  /// \brief Returns true when the given string is in the exact format "{ 05af8d07-0b38-44a6-8d50-49731ae2625d }"
+  /// Returns true when the given string is in the exact format "{ 05af8d07-0b38-44a6-8d50-49731ae2625d }"
   /// This includes braces, whitespaces and dashes. This is the format that ToString produces.
   XII_FOUNDATION_DLL bool IsStringUuid(xiiStringView sText); // [tested]
 
-  /// \brief Converts a bool to a string.
+  /// Converts a bool to a string.
   XII_ALWAYS_INLINE const xiiStringBuilder& ToString(bool value, xiiStringBuilder& out_sResult) // [tested]
   {
     out_sResult = value ? "true" : "false";
     return out_sResult;
   }
 
-  /// \brief Converts a 8bit signed integer to a string.
+  /// Converts a 8bit signed integer to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt8 value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a 8bit unsigned integer to a string.
+  /// Converts a 8bit unsigned integer to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt8 value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a 16bit signed integer to a string.
+  /// Converts a 16bit signed integer to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt16 value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a 16bit unsigned integer to a string.
+  /// Converts a 16bit unsigned integer to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt16 value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a 32bit signed integer to a string.
+  /// Converts a 32bit signed integer to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt32 value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a 32bit unsigned integer to a string.
+  /// Converts a 32bit unsigned integer to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt32 value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a 64bit signed integer to a string.
+  /// Converts a 64bit signed integer to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiInt64 value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a 64bit unsigned integer to a string.
+  /// Converts a 64bit unsigned integer to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(xiiUInt64 value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a float to a string.
+  /// Converts a float to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(float value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a double to a string.
+  /// Converts a double to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(double value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a color to a string.
+  /// Converts a color to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiColor& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a color to a string.
+  /// Converts a color to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiColorGammaUB& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec2 to a string.
+  /// Converts a vec2 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec2d to a string.
+  /// Converts a vec2d to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2d& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec3 to a string.
+  /// Converts a vec3 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec3d to a string.
+  /// Converts a vec3d to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3d& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec4 to a string.
+  /// Converts a vec4 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec4d to a string.
+  /// Converts a vec4d to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4d& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec2I32 to a string.
+  /// Converts a vec2I32 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2I32& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec2I64 to a string.
+  /// Converts a vec2I64 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2I64& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec3I32 to a string.
+  /// Converts a vec3I32 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3I32& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec3I64 to a string.
+  /// Converts a vec3I64 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3I64& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec4I32 to a string.
+  /// Converts a vec4I32 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4I32& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec4I64 to a string.
+  /// Converts a vec4I64 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4I64& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec2U32 to a string.
+  /// Converts a vec2U32 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2U32& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec2U64 to a string.
+  /// Converts a vec2U64 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec2U64& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec3U32 to a string.
+  /// Converts a vec3U32 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3U32& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec3U64 to a string.
+  /// Converts a vec3U64 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec3U64& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec4U32 to a string.
+  /// Converts a vec4U32 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4U32& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a vec4U64 to a string.
+  /// Converts a vec4U64 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiVec4U64& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a quat to a string.
+  /// Converts a quat to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiQuat& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a quatd to a string.
+  /// Converts a quatd to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiQuatd& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a mat3 to a string.
+  /// Converts a mat3 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat3& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a mat3d to a string.
+  /// Converts a mat3d to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat3d& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a mat4 to a string.
+  /// Converts a mat4 to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat4& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a mat4d to a string.
+  /// Converts a mat4d to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiMat4d& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a transform to a string.
+  /// Converts a transform to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTransform& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a transformd to a string.
+  /// Converts a transformd to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTransformd& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a Uuid to a string.
+  /// Converts a Uuid to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiUuid& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts an angle to a string.
+  /// Converts an angle to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiAngle& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts an angle to a string.
+  /// Converts an angle to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiAngled& value, xiiStringBuilder& out_sResult); // [tested]
 
-  /// \brief Converts a time to a string.
+  /// Converts a time to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTime& value, xiiStringBuilder& out_sResult);
 
-  /// \brief Converts a xiiStringView to a string.
+  /// Converts a xiiStringView to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiStringView& value, xiiStringBuilder& out_sResult);
 
-  /// \brief Converts a hashed string to a string.
+  /// Converts a hashed string to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiHashedString& value, xiiStringBuilder& out_sResult);
 
-  /// \brief Converts a temp hashed string to a string. Will print the hash value since the original string can't be restored from a temp hashed string.
+  /// Converts a temp hashed string to a string. Will print the hash value since the original string can't be restored from a temp hashed string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiTempHashedString& value, xiiStringBuilder& out_sResult);
 
-  /// \brief Converts a xiiVariantArray to a string.
+  /// Converts a xiiVariantArray to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiDynamicArray<xiiVariant>& value, xiiStringBuilder& out_sResult);
 
-  /// \brief Converts a xiiVariantDictionary to a string.
+  /// Converts a xiiVariantDictionary to a string.
   XII_FOUNDATION_DLL const xiiStringBuilder& ToString(const xiiHashTable<xiiString, xiiVariant>& value, xiiStringBuilder& out_sResult);
 
-  /// \brief Fallback ToString implementation for all types that don't have one.
+  /// Fallback ToString implementation for all types that don't have one.
   template <typename T>
   XII_ALWAYS_INLINE const xiiStringBuilder& ToString(const T& value, xiiStringBuilder& out_sResult)
   {
@@ -331,20 +331,20 @@ namespace xiiConversionUtils
     return out_sResult;
   }
 
-  /// \brief Parses a string in the form "#RRGGBBAA" as a (gamma space) color.
+  /// Parses a string in the form "#RRGGBBAA" as a (gamma space) color.
   ///
   /// The # at the start is optional.
   /// If fewer characters are given, e.g. only "RRGGBB" or "RRGG" or even just "R" or "RRG", the remaining values are default initialized
   /// with black (alpha = FF).
   XII_FOUNDATION_DLL xiiResult ConvertHexStringToColor(xiiStringView sText, xiiColorGammaUB& ref_color);
 
-  /// \brief Returns the color with the given name.
+  /// Returns the color with the given name.
   ///
   /// Allowed are all predefined color names (case-insensitive), as well as Hex-Values in the form '#RRGGBB' and '#RRGGBBAA'
   /// If out_ValidColorName is a valid pointer, it contains true if the color name was known, otherwise false.
   XII_FOUNDATION_DLL xiiColor GetColorByName(xiiStringView sText, bool* out_pValidColorName = nullptr); // [tested]
 
-  /// \brief The inverse of GetColorByName.
+  /// The inverse of GetColorByName.
   XII_FOUNDATION_DLL xiiString GetColorName(const xiiColor& col); // [tested]
 }; // namespace xiiConversionUtils
 

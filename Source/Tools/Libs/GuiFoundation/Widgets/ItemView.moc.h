@@ -9,7 +9,7 @@
 #include <QItemDelegate>
 #include <QStyledItemDelegate>
 
-/// \brief In combination with xiiQtItemView this delegate allows for receiving the full range of mouse input.
+/// In combination with xiiQtItemView this delegate allows for receiving the full range of mouse input.
 class XII_GUIFOUNDATION_DLL xiiQtItemDelegate : public QItemDelegate
 {
   Q_OBJECT
@@ -26,7 +26,7 @@ public:
   virtual bool mouseMoveEvent(QMouseEvent* pEvent, const QStyleOptionViewItem& option, const QModelIndex& index) { return false; }
 };
 
-/// \brief Template to be used with classes derived from QAbstractItemView. Allows the use of xiiQtItemDelegate.
+/// Template to be used with classes derived from QAbstractItemView. Allows the use of xiiQtItemDelegate.
 template <typename Base>
 class xiiQtItemView : public Base
 {

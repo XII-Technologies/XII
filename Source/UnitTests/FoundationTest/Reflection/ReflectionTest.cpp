@@ -1014,7 +1014,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
   TestSerialization<xiiTestArrays>(containers);
 }
 
-/// \brief Determines whether a type is a pointer.
+/// Determines whether a type is a pointer.
 template <typename T>
 struct xiiIsPointer
 {

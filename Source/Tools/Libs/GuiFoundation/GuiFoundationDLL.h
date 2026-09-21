@@ -27,7 +27,7 @@ class QKeyEvent;
 
 Q_DECLARE_METATYPE(xiiUuid);
 
-/// \brief Calls setUpdatesEnabled(false) on all given QObjects, and the reverse in the destructor. Can be nested.
+/// Calls setUpdatesEnabled(false) on all given QObjects, and the reverse in the destructor. Can be nested.
 class XII_GUIFOUNDATION_DLL xiiQtScopedUpdatesDisabled
 {
 public:
@@ -39,7 +39,7 @@ private:
 };
 
 
-/// \brief Calls blockSignals(true) on all given QObjects, and the reverse in the destructor. Can be nested.
+/// Calls blockSignals(true) on all given QObjects, and the reverse in the destructor. Can be nested.
 class XII_GUIFOUNDATION_DLL xiiQtScopedBlockSignals
 {
 public:

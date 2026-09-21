@@ -9,7 +9,7 @@
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 
-/// \brief Specifies in which mode this camera is configured.
+/// Specifies in which mode this camera is configured.
 struct XII_CORE_DLL xiiCameraMode
 {
   using StorageType = xiiInt8;
@@ -29,7 +29,7 @@ struct XII_CORE_DLL xiiCameraMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiCameraMode);
 
-/// \brief Determines left or right eye of a stereo camera.
+/// Determines left or right eye of a stereo camera.
 ///
 /// As a general rule, this parameter does not matter for mono-scopic cameras and will always return the same value.
 enum class xiiCameraEye
@@ -39,79 +39,79 @@ enum class xiiCameraEye
   // Two eyes should be enough for everyone.
 };
 
-/// \brief A camera class that stores the orientation and some basic camera settings.
+/// A camera class that stores the orientation and some basic camera settings.
 class XII_CORE_DLL xiiCamera
 {
 public:
   xiiCamera();
 
-  /// \brief Allows to specify a different coordinate system in which the camera input and output coordinates are given.
+  /// Allows to specify a different coordinate system in which the camera input and output coordinates are given.
   ///
   /// The default in z is forward = PositiveX, right = PositiveY, Up = PositiveZ.
   void SetCoordinateSystem(xiiBasisAxis::Enum forwardAxis, xiiBasisAxis::Enum rightAxis, xiiBasisAxis::Enum axis);
 
-  /// \brief Allows to specify a full xiiCoordinateSystemProvider to determine forward/right/up vectors for camera movement
+  /// Allows to specify a full xiiCoordinateSystemProvider to determine forward/right/up vectors for camera movement
   void SetCoordinateSystem(const xiiSharedPtr<xiiCoordinateSystemProvider>& pProvider);
 
-  /// \brief Returns the position of the camera that should be used for rendering etc.
+  /// Returns the position of the camera that should be used for rendering etc.
   xiiVec3 GetPosition(xiiCameraEye eye = xiiCameraEye::Left) const;
 
-  /// \brief Returns the forwards vector that should be used for rendering etc.
+  /// Returns the forwards vector that should be used for rendering etc.
   xiiVec3 GetDirForwards(xiiCameraEye eye = xiiCameraEye::Left) const;
 
-  /// \brief Returns the up vector that should be used for rendering etc.
+  /// Returns the up vector that should be used for rendering etc.
   xiiVec3 GetDirUp(xiiCameraEye eye = xiiCameraEye::Left) const;
 
-  /// \brief Returns the right vector that should be used for rendering etc.
+  /// Returns the right vector that should be used for rendering etc.
   xiiVec3 GetDirRight(xiiCameraEye eye = xiiCameraEye::Left) const;
 
-  /// \brief Returns the horizontal FOV.
+  /// Returns the horizontal FOV.
   ///
   /// Works only with xiiCameraMode::PerspectiveFixedFovX and xiiCameraMode::PerspectiveFixedFovY
   xiiAngle GetFovX(float fAspectRatioWidthDivHeight) const;
 
-  /// \brief Returns the vertical FOV.
+  /// Returns the vertical FOV.
   ///
   /// Works only with xiiCameraMode::PerspectiveFixedFovX and xiiCameraMode::PerspectiveFixedFovY
   xiiAngle GetFovY(float fAspectRatioWidthDivHeight) const;
 
-  /// \brief Returns the horizontal dimension for an orthographic view.
+  /// Returns the horizontal dimension for an orthographic view.
   ///
   /// Works only with xiiCameraMode::OrthoFixedWidth and xiiCameraMode::OrthoFixedWidth
   float GetDimensionX(float fAspectRatioWidthDivHeight) const;
 
-  /// \brief Returns the vertical dimension for an orthographic view.
+  /// Returns the vertical dimension for an orthographic view.
   ///
   /// Works only with xiiCameraMode::OrthoFixedWidth and xiiCameraMode::OrthoFixedWidth
   float GetDimensionY(float fAspectRatioWidthDivHeight) const;
 
-  /// \brief Returns the average camera position.
+  /// Returns the average camera position.
   ///
   /// For all cameras execpt Stereo cameras this is identical to GetPosition()
   xiiVec3 GetCenterPosition() const;
 
-  /// \brief Returns the average forwards vector.
+  /// Returns the average forwards vector.
   ///
   /// For all cameras execpt Stereo cameras this is identical to GetDirForwards()
   xiiVec3 GetCenterDirForwards() const;
 
-  /// \brief Returns the average up vector.
+  /// Returns the average up vector.
   ///
   /// For all cameras execpt Stereo cameras this is identical to GetDirUp()
   xiiVec3 GetCenterDirUp() const;
 
-  /// \brief Returns the average right vector.
+  /// Returns the average right vector.
   ///
   /// For all cameras execpt Stereo cameras this is identical to GetDirRight()
   xiiVec3 GetCenterDirRight() const;
 
-  /// \brief Returns the near plane distance that was passed to SetCameraProjectionAndMode().
+  /// Returns the near plane distance that was passed to SetCameraProjectionAndMode().
   float GetNearPlane() const;
 
-  /// \brief Returns the far plane distance that was passed to SetCameraProjectionAndMode().
+  /// Returns the far plane distance that was passed to SetCameraProjectionAndMode().
   float GetFarPlane() const;
 
-  /// \brief Specifies the mode and the projection settings that this camera uses.
+  /// Specifies the mode and the projection settings that this camera uses.
   ///
   /// \param fFovOrDim
   ///   Fov X/Y in degree or width/height (depending on Mode).
@@ -123,57 +123,57 @@ public:
   ///   These stereo projection matrices will only be returned by getProjectionMatrix for the given aspectRatio.
   void SetStereoProjection(const xiiMat4& mProjectionLeftEye, const xiiMat4& mProjectionRightEye, float fAspectRatioWidthDivHeight);
 
-  /// \brief Returns the fFovOrDim parameter that was passed to SetCameraProjectionAndMode().
+  /// Returns the fFovOrDim parameter that was passed to SetCameraProjectionAndMode().
   float GetFovOrDim() const;
 
-  /// \brief Returns the current camera mode.
+  /// Returns the current camera mode.
   xiiCameraMode::Enum GetCameraMode() const;
 
   bool IsPerspective() const;
 
   bool IsOrthographic() const;
 
-  /// \brief Whether this is a stereoscopic camera.
+  /// Whether this is a stereoscopic camera.
   bool IsStereoscopic() const;
 
-  /// \brief Sets the view matrix directly.
+  /// Sets the view matrix directly.
   ///
   /// Works with all camera types. Position- and direction- getter/setter will work as usual.
   void SetViewMatrix(const xiiMat4& mLookAtMatrix, xiiCameraEye eye = xiiCameraEye::Left);
 
-  /// \brief Repositions the camera such that it looks at the given target position.
+  /// Repositions the camera such that it looks at the given target position.
   ///
   /// Not supported for stereo cameras.
   void LookAt(const xiiVec3& vCameraPos, const xiiVec3& vTargetPos, const xiiVec3& vUp);
 
-  /// \brief Moves the camera in its local space along the forward/right/up directions of the coordinate system.
+  /// Moves the camera in its local space along the forward/right/up directions of the coordinate system.
   ///
   /// Not supported for stereo cameras.
   void MoveLocally(float fForward, float fRight, float fUp);
 
-  /// \brief Moves the camera in global space along the forward/right/up directions of the coordinate system.
+  /// Moves the camera in global space along the forward/right/up directions of the coordinate system.
   ///
   /// Not supported for stereo cameras.
   void MoveGlobally(float fForward, float fRight, float fUp);
 
-  /// \brief Rotates the camera around the forward, right and up axis in its own local space.
+  /// Rotates the camera around the forward, right and up axis in its own local space.
   ///
   /// Rotate around \a rightAxis for looking up/down. \forwardAxis is roll. For turning left/right use RotateGlobally().
   /// Not supported for stereo cameras.
   void RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle axis);
 
-  /// \brief Rotates the camera around the forward, right and up axis of the coordinate system in global space.
+  /// Rotates the camera around the forward, right and up axis of the coordinate system in global space.
   ///
   /// Rotate around Z for turning the camera left/right.
   /// Not supported for stereo cameras.
   void RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle axis);
 
-  /// \brief Returns the view matrix for the given eye.
+  /// Returns the view matrix for the given eye.
   ///
   /// \note The view matrix is given in OpenGL convention.
   const xiiMat4& GetViewMatrix(xiiCameraEye eye = xiiCameraEye::Left) const;
 
-  /// \brief Calculates the projection matrix from the current camera properties and stores it in out_projectionMatrix.
+  /// Calculates the projection matrix from the current camera properties and stores it in out_projectionMatrix.
   ///
   /// If the camera is stereo and the given aspect ratio is close to the aspect ratio passed in SetStereoProjection,
   /// the matrix set in SetStereoProjection will be used.
@@ -183,26 +183,26 @@ public:
 
   void SetExposure(float fExposure);
 
-  /// \brief Returns a counter that is increased every time the camera settings are modified.
+  /// Returns a counter that is increased every time the camera settings are modified.
   ///
   /// The camera settings are used to compute the projection matrix. This counter can be used to determine whether the projection matrix
   /// has changed and thus whether cached values need to be updated.
   xiiUInt32 GetSettingsModificationCounter() const { return m_uiSettingsModificationCounter; }
 
-  /// \brief Returns a counter that is increased every time the camera orientation is modified.
+  /// Returns a counter that is increased every time the camera orientation is modified.
   ///
   /// The camera orientation is used to compute the view matrix. This counter can be used to determine whether the view matrix
   /// has changed and thus whether cached values need to be updated.
   xiiUInt32 GetOrientationModificationCounter() const { return m_uiOrientationModificationCounter; }
 
 private:
-  /// \brief This function is called whenever the camera position or rotation changed.
+  /// This function is called whenever the camera position or rotation changed.
   void CameraOrientationChanged() { ++m_uiOrientationModificationCounter; }
 
-  /// \brief This function is called when the camera mode or projection changes (e.g. SetCameraProjectionAndMode was called).
+  /// This function is called when the camera mode or projection changes (e.g. SetCameraProjectionAndMode was called).
   void CameraSettingsChanged();
 
-  /// \brief This function is called by RotateLocally() and RotateGlobally() BEFORE the values are applied,
+  /// This function is called by RotateLocally() and RotateGlobally() BEFORE the values are applied,
   /// and allows to adjust them (e.g. for limiting how far the camera can rotate).
   void ClampRotationAngles(bool bLocalSpace, xiiAngle& forwardAxis, xiiAngle& rightAxis, xiiAngle& upAxis);
 

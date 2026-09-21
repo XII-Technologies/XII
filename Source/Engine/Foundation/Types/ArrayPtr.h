@@ -15,7 +15,7 @@
 #  include <span>
 #endif
 
-/// \brief Value used by containers for indices to indicate an invalid index.
+/// Value used by containers for indices to indicate an invalid index.
 #ifndef xiiInvalidIndex
 #  define xiiInvalidIndex 0xFFFFFFFFU
 #endif
@@ -35,7 +35,7 @@ namespace xiiArrayPtrDetail
   };
 } // namespace xiiArrayPtrDetail
 
-/// \brief This class encapsulates an array and it's size. It is recommended to use this class instead of plain C arrays.
+/// This class encapsulates an array and it's size. It is recommended to use this class instead of plain C arrays.
 ///
 /// No data is deallocated at destruction, the xiiArrayPtr only allows for easier access.
 template <typename T>
@@ -54,20 +54,20 @@ public:
   using ValueType   = T;
   using PointerType = T*;
 
-  /// \brief Initializes the xiiArrayPtr to be empty.
+  /// Initializes the xiiArrayPtr to be empty.
   XII_ALWAYS_INLINE xiiArrayPtr() : // [tested]
     m_pPtr(nullptr), m_uiCount(0u)
   {
   }
 
-  /// \brief Copies the pointer and size of /a other. Does not allocate any data.
+  /// Copies the pointer and size of /a other. Does not allocate any data.
   XII_ALWAYS_INLINE xiiArrayPtr(const xiiArrayPtr<T>& other) // [tested]
   {
     m_pPtr    = other.m_pPtr;
     m_uiCount = other.m_uiCount;
   }
 
-  /// \brief Initializes the xiiArrayPtr with the given pointer and number of elements. No memory is allocated or copied.
+  /// Initializes the xiiArrayPtr with the given pointer and number of elements. No memory is allocated or copied.
   inline xiiArrayPtr(T* pPtr, xiiUInt32 uiCount) : // [tested]
     m_pPtr(pPtr), m_uiCount(uiCount)
   {
@@ -79,14 +79,14 @@ public:
     }
   }
 
-  /// \brief Initializes the xiiArrayPtr to encapsulate the given array.
+  /// Initializes the xiiArrayPtr to encapsulate the given array.
   template <size_t N>
   XII_ALWAYS_INLINE xiiArrayPtr(T (&staticArray)[N]) : // [tested]
     m_pPtr(staticArray), m_uiCount(static_cast<xiiUInt32>(N))
   {
   }
 
-  /// \brief Initializes the xiiArrayPtr to be a copy of \a other. No memory is allocated or copied.
+  /// Initializes the xiiArrayPtr to be a copy of \a other. No memory is allocated or copied.
   template <typename U>
   XII_ALWAYS_INLINE xiiArrayPtr(const xiiArrayPtr<U>& other) : // [tested]
     m_pPtr(other.m_pPtr), m_uiCount(other.m_uiCount)
@@ -121,17 +121,17 @@ public:
   }
 #endif
 
-  /// \brief Convert to const version.
+  /// Convert to const version.
   operator xiiArrayPtr<const T>() const { return xiiArrayPtr<const T>(static_cast<const T*>(GetPtr()), GetCount()); } // [tested]
 
-  /// \brief Copies the pointer and size of /a other. Does not allocate any data.
+  /// Copies the pointer and size of /a other. Does not allocate any data.
   XII_ALWAYS_INLINE void operator=(const xiiArrayPtr<T>& other) // [tested]
   {
     m_pPtr    = other.m_pPtr;
     m_uiCount = other.m_uiCount;
   }
 
-  /// \brief Clears the array
+  /// Clears the array
   XII_ALWAYS_INLINE void Clear()
   {
     m_pPtr    = nullptr;
@@ -144,37 +144,37 @@ public:
     m_uiCount = 0;
   }
 
-  /// \brief Returns the pointer to the array.
+  /// Returns the pointer to the array.
   XII_ALWAYS_INLINE PointerType GetPtr() const // [tested]
   {
     return m_pPtr;
   }
 
-  /// \brief Returns the pointer to the array.
+  /// Returns the pointer to the array.
   XII_ALWAYS_INLINE PointerType GetPtr() // [tested]
   {
     return m_pPtr;
   }
 
-  /// \brief Returns the pointer behind the last element of the array
+  /// Returns the pointer behind the last element of the array
   XII_ALWAYS_INLINE PointerType GetEndPtr() { return m_pPtr + m_uiCount; }
 
-  /// \brief Returns the pointer behind the last element of the array
+  /// Returns the pointer behind the last element of the array
   XII_ALWAYS_INLINE PointerType GetEndPtr() const { return m_pPtr + m_uiCount; }
 
-  /// \brief Returns whether the array is empty.
+  /// Returns whether the array is empty.
   XII_ALWAYS_INLINE bool IsEmpty() const // [tested]
   {
     return GetCount() == 0;
   }
 
-  /// \brief Returns the number of elements in the array.
+  /// Returns the number of elements in the array.
   XII_ALWAYS_INLINE xiiUInt32 GetCount() const // [tested]
   {
     return m_uiCount;
   }
 
-  /// \brief Creates a sub-array from this array.
+  /// Creates a sub-array from this array.
   XII_FORCE_INLINE xiiArrayPtr<T> GetSubArray(xiiUInt32 uiStart, xiiUInt32 uiCount) const // [tested]
   {
     // the first check is necessary to also detect errors when uiStart+uiCount would overflow
@@ -182,7 +182,7 @@ public:
     return xiiArrayPtr<T>(GetPtr() + uiStart, uiCount);
   }
 
-  /// \brief Creates a sub-array from this array.
+  /// Creates a sub-array from this array.
   /// \note \code ap.GetSubArray(i) \endcode is equivalent to \code ap.GetSubArray(i, ap.GetCount() - i) \endcode.
   XII_FORCE_INLINE xiiArrayPtr<T> GetSubArray(xiiUInt32 uiStart) const // [tested]
   {
@@ -190,16 +190,16 @@ public:
     return xiiArrayPtr<T>(GetPtr() + uiStart, GetCount() - uiStart);
   }
 
-  /// \brief Reinterprets this array as a byte array.
+  /// Reinterprets this array as a byte array.
   XII_ALWAYS_INLINE xiiArrayPtr<const ByteType> ToByteArray() const
   {
     return xiiArrayPtr<const ByteType>(reinterpret_cast<const ByteType*>(GetPtr()), GetCount() * sizeof(T));
   }
 
-  /// \brief Reinterprets this array as a byte array.
+  /// Reinterprets this array as a byte array.
   XII_ALWAYS_INLINE xiiArrayPtr<ByteType> ToByteArray() { return xiiArrayPtr<ByteType>(reinterpret_cast<ByteType*>(GetPtr()), GetCount() * sizeof(T)); }
 
-  /// \brief Cast an ArrayPtr to an ArrayPtr to a different, but same size, type
+  /// Cast an ArrayPtr to an ArrayPtr to a different, but same size, type
   template <typename U>
   XII_ALWAYS_INLINE xiiArrayPtr<U> Cast()
   {
@@ -207,7 +207,7 @@ public:
     return xiiArrayPtr<U>(reinterpret_cast<U*>(GetPtr()), GetCount());
   }
 
-  /// \brief Cast an ArrayPtr to an ArrayPtr to a different, but same size, type
+  /// Cast an ArrayPtr to an ArrayPtr to a different, but same size, type
   template <typename U>
   XII_ALWAYS_INLINE xiiArrayPtr<const U> Cast() const
   {
@@ -215,21 +215,21 @@ public:
     return xiiArrayPtr<const U>(reinterpret_cast<const U*>(GetPtr()), GetCount());
   }
 
-  /// \brief Index access.
+  /// Index access.
   XII_FORCE_INLINE const ValueType& operator[](xiiUInt32 uiIndex) const // [tested]
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
     return *static_cast<const ValueType*>(GetPtr() + uiIndex);
   }
 
-  /// \brief Index access.
+  /// Index access.
   XII_FORCE_INLINE ValueType& operator[](xiiUInt32 uiIndex) // [tested]
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(), "Cannot access element {0}, the array only holds {1} elements.", uiIndex, GetCount());
     return *static_cast<ValueType*>(GetPtr() + uiIndex);
   }
 
-  /// \brief Compares the two arrays for equality.
+  /// Compares the two arrays for equality.
   template <typename = typename std::enable_if<std::is_const<T>::value == false>>
   inline bool operator==(const xiiArrayPtr<const T>& other) const // [tested]
   {
@@ -242,7 +242,7 @@ public:
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }
 
-  /// \brief Compares the two arrays for equality.
+  /// Compares the two arrays for equality.
   inline bool operator==(const xiiArrayPtr<T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
@@ -254,7 +254,7 @@ public:
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }
 
-  /// \brief Compares the two arrays for less.
+  /// Compares the two arrays for less.
   inline bool operator<(const xiiArrayPtr<const T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
@@ -272,7 +272,7 @@ public:
     return false;
   }
 
-  /// \brief Copies the data from \a other into this array. The arrays must have the exact same size.
+  /// Copies the data from \a other into this array. The arrays must have the exact same size.
   inline void CopyFrom(const xiiArrayPtr<const T>& other) // [tested]
   {
     XII_ASSERT_DEV(GetCount() == other.GetCount(), "Count for copy does not match. Target has {0} elements, source {1} elements", GetCount(), other.GetCount());
@@ -286,13 +286,13 @@ public:
     ::xiiMath::Swap(m_uiCount, other.m_uiCount);
   }
 
-  /// \brief Checks whether the given value can be found in the array. O(n) complexity.
+  /// Checks whether the given value can be found in the array. O(n) complexity.
   XII_ALWAYS_INLINE bool Contains(const T& value) const // [tested]
   {
     return IndexOf(value) != xiiInvalidIndex;
   }
 
-  /// \brief Searches for the first occurrence of the given value and returns its index or xiiInvalidIndex if not found.
+  /// Searches for the first occurrence of the given value and returns its index or xiiInvalidIndex if not found.
   inline xiiUInt32 IndexOf(const T& value, xiiUInt32 uiStartIndex = 0) const // [tested]
   {
     for (xiiUInt32 i = uiStartIndex; i < m_uiCount; ++i)
@@ -304,7 +304,7 @@ public:
     return xiiInvalidIndex;
   }
 
-  /// \brief Searches for the last occurrence of the given value and returns its index or xiiInvalidIndex if not found.
+  /// Searches for the last occurrence of the given value and returns its index or xiiInvalidIndex if not found.
   inline xiiUInt32 LastIndexOf(const T& value, xiiUInt32 uiStartIndex = xiiInvalidIndex) const // [tested]
   {
     for (xiiUInt32 i = ::xiiMath::Min(uiStartIndex, m_uiCount); i-- > 0;)
@@ -332,41 +332,41 @@ using xiiConstByteArrayPtr = xiiArrayPtr<const xiiUInt8>;
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Helper function to create xiiArrayPtr from a pointer of some type and a count.
+/// Helper function to create xiiArrayPtr from a pointer of some type and a count.
 template <typename T>
 XII_ALWAYS_INLINE xiiArrayPtr<T> xiiMakeArrayPtr(T* pPtr, xiiUInt32 uiCount)
 {
   return xiiArrayPtr<T>(pPtr, uiCount);
 }
 
-/// \brief Helper function to create xiiArrayPtr from a static array the a size known at compile-time.
+/// Helper function to create xiiArrayPtr from a static array the a size known at compile-time.
 template <typename T, xiiUInt32 N>
 XII_ALWAYS_INLINE xiiArrayPtr<T> xiiMakeArrayPtr(T (&staticArray)[N])
 {
   return xiiArrayPtr<T>(staticArray);
 }
 
-/// \brief Helper function to create xiiConstByteArrayPtr from a pointer of some type and a count.
+/// Helper function to create xiiConstByteArrayPtr from a pointer of some type and a count.
 template <typename T>
 XII_ALWAYS_INLINE xiiConstByteArrayPtr xiiMakeByteArrayPtr(const T* pPtr, xiiUInt32 uiCount)
 {
   return xiiConstByteArrayPtr(static_cast<const xiiUInt8*>(pPtr), uiCount * sizeof(T));
 }
 
-/// \brief Helper function to create xiiByteArrayPtr from a pointer of some type and a count.
+/// Helper function to create xiiByteArrayPtr from a pointer of some type and a count.
 template <typename T>
 XII_ALWAYS_INLINE xiiByteArrayPtr xiiMakeByteArrayPtr(T* pPtr, xiiUInt32 uiCount)
 {
   return xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(pPtr), uiCount * sizeof(T));
 }
 
-/// \brief Helper function to create xiiByteArrayPtr from a void pointer and a count.
+/// Helper function to create xiiByteArrayPtr from a void pointer and a count.
 XII_ALWAYS_INLINE xiiByteArrayPtr xiiMakeByteArrayPtr(void* pPtr, xiiUInt32 uiBytes)
 {
   return xiiByteArrayPtr(reinterpret_cast<xiiUInt8*>(pPtr), uiBytes);
 }
 
-/// \brief Helper function to create xiiConstByteArrayPtr from a const void pointer and a count.
+/// Helper function to create xiiConstByteArrayPtr from a const void pointer and a count.
 XII_ALWAYS_INLINE xiiConstByteArrayPtr xiiMakeByteArrayPtr(const void* pPtr, xiiUInt32 uiBytes)
 {
   return xiiConstByteArrayPtr(static_cast<const xiiUInt8*>(pPtr), uiBytes);

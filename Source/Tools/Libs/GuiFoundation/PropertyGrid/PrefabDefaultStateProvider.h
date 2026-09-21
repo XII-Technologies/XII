@@ -6,7 +6,7 @@
 
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
 
-/// \brief Default state provider that reflects the default state defined in the prefab template.
+/// Default state provider that reflects the default state defined in the prefab template.
 class XII_GUIFOUNDATION_DLL xiiPrefabDefaultStateProvider : public xiiDefaultStateProvider
 {
 public:

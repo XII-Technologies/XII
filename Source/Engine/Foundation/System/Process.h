@@ -21,7 +21,7 @@ enum class xiiProcessState
   Finished
 };
 
-/// \brief Options that describe how to run an external process
+/// Options that describe how to run an external process
 struct XII_FOUNDATION_DLL xiiProcessOptions
 {
   /// Path to the binary to launch
@@ -42,30 +42,30 @@ struct XII_FOUNDATION_DLL xiiProcessOptions
   /// If set, stderr will be captured and this function called on a separate thread. Requires bWaitForResult to be true.
   xiiDelegate<void(xiiStringView)> m_onStdError;
 
-  /// \brief Appends a formatted argument to m_Arguments
+  /// Appends a formatted argument to m_Arguments
   ///
   /// This can be useful if a complex command needs to be added as a single argument.
   /// Ie. since arguments with spaces will be wrapped in quotes, it can make a difference
   /// whether a complex parameter is added as one or multiple arguments.
   void AddArgument(const xiiFormatString& arg);
 
-  /// \brief Overload of AddArgument(xiiFormatString) for convenience.
+  /// Overload of AddArgument(xiiFormatString) for convenience.
   template <typename... ARGS>
   void AddArgument(xiiStringView sFormat, ARGS&&... args)
   {
     AddArgument(xiiFormatStringImpl<ARGS...>(sFormat, std::forward<ARGS>(args)...));
   }
 
-  /// \brief Takes a full command line and appends it as individual arguments by splitting it along white-space and quotation marks.
+  /// Takes a full command line and appends it as individual arguments by splitting it along white-space and quotation marks.
   ///
   /// Brief, use this, if arguments are already pre-built as a full command line.
   void AddCommandLine(xiiStringView sCmdLine);
 
-  /// \brief Builds the command line from the process arguments and appends it to \a out_sCmdLine.
+  /// Builds the command line from the process arguments and appends it to \a out_sCmdLine.
   void BuildCommandLineString(xiiStringBuilder& out_sCmdLine) const;
 };
 
-/// \brief Flags for xiiProcess::Launch()
+/// Flags for xiiProcess::Launch()
 struct xiiProcessLaunchFlags
 {
   using StorageType = xiiUInt32;
@@ -87,7 +87,7 @@ struct xiiProcessLaunchFlags
 
 XII_DECLARE_FLAGS_OPERATORS(xiiProcessLaunchFlags);
 
-/// \brief Provides functionality to launch other processes
+/// Provides functionality to launch other processes
 class XII_FOUNDATION_DLL xiiProcess
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiProcess);
@@ -96,7 +96,7 @@ public:
   xiiProcess();
   xiiProcess(xiiProcess&& rhs);
 
-  /// \brief Upon destruction the running process will be terminated.
+  /// Upon destruction the running process will be terminated.
   ///
   /// Use Detach() to prevent the termination of the launched process.
   ///
@@ -104,10 +104,10 @@ public:
   /// \sa Detach()
   ~xiiProcess();
 
-  /// \brief Launches the specified process and waits for it to finish.
+  /// Launches the specified process and waits for it to finish.
   static xiiResult Execute(const xiiProcessOptions& opt, xiiInt32* out_pExitCode = nullptr);
 
-  /// \brief Launches the specified process asynchronously.
+  /// Launches the specified process asynchronously.
   ///
   /// When the function returns, the process is typically starting or running.
   /// Call WaitToFinish() to wait for the process to shutdown or Terminate() to kill it.
@@ -115,11 +115,11 @@ public:
   /// \sa xiiProcessLaunchFlags
   xiiResult Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProcessLaunchFlags> launchFlags = xiiProcessLaunchFlags::None);
 
-  /// \brief Resumes a process that was launched in a suspended state. Returns XII_FAILURE if the process has not been launched or already
+  /// Resumes a process that was launched in a suspended state. Returns XII_FAILURE if the process has not been launched or already
   /// resumed.
   xiiResult ResumeSuspended();
 
-  /// \brief Waits the given amount of time for the previously launched process to finish.
+  /// Waits the given amount of time for the previously launched process to finish.
   ///
   /// Pass in xiiTime::MakeZero() to wait indefinitely.
   /// Returns XII_FAILURE, if the process did not finish within the given time.
@@ -127,30 +127,30 @@ public:
   /// \note Asserts that the xiiProcess instance was used to successfully launch a process before.
   xiiResult WaitToFinish(xiiTime timeout = xiiTime::MakeZero());
 
-  /// \brief Kills the detached process, if possible.
+  /// Kills the detached process, if possible.
   xiiResult Terminate();
 
-  /// \brief Returns the exit code of the process. The exit code will be -0xFFFF as long as the process has not finished.
+  /// Returns the exit code of the process. The exit code will be -0xFFFF as long as the process has not finished.
   xiiInt32 GetExitCode() const;
 
-  /// \brief Returns the running state of the process
+  /// Returns the running state of the process
   ///
   /// If the state is 'finished' the exit code (as returned by GetExitCode() ) will be updated.
   xiiProcessState GetState() const;
 
-  /// \brief Detaches the running process from the xiiProcess instance.
+  /// Detaches the running process from the xiiProcess instance.
   ///
   /// This means the xiiProcess instance loses control over terminating the process or communicating with it.
   /// It also means that the process will keep running and not get terminated when the xiiProcess instance is destroyed.
   void Detach();
 
-  /// \brief Returns the OS specific handle to the process
+  /// Returns the OS specific handle to the process
   xiiOsProcessHandle GetProcessHandle() const;
 
-  /// \brief Returns the OS-specific process ID (PID)
+  /// Returns the OS-specific process ID (PID)
   xiiOsProcessID GetProcessID() const;
 
-  /// \brief Returns OS-specific process ID (PID) for the calling process
+  /// Returns OS-specific process ID (PID) for the calling process
   static xiiOsProcessID GetCurrentProcessID();
 
 private:

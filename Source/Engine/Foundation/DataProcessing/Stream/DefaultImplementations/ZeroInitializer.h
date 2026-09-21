@@ -9,7 +9,7 @@
 
 class xiiProcessingStream;
 
-/// \brief This element spawner initializes new elements with 0 (by writing 0 bytes into the whole element).
+/// This element spawner initializes new elements with 0 (by writing 0 bytes into the whole element).
 class XII_FOUNDATION_DLL xiiProcessingStreamSpawnerZeroInitialized : public xiiProcessingStreamProcessor
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiProcessingStreamSpawnerZeroInitialized, xiiProcessingStreamProcessor);
@@ -17,7 +17,7 @@ class XII_FOUNDATION_DLL xiiProcessingStreamSpawnerZeroInitialized : public xiiP
 public:
   xiiProcessingStreamSpawnerZeroInitialized();
 
-  /// \brief Which stream to zero initialize
+  /// Which stream to zero initialize
   void SetStreamName(xiiStringView sStreamName);
 
 protected:

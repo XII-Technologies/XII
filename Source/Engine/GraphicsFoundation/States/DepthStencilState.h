@@ -7,7 +7,7 @@
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
-/// \brief This describes the stencil operation.
+/// This describes the stencil operation.
 ///
 /// [D3D11_STENCIL_OP]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476219(v=vs.85).aspx
 /// [D3D12_STENCIL_OP]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770409(v=vs.85).aspx
@@ -37,7 +37,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStencilOperation
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALStencilOperation);
 
-/// \brief This describes the stencil operation that are performed on the results of the depth test.
+/// This describes the stencil operation that are performed on the results of the depth test.
 ///
 /// [D3D11_DEPTH_STENCILOP_DESC]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476109(v=vs.85).aspx
 /// [D3D12_DEPTH_STENCILOP_DESC]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770355(v=vs.85).aspx
@@ -52,7 +52,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStencilOperationDescription : public xii
   xiiEnum<xiiGALComparisonFunction> m_ComparisonFunction        = xiiGALComparisonFunction::Always; ///< A function that compares stencil data against existing stencil data. The default is Always.
 };
 
-/// \brief This describes the depth stencil state creation description.
+/// This describes the depth stencil state creation description.
 ///
 /// [D3D11_DEPTH_STENCIL_DESC]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476110(v=vs.85).aspx
 /// [D3D12_DEPTH_STENCIL_DESC]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770356(v=vs.85).aspx
@@ -71,13 +71,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilStateCreationDescription : p
   xiiGALStencilOperationDescription m_BackFace;                                                 ///< Identify stencil operations for the back-facing triangles.
 };
 
-/// \brief Interface that defines methods to manipulate a depth stencil state object.
+/// Interface that defines methods to manipulate a depth stencil state object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilState : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDepthStencilState, xiiGALDeviceObject);
 
 public:
-  /// \brief This returns the creation description for this object.
+  /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDepthStencilStateCreationDescription& GetDescription() const { return m_Description; };
 
 protected:
