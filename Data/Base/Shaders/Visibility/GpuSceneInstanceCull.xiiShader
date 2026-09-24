@@ -1,0 +1,38 @@
+// Stage one: compact scene instances that pass flags, residency, mask, and frustum tests.
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include "GpuSceneCommon.h"
+
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuVisibilityView> g_VisibilityView;
+StructuredBuffer<GpuGeometryRecord> g_Geometry;
+RWStructuredBuffer<uint> g_VisibleInstances;
+RWBuffer<uint> g_VisibleInstanceCount;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const GpuVisibilityView view = g_VisibilityView[0];
+  const uint instanceIndex = dispatchThreadId.x;
+  if (instanceIndex >= view.InstanceCount)
+    return;
+
+  GpuSceneInstance instance = g_SceneInstances[instanceIndex];
+  if ((instance.Flags & view.RequiredFlags) != view.RequiredFlags || (instance.Flags & view.ExcludedFlags) != 0u || (instance.VisibilityMask & view.VisibilityMask) == 0u)
+    return;
+  if (instance.GeometryIndex == 0xFFFFFFFFu)
+    return;
+
+  GpuGeometryRecord geometry = g_Geometry[instance.GeometryIndex];
+  if (geometry.ResidentLodMask == 0u || !SphereInsideFrustum(instance.BoundsCenterRadius.xyz, instance.BoundsCenterRadius.w, view))
+    return;
+
+  uint destination;
+  InterlockedAdd(g_VisibleInstanceCount[0], 1u, destination);
+  g_VisibleInstances[destination] = instanceIndex;
+}

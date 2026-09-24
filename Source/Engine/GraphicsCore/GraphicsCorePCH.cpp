@@ -154,5 +154,6 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureCubeResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureLoader);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureUtils);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Visibility_Implementation_GpuVisibilitySystem);
   XII_STATICLINK_REFERENCE(GraphicsCore_Utils_Implementation_WorldGeoExtractionUtil);
 }
