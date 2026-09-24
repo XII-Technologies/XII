@@ -1,0 +1,37 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include "GpuHiZBuildConstants.h"
+
+Texture2D<float>   g_HiZSource;
+RWTexture2D<float> g_HiZDestination;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (any(dispatchThreadId.xy >= DstSize))
+    return;
+
+  if (Reduce == 0u)
+  {
+    g_HiZDestination[dispatchThreadId.xy] = g_HiZSource.Load(int3(dispatchThreadId.xy, 0));
+    return;
+  }
+
+  const uint2 maximumSource = max(SrcSize, 1u) - 1u;
+  const uint2 sourceBase = dispatchThreadId.xy * 2u;
+  const uint2 p00 = min(sourceBase, maximumSource);
+  const uint2 p10 = min(sourceBase + uint2(1u, 0u), maximumSource);
+  const uint2 p01 = min(sourceBase + uint2(0u, 1u), maximumSource);
+  const uint2 p11 = min(sourceBase + uint2(1u, 1u), maximumSource);
+
+  // XII uses reversed Z. A minimum reduction is conservative: a coarse texel may only
+  // occlude an object when every covered fine texel contains closer geometry.
+  const float conservativeDepth = min(min(g_HiZSource.Load(int3(p00, 0)), g_HiZSource.Load(int3(p10, 0))),
+                                      min(g_HiZSource.Load(int3(p01, 0)), g_HiZSource.Load(int3(p11, 0))));
+  g_HiZDestination[dispatchThreadId.xy] = conservativeDepth;
+}

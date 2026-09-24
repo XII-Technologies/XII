@@ -35,6 +35,7 @@
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsCore/Visibility/GpuHiZPyramid.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
 #include <Shaders/GpuDrivenSceneConstants.h>
@@ -128,16 +129,18 @@ public:
       m_pRenderGraph->BeginSetup(m_uiFrameIndex);
       const auto geometry = m_World.GetGeometryResidency().AddUploadPass(*m_pRenderGraph, m_uiFrameIndex);
       const xiiRenderGraphBufferHandle hMaterials = m_World.GetMaterialSystem().AddUploadPass(*m_pRenderGraph);
+      const xiiRenderGraphTextureHandle hPreviousHiZ = m_HiZPyramid.ImportPrevious(*m_pRenderGraph, m_uiFrameIndex);
 
       xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
-        viewProjection, frustum, m_Camera.GetPosition(), targetSize.width, targetSize.height, 0U,
+        viewProjection, frustum, m_Camera.GetPosition(), targetSize.width, targetSize.height,
+        hPreviousHiZ.IsValid() ? m_HiZPyramid.GetMipLevelCount() : 0U,
         m_World.GetScene().GetObjectCount());
       xiiGpuVisibilityPassDescription visibilityPass;
       visibilityPass.m_sName = "Main View";
       visibilityPass.m_Purpose = xiiGpuVisibilityPurpose::MainView;
       visibilityPass.m_bAsyncCompute = m_Configuration.m_bAsyncCompute;
       const xiiGpuVisibilityOutputs visibility = m_Visibility.AddPasses(
-        *m_pRenderGraph, m_uiFrameIndex, m_World.GetScene(), visibilityView, geometry, visibilityPass);
+        *m_pRenderGraph, m_uiFrameIndex, m_World.GetScene(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
 
       m_pRenderGraph->AddPass<SceneTargetsPassData>(
         "Create Scene Targets", xiiGALCommandQueueFlags::Graphics,
@@ -186,6 +189,9 @@ public:
       drawPass.first->m_uiMaterialFrameBase = m_World.GetMaterialFrameBase(m_uiFrameIndex);
       drawPass.first->m_uiMaterialStride = m_World.GetMaterialSystem().GetGpuStorage().GetMaterialStride();
 
+      // The depth rendered this frame becomes conservative occlusion history for the next one.
+      m_HiZPyramid.AddBuildPass(*m_pRenderGraph, m_uiFrameIndex, drawPass.first->m_hDepth, m_Configuration.m_bAsyncCompute);
+
       m_pRenderGraph->AddPass<PresentPassData>(
         "Present GPU Scene", xiiGALCommandQueueFlags::Graphics,
         [this](PresentPassData& data, xiiRenderGraphBuilder& builder) {
@@ -202,12 +208,13 @@ public:
         }, true);
 
       m_pRenderGraph->EndSetup();
-      m_pRenderGraphResourceCache->BeginFrame(m_uiFrameIndex);
+      m_pRenderGraphResourceCache->BeginFrame(m_uiFrameIndex, uiCompletedFrame);
       xiiStringBuilder error;
       xiiRenderGraphCompileSettings settings;
       settings.m_bEnablePassCulling = true;
       settings.m_bEnableCompileCache = true;
       settings.m_bEnableAsyncQueues = true;
+      settings.m_bEnableSplitBarriers = true;
       settings.m_bEnableGPUProfiling = true;
       if (m_pRenderGraph->Compile(settings, &error).Succeeded())
       {
@@ -300,6 +307,11 @@ public:
     visibilityDescription.m_uiMaxVisibleMeshlets = m_Configuration.m_uiMaxVisibleMeshlets;
     visibilityDescription.m_uiMaxDrawCommands = 1U;
     m_Visibility.Initialize(m_pDevice.Borrow(), visibilityDescription).AssertSuccess();
+    xiiGpuHiZPyramidDescription hiZDescription;
+    hiZDescription.m_uiFramesInFlight = visibilityDescription.m_uiFramesInFlight;
+    m_HiZPyramid.Initialize(m_pDevice.Borrow(), hiZDescription).AssertSuccess();
+    const xiiSizeU32 initialSize = m_pWindow->GetClientAreaSize();
+    m_HiZPyramid.Resize(initialSize.width, initialSize.height).AssertSuccess();
 
     const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/GpuDrivenScene.xiiShader");
     m_hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
@@ -310,6 +322,7 @@ public:
   {
     if (m_pDevice)
       m_pDevice->WaitIdle();
+    m_HiZPyramid.Shutdown();
     m_Visibility.Shutdown();
     m_World.Shutdown(m_uiFrameIndex);
     m_hShaderPermutation.Invalidate();
@@ -352,6 +365,9 @@ private:
       // acquired images and satisfies VUID-vkDestroySwapchainKHR-swapchain-01282.
       m_pDevice->WaitIdle();
       m_pSwapChain->Resize(m_pWindow->GetClientAreaSize()).AssertSuccess();
+      const xiiSizeU32 size = m_pWindow->GetClientAreaSize();
+      if (m_HiZPyramid.GetMipLevelCount() != 0U && size.HasNonZeroArea())
+        m_HiZPyramid.Resize(size.width, size.height).AssertSuccess();
     }
   }
 
@@ -442,6 +458,7 @@ private:
   xiiShaderPermutationResourceHandle            m_hShaderPermutation;
   xiiGpuDrivenSceneConfiguration                 m_Configuration;
   xiiGpuDrivenSceneWorld                         m_World;
+  xiiGpuHiZPyramid                              m_HiZPyramid;
   xiiGpuVisibilitySystem                         m_Visibility;
   xiiCamera                                      m_Camera;
   xiiUInt64                                      m_uiFrameIndex = 0U;
