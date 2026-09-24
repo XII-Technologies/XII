@@ -50,6 +50,7 @@ namespace
     xiiRenderGraphBufferHandle m_hScene;
     xiiRenderGraphBufferHandle m_hView;
     xiiDynamicArray<xiiGpuSceneInstance> m_Instances;
+    xiiDynamicArray<xiiSceneUploadRange> m_UploadRanges;
     xiiGpuVisibilityView m_View;
   };
 
@@ -130,6 +131,7 @@ xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpu
   m_Description = description;
   m_pSceneBuffers.SetCount(description.m_uiFramesInFlight);
   m_pViewBuffers.SetCount(description.m_uiFramesInFlight);
+  m_SceneBufferMirrors.SetCount(description.m_uiFramesInFlight);
   for (xiiUInt32 i = 0; i < description.m_uiFramesInFlight; ++i)
   {
     auto sceneDesc = MakeBuffer(description.m_uiMaxInstances * sizeof(xiiGpuSceneInstance), sizeof(xiiGpuSceneInstance), xiiGALBindFlags::ShaderResource);
@@ -160,6 +162,7 @@ void xiiGpuVisibilitySystem::Shutdown()
   m_pCommandBuildPipeline.Clear();
   m_pSceneBuffers.Clear();
   m_pViewBuffers.Clear();
+  m_SceneBufferMirrors.Clear();
   m_Description = {};
 }
 
@@ -208,11 +211,45 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       builder.SetPassAllowMerge(false);
     },
     [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
-      if (!data.m_Instances.IsEmpty())
-        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hScene), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Instances.GetData()), data.m_Instances.GetCount() * sizeof(xiiGpuSceneInstance)));
+      for (const xiiSceneUploadRange& range : data.m_UploadRanges)
+      {
+        const xiiGpuSceneInstance* pFirstInstance = data.m_Instances.GetData() + range.m_uiFirstInstance;
+        context.GetCommandList().UpdateBuffer(
+          context.GetBuffer(data.m_hScene),
+          range.m_uiFirstInstance * sizeof(xiiGpuSceneInstance),
+          xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(pFirstInstance), range.m_uiInstanceCount * sizeof(xiiGpuSceneInstance)));
+      }
       context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hView), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&data.m_View), sizeof(data.m_View)));
     });
   upload.first->m_Instances = scene.GetGpuInstances();
+  xiiDynamicArray<xiiGpuSceneInstance>& sceneMirror = m_SceneBufferMirrors[uiFrameSlot];
+  if (sceneMirror.GetCount() != upload.first->m_Instances.GetCount())
+  {
+    if (!upload.first->m_Instances.IsEmpty())
+      upload.first->m_UploadRanges.PushBack({0U, upload.first->m_Instances.GetCount()});
+  }
+  else
+  {
+    bool bRangeOpen = false;
+    xiiUInt32 uiRangeStart = 0U;
+    for (xiiUInt32 i = 0U; i < upload.first->m_Instances.GetCount(); ++i)
+    {
+      const bool bDirty = xiiMemoryUtils::RawByteCompare(&sceneMirror[i], &upload.first->m_Instances[i], sizeof(xiiGpuSceneInstance)) != 0;
+      if (bDirty && !bRangeOpen)
+      {
+        bRangeOpen = true;
+        uiRangeStart = i;
+      }
+      else if (!bDirty && bRangeOpen)
+      {
+        upload.first->m_UploadRanges.PushBack({uiRangeStart, i - uiRangeStart});
+        bRangeOpen = false;
+      }
+    }
+    if (bRangeOpen)
+      upload.first->m_UploadRanges.PushBack({uiRangeStart, upload.first->m_Instances.GetCount() - uiRangeStart});
+  }
+  sceneMirror = upload.first->m_Instances;
   upload.first->m_View = view;
   upload.first->m_View.m_uiInstanceCount = uiInstanceCount;
   upload.first->m_View.m_uiGeometryBaseIndex = geometry.m_uiGeometryBaseIndex;

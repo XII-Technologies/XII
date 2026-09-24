@@ -367,6 +367,12 @@ void xiiSceneDatabase::RebuildGpuInstances()
       bRangeOpen = false;
     }
     m_GpuDirty[uiObject] = 0U;
+
+    // Previous transforms describe exactly one frame interval. Once this frame's GPU
+    // record has captured the pair, advance the history even when the object will not
+    // be explicitly modified next frame; otherwise a stopped object reports motion
+    // forever.
+    m_PreviousGlobalTransforms[uiObject] = m_GlobalTransforms[uiObject];
   }
 
   if (bRangeOpen)

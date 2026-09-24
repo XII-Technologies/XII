@@ -105,6 +105,9 @@ private:
   xiiGpuVisibilityDescription m_Description;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pSceneBuffers;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pViewBuffers;
+  /// Last contents uploaded to each frame-in-flight scene buffer. A mirror per slot is
+  /// required because consecutive CPU frames rotate across different GPU allocations.
+  xiiDynamicArray<xiiDynamicArray<xiiGpuSceneInstance>> m_SceneBufferMirrors;
   xiiSharedPtr<xiiGALComputePipelineState> m_pInstanceCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pHiZOcclusionPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletCullPipeline;
