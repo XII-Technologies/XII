@@ -28,7 +28,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   if (instance.GeometryIndex == 0xFFFFFFFFu)
     return;
 
-  GpuGeometryRecord geometry = g_Geometry[instance.GeometryIndex];
+  GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
   if (geometry.ResidentLodMask == 0u || !SphereInsideFrustum(instance.BoundsCenterRadius.xyz, instance.BoundsCenterRadius.w, view))
     return;
 

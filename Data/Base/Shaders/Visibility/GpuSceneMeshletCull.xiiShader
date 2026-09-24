@@ -27,7 +27,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const uint instanceIndex = g_VisibleInstances[dispatchThreadId.x];
   const GpuSceneInstance instance = g_SceneInstances[instanceIndex];
   const GpuVisibilityView view = g_VisibilityView[0];
-  const GpuGeometryRecord geometry = g_Geometry[instance.GeometryIndex];
+  const GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
   const float distanceToCamera = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
   const uint lodIndex = SelectResidentLod(geometry, distanceToCamera, view.ViewportAndHiZ.y);
   if (lodIndex == 0xFFFFFFFFu)

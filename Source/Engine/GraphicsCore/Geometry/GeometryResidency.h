@@ -123,6 +123,8 @@ public:
   {
     xiiRenderGraphBufferHandle m_hGeometryMetadata;
     xiiRenderGraphBufferHandle m_hMeshletMetadata;
+    /// First geometry record in the frame slice uploaded by AddUploadPass().
+    xiiUInt32                  m_uiGeometryBaseIndex = 0U;
   };
 
   [[nodiscard]] UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);

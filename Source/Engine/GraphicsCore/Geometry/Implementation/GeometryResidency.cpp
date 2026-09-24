@@ -356,6 +356,7 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
   UploadHandles result;
   result.m_hGeometryMetadata = pass.first->m_hGeometryBuffer;
   result.m_hMeshletMetadata  = pass.first->m_hMeshletBuffer;
+  result.m_uiGeometryBaseIndex = uiFrameSlice * m_Slots.GetCount();
   return result;
 }
 

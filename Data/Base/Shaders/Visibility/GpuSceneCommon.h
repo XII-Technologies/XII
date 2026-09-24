@@ -26,6 +26,8 @@ struct GpuVisibilityView
   uint VisibilityMask;
   uint RequiredFlags;
   uint ExcludedFlags;
+  uint GeometryBaseIndex;
+  uint3 Padding;
 };
 
 struct GpuGeometryLod

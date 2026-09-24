@@ -18,7 +18,38 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiUInt32 m_uiVisibilityMask = 0xFFFFFFFFU;
   xiiUInt32 m_uiRequiredFlags = xiiSceneObjectFlags::Enabled;
   xiiUInt32 m_uiExcludedFlags = 0U;
+  xiiUInt32 m_uiGeometryBaseIndex = 0U;
+  xiiUInt32 m_uiPadding[3] = {};
 };
+
+/// Identifies an independently culled visibility set for profiling and editor tooling.
+struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPurpose
+{
+  using StorageType = xiiUInt8;
+  enum Enum : StorageType
+  {
+    MainView,
+    Shadow,
+    Reflection,
+    Sensor,
+    Editor,
+
+    Default = MainView
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPurpose);
+
+/// Names and schedules one per-pass visibility set. Multiple descriptions can be submitted to the
+/// same graph without resource-name collisions.
+struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPassDescription
+{
+  xiiString                         m_sName = "Main View";
+  xiiEnum<xiiGpuVisibilityPurpose>  m_Purpose = xiiGpuVisibilityPurpose::MainView;
+  bool                              m_bAsyncCompute = true;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPassDescription);
 
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityDescription
 {
@@ -60,7 +91,13 @@ public:
 
   /// Adds upload and async-compute visibility passes. The geometry handles must be returned by
   /// xiiGeometryResidencyManager::AddUploadPass in the same graph setup.
-  [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, xiiRenderGraphTextureHandle hHiZ = {});
+  [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
+
+  /// Compatibility overload for the main view.
+  [[nodiscard]] xiiGpuVisibilityOutputs AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, xiiRenderGraphTextureHandle hHiZ = {})
+  {
+    return AddPasses(graph, uiFrameIndex, scene, view, geometry, xiiGpuVisibilityPassDescription{}, hHiZ);
+  }
 
 private:
   xiiSharedPtr<xiiGALComputePipelineState> LoadComputePipeline(xiiStringView sShaderPath);
