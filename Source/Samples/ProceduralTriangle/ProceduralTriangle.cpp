@@ -125,8 +125,8 @@ public:
 
         m_pRenderGraphResourceCache->BeginFrame(m_uiFrameIndex);
         {
-          xiiStringBuilder     sError;
-          xiiRGCompileSettings settings;
+          xiiStringBuilder              sError;
+          xiiRenderGraphCompileSettings settings;
           settings.m_bEnablePassCulling  = true;
           settings.m_bEnableCompileCache = true;
           settings.m_bEnableAsyncQueues  = true;
@@ -335,11 +335,11 @@ public:
 private:
   struct OffscreenPassData
   {
-    xiiRGTextureHandle m_hOffScreenTexture;
-    float              m_fGlobalTime = 0.0f;
+    xiiRenderGraphTextureHandle m_hOffScreenTexture;
+    float                       m_fGlobalTime = 0.0f;
   };
 
-  void SetupOffscreenPass(OffscreenPassData& data, xiiRGBuilder& builder)
+  void SetupOffscreenPass(OffscreenPassData& data, xiiRenderGraphBuilder& builder)
   {
     xiiGALTextureCreationDescription textureDescription;
     textureDescription.m_Type      = xiiGALResourceDimension::Texture2D;
@@ -354,7 +354,7 @@ private:
     data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
   }
 
-  void ExecuteOffscreenPass(const OffscreenPassData& data, xiiRGPassContext& context)
+  void ExecuteOffscreenPass(const OffscreenPassData& data, xiiRenderGraphPassContext& context)
   {
     xiiGALCommandList& cmd = context.GetCommandList();
 
@@ -367,14 +367,14 @@ private:
 
   struct ProceduralTrianglePassData
   {
-    xiiRGTextureHandle                 m_hOffScreenTexture;
-    xiiRGBufferHandle                  m_hTriangleConstantBuffer;
+    xiiRenderGraphTextureHandle        m_hOffScreenTexture;
+    xiiRenderGraphBufferHandle         m_hTriangleConstantBuffer;
     xiiShaderResourceHandle            m_hShader;
     xiiShaderPermutationResourceHandle m_hShaderPermutation;
     xiiSharedPtr<xiiGALRenderPass>     m_pRenderPass;
   };
 
-  void SetupProceduralTrianglePass(ProceduralTrianglePassData& data, xiiRGBuilder& builder)
+  void SetupProceduralTrianglePass(ProceduralTrianglePassData& data, xiiRenderGraphBuilder& builder)
   {
     data.m_hOffScreenTexture  = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::RenderTarget);        // Declare that we will read from the offscreen texture in this pass, which will create a dependency on the previous pass that writes to it and ensure proper synchronization. The returned handle references the texture at its current version, so store and use this handle for all future reads/writes.
     data.m_hOffScreenTexture  = builder.WriteTexture(data.m_hOffScreenTexture, xiiGALResourceStateFlags::RenderTarget); // Declare that we will write to the offscreen texture again in this pass, which will bump its version and ensure proper synchronization with the previous pass.
@@ -418,7 +418,7 @@ private:
     data.m_hTriangleConstantBuffer                          = builder.WriteBuffer("TriangleConstantBuffer", triangleConstantBufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
   }
 
-  void ExecuteProceduralTrianglePass(const ProceduralTrianglePassData& data, xiiRGPassContext& context)
+  void ExecuteProceduralTrianglePass(const ProceduralTrianglePassData& data, xiiRenderGraphPassContext& context)
   {
     xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -479,11 +479,11 @@ private:
 
   struct BlitPassData
   {
-    xiiRGTextureHandle m_hBackBufferTexture;
-    xiiRGTextureHandle m_hOffScreenTexture;
+    xiiRenderGraphTextureHandle m_hBackBufferTexture;
+    xiiRenderGraphTextureHandle m_hOffScreenTexture;
   };
 
-  void SetupBlitPass(BlitPassData& data, xiiRGBuilder& builder)
+  void SetupBlitPass(BlitPassData& data, xiiRenderGraphBuilder& builder)
   {
     // Declare that we will read from the offscreen texture created in the previous pass.
     // This registers a read dependency on that pass, so it will be scheduled after it and the texture will be transitioned to the correct state before we read from it.
@@ -496,7 +496,7 @@ private:
     builder.SetPassSideEffects(true);
   }
 
-  void ExecuteBlitPass(const BlitPassData& data, xiiRGPassContext& context)
+  void ExecuteBlitPass(const BlitPassData& data, xiiRenderGraphPassContext& context)
   {
     xiiGALCommandList& cmd = context.GetCommandList();
 
