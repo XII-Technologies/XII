@@ -558,12 +558,13 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
     return XII_SUCCESS;
   }
 
+  // Phase E: multi-queue scheduling.
+  // Queue assignment must precede lifetime analysis: aliasing is only legal when both
+  // logical resources live on the same ordered queue timeline.
+  PhaseE_MultiQueueScheduling(sortedIndices, nullptr, settings);
+
   // Phase C: transient resource lifetime analysis.
   PhaseC_LifetimeAnalysis(sortedIndices);
-
-  // Phase E: multi-queue scheduling.
-  // Pass nullptr device here, queue checks happen at Execute time.
-  PhaseE_MultiQueueScheduling(sortedIndices, nullptr, settings);
 
   // Phase D: barrier synthesis. Queue assignment runs first so barriers can encode ownership
   // transfers and the scheduler can pair them with fence waits.
@@ -651,6 +652,10 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
 
   xiiTemporaryArray<xiiTemporaryHybridArray<xiiUInt32, 4>> adjacency;
   adjacency.SetCount(uiPassCount);
+  // Only true data-flow edges participate in liveness. WAW/WAR edges order accesses to
+  // the same physical allocation, but must not keep otherwise-unused passes alive.
+  xiiTemporaryArray<xiiTemporaryHybridArray<xiiUInt32, 4>> dataAdjacency;
+  dataAdjacency.SetCount(uiPassCount);
 
   // Build producer map: (resource index, version) -> pass index.
   xiiHashTable<xiiUInt64, xiiUInt32> producerMap; // Key = resource index | (version << 32).
@@ -672,6 +677,12 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
     ++inDegree[uiConsumerPassIndex];
   };
 
+  auto AddDataDependency = [&](xiiUInt32 uiProducerPassIndex, xiiUInt32 uiConsumerPassIndex) {
+    AddDependency(uiProducerPassIndex, uiConsumerPassIndex);
+    if (uiProducerPassIndex != uiConsumerPassIndex && !dataAdjacency[uiProducerPassIndex].Contains(uiConsumerPassIndex))
+      dataAdjacency[uiProducerPassIndex].PushBack(uiConsumerPassIndex);
+  };
+
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < uiPassCount; ++uiPassIndex)
   {
     for (const ResourceUsage& read : m_Passes[uiPassIndex].m_Reads)
@@ -681,7 +692,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
 
       if (producerMap.TryGetValue(uiKey, uiProducerPassIndex) && uiProducerPassIndex != uiPassIndex)
       {
-        AddDependency(uiProducerPassIndex, uiPassIndex);
+        AddDataDependency(uiProducerPassIndex, uiPassIndex);
       }
     }
 
@@ -698,6 +709,15 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
       if (producerMap.TryGetValue(uiParentKey, uiProducerPassIndex))
       {
         AddDependency(uiProducerPassIndex, uiPassIndex);
+      }
+
+      // A new version reuses the same physical resource. Every reader of the parent
+      // version must finish before the overwrite, including readers declared after the
+      // writer and readers running on another queue (WAR dependency).
+      const VersionEntry& parentVersion = m_Resources[write.m_uiResourceIndex].m_Versions[version.m_uiParentVersion];
+      for (xiiUInt32 uiReaderPassIndex : parentVersion.m_ReaderPassIndices)
+      {
+        AddDependency(uiReaderPassIndex, uiPassIndex);
       }
     }
   }
@@ -762,7 +782,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
 
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < uiPassCount; ++uiPassIndex)
   {
-    for (xiiUInt32 uiSuccessor : adjacency[uiPassIndex])
+    for (xiiUInt32 uiSuccessor : dataAdjacency[uiPassIndex])
     {
       reverseAdjacency[uiSuccessor].PushBack(uiPassIndex);
     }
@@ -1214,7 +1234,12 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
     {
       const VersionEntry& version = m_Resources[write.m_uiResourceIndex].m_Versions[write.m_uiVersion];
       if (version.m_uiParentVersion != 0xFFFFU)
-        AddProducer(m_Resources[write.m_uiResourceIndex].m_Versions[version.m_uiParentVersion].m_uiProducerPassIdx);
+      {
+        const VersionEntry& parentVersion = m_Resources[write.m_uiResourceIndex].m_Versions[version.m_uiParentVersion];
+        AddProducer(parentVersion.m_uiProducerPassIdx);
+        for (xiiUInt32 uiReaderPassIndex : parentVersion.m_ReaderPassIndices)
+          AddProducer(uiReaderPassIndex);
+      }
     }
   }
 
