@@ -131,7 +131,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
     XII_SCOPE_EXIT(vkDescriptorSetLayoutBindings.Clear(); vkDescriptorBindingFlags.Clear(); vkTempSamplerArrayAssignment.Clear(););
 
-    bool bUpdateAfterBind = false;
+    bool bHasBindingFlags = false;
 
     for (xiiUInt32 uiResourceIndex = 0; uiResourceIndex < setLayout.GetCount(); ++uiResourceIndex)
     {
@@ -148,10 +148,10 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
       if (resourceLayout.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
       {
         // Runtime arrays are fixed-capacity descriptor tables at the API level. Partially-bound
-        // entries make sparse tables legal and update-after-bind permits streaming descriptors
-        // without rebuilding every command list which references the table.
-        vkBindingFlags = vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateAfterBind;
-        bUpdateAfterBind = true;
+        // entries make sparse tables legal. Descriptors are committed before the set is bound, so
+        // update-after-bind is neither needed nor legal when the same set has dynamic buffers.
+        vkBindingFlags = vk::DescriptorBindingFlagBits::ePartiallyBound;
+        bHasBindingFlags = true;
       }
 
       vk::Sampler* pVkImmutableSamplers = nullptr;
@@ -178,12 +178,12 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
     vkDescriptorSetLayoutCreateInfo.pBindings    = !vkDescriptorSetLayoutBindings.IsEmpty() ? vkDescriptorSetLayoutBindings.GetData() : nullptr;
     vkDescriptorSetLayoutCreateInfo.bindingCount = vkDescriptorSetLayoutBindings.GetCount();
-    vkDescriptorSetLayoutCreateInfo.flags = bUpdateAfterBind ? vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool : vk::DescriptorSetLayoutCreateFlags{};
+    vkDescriptorSetLayoutCreateInfo.flags = {};
 
     vk::DescriptorSetLayoutBindingFlagsCreateInfo vkBindingFlagsCreateInfo;
     vkBindingFlagsCreateInfo.bindingCount  = vkDescriptorBindingFlags.GetCount();
     vkBindingFlagsCreateInfo.pBindingFlags = vkDescriptorBindingFlags.GetData();
-    vkDescriptorSetLayoutCreateInfo.pNext  = bUpdateAfterBind ? &vkBindingFlagsCreateInfo : nullptr;
+    vkDescriptorSetLayoutCreateInfo.pNext  = bHasBindingFlags ? &vkBindingFlagsCreateInfo : nullptr;
 
     vk::DescriptorSetLayout& vkDescriptorSetLayout = m_DescriptorSetLayouts.ExpandAndGetRef();
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createDescriptorSetLayout(&vkDescriptorSetLayoutCreateInfo, nullptr, &vkDescriptorSetLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));

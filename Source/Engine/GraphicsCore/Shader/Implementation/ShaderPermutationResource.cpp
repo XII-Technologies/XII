@@ -170,7 +170,10 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
           pExistingResource->m_ShaderStages |= resource.m_ShaderStages;
           pExistingResource->m_uiArraySize = xiiMath::Max(pExistingResource->m_uiArraySize, uiDescriptorCount);
           if (bRuntimeArray)
+          {
             pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::RuntimeArray);
+            pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::NoDynamicBuffers);
+          }
 
           // If resource types differ, prefer the existing one but log a warning.
           if (pExistingResource->m_ResourceType != resource.m_Type)
@@ -189,7 +192,7 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
           resourceSignature.m_uiArraySize           = uiDescriptorCount;
           resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
           resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
-          resourceSignature.m_PipelineResourceFlags = bRuntimeArray ? xiiGALPipelineResourceFlags::RuntimeArray : xiiGALPipelineResourceFlags::None;
+          resourceSignature.m_PipelineResourceFlags = bRuntimeArray ? xiiGALPipelineResourceFlags::RuntimeArray | xiiGALPipelineResourceFlags::NoDynamicBuffers : xiiGALPipelineResourceFlags::None;
         }
 
         // Immutable Samplers: only add if resource is a sampler and not already present.
