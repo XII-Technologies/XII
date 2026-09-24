@@ -145,6 +145,12 @@ void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFr
 bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget)
 {
   ReleaseMeshletAllocations(slot);
+  const xiiUInt32 uiFirstPendingUpload = m_PendingMeshletUploads.GetCount();
+  auto rollback = [&]() {
+    m_PendingMeshletUploads.SetCount(uiFirstPendingUpload);
+    ReleaseMeshletAllocations(slot);
+  };
+
   xiiGpuGeometryRecord record = slot.m_GpuRecord;
   xiiUInt64 uiBytes = 0U;
   xiiUInt32 uiResidentMask = 0U;
@@ -153,7 +159,10 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
     const xiiGeometryLodSource& source = slot.m_Description.m_Lods[i];
     xiiResourceLock<xiiMeshBufferResource> mesh(source.m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
     if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    {
+      rollback();
       return false;
+    }
 
     xiiGpuGeometryLod& lod = record.m_Lods[i];
     lod.m_uiVertexCount = mesh->GetVertexCount();
@@ -171,7 +180,7 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
       xiiUInt32 uiArenaOffset = 0U;
       if (!AllocateMeshlets(lod.m_uiMeshletCount, uiArenaOffset))
       {
-        ReleaseMeshletAllocations(slot);
+        rollback();
         return false;
       }
       slot.m_uiMeshletArenaOffset[i] = uiArenaOffset;
@@ -193,7 +202,7 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
 
   if (uiBytes > inout_uiUploadBudget)
   {
-    ReleaseMeshletAllocations(slot);
+    rollback();
     return false;
   }
   inout_uiUploadBudget -= uiBytes;
