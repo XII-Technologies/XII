@@ -111,7 +111,7 @@ public:
 
   XII_FORCE_INLINE void FillStats(xiiAllocator::Stats& ref_stats)
   {
-    ref_stats.m_uiAllocationCount   = m_Buckets.GetCount();
+    ref_stats.m_uiAllocationCount = m_Buckets.GetCount();
     for (auto& bucket : m_Buckets)
     {
       ref_stats.m_uiAllocationSize += bucket.GetCount();

@@ -22,8 +22,8 @@
 class xiiFrustum;
 class xiiWorld;
 class xiiRenderGraph;
-class xiiRGBuilder;
-class xiiRGPassContext;
+class xiiRenderGraphBuilder;
+class xiiRenderGraphPassContext;
 class xiiExtractedRenderData;
 class xiiGALBuffer;
 class xiiGALTexture;
@@ -249,212 +249,212 @@ private:
   void RunDynamicResolutionPID();
 
 
-  void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRGBuilder& builder);
-  void ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xiiRGPassContext& context);
+  void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xiiRenderGraphPassContext& context);
 
-  void SetupFrustumCull(xiiFrustumCullData& data, xiiRGBuilder& builder);
-  void ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRGPassContext& context);
+  void SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRenderGraphPassContext& context);
 
-  void SetupLODSelect(xiiLODSelectData& data, xiiRGBuilder& builder);
-  void ExecuteLODSelect(const xiiLODSelectData& data, xiiRGPassContext& context);
+  void SetupLODSelect(xiiLODSelectData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteLODSelect(const xiiLODSelectData& data, xiiRenderGraphPassContext& context);
 
-  void SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRGBuilder& builder);
-  void ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRGPassContext& context);
+  void SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRenderGraphPassContext& context);
 
-  void SetupDrawBuild(xiiDrawBuildData& data, xiiRGBuilder& builder);
-  void ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRGPassContext& context);
+  void SetupDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassContext& context);
 
-  void SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRGBuilder& builder);
-  void ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xiiRGPassContext& context);
+  void SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xiiRenderGraphPassContext& context);
 
-  void SetupLightingDataUpload(xiiLightingDataUploadData& data, xiiRGBuilder& builder);
-  void ExecuteLightingDataUpload(const xiiLightingDataUploadData& data, xiiRGPassContext& context);
+  void SetupLightingDataUpload(xiiLightingDataUploadData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteLightingDataUpload(const xiiLightingDataUploadData& data, xiiRenderGraphPassContext& context);
 
-  void SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder);
-  void ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassContext& context);
+  void SetupClusterBuild(xiiClusterBuildData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRenderGraphPassContext& context);
 
-  void SetupLightListBuild(xiiLightListData& data, xiiRGBuilder& builder);
-  void ExecuteLightListBuild(const xiiLightListData& data, xiiRGPassContext& context);
+  void SetupLightListBuild(xiiLightListData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraphPassContext& context);
 
-  void SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRGBuilder& builder);
-  void ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& data, xiiRGPassContext& context);
+  void SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& data, xiiRenderGraphPassContext& context);
 
-  void SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRGBuilder& builder);
-  void ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRGPassContext& context);
+  void SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRGBuilder& builder);
-  void ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, xiiRGPassContext& context);
+  void SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, xiiRenderGraphPassContext& context);
 
-  void SetupLocalShadowAtlasAllocation(xiiLocalShadowAtlasAllocationData& data, xiiRGBuilder& builder);
-  void ExecuteLocalShadowAtlasAllocation(const xiiLocalShadowAtlasAllocationData& data, xiiRGPassContext& context);
+  void SetupLocalShadowAtlasAllocation(xiiLocalShadowAtlasAllocationData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteLocalShadowAtlasAllocation(const xiiLocalShadowAtlasAllocationData& data, xiiRenderGraphPassContext& context);
 
-  void SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRGBuilder& builder);
-  void ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data, xiiRGPassContext& context);
+  void SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data, xiiRenderGraphPassContext& context);
 
-  void SetupSpotShadowData(xiiSpotShadowData& data, xiiRGBuilder& builder);
-  void ExecuteSpotShadowData(const xiiSpotShadowData& data, xiiRGPassContext& context);
+  void SetupSpotShadowData(xiiSpotShadowData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteSpotShadowData(const xiiSpotShadowData& data, xiiRenderGraphPassContext& context);
 
-  void SetupPointShadowData(xiiPointShadowData& data, xiiRGBuilder& builder);
-  void ExecutePointShadowData(const xiiPointShadowData& data, xiiRGPassContext& context);
+  void SetupPointShadowData(xiiPointShadowData& data, xiiRenderGraphBuilder& builder);
+  void ExecutePointShadowData(const xiiPointShadowData& data, xiiRenderGraphPassContext& context);
 
-  void SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRGBuilder& builder);
-  void ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xiiRGPassContext& context);
+  void SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xiiRenderGraphPassContext& context);
 
-  void SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRGBuilder& builder);
-  void ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRGPassContext& context);
+  void SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRenderGraphPassContext& context);
 
-  void SetupContactShadowData(xiiContactShadowData& data, xiiRGBuilder& builder);
-  void ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPassContext& context);
+  void SetupContactShadowData(xiiContactShadowData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteContactShadowData(const xiiContactShadowData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupDepthPrepass(xiiDepthPrepassData& data, xiiRGBuilder& builder);
-  void ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRGPassContext& context);
+  void SetupDepthPrepass(xiiDepthPrepassData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRenderGraphPassContext& context);
 
-  void SetupHiZPyramid(xiiHiZPyramidData& data, xiiRGBuilder& builder);
-  void ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRGPassContext& context);
+  void SetupHiZPyramid(xiiHiZPyramidData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRenderGraphPassContext& context);
 
-  void SetupHiZOcclusionCull(xiiHiZOcclusionCullData& data, xiiRGBuilder& builder);
-  void ExecuteHiZOcclusionCull(const xiiHiZOcclusionCullData& data, xiiRGPassContext& context);
+  void SetupHiZOcclusionCull(xiiHiZOcclusionCullData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteHiZOcclusionCull(const xiiHiZOcclusionCullData& data, xiiRenderGraphPassContext& context);
 
-  void SetupMotionVectors(xiiMotionVectorsData& data, xiiRGBuilder& builder);
-  void ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRGPassContext& context);
+  void SetupMotionVectors(xiiMotionVectorsData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRenderGraphPassContext& context);
 
-  void SetupVelocityDilation(xiiVelocityDilationData& data, xiiRGBuilder& builder);
-  void ExecuteVelocityDilation(const xiiVelocityDilationData& data, xiiRGPassContext& context);
+  void SetupVelocityDilation(xiiVelocityDilationData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteVelocityDilation(const xiiVelocityDilationData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupGBufferBase(xiiGBufferBaseData& data, xiiRGBuilder& builder);
-  void ExecuteGBufferBase(const xiiGBufferBaseData& data, xiiRGPassContext& context);
+  void SetupGBufferBase(xiiGBufferBaseData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteGBufferBase(const xiiGBufferBaseData& data, xiiRenderGraphPassContext& context);
 
-  void SetupNormalRoughnessPrepass(xiiNormalRoughnessPrepassData& data, xiiRGBuilder& builder);
-  void ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData& data, xiiRGPassContext& context);
+  void SetupNormalRoughnessPrepass(xiiNormalRoughnessPrepassData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupBRDFLutGeneration(xiiBRDFLutGenerationData& data, xiiRGBuilder& builder);
-  void ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xiiRGPassContext& context);
+  void SetupBRDFLutGeneration(xiiBRDFLutGenerationData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xiiRenderGraphPassContext& context);
 
-  void SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRGBuilder& builder);
-  void ExecuteAtmosphereTransmittance(const xiiAtmosphereTransmittanceData& data, xiiRGPassContext& context);
+  void SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteAtmosphereTransmittance(const xiiAtmosphereTransmittanceData& data, xiiRenderGraphPassContext& context);
 
-  void SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRGBuilder& builder);
-  void ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData& data, xiiRGPassContext& context);
+  void SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData& data, xiiRenderGraphPassContext& context);
 
-  void SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& data, xiiRGBuilder& builder);
-  void ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionData& data, xiiRGPassContext& context);
+  void SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionData& data, xiiRenderGraphPassContext& context);
 
-  void SetupReflectionProbeConvolution(xiiReflectionProbeConvolutionData& data, xiiRGBuilder& builder);
-  void ExecuteReflectionProbeConvolution(const xiiReflectionProbeConvolutionData& data, xiiRGPassContext& context);
+  void SetupReflectionProbeConvolution(xiiReflectionProbeConvolutionData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReflectionProbeConvolution(const xiiReflectionProbeConvolutionData& data, xiiRenderGraphPassContext& context);
 
-  void SetupVolumetricFogInitialization(xiiVolumetricFogInitializationData& data, xiiRGBuilder& builder);
-  void ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializationData& data, xiiRGPassContext& context);
+  void SetupVolumetricFogInitialization(xiiVolumetricFogInitializationData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializationData& data, xiiRenderGraphPassContext& context);
 
-  void SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRGBuilder& builder);
-  void ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRGPassContext& context);
+  void SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRGBuilder& builder);
-  void ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOcclusionData& data, xiiRGPassContext& context);
+  void SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphPassContext& context);
 
-  void SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGBuilder& builder);
-  void ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGPassContext& context);
+  void SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRGBuilder& builder);
-  void ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, xiiRGPassContext& context);
+  void SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRGBuilder& builder);
-  void ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& data, xiiRGPassContext& context);
+  void SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationData& data, xiiRGBuilder& builder);
-  void ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIlluminationData& data, xiiRGPassContext& context);
+  void SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIlluminationData& data, xiiRenderGraphPassContext& context);
 
-  void SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRGBuilder& builder);
-  void ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& data, xiiRGPassContext& context);
+  void SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& data, xiiRenderGraphPassContext& context);
 
-  void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRGBuilder& builder);
-  void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRGPassContext& context);
+  void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRenderGraphPassContext& context);
 
-  void SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRGBuilder& builder);
-  void ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationData& data, xiiRGPassContext& context);
+  void SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationData& data, xiiRenderGraphPassContext& context);
 
-  void SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRGBuilder& builder);
-  void ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTemporalReprojectionData& data, xiiRGPassContext& context);
+  void SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphPassContext& context);
 
-  void SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRGBuilder& builder);
-  void ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data, xiiRGPassContext& context);
+  void SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRGBuilder& builder);
-  void ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRGPassContext& context);
+  void SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRenderGraphPassContext& context);
 
-  void SetupForwardMasked(xiiForwardMaskedData& data, xiiRGBuilder& builder);
-  void ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRGPassContext& context);
+  void SetupForwardMasked(xiiForwardMaskedData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRenderGraphPassContext& context);
 
-  void SetupHairRendering(xiiHairRenderingData& data, xiiRGBuilder& builder);
-  void ExecuteHairRendering(const xiiHairRenderingData& data, xiiRGPassContext& context);
+  void SetupHairRendering(xiiHairRenderingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteHairRendering(const xiiHairRenderingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupWaterRendering(xiiWaterRenderingData& data, xiiRGBuilder& builder);
-  void ExecuteWaterRendering(const xiiWaterRenderingData& data, xiiRGPassContext& context);
+  void SetupWaterRendering(xiiWaterRenderingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteWaterRendering(const xiiWaterRenderingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupSubsurfaceScattering(xiiSubsurfaceScatteringData& data, xiiRGBuilder& builder);
-  void ExecuteSubsurfaceScattering(const xiiSubsurfaceScatteringData& data, xiiRGPassContext& context);
+  void SetupSubsurfaceScattering(xiiSubsurfaceScatteringData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteSubsurfaceScattering(const xiiSubsurfaceScatteringData& data, xiiRenderGraphPassContext& context);
 
-  void SetupEyeShader(xiiEyeShaderData& data, xiiRGBuilder& builder);
-  void ExecuteEyeShader(const xiiEyeShaderData& data, xiiRGPassContext& context);
+  void SetupEyeShader(xiiEyeShaderData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteEyeShader(const xiiEyeShaderData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRGBuilder& builder);
-  void ExecuteGPUParticleSimulate(const xiiGPUParticleSimulateData& data, xiiRGPassContext& context);
+  void SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteGPUParticleSimulate(const xiiGPUParticleSimulateData& data, xiiRenderGraphPassContext& context);
 
-  void SetupDecalUpload(xiiDecalUploadData& data, xiiRGBuilder& builder);
-  void ExecuteDecalUpload(const xiiDecalUploadData& data, xiiRGPassContext& context);
+  void SetupDecalUpload(xiiDecalUploadData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteDecalUpload(const xiiDecalUploadData& data, xiiRenderGraphPassContext& context);
 
-  void SetupDecalCullBatch(xiiDecalCullBatchData& data, xiiRGBuilder& builder);
-  void ExecuteDecalCullBatch(const xiiDecalCullBatchData& data, xiiRGPassContext& context);
+  void SetupDecalCullBatch(xiiDecalCullBatchData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteDecalCullBatch(const xiiDecalCullBatchData& data, xiiRenderGraphPassContext& context);
 
-  void SetupProjectedDecalResolve(xiiProjectedDecalResolveData& data, xiiRGBuilder& builder);
-  void ExecuteProjectedDecalResolve(const xiiProjectedDecalResolveData& data, xiiRGPassContext& context);
+  void SetupProjectedDecalResolve(xiiProjectedDecalResolveData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteProjectedDecalResolve(const xiiProjectedDecalResolveData& data, xiiRenderGraphPassContext& context);
 
-  void SetupMeshDecalDraw(xiiMeshDecalDrawData& data, xiiRGBuilder& builder);
-  void ExecuteMeshDecalDraw(const xiiMeshDecalDrawData& data, xiiRGPassContext& context);
+  void SetupMeshDecalDraw(xiiMeshDecalDrawData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteMeshDecalDraw(const xiiMeshDecalDrawData& data, xiiRenderGraphPassContext& context);
 
-  void SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRGBuilder& builder);
-  void ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRGPassContext& context);
+  void SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminationData& data, xiiRGBuilder& builder);
-  void ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIlluminationData& data, xiiRGPassContext& context);
+  void SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminationData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIlluminationData& data, xiiRenderGraphPassContext& context);
 
-  void SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xiiRGBuilder& builder);
-  void ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& data, xiiRGPassContext& context);
+  void SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& data, xiiRenderGraphPassContext& context);
 
-  void SetupPlanarReflections(xiiPlanarReflectionsData& data, xiiRGBuilder& builder);
-  void ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRGPassContext& context);
+  void SetupPlanarReflections(xiiPlanarReflectionsData& data, xiiRenderGraphBuilder& builder);
+  void ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupLuminanceHistogram(xiiLuminanceHistogramData& data, xiiRGBuilder& builder);
-  void ExecuteLuminanceHistogram(const xiiLuminanceHistogramData& data, xiiRGPassContext& context);
+  void SetupLuminanceHistogram(xiiLuminanceHistogramData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteLuminanceHistogram(const xiiLuminanceHistogramData& data, xiiRenderGraphPassContext& context);
 
-  void SetupAutoExposure(xiiAutoExposureData& data, xiiRGBuilder& builder);
-  void ExecuteAutoExposure(const xiiAutoExposureData& data, xiiRGPassContext& context);
+  void SetupAutoExposure(xiiAutoExposureData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteAutoExposure(const xiiAutoExposureData& data, xiiRenderGraphPassContext& context);
 
-  void SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRGBuilder& builder);
-  void ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& data, xiiRGPassContext& context);
+  void SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupUpscale(xiiUpscaleData& data, xiiRGBuilder& builder);
-  void ExecuteUpscale(const xiiUpscaleData& data, xiiRGPassContext& context);
+  void SetupUpscale(xiiUpscaleData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteUpscale(const xiiUpscaleData& data, xiiRenderGraphPassContext& context);
 
-  void SetupBloom(xiiBloomData& data, xiiRGBuilder& builder);
-  void ExecuteBloom(const xiiBloomData& data, xiiRGPassContext& context);
+  void SetupBloom(xiiBloomData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteBloom(const xiiBloomData& data, xiiRenderGraphPassContext& context);
 
-  void SetupColorGrading(xiiColorGradingData& data, xiiRGBuilder& builder);
-  void ExecuteColorGrading(const xiiColorGradingData& data, xiiRGPassContext& context);
+  void SetupColorGrading(xiiColorGradingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteColorGrading(const xiiColorGradingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupToneMapping(xiiToneMappingData& data, xiiRGBuilder& builder);
-  void ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContext& context);
+  void SetupToneMapping(xiiToneMappingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteToneMapping(const xiiToneMappingData& data, xiiRenderGraphPassContext& context);
 
-  void SetupFinalBlit(xiiFinalBlitData& data, xiiRGBuilder& builder);
-  void ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& context);
+  void SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassContext& context);
 
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.

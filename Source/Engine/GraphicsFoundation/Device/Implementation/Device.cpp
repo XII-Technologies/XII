@@ -194,7 +194,7 @@ xiiSharedPtr<xiiGALBlendState> xiiGALDevice::CreateBlendState(const xiiGALBlendS
 
   for (xiiUInt32 i = 0U; i < description.m_RenderTargets.GetCount(); ++i)
   {
-    const auto& rtDescription = description.m_RenderTargets[i];
+    const xiiGALRenderTargetBlendDescription& rtDescription = description.m_RenderTargets[i];
 
     const bool bBlendEnable = rtDescription.m_bBlendEnable && (i == 0U || (description.m_bIndependentBlend && i > 0U));
 
@@ -1502,7 +1502,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
   xiiSet<xiiStringView> groupNames(m_Allocator.GetParent());
   for (xiiUInt32 i = 0; i < description.m_GeneralShaders.GetCount(); ++i)
   {
-    const auto& group = description.m_GeneralShaders[i];
+    const xiiGALRayTracingGeneralShaderGroupDescription& group = description.m_GeneralShaders[i];
 
     XII_GAL_DEVICE_CHECK(!group.m_sName.IsEmpty(), "GeneralShaders[{}].sName must have a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!groupNames.Contains(group.m_sName.GetView()), "GeneralShaders[{}].sName has group name ('{}') that has already been assigned to another group. All group names must be unique.", i, group.m_sName);
@@ -1514,7 +1514,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
 
   for (xiiUInt32 i = 0; i < description.m_TriangleHitShaders.GetCount(); ++i)
   {
-    const auto& group = description.m_TriangleHitShaders[i];
+    const xiiGALRayTracingTriangleHitShaderGroupDescription& group = description.m_TriangleHitShaders[i];
 
     XII_GAL_DEVICE_CHECK(!group.m_sName.IsEmpty(), "TriangleHitShaders[{}].sName must have a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!groupNames.Contains(group.m_sName.GetView()), "TriangleHitShaders[{}].sName has group name ('{}') that has already been assigned to another group. All group names must be unique.", i, group.m_sName);
@@ -1527,7 +1527,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
 
   for (xiiUInt32 i = 0; i < description.m_ProceduralHitShaders.GetCount(); ++i)
   {
-    const auto& group = description.m_ProceduralHitShaders[i];
+    const xiiGALRayTracingProceduralHitShaderGroupDescription& group = description.m_ProceduralHitShaders[i];
 
     XII_GAL_DEVICE_CHECK(!group.m_sName.IsEmpty(), "ProceduralHitShaders[{}].sName must have a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!groupNames.Contains(group.m_sName.GetView()), "ProceduralHitShaders[{}].sName has group name ('{}') that has already been assigned to another group. All group names must be unique.", i, group.m_sName);

@@ -45,6 +45,7 @@ private:
   xiiResult CreateVulkanSwapChain();
   xiiResult RecreateVulkanSwapChain();
   void      ReleaseSwapChainResources(bool bReleaseSwapChain);
+  void      WaitForPresentQueueIdle();
   void      ThrottleFrameSubmission();
 
   xiiResult CreateBackBufferInternal();

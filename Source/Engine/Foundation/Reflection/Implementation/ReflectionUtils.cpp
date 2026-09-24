@@ -1056,7 +1056,7 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, xi
   }
   else if (pEnumerationRtti->IsDerivedFrom<xiiBitflagsBase>())
   {
-    xiiStringBuilder                  temp = sValue;
+    xiiStringBuilder                           temp = sValue;
     xiiTemporaryHybridArray<xiiStringView, 32> values;
     temp.Split(false, values, "|");
     for (auto sValueSplit : values)

@@ -7,10 +7,12 @@
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Types/ArrayPtr.h>
 
-struct xiiRGCompiledPass;
-struct xiiRGBarrierDescription;
-struct xiiRGMergeGroup;
-struct xiiRGQueueSubmission;
+struct xiiRenderGraphCompiledPass;
+struct xiiRenderGraphBarrierDescription;
+struct xiiRenderGraphMergeGroup;
+struct xiiRenderGraphQueueSubmission;
+struct xiiRenderGraphResourceDescription;
+struct xiiRenderGraphResourceVersionDescription;
 
 /// Static utility class for render graph debugging and visualization.
 ///
@@ -34,5 +36,5 @@ public:
   /// \param mergeGroups     - Merge groups from xiiRenderGraph::Compile().
   /// \param queueSubmission - Queue submission ordering from xiiRenderGraph::Compile().
   /// \param out_sDot        - Receives the DOT text on success.
-  [[nodiscard]] static xiiResult DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRGBarrierDescription> pBarriers, xiiArrayPtr<const xiiRGMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRGQueueSubmission> pQueueSubmissions, xiiStringBuilder& out_sDot);
+  [[nodiscard]] static xiiResult DumpToDot(xiiArrayPtr<const xiiRenderGraphCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRenderGraphBarrierDescription> pBarriers, xiiArrayPtr<const xiiRenderGraphMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRenderGraphQueueSubmission> pQueueSubmissions, xiiArrayPtr<const xiiRenderGraphResourceDescription> pResources, xiiArrayPtr<const xiiRenderGraphResourceVersionDescription> pVersions, xiiStringBuilder& out_sDot);
 };

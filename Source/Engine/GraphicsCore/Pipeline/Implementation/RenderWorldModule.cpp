@@ -560,7 +560,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
     pGraph->EndSetup();
 
-    xiiRGCompileSettings compileSettings;
+    xiiRenderGraphCompileSettings compileSettings;
     compileSettings.m_bEnableGPUProfiling = true;
     compileSettings.m_bEnablePassCulling  = true;
     compileSettings.m_bEnableAsyncQueues  = true;

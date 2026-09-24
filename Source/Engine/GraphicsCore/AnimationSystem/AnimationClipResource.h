@@ -105,7 +105,7 @@ public:
 private:
   virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   void LoadOzzAnimation(const xiiDynamicArray<xiiUInt8>& ozzData);
 

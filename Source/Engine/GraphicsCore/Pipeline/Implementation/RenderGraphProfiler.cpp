@@ -26,15 +26,19 @@ void xiiRenderGraphTimestampProfiler::Shutdown()
     m_FrameRing[i].m_PassQueries.Clear();
     m_FrameRing[i].m_SubmissionDurationQueries.Clear();
     m_FrameRing[i].m_SubmissionQueryActive.Clear();
+    m_FrameRing[i].m_SubmissionGraphIds.Clear();
+    m_FrameRing[i].m_SubmissionQueueIndices.Clear();
     m_FrameRing[i].m_uiFrameIndex = xiiInvalidIndex;
   }
   m_pDevice = nullptr;
 
   XII_LOCK(m_ResultMutex);
   m_ResolvedDurationsMs.Clear();
+  m_ResolvedGraphDurationsMs.Clear();
+  m_ResolvedQueueDurationsMs.Clear();
 }
 
-void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex)
+void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
 
@@ -44,7 +48,11 @@ void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandLis
   {
     frame.m_SubmissionDurationQueries.SetCount(uiSubmissionIndex + 1U);
     frame.m_SubmissionQueryActive.SetCount(uiSubmissionIndex + 1U, false);
+    frame.m_SubmissionGraphIds.SetCount(uiSubmissionIndex + 1U, 0ULL);
+    frame.m_SubmissionQueueIndices.SetCount(uiSubmissionIndex + 1U, 0U);
   }
+  frame.m_SubmissionGraphIds[uiSubmissionIndex]     = uiGraphId;
+  frame.m_SubmissionQueueIndices[uiSubmissionIndex] = uiQueueIndex;
 
   xiiSharedPtr<xiiGALQuery>& pSubmissionQuery = frame.m_SubmissionDurationQueries[uiSubmissionIndex];
   if (pSubmissionQuery == nullptr)
@@ -63,8 +71,10 @@ void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandLis
   }
 }
 
-void xiiRenderGraphTimestampProfiler::OnGraphEnd(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex)
+void xiiRenderGraphTimestampProfiler::OnGraphEnd(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex)
 {
+  XII_IGNORE_UNUSED(uiGraphId);
+  XII_IGNORE_UNUSED(uiQueueIndex);
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
 
   if (uiSubmissionIndex >= frame.m_SubmissionDurationQueries.GetCount())
@@ -142,7 +152,9 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
 {
   XII_LOCK(m_ResultMutex);
 
-  float fFrameDurationMs = 0.0f;
+  float                          fFrameDurationMs = 0.0f;
+  xiiHashTable<xiiUInt64, float> frameGraphDurations;
+  xiiHashTable<xiiUInt64, float> frameQueueDurations;
 
   for (PassQueries& pass : frameData.m_PassQueries)
   {
@@ -178,6 +190,16 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
       if (submissionDurationData.m_uiFrequency > 0ULL)
       {
         fFrameDurationMs += static_cast<float>(submissionDurationData.m_uiDuration) / static_cast<float>(submissionDurationData.m_uiFrequency) * 1000.0f;
+        const float     fSubmissionMs = static_cast<float>(submissionDurationData.m_uiDuration) / static_cast<float>(submissionDurationData.m_uiFrequency) * 1000.0f;
+        const xiiUInt64 uiGraphId     = frameData.m_SubmissionGraphIds[uiSubmissionIndex];
+        const xiiUInt64 uiQueueKey    = uiGraphId ^ (0x9E3779B97F4A7C15ULL + static_cast<xiiUInt64>(frameData.m_SubmissionQueueIndices[uiSubmissionIndex]));
+
+        float fGraphMs = 0.0f;
+        frameGraphDurations.TryGetValue(uiGraphId, fGraphMs);
+        frameGraphDurations.Insert(uiGraphId, fGraphMs + fSubmissionMs);
+        float fQueueMs = 0.0f;
+        frameQueueDurations.TryGetValue(uiQueueKey, fQueueMs);
+        frameQueueDurations.Insert(uiQueueKey, fQueueMs + fSubmissionMs);
       }
     }
 
@@ -187,11 +209,17 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
   // Use a reserved name for the total frame duration so callers can query it like a pass.
   static const xiiHashedString s_sFrameTotalName = xiiMakeHashedString("__FrameTotal__");
   m_ResolvedDurationsMs.Insert(s_sFrameTotalName, fFrameDurationMs);
+  for (auto it = frameGraphDurations.GetIterator(); it.IsValid(); ++it)
+    m_ResolvedGraphDurationsMs.Insert(it.Key(), it.Value());
+  for (auto it = frameQueueDurations.GetIterator(); it.IsValid(); ++it)
+    m_ResolvedQueueDurationsMs.Insert(it.Key(), it.Value());
 
   // Clear per-frame arrays so the slot can be reused.
   frameData.m_PassQueries.Clear();
   frameData.m_SubmissionDurationQueries.Clear();
   frameData.m_SubmissionQueryActive.Clear();
+  frameData.m_SubmissionGraphIds.Clear();
+  frameData.m_SubmissionQueueIndices.Clear();
   frameData.m_uiFrameIndex = xiiInvalidIndex;
 }
 
@@ -215,5 +243,22 @@ float xiiRenderGraphTimestampProfiler::GetFrameDurationMs() const
   float fResult = 0.0f;
   m_ResolvedDurationsMs.TryGetValue(s_sFrameTotalName, fResult);
 
+  return fResult;
+}
+
+float xiiRenderGraphTimestampProfiler::GetGraphDurationMs(xiiUInt64 uiGraphId) const
+{
+  XII_LOCK(m_ResultMutex);
+  float fResult = 0.0f;
+  m_ResolvedGraphDurationsMs.TryGetValue(uiGraphId, fResult);
+  return fResult;
+}
+
+float xiiRenderGraphTimestampProfiler::GetQueueDurationMs(xiiUInt64 uiGraphId, xiiUInt32 uiQueueIndex) const
+{
+  XII_LOCK(m_ResultMutex);
+  const xiiUInt64 uiQueueKey = uiGraphId ^ (0x9E3779B97F4A7C15ULL + static_cast<xiiUInt64>(uiQueueIndex));
+  float           fResult    = 0.0f;
+  m_ResolvedQueueDurationsMs.TryGetValue(uiQueueKey, fResult);
   return fResult;
 }

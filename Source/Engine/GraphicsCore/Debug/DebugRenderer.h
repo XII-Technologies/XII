@@ -17,8 +17,8 @@ using xiiRectFloat = xiiRectTemplate<float>;
 class xiiFormatString;
 class xiiFrustum;
 class xiiRenderGraph;
-class xiiRGBuilder;
-class xiiRGPassContext;
+class xiiRenderGraphBuilder;
+class xiiRenderGraphPassContext;
 
 struct xiiDebugUploadData;
 struct xiiDebugVisualizationData;
@@ -276,11 +276,11 @@ public:
   static void AddRenderGraphPasses(xiiRenderGraph& graph);
 
 private:
-  static void SetupDebugUpload(xiiDebugUploadData& data, xiiRGBuilder& builder);
-  static void ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRGPassContext& context);
+  static void SetupDebugUpload(xiiDebugUploadData& data, xiiRenderGraphBuilder& builder);
+  static void ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRenderGraphPassContext& context);
 
-  static void SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder);
-  static void ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context);
+  static void SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder);
+  static void ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRenderGraphPassContext& context);
 
   static void OnEngineStartup();
   static void OnEngineShutdown();

@@ -1526,16 +1526,16 @@ struct xiiDebugUploadData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRGBufferHandle m_hSyncToken;
+  xiiRenderGraphBufferHandle m_hSyncToken;
 };
 
 struct xiiDebugVisualizationData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRGBufferHandle  m_hSyncToken;
-  xiiRGTextureHandle m_hSceneColor;
-  xiiRGTextureHandle m_hSceneDepth;
+  xiiRenderGraphBufferHandle  m_hSyncToken;
+  xiiRenderGraphTextureHandle m_hSceneColor;
+  xiiRenderGraphTextureHandle m_hSceneDepth;
 };
 
 namespace
@@ -2477,7 +2477,7 @@ namespace
 } // namespace
 
 // static
-void xiiDebugRenderer::SetupDebugUpload(xiiDebugUploadData& data, xiiRGBuilder& builder)
+void xiiDebugRenderer::SetupDebugUpload(xiiDebugUploadData& data, xiiRenderGraphBuilder& builder)
 {
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = sizeof(xiiUInt32);
@@ -2492,7 +2492,7 @@ void xiiDebugRenderer::SetupDebugUpload(xiiDebugUploadData& data, xiiRGBuilder& 
 }
 
 // static
-void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRGPassContext& context)
+void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRenderGraphPassContext& context)
 {
   const xiiView* pView = context.GetView();
   if (pView == nullptr)
@@ -2526,7 +2526,7 @@ void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRGP
 }
 
 // static
-void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder)
+void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hSyncToken  = builder.ReadBuffer("DebugUploadSyncToken", xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneColor = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_LDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
@@ -2536,7 +2536,7 @@ void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, 
 }
 
 // static
-void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context)
+void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRenderGraphPassContext& context)
 {
   const xiiView* pView = context.GetView();
   if (pView == nullptr)

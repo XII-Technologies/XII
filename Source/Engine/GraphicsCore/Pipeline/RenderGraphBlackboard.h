@@ -30,11 +30,19 @@ public:
   template <typename T>
   void Set(xiiStringView sKey, T&& value);
 
+  /// Stores data that survives ClearFrame() and is shared by all frames of this graph.
+  template <typename T>
+  void SetGraph(xiiStringView sKey, const T& value);
+
   /// Attempts to retrieve and cast a value to type T. Thread-safe, safe to call from parallel execute threads.
   ///
   /// \returns True if the key exists and the stored value is of type T, false otherwise.
   template <typename T>
   [[nodiscard]] bool TryGet(xiiStringView sKey, T& out_value) const;
+
+  /// Looks in frame scope first, then graph scope.
+  template <typename T>
+  [[nodiscard]] bool TryGetScoped(xiiStringView sKey, T& out_value) const;
 
   /// Returns a typed reference to the stored value. Thread-safe, safe to call from parallel execute threads.
   template <typename T>
@@ -49,8 +57,15 @@ public:
   /// Clears all entries. Not thread-safe.
   void Clear();
 
+  /// Clears only per-frame entries. Graph-scoped entries remain available.
+  void ClearFrame();
+
+  /// Clears only graph-scoped entries.
+  void ClearGraph();
+
 private:
-  xiiHashTable<xiiHashedString, xiiVariant> m_Entries;
+  xiiHashTable<xiiHashedString, xiiVariant> m_FrameEntries;
+  xiiHashTable<xiiHashedString, xiiVariant> m_GraphEntries;
   mutable xiiMutex                          m_ReadMutex;
 };
 

@@ -301,7 +301,7 @@ public:
 private:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* Stream) override;
-  virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
   friend class xiiRenderContext;

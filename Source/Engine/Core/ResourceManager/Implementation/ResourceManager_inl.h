@@ -73,7 +73,7 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::CreateResource(xiiStrin
   // If this does not compile, you either passed in the wrong descriptor type for the given resource type
   // or you forgot to std::move the descriptor when calling CreateResource
   {
-    auto                localDescriptor = std::move(descriptor);
+    auto                       localDescriptor = std::move(descriptor);
     xiiResourceLoadDescription ld              = pResource->CreateResource(std::move(localDescriptor));
     pResource->VerifyAfterCreateResource(ld);
   }

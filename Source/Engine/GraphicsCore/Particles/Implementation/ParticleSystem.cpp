@@ -286,7 +286,7 @@ xiiResult xiiParticleSystemRuntime::AddSimulationPasses(xiiRenderGraph& ref_grap
   return XII_SUCCESS;
 }
 
-void xiiParticleSystemRuntime::SetupSimulationPass(xiiParticleSimulationPassData& ref_data, xiiRGBuilder& ref_builder)
+void xiiParticleSystemRuntime::SetupSimulationPass(xiiParticleSimulationPassData& ref_data, xiiRenderGraphBuilder& ref_builder)
 {
   xiiStringBuilder sResourceName;
 
@@ -338,7 +338,7 @@ void xiiParticleSystemRuntime::SetupSimulationPass(xiiParticleSimulationPassData
   ref_builder.SetPassAllowMerge(false);
 }
 
-void xiiParticleSystemRuntime::ExecuteSimulationPass(const xiiParticleSimulationPassData& data, xiiRGPassContext& ref_context)
+void xiiParticleSystemRuntime::ExecuteSimulationPass(const xiiParticleSimulationPassData& data, xiiRenderGraphPassContext& ref_context)
 {
   xiiGALCommandList& cmd = ref_context.GetCommandList();
   cmd.BeginDebugGroup("ParticleGraphSimulate");

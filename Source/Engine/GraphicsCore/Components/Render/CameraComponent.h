@@ -120,13 +120,13 @@ private:
 
   void ResourceChangeEventHandler(const xiiResourceEvent& e);
 
-  xiiEnum<xiiCameraUsageHint>        m_UsageHint;
-  xiiEnum<xiiCameraMode>             m_Mode;
-  float                              m_fNearPlane              = 0.25f;
-  float                              m_fFarPlane               = 1000.0f;
-  float                              m_fPerspectiveFieldOfView = 60.0f;
-  float                              m_fOrthoDimension         = 10.0f;
-  float                              m_fRenderScale            = 1.0f;
+  xiiEnum<xiiCameraUsageHint> m_UsageHint;
+  xiiEnum<xiiCameraMode>      m_Mode;
+  float                       m_fNearPlane              = 0.25f;
+  float                       m_fFarPlane               = 1000.0f;
+  float                       m_fPerspectiveFieldOfView = 60.0f;
+  float                       m_fOrthoDimension         = 10.0f;
+  float                       m_fRenderScale            = 1.0f;
 
   float   m_fAperture             = 1.0f;
   xiiTime m_ShutterTime           = xiiTime::MakeFromSeconds(1.0f);

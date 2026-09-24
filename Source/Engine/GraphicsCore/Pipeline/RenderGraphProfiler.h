@@ -25,10 +25,10 @@ public:
   virtual ~xiiRenderGraphProfiler() = default;
 
   /// Called at the start of a submission command list.
-  virtual void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) = 0;
+  virtual void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex) = 0;
 
   /// Called at the end of a submission command list.
-  virtual void OnGraphEnd(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) = 0;
+  virtual void OnGraphEnd(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex) = 0;
 
   /// Called immediately before a pass records its commands. Insert a begin-query here.
   virtual void OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) = 0;
@@ -67,8 +67,8 @@ public:
   void Shutdown();
 
   // xiiRenderGraphProfiler interface
-  void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) override;
-  void OnGraphEnd(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) override;
+  void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex) override;
+  void OnGraphEnd(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex) override;
   void OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnFrameEnd(xiiUInt64 uiFrameIndex) override;
@@ -78,6 +78,10 @@ public:
 
   /// Returns the last resolved GPU duration for the entire frame in milliseconds.
   [[nodiscard]] float GetFrameDurationMs() const;
+
+  /// Returns the sum of submission timings for one graph or one graph queue.
+  [[nodiscard]] float GetGraphDurationMs(xiiUInt64 uiGraphId) const;
+  [[nodiscard]] float GetQueueDurationMs(xiiUInt64 uiGraphId, xiiUInt32 uiQueueIndex) const;
 
 private:
   struct PassQueries
@@ -92,6 +96,8 @@ private:
     xiiDynamicArray<PassQueries>               m_PassQueries;
     xiiDynamicArray<xiiSharedPtr<xiiGALQuery>> m_SubmissionDurationQueries;
     xiiDynamicArray<bool>                      m_SubmissionQueryActive;
+    xiiDynamicArray<xiiUInt64>                 m_SubmissionGraphIds;
+    xiiDynamicArray<xiiUInt32>                 m_SubmissionQueueIndices;
     xiiUInt64                                  m_uiFrameIndex = xiiInvalidIndex;
   };
 
@@ -102,5 +108,7 @@ private:
   FrameData                            m_FrameRing[s_uiRingFrameCount];
   xiiUInt32                            m_uiCurrentRingSlot = 0U;
   xiiHashTable<xiiHashedString, float> m_ResolvedDurationsMs;
+  xiiHashTable<xiiUInt64, float>       m_ResolvedGraphDurationsMs;
+  xiiHashTable<xiiUInt64, float>       m_ResolvedQueueDurationsMs;
   mutable xiiMutex                     m_ResultMutex;
 };
