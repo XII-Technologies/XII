@@ -31,9 +31,9 @@ xiiResult xiiMaterialInstance::Initialize(xiiSharedPtr<const xiiMaterialSchema> 
   xiiMaterialParameterBlock parameterBlock;
   XII_SUCCEED_OR_RETURN(parameterBlock.Initialize(pSchema));
 
-  m_pSchema       = std::move(pSchema);
-  m_Parameters    = std::move(parameterBlock);
-  m_RuntimeState  = runtimeState;
+  m_pSchema                     = std::move(pSchema);
+  m_Parameters                  = std::move(parameterBlock);
+  m_RuntimeState                = runtimeState;
   m_RuntimeState.m_Domain       = m_pSchema->GetDomain();
   m_RuntimeState.m_ShadingModel = m_pSchema->GetShadingModel();
   m_RuntimeState.m_uiLayoutHash = m_pSchema->GetLayoutHash();
@@ -43,8 +43,8 @@ xiiResult xiiMaterialInstance::Initialize(xiiSharedPtr<const xiiMaterialSchema> 
   for (xiiUInt32 i = 0U; i < textures.GetCount(); ++i)
     m_ResourceBindings[i].m_Id = textures[i].m_Id;
 
-  m_DirtyFlags = xiiMaterialDirtyFlags::All;
-  m_uiRevision = 1U;
+  m_DirtyFlags                = xiiMaterialDirtyFlags::All;
+  m_uiRevision                = 1U;
   m_RuntimeState.m_uiRevision = m_uiRevision;
   return XII_SUCCESS;
 }
@@ -164,22 +164,22 @@ xiiResult xiiMaterialInstance::SetResourceBinding(xiiMaterialParameterId id, con
   if (pBindlessIndex != nullptr && !definition.m_bBindless)
     return XII_FAILURE;
 
-  xiiMaterialResourceBinding& binding = m_ResourceBindings[uiIndex];
-  bool bChanged = false;
+  xiiMaterialResourceBinding& binding  = m_ResourceBindings[uiIndex];
+  bool                        bChanged = false;
   if (pTexture2D != nullptr && binding.m_hTexture2D != *pTexture2D)
   {
     binding.m_hTexture2D = *pTexture2D;
-    bChanged = true;
+    bChanged             = true;
   }
   if (pTextureCube != nullptr && binding.m_hTextureCube != *pTextureCube)
   {
     binding.m_hTextureCube = *pTextureCube;
-    bChanged = true;
+    bChanged               = true;
   }
   if (pBindlessIndex != nullptr && binding.m_uiBindlessIndex != *pBindlessIndex)
   {
     binding.m_uiBindlessIndex = *pBindlessIndex;
-    bChanged = true;
+    bChanged                  = true;
   }
 
   if (!bChanged)

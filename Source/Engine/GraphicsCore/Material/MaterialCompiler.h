@@ -35,10 +35,10 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialCompilationMessage
 
 struct XII_GRAPHICSCORE_DLL xiiCompiledMaterialLayout
 {
-  xiiUInt64                                      m_uiSchemaHash       = 0ULL;
-  xiiUInt32                                      m_uiShaderBlockSize  = 0U;
-  xiiUInt32                                      m_uiParameterCount   = 0U;
-  xiiUInt32                                      m_uiTextureCount     = 0U;
+  xiiUInt64                                      m_uiSchemaHash      = 0ULL;
+  xiiUInt32                                      m_uiShaderBlockSize = 0U;
+  xiiUInt32                                      m_uiParameterCount  = 0U;
+  xiiUInt32                                      m_uiTextureCount    = 0U;
   xiiDynamicArray<xiiMaterialCompilationMessage> m_Messages;
   bool                                           m_bValid = false;
 };

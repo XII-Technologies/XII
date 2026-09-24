@@ -203,8 +203,8 @@ private:
     void Clear();
   };
 
-  mutable xiiMutex                      m_RuntimeDataMutex;
-  ResolvedValues                        m_ResolvedValues;
-  xiiSharedPtr<xiiMaterialSchema>       m_pSchema;
-  xiiSharedPtr<xiiMaterialInstance>     m_pDefaultInstance;
+  mutable xiiMutex                  m_RuntimeDataMutex;
+  ResolvedValues                    m_ResolvedValues;
+  xiiSharedPtr<xiiMaterialSchema>   m_pSchema;
+  xiiSharedPtr<xiiMaterialInstance> m_pDefaultInstance;
 };

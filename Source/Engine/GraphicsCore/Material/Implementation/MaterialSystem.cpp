@@ -83,9 +83,9 @@ xiiResult xiiMaterialSystem::CreateRuntimeMaterial(const xiiMaterialSchemaDescri
   XII_SUCCEED_OR_RETURN(pSchema->Build(description, out_pError));
 
   xiiMaterialRuntimeState resolvedState = runtimeState;
-  resolvedState.m_Domain       = pSchema->GetDomain();
-  resolvedState.m_ShadingModel = pSchema->GetShadingModel();
-  resolvedState.m_uiLayoutHash = pSchema->GetLayoutHash();
+  resolvedState.m_Domain                = pSchema->GetDomain();
+  resolvedState.m_ShadingModel          = pSchema->GetShadingModel();
+  resolvedState.m_uiLayoutHash          = pSchema->GetLayoutHash();
 
   xiiSharedPtr<xiiMaterialInstance> pInstance = XII_DEFAULT_NEW(xiiMaterialInstance);
   XII_SUCCEED_OR_RETURN(pInstance->Initialize(pSchema, resolvedState));

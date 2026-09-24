@@ -18,15 +18,15 @@ public:
   void      Clear();
 
   [[nodiscard]] const xiiSharedPtr<const xiiMaterialSchema>& GetSchema() const { return m_pSchema; }
-  [[nodiscard]] xiiArrayPtr<const xiiUInt8> GetData() const { return m_Data; }
-  [[nodiscard]] xiiArrayPtr<const xiiVariant> GetValues() const { return m_Values; }
-  [[nodiscard]] xiiUInt32 GetRevision() const { return m_uiRevision; }
-  [[nodiscard]] bool IsDirty() const { return m_uiDirtyStart != xiiInvalidIndex; }
-  [[nodiscard]] xiiArrayPtr<const xiiUInt8> GetDirtyData() const;
-  [[nodiscard]] xiiUInt32 GetDirtyOffset() const { return IsDirty() ? m_uiDirtyStart : 0U; }
+  [[nodiscard]] xiiArrayPtr<const xiiUInt8>                  GetData() const { return m_Data; }
+  [[nodiscard]] xiiArrayPtr<const xiiVariant>                GetValues() const { return m_Values; }
+  [[nodiscard]] xiiUInt32                                    GetRevision() const { return m_uiRevision; }
+  [[nodiscard]] bool                                         IsDirty() const { return m_uiDirtyStart != xiiInvalidIndex; }
+  [[nodiscard]] xiiArrayPtr<const xiiUInt8>                  GetDirtyData() const;
+  [[nodiscard]] xiiUInt32                                    GetDirtyOffset() const { return IsDirty() ? m_uiDirtyStart : 0U; }
 
-  xiiResult SetValue(xiiMaterialParameterId id, const xiiVariant& value);
-  xiiResult SetValue(const xiiTempHashedString& sName, const xiiVariant& value);
+  xiiResult                       SetValue(xiiMaterialParameterId id, const xiiVariant& value);
+  xiiResult                       SetValue(const xiiTempHashedString& sName, const xiiVariant& value);
   [[nodiscard]] const xiiVariant* GetValue(xiiMaterialParameterId id) const;
   [[nodiscard]] const xiiVariant* GetValue(const xiiTempHashedString& sName) const;
 

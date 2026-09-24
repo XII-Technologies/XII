@@ -8,9 +8,9 @@
 /// for parameter access and the resource bindings for descriptor or bindless table resolution.
 struct XII_GRAPHICSCORE_DLL xiiMaterialRenderData
 {
-  xiiMaterialGpuHandle                         m_Handle;
-  xiiUInt32                                    m_uiGpuOffset = xiiInvalidIndex;
-  xiiMaterialRuntimeState                      m_RuntimeState;
+  xiiMaterialGpuHandle                        m_Handle;
+  xiiUInt32                                   m_uiGpuOffset = xiiInvalidIndex;
+  xiiMaterialRuntimeState                     m_RuntimeState;
   xiiDynamicArray<xiiMaterialResourceBinding> m_ResourceBindings;
 };
 
@@ -36,12 +36,12 @@ public:
   void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
 
   [[nodiscard]] xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance);
-  void                                    UnregisterMaterial(xiiMaterialGpuHandle handle);
+  void                               UnregisterMaterial(xiiMaterialGpuHandle handle);
 
   [[nodiscard]] xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph);
-  [[nodiscard]] xiiResult ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData) const;
+  [[nodiscard]] xiiResult                  ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData) const;
 
-  [[nodiscard]] xiiMaterialGpuStorage& GetGpuStorage() { return m_GpuStorage; }
+  [[nodiscard]] xiiMaterialGpuStorage&       GetGpuStorage() { return m_GpuStorage; }
   [[nodiscard]] const xiiMaterialGpuStorage& GetGpuStorage() const { return m_GpuStorage; }
 
   /// Builds a standalone runtime material without going through the resource manager. This is the

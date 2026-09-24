@@ -50,8 +50,8 @@ namespace
   {
     xiiMaterialCompilationMessage& message = out_layout.m_Messages.ExpandAndGetRef();
     message.m_Severity                     = severity;
-    message.m_sParameter                  = sParameter;
-    message.m_sMessage                    = sMessage;
+    message.m_sParameter                   = sParameter;
+    message.m_sMessage                     = sMessage;
   }
 
   static const xiiGALShaderResourceDescription* FindResource(const xiiShaderPermutationResource& permutation, const xiiTempHashedString& sName)
@@ -111,7 +111,7 @@ namespace
 
 xiiResult xiiMaterialCompiler::ValidateShaderLayout(const xiiMaterialSchema& schema, const xiiShaderPermutationResource& permutation, xiiCompiledMaterialLayout& out_layout, xiiStringView sParameterBlockName)
 {
-  out_layout = {};
+  out_layout                    = {};
   out_layout.m_uiSchemaHash     = schema.GetLayoutHash();
   out_layout.m_uiParameterCount = schema.GetParameters().GetCount();
   out_layout.m_uiTextureCount   = schema.GetTextures().GetCount();
@@ -122,7 +122,7 @@ xiiResult xiiMaterialCompiler::ValidateShaderLayout(const xiiMaterialSchema& sch
     return XII_FAILURE;
   }
 
-  const xiiTempHashedString blockName(sParameterBlockName);
+  const xiiTempHashedString              blockName(sParameterBlockName);
   const xiiGALShaderResourceDescription* pParameterBlock = FindResource(permutation, blockName);
   if (pParameterBlock == nullptr)
   {
@@ -131,7 +131,7 @@ xiiResult xiiMaterialCompiler::ValidateShaderLayout(const xiiMaterialSchema& sch
   }
 
   out_layout.m_uiShaderBlockSize = pParameterBlock->m_uiTotalSize;
-  bool bValid = pParameterBlock->m_Type == xiiGALShaderResourceType::ConstantBuffer || pParameterBlock->m_Type == xiiGALShaderResourceType::BufferSRV;
+  bool bValid                    = pParameterBlock->m_Type == xiiGALShaderResourceType::ConstantBuffer || pParameterBlock->m_Type == xiiGALShaderResourceType::BufferSRV;
   if (!bValid)
     AddMessage(out_layout, xiiMaterialCompilationSeverity::Error, sParameterBlockName, "The material parameter block must be a constant buffer or read-only buffer.");
 

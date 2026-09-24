@@ -295,7 +295,7 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialGpuHandle
   XII_DECLARE_POD_TYPE();
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiSlot != xiiInvalidIndex; }
-  XII_ALWAYS_INLINE void Invalidate()
+  XII_ALWAYS_INLINE void               Invalidate()
   {
     m_uiSlot       = xiiInvalidIndex;
     m_uiGeneration = 0U;
@@ -310,10 +310,10 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialGpuHandle);
 /// Immutable classification used by sorting, shader selection and render-graph routing.
 struct XII_GRAPHICSCORE_DLL xiiMaterialRuntimeState
 {
-  xiiEnum<xiiMaterialDomain>          m_Domain       = xiiMaterialDomain::Surface;
-  xiiEnum<xiiMaterialShadingModel>    m_ShadingModel = xiiMaterialShadingModel::Lit;
-  xiiEnum<xiiMaterialBlendMode>       m_BlendMode    = xiiMaterialBlendMode::Opaque;
-  xiiEnum<xiiMaterialAlphaMode>       m_AlphaMode    = xiiMaterialAlphaMode::Opaque;
+  xiiEnum<xiiMaterialDomain>           m_Domain       = xiiMaterialDomain::Surface;
+  xiiEnum<xiiMaterialShadingModel>     m_ShadingModel = xiiMaterialShadingModel::Lit;
+  xiiEnum<xiiMaterialBlendMode>        m_BlendMode    = xiiMaterialBlendMode::Opaque;
+  xiiEnum<xiiMaterialAlphaMode>        m_AlphaMode    = xiiMaterialAlphaMode::Opaque;
   xiiBitflags<xiiMaterialFeatureFlags> m_FeatureFlags = xiiMaterialFeatureFlags::Default;
 
   xiiUInt64 m_uiPipelineKey = 0U;

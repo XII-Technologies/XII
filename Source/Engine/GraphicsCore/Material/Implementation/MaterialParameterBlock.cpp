@@ -13,7 +13,7 @@ namespace
     XII_ASSERT_DEV(destination.GetCount() >= sizeof(T), "Material parameter destination is too small.");
     xiiMemoryUtils::Copy(reinterpret_cast<T*>(destination.GetPtr()), &value, 1U);
   }
-}
+} // namespace
 
 xiiResult xiiMaterialParameterBlock::Initialize(xiiSharedPtr<const xiiMaterialSchema> pSchema)
 {

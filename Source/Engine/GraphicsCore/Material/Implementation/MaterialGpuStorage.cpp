@@ -62,7 +62,7 @@ xiiResult xiiMaterialGpuStorage::Initialize(xiiGALDevice* pDevice, const xiiMate
   bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
   bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
-  m_pBuffer                                = pDevice->CreateBuffer(bufferDescription);
+  m_pBuffer                               = pDevice->CreateBuffer(bufferDescription);
   if (m_pBuffer == nullptr)
   {
     Shutdown();
@@ -109,7 +109,7 @@ xiiMaterialGpuHandle xiiMaterialGpuStorage::RegisterMaterial(xiiSharedPtr<xiiMat
 
   const xiiUInt32 uiSlot = m_FreeSlots.PeekBack();
   m_FreeSlots.PopBack();
-  Slot& slot      = m_Slots[uiSlot];
+  Slot& slot       = m_Slots[uiSlot];
   slot.m_pInstance = std::move(pInstance);
   xiiMemoryUtils::ZeroFill(slot.m_LastUploadedRevision.GetData(), slot.m_LastUploadedRevision.GetCount());
   ++m_uiActiveCount;
@@ -133,7 +133,7 @@ void xiiMaterialGpuStorage::UnregisterMaterial(xiiMaterialGpuHandle handle, xiiU
     slot.m_uiGeneration = 1U;
   --m_uiActiveCount;
 
-  RetiredSlot& retired = m_RetiredSlots.ExpandAndGetRef();
+  RetiredSlot& retired     = m_RetiredSlots.ExpandAndGetRef();
   retired.m_uiSlot         = handle.m_uiSlot;
   retired.m_uiLastUseFrame = uiFrameIndex;
 }
@@ -205,7 +205,7 @@ void xiiMaterialGpuStorage::GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpu
     if (slot.m_LastUploadedRevision[uiFrameSlice] == snapshot.m_uiRevision)
       continue;
 
-    xiiMaterialGpuUpload& upload = out_batch.m_Uploads.ExpandAndGetRef();
+    xiiMaterialGpuUpload& upload   = out_batch.m_Uploads.ExpandAndGetRef();
     upload.m_Handle.m_uiSlot       = i;
     upload.m_Handle.m_uiGeneration = slot.m_uiGeneration;
     upload.m_uiRevision            = snapshot.m_uiRevision;
@@ -252,8 +252,8 @@ void xiiMaterialGpuStorage::MarkUploadsRecorded(const xiiMaterialGpuUploadBatch&
     return;
 
   const xiiUInt32 uiFrameSlice = static_cast<xiiUInt32>(batch.m_uiFrameIndex % m_Description.m_uiFramesInFlight);
-  m_uiLastUploadCount = batch.m_Uploads.GetCount();
-  m_uiLastUploadBytes = 0ULL;
+  m_uiLastUploadCount          = batch.m_Uploads.GetCount();
+  m_uiLastUploadBytes          = 0ULL;
   for (const xiiMaterialGpuUpload& upload : batch.m_Uploads)
   {
     if (!IsValidHandleLocked(upload.m_Handle))

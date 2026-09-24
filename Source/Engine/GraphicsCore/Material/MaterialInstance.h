@@ -12,11 +12,11 @@
 /// intentionally kept separate from the resource handle so streaming can replace either safely.
 struct XII_GRAPHICSCORE_DLL xiiMaterialResourceBinding
 {
-  xiiMaterialParameterId         m_Id;
-  xiiTexture2DResourceHandle     m_hTexture2D;
-  xiiTextureCubeResourceHandle   m_hTextureCube;
-  xiiUInt32                      m_uiBindlessIndex = xiiInvalidIndex;
-  xiiUInt32                      m_uiRevision      = 0U;
+  xiiMaterialParameterId       m_Id;
+  xiiTexture2DResourceHandle   m_hTexture2D;
+  xiiTextureCubeResourceHandle m_hTextureCube;
+  xiiUInt32                    m_uiBindlessIndex = xiiInvalidIndex;
+  xiiUInt32                    m_uiRevision      = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialResourceBinding);
@@ -30,7 +30,7 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialInstanceSnapshot
   xiiDynamicArray<xiiMaterialResourceBinding> m_ResourceBindings;
   xiiMaterialRuntimeState                     m_RuntimeState;
   xiiBitflags<xiiMaterialDirtyFlags>          m_DirtyFlags = xiiMaterialDirtyFlags::None;
-  xiiUInt32                                   m_uiRevision  = 0U;
+  xiiUInt32                                   m_uiRevision = 0U;
 };
 
 /// Mutable, thread-safe runtime material instance.
@@ -43,18 +43,18 @@ class XII_GRAPHICSCORE_DLL xiiMaterialInstance final : public xiiRefCounted
 public:
   xiiResult Initialize(xiiSharedPtr<const xiiMaterialSchema> pSchema, const xiiMaterialRuntimeState& runtimeState = {});
 
-  xiiResult SetParameter(xiiMaterialParameterId id, const xiiVariant& value);
-  xiiResult SetParameter(xiiStringView sName, const xiiVariant& value);
+  xiiResult                SetParameter(xiiMaterialParameterId id, const xiiVariant& value);
+  xiiResult                SetParameter(xiiStringView sName, const xiiVariant& value);
   [[nodiscard]] xiiVariant GetParameter(xiiMaterialParameterId id) const;
 
   xiiResult SetTexture2D(xiiMaterialParameterId id, const xiiTexture2DResourceHandle& hTexture);
   xiiResult SetTextureCube(xiiMaterialParameterId id, const xiiTextureCubeResourceHandle& hTexture);
   xiiResult SetBindlessIndex(xiiMaterialParameterId id, xiiUInt32 uiBindlessIndex);
 
-  void SetRuntimeState(const xiiMaterialRuntimeState& runtimeState);
-  [[nodiscard]] xiiMaterialRuntimeState GetRuntimeState() const;
+  void                                                SetRuntimeState(const xiiMaterialRuntimeState& runtimeState);
+  [[nodiscard]] xiiMaterialRuntimeState               GetRuntimeState() const;
   [[nodiscard]] xiiSharedPtr<const xiiMaterialSchema> GetSchema() const;
-  [[nodiscard]] xiiUInt32 GetRevision() const;
+  [[nodiscard]] xiiUInt32                             GetRevision() const;
 
   /// Copies a coherent view without consuming dirty state.
   void CreateSnapshot(xiiMaterialInstanceSnapshot& out_snapshot) const;
@@ -67,11 +67,11 @@ private:
   xiiResult SetResourceBinding(xiiMaterialParameterId id, const xiiTexture2DResourceHandle* pTexture2D, const xiiTextureCubeResourceHandle* pTextureCube, const xiiUInt32* pBindlessIndex);
   void      CreateSnapshotLocked(xiiMaterialInstanceSnapshot& out_snapshot) const;
 
-  mutable xiiMutex                         m_Mutex;
-  xiiSharedPtr<const xiiMaterialSchema>    m_pSchema;
-  xiiMaterialParameterBlock                m_Parameters;
+  mutable xiiMutex                            m_Mutex;
+  xiiSharedPtr<const xiiMaterialSchema>       m_pSchema;
+  xiiMaterialParameterBlock                   m_Parameters;
   xiiDynamicArray<xiiMaterialResourceBinding> m_ResourceBindings;
-  xiiMaterialRuntimeState                  m_RuntimeState;
-  xiiBitflags<xiiMaterialDirtyFlags>       m_DirtyFlags = xiiMaterialDirtyFlags::None;
-  xiiUInt32                                m_uiRevision  = 0U;
+  xiiMaterialRuntimeState                     m_RuntimeState;
+  xiiBitflags<xiiMaterialDirtyFlags>          m_DirtyFlags = xiiMaterialDirtyFlags::None;
+  xiiUInt32                                   m_uiRevision = 0U;
 };

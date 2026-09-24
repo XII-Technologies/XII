@@ -1633,7 +1633,7 @@ void xiiMaterialResource::EnsureRuntimeData()
   }
 
   xiiMaterialSchemaDescription schemaDescription;
-  schemaDescription.m_sName        = GetResourceID();
+  schemaDescription.m_sName = GetResourceID();
   if (schemaDescription.m_sName.IsEmpty())
     schemaDescription.m_sName = "Runtime Material";
   schemaDescription.m_hShader      = m_ResolvedValues.m_hShader;
@@ -1647,7 +1647,7 @@ void xiiMaterialResource::EnsureRuntimeData()
 
   for (const xiiHashedString& name : parameterNames)
   {
-    const xiiVariant* pValue = m_ResolvedValues.m_Parameters.GetValue(name);
+    const xiiVariant*              pValue = m_ResolvedValues.m_Parameters.GetValue(name);
     xiiMaterialParameterType::Enum type;
     if (pValue == nullptr || !TryGetMaterialParameterType(*pValue, type))
     {
@@ -1673,7 +1673,7 @@ void xiiMaterialResource::EnsureRuntimeData()
     schemaDescription.AddTexture(name.GetString(), xiiGALShaderTextureType::TextureCube);
 
   xiiSharedPtr<xiiMaterialSchema> pSchema = XII_DEFAULT_NEW(xiiMaterialSchema);
-  xiiStringBuilder schemaError;
+  xiiStringBuilder                schemaError;
   if (pSchema->Build(schemaDescription, &schemaError).Failed())
   {
     xiiLog::Error("Failed to build runtime schema for material '{}': {}", GetResourceID(), schemaError);
@@ -1682,7 +1682,7 @@ void xiiMaterialResource::EnsureRuntimeData()
   }
 
   xiiSharedPtr<xiiMaterialInstance> pDefaultInstance = XII_DEFAULT_NEW(xiiMaterialInstance);
-  m_RuntimeState.m_uiLayoutHash = pSchema->GetLayoutHash();
+  m_RuntimeState.m_uiLayoutHash                      = pSchema->GetLayoutHash();
   if (pDefaultInstance->Initialize(pSchema, m_RuntimeState).Failed())
   {
     xiiLog::Error("Failed to initialize runtime instance for material '{}'.", GetResourceID());
@@ -1697,7 +1697,7 @@ void xiiMaterialResource::EnsureRuntimeData()
 
   m_pSchema          = std::move(pSchema);
   m_pDefaultInstance = std::move(pDefaultInstance);
-  m_iLastUpdated = m_iLastModified;
+  m_iLastUpdated     = m_iLastModified;
 }
 
 void xiiMaterialResource::ResolvedValues::Clear()

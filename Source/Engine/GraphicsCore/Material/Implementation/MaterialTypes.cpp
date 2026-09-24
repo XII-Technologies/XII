@@ -56,44 +56,41 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialParameterId, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMaterialParameterId>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Value", m_uiValue),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Value", m_uiValue),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialGpuHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMaterialGpuHandle>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Slot", m_uiSlot),
-    XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Slot", m_uiSlot),
+      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialRuntimeState, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMaterialRuntimeState>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_ENUM_MEMBER_PROPERTY("Domain", xiiMaterialDomain, m_Domain),
-    XII_ENUM_MEMBER_PROPERTY("ShadingModel", xiiMaterialShadingModel, m_ShadingModel),
-    XII_ENUM_MEMBER_PROPERTY("BlendMode", xiiMaterialBlendMode, m_BlendMode),
-    XII_ENUM_MEMBER_PROPERTY("AlphaMode", xiiMaterialAlphaMode, m_AlphaMode),
-    XII_BITFLAGS_MEMBER_PROPERTY("Features", xiiMaterialFeatureFlags, m_FeatureFlags),
-    XII_MEMBER_PROPERTY("PipelineKey", m_uiPipelineKey),
-    XII_MEMBER_PROPERTY("LayoutHash", m_uiLayoutHash),
-    XII_MEMBER_PROPERTY("RuntimeHash", m_uiRuntimeHash),
-    XII_MEMBER_PROPERTY("TextureMask", m_uiTextureMask),
-    XII_MEMBER_PROPERTY("Revision", m_uiRevision),
-    XII_MEMBER_PROPERTY("SortPriority", m_iSortPriority),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_ENUM_MEMBER_PROPERTY("Domain", xiiMaterialDomain, m_Domain),
+      XII_ENUM_MEMBER_PROPERTY("ShadingModel", xiiMaterialShadingModel, m_ShadingModel),
+      XII_ENUM_MEMBER_PROPERTY("BlendMode", xiiMaterialBlendMode, m_BlendMode),
+      XII_ENUM_MEMBER_PROPERTY("AlphaMode", xiiMaterialAlphaMode, m_AlphaMode),
+      XII_BITFLAGS_MEMBER_PROPERTY("Features", xiiMaterialFeatureFlags, m_FeatureFlags),
+      XII_MEMBER_PROPERTY("PipelineKey", m_uiPipelineKey),
+      XII_MEMBER_PROPERTY("LayoutHash", m_uiLayoutHash),
+      XII_MEMBER_PROPERTY("RuntimeHash", m_uiRuntimeHash),
+      XII_MEMBER_PROPERTY("TextureMask", m_uiTextureMask),
+      XII_MEMBER_PROPERTY("Revision", m_uiRevision),
+      XII_MEMBER_PROPERTY("SortPriority", m_iSortPriority),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 xiiMaterialParameterId xiiMaterialParameterId::Make(xiiStringView sName)

@@ -13,20 +13,20 @@
 /// slice, so frequent CPU edits never overwrite bytes still consumed by an earlier GPU frame.
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuStorageDescription
 {
-  xiiUInt32 m_uiMaxMaterials        = 65536U;
-  xiiUInt32 m_uiMaxParameterBytes   = 256U;
-  xiiUInt32 m_uiFramesInFlight      = 3U;
+  xiiUInt32 m_uiMaxMaterials      = 65536U;
+  xiiUInt32 m_uiMaxParameterBytes = 256U;
+  xiiUInt32 m_uiFramesInFlight    = 3U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialGpuStorageDescription);
 
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuStorageStatistics
 {
-  xiiUInt32 m_uiCapacity           = 0U;
-  xiiUInt32 m_uiActiveMaterials    = 0U;
-  xiiUInt32 m_uiRetiredMaterials   = 0U;
-  xiiUInt32 m_uiLastUploadCount    = 0U;
-  xiiUInt64 m_uiLastUploadBytes    = 0U;
+  xiiUInt32 m_uiCapacity         = 0U;
+  xiiUInt32 m_uiActiveMaterials  = 0U;
+  xiiUInt32 m_uiRetiredMaterials = 0U;
+  xiiUInt32 m_uiLastUploadCount  = 0U;
+  xiiUInt64 m_uiLastUploadBytes  = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialGpuStorageStatistics);
@@ -34,15 +34,15 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialGpuStorageStatisti
 /// One immutable upload operation captured for a render-graph pass.
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuUpload
 {
-  xiiMaterialGpuHandle       m_Handle;
-  xiiUInt32                  m_uiRevision          = 0U;
-  xiiUInt32                  m_uiDestinationOffset = 0U;
-  xiiDynamicArray<xiiUInt8>  m_Data;
+  xiiMaterialGpuHandle      m_Handle;
+  xiiUInt32                 m_uiRevision          = 0U;
+  xiiUInt32                 m_uiDestinationOffset = 0U;
+  xiiDynamicArray<xiiUInt8> m_Data;
 };
 
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuUploadBatch
 {
-  xiiUInt64                              m_uiFrameIndex = 0ULL;
+  xiiUInt64                             m_uiFrameIndex = 0ULL;
   xiiDynamicArray<xiiMaterialGpuUpload> m_Uploads;
 
   [[nodiscard]] bool IsEmpty() const { return m_Uploads.IsEmpty(); }
@@ -65,15 +65,15 @@ public:
   void      Shutdown();
 
   [[nodiscard]] xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance);
-  void                                    UnregisterMaterial(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex);
-  void                                    CollectGarbage(xiiUInt64 uiCompletedFrame);
+  void                               UnregisterMaterial(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex);
+  void                               CollectGarbage(xiiUInt64 uiCompletedFrame);
 
-  [[nodiscard]] bool IsValidHandle(xiiMaterialGpuHandle handle) const;
+  [[nodiscard]] bool                              IsValidHandle(xiiMaterialGpuHandle handle) const;
   [[nodiscard]] xiiSharedPtr<xiiMaterialInstance> GetMaterial(xiiMaterialGpuHandle handle) const;
-  [[nodiscard]] xiiUInt32 GetGpuOffset(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex) const;
-  [[nodiscard]] xiiUInt32 GetMaterialStride() const { return m_uiMaterialStride; }
-  [[nodiscard]] xiiSharedPtr<xiiGALBuffer> GetBuffer() const { return m_pBuffer; }
-  [[nodiscard]] xiiMaterialGpuStorageStatistics GetStatistics() const;
+  [[nodiscard]] xiiUInt32                         GetGpuOffset(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex) const;
+  [[nodiscard]] xiiUInt32                         GetMaterialStride() const { return m_uiMaterialStride; }
+  [[nodiscard]] xiiSharedPtr<xiiGALBuffer>        GetBuffer() const { return m_pBuffer; }
+  [[nodiscard]] xiiMaterialGpuStorageStatistics   GetStatistics() const;
 
   /// Captures all revisions required by this frame without mutating the live instances.
   void GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpuUploadBatch& out_batch) const;
@@ -108,12 +108,12 @@ private:
 
   mutable xiiMutex                 m_Mutex;
   xiiMaterialGpuStorageDescription m_Description;
-  xiiDynamicArray<Slot>             m_Slots;
-  xiiDynamicArray<xiiUInt32>        m_FreeSlots;
-  xiiDynamicArray<RetiredSlot>      m_RetiredSlots;
-  xiiSharedPtr<xiiGALBuffer>        m_pBuffer;
-  xiiUInt32                         m_uiMaterialStride = 0U;
-  xiiUInt32                         m_uiActiveCount    = 0U;
-  xiiUInt32                         m_uiLastUploadCount = 0U;
-  xiiUInt64                         m_uiLastUploadBytes = 0ULL;
+  xiiDynamicArray<Slot>            m_Slots;
+  xiiDynamicArray<xiiUInt32>       m_FreeSlots;
+  xiiDynamicArray<RetiredSlot>     m_RetiredSlots;
+  xiiSharedPtr<xiiGALBuffer>       m_pBuffer;
+  xiiUInt32                        m_uiMaterialStride  = 0U;
+  xiiUInt32                        m_uiActiveCount     = 0U;
+  xiiUInt32                        m_uiLastUploadCount = 0U;
+  xiiUInt64                        m_uiLastUploadBytes = 0ULL;
 };

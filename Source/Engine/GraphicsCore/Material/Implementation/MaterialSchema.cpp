@@ -87,22 +87,22 @@ namespace
 xiiMaterialParameterDefinition& xiiMaterialSchemaDescription::AddParameter(xiiStringView sName, xiiMaterialParameterType::Enum type, const xiiVariant& defaultValue)
 {
   xiiMaterialParameterDefinition& definition = m_Parameters.ExpandAndGetRef();
-  definition.m_Id                           = xiiMaterialParameterId::Make(sName);
+  definition.m_Id                            = xiiMaterialParameterId::Make(sName);
   definition.m_sName.Assign(sName);
-  definition.m_sDisplayName                 = sName;
-  definition.m_Type                         = type;
-  definition.m_DefaultValue                 = defaultValue;
+  definition.m_sDisplayName = sName;
+  definition.m_Type         = type;
+  definition.m_DefaultValue = defaultValue;
   return definition;
 }
 
 xiiMaterialTextureDefinition& xiiMaterialSchemaDescription::AddTexture(xiiStringView sName, xiiGALShaderTextureType::Enum textureType)
 {
   xiiMaterialTextureDefinition& definition = m_Textures.ExpandAndGetRef();
-  definition.m_Id                         = xiiMaterialParameterId::Make(sName);
+  definition.m_Id                          = xiiMaterialParameterId::Make(sName);
   definition.m_sName.Assign(sName);
-  definition.m_sDisplayName               = sName;
-  definition.m_TextureType                = textureType;
-  definition.m_uiBindingSlot              = m_Textures.GetCount() - 1U;
+  definition.m_sDisplayName  = sName;
+  definition.m_TextureType   = textureType;
+  definition.m_uiBindingSlot = m_Textures.GetCount() - 1U;
   return definition;
 }
 
@@ -193,11 +193,11 @@ void xiiMaterialSchema::Clear()
 {
   m_sName.Clear();
   m_hShader.Invalidate();
-  m_Domain                = xiiMaterialDomain::Surface;
-  m_ShadingModel          = xiiMaterialShadingModel::Lit;
-  m_uiVersion             = 0U;
-  m_uiParameterBlockSize  = 0U;
-  m_uiLayoutHash          = 0U;
+  m_Domain               = xiiMaterialDomain::Surface;
+  m_ShadingModel         = xiiMaterialShadingModel::Lit;
+  m_uiVersion            = 0U;
+  m_uiParameterBlockSize = 0U;
+  m_uiLayoutHash         = 0U;
   m_Parameters.Clear();
   m_Textures.Clear();
   m_ParameterLookup.Clear();
