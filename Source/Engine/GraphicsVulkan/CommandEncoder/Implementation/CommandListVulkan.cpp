@@ -1034,7 +1034,10 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
           vkWriteDescriptorSet.dstSet                 = m_CommandListData.m_DescriptorSets[uiSet];
           vkWriteDescriptorSet.dstBinding             = resourceLayout.m_uiBindingIndex;
           vkWriteDescriptorSet.dstArrayElement        = 0U; // Resource arrays are written from element 0 using descriptorCount.
-          vkWriteDescriptorSet.descriptorCount        = resourceLayout.m_uiArraySize;
+          // The legacy command-list binding API supplies one descriptor per binding. Runtime
+          // tables are sparse/partially-bound and are populated by the bindless table path, so
+          // never read past the single descriptor info assembled below.
+          vkWriteDescriptorSet.descriptorCount        = 1U;
           vkWriteDescriptorSet.descriptorType         = xiiVulkanTypeConversions::GetDescriptorType(resourceLayout.m_DescriptorType); // descriptorType must be the same type as that specified in VkDescriptorSetLayoutBinding for dstSet at dstBinding. The type of the descriptor also controls which array the descriptors are taken from. (13.2.4)
           vkWriteDescriptorSet.pImageInfo             = nullptr;
           vkWriteDescriptorSet.pBufferInfo            = nullptr;

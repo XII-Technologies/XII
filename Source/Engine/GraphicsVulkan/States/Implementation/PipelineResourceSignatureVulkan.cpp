@@ -92,6 +92,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
     pipelineResource.m_uiSamplerIndex                         = xiiInvalidIndex;
     pipelineResource.m_uiArraySize                            = resource.m_uiArraySize;
     pipelineResource.m_ShaderStages                           = resource.m_ShaderStages;
+    pipelineResource.m_PipelineResourceFlags                  = resource.m_PipelineResourceFlags;
     pipelineResource.m_bHasImmutableSampler                   = false;
 
     if (resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler)
@@ -121,13 +122,16 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
   vkDescriptorSetLayoutCreateInfo.flags                             = {};
 
   xiiTemporaryHybridArray<vk::DescriptorSetLayoutBinding, 4U>           vkDescriptorSetLayoutBindings;
+  xiiTemporaryHybridArray<vk::DescriptorBindingFlags, 4U>               vkDescriptorBindingFlags;
   xiiTemporaryHybridArray<xiiTemporaryHybridArray<vk::Sampler, 4U>, 4U> vkTempSamplerArrayAssignment;
 
   for (xiiUInt32 uiSet = 0; uiSet < m_PipelineResourceSetLayouts.GetCount(); ++uiSet)
   {
     const auto& setLayout = m_PipelineResourceSetLayouts[uiSet];
 
-    XII_SCOPE_EXIT(vkDescriptorSetLayoutBindings.Clear(); vkTempSamplerArrayAssignment.Clear(););
+    XII_SCOPE_EXIT(vkDescriptorSetLayoutBindings.Clear(); vkDescriptorBindingFlags.Clear(); vkTempSamplerArrayAssignment.Clear(););
+
+    bool bUpdateAfterBind = false;
 
     for (xiiUInt32 uiResourceIndex = 0; uiResourceIndex < setLayout.GetCount(); ++uiResourceIndex)
     {
@@ -138,6 +142,17 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
       vkDescriptorLayoutBinding.descriptorType                  = xiiVulkanTypeConversions::GetDescriptorType(resourceLayout.m_DescriptorType);
       vkDescriptorLayoutBinding.descriptorCount                 = resourceLayout.m_uiArraySize;
       vkDescriptorLayoutBinding.stageFlags                      = xiiVulkanTypeConversions::GetShaderStageFlags(resourceLayout.m_ShaderStages);
+
+      vk::DescriptorBindingFlags& vkBindingFlags = vkDescriptorBindingFlags.ExpandAndGetRef();
+      vkBindingFlags = {};
+      if (resourceLayout.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
+      {
+        // Runtime arrays are fixed-capacity descriptor tables at the API level. Partially-bound
+        // entries make sparse tables legal and update-after-bind permits streaming descriptors
+        // without rebuilding every command list which references the table.
+        vkBindingFlags = vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateAfterBind;
+        bUpdateAfterBind = true;
+      }
 
       vk::Sampler* pVkImmutableSamplers = nullptr;
       if (resourceLayout.m_bHasImmutableSampler)
@@ -163,6 +178,12 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
     vkDescriptorSetLayoutCreateInfo.pBindings    = !vkDescriptorSetLayoutBindings.IsEmpty() ? vkDescriptorSetLayoutBindings.GetData() : nullptr;
     vkDescriptorSetLayoutCreateInfo.bindingCount = vkDescriptorSetLayoutBindings.GetCount();
+    vkDescriptorSetLayoutCreateInfo.flags = bUpdateAfterBind ? vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool : vk::DescriptorSetLayoutCreateFlags{};
+
+    vk::DescriptorSetLayoutBindingFlagsCreateInfo vkBindingFlagsCreateInfo;
+    vkBindingFlagsCreateInfo.bindingCount  = vkDescriptorBindingFlags.GetCount();
+    vkBindingFlagsCreateInfo.pBindingFlags = vkDescriptorBindingFlags.GetData();
+    vkDescriptorSetLayoutCreateInfo.pNext  = bUpdateAfterBind ? &vkBindingFlagsCreateInfo : nullptr;
 
     vk::DescriptorSetLayout& vkDescriptorSetLayout = m_DescriptorSetLayouts.ExpandAndGetRef();
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createDescriptorSetLayout(&vkDescriptorSetLayoutCreateInfo, nullptr, &vkDescriptorSetLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
