@@ -343,7 +343,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       cmd.ResolveAndSetUnorderedAccessBufferView("g_IndirectCommands", context.GetBuffer(data.m_hCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_IndirectCommandCount", context.GetBuffer(data.m_hCommandCount)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DispatchCompute({(data.m_uiMaxMeshlets + 63U) / 64U, 1U, 1U});
+      cmd.DispatchCompute({1U, 1U, 1U});
     });
   commandBuild.first->m_pPipeline = m_pCommandBuildPipeline;
   commandBuild.first->m_uiMaxMeshlets = m_Description.m_uiMaxVisibleMeshlets;

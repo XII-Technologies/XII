@@ -18,22 +18,26 @@ Buffer<uint> g_VisibleMeshletCount;
 RWStructuredBuffer<MeshDispatchIndirectArguments> g_IndirectCommands;
 RWBuffer<uint> g_IndirectCommandCount;
 
-[numthreads(64, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+[numthreads(1, 1, 1)]
+void main()
 {
   const uint count = g_VisibleMeshletCount[0];
   uint commandCapacity, commandStride;
   g_IndirectCommands.GetDimensions(commandCapacity, commandStride);
-  if (dispatchThreadId.x >= min(count, commandCapacity))
-    return;
 
-  // One mesh workgroup consumes one compacted (instance, meshlet) entry. The mesh shader uses
-  // SV_DrawID to fetch the pair from g_VisibleMeshlets.
+  // A single indirect mesh dispatch launches one workgroup per compacted meshlet. This avoids a
+  // backend-specific draw-ID semantic in mesh shaders: SV_GroupID.x is the stable compacted index.
+  // The count buffer contains either zero or one indirect command.
+  if (count == 0u || commandCapacity == 0u)
+  {
+    g_IndirectCommandCount[0] = 0u;
+    return;
+  }
+
   MeshDispatchIndirectArguments command;
-  command.ThreadGroupCountX = 1u;
+  command.ThreadGroupCountX = count;
   command.ThreadGroupCountY = 1u;
   command.ThreadGroupCountZ = 1u;
-  g_IndirectCommands[dispatchThreadId.x] = command;
-  if (dispatchThreadId.x == 0u)
-    g_IndirectCommandCount[0] = min(count, commandCapacity);
+  g_IndirectCommands[0] = command;
+  g_IndirectCommandCount[0] = 1u;
 }
