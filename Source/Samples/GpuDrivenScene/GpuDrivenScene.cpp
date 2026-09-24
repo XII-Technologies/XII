@@ -274,6 +274,9 @@ public:
     deviceDescription.m_DeviceFeatures.m_BindlessResources = xiiGALDeviceFeatureState::Enabled;
     deviceDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Enabled;
     deviceDescription.m_DeviceFeatures.m_TimestampQueries = xiiGALDeviceFeatureState::Optional;
+    // Timeline fences are required for GPU-side synchronization between the
+    // graphics, asynchronous-compute, and transfer queues.
+    deviceDescription.m_DeviceFeatures.m_NativeFence = xiiGALDeviceFeatureState::Optional;
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     deviceDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
 #endif

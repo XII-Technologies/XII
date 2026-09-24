@@ -783,9 +783,10 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDevi
     ref_vkImageCreateInfo.flags |= vk::ImageCreateFlagBits::eSubsampledEXT;
   }
 
-  ref_vkImageCreateInfo.sharingMode           = vk::SharingMode::eExclusive;
-  ref_vkImageCreateInfo.queueFamilyIndexCount = 0;
-  ref_vkImageCreateInfo.pQueueFamilyIndices   = nullptr;
+  const xiiArrayPtr<const xiiUInt32> activeQueueFamilies = pDeviceVulkan->GetActiveQueueFamilyIndices();
+  ref_vkImageCreateInfo.sharingMode           = activeQueueFamilies.GetCount() > 1U ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
+  ref_vkImageCreateInfo.queueFamilyIndexCount = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetCount() : 0U;
+  ref_vkImageCreateInfo.pQueueFamilyIndices   = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetPtr() : nullptr;
 
   if (creationDescription.m_Usage == xiiGALResourceUsage::Sparse)
   {

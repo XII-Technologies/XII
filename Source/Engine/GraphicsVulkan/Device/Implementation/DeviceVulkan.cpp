@@ -1000,6 +1000,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       queueDescription.pQueuePriorities           = &fQueuePriorities;
 
       m_GraphicsQueueInformation.m_uiQueueFamilyIndex = uiGraphicsQueueIndex;
+      m_ActiveQueueFamilyIndices.PushBack(uiGraphicsQueueIndex);
     }
     else
     {
@@ -1024,6 +1025,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
         queueDescription.pQueuePriorities           = &fQueuePriorities;
 
         m_ComputeQueueInformation.m_uiQueueFamilyIndex = uiComputeQueueIndex;
+        m_ActiveQueueFamilyIndices.PushBack(uiComputeQueueIndex);
       }
 
       xiiUInt32 uiTransferQueueIndex = FindQueueFamily(vk::QueueFlagBits::eTransfer, excludedQueueIndices);
@@ -1041,6 +1043,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
         queueDescription.pQueuePriorities           = &fQueuePriorities;
 
         m_TransferQueueInformation.m_uiQueueFamilyIndex = uiTransferQueueIndex;
+        m_ActiveQueueFamilyIndices.PushBack(uiTransferQueueIndex);
       }
     }
   }

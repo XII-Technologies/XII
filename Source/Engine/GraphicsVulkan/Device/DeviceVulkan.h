@@ -135,6 +135,11 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const vk::PhysicalDeviceFeatures& GetVulkanPhysicalDeviceFeatures() const { return m_PhysicalDeviceFeatures; }
   [[nodiscard]] XII_ALWAYS_INLINE const vk::PhysicalDeviceMemoryProperties& GetVulkanPhysicalDeviceMemoryProperties() const { return m_PhysicalDeviceMemoryProperties; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::QueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties() const { return m_PhysicalDeviceQueueFamilyProperties; }
+  /// Queue families that may execute engine command lists. Resources shared by the
+  /// render graph use this list with VK_SHARING_MODE_CONCURRENT, which avoids
+  /// implicit ownership assumptions when dedicated compute/transfer families are
+  /// available.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiUInt32> GetActiveQueueFamilyIndices() const { return m_ActiveQueueFamilyIndices; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetPhysicalDeviceSupportedExtensions() const { return m_PhysicalDeviceSupportedExtensions; }
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionFeatures& GetPhysicalDeviceExtensionFeatures() const { return m_PhysicalDeviceExtensionFeatures; }
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDeviceVulkan::ExtensionProperties& GetPhysicalDeviceExtensionProperties() const { return m_PhysicalDeviceExtensionProperties; }
@@ -305,6 +310,7 @@ private:
   ExtensionFeatures                       m_LogicalDeviceExtensionFeatures;
   xiiDynamicArray<vk::PipelineStageFlags> m_LogicalDeviceSupportedStagesFlags;
   xiiDynamicArray<vk::AccessFlags>        m_LogicalDeviceSupportedAccessFlags;
+  xiiHybridArray<xiiUInt32, 3U>           m_ActiveQueueFamilyIndices;
 
   // Vulkan Debug Resources.
   vk::DebugUtilsMessengerEXT m_DebugMessenger;

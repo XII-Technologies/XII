@@ -43,9 +43,10 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
   vkBufferCreateInfo.flags                 = {};
   vkBufferCreateInfo.size                  = m_Description.m_uiSize;
   vkBufferCreateInfo.usage                 = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
-  vkBufferCreateInfo.sharingMode           = vk::SharingMode::eExclusive; // Sharing mode of the buffer when it is accessed by multiple queue families.
-  vkBufferCreateInfo.pQueueFamilyIndices   = nullptr;                     // The list of queue families that will access this buffer (ignored if sharingMode is not vk::SharingMode::eConcurrent).
-  vkBufferCreateInfo.queueFamilyIndexCount = 0U;                          // The number of entries in the pQueueFamilyIndices array.
+  const xiiArrayPtr<const xiiUInt32> activeQueueFamilies = pDeviceVulkan->GetActiveQueueFamilyIndices();
+  vkBufferCreateInfo.sharingMode           = activeQueueFamilies.GetCount() > 1U ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
+  vkBufferCreateInfo.pQueueFamilyIndices   = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetPtr() : nullptr;
+  vkBufferCreateInfo.queueFamilyIndexCount = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetCount() : 0U;
 
   for (xiiUInt32 uiBit : m_Description.m_BindFlags)
   {
@@ -131,8 +132,6 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
   }
   else if (m_Description.m_Usage == xiiGALResourceUsage::Dynamic && !bRequiresBackingBuffer)
   {
-    XII_ASSERT_DEV(vkBufferCreateInfo.sharingMode == vk::SharingMode::eExclusive, "Sharing mode is not supported for dynamic buffers, this should have caused buffer creation failure.");
-
     // Dynamic constant/vertex/index/structured buffers are suballocated in the upload heap when Map() is called.
     // Dynamic formatted buffers or writable buffers need to be allocated in GPU-local memory.
     xiiBitflags<xiiGALResourceStateFlags> state = xiiGALResourceStateFlags::VertexBuffer | xiiGALResourceStateFlags::IndexBuffer | xiiGALResourceStateFlags::ConstantBuffer | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::IndirectArgument;
