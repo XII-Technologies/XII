@@ -10,10 +10,10 @@ ALL
 StructuredBuffer<GpuSceneInstance> g_SceneInstances;
 StructuredBuffer<GpuVisibilityView> g_VisibilityView;
 StructuredBuffer<uint> g_CandidateInstances;
-Buffer<uint> g_CandidateCount;
+StructuredBuffer<uint> g_CandidateCount;
 Texture2D<float> g_HiZ;
 RWStructuredBuffer<uint> g_VisibleInstances;
-RWBuffer<uint> g_VisibleInstanceCount;
+RWStructuredBuffer<uint> g_VisibleInstanceCount;
 
 // Returns false when the sphere crosses the near plane. Such objects stay visible because a
 // finite screen-space rectangle cannot conservatively represent them.

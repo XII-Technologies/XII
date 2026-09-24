@@ -13,9 +13,9 @@ StructuredBuffer<GpuVisibilityView> g_VisibilityView;
 StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<GpuMeshlet> g_Meshlets;
 StructuredBuffer<uint> g_VisibleInstances;
-Buffer<uint> g_VisibleInstanceCount;
+StructuredBuffer<uint> g_VisibleInstanceCount;
 RWStructuredBuffer<uint2> g_VisibleMeshlets;
-RWBuffer<uint> g_VisibleMeshletCount;
+RWStructuredBuffer<uint> g_VisibleMeshletCount;
 
 [numthreads(64, 1, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)

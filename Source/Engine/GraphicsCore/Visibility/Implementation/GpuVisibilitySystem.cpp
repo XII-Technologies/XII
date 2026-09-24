@@ -219,6 +219,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
 
   const auto visibleDesc = MakeBuffer(m_Description.m_uiMaxInstances * sizeof(xiiUInt32), sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
   const auto countDesc = MakeBuffer(sizeof(xiiUInt32), sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
+  const auto drawCountDesc = MakeBuffer(sizeof(xiiUInt32), sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments);
   const auto meshletDesc = MakeBuffer(m_Description.m_uiMaxVisibleMeshlets * sizeof(xiiVec2U32), sizeof(xiiVec2U32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
   const auto commandDesc = MakeBuffer(m_Description.m_uiMaxDrawCommands * sizeof(xiiMeshDrawCommand), sizeof(xiiMeshDrawCommand), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments);
 
@@ -227,7 +228,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
     [&](ResetPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hVisibleInstanceCount = builder.WriteBuffer(makeName(" GPU Visible Instance Count"), countDesc, xiiGALResourceStateFlags::CopyDestination);
       data.m_hVisibleMeshletCount = builder.WriteBuffer(makeName(" GPU Visible Meshlet Count"), countDesc, xiiGALResourceStateFlags::CopyDestination);
-      data.m_hDrawCount = builder.WriteBuffer(makeName(" GPU Indirect Command Count"), countDesc, xiiGALResourceStateFlags::CopyDestination);
+      data.m_hDrawCount = builder.WriteBuffer(makeName(" GPU Indirect Command Count"), drawCountDesc, xiiGALResourceStateFlags::CopyDestination);
     },
     [](const ResetPassData& data, xiiRenderGraphPassContext& context) {
       const xiiUInt32 zero = 0U;

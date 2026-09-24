@@ -14,9 +14,9 @@ struct MeshDispatchIndirectArguments
 };
 
 StructuredBuffer<uint2> g_VisibleMeshlets;
-Buffer<uint> g_VisibleMeshletCount;
+StructuredBuffer<uint> g_VisibleMeshletCount;
 RWStructuredBuffer<MeshDispatchIndirectArguments> g_IndirectCommands;
-RWBuffer<uint> g_IndirectCommandCount;
+RWStructuredBuffer<uint> g_IndirectCommandCount;
 
 [numthreads(1, 1, 1)]
 void main()
