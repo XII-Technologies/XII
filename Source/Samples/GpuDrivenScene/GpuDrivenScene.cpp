@@ -31,6 +31,7 @@
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -116,7 +117,7 @@ public:
     if (bCanRender)
     {
       ++m_uiFrameIndex;
-      const xiiUInt64 uiCompletedFrame = m_uiFrameIndex > 3U ? m_uiFrameIndex - 3U : 0U;
+      const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
       m_World.Update(m_uiFrameIndex, uiCompletedFrame, xiiClock::GetGlobalClock()->GetTimeDiff());
 
       const xiiSizeU32 targetSize = m_pWindow->GetClientAreaSize();
@@ -230,6 +231,8 @@ public:
       m_pSwapChain->Present();
     }
     m_pDevice->EndFrame();
+    if (bCanRender)
+      m_FrameCompletionTracker.CaptureSubmittedFrame(m_uiFrameIndex);
 
     xiiResourceManager::PerFrameUpdate();
     xiiTaskSystem::FinishFrameTasks();
@@ -299,6 +302,7 @@ public:
     m_pRenderGraphProfiler = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
     m_pRenderGraphResourceCache->Initialize(m_pDevice);
     m_pRenderGraphProfiler->Initialize(m_pDevice);
+    m_FrameCompletionTracker.Initialize(m_pDevice.Borrow());
 
     m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 250.0f);
     m_Camera.LookAt(xiiVec3(-12.0f, -2.0f, 12.0f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
@@ -334,6 +338,7 @@ public:
     m_pRenderGraphResourceCache.Clear();
     m_pRenderGraphBlackboard.Clear();
     m_pRenderGraph.Clear();
+    m_FrameCompletionTracker.Reset();
     m_pSwapChain.Clear();
     xiiStartup::ShutdownHighLevelSystems();
     if (xiiGALDevice::GetDefaultDevice() == m_pDevice)
@@ -457,6 +462,7 @@ private:
   xiiUniquePtr<xiiRenderGraphBlackboard>        m_pRenderGraphBlackboard;
   xiiUniquePtr<xiiRenderGraphResourceCache>     m_pRenderGraphResourceCache;
   xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pRenderGraphProfiler;
+  xiiGpuFrameCompletionTracker                  m_FrameCompletionTracker;
   xiiSharedPtr<xiiGALRenderPass>                 m_pSceneRenderPass;
   xiiShaderPermutationResourceHandle            m_hShaderPermutation;
   xiiGpuDrivenSceneConfiguration                 m_Configuration;
