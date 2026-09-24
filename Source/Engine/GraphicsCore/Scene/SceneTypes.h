@@ -80,7 +80,7 @@ struct XII_GRAPHICSCORE_DLL xiiSceneObjectDesc
 
 /// Canonical, backend independent GPU record. It deliberately contains both current and previous
 /// transforms so motion vectors never need a second scene lookup.
-struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuSceneInstance
+struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
 {
   XII_DECLARE_POD_TYPE();
 
@@ -121,4 +121,3 @@ struct XII_GRAPHICSCORE_DLL xiiSceneDatabaseStats
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneDatabaseStats);
-
