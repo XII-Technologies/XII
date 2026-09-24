@@ -221,17 +221,19 @@ xiiString xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnu
     break;
     case xiiGALShaderType::Amplification:
     {
-      if (szMajor >= '6' && szMinor >= '5')
+      if (szMajor >= '6')
       {
-        sb.SetFormat("{}_{}_{}", "as", xiiArgC(szMajor), xiiArgC(szMinor));
+        // Amplification and mesh stages were introduced in SM 6.5. A renderer-wide baseline such
+        // as VK_SM60 must not turn an otherwise valid mesh shader into an empty DXC profile.
+        sb.SetFormat("{}_{}_{}", "as", xiiArgC(szMajor), xiiArgC(xiiMath::Max(szMinor, '5')));
       }
     }
     break;
     case xiiGALShaderType::Mesh:
     {
-      if (szMajor >= '6' && szMinor >= '5')
+      if (szMajor >= '6')
       {
-        sb.SetFormat("{}_{}_{}", "ms", xiiArgC(szMajor), xiiArgC(szMinor));
+        sb.SetFormat("{}_{}_{}", "ms", xiiArgC(szMajor), xiiArgC(xiiMath::Max(szMinor, '5')));
       }
     }
     break;
