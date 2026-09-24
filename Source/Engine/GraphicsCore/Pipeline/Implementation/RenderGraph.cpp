@@ -1445,9 +1445,15 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(submission.m_QueueFlags);
     XII_ASSERT_DEV(pQueue != nullptr, "Could not obtain a command queue.");
 
+    // Backends may legally fall back to a more capable queue (for example, compute on
+    // graphics when no asynchronous queue was created). Record and submit a command list
+    // using the physical queue's flags so GAL validation and backend pool selection agree.
+    const xiiBitflags<xiiGALCommandQueueFlags> actualQueueFlags = pQueue->GetDescription().m_QueueFlags;
+    const xiiUInt32 uiActualQueueIndex = xiiRenderGraphSkills::Scheduling::GetQueueIndex(actualQueueFlags, true);
+
     // Create a command list for this submission.
     xiiGALCommandListCreationDescription commandListDescription;
-    commandListDescription.m_QueueFlags          = submission.m_QueueFlags;
+    commandListDescription.m_QueueFlags          = actualQueueFlags;
     xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
     XII_ASSERT_ALWAYS(pCommandList != nullptr, "Failed to create command list.");
 
@@ -1455,7 +1461,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     if (bEnableGpuProfiling)
     {
-      pProfiler->OnGraphBegin(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, submission.m_uiQueueIndex);
+      pProfiler->OnGraphBegin(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
     }
 
     // Emit cross-queue waits.
@@ -1704,7 +1710,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     if (bEnableGpuProfiling)
     {
-      pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, submission.m_uiQueueIndex);
+      pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
     }
 
     pCommandList->End();
