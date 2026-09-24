@@ -20,32 +20,6 @@
 #  include <Foundation/IO/CompressedStreamZstd.h>
 #endif
 
-// clang-format off
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialShadingModel, 1)
-  XII_ENUM_CONSTANTS(xiiMaterialShadingModel::Lit, xiiMaterialShadingModel::Subsurface, xiiMaterialShadingModel::ClearCoat, xiiMaterialShadingModel::Cloth)
-  XII_ENUM_CONSTANTS(xiiMaterialShadingModel::Hair, xiiMaterialShadingModel::Eye, xiiMaterialShadingModel::Unlit, xiiMaterialShadingModel::Custom)
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialBlendMode, 1)
-  XII_ENUM_CONSTANTS(xiiMaterialBlendMode::Opaque, xiiMaterialBlendMode::Masked, xiiMaterialBlendMode::Translucent, xiiMaterialBlendMode::Additive, xiiMaterialBlendMode::Modulate)
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialAlphaMode, 1)
-  XII_ENUM_CONSTANTS(xiiMaterialAlphaMode::Opaque, xiiMaterialAlphaMode::Mask, xiiMaterialAlphaMode::Blend)
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiMaterialFeatureFlags, 1)
-  XII_BITFLAGS_CONSTANTS(xiiMaterialFeatureFlags::NormalTexture, xiiMaterialFeatureFlags::MetallicRoughnessTexture, xiiMaterialFeatureFlags::OcclusionTexture, xiiMaterialFeatureFlags::EmissiveTexture)
-  XII_BITFLAGS_CONSTANTS(xiiMaterialFeatureFlags::HeightTexture, xiiMaterialFeatureFlags::ClearCoat, xiiMaterialFeatureFlags::Transmission, xiiMaterialFeatureFlags::Sheen, xiiMaterialFeatureFlags::Anisotropy)
-  XII_BITFLAGS_CONSTANTS(xiiMaterialFeatureFlags::VertexColor, xiiMaterialFeatureFlags::TwoSided, xiiMaterialFeatureFlags::RuntimeGenerated)
-XII_END_STATIC_REFLECTED_BITFLAGS;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialTextureSlot, 1)
-  XII_ENUM_CONSTANTS(xiiMaterialTextureSlot::BaseColor, xiiMaterialTextureSlot::Normal, xiiMaterialTextureSlot::MetallicRoughness, xiiMaterialTextureSlot::Occlusion)
-  XII_ENUM_CONSTANTS(xiiMaterialTextureSlot::Emissive, xiiMaterialTextureSlot::Height, xiiMaterialTextureSlot::ClearCoat, xiiMaterialTextureSlot::Transmission)
-XII_END_STATIC_REFLECTED_ENUM;
-// clang-format on
-
 namespace
 {
   static xiiUInt32 FindParameter(const xiiMaterialResourceDescriptor& desc, const xiiTempHashedString& sName)
