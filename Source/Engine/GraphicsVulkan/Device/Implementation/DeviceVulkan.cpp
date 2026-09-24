@@ -1119,7 +1119,12 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     // Mesh shader
     if (m_AdapterDescription.m_Features.m_MeshShaders != xiiGALDeviceFeatureState::Disabled)
     {
-      enabledExtensionFeatures.m_MeshShader = m_PhysicalDeviceExtensionFeatures.m_MeshShader;
+      // Enable only the mesh/task features represented by the GAL feature bit. Copying the full
+      // queried structure also enables optional dependent features such as multiviewMeshShader and
+      // primitiveFragmentShadingRateMeshShader without enabling their parent Vulkan features.
+      enabledExtensionFeatures.m_MeshShader = vk::PhysicalDeviceMeshShaderFeaturesEXT{};
+      enabledExtensionFeatures.m_MeshShader.taskShader = m_PhysicalDeviceExtensionFeatures.m_MeshShader.taskShader;
+      enabledExtensionFeatures.m_MeshShader.meshShader = m_PhysicalDeviceExtensionFeatures.m_MeshShader.meshShader;
 
       XII_ASSERT_DEV(enabledExtensionFeatures.m_MeshShader.taskShader != vk::False && enabledExtensionFeatures.m_MeshShader.meshShader != vk::False, "");
 
