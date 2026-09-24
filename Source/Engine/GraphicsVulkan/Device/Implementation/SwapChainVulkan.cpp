@@ -484,12 +484,11 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  // Just idling the GPU is not enough and results in validation warnings.
-  // As a matter of fact, it is only required to check the fence status.
-  if (m_uiFrameIndex > 1ULL)
-  {
-    m_pFrameCompleteFence->Wait(m_uiFrameIndex - 1ULL);
-  }
+  // The frame-complete fence is signaled by the rendering submission that precedes
+  // vkQueuePresentKHR. It therefore cannot prove that the presentation operation has
+  // released the swapchain image or its wait semaphore. Synchronize the presentation
+  // queue before releasing either object or destroying/retiring the swapchain.
+  WaitForPresentQueueIdle();
 
   // All references to the swap chain must be released before it can be destroyed.
   m_pBackBufferTexture.Clear();
@@ -522,6 +521,15 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
     m_vkSwapChain = VK_NULL_HANDLE;
   }
+}
+
+void xiiGALSwapChainVulkan::WaitForPresentQueueIdle()
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&pDeviceVulkan](const vk::Queue& vkQueue) -> void {
+    VK_ASSERT_DEV(vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  });
 }
 
 void xiiGALSwapChainVulkan::ThrottleFrameSubmission()
