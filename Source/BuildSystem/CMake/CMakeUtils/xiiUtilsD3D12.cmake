@@ -3,7 +3,10 @@
 # #####################################
 # ## DirectX 12 support
 # #####################################
-set(XII_BUILD_D3D12 OFF CACHE BOOL "Build the DirectX 12 Graphics Device")
+# D3D12 is intentionally held out while the descriptor-indexing and GPU-scene contracts are
+# implemented and validated on Vulkan. FORCE also clears stale developer cache values so a
+# previously enabled backend cannot enter the build accidentally.
+set(XII_BUILD_D3D12 OFF CACHE BOOL "Build the DirectX 12 Graphics Device" FORCE)
 
 # #####################################
 # ## xii_requires_d3d12()
