@@ -52,7 +52,7 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialGpuUploadBatch
 ///
 /// Material resources no longer allocate one constant buffer each. Instances receive stable slots
 /// in a large shader-resource buffer, and only revisions missing from the current frame slice are
-/// uploaded. Slot reuse is delayed by the configured frames-in-flight count.
+/// uploaded. Retired slots are reused only after the caller reports their last-use frame complete.
 class XII_GRAPHICSCORE_DLL xiiMaterialGpuStorage
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiMaterialGpuStorage);
@@ -64,7 +64,7 @@ public:
   xiiResult Initialize(xiiGALDevice* pDevice, const xiiMaterialGpuStorageDescription& description = {});
   void      Shutdown();
 
-  [[nodiscard]] xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance);
   void                                    UnregisterMaterial(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex);
   void                                    CollectGarbage(xiiUInt64 uiCompletedFrame);
 
@@ -92,8 +92,8 @@ private:
 
   struct RetiredSlot
   {
-    xiiUInt32 m_uiSlot       = xiiInvalidIndex;
-    xiiUInt64 m_uiReuseFrame = 0ULL;
+    xiiUInt32 m_uiSlot         = xiiInvalidIndex;
+    xiiUInt64 m_uiLastUseFrame = 0ULL;
   };
 
   struct UploadPassData
@@ -117,4 +117,3 @@ private:
   xiiUInt32                         m_uiLastUploadCount = 0U;
   xiiUInt64                         m_uiLastUploadBytes = 0ULL;
 };
-

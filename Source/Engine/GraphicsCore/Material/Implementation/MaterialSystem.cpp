@@ -45,7 +45,7 @@ void xiiMaterialSystem::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompleted
 xiiMaterialGpuHandle xiiMaterialSystem::RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance)
 {
   XII_ASSERT_DEV(m_bInitialized, "Material system must be initialized before registering instances.");
-  return m_GpuStorage.RegisterMaterial(std::move(pInstance), m_uiFrameIndex);
+  return m_GpuStorage.RegisterMaterial(std::move(pInstance));
 }
 
 void xiiMaterialSystem::UnregisterMaterial(xiiMaterialGpuHandle handle)
@@ -94,4 +94,3 @@ xiiResult xiiMaterialSystem::CreateRuntimeMaterial(const xiiMaterialSchemaDescri
   out_pInstance = std::move(pInstance);
   return XII_SUCCESS;
 }
-

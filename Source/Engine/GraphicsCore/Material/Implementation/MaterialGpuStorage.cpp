@@ -97,14 +97,14 @@ void xiiMaterialGpuStorage::Shutdown()
   m_uiLastUploadBytes = 0ULL;
 }
 
-xiiMaterialGpuHandle xiiMaterialGpuStorage::RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance, xiiUInt64 uiFrameIndex)
+xiiMaterialGpuHandle xiiMaterialGpuStorage::RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance)
 {
-  if (pInstance == nullptr || pInstance->GetSchema() == nullptr || pInstance->GetSchema()->GetParameterBlockSize() > m_Description.m_uiMaxParameterBytes)
+  if (pInstance == nullptr)
     return {};
 
-  CollectGarbage(uiFrameIndex);
+  const xiiSharedPtr<const xiiMaterialSchema> pSchema = pInstance->GetSchema();
   XII_LOCK(m_Mutex);
-  if (m_pBuffer == nullptr || m_FreeSlots.IsEmpty())
+  if (pSchema == nullptr || pSchema->GetParameterBlockSize() > m_Description.m_uiMaxParameterBytes || m_pBuffer == nullptr || m_FreeSlots.IsEmpty())
     return {};
 
   const xiiUInt32 uiSlot = m_FreeSlots.PeekBack();
@@ -134,8 +134,8 @@ void xiiMaterialGpuStorage::UnregisterMaterial(xiiMaterialGpuHandle handle, xiiU
   --m_uiActiveCount;
 
   RetiredSlot& retired = m_RetiredSlots.ExpandAndGetRef();
-  retired.m_uiSlot       = handle.m_uiSlot;
-  retired.m_uiReuseFrame = uiFrameIndex + m_Description.m_uiFramesInFlight;
+  retired.m_uiSlot         = handle.m_uiSlot;
+  retired.m_uiLastUseFrame = uiFrameIndex;
 }
 
 void xiiMaterialGpuStorage::CollectGarbage(xiiUInt64 uiCompletedFrame)
@@ -143,7 +143,7 @@ void xiiMaterialGpuStorage::CollectGarbage(xiiUInt64 uiCompletedFrame)
   XII_LOCK(m_Mutex);
   for (xiiUInt32 i = m_RetiredSlots.GetCount(); i > 0U; --i)
   {
-    if (m_RetiredSlots[i - 1U].m_uiReuseFrame > uiCompletedFrame)
+    if (m_RetiredSlots[i - 1U].m_uiLastUseFrame > uiCompletedFrame)
       continue;
 
     m_FreeSlots.PushBack(m_RetiredSlots[i - 1U].m_uiSlot);
@@ -268,4 +268,3 @@ bool xiiMaterialGpuStorage::IsValidHandleLocked(xiiMaterialGpuHandle handle) con
 {
   return handle.IsValid() && handle.m_uiSlot < m_Slots.GetCount() && m_Slots[handle.m_uiSlot].m_uiGeneration == handle.m_uiGeneration && m_Slots[handle.m_uiSlot].m_pInstance != nullptr;
 }
-
