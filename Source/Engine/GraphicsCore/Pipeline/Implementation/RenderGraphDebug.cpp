@@ -6,7 +6,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 
 // static
-xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRGBarrierDescription> pBarriers, xiiArrayPtr<const xiiRGMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRGQueueSubmission> pQueueSubmissions, xiiStringBuilder& out_sDot)
+xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRenderGraphCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRenderGraphBarrierDescription> pBarriers, xiiArrayPtr<const xiiRenderGraphMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRenderGraphQueueSubmission> pQueueSubmissions, xiiArrayPtr<const xiiRenderGraphResourceDescription> pResources, xiiArrayPtr<const xiiRenderGraphResourceVersionDescription> pVersions, xiiStringBuilder& out_sDot)
 {
   if (pCompiledPasses.IsEmpty())
     return XII_FAILURE;
@@ -23,8 +23,8 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pC
   // Queue cluster sub-graphs
   for (xiiUInt32 uiQueueSubmissionIndex = 0U; uiQueueSubmissionIndex < pQueueSubmissions.GetCount(); ++uiQueueSubmissionIndex)
   {
-    const xiiRGQueueSubmission& submission   = pQueueSubmissions[uiQueueSubmissionIndex];
-    const xiiUInt32             uiQueueIndex = submission.m_uiQueueIndex < 3U ? submission.m_uiQueueIndex : 0U;
+    const xiiRenderGraphQueueSubmission& submission   = pQueueSubmissions[uiQueueSubmissionIndex];
+    const xiiUInt32                      uiQueueIndex = submission.m_uiQueueIndex < 3U ? submission.m_uiQueueIndex : 0U;
 
     out_sDot.AppendFormat("  submissiongraph cluster_q{0} {{\n", uiQueueSubmissionIndex);
     out_sDot.AppendFormat("    label=\"Submission {0} - {1}\";\n", uiQueueSubmissionIndex, QueueNames[uiQueueIndex]);
@@ -34,7 +34,7 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pC
     xiiHashTable<xiiUInt32, xiiDynamicArray<xiiUInt32>> mergeGroupPasses; // GroupIndex -> Sorted pass list.
     for (xiiUInt32 uiSortedPassOrder : submission.m_PassOrder)
     {
-      const xiiRGCompiledPass& compiledPass = pCompiledPasses[uiSortedPassOrder];
+      const xiiRenderGraphCompiledPass& compiledPass = pCompiledPasses[uiSortedPassOrder];
 
       if (compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex)
       {
@@ -49,9 +49,9 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pC
 
       for (xiiUInt32 uiPassPosition : it.Value())
       {
-        const xiiRGCompiledPass& compiledPass = pCompiledPasses[uiPassPosition];
-        const char*              szFillColour = compiledPass.m_bIsCulled ? "#444444" : QueueColors[uiQueueIndex];
-        const char*              szTextColour = compiledPass.m_bIsCulled ? "#888888" : "white";
+        const xiiRenderGraphCompiledPass& compiledPass = pCompiledPasses[uiPassPosition];
+        const char*                       szFillColour = compiledPass.m_bIsCulled ? "#444444" : QueueColors[uiQueueIndex];
+        const char*                       szTextColour = compiledPass.m_bIsCulled ? "#888888" : "white";
 
         out_sDot.AppendFormat("      p{0} [label=\"{1}\" fillcolor=\"{2}\" fontcolor=\"{3}\"{4}];\n", compiledPass.m_uiPassIndex, compiledPass.m_sName.GetView(), szFillColour, szTextColour, compiledPass.m_bIsCulled ? " style=\"filled,dashed\"" : " style=filled");
       }
@@ -61,7 +61,7 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pC
     // Passes not in any merge group.
     for (xiiUInt32 uiSortedPassOrder : submission.m_PassOrder)
     {
-      const xiiRGCompiledPass& compiledPass = pCompiledPasses[uiSortedPassOrder];
+      const xiiRenderGraphCompiledPass& compiledPass = pCompiledPasses[uiSortedPassOrder];
 
       if (compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex)
         continue;
@@ -76,27 +76,59 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pC
   }
 
   // Dependency edges.
-  for (const xiiRGCompiledPass& compiledPass : pCompiledPasses)
+  for (const xiiRenderGraphCompiledPass& compiledPass : pCompiledPasses)
   {
     for (xiiUInt32 depIdx : compiledPass.m_DependencyPassIndices)
     {
-      out_sDot.AppendFormat("  p{0} -> p{1} [color=\"#4488cc\"];\n", pCompiledPasses[depIdx].m_uiPassIndex, compiledPass.m_uiPassIndex);
+      out_sDot.AppendFormat("  p{0} -> p{1} [color=\"#4488cc\"];\n", depIdx, compiledPass.m_uiPassIndex);
     }
   }
 
   // Barrier annotations.
-  for (const xiiRGCompiledPass& compiledPass : pCompiledPasses)
+  for (const xiiRenderGraphCompiledPass& compiledPass : pCompiledPasses)
   {
     if (compiledPass.m_bIsCulled)
       continue;
 
     for (xiiUInt32 uiBarrierIndex : compiledPass.m_PreBarrierIndices)
     {
-      const xiiRGBarrierDescription& barrier = pBarriers[uiBarrierIndex];
+      const xiiRenderGraphBarrierDescription& barrier = pBarriers[uiBarrierIndex];
       // const char*            szEdgeLabel  = (barrier.m_TransitionType == xiiGALStateTransitionType::End) ? "SplitEnd" : "Immediate";
       // const char*            szEdgeColour = (barrier.m_TransitionType == xiiGALStateTransitionType::End) ? "#ffaa00" : "#cc4444";
 
       // Barrier annotations are embedded in node tooltips in DOT, edges come from dependency pass links.
+    }
+  }
+
+  out_sDot.Append("\n  subgraph cluster_resources {\n    label=\"Resources / Lifetimes / Aliasing\"; color=\"#777777\";\n");
+  for (xiiUInt32 i = 0U; i < pResources.GetCount(); ++i)
+  {
+    const xiiRenderGraphResourceDescription& resource = pResources[i];
+    out_sDot.AppendFormat("    r{0} [shape=note fillcolor=\"#303030\" fontcolor=\"white\" label=\"{1}\\nlife [{2},{3}]\\nalias {4}\"];\n", i, resource.m_sName.GetView(), resource.m_uiFirstUsePassIndex, resource.m_uiLastUsePassIndex, resource.m_uiAliasGroup);
+  }
+  out_sDot.Append("  }\n");
+
+  for (const xiiRenderGraphResourceVersionDescription& version : pVersions)
+  {
+    xiiUInt32 uiResourceIndex = xiiInvalidIndex;
+    for (xiiUInt32 i = 0U; i < pResources.GetCount(); ++i)
+    {
+      if (pResources[i].m_Id == version.m_ResourceId)
+      {
+        uiResourceIndex = i;
+        break;
+      }
+    }
+    if (uiResourceIndex == xiiInvalidIndex)
+      continue;
+
+    for (const xiiRenderGraphCompiledPass& pass : pCompiledPasses)
+    {
+      if (pass.m_Id == version.m_ProducerPassId)
+      {
+        out_sDot.AppendFormat("  p{0} -> r{1} [style=dashed color=\"#aa66cc\" label=\"v{2}\"];\n", pass.m_uiPassIndex, uiResourceIndex, version.m_uiVersion);
+        break;
+      }
     }
   }
 

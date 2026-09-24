@@ -55,7 +55,7 @@ public:
   ~xiiCustomDataResourceBase();
 
 protected:
-  virtual void                CreateAndLoadData(xiiAbstractObjectGraph& ref_graph, xiiRttiConverterContext& ref_context, const xiiAbstractObjectNode* pRootNode) = 0;
+  virtual void                       CreateAndLoadData(xiiAbstractObjectGraph& ref_graph, xiiRttiConverterContext& ref_context, const xiiAbstractObjectNode* pRootNode) = 0;
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
   xiiResourceLoadDescription         UpdateContent_Internal(xiiStreamReader* pStream, const xiiRTTI& rtti);
 };

@@ -243,7 +243,7 @@ inline bool xiiVec4Template<Type>::IsValid() const
 }
 
 template <typename Type>
-XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec4Template<Type>::GetDistanceTo(const xiiVec4Template <Type>& rhs) const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec4Template<Type>::GetDistanceTo(const xiiVec4Template<Type>& rhs) const
 {
   XII_NAN_ASSERT(this);
   XII_NAN_ASSERT(&rhs);
@@ -252,7 +252,7 @@ XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec4Template<Type>::GetDis
 }
 
 template <typename Type>
-XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec4Template<Type>::GetSquaredDistanceTo(const xiiVec4Template <Type>& rhs) const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec4Template<Type>::GetSquaredDistanceTo(const xiiVec4Template<Type>& rhs) const
 {
   XII_NAN_ASSERT(this);
   XII_NAN_ASSERT(&rhs);

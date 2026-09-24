@@ -53,7 +53,7 @@ public:
 private:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* Stream) override;
-  virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
   static const xiiSurfaceInteraction* FindInteraction(const xiiSurfaceResource* pCurSurf, xiiUInt64 uiHash, float fImpulseSqr, float& out_fImpulseParamValue);

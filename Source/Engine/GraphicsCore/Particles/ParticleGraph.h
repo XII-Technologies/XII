@@ -312,7 +312,7 @@ public:
 private:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
   xiiParticleGraphResourceDescriptor m_Descriptor;            ///< The descriptor that defines the contents of this particle graph resource.

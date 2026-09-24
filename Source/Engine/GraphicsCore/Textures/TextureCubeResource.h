@@ -44,7 +44,7 @@ public:
 protected:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   xiiUInt8                    m_uiLoadedTextures;
   xiiSharedPtr<xiiGALTexture> m_pGALTexture[2];

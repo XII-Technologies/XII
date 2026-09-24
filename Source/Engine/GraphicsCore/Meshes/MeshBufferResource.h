@@ -353,7 +353,7 @@ public:
 private:
   virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   void CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiUInt8> pData, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName);
   void CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiUInt32> pData, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName);
