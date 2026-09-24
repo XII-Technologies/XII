@@ -330,4 +330,3 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialRuntimeState
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialRuntimeState);
-

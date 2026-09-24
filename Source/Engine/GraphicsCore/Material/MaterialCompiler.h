@@ -53,4 +53,3 @@ class XII_GRAPHICSCORE_DLL xiiMaterialCompiler
 public:
   static xiiResult ValidateShaderLayout(const xiiMaterialSchema& schema, const xiiShaderPermutationResource& permutation, xiiCompiledMaterialLayout& out_layout, xiiStringView sParameterBlockName = "xiiMaterialConstants");
 };
-

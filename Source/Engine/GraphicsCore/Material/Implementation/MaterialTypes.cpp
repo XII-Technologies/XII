@@ -109,4 +109,3 @@ xiiMaterialParameterId xiiMaterialParameterId::Make(xiiStringView sName)
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Material_Implementation_MaterialTypes);
-

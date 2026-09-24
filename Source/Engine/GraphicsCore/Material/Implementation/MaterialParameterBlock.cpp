@@ -170,4 +170,3 @@ void xiiMaterialParameterBlock::MarkDirty(xiiUInt32 uiOffset, xiiUInt32 uiSize)
   m_uiDirtyStart = m_uiDirtyStart == xiiInvalidIndex ? uiOffset : xiiMath::Min(m_uiDirtyStart, uiOffset);
   m_uiDirtyEnd   = xiiMath::Max(m_uiDirtyEnd, uiOffset + uiSize);
 }
-

@@ -53,4 +53,3 @@ private:
   xiiUInt64             m_uiFrameIndex = 0ULL;
   bool                  m_bInitialized = false;
 };
-

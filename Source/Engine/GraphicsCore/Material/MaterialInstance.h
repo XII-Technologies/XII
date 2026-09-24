@@ -75,4 +75,3 @@ private:
   xiiBitflags<xiiMaterialDirtyFlags>       m_DirtyFlags = xiiMaterialDirtyFlags::None;
   xiiUInt32                                m_uiRevision  = 0U;
 };
-

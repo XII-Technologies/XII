@@ -44,4 +44,3 @@ private:
   xiiUInt32                             m_uiDirtyStart = xiiInvalidIndex;
   xiiUInt32                             m_uiDirtyEnd   = 0U;
 };
-
