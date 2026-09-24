@@ -109,6 +109,7 @@ void xiiGALBuffer::CreateDefaultResourceViews()
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
   {
+    viewDescription.m_ViewType = xiiGALBufferViewType::UnorderedAccess;
     m_DefaultBufferViews[xiiGALBufferViewType::UnorderedAccess] = CreateView(viewDescription);
   }
 }
