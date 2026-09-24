@@ -1172,6 +1172,15 @@ xiiResult xiiShaderCompilerSPIRV::FillSRVResourceBinding(xiiGALShaderResourceDes
 
 xiiResult xiiShaderCompilerSPIRV::FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
+  // SPIR-V represents HLSL RWStructuredBuffer and RWByteAddressBuffer resources as storage
+  // buffers. The shader parser has already classified this binding as a UAV, so retain that
+  // access intent instead of rejecting the descriptor or misclassifying it as an SRV.
+  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+  {
+    binding.m_Type = xiiGALShaderResourceType::BufferUAV;
+    return XII_SUCCESS;
+  }
+
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
   {
     binding.m_Type = xiiGALShaderResourceType::TextureUAV;
