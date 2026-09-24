@@ -237,6 +237,20 @@ const xiiMaterialTextureDefinition* xiiMaterialSchema::FindTexture(const xiiTemp
   return FindTexture(id);
 }
 
+xiiUInt32 xiiMaterialSchema::FindParameterIndex(xiiMaterialParameterId id) const
+{
+  xiiUInt32 uiIndex = xiiInvalidIndex;
+  m_ParameterLookup.TryGetValue(id.m_uiValue, uiIndex);
+  return uiIndex;
+}
+
+xiiUInt32 xiiMaterialSchema::FindTextureIndex(xiiMaterialParameterId id) const
+{
+  xiiUInt32 uiIndex = xiiInvalidIndex;
+  m_TextureLookup.TryGetValue(id.m_uiValue, uiIndex);
+  return uiIndex;
+}
+
 xiiUInt32 xiiMaterialSchema::GetPackedSize(xiiMaterialParameterType::Enum type)
 {
   switch (type)

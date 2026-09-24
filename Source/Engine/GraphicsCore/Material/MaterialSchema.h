@@ -4,6 +4,7 @@
 
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Strings/HashedString.h>
+#include <Foundation/Types/RefCounted.h>
 #include <Foundation/Types/Variant.h>
 #include <GraphicsCore/Material/MaterialTypes.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
@@ -64,7 +65,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialSchemaDescription)
 ///
 /// Schemas are immutable after Build(). Stable IDs remove hashed-string lookup from hot paths,
 /// while retaining names and reflected metadata for editors and diagnostics.
-class XII_GRAPHICSCORE_DLL xiiMaterialSchema
+class XII_GRAPHICSCORE_DLL xiiMaterialSchema : public xiiRefCounted
 {
 public:
   xiiResult Build(const xiiMaterialSchemaDescription& description, xiiStringBuilder* out_pError = nullptr);
@@ -87,6 +88,8 @@ public:
   [[nodiscard]] const xiiMaterialParameterDefinition* FindParameter(const xiiTempHashedString& sName) const;
   [[nodiscard]] const xiiMaterialTextureDefinition* FindTexture(xiiMaterialParameterId id) const;
   [[nodiscard]] const xiiMaterialTextureDefinition* FindTexture(const xiiTempHashedString& sName) const;
+  [[nodiscard]] xiiUInt32 FindParameterIndex(xiiMaterialParameterId id) const;
+  [[nodiscard]] xiiUInt32 FindTextureIndex(xiiMaterialParameterId id) const;
 
   static xiiUInt32 GetPackedSize(xiiMaterialParameterType::Enum type);
   static xiiUInt32 GetPackedAlignment(xiiMaterialParameterType::Enum type);
@@ -106,4 +109,3 @@ private:
   xiiHashTable<xiiUInt64, xiiUInt32>               m_TextureLookup;
   bool                                               m_bValid = false;
 };
-
