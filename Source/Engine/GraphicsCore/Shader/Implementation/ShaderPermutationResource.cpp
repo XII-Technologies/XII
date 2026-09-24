@@ -150,6 +150,9 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
 
       for (const xiiGALShaderResourceDescription& resource : pStageBinary->GetByteCode()->m_ShaderResourceBindings)
       {
+        const bool bRuntimeArray = resource.m_uiArraySize == 0U;
+        const xiiUInt32 uiDescriptorCount = bRuntimeArray ? XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY : resource.m_uiArraySize;
+
         // Try to find an existing resource with the same bind set and bind slot.
         xiiGALPipelineResourceDescription* pExistingResource = nullptr;
         for (xiiGALPipelineResourceDescription& existing : resourceSignatureDescription.m_Resources)
@@ -165,7 +168,9 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
         {
           // Merge shader stages and reconcile array size.
           pExistingResource->m_ShaderStages |= resource.m_ShaderStages;
-          pExistingResource->m_uiArraySize = xiiMath::Max(pExistingResource->m_uiArraySize, resource.m_uiArraySize);
+          pExistingResource->m_uiArraySize = xiiMath::Max(pExistingResource->m_uiArraySize, uiDescriptorCount);
+          if (bRuntimeArray)
+            pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::RuntimeArray);
 
           // If resource types differ, prefer the existing one but log a warning.
           if (pExistingResource->m_ResourceType != resource.m_Type)
@@ -181,10 +186,10 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
           resourceSignature.m_sName                 = resource.m_sName;
           resourceSignature.m_ResourceType          = resource.m_Type;
           resourceSignature.m_ShaderStages          = resource.m_ShaderStages;
-          resourceSignature.m_uiArraySize           = resource.m_uiArraySize;
+          resourceSignature.m_uiArraySize           = uiDescriptorCount;
           resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
           resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
-          resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
+          resourceSignature.m_PipelineResourceFlags = bRuntimeArray ? xiiGALPipelineResourceFlags::RuntimeArray : xiiGALPipelineResourceFlags::None;
         }
 
         // Immutable Samplers: only add if resource is a sampler and not already present.

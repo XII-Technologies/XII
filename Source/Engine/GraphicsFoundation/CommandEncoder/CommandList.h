@@ -1081,11 +1081,17 @@ public:
   /// \param pBufferView        - The handle to the buffer view object to set.
   void SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView);
 
+  /// Updates a range in a fixed or runtime-sized buffer SRV descriptor array.
+  void SetShaderResourceBufferViews(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews);
+
   /// This is used to set the texture view for a shader resource.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param pTextureView       - The handle to the texture view object to set.
   void SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView);
+
+  /// Updates a range in a fixed or runtime-sized texture SRV descriptor array.
+  void SetShaderResourceTextureViews(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews);
 
   /// This is used to set the buffer view for an unordered access.
   ///
@@ -1093,17 +1099,26 @@ public:
   /// \param pBufferView        - The handle to the buffer view object to set.
   void SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView);
 
+  /// Updates a range in a fixed or runtime-sized buffer UAV descriptor array.
+  void SetUnorderedAccessBufferViews(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews);
+
   /// This is used to set the texture view for an unordered access.
   ///
   /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
   /// \param pTextureView       - The handle to the texture view object to set.
   void SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView);
 
+  /// Updates a range in a fixed or runtime-sized texture UAV descriptor array.
+  void SetUnorderedAccessTextureViews(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews);
+
   /// This is used to set the sampler for a sampler resource.
   ///
   /// \param bindingInformation - This describes the binding information for the sampler resource, see xiiGALPipelineResourceDescription for details.
   /// \param pSampler           - The handle to the sampler object to set.
   void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler);
+
+  /// Updates a range in a fixed or runtime-sized sampler descriptor array.
+  void SetSamplers(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALSampler*> pSamplers);
 
   /// Binds a top-level acceleration structure to a shader resource slot.
   ///
@@ -1129,6 +1144,8 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetShaderResourceBufferView(const xiiTempHashedString& sResourceName, xiiGALBufferView* pBufferView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
+  void ResolveAndSetShaderResourceBufferViews(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
   /// Resolves and sets a shader resource texture view for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
@@ -1137,6 +1154,8 @@ public:
   /// \param pTextureView  - Shared pointer to the texture view to set.
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetShaderResourceTextureView(const xiiTempHashedString& sResourceName, xiiGALTextureView* pTextureView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
+  void ResolveAndSetShaderResourceTextureViews(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
   /// Resolves and sets an unordered access buffer view for the given resource name.
   ///
@@ -1147,6 +1166,8 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetUnorderedAccessBufferView(const xiiTempHashedString& sResourceName, xiiGALBufferView* pBufferView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
+  void ResolveAndSetUnorderedAccessBufferViews(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
   /// Resolves and sets an unordered access texture view for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
@@ -1156,6 +1177,8 @@ public:
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetUnorderedAccessTextureView(const xiiTempHashedString& sResourceName, xiiGALTextureView* pTextureView, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
+  void ResolveAndSetUnorderedAccessTextureViews(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
   /// Resolves and sets a sampler for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
@@ -1164,6 +1187,8 @@ public:
   /// \param pSampler      - Shared pointer to the sampler to set.
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiGALSampler* pSampler, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
+  void ResolveAndSetSamplers(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALSampler*> pSamplers, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
   /// Resolves and sets a top-level acceleration structure for the given resource name.
   ///
@@ -1583,10 +1608,15 @@ protected:
 
   virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)               = 0;
   virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)     = 0;
+  virtual void      SetShaderResourceBufferViewsPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews) = 0;
   virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)  = 0;
+  virtual void      SetShaderResourceTextureViewsPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews) = 0;
   virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)    = 0;
+  virtual void      SetUnorderedAccessBufferViewsPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews) = 0;
   virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) = 0;
+  virtual void      SetUnorderedAccessTextureViewsPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews) = 0;
   virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)                            = 0;
+  virtual void      SetSamplersPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALSampler*> pSamplers) = 0;
   virtual void      SetAccelerationStructurePlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTopLevelAS* pTopLevelAS)        = 0;
   virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)                                                              = 0;
 

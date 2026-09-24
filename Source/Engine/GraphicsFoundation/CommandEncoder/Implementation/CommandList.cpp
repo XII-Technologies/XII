@@ -540,6 +540,17 @@ void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResource
   SetShaderResourceBufferViewPlatform(bindingInformation, pBufferView);
 }
 
+void xiiGALCommandList::SetShaderResourceBufferViews(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording && m_pPipelineState != nullptr, "Buffer descriptor arrays require an active recording and pipeline state.");
+  XII_ASSERT_DEV(uiFirstElement + pBufferViews.GetCount() <= bindingInformation.m_uiArraySize, "Buffer descriptor write exceeds array '{}' capacity ({} + {} > {}).", bindingInformation.m_sName, uiFirstElement, pBufferViews.GetCount(), bindingInformation.m_uiArraySize);
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  for (xiiGALBufferView* pView : pBufferViews)
+    XII_ASSERT_DEV(pView == nullptr || pView->GetDescription().m_ViewType == xiiGALBufferViewType::ShaderResource, "All buffer views must be shader-resource views.");
+#endif
+  SetShaderResourceBufferViewsPlatform(bindingInformation, uiFirstElement, pBufferViews);
+}
+
 void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetShaderResourceTextureView must be called while recording.");
@@ -568,6 +579,17 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
 #endif
 
   SetShaderResourceTextureViewPlatform(bindingInformation, pTextureView);
+}
+
+void xiiGALCommandList::SetShaderResourceTextureViews(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording && m_pPipelineState != nullptr, "Texture descriptor arrays require an active recording and pipeline state.");
+  XII_ASSERT_DEV(uiFirstElement + pTextureViews.GetCount() <= bindingInformation.m_uiArraySize, "Texture descriptor write exceeds array '{}' capacity.", bindingInformation.m_sName);
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  for (xiiGALTextureView* pView : pTextureViews)
+    XII_ASSERT_DEV(pView == nullptr || pView->GetDescription().m_ViewType == xiiGALTextureViewType::ShaderResource, "All texture views must be shader-resource views.");
+#endif
+  SetShaderResourceTextureViewsPlatform(bindingInformation, uiFirstElement, pTextureViews);
 }
 
 void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
@@ -600,6 +622,17 @@ void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourc
   SetUnorderedAccessBufferViewPlatform(bindingInformation, pBufferView);
 }
 
+void xiiGALCommandList::SetUnorderedAccessBufferViews(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording && m_pPipelineState != nullptr, "Buffer UAV descriptor arrays require an active recording and pipeline state.");
+  XII_ASSERT_DEV(uiFirstElement + pBufferViews.GetCount() <= bindingInformation.m_uiArraySize, "Buffer UAV descriptor write exceeds array '{}' capacity.", bindingInformation.m_sName);
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  for (xiiGALBufferView* pView : pBufferViews)
+    XII_ASSERT_DEV(pView == nullptr || pView->GetDescription().m_ViewType == xiiGALBufferViewType::UnorderedAccess, "All buffer views must be unordered-access views.");
+#endif
+  SetUnorderedAccessBufferViewsPlatform(bindingInformation, uiFirstElement, pBufferViews);
+}
+
 void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetUnorderedAccessTextureView must be called while recording.");
@@ -630,6 +663,17 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
   SetUnorderedAccessTextureViewPlatform(bindingInformation, pTextureView);
 }
 
+void xiiGALCommandList::SetUnorderedAccessTextureViews(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording && m_pPipelineState != nullptr, "Texture UAV descriptor arrays require an active recording and pipeline state.");
+  XII_ASSERT_DEV(uiFirstElement + pTextureViews.GetCount() <= bindingInformation.m_uiArraySize, "Texture UAV descriptor write exceeds array '{}' capacity.", bindingInformation.m_sName);
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  for (xiiGALTextureView* pView : pTextureViews)
+    XII_ASSERT_DEV(pView == nullptr || pView->GetDescription().m_ViewType == xiiGALTextureViewType::UnorderedAccess, "All texture views must be unordered-access views.");
+#endif
+  SetUnorderedAccessTextureViewsPlatform(bindingInformation, uiFirstElement, pTextureViews);
+}
+
 void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetSampler must be called while recording.");
@@ -657,6 +701,13 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
 #endif
 
   SetSamplerPlatform(bindingInformation, pSampler);
+}
+
+void xiiGALCommandList::SetSamplers(const xiiGALPipelineResourceDescription& bindingInformation, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALSampler*> pSamplers)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording && m_pPipelineState != nullptr, "Sampler descriptor arrays require an active recording and pipeline state.");
+  XII_ASSERT_DEV(uiFirstElement + pSamplers.GetCount() <= bindingInformation.m_uiArraySize, "Sampler descriptor write exceeds array '{}' capacity.", bindingInformation.m_sName);
+  SetSamplersPlatform(bindingInformation, uiFirstElement, pSamplers);
 }
 
 void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTopLevelAS* pTopLevelAS)
@@ -719,6 +770,14 @@ void xiiGALCommandList::ResolveAndSetShaderResourceBufferView(const xiiTempHashe
   }
 }
 
+void xiiGALCommandList::ResolveAndSetShaderResourceBufferViews(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews, xiiBitflags<xiiGALShaderType> shaderStages)
+{
+  XII_ASSERT_DEV(m_pPipelineResourceSignature != nullptr, "Resolving buffer descriptor arrays requires a pipeline resource signature.");
+  for (const xiiGALPipelineResourceDescription& resource : m_pPipelineResourceSignature->GetDescription().m_Resources)
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::BufferSRV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+      SetShaderResourceBufferViews(resource, uiFirstElement, pBufferViews);
+}
+
 void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHashedString& sResourceName, xiiGALTextureView* pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
@@ -733,6 +792,14 @@ void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHash
       SetShaderResourceTextureView(resource, pTextureView);
     }
   }
+}
+
+void xiiGALCommandList::ResolveAndSetShaderResourceTextureViews(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews, xiiBitflags<xiiGALShaderType> shaderStages)
+{
+  XII_ASSERT_DEV(m_pPipelineResourceSignature != nullptr, "Resolving texture descriptor arrays requires a pipeline resource signature.");
+  for (const xiiGALPipelineResourceDescription& resource : m_pPipelineResourceSignature->GetDescription().m_Resources)
+    if (resource.m_sName == sResourceName && (resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+      SetShaderResourceTextureViews(resource, uiFirstElement, pTextureViews);
 }
 
 void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHashedString& sResourceName, xiiGALBufferView* pBufferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
@@ -751,6 +818,14 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHash
   }
 }
 
+void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferViews(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALBufferView*> pBufferViews, xiiBitflags<xiiGALShaderType> shaderStages)
+{
+  XII_ASSERT_DEV(m_pPipelineResourceSignature != nullptr, "Resolving buffer UAV descriptor arrays requires a pipeline resource signature.");
+  for (const xiiGALPipelineResourceDescription& resource : m_pPipelineResourceSignature->GetDescription().m_Resources)
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::BufferUAV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+      SetUnorderedAccessBufferViews(resource, uiFirstElement, pBufferViews);
+}
+
 void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHashedString& sResourceName, xiiGALTextureView* pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
@@ -767,6 +842,14 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHas
   }
 }
 
+void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureViews(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALTextureView*> pTextureViews, xiiBitflags<xiiGALShaderType> shaderStages)
+{
+  XII_ASSERT_DEV(m_pPipelineResourceSignature != nullptr, "Resolving texture UAV descriptor arrays requires a pipeline resource signature.");
+  for (const xiiGALPipelineResourceDescription& resource : m_pPipelineResourceSignature->GetDescription().m_Resources)
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::TextureUAV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+      SetUnorderedAccessTextureViews(resource, uiFirstElement, pTextureViews);
+}
+
 void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiGALSampler* pSampler, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
@@ -781,6 +864,14 @@ void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourc
       SetSampler(resource, pSampler);
     }
   }
+}
+
+void xiiGALCommandList::ResolveAndSetSamplers(const xiiTempHashedString& sResourceName, xiiUInt32 uiFirstElement, xiiArrayPtr<xiiGALSampler*> pSamplers, xiiBitflags<xiiGALShaderType> shaderStages)
+{
+  XII_ASSERT_DEV(m_pPipelineResourceSignature != nullptr, "Resolving sampler descriptor arrays requires a pipeline resource signature.");
+  for (const xiiGALPipelineResourceDescription& resource : m_pPipelineResourceSignature->GetDescription().m_Resources)
+    if (resource.m_sName == sResourceName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+      SetSamplers(resource, uiFirstElement, pSamplers);
 }
 
 void xiiGALCommandList::ResolveAndSetAccelerationStructure(const xiiTempHashedString& sResourceName, xiiGALTopLevelAS* pTopLevelAS, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)

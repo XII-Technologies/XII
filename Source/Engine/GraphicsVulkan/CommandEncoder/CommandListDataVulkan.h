@@ -42,6 +42,11 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
       m_pBoundUnorderedAccessBufferResourceViews  = std::move(other.m_pBoundUnorderedAccessBufferResourceViews);
       m_pBoundUnorderedAccessTextureResourceViews = std::move(other.m_pBoundUnorderedAccessTextureResourceViews);
       m_pBoundSamplerStates                       = std::move(other.m_pBoundSamplerStates);
+      m_pBoundBufferResourceViewArrays                 = std::move(other.m_pBoundBufferResourceViewArrays);
+      m_pBoundTextureResourceViewArrays                = std::move(other.m_pBoundTextureResourceViewArrays);
+      m_pBoundUnorderedAccessBufferResourceViewArrays  = std::move(other.m_pBoundUnorderedAccessBufferResourceViewArrays);
+      m_pBoundUnorderedAccessTextureResourceViewArrays = std::move(other.m_pBoundUnorderedAccessTextureResourceViewArrays);
+      m_pBoundSamplerStateArrays                       = std::move(other.m_pBoundSamplerStateArrays);
     }
 
     xiiDynamicArray<xiiGALBufferVulkan*>      m_pBoundConstantBuffers;
@@ -51,6 +56,11 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     xiiDynamicArray<xiiGALBufferViewVulkan*>  m_pBoundUnorderedAccessBufferResourceViews;
     xiiDynamicArray<xiiGALTextureViewVulkan*> m_pBoundUnorderedAccessTextureResourceViews;
     xiiDynamicArray<xiiGALSamplerVulkan*>     m_pBoundSamplerStates;
+    xiiDynamicArray<xiiDynamicArray<xiiGALBufferViewVulkan*>>  m_pBoundBufferResourceViewArrays;
+    xiiDynamicArray<xiiDynamicArray<xiiGALTextureViewVulkan*>> m_pBoundTextureResourceViewArrays;
+    xiiDynamicArray<xiiDynamicArray<xiiGALBufferViewVulkan*>>  m_pBoundUnorderedAccessBufferResourceViewArrays;
+    xiiDynamicArray<xiiDynamicArray<xiiGALTextureViewVulkan*>> m_pBoundUnorderedAccessTextureResourceViewArrays;
+    xiiDynamicArray<xiiDynamicArray<xiiGALSamplerVulkan*>>     m_pBoundSamplerStateArrays;
   };
 
   XII_ALWAYS_INLINE xiiGALCommandListDataVulkan()  = default;
@@ -110,6 +120,11 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
       setBindings.m_pBoundUnorderedAccessBufferResourceViews.Clear();
       setBindings.m_pBoundUnorderedAccessTextureResourceViews.Clear();
       setBindings.m_pBoundSamplerStates.Clear();
+      setBindings.m_pBoundBufferResourceViewArrays.Clear();
+      setBindings.m_pBoundTextureResourceViewArrays.Clear();
+      setBindings.m_pBoundUnorderedAccessBufferResourceViewArrays.Clear();
+      setBindings.m_pBoundUnorderedAccessTextureResourceViewArrays.Clear();
+      setBindings.m_pBoundSamplerStateArrays.Clear();
     }
 
     m_DescriptorSets.Clear();
