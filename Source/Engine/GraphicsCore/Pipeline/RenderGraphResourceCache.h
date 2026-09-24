@@ -43,8 +43,13 @@ public:
   /// Releases all pooled and active resources and nulls the device reference.
   void Shutdown();
 
-  /// Called once at the start of a frame before Execute().
+  /// Called once at the start of a frame before Execute(). Uses a conservative three-frame
+  /// retirement window for callers that do not expose an exact completed-frame index.
   void BeginFrame(xiiUInt64 uiFrameIndex);
+
+  /// Starts a frame and promotes only resources whose last GPU frame is known to be complete.
+  /// This overload is preferred by render loops with explicit frame fences.
+  void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrameIndex);
 
   /// Called once at the end of a frame after Execute(). Returns all active resources to the pool.
   void EndFrame();
@@ -94,12 +99,18 @@ private:
 private:
   xiiSharedPtr<xiiGALDevice> m_pDevice;
   xiiUInt64                  m_uiCurrentFrame = 0ULL;
+  xiiUInt64                  m_uiCompletedFrame = 0ULL;
 
   /// Idle textures keyed by creation-description hash.
   xiiHashTable<xiiUInt32, xiiDynamicArray<PooledTexture>> m_TexturePool;
 
   /// Idle buffers keyed by creation-description hash.
   xiiHashTable<xiiUInt32, xiiDynamicArray<PooledBuffer>> m_BufferPool;
+
+  /// Resources leave the active set after recording, but remain unavailable until the GPU frame
+  /// that referenced them has completed.
+  xiiDynamicArray<PooledTexture> m_RetiredTextures;
+  xiiDynamicArray<PooledBuffer>  m_RetiredBuffers;
 
   /// Textures that have been acquired and are in flight this frame.
   xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_ActiveTextures;

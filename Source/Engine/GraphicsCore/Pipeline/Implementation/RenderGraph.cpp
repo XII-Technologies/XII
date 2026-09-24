@@ -513,15 +513,11 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 {
   XII_ASSERT_DEV(!m_bIsSetupOpen, "Cannot compile while setup is still open.");
 
-  // Signature check must happen before compiled data is cleared. Clearing first would turn a
-  // cache hit into an empty execution plan.
+  // The signature remains useful for diagnostics and future immutable-plan caching. Frame setup
+  // rebuilds pass data, imported objects, initial states, and resource descriptions, so retaining
+  // a previous frame's compiled plan would leave dangling pass-data pointers and stale barriers.
   m_Statistics = {};
   PhaseG_SignatureAndCache(settings);
-  if (m_Statistics.m_bUsedCachedCompile)
-  {
-    m_LastCompileSettings = settings;
-    return XII_SUCCESS;
-  }
 
   m_CompiledPasses.Clear();
   m_Barriers.Clear();
@@ -1008,6 +1004,7 @@ void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResour
     // End barrier goes on consumer.
     xiiRenderGraphBarrierDescription endBarrier = barrier;
     endBarrier.m_TransitionType                 = xiiGALStateTransitionType::End;
+    endBarrier.m_TransitionFlags                = xiiGALStateTransitionFlags::UpdateState;
     const xiiUInt32 uiEndBarrierIndex           = m_Barriers.GetCount();
     m_Barriers.PushBack(endBarrier);
 
@@ -1309,16 +1306,8 @@ void xiiRenderGraph::PhaseG_SignatureAndCache(const xiiRenderGraphCompileSetting
 {
   const xiiUInt64 uiSignature     = ComputeSignature(m_Passes) ^ static_cast<xiiUInt64>(settings.m_uiCacheSalt);
   m_Statistics.m_uiGraphSignature = uiSignature;
-
-  if (settings.m_bEnableCompileCache && uiSignature == m_uiLastSignature && m_bIsCompiled)
-  {
-    m_Statistics.m_bUsedCachedCompile = true;
-  }
-  else
-  {
-    m_uiLastSignature                 = uiSignature;
-    m_Statistics.m_bUsedCachedCompile = false;
-  }
+  m_uiLastSignature                 = uiSignature;
+  m_Statistics.m_bUsedCachedCompile = false;
 }
 
 xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, xiiStringBuilder* out_pError)

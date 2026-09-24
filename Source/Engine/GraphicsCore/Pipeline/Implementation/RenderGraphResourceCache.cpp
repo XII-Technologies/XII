@@ -26,6 +26,8 @@ void xiiRenderGraphResourceCache::Shutdown()
 
   m_ActiveTextures.Clear();
   m_ActiveBuffers.Clear();
+  m_RetiredTextures.Clear();
+  m_RetiredBuffers.Clear();
   m_TexturePool.Clear();
   m_BufferPool.Clear();
   m_pDevice = nullptr;
@@ -33,9 +35,50 @@ void xiiRenderGraphResourceCache::Shutdown()
 
 void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex)
 {
+  const xiiUInt64 uiConservativeCompletedFrame = uiFrameIndex > 3ULL ? uiFrameIndex - 3ULL : 0ULL;
+  BeginFrame(uiFrameIndex, uiConservativeCompletedFrame);
+}
+
+void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrameIndex)
+{
   XII_LOCK(m_Mutex);
 
   m_uiCurrentFrame = uiFrameIndex;
+  m_uiCompletedFrame = xiiMath::Min(uiCompletedFrameIndex, uiFrameIndex);
+
+  for (xiiUInt32 i = m_RetiredTextures.GetCount(); i > 0U; --i)
+  {
+    PooledTexture& retired = m_RetiredTextures[i - 1U];
+    if (retired.m_uiLastUsedFrame > m_uiCompletedFrame)
+      continue;
+
+    const xiiUInt32 uiHash = retired.m_pTexture->GetDescription().CalculateHash();
+    xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
+    if (pPool == nullptr)
+    {
+      m_TexturePool.Insert(uiHash, xiiDynamicArray<PooledTexture>());
+      pPool = m_TexturePool.GetValue(uiHash);
+    }
+    pPool->PushBack(retired);
+    m_RetiredTextures.RemoveAtAndSwap(i - 1U);
+  }
+
+  for (xiiUInt32 i = m_RetiredBuffers.GetCount(); i > 0U; --i)
+  {
+    PooledBuffer& retired = m_RetiredBuffers[i - 1U];
+    if (retired.m_uiLastUsedFrame > m_uiCompletedFrame)
+      continue;
+
+    const xiiUInt32 uiHash = retired.m_pBuffer->GetDescription().CalculateHash();
+    xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
+    if (pPool == nullptr)
+    {
+      m_BufferPool.Insert(uiHash, xiiDynamicArray<PooledBuffer>());
+      pPool = m_BufferPool.GetValue(uiHash);
+    }
+    pPool->PushBack(retired);
+    m_RetiredBuffers.RemoveAtAndSwap(i - 1U);
+  }
 }
 
 void xiiRenderGraphResourceCache::EndFrame()
@@ -44,17 +87,7 @@ void xiiRenderGraphResourceCache::EndFrame()
 
   for (const xiiSharedPtr<xiiGALTexture>& pTexture : m_ActiveTextures)
   {
-    const xiiUInt32 uiHash = pTexture->GetDescription().CalculateHash();
-
-    xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
-    if (pPool == nullptr)
-    {
-      m_TexturePool.Insert(uiHash, xiiDynamicArray<PooledTexture>());
-
-      pPool = m_TexturePool.GetValue(uiHash);
-    }
-
-    PooledTexture& entry    = pPool->ExpandAndGetRef();
+    PooledTexture& entry    = m_RetiredTextures.ExpandAndGetRef();
     entry.m_pTexture        = pTexture;
     entry.m_uiLastUsedFrame = m_uiCurrentFrame;
   }
@@ -62,17 +95,7 @@ void xiiRenderGraphResourceCache::EndFrame()
 
   for (const xiiSharedPtr<xiiGALBuffer>& pBuffer : m_ActiveBuffers)
   {
-    const xiiUInt32 uiHash = pBuffer->GetDescription().CalculateHash();
-
-    xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
-    if (pPool == nullptr)
-    {
-      m_BufferPool.Insert(uiHash, xiiDynamicArray<PooledBuffer>());
-
-      pPool = m_BufferPool.GetValue(uiHash);
-    }
-
-    PooledBuffer& entry     = pPool->ExpandAndGetRef();
+    PooledBuffer& entry     = m_RetiredBuffers.ExpandAndGetRef();
     entry.m_pBuffer         = pBuffer;
     entry.m_uiLastUsedFrame = m_uiCurrentFrame;
   }
@@ -113,17 +136,7 @@ void xiiRenderGraphResourceCache::ReturnTexture(xiiSharedPtr<xiiGALTexture> pTex
   XII_ASSERT_DEV(uiIndex != xiiInvalidIndex, "Returned texture was not acquired from this cache in the current frame.");
   m_ActiveTextures.RemoveAtAndSwap(uiIndex);
 
-  const xiiUInt32 uiHash = pTexture->GetDescription().CalculateHash();
-
-  xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
-  if (pPool == nullptr)
-  {
-    m_TexturePool.Insert(uiHash, xiiDynamicArray<PooledTexture>());
-
-    pPool = m_TexturePool.GetValue(uiHash);
-  }
-
-  PooledTexture& entry    = pPool->ExpandAndGetRef();
+  PooledTexture& entry    = m_RetiredTextures.ExpandAndGetRef();
   entry.m_pTexture        = pTexture;
   entry.m_uiLastUsedFrame = m_uiCurrentFrame;
 }
@@ -162,17 +175,7 @@ void xiiRenderGraphResourceCache::ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffe
   XII_ASSERT_DEV(uiIndex != xiiInvalidIndex, "Returned buffer was not acquired from this cache in the current frame.");
   m_ActiveBuffers.RemoveAtAndSwap(uiIndex);
 
-  const xiiUInt32 uiHash = pBuffer->GetDescription().CalculateHash();
-
-  xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
-  if (pPool == nullptr)
-  {
-    m_BufferPool.Insert(uiHash, xiiDynamicArray<PooledBuffer>());
-
-    pPool = m_BufferPool.GetValue(uiHash);
-  }
-
-  PooledBuffer& entry     = pPool->ExpandAndGetRef();
+  PooledBuffer& entry     = m_RetiredBuffers.ExpandAndGetRef();
   entry.m_pBuffer         = pBuffer;
   entry.m_uiLastUsedFrame = m_uiCurrentFrame;
 }
