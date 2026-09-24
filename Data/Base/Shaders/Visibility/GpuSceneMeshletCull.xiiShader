@@ -17,6 +17,33 @@ StructuredBuffer<uint> g_VisibleInstanceCount;
 RWStructuredBuffer<uint2> g_VisibleMeshlets;
 RWStructuredBuffer<uint> g_VisibleMeshletCount;
 
+bool ReserveVisibleMeshlet(out uint destination)
+{
+  uint capacity, stride;
+  g_VisibleMeshlets.GetDimensions(capacity, stride);
+
+  // A plain InterlockedAdd can leave the counter larger than the output buffer. The
+  // indirect mesh dispatch consumes this counter, so reserve with compare/exchange and
+  // never publish an out-of-range workgroup count.
+  for (;;)
+  {
+    const uint currentCount = g_VisibleMeshletCount[0];
+    if (currentCount >= capacity)
+    {
+      destination = 0u;
+      return false;
+    }
+
+    uint observedCount;
+    InterlockedCompareExchange(g_VisibleMeshletCount[0], currentCount, currentCount + 1u, observedCount);
+    if (observedCount == currentCount)
+    {
+      destination = currentCount;
+      return true;
+    }
+  }
+}
+
 [numthreads(64, 1, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
@@ -59,10 +86,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     }
 
     uint destination;
-    InterlockedAdd(g_VisibleMeshletCount[0], 1u, destination);
-    uint capacity, stride;
-    g_VisibleMeshlets.GetDimensions(capacity, stride);
-    if (destination < capacity)
+    if (ReserveVisibleMeshlet(destination))
       g_VisibleMeshlets[destination] = uint2(instanceIndex, meshletIndex);
   }
 }
