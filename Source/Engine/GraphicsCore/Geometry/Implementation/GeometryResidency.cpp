@@ -36,10 +36,10 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 xiiGeometryResidencyManager::~xiiGeometryResidencyManager() { Shutdown(); }
 
-xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, xiiUInt32 uiMaxGeometries, xiiUInt32 uiFramesInFlight, xiiUInt64 uiBudgetBytes)
+xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, xiiUInt32 uiMaxGeometries, xiiUInt32 uiFramesInFlight, xiiUInt64 uiBudgetBytes, xiiUInt32 uiMaxMeshlets)
 {
   Shutdown();
-  if (pDevice == nullptr || uiMaxGeometries == 0U || uiFramesInFlight == 0U)
+  if (pDevice == nullptr || uiMaxGeometries == 0U || uiFramesInFlight == 0U || uiMaxMeshlets == 0U)
     return XII_FAILURE;
 
   const xiiUInt64 uiSize = static_cast<xiiUInt64>(sizeof(xiiGpuGeometryRecord)) * uiMaxGeometries * uiFramesInFlight;
@@ -57,6 +57,17 @@ xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, xiiUInt
     return XII_FAILURE;
   m_pMetadataBuffer->SetDebugName("GPU Geometry Metadata");
 
+  desc.m_uiSize = uiMaxMeshlets * sizeof(xiiMeshlet);
+  desc.m_uiElementByteStride = sizeof(xiiMeshlet);
+  m_pMeshletMetadataBuffer = pDevice->CreateBuffer(desc);
+  if (m_pMeshletMetadataBuffer == nullptr)
+  {
+    Shutdown();
+    return XII_FAILURE;
+  }
+  m_pMeshletMetadataBuffer->SetDebugName("GPU Meshlet Metadata Arena");
+  m_FreeMeshletRanges.PushBack({0U, uiMaxMeshlets});
+
   m_Slots.SetCount(uiMaxGeometries);
   m_FreeSlots.Reserve(uiMaxGeometries);
   for (xiiUInt32 i = uiMaxGeometries; i > 0U; --i)
@@ -69,8 +80,11 @@ xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, xiiUInt
 void xiiGeometryResidencyManager::Shutdown()
 {
   m_pMetadataBuffer.Clear();
+  m_pMeshletMetadataBuffer.Clear();
   m_Slots.Clear();
   m_FreeSlots.Clear();
+  m_FreeMeshletRanges.Clear();
+  m_PendingMeshletUploads.Clear();
   m_uiFramesInFlight = 0U;
   m_uiBudgetBytes = 0U;
   m_uiResidentBytes = 0U;
@@ -92,6 +106,8 @@ xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometr
   slot.m_State = xiiGeometryResidencyState::Unloaded;
   slot.m_bAllocated = true;
   slot.m_bDirty = true;
+  xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaOffset, XII_ARRAY_SIZE(slot.m_uiMeshletArenaOffset));
+  xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaCount, XII_ARRAY_SIZE(slot.m_uiMeshletArenaCount));
 
   xiiGeometryHandle handle;
   handle.m_uiIndex = uiIndex;
@@ -128,6 +144,7 @@ void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFr
 
 bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget)
 {
+  ReleaseMeshletAllocations(slot);
   xiiGpuGeometryRecord record = slot.m_GpuRecord;
   xiiUInt64 uiBytes = 0U;
   xiiUInt32 uiResidentMask = 0U;
@@ -149,6 +166,23 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
     uiBytes += static_cast<xiiUInt64>(mesh->GetMeshletCount()) * sizeof(xiiMeshlet);
     uiResidentMask |= XII_BIT(i);
 
+    if (lod.m_uiMeshletCount > 0U)
+    {
+      xiiUInt32 uiArenaOffset = 0U;
+      if (!AllocateMeshlets(lod.m_uiMeshletCount, uiArenaOffset))
+      {
+        ReleaseMeshletAllocations(slot);
+        return false;
+      }
+      slot.m_uiMeshletArenaOffset[i] = uiArenaOffset;
+      slot.m_uiMeshletArenaCount[i]  = lod.m_uiMeshletCount;
+      lod.m_uiMeshletMetadataOffset  = uiArenaOffset;
+
+      UploadPassData::MeshletUpload& upload = m_PendingMeshletUploads.ExpandAndGetRef();
+      upload.m_uiOffset = uiArenaOffset * sizeof(xiiMeshlet);
+      upload.m_Meshlets = mesh->GetMeshlets();
+    }
+
     if (i == slot.m_uiRequestedLod)
     {
       const xiiBoundingBoxSphere& bounds = mesh->GetBounds();
@@ -158,7 +192,10 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
   }
 
   if (uiBytes > inout_uiUploadBudget)
+  {
+    ReleaseMeshletAllocations(slot);
     return false;
+  }
   inout_uiUploadBudget -= uiBytes;
   m_uiResidentBytes -= slot.m_uiResidentBytes;
   slot.m_uiResidentBytes = uiBytes;
@@ -190,6 +227,7 @@ void xiiGeometryResidencyManager::EnforceBudget(xiiUInt64 uiCompletedFrame)
     m_uiResidentBytes -= victim.m_uiResidentBytes;
     victim.m_uiResidentBytes = 0U;
     victim.m_GpuRecord.m_uiResidentLodMask = 0U;
+    ReleaseMeshletAllocations(victim);
     victim.m_State = xiiGeometryResidencyState::Unloaded;
     victim.m_bDirty = true;
   }
@@ -209,6 +247,7 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
     if (slot.m_State == xiiGeometryResidencyState::EvictPending && slot.m_uiRetireFrame <= uiCompletedFrame)
     {
       m_uiResidentBytes -= slot.m_uiResidentBytes;
+      ReleaseMeshletAllocations(slot);
       slot.m_bAllocated = false;
       slot.m_Description.m_Lods.Clear();
       slot.m_uiResidentBytes = 0U;
@@ -267,20 +306,25 @@ xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats() const
   return stats;
 }
 
-xiiRenderGraphBufferHandle xiiGeometryResidencyManager::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
+xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
 {
   auto pass = graph.AddPass<UploadPassData>(
     "Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer,
     [this](UploadPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hBuffer = builder.ImportBuffer("GPU Geometry Metadata", m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hBuffer = builder.WriteBuffer(data.m_hBuffer, xiiGALResourceStateFlags::CopyDestination);
-      builder.ExportBuffer(data.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hGeometryBuffer = builder.ImportBuffer("GPU Geometry Metadata", m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hGeometryBuffer = builder.WriteBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::CopyDestination);
+      builder.ExportBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hMeshletBuffer = builder.ImportBuffer("GPU Meshlet Metadata", m_pMeshletMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hMeshletBuffer = builder.WriteBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::CopyDestination);
+      builder.ExportBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(true);
       builder.SetPassAllowMerge(false);
     },
     [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
       for (const Upload& upload : data.m_Uploads)
-        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hBuffer), upload.m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
+        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hGeometryBuffer), upload.m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
+      for (const UploadPassData::MeshletUpload& upload : data.m_MeshletUploads)
+        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hMeshletBuffer), upload.m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(upload.m_Meshlets.GetData()), upload.m_Meshlets.GetCount() * sizeof(xiiMeshlet)));
     }, true);
 
   m_uiLastUploadedBytes = 0U;
@@ -295,7 +339,69 @@ xiiRenderGraphBufferHandle xiiGeometryResidencyManager::AddUploadPass(xiiRenderG
     slot.m_bDirty = false;
     m_uiLastUploadedBytes += sizeof(xiiGpuGeometryRecord);
   }
-  return pass.first->m_hBuffer;
+  pass.first->m_MeshletUploads = std::move(m_PendingMeshletUploads);
+  m_PendingMeshletUploads.Clear();
+  for (const UploadPassData::MeshletUpload& upload : pass.first->m_MeshletUploads)
+    m_uiLastUploadedBytes += upload.m_Meshlets.GetCount() * sizeof(xiiMeshlet);
+
+  UploadHandles result;
+  result.m_hGeometryMetadata = pass.first->m_hGeometryBuffer;
+  result.m_hMeshletMetadata  = pass.first->m_hMeshletBuffer;
+  return result;
+}
+
+bool xiiGeometryResidencyManager::AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset)
+{
+  for (xiiUInt32 i = 0; i < m_FreeMeshletRanges.GetCount(); ++i)
+  {
+    FreeRange& range = m_FreeMeshletRanges[i];
+    if (range.m_uiCount < uiCount) continue;
+    out_uiOffset = range.m_uiOffset;
+    range.m_uiOffset += uiCount;
+    range.m_uiCount -= uiCount;
+    if (range.m_uiCount == 0U) m_FreeMeshletRanges.RemoveAtAndCopy(i);
+    return true;
+  }
+  return false;
+}
+
+void xiiGeometryResidencyManager::FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount)
+{
+  if (uiCount == 0U) return;
+  xiiUInt32 uiInsert = 0U;
+  while (uiInsert < m_FreeMeshletRanges.GetCount() && m_FreeMeshletRanges[uiInsert].m_uiOffset < uiOffset) ++uiInsert;
+  m_FreeMeshletRanges.InsertAt(uiInsert, {uiOffset, uiCount});
+  if (uiInsert > 0U)
+  {
+    FreeRange& prev = m_FreeMeshletRanges[uiInsert - 1U];
+    if (prev.m_uiOffset + prev.m_uiCount == m_FreeMeshletRanges[uiInsert].m_uiOffset)
+    {
+      prev.m_uiCount += m_FreeMeshletRanges[uiInsert].m_uiCount;
+      m_FreeMeshletRanges.RemoveAtAndCopy(uiInsert);
+      --uiInsert;
+    }
+  }
+  if (uiInsert + 1U < m_FreeMeshletRanges.GetCount())
+  {
+    FreeRange& current = m_FreeMeshletRanges[uiInsert];
+    const FreeRange& next = m_FreeMeshletRanges[uiInsert + 1U];
+    if (current.m_uiOffset + current.m_uiCount == next.m_uiOffset)
+    {
+      current.m_uiCount += next.m_uiCount;
+      m_FreeMeshletRanges.RemoveAtAndCopy(uiInsert + 1U);
+    }
+  }
+}
+
+void xiiGeometryResidencyManager::ReleaseMeshletAllocations(Slot& slot)
+{
+  for (xiiUInt32 i = 0; i < xiiGpuGeometryRecord::s_uiMaxLods; ++i)
+  {
+    FreeMeshlets(slot.m_uiMeshletArenaOffset[i], slot.m_uiMeshletArenaCount[i]);
+    slot.m_uiMeshletArenaOffset[i] = 0U;
+    slot.m_uiMeshletArenaCount[i] = 0U;
+    slot.m_GpuRecord.m_Lods[i].m_uiMeshletMetadataOffset = 0U;
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Geometry_Implementation_GeometryResidency);

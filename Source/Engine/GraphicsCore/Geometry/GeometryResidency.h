@@ -60,8 +60,8 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryLod
   xiiUInt32 m_uiMeshletCount = 0U;
   float     m_fMinimumScreenCoverage = 0.0f;
   xiiUInt32 m_uiIndexType = 0U;
-  xiiUInt32 m_uiPadding0 = 0U;
-  xiiUInt32 m_uiPadding1 = 0U;
+  xiiUInt32 m_uiMeshletMetadataOffset = 0U;
+  xiiUInt32 m_uiPadding = 0U;
 };
 
 struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryRecord
@@ -100,7 +100,7 @@ public:
   xiiGeometryResidencyManager() = default;
   ~xiiGeometryResidencyManager();
 
-  xiiResult Initialize(xiiGALDevice* pDevice, xiiUInt32 uiMaxGeometries = 65536U, xiiUInt32 uiFramesInFlight = 3U, xiiUInt64 uiBudgetBytes = 512ULL * 1024ULL * 1024ULL);
+  xiiResult Initialize(xiiGALDevice* pDevice, xiiUInt32 uiMaxGeometries = 65536U, xiiUInt32 uiFramesInFlight = 3U, xiiUInt64 uiBudgetBytes = 512ULL * 1024ULL * 1024ULL, xiiUInt32 uiMaxMeshlets = 1024U * 1024U);
   void Shutdown();
 
   [[nodiscard]] xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
@@ -116,9 +116,16 @@ public:
   [[nodiscard]] xiiEnum<xiiGeometryResidencyState> GetState(xiiGeometryHandle handle) const;
   [[nodiscard]] const xiiGpuGeometryRecord* GetGpuRecord(xiiGeometryHandle handle) const;
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer> GetMetadataBuffer() const { return m_pMetadataBuffer; }
+  [[nodiscard]] xiiSharedPtr<xiiGALBuffer> GetMeshletMetadataBuffer() const { return m_pMeshletMetadataBuffer; }
   [[nodiscard]] xiiGeometryResidencyStats GetStats() const;
 
-  [[nodiscard]] xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+  struct UploadHandles
+  {
+    xiiRenderGraphBufferHandle m_hGeometryMetadata;
+    xiiRenderGraphBufferHandle m_hMeshletMetadata;
+  };
+
+  [[nodiscard]] UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
 
 private:
   struct Slot
@@ -133,6 +140,8 @@ private:
     xiiUInt32                          m_uiRequestedLod = 0U;
     bool                               m_bAllocated = false;
     bool                               m_bDirty = false;
+    xiiUInt32                          m_uiMeshletArenaOffset[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+    xiiUInt32                          m_uiMeshletArenaCount[xiiGpuGeometryRecord::s_uiMaxLods] = {};
   };
 
   struct Upload
@@ -143,19 +152,33 @@ private:
 
   struct UploadPassData
   {
-    xiiRenderGraphBufferHandle m_hBuffer;
+    xiiRenderGraphBufferHandle m_hGeometryBuffer;
+    xiiRenderGraphBufferHandle m_hMeshletBuffer;
     xiiDynamicArray<Upload>    m_Uploads;
+    struct MeshletUpload
+    {
+      xiiUInt32 m_uiOffset = 0U;
+      xiiDynamicArray<xiiMeshlet> m_Meshlets;
+    };
+    xiiDynamicArray<MeshletUpload> m_MeshletUploads;
   };
+
+  struct FreeRange { xiiUInt32 m_uiOffset = 0U; xiiUInt32 m_uiCount = 0U; };
 
   bool BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget);
   void EnforceBudget(xiiUInt64 uiCompletedFrame);
+  bool AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
+  void FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);
+  void ReleaseMeshletAllocations(Slot& slot);
 
   xiiDynamicArray<Slot>      m_Slots;
   xiiDynamicArray<xiiUInt32> m_FreeSlots;
   xiiSharedPtr<xiiGALBuffer> m_pMetadataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pMeshletMetadataBuffer;
+  xiiDynamicArray<FreeRange> m_FreeMeshletRanges;
+  xiiDynamicArray<UploadPassData::MeshletUpload> m_PendingMeshletUploads;
   xiiUInt32                  m_uiFramesInFlight = 0U;
   xiiUInt64                  m_uiBudgetBytes = 0U;
   xiiUInt64                  m_uiResidentBytes = 0U;
   xiiUInt64                  m_uiLastUploadedBytes = 0U;
 };
-
