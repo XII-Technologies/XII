@@ -1,0 +1,103 @@
+[PLATFORMS]
+ALL
+
+[RENDERSTATE]
+
+DepthEnable = true
+DepthWrite  = true
+DepthFunc   = CompareFunc_LessEqual
+CullMode    = CullMode_Back
+
+[MESH_SHADER]
+
+#include "GpuDrivenSceneConstants.h"
+#include <Shaders/Visibility/GpuSceneCommon.h>
+
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuGeometryRecord> g_Geometry;
+StructuredBuffer<GpuMeshlet> g_Meshlets;
+StructuredBuffer<uint2> g_VisibleMeshlets;
+ByteAddressBuffer g_Buffers[];
+
+struct MeshVertex
+{
+  float4 Position : SV_Position;
+  float3 WorldNormal : NORMAL0;
+  nointerpolation uint MaterialIndex : TEXCOORD0;
+  nointerpolation uint ObjectIndex : TEXCOORD1;
+};
+
+uint LoadByte(ByteAddressBuffer source, uint byteOffset)
+{
+  const uint word = source.Load(byteOffset & ~3u);
+  return (word >> ((byteOffset & 3u) * 8u)) & 0xFFu;
+}
+
+[outputtopology("triangle")]
+[numthreads(64, 1, 1)]
+void main(uint threadIndex : SV_GroupThreadID,
+          uint3 groupIndex : SV_GroupID,
+          out vertices MeshVertex vertices[64],
+          out indices uint3 triangles[126])
+{
+  const uint2 visible = g_VisibleMeshlets[groupIndex.x];
+  const GpuSceneInstance instance = g_SceneInstances[visible.x];
+  const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
+  const GpuMeshlet meshlet = g_Meshlets[visible.y];
+  const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
+  const GpuGeometryLod lod = geometry.Lods[lodIndex];
+  const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  const uint vertexCount = meshlet.PackedPrimitiveVertexCount >> 16u;
+
+  SetMeshOutputCounts(vertexCount, primitiveCount);
+
+  if (threadIndex < vertexCount)
+  {
+    const uint sourceVertex = g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + threadIndex) * 4u);
+    const uint vertexOffset = sourceVertex * VertexStride;
+    const float3 localPosition = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset));
+    const float3 localNormal = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + 12u));
+    const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
+
+    MeshVertex output;
+    output.Position = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
+    output.WorldNormal = normalize(mul((float3x3)instance.GlobalTransform, localNormal));
+    output.MaterialIndex = instance.MaterialIndex;
+    output.ObjectIndex = instance.ObjectIndex;
+    vertices[threadIndex] = output;
+  }
+
+  if (threadIndex < primitiveCount)
+  {
+    const uint primitiveOffset = meshlet.Header.z + threadIndex * 3u;
+    triangles[threadIndex] = uint3(
+      LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 0u),
+      LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
+      LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
+  }
+}
+
+[PIXEL_SHADER]
+
+#include "GpuDrivenSceneConstants.h"
+
+ByteAddressBuffer g_MaterialData;
+
+struct MeshVertex
+{
+  float4 Position : SV_Position;
+  float3 WorldNormal : NORMAL0;
+  nointerpolation uint MaterialIndex : TEXCOORD0;
+  nointerpolation uint ObjectIndex : TEXCOORD1;
+};
+
+float4 main(MeshVertex input) : SV_Target0
+{
+  const uint materialOffset = MaterialFrameBase + input.MaterialIndex * MaterialStride;
+  const float4 baseColor = asfloat(g_MaterialData.Load4(materialOffset));
+  const float3 lightDirection = normalize(-SunDirectionIntensity.xyz);
+  const float diffuse = saturate(dot(normalize(input.WorldNormal), lightDirection));
+  const float3 lighting = AmbientColor.rgb + diffuse * SunDirectionIntensity.w;
+  const float selectionPulse = 0.04f * sin((float)input.ObjectIndex * 0.6180339f);
+  return float4(saturate(baseColor.rgb * lighting + selectionPulse), baseColor.a);
+}
