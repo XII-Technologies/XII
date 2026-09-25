@@ -35,9 +35,14 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryHandle);
 
 struct XII_GRAPHICSCORE_DLL xiiGeometryLodSource
 {
+  [[nodiscard]] xiiString GetMeshBufferResourceId() const;
+  void SetMeshBufferResourceId(xiiString sResourceId);
+
   xiiMeshBufferResourceHandle m_hMeshBuffer;
   float                       m_fMinimumScreenCoverage = 0.0f;
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryLodSource);
 
 struct XII_GRAPHICSCORE_DLL xiiGeometryDescription
 {
@@ -45,6 +50,8 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryDescription
   xiiUInt32 m_uiStreamingPriority = 0U;
   bool      m_bPinned = false;
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryDescription);
 
 /// One LOD consumed by GPU LOD selection and command generation.
 struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryLod
@@ -64,6 +71,8 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryLod
   xiiUInt32 m_uiPadding = 0U;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuGeometryLod);
+
 struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryRecord
 {
   XII_DECLARE_POD_TYPE();
@@ -76,7 +85,12 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryRecord
   xiiUInt32         m_uiGeneration = 0U;
   xiiUInt32         m_uiResidentLodMask = 0U;
   xiiUInt32         m_uiFlags = 0U;
+
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetReflectedLodCount() const { return m_uiLodCount; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGpuGeometryLod GetReflectedLod(xiiUInt32 uiIndex) const { return m_Lods[uiIndex]; }
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuGeometryRecord);
 
 struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
 {

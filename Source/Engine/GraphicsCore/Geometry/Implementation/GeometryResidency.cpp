@@ -19,6 +19,75 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryHandle, xiiNoBase, 1, xiiRTTIDefaultA
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryLodSource, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGeometryLodSource>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ACCESSOR_PROPERTY("MeshBuffer", GetMeshBufferResourceId, SetMeshBufferResourceId),
+    XII_MEMBER_PROPERTY("MinimumScreenCoverage", m_fMinimumScreenCoverage),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+xiiString xiiGeometryLodSource::GetMeshBufferResourceId() const
+{
+  return m_hMeshBuffer.IsValid() ? xiiString(m_hMeshBuffer.GetResourceID()) : xiiString();
+}
+
+void xiiGeometryLodSource::SetMeshBufferResourceId(xiiString sResourceId)
+{
+  m_hMeshBuffer = sResourceId.IsEmpty() ? xiiMeshBufferResourceHandle() : xiiResourceManager::LoadResource<xiiMeshBufferResource>(sResourceId);
+}
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGeometryDescription>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ARRAY_MEMBER_PROPERTY("Lods", m_Lods),
+    XII_MEMBER_PROPERTY("StreamingPriority", m_uiStreamingPriority),
+    XII_MEMBER_PROPERTY("Pinned", m_bPinned),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuGeometryLod, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuGeometryLod>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("VertexBufferIndex", m_uiVertexBufferIndex),
+    XII_MEMBER_PROPERTY("IndexBufferIndex", m_uiIndexBufferIndex),
+    XII_MEMBER_PROPERTY("MeshletBufferIndex", m_uiMeshletBufferIndex),
+    XII_MEMBER_PROPERTY("MeshletRemapBufferIndex", m_uiMeshletRemapBufferIndex),
+    XII_MEMBER_PROPERTY("MeshletPrimitiveBufferIndex", m_uiMeshletPrimitiveBufferIndex),
+    XII_MEMBER_PROPERTY("VertexCount", m_uiVertexCount),
+    XII_MEMBER_PROPERTY("IndexCount", m_uiIndexCount),
+    XII_MEMBER_PROPERTY("MeshletCount", m_uiMeshletCount),
+    XII_MEMBER_PROPERTY("MinimumScreenCoverage", m_fMinimumScreenCoverage),
+    XII_MEMBER_PROPERTY("IndexType", m_uiIndexType),
+    XII_MEMBER_PROPERTY("MeshletMetadataOffset", m_uiMeshletMetadataOffset),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuGeometryRecord, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuGeometryRecord>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("BoundsCenterRadius", m_BoundsCenterRadius),
+    XII_MEMBER_PROPERTY("BoundsExtents", m_BoundsExtents),
+    XII_ARRAY_ACCESSOR_PROPERTY_READ_ONLY("Lods", GetReflectedLodCount, GetReflectedLod),
+    XII_MEMBER_PROPERTY("LodCount", m_uiLodCount),
+    XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
+    XII_MEMBER_PROPERTY("ResidentLodMask", m_uiResidentLodMask),
+    XII_MEMBER_PROPERTY("Flags", m_uiFlags),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryResidencyStats, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGeometryResidencyStats>)
 {
   XII_BEGIN_PROPERTIES

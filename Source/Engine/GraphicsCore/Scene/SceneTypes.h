@@ -68,6 +68,13 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneObjectHandle);
 /// the global GPU geometry and material tables and therefore remain valid across views.
 struct XII_GRAPHICSCORE_DLL xiiSceneObjectDesc
 {
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVec3 GetLocalBoundsCenter() const { return m_LocalBounds.m_vCenter; }
+  XII_ALWAYS_INLINE void SetLocalBoundsCenter(xiiVec3 value) { m_LocalBounds.m_vCenter = value; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVec3 GetLocalBoundsHalfExtents() const { return m_LocalBounds.m_vBoxHalfExtents; }
+  XII_ALWAYS_INLINE void SetLocalBoundsHalfExtents(xiiVec3 value) { m_LocalBounds.m_vBoxHalfExtents = value; }
+  [[nodiscard]] XII_ALWAYS_INLINE float GetLocalBoundsRadius() const { return m_LocalBounds.m_fSphereRadius; }
+  XII_ALWAYS_INLINE void SetLocalBoundsRadius(float value) { m_LocalBounds.m_fSphereRadius = value; }
+
   xiiMat4                          m_LocalTransform = xiiMat4::MakeIdentity();
   xiiBoundingBoxSphere             m_LocalBounds    = xiiBoundingBoxSphere::MakeZero();
   xiiSceneObjectHandle             m_hParent;
@@ -77,6 +84,8 @@ struct XII_GRAPHICSCORE_DLL xiiSceneObjectDesc
   xiiUInt32                        m_uiVisibilityMask = 0xFFFFFFFFU;
   xiiUInt32                        m_uiUserData       = 0U;
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneObjectDesc);
 
 /// Canonical, backend independent GPU record. It deliberately contains both current and previous
 /// transforms so motion vectors never need a second scene lookup.
@@ -100,6 +109,8 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
 
 static_assert(sizeof(xiiGpuSceneInstance) % 16U == 0U, "GPU scene records must preserve structured-buffer alignment.");
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSceneInstance);
+
 /// Contiguous dirty interval used for partial GPU uploads.
 struct XII_GRAPHICSCORE_DLL xiiSceneUploadRange
 {
@@ -108,6 +119,8 @@ struct XII_GRAPHICSCORE_DLL xiiSceneUploadRange
   xiiUInt32 m_uiFirstInstance = 0U;
   xiiUInt32 m_uiInstanceCount = 0U;
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneUploadRange);
 
 struct XII_GRAPHICSCORE_DLL xiiSceneDatabaseStats
 {

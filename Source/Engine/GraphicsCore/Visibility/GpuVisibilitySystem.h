@@ -22,7 +22,12 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiUInt32 m_uiExcludedFlags = 0U;
   xiiUInt32 m_uiGeometryBaseIndex = 0U;
   xiiUInt32 m_uiPadding[3] = {};
+
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetFrustumPlaneCount() const { return 6U; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVec4 GetFrustumPlane(xiiUInt32 uiIndex) const { return m_FrustumPlanes[uiIndex]; }
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityView);
 
 /// Identifies an independently culled visibility set for profiling and editor tooling.
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPurpose
