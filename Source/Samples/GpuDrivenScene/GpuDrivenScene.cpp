@@ -340,7 +340,7 @@ public:
     m_Configuration.m_uiGridHeight = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     m_World.Initialize(m_pDevice.Borrow(), m_Configuration).AssertSuccess();
     xiiGpuVisibilityDescription visibilityDescription;
-    visibilityDescription.m_uiMaxInstances = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight;
+    visibilityDescription.m_uiMaxInstances = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight + 1U;
     visibilityDescription.m_uiMaxVisibleMeshlets = m_Configuration.m_uiMaxVisibleMeshlets;
     visibilityDescription.m_uiMaxDrawCommands = 1U;
     visibilityDescription.m_uiFramesInFlight = m_Configuration.m_uiFramesInFlight;

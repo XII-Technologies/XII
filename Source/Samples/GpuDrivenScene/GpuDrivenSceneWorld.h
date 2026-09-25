@@ -80,6 +80,7 @@ private:
   xiiDynamicArray<xiiMaterialGpuHandle> m_Materials;
   xiiDynamicArray<xiiSharedPtr<xiiMaterialSchema>> m_MaterialSchemas;
   xiiDynamicArray<xiiSharedPtr<xiiMaterialInstance>> m_MaterialInstances;
+  xiiSceneObjectHandle                 m_hAssemblyRoot;
   xiiDynamicArray<xiiSceneObjectHandle> m_Objects;
   xiiDynamicArray<xiiVec3>              m_BasePositions;
   float                                 m_fAnimationTime = 0.0f;

@@ -98,6 +98,8 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   m_MaterialInstances.Clear();
   m_Objects.Clear();
   m_BasePositions.Clear();
+  m_hAssemblyRoot.Invalidate();
+  m_Scene.Clear();
 }
 
 xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
@@ -234,6 +236,14 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   m_Objects.Reserve(objectCount);
   m_BasePositions.Reserve(objectCount);
 
+  // A non-renderable assembly root demonstrates hierarchy propagation without requiring a
+  // parallel scene representation. The first objects below are authored in its local space.
+  xiiSceneObjectDesc rootDescription;
+  rootDescription.m_Flags = xiiSceneObjectFlags::None;
+  m_hAssemblyRoot = m_Scene.CreateObject(rootDescription);
+  if (!m_hAssemblyRoot.IsValid())
+    return XII_FAILURE;
+
   for (xiiUInt32 y = 0U; y < m_Configuration.m_uiGridHeight; ++y)
   {
     for (xiiUInt32 x = 0U; x < m_Configuration.m_uiGridWidth; ++x)
@@ -259,6 +269,8 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       description.m_uiMaterialIndex = m_Materials[objectIndex % m_Materials.GetCount()].m_uiSlot;
       description.m_uiUserData = objectIndex;
       description.m_Flags = xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows | xiiSceneObjectFlags::ReceiveShadows | xiiSceneObjectFlags::SensorVisible | (geometryIndex == 1U ? xiiSceneObjectFlags::Occluder : xiiSceneObjectFlags::None);
+      if (objectIndex < 64U)
+        description.m_hParent = m_hAssemblyRoot;
 
       const xiiSceneObjectHandle object = m_Scene.CreateObject(description);
       if (!object.IsValid())
@@ -271,7 +283,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   m_Scene.CommitFrame(0U);
   for (xiiSceneObjectHandle object : m_Objects)
   {
-    if (!m_SpatialHierarchy.Insert(object, m_Scene.GetGlobalBounds(object).GetBox(), 0xFFFFFFFFU, xiiSceneObjectFlags::Default))
+    if (!m_SpatialHierarchy.Insert(object, m_Scene.GetGlobalBounds(object).GetBox(), m_Scene.GetVisibilityMask(object), m_Scene.GetFlags(object)))
       return XII_FAILURE;
   }
   return XII_SUCCESS;
@@ -281,17 +293,32 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
 {
   m_fAnimationTime += static_cast<float>(deltaTime.GetSeconds());
   const xiiUInt32 animatedCount = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64U);
+  xiiHybridArray<xiiVec3, 64U> previousCenters;
+  previousCenters.SetCountUninitialized(animatedCount);
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
   {
+    previousCenters[i] = m_Scene.GetGlobalBounds(m_Objects[i]).m_vCenter;
     xiiVec3 position = m_BasePositions[i];
     position.z += 0.45f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7f + static_cast<float>(i) * 0.31f));
     const xiiMat4 transform = xiiMat4::MakeTranslation(position) * xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(m_fAnimationTime * 0.3f + static_cast<float>(i) * 0.01f));
     m_Scene.SetLocalTransform(m_Objects[i], transform);
   }
 
+  if (m_hAssemblyRoot.IsValid())
+  {
+    const float fRootAngle = 0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f));
+    const float fRootHeight = 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f));
+    m_Scene.SetLocalTransform(m_hAssemblyRoot,
+      xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
+      xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
+  }
+
   m_Scene.CommitFrame(uiFrameIndex);
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
-    m_SpatialHierarchy.Update(m_Objects[i], m_Scene.GetGlobalBounds(m_Objects[i]).GetBox(), xiiVec3::MakeZero(), 0xFFFFFFFFU, xiiSceneObjectFlags::Default);
+  {
+    const xiiBoundingBoxSphere& bounds = m_Scene.GetGlobalBounds(m_Objects[i]);
+    m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], m_Scene.GetVisibilityMask(m_Objects[i]), m_Scene.GetFlags(m_Objects[i]));
+  }
 
   m_MaterialSystem.BeginFrame(uiFrameIndex, uiCompletedFrame);
   m_GeometryResidency.ProcessStreaming(uiFrameIndex, uiCompletedFrame, 8ULL * 1024ULL * 1024ULL);
