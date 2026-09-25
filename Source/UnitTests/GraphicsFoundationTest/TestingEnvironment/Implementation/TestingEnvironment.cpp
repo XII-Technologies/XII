@@ -14,6 +14,8 @@ xiiGPUTestingEnvironment::~xiiGPUTestingEnvironment()
 
 xiiResult xiiGPUTestingEnvironment::Initialize()
 {
+  XII_SUCCEED_OR_RETURN(xiiConfigureGPUTestDataDirectories());
+
   xiiGALDeviceCreationDescription description;
   description.m_DeviceFeatures.m_WireframeFill                      = xiiGALDeviceFeatureState::Optional;
   description.m_DeviceFeatures.m_MultithreadedResourceCreation      = xiiGALDeviceFeatureState::Optional;

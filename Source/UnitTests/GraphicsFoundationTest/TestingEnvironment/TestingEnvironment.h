@@ -22,6 +22,9 @@ public:
   virtual xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle = {}) = 0;
 };
 
+/// Mounts shared test data paths after the test framework has started the Foundation systems.
+xiiResult xiiConfigureGPUTestDataDirectories();
+
 class xiiGPUTestingEnvironment final : public xiiGPUTestingEnvironmentInterface
 {
 public:
@@ -47,5 +50,5 @@ private:
 /// Returns the number of graphics implementations selected for this run.
 xiiUInt32 xiiGetGPUTestingEnvironmentCount();
 
-/// Returns one selected graphics implementation. The pointer remains valid for the complete test run.
-xiiGPUTestingEnvironmentInterface* xiiGetGPUTestingEnvironment(xiiUInt32 uiIndex);
+/// Returns the factory name of one selected graphics implementation.
+xiiStringView xiiGetGPUTestingEnvironmentName(xiiUInt32 uiIndex);
