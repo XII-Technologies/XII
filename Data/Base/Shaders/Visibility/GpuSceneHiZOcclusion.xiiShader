@@ -30,8 +30,9 @@ bool ProjectSphere(GpuSceneInstance instance, GpuVisibilityView view, out float4
   const float projectedRadius = abs(view.ViewProjectionMatrix[1][1]) * instance.BoundsCenterRadius.w * inverseW * 0.5f;
   screenRect = saturate(float4(center - projectedRadius, center + projectedRadius));
 
-  // XII uses reversed Z. Moving the sphere toward the camera increases its device depth.
-  nearestDepth = saturate(clip.z * inverseW + projectedRadius * 2.0f);
+  // Standard Z maps nearer geometry to smaller device depth. Subtracting the projected
+  // radius yields a conservative nearest point for the sphere.
+  nearestDepth = saturate(clip.z * inverseW - projectedRadius * 2.0f);
   return true;
 }
 
@@ -61,9 +62,9 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     const int2 maximumPixel = int2(max(mipWidth, 1u) - 1u, max(mipHeight, 1u) - 1u);
     const int2 p0 = clamp(int2(rect.xy * float2(mipWidth, mipHeight)), int2(0, 0), maximumPixel);
     const int2 p1 = clamp(int2(rect.zw * float2(mipWidth, mipHeight)), int2(0, 0), maximumPixel);
-    const float occluderDepth = min(min(g_HiZ.Load(int3(p0, mip)), g_HiZ.Load(int3(p1.x, p0.y, mip))),
-                                    min(g_HiZ.Load(int3(p0.x, p1.y, mip)), g_HiZ.Load(int3(p1, mip))));
-    visible = nearestDepth + view.ViewportAndHiZ.w >= occluderDepth;
+    const float occluderDepth = max(max(g_HiZ.Load(int3(p0, mip)), g_HiZ.Load(int3(p1.x, p0.y, mip))),
+                                    max(g_HiZ.Load(int3(p0.x, p1.y, mip)), g_HiZ.Load(int3(p1, mip))));
+    visible = nearestDepth <= occluderDepth + view.ViewportAndHiZ.w;
   }
 
   if (visible)
