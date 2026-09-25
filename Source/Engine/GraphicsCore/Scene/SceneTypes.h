@@ -95,6 +95,11 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
 
   xiiMat4   m_GlobalTransform         = xiiMat4::MakeIdentity();
   xiiMat4   m_PreviousGlobalTransform = xiiMat4::MakeIdentity();
+  /// Rows of the inverse-transpose upper 3x3. Keeping these in the instance record avoids
+  /// recomputing an inverse per mesh vertex and produces correct normals under non-uniform scale.
+  xiiVec4   m_NormalTransformRow0     = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
+  xiiVec4   m_NormalTransformRow1     = xiiVec4(0.0f, 1.0f, 0.0f, 0.0f);
+  xiiVec4   m_NormalTransformRow2     = xiiVec4(0.0f, 0.0f, 1.0f, 0.0f);
   xiiVec4   m_BoundsCenterRadius      = xiiVec4::MakeZero();
   xiiVec4   m_BoundsExtents           = xiiVec4::MakeZero();
   xiiUInt32 m_uiGeometryIndex         = xiiInvalidIndex;

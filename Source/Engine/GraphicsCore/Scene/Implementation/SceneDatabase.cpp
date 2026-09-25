@@ -388,6 +388,23 @@ void xiiSceneDatabase::RebuildGpuInstances()
     xiiGpuSceneInstance& instance = m_GpuInstances.ExpandAndGetRef();
     instance.m_GlobalTransform         = m_GlobalTransforms[uiObject];
     instance.m_PreviousGlobalTransform = m_PreviousGlobalTransforms[uiObject];
+    xiiMat3 normalTransform = instance.m_GlobalTransform.GetRotationalPart();
+    if (normalTransform.Invert().Succeeded())
+    {
+      normalTransform.Transpose();
+    }
+    else
+    {
+      // A singular transform has no mathematically valid normal matrix. Identity keeps the
+      // GPU record finite and deterministic until authoring or simulation restores the scale.
+      normalTransform.SetIdentity();
+    }
+    const xiiVec3 normalRow0 = normalTransform.GetRow(0U);
+    const xiiVec3 normalRow1 = normalTransform.GetRow(1U);
+    const xiiVec3 normalRow2 = normalTransform.GetRow(2U);
+    instance.m_NormalTransformRow0 = xiiVec4(normalRow0.x, normalRow0.y, normalRow0.z, 0.0f);
+    instance.m_NormalTransformRow1 = xiiVec4(normalRow1.x, normalRow1.y, normalRow1.z, 0.0f);
+    instance.m_NormalTransformRow2 = xiiVec4(normalRow2.x, normalRow2.y, normalRow2.z, 0.0f);
     const xiiBoundingBoxSphere& bounds = m_GlobalBounds[uiObject];
     instance.m_BoundsCenterRadius      = xiiVec4(bounds.m_vCenter.x, bounds.m_vCenter.y, bounds.m_vCenter.z, bounds.m_fSphereRadius);
     instance.m_BoundsExtents           = xiiVec4(bounds.m_vBoxHalfExtents.x, bounds.m_vBoxHalfExtents.y, bounds.m_vBoxHalfExtents.z, 0.0f);

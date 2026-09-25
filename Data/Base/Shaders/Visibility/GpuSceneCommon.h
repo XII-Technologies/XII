@@ -4,6 +4,9 @@ struct GpuSceneInstance
 {
   float4x4 GlobalTransform;
   float4x4 PreviousGlobalTransform;
+  float4 NormalTransformRow0;
+  float4 NormalTransformRow1;
+  float4 NormalTransformRow2;
   float4 BoundsCenterRadius;
   float4 BoundsExtents;
   uint GeometryIndex;

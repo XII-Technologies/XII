@@ -41,12 +41,15 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 1, xiiRTTIDefault
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("GlobalTransform", m_GlobalTransform),
     XII_MEMBER_PROPERTY("PreviousGlobalTransform", m_PreviousGlobalTransform),
+    XII_MEMBER_PROPERTY("NormalTransformRow0", m_NormalTransformRow0),
+    XII_MEMBER_PROPERTY("NormalTransformRow1", m_NormalTransformRow1),
+    XII_MEMBER_PROPERTY("NormalTransformRow2", m_NormalTransformRow2),
     XII_MEMBER_PROPERTY("BoundsCenterRadius", m_BoundsCenterRadius),
     XII_MEMBER_PROPERTY("BoundsExtents", m_BoundsExtents),
     XII_MEMBER_PROPERTY("GeometryIndex", m_uiGeometryIndex),

@@ -61,7 +61,10 @@ void main(uint threadIndex : SV_GroupThreadID,
 
     MeshVertex output;
     output.Position = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
-    output.WorldNormal = normalize(mul((float3x3)instance.GlobalTransform, localNormal));
+    output.WorldNormal = normalize(float3(
+      dot(instance.NormalTransformRow0.xyz, localNormal),
+      dot(instance.NormalTransformRow1.xyz, localNormal),
+      dot(instance.NormalTransformRow2.xyz, localNormal)));
     output.MaterialIndex = instance.MaterialIndex;
     output.ObjectIndex = instance.ObjectIndex;
     vertices[threadIndex] = output;
