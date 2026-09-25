@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Math/Frustum.h>
 #include <GraphicsCore/Scene/SceneTypes.h>
 
@@ -12,6 +13,8 @@ struct XII_GRAPHICSCORE_DLL xiiSceneSpatialQuery
   xiiBitflags<xiiSceneObjectFlags> m_RequiredFlags;
   xiiBitflags<xiiSceneObjectFlags> m_ExcludedFlags;
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneSpatialQuery);
 
 struct XII_GRAPHICSCORE_DLL xiiSceneSpatialStats
 {
@@ -80,11 +83,9 @@ private:
 
   xiiDynamicArray<Node>     m_Nodes;
   xiiDynamicArray<xiiInt32> m_ObjectToNode;
-  mutable xiiDynamicArray<xiiInt32> m_QueryStack;
   xiiInt32                  m_iRoot = -1;
   xiiInt32                  m_iFreeList = -1;
   xiiUInt32                 m_uiLeafCount = 0U;
   xiiUInt32                 m_uiReinsertions = 0U;
   float                     m_fFatBoundsMargin = 0.25f;
 };
-

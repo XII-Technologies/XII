@@ -4,6 +4,18 @@
 
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialQuery, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSceneSpatialQuery>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
+    XII_BITFLAGS_MEMBER_PROPERTY("RequiredFlags", xiiSceneObjectFlags, m_RequiredFlags),
+    XII_BITFLAGS_MEMBER_PROPERTY("ExcludedFlags", xiiSceneObjectFlags, m_ExcludedFlags),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialStats, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSceneSpatialStats>)
 {
   XII_BEGIN_PROPERTIES
@@ -27,7 +39,6 @@ void xiiSceneSpatialHierarchy::Clear()
 {
   m_Nodes.Clear();
   m_ObjectToNode.Clear();
-  m_QueryStack.Clear();
   m_iRoot          = -1;
   m_iFreeList      = -1;
   m_uiLeafCount    = 0U;
@@ -38,7 +49,6 @@ void xiiSceneSpatialHierarchy::Reserve(xiiUInt32 uiObjectCapacity)
 {
   m_Nodes.Reserve(uiObjectCapacity * 2U);
   m_ObjectToNode.Reserve(uiObjectCapacity);
-  m_QueryStack.Reserve(64U);
 }
 
 xiiInt32 xiiSceneSpatialHierarchy::AllocateNode()
@@ -262,12 +272,12 @@ void xiiSceneSpatialHierarchy::QueryFrustum(const xiiFrustum& frustum, const xii
 {
   if (m_iRoot == -1)
     return;
-  m_QueryStack.Clear();
-  m_QueryStack.PushBack(m_iRoot);
-  while (!m_QueryStack.IsEmpty())
+  xiiHybridArray<xiiInt32, 64U> queryStack;
+  queryStack.PushBack(m_iRoot);
+  while (!queryStack.IsEmpty())
   {
-    const xiiInt32 iNode = m_QueryStack.PeekBack();
-    m_QueryStack.PopBack();
+    const xiiInt32 iNode = queryStack.PeekBack();
+    queryStack.PopBack();
     const Node& node = m_Nodes[iNode];
     if (frustum.GetObjectPosition(node.m_FatBounds) == xiiVolumePosition::Outside)
       continue;
@@ -278,8 +288,8 @@ void xiiSceneSpatialHierarchy::QueryFrustum(const xiiFrustum& frustum, const xii
     }
     else
     {
-      m_QueryStack.PushBack(node.m_iLeft);
-      m_QueryStack.PushBack(node.m_iRight);
+      queryStack.PushBack(node.m_iLeft);
+      queryStack.PushBack(node.m_iRight);
     }
   }
 }
@@ -288,12 +298,12 @@ void xiiSceneSpatialHierarchy::QueryBox(const xiiBoundingBox& bounds, const xiiS
 {
   if (m_iRoot == -1)
     return;
-  m_QueryStack.Clear();
-  m_QueryStack.PushBack(m_iRoot);
-  while (!m_QueryStack.IsEmpty())
+  xiiHybridArray<xiiInt32, 64U> queryStack;
+  queryStack.PushBack(m_iRoot);
+  while (!queryStack.IsEmpty())
   {
-    const xiiInt32 iNode = m_QueryStack.PeekBack();
-    m_QueryStack.PopBack();
+    const xiiInt32 iNode = queryStack.PeekBack();
+    queryStack.PopBack();
     const Node& node = m_Nodes[iNode];
     if (!bounds.Overlaps(node.m_FatBounds))
       continue;
@@ -304,8 +314,8 @@ void xiiSceneSpatialHierarchy::QueryBox(const xiiBoundingBox& bounds, const xiiS
     }
     else
     {
-      m_QueryStack.PushBack(node.m_iLeft);
-      m_QueryStack.PushBack(node.m_iRight);
+      queryStack.PushBack(node.m_iLeft);
+      queryStack.PushBack(node.m_iRight);
     }
   }
 }
@@ -332,4 +342,3 @@ xiiSceneSpatialStats xiiSceneSpatialHierarchy::GetStats() const
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Scene_Implementation_SceneSpatialHierarchy);
-
