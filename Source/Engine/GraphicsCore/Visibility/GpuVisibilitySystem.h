@@ -138,6 +138,7 @@ private:
   xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletDispatchBuildPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pCommandBuildPipeline;
+  xiiUInt32 m_uiLargestReportedInstanceCount = 0U;
   xiiUInt32 m_uiLargestReportedMeshletCount = 0U;
   xiiUInt32 m_uiMeshDispatchGroupCountX = 0U;
   xiiUInt32 m_uiMeshDispatchGroupCountY = 0U;

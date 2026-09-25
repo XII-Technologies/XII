@@ -245,6 +245,7 @@ void xiiGpuVisibilitySystem::Shutdown()
   m_pPreparedScene = nullptr;
   m_uiPreparedFrame = xiiMath::MaxValue<xiiUInt64>();
   m_hPreparedScene = {};
+  m_uiLargestReportedInstanceCount = 0U;
   m_uiLargestReportedMeshletCount = 0U;
   m_uiMeshDispatchGroupCountX = 0U;
   m_uiMeshDispatchGroupCountY = 0U;
@@ -313,7 +314,16 @@ xiiGpuVisibilityView xiiGpuVisibilitySystem::BuildView(const xiiMat4& viewProjec
 
 xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ)
 {
-  XII_ASSERT_DEV(scene.GetGpuInstances().GetCount() <= m_Description.m_uiMaxInstances, "Scene instance capacity exceeded.");
+  const xiiUInt32 uiSceneInstanceCount = scene.GetGpuInstances().GetCount();
+  const xiiUInt32 uiRequestedInstanceCount = xiiMath::Min(view.m_uiInstanceCount, uiSceneInstanceCount);
+  const xiiUInt32 uiInstanceCount = xiiMath::Min(uiRequestedInstanceCount, m_Description.m_uiMaxInstances);
+  if (uiRequestedInstanceCount > m_Description.m_uiMaxInstances && uiRequestedInstanceCount > m_uiLargestReportedInstanceCount)
+  {
+    xiiLog::Warning("GPU visibility requested {} scene instances, above the configured capacity of {}. Excess instances are omitted to preserve buffer bounds.",
+      uiRequestedInstanceCount, m_Description.m_uiMaxInstances);
+    m_uiLargestReportedInstanceCount = uiRequestedInstanceCount;
+  }
+
   const xiiUInt32 uiMeshletGroupCount = (geometry.m_uiMaximumResidentMeshletCount + 63U) / 64U;
   const xiiUInt32 uiMaximumGroupCountX = m_pDevice->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties.m_uiMaxThreadGroupCountX;
   XII_ASSERT_ALWAYS(uiMeshletGroupCount <= uiMaximumGroupCountX,
@@ -328,7 +338,6 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
   const xiiUInt32 uiVisibilitySetIndex = GetOrCreateVisibilitySetIndex(description.m_sName);
   XII_ASSERT_ALWAYS(uiVisibilitySetIndex != xiiInvalidIndex, "Failed to allocate GPU visibility resources for '{}'.", description.m_sName);
   const xiiUInt32 uiResourceSlot = uiVisibilitySetIndex * m_Description.m_uiFramesInFlight + uiFrameSlot;
-  const xiiUInt32 uiInstanceCount = xiiMath::Min(view.m_uiInstanceCount, scene.GetGpuInstances().GetCount());
   const xiiBitflags<xiiGALCommandQueueFlags> computeQueue = description.m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
   auto makeName = [&description](xiiStringView sSuffix) {
     xiiStringBuilder name(description.m_sName);
@@ -354,7 +363,10 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
             xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(pFirstInstance), range.m_uiInstanceCount * sizeof(xiiGpuSceneInstance)));
         }
       });
-    sceneUpload.first->m_Instances = scene.GetGpuInstances();
+    // The GPU scene allocation is fixed-size. Keep the upload snapshot within the same bound as
+    // every consumer so a release build cannot overwrite the imported buffer when a scene grows.
+    const xiiUInt32 uiUploadedInstanceCount = xiiMath::Min(uiSceneInstanceCount, m_Description.m_uiMaxInstances);
+    sceneUpload.first->m_Instances = scene.GetGpuInstances().GetSubArray(0U, uiUploadedInstanceCount);
     xiiDynamicArray<xiiGpuSceneInstance>& sceneMirror = m_SceneBufferMirrors[uiFrameSlot];
     if (sceneMirror.GetCount() != sceneUpload.first->m_Instances.GetCount())
     {
