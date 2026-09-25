@@ -11,4 +11,3 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiGpuHiZBuildConstants)
   UINT1(Reduce);
   UINT3(Padding);
 };
-

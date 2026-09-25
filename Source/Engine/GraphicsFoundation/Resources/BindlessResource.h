@@ -52,4 +52,3 @@ private:
   xiiDynamicArray<RetiredIndex> m_RetiredIndices;
   xiiUInt32                   m_uiAllocatedCount = 0U;
 };
-

@@ -86,4 +86,3 @@ xiiUInt32 xiiGALBindlessResourceAllocator::GetAllocatedCount() const
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_BindlessResource);
-
