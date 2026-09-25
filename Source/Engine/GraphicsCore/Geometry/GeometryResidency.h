@@ -139,6 +139,9 @@ public:
     xiiRenderGraphBufferHandle m_hMeshletMetadata;
     /// First geometry record in the frame slice uploaded by AddUploadPass().
     xiiUInt32                  m_uiGeometryBaseIndex = 0U;
+    /// Largest meshlet count in any currently resident LOD. Visibility uses this to
+    /// derive a complete indirect dispatch instead of trusting an authored estimate.
+    xiiUInt32                  m_uiMaximumResidentMeshletCount = 0U;
   };
 
   [[nodiscard]] UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);

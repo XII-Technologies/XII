@@ -187,6 +187,7 @@ void xiiGpuVisibilitySystem::Shutdown()
   m_pViewBuffers.Clear();
   m_SceneBufferMirrors.Clear();
   m_VisibilitySetIndices.Clear();
+  m_uiLargestReportedMeshletCount = 0U;
   m_pDevice = nullptr;
   m_Description = {};
 }
@@ -256,6 +257,16 @@ xiiGpuVisibilityView xiiGpuVisibilitySystem::BuildView(const xiiMat4& viewProjec
 xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ)
 {
   XII_ASSERT_DEV(scene.GetGpuInstances().GetCount() <= m_Description.m_uiMaxInstances, "Scene instance capacity exceeded.");
+  const xiiUInt32 uiMeshletGroupCount = (geometry.m_uiMaximumResidentMeshletCount + 63U) / 64U;
+  const xiiUInt32 uiMaximumGroupCountX = m_pDevice->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties.m_uiMaxThreadGroupCountX;
+  XII_ASSERT_ALWAYS(uiMeshletGroupCount <= uiMaximumGroupCountX,
+    "A resident geometry LOD requires {} meshlet-culling groups, exceeding the device limit of {}.", uiMeshletGroupCount, uiMaximumGroupCountX);
+  if (geometry.m_uiMaximumResidentMeshletCount > m_Description.m_uiMaxMeshletsPerGeometry && geometry.m_uiMaximumResidentMeshletCount > m_uiLargestReportedMeshletCount)
+  {
+    xiiLog::Warning("Resident geometry contains {} meshlets in one LOD, above the configured advisory budget of {}. Dispatch was expanded to preserve correctness.",
+      geometry.m_uiMaximumResidentMeshletCount, m_Description.m_uiMaxMeshletsPerGeometry);
+    m_uiLargestReportedMeshletCount = geometry.m_uiMaximumResidentMeshletCount;
+  }
   const xiiUInt32 uiFrameSlot = static_cast<xiiUInt32>(uiFrameIndex % m_Description.m_uiFramesInFlight);
   const xiiUInt32 uiVisibilitySetIndex = GetOrCreateVisibilitySetIndex(description.m_sName);
   XII_ASSERT_ALWAYS(uiVisibilitySetIndex != xiiInvalidIndex, "Failed to allocate GPU visibility resources for '{}'.", description.m_sName);
@@ -428,7 +439,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       cmd.DispatchCompute({1U, 1U, 1U});
     });
   meshletDispatchBuild.first->m_pPipeline = m_pMeshletDispatchBuildPipeline;
-  meshletDispatchBuild.first->m_uiMaxMeshletGroups = (m_Description.m_uiMaxMeshletsPerGeometry + 63U) / 64U;
+  meshletDispatchBuild.first->m_uiMaxMeshletGroups = uiMeshletGroupCount;
 
   auto meshletCull = graph.AddPass<MeshletCullPassData>(
     makeName(" GPU Meshlet Culling"), computeQueue,

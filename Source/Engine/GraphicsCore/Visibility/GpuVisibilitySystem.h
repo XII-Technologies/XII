@@ -62,8 +62,8 @@ struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityDescription
 {
   xiiUInt32 m_uiMaxInstances = 65536U;
   xiiUInt32 m_uiMaxVisibleMeshlets = 1024U * 1024U;
-  /// Upper bound for meshlets in any single resident LOD. This controls the X dimension of
-  /// the GPU-generated culling dispatch; content pipelines must reject LODs above this limit.
+  /// Advisory content budget for meshlets in one resident LOD. Dispatch dimensions are derived
+  /// from residency metadata so exceeding this value reports a warning but never drops work.
   xiiUInt32 m_uiMaxMeshletsPerGeometry = 4096U;
   xiiUInt32 m_uiMaxDrawCommands = 1024U * 1024U;
   xiiUInt32 m_uiFramesInFlight = 3U;
@@ -127,4 +127,5 @@ private:
   xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletDispatchBuildPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pCommandBuildPipeline;
+  xiiUInt32 m_uiLargestReportedMeshletCount = 0U;
 };

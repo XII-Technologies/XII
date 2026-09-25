@@ -456,12 +456,21 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
     }, true);
 
   m_uiLastUploadedBytes = 0U;
+  xiiUInt32 uiMaximumResidentMeshletCount = 0U;
   const xiiUInt32 uiFrameSlice = static_cast<xiiUInt32>(uiFrameIndex % m_uiFramesInFlight);
   const xiiUInt64 uiFrameBit = xiiUInt64(1) << uiFrameSlice;
   for (xiiUInt32 i = 0; i < m_Slots.GetCount(); ++i)
   {
     Slot& slot = m_Slots[i];
-    if (!slot.m_bAllocated || (slot.m_uiDirtyFrameMask & uiFrameBit) == 0U) continue;
+    if (!slot.m_bAllocated) continue;
+
+    for (xiiUInt32 uiLod = 0U; uiLod < slot.m_GpuRecord.m_uiLodCount; ++uiLod)
+    {
+      if ((slot.m_GpuRecord.m_uiResidentLodMask & XII_BIT(uiLod)) != 0U)
+        uiMaximumResidentMeshletCount = xiiMath::Max(uiMaximumResidentMeshletCount, slot.m_GpuRecord.m_Lods[uiLod].m_uiMeshletCount);
+    }
+
+    if ((slot.m_uiDirtyFrameMask & uiFrameBit) == 0U) continue;
     Upload& upload = pass.first->m_Uploads.ExpandAndGetRef();
     upload.m_uiOffset = (uiFrameSlice * m_Slots.GetCount() + i) * sizeof(xiiGpuGeometryRecord);
     upload.m_Record = slot.m_GpuRecord;
@@ -477,6 +486,7 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
   result.m_hGeometryMetadata = pass.first->m_hGeometryBuffer;
   result.m_hMeshletMetadata  = pass.first->m_hMeshletBuffer;
   result.m_uiGeometryBaseIndex = uiFrameSlice * m_Slots.GetCount();
+  result.m_uiMaximumResidentMeshletCount = uiMaximumResidentMeshletCount;
   return result;
 }
 
