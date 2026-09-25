@@ -103,5 +103,30 @@ xiiUInt64 xiiGpuFrameCompletionTracker::PollCompletedFrames()
   return m_Stats.m_uiLastCompletedFrame;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_GpuFrameCompletionTracker);
+void xiiGpuFrameCompletionTracker::WaitForFrame(xiiUInt64 uiFrameIndex)
+{
+  if (uiFrameIndex <= m_Stats.m_uiLastCompletedFrame)
+    return;
 
+  bool bFrameCaptured = false;
+  for (const FramePoint& frame : m_PendingFrames)
+  {
+    if (frame.m_uiFrameIndex > uiFrameIndex)
+      break;
+
+    for (const QueuePoint& queuePoint : frame.m_QueuePoints)
+      queuePoint.m_pQueue->WaitForFenceValue(queuePoint.m_uiSubmittedValue);
+
+    if (frame.m_uiFrameIndex == uiFrameIndex)
+    {
+      bFrameCaptured = true;
+      break;
+    }
+  }
+
+  XII_ASSERT_DEV(bFrameCaptured, "Frame {} was not captured and cannot be waited for.", uiFrameIndex);
+  XII_IGNORE_UNUSED(PollCompletedFrames());
+  XII_ASSERT_DEV(m_Stats.m_uiLastCompletedFrame >= uiFrameIndex, "Frame {} did not complete after its queue fences were waited.", uiFrameIndex);
+}
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_GpuFrameCompletionTracker);

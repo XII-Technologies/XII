@@ -117,6 +117,8 @@ public:
     if (bCanRender)
     {
       ++m_uiFrameIndex;
+      if (m_uiFrameIndex > m_Configuration.m_uiFramesInFlight)
+        m_FrameCompletionTracker.WaitForFrame(m_uiFrameIndex - m_Configuration.m_uiFramesInFlight);
       const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
       m_World.Update(m_uiFrameIndex, uiCompletedFrame, xiiClock::GetGlobalClock()->GetTimeDiff());
 
@@ -337,6 +339,7 @@ public:
     visibilityDescription.m_uiMaxInstances = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight;
     visibilityDescription.m_uiMaxVisibleMeshlets = m_Configuration.m_uiMaxVisibleMeshlets;
     visibilityDescription.m_uiMaxDrawCommands = 1U;
+    visibilityDescription.m_uiFramesInFlight = m_Configuration.m_uiFramesInFlight;
     m_Visibility.Initialize(m_pDevice.Borrow(), visibilityDescription).AssertSuccess();
     xiiGpuHiZPyramidDescription hiZDescription;
     hiZDescription.m_uiFramesInFlight = visibilityDescription.m_uiFramesInFlight;

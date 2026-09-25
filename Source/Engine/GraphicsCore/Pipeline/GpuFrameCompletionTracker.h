@@ -42,6 +42,10 @@ public:
   /// Polls queue fences without blocking and returns the last fully completed frame.
   [[nodiscard]] xiiUInt64 PollCompletedFrames();
 
+  /// Blocks until every queue submission captured for the requested frame has completed.
+  /// Use this before reusing a frame-ring slot. Frames must have been captured sequentially.
+  void WaitForFrame(xiiUInt64 uiFrameIndex);
+
   [[nodiscard]] xiiUInt64 GetLastCompletedFrame() const { return m_Stats.m_uiLastCompletedFrame; }
   [[nodiscard]] const xiiGpuFrameCompletionStats& GetStats() const { return m_Stats; }
 
@@ -62,4 +66,3 @@ private:
   xiiDeque<FramePoint> m_PendingFrames;
   xiiGpuFrameCompletionStats m_Stats;
 };
-

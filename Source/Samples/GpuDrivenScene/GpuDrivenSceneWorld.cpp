@@ -16,6 +16,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xi
     XII_MEMBER_PROPERTY("GridHeight", m_uiGridHeight)->AddAttributes(new xiiDefaultValueAttribute(16U), new xiiClampValueAttribute(1U, 256U)),
     XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4f), new xiiClampValueAttribute(0.25f, 20.0f)),
     XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(262144U)),
+    XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(2U, 8U)),
     XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
   XII_END_PROPERTIES;
@@ -59,13 +60,13 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   bindlessDescription.m_uiBufferSRVCapacity = 256U;
   m_BindlessResources.Initialize(bindlessDescription);
 
-  if (m_GeometryResidency.Initialize(pDevice, 64U, 3U, 128ULL * 1024ULL * 1024ULL, configuration.m_uiMaxVisibleMeshlets).Failed())
+  if (m_GeometryResidency.Initialize(pDevice, 64U, configuration.m_uiFramesInFlight, 128ULL * 1024ULL * 1024ULL, configuration.m_uiMaxVisibleMeshlets).Failed())
     return XII_FAILURE;
 
   xiiMaterialGpuStorageDescription materialDescription;
   materialDescription.m_uiMaxMaterials = 64U;
   materialDescription.m_uiMaxParameterBytes = 64U;
-  materialDescription.m_uiFramesInFlight = 3U;
+  materialDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
   if (m_MaterialSystem.Initialize(pDevice, materialDescription).Failed())
     return XII_FAILURE;
 

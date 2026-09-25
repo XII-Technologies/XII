@@ -17,6 +17,7 @@ struct xiiGpuDrivenSceneConfiguration
   xiiUInt32 m_uiGridHeight        = 16U;
   float     m_fObjectSpacing      = 2.4f;
   xiiUInt32 m_uiMaxVisibleMeshlets = 262144U;
+  xiiUInt32 m_uiFramesInFlight    = 3U;
   bool      m_bAsyncCompute       = true;
 };
 
@@ -83,4 +84,3 @@ private:
   xiiDynamicArray<xiiVec3>              m_BasePositions;
   float                                 m_fAnimationTime = 0.0f;
 };
-

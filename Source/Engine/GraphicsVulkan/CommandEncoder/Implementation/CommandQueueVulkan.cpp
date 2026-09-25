@@ -24,6 +24,12 @@ xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
   return m_pQueueFence->GetCompletedValue();
 }
 
+void xiiGALCommandQueueVulkan::WaitForFenceValue(xiiUInt64 uiFenceValue)
+{
+  XII_ASSERT_DEV(uiFenceValue < m_uiNextFenceValue, "Cannot wait for queue fence value {} because it has not been submitted.", uiFenceValue);
+  m_pQueueFence->Wait(uiFenceValue);
+}
+
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandList)
 {
   XII_ASSERT_DEV(m_pQueueFence != nullptr, "The command queue fence must be valid.");

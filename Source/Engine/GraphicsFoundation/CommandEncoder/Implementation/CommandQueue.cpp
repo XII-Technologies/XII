@@ -44,4 +44,10 @@ xiiUInt64 xiiGALCommandQueue::Submit(xiiGALCommandList* pCommandList)
   return uiFenceValue;
 }
 
+void xiiGALCommandQueue::WaitForFenceValue(xiiUInt64 uiFenceValue)
+{
+  if (GetCompletedFenceValue() < uiFenceValue)
+    WaitForIdle();
+}
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_CommandEncoder_Implementation_CommandQueue);
