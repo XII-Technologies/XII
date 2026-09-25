@@ -35,13 +35,13 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     XII_ALWAYS_INLINE ~ResourceSetBindings() = default;
     XII_ALWAYS_INLINE ResourceSetBindings(ResourceSetBindings&& other) noexcept
     {
-      m_pBoundConstantBuffers                     = std::move(other.m_pBoundConstantBuffers);
-      m_pBoundBufferResourceViews                 = std::move(other.m_pBoundBufferResourceViews);
-      m_pBoundTextureResourceViews                = std::move(other.m_pBoundTextureResourceViews);
-      m_pBoundAccelerationStructures              = std::move(other.m_pBoundAccelerationStructures);
-      m_pBoundUnorderedAccessBufferResourceViews  = std::move(other.m_pBoundUnorderedAccessBufferResourceViews);
-      m_pBoundUnorderedAccessTextureResourceViews = std::move(other.m_pBoundUnorderedAccessTextureResourceViews);
-      m_pBoundSamplerStates                       = std::move(other.m_pBoundSamplerStates);
+      m_pBoundConstantBuffers                          = std::move(other.m_pBoundConstantBuffers);
+      m_pBoundBufferResourceViews                      = std::move(other.m_pBoundBufferResourceViews);
+      m_pBoundTextureResourceViews                     = std::move(other.m_pBoundTextureResourceViews);
+      m_pBoundAccelerationStructures                   = std::move(other.m_pBoundAccelerationStructures);
+      m_pBoundUnorderedAccessBufferResourceViews       = std::move(other.m_pBoundUnorderedAccessBufferResourceViews);
+      m_pBoundUnorderedAccessTextureResourceViews      = std::move(other.m_pBoundUnorderedAccessTextureResourceViews);
+      m_pBoundSamplerStates                            = std::move(other.m_pBoundSamplerStates);
       m_pBoundBufferResourceViewArrays                 = std::move(other.m_pBoundBufferResourceViewArrays);
       m_pBoundTextureResourceViewArrays                = std::move(other.m_pBoundTextureResourceViewArrays);
       m_pBoundUnorderedAccessBufferResourceViewArrays  = std::move(other.m_pBoundUnorderedAccessBufferResourceViewArrays);
@@ -49,13 +49,13 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
       m_pBoundSamplerStateArrays                       = std::move(other.m_pBoundSamplerStateArrays);
     }
 
-    xiiDynamicArray<xiiGALBufferVulkan*>      m_pBoundConstantBuffers;
-    xiiDynamicArray<xiiGALBufferViewVulkan*>  m_pBoundBufferResourceViews;
-    xiiDynamicArray<xiiGALTextureViewVulkan*> m_pBoundTextureResourceViews;
-    xiiDynamicArray<xiiGALTopLevelASVulkan*>  m_pBoundAccelerationStructures;
-    xiiDynamicArray<xiiGALBufferViewVulkan*>  m_pBoundUnorderedAccessBufferResourceViews;
-    xiiDynamicArray<xiiGALTextureViewVulkan*> m_pBoundUnorderedAccessTextureResourceViews;
-    xiiDynamicArray<xiiGALSamplerVulkan*>     m_pBoundSamplerStates;
+    xiiDynamicArray<xiiGALBufferVulkan*>                       m_pBoundConstantBuffers;
+    xiiDynamicArray<xiiGALBufferViewVulkan*>                   m_pBoundBufferResourceViews;
+    xiiDynamicArray<xiiGALTextureViewVulkan*>                  m_pBoundTextureResourceViews;
+    xiiDynamicArray<xiiGALTopLevelASVulkan*>                   m_pBoundAccelerationStructures;
+    xiiDynamicArray<xiiGALBufferViewVulkan*>                   m_pBoundUnorderedAccessBufferResourceViews;
+    xiiDynamicArray<xiiGALTextureViewVulkan*>                  m_pBoundUnorderedAccessTextureResourceViews;
+    xiiDynamicArray<xiiGALSamplerVulkan*>                      m_pBoundSamplerStates;
     xiiDynamicArray<xiiDynamicArray<xiiGALBufferViewVulkan*>>  m_pBoundBufferResourceViewArrays;
     xiiDynamicArray<xiiDynamicArray<xiiGALTextureViewVulkan*>> m_pBoundTextureResourceViewArrays;
     xiiDynamicArray<xiiDynamicArray<xiiGALBufferViewVulkan*>>  m_pBoundUnorderedAccessBufferResourceViewArrays;

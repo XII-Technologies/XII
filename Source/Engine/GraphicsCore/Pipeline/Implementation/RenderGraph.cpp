@@ -1329,8 +1329,8 @@ xiiUInt64 xiiRenderGraph::ComputeSignature(const xiiDynamicArray<PassEntry>& pas
 
 void xiiRenderGraph::PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings)
 {
-  const xiiUInt64 uiSignature     = ComputeSignature(m_Passes) ^ static_cast<xiiUInt64>(settings.m_uiCacheSalt);
-  m_Statistics.m_uiGraphSignature = uiSignature;
+  const xiiUInt64 uiSignature       = ComputeSignature(m_Passes) ^ static_cast<xiiUInt64>(settings.m_uiCacheSalt);
+  m_Statistics.m_uiGraphSignature   = uiSignature;
   m_uiLastSignature                 = uiSignature;
   m_Statistics.m_bUsedCachedCompile = false;
 }

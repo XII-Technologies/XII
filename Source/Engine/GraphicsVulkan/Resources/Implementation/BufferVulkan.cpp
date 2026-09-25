@@ -38,11 +38,11 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
 
-  vk::BufferCreateInfo vkBufferCreateInfo  = {};
-  vkBufferCreateInfo.pNext                 = nullptr;
-  vkBufferCreateInfo.flags                 = {};
-  vkBufferCreateInfo.size                  = m_Description.m_uiSize;
-  vkBufferCreateInfo.usage                 = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
+  vk::BufferCreateInfo vkBufferCreateInfo                = {};
+  vkBufferCreateInfo.pNext                               = nullptr;
+  vkBufferCreateInfo.flags                               = {};
+  vkBufferCreateInfo.size                                = m_Description.m_uiSize;
+  vkBufferCreateInfo.usage                               = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
   const xiiArrayPtr<const xiiUInt32> activeQueueFamilies = pDeviceVulkan->GetActiveQueueFamilyIndices();
   vkBufferCreateInfo.sharingMode                         = activeQueueFamilies.GetCount() > 1U ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
   vkBufferCreateInfo.pQueueFamilyIndices                 = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetPtr() : nullptr;

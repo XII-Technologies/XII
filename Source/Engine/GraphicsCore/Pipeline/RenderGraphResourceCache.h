@@ -98,7 +98,7 @@ private:
 
 private:
   xiiSharedPtr<xiiGALDevice> m_pDevice;
-  xiiUInt64                  m_uiCurrentFrame = 0ULL;
+  xiiUInt64                  m_uiCurrentFrame   = 0ULL;
   xiiUInt64                  m_uiCompletedFrame = 0ULL;
 
   /// Idle textures keyed by creation-description hash.

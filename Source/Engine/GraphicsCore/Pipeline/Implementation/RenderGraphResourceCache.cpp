@@ -53,7 +53,7 @@ void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 u
       continue;
 
     const xiiUInt32                 uiHash = retired.m_pTexture->GetDescription().CalculateHash();
-    xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
+    xiiDynamicArray<PooledTexture>* pPool  = m_TexturePool.GetValue(uiHash);
     if (pPool == nullptr)
     {
       m_TexturePool.Insert(uiHash, xiiDynamicArray<PooledTexture>());
@@ -70,7 +70,7 @@ void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 u
       continue;
 
     const xiiUInt32                uiHash = retired.m_pBuffer->GetDescription().CalculateHash();
-    xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
+    xiiDynamicArray<PooledBuffer>* pPool  = m_BufferPool.GetValue(uiHash);
     if (pPool == nullptr)
     {
       m_BufferPool.Insert(uiHash, xiiDynamicArray<PooledBuffer>());

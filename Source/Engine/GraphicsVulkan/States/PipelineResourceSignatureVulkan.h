@@ -10,15 +10,15 @@
 
 struct xiiGALPipelineResourceDescriptionVulkan : xiiHashableStruct<xiiGALPipelineResourceDescriptionVulkan>
 {
-  xiiHashedString               m_sName;
-  xiiGALDescriporTypeVulkan     m_DescriptorType       = xiiGALDescriporTypeVulkan::ENUM_COUNT;
-  xiiUInt32                     m_uiBindingSet         = xiiInvalidIndex;
-  xiiUInt32                     m_uiBindingIndex       = xiiInvalidIndex;
-  xiiUInt32                     m_uiSamplerIndex       = xiiInvalidIndex;
-  xiiUInt32                     m_uiArraySize          = 0U;
-  xiiBitflags<xiiGALShaderType> m_ShaderStages         = xiiGALShaderType::Unknown;
+  xiiHashedString                          m_sName;
+  xiiGALDescriporTypeVulkan                m_DescriptorType        = xiiGALDescriporTypeVulkan::ENUM_COUNT;
+  xiiUInt32                                m_uiBindingSet          = xiiInvalidIndex;
+  xiiUInt32                                m_uiBindingIndex        = xiiInvalidIndex;
+  xiiUInt32                                m_uiSamplerIndex        = xiiInvalidIndex;
+  xiiUInt32                                m_uiArraySize           = 0U;
+  xiiBitflags<xiiGALShaderType>            m_ShaderStages          = xiiGALShaderType::Unknown;
   xiiBitflags<xiiGALPipelineResourceFlags> m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
-  bool                          m_bHasImmutableSampler = false;
+  bool                                     m_bHasImmutableSampler  = false;
 };
 
 class XII_GRAPHICSVULKAN_DLL xiiGALPipelineResourceSignatureVulkan final : public xiiGALPipelineResourceSignature

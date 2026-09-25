@@ -125,10 +125,10 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
     vkDescriptorPoolCreateInfo.pNext                        = nullptr;
     // Pools are compatible with ordinary and descriptor-indexing layouts. This is required for
     // sets whose runtime arrays are updated while already referenced by submitted command buffers.
-    vkDescriptorPoolCreateInfo.flags                        = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
-    vkDescriptorPoolCreateInfo.maxSets                      = m_uiMaxSets;
-    vkDescriptorPoolCreateInfo.poolSizeCount                = descriptorPoolSizes.GetCount();
-    vkDescriptorPoolCreateInfo.pPoolSizes                   = descriptorPoolSizes.GetData();
+    vkDescriptorPoolCreateInfo.flags         = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
+    vkDescriptorPoolCreateInfo.maxSets       = m_uiMaxSets;
+    vkDescriptorPoolCreateInfo.poolSizeCount = descriptorPoolSizes.GetCount();
+    vkDescriptorPoolCreateInfo.pPoolSizes    = descriptorPoolSizes.GetData();
 
     VK_ASSERT_DEV(vkLogicalDevice.createDescriptorPool(&vkDescriptorPoolCreateInfo, nullptr, &vkDescriptorPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
