@@ -43,6 +43,8 @@
 
 xiiCommandLineOptionInt opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
 xiiCommandLineOptionInt opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after rendering this many frames (zero runs until closed).", 0U);
+xiiCommandLineOptionInt opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
+xiiCommandLineOptionInt opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
 
 namespace
 {
@@ -334,12 +336,15 @@ public:
     m_Camera.LookAt(xiiVec3(-12.0f, -2.0f, 12.0f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
 
     m_Configuration = {};
+    m_Configuration.m_uiGridWidth = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
+    m_Configuration.m_uiGridHeight = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     m_World.Initialize(m_pDevice.Borrow(), m_Configuration).AssertSuccess();
     xiiGpuVisibilityDescription visibilityDescription;
     visibilityDescription.m_uiMaxInstances = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight;
     visibilityDescription.m_uiMaxVisibleMeshlets = m_Configuration.m_uiMaxVisibleMeshlets;
     visibilityDescription.m_uiMaxDrawCommands = 1U;
     visibilityDescription.m_uiFramesInFlight = m_Configuration.m_uiFramesInFlight;
+    visibilityDescription.m_uiMaxVisibilitySets = 2U;
     m_Visibility.Initialize(m_pDevice.Borrow(), visibilityDescription).AssertSuccess();
     xiiGpuHiZPyramidDescription hiZDescription;
     hiZDescription.m_uiFramesInFlight = visibilityDescription.m_uiFramesInFlight;
