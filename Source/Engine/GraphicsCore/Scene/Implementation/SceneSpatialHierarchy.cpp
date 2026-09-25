@@ -4,7 +4,7 @@
 
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialQuery, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSceneSpatialQuery>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialQuery, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiSceneSpatialQuery>)
 {
   XII_BEGIN_PROPERTIES
   {

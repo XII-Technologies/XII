@@ -10,8 +10,8 @@
 struct XII_GRAPHICSCORE_DLL xiiSceneSpatialQuery
 {
   xiiUInt32                        m_uiVisibilityMask = 0xFFFFFFFFU;
-  xiiBitflags<xiiSceneObjectFlags> m_RequiredFlags;
-  xiiBitflags<xiiSceneObjectFlags> m_ExcludedFlags;
+  xiiBitflags<xiiSceneObjectFlags> m_RequiredFlags = xiiSceneObjectFlags::Enabled;
+  xiiBitflags<xiiSceneObjectFlags> m_ExcludedFlags = xiiSceneObjectFlags::None;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneSpatialQuery);
