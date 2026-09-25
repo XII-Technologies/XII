@@ -342,15 +342,13 @@ void xiiGeometryResidencyManager::EnforceBudget(xiiUInt64 uiCompletedFrame)
 
 void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes)
 {
+  xiiDynamicArray<xiiUInt32> streamingQueue;
   for (xiiUInt32 i = 0; i < m_Slots.GetCount(); ++i)
   {
     Slot& slot = m_Slots[i];
     if (!slot.m_bAllocated) continue;
     if (slot.m_State == xiiGeometryResidencyState::Requested || slot.m_State == xiiGeometryResidencyState::Loading)
-    {
-      slot.m_State = xiiGeometryResidencyState::Loading;
-      BuildResidentRecord(slot, uiUploadBudgetBytes);
-    }
+      streamingQueue.PushBack(i);
     if (slot.m_State == xiiGeometryResidencyState::EvictPending && slot.m_uiRetireFrame <= uiCompletedFrame)
     {
       m_uiResidentBytes -= slot.m_uiResidentBytes;
@@ -363,6 +361,27 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
       m_FreeSlots.PushBack(i);
     }
   }
+
+  // Streaming priority is the primary authoring control. Recency breaks equal-priority ties so
+  // actively visible content wins a constrained upload budget, while the slot index keeps the
+  // schedule deterministic for captures and simulation replay.
+  streamingQueue.Sort([this](xiiUInt32 lhsIndex, xiiUInt32 rhsIndex) {
+    const Slot& lhs = m_Slots[lhsIndex];
+    const Slot& rhs = m_Slots[rhsIndex];
+    if (lhs.m_Description.m_uiStreamingPriority != rhs.m_Description.m_uiStreamingPriority)
+      return lhs.m_Description.m_uiStreamingPriority > rhs.m_Description.m_uiStreamingPriority;
+    if (lhs.m_uiLastUsedFrame != rhs.m_uiLastUsedFrame)
+      return lhs.m_uiLastUsedFrame > rhs.m_uiLastUsedFrame;
+    return lhsIndex < rhsIndex;
+  });
+
+  for (xiiUInt32 uiSlotIndex : streamingQueue)
+  {
+    Slot& slot = m_Slots[uiSlotIndex];
+    slot.m_State = xiiGeometryResidencyState::Loading;
+    BuildResidentRecord(slot, uiUploadBudgetBytes);
+  }
+
   EnforceBudget(uiCompletedFrame);
   XII_IGNORE_UNUSED(uiFrameIndex);
 }

@@ -189,7 +189,9 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     asset.m_hGeometry = m_GeometryResidency.RegisterGeometry(description);
     if (!asset.m_hGeometry.IsValid())
       return XII_FAILURE;
-    m_GeometryResidency.RequestResidency(asset.m_hGeometry, 0U, 0U);
+    // Start from the coarsest LOD. Update() requests the fine range later, exercising
+    // incremental residency without invalidating metadata used by frames already in flight.
+    m_GeometryResidency.RequestResidency(asset.m_hGeometry, asset.m_Lods.GetCount() - 1U, 0U);
   }
 
   m_GeometryResidency.ProcessStreaming(0U, 0U, 128ULL * 1024ULL * 1024ULL);
@@ -321,6 +323,11 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
   }
 
   m_MaterialSystem.BeginFrame(uiFrameIndex, uiCompletedFrame);
+  if (uiFrameIndex == 30U)
+  {
+    for (const GeometryAsset& asset : m_GeometryAssets)
+      m_GeometryResidency.RequestResidency(asset.m_hGeometry, 0U, uiFrameIndex);
+  }
   m_GeometryResidency.ProcessStreaming(uiFrameIndex, uiCompletedFrame, 8ULL * 1024ULL * 1024ULL);
   for (const GeometryAsset& asset : m_GeometryAssets)
     m_GeometryResidency.Touch(asset.m_hGeometry, uiFrameIndex);
