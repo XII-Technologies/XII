@@ -691,7 +691,10 @@ xiiVec3U32 xiiGALTextureUtilities::GetMipLevelSize(xiiUInt32 uiMipLevelSize, con
   xiiVec3U32 size = {textureDescription.m_Size.width, textureDescription.m_Size.height, textureDescription.m_uiArraySizeOrDepth};
   size.x          = xiiMath::Max(1U, size.x >> uiMipLevelSize);
   size.y          = xiiMath::Max(1U, size.y >> uiMipLevelSize);
-  size.z          = xiiMath::Max(1U, size.z >> uiMipLevelSize);
+  if (textureDescription.Is3D())
+  {
+    size.z = xiiMath::Max(1U, size.z >> uiMipLevelSize);
+  }
   return size;
 }
 
@@ -711,7 +714,7 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
   xiiGALMipLevelProperties mipLevelProperties;
   mipLevelProperties.m_LogicalSize.width  = xiiMath::Max(textureDescription.m_Size.width >> uiMipLevel, 1U);
   mipLevelProperties.m_LogicalSize.height = xiiMath::Max(textureDescription.m_Size.height >> uiMipLevel, 1U);
-  mipLevelProperties.m_uiDepth            = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> uiMipLevel, 1U);
+  mipLevelProperties.m_uiDepth            = textureDescription.Is3D() ? xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> uiMipLevel, 1U) : 1U;
 
   if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
@@ -739,7 +742,8 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
 
 xiiUInt32 xiiGALTextureUtilities::GetMipLevelCount(const xiiGALTextureCreationDescription& textureDescription)
 {
-  return xiiMath::Log2i(xiiMath::Max(textureDescription.m_Size.width, textureDescription.m_Size.height, textureDescription.m_uiArraySizeOrDepth, 1U)) + 1U;
+  const xiiUInt32 uiDepth = textureDescription.Is3D() ? textureDescription.m_uiArraySizeOrDepth : 1U;
+  return xiiMath::Log2i(xiiMath::Max(textureDescription.m_Size.width, textureDescription.m_Size.height, uiDepth, 1U)) + 1U;
 }
 
 xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTexture1DDescription() noexcept

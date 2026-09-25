@@ -857,6 +857,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
 
   XII_ALWAYS_INLINE static xiiUInt32 VerticesPerPrimitive(xiiGALPrimitiveTopology::Enum e)
   {
+    if (e >= xiiGALPrimitiveTopology::ControlPointPatchList1 && e <= xiiGALPrimitiveTopology::ControlPointPatchList32)
+    {
+      return static_cast<xiiUInt32>(e - xiiGALPrimitiveTopology::ControlPointPatchList1) + 1U;
+    }
+
     switch (e)
     {
       case xiiGALPrimitiveTopology::TriangleList:
