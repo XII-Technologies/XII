@@ -54,14 +54,44 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShadingRate
   return ref_stream;
 }
 
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALDepthResolveDescription& value)
+{
+  ref_stream << value.m_Attachment;
+  ref_stream << value.m_DepthMode;
+  ref_stream << value.m_StencilMode;
+
+  return ref_stream;
+}
+
 xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSubPassDescription& value)
 {
   ref_stream << value.m_InputAttachments.GetCount();
+  for (const auto& attachment : value.m_InputAttachments)
+    ref_stream << attachment;
+
   ref_stream << value.m_RenderTargetAttachments.GetCount();
+  for (const auto& attachment : value.m_RenderTargetAttachments)
+    ref_stream << attachment;
+
   ref_stream << value.m_ResolveAttachments.GetCount();
+  for (const auto& attachment : value.m_ResolveAttachments)
+    ref_stream << attachment;
+
   ref_stream << value.m_DepthStencilAttachment.GetCount();
+  for (const auto& attachment : value.m_DepthStencilAttachment)
+    ref_stream << attachment;
+
+  ref_stream << value.m_DepthResolveAttachment.GetCount();
+  for (const auto& attachment : value.m_DepthResolveAttachment)
+    ref_stream << attachment;
+
   ref_stream << value.m_PreserveAttachments.GetCount();
+  for (const xiiUInt32 uiAttachment : value.m_PreserveAttachments)
+    ref_stream << uiAttachment;
+
   ref_stream << value.m_ShadingRateAttachment.GetCount();
+  for (const auto& attachment : value.m_ShadingRateAttachment)
+    ref_stream << attachment;
 
   return ref_stream;
 }
@@ -160,6 +190,7 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALBlendStateCreationDescription& 
     writer << renderTargetBlend.m_bBlendEnable;
     writer << renderTargetBlend.m_SourceBlend;
     writer << renderTargetBlend.m_DestinationBlend;
+    writer << renderTargetBlend.m_BlendOperation;
     writer << renderTargetBlend.m_SourceBlendAlpha;
     writer << renderTargetBlend.m_DestinationBlendAlpha;
     writer << renderTargetBlend.m_BlendOperationAlpha;
@@ -212,7 +243,8 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALFramebufferCreationDescription&
   xiiHashStreamWriter32 writer;
 
   writer << framebufferDescription.m_pRenderPass;
-  writer << framebufferDescription.m_uiArraySliceCount;
+  writer << framebufferDescription.m_FramebufferSize.width;
+  writer << framebufferDescription.m_FramebufferSize.height;
   writer << framebufferDescription.m_uiArraySliceCount;
   writer << framebufferDescription.m_Attachments.GetCount();
 
