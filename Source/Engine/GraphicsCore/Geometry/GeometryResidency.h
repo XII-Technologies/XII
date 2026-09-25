@@ -155,7 +155,9 @@ private:
     xiiUInt32                          m_uiGeneration = 1U;
     xiiUInt32                          m_uiRequestedLod = 0U;
     bool                               m_bAllocated = false;
-    bool                               m_bDirty = false;
+    /// One bit per frame-in-flight metadata slice. A record change must reach every slice
+    /// before it is considered clean; a single boolean would leave rotating slices stale.
+    xiiUInt64                          m_uiDirtyFrameMask = 0U;
     xiiUInt32                          m_uiMeshletArenaOffset[xiiGpuGeometryRecord::s_uiMaxLods] = {};
     xiiUInt32                          m_uiMeshletArenaCount[xiiGpuGeometryRecord::s_uiMaxLods] = {};
   };
@@ -194,6 +196,7 @@ private:
   xiiDynamicArray<FreeRange> m_FreeMeshletRanges;
   xiiDynamicArray<UploadPassData::MeshletUpload> m_PendingMeshletUploads;
   xiiUInt32                  m_uiFramesInFlight = 0U;
+  xiiUInt64                  m_uiAllFrameMask = 0U;
   xiiUInt64                  m_uiBudgetBytes = 0U;
   xiiUInt64                  m_uiResidentBytes = 0U;
   xiiUInt64                  m_uiLastUploadedBytes = 0U;
