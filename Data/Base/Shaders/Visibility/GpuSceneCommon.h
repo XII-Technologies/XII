@@ -66,9 +66,9 @@ struct GpuMeshlet
   float4 Cone;
 };
 
-uint SelectResidentLod(GpuGeometryRecord geometry, float distanceToCamera, float viewportHeight)
+uint SelectResidentLod(GpuGeometryRecord geometry, float worldSpaceRadius, float distanceToCamera, float viewportHeight)
 {
-  float projectedCoverage = geometry.BoundsCenterRadius.w * viewportHeight / max(distanceToCamera, 0.001f);
+  float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);
   uint fallback = 0xFFFFFFFFu;
   [unroll]
   for (uint lod = 0u; lod < geometry.LodCount; ++lod)

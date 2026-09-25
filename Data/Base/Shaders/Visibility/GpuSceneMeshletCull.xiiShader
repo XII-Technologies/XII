@@ -56,7 +56,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const GpuVisibilityView view = g_VisibilityView[0];
   const GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
   const float distanceToCamera = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
-  const uint lodIndex = SelectResidentLod(geometry, distanceToCamera, view.ViewportAndHiZ.y);
+  const uint lodIndex = SelectResidentLod(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y);
   if (lodIndex == 0xFFFFFFFFu)
     return;
 
@@ -76,12 +76,17 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     if (!SphereInsideFrustum(center, radius, view))
       continue;
 
-    // Conservative normal-cone rejection. A negative cutoff disables cone culling.
-    if (meshlet.Cone.w >= 0.0f)
+    // The stored cutoff is the cosine of the largest deviation from the cone axis.
+    // Reject only when the complete normal cone faces away from the camera. Non-uniform
+    // transforms distort the cone, so conservatively disable this test for those instances.
+    const float minScale = min(scale.x, min(scale.y, scale.z));
+    const bool isUniformScale = maxScale - minScale <= max(maxScale, 0.0001f) * 0.001f;
+    if (meshlet.Cone.w >= 0.0f && isUniformScale)
     {
       const float3 coneAxis = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
       const float3 toCamera = normalize(view.CameraPosition.xyz - center);
-      if (dot(coneAxis, toCamera) >= meshlet.Cone.w)
+      const float sinHalfAngle = sqrt(saturate(1.0f - meshlet.Cone.w * meshlet.Cone.w));
+      if (dot(coneAxis, toCamera) <= -sinHalfAngle)
         continue;
     }
 
