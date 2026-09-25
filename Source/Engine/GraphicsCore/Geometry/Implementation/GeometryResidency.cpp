@@ -160,6 +160,7 @@ void xiiGeometryResidencyManager::Shutdown()
   m_uiBudgetBytes = 0U;
   m_uiResidentBytes = 0U;
   m_uiLastUploadedBytes = 0U;
+  m_uiNextMeshletUploadId = 1U;
 }
 
 xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometryDescription& description)
@@ -278,6 +279,9 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
 
       allocations.PushBack({i, uiArenaOffset, lod.m_uiMeshletCount});
       UploadPassData::MeshletUpload& upload = uploads.ExpandAndGetRef();
+      upload.m_uiUploadId = m_uiNextMeshletUploadId++;
+      if (m_uiNextMeshletUploadId == 0U)
+        m_uiNextMeshletUploadId = 1U;
       upload.m_uiOffset = uiArenaOffset * sizeof(xiiMeshlet);
       upload.m_Meshlets = mesh->GetMeshlets();
       for (xiiMeshlet& meshlet : upload.m_Meshlets)
@@ -448,11 +452,36 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
       builder.SetPassSideEffects(true);
       builder.SetPassAllowMerge(false);
     },
-    [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
+    [this](const UploadPassData& data, xiiRenderGraphPassContext& context) {
       for (const Upload& upload : data.m_Uploads)
         context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hGeometryBuffer), upload.m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
       for (const UploadPassData::MeshletUpload& upload : data.m_MeshletUploads)
         context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hMeshletBuffer), upload.m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(upload.m_Meshlets.GetData()), upload.m_Meshlets.GetCount() * sizeof(xiiMeshlet)));
+
+      // Retire only snapshots that were actually recorded. If a newer CPU revision appeared
+      // after graph setup, its byte comparison fails and the frame slice remains dirty.
+      for (const Upload& upload : data.m_Uploads)
+      {
+        if (upload.m_uiSlotIndex >= m_Slots.GetCount())
+          continue;
+        Slot& slot = m_Slots[upload.m_uiSlotIndex];
+        if (slot.m_bAllocated && xiiMemoryUtils::RawByteCompare(&slot.m_GpuRecord, &upload.m_Record, sizeof(upload.m_Record)) == 0)
+          slot.m_uiDirtyFrameMask &= ~upload.m_uiFrameBit;
+      }
+
+      // Pending meshlet payloads remain manager-owned until this transfer pass executes. This
+      // makes graph compile failure retryable instead of dropping the only copy of an upload.
+      for (const UploadPassData::MeshletUpload& uploaded : data.m_MeshletUploads)
+      {
+        for (xiiUInt32 i = 0U; i < m_PendingMeshletUploads.GetCount(); ++i)
+        {
+          if (m_PendingMeshletUploads[i].m_uiUploadId == uploaded.m_uiUploadId)
+          {
+            m_PendingMeshletUploads.RemoveAtAndCopy(i);
+            break;
+          }
+        }
+      }
     }, true);
 
   m_uiLastUploadedBytes = 0U;
@@ -473,12 +502,12 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
     if ((slot.m_uiDirtyFrameMask & uiFrameBit) == 0U) continue;
     Upload& upload = pass.first->m_Uploads.ExpandAndGetRef();
     upload.m_uiOffset = (uiFrameSlice * m_Slots.GetCount() + i) * sizeof(xiiGpuGeometryRecord);
+    upload.m_uiSlotIndex = i;
+    upload.m_uiFrameBit = uiFrameBit;
     upload.m_Record = slot.m_GpuRecord;
-    slot.m_uiDirtyFrameMask &= ~uiFrameBit;
     m_uiLastUploadedBytes += sizeof(xiiGpuGeometryRecord);
   }
-  pass.first->m_MeshletUploads = std::move(m_PendingMeshletUploads);
-  m_PendingMeshletUploads.Clear();
+  pass.first->m_MeshletUploads = m_PendingMeshletUploads;
   for (const UploadPassData::MeshletUpload& upload : pass.first->m_MeshletUploads)
     m_uiLastUploadedBytes += upload.m_Meshlets.GetCount() * sizeof(xiiMeshlet);
 

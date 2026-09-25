@@ -168,6 +168,8 @@ private:
   struct Upload
   {
     xiiUInt32 m_uiOffset = 0U;
+    xiiUInt32 m_uiSlotIndex = xiiInvalidIndex;
+    xiiUInt64 m_uiFrameBit = 0U;
     xiiGpuGeometryRecord m_Record;
   };
 
@@ -178,6 +180,7 @@ private:
     xiiDynamicArray<Upload>    m_Uploads;
     struct MeshletUpload
     {
+      xiiUInt64 m_uiUploadId = 0U;
       xiiUInt32 m_uiOffset = 0U;
       xiiDynamicArray<xiiMeshlet> m_Meshlets;
     };
@@ -203,4 +206,5 @@ private:
   xiiUInt64                  m_uiBudgetBytes = 0U;
   xiiUInt64                  m_uiResidentBytes = 0U;
   xiiUInt64                  m_uiLastUploadedBytes = 0U;
+  xiiUInt64                  m_uiNextMeshletUploadId = 1U;
 };
