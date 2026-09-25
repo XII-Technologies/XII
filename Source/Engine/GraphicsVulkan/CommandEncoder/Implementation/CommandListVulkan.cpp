@@ -333,8 +333,17 @@ namespace
 void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags)
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
-  XII_ASSERT_DEV((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags) != vk::PipelineStageFlagBits::eNone, "");
-  XII_ASSERT_DEV((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags) != vk::PipelineStageFlagBits::eNone, "");
+
+  // A graph transition can describe the state used by a different queue. Dedicated transfer
+  // queues do not support shader stages, so use execution-only boundary stages for the half of
+  // a cross-queue transition that has no stage on this queue. Semaphore waits/signals carry the
+  // actual inter-queue memory dependency.
+  vkPipelineSourceStageFlags &= m_PipelineBarrier.m_vkSupportedStageFlags;
+  vkPipelineDestinationStageFlags &= m_PipelineBarrier.m_vkSupportedStageFlags;
+  if (vkPipelineSourceStageFlags == vk::PipelineStageFlagBits::eNone)
+    vkPipelineSourceStageFlags = vk::PipelineStageFlagBits::eTopOfPipe;
+  if (vkPipelineDestinationStageFlags == vk::PipelineStageFlagBits::eNone)
+    vkPipelineDestinationStageFlags = vk::PipelineStageFlagBits::eBottomOfPipe;
 
   if (vkOldLayout == vkNewLayout)
   {
@@ -397,8 +406,13 @@ void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::Image
 void xiiGALCommandListVulkan::MemoryBarrier(vk::AccessFlags vkSourceAccessFlags, vk::AccessFlags vkDestinationAccessFlags, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags)
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
-  XII_ASSERT_DEV((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags) != vk::PipelineStageFlagBits::eNone, "");
-  XII_ASSERT_DEV((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags) != vk::PipelineStageFlagBits::eNone, "");
+
+  vkPipelineSourceStageFlags &= m_PipelineBarrier.m_vkSupportedStageFlags;
+  vkPipelineDestinationStageFlags &= m_PipelineBarrier.m_vkSupportedStageFlags;
+  if (vkPipelineSourceStageFlags == vk::PipelineStageFlagBits::eNone)
+    vkPipelineSourceStageFlags = vk::PipelineStageFlagBits::eTopOfPipe;
+  if (vkPipelineDestinationStageFlags == vk::PipelineStageFlagBits::eNone)
+    vkPipelineDestinationStageFlags = vk::PipelineStageFlagBits::eBottomOfPipe;
 
   m_PipelineBarrier.m_vkMemorySourceStages |= vkPipelineSourceStageFlags;
   m_PipelineBarrier.m_vkMemoryDestinationStages |= vkPipelineDestinationStageFlags;

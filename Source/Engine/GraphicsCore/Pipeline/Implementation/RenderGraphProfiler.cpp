@@ -38,6 +38,16 @@ void xiiRenderGraphTimestampProfiler::Shutdown()
   m_ResolvedQueueDurationsMs.Clear();
 }
 
+bool xiiRenderGraphTimestampProfiler::SupportsDurationQueries(const xiiGALCommandList& commandList) const
+{
+  if (m_pDevice == nullptr || m_pDevice->GetFeatures().m_DurationQueries != xiiGALDeviceFeatureState::Enabled)
+    return false;
+
+  const xiiBitflags<xiiGALCommandQueueFlags> queueFlags = commandList.GetDescription().m_QueueFlags;
+  const bool bTransferOnly = queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && !queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute);
+  return !bTransferOnly || m_pDevice->GetFeatures().m_TransferQueueTimestampQueries == xiiGALDeviceFeatureState::Enabled;
+}
+
 void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandList, xiiUInt64 uiGraphId, xiiUInt32 uiSubmissionIndex, xiiUInt32 uiQueueIndex)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
@@ -53,6 +63,12 @@ void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandLis
   }
   frame.m_SubmissionGraphIds[uiSubmissionIndex]     = uiGraphId;
   frame.m_SubmissionQueueIndices[uiSubmissionIndex] = uiQueueIndex;
+
+  if (!SupportsDurationQueries(commandList))
+  {
+    frame.m_SubmissionQueryActive[uiSubmissionIndex] = false;
+    return;
+  }
 
   xiiSharedPtr<xiiGALQuery>& pSubmissionQuery = frame.m_SubmissionDurationQueries[uiSubmissionIndex];
   if (pSubmissionQuery == nullptr)
@@ -102,8 +118,11 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
   }
 
   PassQueries& pass = frame.m_PassQueries[uiPassIndex];
-  pass.m_bActive    = true;
+  pass.m_bActive    = SupportsDurationQueries(commandList);
   pass.m_sPassName.Assign(sPassName);
+
+  if (!pass.m_bActive)
+    return;
 
   if (pass.m_pDurationQuery == nullptr)
   {

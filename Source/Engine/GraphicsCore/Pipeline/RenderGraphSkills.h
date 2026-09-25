@@ -47,10 +47,17 @@ namespace xiiRenderGraphSkills
     {
       if (!bAsyncQueuesEnabled)
         return 0U;
-      if (flags.IsSet(xiiGALCommandQueueFlags::Transfer) && !flags.IsSet(xiiGALCommandQueueFlags::Graphics))
-        return 2U;
-      if (flags.IsSet(xiiGALCommandQueueFlags::Compute) && !flags.IsSet(xiiGALCommandQueueFlags::Graphics))
+
+      // Queue capability values are hierarchical: Graphics contains Compute and Transfer,
+      // and Compute contains Transfer. IsSet() tests for any overlapping bit and therefore
+      // classifies every non-empty queue mask as graphics. Test complete capabilities from
+      // most to least capable instead.
+      if (flags.AreAllSet(xiiGALCommandQueueFlags::Graphics))
+        return 0U;
+      if (flags.AreAllSet(xiiGALCommandQueueFlags::Compute))
         return 1U;
+      if (flags.AreAllSet(xiiGALCommandQueueFlags::Transfer))
+        return 2U;
       return 0U;
     }
   };

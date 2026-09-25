@@ -1740,13 +1740,13 @@ void xiiGALDeviceVulkan::EndFramePlatform()
 
 xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandQueue.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandQueue.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
 
   return m_pGraphicsCommandQueue.Borrow();
@@ -3142,6 +3142,18 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
   INITIALIZE_DEVICE_FEATURE(InstanceDataStepRate, (extensionFeatures.m_VertexAttributeDivisor.vertexAttributeInstanceRateDivisor != vk::False && extensionFeatures.m_VertexAttributeDivisor.vertexAttributeInstanceRateZeroDivisor != vk::False));
 
   INITIALIZE_DEVICE_FEATURE(NativeFence, extensionFeatures.m_TimelineSemaphore.timelineSemaphore != vk::False);
+
+  // Dedicated transfer queues cannot record vkCmdResetQueryPool. Timestamp profiling on
+  // those queues therefore requires host query reset so stale slots can be recycled before
+  // command recording begins.
+  bool bHasTimestampCapableTransferQueue = false;
+  for (const vk::QueueFamilyProperties& queueFamily : m_PhysicalDeviceQueueFamilyProperties)
+  {
+    const bool bTransferOnly = (queueFamily.queueFlags & vk::QueueFlagBits::eTransfer) != vk::QueueFlags{} &&
+      (queueFamily.queueFlags & (vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute)) == vk::QueueFlags{};
+    bHasTimestampCapableTransferQueue |= bTransferOnly && queueFamily.timestampValidBits > 0U;
+  }
+  INITIALIZE_DEVICE_FEATURE(TransferQueueTimestampQueries, extensionFeatures.m_HostQueryReset.hostQueryReset != vk::False && bHasTimestampCapableTransferQueue);
 
   INITIALIZE_DEVICE_FEATURE(TileShaders, false); // Not currently supported.
 

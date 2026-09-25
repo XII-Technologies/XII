@@ -231,8 +231,9 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
       InFlightCommandBuffer& inFlightCommandBuffer = threadPool.m_InFlightCommandBuffers[i];
       xiiUInt64              uiCompletedFenceValue = xiiMath::MaxValue<xiiUInt64>();
 
-      m_pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&](const vk::Queue&) -> void {
-        uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+      const xiiBitflags<xiiGALCommandQueueFlags> queueFlags = m_pCommandQueueVulkan->GetDescription().m_QueueFlags;
+      m_pDeviceVulkan->LockCommandQueueAndRun(queueFlags, [&](const vk::Queue&) -> void {
+        uiCompletedFenceValue = m_pCommandQueueVulkan->GetCompletedFenceValue();
       });
 
       if (inFlightCommandBuffer.m_uiFenceValue <= uiCompletedFenceValue)
