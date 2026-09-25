@@ -10,6 +10,10 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
+#include <GraphicsFoundation/Tools/MapHelper.h>
+
+#include <Shaders/Visibility/GpuMeshletDispatchConstants.h>
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuVisibilityView>)
 {
   XII_BEGIN_PROPERTIES
@@ -54,6 +58,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityDescription, xiiNoBase, 1, xiiRT
   {
     XII_MEMBER_PROPERTY("MaxInstances", m_uiMaxInstances),
     XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets),
+    XII_MEMBER_PROPERTY("MaxMeshletsPerGeometry", m_uiMaxMeshletsPerGeometry),
     XII_MEMBER_PROPERTY("MaxDrawCommands", m_uiMaxDrawCommands),
     XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight),
     XII_MEMBER_PROPERTY("MaxVisibilitySets", m_uiMaxVisibilitySets),
@@ -99,10 +104,19 @@ namespace
     xiiRenderGraphBufferHandle m_hMeshlets;
     xiiRenderGraphBufferHandle m_hVisibleInstances;
     xiiRenderGraphBufferHandle m_hVisibleInstanceCount;
+    xiiRenderGraphBufferHandle m_hDispatchArguments;
     xiiRenderGraphBufferHandle m_hVisibleMeshlets;
     xiiRenderGraphBufferHandle m_hVisibleMeshletCount;
     xiiSharedPtr<xiiGALComputePipelineState> m_pPipeline;
-    xiiUInt32 m_uiMaxInstances = 0U;
+  };
+
+  struct MeshletDispatchBuildPassData
+  {
+    xiiRenderGraphBufferHandle m_hVisibleInstanceCount;
+    xiiRenderGraphBufferHandle m_hDispatchArguments;
+    xiiRenderGraphBufferHandle m_hConstants;
+    xiiSharedPtr<xiiGALComputePipelineState> m_pPipeline;
+    xiiUInt32 m_uiMaxMeshletGroups = 0U;
   };
 
   struct HiZOcclusionPassData
@@ -145,7 +159,7 @@ xiiGpuVisibilitySystem::~xiiGpuVisibilitySystem() { Shutdown(); }
 xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpuVisibilityDescription& description)
 {
   Shutdown();
-  if (pDevice == nullptr || description.m_uiMaxInstances == 0U || description.m_uiMaxVisibleMeshlets == 0U || description.m_uiMaxDrawCommands == 0U || description.m_uiFramesInFlight == 0U || description.m_uiMaxVisibilitySets == 0U)
+  if (pDevice == nullptr || description.m_uiMaxInstances == 0U || description.m_uiMaxVisibleMeshlets == 0U || description.m_uiMaxMeshletsPerGeometry == 0U || description.m_uiMaxDrawCommands == 0U || description.m_uiFramesInFlight == 0U || description.m_uiMaxVisibilitySets == 0U)
     return XII_FAILURE;
   m_Description = description;
   m_pDevice = pDevice;
@@ -156,15 +170,17 @@ xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpu
 
   m_pInstanceCullPipeline = LoadComputePipeline("Shaders/Visibility/GpuSceneInstanceCull.xiiShader");
   m_pHiZOcclusionPipeline = LoadComputePipeline("Shaders/Visibility/GpuSceneHiZOcclusion.xiiShader");
+  m_pMeshletDispatchBuildPipeline = LoadComputePipeline("Shaders/Visibility/GpuSceneMeshletDispatchBuild.xiiShader");
   m_pMeshletCullPipeline  = LoadComputePipeline("Shaders/Visibility/GpuSceneMeshletCull.xiiShader");
   m_pCommandBuildPipeline = LoadComputePipeline("Shaders/Visibility/GpuSceneCommandBuild.xiiShader");
-  return m_pInstanceCullPipeline != nullptr && m_pHiZOcclusionPipeline != nullptr && m_pMeshletCullPipeline != nullptr && m_pCommandBuildPipeline != nullptr ? XII_SUCCESS : XII_FAILURE;
+  return m_pInstanceCullPipeline != nullptr && m_pHiZOcclusionPipeline != nullptr && m_pMeshletDispatchBuildPipeline != nullptr && m_pMeshletCullPipeline != nullptr && m_pCommandBuildPipeline != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
 void xiiGpuVisibilitySystem::Shutdown()
 {
   m_pInstanceCullPipeline.Clear();
   m_pHiZOcclusionPipeline.Clear();
+  m_pMeshletDispatchBuildPipeline.Clear();
   m_pMeshletCullPipeline.Clear();
   m_pCommandBuildPipeline.Clear();
   m_pSceneBuffers.Clear();
@@ -308,6 +324,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
   const auto drawCountDesc = MakeBuffer(sizeof(xiiUInt32), sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments);
   const auto meshletDesc = MakeBuffer(m_Description.m_uiMaxVisibleMeshlets * sizeof(xiiVec2U32), sizeof(xiiVec2U32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
   const auto commandDesc = MakeBuffer(m_Description.m_uiMaxDrawCommands * sizeof(xiiMeshDrawCommand), sizeof(xiiMeshDrawCommand), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments);
+  const auto meshletDispatchDesc = MakeBuffer(3U * sizeof(xiiUInt32), sizeof(xiiUInt32), xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments);
 
   auto reset = graph.AddPass<ResetPassData>(
     makeName(" GPU Visibility Reset"), xiiGALCommandQueueFlags::Transfer,
@@ -383,6 +400,36 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
     hVisibleInstanceCount = hiZCull.first->m_hVisibleCount;
   }
 
+  auto meshletDispatchBuild = graph.AddPass<MeshletDispatchBuildPassData>(
+    makeName(" GPU Meshlet Dispatch Build"), computeQueue,
+    [&](MeshletDispatchBuildPassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_hVisibleInstanceCount = builder.ReadBuffer(hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hDispatchArguments = builder.WriteBuffer(makeName(" GPU Meshlet Dispatch Arguments"), meshletDispatchDesc, xiiGALResourceStateFlags::UnorderedAccess);
+
+      xiiGALBufferCreationDescription constantsDescription;
+      constantsDescription.m_uiSize = sizeof(xiiGpuMeshletDispatchConstants);
+      constantsDescription.m_BindFlags = xiiGALBindFlags::UniformBuffer;
+      constantsDescription.m_Usage = xiiGALResourceUsage::Dynamic;
+      constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      data.m_hConstants = builder.WriteBuffer(makeName(" GPU Meshlet Dispatch Constants"), constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+    },
+    [](const MeshletDispatchBuildPassData& data, xiiRenderGraphPassContext& context) {
+      xiiGALCommandList& cmd = context.GetCommandList();
+      xiiGALBuffer* pConstants = context.GetBuffer(data.m_hConstants);
+      {
+        xiiGALMapHelper<xiiGpuMeshletDispatchConstants> constants(cmd, pConstants, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        constants->MaxMeshletGroups = data.m_uiMaxMeshletGroups;
+      }
+      cmd.SetPipelineState(data.m_pPipeline.Borrow());
+      cmd.ResolveAndSetConstantBuffer("xiiGpuMeshletDispatchConstants", pConstants, xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceBufferView("g_VisibleInstanceCount", context.GetBuffer(data.m_hVisibleInstanceCount)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_MeshletDispatchArguments", context.GetBuffer(data.m_hDispatchArguments)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
+      cmd.DispatchCompute({1U, 1U, 1U});
+    });
+  meshletDispatchBuild.first->m_pPipeline = m_pMeshletDispatchBuildPipeline;
+  meshletDispatchBuild.first->m_uiMaxMeshletGroups = (m_Description.m_uiMaxMeshletsPerGeometry + 63U) / 64U;
+
   auto meshletCull = graph.AddPass<MeshletCullPassData>(
     makeName(" GPU Meshlet Culling"), computeQueue,
     [&](MeshletCullPassData& data, xiiRenderGraphBuilder& builder) {
@@ -392,6 +439,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       data.m_hMeshlets = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVisibleInstances = builder.ReadBuffer(hVisibleInstances, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVisibleInstanceCount = builder.ReadBuffer(hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hDispatchArguments = builder.ReadBuffer(meshletDispatchBuild.first->m_hDispatchArguments, xiiGALResourceStateFlags::IndirectArgument);
       data.m_hVisibleMeshlets = builder.WriteBuffer(makeName(" GPU Visible Meshlets"), meshletDesc, xiiGALResourceStateFlags::UnorderedAccess);
       data.m_hVisibleMeshletCount = builder.WriteBuffer(reset.first->m_hVisibleMeshletCount, xiiGALResourceStateFlags::UnorderedAccess);
     },
@@ -407,10 +455,9 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       cmd.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshlets", context.GetBuffer(data.m_hVisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshletCount", context.GetBuffer(data.m_hVisibleMeshletCount)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DispatchCompute({(data.m_uiMaxInstances + 63U) / 64U, 1U, 1U});
+      cmd.DispatchComputeIndirect({context.GetBuffer(data.m_hDispatchArguments), xiiGALStateTransitionMode::None});
     });
   meshletCull.first->m_pPipeline = m_pMeshletCullPipeline;
-  meshletCull.first->m_uiMaxInstances = uiInstanceCount;
 
   auto commandBuild = graph.AddPass<CommandBuildPassData>(
     makeName(" GPU Indirect Command Build"), computeQueue,
