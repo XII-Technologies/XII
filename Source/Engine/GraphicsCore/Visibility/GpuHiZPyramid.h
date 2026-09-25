@@ -38,7 +38,7 @@ public:
   void Invalidate();
 
   /// Imports frame N-1 for sampling. Returns an invalid handle until one complete pyramid has
-  /// been scheduled after initialization, resize, or invalidation.
+  /// executed after initialization, resize, or invalidation.
   [[nodiscard]] xiiRenderGraphTextureHandle ImportPrevious(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
 
   /// Rebuilds the current ring slot from the rendered scene depth. The pass is a side effect
@@ -67,4 +67,3 @@ private:
   xiiUInt32 m_uiMipLevelCount = 0U;
   bool m_bHistoryValid = false;
 };
-

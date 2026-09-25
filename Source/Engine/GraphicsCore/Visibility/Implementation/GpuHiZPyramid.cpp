@@ -191,7 +191,7 @@ void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameInde
       builder.SetPassSideEffects(true);
       builder.SetPassAllowMerge(false);
     },
-    [](const BuildPassData& data, xiiRenderGraphPassContext& context) {
+    [this](const BuildPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& commandList = context.GetCommandList();
       xiiGALTexture* pDestination = context.GetTexture(data.m_hDestination);
       xiiGALBuffer* pConstants = context.GetBuffer(data.m_hConstants);
@@ -244,13 +244,17 @@ void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameInde
       for (xiiUInt32 uiMip = 0U; uiMip + 1U < data.m_pDestinationViews.GetCount(); ++uiMip)
         TransitionMip(commandList, pDestination, uiMip, xiiGALResourceStateFlags::ShaderResource, xiiGALResourceStateFlags::UnorderedAccess);
       pDestination->SetResourceState(xiiGALResourceStateFlags::UnorderedAccess);
+
+      // Promote temporal history only after the render graph actually records this pass. Merely
+      // scheduling a build is insufficient: graph compilation may fail or execution may be
+      // skipped, in which case exposing this ring slot next frame would sample unwritten data.
+      m_bHistoryValid = true;
     }, true);
 
   build.first->m_pPipeline = m_pBuildPipeline;
   build.first->m_pSourceViews = m_Frames[uiSlot].m_pMipShaderResourceViews;
   build.first->m_pDestinationViews = m_Frames[uiSlot].m_pMipUnorderedAccessViews;
   build.first->m_Size = m_Size;
-  m_bHistoryValid = true;
 }
 
 xiiSharedPtr<xiiGALComputePipelineState> xiiGpuHiZPyramid::LoadComputePipeline(xiiStringView sShaderPath)
