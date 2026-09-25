@@ -65,6 +65,7 @@ namespace
     xiiRenderGraphBufferHandle  m_hGeometry;
     xiiRenderGraphBufferHandle  m_hMeshlets;
     xiiRenderGraphBufferHandle  m_hVisibleMeshlets;
+    xiiRenderGraphBufferHandle  m_hVisibleMeshletCount;
     xiiRenderGraphBufferHandle  m_hIndirectCommands;
     xiiRenderGraphBufferHandle  m_hIndirectCommandCount;
     xiiRenderGraphBufferHandle  m_hMaterials;
@@ -187,6 +188,7 @@ public:
           data.m_hGeometry = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
           data.m_hMeshlets = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
           data.m_hVisibleMeshlets = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
+          data.m_hVisibleMeshletCount = builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
           data.m_hIndirectCommands = builder.ReadBuffer(visibility.m_hIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
           data.m_hIndirectCommandCount = builder.ReadBuffer(visibility.m_hIndirectCommandCount, xiiGALResourceStateFlags::IndirectArgument);
           data.m_hMaterials = builder.ReadBuffer(hMaterials, xiiGALResourceStateFlags::ShaderResource);
@@ -467,6 +469,9 @@ private:
       constants->MaterialFrameBase = data.m_uiMaterialFrameBase;
       constants->MaterialStride = data.m_uiMaterialStride;
       constants->VertexStride = sizeof(xiiMeshPackedVertex);
+      constants->MeshDispatchGroupCountX = m_Visibility.GetMeshDispatchGroupCountX();
+      constants->MeshDispatchGroupCountY = m_Visibility.GetMeshDispatchGroupCountY();
+      constants->Padding = xiiVec2U32::MakeZero();
       const xiiGpuDrivenSceneLight& sun = m_World.GetSunLight();
       constants->SunDirectionIntensity = xiiVec4(sun.m_vDirection.x, sun.m_vDirection.y, sun.m_vDirection.z, sun.m_fIntensity);
       constants->AmbientColor = xiiVec4(0.12f, 0.15f, 0.22f, 1.0f);
@@ -480,6 +485,7 @@ private:
     commandList.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_Meshlets", context.GetBuffer(data.m_hMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_VisibleMeshlets", context.GetBuffer(data.m_hVisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
+    commandList.ResolveAndSetShaderResourceBufferView("g_VisibleMeshletCount", context.GetBuffer(data.m_hVisibleMeshletCount)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_MaterialData", context.GetBuffer(data.m_hMaterials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
     m_World.GetBindlessResources().BindBufferSRVs(commandList, "g_Buffers", xiiGALShaderType::Mesh);
     commandList.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess();

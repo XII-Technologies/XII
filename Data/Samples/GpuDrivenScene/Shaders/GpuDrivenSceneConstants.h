@@ -13,7 +13,9 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiGpuDrivenSceneConstants)
   UINT1(MaterialFrameBase);
   UINT1(MaterialStride);
   UINT1(VertexStride);
+  UINT1(MeshDispatchGroupCountX);
+  UINT1(MeshDispatchGroupCountY);
+  UINT2(Padding);
   FLOAT4(SunDirectionIntensity);
   FLOAT4(AmbientColor);
 };
-

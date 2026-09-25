@@ -65,7 +65,9 @@ struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityDescription
   /// Advisory content budget for meshlets in one resident LOD. Dispatch dimensions are derived
   /// from residency metadata so exceeding this value reports a warning but never drops work.
   xiiUInt32 m_uiMaxMeshletsPerGeometry = 4096U;
-  xiiUInt32 m_uiMaxDrawCommands = 1024U * 1024U;
+  /// Reserved for compatibility with multi-command consumers. The mesh-shader path tiles the
+  /// compact list into one indirect command and therefore requires exactly one command slot.
+  xiiUInt32 m_uiMaxDrawCommands = 1U;
   xiiUInt32 m_uiFramesInFlight = 3U;
   xiiUInt32 m_uiMaxVisibilitySets = 16U;
 };
@@ -110,6 +112,9 @@ public:
     return AddPasses(graph, uiFrameIndex, scene, view, geometry, xiiGpuVisibilityPassDescription{}, hHiZ);
   }
 
+  [[nodiscard]] xiiUInt32 GetMeshDispatchGroupCountX() const { return m_uiMeshDispatchGroupCountX; }
+  [[nodiscard]] xiiUInt32 GetMeshDispatchGroupCountY() const { return m_uiMeshDispatchGroupCountY; }
+
 private:
   xiiSharedPtr<xiiGALComputePipelineState> LoadComputePipeline(xiiStringView sShaderPath);
   xiiUInt32 GetOrCreateVisibilitySetIndex(xiiStringView sName);
@@ -128,4 +133,7 @@ private:
   xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pCommandBuildPipeline;
   xiiUInt32 m_uiLargestReportedMeshletCount = 0U;
+  xiiUInt32 m_uiMeshDispatchGroupCountX = 0U;
+  xiiUInt32 m_uiMeshDispatchGroupCountY = 0U;
+  xiiUInt32 m_uiMeshDispatchGroupTotalCount = 0U;
 };

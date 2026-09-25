@@ -6,6 +6,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include "GpuSceneCommandBuildConstants.h"
+
 struct MeshDispatchIndirectArguments
 {
   uint ThreadGroupCountX;
@@ -21,7 +23,7 @@ RWStructuredBuffer<uint> g_IndirectCommandCount;
 [numthreads(1, 1, 1)]
 void main()
 {
-  const uint count = g_VisibleMeshletCount[0];
+  const uint count = min(g_VisibleMeshletCount[0], MaxMeshGroupTotalCount);
   uint commandCapacity, commandStride;
   g_IndirectCommands.GetDimensions(commandCapacity, commandStride);
 
@@ -35,9 +37,10 @@ void main()
   }
 
   MeshDispatchIndirectArguments command;
-  command.ThreadGroupCountX = count;
-  command.ThreadGroupCountY = 1u;
-  command.ThreadGroupCountZ = 1u;
+  command.ThreadGroupCountX = min(count, MaxMeshGroupCountX);
+  const uint rows = (count + MaxMeshGroupCountX - 1u) / MaxMeshGroupCountX;
+  command.ThreadGroupCountY = min(rows, MaxMeshGroupCountY);
+  command.ThreadGroupCountZ = (rows + MaxMeshGroupCountY - 1u) / MaxMeshGroupCountY;
   g_IndirectCommands[0] = command;
   g_IndirectCommandCount[0] = 1u;
 }

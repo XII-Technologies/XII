@@ -17,6 +17,7 @@ StructuredBuffer<GpuSceneInstance> g_SceneInstances;
 StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<GpuMeshlet> g_Meshlets;
 StructuredBuffer<uint2> g_VisibleMeshlets;
+StructuredBuffer<uint> g_VisibleMeshletCount;
 ByteAddressBuffer g_Buffers[];
 
 struct MeshVertex
@@ -40,7 +41,16 @@ void main(uint threadIndex : SV_GroupThreadID,
           out vertices MeshVertex vertices[64],
           out indices uint3 triangles[126])
 {
-  const uint2 visible = g_VisibleMeshlets[groupIndex.x];
+  const uint visibleMeshletIndex = groupIndex.x +
+    groupIndex.y * MeshDispatchGroupCountX +
+    groupIndex.z * MeshDispatchGroupCountX * MeshDispatchGroupCountY;
+  if (visibleMeshletIndex >= g_VisibleMeshletCount[0])
+  {
+    SetMeshOutputCounts(0u, 0u);
+    return;
+  }
+
+  const uint2 visible = g_VisibleMeshlets[visibleMeshletIndex];
   const GpuSceneInstance instance = g_SceneInstances[visible.x];
   const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
   const GpuMeshlet meshlet = g_Meshlets[visible.y];
