@@ -1,0 +1,24 @@
+// Builds DispatchIndirect arguments without a CPU readback of the compact instance count.
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include "GpuMeshletDispatchConstants.h"
+
+StructuredBuffer<uint> g_VisibleInstanceCount;
+RWStructuredBuffer<uint> g_MeshletDispatchArguments;
+
+[numthreads(1, 1, 1)]
+void main()
+{
+  const uint visibleCount = g_VisibleInstanceCount[0];
+
+  // Vulkan and D3D guarantee at least 65,535 groups in Y and Z. Tile the compact
+  // instance list over both dimensions so visibility sets can exceed 65K objects.
+  g_MeshletDispatchArguments[0] = visibleCount == 0u ? 0u : MaxMeshletGroups;
+  g_MeshletDispatchArguments[1] = min(visibleCount, 65535u);
+  g_MeshletDispatchArguments[2] = (visibleCount + 65534u) / 65535u;
+}

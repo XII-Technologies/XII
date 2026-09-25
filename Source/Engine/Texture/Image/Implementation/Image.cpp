@@ -273,6 +273,8 @@ void xiiImageView::ReinterpretAs(xiiGALResourceFormat::Enum format)
   const bool bTargetCompressed = xiiGALResourceFormat::IsMultiplanar(format) ? false : xiiGALTextureUtilities::GetResourceFormatProperties(format).IsCompressed();
 
   XII_ASSERT_DEBUG(bTargetCompressed == bSourceCompressed, "Cannot reinterpret compressed and non-compressed formats");
+  XII_IGNORE_UNUSED(bSourceCompressed);
+  XII_IGNORE_UNUSED(bTargetCompressed);
 
   xiiGALTextureCreationDescription newDescription = m_Description;
   newDescription.m_Format                         = format;

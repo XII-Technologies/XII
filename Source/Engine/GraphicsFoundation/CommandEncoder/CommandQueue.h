@@ -33,6 +33,11 @@ public:
   /// This returns the last completed value of the internal fence.
   virtual xiiUInt64 GetCompletedFenceValue() = 0;
 
+  /// Blocks the calling thread until the queue's internal fence reaches the requested value.
+  /// Backends should override this with an exact fence wait. The default implementation falls
+  /// back to draining the queue, which preserves correctness for backends without fine-grained waits.
+  virtual void WaitForFenceValue(xiiUInt64 uiFenceValue);
+
   /// Submits a recorded command list to the GPU queue for execution.
   ///
   /// \note Command list must be compatible with the queue's flag configuration.

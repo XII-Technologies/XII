@@ -221,17 +221,19 @@ xiiString xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnu
     break;
     case xiiGALShaderType::Amplification:
     {
-      if (szMajor >= '6' && szMinor >= '5')
+      if (szMajor >= '6')
       {
-        sb.SetFormat("{}_{}_{}", "as", xiiArgC(szMajor), xiiArgC(szMinor));
+        // Amplification and mesh stages were introduced in SM 6.5. A renderer-wide baseline such
+        // as VK_SM60 must not turn an otherwise valid mesh shader into an empty DXC profile.
+        sb.SetFormat("{}_{}_{}", "as", xiiArgC(szMajor), xiiArgC(xiiMath::Max(szMinor, '5')));
       }
     }
     break;
     case xiiGALShaderType::Mesh:
     {
-      if (szMajor >= '6' && szMinor >= '5')
+      if (szMajor >= '6')
       {
-        sb.SetFormat("{}_{}_{}", "ms", xiiArgC(szMajor), xiiArgC(szMinor));
+        sb.SetFormat("{}_{}_{}", "ms", xiiArgC(szMajor), xiiArgC(xiiMath::Max(szMinor, '5')));
       }
     }
     break;
@@ -353,6 +355,10 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
   args.PushBack(L"-Zpc"); // Matrices in column-major order
   args.PushBack(L"-fvk-use-dx-position-w");
   args.PushBack(bMeshShaderProfile ? L"-fspv-target-env=vulkan1.3" : L"-fspv-target-env=vulkan1.1");
+  // Runtime descriptor arrays are the shader-side contract for the engine bindless tables.
+  // DXC requires the SPIR-V extension to be explicitly permitted even when the Vulkan target and
+  // device expose descriptor indexing.
+  args.PushBack(L"-fspv-extension=SPV_EXT_descriptor_indexing");
 
   if (bMeshShaderProfile)
   {
@@ -1020,11 +1026,12 @@ xiiResult xiiShaderCompilerSPIRV::FillSRVResourceBinding(xiiGALShaderResourceDes
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
   {
-    if (info.type_description->op == SpvOp::SpvOpTypeStruct)
-    {
-      binding.m_Type = xiiGALShaderResourceType::BufferSRV;
-      return XII_SUCCESS;
-    }
+    // SPIR-V represents StructuredBuffer and ByteAddressBuffer as storage buffers. For a
+    // runtime descriptor array the reflected top-level type is OpTypeRuntimeArray rather than
+    // OpTypeStruct, but the resource remains a read-only buffer SRV (the HLSL parser has already
+    // classified access intent before this backend-specific descriptor mapping).
+    binding.m_Type = xiiGALShaderResourceType::BufferSRV;
+    return XII_SUCCESS;
   }
 
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE || info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -1172,6 +1179,15 @@ xiiResult xiiShaderCompilerSPIRV::FillSRVResourceBinding(xiiGALShaderResourceDes
 
 xiiResult xiiShaderCompilerSPIRV::FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
+  // SPIR-V represents HLSL RWStructuredBuffer and RWByteAddressBuffer resources as storage
+  // buffers. The shader parser has already classified this binding as a UAV, so retain that
+  // access intent instead of rejecting the descriptor or misclassifying it as an SRV.
+  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+  {
+    binding.m_Type = xiiGALShaderResourceType::BufferUAV;
+    return XII_SUCCESS;
+  }
+
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
   {
     binding.m_Type = xiiGALShaderResourceType::TextureUAV;

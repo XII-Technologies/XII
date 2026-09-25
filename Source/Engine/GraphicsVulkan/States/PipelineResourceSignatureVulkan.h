@@ -17,6 +17,7 @@ struct xiiGALPipelineResourceDescriptionVulkan : xiiHashableStruct<xiiGALPipelin
   xiiUInt32                     m_uiSamplerIndex       = xiiInvalidIndex;
   xiiUInt32                     m_uiArraySize          = 0U;
   xiiBitflags<xiiGALShaderType> m_ShaderStages         = xiiGALShaderType::Unknown;
+  xiiBitflags<xiiGALPipelineResourceFlags> m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
   bool                          m_bHasImmutableSampler = false;
 };
 

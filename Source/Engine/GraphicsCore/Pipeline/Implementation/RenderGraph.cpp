@@ -513,15 +513,11 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 {
   XII_ASSERT_DEV(!m_bIsSetupOpen, "Cannot compile while setup is still open.");
 
-  // Signature check must happen before compiled data is cleared. Clearing first would turn a
-  // cache hit into an empty execution plan.
+  // The signature remains useful for diagnostics and future immutable-plan caching. Frame setup
+  // rebuilds pass data, imported objects, initial states, and resource descriptions, so retaining
+  // a previous frame's compiled plan would leave dangling pass-data pointers and stale barriers.
   m_Statistics = {};
   PhaseG_SignatureAndCache(settings);
-  if (m_Statistics.m_bUsedCachedCompile)
-  {
-    m_LastCompileSettings = settings;
-    return XII_SUCCESS;
-  }
 
   m_CompiledPasses.Clear();
   m_Barriers.Clear();
@@ -562,12 +558,13 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
     return XII_SUCCESS;
   }
 
+  // Phase E: multi-queue scheduling.
+  // Queue assignment must precede lifetime analysis: aliasing is only legal when both
+  // logical resources live on the same ordered queue timeline.
+  PhaseE_MultiQueueScheduling(sortedIndices, nullptr, settings);
+
   // Phase C: transient resource lifetime analysis.
   PhaseC_LifetimeAnalysis(sortedIndices);
-
-  // Phase E: multi-queue scheduling.
-  // Pass nullptr device here, queue checks happen at Execute time.
-  PhaseE_MultiQueueScheduling(sortedIndices, nullptr, settings);
 
   // Phase D: barrier synthesis. Queue assignment runs first so barriers can encode ownership
   // transfers and the scheduler can pair them with fence waits.
@@ -655,6 +652,10 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
 
   xiiTemporaryArray<xiiTemporaryHybridArray<xiiUInt32, 4>> adjacency;
   adjacency.SetCount(uiPassCount);
+  // Only true data-flow edges participate in liveness. WAW/WAR edges order accesses to
+  // the same physical allocation, but must not keep otherwise-unused passes alive.
+  xiiTemporaryArray<xiiTemporaryHybridArray<xiiUInt32, 4>> dataAdjacency;
+  dataAdjacency.SetCount(uiPassCount);
 
   // Build producer map: (resource index, version) -> pass index.
   xiiHashTable<xiiUInt64, xiiUInt32> producerMap; // Key = resource index | (version << 32).
@@ -676,6 +677,12 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
     ++inDegree[uiConsumerPassIndex];
   };
 
+  auto AddDataDependency = [&](xiiUInt32 uiProducerPassIndex, xiiUInt32 uiConsumerPassIndex) {
+    AddDependency(uiProducerPassIndex, uiConsumerPassIndex);
+    if (uiProducerPassIndex != uiConsumerPassIndex && !dataAdjacency[uiProducerPassIndex].Contains(uiConsumerPassIndex))
+      dataAdjacency[uiProducerPassIndex].PushBack(uiConsumerPassIndex);
+  };
+
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < uiPassCount; ++uiPassIndex)
   {
     for (const ResourceUsage& read : m_Passes[uiPassIndex].m_Reads)
@@ -685,7 +692,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
 
       if (producerMap.TryGetValue(uiKey, uiProducerPassIndex) && uiProducerPassIndex != uiPassIndex)
       {
-        AddDependency(uiProducerPassIndex, uiPassIndex);
+        AddDataDependency(uiProducerPassIndex, uiPassIndex);
       }
     }
 
@@ -702,6 +709,15 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
       if (producerMap.TryGetValue(uiParentKey, uiProducerPassIndex))
       {
         AddDependency(uiProducerPassIndex, uiPassIndex);
+      }
+
+      // A new version reuses the same physical resource. Every reader of the parent
+      // version must finish before the overwrite, including readers declared after the
+      // writer and readers running on another queue (WAR dependency).
+      const VersionEntry& parentVersion = m_Resources[write.m_uiResourceIndex].m_Versions[version.m_uiParentVersion];
+      for (xiiUInt32 uiReaderPassIndex : parentVersion.m_ReaderPassIndices)
+      {
+        AddDependency(uiReaderPassIndex, uiPassIndex);
       }
     }
   }
@@ -766,7 +782,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
 
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < uiPassCount; ++uiPassIndex)
   {
-    for (xiiUInt32 uiSuccessor : adjacency[uiPassIndex])
+    for (xiiUInt32 uiSuccessor : dataAdjacency[uiPassIndex])
     {
       reverseAdjacency[uiSuccessor].PushBack(uiPassIndex);
     }
@@ -1008,6 +1024,7 @@ void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResour
     // End barrier goes on consumer.
     xiiRenderGraphBarrierDescription endBarrier = barrier;
     endBarrier.m_TransitionType                 = xiiGALStateTransitionType::End;
+    endBarrier.m_TransitionFlags                = xiiGALStateTransitionFlags::UpdateState;
     const xiiUInt32 uiEndBarrierIndex           = m_Barriers.GetCount();
     m_Barriers.PushBack(endBarrier);
 
@@ -1217,7 +1234,12 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
     {
       const VersionEntry& version = m_Resources[write.m_uiResourceIndex].m_Versions[write.m_uiVersion];
       if (version.m_uiParentVersion != 0xFFFFU)
-        AddProducer(m_Resources[write.m_uiResourceIndex].m_Versions[version.m_uiParentVersion].m_uiProducerPassIdx);
+      {
+        const VersionEntry& parentVersion = m_Resources[write.m_uiResourceIndex].m_Versions[version.m_uiParentVersion];
+        AddProducer(parentVersion.m_uiProducerPassIdx);
+        for (xiiUInt32 uiReaderPassIndex : parentVersion.m_ReaderPassIndices)
+          AddProducer(uiReaderPassIndex);
+      }
     }
   }
 
@@ -1309,16 +1331,8 @@ void xiiRenderGraph::PhaseG_SignatureAndCache(const xiiRenderGraphCompileSetting
 {
   const xiiUInt64 uiSignature     = ComputeSignature(m_Passes) ^ static_cast<xiiUInt64>(settings.m_uiCacheSalt);
   m_Statistics.m_uiGraphSignature = uiSignature;
-
-  if (settings.m_bEnableCompileCache && uiSignature == m_uiLastSignature && m_bIsCompiled)
-  {
-    m_Statistics.m_bUsedCachedCompile = true;
-  }
-  else
-  {
-    m_uiLastSignature                 = uiSignature;
-    m_Statistics.m_bUsedCachedCompile = false;
-  }
+  m_uiLastSignature                 = uiSignature;
+  m_Statistics.m_bUsedCachedCompile = false;
 }
 
 xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, xiiStringBuilder* out_pError)
@@ -1431,9 +1445,15 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(submission.m_QueueFlags);
     XII_ASSERT_DEV(pQueue != nullptr, "Could not obtain a command queue.");
 
+    // Backends may legally fall back to a more capable queue (for example, compute on
+    // graphics when no asynchronous queue was created). Record and submit a command list
+    // using the physical queue's flags so GAL validation and backend pool selection agree.
+    const xiiBitflags<xiiGALCommandQueueFlags> actualQueueFlags   = pQueue->GetDescription().m_QueueFlags;
+    const xiiUInt32                            uiActualQueueIndex = xiiRenderGraphSkills::Scheduling::GetQueueIndex(actualQueueFlags, true);
+
     // Create a command list for this submission.
     xiiGALCommandListCreationDescription commandListDescription;
-    commandListDescription.m_QueueFlags          = submission.m_QueueFlags;
+    commandListDescription.m_QueueFlags          = actualQueueFlags;
     xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
     XII_ASSERT_ALWAYS(pCommandList != nullptr, "Failed to create command list.");
 
@@ -1441,7 +1461,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     if (bEnableGpuProfiling)
     {
-      pProfiler->OnGraphBegin(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, submission.m_uiQueueIndex);
+      pProfiler->OnGraphBegin(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
     }
 
     // Emit cross-queue waits.
@@ -1690,7 +1710,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     if (bEnableGpuProfiling)
     {
-      pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, submission.m_uiQueueIndex);
+      pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
     }
 
     pCommandList->End();

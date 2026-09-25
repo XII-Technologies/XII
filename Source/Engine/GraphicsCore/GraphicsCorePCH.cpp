@@ -60,6 +60,7 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Decals_Implementation_DecalComponent);
   XII_STATICLINK_REFERENCE(GraphicsCore_Decals_Implementation_DecalResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_GPUResourcePool_Implementation_GPUResourcePool);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Geometry_Implementation_GeometryResidency);
   XII_STATICLINK_REFERENCE(GraphicsCore_Lights_Implementation_AmbientLightComponent);
   XII_STATICLINK_REFERENCE(GraphicsCore_Lights_Implementation_BoxReflectionProbeComponent);
   XII_STATICLINK_REFERENCE(GraphicsCore_Lights_Implementation_ClusteredDataProvider);
@@ -133,6 +134,9 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Rasterizer_Thirdparty_Rasterizer);
   XII_STATICLINK_REFERENCE(GraphicsCore_RenderContext_Implementation_RenderContext);
   XII_STATICLINK_REFERENCE(GraphicsCore_RenderWorld_Implementation_RenderWorld);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Scene_Implementation_SceneDatabase);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Scene_Implementation_SceneSpatialHierarchy);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Scene_Implementation_SceneTypes);
   XII_STATICLINK_REFERENCE(GraphicsCore_ShaderCompiler_Implementation_PermutationGenerator);
   XII_STATICLINK_REFERENCE(GraphicsCore_ShaderCompiler_Implementation_ShaderCompiler);
   XII_STATICLINK_REFERENCE(GraphicsCore_ShaderCompiler_Implementation_ShaderManager);
@@ -150,5 +154,6 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureCubeResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureLoader);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureUtils);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Visibility_Implementation_GpuVisibilitySystem);
   XII_STATICLINK_REFERENCE(GraphicsCore_Utils_Implementation_WorldGeoExtractionUtil);
 }

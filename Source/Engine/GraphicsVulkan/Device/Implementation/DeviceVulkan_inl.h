@@ -48,13 +48,13 @@ XII_ALWAYS_INLINE void xiiGALDeviceVulkan::LockCommandQueueAndRun(xiiBitflags<xi
 
 XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& xiiGALDeviceVulkan::GetCommandQueueInformation(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics))
     return m_GraphicsQueueInformation;
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_ComputeQueueInformation;
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_TransferQueueInformation;
 
   return m_GraphicsQueueInformation;
@@ -62,13 +62,13 @@ XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& xiiGALDeviceVulkan::GetCom
 
 XII_ALWAYS_INLINE xiiMutex& xiiGALDeviceVulkan::GetCommandQueueMutex(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics))
     return m_GraphicsQueueMutex;
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_ComputeQueueMutex;
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_TransferQueueMutex;
 
   return m_GraphicsQueueMutex;
@@ -76,13 +76,13 @@ XII_ALWAYS_INLINE xiiMutex& xiiGALDeviceVulkan::GetCommandQueueMutex(xiiBitflags
 
 XII_ALWAYS_INLINE xiiGALCommandBufferPoolVulkan* xiiGALDeviceVulkan::GetCommandBufferPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandBufferPool.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandBufferPool.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandBufferPool.Borrow();
 
   return m_pGraphicsCommandBufferPool.Borrow();
@@ -90,13 +90,13 @@ XII_ALWAYS_INLINE xiiGALCommandBufferPoolVulkan* xiiGALDeviceVulkan::GetCommandB
 
 XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* xiiGALDeviceVulkan::GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandQueueQueryPool.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandQueueQueryPool.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueueQueryPool.Borrow();
 
   return m_pGraphicsCommandQueueQueryPool.Borrow();

@@ -1,0 +1,76 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include "GpuSceneCommon.h"
+
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuVisibilityView> g_VisibilityView;
+StructuredBuffer<uint> g_CandidateInstances;
+StructuredBuffer<uint> g_CandidateCount;
+Texture2D<float> g_HiZ;
+RWStructuredBuffer<uint> g_VisibleInstances;
+RWStructuredBuffer<uint> g_VisibleInstanceCount;
+
+// Returns false when the sphere crosses the near plane. Such objects stay visible because a
+// finite screen-space rectangle cannot conservatively represent them.
+bool ProjectSphere(GpuSceneInstance instance, GpuVisibilityView view, out float4 screenRect, out float nearestDepth)
+{
+  screenRect = float4(0.0f, 0.0f, 1.0f, 1.0f);
+  nearestDepth = 1.0f;
+  const float4 clip = mul(view.ViewProjectionMatrix, float4(instance.BoundsCenterRadius.xyz, 1.0f));
+  if (clip.w <= instance.BoundsCenterRadius.w)
+    return false;
+
+  const float inverseW = rcp(clip.w);
+  const float2 center = clip.xy * inverseW * float2(0.5f, -0.5f) + 0.5f;
+  const float projectedRadius = abs(view.ViewProjectionMatrix[1][1]) * instance.BoundsCenterRadius.w * inverseW * 0.5f;
+  screenRect = saturate(float4(center - projectedRadius, center + projectedRadius));
+
+  // Standard Z maps nearer geometry to smaller device depth. Subtracting the projected
+  // radius yields a conservative nearest point for the sphere.
+  nearestDepth = saturate(clip.z * inverseW - projectedRadius * 2.0f);
+  return true;
+}
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint candidateCount = g_CandidateCount[0];
+  if (dispatchThreadId.x >= candidateCount)
+    return;
+
+  const uint instanceIndex = g_CandidateInstances[dispatchThreadId.x];
+  const GpuSceneInstance instance = g_SceneInstances[instanceIndex];
+  const GpuVisibilityView view = g_VisibilityView[0];
+
+  float4 rect;
+  float nearestDepth;
+  bool visible = true;
+  if (ProjectSphere(instance, view, rect, nearestDepth))
+  {
+    uint width, height, levels;
+    g_HiZ.GetDimensions(0, width, height, levels);
+    const float2 footprint = (rect.zw - rect.xy) * float2(width, height);
+    const uint mip = min((uint)max(0.0f, floor(log2(max(max(footprint.x, footprint.y), 1.0f)))), max(levels, 1u) - 1u);
+
+    uint mipWidth, mipHeight, ignoredLevels;
+    g_HiZ.GetDimensions(mip, mipWidth, mipHeight, ignoredLevels);
+    const int2 maximumPixel = int2(max(mipWidth, 1u) - 1u, max(mipHeight, 1u) - 1u);
+    const int2 p0 = clamp(int2(rect.xy * float2(mipWidth, mipHeight)), int2(0, 0), maximumPixel);
+    const int2 p1 = clamp(int2(rect.zw * float2(mipWidth, mipHeight)), int2(0, 0), maximumPixel);
+    const float occluderDepth = max(max(g_HiZ.Load(int3(p0, mip)), g_HiZ.Load(int3(p1.x, p0.y, mip))),
+                                    max(g_HiZ.Load(int3(p0.x, p1.y, mip)), g_HiZ.Load(int3(p1, mip))));
+    visible = nearestDepth <= occluderDepth + view.ViewportAndHiZ.w;
+  }
+
+  if (visible)
+  {
+    uint destination;
+    InterlockedAdd(g_VisibleInstanceCount[0], 1u, destination);
+    g_VisibleInstances[destination] = instanceIndex;
+  }
+}

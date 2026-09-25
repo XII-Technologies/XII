@@ -8,7 +8,11 @@
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsFoundation/Device/Device.h>
 
+#include <meshoptimizer/meshoptimizer.h>
+
 #include <cstddef>
+
+XII_DEFINE_AS_POD_TYPE(meshopt_Meshlet);
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshVertexSemantic, 1)
@@ -96,114 +100,6 @@ namespace
 
     const xiiUInt8* pVertex = desc.m_VertexData.GetData() + uiVertexIndex * pPositionStream->m_uiStride + pPositionStream->m_uiOffset;
     return *reinterpret_cast<const xiiVec3*>(pVertex);
-  }
-
-  static xiiUInt32 FindOrAppendVertex(xiiDynamicArray<xiiUInt32>& inout_vertices, xiiUInt32 uiVertex)
-  {
-    for (xiiUInt32 i = 0; i < inout_vertices.GetCount(); ++i)
-    {
-      if (inout_vertices[i] == uiVertex)
-        return i;
-    }
-
-    inout_vertices.PushBack(uiVertex);
-    return inout_vertices.GetCount() - 1U;
-  }
-
-  static xiiUInt32 CountNewVertices(const xiiDynamicArray<xiiUInt32>& vertices, xiiUInt32 uiA, xiiUInt32 uiB, xiiUInt32 uiC)
-  {
-    xiiUInt32       uiNewVertices = 0U;
-    const xiiUInt32 tri[3]        = {uiA, uiB, uiC};
-
-    for (xiiUInt32 i = 0; i < 3; ++i)
-    {
-      bool bKnown = false;
-      for (xiiUInt32 v = 0; v < vertices.GetCount(); ++v)
-      {
-        if (vertices[v] == tri[i])
-        {
-          bKnown = true;
-          break;
-        }
-      }
-
-      for (xiiUInt32 j = 0; j < i && !bKnown; ++j)
-      {
-        if (tri[j] == tri[i])
-          bKnown = true;
-      }
-
-      if (!bKnown)
-        ++uiNewVertices;
-    }
-
-    return uiNewVertices;
-  }
-
-  static xiiBoundingSphere ComputeMeshletBounds(const xiiMeshBufferResourceDescriptor& desc, const xiiDynamicArray<xiiUInt32>& vertices)
-  {
-    xiiHybridArray<xiiVec3, 128> positions;
-    positions.SetCountUninitialized(vertices.GetCount());
-
-    for (xiiUInt32 i = 0; i < vertices.GetCount(); ++i)
-    {
-      positions[i] = ReadPosition(desc, vertices[i]);
-    }
-
-    if (positions.IsEmpty())
-      return xiiBoundingSphere::MakeZero();
-
-    return xiiBoundingSphere::MakeFromPoints(positions.GetData(), positions.GetCount());
-  }
-
-  static void ComputeMeshletCone(const xiiMeshBufferResourceDescriptor& desc, xiiArrayPtr<const xiiUInt8> primitiveIndices, const xiiDynamicArray<xiiUInt32>& vertices, xiiVec3& out_vAxis, float& out_fCutoff)
-  {
-    xiiVec3 vAverageNormal = xiiVec3::MakeZero();
-
-    for (xiiUInt32 primitive = 0; primitive < primitiveIndices.GetCount() / 3U; ++primitive)
-    {
-      const xiiUInt32 uiA = vertices[primitiveIndices[primitive * 3U + 0U]];
-      const xiiUInt32 uiB = vertices[primitiveIndices[primitive * 3U + 1U]];
-      const xiiUInt32 uiC = vertices[primitiveIndices[primitive * 3U + 2U]];
-
-      const xiiVec3 p0 = ReadPosition(desc, uiA);
-      const xiiVec3 p1 = ReadPosition(desc, uiB);
-      const xiiVec3 p2 = ReadPosition(desc, uiC);
-
-      xiiVec3 vNormal;
-      if (vNormal.CalculateNormal(p0, p1, p2).Succeeded())
-      {
-        vAverageNormal += vNormal;
-      }
-    }
-
-    if (vAverageNormal.NormalizeIfNotZero(xiiVec3(0.0f, 0.0f, 1.0f)).Failed())
-    {
-      out_vAxis   = xiiVec3(0.0f, 0.0f, 1.0f);
-      out_fCutoff = -1.0f;
-      return;
-    }
-
-    float fMinDot = 1.0f;
-    for (xiiUInt32 primitive = 0; primitive < primitiveIndices.GetCount() / 3U; ++primitive)
-    {
-      const xiiUInt32 uiA = vertices[primitiveIndices[primitive * 3U + 0U]];
-      const xiiUInt32 uiB = vertices[primitiveIndices[primitive * 3U + 1U]];
-      const xiiUInt32 uiC = vertices[primitiveIndices[primitive * 3U + 2U]];
-
-      const xiiVec3 p0 = ReadPosition(desc, uiA);
-      const xiiVec3 p1 = ReadPosition(desc, uiB);
-      const xiiVec3 p2 = ReadPosition(desc, uiC);
-
-      xiiVec3 vNormal;
-      if (vNormal.CalculateNormal(p0, p1, p2).Succeeded())
-      {
-        fMinDot = xiiMath::Min(fMinDot, vAverageNormal.Dot(vNormal));
-      }
-    }
-
-    out_vAxis   = vAverageNormal;
-    out_fCutoff = fMinDot;
   }
 
   template <typename T>
@@ -510,60 +406,76 @@ void xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xii
   m_MeshletMaterialIndices.Clear();
   m_DrawCommands.Clear();
 
-  if (m_Topology != xiiGALPrimitiveTopology::TriangleList || m_IndexData.IsEmpty())
+  const xiiUInt32 uiClusteredIndexCount = m_uiIndexCount - (m_uiIndexCount % 3U);
+  if (m_Topology != xiiGALPrimitiveTopology::TriangleList || m_IndexData.IsEmpty() || m_uiVertexCount == 0U || uiClusteredIndexCount == 0U)
     return;
 
-  uiMaxVertices   = xiiMath::Clamp<xiiUInt32>(uiMaxVertices, 3U, 255U);
-  uiMaxPrimitives = xiiMath::Clamp<xiiUInt32>(uiMaxPrimitives, 1U, 255U);
+  uiMaxVertices   = xiiMath::Clamp<xiiUInt32>(uiMaxVertices, 3U, xiiMeshlet::s_uiMaxVertices);
+  uiMaxPrimitives = xiiMath::Clamp<xiiUInt32>(uiMaxPrimitives, 4U, xiiMeshlet::s_uiMaxPrimitives) & ~3U;
 
-  xiiDynamicArray<xiiUInt32> localVertices;
-  xiiDynamicArray<xiiUInt8>  localPrimitiveIndices;
-
-  auto FlushMeshlet = [&]() {
-    if (localPrimitiveIndices.IsEmpty())
+  xiiDynamicArray<xiiUInt32> indices;
+  indices.SetCountUninitialized(uiClusteredIndexCount);
+  for (xiiUInt32 i = 0U; i < uiClusteredIndexCount; ++i)
+  {
+    indices[i] = ReadIndex(m_IndexData, m_IndexType, i);
+    if (indices[i] >= m_uiVertexCount)
+    {
+      xiiLog::Error("Cannot build meshlets: index {} references vertex {}, but the mesh contains only {} vertices.", i, indices[i], m_uiVertexCount);
       return;
+    }
+  }
+
+  xiiDynamicArray<xiiVec3> positions;
+  positions.SetCountUninitialized(m_uiVertexCount);
+  for (xiiUInt32 i = 0U; i < m_uiVertexCount; ++i)
+    positions[i] = ReadPosition(*this, i);
+
+  const size_t uiMeshletCapacity = meshopt_buildMeshletsBound(uiClusteredIndexCount, uiMaxVertices, uiMaxPrimitives);
+  if (uiMeshletCapacity > xiiMath::MaxValue<xiiUInt32>() / uiMaxVertices || uiMeshletCapacity > xiiMath::MaxValue<xiiUInt32>() / (uiMaxPrimitives * 3U))
+  {
+    xiiLog::Error("Cannot build meshlets: cluster scratch storage exceeds the engine's 32-bit array capacity.");
+    return;
+  }
+  xiiDynamicArray<meshopt_Meshlet> optimizedMeshlets;
+  xiiDynamicArray<xiiUInt32>       optimizedVertices;
+  xiiDynamicArray<xiiUInt8>        optimizedTriangles;
+  optimizedMeshlets.SetCountUninitialized(static_cast<xiiUInt32>(uiMeshletCapacity));
+  optimizedVertices.SetCountUninitialized(static_cast<xiiUInt32>(uiMeshletCapacity * uiMaxVertices));
+  optimizedTriangles.SetCountUninitialized(static_cast<xiiUInt32>(uiMeshletCapacity * uiMaxPrimitives * 3U));
+
+  // A moderate cone weight balances vertex reuse and backface-cone quality. This builder also
+  // clusters spatially adjacent triangles, substantially improving culling granularity over
+  // sequential index-buffer packing.
+  const size_t uiMeshletCount = meshopt_buildMeshlets(
+    optimizedMeshlets.GetData(), optimizedVertices.GetData(), optimizedTriangles.GetData(),
+    indices.GetData(), indices.GetCount(), &positions[0].x, positions.GetCount(), sizeof(xiiVec3),
+    uiMaxVertices, uiMaxPrimitives, 0.5f);
+
+  for (size_t i = 0U; i < uiMeshletCount; ++i)
+  {
+    const meshopt_Meshlet& source = optimizedMeshlets[static_cast<xiiUInt32>(i)];
+    const meshopt_Bounds   bounds = meshopt_computeMeshletBounds(
+      optimizedVertices.GetData() + source.vertex_offset,
+      optimizedTriangles.GetData() + source.triangle_offset,
+      source.triangle_count, &positions[0].x, positions.GetCount(), sizeof(xiiVec3));
 
     xiiMeshlet& meshlet              = m_Meshlets.ExpandAndGetRef();
-    meshlet.m_uiFirstPrimitive       = (m_MeshletPrimitiveIndices.GetCount() / 3U);
-    meshlet.m_uiPrimitiveCount       = static_cast<xiiUInt16>(localPrimitiveIndices.GetCount() / 3U);
-    meshlet.m_uiVertexCount          = static_cast<xiiUInt16>(localVertices.GetCount());
+    meshlet.m_uiFirstPrimitive       = m_MeshletPrimitiveIndices.GetCount() / 3U;
+    meshlet.m_uiPrimitiveCount       = static_cast<xiiUInt16>(source.triangle_count);
+    meshlet.m_uiVertexCount          = static_cast<xiiUInt16>(source.vertex_count);
     meshlet.m_uiVertexRemapOffset    = m_MeshletVertexRemap.GetCount();
     meshlet.m_uiPrimitiveIndexOffset = m_MeshletPrimitiveIndices.GetCount();
     meshlet.m_uiMaterialIndex        = 0U;
-    meshlet.m_Bounds                 = ComputeMeshletBounds(*this, localVertices);
-    ComputeMeshletCone(*this, localPrimitiveIndices, localVertices, meshlet.m_vConeAxis, meshlet.m_fConeCutoff);
+    meshlet.m_Bounds                 = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(bounds.center[0], bounds.center[1], bounds.center[2]), bounds.radius);
+    meshlet.m_vConeAxis              = xiiVec3(bounds.cone_axis[0], bounds.cone_axis[1], bounds.cone_axis[2]);
+    // meshoptimizer returns sin(half-angle), while the engine record stores cos(half-angle).
+    // A disabled/degenerate cone returns one and therefore maps to zero (conservative accept).
+    meshlet.m_fConeCutoff = xiiMath::Sqrt(xiiMath::Max(0.0f, 1.0f - bounds.cone_cutoff * bounds.cone_cutoff));
 
-    m_MeshletVertexRemap.PushBackRange(localVertices);
-    m_MeshletPrimitiveIndices.PushBackRange(localPrimitiveIndices);
+    m_MeshletVertexRemap.PushBackRange(xiiArrayPtr<const xiiUInt32>(optimizedVertices.GetData() + source.vertex_offset, static_cast<xiiUInt32>(source.vertex_count)));
+    m_MeshletPrimitiveIndices.PushBackRange(xiiArrayPtr<const xiiUInt8>(optimizedTriangles.GetData() + source.triangle_offset, static_cast<xiiUInt32>(source.triangle_count * 3U)));
     m_MeshletMaterialIndices.PushBack(meshlet.m_uiMaterialIndex);
-
-    localVertices.Clear();
-    localPrimitiveIndices.Clear();
-  };
-
-  const xiiUInt32 uiTriangleCount = m_uiIndexCount / 3U;
-  for (xiiUInt32 tri = 0; tri < uiTriangleCount; ++tri)
-  {
-    const xiiUInt32 uiA = ReadIndex(m_IndexData, m_IndexType, tri * 3U + 0U);
-    const xiiUInt32 uiB = ReadIndex(m_IndexData, m_IndexType, tri * 3U + 1U);
-    const xiiUInt32 uiC = ReadIndex(m_IndexData, m_IndexType, tri * 3U + 2U);
-
-    const xiiUInt32 uiNewVertices = CountNewVertices(localVertices, uiA, uiB, uiC);
-    if (!localPrimitiveIndices.IsEmpty() && (localPrimitiveIndices.GetCount() / 3U >= uiMaxPrimitives || localVertices.GetCount() + uiNewVertices > uiMaxVertices))
-    {
-      FlushMeshlet();
-    }
-
-    const xiiUInt32 uiLocalA = FindOrAppendVertex(localVertices, uiA);
-    const xiiUInt32 uiLocalB = FindOrAppendVertex(localVertices, uiB);
-    const xiiUInt32 uiLocalC = FindOrAppendVertex(localVertices, uiC);
-
-    localPrimitiveIndices.PushBack(static_cast<xiiUInt8>(uiLocalA));
-    localPrimitiveIndices.PushBack(static_cast<xiiUInt8>(uiLocalB));
-    localPrimitiveIndices.PushBack(static_cast<xiiUInt8>(uiLocalC));
   }
-
-  FlushMeshlet();
 
   if (!m_Meshlets.IsEmpty())
   {

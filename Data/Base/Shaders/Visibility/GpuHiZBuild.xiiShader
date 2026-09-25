@@ -1,0 +1,38 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include "GpuHiZBuildConstants.h"
+
+Texture2D<float>   g_HiZSource;
+RWTexture2D<float> g_HiZDestination;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (any(dispatchThreadId.xy >= DstSize))
+    return;
+
+  if (Reduce == 0u)
+  {
+    g_HiZDestination[dispatchThreadId.xy] = g_HiZSource.Load(int3(dispatchThreadId.xy, 0));
+    return;
+  }
+
+  const uint2 maximumSource = max(SrcSize, 1u) - 1u;
+  const uint2 sourceBase = dispatchThreadId.xy * 2u;
+  const uint2 p00 = min(sourceBase, maximumSource);
+  const uint2 p10 = min(sourceBase + uint2(1u, 0u), maximumSource);
+  const uint2 p01 = min(sourceBase + uint2(0u, 1u), maximumSource);
+  const uint2 p11 = min(sourceBase + uint2(1u, 1u), maximumSource);
+
+  // This pipeline uses standard Z (LessEqual, cleared to 1). A maximum reduction stores
+  // the farthest occluder in the footprint, so an object is rejected only when it is
+  // behind every contributing fine-depth sample.
+  const float conservativeDepth = max(max(g_HiZSource.Load(int3(p00, 0)), g_HiZSource.Load(int3(p10, 0))),
+                                      max(g_HiZSource.Load(int3(p01, 0)), g_HiZSource.Load(int3(p11, 0))));
+  g_HiZDestination[dispatchThreadId.xy] = conservativeDepth;
+}

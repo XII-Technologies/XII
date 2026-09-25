@@ -101,7 +101,8 @@ private:
     xiiUInt64                                  m_uiFrameIndex = xiiInvalidIndex;
   };
 
-  void ReadbackFrame(FrameData& frameData);
+  [[nodiscard]] bool SupportsDurationQueries(const xiiGALCommandList& commandList) const;
+  void               ReadbackFrame(FrameData& frameData);
 
 private:
   xiiSharedPtr<xiiGALDevice>           m_pDevice;

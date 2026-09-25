@@ -12,6 +12,9 @@ target_link_libraries(${PROJECT_NAME}
   Core
   GraphicsFoundation
   Texture
+
+  PRIVATE
+  meshoptimizer
 )
 
 if (XII_3RDPARTY_OZZ_SUPPORT)

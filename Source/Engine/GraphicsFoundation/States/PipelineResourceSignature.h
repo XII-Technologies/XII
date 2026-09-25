@@ -8,6 +8,10 @@
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
+/// Fixed API capacity used for shader-declared unbounded descriptor arrays. Backends expose the
+/// array as a sparse, partially-bound table while shaders retain runtime indexing semantics.
+static constexpr xiiUInt32 XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY = 4096U;
+
 /// This describes the pipeline resource property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceFlags
 {

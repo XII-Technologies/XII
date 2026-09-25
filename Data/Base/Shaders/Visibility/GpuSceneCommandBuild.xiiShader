@@ -1,0 +1,46 @@
+// Final stage: translate compact meshlet work into DrawMeshIndirect-compatible commands.
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include "GpuSceneCommandBuildConstants.h"
+
+struct MeshDispatchIndirectArguments
+{
+  uint ThreadGroupCountX;
+  uint ThreadGroupCountY;
+  uint ThreadGroupCountZ;
+};
+
+StructuredBuffer<uint2> g_VisibleMeshlets;
+StructuredBuffer<uint> g_VisibleMeshletCount;
+RWStructuredBuffer<MeshDispatchIndirectArguments> g_IndirectCommands;
+RWStructuredBuffer<uint> g_IndirectCommandCount;
+
+[numthreads(1, 1, 1)]
+void main()
+{
+  const uint count = min(g_VisibleMeshletCount[0], MaxMeshGroupTotalCount);
+  uint commandCapacity, commandStride;
+  g_IndirectCommands.GetDimensions(commandCapacity, commandStride);
+
+  // A single indirect mesh dispatch launches one workgroup per compacted meshlet. This avoids a
+  // backend-specific draw-ID semantic in mesh shaders: SV_GroupID.x is the stable compacted index.
+  // The count buffer contains either zero or one indirect command.
+  if (count == 0u || commandCapacity == 0u)
+  {
+    g_IndirectCommandCount[0] = 0u;
+    return;
+  }
+
+  MeshDispatchIndirectArguments command;
+  command.ThreadGroupCountX = min(count, MaxMeshGroupCountX);
+  const uint rows = (count + MaxMeshGroupCountX - 1u) / MaxMeshGroupCountX;
+  command.ThreadGroupCountY = min(rows, MaxMeshGroupCountY);
+  command.ThreadGroupCountZ = (rows + MaxMeshGroupCountY - 1u) / MaxMeshGroupCountY;
+  g_IndirectCommands[0] = command;
+  g_IndirectCommandCount[0] = 1u;
+}

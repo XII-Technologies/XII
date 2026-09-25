@@ -1000,6 +1000,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       queueDescription.pQueuePriorities           = &fQueuePriorities;
 
       m_GraphicsQueueInformation.m_uiQueueFamilyIndex = uiGraphicsQueueIndex;
+      m_ActiveQueueFamilyIndices.PushBack(uiGraphicsQueueIndex);
     }
     else
     {
@@ -1024,6 +1025,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
         queueDescription.pQueuePriorities           = &fQueuePriorities;
 
         m_ComputeQueueInformation.m_uiQueueFamilyIndex = uiComputeQueueIndex;
+        m_ActiveQueueFamilyIndices.PushBack(uiComputeQueueIndex);
       }
 
       xiiUInt32 uiTransferQueueIndex = FindQueueFamily(vk::QueueFlagBits::eTransfer, excludedQueueIndices);
@@ -1041,6 +1043,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
         queueDescription.pQueuePriorities           = &fQueuePriorities;
 
         m_TransferQueueInformation.m_uiQueueFamilyIndex = uiTransferQueueIndex;
+        m_ActiveQueueFamilyIndices.PushBack(uiTransferQueueIndex);
       }
     }
   }
@@ -1119,7 +1122,12 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     // Mesh shader
     if (m_AdapterDescription.m_Features.m_MeshShaders != xiiGALDeviceFeatureState::Disabled)
     {
-      enabledExtensionFeatures.m_MeshShader = m_PhysicalDeviceExtensionFeatures.m_MeshShader;
+      // Enable only the mesh/task features represented by the GAL feature bit. Copying the full
+      // queried structure also enables optional dependent features such as multiviewMeshShader and
+      // primitiveFragmentShadingRateMeshShader without enabling their parent Vulkan features.
+      enabledExtensionFeatures.m_MeshShader            = vk::PhysicalDeviceMeshShaderFeaturesEXT{};
+      enabledExtensionFeatures.m_MeshShader.taskShader = m_PhysicalDeviceExtensionFeatures.m_MeshShader.taskShader;
+      enabledExtensionFeatures.m_MeshShader.meshShader = m_PhysicalDeviceExtensionFeatures.m_MeshShader.meshShader;
 
       XII_ASSERT_DEV(enabledExtensionFeatures.m_MeshShader.taskShader != vk::False && enabledExtensionFeatures.m_MeshShader.meshShader != vk::False, "");
 
@@ -1224,7 +1232,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     if (m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray != xiiGALDeviceFeatureState::Disabled || m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Disabled)
     {
       XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_KHR_maintenance3 extension must be supported");
-      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_EXT_descriptor_indexing extension must be supported");
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME), "VK_EXT_descriptor_indexing extension must be supported");
 
       deviceExtensions.PushBack(VK_KHR_MAINTENANCE3_EXTENSION_NAME); // Required for VK_EXT_descriptor_indexing
       deviceExtensions.PushBack(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
@@ -1732,13 +1740,13 @@ void xiiGALDeviceVulkan::EndFramePlatform()
 
 xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandQueue.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandQueue.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
 
   return m_pGraphicsCommandQueue.Borrow();
@@ -3134,6 +3142,18 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
   INITIALIZE_DEVICE_FEATURE(InstanceDataStepRate, (extensionFeatures.m_VertexAttributeDivisor.vertexAttributeInstanceRateDivisor != vk::False && extensionFeatures.m_VertexAttributeDivisor.vertexAttributeInstanceRateZeroDivisor != vk::False));
 
   INITIALIZE_DEVICE_FEATURE(NativeFence, extensionFeatures.m_TimelineSemaphore.timelineSemaphore != vk::False);
+
+  // Dedicated transfer queues cannot record vkCmdResetQueryPool. Timestamp profiling on
+  // those queues therefore requires host query reset so stale slots can be recycled before
+  // command recording begins.
+  bool bHasTimestampCapableTransferQueue = false;
+  for (const vk::QueueFamilyProperties& queueFamily : m_PhysicalDeviceQueueFamilyProperties)
+  {
+    const bool bTransferOnly = (queueFamily.queueFlags & vk::QueueFlagBits::eTransfer) != vk::QueueFlags{} &&
+      (queueFamily.queueFlags & (vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute)) == vk::QueueFlags{};
+    bHasTimestampCapableTransferQueue |= bTransferOnly && queueFamily.timestampValidBits > 0U;
+  }
+  INITIALIZE_DEVICE_FEATURE(TransferQueueTimestampQueries, extensionFeatures.m_HostQueryReset.hostQueryReset != vk::False && bHasTimestampCapableTransferQueue);
 
   INITIALIZE_DEVICE_FEATURE(TileShaders, false); // Not currently supported.
 

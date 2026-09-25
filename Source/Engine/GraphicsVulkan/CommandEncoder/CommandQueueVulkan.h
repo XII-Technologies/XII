@@ -22,6 +22,9 @@ public:
   /// This returns the last completed value of the internal fence.
   virtual xiiUInt64 GetCompletedFenceValue() override final;
 
+  /// Waits for one previously submitted command list without draining later queue work.
+  virtual void WaitForFenceValue(xiiUInt64 uiFenceValue) override final;
+
   XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
 
   XII_ALWAYS_INLINE xiiGALCpuWaitOnlyFenceVulkan* GetWaitOnlyFence() const { return m_pQueueFence.Borrow(); }

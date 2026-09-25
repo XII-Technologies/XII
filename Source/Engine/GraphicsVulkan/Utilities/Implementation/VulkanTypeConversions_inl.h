@@ -1645,6 +1645,14 @@ XII_ALWAYS_INLINE vk::ResolveModeFlagBits xiiVulkanTypeConversions::GetDepthReso
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
 {
+  // UAV is an exclusive write state. A buffer may advertise both SRV and UAV bind flags, but it
+  // cannot simultaneously be in ShaderResource and UnorderedAccess state. Prefer the writable
+  // state for newly-created UAV-capable buffers; the state tracker will transition it on demand.
+  if (bindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
+  {
+    return xiiGALResourceStateFlags::UnorderedAccess;
+  }
+
   xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Unknown;
 
   for (auto v : bindFlags)
