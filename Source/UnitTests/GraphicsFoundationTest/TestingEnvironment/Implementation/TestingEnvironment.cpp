@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <Foundation/Configuration/Plugin.h>
+
 xiiGPUTestingEnvironment::xiiGPUTestingEnvironment(xiiStringView sImplementationName) :
   m_sImplementationName(sImplementationName)
 {
@@ -82,7 +84,12 @@ xiiResult xiiGPUTestingEnvironment::Initialize()
 
 void xiiGPUTestingEnvironment::Shutdown()
 {
-  m_pDevice.Clear();
+  if (m_pDevice != nullptr)
+  {
+    m_pDevice->WaitIdle();
+    m_pDevice.Clear();
+    xiiPlugin::UnloadAllPlugins();
+  }
 }
 
 xiiUniquePtr<xiiWindowBase> xiiGPUTestingEnvironment::CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle)
