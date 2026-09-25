@@ -75,6 +75,7 @@ namespace
     xiiRenderGraphBufferHandle m_hScene;
     xiiDynamicArray<xiiGpuSceneInstance> m_Instances;
     xiiDynamicArray<xiiSceneUploadRange> m_UploadRanges;
+    xiiUInt32 m_uiFrameSlot = 0U;
   };
 
   struct ViewUploadPassData
@@ -353,7 +354,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
         data.m_hScene = builder.WriteBuffer(builder.ImportBuffer("GPU Scene Instances", m_pSceneBuffers[uiFrameSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::CopyDestination);
         builder.SetPassAllowMerge(false);
       },
-      [](const SceneUploadPassData& data, xiiRenderGraphPassContext& context) {
+      [this](const SceneUploadPassData& data, xiiRenderGraphPassContext& context) {
         for (const xiiSceneUploadRange& range : data.m_UploadRanges)
         {
           const xiiGpuSceneInstance* pFirstInstance = data.m_Instances.GetData() + range.m_uiFirstInstance;
@@ -362,7 +363,12 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
             range.m_uiFirstInstance * sizeof(xiiGpuSceneInstance),
             xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(pFirstInstance), range.m_uiInstanceCount * sizeof(xiiGpuSceneInstance)));
         }
+
+        // The mirror describes GPU contents, so advance it only after this transfer pass was
+        // actually recorded. A graph that fails compilation must retry the same ranges later.
+        m_SceneBufferMirrors[data.m_uiFrameSlot] = data.m_Instances;
       });
+    sceneUpload.first->m_uiFrameSlot = uiFrameSlot;
     // The GPU scene allocation is fixed-size. Keep the upload snapshot within the same bound as
     // every consumer so a release build cannot overwrite the imported buffer when a scene grows.
     const xiiUInt32 uiUploadedInstanceCount = xiiMath::Min(uiSceneInstanceCount, m_Description.m_uiMaxInstances);
@@ -394,7 +400,6 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       if (bRangeOpen)
         sceneUpload.first->m_UploadRanges.PushBack({uiRangeStart, sceneUpload.first->m_Instances.GetCount() - uiRangeStart});
     }
-    sceneMirror = sceneUpload.first->m_Instances;
     m_pPreparedGraph = &graph;
     m_pPreparedScene = &scene;
     m_uiPreparedFrame = uiFrameIndex;
