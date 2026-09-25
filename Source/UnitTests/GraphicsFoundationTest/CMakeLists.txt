@@ -9,6 +9,10 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(APPLICATION ${PROJECT_NAME})
 
+# The testing environment is backend agnostic. Keep it explicit because the project generator
+# intentionally preserves the per-backend source placeholders for IDE organization.
+target_sources(${PROJECT_NAME} PRIVATE TestingEnvironment/Implementation/TestingEnvironment.cpp)
+
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   TestFramework
