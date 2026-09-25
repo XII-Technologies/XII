@@ -14,7 +14,7 @@ namespace
     for (xiiUInt32 i = uiOldCount; i < uiCount; ++i)
       array[i] = initialValue;
   }
-}
+} // namespace
 
 xiiSceneDatabase::xiiSceneDatabase()  = default;
 xiiSceneDatabase::~xiiSceneDatabase() = default;
@@ -44,9 +44,9 @@ void xiiSceneDatabase::Clear()
   m_GpuInstances.Clear();
   m_UploadRanges.Clear();
   m_WorkStack.Clear();
-  m_Stats = {};
-  m_uiObjectCount = 0U;
-  m_uiRevision = 0U;
+  m_Stats                = {};
+  m_uiObjectCount        = 0U;
+  m_uiRevision           = 0U;
   m_uiLastCommittedFrame = xiiMath::MaxValue<xiiUInt64>();
 }
 
@@ -86,7 +86,7 @@ xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& de
   }
   else
   {
-    uiIndex = m_Generations.GetCount();
+    uiIndex                 = m_Generations.GetCount();
     const xiiUInt32 uiCount = uiIndex + 1U;
     EnsureCount(m_Generations, uiCount, 1U);
     EnsureCount(m_Alive, uiCount, static_cast<xiiUInt8>(0U));
@@ -149,18 +149,18 @@ bool xiiSceneDatabase::DestroyObject(xiiSceneObjectHandle hObject)
   xiiUInt32 uiChild = m_FirstChild[uiIndex];
   while (uiChild != s_uiInvalidIndex)
   {
-    const xiiUInt32 uiNext = m_NextSibling[uiChild];
-    m_Parent[uiChild]         = s_uiInvalidIndex;
-    m_NextSibling[uiChild]    = s_uiInvalidIndex;
+    const xiiUInt32 uiNext     = m_NextSibling[uiChild];
+    m_Parent[uiChild]          = s_uiInvalidIndex;
+    m_NextSibling[uiChild]     = s_uiInvalidIndex;
     m_LocalTransforms[uiChild] = m_GlobalTransforms[uiChild];
     MarkSubtreeDirty(uiChild);
     uiChild = uiNext;
   }
 
-  m_FirstChild[uiIndex] = s_uiInvalidIndex;
-  m_Alive[uiIndex]      = 0U;
-  m_TransformDirty[uiIndex] = 0U;
-  m_GpuDirty[uiIndex]   = 1U;
+  m_FirstChild[uiIndex]       = s_uiInvalidIndex;
+  m_Alive[uiIndex]            = 0U;
+  m_TransformDirty[uiIndex]   = 0U;
+  m_GpuDirty[uiIndex]         = 1U;
   m_ObjectToGpuIndex[uiIndex] = s_uiInvalidIndex;
   ++m_Generations[uiIndex];
   if (m_Generations[uiIndex] == 0U)
@@ -268,7 +268,7 @@ bool xiiSceneDatabase::SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeo
 {
   if (!IsAlive(hObject)) return false;
   m_GeometryIndices[hObject.m_uiIndex] = uiGeometryIndex;
-  m_GpuDirty[hObject.m_uiIndex] = 1U;
+  m_GpuDirty[hObject.m_uiIndex]        = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -277,7 +277,7 @@ bool xiiSceneDatabase::SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMat
 {
   if (!IsAlive(hObject)) return false;
   m_MaterialIndices[hObject.m_uiIndex] = uiMaterialIndex;
-  m_GpuDirty[hObject.m_uiIndex] = 1U;
+  m_GpuDirty[hObject.m_uiIndex]        = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -285,7 +285,7 @@ bool xiiSceneDatabase::SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMat
 bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags)
 {
   if (!IsAlive(hObject)) return false;
-  m_Flags[hObject.m_uiIndex] = flags;
+  m_Flags[hObject.m_uiIndex]    = flags;
   m_GpuDirty[hObject.m_uiIndex] = 1U;
   ++m_uiRevision;
   return true;
@@ -295,7 +295,7 @@ bool xiiSceneDatabase::SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32
 {
   if (!IsAlive(hObject)) return false;
   m_VisibilityMasks[hObject.m_uiIndex] = uiVisibilityMask;
-  m_GpuDirty[hObject.m_uiIndex] = 1U;
+  m_GpuDirty[hObject.m_uiIndex]        = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -341,16 +341,18 @@ void xiiSceneDatabase::UpdateDirtyTransforms()
 
   while (!m_WorkStack.IsEmpty())
   {
-    const xiiUInt32 uiDepth = m_WorkStack.PeekBack(); m_WorkStack.PopBack();
-    const xiiUInt32 uiObject = m_WorkStack.PeekBack(); m_WorkStack.PopBack();
+    const xiiUInt32 uiDepth = m_WorkStack.PeekBack();
+    m_WorkStack.PopBack();
+    const xiiUInt32 uiObject = m_WorkStack.PeekBack();
+    m_WorkStack.PopBack();
     m_Stats.m_uiHierarchyDepth = xiiMath::Max(m_Stats.m_uiHierarchyDepth, uiDepth);
 
     if (m_TransformDirty[uiObject] != 0U)
     {
       m_PreviousGlobalTransforms[uiObject] = m_GlobalTransforms[uiObject];
-      const xiiUInt32 uiParent = m_Parent[uiObject];
-      m_GlobalTransforms[uiObject] = uiParent == s_uiInvalidIndex ? m_LocalTransforms[uiObject] : m_GlobalTransforms[uiParent] * m_LocalTransforms[uiObject];
-      m_GlobalBounds[uiObject] = m_LocalBounds[uiObject];
+      const xiiUInt32 uiParent             = m_Parent[uiObject];
+      m_GlobalTransforms[uiObject]         = uiParent == s_uiInvalidIndex ? m_LocalTransforms[uiObject] : m_GlobalTransforms[uiParent] * m_LocalTransforms[uiObject];
+      m_GlobalBounds[uiObject]             = m_LocalBounds[uiObject];
       m_GlobalBounds[uiObject].Transform(m_GlobalTransforms[uiObject]);
       m_TransformDirty[uiObject] = 0U;
       m_GpuDirty[uiObject]       = 1U;
@@ -373,22 +375,22 @@ void xiiSceneDatabase::RebuildGpuInstances()
   m_GpuInstances.Reserve(m_uiObjectCount);
   m_UploadRanges.Clear();
 
-  bool      bRangeOpen = false;
+  bool      bRangeOpen   = false;
   xiiUInt32 uiRangeStart = 0U;
   for (xiiUInt32 uiObject = 0; uiObject < m_Alive.GetCount(); ++uiObject)
   {
     if (m_Alive[uiObject] == 0U)
       continue;
 
-    const xiiUInt32 uiGpuIndex = m_GpuInstances.GetCount();
-    const bool bMoved = m_ObjectToGpuIndex[uiObject] != uiGpuIndex;
+    const xiiUInt32 uiGpuIndex   = m_GpuInstances.GetCount();
+    const bool      bMoved       = m_ObjectToGpuIndex[uiObject] != uiGpuIndex;
     m_ObjectToGpuIndex[uiObject] = uiGpuIndex;
     m_GpuToObjectIndex.PushBack(uiObject);
 
-    xiiGpuSceneInstance& instance = m_GpuInstances.ExpandAndGetRef();
+    xiiGpuSceneInstance& instance      = m_GpuInstances.ExpandAndGetRef();
     instance.m_GlobalTransform         = m_GlobalTransforms[uiObject];
     instance.m_PreviousGlobalTransform = m_PreviousGlobalTransforms[uiObject];
-    xiiMat3 normalTransform = instance.m_GlobalTransform.GetRotationalPart();
+    xiiMat3 normalTransform            = instance.m_GlobalTransform.GetRotationalPart();
     if (normalTransform.Invert().Succeeded())
     {
       normalTransform.Transpose();
@@ -399,12 +401,12 @@ void xiiSceneDatabase::RebuildGpuInstances()
       // GPU record finite and deterministic until authoring or simulation restores the scale.
       normalTransform.SetIdentity();
     }
-    const xiiVec3 normalRow0 = normalTransform.GetRow(0U);
-    const xiiVec3 normalRow1 = normalTransform.GetRow(1U);
-    const xiiVec3 normalRow2 = normalTransform.GetRow(2U);
-    instance.m_NormalTransformRow0 = xiiVec4(normalRow0.x, normalRow0.y, normalRow0.z, 0.0f);
-    instance.m_NormalTransformRow1 = xiiVec4(normalRow1.x, normalRow1.y, normalRow1.z, 0.0f);
-    instance.m_NormalTransformRow2 = xiiVec4(normalRow2.x, normalRow2.y, normalRow2.z, 0.0f);
+    const xiiVec3 normalRow0           = normalTransform.GetRow(0U);
+    const xiiVec3 normalRow1           = normalTransform.GetRow(1U);
+    const xiiVec3 normalRow2           = normalTransform.GetRow(2U);
+    instance.m_NormalTransformRow0     = xiiVec4(normalRow0.x, normalRow0.y, normalRow0.z, 0.0f);
+    instance.m_NormalTransformRow1     = xiiVec4(normalRow1.x, normalRow1.y, normalRow1.z, 0.0f);
+    instance.m_NormalTransformRow2     = xiiVec4(normalRow2.x, normalRow2.y, normalRow2.z, 0.0f);
     const xiiBoundingBoxSphere& bounds = m_GlobalBounds[uiObject];
     instance.m_BoundsCenterRadius      = xiiVec4(bounds.m_vCenter.x, bounds.m_vCenter.y, bounds.m_vCenter.z, bounds.m_fSphereRadius);
     instance.m_BoundsExtents           = xiiVec4(bounds.m_vBoxHalfExtents.x, bounds.m_vBoxHalfExtents.y, bounds.m_vBoxHalfExtents.z, 0.0f);

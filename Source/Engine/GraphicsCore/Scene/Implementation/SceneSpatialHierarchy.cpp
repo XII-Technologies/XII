@@ -5,30 +5,28 @@
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialQuery, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiSceneSpatialQuery>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
-    XII_BITFLAGS_MEMBER_PROPERTY("RequiredFlags", xiiSceneObjectFlags, m_RequiredFlags),
-    XII_BITFLAGS_MEMBER_PROPERTY("ExcludedFlags", xiiSceneObjectFlags, m_ExcludedFlags),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
+      XII_BITFLAGS_MEMBER_PROPERTY("RequiredFlags", xiiSceneObjectFlags, m_RequiredFlags),
+      XII_BITFLAGS_MEMBER_PROPERTY("ExcludedFlags", xiiSceneObjectFlags, m_ExcludedFlags),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialStats, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiSceneSpatialStats>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("LeafCount", m_uiLeafCount),
-    XII_MEMBER_PROPERTY("NodeCount", m_uiNodeCount),
-    XII_MEMBER_PROPERTY("TreeHeight", m_uiTreeHeight),
-    XII_MEMBER_PROPERTY("Reinsertions", m_uiReinsertions),
-    XII_MEMBER_PROPERTY("Rotations", m_uiRotations),
-    XII_MEMBER_PROPERTY("AreaRatio", m_fAreaRatio),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("LeafCount", m_uiLeafCount),
+      XII_MEMBER_PROPERTY("NodeCount", m_uiNodeCount),
+      XII_MEMBER_PROPERTY("TreeHeight", m_uiTreeHeight),
+      XII_MEMBER_PROPERTY("Reinsertions", m_uiReinsertions),
+      XII_MEMBER_PROPERTY("Rotations", m_uiRotations),
+      XII_MEMBER_PROPERTY("AreaRatio", m_fAreaRatio),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 xiiSceneSpatialHierarchy::xiiSceneSpatialHierarchy(float fFatBoundsMargin) :
@@ -58,12 +56,12 @@ xiiInt32 xiiSceneSpatialHierarchy::AllocateNode()
   if (m_iFreeList != -1)
   {
     const xiiInt32 iNode = m_iFreeList;
-    m_iFreeList = m_Nodes[iNode].m_iNextFree;
-    m_Nodes[iNode] = Node{};
+    m_iFreeList          = m_Nodes[iNode].m_iNextFree;
+    m_Nodes[iNode]       = Node{};
     return iNode;
   }
 
-  const xiiInt32 iNode = static_cast<xiiInt32>(m_Nodes.GetCount());
+  const xiiInt32 iNode      = static_cast<xiiInt32>(m_Nodes.GetCount());
   m_Nodes.ExpandAndGetRef() = Node{};
   return iNode;
 }
@@ -88,9 +86,15 @@ xiiBoundingBox xiiSceneSpatialHierarchy::MakeFatBounds(const xiiBoundingBox& bou
   fat.Grow(xiiVec3(m_fFatBoundsMargin));
 
   // Predictive expansion avoids a remove/insert every frame for coherently moving bodies.
-  if (vDisplacement.x < 0.0f) fat.m_vMin.x += vDisplacement.x * 2.0f; else fat.m_vMax.x += vDisplacement.x * 2.0f;
-  if (vDisplacement.y < 0.0f) fat.m_vMin.y += vDisplacement.y * 2.0f; else fat.m_vMax.y += vDisplacement.y * 2.0f;
-  if (vDisplacement.z < 0.0f) fat.m_vMin.z += vDisplacement.z * 2.0f; else fat.m_vMax.z += vDisplacement.z * 2.0f;
+  if (vDisplacement.x < 0.0f) fat.m_vMin.x += vDisplacement.x * 2.0f;
+  else
+    fat.m_vMax.x += vDisplacement.x * 2.0f;
+  if (vDisplacement.y < 0.0f) fat.m_vMin.y += vDisplacement.y * 2.0f;
+  else
+    fat.m_vMax.y += vDisplacement.y * 2.0f;
+  if (vDisplacement.z < 0.0f) fat.m_vMin.z += vDisplacement.z * 2.0f;
+  else
+    fat.m_vMax.z += vDisplacement.z * 2.0f;
   return fat;
 }
 
@@ -109,14 +113,14 @@ bool xiiSceneSpatialHierarchy::Insert(xiiSceneObjectHandle hObject, const xiiBou
   if (m_ObjectToNode[hObject.m_uiIndex] != -1)
     return false;
 
-  const xiiInt32 iLeaf = AllocateNode();
-  Node& leaf               = m_Nodes[iLeaf];
-  leaf.m_ExactBounds       = bounds;
-  leaf.m_FatBounds         = MakeFatBounds(bounds, xiiVec3::MakeZero());
-  leaf.m_hObject           = hObject;
-  leaf.m_uiVisibilityMask  = uiVisibilityMask;
-  leaf.m_Flags             = flags;
-  leaf.m_iHeight           = 0;
+  const xiiInt32 iLeaf              = AllocateNode();
+  Node&          leaf               = m_Nodes[iLeaf];
+  leaf.m_ExactBounds                = bounds;
+  leaf.m_FatBounds                  = MakeFatBounds(bounds, xiiVec3::MakeZero());
+  leaf.m_hObject                    = hObject;
+  leaf.m_uiVisibilityMask           = uiVisibilityMask;
+  leaf.m_Flags                      = flags;
+  leaf.m_iHeight                    = 0;
   m_ObjectToNode[hObject.m_uiIndex] = iLeaf;
   InsertLeaf(iLeaf);
   ++m_uiLeafCount;
@@ -165,15 +169,14 @@ xiiInt32 xiiSceneSpatialHierarchy::FindBestSibling(const xiiBoundingBox& bounds)
   xiiInt32 iNode = m_iRoot;
   while (!m_Nodes[iNode].IsLeaf())
   {
-    const Node& node = m_Nodes[iNode];
-    const float fArea = SurfaceArea(node.m_FatBounds);
+    const Node&    node     = m_Nodes[iNode];
+    const float    fArea    = SurfaceArea(node.m_FatBounds);
     xiiBoundingBox combined = node.m_FatBounds;
     combined.ExpandToInclude(bounds);
-    const float fCombinedArea = SurfaceArea(combined);
+    const float fCombinedArea    = SurfaceArea(combined);
     const float fInheritanceCost = 2.0f * (fCombinedArea - fArea);
 
-    auto ChildCost = [&](xiiInt32 iChild)
-    {
+    auto ChildCost = [&](xiiInt32 iChild) {
       xiiBoundingBox childCombined = m_Nodes[iChild].m_FatBounds;
       childCombined.ExpandToInclude(bounds);
       const float fNewArea = SurfaceArea(childCombined);
@@ -193,7 +196,7 @@ void xiiSceneSpatialHierarchy::InsertLeaf(xiiInt32 iLeaf)
 {
   if (m_iRoot == -1)
   {
-    m_iRoot = iLeaf;
+    m_iRoot                  = iLeaf;
     m_Nodes[iLeaf].m_iParent = -1;
     return;
   }
@@ -201,7 +204,7 @@ void xiiSceneSpatialHierarchy::InsertLeaf(xiiInt32 iLeaf)
   const xiiInt32 iSibling   = FindBestSibling(m_Nodes[iLeaf].m_FatBounds);
   const xiiInt32 iOldParent = m_Nodes[iSibling].m_iParent;
   const xiiInt32 iNewParent = AllocateNode();
-  Node& parent              = m_Nodes[iNewParent];
+  Node&          parent     = m_Nodes[iNewParent];
   parent.m_iParent          = iOldParent;
   parent.m_iLeft            = iSibling;
   parent.m_iRight           = iLeaf;
@@ -234,7 +237,7 @@ void xiiSceneSpatialHierarchy::RemoveLeaf(xiiInt32 iLeaf)
   const xiiInt32 iSibling     = m_Nodes[iParent].m_iLeft == iLeaf ? m_Nodes[iParent].m_iRight : m_Nodes[iParent].m_iLeft;
   if (iGrandParent == -1)
   {
-    m_iRoot = iSibling;
+    m_iRoot                     = iSibling;
     m_Nodes[iSibling].m_iParent = -1;
   }
   else
@@ -254,7 +257,7 @@ void xiiSceneSpatialHierarchy::RefitAncestors(xiiInt32 iNode)
 {
   while (iNode != -1)
   {
-    iNode = Balance(iNode);
+    iNode      = Balance(iNode);
     Node& node = m_Nodes[iNode];
     if (!node.IsLeaf())
     {
@@ -272,10 +275,10 @@ xiiInt32 xiiSceneSpatialHierarchy::Balance(xiiInt32 iNode)
   if (root.IsLeaf() || root.m_iHeight < 2)
     return iNode;
 
-  const xiiInt32 iLeft  = root.m_iLeft;
-  const xiiInt32 iRight = root.m_iRight;
-  Node& left            = m_Nodes[iLeft];
-  Node& right           = m_Nodes[iRight];
+  const xiiInt32 iLeft    = root.m_iLeft;
+  const xiiInt32 iRight   = root.m_iRight;
+  Node&          left     = m_Nodes[iLeft];
+  Node&          right    = m_Nodes[iRight];
   const xiiInt32 iBalance = right.m_iHeight - left.m_iHeight;
 
   // Rotate the right child above this node. Choosing the taller grandchild to remain attached to
@@ -284,8 +287,8 @@ xiiInt32 xiiSceneSpatialHierarchy::Balance(xiiInt32 iNode)
   {
     const xiiInt32 iRightLeft  = right.m_iLeft;
     const xiiInt32 iRightRight = right.m_iRight;
-    Node& rightLeft            = m_Nodes[iRightLeft];
-    Node& rightRight           = m_Nodes[iRightRight];
+    Node&          rightLeft   = m_Nodes[iRightLeft];
+    Node&          rightRight  = m_Nodes[iRightRight];
 
     right.m_iLeft   = iNode;
     right.m_iParent = root.m_iParent;
@@ -299,15 +302,15 @@ xiiInt32 xiiSceneSpatialHierarchy::Balance(xiiInt32 iNode)
 
     if (rightLeft.m_iHeight > rightRight.m_iHeight)
     {
-      right.m_iRight = iRightLeft;
-      root.m_iRight  = iRightRight;
+      right.m_iRight       = iRightLeft;
+      root.m_iRight        = iRightRight;
       rightLeft.m_iParent  = iRight;
       rightRight.m_iParent = iNode;
     }
     else
     {
-      right.m_iRight = iRightRight;
-      root.m_iRight  = iRightLeft;
+      right.m_iRight       = iRightRight;
+      root.m_iRight        = iRightLeft;
       rightRight.m_iParent = iRight;
       rightLeft.m_iParent  = iNode;
     }
@@ -327,8 +330,8 @@ xiiInt32 xiiSceneSpatialHierarchy::Balance(xiiInt32 iNode)
   {
     const xiiInt32 iLeftLeft  = left.m_iLeft;
     const xiiInt32 iLeftRight = left.m_iRight;
-    Node& leftLeft            = m_Nodes[iLeftLeft];
-    Node& leftRight           = m_Nodes[iLeftRight];
+    Node&          leftLeft   = m_Nodes[iLeftLeft];
+    Node&          leftRight  = m_Nodes[iLeftRight];
 
     left.m_iLeft   = iNode;
     left.m_iParent = root.m_iParent;
@@ -342,15 +345,15 @@ xiiInt32 xiiSceneSpatialHierarchy::Balance(xiiInt32 iNode)
 
     if (leftLeft.m_iHeight > leftRight.m_iHeight)
     {
-      left.m_iRight = iLeftLeft;
-      root.m_iLeft  = iLeftRight;
+      left.m_iRight       = iLeftLeft;
+      root.m_iLeft        = iLeftRight;
       leftLeft.m_iParent  = iLeft;
       leftRight.m_iParent = iNode;
     }
     else
     {
-      left.m_iRight = iLeftRight;
-      root.m_iLeft  = iLeftLeft;
+      left.m_iRight       = iLeftRight;
+      root.m_iLeft        = iLeftLeft;
       leftRight.m_iParent = iLeft;
       leftLeft.m_iParent  = iNode;
     }

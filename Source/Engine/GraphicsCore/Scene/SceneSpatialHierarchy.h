@@ -10,8 +10,8 @@
 struct XII_GRAPHICSCORE_DLL xiiSceneSpatialQuery
 {
   xiiUInt32                        m_uiVisibilityMask = 0xFFFFFFFFU;
-  xiiBitflags<xiiSceneObjectFlags> m_RequiredFlags = xiiSceneObjectFlags::Enabled;
-  xiiBitflags<xiiSceneObjectFlags> m_ExcludedFlags = xiiSceneObjectFlags::None;
+  xiiBitflags<xiiSceneObjectFlags> m_RequiredFlags    = xiiSceneObjectFlags::Enabled;
+  xiiBitflags<xiiSceneObjectFlags> m_ExcludedFlags    = xiiSceneObjectFlags::None;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneSpatialQuery);
@@ -20,12 +20,12 @@ struct XII_GRAPHICSCORE_DLL xiiSceneSpatialStats
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiLeafCount   = 0U;
-  xiiUInt32 m_uiNodeCount   = 0U;
-  xiiUInt32 m_uiTreeHeight  = 0U;
+  xiiUInt32 m_uiLeafCount    = 0U;
+  xiiUInt32 m_uiNodeCount    = 0U;
+  xiiUInt32 m_uiTreeHeight   = 0U;
   xiiUInt32 m_uiReinsertions = 0U;
-  xiiUInt32 m_uiRotations   = 0U;
-  float     m_fAreaRatio    = 0.0f;
+  xiiUInt32 m_uiRotations    = 0U;
+  float     m_fAreaRatio     = 0.0f;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneSpatialStats);
@@ -58,37 +58,37 @@ public:
 private:
   struct Node
   {
-    xiiBoundingBox                  m_FatBounds = xiiBoundingBox::MakeInvalid();
-    xiiBoundingBox                  m_ExactBounds = xiiBoundingBox::MakeInvalid();
-    xiiSceneObjectHandle            m_hObject;
+    xiiBoundingBox                   m_FatBounds   = xiiBoundingBox::MakeInvalid();
+    xiiBoundingBox                   m_ExactBounds = xiiBoundingBox::MakeInvalid();
+    xiiSceneObjectHandle             m_hObject;
     xiiBitflags<xiiSceneObjectFlags> m_Flags;
-    xiiUInt32                       m_uiVisibilityMask = 0U;
-    xiiInt32                        m_iParent = -1;
-    xiiInt32                        m_iLeft = -1;
-    xiiInt32                        m_iRight = -1;
-    xiiInt32                        m_iHeight = -1;
-    xiiInt32                        m_iNextFree = -1;
+    xiiUInt32                        m_uiVisibilityMask = 0U;
+    xiiInt32                         m_iParent          = -1;
+    xiiInt32                         m_iLeft            = -1;
+    xiiInt32                         m_iRight           = -1;
+    xiiInt32                         m_iHeight          = -1;
+    xiiInt32                         m_iNextFree        = -1;
 
     [[nodiscard]] bool IsLeaf() const { return m_iLeft == -1; }
   };
 
-  [[nodiscard]] xiiInt32 AllocateNode();
-  void                       FreeNode(xiiInt32 iNode);
-  void                       InsertLeaf(xiiInt32 iLeaf);
-  void                       RemoveLeaf(xiiInt32 iLeaf);
-  void                       RefitAncestors(xiiInt32 iNode);
-  [[nodiscard]] xiiInt32     Balance(xiiInt32 iNode);
-  [[nodiscard]] xiiInt32     FindBestSibling(const xiiBoundingBox& bounds) const;
-  [[nodiscard]] bool         PassesFilter(const Node& node, const xiiSceneSpatialQuery& query) const;
+  [[nodiscard]] xiiInt32       AllocateNode();
+  void                         FreeNode(xiiInt32 iNode);
+  void                         InsertLeaf(xiiInt32 iLeaf);
+  void                         RemoveLeaf(xiiInt32 iLeaf);
+  void                         RefitAncestors(xiiInt32 iNode);
+  [[nodiscard]] xiiInt32       Balance(xiiInt32 iNode);
+  [[nodiscard]] xiiInt32       FindBestSibling(const xiiBoundingBox& bounds) const;
+  [[nodiscard]] bool           PassesFilter(const Node& node, const xiiSceneSpatialQuery& query) const;
   [[nodiscard]] xiiBoundingBox MakeFatBounds(const xiiBoundingBox& bounds, const xiiVec3& vDisplacement) const;
-  [[nodiscard]] static float SurfaceArea(const xiiBoundingBox& bounds);
+  [[nodiscard]] static float   SurfaceArea(const xiiBoundingBox& bounds);
 
   xiiDynamicArray<Node>     m_Nodes;
   xiiDynamicArray<xiiInt32> m_ObjectToNode;
-  xiiInt32                  m_iRoot = -1;
-  xiiInt32                  m_iFreeList = -1;
-  xiiUInt32                 m_uiLeafCount = 0U;
-  xiiUInt32                 m_uiReinsertions = 0U;
-  xiiUInt32                 m_uiRotations = 0U;
+  xiiInt32                  m_iRoot            = -1;
+  xiiInt32                  m_iFreeList        = -1;
+  xiiUInt32                 m_uiLeafCount      = 0U;
+  xiiUInt32                 m_uiReinsertions   = 0U;
+  xiiUInt32                 m_uiRotations      = 0U;
   float                     m_fFatBoundsMargin = 0.25f;
 };

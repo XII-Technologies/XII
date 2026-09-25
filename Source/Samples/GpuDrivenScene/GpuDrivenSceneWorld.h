@@ -13,12 +13,12 @@
 /// Reflected sample configuration doubles as an editor/tooling example for the new systems.
 struct xiiGpuDrivenSceneConfiguration
 {
-  xiiUInt32 m_uiGridWidth         = 24U;
-  xiiUInt32 m_uiGridHeight        = 16U;
-  float     m_fObjectSpacing      = 2.4f;
+  xiiUInt32 m_uiGridWidth          = 24U;
+  xiiUInt32 m_uiGridHeight         = 16U;
+  float     m_fObjectSpacing       = 2.4f;
   xiiUInt32 m_uiMaxVisibleMeshlets = 262144U;
-  xiiUInt32 m_uiFramesInFlight    = 3U;
-  bool      m_bAsyncCompute       = true;
+  xiiUInt32 m_uiFramesInFlight     = 3U;
+  bool      m_bAsyncCompute        = true;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiGpuDrivenSceneConfiguration);
@@ -47,21 +47,21 @@ public:
   void      Shutdown(xiiUInt64 uiLastSubmittedFrame);
   void      Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiTime deltaTime);
 
-  [[nodiscard]] xiiSceneDatabase&                   GetScene() { return m_Scene; }
-  [[nodiscard]] const xiiSceneDatabase&             GetScene() const { return m_Scene; }
-  [[nodiscard]] xiiSceneSpatialHierarchy&           GetSpatialHierarchy() { return m_SpatialHierarchy; }
-  [[nodiscard]] xiiGeometryResidencyManager&        GetGeometryResidency() { return m_GeometryResidency; }
-  [[nodiscard]] xiiMaterialSystem&                  GetMaterialSystem() { return m_MaterialSystem; }
-  [[nodiscard]] xiiGALBindlessResourceTable&        GetBindlessResources() { return m_BindlessResources; }
-  [[nodiscard]] const xiiGpuDrivenSceneLight&       GetSunLight() const { return m_SunLight; }
-  [[nodiscard]] xiiUInt32                           GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;
+  [[nodiscard]] xiiSceneDatabase&             GetScene() { return m_Scene; }
+  [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_Scene; }
+  [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
+  [[nodiscard]] xiiGeometryResidencyManager&  GetGeometryResidency() { return m_GeometryResidency; }
+  [[nodiscard]] xiiMaterialSystem&            GetMaterialSystem() { return m_MaterialSystem; }
+  [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return m_BindlessResources; }
+  [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
+  [[nodiscard]] xiiUInt32                     GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;
 
 private:
   struct GeometryAsset
   {
-    xiiGeometryHandle                              m_hGeometry;
-    xiiDynamicArray<xiiMeshBufferResourceHandle>   m_Lods;
-    xiiDynamicArray<xiiGALBindlessResourceHandle>  m_BindlessBuffers;
+    xiiGeometryHandle                             m_hGeometry;
+    xiiDynamicArray<xiiMeshBufferResourceHandle>  m_Lods;
+    xiiDynamicArray<xiiGALBindlessResourceHandle> m_BindlessBuffers;
   };
 
   xiiResult CreateMaterials();
@@ -69,19 +69,19 @@ private:
   xiiResult CreateSceneObjects();
   xiiResult RegisterGeometryBuffers(GeometryAsset& asset);
 
-  xiiGpuDrivenSceneConfiguration      m_Configuration;
-  xiiGpuDrivenSceneLight              m_SunLight;
-  xiiSceneDatabase                    m_Scene;
-  xiiSceneSpatialHierarchy            m_SpatialHierarchy;
-  xiiGeometryResidencyManager         m_GeometryResidency;
-  xiiMaterialSystem                   m_MaterialSystem;
-  xiiGALBindlessResourceTable         m_BindlessResources;
-  xiiDynamicArray<GeometryAsset>       m_GeometryAssets;
-  xiiDynamicArray<xiiMaterialGpuHandle> m_Materials;
-  xiiDynamicArray<xiiSharedPtr<xiiMaterialSchema>> m_MaterialSchemas;
+  xiiGpuDrivenSceneConfiguration                     m_Configuration;
+  xiiGpuDrivenSceneLight                             m_SunLight;
+  xiiSceneDatabase                                   m_Scene;
+  xiiSceneSpatialHierarchy                           m_SpatialHierarchy;
+  xiiGeometryResidencyManager                        m_GeometryResidency;
+  xiiMaterialSystem                                  m_MaterialSystem;
+  xiiGALBindlessResourceTable                        m_BindlessResources;
+  xiiDynamicArray<GeometryAsset>                     m_GeometryAssets;
+  xiiDynamicArray<xiiMaterialGpuHandle>              m_Materials;
+  xiiDynamicArray<xiiSharedPtr<xiiMaterialSchema>>   m_MaterialSchemas;
   xiiDynamicArray<xiiSharedPtr<xiiMaterialInstance>> m_MaterialInstances;
-  xiiSceneObjectHandle                 m_hAssemblyRoot;
-  xiiDynamicArray<xiiSceneObjectHandle> m_Objects;
-  xiiDynamicArray<xiiVec3>              m_BasePositions;
-  float                                 m_fAnimationTime = 0.0f;
+  xiiSceneObjectHandle                               m_hAssemblyRoot;
+  xiiDynamicArray<xiiSceneObjectHandle>              m_Objects;
+  xiiDynamicArray<xiiVec3>                           m_BasePositions;
+  float                                              m_fAnimationTime = 0.0f;
 };

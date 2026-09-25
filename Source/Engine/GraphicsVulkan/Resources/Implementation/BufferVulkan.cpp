@@ -44,9 +44,9 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
   vkBufferCreateInfo.size                  = m_Description.m_uiSize;
   vkBufferCreateInfo.usage                 = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
   const xiiArrayPtr<const xiiUInt32> activeQueueFamilies = pDeviceVulkan->GetActiveQueueFamilyIndices();
-  vkBufferCreateInfo.sharingMode           = activeQueueFamilies.GetCount() > 1U ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
-  vkBufferCreateInfo.pQueueFamilyIndices   = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetPtr() : nullptr;
-  vkBufferCreateInfo.queueFamilyIndexCount = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetCount() : 0U;
+  vkBufferCreateInfo.sharingMode                         = activeQueueFamilies.GetCount() > 1U ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
+  vkBufferCreateInfo.pQueueFamilyIndices                 = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetPtr() : nullptr;
+  vkBufferCreateInfo.queueFamilyIndexCount               = activeQueueFamilies.GetCount() > 1U ? activeQueueFamilies.GetCount() : 0U;
 
   for (xiiUInt32 uiBit : m_Description.m_BindFlags)
   {

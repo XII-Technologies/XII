@@ -45,25 +45,25 @@ public:
   /// because the result is intentionally consumed by a later frame.
   void AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute = true);
 
-  [[nodiscard]] bool      HasValidHistory() const { return m_bHistoryValid; }
-  [[nodiscard]] xiiUInt32 GetMipLevelCount() const { return m_uiMipLevelCount; }
+  [[nodiscard]] bool       HasValidHistory() const { return m_bHistoryValid; }
+  [[nodiscard]] xiiUInt32  GetMipLevelCount() const { return m_uiMipLevelCount; }
   [[nodiscard]] xiiSizeU32 GetSize() const { return m_Size; }
 
 private:
   struct FrameResources
   {
-    xiiSharedPtr<xiiGALTexture> m_pTexture;
+    xiiSharedPtr<xiiGALTexture>                      m_pTexture;
     xiiDynamicArray<xiiSharedPtr<xiiGALTextureView>> m_pMipShaderResourceViews;
     xiiDynamicArray<xiiSharedPtr<xiiGALTextureView>> m_pMipUnorderedAccessViews;
   };
 
   xiiSharedPtr<xiiGALComputePipelineState> LoadComputePipeline(xiiStringView sShaderPath);
 
-  xiiGALDevice* m_pDevice = nullptr;
-  xiiGpuHiZPyramidDescription m_Description;
-  xiiDynamicArray<FrameResources> m_Frames;
+  xiiGALDevice*                            m_pDevice = nullptr;
+  xiiGpuHiZPyramidDescription              m_Description;
+  xiiDynamicArray<FrameResources>          m_Frames;
   xiiSharedPtr<xiiGALComputePipelineState> m_pBuildPipeline;
-  xiiSizeU32 m_Size;
-  xiiUInt32 m_uiMipLevelCount = 0U;
-  bool m_bHistoryValid = false;
+  xiiSizeU32                               m_Size;
+  xiiUInt32                                m_uiMipLevelCount = 0U;
+  bool                                     m_bHistoryValid   = false;
 };

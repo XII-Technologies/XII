@@ -14,16 +14,16 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     xiiSceneDatabase scene;
 
     xiiSceneObjectDesc parentDesc;
-    parentDesc.m_LocalTransform = xiiMat4::MakeTranslation(xiiVec3(10.0f, 0.0f, 0.0f));
-    parentDesc.m_LocalBounds = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(0.5f), 0.9f);
+    parentDesc.m_LocalTransform       = xiiMat4::MakeTranslation(xiiVec3(10.0f, 0.0f, 0.0f));
+    parentDesc.m_LocalBounds          = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(0.5f), 0.9f);
     const xiiSceneObjectHandle parent = scene.CreateObject(parentDesc);
 
     xiiSceneObjectDesc childDesc;
-    childDesc.m_hParent = parent;
-    childDesc.m_LocalTransform = xiiMat4::MakeTranslation(xiiVec3(0.0f, 2.0f, 0.0f));
-    childDesc.m_LocalBounds = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(0.25f), 0.45f);
-    childDesc.m_uiGeometryIndex = 7U;
-    childDesc.m_uiMaterialIndex = 11U;
+    childDesc.m_hParent              = parent;
+    childDesc.m_LocalTransform       = xiiMat4::MakeTranslation(xiiVec3(0.0f, 2.0f, 0.0f));
+    childDesc.m_LocalBounds          = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(0.25f), 0.45f);
+    childDesc.m_uiGeometryIndex      = 7U;
+    childDesc.m_uiMaterialIndex      = 11U;
     const xiiSceneObjectHandle child = scene.CreateObject(childDesc);
 
     XII_TEST_BOOL(parent.IsValid());
@@ -63,7 +63,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Balanced ordered spatial hierarchy")
   {
-    constexpr xiiUInt32 uiObjectCount = 4096U;
+    constexpr xiiUInt32      uiObjectCount = 4096U;
     xiiSceneSpatialHierarchy hierarchy(0.05f);
     hierarchy.Reserve(uiObjectCount);
 
@@ -71,8 +71,8 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     handles.SetCount(uiObjectCount);
     for (xiiUInt32 i = 0U; i < uiObjectCount; ++i)
     {
-      handles[i].m_uiIndex = i;
-      handles[i].m_uiGeneration = 1U;
+      handles[i].m_uiIndex        = i;
+      handles[i].m_uiGeneration   = 1U;
       const xiiBoundingBox bounds = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3(static_cast<float>(i), 0.0f, 0.0f), xiiVec3(0.25f));
       XII_TEST_BOOL(hierarchy.Insert(handles[i], bounds, 1U, xiiSceneObjectFlags::Enabled));
     }
@@ -85,7 +85,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
 
     xiiSceneSpatialQuery query;
     query.m_uiVisibilityMask = 1U;
-    query.m_RequiredFlags = xiiSceneObjectFlags::Enabled;
+    query.m_RequiredFlags    = xiiSceneObjectFlags::Enabled;
     xiiDynamicArray<xiiSceneObjectHandle> results;
     hierarchy.QueryBox(xiiBoundingBox::MakeFromMinMax(xiiVec3(99.5f, -1.0f, -1.0f), xiiVec3(199.5f, 1.0f, 1.0f)), query, results);
     XII_TEST_INT(results.GetCount(), 100U);

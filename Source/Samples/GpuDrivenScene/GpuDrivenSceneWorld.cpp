@@ -9,30 +9,28 @@
 #include <Foundation/Reflection/Reflection.h>
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDrivenSceneConfiguration>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("GridWidth", m_uiGridWidth)->AddAttributes(new xiiDefaultValueAttribute(24U), new xiiClampValueAttribute(1U, 512U)),
-    XII_MEMBER_PROPERTY("GridHeight", m_uiGridHeight)->AddAttributes(new xiiDefaultValueAttribute(16U), new xiiClampValueAttribute(1U, 512U)),
-    XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4f), new xiiClampValueAttribute(0.25f, 20.0f)),
-    XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(262144U)),
-    XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(2U, 8U)),
-    XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("GridWidth", m_uiGridWidth)->AddAttributes(new xiiDefaultValueAttribute(24U), new xiiClampValueAttribute(1U, 512U)),
+      XII_MEMBER_PROPERTY("GridHeight", m_uiGridHeight)->AddAttributes(new xiiDefaultValueAttribute(16U), new xiiClampValueAttribute(1U, 512U)),
+      XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4f), new xiiClampValueAttribute(0.25f, 20.0f)),
+      XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(262144U)),
+      XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(2U, 8U)),
+      XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneLight, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDrivenSceneLight>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Direction", m_vDirection),
-    XII_MEMBER_PROPERTY("Color", m_Color),
-    XII_MEMBER_PROPERTY("Intensity", m_fIntensity)->AddAttributes(new xiiDefaultValueAttribute(1.35f), new xiiClampValueAttribute(0.0f, 100.0f)),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Direction", m_vDirection),
+      XII_MEMBER_PROPERTY("Color", m_Color),
+      XII_MEMBER_PROPERTY("Intensity", m_fIntensity)->AddAttributes(new xiiDefaultValueAttribute(1.35f), new xiiClampValueAttribute(0.0f, 100.0f)),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 namespace
@@ -45,7 +43,7 @@ namespace
     descriptor.m_bKeepCpuMeshData    = false;
     return xiiResourceManager::CreateResource<xiiMeshBufferResource>(sName, std::move(descriptor), sName);
   }
-}
+} // namespace
 
 xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
 {
@@ -64,9 +62,9 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
     return XII_FAILURE;
 
   xiiMaterialGpuStorageDescription materialDescription;
-  materialDescription.m_uiMaxMaterials = 64U;
+  materialDescription.m_uiMaxMaterials      = 64U;
   materialDescription.m_uiMaxParameterBytes = 64U;
-  materialDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
+  materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
   if (m_MaterialSystem.Initialize(pDevice, materialDescription).Failed())
     return XII_FAILURE;
 
@@ -114,22 +112,22 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
   for (xiiUInt32 i = 0U; i < XII_ARRAY_SIZE(colors); ++i)
   {
     xiiMaterialSchemaDescription schemaDescription;
-    xiiStringBuilder materialName;
+    xiiStringBuilder             materialName;
     materialName.SetFormat("GPU Driven Material {0}", i);
-    schemaDescription.m_sName = materialName;
-    schemaDescription.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/GpuDrivenScene.xiiShader");
-    schemaDescription.m_Domain = xiiMaterialDomain::Surface;
+    schemaDescription.m_sName        = materialName;
+    schemaDescription.m_hShader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/GpuDrivenScene.xiiShader");
+    schemaDescription.m_Domain       = xiiMaterialDomain::Surface;
     schemaDescription.m_ShadingModel = xiiMaterialShadingModel::Lit;
     schemaDescription.AddParameter("BaseColor", xiiMaterialParameterType::Float4, xiiVec4(colors[i].r, colors[i].g, colors[i].b, colors[i].a));
 
     xiiMaterialRuntimeState runtimeState;
-    runtimeState.m_Domain = xiiMaterialDomain::Surface;
+    runtimeState.m_Domain       = xiiMaterialDomain::Surface;
     runtimeState.m_ShadingModel = xiiMaterialShadingModel::Lit;
     runtimeState.m_FeatureFlags = xiiMaterialFeatureFlags::ReceivesLighting | xiiMaterialFeatureFlags::CastsShadows | xiiMaterialFeatureFlags::RuntimeGenerated | xiiMaterialFeatureFlags::UsesBindlessResources;
 
-    xiiSharedPtr<xiiMaterialSchema> schema;
+    xiiSharedPtr<xiiMaterialSchema>   schema;
     xiiSharedPtr<xiiMaterialInstance> instance;
-    xiiStringBuilder error;
+    xiiStringBuilder                  error;
     if (xiiMaterialSystem::CreateRuntimeMaterial(schemaDescription, runtimeState, schema, instance, &error).Failed())
     {
       xiiLog::Error("Failed to create GPU-driven sample material: {0}", error);
@@ -174,12 +172,12 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
   for (GeometryAsset& asset : m_GeometryAssets)
   {
     xiiGeometryDescription description;
-    description.m_bPinned = true;
+    description.m_bPinned             = true;
     description.m_uiStreamingPriority = 100U;
     for (xiiUInt32 lod = 0U; lod < asset.m_Lods.GetCount(); ++lod)
     {
-      xiiGeometryLodSource& source = description.m_Lods.ExpandAndGetRef();
-      source.m_hMeshBuffer = asset.m_Lods[lod];
+      xiiGeometryLodSource& source    = description.m_Lods.ExpandAndGetRef();
+      source.m_hMeshBuffer            = asset.m_Lods[lod];
       source.m_fMinimumScreenCoverage = lod == 0U ? 80.0f : 0.0f;
       xiiResourceManager::PreloadResource(source.m_hMeshBuffer);
       xiiResourceLock<xiiMeshBufferResource> mesh(source.m_hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
@@ -242,7 +240,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   // parallel scene representation. The first objects below are authored in its local space.
   xiiSceneObjectDesc rootDescription;
   rootDescription.m_Flags = xiiSceneObjectFlags::None;
-  m_hAssemblyRoot = m_Scene.CreateObject(rootDescription);
+  m_hAssemblyRoot         = m_Scene.CreateObject(rootDescription);
   if (!m_hAssemblyRoot.IsValid())
     return XII_FAILURE;
 
@@ -250,9 +248,9 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   {
     for (xiiUInt32 x = 0U; x < m_Configuration.m_uiGridWidth; ++x)
     {
-      const xiiUInt32 objectIndex = y * m_Configuration.m_uiGridWidth + x;
+      const xiiUInt32 objectIndex   = y * m_Configuration.m_uiGridWidth + x;
       const xiiUInt32 geometryIndex = objectIndex % m_GeometryAssets.GetCount();
-      const xiiVec3 position(
+      const xiiVec3   position(
         6.0f + static_cast<float>(y) * m_Configuration.m_fObjectSpacing,
         (static_cast<float>(x) - static_cast<float>(m_Configuration.m_uiGridWidth - 1U) * 0.5f) * m_Configuration.m_fObjectSpacing,
         (static_cast<float>(objectIndex % 5U) - 2.0f) * 0.32f);
@@ -263,14 +261,14 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
 
       xiiSceneObjectDesc description;
       description.m_LocalTransform = xiiMat4::MakeTranslation(position);
-      description.m_LocalBounds = xiiBoundingBoxSphere::MakeFromCenterExtents(
+      description.m_LocalBounds    = xiiBoundingBoxSphere::MakeFromCenterExtents(
         geometry->m_BoundsCenterRadius.GetAsVec3(),
         geometry->m_BoundsExtents.GetAsVec3(),
         geometry->m_BoundsCenterRadius.w);
       description.m_uiGeometryIndex = m_GeometryAssets[geometryIndex].m_hGeometry.m_uiIndex;
       description.m_uiMaterialIndex = m_Materials[objectIndex % m_Materials.GetCount()].m_uiSlot;
-      description.m_uiUserData = objectIndex;
-      description.m_Flags = xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows | xiiSceneObjectFlags::ReceiveShadows | xiiSceneObjectFlags::SensorVisible | (geometryIndex == 1U ? xiiSceneObjectFlags::Occluder : xiiSceneObjectFlags::None);
+      description.m_uiUserData      = objectIndex;
+      description.m_Flags           = xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows | xiiSceneObjectFlags::ReceiveShadows | xiiSceneObjectFlags::SensorVisible | (geometryIndex == 1U ? xiiSceneObjectFlags::Occluder : xiiSceneObjectFlags::None);
       if (objectIndex < 64U)
         description.m_hParent = m_hAssemblyRoot;
 
@@ -294,28 +292,28 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
 void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiTime deltaTime)
 {
   m_fAnimationTime += static_cast<float>(deltaTime.GetSeconds());
-  const xiiUInt32 animatedCount = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64U);
+  const xiiUInt32              animatedCount = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64U);
   xiiHybridArray<xiiVec3, 64U> previousCenters;
   previousCenters.SetCountUninitialized(animatedCount);
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
   {
     previousCenters[i] = m_Scene.GetGlobalBounds(m_Objects[i]).m_vCenter;
-    xiiVec3 position = m_BasePositions[i];
+    xiiVec3 position   = m_BasePositions[i];
     position.z += 0.45f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7f + static_cast<float>(i) * 0.31f));
     // Exercise the canonical inverse-transpose normal transform with an animated,
     // non-uniformly scaled instance while the remaining objects use rigid transforms.
-    const xiiMat4 scale = i == 0U ? xiiMat4::MakeScaling(xiiVec3(1.0f, 0.65f, 1.35f)) : xiiMat4::MakeIdentity();
+    const xiiMat4 scale     = i == 0U ? xiiMat4::MakeScaling(xiiVec3(1.0f, 0.65f, 1.35f)) : xiiMat4::MakeIdentity();
     const xiiMat4 transform = xiiMat4::MakeTranslation(position) * xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(m_fAnimationTime * 0.3f + static_cast<float>(i) * 0.01f)) * scale;
     m_Scene.SetLocalTransform(m_Objects[i], transform);
   }
 
   if (m_hAssemblyRoot.IsValid())
   {
-    const float fRootAngle = 0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f));
+    const float fRootAngle  = 0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f));
     const float fRootHeight = 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f));
     m_Scene.SetLocalTransform(m_hAssemblyRoot,
-      xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
-      xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
+                              xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
+                                xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
   }
 
   m_Scene.CommitFrame(uiFrameIndex);

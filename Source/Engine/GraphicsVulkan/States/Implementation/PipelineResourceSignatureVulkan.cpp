@@ -144,13 +144,13 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
       vkDescriptorLayoutBinding.stageFlags                      = xiiVulkanTypeConversions::GetShaderStageFlags(resourceLayout.m_ShaderStages);
 
       vk::DescriptorBindingFlags& vkBindingFlags = vkDescriptorBindingFlags.ExpandAndGetRef();
-      vkBindingFlags = {};
+      vkBindingFlags                             = {};
       if (resourceLayout.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
       {
         // Runtime arrays are fixed-capacity descriptor tables at the API level. Partially-bound
         // entries make sparse tables legal. Descriptors are committed before the set is bound, so
         // update-after-bind is neither needed nor legal when the same set has dynamic buffers.
-        vkBindingFlags = vk::DescriptorBindingFlagBits::ePartiallyBound;
+        vkBindingFlags   = vk::DescriptorBindingFlagBits::ePartiallyBound;
         bHasBindingFlags = true;
       }
 
@@ -178,7 +178,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
     vkDescriptorSetLayoutCreateInfo.pBindings    = !vkDescriptorSetLayoutBindings.IsEmpty() ? vkDescriptorSetLayoutBindings.GetData() : nullptr;
     vkDescriptorSetLayoutCreateInfo.bindingCount = vkDescriptorSetLayoutBindings.GetCount();
-    vkDescriptorSetLayoutCreateInfo.flags = {};
+    vkDescriptorSetLayoutCreateInfo.flags        = {};
 
     vk::DescriptorSetLayoutBindingFlagsCreateInfo vkBindingFlagsCreateInfo;
     vkBindingFlagsCreateInfo.bindingCount  = vkDescriptorBindingFlags.GetCount();

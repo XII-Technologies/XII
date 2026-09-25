@@ -13,11 +13,11 @@ class xiiGALCommandList;
 /// Capacity policy for the engine-wide sparse descriptor tables.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindlessResourceTableDescription
 {
-  xiiUInt32 m_uiBufferSRVCapacity = XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY;
-  xiiUInt32 m_uiBufferUAVCapacity = XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY;
+  xiiUInt32 m_uiBufferSRVCapacity  = XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY;
+  xiiUInt32 m_uiBufferUAVCapacity  = XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY;
   xiiUInt32 m_uiTextureSRVCapacity = XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY;
   xiiUInt32 m_uiTextureUAVCapacity = 1024U;
-  xiiUInt32 m_uiSamplerCapacity = 256U;
+  xiiUInt32 m_uiSamplerCapacity    = 256U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBindlessResourceTableDescription);
@@ -25,11 +25,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBindlessResourceT
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindlessResourceTableStats
 {
   XII_DECLARE_POD_TYPE();
-  xiiUInt32 m_uiBufferSRVCount = 0U;
-  xiiUInt32 m_uiBufferUAVCount = 0U;
+  xiiUInt32 m_uiBufferSRVCount  = 0U;
+  xiiUInt32 m_uiBufferUAVCount  = 0U;
   xiiUInt32 m_uiTextureSRVCount = 0U;
   xiiUInt32 m_uiTextureUAVCount = 0U;
-  xiiUInt32 m_uiSamplerCount = 0U;
+  xiiUInt32 m_uiSamplerCount    = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBindlessResourceTableStats);
@@ -82,9 +82,9 @@ private:
   template <typename TObject>
   struct TableStorage
   {
-    xiiGALBindlessResourceAllocator      m_Allocator;
+    xiiGALBindlessResourceAllocator        m_Allocator;
     xiiDynamicArray<xiiSharedPtr<TObject>> m_Objects;
-    xiiDynamicArray<xiiUInt64>           m_RetireFences;
+    xiiDynamicArray<xiiUInt64>             m_RetireFences;
   };
 
   template <typename TObject>
@@ -96,10 +96,10 @@ private:
   template <typename TObject>
   static void Collect(TableStorage<TObject>& table, xiiUInt64 uiCompletedFenceValue);
 
-  mutable xiiMutex                    m_Mutex;
-  TableStorage<xiiGALBufferView>      m_BufferSRVs;
-  TableStorage<xiiGALBufferView>      m_BufferUAVs;
-  TableStorage<xiiGALTextureView>     m_TextureSRVs;
-  TableStorage<xiiGALTextureView>     m_TextureUAVs;
-  TableStorage<xiiGALSampler>         m_Samplers;
+  mutable xiiMutex                m_Mutex;
+  TableStorage<xiiGALBufferView>  m_BufferSRVs;
+  TableStorage<xiiGALBufferView>  m_BufferUAVs;
+  TableStorage<xiiGALTextureView> m_TextureSRVs;
+  TableStorage<xiiGALTextureView> m_TextureUAVs;
+  TableStorage<xiiGALSampler>     m_Samplers;
 };

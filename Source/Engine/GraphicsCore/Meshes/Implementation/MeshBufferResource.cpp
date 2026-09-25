@@ -437,8 +437,8 @@ void xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xii
     return;
   }
   xiiDynamicArray<meshopt_Meshlet> optimizedMeshlets;
-  xiiDynamicArray<xiiUInt32> optimizedVertices;
-  xiiDynamicArray<xiiUInt8> optimizedTriangles;
+  xiiDynamicArray<xiiUInt32>       optimizedVertices;
+  xiiDynamicArray<xiiUInt8>        optimizedTriangles;
   optimizedMeshlets.SetCountUninitialized(static_cast<xiiUInt32>(uiMeshletCapacity));
   optimizedVertices.SetCountUninitialized(static_cast<xiiUInt32>(uiMeshletCapacity * uiMaxVertices));
   optimizedTriangles.SetCountUninitialized(static_cast<xiiUInt32>(uiMeshletCapacity * uiMaxPrimitives * 3U));
@@ -454,7 +454,7 @@ void xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xii
   for (size_t i = 0U; i < uiMeshletCount; ++i)
   {
     const meshopt_Meshlet& source = optimizedMeshlets[static_cast<xiiUInt32>(i)];
-    const meshopt_Bounds bounds = meshopt_computeMeshletBounds(
+    const meshopt_Bounds   bounds = meshopt_computeMeshletBounds(
       optimizedVertices.GetData() + source.vertex_offset,
       optimizedTriangles.GetData() + source.triangle_offset,
       source.triangle_count, &positions[0].x, positions.GetCount(), sizeof(xiiVec3));

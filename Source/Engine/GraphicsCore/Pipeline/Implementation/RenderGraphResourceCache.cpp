@@ -43,7 +43,7 @@ void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 u
 {
   XII_LOCK(m_Mutex);
 
-  m_uiCurrentFrame = uiFrameIndex;
+  m_uiCurrentFrame   = uiFrameIndex;
   m_uiCompletedFrame = xiiMath::Min(uiCompletedFrameIndex, uiFrameIndex);
 
   for (xiiUInt32 i = m_RetiredTextures.GetCount(); i > 0U; --i)
@@ -52,7 +52,7 @@ void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 u
     if (retired.m_uiLastUsedFrame > m_uiCompletedFrame)
       continue;
 
-    const xiiUInt32 uiHash = retired.m_pTexture->GetDescription().CalculateHash();
+    const xiiUInt32                 uiHash = retired.m_pTexture->GetDescription().CalculateHash();
     xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
     if (pPool == nullptr)
     {
@@ -69,7 +69,7 @@ void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 u
     if (retired.m_uiLastUsedFrame > m_uiCompletedFrame)
       continue;
 
-    const xiiUInt32 uiHash = retired.m_pBuffer->GetDescription().CalculateHash();
+    const xiiUInt32                uiHash = retired.m_pBuffer->GetDescription().CalculateHash();
     xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
     if (pPool == nullptr)
     {

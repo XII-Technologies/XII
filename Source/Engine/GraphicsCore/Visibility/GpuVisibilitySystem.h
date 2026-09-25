@@ -16,15 +16,15 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiVec4   m_FrustumPlanes[6];
   xiiVec4   m_CameraPosition;
   xiiVec4   m_ViewportAndHiZ; // width, height, Hi-Z mip count, occlusion bias
-  xiiUInt32 m_uiInstanceCount = 0U;
-  xiiUInt32 m_uiVisibilityMask = 0xFFFFFFFFU;
-  xiiUInt32 m_uiRequiredFlags = xiiSceneObjectFlags::Enabled;
-  xiiUInt32 m_uiExcludedFlags = 0U;
+  xiiUInt32 m_uiInstanceCount     = 0U;
+  xiiUInt32 m_uiVisibilityMask    = 0xFFFFFFFFU;
+  xiiUInt32 m_uiRequiredFlags     = xiiSceneObjectFlags::Enabled;
+  xiiUInt32 m_uiExcludedFlags     = 0U;
   xiiUInt32 m_uiGeometryBaseIndex = 0U;
-  xiiUInt32 m_uiPadding[3] = {};
+  xiiUInt32 m_uiPadding[3]        = {};
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetFrustumPlaneCount() const { return 6U; }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiVec4 GetFrustumPlane(xiiUInt32 uiIndex) const { return m_FrustumPlanes[uiIndex]; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVec4   GetFrustumPlane(xiiUInt32 uiIndex) const { return m_FrustumPlanes[uiIndex]; }
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityView);
@@ -51,24 +51,24 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPurpose);
 /// same graph without resource-name collisions.
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPassDescription
 {
-  xiiString                         m_sName = "Main View";
-  xiiEnum<xiiGpuVisibilityPurpose>  m_Purpose = xiiGpuVisibilityPurpose::MainView;
-  bool                              m_bAsyncCompute = true;
+  xiiString                        m_sName         = "Main View";
+  xiiEnum<xiiGpuVisibilityPurpose> m_Purpose       = xiiGpuVisibilityPurpose::MainView;
+  bool                             m_bAsyncCompute = true;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPassDescription);
 
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityDescription
 {
-  xiiUInt32 m_uiMaxInstances = 65536U;
+  xiiUInt32 m_uiMaxInstances       = 65536U;
   xiiUInt32 m_uiMaxVisibleMeshlets = 1024U * 1024U;
   /// Advisory content budget for meshlets in one resident LOD. Dispatch dimensions are derived
   /// from residency metadata so exceeding this value reports a warning but never drops work.
   xiiUInt32 m_uiMaxMeshletsPerGeometry = 4096U;
   /// Reserved for compatibility with multi-command consumers. The mesh-shader path tiles the
   /// compact list into one indirect command and therefore requires exactly one command slot.
-  xiiUInt32 m_uiMaxDrawCommands = 1U;
-  xiiUInt32 m_uiFramesInFlight = 3U;
+  xiiUInt32 m_uiMaxDrawCommands   = 1U;
+  xiiUInt32 m_uiFramesInFlight    = 3U;
   xiiUInt32 m_uiMaxVisibilitySets = 16U;
 };
 
@@ -98,7 +98,7 @@ public:
   ~xiiGpuVisibilitySystem();
 
   xiiResult Initialize(xiiGALDevice* pDevice, const xiiGpuVisibilityDescription& description = {});
-  void Shutdown();
+  void      Shutdown();
 
   static xiiGpuVisibilityView BuildView(const xiiMat4& viewProjectionMatrix, const xiiFrustum& frustum, const xiiVec3& vCameraPosition, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiHiZMipCount, xiiUInt32 uiInstanceCount, xiiUInt32 uiVisibilityMask = 0xFFFFFFFFU);
 
@@ -117,10 +117,10 @@ public:
 
 private:
   xiiSharedPtr<xiiGALComputePipelineState> LoadComputePipeline(xiiStringView sShaderPath);
-  xiiUInt32 GetOrCreateVisibilitySetIndex(xiiStringView sName);
+  xiiUInt32                                GetOrCreateVisibilitySetIndex(xiiStringView sName);
 
   xiiGpuVisibilityDescription m_Description;
-  xiiGALDevice* m_pDevice = nullptr;
+  xiiGALDevice*               m_pDevice = nullptr;
   /// One scene snapshot per frame slot is shared by every view. View constants remain
   /// independently frame-sliced because masks, frusta, and Hi-Z inputs differ per pass.
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pSceneBuffers;
@@ -128,19 +128,19 @@ private:
   /// Last contents uploaded to each frame-in-flight scene buffer. A mirror per slot is
   /// required because consecutive CPU frames rotate across different GPU allocations.
   xiiDynamicArray<xiiDynamicArray<xiiGpuSceneInstance>> m_SceneBufferMirrors;
-  xiiRenderGraph* m_pPreparedGraph = nullptr;
-  const xiiSceneDatabase* m_pPreparedScene = nullptr;
-  xiiUInt64 m_uiPreparedFrame = xiiMath::MaxValue<xiiUInt64>();
-  xiiRenderGraphBufferHandle m_hPreparedScene;
-  xiiHashTable<xiiHashedString, xiiUInt32> m_VisibilitySetIndices;
-  xiiSharedPtr<xiiGALComputePipelineState> m_pInstanceCullPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState> m_pHiZOcclusionPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletDispatchBuildPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletCullPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState> m_pCommandBuildPipeline;
-  xiiUInt32 m_uiLargestReportedInstanceCount = 0U;
-  xiiUInt32 m_uiLargestReportedMeshletCount = 0U;
-  xiiUInt32 m_uiMeshDispatchGroupCountX = 0U;
-  xiiUInt32 m_uiMeshDispatchGroupCountY = 0U;
-  xiiUInt32 m_uiMeshDispatchGroupTotalCount = 0U;
+  xiiRenderGraph*                                       m_pPreparedGraph  = nullptr;
+  const xiiSceneDatabase*                               m_pPreparedScene  = nullptr;
+  xiiUInt64                                             m_uiPreparedFrame = xiiMath::MaxValue<xiiUInt64>();
+  xiiRenderGraphBufferHandle                            m_hPreparedScene;
+  xiiHashTable<xiiHashedString, xiiUInt32>              m_VisibilitySetIndices;
+  xiiSharedPtr<xiiGALComputePipelineState>              m_pInstanceCullPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>              m_pHiZOcclusionPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletDispatchBuildPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletCullPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>              m_pCommandBuildPipeline;
+  xiiUInt32                                             m_uiLargestReportedInstanceCount = 0U;
+  xiiUInt32                                             m_uiLargestReportedMeshletCount  = 0U;
+  xiiUInt32                                             m_uiMeshDispatchGroupCountX      = 0U;
+  xiiUInt32                                             m_uiMeshDispatchGroupCountY      = 0U;
+  xiiUInt32                                             m_uiMeshDispatchGroupTotalCount  = 0U;
 };

@@ -43,8 +43,8 @@ bool xiiRenderGraphTimestampProfiler::SupportsDurationQueries(const xiiGALComman
   if (m_pDevice == nullptr || m_pDevice->GetFeatures().m_DurationQueries != xiiGALDeviceFeatureState::Enabled)
     return false;
 
-  const xiiBitflags<xiiGALCommandQueueFlags> queueFlags = commandList.GetDescription().m_QueueFlags;
-  const bool bTransferOnly = queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && !queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute);
+  const xiiBitflags<xiiGALCommandQueueFlags> queueFlags    = commandList.GetDescription().m_QueueFlags;
+  const bool                                 bTransferOnly = queueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer) && !queueFlags.AreAllSet(xiiGALCommandQueueFlags::Compute);
   return !bTransferOnly || m_pDevice->GetFeatures().m_TransferQueueTimestampQueries == xiiGALDeviceFeatureState::Enabled;
 }
 

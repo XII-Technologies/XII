@@ -1448,8 +1448,8 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     // Backends may legally fall back to a more capable queue (for example, compute on
     // graphics when no asynchronous queue was created). Record and submit a command list
     // using the physical queue's flags so GAL validation and backend pool selection agree.
-    const xiiBitflags<xiiGALCommandQueueFlags> actualQueueFlags = pQueue->GetDescription().m_QueueFlags;
-    const xiiUInt32 uiActualQueueIndex = xiiRenderGraphSkills::Scheduling::GetQueueIndex(actualQueueFlags, true);
+    const xiiBitflags<xiiGALCommandQueueFlags> actualQueueFlags   = pQueue->GetDescription().m_QueueFlags;
+    const xiiUInt32                            uiActualQueueIndex = xiiRenderGraphSkills::Scheduling::GetQueueIndex(actualQueueFlags, true);
 
     // Create a command list for this submission.
     xiiGALCommandListCreationDescription commandListDescription;

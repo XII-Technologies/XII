@@ -15,10 +15,10 @@ struct XII_GRAPHICSCORE_DLL xiiGpuFrameCompletionStats
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt64 m_uiLastCapturedFrame = 0ULL;
+  xiiUInt64 m_uiLastCapturedFrame  = 0ULL;
   xiiUInt64 m_uiLastCompletedFrame = 0ULL;
-  xiiUInt32 m_uiPendingFrameCount = 0U;
-  xiiUInt32 m_uiTrackedQueueCount = 0U;
+  xiiUInt32 m_uiPendingFrameCount  = 0U;
+  xiiUInt32 m_uiTrackedQueueCount  = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuFrameCompletionStats);
@@ -46,23 +46,23 @@ public:
   /// Use this before reusing a frame-ring slot. Frames must have been captured sequentially.
   void WaitForFrame(xiiUInt64 uiFrameIndex);
 
-  [[nodiscard]] xiiUInt64 GetLastCompletedFrame() const { return m_Stats.m_uiLastCompletedFrame; }
+  [[nodiscard]] xiiUInt64                         GetLastCompletedFrame() const { return m_Stats.m_uiLastCompletedFrame; }
   [[nodiscard]] const xiiGpuFrameCompletionStats& GetStats() const { return m_Stats; }
 
 private:
   struct QueuePoint
   {
-    xiiGALCommandQueue* m_pQueue = nullptr;
+    xiiGALCommandQueue* m_pQueue           = nullptr;
     xiiUInt64           m_uiSubmittedValue = 0ULL;
   };
 
   struct FramePoint
   {
-    xiiUInt64                       m_uiFrameIndex = 0ULL;
+    xiiUInt64                      m_uiFrameIndex = 0ULL;
     xiiHybridArray<QueuePoint, 3U> m_QueuePoints;
   };
 
-  xiiGALDevice*        m_pDevice = nullptr;
-  xiiDeque<FramePoint> m_PendingFrames;
+  xiiGALDevice*              m_pDevice = nullptr;
+  xiiDeque<FramePoint>       m_PendingFrames;
   xiiGpuFrameCompletionStats m_Stats;
 };

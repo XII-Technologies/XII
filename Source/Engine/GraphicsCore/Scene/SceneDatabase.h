@@ -27,7 +27,7 @@ public:
   [[nodiscard]] xiiSceneObjectHandle CreateObject(const xiiSceneObjectDesc& desc);
   bool                               DestroyObject(xiiSceneObjectHandle hObject);
 
-  [[nodiscard]] bool IsAlive(xiiSceneObjectHandle hObject) const;
+  [[nodiscard]] bool      IsAlive(xiiSceneObjectHandle hObject) const;
   [[nodiscard]] xiiUInt32 GetObjectCount() const { return m_uiObjectCount; }
   [[nodiscard]] xiiUInt64 GetRevision() const { return m_uiRevision; }
 
@@ -39,10 +39,10 @@ public:
   bool SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags);
   bool SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask);
 
-  [[nodiscard]] const xiiMat4&              GetGlobalTransform(xiiSceneObjectHandle hObject) const;
-  [[nodiscard]] const xiiBoundingBoxSphere& GetGlobalBounds(xiiSceneObjectHandle hObject) const;
+  [[nodiscard]] const xiiMat4&                   GetGlobalTransform(xiiSceneObjectHandle hObject) const;
+  [[nodiscard]] const xiiBoundingBoxSphere&      GetGlobalBounds(xiiSceneObjectHandle hObject) const;
   [[nodiscard]] xiiBitflags<xiiSceneObjectFlags> GetFlags(xiiSceneObjectHandle hObject) const;
-  [[nodiscard]] xiiUInt32 GetVisibilityMask(xiiSceneObjectHandle hObject) const;
+  [[nodiscard]] xiiUInt32                        GetVisibilityMask(xiiSceneObjectHandle hObject) const;
 
   /// Resolves all dirty transforms, compacts live objects into GPU order, and emits coalesced
   /// ranges which can be uploaded without rewriting unchanged regions.
@@ -62,33 +62,33 @@ private:
   void               UpdateDirtyTransforms();
   void               RebuildGpuInstances();
 
-  xiiDynamicArray<xiiUInt32>            m_Generations;
-  xiiDynamicArray<xiiUInt32>            m_FreeIndices;
-  xiiDynamicArray<xiiUInt8>             m_Alive;
-  xiiDynamicArray<xiiUInt8>             m_TransformDirty;
-  xiiDynamicArray<xiiUInt8>             m_GpuDirty;
-  xiiDynamicArray<xiiUInt32>            m_Parent;
-  xiiDynamicArray<xiiUInt32>            m_FirstChild;
-  xiiDynamicArray<xiiUInt32>            m_NextSibling;
-  xiiDynamicArray<xiiMat4>              m_LocalTransforms;
-  xiiDynamicArray<xiiMat4>              m_GlobalTransforms;
-  xiiDynamicArray<xiiMat4>              m_PreviousGlobalTransforms;
-  xiiDynamicArray<xiiBoundingBoxSphere> m_LocalBounds;
-  xiiDynamicArray<xiiBoundingBoxSphere> m_GlobalBounds;
-  xiiDynamicArray<xiiUInt32>            m_GeometryIndices;
-  xiiDynamicArray<xiiUInt32>            m_MaterialIndices;
-  xiiDynamicArray<xiiUInt32>            m_VisibilityMasks;
-  xiiDynamicArray<xiiUInt32>            m_UserData;
+  xiiDynamicArray<xiiUInt32>                        m_Generations;
+  xiiDynamicArray<xiiUInt32>                        m_FreeIndices;
+  xiiDynamicArray<xiiUInt8>                         m_Alive;
+  xiiDynamicArray<xiiUInt8>                         m_TransformDirty;
+  xiiDynamicArray<xiiUInt8>                         m_GpuDirty;
+  xiiDynamicArray<xiiUInt32>                        m_Parent;
+  xiiDynamicArray<xiiUInt32>                        m_FirstChild;
+  xiiDynamicArray<xiiUInt32>                        m_NextSibling;
+  xiiDynamicArray<xiiMat4>                          m_LocalTransforms;
+  xiiDynamicArray<xiiMat4>                          m_GlobalTransforms;
+  xiiDynamicArray<xiiMat4>                          m_PreviousGlobalTransforms;
+  xiiDynamicArray<xiiBoundingBoxSphere>             m_LocalBounds;
+  xiiDynamicArray<xiiBoundingBoxSphere>             m_GlobalBounds;
+  xiiDynamicArray<xiiUInt32>                        m_GeometryIndices;
+  xiiDynamicArray<xiiUInt32>                        m_MaterialIndices;
+  xiiDynamicArray<xiiUInt32>                        m_VisibilityMasks;
+  xiiDynamicArray<xiiUInt32>                        m_UserData;
   xiiDynamicArray<xiiBitflags<xiiSceneObjectFlags>> m_Flags;
 
-  xiiDynamicArray<xiiUInt32>            m_ObjectToGpuIndex;
-  xiiDynamicArray<xiiUInt32>            m_GpuToObjectIndex;
-  xiiDynamicArray<xiiGpuSceneInstance>  m_GpuInstances;
-  xiiDynamicArray<xiiSceneUploadRange>  m_UploadRanges;
-  xiiDynamicArray<xiiUInt32>            m_WorkStack;
+  xiiDynamicArray<xiiUInt32>           m_ObjectToGpuIndex;
+  xiiDynamicArray<xiiUInt32>           m_GpuToObjectIndex;
+  xiiDynamicArray<xiiGpuSceneInstance> m_GpuInstances;
+  xiiDynamicArray<xiiSceneUploadRange> m_UploadRanges;
+  xiiDynamicArray<xiiUInt32>           m_WorkStack;
 
   xiiSceneDatabaseStats m_Stats;
-  xiiUInt32             m_uiObjectCount = 0U;
-  xiiUInt64             m_uiRevision    = 0U;
+  xiiUInt32             m_uiObjectCount        = 0U;
+  xiiUInt64             m_uiRevision           = 0U;
   xiiUInt64             m_uiLastCommittedFrame = static_cast<xiiUInt64>(-1);
 };

@@ -6,9 +6,13 @@
 #include <GraphicsFoundation/Resources/BindlessResource.h>
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALBindlessResourceHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGALBindlessResourceHandle>)
-{
-  XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Index", m_uiIndex), XII_MEMBER_PROPERTY("Generation", m_uiGeneration), } XII_END_PROPERTIES;
-}
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Index", m_uiIndex),
+      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
+    } XII_END_PROPERTIES;
+  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 void xiiGALBindlessResourceAllocator::Initialize(xiiUInt32 uiCapacity)
@@ -44,7 +48,7 @@ xiiGALBindlessResourceHandle xiiGALBindlessResourceAllocator::Allocate()
   m_Allocated[uiIndex] = 1U;
   ++m_uiAllocatedCount;
   xiiGALBindlessResourceHandle handle;
-  handle.m_uiIndex = uiIndex;
+  handle.m_uiIndex      = uiIndex;
   handle.m_uiGeneration = m_Generations[uiIndex];
   return handle;
 }
