@@ -19,6 +19,37 @@ namespace
 xiiSceneDatabase::xiiSceneDatabase()  = default;
 xiiSceneDatabase::~xiiSceneDatabase() = default;
 
+void xiiSceneDatabase::Clear()
+{
+  m_Generations.Clear();
+  m_FreeIndices.Clear();
+  m_Alive.Clear();
+  m_TransformDirty.Clear();
+  m_GpuDirty.Clear();
+  m_Parent.Clear();
+  m_FirstChild.Clear();
+  m_NextSibling.Clear();
+  m_LocalTransforms.Clear();
+  m_GlobalTransforms.Clear();
+  m_PreviousGlobalTransforms.Clear();
+  m_LocalBounds.Clear();
+  m_GlobalBounds.Clear();
+  m_GeometryIndices.Clear();
+  m_MaterialIndices.Clear();
+  m_VisibilityMasks.Clear();
+  m_UserData.Clear();
+  m_Flags.Clear();
+  m_ObjectToGpuIndex.Clear();
+  m_GpuToObjectIndex.Clear();
+  m_GpuInstances.Clear();
+  m_UploadRanges.Clear();
+  m_WorkStack.Clear();
+  m_Stats = {};
+  m_uiObjectCount = 0U;
+  m_uiRevision = 0U;
+  m_uiLastCommittedFrame = xiiMath::MaxValue<xiiUInt64>();
+}
+
 void xiiSceneDatabase::Reserve(xiiUInt32 uiObjectCapacity)
 {
   m_Generations.Reserve(uiObjectCapacity);
@@ -279,6 +310,18 @@ const xiiBoundingBoxSphere& xiiSceneDatabase::GetGlobalBounds(xiiSceneObjectHand
 {
   XII_ASSERT_DEV(IsAlive(hObject), "Invalid scene object handle.");
   return m_GlobalBounds[hObject.m_uiIndex];
+}
+
+xiiBitflags<xiiSceneObjectFlags> xiiSceneDatabase::GetFlags(xiiSceneObjectHandle hObject) const
+{
+  XII_ASSERT_DEV(IsAlive(hObject), "Invalid scene object handle.");
+  return m_Flags[hObject.m_uiIndex];
+}
+
+xiiUInt32 xiiSceneDatabase::GetVisibilityMask(xiiSceneObjectHandle hObject) const
+{
+  XII_ASSERT_DEV(IsAlive(hObject), "Invalid scene object handle.");
+  return m_VisibilityMasks[hObject.m_uiIndex];
 }
 
 void xiiSceneDatabase::UpdateDirtyTransforms()

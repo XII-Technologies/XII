@@ -19,6 +19,9 @@ public:
   xiiSceneDatabase();
   ~xiiSceneDatabase();
 
+  /// Removes every object and resets generations, hierarchy links, GPU mirrors, and revisions.
+  /// Capacity is retained so simulation worlds can be restarted without reallocating hot arrays.
+  void Clear();
   void Reserve(xiiUInt32 uiObjectCapacity);
 
   [[nodiscard]] xiiSceneObjectHandle CreateObject(const xiiSceneObjectDesc& desc);
@@ -38,6 +41,8 @@ public:
 
   [[nodiscard]] const xiiMat4&              GetGlobalTransform(xiiSceneObjectHandle hObject) const;
   [[nodiscard]] const xiiBoundingBoxSphere& GetGlobalBounds(xiiSceneObjectHandle hObject) const;
+  [[nodiscard]] xiiBitflags<xiiSceneObjectFlags> GetFlags(xiiSceneObjectHandle hObject) const;
+  [[nodiscard]] xiiUInt32 GetVisibilityMask(xiiSceneObjectHandle hObject) const;
 
   /// Resolves all dirty transforms, compacts live objects into GPU order, and emits coalesced
   /// ranges which can be uploaded without rewriting unchanged regions.
