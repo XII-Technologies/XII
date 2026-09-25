@@ -16,7 +16,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialQuery, xiiNoBase, 1, xiiRTTIDefau
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialStats, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSceneSpatialStats>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialStats, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiSceneSpatialStats>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -24,6 +24,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialStats, xiiNoBase, 1, xiiRTTIDefau
     XII_MEMBER_PROPERTY("NodeCount", m_uiNodeCount),
     XII_MEMBER_PROPERTY("TreeHeight", m_uiTreeHeight),
     XII_MEMBER_PROPERTY("Reinsertions", m_uiReinsertions),
+    XII_MEMBER_PROPERTY("Rotations", m_uiRotations),
     XII_MEMBER_PROPERTY("AreaRatio", m_fAreaRatio),
   }
   XII_END_PROPERTIES;
@@ -43,6 +44,7 @@ void xiiSceneSpatialHierarchy::Clear()
   m_iFreeList      = -1;
   m_uiLeafCount    = 0U;
   m_uiReinsertions = 0U;
+  m_uiRotations    = 0U;
 }
 
 void xiiSceneSpatialHierarchy::Reserve(xiiUInt32 uiObjectCapacity)
@@ -252,6 +254,7 @@ void xiiSceneSpatialHierarchy::RefitAncestors(xiiInt32 iNode)
 {
   while (iNode != -1)
   {
+    iNode = Balance(iNode);
     Node& node = m_Nodes[iNode];
     if (!node.IsLeaf())
     {
@@ -261,6 +264,108 @@ void xiiSceneSpatialHierarchy::RefitAncestors(xiiInt32 iNode)
     }
     iNode = node.m_iParent;
   }
+}
+
+xiiInt32 xiiSceneSpatialHierarchy::Balance(xiiInt32 iNode)
+{
+  Node& root = m_Nodes[iNode];
+  if (root.IsLeaf() || root.m_iHeight < 2)
+    return iNode;
+
+  const xiiInt32 iLeft  = root.m_iLeft;
+  const xiiInt32 iRight = root.m_iRight;
+  Node& left            = m_Nodes[iLeft];
+  Node& right           = m_Nodes[iRight];
+  const xiiInt32 iBalance = right.m_iHeight - left.m_iHeight;
+
+  // Rotate the right child above this node. Choosing the taller grandchild to remain attached to
+  // the promoted node minimizes the new surface area and preserves logarithmic tree height.
+  if (iBalance > 1)
+  {
+    const xiiInt32 iRightLeft  = right.m_iLeft;
+    const xiiInt32 iRightRight = right.m_iRight;
+    Node& rightLeft            = m_Nodes[iRightLeft];
+    Node& rightRight           = m_Nodes[iRightRight];
+
+    right.m_iLeft   = iNode;
+    right.m_iParent = root.m_iParent;
+    root.m_iParent  = iRight;
+    if (right.m_iParent == -1)
+      m_iRoot = iRight;
+    else if (m_Nodes[right.m_iParent].m_iLeft == iNode)
+      m_Nodes[right.m_iParent].m_iLeft = iRight;
+    else
+      m_Nodes[right.m_iParent].m_iRight = iRight;
+
+    if (rightLeft.m_iHeight > rightRight.m_iHeight)
+    {
+      right.m_iRight = iRightLeft;
+      root.m_iRight  = iRightRight;
+      rightLeft.m_iParent  = iRight;
+      rightRight.m_iParent = iNode;
+    }
+    else
+    {
+      right.m_iRight = iRightRight;
+      root.m_iRight  = iRightLeft;
+      rightRight.m_iParent = iRight;
+      rightLeft.m_iParent  = iNode;
+    }
+
+    root.m_FatBounds = left.m_FatBounds;
+    root.m_FatBounds.ExpandToInclude(m_Nodes[root.m_iRight].m_FatBounds);
+    right.m_FatBounds = root.m_FatBounds;
+    right.m_FatBounds.ExpandToInclude(m_Nodes[right.m_iRight].m_FatBounds);
+    root.m_iHeight  = 1 + xiiMath::Max(left.m_iHeight, m_Nodes[root.m_iRight].m_iHeight);
+    right.m_iHeight = 1 + xiiMath::Max(root.m_iHeight, m_Nodes[right.m_iRight].m_iHeight);
+    ++m_uiRotations;
+    return iRight;
+  }
+
+  // Symmetric left-heavy rotation.
+  if (iBalance < -1)
+  {
+    const xiiInt32 iLeftLeft  = left.m_iLeft;
+    const xiiInt32 iLeftRight = left.m_iRight;
+    Node& leftLeft            = m_Nodes[iLeftLeft];
+    Node& leftRight           = m_Nodes[iLeftRight];
+
+    left.m_iLeft   = iNode;
+    left.m_iParent = root.m_iParent;
+    root.m_iParent = iLeft;
+    if (left.m_iParent == -1)
+      m_iRoot = iLeft;
+    else if (m_Nodes[left.m_iParent].m_iLeft == iNode)
+      m_Nodes[left.m_iParent].m_iLeft = iLeft;
+    else
+      m_Nodes[left.m_iParent].m_iRight = iLeft;
+
+    if (leftLeft.m_iHeight > leftRight.m_iHeight)
+    {
+      left.m_iRight = iLeftLeft;
+      root.m_iLeft  = iLeftRight;
+      leftLeft.m_iParent  = iLeft;
+      leftRight.m_iParent = iNode;
+    }
+    else
+    {
+      left.m_iRight = iLeftRight;
+      root.m_iLeft  = iLeftLeft;
+      leftRight.m_iParent = iLeft;
+      leftLeft.m_iParent  = iNode;
+    }
+
+    root.m_FatBounds = right.m_FatBounds;
+    root.m_FatBounds.ExpandToInclude(m_Nodes[root.m_iLeft].m_FatBounds);
+    left.m_FatBounds = root.m_FatBounds;
+    left.m_FatBounds.ExpandToInclude(m_Nodes[left.m_iRight].m_FatBounds);
+    root.m_iHeight = 1 + xiiMath::Max(right.m_iHeight, m_Nodes[root.m_iLeft].m_iHeight);
+    left.m_iHeight = 1 + xiiMath::Max(root.m_iHeight, m_Nodes[left.m_iRight].m_iHeight);
+    ++m_uiRotations;
+    return iLeft;
+  }
+
+  return iNode;
 }
 
 bool xiiSceneSpatialHierarchy::PassesFilter(const Node& node, const xiiSceneSpatialQuery& query) const
@@ -325,6 +430,7 @@ xiiSceneSpatialStats xiiSceneSpatialHierarchy::GetStats() const
   xiiSceneSpatialStats stats;
   stats.m_uiLeafCount    = m_uiLeafCount;
   stats.m_uiReinsertions = m_uiReinsertions;
+  stats.m_uiRotations    = m_uiRotations;
   stats.m_uiTreeHeight   = m_iRoot == -1 ? 0U : static_cast<xiiUInt32>(m_Nodes[m_iRoot].m_iHeight);
 
   float fTotalArea = 0.0f;

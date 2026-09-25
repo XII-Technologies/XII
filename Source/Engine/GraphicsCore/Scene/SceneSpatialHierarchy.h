@@ -24,6 +24,7 @@ struct XII_GRAPHICSCORE_DLL xiiSceneSpatialStats
   xiiUInt32 m_uiNodeCount   = 0U;
   xiiUInt32 m_uiTreeHeight  = 0U;
   xiiUInt32 m_uiReinsertions = 0U;
+  xiiUInt32 m_uiRotations   = 0U;
   float     m_fAreaRatio    = 0.0f;
 };
 
@@ -76,6 +77,7 @@ private:
   void                       InsertLeaf(xiiInt32 iLeaf);
   void                       RemoveLeaf(xiiInt32 iLeaf);
   void                       RefitAncestors(xiiInt32 iNode);
+  [[nodiscard]] xiiInt32     Balance(xiiInt32 iNode);
   [[nodiscard]] xiiInt32     FindBestSibling(const xiiBoundingBox& bounds) const;
   [[nodiscard]] bool         PassesFilter(const Node& node, const xiiSceneSpatialQuery& query) const;
   [[nodiscard]] xiiBoundingBox MakeFatBounds(const xiiBoundingBox& bounds, const xiiVec3& vDisplacement) const;
@@ -87,5 +89,6 @@ private:
   xiiInt32                  m_iFreeList = -1;
   xiiUInt32                 m_uiLeafCount = 0U;
   xiiUInt32                 m_uiReinsertions = 0U;
+  xiiUInt32                 m_uiRotations = 0U;
   float                     m_fFatBoundsMargin = 0.25f;
 };
