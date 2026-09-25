@@ -121,11 +121,17 @@ private:
 
   xiiGpuVisibilityDescription m_Description;
   xiiGALDevice* m_pDevice = nullptr;
+  /// One scene snapshot per frame slot is shared by every view. View constants remain
+  /// independently frame-sliced because masks, frusta, and Hi-Z inputs differ per pass.
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pSceneBuffers;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pViewBuffers;
   /// Last contents uploaded to each frame-in-flight scene buffer. A mirror per slot is
   /// required because consecutive CPU frames rotate across different GPU allocations.
   xiiDynamicArray<xiiDynamicArray<xiiGpuSceneInstance>> m_SceneBufferMirrors;
+  xiiRenderGraph* m_pPreparedGraph = nullptr;
+  const xiiSceneDatabase* m_pPreparedScene = nullptr;
+  xiiUInt64 m_uiPreparedFrame = xiiMath::MaxValue<xiiUInt64>();
+  xiiRenderGraphBufferHandle m_hPreparedScene;
   xiiHashTable<xiiHashedString, xiiUInt32> m_VisibilitySetIndices;
   xiiSharedPtr<xiiGALComputePipelineState> m_pInstanceCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pHiZOcclusionPipeline;
