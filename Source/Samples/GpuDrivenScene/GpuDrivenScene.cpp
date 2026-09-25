@@ -143,6 +143,18 @@ public:
       const xiiGpuVisibilityOutputs visibility = m_Visibility.AddPasses(
         *m_pRenderGraph, m_uiFrameIndex, m_World.GetScene(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
 
+      // A robotics/medical sensor view owns independent frame-sliced constants and scene
+      // uploads. Only its instance count is exported below; meshlet and indirect-command
+      // stages are intentionally left unused so render-graph pipeline culling can remove them.
+      xiiGpuVisibilityView sensorView = visibilityView;
+      sensorView.m_uiRequiredFlags = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::SensorVisible).GetValue();
+      xiiGpuVisibilityPassDescription sensorVisibilityPass;
+      sensorVisibilityPass.m_sName = "Sensor View";
+      sensorVisibilityPass.m_Purpose = xiiGpuVisibilityPurpose::Sensor;
+      sensorVisibilityPass.m_bAsyncCompute = m_Configuration.m_bAsyncCompute;
+      const xiiGpuVisibilityOutputs sensorVisibility = m_Visibility.AddPasses(
+        *m_pRenderGraph, m_uiFrameIndex, m_World.GetScene(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
+
       m_pRenderGraph->AddPass<SceneTargetsPassData>(
         "Create Scene Targets", xiiGALCommandQueueFlags::Graphics,
         [targetSize](SceneTargetsPassData& data, xiiRenderGraphBuilder& builder) {
@@ -195,13 +207,16 @@ public:
 
       m_pRenderGraph->AddPass<PresentPassData>(
         "Present GPU Scene", xiiGALCommandQueueFlags::Graphics,
-        [this](PresentPassData& data, xiiRenderGraphBuilder& builder) {
+        [this, sensorVisibility](PresentPassData& data, xiiRenderGraphBuilder& builder) {
           data.m_hColor = builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::CopySource);
           xiiSharedPtr<xiiGALTexture> pBackBuffer = m_pSwapChain->GetBackBufferTexture();
           data.m_hBackBuffer = builder.WriteTexture(
             builder.ImportTexture("BackBuffer", pBackBuffer, pBackBuffer->GetResourceState()),
             xiiGALResourceStateFlags::CopyDestination);
           builder.ExportTexture(data.m_hBackBuffer, xiiGALResourceStateFlags::Present);
+          // Expose the compact sensor count to capture/editor tooling without forcing the
+          // unused sensor meshlet and draw-command stages to stay alive.
+          builder.ExportBuffer(sensorVisibility.m_hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
           builder.SetPassSideEffects(true);
         },
         [](const PresentPassData& data, xiiRenderGraphPassContext& context) {
@@ -219,6 +234,13 @@ public:
       settings.m_bEnableGPUProfiling = true;
       if (m_pRenderGraph->Compile(settings, &error).Succeeded())
       {
+        if (m_uiFrameIndex == 1U)
+        {
+          const xiiRenderGraphStatistics& statistics = m_pRenderGraph->GetStatistics();
+          xiiLog::Info("GPU-driven render graph: {} registered, {} compiled, {} culled passes; {} queue submissions, {} barriers ({} split).",
+            statistics.m_uiRegisteredPassCount, statistics.m_uiCompiledPassCount, statistics.m_uiCulledPassCount,
+            statistics.m_uiQueueSubmissionCount, statistics.m_uiTotalBarrierCount, statistics.m_uiSplitBarrierCount);
+        }
         m_pRenderGraph->Execute(m_pDevice.Borrow(), nullptr, m_pRenderGraphBlackboard.Borrow(), m_pRenderGraphResourceCache.Borrow(), m_pRenderGraphProfiler.Borrow()).AssertSuccess();
       }
       else
@@ -277,6 +299,8 @@ public:
     deviceDescription.m_DeviceFeatures.m_BindlessResources = xiiGALDeviceFeatureState::Enabled;
     deviceDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Enabled;
     deviceDescription.m_DeviceFeatures.m_TimestampQueries = xiiGALDeviceFeatureState::Optional;
+    deviceDescription.m_DeviceFeatures.m_DurationQueries = xiiGALDeviceFeatureState::Optional;
+    deviceDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Optional;
     // Timeline fences are required for GPU-side synchronization between the
     // graphics, asynchronous-compute, and transfer queues.
     deviceDescription.m_DeviceFeatures.m_NativeFence = xiiGALDeviceFeatureState::Optional;

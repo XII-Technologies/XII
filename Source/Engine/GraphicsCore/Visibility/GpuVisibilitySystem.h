@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include <Foundation/Containers/HashTable.h>
 #include <Foundation/Math/Frustum.h>
+#include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
 
@@ -57,6 +59,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityDescription
   xiiUInt32 m_uiMaxVisibleMeshlets = 1024U * 1024U;
   xiiUInt32 m_uiMaxDrawCommands = 1024U * 1024U;
   xiiUInt32 m_uiFramesInFlight = 3U;
+  xiiUInt32 m_uiMaxVisibilitySets = 16U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityDescription);
@@ -101,13 +104,16 @@ public:
 
 private:
   xiiSharedPtr<xiiGALComputePipelineState> LoadComputePipeline(xiiStringView sShaderPath);
+  xiiUInt32 GetOrCreateVisibilitySetIndex(xiiStringView sName);
 
   xiiGpuVisibilityDescription m_Description;
+  xiiGALDevice* m_pDevice = nullptr;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pSceneBuffers;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pViewBuffers;
   /// Last contents uploaded to each frame-in-flight scene buffer. A mirror per slot is
   /// required because consecutive CPU frames rotate across different GPU allocations.
   xiiDynamicArray<xiiDynamicArray<xiiGpuSceneInstance>> m_SceneBufferMirrors;
+  xiiHashTable<xiiHashedString, xiiUInt32> m_VisibilitySetIndices;
   xiiSharedPtr<xiiGALComputePipelineState> m_pInstanceCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pHiZOcclusionPipeline;
   xiiSharedPtr<xiiGALComputePipelineState> m_pMeshletCullPipeline;

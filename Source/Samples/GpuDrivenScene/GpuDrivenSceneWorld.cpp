@@ -257,7 +257,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       description.m_uiGeometryIndex = m_GeometryAssets[geometryIndex].m_hGeometry.m_uiIndex;
       description.m_uiMaterialIndex = m_Materials[objectIndex % m_Materials.GetCount()].m_uiSlot;
       description.m_uiUserData = objectIndex;
-      description.m_Flags = xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows | xiiSceneObjectFlags::ReceiveShadows | (geometryIndex == 1U ? xiiSceneObjectFlags::Occluder : xiiSceneObjectFlags::None);
+      description.m_Flags = xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows | xiiSceneObjectFlags::ReceiveShadows | xiiSceneObjectFlags::SensorVisible | (geometryIndex == 1U ? xiiSceneObjectFlags::Occluder : xiiSceneObjectFlags::None);
 
       const xiiSceneObjectHandle object = m_Scene.CreateObject(description);
       if (!object.IsValid())
