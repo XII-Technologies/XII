@@ -111,6 +111,11 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
 {
   XII_DECLARE_POD_TYPE();
 
+  /// Portable mesh-shader payload limits used by the engine's GPU-driven path. The primitive
+  /// limit is divisible by four as required by meshoptimizer's cluster builder.
+  static constexpr xiiUInt32 s_uiMaxVertices   = 64U;
+  static constexpr xiiUInt32 s_uiMaxPrimitives = 124U;
+
   xiiUInt32         m_uiFirstPrimitive       = 0U;                            ///< The index of the first primitive in this meshlet, used to identify the starting point of the primitive data for this meshlet in the meshlet primitive index buffer.
   xiiUInt32         m_uiVertexRemapOffset    = 0U;                            ///< The byte offset into the meshlet vertex remap buffer where the vertex remapping data for this meshlet begins, used to identify the starting point of the vertex remapping data for this meshlet.
   xiiUInt32         m_uiPrimitiveIndexOffset = 0U;                            ///< The byte offset into the meshlet primitive index buffer where the primitive index data for this meshlet begins, used to identify the starting point of the primitive index data for this meshlet.
