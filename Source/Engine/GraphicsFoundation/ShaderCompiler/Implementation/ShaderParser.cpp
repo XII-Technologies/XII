@@ -657,6 +657,7 @@ xiiResult ParseResource(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xi
     return XII_FAILURE;
 
   s_NameToTextureTable.TryGetValue(tokens[uiTypeToken]->m_DataView, out_resourceDefinition.m_ResourceDescription.m_TextureType);
+  out_resourceDefinition.m_ResourceDescription.m_uiArraySize = 1U;
 
   // Skip optional template
   TokenMatch                   templatePattern[] = {"<"_xiisv, xiiTokenType::Identifier, ">"_xiisv};
@@ -817,7 +818,7 @@ xiiResult xiiGALShaderParser::SanityCheckShaderResourceBindings(const xiiHashTab
       xiiLog::Error(pLog, "Shader resource '{}' does not have a set defined.", it.Key());
       return XII_FAILURE;
     }
-    if (it.Value().m_uiDescriptorSet == xiiInvalidIndex)
+    if (it.Value().m_uiBindIndex == xiiInvalidIndex)
     {
       xiiLog::Error(pLog, "Shader resource '{}' does not have a slot defined.", it.Key());
       return XII_FAILURE;
