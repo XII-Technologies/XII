@@ -5,7 +5,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Color.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Material/MaterialSystem.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -51,7 +51,6 @@ public:
   [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_Scene; }
   [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
   [[nodiscard]] xiiGeometryResidencyManager&  GetGeometryResidency() { return *xiiGeometryResidencyManager::GetSingleton(); }
-  [[nodiscard]] xiiMaterialSystem&            GetMaterialSystem() { return m_MaterialSystem; }
   [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return m_BindlessResources; }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
   [[nodiscard]] xiiUInt32                     GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;
@@ -73,7 +72,6 @@ private:
   xiiGpuDrivenSceneLight                             m_SunLight;
   xiiSceneDatabase                                   m_Scene;
   xiiSceneSpatialHierarchy                           m_SpatialHierarchy;
-  xiiMaterialSystem                                  m_MaterialSystem;
   xiiGALBindlessResourceTable                        m_BindlessResources;
   xiiDynamicArray<GeometryAsset>                     m_GeometryAssets;
   xiiDynamicArray<xiiMaterialGpuHandle>              m_Materials;

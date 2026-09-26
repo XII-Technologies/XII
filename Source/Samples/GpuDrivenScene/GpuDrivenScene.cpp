@@ -134,7 +134,7 @@ public:
 
       m_pRenderGraph->BeginSetup(m_uiFrameIndex);
       const auto                        geometry     = m_World.GetGeometryResidency().AddUploadPass(*m_pRenderGraph, m_uiFrameIndex);
-      const xiiRenderGraphBufferHandle  hMaterials   = m_World.GetMaterialSystem().AddUploadPass(*m_pRenderGraph);
+      const xiiRenderGraphBufferHandle  hMaterials   = xiiMaterialManager::AddUploadPass(*m_pRenderGraph);
       const xiiRenderGraphTextureHandle hPreviousHiZ = m_HiZPyramid.ImportPrevious(*m_pRenderGraph, m_uiFrameIndex);
 
       xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
@@ -206,7 +206,7 @@ public:
       drawPass.first->m_ViewProjection      = viewProjection;
       drawPass.first->m_uiGeometryBase      = geometry.m_uiGeometryBaseIndex;
       drawPass.first->m_uiMaterialFrameBase = m_World.GetMaterialFrameBase(m_uiFrameIndex);
-      drawPass.first->m_uiMaterialStride    = m_World.GetMaterialSystem().GetGpuStorage().GetMaterialStride();
+      drawPass.first->m_uiMaterialStride    = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
 
       // The depth rendered this frame becomes conservative occlusion history for the next one.
       m_HiZPyramid.AddBuildPass(*m_pRenderGraph, m_uiFrameIndex, drawPass.first->m_hDepth, m_Configuration.m_bAsyncCompute);

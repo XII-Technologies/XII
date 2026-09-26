@@ -70,7 +70,7 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   materialDescription.m_uiMaxMaterials      = 64U;
   materialDescription.m_uiMaxParameterBytes = 64U;
   materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
-  if (m_MaterialSystem.Initialize(pDevice, materialDescription).Failed())
+  if (xiiMaterialManager::Configure(materialDescription).Failed())
     return XII_FAILURE;
 
   XII_SUCCEED_OR_RETURN(CreateMaterials());
@@ -88,11 +88,10 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
     GetGeometryResidency().UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
   }
   for (xiiMaterialGpuHandle handle : m_Materials)
-    m_MaterialSystem.UnregisterMaterial(handle);
+    xiiMaterialManager::UnregisterMaterial(handle);
 
   m_BindlessResources.Collect(uiLastSubmittedFrame);
   m_BindlessResources.Clear();
-  m_MaterialSystem.Shutdown();
   m_SpatialHierarchy.Clear();
   m_GeometryAssets.Clear();
   m_Materials.Clear();
@@ -132,14 +131,14 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
     xiiSharedPtr<xiiMaterialSchema>   schema;
     xiiSharedPtr<xiiMaterialInstance> instance;
     xiiStringBuilder                  error;
-    if (xiiMaterialSystem::CreateRuntimeMaterial(schemaDescription, runtimeState, schema, instance, &error).Failed())
+    if (xiiMaterialManager::CreateRuntimeMaterial(schemaDescription, runtimeState, schema, instance, &error).Failed())
     {
       xiiLog::Error("Failed to create GPU-driven sample material: {0}", error);
       return XII_FAILURE;
     }
 
     instance->SetParameter("BaseColor", xiiVec4(colors[i].r, colors[i].g, colors[i].b, colors[i].a)).AssertSuccess();
-    const xiiMaterialGpuHandle handle = m_MaterialSystem.RegisterMaterial(instance);
+    const xiiMaterialGpuHandle handle = xiiMaterialManager::RegisterMaterial(instance);
     if (!handle.IsValid())
       return XII_FAILURE;
 
@@ -327,7 +326,7 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
     m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], m_Scene.GetVisibilityMask(m_Objects[i]), m_Scene.GetFlags(m_Objects[i]));
   }
 
-  m_MaterialSystem.BeginFrame(uiFrameIndex, uiCompletedFrame);
+  xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   if (uiFrameIndex == 30U)
   {
     for (const GeometryAsset& asset : m_GeometryAssets)
@@ -343,6 +342,6 @@ xiiUInt32 xiiGpuDrivenSceneWorld::GetMaterialFrameBase(xiiUInt64 uiFrameIndex) c
 {
   if (m_Materials.IsEmpty())
     return 0U;
-  const xiiUInt32 stride = m_MaterialSystem.GetGpuStorage().GetMaterialStride();
-  return m_MaterialSystem.GetGpuStorage().GetGpuOffset(m_Materials[0], uiFrameIndex) - m_Materials[0].m_uiSlot * stride;
+  const xiiUInt32 stride = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
+  return xiiMaterialManager::GetGpuStorage().GetGpuOffset(m_Materials[0], uiFrameIndex) - m_Materials[0].m_uiSlot * stride;
 }
