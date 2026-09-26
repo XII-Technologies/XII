@@ -9,6 +9,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
@@ -441,38 +442,96 @@ cbuffer Globals : register(b1, space0)
       xiiSharedPtr<xiiGALInputLayout> pInputLayout = pVertexShader->CreateInputLayout(inputLayoutDescription);
       XII_TEST_BOOL(pInputLayout != nullptr);
 
-      xiiGALPipelineResourceSignatureCreationDescription signatureDescription;
-      xiiSharedPtr<xiiGALPipelineResourceSignature> pSignature = pDevice->CreatePipelineResourceSignature(signatureDescription);
-      XII_TEST_BOOL(pSignature != nullptr);
+      xiiGALPipelineResourceSignatureCreationDescription graphicsSignatureDescription;
+      xiiSharedPtr<xiiGALPipelineResourceSignature> pGraphicsSignature = pDevice->CreatePipelineResourceSignature(graphicsSignatureDescription);
+      XII_TEST_BOOL(pGraphicsSignature != nullptr);
 
-      if (pSignature != nullptr)
+      xiiGALPipelineResourceSignatureCreationDescription computeSignatureDescription;
+      for (const xiiGALShaderResourceDescription& reflectedResource : pComputeBinary->GetByteCode()->m_ShaderResourceBindings)
+      {
+        xiiGALPipelineResourceDescription& resource = computeSignatureDescription.m_Resources.ExpandAndGetRef();
+        resource.m_sName                             = reflectedResource.m_sName;
+        resource.m_ShaderStages                      = reflectedResource.m_ShaderStages;
+        resource.m_uiArraySize                       = reflectedResource.m_uiArraySize;
+        resource.m_uiBindSet                         = reflectedResource.m_uiDescriptorSet;
+        resource.m_uiBindSlot                        = reflectedResource.m_uiBindIndex;
+        resource.m_ResourceType                      = reflectedResource.m_Type;
+      }
+      XII_TEST_INT(computeSignatureDescription.m_Resources.GetCount(), 1U);
+      if (!computeSignatureDescription.m_Resources.IsEmpty())
+      {
+        XII_TEST_STRING(computeSignatureDescription.m_Resources[0].m_sName.GetString(), "OutputBuffer");
+        XII_TEST_BOOL(computeSignatureDescription.m_Resources[0].m_ResourceType == xiiGALShaderResourceType::BufferUAV);
+        XII_TEST_BOOL(computeSignatureDescription.m_Resources[0].m_ShaderStages == xiiGALShaderType::Compute);
+      }
+
+      xiiSharedPtr<xiiGALPipelineResourceSignature> pComputeSignature = pDevice->CreatePipelineResourceSignature(computeSignatureDescription);
+      XII_TEST_BOOL(pComputeSignature != nullptr);
+
+      if (pComputeSignature != nullptr)
       {
         xiiGALComputePipelineStateCreationDescription computePipelineDescription;
-        computePipelineDescription.m_pPipelineResourceSignature = pSignature;
+        computePipelineDescription.m_pPipelineResourceSignature = pComputeSignature;
         computePipelineDescription.m_pComputeShader              = pComputeShader;
         xiiSharedPtr<xiiGALComputePipelineState> pComputePipeline = pDevice->CreateComputePipelineState(computePipelineDescription);
         XII_TEST_BOOL(pComputePipeline != nullptr);
 
-        xiiGALCommandQueue* pComputeQueue = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Compute);
+        xiiGALBufferCreationDescription outputDescription;
+        outputDescription.m_uiSize              = sizeof(xiiUInt32);
+        outputDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+        outputDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+        outputDescription.m_Mode                = xiiGALBufferMode::Structured;
+        outputDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+        xiiSharedPtr<xiiGALBuffer> pOutputBuffer = pDevice->CreateBuffer(outputDescription);
+
+        xiiGALBufferCreationDescription readbackDescription;
+        readbackDescription.m_uiSize         = sizeof(xiiUInt32);
+        readbackDescription.m_Usage          = xiiGALResourceUsage::Staging;
+        readbackDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+        xiiSharedPtr<xiiGALBuffer> pReadbackBuffer = pDevice->CreateBuffer(readbackDescription);
+
+        XII_TEST_BOOL(pOutputBuffer != nullptr);
+        XII_TEST_BOOL(pReadbackBuffer != nullptr);
+
+        xiiGALCommandQueue* pComputeQueue = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
         XII_TEST_BOOL(pComputeQueue != nullptr);
-        if (pComputePipeline != nullptr && pComputeQueue != nullptr)
+        if (pComputePipeline != nullptr && pOutputBuffer != nullptr && pReadbackBuffer != nullptr && pComputeQueue != nullptr)
         {
           xiiGALCommandListCreationDescription computeCommandListDescription;
-          computeCommandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Compute;
+          computeCommandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute | xiiGALCommandQueueFlags::Transfer;
           xiiSharedPtr<xiiGALCommandList> pComputeCommandList = pDevice->CreateCommandList(computeCommandListDescription);
           XII_TEST_BOOL(pComputeCommandList != nullptr);
           if (pComputeCommandList != nullptr)
           {
             pComputeCommandList->Begin();
             pComputeCommandList->SetPipelineState(pComputePipeline.Borrow());
+            pComputeCommandList->ResolveAndSetUnorderedAccessBufferView("OutputBuffer", pOutputBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
             XII_TEST_BOOL(pComputeCommandList->CommitShaderResources().Succeeded());
             pComputeCommandList->DispatchCompute({1U, 1U, 1U});
+            pComputeCommandList->CopyBuffer(pOutputBuffer.Borrow(), pReadbackBuffer.Borrow());
             pComputeCommandList->End();
             XII_TEST_INT(pComputeCommandList->GetStatistics().m_CommandListCounters.m_uiDispatchCompute, 1U);
+            XII_TEST_INT(pComputeCommandList->GetStatistics().m_CommandListCounters.m_uiCopyBuffer, 1U);
 
             const xiiUInt64 uiComputeFenceValue = pComputeQueue->Submit(pComputeCommandList.Borrow());
             XII_TEST_BOOL(uiComputeFenceValue > 0U);
             pComputeQueue->WaitForFenceValue(uiComputeFenceValue);
+
+            xiiSharedPtr<xiiGALCommandList> pMapCommandList = pDevice->CreateCommandList(computeCommandListDescription);
+            pMapCommandList->Begin();
+            void* pMappedData = nullptr;
+            const xiiResult mapResult = pMapCommandList->MapBuffer(pReadbackBuffer.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pMappedData);
+            XII_TEST_BOOL(mapResult.Succeeded());
+            XII_TEST_BOOL(pMappedData != nullptr);
+            if (pMappedData != nullptr)
+            {
+              XII_TEST_INT(*static_cast<const xiiUInt32*>(pMappedData), 0xC0DEF00DU);
+            }
+            if (mapResult.Succeeded())
+            {
+              XII_TEST_BOOL(pMapCommandList->UnmapBuffer(pReadbackBuffer.Borrow(), xiiGALMapType::Read).Succeeded());
+            }
+            pMapCommandList->End();
           }
         }
       }
@@ -496,10 +555,10 @@ cbuffer Globals : register(b1, space0)
       xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
       XII_TEST_BOOL(pRenderPass != nullptr);
 
-      if (pInputLayout != nullptr && pSignature != nullptr && pBlendState != nullptr && pRasterizerState != nullptr && pRenderPass != nullptr)
+      if (pInputLayout != nullptr && pGraphicsSignature != nullptr && pBlendState != nullptr && pRasterizerState != nullptr && pRenderPass != nullptr)
       {
         xiiGALGraphicsPipelineStateCreationDescription pipelineDescription;
-        pipelineDescription.m_pPipelineResourceSignature         = pSignature;
+        pipelineDescription.m_pPipelineResourceSignature         = pGraphicsSignature;
         pipelineDescription.m_pVertexShader                      = pVertexShader;
         pipelineDescription.m_pPixelShader                       = pPixelShader;
         pipelineDescription.m_GraphicsPipeline.m_pInputLayout    = pInputLayout;
