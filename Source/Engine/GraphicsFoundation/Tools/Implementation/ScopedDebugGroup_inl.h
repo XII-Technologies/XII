@@ -41,7 +41,13 @@ XII_ALWAYS_INLINE xiiGALScopedDebugGroup& xiiGALScopedDebugGroup::operator=(xiiG
 {
   if (this != &rhs)
   {
-    m_pCommandList = std::move(rhs.m_pCommandList);
+    if (m_pCommandList)
+    {
+      m_pCommandList->EndDebugGroup();
+    }
+
+    m_pCommandList     = rhs.m_pCommandList;
+    rhs.m_pCommandList = nullptr;
   }
   return *this;
 }
