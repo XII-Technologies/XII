@@ -51,7 +51,7 @@ public:
   [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_Scene; }
   [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
   [[nodiscard]] xiiGeometryResidencyManager&  GetGeometryResidency() { return *xiiGeometryResidencyManager::GetSingleton(); }
-  [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return m_BindlessResources; }
+  [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return *xiiGALBindlessResourceTable::GetSingleton(); }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
   [[nodiscard]] xiiUInt32                     GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;
 
@@ -72,7 +72,6 @@ private:
   xiiGpuDrivenSceneLight                             m_SunLight;
   xiiSceneDatabase                                   m_Scene;
   xiiSceneSpatialHierarchy                           m_SpatialHierarchy;
-  xiiGALBindlessResourceTable                        m_BindlessResources;
   xiiDynamicArray<GeometryAsset>                     m_GeometryAssets;
   xiiDynamicArray<xiiMaterialGpuHandle>              m_Materials;
   xiiDynamicArray<xiiSharedPtr<xiiMaterialSchema>>   m_MaterialSchemas;

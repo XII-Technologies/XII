@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Configuration/StaticSubSystem.h>
 #include <GraphicsFoundation/Resources/BindlessResource.h>
 #include <GraphicsFoundation/Resources/BufferView.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -42,12 +44,19 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBindlessResourceT
 /// are emitted by descriptor-indexing backends.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBindlessResourceTable
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiGALBindlessResourceTable);
+  XII_DECLARE_SINGLETON(xiiGALBindlessResourceTable);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsFoundation, BindlessResourceTable);
 
 public:
-  xiiGALBindlessResourceTable() = default;
+  xiiGALBindlessResourceTable();
+  ~xiiGALBindlessResourceTable();
 
-  void Initialize(const xiiGALBindlessResourceTableDescription& description = {});
+  /// Rebuilds empty descriptor tables with a new capacity policy.
+  /// Reconfiguration is rejected while live or retired handles still occupy slots.
+  [[nodiscard]] xiiResult Configure(const xiiGALBindlessResourceTableDescription& description);
+  [[nodiscard]] const xiiGALBindlessResourceTableDescription& GetConfiguration() const { return m_Description; }
+  [[nodiscard]] bool IsInitialized() const { return m_bInitialized; }
+
   void Clear();
 
   [[nodiscard]] xiiGALBindlessResourceHandle RegisterBufferSRV(xiiSharedPtr<xiiGALBufferView> pView);
@@ -79,6 +88,8 @@ public:
   [[nodiscard]] xiiGALBindlessResourceTableStats GetStats() const;
 
 private:
+  void Initialize(const xiiGALBindlessResourceTableDescription& description);
+
   template <typename TObject>
   struct TableStorage
   {
@@ -102,4 +113,6 @@ private:
   TableStorage<xiiGALTextureView> m_TextureSRVs;
   TableStorage<xiiGALTextureView> m_TextureUAVs;
   TableStorage<xiiGALSampler>     m_Samplers;
+  xiiGALBindlessResourceTableDescription m_Description;
+  bool m_bInitialized = false;
 };
