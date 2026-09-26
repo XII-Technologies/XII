@@ -23,6 +23,27 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, BindlessResourceTable)
     s_pBindlessResourceTable = XII_DEFAULT_NEW(xiiGALBindlessResourceTable);
   }
 
+  ON_HIGHLEVELSYSTEMS_STARTUP
+  {
+    xiiGALBindlessResourceTable* pTable = xiiGALBindlessResourceTable::GetSingleton();
+    XII_ASSERT_DEV(pTable != nullptr, "The bindless resource table core subsystem must be started first.");
+
+    if (!pTable->IsInitialized())
+    {
+      XII_VERIFY(pTable->Configure(pTable->GetConfiguration()).Succeeded(), "Failed to restore the bindless resource table.");
+    }
+  }
+
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    if (xiiGALBindlessResourceTable* pTable = xiiGALBindlessResourceTable::GetSingleton())
+    {
+      // Drop strong references to device objects while the GAL device and its allocators
+      // are still alive. The table object itself remains available until core shutdown.
+      pTable->Clear();
+    }
+  }
+
   ON_CORESYSTEMS_SHUTDOWN
   {
     s_pBindlessResourceTable.Clear();
