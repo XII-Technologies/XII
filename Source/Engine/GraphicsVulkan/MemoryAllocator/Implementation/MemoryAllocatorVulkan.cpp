@@ -155,7 +155,13 @@ xiiVulkanMemoryAllocator::xiiVulkanMemoryAllocator()
   m_pImplementation = XII_DEFAULT_NEW(xiiVulkanMemoryAllocator::Implementation);
 }
 
-xiiVulkanMemoryAllocator::~xiiVulkanMemoryAllocator() = default;
+xiiVulkanMemoryAllocator::~xiiVulkanMemoryAllocator()
+{
+  if (m_pImplementation->m_VmaAllocator != VK_NULL_HANDLE)
+  {
+    DeInitialize();
+  }
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Initialize / DeInitialize
@@ -198,7 +204,7 @@ vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulka
 
 void xiiVulkanMemoryAllocator::DeInitialize()
 {
-  XII_ASSERT_DEV(m_pImplementation != nullptr, "xiiVulkanMemoryAllocator not initialized or already de-initialized.");
+  XII_ASSERT_DEV(m_pImplementation != nullptr && m_pImplementation->m_VmaAllocator != VK_NULL_HANDLE, "xiiVulkanMemoryAllocator not initialized or already de-initialized.");
 
   for (auto& it : m_pImplementation->m_ExportedSharedPools)
   {
@@ -208,13 +214,6 @@ void xiiVulkanMemoryAllocator::DeInitialize()
 
   vmaDestroyAllocator(m_pImplementation->m_VmaAllocator);
   m_pImplementation->m_VmaAllocator = VK_NULL_HANDLE;
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  char* pStatsString = nullptr;
-  vmaBuildStatsString(m_pImplementation->m_VmaAllocator, &pStatsString, true);
-  xiiLog::Dev("Vulkan Memory Allocator Stats:\n%s", pStatsString);
-  vmaFreeStatsString(m_pImplementation->m_VmaAllocator, pStatsString);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

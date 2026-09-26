@@ -747,9 +747,9 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDevi
   ref_vkImageCreateInfo.format        = xiiVulkanTypeConversions::GetFormat(internalTextureFormat);
   ref_vkImageCreateInfo.extent.width  = creationDescription.m_Size.width;
   ref_vkImageCreateInfo.extent.height = creationDescription.m_Size.height;
-  ref_vkImageCreateInfo.extent.depth  = creationDescription.m_uiArraySizeOrDepth;
+  ref_vkImageCreateInfo.extent.depth  = creationDescription.Is3D() ? creationDescription.m_uiArraySizeOrDepth : 1U;
   ref_vkImageCreateInfo.mipLevels     = creationDescription.m_uiMipLevels;
-  ref_vkImageCreateInfo.arrayLayers   = creationDescription.m_uiArraySizeOrDepth;
+  ref_vkImageCreateInfo.arrayLayers   = creationDescription.Is3D() ? 1U : creationDescription.m_uiArraySizeOrDepth;
   ref_vkImageCreateInfo.samples       = static_cast<vk::SampleCountFlagBits>(creationDescription.m_uiSampleCount);
   ref_vkImageCreateInfo.tiling        = vk::ImageTiling::eOptimal;
   ref_vkImageCreateInfo.usage         = xiiVulkanTypeConversions::GetImageUsageFlags(creationDescription.m_BindFlags, bIsMemoryLess, vkExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != vk::False);

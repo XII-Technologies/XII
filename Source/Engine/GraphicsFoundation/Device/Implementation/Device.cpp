@@ -695,6 +695,20 @@ xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreat
 {
   VerifyMultithreadedAccess();
 
+  XII_LOCK(m_Mutex);
+
+  const xiiUInt32 uiDescriptionHash = description.CalculateHash();
+  if (auto it = m_SamplerCache.Find(uiDescriptionHash); it.IsValid())
+  {
+    for (xiiGALSampler* pCachedSampler : it.Value())
+    {
+      if (pCachedSampler->GetDescription() == description)
+      {
+        return xiiSharedPtr<xiiGALSampler>(pCachedSampler, &m_Allocator);
+      }
+    }
+  }
+
   if (description.m_Flags.AreAllSet(xiiGALSamplerFlags::Subsampled | xiiGALSamplerFlags::SubsampledCoarseReconstruction))
   {
     XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget), "Subsampled sampler requires the xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capability.");
@@ -710,7 +724,26 @@ xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreat
     XII_GAL_DEVICE_CHECK(!xiiGALFilterType::IsAnisotropicFilter(description.m_MinFilter), "When unnormalized coordinates are enabled, the MinFilter and MagFilter must not be of the anisotropic type.");
   }
 
-  return CreateSamplerPlatform(description);
+  xiiSharedPtr<xiiGALSampler> pSampler = CreateSamplerPlatform(description);
+  if (pSampler != nullptr)
+  {
+    m_SamplerCache[uiDescriptionHash].PushBack(pSampler.Borrow());
+  }
+  return pSampler;
+}
+
+void xiiGALDevice::UnregisterSampler(xiiUInt32 uiDescriptionHash, const xiiGALSampler* pSampler)
+{
+  XII_LOCK(m_Mutex);
+
+  auto it = m_SamplerCache.Find(uiDescriptionHash);
+  if (!it.IsValid())
+    return;
+
+  if (it.Value().RemoveAndCopy(const_cast<xiiGALSampler*>(pSampler)) && it.Value().IsEmpty())
+  {
+    m_SamplerCache.Remove(it);
+  }
 }
 
 xiiSharedPtr<xiiGALQuery> xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription& description)
