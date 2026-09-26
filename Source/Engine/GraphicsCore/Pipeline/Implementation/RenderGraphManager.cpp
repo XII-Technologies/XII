@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -23,6 +24,7 @@ public:
   xiiDynamicArray<xiiUniquePtr<Entry>> m_Entries;
   xiiUniquePtr<xiiRenderGraphResourceCache> m_pResourceCache;
   xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pProfiler;
+  xiiGpuFrameCompletionTracker m_FrameCompletionTracker;
   xiiUInt32 m_uiNextRegistrationOrder = 0U;
   bool m_bEngineStarted = false;
 };
@@ -176,6 +178,18 @@ xiiRenderGraphTimestampProfiler* xiiRenderGraphManager::GetProfiler()
   return s_pState != nullptr ? s_pState->m_pProfiler.Borrow() : nullptr;
 }
 
+xiiUInt64 xiiRenderGraphManager::PrepareFrame(xiiUInt64 uiFrameIndex, xiiUInt32 uiFramesInFlight)
+{
+  XII_ASSERT_DEV(s_pState != nullptr && s_pState->m_bEngineStarted, "Render graph manager is not ready to prepare GPU frames.");
+  XII_ASSERT_DEV(uiFramesInFlight > 0U, "At least one frame in flight is required.");
+  if (s_pState == nullptr || !s_pState->m_bEngineStarted || uiFramesInFlight == 0U)
+    return 0ULL;
+
+  if (uiFrameIndex > uiFramesInFlight)
+    s_pState->m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
+  return s_pState->m_FrameCompletionTracker.PollCompletedFrames();
+}
+
 xiiResult xiiRenderGraphManager::ExecuteFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, const xiiView* pView, const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
 {
   if (s_pState == nullptr || !s_pState->m_bEngineStarted)
@@ -188,6 +202,10 @@ xiiResult xiiRenderGraphManager::ExecuteFrame(xiiUInt64 uiFrameIndex, xiiUInt64 
   s_pState->m_pResourceCache->BeginFrame(uiFrameIndex, uiCompletedFrame);
   const xiiResult result = ExecuteFrame(uiFrameIndex, pDevice.Borrow(), pView, s_pState->m_pResourceCache.Borrow(), s_pState->m_pProfiler.Borrow(), settings, out_pError);
   s_pState->m_pResourceCache->EndFrame();
+  // Capture every attempted frame so ring-slot waiting remains sequential even if graph
+  // compilation fails before submitting new work. In that case the previous queue values make
+  // the frame immediately complete without introducing a hole in the tracker timeline.
+  s_pState->m_FrameCompletionTracker.CaptureSubmittedFrame(uiFrameIndex);
   return result;
 }
 
@@ -248,6 +266,7 @@ void xiiRenderGraphManager::EngineStartup()
   s_pState->m_pProfiler = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
   s_pState->m_pResourceCache->Initialize(pDevice);
   s_pState->m_pProfiler->Initialize(pDevice);
+  s_pState->m_FrameCompletionTracker.Initialize(pDevice.Borrow());
   s_pState->m_bEngineStarted = true;
 }
 
@@ -257,6 +276,7 @@ void xiiRenderGraphManager::EngineShutdown()
     return;
 
   s_pState->m_Entries.Clear();
+  s_pState->m_FrameCompletionTracker.Reset();
   if (s_pState->m_pProfiler != nullptr)
     s_pState->m_pProfiler->Shutdown();
   if (s_pState->m_pResourceCache != nullptr)

@@ -28,7 +28,6 @@
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
-#include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
@@ -118,9 +117,7 @@ public:
     if (bCanRender)
     {
       ++m_uiFrameIndex;
-      if (m_uiFrameIndex > m_Configuration.m_uiFramesInFlight)
-        m_FrameCompletionTracker.WaitForFrame(m_uiFrameIndex - m_Configuration.m_uiFramesInFlight);
-      const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
+      const xiiUInt64 uiCompletedFrame = xiiRenderGraphManager::PrepareFrame(m_uiFrameIndex, m_Configuration.m_uiFramesInFlight);
       m_World.Update(m_uiFrameIndex, uiCompletedFrame, xiiClock::GetGlobalClock()->GetTimeDiff());
 
       m_TargetSize            = m_pWindow->GetClientAreaSize();
@@ -156,9 +153,6 @@ public:
       m_pSwapChain->Present();
     }
     m_pDevice->EndFrame();
-    if (bCanRender)
-      m_FrameCompletionTracker.CaptureSubmittedFrame(m_uiFrameIndex);
-
     xiiResourceManager::PerFrameUpdate();
     xiiTaskSystem::FinishFrameTasks();
     return Execution::Continue;
@@ -223,8 +217,6 @@ public:
     UpdateSwapChain();
     xiiStartup::StartupHighLevelSystems();
 
-    m_FrameCompletionTracker.Initialize(m_pDevice.Borrow());
-
     m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 250.0f);
     m_Camera.LookAt(xiiVec3(-12.0f, -2.0f, 12.0f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
 
@@ -267,7 +259,6 @@ public:
     m_World.Shutdown(m_uiFrameIndex);
     m_hShaderPermutation.Invalidate();
     m_pSceneRenderPass.Clear();
-    m_FrameCompletionTracker.Reset();
     m_pSwapChain.Clear();
     xiiStartup::ShutdownHighLevelSystems();
     if (xiiGALDevice::GetDefaultDevice() == m_pDevice)
@@ -489,7 +480,6 @@ private:
   xiiSharedPtr<xiiGALDevice>                    m_pDevice;
   xiiSharedPtr<xiiGALSwapChain>                 m_pSwapChain;
   xiiUniquePtr<xiiWindow>                       m_pWindow;
-  xiiGpuFrameCompletionTracker                  m_FrameCompletionTracker;
   xiiSharedPtr<xiiGALRenderPass>                m_pSceneRenderPass;
   xiiShaderPermutationResourceHandle            m_hShaderPermutation;
   xiiGpuDrivenSceneConfiguration                m_Configuration;

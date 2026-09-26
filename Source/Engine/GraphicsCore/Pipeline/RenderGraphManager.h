@@ -82,6 +82,9 @@ public:
   [[nodiscard]] static xiiRenderGraphResourceCache* GetResourceCache();
   [[nodiscard]] static xiiRenderGraphTimestampProfiler* GetProfiler();
 
+  /// Waits before a frame-ring slot is reused and returns the latest fully completed GPU frame.
+  [[nodiscard]] static xiiUInt64 PrepareFrame(xiiUInt64 uiFrameIndex, xiiUInt32 uiFramesInFlight);
+
   /// Executes eligible graphs using the default GAL device and subsystem-owned cache/profiler.
   /// The completed frame is used to retire transient resources without reusing in-flight memory.
   [[nodiscard]] static xiiResult ExecuteFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, const xiiView* pView, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
