@@ -31,10 +31,9 @@ xiiEnum<xiiGALGraphicsAdapterVendor> xiiGALDeviceUtilities::GetVendorFromID(xiiU
       return xiiGALGraphicsAdapterVendor::Mesa;
     case 0x014E4: // Broadcom
       return xiiGALGraphicsAdapterVendor::Broadcom;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    default:
+      return xiiGALGraphicsAdapterVendor::Unknown;
   }
-  return xiiGALGraphicsAdapterVendor::Unknown;
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateVertexBuffer(xiiGALDevice* pDevice, xiiUInt32 uiVertexSize, xiiUInt32 uiVertexCount, xiiArrayPtr<xiiUInt8> pInitialData, bool bDataIsMutable)
@@ -112,7 +111,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateStagingBuffer(xiiGALDevi
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
   xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::None;
   bufferDescription.m_uiElementByteStride = 0U;
   bufferDescription.m_uiSize              = uiBufferSize;
   bufferDescription.m_Usage               = xiiGALResourceUsage::Staging;

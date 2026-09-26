@@ -462,6 +462,11 @@ private:
         vkLogicalDevice.destroyCommandPool(reinterpret_cast<vk::CommandPool&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
       }
       break;
+      case vk::ObjectType::eAccelerationStructureKHR:
+      {
+        vkLogicalDevice.destroyAccelerationStructureKHR(reinterpret_cast<vk::AccelerationStructureKHR&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
+      break;
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }

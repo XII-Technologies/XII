@@ -188,13 +188,19 @@ xiiGALTexture* xiiGALTextureReadback::AcquireStagingTexture(const xiiGALTextureC
 
   if (!pStagingTexture)
   {
-    TextureResource& resource = m_StagingPool.ExpandAndGetRef();
-    resource.m_pTexture       = m_pDevice->CreateTexture(description);
-    resource.m_bInUse         = true;
+    xiiSharedPtr<xiiGALTexture> pNewTexture = m_pDevice->CreateTexture(description);
+    if (pNewTexture == nullptr)
+      return nullptr;
 
     xiiStringBuilder sb;
-    sb.AppendFormat("Texture Readback Staging {}x{} {} {}", description.m_Size.width, description.m_Size.height, description.m_Format.GetValue(), m_StagingPool.GetCount());
-    pStagingTexture->SetDebugName(sb);
+    sb.AppendFormat("Texture Readback Staging {}x{} {}", description.m_Size.width, description.m_Size.height, description.m_Format.GetValue());
+    pNewTexture->SetDebugName(sb);
+
+    XII_LOCK(m_PoolMutex);
+
+    TextureResource& resource = m_StagingPool.ExpandAndGetRef();
+    resource.m_pTexture       = std::move(pNewTexture);
+    resource.m_bInUse         = true;
 
     pStagingTexture = resource.m_pTexture;
   }

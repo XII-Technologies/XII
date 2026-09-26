@@ -288,7 +288,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
 
   auto allowedBindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::StreamOutput | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing;
 
-  XII_GAL_DEVICE_CHECK(description.m_BindFlags.IsStrictlyAnySet(allowedBindFlags), "The buffer description bind flags contain unsupported bind flags.");
+  XII_GAL_DEVICE_CHECK((description.m_Usage == xiiGALResourceUsage::Staging && description.m_BindFlags.IsNoFlagSet()) || description.m_BindFlags.IsStrictlyAnySet(allowedBindFlags), "The buffer description bind flags contain unsupported bind flags.");
 
   if (description.m_BindFlags.IsAnySet(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess))
   {
@@ -403,7 +403,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
   {
     if (description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
     {
-      XII_GAL_DEVICE_CHECK(bHasInitialData, "Staging buffers with CPU write access must be updated via map.");
+      XII_GAL_DEVICE_CHECK(!bHasInitialData, "Staging buffers with CPU write access must be updated via map.");
     }
   }
   else if (description.m_Usage == xiiGALResourceUsage::Unified)
@@ -693,7 +693,19 @@ void xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCreationDescriptio
 
 xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescription& description)
 {
-  VerifyMultithreadedAccess();
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  const xiiUInt32 uiDescriptionHash = description.CalculateHash();
+  if (auto it = m_SamplerCache.Find(uiDescriptionHash); it.IsValid())
+  {
+    for (xiiGALSampler* pCachedSampler : it.Value())
+    {
+      if (pCachedSampler->GetDescription() == description)
+      {
+        return xiiSharedPtr<xiiGALSampler>(pCachedSampler, &m_Allocator);
+      }
+    }
+  }
 
   if (description.m_Flags.AreAllSet(xiiGALSamplerFlags::Subsampled | xiiGALSamplerFlags::SubsampledCoarseReconstruction))
   {
@@ -710,7 +722,26 @@ xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreat
     XII_GAL_DEVICE_CHECK(!xiiGALFilterType::IsAnisotropicFilter(description.m_MinFilter), "When unnormalized coordinates are enabled, the MinFilter and MagFilter must not be of the anisotropic type.");
   }
 
-  return CreateSamplerPlatform(description);
+  xiiSharedPtr<xiiGALSampler> pSampler = CreateSamplerPlatform(description);
+  if (pSampler != nullptr)
+  {
+    m_SamplerCache[uiDescriptionHash].PushBack(pSampler.Borrow());
+  }
+  return pSampler;
+}
+
+void xiiGALDevice::UnregisterSampler(xiiUInt32 uiDescriptionHash, const xiiGALSampler* pSampler)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  auto it = m_SamplerCache.Find(uiDescriptionHash);
+  if (!it.IsValid())
+    return;
+
+  if (it.Value().RemoveAndCopy(const_cast<xiiGALSampler*>(pSampler)) && it.Value().IsEmpty())
+  {
+    m_SamplerCache.Remove(it);
+  }
 }
 
 xiiSharedPtr<xiiGALQuery> xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription& description)
@@ -1314,7 +1345,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
   VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_uiBindingIndex < XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT, "The pipeline resource signature binding index ({0}) exceeds the maximum allowed value ({1}).", description.m_uiBindingIndex, XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT - 1);
-  XII_GAL_DEVICE_CHECK(description.m_uiBindingIndex <= s_uiMaxResourcesInSignature, "The pipeline resource signature resource count ({0}) exceeds the maximum allowed value ({1}).", description.m_Resources.GetCount(), s_uiMaxResourcesInSignature);
+  XII_GAL_DEVICE_CHECK(description.m_Resources.GetCount() <= s_uiMaxResourcesInSignature, "The pipeline resource signature resource count ({0}) exceeds the maximum allowed value ({1}).", description.m_Resources.GetCount(), s_uiMaxResourcesInSignature);
 
   // Ensure that shader stages do not conflict for resources with the same name.
 

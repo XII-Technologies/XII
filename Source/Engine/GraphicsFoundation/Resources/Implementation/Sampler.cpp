@@ -21,7 +21,10 @@ xiiGALSampler::xiiGALSampler(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSam
 {
 }
 
-xiiGALSampler::~xiiGALSampler() = default;
+xiiGALSampler::~xiiGALSampler()
+{
+  m_pDevice->UnregisterSampler(m_Description.CalculateHash(), this);
+}
 
 xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSamplerCreationDescription& description)
 {

@@ -130,6 +130,17 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
 
     SetResourceState(xiiGALResourceStateFlags::Undefined);
   }
+  else if (m_Description.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    xiiVulkanAllocationCreateInfo allocationCreateInfo;
+    allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
+    allocationCreateInfo.m_RequiredFlags = xiiVulkanMemoryPropertyFlags::HostVisible;
+    allocationCreateInfo.m_Flags         = m_Description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read) ? xiiVulkanAllocationCreateFlags::StrategyHostRandom : xiiVulkanAllocationCreateFlags::StrategyHostSequential;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, m_vkBuffer, m_BufferMemoryAllocation));
+
+    SetResourceState(m_Description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read) ? xiiGALResourceStateFlags::CopyDestination : xiiGALResourceStateFlags::CopySource);
+  }
   else if (m_Description.m_Usage == xiiGALResourceUsage::Dynamic && !bRequiresBackingBuffer)
   {
     // Dynamic constant/vertex/index/structured buffers are suballocated in the upload heap when Map() is called.

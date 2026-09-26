@@ -309,8 +309,6 @@ namespace
 
 bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
 {
-  XII_IGNORE_UNUSED(bAutoInvalidate);
-
   CheckQueryDataPtr(pData, uiDataSize);
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
@@ -353,6 +351,11 @@ bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInv
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
+  }
+
+  if (bIsDataAvailable && pData != nullptr && bAutoInvalidate)
+  {
+    Invalidate();
   }
 
   return bIsDataAvailable;

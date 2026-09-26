@@ -1,0 +1,41 @@
+[PLATFORMS]
+ALL
+
+[RENDERSTATE]
+DepthEnable = false
+CullMode = CullMode_None
+
+[VERTEX_SHADER]
+struct VertexOutput
+{
+  float4 Position : SV_POSITION;
+  float4 Color : COLOR0;
+};
+
+void main(in uint vertexID : SV_VertexID, out VertexOutput output)
+{
+  float2 positions[3] =
+  {
+    float2(-0.5, -0.5),
+    float2( 0.0,  0.5),
+    float2( 0.5, -0.5)
+  };
+
+  output.Position = float4(positions[vertexID], 0.0, 1.0);
+  output.Color = float4(vertexID == 0, vertexID == 1, vertexID == 2, 1.0);
+}
+
+[PIXEL_SHADER]
+float4 main(float4 position : SV_POSITION, float4 color : COLOR0) : SV_TARGET
+{
+  return color;
+}
+
+[COMPUTE_SHADER]
+RWStructuredBuffer<uint> OutputBuffer : register(u0);
+
+[numthreads(1, 1, 1)]
+void main(uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+  OutputBuffer[dispatchThreadID.x] = 0xC0DEF00D;
+}

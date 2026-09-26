@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Containers/Map.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
@@ -278,6 +280,7 @@ protected:
 
   // These functions need to be implemented by a graphics API abstraction.
 protected:
+  friend class xiiGALSampler;
   friend class xiiMemoryUtils;
 
   virtual xiiResult InitializePlatform()     = 0;
@@ -318,9 +321,13 @@ protected:
   void FinalizeBufferInternal(const xiiGALBufferCreationDescription& description, xiiSharedPtr<xiiGALBuffer>& pBuffer);
 
 private:
+  void UnregisterSampler(xiiUInt32 uiDescriptionHash, const xiiGALSampler* pSampler);
+
   static xiiSharedPtr<xiiGALDevice> s_pDefaultDevice;
 
 private:
+  xiiMap<xiiUInt32, xiiHybridArray<xiiGALSampler*, 1>> m_SamplerCache;
+
   bool m_bBeginFrameCalled = false;
 };
 

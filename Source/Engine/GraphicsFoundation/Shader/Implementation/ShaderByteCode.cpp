@@ -319,7 +319,7 @@ void xiiGALShaderVariableDescription::CopyDataFromVariant(xiiUInt8* pDestination
           switch (description.m_uiColumnCount)
           {
             case 1:
-              *reinterpret_cast<float*>(pDestination) = pValue->ConvertTo<float>(&conversionResult);
+              *reinterpret_cast<double*>(pDestination) = pValue->ConvertTo<double>(&conversionResult);
               break;
             case 2:
               *reinterpret_cast<xiiVec2d*>(pDestination) = pValue->Get<xiiVec2d>();
