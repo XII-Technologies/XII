@@ -693,9 +693,7 @@ void xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCreationDescriptio
 
 xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescription& description)
 {
-  VerifyMultithreadedAccess();
-
-  XII_LOCK(m_Mutex);
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
 
   const xiiUInt32 uiDescriptionHash = description.CalculateHash();
   if (auto it = m_SamplerCache.Find(uiDescriptionHash); it.IsValid())
@@ -734,7 +732,7 @@ xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreat
 
 void xiiGALDevice::UnregisterSampler(xiiUInt32 uiDescriptionHash, const xiiGALSampler* pSampler)
 {
-  XII_LOCK(m_Mutex);
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
 
   auto it = m_SamplerCache.Find(uiDescriptionHash);
   if (!it.IsValid())

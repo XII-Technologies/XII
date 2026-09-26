@@ -5,8 +5,8 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Containers/HybridArray.h>
-#include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Containers/Map.h>
+#include <Foundation/Memory/CommonAllocators.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
 
