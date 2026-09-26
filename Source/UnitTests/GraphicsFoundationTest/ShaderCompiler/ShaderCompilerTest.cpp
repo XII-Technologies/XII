@@ -12,7 +12,9 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(ShaderCompiler);
 
@@ -342,7 +344,111 @@ cbuffer Globals : register(b1, space0)
       XII_TEST_BOOL(compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel).Succeeded());
       XII_TEST_BOOL(compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel).Succeeded());
 
-      xiiPlugin::UnloadAllPlugins();
+      xiiStringBuilder sPermutationFile = xiiGALShaderManager::GetCacheDirectory();
+      sPermutationFile.AppendPath(sShaderModel);
+      sPermutationFile.AppendPath(sShaderFile);
+      sPermutationFile.ChangeFileExtension("");
+      if (sPermutationFile.EndsWith("."))
+        sPermutationFile.Shrink(0U, 1U);
+      sPermutationFile.AppendFormat("_{0}.xiiPermutation", xiiArgU(xiiGALPermutationVariable::CalculateHash({}), 8, true, 16, true));
+
+      xiiFileReader permutationFile;
+      XII_TEST_BOOL(permutationFile.Open(sPermutationFile).Succeeded());
+      xiiGALShaderPermutationBinary permutation;
+      bool                          bOldVersion = true;
+      XII_TEST_BOOL(permutation.Read(permutationFile, bOldVersion).Succeeded());
+      XII_TEST_BOOL(!bOldVersion);
+
+      auto vertexHash = permutation.m_ShaderStageHashes.Find(xiiGALShaderType::Vertex);
+      auto pixelHash  = permutation.m_ShaderStageHashes.Find(xiiGALShaderType::Pixel);
+      XII_TEST_BOOL(vertexHash.IsValid());
+      XII_TEST_BOOL(pixelHash.IsValid());
+      if (!vertexHash.IsValid() || !pixelHash.IsValid())
+      {
+        xiiPlugin::UnloadAllPlugins();
+        continue;
+      }
+
+      xiiGALShaderStageBinary* pVertexBinary = xiiGALShaderStageBinary::LoadStageBinary(xiiGALShaderType::Vertex, vertexHash.Value(), sShaderModel);
+      xiiGALShaderStageBinary* pPixelBinary  = xiiGALShaderStageBinary::LoadStageBinary(xiiGALShaderType::Pixel, pixelHash.Value(), sShaderModel);
+      XII_TEST_BOOL(pVertexBinary != nullptr);
+      XII_TEST_BOOL(pPixelBinary != nullptr);
+      if (pVertexBinary == nullptr || pPixelBinary == nullptr)
+      {
+        xiiPlugin::UnloadAllPlugins();
+        continue;
+      }
+
+      xiiGPUTestingEnvironment environment(sImplementation);
+      XII_TEST_BOOL(environment.Initialize().Succeeded());
+      if (environment.GetDevice() == nullptr)
+        continue;
+
+      xiiGALDevice* pDevice = environment.GetDevice();
+      xiiGALShaderCreationDescription vertexShaderDescription;
+      vertexShaderDescription.m_ShaderType = xiiGALShaderType::Vertex;
+      vertexShaderDescription.m_ByteCode   = const_cast<xiiGALShaderByteCode*>(pVertexBinary->GetByteCode().Borrow());
+      xiiSharedPtr<xiiGALShader> pVertexShader = pDevice->CreateShader(vertexShaderDescription);
+      XII_TEST_BOOL(pVertexShader != nullptr);
+
+      xiiGALShaderCreationDescription pixelShaderDescription;
+      pixelShaderDescription.m_ShaderType = xiiGALShaderType::Pixel;
+      pixelShaderDescription.m_ByteCode   = const_cast<xiiGALShaderByteCode*>(pPixelBinary->GetByteCode().Borrow());
+      xiiSharedPtr<xiiGALShader> pPixelShader = pDevice->CreateShader(pixelShaderDescription);
+      XII_TEST_BOOL(pPixelShader != nullptr);
+      if (pVertexShader == nullptr || pPixelShader == nullptr)
+        continue;
+
+      pVertexShader->SetDebugName("Compiled Unit Test Vertex Shader");
+      pPixelShader->SetDebugName("Compiled Unit Test Pixel Shader");
+      XII_TEST_STRING(pVertexShader->GetDebugName(), "Compiled Unit Test Vertex Shader");
+      XII_TEST_STRING(pPixelShader->GetDebugName(), "Compiled Unit Test Pixel Shader");
+
+      xiiGALInputLayoutCreationDescription inputLayoutDescription;
+      xiiSharedPtr<xiiGALInputLayout> pInputLayout = pVertexShader->CreateInputLayout(inputLayoutDescription);
+      XII_TEST_BOOL(pInputLayout != nullptr);
+
+      xiiGALPipelineResourceSignatureCreationDescription signatureDescription;
+      xiiSharedPtr<xiiGALPipelineResourceSignature> pSignature = pDevice->CreatePipelineResourceSignature(signatureDescription);
+      XII_TEST_BOOL(pSignature != nullptr);
+
+      xiiGALBlendStateCreationDescription blendDescription;
+      blendDescription.m_RenderTargets.ExpandAndGetRef();
+      xiiSharedPtr<xiiGALBlendState> pBlendState = pDevice->CreateBlendState(blendDescription);
+      xiiSharedPtr<xiiGALRasterizerState> pRasterizerState = pDevice->CreateRasterizerState(permutation.m_StateDescriptor.m_RasterizerDescription);
+      XII_TEST_BOOL(pBlendState != nullptr);
+      XII_TEST_BOOL(pRasterizerState != nullptr);
+
+      xiiGALRenderPassCreationDescription renderPassDescription;
+      auto& attachment                = renderPassDescription.m_Attachments.ExpandAndGetRef();
+      attachment.m_Format            = xiiGALResourceFormat::RGBA8UNormalized;
+      attachment.m_uiSampleCount     = 1U;
+      attachment.m_LoadOperation     = xiiGALAttachmentLoadOperation::Clear;
+      attachment.m_StoreOperation    = xiiGALAttachmentStoreOperation::Store;
+      attachment.m_InitialStateFlags = xiiGALResourceStateFlags::Undefined;
+      attachment.m_FinalStateFlags   = xiiGALResourceStateFlags::RenderTarget;
+      renderPassDescription.m_SubPasses.ExpandAndGetRef().m_RenderTargetAttachments.PushBack({0U, xiiGALResourceStateFlags::RenderTarget});
+      xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+      XII_TEST_BOOL(pRenderPass != nullptr);
+
+      if (pInputLayout != nullptr && pSignature != nullptr && pBlendState != nullptr && pRasterizerState != nullptr && pRenderPass != nullptr)
+      {
+        xiiGALGraphicsPipelineStateCreationDescription pipelineDescription;
+        pipelineDescription.m_pPipelineResourceSignature         = pSignature;
+        pipelineDescription.m_pVertexShader                      = pVertexShader;
+        pipelineDescription.m_pPixelShader                       = pPixelShader;
+        pipelineDescription.m_GraphicsPipeline.m_pInputLayout    = pInputLayout;
+        pipelineDescription.m_GraphicsPipeline.m_pBlendState     = pBlendState;
+        pipelineDescription.m_GraphicsPipeline.m_pRasterizerState = pRasterizerState;
+        pipelineDescription.m_GraphicsPipeline.m_pRenderPass     = pRenderPass;
+        xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = pDevice->CreateGraphicsPipelineState(pipelineDescription);
+        XII_TEST_BOOL(pPipeline != nullptr);
+        if (pPipeline != nullptr)
+        {
+          pPipeline->SetDebugName("Compiled Unit Test Graphics Pipeline");
+          XII_TEST_STRING(pPipeline->GetDebugName(), "Compiled Unit Test Graphics Pipeline");
+        }
+      }
     }
   }
 }
