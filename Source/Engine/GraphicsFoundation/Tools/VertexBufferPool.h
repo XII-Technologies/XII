@@ -37,7 +37,7 @@ public:
   ///
   /// \param uiInitialChunkSize - The number of vertices in the first (and minimum) chunk.
   /// \param uiExpansionFactor  - Determines the size of new chunks (e.g. 2 means double the previous chunk).
-  xiiGALVertexBufferPool(xiiStringView sName = {}, xiiAllocator* pAllocator = AllocatorWrapper::GetAllocator(), xiiUInt32 uiInitialChunkSize = 1024, xiiUInt32 uiExpansionFactor = 2U);
+  xiiGALVertexBufferPool(xiiSharedPtr<xiiGALDevice> pDevice, xiiStringView sName = {}, xiiAllocator* pAllocator = AllocatorWrapper::GetAllocator(), xiiUInt32 uiInitialChunkSize = 1024, xiiUInt32 uiExpansionFactor = 2U);
   ~xiiGALVertexBufferPool();
 
   /// Allocates a block of vertices from the pool.
@@ -77,7 +77,7 @@ private:
       xiiGALBufferCreationDescription description;
       description.m_uiSize    = uiCapacity * sizeof(VertexType);
       description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
-      description.m_Usage     = xiiGALResourceUsage::Dynamic;
+      description.m_Usage     = xiiGALResourceUsage::Mutable;
 
       m_pBuffer = pDevice->CreateBuffer(description);
     }
