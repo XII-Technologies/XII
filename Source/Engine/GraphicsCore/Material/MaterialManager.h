@@ -24,15 +24,15 @@ public:
   /// Reconfigures the global GPU table. This is only valid before materials are registered.
   /// Before high-level startup the description is retained and applied when the GAL device exists.
   [[nodiscard]] static xiiResult Configure(const xiiMaterialGpuStorageDescription& description);
-  [[nodiscard]] static bool IsInitialized();
+  [[nodiscard]] static bool      IsInitialized();
 
   static void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
 
   [[nodiscard]] static xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance);
-  static void                                  UnregisterMaterial(xiiMaterialGpuHandle handle);
+  static void                               UnregisterMaterial(xiiMaterialGpuHandle handle);
 
   [[nodiscard]] static xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph);
-  [[nodiscard]] static xiiResult ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData);
+  [[nodiscard]] static xiiResult                  ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData);
 
   [[nodiscard]] static xiiMaterialGpuStorage& GetGpuStorage();
 

@@ -14,19 +14,19 @@ public:
   struct Entry
   {
     xiiRenderGraphRegistrationDescription m_Description;
-    xiiUniquePtr<xiiRenderGraph>           m_pGraph;
-    xiiRenderGraphBlackboard               m_Blackboard;
-    xiiRenderGraphManager::BuildDelegate   m_BuildDelegate;
-    xiiUInt32                              m_uiRegistrationOrder = 0U;
-    bool                                   m_bOnDemandRequested  = false;
+    xiiUniquePtr<xiiRenderGraph>          m_pGraph;
+    xiiRenderGraphBlackboard              m_Blackboard;
+    xiiRenderGraphManager::BuildDelegate  m_BuildDelegate;
+    xiiUInt32                             m_uiRegistrationOrder = 0U;
+    bool                                  m_bOnDemandRequested  = false;
   };
 
-  xiiDynamicArray<xiiUniquePtr<Entry>> m_Entries;
-  xiiUniquePtr<xiiRenderGraphResourceCache> m_pResourceCache;
+  xiiDynamicArray<xiiUniquePtr<Entry>>          m_Entries;
+  xiiUniquePtr<xiiRenderGraphResourceCache>     m_pResourceCache;
   xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pProfiler;
-  xiiGpuFrameCompletionTracker m_FrameCompletionTracker;
-  xiiUInt32 m_uiNextRegistrationOrder = 0U;
-  bool m_bEngineStarted = false;
+  xiiGpuFrameCompletionTracker                  m_FrameCompletionTracker;
+  xiiUInt32                                     m_uiNextRegistrationOrder = 0U;
+  bool                                          m_bEngineStarted          = false;
 };
 
 xiiUniquePtr<xiiRenderGraphManagerState> xiiRenderGraphManager::s_pState;
@@ -57,7 +57,7 @@ namespace
         return false;
     }
   }
-}
+} // namespace
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderGraphManager)
@@ -127,12 +127,12 @@ xiiRenderGraphGraphId xiiRenderGraphManager::RegisterGraph(const xiiRenderGraphR
   XII_ASSERT_DEV(buildDelegate.IsValid(), "A render graph registration requires a build delegate.");
 
   xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry = XII_DEFAULT_NEW(xiiRenderGraphManagerState::Entry);
-  xiiRenderGraphManagerState::Entry& entry = *pEntry;
+  xiiRenderGraphManagerState::Entry&              entry  = *pEntry;
   entry.m_Description                  = description;
   entry.m_Description.m_uiEveryNFrames = xiiMath::Max(1U, description.m_uiEveryNFrames);
   entry.m_pGraph                       = XII_DEFAULT_NEW(xiiRenderGraph, description.m_sName);
   entry.m_BuildDelegate                = buildDelegate;
-  entry.m_uiRegistrationOrder          = s_pState->m_uiNextRegistrationOrder++;
+  entry.m_uiRegistrationOrder                            = s_pState->m_uiNextRegistrationOrder++;
   const xiiRenderGraphGraphId id       = entry.m_pGraph->GetId();
   s_pState->m_Entries.PushBack(std::move(pEntry));
   return id;
@@ -263,7 +263,7 @@ void xiiRenderGraphManager::EngineStartup()
     return;
 
   s_pState->m_pResourceCache = XII_DEFAULT_NEW(xiiRenderGraphResourceCache);
-  s_pState->m_pProfiler = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
+  s_pState->m_pProfiler      = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
   s_pState->m_pResourceCache->Initialize(pDevice);
   s_pState->m_pProfiler->Initialize(pDevice);
   s_pState->m_FrameCompletionTracker.Initialize(pDevice.Borrow());

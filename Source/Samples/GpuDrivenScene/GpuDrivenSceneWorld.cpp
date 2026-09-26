@@ -57,16 +57,16 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   XII_SUCCEED_OR_RETURN(pBindlessResources->Configure(bindlessDescription));
 
   xiiGeometryResidencyDescription geometryDescription;
-  geometryDescription.m_uiMaxGeometries = 64U;
+  geometryDescription.m_uiMaxGeometries  = 64U;
   geometryDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
-  geometryDescription.m_uiBudgetBytes = 128ULL * 1024ULL * 1024ULL;
-  geometryDescription.m_uiMaxMeshlets = configuration.m_uiMaxVisibleMeshlets;
+  geometryDescription.m_uiBudgetBytes    = 128ULL * 1024ULL * 1024ULL;
+  geometryDescription.m_uiMaxMeshlets    = configuration.m_uiMaxVisibleMeshlets;
   XII_SUCCEED_OR_RETURN(pGeometryResidency->Configure(geometryDescription));
 
   xiiMaterialGpuStorageDescription materialDescription;
-  materialDescription.m_uiMaxMaterials = 64U;
+  materialDescription.m_uiMaxMaterials      = 64U;
   materialDescription.m_uiMaxParameterBytes = 64U;
-  materialDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
+  materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
   return xiiMaterialManager::Configure(materialDescription);
 }
 

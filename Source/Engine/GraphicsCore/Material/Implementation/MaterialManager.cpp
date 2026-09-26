@@ -8,10 +8,10 @@
 class xiiMaterialManagerState
 {
 public:
-  xiiUniquePtr<xiiMaterialSystem> m_pSystem;
+  xiiUniquePtr<xiiMaterialSystem>  m_pSystem;
   xiiMaterialGpuStorageDescription m_Description;
-  bool m_bEngineStarted = false;
-  bool m_bInitialized = false;
+  bool                             m_bEngineStarted = false;
+  bool                             m_bInitialized   = false;
 };
 
 xiiUniquePtr<xiiMaterialManagerState> xiiMaterialManager::s_pState;
@@ -137,7 +137,7 @@ void xiiMaterialManager::EngineShutdown()
   if (s_pState->m_pSystem != nullptr)
     s_pState->m_pSystem->Shutdown();
   s_pState->m_pSystem.Clear();
-  s_pState->m_bInitialized = false;
+  s_pState->m_bInitialized   = false;
   s_pState->m_bEngineStarted = false;
 }
 

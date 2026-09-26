@@ -133,9 +133,9 @@ public:
   ~xiiGeometryResidencyManager();
 
   /// Stores startup configuration or reapplies it while no geometry handles are active.
-  [[nodiscard]] xiiResult Configure(const xiiGeometryResidencyDescription& description);
+  [[nodiscard]] xiiResult                              Configure(const xiiGeometryResidencyDescription& description);
   [[nodiscard]] const xiiGeometryResidencyDescription& GetConfiguration() const { return m_Configuration; }
-  [[nodiscard]] bool IsInitialized() const { return m_bInitialized; }
+  [[nodiscard]] bool                                   IsInitialized() const { return m_bInitialized; }
 
   [[nodiscard]] xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
   void                            UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
@@ -168,9 +168,9 @@ public:
 
 private:
   xiiResult Initialize(xiiGALDevice* pDevice, const xiiGeometryResidencyDescription& description);
-  void Shutdown();
-  void EngineStartup();
-  void EngineShutdown();
+  void      Shutdown();
+  void      EngineStartup();
+  void      EngineShutdown();
 
   struct Slot
   {
@@ -238,5 +238,5 @@ private:
   xiiUInt64                                      m_uiNextMeshletUploadId = 1U;
   xiiGeometryResidencyDescription                m_Configuration;
   bool                                           m_bEngineStarted = false;
-  bool                                           m_bInitialized = false;
+  bool                                           m_bInitialized   = false;
 };

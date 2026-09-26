@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -79,7 +79,7 @@ public:
   [[nodiscard]] static xiiRenderGraph*           GetGraph(xiiRenderGraphGraphId id);
   [[nodiscard]] static xiiRenderGraphBlackboard* GetBlackboard(xiiRenderGraphGraphId id);
 
-  [[nodiscard]] static xiiRenderGraphResourceCache* GetResourceCache();
+  [[nodiscard]] static xiiRenderGraphResourceCache*     GetResourceCache();
   [[nodiscard]] static xiiRenderGraphTimestampProfiler* GetProfiler();
 
   /// Waits before a frame-ring slot is reused and returns the latest fully completed GPU frame.

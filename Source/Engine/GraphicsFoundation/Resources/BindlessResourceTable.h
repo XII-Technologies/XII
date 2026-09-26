@@ -53,9 +53,9 @@ public:
 
   /// Rebuilds empty descriptor tables with a new capacity policy.
   /// Reconfiguration is rejected while live or retired handles still occupy slots.
-  [[nodiscard]] xiiResult Configure(const xiiGALBindlessResourceTableDescription& description);
+  [[nodiscard]] xiiResult                                     Configure(const xiiGALBindlessResourceTableDescription& description);
   [[nodiscard]] const xiiGALBindlessResourceTableDescription& GetConfiguration() const { return m_Description; }
-  [[nodiscard]] bool IsInitialized() const { return m_bInitialized; }
+  [[nodiscard]] bool                                          IsInitialized() const { return m_bInitialized; }
 
   void Clear();
 
@@ -114,5 +114,5 @@ private:
   TableStorage<xiiGALTextureView> m_TextureUAVs;
   TableStorage<xiiGALSampler>     m_Samplers;
   xiiGALBindlessResourceTableDescription m_Description;
-  bool m_bInitialized = false;
+  bool                                   m_bInitialized = false;
 };

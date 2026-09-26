@@ -121,13 +121,13 @@ public:
       m_World.Update(m_uiFrameIndex, uiCompletedFrame, xiiClock::GetGlobalClock()->GetTimeDiff());
 
       m_TargetSize            = m_pWindow->GetClientAreaSize();
-      const float aspect      = static_cast<float>(m_TargetSize.width) / static_cast<float>(m_TargetSize.height);
+      const float      aspect = static_cast<float>(m_TargetSize.width) / static_cast<float>(m_TargetSize.height);
       xiiMat4          projection;
       m_Camera.GetProjectionMatrix(aspect, projection, xiiCameraEye::Left, xiiClipSpaceDepthRange::ZeroToOne);
       m_ViewProjection = projection * m_Camera.GetViewMatrix();
       m_ViewFrustum    = xiiFrustum::MakeFromMVP(m_ViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
-      xiiStringBuilder error;
+      xiiStringBuilder              error;
       xiiRenderGraphCompileSettings settings;
       settings.m_bEnablePassCulling   = true;
       settings.m_bEnableCompileCache  = true;
@@ -216,8 +216,8 @@ public:
     xiiGALDevice::SetDefaultDevice(m_pDevice);
     UpdateSwapChain();
 
-    m_Configuration = {};
-    m_Configuration.m_uiGridWidth = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
+    m_Configuration                = {};
+    m_Configuration.m_uiGridWidth  = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     m_Configuration.m_uiGridHeight = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     xiiGpuDrivenSceneWorld::ConfigureSubsystems(m_Configuration).AssertSuccess();
     xiiStartup::StartupHighLevelSystems();
@@ -248,7 +248,7 @@ public:
     graphDescription.m_Category  = xiiRenderGraphCategory::SceneRendering;
     graphDescription.m_Frequency = xiiRenderGraphFrequency::EveryFrame;
     graphDescription.m_iPriority = 0;
-    m_hRenderGraph = xiiRenderGraphManager::RegisterGraph(graphDescription, xiiMakeDelegate(&xiiGpuDrivenSceneApp::BuildRenderGraph, this));
+    m_hRenderGraph               = xiiRenderGraphManager::RegisterGraph(graphDescription, xiiMakeDelegate(&xiiGpuDrivenSceneApp::BuildRenderGraph, this));
   }
 
   void BeforeHighLevelSystemsShutdown() override
@@ -281,8 +281,8 @@ private:
   {
     XII_IGNORE_UNUSED(blackboard);
 
-    const auto geometry = m_World.GetGeometryResidency().AddUploadPass(graph, m_uiFrameIndex);
-    const xiiRenderGraphBufferHandle hMaterials = xiiMaterialManager::AddUploadPass(graph);
+    const auto                        geometry     = m_World.GetGeometryResidency().AddUploadPass(graph, m_uiFrameIndex);
+    const xiiRenderGraphBufferHandle  hMaterials   = xiiMaterialManager::AddUploadPass(graph);
     const xiiRenderGraphTextureHandle hPreviousHiZ = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
 
     xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
@@ -290,20 +290,20 @@ private:
       hPreviousHiZ.IsValid() ? m_HiZPyramid.GetMipLevelCount() : 0U,
       m_World.GetScene().GetObjectCount());
     xiiGpuVisibilityPassDescription visibilityPass;
-    visibilityPass.m_sName = "Main View";
-    visibilityPass.m_Purpose = xiiGpuVisibilityPurpose::MainView;
-    visibilityPass.m_bAsyncCompute = m_Configuration.m_bAsyncCompute;
+    visibilityPass.m_sName                   = "Main View";
+    visibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::MainView;
+    visibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
     const xiiGpuVisibilityOutputs visibility = m_Visibility.AddPasses(
       graph, m_uiFrameIndex, m_World.GetScene(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
 
     // A robotics/medical sensor view owns independent frame-sliced constants. Only its instance
     // count is exported; unused meshlet and command stages are culled by the render graph.
     xiiGpuVisibilityView sensorView = visibilityView;
-    sensorView.m_uiRequiredFlags = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::SensorVisible).GetValue();
+    sensorView.m_uiRequiredFlags    = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::SensorVisible).GetValue();
     xiiGpuVisibilityPassDescription sensorVisibilityPass;
-    sensorVisibilityPass.m_sName = "Sensor View";
-    sensorVisibilityPass.m_Purpose = xiiGpuVisibilityPurpose::Sensor;
-    sensorVisibilityPass.m_bAsyncCompute = m_Configuration.m_bAsyncCompute;
+    sensorVisibilityPass.m_sName                   = "Sensor View";
+    sensorVisibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::Sensor;
+    sensorVisibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
     const xiiGpuVisibilityOutputs sensorVisibility = m_Visibility.AddPasses(
       graph, m_uiFrameIndex, m_World.GetScene(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
 
@@ -311,14 +311,14 @@ private:
       "Create Scene Targets", xiiGALCommandQueueFlags::Graphics,
       [targetSize = m_TargetSize](SceneTargetsPassData& data, xiiRenderGraphBuilder& builder) {
         xiiGALTextureCreationDescription description;
-        description.m_Type = xiiGALResourceDimension::Texture2D;
-        description.m_Size = targetSize;
-        description.m_Format = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+        description.m_Type      = xiiGALResourceDimension::Texture2D;
+        description.m_Size      = targetSize;
+        description.m_Format    = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
         description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-        data.m_hColor = builder.WriteTexture("GPU Scene Color", description, xiiGALResourceStateFlags::RenderTarget);
-        description.m_Format = xiiGALResourceFormat::D24UNormalizedS8UInt;
+        data.m_hColor           = builder.WriteTexture("GPU Scene Color", description, xiiGALResourceStateFlags::RenderTarget);
+        description.m_Format    = xiiGALResourceFormat::D24UNormalizedS8UInt;
         description.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-        data.m_hDepth = builder.WriteTexture("GPU Scene Depth", description, xiiGALResourceStateFlags::DepthWrite);
+        data.m_hDepth           = builder.WriteTexture("GPU Scene Depth", description, xiiGALResourceStateFlags::DepthWrite);
       },
       [](const SceneTargetsPassData& data, xiiRenderGraphPassContext& context) {
         xiiGALCommandList& commandList = context.GetCommandList();
@@ -329,40 +329,40 @@ private:
     auto drawPass = graph.AddPass<GpuDrivenDrawPassData>(
       "GPU Driven Mesh Dispatch", xiiGALCommandQueueFlags::Graphics,
       [geometry, visibility, hMaterials](GpuDrivenDrawPassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hColor = builder.WriteTexture(builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-        data.m_hDepth = builder.WriteTexture(builder.ReadTexture("GPU Scene Depth", xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
-        data.m_hSceneInstances = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hGeometry = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hMeshlets = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVisibleMeshlets = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVisibleMeshletCount = builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hIndirectCommands = builder.ReadBuffer(visibility.m_hIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+        data.m_hColor                = builder.WriteTexture(builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+        data.m_hDepth                = builder.WriteTexture(builder.ReadTexture("GPU Scene Depth", xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+        data.m_hSceneInstances       = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hGeometry             = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hMeshlets             = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hVisibleMeshlets      = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hVisibleMeshletCount  = builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hIndirectCommands     = builder.ReadBuffer(visibility.m_hIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
         data.m_hIndirectCommandCount = builder.ReadBuffer(visibility.m_hIndirectCommandCount, xiiGALResourceStateFlags::IndirectArgument);
-        data.m_hMaterials = builder.ReadBuffer(hMaterials, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hMaterials            = builder.ReadBuffer(hMaterials, xiiGALResourceStateFlags::ShaderResource);
 
         xiiGALBufferCreationDescription constantsDescription;
-        constantsDescription.m_uiSize = sizeof(xiiGpuDrivenSceneConstants);
-        constantsDescription.m_BindFlags = xiiGALBindFlags::UniformBuffer;
-        constantsDescription.m_Usage = xiiGALResourceUsage::Dynamic;
+        constantsDescription.m_uiSize         = sizeof(xiiGpuDrivenSceneConstants);
+        constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+        constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
         constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-        data.m_hConstants = builder.WriteBuffer("GPU Driven Scene Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+        data.m_hConstants                     = builder.WriteBuffer("GPU Driven Scene Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
       },
       [this](const GpuDrivenDrawPassData& data, xiiRenderGraphPassContext& context) { ExecuteGpuDrivenDraw(data, context); });
-    drawPass.first->m_hShaderPermutation = m_hShaderPermutation;
-    drawPass.first->m_pRenderPass = m_pSceneRenderPass;
-    drawPass.first->m_ViewProjection = m_ViewProjection;
-    drawPass.first->m_uiGeometryBase = geometry.m_uiGeometryBaseIndex;
+    drawPass.first->m_hShaderPermutation  = m_hShaderPermutation;
+    drawPass.first->m_pRenderPass         = m_pSceneRenderPass;
+    drawPass.first->m_ViewProjection      = m_ViewProjection;
+    drawPass.first->m_uiGeometryBase      = geometry.m_uiGeometryBaseIndex;
     drawPass.first->m_uiMaterialFrameBase = m_World.GetMaterialFrameBase(m_uiFrameIndex);
-    drawPass.first->m_uiMaterialStride = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
+    drawPass.first->m_uiMaterialStride    = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
 
     m_HiZPyramid.AddBuildPass(graph, m_uiFrameIndex, drawPass.first->m_hDepth, m_Configuration.m_bAsyncCompute);
 
     graph.AddPass<PresentPassData>(
       "Present GPU Scene", xiiGALCommandQueueFlags::Graphics,
       [this, sensorVisibility](PresentPassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hColor = builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::CopySource);
+        data.m_hColor                                 = builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::CopySource);
         const xiiSharedPtr<xiiGALTexture> pBackBuffer = m_pSwapChain->GetBackBufferTexture();
-        data.m_hBackBuffer = builder.WriteTexture(
+        data.m_hBackBuffer                            = builder.WriteTexture(
           builder.ImportTexture("BackBuffer", pBackBuffer, pBackBuffer->GetResourceState()),
           xiiGALResourceStateFlags::CopyDestination);
         builder.ExportTexture(data.m_hBackBuffer, xiiGALResourceStateFlags::Present);

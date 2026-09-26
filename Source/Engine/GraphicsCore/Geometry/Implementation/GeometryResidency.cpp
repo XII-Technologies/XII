@@ -250,7 +250,7 @@ void xiiGeometryResidencyManager::Shutdown()
 
 void xiiGeometryResidencyManager::EngineStartup()
 {
-  m_bEngineStarted = true;
+  m_bEngineStarted                         = true;
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (pDevice != nullptr)
     Initialize(pDevice.Borrow(), m_Configuration).IgnoreResult();
