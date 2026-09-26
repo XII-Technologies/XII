@@ -42,8 +42,8 @@ void PSMain() {}
     xiiGALShaderTextSectionizer sections;
     xiiGALShaderSections::GetShaderSections(szShader, sections);
 
-    xiiUInt32 uiFirstLine = 0U;
-    xiiStringView content = sections.GetSectionContent(xiiGALShaderSections::Platforms, uiFirstLine);
+    xiiUInt32     uiFirstLine = 0U;
+    xiiStringView content     = sections.GetSectionContent(xiiGALShaderSections::Platforms, uiFirstLine);
     XII_TEST_INT(uiFirstLine, 3U);
     XII_TEST_BOOL(content.FindSubString("ALL") != nullptr);
     XII_TEST_BOOL(content.FindSubString("QUALITY") == nullptr);
@@ -65,7 +65,7 @@ void PSMain() {}
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Permutation section parsing")
   {
-    xiiHybridArray<xiiHashedString, 16>       dynamicVariables;
+    xiiHybridArray<xiiHashedString, 16>           dynamicVariables;
     xiiHybridArray<xiiGALPermutationVariable, 16> fixedVariables;
     xiiGALShaderParser::ParsePermutationSection(
       "QUALITY\n"
@@ -81,7 +81,7 @@ void PSMain() {}
     XII_TEST_STRING(fixedVariables[0].m_sName.GetView(), "MODE");
     XII_TEST_STRING(fixedVariables[0].m_sValue.GetView(), "MODE_FAST");
 
-    xiiVariant                           defaultValue;
+    xiiVariant                         defaultValue;
     xiiGALShaderParser::EnumDefinition definition;
     xiiGALShaderParser::ParsePermutationVariableConfiguration(" bool USE_SHADOWS = true ", defaultValue, definition);
     XII_TEST_STRING(definition.m_sName, "USE_SHADOWS");
@@ -127,7 +127,7 @@ void PSMain() {}
       generator.GetPermutation(uiPermutation, variables);
       XII_TEST_INT(variables.GetCount(), 2U);
 
-      xiiUInt32 uiQuality = xiiInvalidIndex;
+      xiiUInt32 uiQuality  = xiiInvalidIndex;
       xiiUInt32 uiSkinning = xiiInvalidIndex;
       for (const xiiGALPermutationVariable& variable : variables)
       {
@@ -193,8 +193,8 @@ cbuffer Globals : register(b1, space0)
     for (const xiiGALShaderResourceDefinition& resource : resources)
     {
       xiiGALShaderResourceDescription binding = resource.m_ResourceDescription;
-      binding.m_uiBindIndex                     = bindings.GetCount() + 7U;
-      binding.m_uiDescriptorSet                 = 4U;
+      binding.m_uiBindIndex                   = bindings.GetCount() + 7U;
+      binding.m_uiDescriptorSet               = 4U;
       bindings.Insert(binding.m_sName, binding);
     }
 
@@ -210,7 +210,7 @@ cbuffer Globals : register(b1, space0)
     XII_TEST_BOOL(patchedSource.FindSubString("RWStructuredBuffer<float4> Output[4] : register(x8, space4)") != nullptr);
     XII_TEST_BOOL(patchedSource.FindSubString("register(t3, space2)") == nullptr);
 
-    xiiMuteLog muteLog;
+    xiiMuteLog                      muteLog;
     xiiGALShaderResourceDescription validBinding;
     validBinding.m_sName.Assign("Valid");
     validBinding.m_uiBindIndex     = 0U;
@@ -227,25 +227,25 @@ cbuffer Globals : register(b1, space0)
   {
     xiiGALShaderStateResourceDescriptor state;
     XII_TEST_BOOL(state.Parse(
-      "AlphaToCoverage = true\n"
-      "IndependentBlend = true\n"
-      "BlendEnable0 = true\n"
-      "SourceBlend0 = BlendFactor_SourceAlpha\n"
-      "DestinationBlend0 = BlendFactor_InverseSourceAlpha\n"
-      "ColorMask0 = 5\n"
-      "FillMode = FillMode_Wireframe\n"
-      "CullMode = CullMode_Front\n"
-      "FrontCounterClockwise = true\n"
-      "DepthBias = -7\n"
-      "DepthBiasClamp = 1.25\n"
-      "SlopeScaledDepthBias = 2.5\n"
-      "DepthEnable = true\n"
-      "DepthWriteEnable = false\n"
-      "ComparisonDepthFunction = ComparisonFunction_GreaterEqual\n"
-      "StencilEnable = true\n"
-      "StencilReadMask = 63\n"
-      "StencilWriteMask = 31\n"
-      "FrontFaceStencilPassOperation = StencilOperation_Replace\n")
+                         "AlphaToCoverage = true\n"
+                         "IndependentBlend = true\n"
+                         "BlendEnable0 = true\n"
+                         "SourceBlend0 = BlendFactor_SourceAlpha\n"
+                         "DestinationBlend0 = BlendFactor_InverseSourceAlpha\n"
+                         "ColorMask0 = 5\n"
+                         "FillMode = FillMode_Wireframe\n"
+                         "CullMode = CullMode_Front\n"
+                         "FrontCounterClockwise = true\n"
+                         "DepthBias = -7\n"
+                         "DepthBiasClamp = 1.25\n"
+                         "SlopeScaledDepthBias = 2.5\n"
+                         "DepthEnable = true\n"
+                         "DepthWriteEnable = false\n"
+                         "ComparisonDepthFunction = ComparisonFunction_GreaterEqual\n"
+                         "StencilEnable = true\n"
+                         "StencilReadMask = 63\n"
+                         "StencilWriteMask = 31\n"
+                         "FrontFaceStencilPassOperation = StencilOperation_Replace\n")
                     .Succeeded());
 
     XII_TEST_BOOL(state.m_BlendDescription.m_bAlphaToCoverage);
@@ -274,7 +274,7 @@ cbuffer Globals : register(b1, space0)
     state.Save(writer);
 
     xiiGALShaderStateResourceDescriptor loadedState;
-    xiiMemoryStreamReader                reader(&storage);
+    xiiMemoryStreamReader               reader(&storage);
     loadedState.Load(reader);
     XII_TEST_BOOL(loadedState.m_BlendDescription == state.m_BlendDescription);
     XII_TEST_BOOL(loadedState.m_RasterizerDescription == state.m_RasterizerDescription);
@@ -287,7 +287,7 @@ cbuffer Globals : register(b1, space0)
     xiiGALShaderPermutationBinary source;
     source.m_ShaderStageHashes.Insert(xiiGALShaderType::Vertex, 0x12345678U);
     source.m_ShaderStageHashes.Insert(xiiGALShaderType::Pixel, 0x9ABCDEF0U);
-    source.m_StateDescriptor.m_RasterizerDescription.m_CullMode = xiiGALCullMode::Front;
+    source.m_StateDescriptor.m_RasterizerDescription.m_CullMode       = xiiGALCullMode::Front;
     source.m_StateDescriptor.m_DepthStencilDescription.m_bDepthEnable = true;
 
     xiiGALPermutationVariable& quality = source.m_PermutationVariables.ExpandAndGetRef();
@@ -317,7 +317,6 @@ cbuffer Globals : register(b1, space0)
     XII_TEST_STRING(loaded.m_PermutationVariables[0].m_sValue.GetView(), "QUALITY_HIGH");
     XII_TEST_STRING(loaded.m_PermutationVariables[1].m_sName.GetView(), "SKINNED");
     XII_TEST_STRING(loaded.m_PermutationVariables[1].m_sValue.GetView(), "TRUE");
-
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Compile and reuse the cache for every selected backend")
@@ -351,7 +350,7 @@ cbuffer Globals : register(b1, space0)
       }
       shaderFile.Close();
       xiiGALShaderCompiler compiler;
-      const xiiResult firstCompileResult = compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel);
+      const xiiResult      firstCompileResult = compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel);
       XII_TEST_BOOL(firstCompileResult.Succeeded());
       if (firstCompileResult.Failed())
       {
@@ -368,7 +367,7 @@ cbuffer Globals : register(b1, space0)
         sPermutationFile.Shrink(0U, 1U);
       sPermutationFile.AppendFormat("_{0}.xiiPermutation", xiiArgU(xiiGALPermutationVariable::CalculateHash({}), 8, true, 16, true));
 
-      xiiFileReader permutationFile;
+      xiiFileReader   permutationFile;
       const xiiResult permutationOpenResult = permutationFile.Open(sPermutationFile);
       XII_TEST_BOOL(permutationOpenResult.Succeeded());
       if (permutationOpenResult.Failed())
@@ -381,8 +380,8 @@ cbuffer Globals : register(b1, space0)
       XII_TEST_BOOL(permutation.Read(permutationFile, bOldVersion).Succeeded());
       XII_TEST_BOOL(!bOldVersion);
 
-      auto vertexHash = permutation.m_ShaderStageHashes.Find(xiiGALShaderType::Vertex);
-      auto pixelHash  = permutation.m_ShaderStageHashes.Find(xiiGALShaderType::Pixel);
+      auto vertexHash  = permutation.m_ShaderStageHashes.Find(xiiGALShaderType::Vertex);
+      auto pixelHash   = permutation.m_ShaderStageHashes.Find(xiiGALShaderType::Pixel);
       auto computeHash = permutation.m_ShaderStageHashes.Find(xiiGALShaderType::Compute);
       XII_TEST_BOOL(vertexHash.IsValid());
       XII_TEST_BOOL(pixelHash.IsValid());
@@ -393,8 +392,8 @@ cbuffer Globals : register(b1, space0)
         continue;
       }
 
-      xiiGALShaderStageBinary* pVertexBinary = xiiGALShaderStageBinary::LoadStageBinary(xiiGALShaderType::Vertex, vertexHash.Value(), sShaderModel);
-      xiiGALShaderStageBinary* pPixelBinary  = xiiGALShaderStageBinary::LoadStageBinary(xiiGALShaderType::Pixel, pixelHash.Value(), sShaderModel);
+      xiiGALShaderStageBinary* pVertexBinary  = xiiGALShaderStageBinary::LoadStageBinary(xiiGALShaderType::Vertex, vertexHash.Value(), sShaderModel);
+      xiiGALShaderStageBinary* pPixelBinary   = xiiGALShaderStageBinary::LoadStageBinary(xiiGALShaderType::Pixel, pixelHash.Value(), sShaderModel);
       xiiGALShaderStageBinary* pComputeBinary = xiiGALShaderStageBinary::LoadStageBinary(xiiGALShaderType::Compute, computeHash.Value(), sShaderModel);
       XII_TEST_BOOL(pVertexBinary != nullptr);
       XII_TEST_BOOL(pPixelBinary != nullptr);
@@ -410,22 +409,22 @@ cbuffer Globals : register(b1, space0)
       if (environment.GetDevice() == nullptr)
         continue;
 
-      xiiGALDevice* pDevice = environment.GetDevice();
+      xiiGALDevice*                   pDevice = environment.GetDevice();
       xiiGALShaderCreationDescription vertexShaderDescription;
-      vertexShaderDescription.m_ShaderType = xiiGALShaderType::Vertex;
-      vertexShaderDescription.m_ByteCode   = const_cast<xiiGALShaderByteCode*>(pVertexBinary->GetByteCode().Borrow());
+      vertexShaderDescription.m_ShaderType     = xiiGALShaderType::Vertex;
+      vertexShaderDescription.m_ByteCode       = const_cast<xiiGALShaderByteCode*>(pVertexBinary->GetByteCode().Borrow());
       xiiSharedPtr<xiiGALShader> pVertexShader = pDevice->CreateShader(vertexShaderDescription);
       XII_TEST_BOOL(pVertexShader != nullptr);
 
       xiiGALShaderCreationDescription pixelShaderDescription;
-      pixelShaderDescription.m_ShaderType = xiiGALShaderType::Pixel;
-      pixelShaderDescription.m_ByteCode   = const_cast<xiiGALShaderByteCode*>(pPixelBinary->GetByteCode().Borrow());
+      pixelShaderDescription.m_ShaderType     = xiiGALShaderType::Pixel;
+      pixelShaderDescription.m_ByteCode       = const_cast<xiiGALShaderByteCode*>(pPixelBinary->GetByteCode().Borrow());
       xiiSharedPtr<xiiGALShader> pPixelShader = pDevice->CreateShader(pixelShaderDescription);
       XII_TEST_BOOL(pPixelShader != nullptr);
 
       xiiGALShaderCreationDescription computeShaderDescription;
-      computeShaderDescription.m_ShaderType = xiiGALShaderType::Compute;
-      computeShaderDescription.m_ByteCode   = const_cast<xiiGALShaderByteCode*>(pComputeBinary->GetByteCode().Borrow());
+      computeShaderDescription.m_ShaderType     = xiiGALShaderType::Compute;
+      computeShaderDescription.m_ByteCode       = const_cast<xiiGALShaderByteCode*>(pComputeBinary->GetByteCode().Borrow());
       xiiSharedPtr<xiiGALShader> pComputeShader = pDevice->CreateShader(computeShaderDescription);
       XII_TEST_BOOL(pComputeShader != nullptr);
       if (pVertexShader == nullptr || pPixelShader == nullptr || pComputeShader == nullptr)
@@ -439,23 +438,23 @@ cbuffer Globals : register(b1, space0)
       XII_TEST_STRING(pComputeShader->GetDebugName(), "Compiled Unit Test Compute Shader");
 
       xiiGALInputLayoutCreationDescription inputLayoutDescription;
-      xiiSharedPtr<xiiGALInputLayout> pInputLayout = pVertexShader->CreateInputLayout(inputLayoutDescription);
+      xiiSharedPtr<xiiGALInputLayout>      pInputLayout = pVertexShader->CreateInputLayout(inputLayoutDescription);
       XII_TEST_BOOL(pInputLayout != nullptr);
 
       xiiGALPipelineResourceSignatureCreationDescription graphicsSignatureDescription;
-      xiiSharedPtr<xiiGALPipelineResourceSignature> pGraphicsSignature = pDevice->CreatePipelineResourceSignature(graphicsSignatureDescription);
+      xiiSharedPtr<xiiGALPipelineResourceSignature>      pGraphicsSignature = pDevice->CreatePipelineResourceSignature(graphicsSignatureDescription);
       XII_TEST_BOOL(pGraphicsSignature != nullptr);
 
       xiiGALPipelineResourceSignatureCreationDescription computeSignatureDescription;
       for (const xiiGALShaderResourceDescription& reflectedResource : pComputeBinary->GetByteCode()->m_ShaderResourceBindings)
       {
         xiiGALPipelineResourceDescription& resource = computeSignatureDescription.m_Resources.ExpandAndGetRef();
-        resource.m_sName                             = reflectedResource.m_sName;
-        resource.m_ShaderStages                      = reflectedResource.m_ShaderStages;
-        resource.m_uiArraySize                       = reflectedResource.m_uiArraySize;
-        resource.m_uiBindSet                         = reflectedResource.m_uiDescriptorSet;
-        resource.m_uiBindSlot                        = reflectedResource.m_uiBindIndex;
-        resource.m_ResourceType                      = reflectedResource.m_Type;
+        resource.m_sName                            = reflectedResource.m_sName;
+        resource.m_ShaderStages                     = reflectedResource.m_ShaderStages;
+        resource.m_uiArraySize                      = reflectedResource.m_uiArraySize;
+        resource.m_uiBindSet                        = reflectedResource.m_uiDescriptorSet;
+        resource.m_uiBindSlot                       = reflectedResource.m_uiBindIndex;
+        resource.m_ResourceType                     = reflectedResource.m_Type;
       }
       XII_TEST_INT(computeSignatureDescription.m_Resources.GetCount(), 1U);
       if (!computeSignatureDescription.m_Resources.IsEmpty())
@@ -471,23 +470,23 @@ cbuffer Globals : register(b1, space0)
       if (pComputeSignature != nullptr)
       {
         xiiGALComputePipelineStateCreationDescription computePipelineDescription;
-        computePipelineDescription.m_pPipelineResourceSignature = pComputeSignature;
-        computePipelineDescription.m_pComputeShader              = pComputeShader;
+        computePipelineDescription.m_pPipelineResourceSignature   = pComputeSignature;
+        computePipelineDescription.m_pComputeShader               = pComputeShader;
         xiiSharedPtr<xiiGALComputePipelineState> pComputePipeline = pDevice->CreateComputePipelineState(computePipelineDescription);
         XII_TEST_BOOL(pComputePipeline != nullptr);
 
         xiiGALBufferCreationDescription outputDescription;
-        outputDescription.m_uiSize              = sizeof(xiiUInt32);
-        outputDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-        outputDescription.m_Usage               = xiiGALResourceUsage::Mutable;
-        outputDescription.m_Mode                = xiiGALBufferMode::Structured;
-        outputDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+        outputDescription.m_uiSize               = sizeof(xiiUInt32);
+        outputDescription.m_BindFlags            = xiiGALBindFlags::UnorderedAccess;
+        outputDescription.m_Usage                = xiiGALResourceUsage::Mutable;
+        outputDescription.m_Mode                 = xiiGALBufferMode::Structured;
+        outputDescription.m_uiElementByteStride  = sizeof(xiiUInt32);
         xiiSharedPtr<xiiGALBuffer> pOutputBuffer = pDevice->CreateBuffer(outputDescription);
 
         xiiGALBufferCreationDescription readbackDescription;
-        readbackDescription.m_uiSize         = sizeof(xiiUInt32);
-        readbackDescription.m_Usage          = xiiGALResourceUsage::Staging;
-        readbackDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+        readbackDescription.m_uiSize               = sizeof(xiiUInt32);
+        readbackDescription.m_Usage                = xiiGALResourceUsage::Staging;
+        readbackDescription.m_CPUAccessFlags       = xiiGALCPUAccessFlag::Read;
         xiiSharedPtr<xiiGALBuffer> pReadbackBuffer = pDevice->CreateBuffer(readbackDescription);
 
         XII_TEST_BOOL(pOutputBuffer != nullptr);
@@ -498,7 +497,7 @@ cbuffer Globals : register(b1, space0)
         if (pComputePipeline != nullptr && pOutputBuffer != nullptr && pReadbackBuffer != nullptr && pComputeQueue != nullptr)
         {
           xiiGALCommandListCreationDescription computeCommandListDescription;
-          computeCommandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute | xiiGALCommandQueueFlags::Transfer;
+          computeCommandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute | xiiGALCommandQueueFlags::Transfer;
           xiiSharedPtr<xiiGALCommandList> pComputeCommandList = pDevice->CreateCommandList(computeCommandListDescription);
           XII_TEST_BOOL(pComputeCommandList != nullptr);
           if (pComputeCommandList != nullptr)
@@ -519,8 +518,8 @@ cbuffer Globals : register(b1, space0)
 
             xiiSharedPtr<xiiGALCommandList> pMapCommandList = pDevice->CreateCommandList(computeCommandListDescription);
             pMapCommandList->Begin();
-            void* pMappedData = nullptr;
-            const xiiResult mapResult = pMapCommandList->MapBuffer(pReadbackBuffer.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pMappedData);
+            void*           pMappedData = nullptr;
+            const xiiResult mapResult   = pMapCommandList->MapBuffer(pReadbackBuffer.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pMappedData);
             XII_TEST_BOOL(mapResult.Succeeded());
             XII_TEST_BOOL(pMappedData != nullptr);
             if (pMappedData != nullptr)
@@ -538,19 +537,19 @@ cbuffer Globals : register(b1, space0)
 
       xiiGALBlendStateCreationDescription blendDescription;
       blendDescription.m_RenderTargets.ExpandAndGetRef();
-      xiiSharedPtr<xiiGALBlendState> pBlendState = pDevice->CreateBlendState(blendDescription);
+      xiiSharedPtr<xiiGALBlendState>      pBlendState      = pDevice->CreateBlendState(blendDescription);
       xiiSharedPtr<xiiGALRasterizerState> pRasterizerState = pDevice->CreateRasterizerState(permutation.m_StateDescriptor.m_RasterizerDescription);
       XII_TEST_BOOL(pBlendState != nullptr);
       XII_TEST_BOOL(pRasterizerState != nullptr);
 
       xiiGALRenderPassCreationDescription renderPassDescription;
-      auto& attachment                = renderPassDescription.m_Attachments.ExpandAndGetRef();
-      attachment.m_Format            = xiiGALResourceFormat::RGBA8UNormalized;
-      attachment.m_uiSampleCount     = 1U;
-      attachment.m_LoadOperation     = xiiGALAttachmentLoadOperation::Clear;
-      attachment.m_StoreOperation    = xiiGALAttachmentStoreOperation::Store;
-      attachment.m_InitialStateFlags = xiiGALResourceStateFlags::Undefined;
-      attachment.m_FinalStateFlags   = xiiGALResourceStateFlags::RenderTarget;
+      auto&                               attachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
+      attachment.m_Format                            = xiiGALResourceFormat::RGBA8UNormalized;
+      attachment.m_uiSampleCount                     = 1U;
+      attachment.m_LoadOperation                     = xiiGALAttachmentLoadOperation::Clear;
+      attachment.m_StoreOperation                    = xiiGALAttachmentStoreOperation::Store;
+      attachment.m_InitialStateFlags                 = xiiGALResourceStateFlags::Undefined;
+      attachment.m_FinalStateFlags                   = xiiGALResourceStateFlags::RenderTarget;
       renderPassDescription.m_SubPasses.ExpandAndGetRef().m_RenderTargetAttachments.PushBack({0U, xiiGALResourceStateFlags::RenderTarget});
       xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
       XII_TEST_BOOL(pRenderPass != nullptr);
@@ -558,14 +557,14 @@ cbuffer Globals : register(b1, space0)
       if (pInputLayout != nullptr && pGraphicsSignature != nullptr && pBlendState != nullptr && pRasterizerState != nullptr && pRenderPass != nullptr)
       {
         xiiGALGraphicsPipelineStateCreationDescription pipelineDescription;
-        pipelineDescription.m_pPipelineResourceSignature         = pGraphicsSignature;
-        pipelineDescription.m_pVertexShader                      = pVertexShader;
-        pipelineDescription.m_pPixelShader                       = pPixelShader;
-        pipelineDescription.m_GraphicsPipeline.m_pInputLayout    = pInputLayout;
-        pipelineDescription.m_GraphicsPipeline.m_pBlendState     = pBlendState;
+        pipelineDescription.m_pPipelineResourceSignature          = pGraphicsSignature;
+        pipelineDescription.m_pVertexShader                       = pVertexShader;
+        pipelineDescription.m_pPixelShader                        = pPixelShader;
+        pipelineDescription.m_GraphicsPipeline.m_pInputLayout     = pInputLayout;
+        pipelineDescription.m_GraphicsPipeline.m_pBlendState      = pBlendState;
         pipelineDescription.m_GraphicsPipeline.m_pRasterizerState = pRasterizerState;
-        pipelineDescription.m_GraphicsPipeline.m_pRenderPass     = pRenderPass;
-        xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = pDevice->CreateGraphicsPipelineState(pipelineDescription);
+        pipelineDescription.m_GraphicsPipeline.m_pRenderPass      = pRenderPass;
+        xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline       = pDevice->CreateGraphicsPipelineState(pipelineDescription);
         XII_TEST_BOOL(pPipeline != nullptr);
         if (pPipeline != nullptr)
         {
@@ -580,7 +579,7 @@ cbuffer Globals : register(b1, space0)
           renderTargetDescription.m_uiMipLevels        = 1U;
           renderTargetDescription.m_BindFlags          = xiiGALBindFlags::RenderTarget;
           renderTargetDescription.m_Usage              = xiiGALResourceUsage::Mutable;
-          xiiSharedPtr<xiiGALTexture> pRenderTarget = pDevice->CreateTexture(renderTargetDescription);
+          xiiSharedPtr<xiiGALTexture> pRenderTarget    = pDevice->CreateTexture(renderTargetDescription);
           XII_TEST_BOOL(pRenderTarget != nullptr);
 
           xiiGALFramebufferCreationDescription framebufferDescription;
@@ -597,7 +596,7 @@ cbuffer Globals : register(b1, space0)
           if (pFramebuffer != nullptr && pQueue != nullptr)
           {
             xiiGALCommandListCreationDescription commandListDescription;
-            commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+            commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics;
             xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
             XII_TEST_BOOL(pCommandList != nullptr);
             if (pCommandList != nullptr)

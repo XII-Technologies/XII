@@ -19,8 +19,8 @@ XII_CREATE_SIMPLE_TEST(Resources, Query)
 
       struct QueryFeature
       {
-        xiiGALQueryType::Enum m_Type;
-        xiiEnum<xiiGALDeviceFeatureState> xiiGALDeviceFeatures::*m_pFeature;
+        xiiGALQueryType::Enum             m_Type;
+        xiiEnum<xiiGALDeviceFeatureState> xiiGALDeviceFeatures::* m_pFeature;
       };
 
       const QueryFeature queryFeatures[] = {
@@ -37,7 +37,7 @@ XII_CREATE_SIMPLE_TEST(Resources, Query)
           continue;
 
         xiiGALQueryCreationDescription description;
-        description.m_Type = queryFeature.m_Type;
+        description.m_Type               = queryFeature.m_Type;
         xiiSharedPtr<xiiGALQuery> pQuery = environment.GetDevice()->CreateQuery(description);
         XII_TEST_BOOL(pQuery != nullptr);
         if (pQuery != nullptr)
@@ -68,8 +68,8 @@ XII_CREATE_SIMPLE_TEST(Resources, Query)
 
       struct QueryFeature
       {
-        xiiGALQueryType::Enum m_Type;
-        xiiEnum<xiiGALDeviceFeatureState> xiiGALDeviceFeatures::*m_pFeature;
+        xiiGALQueryType::Enum             m_Type;
+        xiiEnum<xiiGALDeviceFeatureState> xiiGALDeviceFeatures::* m_pFeature;
       };
 
       const QueryFeature queryFeatures[] = {
@@ -87,7 +87,7 @@ XII_CREATE_SIMPLE_TEST(Resources, Query)
           continue;
 
         xiiGALQueryCreationDescription queryDescription;
-        queryDescription.m_Type = queryFeature.m_Type;
+        queryDescription.m_Type          = queryFeature.m_Type;
         xiiSharedPtr<xiiGALQuery> pQuery = pDevice->CreateQuery(queryDescription);
         XII_TEST_BOOL(pQuery != nullptr);
         if (pQuery != nullptr)
@@ -95,7 +95,7 @@ XII_CREATE_SIMPLE_TEST(Resources, Query)
       }
 
       xiiGALCommandListCreationDescription commandListDescription;
-      commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
+      commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
       xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
       XII_TEST_BOOL(pCommandList != nullptr);
       if (pCommandList == nullptr)

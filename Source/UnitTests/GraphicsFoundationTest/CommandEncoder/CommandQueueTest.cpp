@@ -23,13 +23,13 @@ XII_CREATE_SIMPLE_TEST(CommandEncoder, CommandQueue)
       if (pQueue == nullptr)
         continue;
 
-      const xiiUInt64 uiNextBeforeSubmit = pQueue->GetNextFenceValue();
+      const xiiUInt64 uiNextBeforeSubmit      = pQueue->GetNextFenceValue();
       const xiiUInt64 uiCompletedBeforeSubmit = pQueue->GetCompletedFenceValue();
       XII_TEST_BOOL(uiNextBeforeSubmit > uiCompletedBeforeSubmit);
 
       xiiGALCommandListCreationDescription description;
-      description.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
-      description.m_Flags      = xiiGALCommandListFlags::MultiSubmit;
+      description.m_QueueFlags                     = xiiGALCommandQueueFlags::Graphics;
+      description.m_Flags                          = xiiGALCommandListFlags::MultiSubmit;
       xiiSharedPtr<xiiGALCommandList> pCommandList = environment.GetDevice()->CreateCommandList(description);
       XII_TEST_BOOL(pCommandList != nullptr);
       if (pCommandList == nullptr)
@@ -39,7 +39,7 @@ XII_CREATE_SIMPLE_TEST(CommandEncoder, CommandQueue)
       pCommandList->InsertDebugLabel("Queue fence test");
       pCommandList->End();
 
-      const xiiUInt64 uiFirstFence = pQueue->Submit(pCommandList.Borrow());
+      const xiiUInt64 uiFirstFence  = pQueue->Submit(pCommandList.Borrow());
       const xiiUInt64 uiSecondFence = pQueue->Submit(pCommandList.Borrow());
       XII_TEST_BOOL(uiFirstFence >= uiNextBeforeSubmit);
       XII_TEST_BOOL(uiSecondFence > uiFirstFence);

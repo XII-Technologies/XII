@@ -63,10 +63,10 @@ XII_CREATE_SIMPLE_TEST(Resources, BottomLevelAS)
       }
 
       xiiGALBottomLevelASCreationDescription boxDescription;
-      auto& box              = boxDescription.m_BoundingBoxes.ExpandAndGetRef();
-      box.m_sGeometryName    = "Bounds";
-      box.m_uiMaxBoxCount    = 2U;
-      xiiSharedPtr<xiiGALBottomLevelAS> pBoxes = environment.GetDevice()->CreateBottomLevelAS(boxDescription);
+      auto&                                  box = boxDescription.m_BoundingBoxes.ExpandAndGetRef();
+      box.m_sGeometryName                        = "Bounds";
+      box.m_uiMaxBoxCount                        = 2U;
+      xiiSharedPtr<xiiGALBottomLevelAS> pBoxes   = environment.GetDevice()->CreateBottomLevelAS(boxDescription);
       XII_TEST_BOOL(pBoxes != nullptr);
       if (pBoxes != nullptr)
       {

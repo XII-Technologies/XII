@@ -16,10 +16,10 @@ XII_CREATE_SIMPLE_TEST(States, DepthStencilState)
     XII_TEST_BOOL(a.m_ComparisonDepthFunction == xiiGALComparisonFunction::Less);
     XII_TEST_BOOL(!a.m_bStencilEnable);
 
-    b.m_bStencilEnable                       = true;
-    b.m_uiStencilReadMask                    = 0x0FU;
-    b.m_FrontFace.m_StencilPassOperation     = xiiGALStencilOperation::Replace;
-    b.m_BackFace.m_ComparisonFunction        = xiiGALComparisonFunction::GreaterEqual;
+    b.m_bStencilEnable                   = true;
+    b.m_uiStencilReadMask                = 0x0FU;
+    b.m_FrontFace.m_StencilPassOperation = xiiGALStencilOperation::Replace;
+    b.m_BackFace.m_ComparisonFunction    = xiiGALComparisonFunction::GreaterEqual;
     XII_TEST_BOOL(a != b);
     XII_TEST_BOOL(a.CalculateHash() != b.CalculateHash());
   }

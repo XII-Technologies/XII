@@ -44,7 +44,7 @@ XII_CREATE_SIMPLE_TEST(Tools, VertexBufferPool)
       };
 
       xiiGALCommandListCreationDescription commandListDescription;
-      commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
+      commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
       xiiSharedPtr<xiiGALCommandList> pCommandList = environment.GetDevice()->CreateCommandList(commandListDescription);
       XII_TEST_BOOL(pCommandList != nullptr);
       if (pCommandList == nullptr)

@@ -19,16 +19,16 @@ XII_CREATE_SIMPLE_TEST(Tools, TextureReadback)
 
       constexpr xiiUInt32 width  = 8U;
       constexpr xiiUInt32 height = 6U;
-      xiiUInt8 pixels[width * height * 4U];
+      xiiUInt8            pixels[width * height * 4U];
       for (xiiUInt32 y = 0; y < height; ++y)
       {
         for (xiiUInt32 x = 0; x < width; ++x)
         {
           const xiiUInt32 offset = (y * width + x) * 4U;
-          pixels[offset + 0U] = static_cast<xiiUInt8>(x * 13U);
-          pixels[offset + 1U] = static_cast<xiiUInt8>(y * 17U);
-          pixels[offset + 2U] = static_cast<xiiUInt8>(x + y * 3U);
-          pixels[offset + 3U] = 255U;
+          pixels[offset + 0U]    = static_cast<xiiUInt8>(x * 13U);
+          pixels[offset + 1U]    = static_cast<xiiUInt8>(y * 17U);
+          pixels[offset + 2U]    = static_cast<xiiUInt8>(x + y * 3U);
+          pixels[offset + 3U]    = 255U;
         }
       }
 
@@ -41,13 +41,13 @@ XII_CREATE_SIMPLE_TEST(Tools, TextureReadback)
       textureDescription.m_uiSampleCount      = 1U;
       textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
       textureDescription.m_Usage              = xiiGALResourceUsage::Mutable;
-      xiiSharedPtr<xiiGALTexture> pTexture = environment.GetDevice()->CreateTexture(textureDescription);
+      xiiSharedPtr<xiiGALTexture> pTexture    = environment.GetDevice()->CreateTexture(textureDescription);
       XII_TEST_BOOL(pTexture != nullptr);
       if (pTexture == nullptr)
         continue;
 
       xiiGALCommandListCreationDescription commandListDescription;
-      commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
+      commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
       xiiSharedPtr<xiiGALCommandList> pCommandList = environment.GetDevice()->CreateCommandList(commandListDescription);
       XII_TEST_BOOL(pCommandList != nullptr);
       if (pCommandList == nullptr)
@@ -57,8 +57,8 @@ XII_CREATE_SIMPLE_TEST(Tools, TextureReadback)
       XII_TEST_BOOL(!readback.HasCompleted());
       XII_TEST_BOOL(!static_cast<bool>(readback.GetCompleted()));
 
-      xiiGALTextureMipLevelData mipLevel;
-      const xiiBoundingBoxU32 fullBox = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), xiiVec3U32(width, height, 1U));
+      xiiGALTextureMipLevelData          mipLevel;
+      const xiiBoundingBoxU32            fullBox = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), xiiVec3U32(width, height, 1U));
       const xiiGALTextureSubResourceData sourceData(xiiConstByteBlobPtr(pixels), width * 4U, width * height * 4U);
 
       xiiGALTextureReadback::ReadbackRequest request;
@@ -105,7 +105,7 @@ XII_CREATE_SIMPLE_TEST(Tools, TextureReadback)
       {
         for (xiiUInt32 y = 0; y < capture.m_uiHeight; ++y)
         {
-          const xiiUInt8* pActual = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride);
+          const xiiUInt8* pActual   = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride);
           const xiiUInt8* pExpected = &pixels[((request.m_uiRegionY + y) * width + request.m_uiRegionX) * 4U];
           XII_TEST_BOOL(xiiMemoryUtils::IsEqual(pActual, pExpected, capture.m_uiRowStrideBytes));
         }

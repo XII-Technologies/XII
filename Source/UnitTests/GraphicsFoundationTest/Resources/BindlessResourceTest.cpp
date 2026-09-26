@@ -61,7 +61,7 @@ XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
       bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
       bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
       bufferDescription.m_uiElementByteStride = 4U;
-      xiiSharedPtr<xiiGALBuffer> pBuffer = environment.GetDevice()->CreateBuffer(bufferDescription);
+      xiiSharedPtr<xiiGALBuffer> pBuffer      = environment.GetDevice()->CreateBuffer(bufferDescription);
       XII_TEST_BOOL(pBuffer != nullptr);
 
       xiiGALTextureCreationDescription textureDescription;
@@ -72,7 +72,7 @@ XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
       textureDescription.m_uiMipLevels        = 1U;
       textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
       textureDescription.m_Usage              = xiiGALResourceUsage::Mutable;
-      xiiSharedPtr<xiiGALTexture> pTexture = environment.GetDevice()->CreateTexture(textureDescription);
+      xiiSharedPtr<xiiGALTexture> pTexture    = environment.GetDevice()->CreateTexture(textureDescription);
       XII_TEST_BOOL(pTexture != nullptr);
 
       xiiSharedPtr<xiiGALSampler> pSampler = environment.GetDevice()->CreateSampler(xiiGALSamplerCreationDescription());
@@ -80,8 +80,8 @@ XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
       if (pBuffer == nullptr || pTexture == nullptr || pSampler == nullptr)
         continue;
 
-      xiiSharedPtr<xiiGALBufferView> pBufferSRV = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
-      xiiSharedPtr<xiiGALBufferView> pBufferUAV = pBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess);
+      xiiSharedPtr<xiiGALBufferView>  pBufferSRV  = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+      xiiSharedPtr<xiiGALBufferView>  pBufferUAV  = pBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess);
       xiiSharedPtr<xiiGALTextureView> pTextureSRV = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
       xiiSharedPtr<xiiGALTextureView> pTextureUAV = pTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess);
       XII_TEST_BOOL(pBufferSRV != nullptr && pBufferUAV != nullptr && pTextureSRV != nullptr && pTextureUAV != nullptr);

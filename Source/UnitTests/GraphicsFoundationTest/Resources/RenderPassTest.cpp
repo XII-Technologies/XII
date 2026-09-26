@@ -16,13 +16,13 @@ XII_CREATE_SIMPLE_TEST(Resources, RenderPass)
         continue;
 
       xiiGALRenderPassCreationDescription description;
-      auto& attachment                 = description.m_Attachments.ExpandAndGetRef();
-      attachment.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
-      attachment.m_uiSampleCount      = 1U;
-      attachment.m_LoadOperation      = xiiGALAttachmentLoadOperation::Clear;
-      attachment.m_StoreOperation     = xiiGALAttachmentStoreOperation::Store;
-      attachment.m_InitialStateFlags  = xiiGALResourceStateFlags::Undefined;
-      attachment.m_FinalStateFlags    = xiiGALResourceStateFlags::ShaderResource;
+      auto&                               attachment = description.m_Attachments.ExpandAndGetRef();
+      attachment.m_Format                            = xiiGALResourceFormat::RGBA8UNormalized;
+      attachment.m_uiSampleCount                     = 1U;
+      attachment.m_LoadOperation                     = xiiGALAttachmentLoadOperation::Clear;
+      attachment.m_StoreOperation                    = xiiGALAttachmentStoreOperation::Store;
+      attachment.m_InitialStateFlags                 = xiiGALResourceStateFlags::Undefined;
+      attachment.m_FinalStateFlags                   = xiiGALResourceStateFlags::ShaderResource;
 
       auto& subPass = description.m_SubPasses.ExpandAndGetRef();
       subPass.m_RenderTargetAttachments.PushBack({0U, xiiGALResourceStateFlags::RenderTarget});

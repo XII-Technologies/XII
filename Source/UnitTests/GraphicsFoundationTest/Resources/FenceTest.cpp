@@ -16,7 +16,7 @@ XII_CREATE_SIMPLE_TEST(Resources, Fence)
         continue;
 
       xiiGALFenceCreationDescription cpuFenceDescription;
-      xiiSharedPtr<xiiGALFence> pCpuFence = environment.GetDevice()->CreateFence(cpuFenceDescription);
+      xiiSharedPtr<xiiGALFence>      pCpuFence = environment.GetDevice()->CreateFence(cpuFenceDescription);
       XII_TEST_BOOL(pCpuFence != nullptr);
       if (pCpuFence != nullptr)
       {
@@ -28,7 +28,7 @@ XII_CREATE_SIMPLE_TEST(Resources, Fence)
       if (environment.GetDevice()->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled)
       {
         xiiGALFenceCreationDescription generalFenceDescription;
-        generalFenceDescription.m_Type = xiiGALFenceType::General;
+        generalFenceDescription.m_Type          = xiiGALFenceType::General;
         xiiSharedPtr<xiiGALFence> pGeneralFence = environment.GetDevice()->CreateFence(generalFenceDescription);
         XII_TEST_BOOL(pGeneralFence != nullptr);
         if (pGeneralFence != nullptr)

@@ -24,7 +24,7 @@ XII_CREATE_SIMPLE_TEST(Resources, TextureView)
       textureDescription.m_uiMipLevels        = 4U;
       textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
       textureDescription.m_Usage              = xiiGALResourceUsage::Mutable;
-      xiiSharedPtr<xiiGALTexture> pTexture = environment.GetDevice()->CreateTexture(textureDescription);
+      xiiSharedPtr<xiiGALTexture> pTexture    = environment.GetDevice()->CreateTexture(textureDescription);
       XII_TEST_BOOL(pTexture != nullptr);
       if (pTexture == nullptr)
         continue;

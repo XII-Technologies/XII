@@ -23,7 +23,7 @@ XII_CREATE_SIMPLE_TEST(States, BlendState)
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    a = b;
+    a                                     = b;
     b.m_RenderTargets[0].m_BlendOperation = xiiGALBlendOperation::ReverseSubtract;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
@@ -39,12 +39,12 @@ XII_CREATE_SIMPLE_TEST(States, BlendState)
         continue;
 
       xiiGALBlendStateCreationDescription description;
-      auto& renderTarget                  = description.m_RenderTargets.ExpandAndGetRef();
-      renderTarget.m_bBlendEnable         = true;
-      renderTarget.m_SourceBlend          = xiiGALBlendFactor::SourceAlpha;
-      renderTarget.m_DestinationBlend     = xiiGALBlendFactor::InverseSourceAlpha;
-      renderTarget.m_SourceBlendAlpha     = xiiGALBlendFactor::One;
-      renderTarget.m_DestinationBlendAlpha = xiiGALBlendFactor::Zero;
+      auto&                               renderTarget = description.m_RenderTargets.ExpandAndGetRef();
+      renderTarget.m_bBlendEnable                      = true;
+      renderTarget.m_SourceBlend                       = xiiGALBlendFactor::SourceAlpha;
+      renderTarget.m_DestinationBlend                  = xiiGALBlendFactor::InverseSourceAlpha;
+      renderTarget.m_SourceBlendAlpha                  = xiiGALBlendFactor::One;
+      renderTarget.m_DestinationBlendAlpha             = xiiGALBlendFactor::Zero;
 
       xiiSharedPtr<xiiGALBlendState> pState = environment.GetDevice()->CreateBlendState(description);
       XII_TEST_BOOL(pState != nullptr);

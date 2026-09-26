@@ -27,7 +27,7 @@ XII_CREATE_SIMPLE_TEST(Tools, ScopedDebugGroup)
         continue;
 
       xiiGALCommandListCreationDescription commandListDescription;
-      commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+      commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics;
       xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
       XII_TEST_BOOL(pCommandList != nullptr);
       if (pCommandList == nullptr)

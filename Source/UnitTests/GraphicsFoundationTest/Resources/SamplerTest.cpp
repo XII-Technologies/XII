@@ -16,15 +16,15 @@ XII_CREATE_SIMPLE_TEST(Resources, Sampler)
         continue;
 
       xiiGALSamplerCreationDescription description;
-      description.m_MinFilter          = xiiGALFilterType::Point;
-      description.m_MagFilter          = xiiGALFilterType::Linear;
-      description.m_MipFilter          = xiiGALFilterType::Point;
-      description.m_AddressU           = xiiGALTextureAddressMode::Wrap;
-      description.m_AddressV           = xiiGALTextureAddressMode::Mirror;
-      description.m_AddressW           = xiiGALTextureAddressMode::Clamp;
-      description.m_fMipLODBias        = 0.5f;
-      description.m_fMinLOD            = 1.0f;
-      description.m_fMaxLOD            = 8.0f;
+      description.m_MinFilter   = xiiGALFilterType::Point;
+      description.m_MagFilter   = xiiGALFilterType::Linear;
+      description.m_MipFilter   = xiiGALFilterType::Point;
+      description.m_AddressU    = xiiGALTextureAddressMode::Wrap;
+      description.m_AddressV    = xiiGALTextureAddressMode::Mirror;
+      description.m_AddressW    = xiiGALTextureAddressMode::Clamp;
+      description.m_fMipLODBias = 0.5f;
+      description.m_fMinLOD     = 1.0f;
+      description.m_fMaxLOD     = 8.0f;
 
       xiiSharedPtr<xiiGALSampler> pSamplerA = environment.GetDevice()->CreateSampler(description);
       xiiSharedPtr<xiiGALSampler> pSamplerB = environment.GetDevice()->CreateSampler(description);

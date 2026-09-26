@@ -37,9 +37,9 @@ XII_CREATE_SIMPLE_TEST(Utilities, TextureUtilities)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Mip dimensions and storage")
   {
     xiiGALTextureCreationDescription description = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
-    description.m_Size                            = xiiSizeU32(10U, 6U);
-    description.m_Format                          = xiiGALResourceFormat::RGBA8UNormalized;
-    description.m_uiMipLevels                     = 4U;
+    description.m_Size                           = xiiSizeU32(10U, 6U);
+    description.m_Format                         = xiiGALResourceFormat::RGBA8UNormalized;
+    description.m_uiMipLevels                    = 4U;
 
     XII_TEST_INT(xiiGALTextureUtilities::GetMipSize(10U, 0U), 10U);
     XII_TEST_INT(xiiGALTextureUtilities::GetMipSize(10U, 1U), 5U);
@@ -57,7 +57,7 @@ XII_CREATE_SIMPLE_TEST(Utilities, TextureUtilities)
     XII_TEST_INT(mip.m_uiDepthSliceSize, 60U);
     XII_TEST_INT(mip.m_uiMipSize, 60U);
 
-    description.m_Format = xiiGALResourceFormat::BC1UNormalized;
+    description.m_Format                         = xiiGALResourceFormat::BC1UNormalized;
     const xiiGALMipLevelProperties compressedMip = xiiGALTextureUtilities::GetMipLevelProperties(description, 0U);
     XII_TEST_BOOL(compressedMip.m_LogicalSize == xiiSizeU32(10U, 6U));
     XII_TEST_BOOL(compressedMip.m_StorageSize == xiiSizeU32(12U, 8U));
@@ -68,11 +68,11 @@ XII_CREATE_SIMPLE_TEST(Utilities, TextureUtilities)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Staging offsets and copy layout")
   {
     xiiGALTextureCreationDescription description = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
-    description.m_Type                            = xiiGALResourceDimension::Texture2DArray;
-    description.m_Size                            = xiiSizeU32(8U, 4U);
-    description.m_uiArraySizeOrDepth              = 2U;
-    description.m_uiMipLevels                     = 2U;
-    description.m_Format                          = xiiGALResourceFormat::RGBA8UNormalized;
+    description.m_Type                           = xiiGALResourceDimension::Texture2DArray;
+    description.m_Size                           = xiiSizeU32(8U, 4U);
+    description.m_uiArraySizeOrDepth             = 2U;
+    description.m_uiMipLevels                    = 2U;
+    description.m_Format                         = xiiGALResourceFormat::RGBA8UNormalized;
 
     XII_TEST_INT(xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(description, 0U, 0U, 64U), 0U);
     XII_TEST_INT(xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(description, 0U, 1U, 64U), 128U);
@@ -83,8 +83,8 @@ XII_CREATE_SIMPLE_TEST(Utilities, TextureUtilities)
     XII_TEST_INT(xiiGALTextureUtilities::GetRequiredSlicePitch(description, 0U), 128U);
 
     xiiBoundingBoxU32 region;
-    region.m_vMin = xiiVec3U32(0U, 0U, 0U);
-    region.m_vMax = xiiVec3U32(5U, 3U, 2U);
+    region.m_vMin                                   = xiiVec3U32(0U, 0U, 0U);
+    region.m_vMax                                   = xiiVec3U32(5U, 3U, 2U);
     const xiiGALBufferToTextureCopyDescription copy = xiiGALTextureUtilities::GetBufferToTextureCopyDescription(xiiGALResourceFormat::RGBA8UNormalized, region, 16U);
     XII_TEST_INT(copy.m_uiRowSize, 20U);
     XII_TEST_INT(copy.m_uiRowStride, 32U);
@@ -106,7 +106,7 @@ XII_CREATE_SIMPLE_TEST(Utilities, TextureUtilities)
       source[i] = static_cast<xiiUInt8>(i + 1U);
 
     xiiGALTextureSubResourceData sourceData(xiiConstByteBlobPtr(source), 8U, 16U);
-    xiiUInt8 destination[48] = {};
+    xiiUInt8                     destination[48] = {};
     xiiGALTextureUtilities::CopyTextureSubresource(sourceData, 2U, 2U, 4U, destination, 12U, 24U);
 
     XII_TEST_INT(destination[0], 1U);
@@ -123,9 +123,9 @@ XII_CREATE_SIMPLE_TEST(Utilities, TextureUtilities)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default descriptors and view formats")
   {
-    const xiiGALTextureCreationDescription texture1D = xiiGALTextureUtilities::GetDefaultTexture1DDescription();
-    const xiiGALTextureCreationDescription texture2D = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
-    const xiiGALTextureCreationDescription texture3D = xiiGALTextureUtilities::GetDefaultTexture3DDescription();
+    const xiiGALTextureCreationDescription texture1D   = xiiGALTextureUtilities::GetDefaultTexture1DDescription();
+    const xiiGALTextureCreationDescription texture2D   = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
+    const xiiGALTextureCreationDescription texture3D   = xiiGALTextureUtilities::GetDefaultTexture3DDescription();
     const xiiGALTextureCreationDescription textureCube = xiiGALTextureUtilities::GetDefaultTextureCubeDescription();
     XII_TEST_BOOL(texture1D.m_Type == xiiGALResourceDimension::Texture1D);
     XII_TEST_BOOL(texture2D.m_Type == xiiGALResourceDimension::Texture2D);
@@ -142,13 +142,13 @@ XII_CREATE_SIMPLE_TEST(Utilities, TextureUtilities)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Zero-memory initial data")
   {
     xiiGALTextureCreationDescription description = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
-    description.m_Size                            = xiiSizeU32(4U, 2U);
-    description.m_Format                          = xiiGALResourceFormat::RGBA8UNormalized;
-    description.m_uiMipLevels                     = 2U;
+    description.m_Size                           = xiiSizeU32(4U, 2U);
+    description.m_Format                         = xiiGALResourceFormat::RGBA8UNormalized;
+    description.m_uiMipLevels                    = 2U;
 
     xiiHybridArray<xiiGALTextureSubResourceData, 2U> subresources;
-    xiiDynamicArray<xiiUInt8>                      data;
-    const xiiGALTextureData initialData = xiiGALTextureUtilities::GetZeroMemoryInitialData(description, subresources, data);
+    xiiDynamicArray<xiiUInt8>                        data;
+    const xiiGALTextureData                          initialData = xiiGALTextureUtilities::GetZeroMemoryInitialData(description, subresources, data);
 
     XII_TEST_INT(subresources.GetCount(), 2U);
     XII_TEST_INT(initialData.m_pSubResources.GetCount(), 2U);

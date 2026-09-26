@@ -29,7 +29,7 @@ XII_CREATE_SIMPLE_TEST(Tools, DynamicBuffer)
       XII_TEST_BOOL(uiInitialVersion > 0U);
 
       xiiSharedPtr<xiiGALBuffer> pOriginal = buffer.GetBuffer();
-      xiiSharedPtr<xiiGALBuffer> pResized = buffer.Resize(nullptr, 64U, true);
+      xiiSharedPtr<xiiGALBuffer> pResized  = buffer.Resize(nullptr, 64U, true);
       XII_TEST_BOOL(pResized != nullptr);
       XII_TEST_BOOL(pResized != pOriginal);
       XII_TEST_BOOL(!buffer.PendingUpdate());

@@ -44,7 +44,7 @@ XII_CREATE_SIMPLE_TEST(Shader, ShaderByteCode)
     XII_TEST_BOOL(xiiGALShaderPrimitiveType::IsNumberType(xiiGALShaderPrimitiveType::UInt64));
     XII_TEST_BOOL(!xiiGALShaderPrimitiveType::IsNumberType(xiiGALShaderPrimitiveType::String));
 
-    alignas(16) xiiUInt8 destination[64] = {};
+    alignas(16) xiiUInt8            destination[64] = {};
     xiiGALShaderVariableDescription description;
     description.m_Class         = xiiGALShaderVariableClassType::Scalar;
     description.m_PrimitiveType = xiiGALShaderPrimitiveType::Float32;
@@ -58,9 +58,9 @@ XII_CREATE_SIMPLE_TEST(Shader, ShaderByteCode)
     XII_TEST_FLOAT(packedColor.z, 0.75f, 0.0001f);
     XII_TEST_FLOAT(packedColor.w, 1.0f, 0.0001f);
 
-    description.m_PrimitiveType = xiiGALShaderPrimitiveType::Double;
-    description.m_uiColumnCount = 1U;
-    const xiiVariant doubleValue = 1234.5;
+    description.m_PrimitiveType                = xiiGALShaderPrimitiveType::Double;
+    description.m_uiColumnCount                = 1U;
+    const xiiVariant doubleValue               = 1234.5;
     *reinterpret_cast<xiiUInt64*>(destination) = 0U;
     xiiGALShaderVariableDescription::CopyDataFromVariant(destination, &doubleValue, description);
     XII_TEST_DOUBLE(*reinterpret_cast<const double*>(destination), 1234.5, 0.000001);

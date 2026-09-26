@@ -3,8 +3,8 @@
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 #include <Foundation/Utilities/CommandLineUtils.h>
-#include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <TestFramework/Framework/TestFramework.h>
 
@@ -38,7 +38,7 @@ XII_CREATE_SIMPLE_TEST(Device, Device)
   {
     for (xiiUInt32 uiImplementation = 0; uiImplementation < xiiGetGPUTestingEnvironmentCount(); ++uiImplementation)
     {
-      const xiiStringView          sName = xiiGetGPUTestingEnvironmentName(uiImplementation);
+      const xiiStringView      sName = xiiGetGPUTestingEnvironmentName(uiImplementation);
       xiiGPUTestingEnvironment environment(sName);
       XII_TEST_BOOL(environment.Initialize().Succeeded());
 

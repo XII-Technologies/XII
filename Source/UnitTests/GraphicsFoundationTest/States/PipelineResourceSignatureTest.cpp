@@ -18,7 +18,7 @@ namespace
     resource.m_uiBindSlot   = uiSlot;
     return resource;
   }
-}
+} // namespace
 
 XII_CREATE_SIMPLE_TEST(States, PipelineResourceSignature)
 {
@@ -41,17 +41,17 @@ XII_CREATE_SIMPLE_TEST(States, PipelineResourceSignature)
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    b = a;
+    b                            = a;
     b.m_Resources[1].m_uiBindSet = 2U;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    b = a;
+    b                                  = a;
     b.m_PushConstantRanges[0].m_uiSize = 32U;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    b = a;
+    b                                        = a;
     b.m_PushConstantRanges[0].m_ShaderStages = xiiGALShaderType::Pixel;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
@@ -90,14 +90,14 @@ XII_CREATE_SIMPLE_TEST(States, PipelineResourceSignature)
       XII_TEST_BOOL(pSignature->IsCompatibleWith(pSignature.Borrow()));
 
       xiiGALPipelineResourceSignatureCreationDescription equivalentDescription = description;
-      xiiSharedPtr<xiiGALPipelineResourceSignature> pEquivalent = environment.GetDevice()->CreatePipelineResourceSignature(equivalentDescription);
+      xiiSharedPtr<xiiGALPipelineResourceSignature>      pEquivalent           = environment.GetDevice()->CreatePipelineResourceSignature(equivalentDescription);
       XII_TEST_BOOL(pEquivalent != nullptr);
       XII_TEST_BOOL(pSignature->IsCompatibleWith(pEquivalent.Borrow()));
       XII_TEST_BOOL(pEquivalent->IsCompatibleWith(pSignature.Borrow()));
 
       xiiGALPipelineResourceSignatureCreationDescription incompatibleDescription = description;
-      incompatibleDescription.m_PushConstantRanges[0].m_ShaderStages = xiiGALShaderType::Pixel;
-      xiiSharedPtr<xiiGALPipelineResourceSignature> pIncompatible = environment.GetDevice()->CreatePipelineResourceSignature(incompatibleDescription);
+      incompatibleDescription.m_PushConstantRanges[0].m_ShaderStages             = xiiGALShaderType::Pixel;
+      xiiSharedPtr<xiiGALPipelineResourceSignature> pIncompatible                = environment.GetDevice()->CreatePipelineResourceSignature(incompatibleDescription);
       XII_TEST_BOOL(pIncompatible != nullptr);
       XII_TEST_BOOL(!pSignature->IsCompatibleWith(pIncompatible.Borrow()));
       XII_TEST_BOOL(!pIncompatible->IsCompatibleWith(pSignature.Borrow()));

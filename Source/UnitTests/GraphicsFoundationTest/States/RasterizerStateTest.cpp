@@ -15,10 +15,10 @@ XII_CREATE_SIMPLE_TEST(States, RasterizerState)
     XII_TEST_BOOL(a.m_CullMode == xiiGALCullMode::Back);
     XII_TEST_BOOL(a.m_bAntialiasedLineEnable);
 
-    b.m_CullMode                = xiiGALCullMode::Front;
+    b.m_CullMode               = xiiGALCullMode::Front;
     b.m_bFrontCounterClockwise = true;
-    b.m_iDepthBias              = 7;
-    b.m_fSlopeScaledDepthBias   = 1.5f;
+    b.m_iDepthBias             = 7;
+    b.m_fSlopeScaledDepthBias  = 1.5f;
     XII_TEST_BOOL(a != b);
     XII_TEST_BOOL(a.CalculateHash() != b.CalculateHash());
   }
@@ -33,7 +33,7 @@ XII_CREATE_SIMPLE_TEST(States, RasterizerState)
         continue;
 
       xiiGALRasterizerStateCreationDescription description;
-      description.m_CullMode                = xiiGALCullMode::None;
+      description.m_CullMode               = xiiGALCullMode::None;
       description.m_bFrontCounterClockwise = true;
       description.m_bDepthClipEnable       = true;
       description.m_bScissorEnable         = true;

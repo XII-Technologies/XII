@@ -29,7 +29,7 @@ namespace
   protected:
     virtual xiiResult InitPlatform() override { return XII_SUCCESS; }
   };
-}
+} // namespace
 
 XII_CREATE_SIMPLE_TEST(Device, SwapChain)
 {

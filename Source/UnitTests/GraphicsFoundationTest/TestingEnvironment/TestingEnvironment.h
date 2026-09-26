@@ -45,7 +45,7 @@ public:
   virtual xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle) override;
 
 private:
-  xiiString                   m_sImplementationName;
+  xiiString                  m_sImplementationName;
   xiiSharedPtr<xiiGALDevice> m_pDevice;
 };
 

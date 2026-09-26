@@ -21,7 +21,7 @@ XII_CREATE_SIMPLE_TEST(Resources, BufferView)
       bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
       bufferDescription.m_Mode                = xiiGALBufferMode::Formatted;
       bufferDescription.m_uiElementByteStride = 4U;
-      xiiSharedPtr<xiiGALBuffer> pBuffer = environment.GetDevice()->CreateBuffer(bufferDescription);
+      xiiSharedPtr<xiiGALBuffer> pBuffer      = environment.GetDevice()->CreateBuffer(bufferDescription);
       XII_TEST_BOOL(pBuffer != nullptr);
       if (pBuffer == nullptr)
         continue;

@@ -46,28 +46,28 @@ XII_CREATE_SIMPLE_TEST(States, PipelineState)
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    b = a;
+    b                                        = a;
     b.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::LineList;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    b = a;
+    b                                      = a;
     b.m_GraphicsPipeline.m_uiViewportCount = 2U;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    b = a;
+    b                                     = a;
     b.m_GraphicsPipeline.m_uiSubpassIndex = 1U;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    b = a;
-    b.m_GraphicsPipeline.m_SampleDescription.m_uiCount = 4U;
+    b                                                    = a;
+    b.m_GraphicsPipeline.m_SampleDescription.m_uiCount   = 4U;
     b.m_GraphicsPipeline.m_SampleDescription.m_uiQuality = 2U;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
 
-    b = a;
+    b                                       = a;
     b.m_GraphicsPipeline.m_ShadingRateFlags = xiiGALPipelineShadingRateFlags::TextureBased;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(a, b));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(a) != xiiGALDescriptorHash::Hash(b));
@@ -85,10 +85,10 @@ XII_CREATE_SIMPLE_TEST(States, PipelineState)
 
     xiiGALRayTracingPipelineStateCreationDescription rayA;
     rayA.m_sShaderRecordName.Assign("LocalConstants");
-    rayA.m_RayTracingPipeline.m_uiShaderRecordSize  = 32U;
-    rayA.m_RayTracingPipeline.m_uiMaxRecursionDepth = 2U;
-    rayA.m_uiMaximumAttributeSize                    = 8U;
-    rayA.m_uiMaximumPayloadSize                      = 24U;
+    rayA.m_RayTracingPipeline.m_uiShaderRecordSize        = 32U;
+    rayA.m_RayTracingPipeline.m_uiMaxRecursionDepth       = 2U;
+    rayA.m_uiMaximumAttributeSize                         = 8U;
+    rayA.m_uiMaximumPayloadSize                           = 24U;
     xiiGALRayTracingPipelineStateCreationDescription rayB = rayA;
     XII_TEST_BOOL(xiiGALDescriptorHash::Equal(rayA, rayB));
     XII_TEST_INT(xiiGALDescriptorHash::Hash(rayA), xiiGALDescriptorHash::Hash(rayB));
@@ -97,7 +97,7 @@ XII_CREATE_SIMPLE_TEST(States, PipelineState)
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(rayA, rayB));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(rayA) != xiiGALDescriptorHash::Hash(rayB));
 
-    rayB = rayA;
+    rayB                        = rayA;
     rayB.m_uiMaximumPayloadSize = 32U;
     XII_TEST_BOOL(!xiiGALDescriptorHash::Equal(rayA, rayB));
     XII_TEST_BOOL(xiiGALDescriptorHash::Hash(rayA) != xiiGALDescriptorHash::Hash(rayB));

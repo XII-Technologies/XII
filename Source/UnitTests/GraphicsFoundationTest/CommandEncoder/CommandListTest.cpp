@@ -16,16 +16,16 @@ XII_CREATE_SIMPLE_TEST(CommandEncoder, CommandList)
       if (environment.GetDevice() == nullptr)
         continue;
 
-      xiiGALDevice* pDevice = environment.GetDevice();
-      xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+      xiiGALDevice*       pDevice = environment.GetDevice();
+      xiiGALCommandQueue* pQueue  = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
       XII_TEST_BOOL(pQueue != nullptr);
       if (pQueue == nullptr)
         continue;
 
       xiiGALBufferCreationDescription sourceDescription;
-      sourceDescription.m_uiSize    = 64U;
-      sourceDescription.m_Usage     = xiiGALResourceUsage::Mutable;
-      sourceDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+      sourceDescription.m_uiSize         = 64U;
+      sourceDescription.m_Usage          = xiiGALResourceUsage::Mutable;
+      sourceDescription.m_BindFlags      = xiiGALBindFlags::VertexBuffer;
       xiiSharedPtr<xiiGALBuffer> pSource = pDevice->CreateBuffer(sourceDescription);
 
       xiiGALBufferCreationDescription readbackDescription;
@@ -45,7 +45,7 @@ XII_CREATE_SIMPLE_TEST(CommandEncoder, CommandList)
       }
 
       xiiGALCommandListCreationDescription commandListDescription;
-      commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
+      commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
       xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
       XII_TEST_BOOL(pCommandList != nullptr);
       if (pCommandList == nullptr)
@@ -74,8 +74,8 @@ XII_CREATE_SIMPLE_TEST(CommandEncoder, CommandList)
 
       xiiSharedPtr<xiiGALCommandList> pMapCommandList = pDevice->CreateCommandList(commandListDescription);
       pMapCommandList->Begin();
-      void* pMappedData = nullptr;
-      const xiiResult mapResult = pMapCommandList->MapBuffer(pReadback.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pMappedData);
+      void*           pMappedData = nullptr;
+      const xiiResult mapResult   = pMapCommandList->MapBuffer(pReadback.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pMappedData);
       XII_TEST_BOOL(mapResult.Succeeded());
       XII_TEST_BOOL(pMappedData != nullptr);
       if (pMappedData != nullptr)

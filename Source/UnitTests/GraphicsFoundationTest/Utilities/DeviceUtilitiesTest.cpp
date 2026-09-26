@@ -55,8 +55,8 @@ XII_CREATE_SIMPLE_TEST(Utilities, DeviceUtilities)
       XII_TEST_BOOL(pDynamicVertices->GetDescription().m_Usage == xiiGALResourceUsage::Dynamic);
       XII_TEST_BOOL(pDynamicVertices->GetDescription().m_CPUAccessFlags == xiiGALCPUAccessFlag::Write);
 
-      xiiUInt8 indexData[6] = {0U, 0U, 1U, 0U, 2U, 0U};
-      xiiSharedPtr<xiiGALBuffer> pIndices = xiiGALDeviceUtilities::CreateIndexBuffer(environment.GetDevice(), xiiGALDeviceUtilities::IndexType::UShort, 3U, xiiMakeArrayPtr(indexData));
+      xiiUInt8                   indexData[6] = {0U, 0U, 1U, 0U, 2U, 0U};
+      xiiSharedPtr<xiiGALBuffer> pIndices     = xiiGALDeviceUtilities::CreateIndexBuffer(environment.GetDevice(), xiiGALDeviceUtilities::IndexType::UShort, 3U, xiiMakeArrayPtr(indexData));
       XII_TEST_BOOL(pIndices != nullptr);
       XII_TEST_BOOL(pIndices->GetDescription().m_BindFlags == xiiGALBindFlags::IndexBuffer);
       XII_TEST_INT(pIndices->GetDescription().m_uiElementByteStride, 2U);
@@ -78,7 +78,7 @@ XII_CREATE_SIMPLE_TEST(Utilities, DeviceUtilities)
       }
 
       xiiGALCommandListCreationDescription commandListDescription;
-      commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
+      commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer;
       xiiSharedPtr<xiiGALCommandList> pCommandList = environment.GetDevice()->CreateCommandList(commandListDescription);
       XII_TEST_BOOL(pCommandList != nullptr);
       if (pCommandList == nullptr || pDynamicVertices == nullptr)
