@@ -140,9 +140,10 @@ void xiiGALDynamicBuffer::InitializeBuffer()
 
     m_pBuffer = m_pDevice->CreateBuffer(description);
 
-    if (m_Description.m_uiSize == 0U)
+    if (!m_pStaleBuffer)
     {
-      // The array was previously empty, nothing to copy.
+      // The array was previously empty or its contents were explicitly discarded.
+      // There is no deferred copy, so the resize is complete as soon as the new buffer exists.
       m_Description.m_uiSize = m_uiPendingSize;
     }
   }

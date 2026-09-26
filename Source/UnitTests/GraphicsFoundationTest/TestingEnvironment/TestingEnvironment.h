@@ -40,6 +40,8 @@ public:
 
   virtual xiiGALDevice* GetDevice() const override { return m_pDevice.Borrow(); }
 
+  xiiSharedPtr<xiiGALDevice> GetDeviceShared() const { return m_pDevice; }
+
   virtual xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle) override;
 
 private:

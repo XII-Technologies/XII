@@ -403,7 +403,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
   {
     if (description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
     {
-      XII_GAL_DEVICE_CHECK(bHasInitialData, "Staging buffers with CPU write access must be updated via map.");
+      XII_GAL_DEVICE_CHECK(!bHasInitialData, "Staging buffers with CPU write access must be updated via map.");
     }
   }
   else if (description.m_Usage == xiiGALResourceUsage::Unified)

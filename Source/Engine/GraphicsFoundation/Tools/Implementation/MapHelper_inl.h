@@ -22,8 +22,10 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALCommandList& 
 
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALMapHelper&& other) noexcept :
-  m_pCommandList(std::move(other.m_pCommandList)), m_pBuffer(std::move(other.m_pBuffer)), m_pMappedData(other.m_pMappedData), m_MapType(other.m_MapType), m_MapFlags(other.m_MapFlags)
+  m_pCommandList(other.m_pCommandList), m_pBuffer(other.m_pBuffer), m_pMappedData(other.m_pMappedData), m_MapType(other.m_MapType), m_MapFlags(other.m_MapFlags)
 {
+  other.m_pCommandList = nullptr;
+  other.m_pBuffer      = nullptr;
   other.m_pMappedData = nullptr;
   other.m_MapType     = xiiGALMapType::Default;
   other.m_MapFlags    = xiiGALMapFlags::None;
@@ -38,13 +40,20 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::~xiiGALMapHelper()
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator=(xiiGALMapHelper&& other) noexcept
 {
-  m_pCommandList = std::move(other.m_pCommandList);
-  m_pBuffer      = std::move(other.m_pBuffer);
+  if (this == &other)
+    return *this;
+
+  Unmap().IgnoreResult();
+
+  m_pCommandList = other.m_pCommandList;
+  m_pBuffer      = other.m_pBuffer;
   m_pMappedData  = other.m_pMappedData;
   m_MapType      = other.m_MapType;
   m_MapFlags     = other.m_MapFlags;
 
-  other.m_pMappedData = nullptr;
+  other.m_pCommandList = nullptr;
+  other.m_pBuffer      = nullptr;
+  other.m_pMappedData  = nullptr;
   other.m_MapType     = xiiGALMapType::Default;
   other.m_MapFlags    = xiiGALMapFlags::None;
 
