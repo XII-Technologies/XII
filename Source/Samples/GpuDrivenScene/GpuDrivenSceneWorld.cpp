@@ -45,34 +45,41 @@ namespace
   }
 } // namespace
 
+xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration)
+{
+  xiiGeometryResidencyManager* pGeometryResidency = xiiGeometryResidencyManager::GetSingleton();
+  xiiGALBindlessResourceTable* pBindlessResources = xiiGALBindlessResourceTable::GetSingleton();
+  if (pGeometryResidency == nullptr || pBindlessResources == nullptr)
+    return XII_FAILURE;
+
+  xiiGALBindlessResourceTableDescription bindlessDescription;
+  bindlessDescription.m_uiBufferSRVCapacity = 256U;
+  XII_SUCCEED_OR_RETURN(pBindlessResources->Configure(bindlessDescription));
+
+  xiiGeometryResidencyDescription geometryDescription;
+  geometryDescription.m_uiMaxGeometries = 64U;
+  geometryDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
+  geometryDescription.m_uiBudgetBytes = 128ULL * 1024ULL * 1024ULL;
+  geometryDescription.m_uiMaxMeshlets = configuration.m_uiMaxVisibleMeshlets;
+  XII_SUCCEED_OR_RETURN(pGeometryResidency->Configure(geometryDescription));
+
+  xiiMaterialGpuStorageDescription materialDescription;
+  materialDescription.m_uiMaxMaterials = 64U;
+  materialDescription.m_uiMaxParameterBytes = 64U;
+  materialDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
+  return xiiMaterialManager::Configure(materialDescription);
+}
+
 xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
 {
   if (pDevice == nullptr)
     return XII_FAILURE;
 
+  XII_SUCCEED_OR_RETURN(ConfigureSubsystems(configuration));
+
   m_Configuration = configuration;
   m_Scene.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U);
   m_SpatialHierarchy.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight);
-
-  xiiGALBindlessResourceTableDescription bindlessDescription;
-  bindlessDescription.m_uiBufferSRVCapacity = 256U;
-  if (GetBindlessResources().Configure(bindlessDescription).Failed())
-    return XII_FAILURE;
-
-  xiiGeometryResidencyDescription geometryDescription;
-  geometryDescription.m_uiMaxGeometries  = 64U;
-  geometryDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
-  geometryDescription.m_uiBudgetBytes    = 128ULL * 1024ULL * 1024ULL;
-  geometryDescription.m_uiMaxMeshlets    = configuration.m_uiMaxVisibleMeshlets;
-  if (GetGeometryResidency().Configure(geometryDescription).Failed())
-    return XII_FAILURE;
-
-  xiiMaterialGpuStorageDescription materialDescription;
-  materialDescription.m_uiMaxMaterials      = 64U;
-  materialDescription.m_uiMaxParameterBytes = 64U;
-  materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
-  if (xiiMaterialManager::Configure(materialDescription).Failed())
-    return XII_FAILURE;
 
   XII_SUCCEED_OR_RETURN(CreateMaterials());
   XII_SUCCEED_OR_RETURN(CreateGeometry());

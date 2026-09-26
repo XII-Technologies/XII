@@ -215,14 +215,16 @@ public:
     XII_ASSERT_ALWAYS(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "The GPU-driven sample requires mesh shader support.");
     xiiGALDevice::SetDefaultDevice(m_pDevice);
     UpdateSwapChain();
+
+    m_Configuration = {};
+    m_Configuration.m_uiGridWidth = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
+    m_Configuration.m_uiGridHeight = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
+    xiiGpuDrivenSceneWorld::ConfigureSubsystems(m_Configuration).AssertSuccess();
     xiiStartup::StartupHighLevelSystems();
 
     m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 250.0f);
     m_Camera.LookAt(xiiVec3(-12.0f, -2.0f, 12.0f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
 
-    m_Configuration                = {};
-    m_Configuration.m_uiGridWidth  = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
-    m_Configuration.m_uiGridHeight = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     m_World.Initialize(m_pDevice.Borrow(), m_Configuration).AssertSuccess();
     xiiGpuVisibilityDescription visibilityDescription;
     visibilityDescription.m_uiMaxInstances       = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight + 1U;

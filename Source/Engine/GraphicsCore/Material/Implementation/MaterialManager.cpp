@@ -59,6 +59,13 @@ xiiResult xiiMaterialManager::Configure(const xiiMaterialGpuStorageDescription& 
     return XII_FAILURE;
   }
 
+  const bool bSameConfiguration =
+    s_pState->m_Description.m_uiMaxMaterials == description.m_uiMaxMaterials &&
+    s_pState->m_Description.m_uiMaxParameterBytes == description.m_uiMaxParameterBytes &&
+    s_pState->m_Description.m_uiFramesInFlight == description.m_uiFramesInFlight;
+  if (bSameConfiguration && s_pState->m_bInitialized)
+    return XII_SUCCESS;
+
   s_pState->m_Description = description;
   return s_pState->m_bEngineStarted ? ApplyConfiguration() : XII_SUCCESS;
 }

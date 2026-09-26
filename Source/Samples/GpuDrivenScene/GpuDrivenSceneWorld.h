@@ -43,6 +43,8 @@ class xiiGpuDrivenSceneWorld
 public:
   xiiGpuDrivenSceneWorld() = default;
 
+  /// Publishes capacity policies before high-level startup so manager subsystems allocate once.
+  [[nodiscard]] static xiiResult ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration);
   xiiResult Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration);
   void      Shutdown(xiiUInt64 uiLastSubmittedFrame);
   void      Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiTime deltaTime);

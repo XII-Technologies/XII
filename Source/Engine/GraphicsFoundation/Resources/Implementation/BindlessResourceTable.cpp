@@ -138,6 +138,15 @@ xiiResult xiiGALBindlessResourceTable::Configure(const xiiGALBindlessResourceTab
     return XII_FAILURE;
 
   XII_LOCK(m_Mutex);
+  const bool bSameConfiguration =
+    m_Description.m_uiBufferSRVCapacity == description.m_uiBufferSRVCapacity &&
+    m_Description.m_uiBufferUAVCapacity == description.m_uiBufferUAVCapacity &&
+    m_Description.m_uiTextureSRVCapacity == description.m_uiTextureSRVCapacity &&
+    m_Description.m_uiTextureUAVCapacity == description.m_uiTextureUAVCapacity &&
+    m_Description.m_uiSamplerCapacity == description.m_uiSamplerCapacity;
+  if (bSameConfiguration && m_bInitialized)
+    return XII_SUCCESS;
+
   auto hasOccupiedSlots = [](const auto& table) {
     for (const auto& pObject : table.m_Objects)
     {

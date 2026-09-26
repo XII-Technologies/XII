@@ -168,6 +168,14 @@ xiiResult xiiGeometryResidencyManager::Configure(const xiiGeometryResidencyDescr
     return XII_FAILURE;
   }
 
+  const bool bSameConfiguration =
+    m_Configuration.m_uiMaxGeometries == description.m_uiMaxGeometries &&
+    m_Configuration.m_uiFramesInFlight == description.m_uiFramesInFlight &&
+    m_Configuration.m_uiBudgetBytes == description.m_uiBudgetBytes &&
+    m_Configuration.m_uiMaxMeshlets == description.m_uiMaxMeshlets;
+  if (bSameConfiguration && m_bInitialized)
+    return XII_SUCCESS;
+
   m_Configuration = description;
   if (!m_bEngineStarted)
     return XII_SUCCESS;
