@@ -126,7 +126,10 @@ void xiiGALImageCapture::Capture(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSh
 
 void xiiGALImageCapture::WaitForCompletedValue()
 {
-  m_pFence->Wait(m_uiCurrentFenceValue);
+  if (m_uiCurrentFenceValue > 1U)
+  {
+    m_pFence->Wait(m_uiCurrentFenceValue - 1U);
+  }
 }
 
 void xiiGALImageCapture::RecycleStagingTexture(xiiSharedPtr<xiiGALTexture>&& pStagingTexture)
