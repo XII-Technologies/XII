@@ -26,23 +26,16 @@ xiiGALPipelineResourceSignature::~xiiGALPipelineResourceSignature() = default;
 
 bool xiiGALPipelineResourceSignature::IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const
 {
+  if (pPipelineResourceSignature == nullptr)
+    return false;
+
   if (pPipelineResourceSignature == this)
     return true;
 
   const xiiGALPipelineResourceSignatureCreationDescription& sourceDescription  = GetDescription();
   const xiiGALPipelineResourceSignatureCreationDescription& compareDescription = pPipelineResourceSignature->GetDescription();
 
-  for (const xiiGALPipelineResourceDescription& resource : compareDescription.m_Resources)
-  {
-    if (!sourceDescription.m_Resources.Contains(resource))
-      return false;
-  }
-  for (const xiiGALImmutableSamplerDescription& immutableSampler : compareDescription.m_ImmutableSamplers)
-  {
-    if (!sourceDescription.m_ImmutableSamplers.Contains(immutableSampler))
-      return false;
-  }
-  return true;
+  return sourceDescription == compareDescription;
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineResourceSignature);

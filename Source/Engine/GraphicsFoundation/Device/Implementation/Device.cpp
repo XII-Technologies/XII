@@ -1347,7 +1347,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
   VerifyMultithreadedAccess();
 
   XII_GAL_DEVICE_CHECK(description.m_uiBindingIndex < XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT, "The pipeline resource signature binding index ({0}) exceeds the maximum allowed value ({1}).", description.m_uiBindingIndex, XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT - 1);
-  XII_GAL_DEVICE_CHECK(description.m_uiBindingIndex <= s_uiMaxResourcesInSignature, "The pipeline resource signature resource count ({0}) exceeds the maximum allowed value ({1}).", description.m_Resources.GetCount(), s_uiMaxResourcesInSignature);
+  XII_GAL_DEVICE_CHECK(description.m_Resources.GetCount() <= s_uiMaxResourcesInSignature, "The pipeline resource signature resource count ({0}) exceeds the maximum allowed value ({1}).", description.m_Resources.GetCount(), s_uiMaxResourcesInSignature);
 
   // Ensure that shader stages do not conflict for resources with the same name.
 

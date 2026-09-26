@@ -385,6 +385,8 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineResourceSignatureCreati
     writer << resource.m_sName;
     writer << resource.m_ShaderStages;
     writer << resource.m_uiArraySize;
+    writer << resource.m_uiBindSet;
+    writer << resource.m_uiBindSlot;
     writer << resource.m_ResourceType;
     writer << resource.m_PipelineResourceFlags;
   }
@@ -398,6 +400,17 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineResourceSignatureCreati
     writer << sampler.m_SamplerOrTextureName;
     writer << sampler.m_ShaderStages;
     writer << sampler.m_SamplerDescription.CalculateHash();
+  }
+
+  writer << description.m_PushConstantRanges.GetCount();
+  for (xiiUInt32 i = 0; i < description.m_PushConstantRanges.GetCount(); ++i)
+  {
+    const auto& range = description.m_PushConstantRanges[i];
+
+    writer << i;
+    writer << range.m_uiOffset;
+    writer << range.m_uiSize;
+    writer << range.m_ShaderStages;
   }
 
   return writer.GetHashValue();
