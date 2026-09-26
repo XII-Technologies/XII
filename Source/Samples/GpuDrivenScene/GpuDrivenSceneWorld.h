@@ -5,7 +5,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Color.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Material/MaterialSystem.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -43,6 +43,8 @@ class xiiGpuDrivenSceneWorld
 public:
   xiiGpuDrivenSceneWorld() = default;
 
+  /// Publishes capacity policies before high-level startup so manager subsystems allocate once.
+  [[nodiscard]] static xiiResult ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration);
   xiiResult Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration);
   void      Shutdown(xiiUInt64 uiLastSubmittedFrame);
   void      Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiTime deltaTime);
@@ -50,9 +52,8 @@ public:
   [[nodiscard]] xiiSceneDatabase&             GetScene() { return m_Scene; }
   [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_Scene; }
   [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
-  [[nodiscard]] xiiGeometryResidencyManager&  GetGeometryResidency() { return m_GeometryResidency; }
-  [[nodiscard]] xiiMaterialSystem&            GetMaterialSystem() { return m_MaterialSystem; }
-  [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return m_BindlessResources; }
+  [[nodiscard]] xiiGeometryResidencyManager&  GetGeometryResidency() { return *xiiGeometryResidencyManager::GetSingleton(); }
+  [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return *xiiGALBindlessResourceTable::GetSingleton(); }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
   [[nodiscard]] xiiUInt32                     GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;
 
@@ -73,9 +74,6 @@ private:
   xiiGpuDrivenSceneLight                             m_SunLight;
   xiiSceneDatabase                                   m_Scene;
   xiiSceneSpatialHierarchy                           m_SpatialHierarchy;
-  xiiGeometryResidencyManager                        m_GeometryResidency;
-  xiiMaterialSystem                                  m_MaterialSystem;
-  xiiGALBindlessResourceTable                        m_BindlessResources;
   xiiDynamicArray<GeometryAsset>                     m_GeometryAssets;
   xiiDynamicArray<xiiMaterialGpuHandle>              m_Materials;
   xiiDynamicArray<xiiSharedPtr<xiiMaterialSchema>>   m_MaterialSchemas;

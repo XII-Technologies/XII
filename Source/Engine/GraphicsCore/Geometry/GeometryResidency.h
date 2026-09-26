@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -105,17 +107,35 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyStats);
 
-/// Owns the stable GPU geometry table and coordinates mesh LOD residency.
+/// Startup configuration for the process-wide geometry residency service.
+struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyDescription
+{
+  xiiUInt32 m_uiMaxGeometries  = 65536U;
+  xiiUInt32 m_uiFramesInFlight = 3U;
+  xiiUInt64 m_uiBudgetBytes    = 512ULL * 1024ULL * 1024ULL;
+  xiiUInt32 m_uiMaxMeshlets    = 1024U * 1024U;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyDescription);
+
+/// Subsystem-owned stable GPU geometry table and mesh LOD residency service.
+///
+/// The instance is constructed after Foundation startup and initialized against the default GAL
+/// device during high-level startup. Renderers access GetSingleton(); they never own or destroy the
+/// residency service, preventing allocator and GPU-object lifetime inversions in Debug builds.
 class XII_GRAPHICSCORE_DLL xiiGeometryResidencyManager
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiGeometryResidencyManager);
+  XII_DECLARE_SINGLETON(xiiGeometryResidencyManager);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, GeometryResidencyManager);
 
 public:
-  xiiGeometryResidencyManager() = default;
+  xiiGeometryResidencyManager();
   ~xiiGeometryResidencyManager();
 
-  xiiResult Initialize(xiiGALDevice* pDevice, xiiUInt32 uiMaxGeometries = 65536U, xiiUInt32 uiFramesInFlight = 3U, xiiUInt64 uiBudgetBytes = 512ULL * 1024ULL * 1024ULL, xiiUInt32 uiMaxMeshlets = 1024U * 1024U);
-  void      Shutdown();
+  /// Stores startup configuration or reapplies it while no geometry handles are active.
+  [[nodiscard]] xiiResult                              Configure(const xiiGeometryResidencyDescription& description);
+  [[nodiscard]] const xiiGeometryResidencyDescription& GetConfiguration() const { return m_Configuration; }
+  [[nodiscard]] bool                                   IsInitialized() const { return m_bInitialized; }
 
   [[nodiscard]] xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
   void                            UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
@@ -147,6 +167,11 @@ public:
   [[nodiscard]] UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
 
 private:
+  xiiResult Initialize(xiiGALDevice* pDevice, const xiiGeometryResidencyDescription& description);
+  void      Shutdown();
+  void      EngineStartup();
+  void      EngineShutdown();
+
   struct Slot
   {
     xiiGeometryDescription             m_Description;
@@ -211,4 +236,7 @@ private:
   xiiUInt64                                      m_uiResidentBytes       = 0U;
   xiiUInt64                                      m_uiLastUploadedBytes   = 0U;
   xiiUInt64                                      m_uiNextMeshletUploadId = 1U;
+  xiiGeometryResidencyDescription                m_Configuration;
+  bool                                           m_bEngineStarted = false;
+  bool                                           m_bInitialized   = false;
 };

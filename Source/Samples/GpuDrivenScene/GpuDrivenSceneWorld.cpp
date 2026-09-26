@@ -45,28 +45,41 @@ namespace
   }
 } // namespace
 
-xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
+xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration)
 {
-  if (pDevice == nullptr)
+  xiiGeometryResidencyManager* pGeometryResidency = xiiGeometryResidencyManager::GetSingleton();
+  xiiGALBindlessResourceTable* pBindlessResources = xiiGALBindlessResourceTable::GetSingleton();
+  if (pGeometryResidency == nullptr || pBindlessResources == nullptr)
     return XII_FAILURE;
-
-  m_Configuration = configuration;
-  m_Scene.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U);
-  m_SpatialHierarchy.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight);
 
   xiiGALBindlessResourceTableDescription bindlessDescription;
   bindlessDescription.m_uiBufferSRVCapacity = 256U;
-  m_BindlessResources.Initialize(bindlessDescription);
+  XII_SUCCEED_OR_RETURN(pBindlessResources->Configure(bindlessDescription));
 
-  if (m_GeometryResidency.Initialize(pDevice, 64U, configuration.m_uiFramesInFlight, 128ULL * 1024ULL * 1024ULL, configuration.m_uiMaxVisibleMeshlets).Failed())
-    return XII_FAILURE;
+  xiiGeometryResidencyDescription geometryDescription;
+  geometryDescription.m_uiMaxGeometries  = 64U;
+  geometryDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
+  geometryDescription.m_uiBudgetBytes    = 128ULL * 1024ULL * 1024ULL;
+  geometryDescription.m_uiMaxMeshlets    = configuration.m_uiMaxVisibleMeshlets;
+  XII_SUCCEED_OR_RETURN(pGeometryResidency->Configure(geometryDescription));
 
   xiiMaterialGpuStorageDescription materialDescription;
   materialDescription.m_uiMaxMaterials      = 64U;
   materialDescription.m_uiMaxParameterBytes = 64U;
   materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
-  if (m_MaterialSystem.Initialize(pDevice, materialDescription).Failed())
+  return xiiMaterialManager::Configure(materialDescription);
+}
+
+xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
+{
+  if (pDevice == nullptr)
     return XII_FAILURE;
+
+  XII_SUCCEED_OR_RETURN(ConfigureSubsystems(configuration));
+
+  m_Configuration = configuration;
+  m_Scene.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U);
+  m_SpatialHierarchy.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight);
 
   XII_SUCCEED_OR_RETURN(CreateMaterials());
   XII_SUCCEED_OR_RETURN(CreateGeometry());
@@ -79,16 +92,13 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   for (GeometryAsset& asset : m_GeometryAssets)
   {
     for (xiiGALBindlessResourceHandle handle : asset.m_BindlessBuffers)
-      m_BindlessResources.RetireBufferSRV(handle, uiLastSubmittedFrame);
-    m_GeometryResidency.UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
+      GetBindlessResources().RetireBufferSRV(handle, uiLastSubmittedFrame);
+    GetGeometryResidency().UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
   }
   for (xiiMaterialGpuHandle handle : m_Materials)
-    m_MaterialSystem.UnregisterMaterial(handle);
+    xiiMaterialManager::UnregisterMaterial(handle);
 
-  m_BindlessResources.Collect(uiLastSubmittedFrame);
-  m_BindlessResources.Clear();
-  m_MaterialSystem.Shutdown();
-  m_GeometryResidency.Shutdown();
+  GetBindlessResources().Collect(uiLastSubmittedFrame);
   m_SpatialHierarchy.Clear();
   m_GeometryAssets.Clear();
   m_Materials.Clear();
@@ -128,14 +138,14 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
     xiiSharedPtr<xiiMaterialSchema>   schema;
     xiiSharedPtr<xiiMaterialInstance> instance;
     xiiStringBuilder                  error;
-    if (xiiMaterialSystem::CreateRuntimeMaterial(schemaDescription, runtimeState, schema, instance, &error).Failed())
+    if (xiiMaterialManager::CreateRuntimeMaterial(schemaDescription, runtimeState, schema, instance, &error).Failed())
     {
       xiiLog::Error("Failed to create GPU-driven sample material: {0}", error);
       return XII_FAILURE;
     }
 
     instance->SetParameter("BaseColor", xiiVec4(colors[i].r, colors[i].g, colors[i].b, colors[i].a)).AssertSuccess();
-    const xiiMaterialGpuHandle handle = m_MaterialSystem.RegisterMaterial(instance);
+    const xiiMaterialGpuHandle handle = xiiMaterialManager::RegisterMaterial(instance);
     if (!handle.IsValid())
       return XII_FAILURE;
 
@@ -184,18 +194,18 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
       if (!mesh.IsValid())
         return XII_FAILURE;
     }
-    asset.m_hGeometry = m_GeometryResidency.RegisterGeometry(description);
+    asset.m_hGeometry = GetGeometryResidency().RegisterGeometry(description);
     if (!asset.m_hGeometry.IsValid())
       return XII_FAILURE;
     // Start from the coarsest LOD. Update() requests the fine range later, exercising
     // incremental residency without invalidating metadata used by frames already in flight.
-    m_GeometryResidency.RequestResidency(asset.m_hGeometry, asset.m_Lods.GetCount() - 1U, 0U);
+    GetGeometryResidency().RequestResidency(asset.m_hGeometry, asset.m_Lods.GetCount() - 1U, 0U);
   }
 
-  m_GeometryResidency.ProcessStreaming(0U, 0U, 128ULL * 1024ULL * 1024ULL);
+  GetGeometryResidency().ProcessStreaming(0U, 0U, 128ULL * 1024ULL * 1024ULL);
   for (GeometryAsset& asset : m_GeometryAssets)
   {
-    if (m_GeometryResidency.GetState(asset.m_hGeometry) != xiiGeometryResidencyState::Resident)
+    if (GetGeometryResidency().GetState(asset.m_hGeometry) != xiiGeometryResidencyState::Resident)
       return XII_FAILURE;
     XII_SUCCEED_OR_RETURN(RegisterGeometryBuffers(asset));
   }
@@ -211,11 +221,11 @@ xiiResult xiiGpuDrivenSceneWorld::RegisterGeometryBuffers(GeometryAsset& asset)
       return XII_FAILURE;
 
     xiiGALBindlessResourceHandle handles[5] = {
-      m_BindlessResources.RegisterBufferSRV(mesh->GetVertexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      m_BindlessResources.RegisterBufferSRV(mesh->GetIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      m_BindlessResources.RegisterBufferSRV(mesh->GetMeshletBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      m_BindlessResources.RegisterBufferSRV(mesh->GetMeshletVertexRemapBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      m_BindlessResources.RegisterBufferSRV(mesh->GetMeshletPrimitiveIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      GetBindlessResources().RegisterBufferSRV(mesh->GetVertexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      GetBindlessResources().RegisterBufferSRV(mesh->GetIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletVertexRemapBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletPrimitiveIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
     };
     for (const xiiGALBindlessResourceHandle handle : handles)
     {
@@ -224,7 +234,7 @@ xiiResult xiiGpuDrivenSceneWorld::RegisterGeometryBuffers(GeometryAsset& asset)
       asset.m_BindlessBuffers.PushBack(handle);
     }
 
-    if (!m_GeometryResidency.SetBindlessIndices(asset.m_hGeometry, lod, handles[0].m_uiIndex, handles[1].m_uiIndex, handles[2].m_uiIndex, handles[3].m_uiIndex, handles[4].m_uiIndex))
+    if (!GetGeometryResidency().SetBindlessIndices(asset.m_hGeometry, lod, handles[0].m_uiIndex, handles[1].m_uiIndex, handles[2].m_uiIndex, handles[3].m_uiIndex, handles[4].m_uiIndex))
       return XII_FAILURE;
   }
   return XII_SUCCESS;
@@ -255,7 +265,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
         (static_cast<float>(x) - static_cast<float>(m_Configuration.m_uiGridWidth - 1U) * 0.5f) * m_Configuration.m_fObjectSpacing,
         (static_cast<float>(objectIndex % 5U) - 2.0f) * 0.32f);
 
-      const xiiGpuGeometryRecord* geometry = m_GeometryResidency.GetGpuRecord(m_GeometryAssets[geometryIndex].m_hGeometry);
+      const xiiGpuGeometryRecord* geometry = GetGeometryResidency().GetGpuRecord(m_GeometryAssets[geometryIndex].m_hGeometry);
       if (geometry == nullptr)
         return XII_FAILURE;
 
@@ -323,22 +333,22 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
     m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], m_Scene.GetVisibilityMask(m_Objects[i]), m_Scene.GetFlags(m_Objects[i]));
   }
 
-  m_MaterialSystem.BeginFrame(uiFrameIndex, uiCompletedFrame);
+  xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   if (uiFrameIndex == 30U)
   {
     for (const GeometryAsset& asset : m_GeometryAssets)
-      m_GeometryResidency.RequestResidency(asset.m_hGeometry, 0U, uiFrameIndex);
+      GetGeometryResidency().RequestResidency(asset.m_hGeometry, 0U, uiFrameIndex);
   }
-  m_GeometryResidency.ProcessStreaming(uiFrameIndex, uiCompletedFrame, 8ULL * 1024ULL * 1024ULL);
+  GetGeometryResidency().ProcessStreaming(uiFrameIndex, uiCompletedFrame, 8ULL * 1024ULL * 1024ULL);
   for (const GeometryAsset& asset : m_GeometryAssets)
-    m_GeometryResidency.Touch(asset.m_hGeometry, uiFrameIndex);
-  m_BindlessResources.Collect(uiCompletedFrame);
+    GetGeometryResidency().Touch(asset.m_hGeometry, uiFrameIndex);
+  GetBindlessResources().Collect(uiCompletedFrame);
 }
 
 xiiUInt32 xiiGpuDrivenSceneWorld::GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const
 {
   if (m_Materials.IsEmpty())
     return 0U;
-  const xiiUInt32 stride = m_MaterialSystem.GetGpuStorage().GetMaterialStride();
-  return m_MaterialSystem.GetGpuStorage().GetGpuOffset(m_Materials[0], uiFrameIndex) - m_Materials[0].m_uiSlot * stride;
+  const xiiUInt32 stride = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
+  return xiiMaterialManager::GetGpuStorage().GetGpuOffset(m_Materials[0], uiFrameIndex) - m_Materials[0].m_uiSlot * stride;
 }

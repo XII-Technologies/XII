@@ -2,9 +2,55 @@
 
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Threading/Lock.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
+
+XII_IMPLEMENT_SINGLETON(xiiGALBindlessResourceTable);
+
+static xiiUniquePtr<xiiGALBindlessResourceTable> s_pBindlessResourceTable;
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, BindlessResourceTable)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    s_pBindlessResourceTable = XII_DEFAULT_NEW(xiiGALBindlessResourceTable);
+  }
+
+  ON_HIGHLEVELSYSTEMS_STARTUP
+  {
+    xiiGALBindlessResourceTable* pTable = xiiGALBindlessResourceTable::GetSingleton();
+    XII_ASSERT_DEV(pTable != nullptr, "The bindless resource table core subsystem must be started first.");
+
+    if (!pTable->IsInitialized())
+    {
+      XII_VERIFY(pTable->Configure(pTable->GetConfiguration()).Succeeded(), "Failed to restore the bindless resource table.");
+    }
+  }
+
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    if (xiiGALBindlessResourceTable* pTable = xiiGALBindlessResourceTable::GetSingleton())
+    {
+      // Drop strong references to device objects while the GAL device and its allocators
+      // are still alive. The table object itself remains available until core shutdown.
+      pTable->Clear();
+    }
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    s_pBindlessResourceTable.Clear();
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALBindlessResourceTableDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGALBindlessResourceTableDescription>)
   {
@@ -49,6 +95,17 @@ namespace
     return result;
   }
 } // namespace
+
+xiiGALBindlessResourceTable::xiiGALBindlessResourceTable() :
+  m_SingletonRegistrar(this)
+{
+  Initialize(m_Description);
+}
+
+xiiGALBindlessResourceTable::~xiiGALBindlessResourceTable()
+{
+  Clear();
+}
 
 template <typename TObject>
 xiiGALBindlessResourceHandle xiiGALBindlessResourceTable::Register(TableStorage<TObject>& table, xiiSharedPtr<TObject> pObject)
@@ -95,9 +152,54 @@ void xiiGALBindlessResourceTable::Collect(TableStorage<TObject>& table, xiiUInt6
   table.m_Allocator.Collect(uiCompletedFenceValue);
 }
 
+xiiResult xiiGALBindlessResourceTable::Configure(const xiiGALBindlessResourceTableDescription& description)
+{
+  if (description.m_uiBufferSRVCapacity == 0U || description.m_uiBufferUAVCapacity == 0U || description.m_uiTextureSRVCapacity == 0U || description.m_uiTextureUAVCapacity == 0U || description.m_uiSamplerCapacity == 0U ||
+      description.m_uiBufferSRVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiBufferUAVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiTextureSRVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiTextureUAVCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY || description.m_uiSamplerCapacity > XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY)
+    return XII_FAILURE;
+
+  XII_LOCK(m_Mutex);
+  const bool bSameConfiguration =
+    m_Description.m_uiBufferSRVCapacity == description.m_uiBufferSRVCapacity &&
+    m_Description.m_uiBufferUAVCapacity == description.m_uiBufferUAVCapacity &&
+    m_Description.m_uiTextureSRVCapacity == description.m_uiTextureSRVCapacity &&
+    m_Description.m_uiTextureUAVCapacity == description.m_uiTextureUAVCapacity &&
+    m_Description.m_uiSamplerCapacity == description.m_uiSamplerCapacity;
+  if (bSameConfiguration && m_bInitialized)
+    return XII_SUCCESS;
+
+  auto hasOccupiedSlots = [](const auto& table) {
+    for (const auto& pObject : table.m_Objects)
+    {
+      if (pObject != nullptr)
+        return true;
+    }
+    return false;
+  };
+  if (hasOccupiedSlots(m_BufferSRVs) || hasOccupiedSlots(m_BufferUAVs) || hasOccupiedSlots(m_TextureSRVs) || hasOccupiedSlots(m_TextureUAVs) || hasOccupiedSlots(m_Samplers))
+  {
+    XII_ASSERT_DEV(false, "The bindless resource table cannot be reconfigured while handles are active or retired.");
+    return XII_FAILURE;
+  }
+
+  auto clear = [](auto& table) {
+    table.m_Allocator.Clear();
+    table.m_Objects.Clear();
+    table.m_RetireFences.Clear();
+  };
+  clear(m_BufferSRVs);
+  clear(m_BufferUAVs);
+  clear(m_TextureSRVs);
+  clear(m_TextureUAVs);
+  clear(m_Samplers);
+
+  m_Description = description;
+  Initialize(description);
+  return XII_SUCCESS;
+}
+
 void xiiGALBindlessResourceTable::Initialize(const xiiGALBindlessResourceTableDescription& description)
 {
-  XII_LOCK(m_Mutex);
   XII_ASSERT_DEV(description.m_uiBufferSRVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiBufferUAVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiTextureSRVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiTextureUAVCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY && description.m_uiSamplerCapacity <= XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY, "Bindless table capacities must fit the reflected runtime descriptor capacity.");
   auto initialize = [](auto& table, xiiUInt32 uiCapacity) {
     table.m_Allocator.Initialize(uiCapacity);
@@ -109,6 +211,7 @@ void xiiGALBindlessResourceTable::Initialize(const xiiGALBindlessResourceTableDe
   initialize(m_TextureSRVs, description.m_uiTextureSRVCapacity);
   initialize(m_TextureUAVs, description.m_uiTextureUAVCapacity);
   initialize(m_Samplers, description.m_uiSamplerCapacity);
+  m_bInitialized = true;
 }
 
 void xiiGALBindlessResourceTable::Clear()
@@ -124,6 +227,7 @@ void xiiGALBindlessResourceTable::Clear()
   clear(m_TextureSRVs);
   clear(m_TextureUAVs);
   clear(m_Samplers);
+  m_bInitialized = false;
 }
 
 xiiGALBindlessResourceHandle xiiGALBindlessResourceTable::RegisterBufferSRV(xiiSharedPtr<xiiGALBufferView> p)
