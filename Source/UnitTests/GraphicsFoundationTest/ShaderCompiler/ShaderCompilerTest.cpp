@@ -341,10 +341,22 @@ cbuffer Globals : register(b1, space0)
 
       const xiiStringView sShaderFile = "Shaders/Minimal.xiiShader";
       xiiFileReader       shaderFile;
-      XII_TEST_BOOL(shaderFile.Open(sShaderFile).Succeeded());
+      const xiiResult     shaderOpenResult = shaderFile.Open(sShaderFile);
+      XII_TEST_BOOL(shaderOpenResult.Succeeded());
+      if (shaderOpenResult.Failed())
+      {
+        xiiPlugin::UnloadAllPlugins();
+        continue;
+      }
       shaderFile.Close();
       xiiGALShaderCompiler compiler;
-      XII_TEST_BOOL(compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel).Succeeded());
+      const xiiResult firstCompileResult = compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel);
+      XII_TEST_BOOL(firstCompileResult.Succeeded());
+      if (firstCompileResult.Failed())
+      {
+        xiiPlugin::UnloadAllPlugins();
+        continue;
+      }
       XII_TEST_BOOL(compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel).Succeeded());
 
       xiiStringBuilder sPermutationFile = xiiGALShaderManager::GetCacheDirectory();
@@ -356,7 +368,13 @@ cbuffer Globals : register(b1, space0)
       sPermutationFile.AppendFormat("_{0}.xiiPermutation", xiiArgU(xiiGALPermutationVariable::CalculateHash({}), 8, true, 16, true));
 
       xiiFileReader permutationFile;
-      XII_TEST_BOOL(permutationFile.Open(sPermutationFile).Succeeded());
+      const xiiResult permutationOpenResult = permutationFile.Open(sPermutationFile);
+      XII_TEST_BOOL(permutationOpenResult.Succeeded());
+      if (permutationOpenResult.Failed())
+      {
+        xiiPlugin::UnloadAllPlugins();
+        continue;
+      }
       xiiGALShaderPermutationBinary permutation;
       bool                          bOldVersion = true;
       XII_TEST_BOOL(permutation.Read(permutationFile, bOldVersion).Succeeded());

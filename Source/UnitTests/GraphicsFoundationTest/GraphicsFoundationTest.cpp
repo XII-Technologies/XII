@@ -6,7 +6,6 @@
 #include <TestFramework/Utilities/TestSetup.h>
 
 static xiiHybridArray<xiiString, 2U> s_GPUTestingEnvironmentNames;
-static bool                           s_bTestDataDirectoriesConfigured = false;
 
 xiiUInt32 xiiGetGPUTestingEnvironmentCount()
 {
@@ -21,7 +20,9 @@ xiiStringView xiiGetGPUTestingEnvironmentName(xiiUInt32 uiIndex)
 
 xiiResult xiiConfigureGPUTestDataDirectories()
 {
-  if (s_bTestDataDirectoriesConfigured)
+  // Unloading a renderer plugin reinitializes core subsystems, which clears all file-system mounts.
+  // Use the actual mount state instead of a process-lifetime flag so every fixture can restore it.
+  if (xiiFileSystem::FindDataDirectoryWithRoot("shadercache") != nullptr)
     return XII_SUCCESS;
 
   xiiFileSystem::SetSpecialDirectory("testout", xiiTestFramework::GetInstance()->GetAbsOutputPath());
@@ -36,7 +37,6 @@ xiiResult xiiConfigureGPUTestDataDirectories()
 
   sReadDir.Set(">sdk/", xiiTestFramework::GetInstance()->GetRelTestDataPath());
   XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sReadDir, "ImageComparisonDataDir"));
-  s_bTestDataDirectoriesConfigured = true;
   return XII_SUCCESS;
 }
 
