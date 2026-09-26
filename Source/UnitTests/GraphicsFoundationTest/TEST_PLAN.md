@@ -79,3 +79,17 @@
 4. Run explicit `-renderer Vulkan` and `-renderer D3D12` selections to verify filtering.
 5. Treat validation-layer errors, leaked references, nondeterministic waits, and backend-specific assertion differences as test failures.
 6. Keep each commit buildable and limited to one coherent test family or harness change.
+
+## Implementation Status
+
+The feature matrix above is implemented by 35 subtests in nine test groups. Public headers that currently contain declarations but no runtime behavior are included by dedicated compile-smoke translation units so that future API additions cannot silently escape the test target.
+
+The backend harness builds each renderer selected by the build configuration. With no `-renderer` argument it registers every compiled implementation; `-renderer <name>` restricts registration to the named implementation and rejects names that were not compiled into the executable. Every device-backed subtest iterates that registered list, while pure descriptor, serialization, parsing, hashing, and math contracts execute once.
+
+Current host verification (2026-09-26):
+
+- Visual Studio 2026 Debug x64, default backend selection: all 35 subtests passed with `-nosave -nogui -all`.
+- Visual Studio 2026 Debug x64, explicit Vulkan selection: all 35 subtests passed with `-nosave -nogui -all -renderer Vulkan`.
+- The active preset compiles Vulkan and its SPIR-V shader compiler. D3D12 remains covered by the conditional harness and the same backend-neutral fixtures, but cannot execute until that renderer is enabled in a build preset.
+- The requested Visual Studio 2022 executable was not available on this host and its CMake generator is not installed; the equivalent installed Visual Studio 2026 configuration was used for build and execution.
+- Headless execution validates swap-chain descriptors and ownership contracts but deliberately excludes native window presentation. Optional bindless, query, ray-tracing, and advanced pipeline paths execute only when the selected adapter advertises the corresponding feature.
