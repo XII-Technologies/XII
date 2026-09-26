@@ -2,9 +2,14 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <Foundation/Configuration/Plugin.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Logging/Log.h>
+#include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
@@ -307,5 +312,37 @@ cbuffer Globals : register(b1, space0)
     XII_TEST_STRING(loaded.m_PermutationVariables[1].m_sName.GetView(), "SKINNED");
     XII_TEST_STRING(loaded.m_PermutationVariables[1].m_sValue.GetView(), "TRUE");
 
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Compile and reuse the cache for every selected backend")
+  {
+    XII_TEST_BOOL(xiiConfigureGPUTestDataDirectories().Succeeded());
+
+    for (xiiUInt32 uiImplementation = 0; uiImplementation < xiiGetGPUTestingEnvironmentCount(); ++uiImplementation)
+    {
+      const xiiStringView sImplementation = xiiGetGPUTestingEnvironmentName(uiImplementation);
+      xiiStringView       sShaderModel;
+      xiiStringView       sShaderCompiler;
+      xiiGALDeviceFactory::GetShaderModelAndCompiler(sImplementation, sShaderModel, sShaderCompiler);
+      XII_TEST_BOOL(!sShaderModel.IsEmpty());
+      XII_TEST_BOOL(!sShaderCompiler.IsEmpty());
+      if (sShaderModel.IsEmpty() || sShaderCompiler.IsEmpty())
+        continue;
+
+      XII_TEST_BOOL(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded());
+      xiiGALShaderManager::Configure(sShaderModel, true, ":shadercache/GraphicsFoundationTest");
+      XII_TEST_STRING(xiiGALShaderManager::GetActivePlatform(), sShaderModel);
+      XII_TEST_BOOL(xiiGALShaderManager::IsRuntimeCompilationEnabled());
+
+      const xiiStringView sShaderFile = "Shaders/Minimal.xiiShader";
+      xiiFileReader       shaderFile;
+      XII_TEST_BOOL(shaderFile.Open(sShaderFile).Succeeded());
+      shaderFile.Close();
+      xiiGALShaderCompiler compiler;
+      XII_TEST_BOOL(compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel).Succeeded());
+      XII_TEST_BOOL(compiler.CompileShaderPermutationForPlatforms(sShaderFile, {}, xiiLog::GetThreadLocalLogSystem(), sShaderModel).Succeeded());
+
+      xiiPlugin::UnloadAllPlugins();
+    }
   }
 }

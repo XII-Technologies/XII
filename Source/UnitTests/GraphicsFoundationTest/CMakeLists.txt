@@ -20,6 +20,6 @@ target_link_libraries(${PROJECT_NAME}
   Core
 )
 
-xii_add_renderers(${PROJECT_NAME} EXCLUDE_SHADER_COMPILER)
+xii_add_renderers(${PROJECT_NAME})
 
 xii_ci_add_test(${PROJECT_NAME} NEEDS_HW_ACCESS)
