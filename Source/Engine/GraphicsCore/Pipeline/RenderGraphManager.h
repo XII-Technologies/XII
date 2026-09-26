@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -52,40 +53,47 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphRegistrationDescription
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphRegistrationDescription);
 
-/// Deterministic owner and scheduler for multiple render graphs in a frame.
+class xiiRenderGraphManagerState;
+class xiiRenderGraphResourceCache;
+class xiiRenderGraphTimestampProfiler;
+
+/// Process-wide deterministic scheduler for multiple render graphs in a frame.
+///
+/// The manager's state is created by the GraphicsCore startup system after Foundation allocators
+/// are available. Keeping the public facade stateless prevents global constructors from touching
+/// allocators and guarantees that graphs and GPU resources are released during engine shutdown.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphManager
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphManager);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RenderGraphManager);
 
 public:
   using BuildDelegate = xiiDelegate<void(xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
 
-  xiiRenderGraphManager() = default;
+  xiiRenderGraphManager() = delete;
 
-  [[nodiscard]] xiiRenderGraphGraphId RegisterGraph(const xiiRenderGraphRegistrationDescription& description, BuildDelegate buildDelegate);
-  bool                                UnregisterGraph(xiiRenderGraphGraphId id);
-  bool                                RequestExecution(xiiRenderGraphGraphId id);
+  [[nodiscard]] static xiiRenderGraphGraphId RegisterGraph(const xiiRenderGraphRegistrationDescription& description, BuildDelegate buildDelegate);
+  static bool                                UnregisterGraph(xiiRenderGraphGraphId id);
+  static bool                                RequestExecution(xiiRenderGraphGraphId id);
 
-  [[nodiscard]] xiiRenderGraph*           GetGraph(xiiRenderGraphGraphId id);
-  [[nodiscard]] xiiRenderGraphBlackboard* GetBlackboard(xiiRenderGraphGraphId id);
+  [[nodiscard]] static xiiRenderGraph*           GetGraph(xiiRenderGraphGraphId id);
+  [[nodiscard]] static xiiRenderGraphBlackboard* GetBlackboard(xiiRenderGraphGraphId id);
+
+  [[nodiscard]] static xiiRenderGraphResourceCache* GetResourceCache();
+  [[nodiscard]] static xiiRenderGraphTimestampProfiler* GetProfiler();
+
+  /// Executes eligible graphs using the default GAL device and subsystem-owned cache/profiler.
+  /// The completed frame is used to retire transient resources without reusing in-flight memory.
+  [[nodiscard]] static xiiResult ExecuteFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, const xiiView* pView, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
 
   /// Builds, compiles and executes all graphs eligible for this frame in deterministic order.
-  [[nodiscard]] xiiResult ExecuteFrame(xiiUInt64 uiFrameIndex, xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
+  [[nodiscard]] static xiiResult ExecuteFrame(xiiUInt64 uiFrameIndex, xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
 
 private:
-  struct Entry
-  {
-    xiiRenderGraphRegistrationDescription m_Description;
-    xiiUniquePtr<xiiRenderGraph>          m_pGraph;
-    xiiRenderGraphBlackboard              m_Blackboard;
-    BuildDelegate                         m_BuildDelegate;
-    xiiUInt32                             m_uiRegistrationOrder = 0U;
-    bool                                  m_bOnDemandRequested  = false;
-  };
+  static void Startup();
+  static void EngineStartup();
+  static void EngineShutdown();
+  static void Shutdown();
 
-  [[nodiscard]] xiiUInt32   FindEntry(xiiRenderGraphGraphId id) const;
-  [[nodiscard]] static bool ShouldExecute(const Entry& entry, xiiUInt64 uiFrameIndex);
-
-  xiiDynamicArray<xiiUniquePtr<Entry>> m_Entries;
-  xiiUInt32                            m_uiNextRegistrationOrder = 0U;
+  static xiiUniquePtr<xiiRenderGraphManagerState> s_pState;
 };
