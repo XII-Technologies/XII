@@ -6,7 +6,10 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Logging/Log.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
+#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/ShaderCompiler/PermutationGenerator.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
@@ -447,6 +450,61 @@ cbuffer Globals : register(b1, space0)
         {
           pPipeline->SetDebugName("Compiled Unit Test Graphics Pipeline");
           XII_TEST_STRING(pPipeline->GetDebugName(), "Compiled Unit Test Graphics Pipeline");
+
+          xiiGALTextureCreationDescription renderTargetDescription;
+          renderTargetDescription.m_Type               = xiiGALResourceDimension::Texture2D;
+          renderTargetDescription.m_Size               = xiiSizeU32(16U, 16U);
+          renderTargetDescription.m_uiArraySizeOrDepth = 1U;
+          renderTargetDescription.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
+          renderTargetDescription.m_uiMipLevels        = 1U;
+          renderTargetDescription.m_BindFlags          = xiiGALBindFlags::RenderTarget;
+          renderTargetDescription.m_Usage              = xiiGALResourceUsage::Mutable;
+          xiiSharedPtr<xiiGALTexture> pRenderTarget = pDevice->CreateTexture(renderTargetDescription);
+          XII_TEST_BOOL(pRenderTarget != nullptr);
+
+          xiiGALFramebufferCreationDescription framebufferDescription;
+          framebufferDescription.m_pRenderPass       = pRenderPass;
+          framebufferDescription.m_FramebufferSize   = renderTargetDescription.m_Size;
+          framebufferDescription.m_uiArraySliceCount = 1U;
+          if (pRenderTarget != nullptr)
+            framebufferDescription.m_Attachments.PushBack(pRenderTarget->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+          xiiSharedPtr<xiiGALFramebuffer> pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+          XII_TEST_BOOL(pFramebuffer != nullptr);
+
+          xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+          XII_TEST_BOOL(pQueue != nullptr);
+          if (pFramebuffer != nullptr && pQueue != nullptr)
+          {
+            xiiGALCommandListCreationDescription commandListDescription;
+            commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+            xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
+            XII_TEST_BOOL(pCommandList != nullptr);
+            if (pCommandList != nullptr)
+            {
+              xiiGALOptimizedClearValue clearValue;
+              clearValue.m_ResourceFormat = xiiGALResourceFormat::RGBA8UNormalized;
+              clearValue.m_ClearColour    = xiiColor::RebeccaPurple;
+
+              pCommandList->Begin();
+              pCommandList->BeginRenderPass({pRenderPass.Borrow(), pFramebuffer.Borrow(), xiiMakeArrayPtr(&clearValue, 1U)});
+              pCommandList->SetViewport(xiiRectFloat(0.0f, 0.0f, 16.0f, 16.0f));
+              pCommandList->SetPipelineState(pPipeline.Borrow());
+              XII_TEST_BOOL(pCommandList->CommitShaderResources().Succeeded());
+              pCommandList->Draw({3U});
+              pCommandList->EndRenderPass();
+              pCommandList->End();
+
+              XII_TEST_INT(pCommandList->GetStatistics().m_CommandListCounters.m_uiBeginRenderPass, 1U);
+              XII_TEST_INT(pCommandList->GetStatistics().m_CommandListCounters.m_uiSetPipelineState, 1U);
+              XII_TEST_INT(pCommandList->GetStatistics().m_CommandListCounters.m_uiCommitShaderResources, 1U);
+              XII_TEST_INT(pCommandList->GetStatistics().m_CommandListCounters.m_uiDraw, 1U);
+              XII_TEST_INT(pCommandList->GetStatistics().m_PrimitiveCounters[xiiGALPrimitiveTopology::TriangleList], 1U);
+
+              const xiiUInt64 uiFenceValue = pQueue->Submit(pCommandList.Borrow());
+              XII_TEST_BOOL(uiFenceValue > 0U);
+              pQueue->WaitForFenceValue(uiFenceValue);
+            }
+          }
         }
       }
     }
