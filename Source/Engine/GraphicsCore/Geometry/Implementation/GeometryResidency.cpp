@@ -4,7 +4,43 @@
 
 #include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+
+XII_IMPLEMENT_SINGLETON(xiiGeometryResidencyManager);
+
+static xiiUniquePtr<xiiGeometryResidencyManager> s_pGeometryResidencyManager;
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, GeometryResidencyManager)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    s_pGeometryResidencyManager = XII_DEFAULT_NEW(xiiGeometryResidencyManager);
+  }
+
+  ON_HIGHLEVELSYSTEMS_STARTUP
+  {
+    s_pGeometryResidencyManager->EngineStartup();
+  }
+
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    s_pGeometryResidencyManager->EngineShutdown();
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    s_pGeometryResidencyManager.Clear();
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGeometryResidencyState, 1)
@@ -102,11 +138,51 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryResidencyStats, xiiNoBase, 1, xiiRTTI
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryResidencyDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGeometryResidencyDescription>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("MaxGeometries", m_uiMaxGeometries)->AddAttributes(new xiiDefaultValueAttribute(65536U), new xiiClampValueAttribute(1U, 1048576U)),
+      XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(1U, 64U)),
+      XII_MEMBER_PROPERTY("BudgetBytes", m_uiBudgetBytes)->AddAttributes(new xiiDefaultValueAttribute(512ULL * 1024ULL * 1024ULL)),
+      XII_MEMBER_PROPERTY("MaxMeshlets", m_uiMaxMeshlets)->AddAttributes(new xiiDefaultValueAttribute(1024U * 1024U), new xiiClampValueAttribute(1U, 64U * 1024U * 1024U)),
+    } XII_END_PROPERTIES;
+  }
+XII_END_STATIC_REFLECTED_TYPE;
+
+xiiGeometryResidencyManager::xiiGeometryResidencyManager() :
+  m_SingletonRegistrar(this)
+{
+}
+
 xiiGeometryResidencyManager::~xiiGeometryResidencyManager() { Shutdown(); }
 
-xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, xiiUInt32 uiMaxGeometries, xiiUInt32 uiFramesInFlight, xiiUInt64 uiBudgetBytes, xiiUInt32 uiMaxMeshlets)
+xiiResult xiiGeometryResidencyManager::Configure(const xiiGeometryResidencyDescription& description)
+{
+  if (description.m_uiMaxGeometries == 0U || description.m_uiFramesInFlight == 0U || description.m_uiFramesInFlight > 64U || description.m_uiMaxMeshlets == 0U)
+    return XII_FAILURE;
+
+  if (m_bInitialized && GetStats().m_uiGeometryCount != 0U)
+  {
+    XII_ASSERT_DEV(false, "Geometry residency cannot be reconfigured while geometry handles are active.");
+    return XII_FAILURE;
+  }
+
+  m_Configuration = description;
+  if (!m_bEngineStarted)
+    return XII_SUCCESS;
+
+  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  return pDevice != nullptr ? Initialize(pDevice.Borrow(), m_Configuration) : XII_FAILURE;
+}
+
+xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, const xiiGeometryResidencyDescription& description)
 {
   Shutdown();
+  const xiiUInt32 uiMaxGeometries  = description.m_uiMaxGeometries;
+  const xiiUInt32 uiFramesInFlight = description.m_uiFramesInFlight;
+  const xiiUInt64 uiBudgetBytes    = description.m_uiBudgetBytes;
+  const xiiUInt32 uiMaxMeshlets    = description.m_uiMaxMeshlets;
   if (pDevice == nullptr || uiMaxGeometries == 0U || uiFramesInFlight == 0U || uiFramesInFlight > 64U || uiMaxMeshlets == 0U)
     return XII_FAILURE;
 
@@ -143,6 +219,7 @@ xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, xiiUInt
   m_uiFramesInFlight = uiFramesInFlight;
   m_uiAllFrameMask   = uiFramesInFlight == 64U ? xiiMath::MaxValue<xiiUInt64>() : (xiiUInt64(1) << uiFramesInFlight) - 1U;
   m_uiBudgetBytes    = uiBudgetBytes;
+  m_bInitialized     = true;
   return XII_SUCCESS;
 }
 
@@ -160,6 +237,21 @@ void xiiGeometryResidencyManager::Shutdown()
   m_uiResidentBytes       = 0U;
   m_uiLastUploadedBytes   = 0U;
   m_uiNextMeshletUploadId = 1U;
+  m_bInitialized          = false;
+}
+
+void xiiGeometryResidencyManager::EngineStartup()
+{
+  m_bEngineStarted = true;
+  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice != nullptr)
+    Initialize(pDevice.Borrow(), m_Configuration).IgnoreResult();
+}
+
+void xiiGeometryResidencyManager::EngineShutdown()
+{
+  Shutdown();
+  m_bEngineStarted = false;
 }
 
 xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometryDescription& description)

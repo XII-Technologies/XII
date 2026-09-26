@@ -58,7 +58,12 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   bindlessDescription.m_uiBufferSRVCapacity = 256U;
   m_BindlessResources.Initialize(bindlessDescription);
 
-  if (m_GeometryResidency.Initialize(pDevice, 64U, configuration.m_uiFramesInFlight, 128ULL * 1024ULL * 1024ULL, configuration.m_uiMaxVisibleMeshlets).Failed())
+  xiiGeometryResidencyDescription geometryDescription;
+  geometryDescription.m_uiMaxGeometries  = 64U;
+  geometryDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
+  geometryDescription.m_uiBudgetBytes    = 128ULL * 1024ULL * 1024ULL;
+  geometryDescription.m_uiMaxMeshlets    = configuration.m_uiMaxVisibleMeshlets;
+  if (GetGeometryResidency().Configure(geometryDescription).Failed())
     return XII_FAILURE;
 
   xiiMaterialGpuStorageDescription materialDescription;
@@ -80,7 +85,7 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   {
     for (xiiGALBindlessResourceHandle handle : asset.m_BindlessBuffers)
       m_BindlessResources.RetireBufferSRV(handle, uiLastSubmittedFrame);
-    m_GeometryResidency.UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
+    GetGeometryResidency().UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
   }
   for (xiiMaterialGpuHandle handle : m_Materials)
     m_MaterialSystem.UnregisterMaterial(handle);
@@ -88,7 +93,6 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   m_BindlessResources.Collect(uiLastSubmittedFrame);
   m_BindlessResources.Clear();
   m_MaterialSystem.Shutdown();
-  m_GeometryResidency.Shutdown();
   m_SpatialHierarchy.Clear();
   m_GeometryAssets.Clear();
   m_Materials.Clear();
@@ -184,18 +188,18 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
       if (!mesh.IsValid())
         return XII_FAILURE;
     }
-    asset.m_hGeometry = m_GeometryResidency.RegisterGeometry(description);
+    asset.m_hGeometry = GetGeometryResidency().RegisterGeometry(description);
     if (!asset.m_hGeometry.IsValid())
       return XII_FAILURE;
     // Start from the coarsest LOD. Update() requests the fine range later, exercising
     // incremental residency without invalidating metadata used by frames already in flight.
-    m_GeometryResidency.RequestResidency(asset.m_hGeometry, asset.m_Lods.GetCount() - 1U, 0U);
+    GetGeometryResidency().RequestResidency(asset.m_hGeometry, asset.m_Lods.GetCount() - 1U, 0U);
   }
 
-  m_GeometryResidency.ProcessStreaming(0U, 0U, 128ULL * 1024ULL * 1024ULL);
+  GetGeometryResidency().ProcessStreaming(0U, 0U, 128ULL * 1024ULL * 1024ULL);
   for (GeometryAsset& asset : m_GeometryAssets)
   {
-    if (m_GeometryResidency.GetState(asset.m_hGeometry) != xiiGeometryResidencyState::Resident)
+    if (GetGeometryResidency().GetState(asset.m_hGeometry) != xiiGeometryResidencyState::Resident)
       return XII_FAILURE;
     XII_SUCCEED_OR_RETURN(RegisterGeometryBuffers(asset));
   }
@@ -224,7 +228,7 @@ xiiResult xiiGpuDrivenSceneWorld::RegisterGeometryBuffers(GeometryAsset& asset)
       asset.m_BindlessBuffers.PushBack(handle);
     }
 
-    if (!m_GeometryResidency.SetBindlessIndices(asset.m_hGeometry, lod, handles[0].m_uiIndex, handles[1].m_uiIndex, handles[2].m_uiIndex, handles[3].m_uiIndex, handles[4].m_uiIndex))
+    if (!GetGeometryResidency().SetBindlessIndices(asset.m_hGeometry, lod, handles[0].m_uiIndex, handles[1].m_uiIndex, handles[2].m_uiIndex, handles[3].m_uiIndex, handles[4].m_uiIndex))
       return XII_FAILURE;
   }
   return XII_SUCCESS;
@@ -255,7 +259,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
         (static_cast<float>(x) - static_cast<float>(m_Configuration.m_uiGridWidth - 1U) * 0.5f) * m_Configuration.m_fObjectSpacing,
         (static_cast<float>(objectIndex % 5U) - 2.0f) * 0.32f);
 
-      const xiiGpuGeometryRecord* geometry = m_GeometryResidency.GetGpuRecord(m_GeometryAssets[geometryIndex].m_hGeometry);
+      const xiiGpuGeometryRecord* geometry = GetGeometryResidency().GetGpuRecord(m_GeometryAssets[geometryIndex].m_hGeometry);
       if (geometry == nullptr)
         return XII_FAILURE;
 
@@ -327,11 +331,11 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
   if (uiFrameIndex == 30U)
   {
     for (const GeometryAsset& asset : m_GeometryAssets)
-      m_GeometryResidency.RequestResidency(asset.m_hGeometry, 0U, uiFrameIndex);
+      GetGeometryResidency().RequestResidency(asset.m_hGeometry, 0U, uiFrameIndex);
   }
-  m_GeometryResidency.ProcessStreaming(uiFrameIndex, uiCompletedFrame, 8ULL * 1024ULL * 1024ULL);
+  GetGeometryResidency().ProcessStreaming(uiFrameIndex, uiCompletedFrame, 8ULL * 1024ULL * 1024ULL);
   for (const GeometryAsset& asset : m_GeometryAssets)
-    m_GeometryResidency.Touch(asset.m_hGeometry, uiFrameIndex);
+    GetGeometryResidency().Touch(asset.m_hGeometry, uiFrameIndex);
   m_BindlessResources.Collect(uiCompletedFrame);
 }
 
