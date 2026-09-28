@@ -95,7 +95,7 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiGALTextureCreationDescri
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiUInt64 uiDataSize = ComputeLayout();
-  XII_ASSERT_DEV(imageData.GetCount() == uiDataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)", imageData.GetCount(), uiDataSize);
+  XII_ASSERT_DEV(imageData.GetCount() >= uiDataSize, "Provided image storage ({} bytes) is smaller than the required data size ({} bytes)", imageData.GetCount(), uiDataSize);
 #endif
 
   // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage.
