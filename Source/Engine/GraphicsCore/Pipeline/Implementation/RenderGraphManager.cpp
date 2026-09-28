@@ -128,12 +128,12 @@ xiiRenderGraphGraphId xiiRenderGraphManager::RegisterGraph(const xiiRenderGraphR
 
   xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry = XII_DEFAULT_NEW(xiiRenderGraphManagerState::Entry);
   xiiRenderGraphManagerState::Entry&              entry  = *pEntry;
-  entry.m_Description                  = description;
-  entry.m_Description.m_uiEveryNFrames = xiiMath::Max(1U, description.m_uiEveryNFrames);
-  entry.m_pGraph                       = XII_DEFAULT_NEW(xiiRenderGraph, description.m_sName);
-  entry.m_BuildDelegate                = buildDelegate;
+  entry.m_Description                                    = description;
+  entry.m_Description.m_uiEveryNFrames                   = xiiMath::Max(1U, description.m_uiEveryNFrames);
+  entry.m_pGraph                                         = XII_DEFAULT_NEW(xiiRenderGraph, description.m_sName);
+  entry.m_BuildDelegate                                  = buildDelegate;
   entry.m_uiRegistrationOrder                            = s_pState->m_uiNextRegistrationOrder++;
-  const xiiRenderGraphGraphId id       = entry.m_pGraph->GetId();
+  const xiiRenderGraphGraphId id                         = entry.m_pGraph->GetId();
   s_pState->m_Entries.PushBack(std::move(pEntry));
   return id;
 }

@@ -107,12 +107,12 @@ private:
   template <typename TObject>
   static void Collect(TableStorage<TObject>& table, xiiUInt64 uiCompletedFenceValue);
 
-  mutable xiiMutex                m_Mutex;
-  TableStorage<xiiGALBufferView>  m_BufferSRVs;
-  TableStorage<xiiGALBufferView>  m_BufferUAVs;
-  TableStorage<xiiGALTextureView> m_TextureSRVs;
-  TableStorage<xiiGALTextureView> m_TextureUAVs;
-  TableStorage<xiiGALSampler>     m_Samplers;
+  mutable xiiMutex                       m_Mutex;
+  TableStorage<xiiGALBufferView>         m_BufferSRVs;
+  TableStorage<xiiGALBufferView>         m_BufferUAVs;
+  TableStorage<xiiGALTextureView>        m_TextureSRVs;
+  TableStorage<xiiGALTextureView>        m_TextureUAVs;
+  TableStorage<xiiGALSampler>            m_Samplers;
   xiiGALBindlessResourceTableDescription m_Description;
   bool                                   m_bInitialized = false;
 };
