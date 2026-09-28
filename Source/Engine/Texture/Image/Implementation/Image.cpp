@@ -254,7 +254,7 @@ xiiUInt64 xiiImageView::ComputeDataSize() const
 xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 y /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
 {
   const xiiEnum<xiiGALResourceFormat> planeFormat = GetPlaneFormat(m_Description.m_Format, uiPlaneIndex);
-  xiiGALTextureCreationDescription    description = MakeImageDescription(GetNumBlocksX(uiMipLevel, uiPlaneIndex), 1, 1, planeFormat);
+  xiiGALTextureCreationDescription    description = MakeImageDescription(GetPlaneWidth(m_Description.m_Format, GetWidth(uiMipLevel), uiPlaneIndex), xiiGALTextureUtilities::GetBlockHeight(planeFormat), 1, planeFormat);
 
   xiiUInt64 uiOffset = 0U;
   uiOffset += GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
