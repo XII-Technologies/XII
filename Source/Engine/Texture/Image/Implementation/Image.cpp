@@ -93,13 +93,11 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiGALTextureCreationDescri
 {
   m_Description = description;
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  xiiUInt64 uiDataSize = ComputeLayout();
+  const xiiUInt64 uiDataSize = ComputeLayout();
   XII_ASSERT_DEV(imageData.GetCount() >= uiDataSize, "Provided image storage ({} bytes) is smaller than the required data size ({} bytes)", imageData.GetCount(), uiDataSize);
-#endif
 
   // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage.
-  m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), imageData.GetCount());
+  m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), uiDataSize);
 }
 
 xiiResult xiiImageView::SaveTo(xiiStringView sFileName) const
@@ -516,5 +514,5 @@ xiiImageView xiiImageView::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 
 
 bool xiiImage::UsesExternalStorage() const
 {
-  return m_InternalStorage.GetBlobPtr<xiiUInt8>() != m_DataPtr;
+  return m_InternalStorage.GetBlobPtr<xiiUInt8>().GetPtr() != m_DataPtr.GetPtr();
 }
