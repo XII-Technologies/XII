@@ -339,6 +339,10 @@ static xiiResult ReadImageHeaderImpl(xiiStreamReader& inout_stream, xiiGALTextur
   {
     ref_header.m_Format = xiiGALResourceFormat::R8UNormalized;
   }
+  else if (uiBytesPerPixel == 3)
+  {
+    ref_header.m_Format = xiiGALResourceFormat::BGRX8UNormalized;
+  }
   else
   {
     ref_header.m_Format = xiiGALResourceFormat::BGRA8UNormalized;
@@ -410,7 +414,21 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
 
     const xiiUInt32 uiBytesPerRow = uiBytesPerPixel * tgaHeader.m_iImageWidth;
 
-    if (tgaHeader.m_ImageDescriptor.m_bFlipH)
+    if (uiBytesPerPixel == 3)
+    {
+      for (xiiInt32 y = 0; y < tgaHeader.m_iImageHeight; ++y)
+      {
+        const auto row = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
+        for (xiiInt32 x = 0; x < tgaHeader.m_iImageWidth; ++x)
+        {
+          const auto col    = tgaHeader.m_ImageDescriptor.m_bFlipH ? tgaHeader.m_iImageWidth - x - 1 : x;
+          xiiUInt8*  pPixel = ref_image.GetPixelPointer<xiiUInt8>(0, 0, 0, col, row, 0);
+          inout_stream.ReadBytes(pPixel, uiBytesPerPixel);
+          pPixel[3] = 255;
+        }
+      }
+    }
+    else if (tgaHeader.m_ImageDescriptor.m_bFlipH)
     {
       // read each row (gets rid of the row pitch
       for (xiiInt32 y = 0; y < tgaHeader.m_iImageHeight; ++y)
@@ -465,9 +483,14 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
           const xiiInt32 x = iCurrentPixel % tgaHeader.m_iImageWidth;
           const xiiInt32 y = iCurrentPixel / tgaHeader.m_iImageWidth;
 
-          const auto row = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
-          const auto col = tgaHeader.m_ImageDescriptor.m_bFlipH ? tgaHeader.m_iImageWidth - x - 1 : x;
-          inout_stream.ReadBytes(ref_image.GetPixelPointer<void>(0, 0, 0, col, row, 0), uiBytesPerPixel);
+          const auto row    = tgaHeader.m_ImageDescriptor.m_bFlipV ? y : tgaHeader.m_iImageHeight - y - 1;
+          const auto col    = tgaHeader.m_ImageDescriptor.m_bFlipH ? tgaHeader.m_iImageWidth - x - 1 : x;
+          xiiUInt8*  pPixel = ref_image.GetPixelPointer<xiiUInt8>(0, 0, 0, col, row, 0);
+          inout_stream.ReadBytes(pPixel, uiBytesPerPixel);
+          if (uiBytesPerPixel == 3)
+          {
+            pPixel[3] = 255;
+          }
 
           ++iCurrentPixel;
         }
@@ -499,11 +522,8 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
             pPixel[1] = uiBuffer[1];
             pPixel[2] = uiBuffer[2];
 
-            // Alpha
-            if (uiBytesPerPixel == 4)
-            {
-              pPixel[3] = uiBuffer[3];
-            }
+            // Alpha or unused X channel.
+            pPixel[3] = uiBuffer[3];
           }
 
           ++iCurrentPixel;
