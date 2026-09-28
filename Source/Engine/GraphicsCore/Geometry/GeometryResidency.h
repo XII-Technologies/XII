@@ -202,12 +202,12 @@ private:
   {
     xiiRenderGraphBufferHandle m_hGeometryBuffer;
     xiiRenderGraphBufferHandle m_hMeshletBuffer;
-    xiiDynamicArray<Upload>    m_Uploads;
+    xiiDynamicArray<Upload, xiiAlignedAllocatorWrapper> m_Uploads;
     struct MeshletUpload
     {
       xiiUInt64                   m_uiUploadId = 0U;
       xiiUInt32                   m_uiOffset   = 0U;
-      xiiDynamicArray<xiiMeshlet> m_Meshlets;
+      xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> m_Meshlets;
     };
     xiiDynamicArray<MeshletUpload> m_MeshletUploads;
   };
@@ -224,7 +224,7 @@ private:
   void FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);
   void ReleaseMeshletAllocations(Slot& slot);
 
-  xiiDynamicArray<Slot>                          m_Slots;
+  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper> m_Slots;
   xiiDynamicArray<xiiUInt32>                     m_FreeSlots;
   xiiSharedPtr<xiiGALBuffer>                     m_pMetadataBuffer;
   xiiSharedPtr<xiiGALBuffer>                     m_pMeshletMetadataBuffer;

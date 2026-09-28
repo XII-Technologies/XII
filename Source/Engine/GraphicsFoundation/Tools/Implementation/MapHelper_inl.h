@@ -26,9 +26,9 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALMapHelper&& o
 {
   other.m_pCommandList = nullptr;
   other.m_pBuffer      = nullptr;
-  other.m_pMappedData = nullptr;
-  other.m_MapType     = xiiGALMapType::Default;
-  other.m_MapFlags    = xiiGALMapFlags::None;
+  other.m_pMappedData  = nullptr;
+  other.m_MapType      = xiiGALMapType::Default;
+  other.m_MapFlags     = xiiGALMapFlags::None;
 }
 
 template <typename DataType>
@@ -54,8 +54,8 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator
   other.m_pCommandList = nullptr;
   other.m_pBuffer      = nullptr;
   other.m_pMappedData  = nullptr;
-  other.m_MapType     = xiiGALMapType::Default;
-  other.m_MapFlags    = xiiGALMapFlags::None;
+  other.m_MapType      = xiiGALMapType::Default;
+  other.m_MapFlags     = xiiGALMapFlags::None;
 
   return *this;
 }

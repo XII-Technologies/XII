@@ -120,9 +120,9 @@ public:
       const xiiUInt64 uiCompletedFrame = xiiRenderGraphManager::PrepareFrame(m_uiFrameIndex, m_Configuration.m_uiFramesInFlight);
       m_World.Update(m_uiFrameIndex, uiCompletedFrame, xiiClock::GetGlobalClock()->GetTimeDiff());
 
-      m_TargetSize            = m_pWindow->GetClientAreaSize();
-      const float      aspect = static_cast<float>(m_TargetSize.width) / static_cast<float>(m_TargetSize.height);
-      xiiMat4          projection;
+      m_TargetSize       = m_pWindow->GetClientAreaSize();
+      const float aspect = static_cast<float>(m_TargetSize.width) / static_cast<float>(m_TargetSize.height);
+      xiiMat4     projection;
       m_Camera.GetProjectionMatrix(aspect, projection, xiiCameraEye::Left, xiiClipSpaceDepthRange::ZeroToOne);
       m_ViewProjection = projection * m_Camera.GetViewMatrix();
       m_ViewFrustum    = xiiFrustum::MakeFromMVP(m_ViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
@@ -479,21 +479,21 @@ private:
     commandList.EndRenderPass();
   }
 
-  xiiSharedPtr<xiiGALDevice>                    m_pDevice;
-  xiiSharedPtr<xiiGALSwapChain>                 m_pSwapChain;
-  xiiUniquePtr<xiiWindow>                       m_pWindow;
-  xiiSharedPtr<xiiGALRenderPass>                m_pSceneRenderPass;
-  xiiShaderPermutationResourceHandle            m_hShaderPermutation;
-  xiiGpuDrivenSceneConfiguration                m_Configuration;
-  xiiGpuDrivenSceneWorld                        m_World;
-  xiiGpuHiZPyramid                              m_HiZPyramid;
-  xiiGpuVisibilitySystem                        m_Visibility;
-  xiiCamera                                     m_Camera;
-  xiiRenderGraphGraphId                         m_hRenderGraph;
-  xiiSizeU32                                    m_TargetSize;
-  xiiMat4                                       m_ViewProjection = xiiMat4::MakeIdentity();
-  xiiFrustum                                    m_ViewFrustum;
-  xiiUInt64                                     m_uiFrameIndex = 0U;
+  xiiSharedPtr<xiiGALDevice>         m_pDevice;
+  xiiSharedPtr<xiiGALSwapChain>      m_pSwapChain;
+  xiiUniquePtr<xiiWindow>            m_pWindow;
+  xiiSharedPtr<xiiGALRenderPass>     m_pSceneRenderPass;
+  xiiShaderPermutationResourceHandle m_hShaderPermutation;
+  xiiGpuDrivenSceneConfiguration     m_Configuration;
+  xiiGpuDrivenSceneWorld             m_World;
+  xiiGpuHiZPyramid                   m_HiZPyramid;
+  xiiGpuVisibilitySystem             m_Visibility;
+  xiiCamera                          m_Camera;
+  xiiRenderGraphGraphId              m_hRenderGraph;
+  xiiSizeU32                         m_TargetSize;
+  xiiMat4                            m_ViewProjection = xiiMat4::MakeIdentity();
+  xiiFrustum                         m_ViewFrustum;
+  xiiUInt64                          m_uiFrameIndex = 0U;
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiGpuDrivenSceneApp);
