@@ -113,11 +113,11 @@ void xiiGameApplication::Init_SetupDefaultResources()
   {
     /// \todo Loading Cubemap Texture
 
-    xiiTextureCubeResourceHandle hFallbackTexture = xiiResourceManager::LoadResource<xiiTextureCubeResource>("Textures/MissingCubeMap.dds");
-    xiiTextureCubeResourceHandle hMissingTexture  = xiiResourceManager::LoadResource<xiiTextureCubeResource>("Textures/MissingCubeMap.dds");
+    //xiiTextureCubeResourceHandle hFallbackTexture = xiiResourceManager::LoadResource<xiiTextureCubeResource>("Textures/MissingCubeMap.dds");
+    //xiiTextureCubeResourceHandle hMissingTexture  = xiiResourceManager::LoadResource<xiiTextureCubeResource>("Textures/MissingCubeMap.dds");
 
-    xiiResourceManager::SetResourceTypeLoadingFallback<xiiTextureCubeResource>(hFallbackTexture);
-    xiiResourceManager::SetResourceTypeMissingFallback<xiiTextureCubeResource>(hMissingTexture);
+    //xiiResourceManager::SetResourceTypeLoadingFallback<xiiTextureCubeResource>(hFallbackTexture);
+    //xiiResourceManager::SetResourceTypeMissingFallback<xiiTextureCubeResource>(hMissingTexture);
   }
 
   // Materials
