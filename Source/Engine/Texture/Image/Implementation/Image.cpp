@@ -93,13 +93,11 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiGALTextureCreationDescri
 {
   m_Description = description;
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  xiiUInt64 uiDataSize = ComputeLayout();
-  XII_ASSERT_DEV(imageData.GetCount() == uiDataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)", imageData.GetCount(), uiDataSize);
-#endif
+  const xiiUInt64 uiDataSize = ComputeLayout();
+  XII_ASSERT_DEV(imageData.GetCount() >= uiDataSize, "Provided image storage ({} bytes) is smaller than the required data size ({} bytes)", imageData.GetCount(), uiDataSize);
 
   // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage.
-  m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), imageData.GetCount());
+  m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), uiDataSize);
 }
 
 xiiResult xiiImageView::SaveTo(xiiStringView sFileName) const
@@ -256,7 +254,7 @@ xiiUInt64 xiiImageView::ComputeDataSize() const
 xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 y /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
 {
   const xiiEnum<xiiGALResourceFormat> planeFormat = GetPlaneFormat(m_Description.m_Format, uiPlaneIndex);
-  xiiGALTextureCreationDescription    description = MakeImageDescription(GetNumBlocksX(uiMipLevel, uiPlaneIndex), 1, 1, planeFormat);
+  xiiGALTextureCreationDescription    description = MakeImageDescription(GetPlaneWidth(m_Description.m_Format, GetWidth(uiMipLevel), uiPlaneIndex), xiiGALTextureUtilities::GetBlockHeight(planeFormat), 1, planeFormat);
 
   xiiUInt64 uiOffset = 0U;
   uiOffset += GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
@@ -516,5 +514,5 @@ xiiImageView xiiImageView::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 
 
 bool xiiImage::UsesExternalStorage() const
 {
-  return m_InternalStorage.GetBlobPtr<xiiUInt8>() != m_DataPtr;
+  return m_InternalStorage.GetBlobPtr<xiiUInt8>().GetPtr() != m_DataPtr.GetPtr();
 }

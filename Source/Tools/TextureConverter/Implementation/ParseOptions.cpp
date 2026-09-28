@@ -98,9 +98,9 @@ xiiCommandLineOptionEnum opt_Usage("_TextureConverter", "-usage", "What type of 
 
 xiiCommandLineOptionEnum opt_Mipmaps("_TextureConverter", "-mipmaps", "Whether to generate mipmaps and with which algorithm.", "None = 0 |Linear = 1 | Kaiser = 2", 1);
 
-xiiCommandLineOptionEnum opt_AddressU("_TextureConverter", "-addressU", "Which texture address mode to use along U. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
-xiiCommandLineOptionEnum opt_AddressV("_TextureConverter", "-addressV", "Which texture address mode to use along V. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
-xiiCommandLineOptionEnum opt_AddressW("_TextureConverter", "-addressW", "Which texture address mode to use along W. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
+xiiCommandLineOptionEnum opt_AddressU("_TextureConverter", "-addressU", "Which texture address mode to use along U. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2", 1);
+xiiCommandLineOptionEnum opt_AddressV("_TextureConverter", "-addressV", "Which texture address mode to use along V. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2", 1);
+xiiCommandLineOptionEnum opt_AddressW("_TextureConverter", "-addressW", "Which texture address mode to use along W. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2", 1);
 
 xiiCommandLineOptionEnum opt_Filter("_TextureConverter", "-filter", "Which texture filter mode to use at runtime. Only supported by XII specific output formats.", "Default = 9 | Lowest = 7 | Low = 8 | High = 10 | Highest = 11 | Nearest = 0 | Linear = 1 | Trilinear = 2 | Aniso2x = 3 | Aniso4x = 4 | Aniso8x = 5 | Aniso16x = 6", 9);
 

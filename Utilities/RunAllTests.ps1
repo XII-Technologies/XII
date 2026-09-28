@@ -1,42 +1,71 @@
-#!/usr/bin/env powershell
 param
 (
-    [Parameter(Mandatory = $True, HelpMessage="Which build to use.")]
-    [ValidateSet('Debug', 'Dev', 'Shipping')][string] $BuildType,
-    [switch] $SkipFoundationTest,
-    [switch] $SkipCoreTest,
-    [switch] $SkipToolsFoundationTest,
-    [switch] $SkipGraphicsTest
+  [Parameter(Mandatory = $True, HelpMessage="Which build to use.")]
+  [ValidateSet('Debug', 'Dev', 'Shipping')][string] $BuildType,
+  [switch] $SkipFoundationTest,
+  [switch] $SkipCoreTest,
+  [switch] $SkipGraphicsFoundationTest,
+  [switch] $SkipTextureTest,
+  [switch] $SkipGraphicsCoreTest,
+  [switch] $SkipGameEngineTest,
+  [switch] $SkipToolsFoundationTest
 )
 
-$Path = "$PSScriptRoot/../Output/Bin/WinVs2026$($BuildType)64"
+$Path = (Resolve-Path (Join-Path $PSScriptRoot "..\Output\Bin\WinVs2026$BuildType`64")).Path
 
-function RunTest($name) {
+function RunTest($name)
+{
+  Write-Host "`nRunning $name.`n" -ForegroundColor Yellow
 
-    Write-Host "`nRunning $name.`n" -ForegroundColor Yellow
+  $executable = Join-Path $Path "$name.exe"
 
-    & "$Path\$name.exe" -nosave -all -nogui
+  if (-not (Test-Path $executable))
+  {
+    throw "Executable not found: $executable"
+  }
 
-    if (!$?) {
-        Write-Host "`n$name failed`n" -ForegroundColor Yellow
-        throw
-    }
+  & $executable -nosave -all -nogui
 
-    Write-Host "`n$name succeeded.`n" -ForegroundColor Green
+  if ($LASTEXITCODE -ne 0)
+  {
+    Write-Host "`n$name failed`n" -ForegroundColor Yellow
+    throw "Test failed."
+  }
+
+  Write-Host "`n$name succeeded.`n" -ForegroundColor Green
 }
 
-if (-not $SkipFoundationTest) {
-    RunTest "FoundationTest"
+if (-not $SkipFoundationTest)
+{
+  RunTest "FoundationTest"
 }
 
-if (-not $SkipCoreTest) {
-    RunTest "CoreTest"
+if (-not $SkipCoreTest)
+{
+  RunTest "CoreTest"
 }
 
-if (-not $SkipToolsFoundationTest) {
-    RunTest "ToolsFoundationTest"
+if (-not $SkipGraphicsFoundationTest)
+{
+  RunTest "GraphicsFoundationTest"
 }
 
-if (-not $SkipGraphicsTest) {
-    RunTest "GraphicsTest"
+if (-not $SkipTextureTest)
+{
+  RunTest "TextureTest"
+}
+
+if (-not $SkipGraphicsCoreTest)
+{
+  RunTest "GraphicsCoreTest"
+}
+
+if (-not $SkipGameEngineTest)
+{
+  RunTest "GameEngineTest"
+}
+
+if (-not $SkipToolsFoundationTest)
+{
+  RunTest "ToolsFoundationTest"
 }

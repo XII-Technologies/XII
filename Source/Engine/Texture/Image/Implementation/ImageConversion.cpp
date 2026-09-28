@@ -27,6 +27,11 @@ namespace
       m_SourceFormat     = entry.m_SourceFormat;
       m_TargetFormat     = entry.m_TargetFormat;
       m_uiComponentCount = xiiMath::Min(xiiGALTextureUtilities::GetComponentCount(entry.m_SourceFormat), xiiGALTextureUtilities::GetComponentCount(entry.m_TargetFormat));
+      m_Path.PushBack(entry.m_SourceFormat);
+      if (entry.m_TargetFormat != entry.m_SourceFormat)
+      {
+        m_Path.PushBack(entry.m_TargetFormat);
+      }
 
       float fSourceBpp = xiiGALTextureUtilities::GetExactBitsPerPixel(m_SourceFormat);
       float fTargetBpp = xiiGALTextureUtilities::GetExactBitsPerPixel(m_TargetFormat);
@@ -56,12 +61,13 @@ namespace
       m_fCost += entry.m_fAdditionalPenalty;
     }
 
-    const xiiImageConversionStep*        m_pStep        = nullptr;
-    xiiEnum<xiiGALResourceFormat>        m_SourceFormat = xiiGALResourceFormat::Unknown;
-    xiiEnum<xiiGALResourceFormat>        m_TargetFormat = xiiGALResourceFormat::Unknown;
-    xiiBitflags<xiiImageConversionFlags> m_Flags;
-    float                                m_fCost            = xiiMath::MaxValue<float>();
-    xiiUInt32                            m_uiComponentCount = 0;
+    const xiiImageConversionStep*                    m_pStep        = nullptr;
+    xiiEnum<xiiGALResourceFormat>                    m_SourceFormat = xiiGALResourceFormat::Unknown;
+    xiiEnum<xiiGALResourceFormat>                    m_TargetFormat = xiiGALResourceFormat::Unknown;
+    xiiBitflags<xiiImageConversionFlags>             m_Flags;
+    float                                            m_fCost            = xiiMath::MaxValue<float>();
+    xiiUInt32                                        m_uiComponentCount = 0;
+    xiiHybridArray<xiiEnum<xiiGALResourceFormat>, 8> m_Path;
 
     static TableEntry chain(const TableEntry& a, const TableEntry& b)
     {
@@ -72,6 +78,14 @@ namespace
         return {};
       }
 
+      for (xiiUInt32 i = 1; i < b.m_Path.GetCount(); ++i)
+      {
+        if (a.m_Path.Contains(b.m_Path[i]))
+        {
+          return {};
+        }
+      }
+
       TableEntry entry;
       entry.m_pStep            = a.m_pStep;
       entry.m_fCost            = a.m_fCost + b.m_fCost;
@@ -79,6 +93,11 @@ namespace
       entry.m_TargetFormat     = a.m_TargetFormat;
       entry.m_Flags            = a.m_Flags;
       entry.m_uiComponentCount = xiiMath::Min(a.m_uiComponentCount, b.m_uiComponentCount);
+      entry.m_Path             = a.m_Path;
+      for (xiiUInt32 i = 1; i < b.m_Path.GetCount(); ++i)
+      {
+        entry.m_Path.PushBack(b.m_Path[i]);
+      }
       return entry;
     }
 
@@ -210,8 +229,15 @@ xiiResult xiiImageConversion::BuildPath(xiiEnum<xiiGALResourceFormat> sourceForm
     RebuildConversionTable();
   }
 
+  xiiUInt32 uiPathLength = 0;
   for (xiiEnum<xiiGALResourceFormat> current = sourceFormat; current != targetFormat;)
   {
+    if (++uiPathLength > xiiGALResourceFormat::ENUM_COUNT)
+    {
+      xiiLog::Error("Conversion path from {} to {} contains a cycle at {}.", xiiArgEnum(sourceFormat), xiiArgEnum(targetFormat), xiiArgEnum(current));
+      return XII_FAILURE;
+    }
+
     xiiUInt32 currentTableIndex = MakeKey(current, targetFormat);
 
     TableEntry entry;
