@@ -93,7 +93,13 @@ XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
       tableDescription.m_uiTextureUAVCapacity = 2U;
       tableDescription.m_uiSamplerCapacity    = 2U;
 
-      xiiGALBindlessResourceTable table;
+      xiiGALBindlessResourceTable* pTable = xiiGALBindlessResourceTable::GetSingleton();
+      XII_TEST_BOOL(pTable != nullptr);
+      if (pTable == nullptr)
+        continue;
+
+      const xiiGALBindlessResourceTableDescription originalTableDescription = pTable->GetConfiguration();
+      xiiGALBindlessResourceTable&                  table                    = *pTable;
       XII_TEST_BOOL(table.Configure(tableDescription).Succeeded());
       XII_TEST_BOOL(!table.RegisterBufferSRV(nullptr).IsValid());
 
@@ -137,6 +143,7 @@ XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
       table.Clear();
       const auto clearedStats = table.GetStats();
       XII_TEST_INT(clearedStats.m_uiBufferSRVCount + clearedStats.m_uiBufferUAVCount + clearedStats.m_uiTextureSRVCount + clearedStats.m_uiTextureUAVCount + clearedStats.m_uiSamplerCount, 0U);
+      XII_TEST_BOOL(table.Configure(originalTableDescription).Succeeded());
     }
   }
 }
