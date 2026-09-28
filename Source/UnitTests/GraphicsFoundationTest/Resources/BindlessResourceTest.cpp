@@ -99,7 +99,7 @@ XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
         continue;
 
       const xiiGALBindlessResourceTableDescription originalTableDescription = pTable->GetConfiguration();
-      xiiGALBindlessResourceTable&                  table                    = *pTable;
+      xiiGALBindlessResourceTable&                 table                    = *pTable;
       XII_TEST_BOOL(table.Configure(tableDescription).Succeeded());
       XII_TEST_BOOL(!table.RegisterBufferSRV(nullptr).IsValid());
 
