@@ -52,8 +52,7 @@ private:
 
   virtual xiiTestAppRun RunSubTest(xiiInt32 iIdentifier, xiiUInt32 uiInvocationCount) override
   {
-    xiiEnum<xiiGALResourceFormat>          format           = static_cast<xiiGALResourceFormat::Enum>(iIdentifier);
-    const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+    xiiEnum<xiiGALResourceFormat> format = static_cast<xiiGALResourceFormat::Enum>(iIdentifier);
 
     if (!xiiImageConversion::IsConvertible(format, g_DefaultFormat))
     {
@@ -95,7 +94,7 @@ private:
 
       XII_TEST_BOOL(m_Image.Convert(format).Succeeded());
 
-      XII_TEST_IMAGE(iIdentifier * 2, formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed ? 10 : 0);
+      XII_TEST_IMAGE(iIdentifier * 2, xiiGALTextureUtilities::GetComponentType(format) == xiiGALResourceFormatComponentType::Compressed ? 10 : 0);
     }
 
     // Test HDR: Load, decode to FLOAT32, stretch to [-range, range] and encode;
@@ -186,7 +185,7 @@ private:
         }
       }
 
-      XII_TEST_IMAGE(iIdentifier * 2 + 1, formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed ? 10 : 0);
+      XII_TEST_IMAGE(iIdentifier * 2 + 1, xiiGALTextureUtilities::GetComponentType(format) == xiiGALResourceFormatComponentType::Compressed ? 10 : 0);
     }
 
     return xiiTestAppRun::Quit;
