@@ -2984,7 +2984,7 @@ public:
 
     // Bias to shift signed data into unsigned range so we can treat it the same as unsigned.
     xiiUInt8 uiBias = 0U;
-    if (sourceFormatDescription.m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized)
+    if (sourceFormat == xiiGALResourceFormat::BC4SNormalized)
     {
       uiBias = 128U;
     }
@@ -3032,7 +3032,7 @@ public:
 
     // Bias to shift signed data into unsigned range so we can treat it the same as unsigned.
     xiiUInt8 uiBias = 0U;
-    if (sourceFormatDescription.m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized)
+    if (sourceFormat == xiiGALResourceFormat::BC5SNormalized)
     {
       uiBias = 128U;
     }
