@@ -77,7 +77,7 @@ std::pair<TPassData*, xiiRenderGraphPassHandle> xiiRenderGraph::AddPass(xiiStrin
   passEntry.m_bAllowMerge     = true;
   passEntry.m_sName.Assign(sName);
 
-  TPassData*    pPassData             = XII_NEW(xiiAlignedAllocatorWrapper::GetAllocator(), TPassData);
+  TPassData* pPassData                = XII_NEW(xiiAlignedAllocatorWrapper::GetAllocator(), TPassData);
   passEntry.m_pPassData               = pPassData;
   passEntry.m_DestroyPassDataDelegate = [](void* pData) -> void {
     xiiInternal::Delete(xiiAlignedAllocatorWrapper::GetAllocator(), static_cast<TPassData*>(pData));
