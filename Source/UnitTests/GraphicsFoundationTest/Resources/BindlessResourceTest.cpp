@@ -94,7 +94,7 @@ XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
       tableDescription.m_uiSamplerCapacity    = 2U;
 
       xiiGALBindlessResourceTable table;
-      table.Initialize(tableDescription);
+      XII_TEST_BOOL(table.Configure(tableDescription).Succeeded());
       XII_TEST_BOOL(!table.RegisterBufferSRV(nullptr).IsValid());
 
       const auto bufferSRV  = table.RegisterBufferSRV(pBufferSRV);
