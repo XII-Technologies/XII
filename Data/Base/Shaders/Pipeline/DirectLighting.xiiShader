@@ -3,13 +3,14 @@
 
 #include "PipelineCommon.xiiShader"
 #include "ReSTIRDICommon.h"
+#include "Passes/ShadowCascade/ShadowCascadeConstants.h"
 
 Texture2D<float4> g_GBufAlbedo    : register(t0);
 Texture2D<float2> g_GBufNormal    : register(t1);
 Texture2D<float4> g_GBufMaterial  : register(t2);
 Texture2D<float>  g_SceneDepth    : register(t3);
 Texture2D<float>  g_AOTerm        : register(t4);
-Texture2D<float>  g_ShadowAtlas   : register(t5);
+Texture2DArray<float> g_ShadowAtlas : register(t5);
 Texture2D<float>  g_ContactShadow : register(t6);
 Texture2D<float>  g_RTShadow      : register(t7);
 Texture2D<float>  g_LocalShadowAtlas : register(t8);
@@ -57,6 +58,92 @@ float3 BRDF(float3 albedo, float roughness, float metallic, float3 N, float3 L, 
     const float3 spec = (D * G * F) / max(4.0f * NoV * NoL, 1e-7f);
     const float3 diff = (1.0f - F) * (1.0f - metallic) * albedo / 3.14159265f;
     return (diff + spec) * NoL;
+}
+
+uint SelectDirectionalShadowCascade(float linearDepth)
+{
+    const uint cascadeCount = min(ActiveCascadeCount, 4u);
+    [unroll]
+    for (uint cascadeIndex = 0u; cascadeIndex < 4u; ++cascadeIndex)
+    {
+        if (cascadeIndex < cascadeCount && linearDepth <= CascadeSplitDepths[cascadeIndex])
+            return cascadeIndex;
+    }
+
+    return cascadeCount;
+}
+
+float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 N, float3 L)
+{
+    const float splitFar = max(CascadeSplitDepths[cascadeIndex], g_CameraPositionAndNearPlane.w);
+    const float NoL = saturate(dot(N, L));
+
+    // Scale the receiver-plane offset with cascade range so distant cascades
+    // remain stable without over-biasing contact shadows in the near field.
+    const float normalBias = splitFar * lerp(0.00012f, 0.00045f, 1.0f - NoL);
+    const float4 shadowClip = mul(CascadeViewProjection[cascadeIndex], float4(worldPos + N * normalBias, 1.0f));
+    if (shadowClip.w <= 0.0f)
+        return 1.0f;
+
+    const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
+    const float2 shadowUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+    if (any(shadowUV <= 0.0f) || any(shadowUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
+        return 1.0f;
+
+    uint atlasWidth;
+    uint atlasHeight;
+    uint atlasLayers;
+    g_ShadowAtlas.GetDimensions(atlasWidth, atlasHeight, atlasLayers);
+    const float2 texelSize = rcp(float2(atlasWidth, atlasHeight));
+
+    // XII uses reversed Z. A receiver is visible when its depth is greater
+    // than or equal to the stored nearest-occluder depth. Slope bias is added
+    // to the receiver depth to suppress self-shadowing at grazing angles.
+    const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.00065f, 1.0f - NoL);
+    float visibility = 0.0f;
+    [unroll]
+    for (int y = -1; y <= 1; ++y)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; ++x)
+        {
+            const float mapDepth = g_ShadowAtlas.SampleLevel(g_sPointClamp, float3(shadowUV + float2(x, y) * texelSize, cascadeIndex), 0.0f);
+            visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
+        }
+    }
+
+    return visibility * (1.0f / 9.0f);
+}
+
+float EvaluateDirectionalShadow(float3 worldPos, float3 N, float3 L, float linearDepth)
+{
+    const uint cascadeCount = min(ActiveCascadeCount, 4u);
+    if (cascadeCount == 0u)
+        return 1.0f;
+
+    const uint cascadeIndex = SelectDirectionalShadowCascade(linearDepth);
+    if (cascadeIndex >= cascadeCount)
+        return 1.0f;
+
+    float visibility = SampleDirectionalShadowCascade(cascadeIndex, worldPos, N, L);
+
+    // Cross-fade neighboring cascades over the last 10% of each split. This
+    // hides precision and filtering discontinuities while retaining a tight
+    // high-resolution near cascade.
+    if (cascadeIndex + 1u < cascadeCount)
+    {
+        const float splitNear = cascadeIndex == 0u ? g_CameraPositionAndNearPlane.w : CascadeSplitDepths[cascadeIndex - 1u];
+        const float splitFar = CascadeSplitDepths[cascadeIndex];
+        const float blendStart = lerp(splitNear, splitFar, 0.9f);
+        const float blendWeight = saturate((linearDepth - blendStart) / max(splitFar - blendStart, 1e-4f));
+        if (blendWeight > 0.0f)
+        {
+            const float nextVisibility = SampleDirectionalShadowCascade(cascadeIndex + 1u, worldPos, N, L);
+            visibility = lerp(visibility, nextVisibility, blendWeight);
+        }
+    }
+
+    return visibility;
 }
 
 float SmoothDistanceAttenuation(float distance, float range)
@@ -143,7 +230,8 @@ void CS_DirectLighting(uint3 tid : SV_DispatchThreadID)
     const float3 V = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
 
     const float3 mainL = normalize(-g_MainLightDirectionAndIntensity.xyz);
-    const float globalShadow = saturate(1.0f - max(rtShadow, contactShadow));
+    const float cascadeShadow = EvaluateDirectionalShadow(worldPos, N, mainL, LinearizeDepth(depth));
+    const float globalShadow = cascadeShadow * saturate(1.0f - max(rtShadow, contactShadow));
     float3 direct = BRDF(albedo, roughness, metallic, N, mainL, V) * g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * globalShadow;
 
     const xiiReSTIRDIReservoir reservoir = ReSTIRUnpackReservoir(g_DirectLightReservoir.Load(int3(tid.xy, 0)));

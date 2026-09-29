@@ -913,7 +913,7 @@ struct xiiShadowCascadeSetupData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphBufferHandle m_hCascadeMatrices;                              ///< CPU-uploaded structured buffer of cascade view-projection matrices and split depths.
+  xiiRenderGraphBufferHandle m_hCascadeMatrices;                              ///< CPU-uploaded constant buffer of cascade view-projection matrices and split depths.
   xiiUInt32                  m_uiActiveCascades = 0U;                         ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes.
   xiiMat4                    m_CascadeViewProjection[4];
   xiiVec4                    m_vCascadeSplitDepths = xiiVec4::MakeZero();
@@ -954,15 +954,17 @@ void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRender
   }
   m_ViewPassResources.m_ShadowPasses.m_uiActiveCascadeCount = data.m_uiActiveCascades;
 
-  // GPU buffer: ShadowCascadeConstants (float4x4[4] + float4 + uint + pad3)
+  // GPU constant buffer: ShadowCascadeConstants (float4x4[4] + float4 + uint + pad3).
+  // Keep the resource type consistent with DECLARE_CONSTANT_BUFFER_AUTO so the
+  // same reflected declaration can be consumed by raster and compute passes.
   xiiGALBufferCreationDescription description;
-  description.m_uiElementByteStride = sizeof(xiiShadowCascadeConstants);
-  description.m_uiSize              = description.m_uiElementByteStride;
-  description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-  description.m_Mode                = xiiGALBufferMode::Structured;
+  description.m_uiElementByteStride = 0U;
+  description.m_uiSize              = sizeof(xiiShadowCascadeConstants);
+  description.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  description.m_Mode                = xiiGALBufferMode::Undefined;
   description.m_Usage               = xiiGALResourceUsage::Dynamic;
   description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-  data.m_hCascadeMatrices           = builder.WriteBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, description, xiiGALResourceStateFlags::CopyDestination);
+  data.m_hCascadeMatrices           = builder.WriteBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, description, xiiGALResourceStateFlags::ConstantBuffer);
 
   builder.SetPassAllowMerge(false);
 }
@@ -1040,7 +1042,7 @@ struct xiiDirectionalShadowData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphBufferHandle  m_hCascadeMatrices;        ///< SRV in (structured buffer of float4x4 cascade view-projection matrices, one per cascade, from this frame's Shadow Cascade Setup pass).
+  xiiRenderGraphBufferHandle  m_hCascadeMatrices;        ///< ConstantBuffer in (cascade view-projection matrices and split depths from this frame's Shadow Cascade Setup pass).
   xiiRenderGraphBufferHandle  m_hShadowCasterCommands;   ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per cascade-per-bin, from this frame's Shadow Caster Build pass).
   xiiRenderGraphTextureHandle m_hDirectionalShadowAtlas; ///< SRV in (texture atlas for directional shadow maps, written by Shadow Passes, read by main lighting pass).
   xiiUInt32                   m_uiActiveCascades = 3U;   ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes and main lighting pass.
@@ -1063,7 +1065,7 @@ void xiiView::SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRend
     m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   }
 
-  data.m_hCascadeMatrices        = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hCascadeMatrices        = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
   data.m_hShadowCasterCommands   = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hDirectionalShadowAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_hDirectionalShadowAtlas = builder.WriteTexture(data.m_hDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
@@ -2363,6 +2365,7 @@ struct xiiDeferredDirectLightingData
   xiiRenderGraphTextureHandle m_hStableAmbientOcclusion;   ///< ShaderResource in (stable ambient occlusion).
   xiiRenderGraphTextureHandle m_hRayTracedFinalShadowMask; ///< ShaderResource in (denoised ray traced shadows).
   xiiRenderGraphTextureHandle m_hContactShadowTerm;        ///< ShaderResource in (contact shadow mask).
+  xiiRenderGraphBufferHandle  m_hShadowCascadeConstants;   ///< ConstantBuffer in (directional cascade matrices, split depths, and active count).
   xiiRenderGraphTextureHandle m_hDirectionalShadowAtlas;   ///< ShaderResource in (directional shadow atlas).
   xiiRenderGraphTextureHandle m_hLocalShadowAtlas;         ///< ShaderResource in (local light shadow atlas).
   xiiRenderGraphBufferHandle  m_hLocalShadowAtlasDescriptors;
@@ -2382,6 +2385,7 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   data.m_hStableAmbientOcclusion      = builder.ReadTexture(xiiRGBlackboardKeys::k_StableAOTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hRayTracedFinalShadowMask    = builder.ReadTexture(xiiRGBlackboardKeys::k_RTFinalShadowMask, xiiGALResourceStateFlags::ShaderResource);
   data.m_hContactShadowTerm           = builder.ReadTexture(xiiRGBlackboardKeys::k_ContactShadowTerm, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hShadowCascadeConstants      = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
   data.m_hDirectionalShadowAtlas      = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLocalShadowAtlas            = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
@@ -2419,6 +2423,7 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
     cmd.ResolveAndSetShaderResourceTextureView("g_AOTerm", context.GetTexture(data.m_hStableAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_RTShadow", context.GetTexture(data.m_hRayTracedFinalShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ContactShadow", context.GetTexture(data.m_hContactShadowTerm)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hShadowCascadeConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ShadowAtlas", context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_LocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
