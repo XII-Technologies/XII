@@ -1,0 +1,33 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+
+#include <GraphicsCore/Lighting/Atmosphere.h>
+
+XII_CREATE_SIMPLE_TEST(Lighting, Atmosphere)
+{
+  XII_TEST_BOOL(xiiAtmosphereManager::IsInitialized());
+
+  const xiiAtmosphereSettings original = xiiAtmosphereManager::GetConfiguration();
+  const xiiUInt64 uiOriginalRevision = xiiAtmosphereManager::GetConfigurationRevision();
+
+  xiiAtmosphereSettings modified = original;
+  modified.m_fMiePhaseG = 0.72f;
+  XII_TEST_BOOL(xiiAtmosphereManager::Configure(modified).Succeeded());
+  XII_TEST_BOOL(xiiAtmosphereManager::GetConfigurationRevision() > uiOriginalRevision);
+  XII_TEST_BOOL(xiiAtmosphereManager::IsGenerationPending());
+
+  const xiiUInt64 uiModifiedRevision = xiiAtmosphereManager::GetConfigurationRevision();
+  xiiAtmosphereManager::MarkLUTsGenerated(uiModifiedRevision - 1U);
+  XII_TEST_BOOL(xiiAtmosphereManager::IsGenerationPending());
+  xiiAtmosphereManager::MarkLUTsGenerated(uiModifiedRevision);
+  XII_TEST_BOOL(!xiiAtmosphereManager::IsGenerationPending());
+
+  xiiAtmosphereSettings invalid = modified;
+  invalid.m_fAtmosphereRadiusKm = invalid.m_fPlanetRadiusKm;
+  XII_TEST_BOOL(xiiAtmosphereManager::Configure(invalid).Failed());
+  XII_TEST_INT(xiiAtmosphereManager::GetConfigurationRevision(), uiModifiedRevision);
+
+  XII_TEST_BOOL(xiiAtmosphereManager::Configure(original).Succeeded());
+}
+

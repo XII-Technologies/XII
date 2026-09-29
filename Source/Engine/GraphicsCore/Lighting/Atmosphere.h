@@ -1,0 +1,85 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#pragma once
+
+#include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Math/Vec3.h>
+#include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/SharedPtr.h>
+#include <Foundation/Types/UniquePtr.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
+class xiiGALTexture;
+
+/// Physical parameters used to generate the shared atmosphere lookup tables.
+/// Distances and extinction coefficients are expressed in kilometres because
+/// that keeps the values numerically well-conditioned in the GPU integration.
+struct XII_GRAPHICSCORE_DLL xiiAtmosphereSettings
+{
+  float   m_fPlanetRadiusKm       = 6360.0f;
+  float   m_fAtmosphereRadiusKm   = 6460.0f;
+  float   m_fRayleighScaleHeightKm = 8.0f;
+  float   m_fMieScaleHeightKm      = 1.2f;
+  xiiVec3 m_vRayleighScattering    = xiiVec3(0.005802f, 0.013558f, 0.033100f);
+  xiiVec3 m_vMieScattering         = xiiVec3(0.003996f);
+  xiiVec3 m_vMieAbsorption         = xiiVec3(0.004400f);
+  xiiVec3 m_vOzoneAbsorption       = xiiVec3(0.000650f, 0.001881f, 0.000085f);
+  float   m_fMiePhaseG             = 0.8f;
+  xiiUInt32 m_uiTransmittanceIntegrationSteps = 40U;
+  xiiUInt32 m_uiMultiScatterSqrtSamples       = 8U;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAtmosphereSettings);
+
+/// Tool-facing state of the shared atmosphere LUT cache.
+struct XII_GRAPHICSCORE_DLL xiiAtmosphereCacheStats
+{
+  xiiUInt64 m_uiConfigurationRevision = 0U;
+  xiiUInt64 m_uiGeneratedRevision     = 0U;
+  bool      m_bGpuResourcesAvailable  = false;
+  bool      m_bGenerationPending      = true;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAtmosphereCacheStats);
+
+/// Process-wide owner of atmosphere lookup resources.
+///
+/// CPU state is allocated during core-system startup, after Foundation's
+/// allocator exists. GPU resources are created during high-level startup and
+/// released during high-level shutdown, before the graphics device disappears.
+/// Views only import these textures into their render graphs; they never own or
+/// destroy them.
+class XII_GRAPHICSCORE_DLL xiiAtmosphereManager
+{
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiAtmosphereManager);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, AtmosphereManager);
+
+public:
+  xiiAtmosphereManager() = delete;
+
+  [[nodiscard]] static xiiResult Configure(const xiiAtmosphereSettings& settings);
+  [[nodiscard]] static bool IsInitialized();
+  [[nodiscard]] static const xiiAtmosphereSettings& GetConfiguration();
+
+  /// Ensures textures exist. This permits recovery when the default GAL device
+  /// is installed after high-level subsystem startup.
+  [[nodiscard]] static xiiResult EnsureGpuResources();
+  [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetTransmittanceLUT();
+  [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetMultiScatterLUT();
+
+  [[nodiscard]] static xiiUInt64 GetConfigurationRevision();
+  [[nodiscard]] static bool IsGenerationPending();
+  static void MarkLUTsGenerated(xiiUInt64 uiConfigurationRevision);
+  static void InvalidateLUTs();
+  [[nodiscard]] static xiiAtmosphereCacheStats GetCacheStats();
+
+private:
+  static void Startup();
+  static void EngineStartup();
+  static void EngineShutdown();
+  static void Shutdown();
+
+  class State;
+  static xiiUniquePtr<State> s_pState;
+};
+

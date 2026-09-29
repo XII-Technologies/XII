@@ -10,6 +10,7 @@
 #include <GraphicsCore/Components/Render/DecalComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Decals/DecalResource.h>
+#include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
@@ -1872,26 +1873,16 @@ struct xiiAtmosphereTransmittanceData
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hTransmittanceLUT;        ///< Imported persistent atmosphere transmittance LUT texture.
+  xiiUInt64                   m_uiConfigurationRevision = 0U;
   bool                        m_bNeedsGeneration = false; ///< Whether this frame must dispatch transmittance LUT generation.
 };
 
 void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRenderGraphBuilder& builder)
 {
-  if (!m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT)
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type                                              = xiiGALResourceDimension::Texture2D;
-    description.m_Format                                            = xiiGALResourceFormat::RGBA16Float;
-    description.m_Size.width                                        = 256U;
-    description.m_Size.height                                       = 64U;
-    description.m_uiMipLevels                                       = 1U;
-    description.m_BindFlags                                         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                                             = xiiGALResourceUsage::Default;
-    m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    data.m_bNeedsGeneration                                         = true;
-  }
-
-  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources().Succeeded(), "Atmosphere LUT resources are unavailable.");
+  data.m_uiConfigurationRevision = xiiAtmosphereManager::GetConfigurationRevision();
+  data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending();
+  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiAtmosphereManager::GetTransmittanceLUT(), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
 
   if (data.m_bNeedsGeneration)
   {
@@ -1928,27 +1919,17 @@ struct xiiAtmosphereMultiScatterData
 
   xiiRenderGraphTextureHandle m_hMultiScatterLUT;         ///< Imported persistent atmosphere multi-scatter LUT texture.
   xiiRenderGraphTextureHandle m_hTransmittanceLUT;        ///< ShaderResource in (atmosphere transmittance LUT).
+  xiiUInt64                   m_uiConfigurationRevision = 0U;
   bool                        m_bNeedsGeneration = false; ///< Whether this frame must dispatch multi-scatter LUT generation.
 };
 
 void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRenderGraphBuilder& builder)
 {
-  if (!m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT)
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type                                             = xiiGALResourceDimension::Texture2D;
-    description.m_Format                                           = xiiGALResourceFormat::RGBA16Float;
-    description.m_Size.width                                       = 32U;
-    description.m_Size.height                                      = 32U;
-    description.m_uiMipLevels                                      = 1U;
-    description.m_BindFlags                                        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                                            = xiiGALResourceUsage::Default;
-    m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    data.m_bNeedsGeneration                                        = true;
-  }
-
+  XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources().Succeeded(), "Atmosphere LUT resources are unavailable.");
+  data.m_uiConfigurationRevision = xiiAtmosphereManager::GetConfigurationRevision();
+  data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending();
   data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiAtmosphereManager::GetMultiScatterLUT(), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
 
   if (data.m_bNeedsGeneration)
   {
@@ -1972,7 +1953,7 @@ void xiiView::ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData&
     cmd.ResolveAndSetUnorderedAccessTextureView("g_MultiScatterOut", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({4U, 4U, 1U});
-    m_ViewPassResources.m_LightingPrepPasses.m_bAtmLutsGenerated = true;
+    xiiAtmosphereManager::MarkLUTsGenerated(data.m_uiConfigurationRevision);
   }
   cmd.EndDebugGroup();
 }

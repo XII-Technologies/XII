@@ -597,10 +597,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pGTAODenoisePipeline;
       // Persistent once-generated textures
       xiiSharedPtr<xiiGALTexture> m_pBRDFLut;             // 256x256 R16G16F, generated once
-      xiiSharedPtr<xiiGALTexture> m_pAtmTransmittanceLUT; // 256x64 R16G16B16A16F
-      xiiSharedPtr<xiiGALTexture> m_pAtmMultiScatterLUT;  // 32x32  R16G16B16A16F
       bool                        m_bBRDFLutGenerated = false;
-      bool                        m_bAtmLutsGenerated = false;
     } m_LightingPrepPasses;
 
     //  Stage 6 - Main Lighting
