@@ -71,6 +71,8 @@ struct xiiDDGIProbeSamplingData;
 struct xiiGroundTruthAmbientOcclusionData;
 struct xiiGroundTruthAmbientOcclusionDenoiseData;
 
+struct xiiReSTIRDITemporalData;
+struct xiiReSTIRDISpatialData;
 struct xiiDeferredDirectLightingData;
 struct xiiDeferredIndirectLightingData;
 struct xiiRayTracedGlobalIlluminationData;
@@ -358,6 +360,11 @@ private:
   void SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphBuilder& builder);
   void ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphPassContext& context);
 
+  void SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReSTIRDITemporal(const xiiReSTIRDITemporalData& data, xiiRenderGraphPassContext& context);
+
+  void SetupReSTIRDISpatial(xiiReSTIRDISpatialData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRenderGraphPassContext& context);
 
   void SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRenderGraphBuilder& builder);
   void ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, xiiRenderGraphPassContext& context);
@@ -588,6 +595,8 @@ private:
     //  Stage 6 - Main Lighting
     struct LightingPasses
     {
+      xiiSharedPtr<xiiGALComputePipelineState> m_pReSTIRDITemporalPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pReSTIRDISpatialPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pDirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pIndirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSRPipeline;
@@ -596,7 +605,10 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pAtmosphereCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pRTGIPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pRTReflectionPipeline;
+      xiiSharedPtr<xiiGALTexture>              m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
+      xiiSharedPtr<xiiGALTexture>              m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
       xiiSharedPtr<xiiGALTexture>              m_pFroxelHistoryBuffer; // prev-frame froxel
+      xiiUInt32                                m_uiFrameIndex = 0U;
     } m_LightingPasses;
 
     //  Stage 7 - Forward Passes

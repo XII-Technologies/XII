@@ -1,0 +1,99 @@
+// XII Engine - ReSTIR DI candidate generation and temporal reuse.
+
+#include "PipelineCommon.xiiShader"
+#include "ReSTIRDICommon.h"
+
+Texture2D<float>  g_SceneDepth       : register(t0);
+Texture2D<float2> g_GBufferNormal    : register(t1);
+Texture2D<float2> g_Velocity         : register(t2);
+StructuredBuffer<uint2>           g_LightGrid : register(t3);
+StructuredBuffer<uint>            g_LightIndex : register(t4);
+StructuredBuffer<xiiGpuLightData> g_Lights : register(t5);
+Texture2D<uint4>  g_PreviousReservoir : register(t6);
+Texture2D<float4> g_PreviousSurface   : register(t7);
+RWTexture2D<uint4> g_TemporalReservoir : register(u0);
+
+uint ComputeReSTIRClusterIndex(float2 uv, float depth)
+{
+  if (g_ClusterCountX == 0u || g_ClusterCountY == 0u || g_ClusterCountZ == 0u)
+    return 0u;
+
+  const float linearDepth = LinearizeDepth(depth);
+  const float zSlice = max(0.0f, log2(max(linearDepth, g_ClusterNearPlane) / max(g_ClusterNearPlane, 1e-4f)) /
+                                      max(g_ClusterLogFarOverNear, 1e-4f) * (float)g_ClusterCountZ);
+  const uint cX = min((uint)(uv.x * (float)g_ClusterCountX), g_ClusterCountX - 1u);
+  const uint cY = min((uint)(uv.y * (float)g_ClusterCountY), g_ClusterCountY - 1u);
+  const uint cZ = min((uint)zSlice, g_ClusterCountZ - 1u);
+  return (cZ * g_ClusterCountY + cY) * g_ClusterCountX + cX;
+}
+
+[numthreads(8, 8, 1)]
+void CS_ReSTIRDITemporal(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_TemporalReservoir.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const uint2 pixel = dispatchThreadId.xy;
+  const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  if (depth <= 0.0f)
+  {
+    g_TemporalReservoir[pixel] = ReSTIRPackReservoir(ReSTIREmptyReservoir());
+    return;
+  }
+
+  const float3 normal = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
+  const float3 worldPosition = ReconstructWorldPos(uv, depth);
+  const uint clusterIndex = ComputeReSTIRClusterIndex(uv, depth);
+  const uint2 lightRange = g_LightGrid[clusterIndex];
+  const uint lightCount = min(lightRange.y, g_MaxLightsPerCluster);
+  uint randomState = ReSTIRHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x9E3779B9u);
+  xiiReSTIRDIReservoir reservoir = ReSTIREmptyReservoir();
+
+  const uint candidateCount = min(lightCount, XII_RESTIR_CANDIDATES);
+  [loop]
+  for (uint candidate = 0u; candidate < candidateCount; ++candidate)
+  {
+    const uint listIndex = min((uint)(ReSTIRRandom01(randomState) * (float)lightCount), lightCount - 1u);
+    const uint lightIndex = g_LightIndex[lightRange.x + listIndex];
+    if (lightIndex >= g_ActiveLightCount)
+      continue;
+
+    const xiiGpuLightData lightData = g_Lights[lightIndex];
+    const float target = ReSTIREstimateTarget(lightData, worldPosition, normal);
+    ReSTIRUpdateReservoir(reservoir, lightIndex, lightData.Metadata.x, target * (float)lightCount, 1u, randomState);
+  }
+
+  // Reproject and merge the previous aggregate. Stable IDs make the history
+  // robust to compaction and reject a recycled compact index automatically.
+  const float2 velocity = g_Velocity.Load(int3(pixel, 0));
+  const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
+  if (all(previousUV > 0.0f) && all(previousUV < 1.0f))
+  {
+    const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1u);
+    xiiReSTIRDIReservoir previous = ReSTIRUnpackReservoir(g_PreviousReservoir.Load(int3(previousPixel, 0)));
+    const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
+    const float previousDepth = previousSurface.z;
+    const float currentLinearDepth = LinearizeDepth(depth);
+    const float3 previousNormal = DecodeOctNormal(previousSurface.xy);
+    const bool surfaceMatches = previousDepth > 0.0f &&
+      abs(previousDepth - currentLinearDepth) <= max(currentLinearDepth * 0.10f, 0.02f) &&
+      dot(previousNormal, normal) >= 0.8f;
+
+    if (surfaceMatches && ReSTIRValidateReservoir(previous))
+    {
+      previous.M = min(previous.M, XII_RESTIR_MAX_HISTORY_M);
+      const float target = ReSTIREstimateTarget(g_Lights[previous.LightIndex], worldPosition, normal);
+      const float aggregateWeight = target * previous.WeightSum * (float)previous.M;
+      ReSTIRUpdateReservoir(reservoir, previous.LightIndex, previous.StableLightId, aggregateWeight, previous.M, randomState);
+    }
+  }
+
+  const float selectedTarget = reservoir.LightIndex < g_ActiveLightCount ?
+    ReSTIREstimateTarget(g_Lights[reservoir.LightIndex], worldPosition, normal) : 0.0f;
+  ReSTIRFinalizeReservoir(reservoir, selectedTarget);
+  g_TemporalReservoir[pixel] = ReSTIRPackReservoir(reservoir);
+}
+

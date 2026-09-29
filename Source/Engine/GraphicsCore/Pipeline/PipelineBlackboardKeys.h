@@ -80,6 +80,8 @@ namespace xiiRGBlackboardKeys
 
   // Stage 6 - Main Lighting.
 
+  constexpr xiiStringView k_DirectLightReservoir        = "DirectLightReservoir"_xiisv;        ///< xiiRenderGraphTextureHandle - spatially reused ReSTIR DI reservoir (RGBA32_UINT).
+  constexpr xiiStringView k_DirectLightReservoirSurface = "DirectLightReservoirSurface"_xiisv; ///< xiiRenderGraphTextureHandle - surface validation history for the reservoir.
   constexpr xiiStringView k_DirectLightingBuffer   = "DirectLighting"_xiisv;       ///< xiiRenderGraphTextureHandle - direct lighting HDR (R16G16B16A16F).
   constexpr xiiStringView k_IndirectLightingBuffer = "IndirectLighting"_xiisv;     ///< xiiRenderGraphTextureHandle - indirect lighting HDR (R16G16B16A16F).
   constexpr xiiStringView k_SSRTexture             = "SSRTerm"_xiisv;              ///< xiiRenderGraphTextureHandle - screen-space reflection radiance (R16G16B16A16F).
