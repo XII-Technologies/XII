@@ -124,6 +124,7 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
     cascade.m_mViewProjection = mLightProjection * mLightView;
     cascade.m_fSplitNear      = fPreviousSplit;
     cascade.m_fSplitFar       = fSplitFar;
+    cascade.m_fWorldRadius    = fRadius;
     fPreviousSplit            = fSplitFar;
   }
 

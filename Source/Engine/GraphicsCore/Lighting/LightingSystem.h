@@ -8,6 +8,7 @@
 #include <Foundation/Math/Color.h>
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Vec4.h>
+#include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
@@ -37,7 +38,12 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   float     m_fVolumetricHeightFalloff = 0.08f;
   float     m_fVolumetricBaseHeight    = 0.0f;
   float     m_fVolumetricAnisotropy    = 0.45f;
+  float     m_fDirectionalShadowMaxPenumbra = 24.0f; ///< Maximum PCSS filter radius in shadow texels.
+  xiiUInt32 m_uiDirectionalShadowBlockerSamples = 12U;
+  xiiUInt32 m_uiDirectionalShadowFilterSamples  = 16U;
 };
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightingSystemSettings);
 
 /// Light representation consumed by clustered lighting shaders.
 ///
@@ -143,7 +149,12 @@ private:
     float     m_fVolumetricHeightFalloff       = 0.08f;
     float     m_fVolumetricBaseHeight          = 0.0f;
     float     m_fVolumetricAnisotropy          = 0.45f;
+    float     m_fDirectionalShadowSourceRadius = 0.0f;
+    float     m_fDirectionalShadowMaxPenumbra  = 24.0f;
+    xiiUInt32 m_uiDirectionalShadowBlockerSamples = 12U;
+    xiiUInt32 m_uiDirectionalShadowFilterSamples  = 16U;
   };
+  static_assert(sizeof(PerFrameLightConstants) == 128U, "PerFrameLight must remain byte-compatible with PipelineCommon.xiiShader.");
 
   struct PerFrameGlobalConstants
   {

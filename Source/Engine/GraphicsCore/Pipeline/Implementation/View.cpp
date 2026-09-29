@@ -64,6 +64,24 @@ namespace
     return uiCount;
   }
 
+  static const xiiDirectionalLightRenderData* SelectMainDirectionalLight(const xiiArrayPtr<xiiRenderData* const>& renderData)
+  {
+    const xiiDirectionalLightRenderData* pBest = nullptr;
+    for (const xiiRenderData* pRenderData : renderData)
+    {
+      const xiiDirectionalLightRenderData* pDirectional = xiiDynamicCast<const xiiDirectionalLightRenderData*>(pRenderData);
+      if (pDirectional == nullptr)
+        continue;
+
+      if (pBest == nullptr || pDirectional->m_fPhotometricIntensity > pBest->m_fPhotometricIntensity ||
+          (pDirectional->m_fPhotometricIntensity == pBest->m_fPhotometricIntensity && pDirectional->m_uiSortingKey < pBest->m_uiSortingKey))
+      {
+        pBest = pDirectional;
+      }
+    }
+    return pBest;
+  }
+
   static xiiUInt32 ComputeDynamicResolutionDimension(xiiUInt32 uiNativeDimension, float fScale)
   {
     const xiiUInt32 uiScaled = static_cast<xiiUInt32>(static_cast<float>(uiNativeDimension) * fScale) & ~1U;
@@ -918,6 +936,7 @@ struct xiiShadowCascadeSetupData
   xiiUInt32                  m_uiActiveCascades = 0U;                         ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes.
   xiiMat4                    m_CascadeViewProjection[4];
   xiiVec4                    m_vCascadeSplitDepths = xiiVec4::MakeZero();
+  xiiVec4                    m_vCascadeWorldRadii = xiiVec4::MakeZero();
 };
 
 void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRenderGraphBuilder& builder)
@@ -928,16 +947,12 @@ void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRender
   }
 
   xiiVec3 vLightDirection = xiiVec3(0.0f, 0.0f, -1.0f);
-  bool    bHasShadowCastingDirectionalLight = false;
   const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
-  for (xiiRenderData* pRenderData : renderData)
+  const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(renderData);
+  const bool bHasShadowCastingDirectionalLight = pMainDirectional != nullptr && pMainDirectional->m_bCastShadows;
+  if (bHasShadowCastingDirectionalLight)
   {
-    if (const xiiDirectionalLightRenderData* pDirectionalLight = xiiDynamicCast<const xiiDirectionalLightRenderData*>(pRenderData); pDirectionalLight != nullptr && pDirectionalLight->m_bCastShadows)
-    {
-      vLightDirection = pDirectionalLight->m_vDirection;
-      bHasShadowCastingDirectionalLight = true;
-      break;
-    }
+    vLightDirection = pMainDirectional->m_vDirection;
   }
 
   xiiStaticArray<xiiShadowCascadeDescription, 4> cascades;
@@ -951,6 +966,7 @@ void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRender
     {
       data.m_CascadeViewProjection[uiCascade] = cascades[uiCascade].m_mViewProjection;
       data.m_vCascadeSplitDepths.GetData()[uiCascade] = cascades[uiCascade].m_fSplitFar;
+      data.m_vCascadeWorldRadii.GetData()[uiCascade] = cascades[uiCascade].m_fWorldRadius;
     }
   }
   m_ViewPassResources.m_ShadowPasses.m_uiActiveCascadeCount = data.m_uiActiveCascades;
@@ -982,6 +998,7 @@ void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, x
       pConstants->ActiveCascadeCount = data.m_uiActiveCascades;
 
       pConstants->CascadeSplitDepths = data.m_vCascadeSplitDepths;
+      pConstants->CascadeWorldRadii = data.m_vCascadeWorldRadii;
       for (xiiUInt32 i = 0; i < 4; ++i)
       {
         pConstants->CascadeViewProjection[i] = data.m_CascadeViewProjection[i];
@@ -4326,20 +4343,15 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Depth and motion prepasses, which produce depth and motion data consumed by later passes.
   auto depthPrepass = graph.AddPass<xiiDepthPrepassData>("DepthPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDepthPrepass, this), xiiMakeDelegate(&xiiView::ExecuteDepthPrepass, this));
-  xiiUInt32 uiDirectionalLightId = 0U;
   if (m_pExtractedData != nullptr)
   {
-    for (const xiiRenderData* pRenderData : m_pExtractedData->GetAllRenderData())
+    const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(m_pExtractedData->GetAllRenderData());
+    if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows)
     {
-      if (const xiiDirectionalLightRenderData* pDirectional = xiiDynamicCast<const xiiDirectionalLightRenderData*>(pRenderData); pDirectional != nullptr && pDirectional->m_bCastShadows)
-      {
-        uiDirectionalLightId = static_cast<xiiUInt32>(pDirectional->m_uiSortingKey);
-        break;
-      }
+      xiiVirtualShadowMapManager::AddFeedbackPasses(graph, depthPrepass.first->m_hSceneDepth, shadowCascadePass.first->m_hCascadeMatrices,
+        GetRenderResolutionWidth(), GetRenderResolutionHeight(), static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey), uiFrameIndex);
     }
   }
-  xiiVirtualShadowMapManager::AddFeedbackPasses(graph, depthPrepass.first->m_hSceneDepth, shadowCascadePass.first->m_hCascadeMatrices,
-    GetRenderResolutionWidth(), GetRenderResolutionHeight(), uiDirectionalLightId, uiFrameIndex);
   graph.AddPass<xiiHiZPyramidData>("HiZPyramid", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZPyramid, this), xiiMakeDelegate(&xiiView::ExecuteHiZPyramid, this));
   graph.AddPass<xiiHiZOcclusionCullData>("HiZOcclusionCull", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZOcclusionCull, this), xiiMakeDelegate(&xiiView::ExecuteHiZOcclusionCull, this));
   graph.AddPass<xiiMotionVectorsData>("MotionVectors", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupMotionVectors, this), xiiMakeDelegate(&xiiView::ExecuteMotionVectors, this));

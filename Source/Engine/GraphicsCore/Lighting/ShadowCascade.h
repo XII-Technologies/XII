@@ -26,6 +26,7 @@ struct XII_GRAPHICSCORE_DLL xiiShadowCascadeDescription
   xiiMat4 m_mViewProjection = xiiMat4::MakeIdentity();
   float   m_fSplitNear      = 0.0f;
   float   m_fSplitFar       = 0.0f;
+  float   m_fWorldRadius    = 0.0f; ///< Half-extent of the stabilized orthographic projection in metres.
 };
 
 /// CPU cascade construction shared by the renderer and deterministic tests.

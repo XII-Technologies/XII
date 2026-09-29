@@ -28,6 +28,7 @@ XII_CREATE_SIMPLE_TEST(Lighting, ShadowCascades)
     XII_TEST_BOOL(!cascade.m_mViewProjection.IsIdentity());
     XII_TEST_FLOAT(cascade.m_fSplitNear, fPreviousFar, 0.001f);
     XII_TEST_BOOL(cascade.m_fSplitFar > cascade.m_fSplitNear);
+    XII_TEST_BOOL(cascade.m_fWorldRadius > 0.0f);
     fPreviousFar = cascade.m_fSplitFar;
   }
   XII_TEST_FLOAT(cascades.PeekBack().m_fSplitFar, settings.m_fMaximumShadowDistance, 0.01f);

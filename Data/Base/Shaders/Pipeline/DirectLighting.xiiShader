@@ -73,6 +73,20 @@ uint SelectDirectionalShadowCascade(float linearDepth)
     return cascadeCount;
 }
 
+float2 VogelDiskSample(uint sampleIndex, uint sampleCount, float rotation)
+{
+    const float goldenAngle = 2.39996323f;
+    const float radius = sqrt((float(sampleIndex) + 0.5f) / max(float(sampleCount), 1.0f));
+    const float angle = float(sampleIndex) * goldenAngle + rotation;
+    return float2(cos(angle), sin(angle)) * radius;
+}
+
+float StableShadowRotation(float2 shadowUV, uint atlasWidth)
+{
+    const float2 texel = floor(shadowUV * float(atlasWidth));
+    return frac(52.9829189f * frac(dot(texel, float2(0.06711056f, 0.00583715f)))) * 6.28318531f;
+}
+
 float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 N, float3 L)
 {
     const float splitFar = max(CascadeSplitDepths[cascadeIndex], g_CameraPositionAndNearPlane.w);
@@ -100,19 +114,64 @@ float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 
     // than or equal to the stored nearest-occluder depth. Slope bias is added
     // to the receiver depth to suppress self-shadowing at grazing angles.
     const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.00065f, 1.0f - NoL);
-    float visibility = 0.0f;
-    [unroll]
-    for (int y = -1; y <= 1; ++y)
+    const float sourceRadius = max(g_DirectionalShadowSourceRadius, 0.0f);
+    if (sourceRadius <= 1e-6f)
     {
+        float visibility = 0.0f;
         [unroll]
-        for (int x = -1; x <= 1; ++x)
+        for (int y = -1; y <= 1; ++y)
         {
-            const float mapDepth = g_ShadowAtlas.SampleLevel(g_sPointClamp, float3(shadowUV + float2(x, y) * texelSize, cascadeIndex), 0.0f);
-            visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
+            [unroll]
+            for (int x = -1; x <= 1; ++x)
+            {
+                const float mapDepth = g_ShadowAtlas.SampleLevel(g_sPointClamp, float3(shadowUV + float2(x, y) * texelSize, cascadeIndex), 0.0f);
+                visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
+            }
+        }
+        return visibility * (1.0f / 9.0f);
+    }
+
+    // PCSS for an angular emitter. CascadeWorldRadii converts the authored
+    // source half-angle into a stable texel-space search radius. The blocker
+    // separation then controls the final penumbra: nearby blockers remain
+    // sharp while blockers farther from the receiver become progressively soft.
+    const float worldUnitsPerTexel = max((2.0f * CascadeWorldRadii[cascadeIndex]) / float(atlasWidth), 1e-5f);
+    const float maxPenumbra = max(g_DirectionalShadowMaxPenumbra, 1.0f);
+    const float blockerSearchRadius = clamp(sourceRadius * splitFar / worldUnitsPerTexel, 1.0f, maxPenumbra);
+    const uint blockerSampleCount = clamp(g_DirectionalShadowBlockerSamples, 1u, 32u);
+    const uint filterSampleCount = clamp(g_DirectionalShadowFilterSamples, 1u, 32u);
+    const float rotation = StableShadowRotation(shadowUV, atlasWidth);
+
+    float blockerDepthSum = 0.0f;
+    uint blockerCount = 0u;
+    [loop]
+    for (uint sampleIndex = 0u; sampleIndex < blockerSampleCount; ++sampleIndex)
+    {
+        const float2 offset = VogelDiskSample(sampleIndex, blockerSampleCount, rotation) * blockerSearchRadius * texelSize;
+        const float mapDepth = g_ShadowAtlas.SampleLevel(g_sPointClamp, float3(shadowUV + offset, cascadeIndex), 0.0f);
+        if (mapDepth > receiverDepth)
+        {
+            blockerDepthSum += mapDepth;
+            ++blockerCount;
         }
     }
 
-    return visibility * (1.0f / 9.0f);
+    if (blockerCount == 0u)
+        return 1.0f;
+
+    const float averageBlockerDepth = blockerDepthSum / float(blockerCount);
+    const float normalizedSeparation = max(averageBlockerDepth - receiverDepth, 0.0f);
+    const float penumbraRadius = clamp(sourceRadius * normalizedSeparation * splitFar / worldUnitsPerTexel, 1.0f, maxPenumbra);
+
+    float visibility = 0.0f;
+    [loop]
+    for (uint sampleIndex = 0u; sampleIndex < filterSampleCount; ++sampleIndex)
+    {
+        const float2 offset = VogelDiskSample(sampleIndex, filterSampleCount, rotation) * penumbraRadius * texelSize;
+        const float mapDepth = g_ShadowAtlas.SampleLevel(g_sPointClamp, float3(shadowUV + offset, cascadeIndex), 0.0f);
+        visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
+    }
+    return visibility / float(filterSampleCount);
 }
 
 float EvaluateDirectionalShadow(float3 worldPos, float3 N, float3 L, float linearDepth)

@@ -35,6 +35,10 @@ cbuffer PerFrameLight : register(b1)
     float    g_VolumetricHeightFalloff;
     float    g_VolumetricBaseHeight;
     float    g_VolumetricAnisotropy;
+    float    g_DirectionalShadowSourceRadius; // sin(authored source half-angle)
+    float    g_DirectionalShadowMaxPenumbra;  // shadow-map texels
+    uint     g_DirectionalShadowBlockerSamples;
+    uint     g_DirectionalShadowFilterSamples;
 };
 
 cbuffer PerFrameGlobal : register(b2)

@@ -61,6 +61,34 @@ namespace
   }
 } // namespace
 
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("MaxActiveLights", m_uiMaxActiveLights)->AddAttributes(new xiiClampValueAttribute(1U, 1048576U)),
+    XII_MEMBER_PROPERTY("MaxLightsPerCluster", m_uiMaxLightsPerCluster)->AddAttributes(new xiiClampValueAttribute(1U, 1024U)),
+    XII_MEMBER_PROPERTY("ClusterTileSize", m_uiClusterTileSize)->AddAttributes(new xiiClampValueAttribute(4U, 128U)),
+    XII_MEMBER_PROPERTY("ClusterDepthSlices", m_uiClusterDepthSlices)->AddAttributes(new xiiClampValueAttribute(1U, 128U)),
+    XII_MEMBER_PROPERTY("AmbientLightColor", m_AmbientLightColor),
+    XII_MEMBER_PROPERTY("IndirectLightIntensity", m_fIndirectLightIntensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("ContactShadowLength", m_fContactShadowLength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("ContactShadowThickness", m_fContactShadowThickness)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("ContactShadowSteps", m_uiContactShadowSteps)->AddAttributes(new xiiClampValueAttribute(1U, 128U)),
+    XII_MEMBER_PROPERTY("LocalShadowTileSize", m_uiLocalShadowTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U)),
+    XII_MEMBER_PROPERTY("VolumetricFogDensity", m_fVolumetricFogDensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("VolumetricHeightFalloff", m_fVolumetricHeightFalloff)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("VolumetricBaseHeight", m_fVolumetricBaseHeight)->AddAttributes(new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("VolumetricAnisotropy", m_fVolumetricAnisotropy)->AddAttributes(new xiiClampValueAttribute(-0.99f, 0.99f)),
+    XII_MEMBER_PROPERTY("DirectionalShadowMaxPenumbra", m_fDirectionalShadowMaxPenumbra)->AddAttributes(new xiiClampValueAttribute(1.0f, 128.0f), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("DirectionalShadowBlockerSamples", m_uiDirectionalShadowBlockerSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+    XII_MEMBER_PROPERTY("DirectionalShadowFilterSamples", m_uiDirectionalShadowFilterSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiLightingSystem::xiiLightingSystem() = default;
 
 xiiLightingSystem::~xiiLightingSystem()
@@ -126,6 +154,9 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   m_LightConstants.m_fVolumetricHeightFalloff = m_Settings.m_fVolumetricHeightFalloff;
   m_LightConstants.m_fVolumetricBaseHeight    = m_Settings.m_fVolumetricBaseHeight;
   m_LightConstants.m_fVolumetricAnisotropy    = m_Settings.m_fVolumetricAnisotropy;
+  m_LightConstants.m_fDirectionalShadowMaxPenumbra = m_Settings.m_fDirectionalShadowMaxPenumbra;
+  m_LightConstants.m_uiDirectionalShadowBlockerSamples = xiiMath::Clamp(m_Settings.m_uiDirectionalShadowBlockerSamples, 1U, 32U);
+  m_LightConstants.m_uiDirectionalShadowFilterSamples = xiiMath::Clamp(m_Settings.m_uiDirectionalShadowFilterSamples, 1U, 32U);
 
   m_GlobalConstants.m_uiFrameIndex = uiFrameIndex;
   if (xiiClock* pClock = xiiClock::GetGlobalClock())
@@ -136,7 +167,8 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   }
   m_GlobalConstants.m_RenderScaleJitter = xiiVec4(view.GetRenderResolutionScale(), 0.0f, 0.0f, 0.0f);
 
-  float fBestDirectionalIntensity = -1.0f;
+  float     fBestDirectionalIntensity = -1.0f;
+  xiiUInt32 uiBestDirectionalLightId  = xiiInvalidIndex;
 
   for (const xiiRenderData* pRenderData : extractedData.GetAllRenderData())
   {
@@ -155,11 +187,17 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_ShadowData            = xiiVec4(pDirectionalLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, pDirectionalLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = xiiVec4::MakeZero();
 
-      if (AppendLight(lightData, LightType::Directional, static_cast<xiiUInt32>(pDirectionalLight->m_uiSortingKey)) && pDirectionalLight->m_fPhotometricIntensity > fBestDirectionalIntensity)
+      const xiiUInt32 uiStableLightId = static_cast<xiiUInt32>(pDirectionalLight->m_uiSortingKey);
+      const bool bAppended = AppendLight(lightData, LightType::Directional, uiStableLightId);
+      const bool bIsBetter = pDirectionalLight->m_fPhotometricIntensity > fBestDirectionalIntensity ||
+                             (pDirectionalLight->m_fPhotometricIntensity == fBestDirectionalIntensity && uiStableLightId < uiBestDirectionalLightId);
+      if (bAppended && bIsBetter)
       {
         fBestDirectionalIntensity                         = pDirectionalLight->m_fPhotometricIntensity;
+        uiBestDirectionalLightId                          = uiStableLightId;
         m_LightConstants.m_MainLightDirectionAndIntensity = MakeVec4(vDirection, pDirectionalLight->m_fPhotometricIntensity);
         m_LightConstants.m_MainLightColor                 = MakeVec4(lightColor, 1.0f);
+        m_LightConstants.m_fDirectionalShadowSourceRadius = xiiMath::Max(pDirectionalLight->m_fRadius, 0.0f);
       }
 
       continue;
