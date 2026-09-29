@@ -20,6 +20,20 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
 {
+  {
+    xiiVirtualShadowPageId page;
+    page.m_uiLightId = 0x00ABCDEU;
+    page.m_uiMipLevel = 47U;
+    page.m_uiPageX = 0x1ABCDU;
+    page.m_uiPageY = 0x12345U;
+
+    const xiiVirtualShadowPageId decoded = xiiVirtualShadowPageId::FromPackedValue(page.GetPackedValue());
+    XII_TEST_INT(decoded.m_uiLightId, page.m_uiLightId);
+    XII_TEST_INT(decoded.m_uiMipLevel, page.m_uiMipLevel);
+    XII_TEST_INT(decoded.m_uiPageX, page.m_uiPageX);
+    XII_TEST_INT(decoded.m_uiPageY, page.m_uiPageY);
+  }
+
   xiiVirtualShadowMapSettings settings;
   settings.m_uiVirtualResolution = 1024U;
   settings.m_uiPageSize = 128U;

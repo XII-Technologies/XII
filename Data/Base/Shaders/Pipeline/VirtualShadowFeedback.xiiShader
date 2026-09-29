@@ -1,0 +1,71 @@
+// XII Engine - demand-driven directional virtual shadow-map feedback.
+
+#include "PipelineCommon.xiiShader"
+#include "Passes/ShadowCascade/ShadowCascadeConstants.h"
+#include "Passes/VirtualShadowMap/VirtualShadowMapConstants.h"
+
+Texture2D<float> g_SceneDepth : register(t0);
+
+struct xiiGpuVirtualShadowFeedback
+{
+    uint VirtualKeyLow;
+    uint VirtualKeyHigh;
+    uint Priority;
+    uint Flags;
+};
+
+RWStructuredBuffer<xiiGpuVirtualShadowFeedback> g_VirtualShadowFeedback : register(u0);
+
+[numthreads(8, 8, 1)]
+void CS_VirtualShadowFeedback(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dimensions;
+    g_SceneDepth.GetDimensions(dimensions.x, dimensions.y);
+    const uint2 pixel = tid.xy * 8u + 4u;
+    if (any(pixel >= dimensions))
+        return;
+
+    const float depth = g_SceneDepth.Load(int3(pixel, 0));
+    if (depth <= 0.0f || ActiveCascadeCount == 0u)
+        return;
+
+    const float linearDepth = LinearizeDepth(depth);
+    uint cascade = 0u;
+    [unroll]
+    for (uint i = 0u; i < 4u; ++i)
+    {
+        if (i < ActiveCascadeCount && linearDepth > CascadeSplitDepths[i])
+            cascade = min(i + 1u, ActiveCascadeCount - 1u);
+    }
+
+    const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+    const float3 worldPosition = ReconstructWorldPos(uv, depth);
+    const float4 shadowClip = mul(CascadeViewProjection[cascade], float4(worldPosition, 1.0f));
+    if (shadowClip.w <= 0.0f)
+        return;
+    const float2 shadowUv = float2(shadowClip.x, -shadowClip.y) / shadowClip.w * 0.5f + 0.5f;
+    if (any(shadowUv < 0.0f) || any(shadowUv >= 1.0f))
+        return;
+
+    const uint basePages = max(VirtualResolution / max(PageSize, 1u), 1u);
+    const uint pagesPerAxis = max(basePages >> cascade, 1u);
+    const uint2 page = min((uint2)(shadowUv * pagesPerAxis), pagesPerAxis - 1u);
+
+    const uint keyLow = (DirectionalLightId & 0x00FFFFFFu) | ((cascade & 0x3Fu) << 24u) | ((page.x & 0x3u) << 30u);
+    const uint keyHigh = ((page.x >> 2u) & 0x7FFFu) | ((page.y & 0x1FFFFu) << 15u);
+    const float2 centered = abs(uv * 2.0f - 1.0f);
+    const uint priority = ((4u - cascade) << 24u) | (uint)(saturate(1.0f - max(centered.x, centered.y)) * 16777215.0f);
+
+    uint requestIndex;
+    InterlockedAdd(g_VirtualShadowFeedback[0].VirtualKeyLow, 1u, requestIndex);
+    if (requestIndex < MaxFeedbackRequests)
+    {
+        xiiGpuVirtualShadowFeedback feedback;
+        feedback.VirtualKeyLow = keyLow;
+        feedback.VirtualKeyHigh = keyHigh;
+        feedback.Priority = priority;
+        feedback.Flags = cascade == 0u ? 1u : 0u;
+        g_VirtualShadowFeedback[requestIndex + 1u] = feedback;
+    }
+}
+

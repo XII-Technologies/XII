@@ -32,6 +32,7 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageId
 
   [[nodiscard]] bool      IsValid() const;
   [[nodiscard]] xiiUInt64 GetPackedValue() const;
+  [[nodiscard]] static xiiVirtualShadowPageId FromPackedValue(xiiUInt64 uiPackedValue);
 
   xiiUInt32 m_uiLightId  = xiiInvalidIndex;
   xiiUInt32 m_uiMipLevel = 0U;
@@ -101,6 +102,19 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVirtualShadowPage
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVirtualShadowPage);
 
+/// GPU feedback record. Element zero uses VirtualKeyLow as the append counter.
+struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVirtualShadowFeedback
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiVirtualKeyLow  = 0U;
+  xiiUInt32 m_uiVirtualKeyHigh = 0U;
+  xiiUInt32 m_uiPriority       = 0U;
+  xiiUInt32 m_uiFlags          = 0U; ///< bit 0 requests pinned residency.
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVirtualShadowFeedback);
+
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapStats
 {
   XII_DECLARE_POD_TYPE();
@@ -160,6 +174,12 @@ public:
   /// Adds a transfer pass that publishes changed residency records to the
   /// current frame slice. Updates remain retryable if graph execution fails.
   [[nodiscard]] static UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+
+  /// Appends screen-derived directional shadow requests and copies the cumulative
+  /// feedback stream into the completed-frame readback ring.
+  static void AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth,
+    xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight,
+    xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex);
 
 private:
   static void Startup();
