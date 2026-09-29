@@ -48,7 +48,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuLightData
 
   xiiVec4 m_PositionAndInvRange;   ///< xyz = world position, w = 1 / range.
   xiiVec4 m_DirectionAndType;      ///< xyz = world direction, w = xiiGpuLightType.
-  xiiVec4 m_ColorAndIntensity;     ///< rgb = linear color after temperature, w = scalar intensity.
+  xiiVec4 m_ColorAndIntensity;     ///< rgb = normalized linear color; w = cd (local), lx (directional), or nt (area).
   xiiVec4 m_AttenuationAndSize;    ///< x = range, y = source radius, z = tube length, w = reserved.
   xiiVec4 m_SpotAnglesAndRectSize; ///< x = cos(inner half angle), y = cos(outer half angle), zw = rect extents.
   xiiVec4 m_ShadowData;            ///< x = casts shadow, y = shadow fade range, z = angular/source size, w = reserved.

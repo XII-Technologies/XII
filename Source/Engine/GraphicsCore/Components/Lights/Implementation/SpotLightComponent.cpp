@@ -78,7 +78,10 @@ xiiResult xiiSpotLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds
 {
   XII_IGNORE_UNUSED(ref_msg);
 
-  m_fEffectiveRange  = CalculateEffectiveRange(m_fRange, m_fIntensity);
+  const float fSolidAngle    = xiiPhotometricUtils::ConeSolidAngle(m_OuterSpotAngle);
+  const float fProjectedArea = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
+  const float fCandela       = fSolidAngle > 0.0f ? GetLuminousIntensity(fSolidAngle, fProjectedArea) : 0.0f;
+  m_fEffectiveRange          = CalculateEffectiveRange(m_fRange, fCandela);
   ref_bounds         = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_fEffectiveRange);
   ref_bAlwaysVisible = false;
 
@@ -90,6 +93,7 @@ void xiiSpotLightComponent::SetRange(float fRange)
   m_fRange = xiiMath::Max(fRange, 0.0f);
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 float xiiSpotLightComponent::GetRange() const
@@ -106,6 +110,7 @@ void xiiSpotLightComponent::SetRadius(float fRadius)
 {
   m_fRadius = xiiMath::Max(fRadius, 0.0f);
 
+  TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
 }
 
@@ -143,6 +148,7 @@ void xiiSpotLightComponent::SetOuterSpotAngle(xiiAngle spotAngle)
   m_OuterSpotAngle = xiiMath::Clamp(spotAngle, xiiAngle::MakeZero(), c_MaxSpotAngle);
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 xiiAngle xiiSpotLightComponent::GetOuterSpotAngle() const
@@ -155,15 +161,18 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
-  const float fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
+  const float fSolidAngle    = xiiPhotometricUtils::ConeSolidAngle(m_OuterSpotAngle);
+  const float fProjectedArea = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
+  const float fCandela       = fSolidAngle > 0.0f ? GetLuminousIntensity(fSolidAngle, fProjectedArea) : 0.0f;
+  const float fEffectiveRange = CalculateEffectiveRange(m_fRange, fCandela);
 
-  if (m_fIntensity <= 0.0f || fEffectiveRange <= 0.0f || m_OuterSpotAngle.GetRadian() <= 0.0f)
+  if (fCandela <= 0.0f || fEffectiveRange <= 0.0f || m_OuterSpotAngle.GetRadian() <= 0.0f)
     return;
 
   auto                    pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
   xiiSpotLightRenderData* pRenderData  = pWorldModule->CreateRenderDataForThisFrame<xiiSpotLightRenderData>(this);
   pRenderData->m_LightColor            = GetLightColor();
-  pRenderData->m_fIntensity            = GetIntensity();
+  pRenderData->m_fPhotometricIntensity = fCandela;
   pRenderData->m_uiTemperature         = GetTemperature();
   pRenderData->m_fRange                = fEffectiveRange;
   pRenderData->m_fRadius               = m_fRadius;

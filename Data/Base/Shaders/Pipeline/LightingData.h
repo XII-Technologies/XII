@@ -13,7 +13,7 @@ struct xiiGpuLightData
 {
   float4 PositionAndInvRange;   // xyz = position, w = 1 / range
   float4 DirectionAndType;      // xyz = direction, w = light type
-  float4 ColorAndIntensity;     // rgb = color, w = intensity
+  float4 ColorAndIntensity;     // rgb = normalized color, w = cd (local), lx (directional), or nt (area)
   float4 AttenuationAndSize;    // x = range, y = source radius, z = tube length
   float4 SpotAnglesAndRectSize; // x = cos inner, y = cos outer, zw = rectangle extents
   float4 ShadowData;            // x = casts shadow, y = shadow fade, z = angular/source size

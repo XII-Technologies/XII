@@ -33,7 +33,8 @@ float xiiPhotometricUtils::ConeSolidAngle(xiiAngle fullConeAngle)
 
 float xiiPhotometricUtils::LuminousFluxToIntensity(float fLumens, float fSolidAngleSteradians)
 {
-  return Sanitize(fLumens) / SafeDivisor(fSolidAngleSteradians);
+  const float fSolidAngle = Sanitize(fSolidAngleSteradians);
+  return fSolidAngle > 0.0f ? Sanitize(fLumens) / SafeDivisor(fSolidAngle) : 0.0f;
 }
 
 float xiiPhotometricUtils::LuminousIntensityToFlux(float fCandela, float fSolidAngleSteradians)

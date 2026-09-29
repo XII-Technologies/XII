@@ -34,7 +34,10 @@ XII_BEGIN_COMPONENT_TYPE(xiiDirectionalLightComponent, 1, xiiComponentMode::Stat
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiDirectionalLightComponent::xiiDirectionalLightComponent()  = default;
+xiiDirectionalLightComponent::xiiDirectionalLightComponent()
+{
+  m_IntensityUnit = xiiPhotometricUnit::Lux;
+}
 xiiDirectionalLightComponent::~xiiDirectionalLightComponent() = default;
 
 void xiiDirectionalLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
@@ -80,14 +83,15 @@ void xiiDirectionalLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDat
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
-  if (m_fIntensity <= 0.0f)
+  const float fLux = GetIlluminance(xiiPhotometricUtils::ConeSolidAngle(m_SourceAngle));
+  if (fLux <= 0.0f)
     return;
 
   auto                           pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
   xiiDirectionalLightRenderData* pRenderData  = pWorldModule->CreateRenderDataForThisFrame<xiiDirectionalLightRenderData>(this);
   pRenderData->m_LightColor                   = m_LightColor;
   pRenderData->m_uiTemperature                = m_uiTemperature;
-  pRenderData->m_fIntensity                   = m_fIntensity;
+  pRenderData->m_fPhotometricIntensity        = fLux;
   pRenderData->m_bCastShadows                 = m_bCastShadows;
   pRenderData->m_vDirection                   = GetOwner()->GetGlobalRotation() * xiiVec3(-1.0f, 0.0f, 0.0f);
   pRenderData->m_fRadius                      = xiiMath::Sin(m_SourceAngle * 0.5f); // This is interpreted as the sin(halfangle) of the emitter disc.

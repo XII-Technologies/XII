@@ -2,6 +2,11 @@
 
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
+#include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
+#include <GraphicsCore/Components/Lights/DiscAreaLightComponent.h>
+#include <GraphicsCore/Components/Lights/PointLightComponent.h>
+#include <GraphicsCore/Components/Lights/RectangleAreaLightComponent.h>
+#include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <GraphicsCore/Lighting/PhotometricUnits.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(Lighting);
@@ -41,6 +46,22 @@ XII_CREATE_SIMPLE_TEST(Lighting, PhotometricUnits)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid physical inputs are contained")
   {
     XII_TEST_FLOAT(xiiPhotometricUtils::LuminousFluxToIntensity(-10.0f, fFourPi), 0.0f, 0.0f);
+    XII_TEST_FLOAT(xiiPhotometricUtils::LuminousFluxToIntensity(100.0f, 0.0f), 0.0f, 0.0f);
     XII_TEST_FLOAT(xiiPhotometricUtils::LuminousIntensityToLuminance(100.0f, 0.0f), 0.0f, 0.0f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Emitter defaults use canonical physical units")
+  {
+    xiiPointLightComponent         pointLight;
+    xiiSpotLightComponent          spotLight;
+    xiiDirectionalLightComponent   directionalLight;
+    xiiRectangleAreaLightComponent rectangleLight;
+    xiiDiscAreaLightComponent      discLight;
+
+    XII_TEST_INT(pointLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Candela);
+    XII_TEST_INT(spotLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Candela);
+    XII_TEST_INT(directionalLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Lux);
+    XII_TEST_INT(rectangleLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Nit);
+    XII_TEST_INT(discLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Nit);
   }
 }

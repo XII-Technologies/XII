@@ -8,6 +8,15 @@
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
+namespace
+{
+  float GetPointEmitterProjectedArea(float fRadius, float fLength)
+  {
+    const float fSafeRadius = xiiMath::Max(fRadius, 0.0f);
+    return xiiMath::Pi<float>() * fSafeRadius * fSafeRadius + 2.0f * fSafeRadius * xiiMath::Max(fLength, 0.0f);
+  }
+} // namespace
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPointLightRenderData, 1, xiiRTTIDefaultAllocator<xiiPointLightRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -64,7 +73,8 @@ void xiiPointLightComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 
 xiiResult xiiPointLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
-  m_fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
+  const float fCandela = GetLuminousIntensity(4.0f * xiiMath::Pi<float>(), GetPointEmitterProjectedArea(m_fRadius, m_fLength));
+  m_fEffectiveRange    = CalculateEffectiveRange(m_fRange, fCandela);
 
   const float fBoundingRadius = m_fEffectiveRange + m_fLength * 0.5f;
   ref_bounds                  = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), fBoundingRadius);
@@ -77,6 +87,7 @@ void xiiPointLightComponent::SetRange(float fRange)
   m_fRange = xiiMath::Max(fRange, 0.0f);
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 float xiiPointLightComponent::GetRange() const
@@ -94,6 +105,7 @@ void xiiPointLightComponent::SetLength(float fLength)
   m_fLength = xiiMath::Max(fLength, 0.0f);
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 float xiiPointLightComponent::GetLength() const
@@ -105,6 +117,7 @@ void xiiPointLightComponent::SetRadius(float fRadius)
 {
   m_fRadius = xiiMath::Max(fRadius, 0.0f);
 
+  TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
 }
 
@@ -129,16 +142,17 @@ void xiiPointLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref
 {
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
     return;
-  if (m_fIntensity <= 0.0f)
+  const float fCandela = GetLuminousIntensity(4.0f * xiiMath::Pi<float>(), GetPointEmitterProjectedArea(m_fRadius, m_fLength));
+  if (fCandela <= 0.0f)
     return;
 
   auto                     pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
   xiiPointLightRenderData* pRenderData  = pWorldModule->CreateRenderDataForThisFrame<xiiPointLightRenderData>(this);
   pRenderData->m_LightColor             = m_LightColor;
   pRenderData->m_uiTemperature          = m_uiTemperature;
-  pRenderData->m_fIntensity             = m_fIntensity;
+  pRenderData->m_fPhotometricIntensity  = fCandela;
   pRenderData->m_bCastShadows           = m_bCastShadows;
-  pRenderData->m_fRange                 = CalculateEffectiveRange(m_fRange, m_fIntensity);
+  pRenderData->m_fRange                 = CalculateEffectiveRange(m_fRange, fCandela);
   pRenderData->m_fRadius                = m_fRadius;
   pRenderData->m_fLength                = m_fLength;
   pRenderData->m_fShadowFadeOutRange    = m_fShadowFadeOutRange;

@@ -148,15 +148,15 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
 
       lightData.m_PositionAndInvRange   = xiiVec4::MakeZero();
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Directional));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pDirectionalLight->m_fIntensity);
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pDirectionalLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(0.0f, pDirectionalLight->m_fRadius, 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pDirectionalLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, pDirectionalLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = xiiVec4::MakeZero();
 
-      if (AppendLight(lightData, LightType::Directional) && pDirectionalLight->m_fIntensity > fBestDirectionalIntensity)
+      if (AppendLight(lightData, LightType::Directional) && pDirectionalLight->m_fPhotometricIntensity > fBestDirectionalIntensity)
       {
-        fBestDirectionalIntensity                         = pDirectionalLight->m_fIntensity;
-        m_LightConstants.m_MainLightDirectionAndIntensity = MakeVec4(vDirection, pDirectionalLight->m_fIntensity);
+        fBestDirectionalIntensity                         = pDirectionalLight->m_fPhotometricIntensity;
+        m_LightConstants.m_MainLightDirectionAndIntensity = MakeVec4(vDirection, pDirectionalLight->m_fPhotometricIntensity);
         m_LightConstants.m_MainLightColor                 = MakeVec4(lightColor, 1.0f);
       }
 
@@ -168,14 +168,14 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const float    fRange     = xiiMath::Max(GetSafeRange(pPointLight->m_fRange, pPointLight->m_fIntensity), 0.001f);
+      const float    fRange     = xiiMath::Max(GetSafeRange(pPointLight->m_fRange, pPointLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pPointLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pPointLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pPointLight->m_LightColor, pPointLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Point));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pPointLight->m_fIntensity);
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pPointLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(fRange, pPointLight->m_fRadius, pPointLight->m_fLength, 0.0f);
       lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pPointLight->m_bCastShadows ? 1.0f : 0.0f, pPointLight->m_fShadowFadeOutRange, pPointLight->m_fRadius, 0.0f);
@@ -190,14 +190,14 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const float    fRange     = xiiMath::Max(GetSafeRange(pSpotLight->m_fRange, pSpotLight->m_fIntensity), 0.001f);
+      const float    fRange     = xiiMath::Max(GetSafeRange(pSpotLight->m_fRange, pSpotLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pSpotLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pSpotLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pSpotLight->m_LightColor, pSpotLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Spot));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pSpotLight->m_fIntensity);
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pSpotLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(fRange, pSpotLight->m_fRadius, 0.0f, 0.0f);
       lightData.m_SpotAnglesAndRectSize = xiiVec4(xiiMath::Cos(pSpotLight->m_InnerSpotAngle * 0.5f), xiiMath::Cos(pSpotLight->m_OuterSpotAngle * 0.5f), 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pSpotLight->m_bCastShadows ? 1.0f : 0.0f, pSpotLight->m_fShadowFadeOutRange, pSpotLight->m_fRadius, 0.0f);
@@ -214,14 +214,14 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const float    fRange     = xiiMath::Max(xiiLightComponent::CalculateEffectiveRange(0.0f, pRectangleLight->m_fIntensity), 0.001f);
+      const float    fRange     = xiiMath::Max(pRectangleLight->m_fRadius, 0.001f);
       const xiiVec3  vPosition  = pRectangleLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pRectangleLight->m_qGlobalRotation * xiiVec3(-1.0f, 0.0f, 0.0f), xiiVec3(-1.0f, 0.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pRectangleLight->m_LightColor, pRectangleLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Rectangle));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pRectangleLight->m_fIntensity);
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pRectangleLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(fRange, 0.0f, 0.0f, 0.0f);
       lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, xiiMath::Max(pRectangleLight->m_vExtents.x, 0.001f), xiiMath::Max(pRectangleLight->m_vExtents.y, 0.001f));
       lightData.m_ShadowData            = xiiVec4(pRectangleLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f);
@@ -236,14 +236,14 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const float    fRange     = xiiMath::Max(GetSafeRange(pDiscLight->m_fRange, pDiscLight->m_fIntensity), 0.001f);
+      const float    fRange     = xiiMath::Max(GetSafeRange(pDiscLight->m_fRange, pDiscLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pDiscLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pDiscLight->m_qGlobalRotation * xiiVec3(-1.0f, 0.0f, 0.0f), xiiVec3(-1.0f, 0.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pDiscLight->m_LightColor, pDiscLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Disc));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pDiscLight->m_fIntensity);
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pDiscLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(fRange, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f, 0.0f);
       lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f);
       lightData.m_ShadowData            = xiiVec4(pDiscLight->m_bCastShadows ? 1.0f : 0.0f, pDiscLight->m_fShadowFadeOutRange, pDiscLight->m_fRadius, 0.0f);

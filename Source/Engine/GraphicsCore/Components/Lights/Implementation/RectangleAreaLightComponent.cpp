@@ -34,7 +34,10 @@ XII_BEGIN_COMPONENT_TYPE(xiiRectangleAreaLightComponent, 1, xiiComponentMode::St
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiRectangleAreaLightComponent::xiiRectangleAreaLightComponent()  = default;
+xiiRectangleAreaLightComponent::xiiRectangleAreaLightComponent()
+{
+  m_IntensityUnit = xiiPhotometricUnit::Nit;
+}
 xiiRectangleAreaLightComponent::~xiiRectangleAreaLightComponent() = default;
 
 void xiiRectangleAreaLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
@@ -57,7 +60,12 @@ xiiResult xiiRectangleAreaLightComponent::GetLocalBounds(xiiBoundingBoxSphere& r
 {
   XII_IGNORE_UNUSED(ref_msg);
 
-  ref_bounds         = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_vExtents);
+  const float fArea             = m_vExtents.x * m_vExtents.y;
+  const float fNits             = GetLuminance(fArea, fArea);
+  const float fOnAxisCandela    = xiiPhotometricUtils::LuminanceToLuminousIntensity(fNits, fArea);
+  const float fInfluenceRange   = CalculateEffectiveRange(0.0f, fOnAxisCandela);
+  ref_bounds                    = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_vExtents);
+  ref_bounds.m_fSphereRadius   += fInfluenceRange;
   ref_bAlwaysVisible = false;
 
   return XII_SUCCESS;
@@ -65,12 +73,16 @@ xiiResult xiiRectangleAreaLightComponent::GetLocalBounds(xiiBoundingBoxSphere& r
 
 void xiiRectangleAreaLightComponent::SetExtents(xiiVec2 vExtents)
 {
+  vExtents.x = xiiMath::Max(vExtents.x, 0.0f);
+  vExtents.y = xiiMath::Max(vExtents.y, 0.0f);
+
   if (m_vExtents == vExtents)
     return;
 
   m_vExtents = vExtents;
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 xiiVec2 xiiRectangleAreaLightComponent::GetExtents() const
@@ -83,18 +95,22 @@ void xiiRectangleAreaLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderD
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
-  if (m_fIntensity <= 0.0f || m_vExtents.IsZero())
+  const float fArea          = m_vExtents.x * m_vExtents.y;
+  const float fNits          = GetLuminance(fArea, fArea);
+  const float fOnAxisCandela = xiiPhotometricUtils::LuminanceToLuminousIntensity(fNits, fArea);
+
+  if (fNits <= 0.0f || fOnAxisCandela <= 0.0f || m_vExtents.IsZero())
     return;
 
   auto                             pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
   xiiRectangleAreaLightRenderData* pRenderData  = pWorldModule->CreateRenderDataForThisFrame<xiiRectangleAreaLightRenderData>(this);
   pRenderData->m_LightColor                     = m_LightColor;
   pRenderData->m_uiTemperature                  = m_uiTemperature;
-  pRenderData->m_fIntensity                     = m_fIntensity;
+  pRenderData->m_fPhotometricIntensity          = fNits;
   pRenderData->m_bCastShadows                   = m_bCastShadows;
   pRenderData->m_vExtents                       = m_vExtents;
   pRenderData->m_qGlobalRotation                = GetOwner()->GetGlobalRotation();
-  pRenderData->m_fRadius                        = CalculateEffectiveRange(0.0f, m_fIntensity);
+  pRenderData->m_fRadius                        = CalculateEffectiveRange(0.0f, fOnAxisCandela);
   pRenderData->m_uiSortingKey                   = GetUniqueIdForRendering();
 
   ref_msg.AddRenderData(pRenderData, m_bCastShadows ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never);
