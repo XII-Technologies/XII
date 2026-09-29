@@ -6,9 +6,11 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Render/DecalComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Decals/DecalResource.h>
+#include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
@@ -911,42 +913,57 @@ struct xiiShadowCascadeSetupData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphBufferHandle m_hCascadeMatrices;                              ///< UAV out (structured buffer of float4x4 cascade view-projection matrices, one per cascade, consumed by Shadow Passes).
+  xiiRenderGraphBufferHandle m_hCascadeMatrices;                              ///< CPU-uploaded structured buffer of cascade view-projection matrices and split depths.
   xiiUInt32                  m_uiActiveCascades = 0U;                         ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes.
-  xiiVec3                    m_vLightDirection  = xiiVec3(0.0f, -1.0f, 0.0f); ///< Direction of the main directional light, used for computing cascade splits and matrices.
-  float                      m_fNearPlane       = 0.1f;                       ///< Near plane distance for shadow cascades, used for computing cascade splits and matrices.
-  float                      m_fFarPlane        = 1000.0f;                    ///< Far plane distance for shadow cascades, used for computing cascade splits and matrices.
+  xiiMat4                    m_CascadeViewProjection[4];
+  xiiVec4                    m_vCascadeSplitDepths = xiiVec4::MakeZero();
 };
 
 void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_uiActiveCascades = 3U;
-  data.m_vLightDirection  = xiiVec3(0.0f, -1.0f, 0.0f);
-  data.m_fNearPlane       = m_pCamera->GetNearPlane();
-  data.m_fFarPlane        = m_pCamera->GetFarPlane();
+  for (xiiMat4& mCascadeViewProjection : data.m_CascadeViewProjection)
+  {
+    mCascadeViewProjection = xiiMat4::MakeIdentity();
+  }
 
-  // Walk extracted data to find the first directional light.
-
+  xiiVec3 vLightDirection = xiiVec3(0.0f, 0.0f, -1.0f);
+  bool    bHasShadowCastingDirectionalLight = false;
   const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
   for (xiiRenderData* pRenderData : renderData)
   {
-    if (IsRenderDataTypeName(pRenderData, "xiiDirectionalLightRenderData"))
+    if (const xiiDirectionalLightRenderData* pDirectionalLight = xiiDynamicCast<const xiiDirectionalLightRenderData*>(pRenderData); pDirectionalLight != nullptr && pDirectionalLight->m_bCastShadows)
     {
-      data.m_vLightDirection  = -pRenderData->m_GlobalTransform.m_qRotation.GetVectorPart();
-      data.m_uiActiveCascades = 3U; // Could read from component property via msg if exposed.
+      vLightDirection = pDirectionalLight->m_vDirection;
+      bHasShadowCastingDirectionalLight = true;
       break;
     }
   }
+
+  xiiStaticArray<xiiShadowCascadeDescription, 4> cascades;
+  xiiShadowCascadeSettings settings;
+  settings.m_uiShadowMapResolution = k_uiDirectionalShadowAtlasWidth;
+  const float fAspectRatio = static_cast<float>(GetRenderResolutionWidth()) / static_cast<float>(xiiMath::Max(GetRenderResolutionHeight(), 1U));
+  if (bHasShadowCastingDirectionalLight && xiiShadowCascadeUtils::Build(*m_pCamera, fAspectRatio, vLightDirection, settings, cascades).Succeeded())
+  {
+    data.m_uiActiveCascades = cascades.GetCount();
+    for (xiiUInt32 uiCascade = 0U; uiCascade < cascades.GetCount(); ++uiCascade)
+    {
+      data.m_CascadeViewProjection[uiCascade] = cascades[uiCascade].m_mViewProjection;
+      data.m_vCascadeSplitDepths.GetData()[uiCascade] = cascades[uiCascade].m_fSplitFar;
+    }
+  }
+  m_ViewPassResources.m_ShadowPasses.m_uiActiveCascadeCount = data.m_uiActiveCascades;
 
   // GPU buffer: ShadowCascadeConstants (float4x4[4] + float4 + uint + pad3)
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = sizeof(xiiShadowCascadeConstants);
   description.m_uiSize              = description.m_uiElementByteStride;
-  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
   description.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hCascadeMatrices           = builder.WriteBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, description, xiiGALResourceStateFlags::UnorderedAccess);
+  description.m_Usage               = xiiGALResourceUsage::Dynamic;
+  description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  data.m_hCascadeMatrices           = builder.WriteBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, description, xiiGALResourceStateFlags::CopyDestination);
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pCascadeSetupPipeline, "Shaders/Pipeline/ShadowCascadeSetup.xiiShader");
   builder.SetPassAllowMerge(false);
 }
 
@@ -961,26 +978,12 @@ void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, x
 
       pConstants->ActiveCascadeCount = data.m_uiActiveCascades;
 
-      // Cascade split depths: practical split scheme based on camera range.
-      const float fRange = data.m_fFarPlane - data.m_fNearPlane;
+      pConstants->CascadeSplitDepths = data.m_vCascadeSplitDepths;
       for (xiiUInt32 i = 0; i < 4; ++i)
       {
-        const float t                               = static_cast<float>(i + 1) / 4.0f;
-        pConstants->CascadeSplitDepths.GetData()[i] = data.m_fNearPlane + fRange * t * t; // quadratic split
-      }
-
-      // Cascade view-projection matrices are computed on CPU, written once per directional light.
-      // (Full implementation would call xiiView::ComputeCascadeViewProjection; simplified for now.)
-      for (xiiUInt32 i = 0; i < 4; ++i)
-      {
-        pConstants->CascadeViewProjection[i] = xiiMat4::MakeIdentity();
+        pConstants->CascadeViewProjection[i] = data.m_CascadeViewProjection[i];
       }
     }
-
-    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pCascadeSetupPipeline);
-    cmd.ResolveAndSetUnorderedAccessBufferView("g_CascadeOut", context.GetBuffer(data.m_hCascadeMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({1U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1064,7 +1067,7 @@ void xiiView::SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRend
   data.m_hShadowCasterCommands   = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hDirectionalShadowAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_hDirectionalShadowAtlas = builder.WriteTexture(data.m_hDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
-  data.m_uiActiveCascades        = 3U;
+  data.m_uiActiveCascades        = m_ViewPassResources.m_ShadowPasses.m_uiActiveCascadeCount;
 
   builder.SetPassAllowMerge(false);
 }

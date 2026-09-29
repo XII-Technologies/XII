@@ -550,7 +550,6 @@ private:
     //  Stage 2 - Shadows
     struct ShadowPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pCascadeSetupPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pLocalShadowAtlasAllocationPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pShadowDepthPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pRayTracedShadowPipeline;
@@ -558,6 +557,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>  m_pContactShadowPipeline;
       xiiSharedPtr<xiiGALTexture>               m_pDirectionalShadowAtlas; // D32F[4] 4096x4096
       xiiSharedPtr<xiiGALTexture>               m_pLocalShadowAtlas;       // D32F 2D 4096x4096
+      xiiUInt32                                 m_uiActiveCascadeCount = 0U;
     } m_ShadowPasses;
 
     //  Stage 3 - Depth & Hi-Z
