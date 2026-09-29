@@ -126,12 +126,12 @@ void xiiImguiSingleton::Startup()
     memoryDesc.m_uiDepthStride = iWidth * iHeight * 4;
 
     xiiTexture2DResourceDescriptor desc;
-    desc.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
-    desc.m_DescGAL.m_Size.width  = iWidth;
-    desc.m_DescGAL.m_Size.height = iHeight;
-    desc.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
-    desc.m_DescGAL.m_Usage       = xiiGALResourceUsage::Immutable;
-    desc.m_InitialContent        = xiiMakeArrayPtr(&memoryDesc, 1);
+    desc.m_TextureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
+    desc.m_TextureDescription.m_Size.width  = iWidth;
+    desc.m_TextureDescription.m_Size.height = iHeight;
+    desc.m_TextureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
+    desc.m_TextureDescription.m_Usage       = xiiGALResourceUsage::Immutable;
+    desc.m_InitialContent                   = xiiMakeArrayPtr(&memoryDesc, 1);
 
     hFont = xiiResourceManager::GetOrCreateResource<xiiTexture2DResource>("ImguiFont", std::move(desc));
   }
