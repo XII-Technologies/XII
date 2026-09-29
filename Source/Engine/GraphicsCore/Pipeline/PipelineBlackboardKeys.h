@@ -19,7 +19,9 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_DrawIndirectCommands      = "DrawIndirectCommands"_xiisv;     ///< xiiRenderGraphBufferHandle - packed DrawIndexedIndirect args, one per material bin.
   constexpr xiiStringView k_DrawCountBuffer           = "DrawCounts"_xiisv;               ///< xiiRenderGraphBufferHandle - per-material-bin indirect draw count.
   constexpr xiiStringView k_DrawShadowCasterCommands  = "DrawShadowCasterCommands"_xiisv; ///< xiiRenderGraphBufferHandle - packed indirect args for shadow depth renders.
-  constexpr xiiStringView k_ReflectionProbeMask       = "ReflectionProbeMask"_xiisv;      ///< xiiRenderGraphBufferHandle - per-probe visibility bits (bitfield of active probes).
+  constexpr xiiStringView k_ReflectionProbeData       = "ReflectionProbeData"_xiisv;      ///< xiiRenderGraphBufferHandle - compact xiiGPUReflectionProbe records for active captures.
+  constexpr xiiStringView k_ReflectionProbeConstants  = "ReflectionProbeConstants"_xiisv; ///< xiiRenderGraphBufferHandle - active probe and cluster counts.
+  constexpr xiiStringView k_ReflectionProbeMask       = "ReflectionProbeClusters"_xiisv;  ///< xiiRenderGraphBufferHandle - uint2 primary/secondary probe indices per lighting cluster.
   constexpr xiiStringView k_SkinnedVertexBuffer       = "SkinnedVertexBuffer"_xiisv;      ///< xiiRenderGraphBufferHandle - deformed vertex streams (written by skinning pass).
   constexpr xiiStringView k_ParticleVertexBuffer      = "ParticleVertexBuffer"_xiisv;     ///< xiiRenderGraphBufferHandle - particle vertex data (written by GPU particle sim).
   constexpr xiiStringView k_ParticleIndexBuffer       = "ParticleIndexBuffer"_xiisv;      ///< xiiRenderGraphBufferHandle - particle index data (written by GPU particle sim).

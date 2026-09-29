@@ -2,12 +2,14 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Components/Fog/VolumetricCloudComponent.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
+#include <GraphicsCore/Components/Lights/ReflectionCaptureComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Components/Render/DecalComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -34,6 +36,7 @@
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/ReflectionProbeData.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
 xiiCVarFloat cvar_DynamicRenderingMinScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
@@ -44,8 +47,6 @@ namespace
   // Shared constants (sizes of persistent GPU buffers, aligned to typical instance budgets)
   static constexpr xiiUInt32 k_uiMaxInstances    = 65536U; ///< The maximum number of drawable objects in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
   static constexpr xiiUInt32 k_uiMaxMaterialBins = 512U;   ///< The maximum number of distinct (mesh x material) draw bins in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
-
-  static constexpr xiiUInt32 k_uiMaxReflectionProbes = 64U; ///< The maximum number of active reflection probes in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
 
   static constexpr xiiUInt32 k_uiDirectionalShadowAtlasWidth  = 4096U; ///< The width of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The height will be the same as the width, and each cascade will be allocated a quadrant of the atlas.
   static constexpr xiiUInt32 k_uiDirectionalShadowAtlasHeight = 4096U; ///< The height of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The width will be the same as the height, and each cascade will be allocated a quadrant of the atlas.
@@ -877,24 +878,119 @@ void xiiView::ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraph
 
 struct xiiReflectionProbeSelectData
 {
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphBufferHandle m_hClusterDescriptors; ///< SRV in (structured buffer of cluster descriptors, one per cluster, from this frame's Cluster Build).
-  xiiRenderGraphBufferHandle m_hProbeMask;          ///< UAV out (structured buffer of uint, one per instance, bitmask of which reflection probes affect each instance, consumed by main lighting pass).
+  xiiRenderGraphBufferHandle m_hClusterDescriptors; ///< SRV in: world-space lighting-cluster AABBs.
+  xiiRenderGraphBufferHandle m_hProbeData;          ///< SRV in: active probe transforms, volumes, and texture slots.
+  xiiRenderGraphBufferHandle m_hProbeConstants;     ///< Constant buffer in: active probe and cluster counts.
+  xiiRenderGraphBufferHandle m_hProbeClusters;      ///< UAV out: primary and secondary probe indices per cluster.
+  xiiDynamicArray<xiiGPUReflectionProbe, xiiAlignedAllocatorWrapper> m_Probes;
+  xiiUInt32 m_uiTotalClusterCount = 1U;
 };
 
 void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hClusterDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, xiiGALResourceStateFlags::ShaderResource);
 
-  xiiGALBufferCreationDescription description;
-  description.m_uiElementByteStride = 4U;
-  description.m_uiSize              = 4U * k_uiMaxReflectionProbes; ///< \todo : use a well defined constant for a reasonable upper limit.
-  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-  description.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hProbeMask                 = builder.WriteBuffer(xiiRGBlackboardKeys::k_ReflectionProbeMask, description, xiiGALResourceStateFlags::UnorderedAccess);
+  auto& reflectionResources = m_ViewPassResources.m_LightingPrepPasses;
+  reflectionResources.m_ReflectionProbeTextures.Clear();
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pProbeSelectPipeline, "Shaders/Pipeline/GpuDrivenVisibilityCulling.xiiShader");
+  if (reflectionResources.m_pFallbackReflectionProbeTexture == nullptr)
+  {
+    xiiGALTextureCreationDescription textureDescription;
+    textureDescription.m_Type               = xiiGALResourceDimension::TextureCube;
+    textureDescription.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
+    textureDescription.m_Size.width         = 1U;
+    textureDescription.m_Size.height        = 1U;
+    textureDescription.m_uiArraySizeOrDepth = 6U;
+    textureDescription.m_uiMipLevels        = 1U;
+    textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
+    textureDescription.m_Usage              = xiiGALResourceUsage::Immutable;
+
+    const xiiUInt32 uiBlackPixel = 0xFF000000U;
+    xiiHybridArray<xiiGALTextureSubResourceData, 6U> initialData;
+    for (xiiUInt32 uiFace = 0U; uiFace < 6U; ++uiFace)
+    {
+      xiiGALTextureSubResourceData& faceData = initialData.ExpandAndGetRef();
+      faceData.m_pData                       = xiiMakeByteBlobPtr(static_cast<const void*>(&uiBlackPixel), sizeof(uiBlackPixel));
+      faceData.m_uiStride                    = sizeof(uiBlackPixel);
+      faceData.m_uiDepthStride               = sizeof(uiBlackPixel);
+    }
+
+    xiiGALTextureData textureData(initialData);
+    reflectionResources.m_pFallbackReflectionProbeTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(textureDescription, &textureData);
+    if (reflectionResources.m_pFallbackReflectionProbeTexture != nullptr)
+      reflectionResources.m_pFallbackReflectionProbeTexture->SetDebugName("ReflectionProbe::FallbackBlackCube");
+  }
+
+  xiiHybridArray<const xiiReflectionCaptureRenderData*, XII_MAX_REFLECTION_PROBES> candidates;
+  if (m_pExtractedData != nullptr)
+  {
+    for (const xiiRenderData* pRenderData : m_pExtractedData->GetAllRenderData())
+    {
+      if (const xiiReflectionCaptureRenderData* pProbe = xiiDynamicCast<const xiiReflectionCaptureRenderData*>(pRenderData))
+        candidates.PushBack(pProbe);
+    }
+  }
+
+  candidates.Sort([](const xiiReflectionCaptureRenderData* pLeft, const xiiReflectionCaptureRenderData* pRight) {
+    if (pLeft->m_iPriority != pRight->m_iPriority)
+      return pLeft->m_iPriority > pRight->m_iPriority;
+    return pLeft->m_uiSortingKey < pRight->m_uiSortingKey;
+  });
+
+  data.m_Probes.Reserve(xiiMath::Min(candidates.GetCount(), XII_MAX_REFLECTION_PROBES));
+  for (const xiiReflectionCaptureRenderData* pProbe : candidates)
+  {
+    if (data.m_Probes.GetCount() >= XII_MAX_REFLECTION_PROBES)
+      break;
+
+    xiiResourceLock<xiiTextureCubeResource> reflectionMap(pProbe->m_hReflectionMap, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+    if (!reflectionMap.IsValid())
+      continue;
+
+    xiiSharedPtr<xiiGALTexture> pTexture = reflectionMap->GetGALTexture();
+    if (pTexture == nullptr)
+      continue;
+
+    const xiiVec3 vAbsoluteScale = pProbe->m_GlobalTransform.m_vScale.Abs();
+    const float fMaximumScale = xiiMath::Max(vAbsoluteScale.x, xiiMath::Max(vAbsoluteScale.y, vAbsoluteScale.z));
+    const float fInfluenceRadius = pProbe->m_InfluenceShape == xiiReflectionProbeInfluenceShape::Sphere ?
+      pProbe->m_fSphereRadius * fMaximumScale : pProbe->m_vHalfExtents.CompMul(vAbsoluteScale).GetLength();
+
+    xiiGPUReflectionProbe& gpuProbe = data.m_Probes.ExpandAndGetRef();
+    gpuProbe.WorldToProbe          = pProbe->m_GlobalTransform.GetInverse().GetAsMat4();
+    gpuProbe.PositionAndRadius     = xiiVec4(pProbe->m_GlobalTransform.m_vPosition, xiiMath::Max(fInfluenceRadius, 0.01f));
+    gpuProbe.HalfExtentsAndBlend   = xiiVec4(pProbe->m_vHalfExtents, pProbe->m_fBlendDistance);
+    gpuProbe.ProbeParameters       = xiiVec4(pProbe->m_fSphereRadius, pProbe->m_fIntensity, pProbe->m_fSaturation, static_cast<float>(pProbe->m_InfluenceShape.GetValue()));
+    gpuProbe.Metadata              = xiiVec4U32(static_cast<xiiUInt32>(pProbe->m_uiSortingKey), data.m_Probes.GetCount() - 1U, static_cast<xiiUInt32>(pProbe->m_iPriority), pProbe->m_bParallaxCorrected ? 1U : 0U);
+
+    reflectionResources.m_ReflectionProbeTextures.PushBack(std::move(pTexture));
+  }
+
+  xiiGALBufferCreationDescription description;
+  description.m_uiElementByteStride = sizeof(xiiGPUReflectionProbe);
+  description.m_uiSize              = sizeof(xiiGPUReflectionProbe) * XII_MAX_REFLECTION_PROBES;
+  description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  description.m_Usage               = xiiGALResourceUsage::Dynamic;
+  description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  data.m_hProbeData                 = builder.WriteBuffer(xiiRGBlackboardKeys::k_ReflectionProbeData, description, xiiGALResourceStateFlags::ShaderResource);
+
+  description.m_uiElementByteStride = 0U;
+  description.m_uiSize              = sizeof(xiiReflectionProbeConstants);
+  description.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  description.m_Mode                = xiiGALBufferMode::Undefined;
+  data.m_hProbeConstants            = builder.WriteBuffer(xiiRGBlackboardKeys::k_ReflectionProbeConstants, description, xiiGALResourceStateFlags::ConstantBuffer);
+
+  data.m_uiTotalClusterCount        = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);
+  description.m_uiElementByteStride = sizeof(xiiVec2U32);
+  description.m_uiSize              = sizeof(xiiVec2U32) * data.m_uiTotalClusterCount;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  description.m_Usage               = xiiGALResourceUsage::Default;
+  description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+  data.m_hProbeClusters             = builder.WriteBuffer(xiiRGBlackboardKeys::k_ReflectionProbeMask, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pProbeSelectPipeline, "Shaders/Pipeline/ReflectionProbeSelection.xiiShader");
 }
 
 void xiiView::ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& data, xiiRenderGraphPassContext& context)
@@ -903,11 +999,29 @@ void xiiView::ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& d
 
   cmd.BeginDebugGroup("ReflectionProbeSelection");
   {
+    {
+      xiiGALMapHelper<xiiUInt8> pProbeBytes(cmd, context.GetBuffer(data.m_hProbeData), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      xiiMemoryUtils::ZeroFill(pProbeBytes.GetMappedData(), sizeof(xiiGPUReflectionProbe) * XII_MAX_REFLECTION_PROBES);
+      if (!data.m_Probes.IsEmpty())
+      {
+        const xiiArrayPtr<const xiiUInt8> probeBytes = data.m_Probes.GetByteArrayPtr();
+        xiiMemoryUtils::Copy(pProbeBytes.GetMappedData(), probeBytes.GetPtr(), probeBytes.GetCount());
+      }
+    }
+    {
+      xiiGALMapHelper<xiiReflectionProbeConstants> pConstants(cmd, context.GetBuffer(data.m_hProbeConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->ActiveProbeCount          = data.m_Probes.GetCount();
+      pConstants->TotalClusterCount         = data.m_uiTotalClusterCount;
+      pConstants->_ReflectionProbePadding   = xiiVec2U32::MakeZero();
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pProbeSelectPipeline);
     cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessBufferView("g_ProbeMask", context.GetBuffer(data.m_hProbeMask)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", context.GetBuffer(data.m_hProbeData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiReflectionProbeConstants", context.GetBuffer(data.m_hProbeConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_ReflectionProbeClusters", context.GetBuffer(data.m_hProbeClusters)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(k_uiMaxReflectionProbes + 63U) / 64U, 1U, 1U});
+    cmd.DispatchCompute({(data.m_uiTotalClusterCount + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -2099,41 +2213,6 @@ void xiiView::ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionD
   cmd.EndDebugGroup();
 }
 
-////////// GPU Reflection Probe Convolution Data //////////
-//
-// Collects all GPU resources related to reflection probe specular convolution.
-
-struct xiiReflectionProbeConvolutionData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphBufferHandle  m_hReflectionProbeMask; ///< ShaderResource in (per-probe visibility/selection mask).
-  xiiRenderGraphTextureHandle m_hBRDFLut;             ///< ShaderResource in (precomputed BRDF LUT for filtered specular).
-};
-
-void xiiView::SetupReflectionProbeConvolution(xiiReflectionProbeConvolutionData& data, xiiRenderGraphBuilder& builder)
-{
-  data.m_hReflectionProbeMask = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeMask, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hBRDFLut             = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pReflProbeConvPipeline, "Shaders/Pipeline/ReflectionFilteredSpecular.xiiShader");
-}
-
-void xiiView::ExecuteReflectionProbeConvolution(const xiiReflectionProbeConvolutionData& data, xiiRenderGraphPassContext& context)
-{
-  xiiGALCommandList& cmd = context.GetCommandList();
-
-  cmd.BeginDebugGroup("ReflectionProbeConvolution");
-  {
-    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pReflProbeConvPipeline);
-    cmd.ResolveAndSetShaderResourceTextureView("g_BRDFLut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_ProbeMask", context.GetBuffer(data.m_hReflectionProbeMask)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({8U, 8U, 6U});
-  }
-  cmd.EndDebugGroup();
-}
-
 ////////// GPU Volumetric Fog Initialization Data //////////
 //
 // Collects all GPU resources related to volumetric fog froxel initialization.
@@ -2639,8 +2718,6 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
 
 struct xiiDeferredIndirectLightingData
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiRenderGraphTextureHandle m_hGBufferAlbedo;          ///< ShaderResource in (G-Buffer albedo).
   xiiRenderGraphTextureHandle m_hGBufferNormal;          ///< ShaderResource in (G-Buffer normal).
   xiiRenderGraphTextureHandle m_hGBufferMaterial;        ///< ShaderResource in (G-Buffer material).
@@ -2650,6 +2727,10 @@ struct xiiDeferredIndirectLightingData
   xiiRenderGraphTextureHandle m_hDDGIIrradiance;         ///< ShaderResource in (DDGI irradiance texture).
   xiiRenderGraphTextureHandle m_hSparseVoxelIrradiance;  ///< ShaderResource in (far-field sparse voxel irradiance).
   xiiRenderGraphTextureHandle m_hSkyRadiance;            ///< ShaderResource in (sky radiance texture).
+  xiiRenderGraphBufferHandle  m_hReflectionProbeData;    ///< ShaderResource in (active local reflection probes).
+  xiiRenderGraphBufferHandle  m_hReflectionProbeClusters; ///< ShaderResource in (two selected probes per cluster).
+  xiiHybridArray<xiiRenderGraphTextureHandle, XII_MAX_REFLECTION_PROBES> m_hReflectionProbeTextures;
+  xiiRenderGraphTextureHandle m_hFallbackReflectionProbe;
   xiiRenderGraphTextureHandle m_hIndirectLightingBuffer; ///< UnorderedAccess out (indirect lighting HDR buffer).
 };
 
@@ -2664,6 +2745,24 @@ void xiiView::SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRe
   data.m_hDDGIIrradiance         = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIIrradiance, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSparseVoxelIrradiance  = builder.ReadTexture(xiiRGBlackboardKeys::k_SparseVoxelIrradiance, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSkyRadiance            = builder.ReadTexture(xiiRGBlackboardKeys::k_SkyRadiance, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hReflectionProbeData    = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeData, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hReflectionProbeClusters = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeMask, xiiGALResourceStateFlags::ShaderResource);
+
+  auto& reflectionResources = m_ViewPassResources.m_LightingPrepPasses;
+  XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before indirect lighting setup.");
+  data.m_hFallbackReflectionProbe = builder.ReadTexture(
+    builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, xiiGALResourceStateFlags::ShaderResource),
+    xiiGALResourceStateFlags::ShaderResource);
+
+  data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
+  for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < reflectionResources.m_ReflectionProbeTextures.GetCount(); ++uiProbeIndex)
+  {
+    xiiStringBuilder sResourceName;
+    sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
+    data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
+      builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], xiiGALResourceStateFlags::ShaderResource),
+      xiiGALResourceStateFlags::ShaderResource));
+  }
 
   xiiGALTextureCreationDescription description;
   description.m_Type             = xiiGALResourceDimension::Texture2D;
@@ -2696,6 +2795,18 @@ void xiiView::ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& dat
     cmd.ResolveAndSetShaderResourceTextureView("g_DDGIIr", context.GetTexture(data.m_hDDGIIrradiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SparseVoxelIrradiance", context.GetTexture(data.m_hSparseVoxelIrradiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SkyRadiance", context.GetTexture(data.m_hSkyRadiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", context.GetBuffer(data.m_hReflectionProbeData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeClusters", context.GetBuffer(data.m_hReflectionProbeClusters)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+
+    xiiHybridArray<xiiGALTextureView*, XII_MAX_REFLECTION_PROBES> reflectionProbeViews;
+    reflectionProbeViews.SetCount(XII_MAX_REFLECTION_PROBES);
+    xiiGALTextureView* pFallbackView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+    for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < XII_MAX_REFLECTION_PROBES; ++uiProbeIndex)
+    {
+      reflectionProbeViews[uiProbeIndex] = uiProbeIndex < data.m_hReflectionProbeTextures.GetCount() ?
+        context.GetTexture(data.m_hReflectionProbeTextures[uiProbeIndex])->GetDefaultView(xiiGALTextureViewType::ShaderResource) : pFallbackView;
+    }
+    cmd.ResolveAndSetShaderResourceTextureViews("g_ReflectionProbeTextures", 0U, reflectionProbeViews, xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_IndirectOut", context.GetTexture(data.m_hIndirectLightingBuffer)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
@@ -4580,7 +4691,6 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiAtmosphereTransmittanceData>("AtmosphereTransmittanceLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereTransmittance, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereTransmittance, this));
   graph.AddPass<xiiAtmosphereMultiScatterData>("AtmosphereMultiScatterLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereMultiScatter, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereMultiScatter, this));
   graph.AddPass<xiiSkyIrradianceConvolutionData>("SkyIrradianceConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSkyIrradianceConvolution, this), xiiMakeDelegate(&xiiView::ExecuteSkyIrradianceConvolution, this));
-  graph.AddPass<xiiReflectionProbeConvolutionData>("ReflectionProbeConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeConvolution, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeConvolution, this));
   graph.AddPass<xiiVolumetricFogInitializationData>("VolumetricFogInitialization", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogInitialization, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogInitialization, this));
   XII_IGNORE_UNUSED(xiiSparseVoxelRadianceManager::AddUpdatePass(graph, &m_ViewPassResources.m_LightingSystem));
   graph.AddPass<xiiSparseVoxelRadianceGatherData>("SparseVoxelRadianceGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSparseVoxelRadianceGather, this), xiiMakeDelegate(&xiiView::ExecuteSparseVoxelRadianceGather, this));

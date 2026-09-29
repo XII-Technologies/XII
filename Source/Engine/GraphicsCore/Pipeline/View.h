@@ -67,7 +67,6 @@ struct xiiBRDFLutGenerationData;
 struct xiiAtmosphereTransmittanceData;
 struct xiiAtmosphereMultiScatterData;
 struct xiiSkyIrradianceConvolutionData;
-struct xiiReflectionProbeConvolutionData;
 struct xiiVolumetricFogInitializationData;
 struct xiiDDGIProbeSamplingData;
 struct xiiSparseVoxelRadianceGatherData;
@@ -351,8 +350,6 @@ private:
   void SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& data, xiiRenderGraphBuilder& builder);
   void ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionData& data, xiiRenderGraphPassContext& context);
 
-  void SetupReflectionProbeConvolution(xiiReflectionProbeConvolutionData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteReflectionProbeConvolution(const xiiReflectionProbeConvolutionData& data, xiiRenderGraphPassContext& context);
 
   void SetupVolumetricFogInitialization(xiiVolumetricFogInitializationData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializationData& data, xiiRenderGraphPassContext& context);
@@ -591,7 +588,6 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pAtmTransmittancePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pAtmMultiScatterPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSkyIrradiancePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pReflProbeConvPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelFogInitPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pDDGIProbePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSparseVoxelGatherPipeline;
@@ -600,6 +596,8 @@ private:
       // Persistent once-generated textures
       xiiSharedPtr<xiiGALTexture> m_pBRDFLut;             // 256x256 R16G16F, generated once
       bool                        m_bBRDFLutGenerated = false;
+      xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;
+      xiiSharedPtr<xiiGALTexture>                       m_pFallbackReflectionProbeTexture;
     } m_LightingPrepPasses;
 
     //  Stage 6 - Main Lighting

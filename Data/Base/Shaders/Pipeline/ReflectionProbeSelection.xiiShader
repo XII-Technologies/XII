@@ -1,0 +1,79 @@
+// XII Engine - GPU reflection probe assignment.
+// Selects two deterministic local probes for every logarithmic lighting cluster.
+
+#include "LightingData.h"
+#include "ReflectionProbeData.h"
+
+StructuredBuffer<xiiClusterDescriptor> g_Clusters : register(t0);
+StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData : register(t1);
+RWStructuredBuffer<uint2> g_ReflectionProbeClusters : register(u0);
+
+bool IntersectsCluster(xiiGPUReflectionProbe probe, xiiClusterDescriptor cluster)
+{
+    const float3 closestPoint = clamp(probe.PositionAndRadius.xyz, cluster.MinBounds.xyz, cluster.MaxBounds.xyz);
+    const float3 delta = probe.PositionAndRadius.xyz - closestPoint;
+    return dot(delta, delta) <= probe.PositionAndRadius.w * probe.PositionAndRadius.w;
+}
+
+bool IsBetterProbe(int priority, float distanceSquared, uint stableId,
+                   int currentPriority, float currentDistanceSquared, uint currentStableId)
+{
+    return priority > currentPriority ||
+           (priority == currentPriority && distanceSquared < currentDistanceSquared) ||
+           (priority == currentPriority && distanceSquared == currentDistanceSquared && stableId < currentStableId);
+}
+
+[numthreads(64, 1, 1)]
+void CS_ReflectionProbeSelection(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    const uint clusterIndex = dispatchThreadId.x;
+    if (clusterIndex >= TotalClusterCount)
+        return;
+
+    const xiiClusterDescriptor cluster = g_Clusters[clusterIndex];
+    const float3 clusterCenter = 0.5f * (cluster.MinBounds.xyz + cluster.MaxBounds.xyz);
+
+    uint firstProbe = 0u;
+    uint secondProbe = 0u;
+    int firstPriority = -2147483647;
+    int secondPriority = -2147483647;
+    float firstDistance = 3.402823e+38f;
+    float secondDistance = 3.402823e+38f;
+    uint firstStableId = 0xffffffffu;
+    uint secondStableId = 0xffffffffu;
+
+    [loop]
+    for (uint probeIndex = 0u; probeIndex < ActiveProbeCount; ++probeIndex)
+    {
+        const xiiGPUReflectionProbe probe = g_ReflectionProbeData[probeIndex];
+        if (!IntersectsCluster(probe, cluster))
+            continue;
+
+        const float3 toProbe = probe.PositionAndRadius.xyz - clusterCenter;
+        const float distanceSquared = dot(toProbe, toProbe);
+        const int priority = asint(probe.Metadata.z);
+        const uint stableId = probe.Metadata.x;
+
+        if (IsBetterProbe(priority, distanceSquared, stableId, firstPriority, firstDistance, firstStableId))
+        {
+            secondProbe = firstProbe;
+            secondPriority = firstPriority;
+            secondDistance = firstDistance;
+            secondStableId = firstStableId;
+
+            firstProbe = probeIndex + 1u;
+            firstPriority = priority;
+            firstDistance = distanceSquared;
+            firstStableId = stableId;
+        }
+        else if (IsBetterProbe(priority, distanceSquared, stableId, secondPriority, secondDistance, secondStableId))
+        {
+            secondProbe = probeIndex + 1u;
+            secondPriority = priority;
+            secondDistance = distanceSquared;
+            secondStableId = stableId;
+        }
+    }
+
+    g_ReflectionProbeClusters[clusterIndex] = uint2(firstProbe, secondProbe);
+}
