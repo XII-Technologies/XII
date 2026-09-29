@@ -35,6 +35,7 @@
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+#include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
@@ -2936,8 +2937,11 @@ struct xiiScreenSpaceReflectionsData
   xiiRenderGraphTextureHandle m_hSceneDepth;             ///< ShaderResource in (scene depth texture).
   xiiRenderGraphTextureHandle m_hGBufferNormal;          ///< ShaderResource in (G-Buffer normal).
   xiiRenderGraphTextureHandle m_hGBufferMaterial;        ///< ShaderResource in (G-Buffer material).
+  xiiRenderGraphTextureHandle m_hHiZPyramid;             ///< ShaderResource in (hierarchical depth used for ray traversal).
   xiiRenderGraphTextureHandle m_hHDRSceneColor;          ///< ShaderResource in (current HDR scene color).
   xiiRenderGraphTextureHandle m_hScreenSpaceReflections; ///< UnorderedAccess out (screen-space reflections texture).
+  xiiRenderGraphBufferHandle  m_hConstants;              ///< ConstantBuffer in (SSR quality and traversal settings).
+  xiiSSRConstants             m_Constants;
 };
 
 void xiiView::SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRenderGraphBuilder& builder)
@@ -2945,6 +2949,7 @@ void xiiView::SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, x
   data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHiZPyramid      = builder.ReadTexture(xiiRGBlackboardKeys::k_HiZPyramid, xiiGALResourceStateFlags::ShaderResource);
   data.m_hHDRSceneColor   = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
@@ -2957,6 +2962,31 @@ void xiiView::SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, x
   description.m_Usage            = xiiGALResourceUsage::Default;
   data.m_hScreenSpaceReflections = builder.WriteTexture(xiiRGBlackboardKeys::k_SSRTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiSSRConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("xiiSSRConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  xiiUInt32 uiMipWidth  = GetRenderResolutionWidth();
+  xiiUInt32 uiMipHeight = GetRenderResolutionHeight();
+  xiiUInt32 uiMipCount  = 1U;
+  while (uiMipWidth > 1U || uiMipHeight > 1U)
+  {
+    uiMipWidth  = xiiMath::Max(uiMipWidth >> 1U, 1U);
+    uiMipHeight = xiiMath::Max(uiMipHeight >> 1U, 1U);
+    ++uiMipCount;
+  }
+
+  data.m_Constants.MaxSteps       = 96U;
+  data.m_Constants.Thickness      = 0.0025f;
+  data.m_Constants.MaxRoughness   = 0.72f;
+  data.m_Constants.StrideZCutoff  = 0.25f;
+  data.m_Constants.InvResolution  = xiiVec2(1.0f / static_cast<float>(GetRenderResolutionWidth()), 1.0f / static_cast<float>(GetRenderResolutionHeight()));
+  data.m_Constants.HiZMipCount    = uiMipCount;
+  data.m_Constants._Padding       = 0.0f;
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pSSRPipeline, "Shaders/Pipeline/SSR.xiiShader");
 }
 
@@ -2966,12 +2996,20 @@ void xiiView::ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData&
 
   cmd.BeginDebugGroup("SSR");
   {
+    {
+      xiiGALMapHelper<xiiSSRConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *pConstants = data.m_Constants;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pSSRPipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
 
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_HiZPyramid", context.GetTexture(data.m_hHiZPyramid)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRScene", context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiSSRConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SSROut", context.GetTexture(data.m_hScreenSpaceReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});

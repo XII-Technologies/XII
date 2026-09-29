@@ -3,22 +3,13 @@
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
 #include "PipelineCommon.xiiShader"
-
-cbuffer SSRConstants : register(b3)
-{
-    uint   g_MaxSteps;
-    float  g_Thickness;           // depth tolerance for a hit (world units)
-    float  g_MaxRoughnessForSSR;  // skip rougher pixels - they fall back to IBL
-    float  g_StrideZCutoff;       // stride doubles once Z exceeds this
-    float2 g_InvResolution;
-    uint   g_HiZMipCount;
-    float  _pad;
-};
+#include "Passes/Reflections/SSRConstants.h"
 
 Texture2D<float>  g_SceneDepth  : register(t0);
-Texture2D<float2> g_NRBuffer    : register(t1);
-Texture2D<float4> g_GBufMat     : register(t2); // r=roughness
+Texture2D<float2> g_GBufNormal  : register(t1);
+Texture2D<float4> g_GBufMaterial : register(t2); // r=roughness
 Texture2D<float>  g_HiZPyramid  : register(t3);
+Texture2D<float4> g_HDRScene    : register(t4);
 RWTexture2D<float4> g_SSROut    : register(u0);
 
 // Intersect ray with screen using a Hi-Z accelerated DDA.
@@ -73,17 +64,17 @@ void CS_SSR(uint3 tid : SV_DispatchThreadID)
     if (any(tid.xy >= dims)) return;
 
     float2 uv        = (float2(tid.xy) + 0.5f) / float2(dims);
-    float  roughness = g_GBufMat.SampleLevel(g_sPointClamp, uv, 0).r;
+    float  roughness = g_GBufMaterial.SampleLevel(g_sPointClamp, uv, 0).r;
 
     g_SSROut[tid.xy] = float4(0,0,0,0);
-    if (roughness > g_MaxRoughnessForSSR) return;
+    if (roughness > MaxRoughness) return;
 
     float  depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
     if (depth <= 0.0f) return;
 
     float3 worldPos = ReconstructWorldPos(uv, depth);
     float3 V        = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
-    float2 octN     = g_NRBuffer.SampleLevel(g_sPointClamp, uv, 0);
+    float2 octN     = g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0);
     float3 N        = DecodeOctNormal(octN);
 
     // Jitter reflection direction based on roughness and frame index (for TAA integration).
@@ -103,14 +94,18 @@ void CS_SSR(uint3 tid : SV_DispatchThreadID)
     float3 rayDir   = normalize(ndcEnd - ndcOrg);
 
     float2 hitUV; float hitDepth;
-    bool hit = TraceHiZ(ndcOrg, rayDir, g_Thickness, g_MaxSteps, g_HiZMipCount, hitUV, hitDepth);
+    bool hit = TraceHiZ(ndcOrg, rayDir, Thickness, MaxSteps, HiZMipCount, hitUV, hitDepth);
 
     if (hit)
     {
         // Fade at screen edges and by roughness.
         float2 edgeFade = saturate(float2(8,8) * min(hitUV, 1.0f - hitUV));
-        float  conf     = edgeFade.x * edgeFade.y * (1.0f - roughness / g_MaxRoughnessForSSR);
-        // Store UV into the hit colour for the resolve pass (here simplified to confidence).
-        g_SSROut[tid.xy] = float4(hitUV.x, hitUV.y, hitDepth, conf);
+        float  conf     = edgeFade.x * edgeFade.y * (1.0f - roughness / max(MaxRoughness, 1e-4f));
+
+        // Resolve the hit immediately. RGB is scene-referred radiance and alpha
+        // is confidence, which lets the hybrid reflection composite blend into
+        // ray tracing and local/sky probes without interpreting packed UVs.
+        float3 hitRadiance = max(g_HDRScene.SampleLevel(g_sLinearClamp, hitUV, roughness * 4.0f).rgb, 0.0f);
+        g_SSROut[tid.xy] = float4(hitRadiance, saturate(conf));
     }
 }
