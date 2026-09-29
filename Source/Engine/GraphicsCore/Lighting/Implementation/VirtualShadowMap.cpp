@@ -15,6 +15,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
@@ -55,6 +56,7 @@ public:
   xiiDynamicArray<xiiVirtualShadowPageMapping> m_DirtyPages;
   xiiVirtualShadowMapStats                 m_Stats;
   xiiSharedPtr<xiiGALBuffer>               m_pPhysicalPageTable;
+  xiiSharedPtr<xiiGALTexture>              m_pPhysicalAtlas;
   xiiSharedPtr<xiiGALBuffer>               m_pFeedbackBuffer;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_FeedbackReadbackRing;
   xiiDynamicArray<xiiUInt64>               m_FeedbackReadbackFrames;
@@ -63,6 +65,8 @@ public:
   xiiUInt64                                m_uiCompletedFrame = 0U;
   xiiUInt64                                m_uiAllFrameMask = 0U;
   xiiUInt64                                m_uiFeedbackClearFrame = xiiMath::MaxValue<xiiUInt64>();
+  xiiUInt32                                m_uiPhysicalPagesPerRow = 0U;
+  xiiUInt32                                m_uiPhysicalPageRows = 0U;
   bool                                     m_bEngineStarted = false;
   bool                                     m_bInitialized = false;
 };
@@ -209,6 +213,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVirtualShadowMapStats, xiiNoBase, 1, xiiRTTID
     XII_MEMBER_PROPERTY("EvictionCount", m_uiEvictionCount),
     XII_MEMBER_PROPERTY("DroppedRequestCount", m_uiDroppedRequestCount),
     XII_MEMBER_PROPERTY("DirtyPageCount", m_uiDirtyPageCount),
+    XII_MEMBER_PROPERTY("PhysicalAtlasWidth", m_uiPhysicalAtlasWidth),
+    XII_MEMBER_PROPERTY("PhysicalAtlasHeight", m_uiPhysicalAtlasHeight),
   }
   XII_END_PROPERTIES;
 }
@@ -261,6 +267,7 @@ void xiiVirtualShadowMapManager::EngineShutdown()
     s_pState->m_FeedbackReadbackRing.Clear();
     s_pState->m_FeedbackReadbackFrames.Clear();
     s_pState->m_pFeedbackBuffer.Clear();
+    s_pState->m_pPhysicalAtlas.Clear();
     s_pState->m_pPhysicalPageTable.Clear();
     s_pState->m_bEngineStarted = false;
   }
@@ -283,17 +290,35 @@ xiiResult xiiVirtualShadowMapManager::CreateGpuResources()
   if (pDevice == nullptr || uiBufferSize > xiiMath::MaxValue<xiiUInt32>())
     return XII_FAILURE;
 
+  const xiiUInt64 uiAtlasWidth = static_cast<xiiUInt64>(s_pState->m_uiPhysicalPagesPerRow) * s_pState->m_Settings.m_uiPageSize;
+  const xiiUInt64 uiAtlasHeight = static_cast<xiiUInt64>(s_pState->m_uiPhysicalPageRows) * s_pState->m_Settings.m_uiPageSize;
+  const xiiUInt32 uiMaximumTextureDimension = pDevice->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_uiMaxTexture2DDimension;
+  if (uiAtlasWidth == 0U || uiAtlasHeight == 0U || uiAtlasWidth > uiMaximumTextureDimension || uiAtlasHeight > uiMaximumTextureDimension)
+    return XII_FAILURE;
+
   xiiGALBufferCreationDescription description;
   description.m_uiSize = static_cast<xiiUInt32>(uiBufferSize);
   description.m_uiElementByteStride = sizeof(xiiGpuVirtualShadowPage);
   description.m_BindFlags = xiiGALBindFlags::ShaderResource;
   description.m_Mode = xiiGALBufferMode::Structured;
   description.m_Usage = xiiGALResourceUsage::Mutable;
-  s_pState->m_pPhysicalPageTable = pDevice->CreateBuffer(description);
-  if (s_pState->m_pPhysicalPageTable == nullptr)
+  xiiSharedPtr<xiiGALBuffer> pPhysicalPageTable = pDevice->CreateBuffer(description);
+  if (pPhysicalPageTable == nullptr)
     return XII_FAILURE;
+  pPhysicalPageTable->SetDebugName("Virtual Shadow Physical Page Table");
 
-  s_pState->m_pPhysicalPageTable->SetDebugName("Virtual Shadow Physical Page Table");
+  xiiGALTextureCreationDescription textureDescription;
+  textureDescription.m_Type = xiiGALResourceDimension::Texture2D;
+  textureDescription.m_Format = xiiGALResourceFormat::D32Float;
+  textureDescription.m_Size.width = static_cast<xiiUInt32>(uiAtlasWidth);
+  textureDescription.m_Size.height = static_cast<xiiUInt32>(uiAtlasHeight);
+  textureDescription.m_uiMipLevels = 1U;
+  textureDescription.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+  textureDescription.m_Usage = xiiGALResourceUsage::Default;
+  xiiSharedPtr<xiiGALTexture> pPhysicalAtlas = pDevice->CreateTexture(textureDescription);
+  if (pPhysicalAtlas == nullptr)
+    return XII_FAILURE;
+  pPhysicalAtlas->SetDebugName("Virtual Shadow Physical Atlas");
 
   const xiiUInt64 uiFeedbackSize = static_cast<xiiUInt64>(s_pState->m_Settings.m_uiMaxFeedbackRequests + 1U) * sizeof(xiiGpuVirtualShadowFeedback);
   if (uiFeedbackSize > xiiMath::MaxValue<xiiUInt32>())
@@ -305,23 +330,29 @@ xiiResult xiiVirtualShadowMapManager::CreateGpuResources()
   description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
   description.m_Mode = xiiGALBufferMode::Structured;
   description.m_Usage = xiiGALResourceUsage::Default;
-  s_pState->m_pFeedbackBuffer = pDevice->CreateBuffer(description);
-  if (s_pState->m_pFeedbackBuffer == nullptr)
+  xiiSharedPtr<xiiGALBuffer> pFeedbackBuffer = pDevice->CreateBuffer(description);
+  if (pFeedbackBuffer == nullptr)
     return XII_FAILURE;
-  s_pState->m_pFeedbackBuffer->SetDebugName("Virtual Shadow Feedback");
+  pFeedbackBuffer->SetDebugName("Virtual Shadow Feedback");
 
   description = {};
   description.m_uiSize = static_cast<xiiUInt32>(uiFeedbackSize);
   description.m_Usage = xiiGALResourceUsage::Staging;
   description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
-  s_pState->m_FeedbackReadbackRing.SetCount(s_pState->m_Settings.m_uiFramesInFlight);
-  s_pState->m_FeedbackReadbackFrames.SetCount(s_pState->m_Settings.m_uiFramesInFlight, xiiMath::MaxValue<xiiUInt64>());
+  xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> feedbackReadbackRing;
+  feedbackReadbackRing.SetCount(s_pState->m_Settings.m_uiFramesInFlight);
   for (xiiUInt32 i = 0U; i < s_pState->m_Settings.m_uiFramesInFlight; ++i)
   {
-    s_pState->m_FeedbackReadbackRing[i] = pDevice->CreateBuffer(description);
-    if (s_pState->m_FeedbackReadbackRing[i] == nullptr)
+    feedbackReadbackRing[i] = pDevice->CreateBuffer(description);
+    if (feedbackReadbackRing[i] == nullptr)
       return XII_FAILURE;
   }
+
+  s_pState->m_pPhysicalPageTable = std::move(pPhysicalPageTable);
+  s_pState->m_pPhysicalAtlas = std::move(pPhysicalAtlas);
+  s_pState->m_pFeedbackBuffer = std::move(pFeedbackBuffer);
+  s_pState->m_FeedbackReadbackRing = std::move(feedbackReadbackRing);
+  s_pState->m_FeedbackReadbackFrames.SetCount(s_pState->m_Settings.m_uiFramesInFlight, xiiMath::MaxValue<xiiUInt64>());
   return XII_SUCCESS;
 }
 
@@ -344,6 +375,10 @@ xiiResult xiiVirtualShadowMapManager::Configure(const xiiVirtualShadowMapSetting
   s_pState->m_DirtyPages.Clear();
   s_pState->m_Stats = {};
   s_pState->m_Stats.m_uiFreePageCount = settings.m_uiPhysicalPageCount;
+  s_pState->m_uiPhysicalPagesPerRow = xiiMath::Max(static_cast<xiiUInt32>(xiiMath::Ceil(xiiMath::Sqrt(static_cast<float>(settings.m_uiPhysicalPageCount)))), 1U);
+  s_pState->m_uiPhysicalPageRows = (settings.m_uiPhysicalPageCount + s_pState->m_uiPhysicalPagesPerRow - 1U) / s_pState->m_uiPhysicalPagesPerRow;
+  s_pState->m_Stats.m_uiPhysicalAtlasWidth = s_pState->m_uiPhysicalPagesPerRow * settings.m_uiPageSize;
+  s_pState->m_Stats.m_uiPhysicalAtlasHeight = s_pState->m_uiPhysicalPageRows * settings.m_uiPageSize;
   s_pState->m_uiFrameIndex = 0U;
   s_pState->m_uiCompletedFrame = 0U;
   s_pState->m_uiAllFrameMask = settings.m_uiFramesInFlight >= 64U ? xiiMath::MaxValue<xiiUInt64>() : (xiiUInt64(1) << settings.m_uiFramesInFlight) - 1U;
@@ -593,6 +628,27 @@ const xiiVirtualShadowMapSettings& xiiVirtualShadowMapManager::GetConfiguration(
 {
   XII_ASSERT_RELEASE(IsInitialized(), "Virtual shadow-map manager is not initialized.");
   return s_pState->m_Settings;
+}
+
+xiiSharedPtr<xiiGALTexture> xiiVirtualShadowMapManager::GetPhysicalAtlas()
+{
+  if (!IsInitialized())
+    return nullptr;
+  if (s_pState->m_pPhysicalAtlas == nullptr && CreateGpuResources().Failed())
+    return nullptr;
+  return s_pState->m_pPhysicalAtlas;
+}
+
+bool xiiVirtualShadowMapManager::GetPhysicalPageViewport(xiiUInt32 uiPhysicalPage, xiiRectU32& out_viewport)
+{
+  if (!IsInitialized() || uiPhysicalPage >= s_pState->m_Settings.m_uiPhysicalPageCount || s_pState->m_uiPhysicalPagesPerRow == 0U)
+    return false;
+
+  const xiiUInt32 uiPageX = uiPhysicalPage % s_pState->m_uiPhysicalPagesPerRow;
+  const xiiUInt32 uiPageY = uiPhysicalPage / s_pState->m_uiPhysicalPagesPerRow;
+  out_viewport = xiiRectU32(uiPageX * s_pState->m_Settings.m_uiPageSize, uiPageY * s_pState->m_Settings.m_uiPageSize,
+    s_pState->m_Settings.m_uiPageSize, s_pState->m_Settings.m_uiPageSize);
+  return true;
 }
 
 xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)

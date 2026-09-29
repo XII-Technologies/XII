@@ -43,6 +43,17 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   settings.m_uiFramesInFlight = 2U;
   XII_TEST_BOOL(xiiVirtualShadowMapManager::Configure(settings).Succeeded());
 
+  const xiiVirtualShadowMapStats configuredStats = xiiVirtualShadowMapManager::GetStats();
+  XII_TEST_INT(configuredStats.m_uiPhysicalAtlasWidth, 256U);
+  XII_TEST_INT(configuredStats.m_uiPhysicalAtlasHeight, 128U);
+  xiiRectU32 secondPageViewport;
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::GetPhysicalPageViewport(1U, secondPageViewport));
+  XII_TEST_INT(secondPageViewport.x, 128U);
+  XII_TEST_INT(secondPageViewport.y, 0U);
+  XII_TEST_INT(secondPageViewport.width, 128U);
+  XII_TEST_INT(secondPageViewport.height, 128U);
+  XII_TEST_BOOL(!xiiVirtualShadowMapManager::GetPhysicalPageViewport(2U, secondPageViewport));
+
   xiiVirtualShadowMapManager::BeginFrame(1U, 0U);
   xiiVirtualShadowPageRequest initial[] = {
     MakeRequest(1U, 0U, 10U),

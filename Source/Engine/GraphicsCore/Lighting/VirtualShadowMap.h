@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Math/Rect.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
@@ -127,6 +128,8 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapStats
   xiiUInt32 m_uiEvictionCount        = 0U;
   xiiUInt32 m_uiDroppedRequestCount  = 0U;
   xiiUInt32 m_uiDirtyPageCount       = 0U;
+  xiiUInt32 m_uiPhysicalAtlasWidth   = 0U;
+  xiiUInt32 m_uiPhysicalAtlasHeight  = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowMapStats);
@@ -163,6 +166,13 @@ public:
 
   [[nodiscard]] static xiiVirtualShadowMapStats GetStats();
   [[nodiscard]] static const xiiVirtualShadowMapSettings& GetConfiguration();
+
+  /// Persistent depth atlas owned by the subsystem. Consumers import this
+  /// resource into their render graph but never own or destroy it.
+  [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetPhysicalAtlas();
+
+  /// Returns the texel viewport assigned to a physical page.
+  [[nodiscard]] static bool GetPhysicalPageViewport(xiiUInt32 uiPhysicalPage, xiiRectU32& out_viewport);
 
   struct UploadHandles
   {
