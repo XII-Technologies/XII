@@ -1,5 +1,5 @@
 // XII Engine - LightListBuild.xiiShader
-// Assigns stable-ID GPU lights to the logarithmic cluster grid.
+// Light-centric assignment of stable-ID GPU lights to logarithmic clusters.
 
 #include "PipelineCommon.xiiShader"
 #include "LightingData.h"
@@ -20,47 +20,77 @@ cbuffer xiiLightClusteringConstants : register(b3)
     uint  ActiveLightCount;
 };
 
-StructuredBuffer<xiiClusterDescriptor> g_Clusters   : register(t0);
-StructuredBuffer<xiiGpuLightData>      g_Lights     : register(t1);
+StructuredBuffer<xiiGpuLightData>      g_Lights     : register(t0);
 RWStructuredBuffer<uint>               g_LightIndex : register(u0);
 RWStructuredBuffer<uint2>              g_LightGrid  : register(u1);
 
-bool SphereIntersectsAabb(float4 sphere, float3 aabbMin, float3 aabbMax)
+uint LinearDepthToSlice(float linearDepth)
 {
-    const float3 closest = clamp(sphere.xyz, aabbMin, aabbMax);
-    const float3 delta = closest - sphere.xyz;
-    return dot(delta, delta) <= sphere.w * sphere.w;
+    const float normalized = log2(max(linearDepth, NearPlane) / max(NearPlane, 1e-4f)) / max(LogFarOverNear, 1e-4f);
+    return min((uint)max(normalized * (float)ClusterCountZ, 0.0f), ClusterCountZ - 1u);
 }
 
 [numthreads(64, 1, 1)]
 void CS_LightListBuild(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    const uint clusterIndex = dispatchThreadId.x;
-    if (clusterIndex >= TotalClusters)
+    const uint lightIndex = dispatchThreadId.x;
+    if (lightIndex >= ActiveLightCount)
         return;
 
-    const xiiClusterDescriptor cluster = g_Clusters[clusterIndex];
-    const uint listOffset = clusterIndex * MaxLightsPerCluster;
-    uint localCount = 0u;
+    const xiiGpuLightData lightData = g_Lights[lightIndex];
+    if (GetLightType(lightData) == XII_LIGHT_TYPE_DIRECTIONAL)
+        return;
 
-    [loop]
-    for (uint lightIndex = 0u; lightIndex < ActiveLightCount; ++lightIndex)
+    const float3 center = lightData.BoundsCenterAndRadius.xyz;
+    const float radius = max(lightData.BoundsCenterAndRadius.w, 1e-3f);
+    const float viewDepth = dot(center - g_CameraPositionAndNearPlane.xyz, normalize(g_CameraForwardAndFarPlane.xyz));
+    if (viewDepth + radius < NearPlane || viewDepth - radius > FarPlane)
+        return;
+
+    const uint minZ = LinearDepthToSlice(max(viewDepth - radius, NearPlane));
+    const uint maxZ = LinearDepthToSlice(min(viewDepth + radius, FarPlane));
+
+    uint2 minTile = uint2(0u, 0u);
+    uint2 maxTile = uint2(ClusterCountX - 1u, ClusterCountY - 1u);
+    if (viewDepth > radius)
     {
-        const xiiGpuLightData lightData = g_Lights[lightIndex];
-        const uint lightType = GetLightType(lightData);
+        const float4 clipCenter = mul(g_ViewProjectionMatrix, float4(center, 1.0f));
+        if (clipCenter.w <= 1e-5f)
+            return;
 
-        if (lightType == XII_LIGHT_TYPE_DIRECTIONAL)
-            continue;
+        const float projectionScaleX = length(float3(g_ViewProjectionMatrix[0][0], g_ViewProjectionMatrix[0][1], g_ViewProjectionMatrix[0][2]));
+        const float projectionScaleY = length(float3(g_ViewProjectionMatrix[1][0], g_ViewProjectionMatrix[1][1], g_ViewProjectionMatrix[1][2]));
+        const float2 ndcCenter = clipCenter.xy / clipCenter.w;
+        const float2 ndcRadius = radius * float2(projectionScaleX, projectionScaleY) / abs(clipCenter.w);
+        const float2 uvCenter = float2(ndcCenter.x * 0.5f + 0.5f, -ndcCenter.y * 0.5f + 0.5f);
+        const float2 uvRadius = ndcRadius * 0.5f;
 
-        if (!SphereIntersectsAabb(lightData.BoundsCenterAndRadius, cluster.MinBounds.xyz, cluster.MaxBounds.xyz))
-            continue;
+        const float2 tileMinFloat = floor((uvCenter - uvRadius) * float2(ClusterCountX, ClusterCountY));
+        const float2 tileMaxFloat = floor((uvCenter + uvRadius) * float2(ClusterCountX, ClusterCountY));
+        if (tileMaxFloat.x < 0.0f || tileMaxFloat.y < 0.0f || tileMinFloat.x >= (float)ClusterCountX || tileMinFloat.y >= (float)ClusterCountY)
+            return;
 
-        if (localCount < MaxLightsPerCluster)
-        {
-            g_LightIndex[listOffset + localCount] = lightIndex;
-            ++localCount;
-        }
+        minTile = (uint2)clamp(tileMinFloat - 1.0f, 0.0f, float2(ClusterCountX - 1u, ClusterCountY - 1u));
+        maxTile = (uint2)clamp(tileMaxFloat + 1.0f, 0.0f, float2(ClusterCountX - 1u, ClusterCountY - 1u));
     }
 
-    g_LightGrid[clusterIndex] = uint2(listOffset, localCount);
+    [loop]
+    for (uint z = minZ; z <= maxZ; ++z)
+    {
+        [loop]
+        for (uint y = minTile.y; y <= maxTile.y; ++y)
+        {
+            [loop]
+            for (uint x = minTile.x; x <= maxTile.x; ++x)
+            {
+                const uint clusterIndex = (z * ClusterCountY + y) * ClusterCountX + x;
+                uint listSlot;
+                InterlockedAdd(g_LightGrid[clusterIndex].y, 1u, listSlot);
+                if (listSlot < MaxLightsPerCluster)
+                {
+                    g_LightIndex[clusterIndex * MaxLightsPerCluster + listSlot] = lightIndex;
+                }
+            }
+        }
+    }
 }

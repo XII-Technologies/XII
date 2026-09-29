@@ -23,7 +23,7 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiMaxActiveLights        = 1024U;
+  xiiUInt32 m_uiMaxActiveLights        = 65536U;
   xiiUInt32 m_uiMaxLightsPerCluster    = 128U;
   xiiUInt32 m_uiClusterTileSize        = 16U;
   xiiUInt32 m_uiClusterDepthSlices     = 24U;

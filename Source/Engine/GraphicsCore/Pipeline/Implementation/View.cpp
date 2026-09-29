@@ -33,7 +33,6 @@ namespace
 {
   // Shared constants (sizes of persistent GPU buffers, aligned to typical instance budgets)
   static constexpr xiiUInt32 k_uiMaxInstances    = 65536U; ///< The maximum number of drawable objects in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
-  static constexpr xiiUInt32 k_uiMaxLights       = 1024U;  ///< The maximum number of active lights in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
   static constexpr xiiUInt32 k_uiMaxMaterialBins = 512U;   ///< The maximum number of distinct (mesh x material) draw bins in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
 
   static constexpr xiiUInt32 k_uiMaxReflectionProbes = 64U; ///< The maximum number of active reflection probes in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
@@ -717,22 +716,60 @@ void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRenderGrap
 // Builds light lists for clustered shading on the GPU, using the cluster grid from this frame's Cluster Build pass and the list of active lights from extraction.
 // This is a compute pass that writes out structured buffers of light indices per cluster, which are then consumed by the main lighting pass for light culling and shading.
 
+struct xiiLightListClearData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphBufferHandle m_hClusterConstants;
+  xiiRenderGraphBufferHandle m_hLightGridBuffer;
+  xiiUInt32                  m_uiTotalClusters = 0U;
+};
+
+void xiiView::SetupLightListClear(xiiLightListClearData& data, xiiRenderGraphBuilder& builder)
+{
+  data.m_hClusterConstants = builder.ReadBuffer("xiiLightClusteringConstants", xiiGALResourceStateFlags::ConstantBuffer);
+
+  const xiiUInt32 uiMaxClusters = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);
+
+  xiiGALBufferCreationDescription description;
+  description.m_uiElementByteStride = 8U; // uint2 (fixed list offset, atomic count) per cluster
+  description.m_uiSize              = description.m_uiElementByteStride * uiMaxClusters;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  data.m_hLightGridBuffer           = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_uiTotalClusters            = uiMaxClusters;
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pLightListClearPipeline, "Shaders/Pipeline/LightListClear.xiiShader");
+}
+
+void xiiView::ExecuteLightListClear(const xiiLightListClearData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("LightListClear");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pLightListClearPipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(data.m_uiTotalClusters + 63U) / 64U, 1U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 struct xiiLightListData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphBufferHandle m_hClusterDescriptors;    ///< SRV in (structured buffer of cluster descriptors, one per cluster, from this frame's Cluster Build).
   xiiRenderGraphBufferHandle m_hClusterConstants;      ///< Constant buffer in (cluster dimensions and active light count).
   xiiRenderGraphBufferHandle m_hLightIndexBuffer;      ///< SRV in (structured buffer of uint, one per light, containing light type and other metadata, from extraction).
   xiiRenderGraphBufferHandle m_hLightGridBuffer;       ///< UAV out (structured buffer of uint, containing compact light lists per cluster, consumed by main lighting pass).
   xiiUInt32                  m_uiActiveLightCount = 0; ///< Number of active lights to process (from extraction). This is used to avoid processing the entire buffer when only a subset is populated.
-  xiiUInt32                  m_uiTotalClusters    = 0; ///< Number of clusters that need a compact light list.
 };
 
 void xiiView::SetupLightListBuild(xiiLightListData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hClusterDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hClusterConstants   = builder.ReadBuffer("xiiLightClusteringConstants", xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hClusterConstants = builder.ReadBuffer("xiiLightClusteringConstants", xiiGALResourceStateFlags::ConstantBuffer);
 
   const xiiUInt32 uiMaxClusters    = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);
   const xiiUInt32 uiMaxLightsPerCl = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetSettings().m_uiMaxLightsPerCluster, 1U);
@@ -744,15 +781,9 @@ void xiiView::SetupLightListBuild(xiiLightListData& data, xiiRenderGraphBuilder&
   indexBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hLightIndexBuffer                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, indexBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
-  xiiGALBufferCreationDescription gridBufferDescription;
-  gridBufferDescription.m_uiElementByteStride = 8U; // uint2 (offset, count) per cluster
-  gridBufferDescription.m_uiSize              = gridBufferDescription.m_uiElementByteStride * uiMaxClusters;
-  gridBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  gridBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hLightGridBuffer                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, gridBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hLightGridBuffer = builder.WriteBuffer(builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
 
   data.m_uiActiveLightCount = m_ViewPassResources.m_LightingSystem.GetActiveLightCount();
-  data.m_uiTotalClusters    = uiMaxClusters;
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pLightListPipeline, "Shaders/Pipeline/LightListBuild.xiiShader");
 }
@@ -767,11 +798,10 @@ void xiiView::ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraph
     m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     m_ViewPassResources.m_LightingSystem.BindLightData(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(data.m_uiTotalClusters + 63U) / 64U, 1U, 1U});
+    cmd.DispatchCompute({(xiiMath::Max(data.m_uiActiveLightCount, 1U) + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -973,7 +1003,7 @@ void xiiView::SetupLocalShadowAtlasAllocation(xiiLocalShadowAtlasAllocationData&
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 32U;
-  description.m_uiSize              = description.m_uiElementByteStride * k_uiMaxLights;
+  description.m_uiSize              = description.m_uiElementByteStride * m_ViewPassResources.m_LightingSystem.GetSettings().m_uiMaxActiveLights;
   description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Mode                = xiiGALBufferMode::Structured;
   description.m_Usage               = xiiGALResourceUsage::Default;
@@ -4261,6 +4291,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiShadowCasterBuildData>("ShadowCasterListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCasterBuild, this), xiiMakeDelegate(&xiiView::ExecuteShadowCasterBuild, this));
   graph.AddPass<xiiInstanceUpdateData>("InstanceUpdate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupInstanceUpdate, this), xiiMakeDelegate(&xiiView::ExecuteInstanceUpdate, this));
   graph.AddPass<xiiClusterBuildData>("ClusterGridBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupClusterBuild, this), xiiMakeDelegate(&xiiView::ExecuteClusterBuild, this));
+  graph.AddPass<xiiLightListClearData>("LightListClear", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListClear, this), xiiMakeDelegate(&xiiView::ExecuteLightListClear, this));
   graph.AddPass<xiiLightListData>("LightListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListBuild, this), xiiMakeDelegate(&xiiView::ExecuteLightListBuild, this));
   graph.AddPass<xiiReflectionProbeSelectData>("ReflectionProbeSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeSelect, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeSelect, this));
   graph.AddPass<xiiFroxelAllocationData>("VolumetricGridAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFroxelAllocation, this), xiiMakeDelegate(&xiiView::ExecuteFroxelAllocation, this));
