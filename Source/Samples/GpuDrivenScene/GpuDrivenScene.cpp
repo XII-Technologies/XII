@@ -281,7 +281,7 @@ private:
   {
     XII_IGNORE_UNUSED(blackboard);
 
-    const auto                        geometry     = m_World.GetGeometryResidency().AddUploadPass(graph, m_uiFrameIndex);
+    const auto                        geometry     = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
     const xiiRenderGraphBufferHandle  hMaterials   = xiiMaterialManager::AddUploadPass(graph);
     const xiiRenderGraphTextureHandle hPreviousHiZ = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
 

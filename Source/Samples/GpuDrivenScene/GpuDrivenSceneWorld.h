@@ -52,7 +52,6 @@ public:
   [[nodiscard]] xiiSceneDatabase&             GetScene() { return m_Scene; }
   [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_Scene; }
   [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
-  [[nodiscard]] xiiGeometryResidencyManager&  GetGeometryResidency() { return *xiiGeometryResidencyManager::GetSingleton(); }
   [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return *xiiGALBindlessResourceTable::GetSingleton(); }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
   [[nodiscard]] xiiUInt32                     GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;

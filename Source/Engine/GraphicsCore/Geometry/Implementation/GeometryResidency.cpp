@@ -7,9 +7,44 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 
-XII_IMPLEMENT_SINGLETON(xiiGeometryResidencyManager);
+class xiiGeometryResidencyManager::State
+{
+public:
+  void ClearGpuState()
+  {
+    m_pMetadataBuffer.Clear();
+    m_pMeshletMetadataBuffer.Clear();
+    m_Slots.Clear();
+    m_FreeSlots.Clear();
+    m_FreeMeshletRanges.Clear();
+    m_PendingMeshletUploads.Clear();
+    m_uiFramesInFlight      = 0U;
+    m_uiAllFrameMask        = 0U;
+    m_uiBudgetBytes         = 0U;
+    m_uiResidentBytes       = 0U;
+    m_uiLastUploadedBytes   = 0U;
+    m_uiNextMeshletUploadId = 1U;
+    m_bInitialized          = false;
+  }
 
-static xiiUniquePtr<xiiGeometryResidencyManager> s_pGeometryResidencyManager;
+  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper> m_Slots;
+  xiiDynamicArray<xiiUInt32>                        m_FreeSlots;
+  xiiSharedPtr<xiiGALBuffer>                        m_pMetadataBuffer;
+  xiiSharedPtr<xiiGALBuffer>                        m_pMeshletMetadataBuffer;
+  xiiDynamicArray<FreeRange>                        m_FreeMeshletRanges;
+  xiiDynamicArray<UploadPassData::MeshletUpload>    m_PendingMeshletUploads;
+  xiiUInt32                                         m_uiFramesInFlight      = 0U;
+  xiiUInt64                                         m_uiAllFrameMask        = 0U;
+  xiiUInt64                                         m_uiBudgetBytes         = 0U;
+  xiiUInt64                                         m_uiResidentBytes       = 0U;
+  xiiUInt64                                         m_uiLastUploadedBytes   = 0U;
+  xiiUInt64                                         m_uiNextMeshletUploadId = 1U;
+  xiiGeometryResidencyDescription                   m_Configuration;
+  bool                                              m_bEngineStarted = false;
+  bool                                              m_bInitialized   = false;
+};
+
+xiiUniquePtr<xiiGeometryResidencyManager::State> xiiGeometryResidencyManager::s_pState;
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, GeometryResidencyManager)
@@ -21,22 +56,22 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, GeometryResidencyManager)
 
   ON_CORESYSTEMS_STARTUP
   {
-    s_pGeometryResidencyManager = XII_DEFAULT_NEW(xiiGeometryResidencyManager);
+    xiiGeometryResidencyManager::Startup();
   }
 
   ON_HIGHLEVELSYSTEMS_STARTUP
   {
-    s_pGeometryResidencyManager->EngineStartup();
+    xiiGeometryResidencyManager::EngineStartup();
   }
 
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
-    s_pGeometryResidencyManager->EngineShutdown();
+    xiiGeometryResidencyManager::EngineShutdown();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    s_pGeometryResidencyManager.Clear();
+    xiiGeometryResidencyManager::Shutdown();
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -150,43 +185,59 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryResidencyDescription, xiiNoBase, 1, x
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
-xiiGeometryResidencyManager::xiiGeometryResidencyManager() :
-  m_SingletonRegistrar(this)
+void xiiGeometryResidencyManager::Startup()
 {
+  XII_ASSERT_DEV(s_pState == nullptr, "Geometry residency manager started twice.");
+  s_pState = XII_DEFAULT_NEW(State);
 }
-
-xiiGeometryResidencyManager::~xiiGeometryResidencyManager() { Shutdown(); }
 
 xiiResult xiiGeometryResidencyManager::Configure(const xiiGeometryResidencyDescription& description)
 {
-  if (description.m_uiMaxGeometries == 0U || description.m_uiFramesInFlight == 0U || description.m_uiFramesInFlight > 64U || description.m_uiMaxMeshlets == 0U)
+  XII_ASSERT_DEV(s_pState != nullptr, "Geometry residency manager is not started.");
+  if (s_pState == nullptr || description.m_uiMaxGeometries == 0U || description.m_uiFramesInFlight == 0U || description.m_uiFramesInFlight > 64U || description.m_uiMaxMeshlets == 0U)
     return XII_FAILURE;
 
-  if (m_bInitialized && GetStats().m_uiGeometryCount != 0U)
+  if (s_pState->m_bInitialized && GetStats().m_uiGeometryCount != 0U)
   {
     XII_ASSERT_DEV(false, "Geometry residency cannot be reconfigured while geometry handles are active.");
     return XII_FAILURE;
   }
 
   const bool bSameConfiguration =
-    m_Configuration.m_uiMaxGeometries == description.m_uiMaxGeometries &&
-    m_Configuration.m_uiFramesInFlight == description.m_uiFramesInFlight &&
-    m_Configuration.m_uiBudgetBytes == description.m_uiBudgetBytes &&
-    m_Configuration.m_uiMaxMeshlets == description.m_uiMaxMeshlets;
-  if (bSameConfiguration && m_bInitialized)
+    s_pState->m_Configuration.m_uiMaxGeometries == description.m_uiMaxGeometries &&
+    s_pState->m_Configuration.m_uiFramesInFlight == description.m_uiFramesInFlight &&
+    s_pState->m_Configuration.m_uiBudgetBytes == description.m_uiBudgetBytes &&
+    s_pState->m_Configuration.m_uiMaxMeshlets == description.m_uiMaxMeshlets;
+  if (bSameConfiguration && s_pState->m_bInitialized)
     return XII_SUCCESS;
 
-  m_Configuration = description;
-  if (!m_bEngineStarted)
+  s_pState->m_Configuration = description;
+  if (!s_pState->m_bEngineStarted)
     return XII_SUCCESS;
 
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-  return pDevice != nullptr ? Initialize(pDevice.Borrow(), m_Configuration) : XII_FAILURE;
+  return pDevice != nullptr ? Initialize(pDevice.Borrow(), s_pState->m_Configuration) : XII_FAILURE;
+}
+
+const xiiGeometryResidencyDescription& xiiGeometryResidencyManager::GetConfiguration()
+{
+  XII_ASSERT_DEV(s_pState != nullptr, "Geometry residency manager is not started.");
+  static const xiiGeometryResidencyDescription s_DefaultConfiguration;
+  return s_pState != nullptr ? s_pState->m_Configuration : s_DefaultConfiguration;
+}
+
+bool xiiGeometryResidencyManager::IsInitialized()
+{
+  return s_pState != nullptr && s_pState->m_bInitialized;
 }
 
 xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, const xiiGeometryResidencyDescription& description)
 {
-  Shutdown();
+  XII_ASSERT_DEV(s_pState != nullptr, "Geometry residency manager is not started.");
+  if (s_pState == nullptr)
+    return XII_FAILURE;
+
+  s_pState->ClearGpuState();
   const xiiUInt32 uiMaxGeometries  = description.m_uiMaxGeometries;
   const xiiUInt32 uiFramesInFlight = description.m_uiFramesInFlight;
   const xiiUInt64 uiBudgetBytes    = description.m_uiBudgetBytes;
@@ -204,79 +255,75 @@ xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, const x
   desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
   desc.m_Mode                = xiiGALBufferMode::Structured;
   desc.m_Usage               = xiiGALResourceUsage::Mutable;
-  m_pMetadataBuffer          = pDevice->CreateBuffer(desc);
-  if (m_pMetadataBuffer == nullptr)
+  s_pState->m_pMetadataBuffer = pDevice->CreateBuffer(desc);
+  if (s_pState->m_pMetadataBuffer == nullptr)
     return XII_FAILURE;
-  m_pMetadataBuffer->SetDebugName("GPU Geometry Metadata");
+  s_pState->m_pMetadataBuffer->SetDebugName("GPU Geometry Metadata");
 
   desc.m_uiSize              = uiMaxMeshlets * sizeof(xiiMeshlet);
   desc.m_uiElementByteStride = sizeof(xiiMeshlet);
-  m_pMeshletMetadataBuffer   = pDevice->CreateBuffer(desc);
-  if (m_pMeshletMetadataBuffer == nullptr)
+  s_pState->m_pMeshletMetadataBuffer = pDevice->CreateBuffer(desc);
+  if (s_pState->m_pMeshletMetadataBuffer == nullptr)
   {
-    Shutdown();
+    s_pState->m_pMetadataBuffer.Clear();
     return XII_FAILURE;
   }
-  m_pMeshletMetadataBuffer->SetDebugName("GPU Meshlet Metadata Arena");
-  m_FreeMeshletRanges.PushBack({0U, uiMaxMeshlets});
+  s_pState->m_pMeshletMetadataBuffer->SetDebugName("GPU Meshlet Metadata Arena");
+  s_pState->m_FreeMeshletRanges.PushBack({0U, uiMaxMeshlets});
 
-  m_Slots.SetCount(uiMaxGeometries);
-  m_FreeSlots.Reserve(uiMaxGeometries);
+  s_pState->m_Slots.SetCount(uiMaxGeometries);
+  s_pState->m_FreeSlots.Reserve(uiMaxGeometries);
   for (xiiUInt32 i = uiMaxGeometries; i > 0U; --i)
-    m_FreeSlots.PushBack(i - 1U);
-  m_uiFramesInFlight = uiFramesInFlight;
-  m_uiAllFrameMask   = uiFramesInFlight == 64U ? xiiMath::MaxValue<xiiUInt64>() : (xiiUInt64(1) << uiFramesInFlight) - 1U;
-  m_uiBudgetBytes    = uiBudgetBytes;
-  m_bInitialized     = true;
+    s_pState->m_FreeSlots.PushBack(i - 1U);
+  s_pState->m_uiFramesInFlight = uiFramesInFlight;
+  s_pState->m_uiAllFrameMask   = uiFramesInFlight == 64U ? xiiMath::MaxValue<xiiUInt64>() : (xiiUInt64(1) << uiFramesInFlight) - 1U;
+  s_pState->m_uiBudgetBytes    = uiBudgetBytes;
+  s_pState->m_bInitialized     = true;
   return XII_SUCCESS;
 }
 
 void xiiGeometryResidencyManager::Shutdown()
 {
-  m_pMetadataBuffer.Clear();
-  m_pMeshletMetadataBuffer.Clear();
-  m_Slots.Clear();
-  m_FreeSlots.Clear();
-  m_FreeMeshletRanges.Clear();
-  m_PendingMeshletUploads.Clear();
-  m_uiFramesInFlight      = 0U;
-  m_uiAllFrameMask        = 0U;
-  m_uiBudgetBytes         = 0U;
-  m_uiResidentBytes       = 0U;
-  m_uiLastUploadedBytes   = 0U;
-  m_uiNextMeshletUploadId = 1U;
-  m_bInitialized          = false;
+  EngineShutdown();
+  s_pState.Clear();
 }
 
 void xiiGeometryResidencyManager::EngineStartup()
 {
-  m_bEngineStarted                         = true;
+  XII_ASSERT_DEV(s_pState != nullptr, "Core startup must precede geometry residency engine startup.");
+  if (s_pState == nullptr)
+    return;
+
+  s_pState->m_bEngineStarted               = true;
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (pDevice != nullptr)
-    Initialize(pDevice.Borrow(), m_Configuration).IgnoreResult();
+    Initialize(pDevice.Borrow(), s_pState->m_Configuration).IgnoreResult();
 }
 
 void xiiGeometryResidencyManager::EngineShutdown()
 {
-  Shutdown();
-  m_bEngineStarted = false;
+  if (s_pState == nullptr)
+    return;
+
+  s_pState->ClearGpuState();
+  s_pState->m_bEngineStarted = false;
 }
 
 xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometryDescription& description)
 {
-  if (m_pMetadataBuffer == nullptr || m_FreeSlots.IsEmpty() || description.m_Lods.IsEmpty() || description.m_Lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
+  if (!IsInitialized() || s_pState->m_pMetadataBuffer == nullptr || s_pState->m_FreeSlots.IsEmpty() || description.m_Lods.IsEmpty() || description.m_Lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
     return {};
 
-  const xiiUInt32 uiIndex = m_FreeSlots.PeekBack();
-  m_FreeSlots.PopBack();
-  Slot& slot                      = m_Slots[uiIndex];
+  const xiiUInt32 uiIndex = s_pState->m_FreeSlots.PeekBack();
+  s_pState->m_FreeSlots.PopBack();
+  Slot& slot                      = s_pState->m_Slots[uiIndex];
   slot.m_Description              = description;
   slot.m_GpuRecord                = {};
   slot.m_GpuRecord.m_uiGeneration = slot.m_uiGeneration;
   slot.m_GpuRecord.m_uiLodCount   = description.m_Lods.GetCount();
   slot.m_State                    = xiiGeometryResidencyState::Unloaded;
   slot.m_bAllocated               = true;
-  slot.m_uiDirtyFrameMask         = m_uiAllFrameMask;
+  slot.m_uiDirtyFrameMask         = s_pState->m_uiAllFrameMask;
   xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaOffset, XII_ARRAY_SIZE(slot.m_uiMeshletArenaOffset));
   xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaCount, XII_ARRAY_SIZE(slot.m_uiMeshletArenaCount));
 
@@ -289,7 +336,7 @@ xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometr
 void xiiGeometryResidencyManager::UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex)
 {
   if (!IsValid(handle)) return;
-  Slot& slot           = m_Slots[handle.m_uiIndex];
+  Slot& slot           = s_pState->m_Slots[handle.m_uiIndex];
   slot.m_State         = xiiGeometryResidencyState::EvictPending;
   slot.m_uiRetireFrame = uiFrameIndex;
 }
@@ -297,7 +344,7 @@ void xiiGeometryResidencyManager::UnregisterGeometry(xiiGeometryHandle handle, x
 void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex)
 {
   if (!IsValid(handle)) return;
-  Slot& slot             = m_Slots[handle.m_uiIndex];
+  Slot& slot             = s_pState->m_Slots[handle.m_uiIndex];
   slot.m_uiLastUsedFrame = uiFrameIndex;
   slot.m_uiRequestedLod  = xiiMath::Min(uiMinimumLod, slot.m_Description.m_Lods.GetCount() - 1U);
 
@@ -319,7 +366,7 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
 
 void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex)
 {
-  if (IsValid(handle)) m_Slots[handle.m_uiIndex].m_uiLastUsedFrame = uiFrameIndex;
+  if (IsValid(handle)) s_pState->m_Slots[handle.m_uiIndex].m_uiLastUsedFrame = uiFrameIndex;
 }
 
 bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget)
@@ -378,9 +425,9 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
 
       allocations.PushBack({i, uiArenaOffset, lod.m_uiMeshletCount});
       UploadPassData::MeshletUpload& upload = uploads.ExpandAndGetRef();
-      upload.m_uiUploadId                   = m_uiNextMeshletUploadId++;
-      if (m_uiNextMeshletUploadId == 0U)
-        m_uiNextMeshletUploadId = 1U;
+      upload.m_uiUploadId                   = s_pState->m_uiNextMeshletUploadId++;
+      if (s_pState->m_uiNextMeshletUploadId == 0U)
+        s_pState->m_uiNextMeshletUploadId = 1U;
       upload.m_uiOffset = uiArenaOffset * sizeof(xiiMeshlet);
       upload.m_Meshlets = mesh->GetMeshlets();
       for (xiiMeshlet& meshlet : upload.m_Meshlets)
@@ -408,26 +455,26 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
     slot.m_uiMeshletArenaCount[allocation.m_uiLod]  = allocation.m_uiCount;
   }
   for (UploadPassData::MeshletUpload& upload : uploads)
-    m_PendingMeshletUploads.PushBack(std::move(upload));
+    s_pState->m_PendingMeshletUploads.PushBack(std::move(upload));
 
   inout_uiUploadBudget -= uiNewBytes;
   slot.m_uiResidentBytes += uiNewBytes;
-  m_uiResidentBytes += uiNewBytes;
+  s_pState->m_uiResidentBytes += uiNewBytes;
   slot.m_GpuRecord        = record;
   slot.m_State            = xiiGeometryResidencyState::Resident;
-  slot.m_uiDirtyFrameMask = m_uiAllFrameMask;
+  slot.m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
   return true;
 }
 
 void xiiGeometryResidencyManager::EnforceBudget(xiiUInt64 uiCompletedFrame)
 {
-  while (m_uiResidentBytes > m_uiBudgetBytes)
+  while (s_pState->m_uiResidentBytes > s_pState->m_uiBudgetBytes)
   {
     xiiUInt32 uiVictim = xiiInvalidIndex;
     xiiUInt64 uiOldest = xiiMath::MaxValue<xiiUInt64>();
-    for (xiiUInt32 i = 0; i < m_Slots.GetCount(); ++i)
+    for (xiiUInt32 i = 0; i < s_pState->m_Slots.GetCount(); ++i)
     {
-      const Slot& slot = m_Slots[i];
+      const Slot& slot = s_pState->m_Slots[i];
       if (slot.m_bAllocated && slot.m_State == xiiGeometryResidencyState::Resident && !slot.m_Description.m_bPinned && slot.m_uiLastUsedFrame <= uiCompletedFrame && slot.m_uiLastUsedFrame < uiOldest)
       {
         uiOldest = slot.m_uiLastUsedFrame;
@@ -435,44 +482,47 @@ void xiiGeometryResidencyManager::EnforceBudget(xiiUInt64 uiCompletedFrame)
       }
     }
     if (uiVictim == xiiInvalidIndex) break;
-    Slot& victim = m_Slots[uiVictim];
-    m_uiResidentBytes -= victim.m_uiResidentBytes;
+    Slot& victim = s_pState->m_Slots[uiVictim];
+    s_pState->m_uiResidentBytes -= victim.m_uiResidentBytes;
     victim.m_uiResidentBytes               = 0U;
     victim.m_GpuRecord.m_uiResidentLodMask = 0U;
     ReleaseMeshletAllocations(victim);
     victim.m_State            = xiiGeometryResidencyState::Unloaded;
-    victim.m_uiDirtyFrameMask = m_uiAllFrameMask;
+    victim.m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
   }
 }
 
 void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes)
 {
+  if (!IsInitialized())
+    return;
+
   xiiDynamicArray<xiiUInt32> streamingQueue;
-  for (xiiUInt32 i = 0; i < m_Slots.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < s_pState->m_Slots.GetCount(); ++i)
   {
-    Slot& slot = m_Slots[i];
+    Slot& slot = s_pState->m_Slots[i];
     if (!slot.m_bAllocated) continue;
     if (slot.m_State == xiiGeometryResidencyState::Requested || slot.m_State == xiiGeometryResidencyState::Loading)
       streamingQueue.PushBack(i);
     if (slot.m_State == xiiGeometryResidencyState::EvictPending && slot.m_uiRetireFrame <= uiCompletedFrame)
     {
-      m_uiResidentBytes -= slot.m_uiResidentBytes;
+      s_pState->m_uiResidentBytes -= slot.m_uiResidentBytes;
       ReleaseMeshletAllocations(slot);
       slot.m_bAllocated = false;
       slot.m_Description.m_Lods.Clear();
       slot.m_uiResidentBytes = 0U;
       ++slot.m_uiGeneration;
       if (slot.m_uiGeneration == 0U) slot.m_uiGeneration = 1U;
-      m_FreeSlots.PushBack(i);
+      s_pState->m_FreeSlots.PushBack(i);
     }
   }
 
   // Streaming priority is the primary authoring control. Recency breaks equal-priority ties so
   // actively visible content wins a constrained upload budget, while the slot index keeps the
   // schedule deterministic for captures and simulation replay.
-  streamingQueue.Sort([this](xiiUInt32 lhsIndex, xiiUInt32 rhsIndex) {
-    const Slot& lhs = m_Slots[lhsIndex];
-    const Slot& rhs = m_Slots[rhsIndex];
+  streamingQueue.Sort([](xiiUInt32 lhsIndex, xiiUInt32 rhsIndex) {
+    const Slot& lhs = s_pState->m_Slots[lhsIndex];
+    const Slot& rhs = s_pState->m_Slots[rhsIndex];
     if (lhs.m_Description.m_uiStreamingPriority != rhs.m_Description.m_uiStreamingPriority)
       return lhs.m_Description.m_uiStreamingPriority > rhs.m_Description.m_uiStreamingPriority;
     if (lhs.m_uiLastUsedFrame != rhs.m_uiLastUsedFrame)
@@ -482,7 +532,7 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
 
   for (xiiUInt32 uiSlotIndex : streamingQueue)
   {
-    Slot& slot   = m_Slots[uiSlotIndex];
+    Slot& slot   = s_pState->m_Slots[uiSlotIndex];
     slot.m_State = xiiGeometryResidencyState::Loading;
     BuildResidentRecord(slot, uiUploadBudgetBytes);
   }
@@ -493,41 +543,54 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
 
 bool xiiGeometryResidencyManager::SetBindlessIndices(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt32 uiVertex, xiiUInt32 uiIndex, xiiUInt32 uiMeshlet, xiiUInt32 uiRemap, xiiUInt32 uiPrimitive)
 {
-  if (!IsValid(handle) || uiLod >= m_Slots[handle.m_uiIndex].m_GpuRecord.m_uiLodCount) return false;
-  xiiGpuGeometryLod& lod                       = m_Slots[handle.m_uiIndex].m_GpuRecord.m_Lods[uiLod];
+  if (!IsValid(handle) || uiLod >= s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord.m_uiLodCount) return false;
+  xiiGpuGeometryLod& lod                       = s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord.m_Lods[uiLod];
   lod.m_uiVertexBufferIndex                    = uiVertex;
   lod.m_uiIndexBufferIndex                     = uiIndex;
   lod.m_uiMeshletBufferIndex                   = uiMeshlet;
   lod.m_uiMeshletRemapBufferIndex              = uiRemap;
   lod.m_uiMeshletPrimitiveBufferIndex          = uiPrimitive;
-  m_Slots[handle.m_uiIndex].m_uiDirtyFrameMask = m_uiAllFrameMask;
+  s_pState->m_Slots[handle.m_uiIndex].m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
   return true;
 }
 
-bool xiiGeometryResidencyManager::IsValid(xiiGeometryHandle handle) const
+bool xiiGeometryResidencyManager::IsValid(xiiGeometryHandle handle)
 {
-  return handle.IsValid() && handle.m_uiIndex < m_Slots.GetCount() && m_Slots[handle.m_uiIndex].m_bAllocated && m_Slots[handle.m_uiIndex].m_uiGeneration == handle.m_uiGeneration;
+  return s_pState != nullptr && handle.IsValid() && handle.m_uiIndex < s_pState->m_Slots.GetCount() && s_pState->m_Slots[handle.m_uiIndex].m_bAllocated && s_pState->m_Slots[handle.m_uiIndex].m_uiGeneration == handle.m_uiGeneration;
 }
 
-xiiEnum<xiiGeometryResidencyState> xiiGeometryResidencyManager::GetState(xiiGeometryHandle handle) const
+xiiEnum<xiiGeometryResidencyState> xiiGeometryResidencyManager::GetState(xiiGeometryHandle handle)
 {
   if (IsValid(handle))
-    return m_Slots[handle.m_uiIndex].m_State;
+    return s_pState->m_Slots[handle.m_uiIndex].m_State;
   return xiiEnum<xiiGeometryResidencyState>(xiiGeometryResidencyState::Unloaded);
 }
 
-const xiiGpuGeometryRecord* xiiGeometryResidencyManager::GetGpuRecord(xiiGeometryHandle handle) const
+const xiiGpuGeometryRecord* xiiGeometryResidencyManager::GetGpuRecord(xiiGeometryHandle handle)
 {
-  return IsValid(handle) ? &m_Slots[handle.m_uiIndex].m_GpuRecord : nullptr;
+  return IsValid(handle) ? &s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord : nullptr;
 }
 
-xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats() const
+xiiSharedPtr<xiiGALBuffer> xiiGeometryResidencyManager::GetMetadataBuffer()
+{
+  return s_pState != nullptr ? s_pState->m_pMetadataBuffer : nullptr;
+}
+
+xiiSharedPtr<xiiGALBuffer> xiiGeometryResidencyManager::GetMeshletMetadataBuffer()
+{
+  return s_pState != nullptr ? s_pState->m_pMeshletMetadataBuffer : nullptr;
+}
+
+xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats()
 {
   xiiGeometryResidencyStats stats;
-  stats.m_uiBudgetBytes   = m_uiBudgetBytes;
-  stats.m_uiResidentBytes = m_uiResidentBytes;
-  stats.m_uiUploadedBytes = m_uiLastUploadedBytes;
-  for (const Slot& slot : m_Slots)
+  if (s_pState == nullptr)
+    return stats;
+
+  stats.m_uiBudgetBytes   = s_pState->m_uiBudgetBytes;
+  stats.m_uiResidentBytes = s_pState->m_uiResidentBytes;
+  stats.m_uiUploadedBytes = s_pState->m_uiLastUploadedBytes;
+  for (const Slot& slot : s_pState->m_Slots)
   {
     if (!slot.m_bAllocated) continue;
     ++stats.m_uiGeometryCount;
@@ -539,19 +602,23 @@ xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats() const
 
 xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
 {
+  if (!IsInitialized())
+    return {};
+
+  State* pState = s_pState.Borrow();
   auto pass = graph.AddPass<UploadPassData>(
     "Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer,
-    [this](UploadPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hGeometryBuffer = builder.ImportBuffer("GPU Geometry Metadata", m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
+    [pState](UploadPassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_hGeometryBuffer = builder.ImportBuffer("GPU Geometry Metadata", pState->m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometryBuffer = builder.WriteBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hMeshletBuffer = builder.ImportBuffer("GPU Meshlet Metadata", m_pMeshletMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hMeshletBuffer = builder.ImportBuffer("GPU Meshlet Metadata", pState->m_pMeshletMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
       data.m_hMeshletBuffer = builder.WriteBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(true);
       builder.SetPassAllowMerge(false);
     },
-    [this](const UploadPassData& data, xiiRenderGraphPassContext& context) {
+    [pState](const UploadPassData& data, xiiRenderGraphPassContext& context) {
       for (const Upload& upload : data.m_Uploads)
         context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hGeometryBuffer), upload.m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
       for (const UploadPassData::MeshletUpload& upload : data.m_MeshletUploads)
@@ -561,9 +628,9 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
       // after graph setup, its byte comparison fails and the frame slice remains dirty.
       for (const Upload& upload : data.m_Uploads)
       {
-        if (upload.m_uiSlotIndex >= m_Slots.GetCount())
+        if (upload.m_uiSlotIndex >= pState->m_Slots.GetCount())
           continue;
-        Slot& slot = m_Slots[upload.m_uiSlotIndex];
+        Slot& slot = pState->m_Slots[upload.m_uiSlotIndex];
         if (slot.m_bAllocated && xiiMemoryUtils::RawByteCompare(&slot.m_GpuRecord, &upload.m_Record, sizeof(upload.m_Record)) == 0)
           slot.m_uiDirtyFrameMask &= ~upload.m_uiFrameBit;
       }
@@ -572,11 +639,11 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
       // makes graph compile failure retryable instead of dropping the only copy of an upload.
       for (const UploadPassData::MeshletUpload& uploaded : data.m_MeshletUploads)
       {
-        for (xiiUInt32 i = 0U; i < m_PendingMeshletUploads.GetCount(); ++i)
+        for (xiiUInt32 i = 0U; i < pState->m_PendingMeshletUploads.GetCount(); ++i)
         {
-          if (m_PendingMeshletUploads[i].m_uiUploadId == uploaded.m_uiUploadId)
+          if (pState->m_PendingMeshletUploads[i].m_uiUploadId == uploaded.m_uiUploadId)
           {
-            m_PendingMeshletUploads.RemoveAtAndCopy(i);
+            pState->m_PendingMeshletUploads.RemoveAtAndCopy(i);
             break;
           }
         }
@@ -584,13 +651,13 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
     },
     true);
 
-  m_uiLastUploadedBytes                         = 0U;
+  pState->m_uiLastUploadedBytes                 = 0U;
   xiiUInt32       uiMaximumResidentMeshletCount = 0U;
-  const xiiUInt32 uiFrameSlice                  = static_cast<xiiUInt32>(uiFrameIndex % m_uiFramesInFlight);
+  const xiiUInt32 uiFrameSlice                  = static_cast<xiiUInt32>(uiFrameIndex % pState->m_uiFramesInFlight);
   const xiiUInt64 uiFrameBit                    = xiiUInt64(1) << uiFrameSlice;
-  for (xiiUInt32 i = 0; i < m_Slots.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < pState->m_Slots.GetCount(); ++i)
   {
-    Slot& slot = m_Slots[i];
+    Slot& slot = pState->m_Slots[i];
     if (!slot.m_bAllocated) continue;
 
     for (xiiUInt32 uiLod = 0U; uiLod < slot.m_GpuRecord.m_uiLodCount; ++uiLod)
@@ -601,34 +668,34 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
 
     if ((slot.m_uiDirtyFrameMask & uiFrameBit) == 0U) continue;
     Upload& upload       = pass.first->m_Uploads.ExpandAndGetRef();
-    upload.m_uiOffset    = (uiFrameSlice * m_Slots.GetCount() + i) * sizeof(xiiGpuGeometryRecord);
+    upload.m_uiOffset    = (uiFrameSlice * pState->m_Slots.GetCount() + i) * sizeof(xiiGpuGeometryRecord);
     upload.m_uiSlotIndex = i;
     upload.m_uiFrameBit  = uiFrameBit;
     upload.m_Record      = slot.m_GpuRecord;
-    m_uiLastUploadedBytes += sizeof(xiiGpuGeometryRecord);
+    pState->m_uiLastUploadedBytes += sizeof(xiiGpuGeometryRecord);
   }
-  pass.first->m_MeshletUploads = m_PendingMeshletUploads;
+  pass.first->m_MeshletUploads = pState->m_PendingMeshletUploads;
   for (const UploadPassData::MeshletUpload& upload : pass.first->m_MeshletUploads)
-    m_uiLastUploadedBytes += upload.m_Meshlets.GetCount() * sizeof(xiiMeshlet);
+    pState->m_uiLastUploadedBytes += upload.m_Meshlets.GetCount() * sizeof(xiiMeshlet);
 
   UploadHandles result;
   result.m_hGeometryMetadata             = pass.first->m_hGeometryBuffer;
   result.m_hMeshletMetadata              = pass.first->m_hMeshletBuffer;
-  result.m_uiGeometryBaseIndex           = uiFrameSlice * m_Slots.GetCount();
+  result.m_uiGeometryBaseIndex           = uiFrameSlice * pState->m_Slots.GetCount();
   result.m_uiMaximumResidentMeshletCount = uiMaximumResidentMeshletCount;
   return result;
 }
 
 bool xiiGeometryResidencyManager::AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset)
 {
-  for (xiiUInt32 i = 0; i < m_FreeMeshletRanges.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < s_pState->m_FreeMeshletRanges.GetCount(); ++i)
   {
-    FreeRange& range = m_FreeMeshletRanges[i];
+    FreeRange& range = s_pState->m_FreeMeshletRanges[i];
     if (range.m_uiCount < uiCount) continue;
     out_uiOffset = range.m_uiOffset;
     range.m_uiOffset += uiCount;
     range.m_uiCount -= uiCount;
-    if (range.m_uiCount == 0U) m_FreeMeshletRanges.RemoveAtAndCopy(i);
+    if (range.m_uiCount == 0U) s_pState->m_FreeMeshletRanges.RemoveAtAndCopy(i);
     return true;
   }
   return false;
@@ -638,26 +705,26 @@ void xiiGeometryResidencyManager::FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiC
 {
   if (uiCount == 0U) return;
   xiiUInt32 uiInsert = 0U;
-  while (uiInsert < m_FreeMeshletRanges.GetCount() && m_FreeMeshletRanges[uiInsert].m_uiOffset < uiOffset) ++uiInsert;
-  m_FreeMeshletRanges.InsertAt(uiInsert, {uiOffset, uiCount});
+  while (uiInsert < s_pState->m_FreeMeshletRanges.GetCount() && s_pState->m_FreeMeshletRanges[uiInsert].m_uiOffset < uiOffset) ++uiInsert;
+  s_pState->m_FreeMeshletRanges.InsertAt(uiInsert, {uiOffset, uiCount});
   if (uiInsert > 0U)
   {
-    FreeRange& prev = m_FreeMeshletRanges[uiInsert - 1U];
-    if (prev.m_uiOffset + prev.m_uiCount == m_FreeMeshletRanges[uiInsert].m_uiOffset)
+    FreeRange& prev = s_pState->m_FreeMeshletRanges[uiInsert - 1U];
+    if (prev.m_uiOffset + prev.m_uiCount == s_pState->m_FreeMeshletRanges[uiInsert].m_uiOffset)
     {
-      prev.m_uiCount += m_FreeMeshletRanges[uiInsert].m_uiCount;
-      m_FreeMeshletRanges.RemoveAtAndCopy(uiInsert);
+      prev.m_uiCount += s_pState->m_FreeMeshletRanges[uiInsert].m_uiCount;
+      s_pState->m_FreeMeshletRanges.RemoveAtAndCopy(uiInsert);
       --uiInsert;
     }
   }
-  if (uiInsert + 1U < m_FreeMeshletRanges.GetCount())
+  if (uiInsert + 1U < s_pState->m_FreeMeshletRanges.GetCount())
   {
-    FreeRange&       current = m_FreeMeshletRanges[uiInsert];
-    const FreeRange& next    = m_FreeMeshletRanges[uiInsert + 1U];
+    FreeRange&       current = s_pState->m_FreeMeshletRanges[uiInsert];
+    const FreeRange& next    = s_pState->m_FreeMeshletRanges[uiInsert + 1U];
     if (current.m_uiOffset + current.m_uiCount == next.m_uiOffset)
     {
       current.m_uiCount += next.m_uiCount;
-      m_FreeMeshletRanges.RemoveAtAndCopy(uiInsert + 1U);
+      s_pState->m_FreeMeshletRanges.RemoveAtAndCopy(uiInsert + 1U);
     }
   }
 }
