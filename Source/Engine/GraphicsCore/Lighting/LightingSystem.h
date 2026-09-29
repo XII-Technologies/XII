@@ -53,7 +53,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuLightData
   xiiVec4 m_SpotAnglesAndRectSize; ///< x = cos(inner half angle), y = cos(outer half angle), zw = rect extents.
   xiiVec4 m_ShadowData;            ///< x = casts shadow, y = shadow fade range, z = angular/source size, w = reserved.
   xiiVec4 m_BoundsCenterAndRadius; ///< xyz = culling sphere center, w = culling sphere radius.
-  xiiVec4 m_UserData;              ///< Reserved for renderer-side IDs and debug views.
+  xiiVec4U32 m_Metadata;           ///< x = stable light ID, y = compact frame index, z = LightType, w = reserved flags.
 };
 
 static_assert(sizeof(xiiGpuLightData) == 128);
@@ -159,7 +159,7 @@ private:
   void EnsureGpuResources();
   void ResetFrameData();
 
-  bool AppendLight(xiiGpuLightData lightData, LightType type);
+  bool AppendLight(xiiGpuLightData lightData, LightType type, xiiUInt32 uiStableLightId);
 
   static xiiColor EvaluateTemperatureColor(xiiUInt32 uiTemperature);
   static xiiColor EvaluateLightColor(const xiiColorLinearUB& color, xiiUInt32 uiTemperature);

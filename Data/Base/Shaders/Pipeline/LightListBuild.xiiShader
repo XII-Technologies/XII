@@ -1,9 +1,5 @@
-[PLATFORMS]
-ALL
-
-[PERMUTATIONS]
-
-[COMPUTESHADER]
+// XII Engine - LightListBuild.xiiShader
+// Assigns stable-ID GPU lights to the logarithmic cluster grid.
 
 #include "PipelineCommon.xiiShader"
 #include "LightingData.h"

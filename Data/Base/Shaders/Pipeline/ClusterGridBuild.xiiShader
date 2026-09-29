@@ -1,9 +1,5 @@
-[PLATFORMS]
-ALL
-
-[PERMUTATIONS]
-
-[COMPUTESHADER]
+// XII Engine - ClusterGridBuild.xiiShader
+// Builds logarithmic view-space cluster bounds for Forward+ and deferred lighting.
 
 #include "PipelineCommon.xiiShader"
 #include "LightingData.h"

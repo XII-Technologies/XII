@@ -155,7 +155,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_ShadowData            = xiiVec4(pDirectionalLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, pDirectionalLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = xiiVec4::MakeZero();
 
-      if (AppendLight(lightData, LightType::Directional) && pDirectionalLight->m_fPhotometricIntensity > fBestDirectionalIntensity)
+      if (AppendLight(lightData, LightType::Directional, static_cast<xiiUInt32>(pDirectionalLight->m_uiSortingKey)) && pDirectionalLight->m_fPhotometricIntensity > fBestDirectionalIntensity)
       {
         fBestDirectionalIntensity                         = pDirectionalLight->m_fPhotometricIntensity;
         m_LightConstants.m_MainLightDirectionAndIntensity = MakeVec4(vDirection, pDirectionalLight->m_fPhotometricIntensity);
@@ -183,7 +183,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_ShadowData            = xiiVec4(pPointLight->m_bCastShadows ? 1.0f : 0.0f, pPointLight->m_fShadowFadeOutRange, pPointLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pPointLight->m_fLength * 0.5f);
 
-      AppendLight(lightData, LightType::Point);
+      AppendLight(lightData, LightType::Point, static_cast<xiiUInt32>(pPointLight->m_uiSortingKey));
       continue;
     }
 
@@ -207,7 +207,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const xiiBoundingSphere boundingSphere = pSpotLight->m_GlobalBounds.GetSphere();
       lightData.m_BoundsCenterAndRadius      = MakeVec4(boundingSphere.m_vCenter, xiiMath::Max(boundingSphere.m_fRadius, fRange));
 
-      AppendLight(lightData, LightType::Spot);
+      AppendLight(lightData, LightType::Spot, static_cast<xiiUInt32>(pSpotLight->m_uiSortingKey));
       continue;
     }
 
@@ -229,7 +229,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_ShadowData            = xiiVec4(pRectangleLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pRectangleLight->m_vExtents.GetLength() * 0.5f);
 
-      AppendLight(lightData, LightType::Rectangle);
+      AppendLight(lightData, LightType::Rectangle, static_cast<xiiUInt32>(pRectangleLight->m_uiSortingKey));
       continue;
     }
 
@@ -251,7 +251,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_ShadowData            = xiiVec4(pDiscLight->m_bCastShadows ? 1.0f : 0.0f, pDiscLight->m_fShadowFadeOutRange, pDiscLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pDiscLight->m_fRadius);
 
-      AppendLight(lightData, LightType::Disc);
+      AppendLight(lightData, LightType::Disc, static_cast<xiiUInt32>(pDiscLight->m_uiSortingKey));
       continue;
     }
 
@@ -272,7 +272,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_ShadowData            = xiiVec4(pSphereLight->m_bCastShadows ? 1.0f : 0.0f, pSphereLight->m_fShadowFadeOutRange, pSphereLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pSphereLight->m_fRadius);
 
-      AppendLight(lightData, LightType::Sphere);
+      AppendLight(lightData, LightType::Sphere, static_cast<xiiUInt32>(pSphereLight->m_uiSortingKey));
       continue;
     }
 
@@ -294,7 +294,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_ShadowData            = xiiVec4(pTubeLight->m_bCastShadows ? 1.0f : 0.0f, pTubeLight->m_fShadowFadeOutRange, pTubeLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pTubeLight->m_fLength * 0.5f + pTubeLight->m_fRadius);
 
-      AppendLight(lightData, LightType::Tube);
+      AppendLight(lightData, LightType::Tube, static_cast<xiiUInt32>(pTubeLight->m_uiSortingKey));
       continue;
     }
   }
@@ -423,7 +423,7 @@ void xiiLightingSystem::ResetFrameData()
   m_GlobalConstants = {};
 }
 
-bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type)
+bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type, xiiUInt32 uiStableLightId)
 {
   if (m_LightData.GetCount() >= m_Settings.m_uiMaxActiveLights)
   {
@@ -431,7 +431,10 @@ bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type)
     return false;
   }
 
-  lightData.m_UserData.x = static_cast<float>(m_LightData.GetCount());
+  lightData.m_Metadata.x = uiStableLightId;
+  lightData.m_Metadata.y = m_LightData.GetCount();
+  lightData.m_Metadata.z = static_cast<xiiUInt32>(type);
+  lightData.m_Metadata.w = 0U;
 
   m_LightData.PushBack(lightData);
   ++m_Stats.m_uiActiveLightCount;
