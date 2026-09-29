@@ -12,6 +12,7 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
@@ -585,6 +586,7 @@ private:
     //  Stage 5 - Lighting Preparation
     struct LightingPrepPasses
     {
+      xiiAtmosphereLUTHandle                    m_hAtmosphereLUT;
       xiiSharedPtr<xiiGALComputePipelineState> m_pBRDFLutPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pAtmTransmittancePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pAtmMultiScatterPipeline;

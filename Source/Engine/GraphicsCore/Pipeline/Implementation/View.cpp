@@ -7,6 +7,7 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
+#include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Components/Render/DecalComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Decals/DecalResource.h>
@@ -81,6 +82,24 @@ namespace
           (pDirectional->m_fPhotometricIntensity == pBest->m_fPhotometricIntensity && pDirectional->m_uiSortingKey < pBest->m_uiSortingKey))
       {
         pBest = pDirectional;
+      }
+    }
+    return pBest;
+  }
+
+  static const xiiSkyAtmosphereRenderData* SelectSkyAtmosphere(const xiiArrayPtr<xiiRenderData* const>& renderData)
+  {
+    const xiiSkyAtmosphereRenderData* pBest = nullptr;
+    for (const xiiRenderData* pRenderData : renderData)
+    {
+      const xiiSkyAtmosphereRenderData* pAtmosphere = xiiDynamicCast<const xiiSkyAtmosphereRenderData*>(pRenderData);
+      if (pAtmosphere == nullptr)
+        continue;
+
+      if (pBest == nullptr || pAtmosphere->m_iPriority > pBest->m_iPriority ||
+          (pAtmosphere->m_iPriority == pBest->m_iPriority && pAtmosphere->m_uiSortingKey < pBest->m_uiSortingKey))
+      {
+        pBest = pAtmosphere;
       }
     }
     return pBest;
@@ -1916,7 +1935,11 @@ struct xiiAtmosphereTransmittanceData
 
 void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
+  data.m_hCache = m_ViewPassResources.m_LightingPrepPasses.m_hAtmosphereLUT;
+  if (!data.m_hCache.IsValid())
+  {
+    data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
+  }
   XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources(data.m_hCache).Succeeded(), "Atmosphere LUT resources are unavailable.");
   data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
   data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiAtmosphereManager::GetTransmittanceLUT(data.m_hCache), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
@@ -1968,7 +1991,11 @@ struct xiiAtmosphereMultiScatterData
 
 void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
+  data.m_hCache = m_ViewPassResources.m_LightingPrepPasses.m_hAtmosphereLUT;
+  if (!data.m_hCache.IsValid())
+  {
+    data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
+  }
   XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources(data.m_hCache).Succeeded(), "Atmosphere LUT resources are unavailable.");
   data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
   data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
@@ -2924,7 +2951,7 @@ void xiiView::SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRend
   data.m_hAtmosphereMultiScatterLUT  = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDirectLighting             = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightingBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hConstants                  = CreateAtmosphereConstantsBuffer(builder, "AtmosphereCompositeConstants");
-  data.m_Constants                   = MakeAtmosphereConstants(xiiAtmosphereManager::GetDefaultLUTHandle());
+  data.m_Constants                   = MakeAtmosphereConstants(m_ViewPassResources.m_LightingPrepPasses.m_hAtmosphereLUT);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pAtmosphereCompositePipeline, "Shaders/Pipeline/AtmosphereComposite.xiiShader");
 }
@@ -4419,6 +4446,19 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   if (m_pExtractedData != nullptr)
   {
     m_ViewPassResources.m_LightingSystem.BuildFrameData(*this, *m_pExtractedData, uiFrameIndex);
+  }
+
+  xiiAtmosphereLUTHandle& hAtmosphereLUT = m_ViewPassResources.m_LightingPrepPasses.m_hAtmosphereLUT;
+  hAtmosphereLUT = xiiAtmosphereManager::GetDefaultLUTHandle();
+  if (m_pExtractedData != nullptr)
+  {
+    if (const xiiSkyAtmosphereRenderData* pAtmosphere = SelectSkyAtmosphere(m_pExtractedData->GetAllRenderData()))
+    {
+      if (xiiAtmosphereManager::AcquireLUTs(pAtmosphere->m_AtmosphereSettings, hAtmosphereLUT).Failed())
+      {
+        hAtmosphereLUT = xiiAtmosphereManager::GetDefaultLUTHandle();
+      }
+    }
   }
   m_ViewPassResources.m_LightingSystem.WriteBlackboard(blackboard);
   m_ViewPassResources.m_LightingPasses.m_uiFrameIndex = uiFrameIndex;

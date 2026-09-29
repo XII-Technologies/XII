@@ -2,11 +2,16 @@
 
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
+#include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 
 XII_CREATE_SIMPLE_TEST(Lighting, Atmosphere)
 {
   XII_TEST_BOOL(xiiAtmosphereManager::IsInitialized());
+
+  const xiiRTTI* pComponentType = xiiGetStaticRTTI<xiiSkyAtmosphereComponent>();
+  XII_TEST_BOOL(pComponentType->FindPropertyByName("Atmosphere") != nullptr);
+  XII_TEST_BOOL(pComponentType->FindPropertyByName("Priority") != nullptr);
 
   const xiiAtmosphereSettings original = xiiAtmosphereManager::GetConfiguration();
   const xiiUInt64 uiOriginalRevision = xiiAtmosphereManager::GetConfigurationRevision();

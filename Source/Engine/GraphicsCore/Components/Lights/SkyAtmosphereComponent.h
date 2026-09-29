@@ -2,7 +2,11 @@
 
 #pragma once
 
-#include <GraphicsCore/Components/Lights/LightComponent.h>
+#include <GraphicsCore/Components/Render/RenderComponent.h>
+#include <GraphicsCore/Lighting/Atmosphere.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
+
+struct xiiMsgExtractRenderData;
 
 using xiiSkyAtmosphereComponentManager = xiiComponentManager<class xiiSkyAtmosphereComponent, xiiBlockStorageType::Compact>;
 
@@ -116,6 +120,9 @@ class XII_GRAPHICSCORE_DLL xiiSkyAtmosphereRenderData : public xiiRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiSkyAtmosphereRenderData, xiiRenderData);
 
 public:
+  xiiAtmosphereSettings m_AtmosphereSettings;
+  xiiInt32              m_iPriority = 0;
+
   xiiUInt32 m_uiEpipolarSliceCount           = 512U; ///< Total number of epipolar slices. Set this value to (screen width + screen height) / 2 for best quality.
   xiiUInt32 m_uiMaxSamplesInSlice            = 256U; ///< Maximum number of samples in each epipolar slice. Set this value to max(screen width, screen height) / 2 for best quality.
   xiiUInt32 m_uiInitialSampleStepInSlice     = 16U;  ///< Initial ray marching sample spacing on an epipolar slice. Additional samples are added at discontinuities.
@@ -161,4 +168,34 @@ public:
 
   xiiVec3 m_vPlanetCenter = xiiVec3::MakeZero(); ///< The center of the planet, which is used for calculating the view ray direction and the sun direction in the shader. This should typically be set to the origin of the world or the center of the scene.
   float   m_fPlanetRadius = 6360000.0f;          ///< The radius of the planet in meters, which is used for calculating the view ray direction and the sun direction in the shader. This should typically be set to the average radius of the planet, which is 6360000 meters for Earth, but it can be adjusted for artistic purposes or for rendering other planets.
+};
+
+/// Authors the physical atmosphere used by a view.
+///
+/// Components are always visible and extracted once per view. If several are
+/// visible, the highest priority wins; ties use the component's stable render
+/// ID so selection is deterministic across runs and extraction threads.
+class XII_GRAPHICSCORE_DLL xiiSkyAtmosphereComponent : public xiiRenderComponent
+{
+  XII_DECLARE_COMPONENT_TYPE(xiiSkyAtmosphereComponent, xiiRenderComponent, xiiSkyAtmosphereComponentManager);
+
+public:
+  xiiSkyAtmosphereComponent();
+  ~xiiSkyAtmosphereComponent();
+
+  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& out_bounds, bool& out_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+
+  void SetAtmosphereSettings(const xiiAtmosphereSettings& settings);
+  const xiiAtmosphereSettings& GetAtmosphereSettings() const;
+
+  void SetPriority(xiiInt32 iPriority);
+  xiiInt32 GetPriority() const;
+
+protected:
+  void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
+
+  xiiAtmosphereSettings m_AtmosphereSettings;
+  xiiInt32              m_iPriority = 0;
 };
