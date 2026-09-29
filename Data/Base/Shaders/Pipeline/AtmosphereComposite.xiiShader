@@ -1,5 +1,5 @@
 // XII Engine - AtmosphereComposite.xiiShader  [NEW]
-// Pass 50: Apply sky radiance to HDRI scene - Bruneton atmosphere at sky pixels, aerial perspective on geometry.
+// Apply Bruneton-style sky radiance and finite-distance aerial perspective to the completed HDR scene.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
 #include "PipelineCommon.xiiShader"
@@ -8,7 +8,7 @@
 Texture2D<float>  g_SceneDepth     : register(t0);
 Texture2D<float4> g_Transmittance  : register(t1); // precomputed LUT
 Texture2D<float4> g_MultiScatter   : register(t2); // 32×32 fms LUT
-RWTexture2D<float4> g_DirectLight  : register(u0); // additive write into direct lighting buffer
+RWTexture2D<float4> g_HDRScene     : register(u0);
 
 // Sample the transmittance LUT for a given camera height and sun zenith.
 float3 SampleTransmittance(float heightKm, float cosZenith)
@@ -40,16 +40,16 @@ float DistanceToAtmosphereExit(float heightKm, float cosViewZenith)
 [numthreads(8, 8, 1)]
 void CS_AtmosphereComposite(uint3 tid : SV_DispatchThreadID)
 {
-    uint2 dims; g_DirectLight.GetDimensions(dims.x, dims.y);
+    uint2 dims; g_HDRScene.GetDimensions(dims.x, dims.y);
     if (any(tid.xy >= dims)) return;
 
     float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
     float  depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
 
-    // Only render sky for background pixels (depth == 0 in reversed-Z far plane).
-    if (depth > 0.0f) return;
-
-    float3 V = normalize(ReconstructWorldPos(uv, 0.001f) - g_CameraPositionAndNearPlane.xyz);
+    const bool isSky = depth <= 1e-7f;
+    const float3 cameraPosition = g_CameraPositionAndNearPlane.xyz;
+    const float3 worldPosition = ReconstructWorldPos(uv, isSky ? 0.001f : depth);
+    float3 V = normalize(worldPosition - cameraPosition);
     float3 sunDirection = normalize(-g_MainLightDirectionAndIntensity.xyz);
     float cosTheta = dot(V, sunDirection);
 
@@ -67,13 +67,14 @@ void CS_AtmosphereComposite(uint3 tid : SV_DispatchThreadID)
 
     float3 viewTransmittance = SampleTransmittance(cameraHeightKm, cosViewZenith);
     float3 sunTransmittance  = SampleTransmittance(cameraHeightKm, cosSunZenith);
-    float pathLengthKm = DistanceToAtmosphereExit(cameraHeightKm, cosViewZenith);
+    float pathLengthKm = isSky ? DistanceToAtmosphereExit(cameraHeightKm, cosViewZenith)
+                               : length(worldPosition - cameraPosition) * 0.001f;
     float3 solarIlluminance = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f);
     float3 sky = solarIlluminance * scattering * pathLengthKm * viewTransmittance * sunTransmittance;
 
     // A uniform emitter disc converts authored illuminance (lux) to radiance.
     float sourceRadius = saturate(g_DirectionalShadowSourceRadius);
-    if (sourceRadius > 1e-5f && cosTheta > sqrt(max(1.0f - sourceRadius * sourceRadius, 0.0f)))
+    if (isSky && sourceRadius > 1e-5f && cosTheta > sqrt(max(1.0f - sourceRadius * sourceRadius, 0.0f)))
     {
         float projectedSolidAngle = 3.14159265f * sourceRadius * sourceRadius;
         sky += solarIlluminance * viewTransmittance / max(projectedSolidAngle, 1e-6f);
@@ -85,6 +86,31 @@ void CS_AtmosphereComposite(uint3 tid : SV_DispatchThreadID)
     float3 ms     = g_MultiScatter.SampleLevel(g_sLinearClamp, msUV, 0).rgb;
     sky          += ms * solarIlluminance * pathLengthKm * viewTransmittance;
 
-    float4 existing = g_DirectLight[tid.xy];
-    g_DirectLight[tid.xy] = float4(existing.rgb + sky, 1.0f);
+    float4 existing = g_HDRScene[tid.xy];
+    if (isSky)
+    {
+        g_HDRScene[tid.xy] = float4(existing.rgb + sky, 1.0f);
+        return;
+    }
+
+    // Integrate a finite camera-to-surface segment. Midpoint density is a
+    // stable approximation that preserves the physical km^-1 coefficients and
+    // avoids the excessive cost of per-pixel ray marching for opaque geometry.
+    float3 midpoint = (cameraPosition + worldPosition) * 0.5f;
+    float midpointAltitudeKm = max((dot(midpoint, planetUp) - PlanetUpAndGroundAltitudeMeters.w) * 0.001f, 0.0f);
+    float midpointRayleighDensity = exp(-midpointAltitudeKm / PlanetAtmosphereRadiiScaleHeights.z);
+    float midpointMieDensity = exp(-midpointAltitudeKm / PlanetAtmosphereRadiiScaleHeights.w);
+    float midpointOzoneDensity = saturate(1.0f - abs(midpointAltitudeKm - 25.0f) / 15.0f);
+
+    float3 extinction = RayleighScattering.xyz * midpointRayleighDensity
+                      + (MieScatteringAndPhase.xyz + MieAbsorption.xyz) * midpointMieDensity
+                      + OzoneAbsorption.xyz * midpointOzoneDensity;
+    float3 segmentTransmittance = exp(-extinction * pathLengthKm);
+    float3 segmentScattering = RayleighScattering.xyz * midpointRayleighDensity * RayleighPhase(cosTheta)
+                             + MieScatteringAndPhase.xyz * midpointMieDensity * MiePhase(cosTheta, MieScatteringAndPhase.w);
+    float3 integratedDistance = (1.0f - segmentTransmittance) / max(extinction, 1e-6f);
+    float3 aerialInscatter = solarIlluminance * sunTransmittance * segmentScattering * integratedDistance;
+    aerialInscatter += ms * solarIlluminance * (1.0f - segmentTransmittance);
+
+    g_HDRScene[tid.xy] = float4(existing.rgb * segmentTransmittance + aerialInscatter, existing.a);
 }
