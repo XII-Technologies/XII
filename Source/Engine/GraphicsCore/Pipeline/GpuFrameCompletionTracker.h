@@ -65,4 +65,5 @@ private:
   xiiGALDevice*              m_pDevice = nullptr;
   xiiDeque<FramePoint>       m_PendingFrames;
   xiiGpuFrameCompletionStats m_Stats;
+  bool                       m_bHasCapturedFrame = false;
 };

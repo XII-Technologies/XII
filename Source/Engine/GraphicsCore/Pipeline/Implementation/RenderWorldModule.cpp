@@ -6,6 +6,7 @@
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
+#include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -95,6 +96,8 @@ void xiiRenderWorldModule::Deinitialize()
   }
 
   m_uiRenderFrameIndex = 0;
+  m_FrameCompletionTracker.Reset();
+  m_bFrameCompletionTrackerInitialized = false;
 }
 
 void xiiRenderWorldModule::OnSimulationStarted()
@@ -525,7 +528,18 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (!pDevice)
     return;
 
+  if (!m_bFrameCompletionTrackerInitialized)
+  {
+    m_FrameCompletionTracker.Initialize(pDevice.Borrow());
+    m_bFrameCompletionTrackerInitialized = true;
+  }
+
   const xiiUInt64 uiFrameIndex = m_uiRenderFrameIndex++;
+  constexpr xiiUInt32 uiFramesInFlight = 3U;
+  if (uiFrameIndex >= uiFramesInFlight)
+    m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
+  const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
+  xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
 
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
@@ -537,6 +551,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     xiiRenderGraph*              pGraph        = viewDetail.m_pView->GetRenderGraph();
     xiiRenderGraphBlackboard&    blackboard    = viewDetail.m_pView->GetBlackboard();
     xiiRenderGraphResourceCache& resourceCache = viewDetail.m_pView->GetResourceCache();
+    resourceCache.BeginFrame(uiFrameIndex, uiCompletedFrame);
 
     // Clear the per-view blackboard at the start of each frame so passes start clean.
     // History data lives in persistent GPU resources inside ViewPassResources, not here.
@@ -558,6 +573,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard);
     }
 
+    XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::AddUploadPass(*pGraph, uiFrameIndex));
+
     pGraph->EndSetup();
 
     xiiRenderGraphCompileSettings compileSettings;
@@ -572,5 +589,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       const xiiResult executeResult = pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler());
       XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", viewDetail.m_pView->GetName());
     }
+    resourceCache.EndFrame();
   }
+
+  m_FrameCompletionTracker.CaptureSubmittedFrame(uiFrameIndex);
 }

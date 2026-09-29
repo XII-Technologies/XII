@@ -7,6 +7,7 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 
 class xiiRenderGraph;
@@ -184,6 +185,8 @@ private:
   };
 
   xiiUInt64 m_uiRenderFrameIndex = 0;
+  xiiGpuFrameCompletionTracker m_FrameCompletionTracker;
+  bool                         m_bFrameCompletionTrackerInitialized = false;
 
   xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
   xiiEvent<xiiViewEvent, xiiMutex>  m_ViewEvents;
