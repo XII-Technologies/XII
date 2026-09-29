@@ -11,7 +11,9 @@
 #include <GraphicsCore/Components/Lights/DiscAreaLightComponent.h>
 #include <GraphicsCore/Components/Lights/PointLightComponent.h>
 #include <GraphicsCore/Components/Lights/RectangleAreaLightComponent.h>
+#include <GraphicsCore/Components/Lights/SphereAreaLightComponent.h>
 #include <GraphicsCore/Components/Lights/SpotLightComponent.h>
+#include <GraphicsCore/Components/Lights/TubeAreaLightComponent.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
@@ -250,6 +252,49 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pDiscLight->m_fRadius);
 
       AppendLight(lightData, LightType::Disc);
+      continue;
+    }
+
+    if (const xiiSphereAreaLightRenderData* pSphereLight = xiiDynamicCast<const xiiSphereAreaLightRenderData*>(pRenderData))
+    {
+      xiiGpuLightData lightData;
+      xiiMemoryUtils::ZeroFill(&lightData, 1);
+
+      const float    fRange     = xiiMath::Max(pSphereLight->m_fRange, 0.001f);
+      const xiiVec3  vPosition  = pSphereLight->m_GlobalTransform.m_vPosition;
+      const xiiColor lightColor = EvaluateLightColor(pSphereLight->m_LightColor, pSphereLight->m_uiTemperature);
+
+      lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
+      lightData.m_DirectionAndType      = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(LightType::Sphere));
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pSphereLight->m_fPhotometricIntensity);
+      lightData.m_AttenuationAndSize    = xiiVec4(fRange, xiiMath::Max(pSphereLight->m_fRadius, 0.001f), 0.0f, 0.0f);
+      lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
+      lightData.m_ShadowData            = xiiVec4(pSphereLight->m_bCastShadows ? 1.0f : 0.0f, pSphereLight->m_fShadowFadeOutRange, pSphereLight->m_fRadius, 0.0f);
+      lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pSphereLight->m_fRadius);
+
+      AppendLight(lightData, LightType::Sphere);
+      continue;
+    }
+
+    if (const xiiTubeAreaLightRenderData* pTubeLight = xiiDynamicCast<const xiiTubeAreaLightRenderData*>(pRenderData))
+    {
+      xiiGpuLightData lightData;
+      xiiMemoryUtils::ZeroFill(&lightData, 1);
+
+      const float    fRange     = xiiMath::Max(pTubeLight->m_fRange, 0.001f);
+      const xiiVec3  vPosition  = pTubeLight->m_GlobalTransform.m_vPosition;
+      const xiiVec3  vDirection = NormalizeOrFallback(pTubeLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
+      const xiiColor lightColor = EvaluateLightColor(pTubeLight->m_LightColor, pTubeLight->m_uiTemperature);
+
+      lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
+      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Tube));
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pTubeLight->m_fPhotometricIntensity);
+      lightData.m_AttenuationAndSize    = xiiVec4(fRange, xiiMath::Max(pTubeLight->m_fRadius, 0.001f), xiiMath::Max(pTubeLight->m_fLength, 0.001f), 0.0f);
+      lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
+      lightData.m_ShadowData            = xiiVec4(pTubeLight->m_bCastShadows ? 1.0f : 0.0f, pTubeLight->m_fShadowFadeOutRange, pTubeLight->m_fRadius, 0.0f);
+      lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pTubeLight->m_fLength * 0.5f + pTubeLight->m_fRadius);
+
+      AppendLight(lightData, LightType::Tube);
       continue;
     }
   }

@@ -58,9 +58,10 @@ float3 EstimateLocalScattering(float2 uv, float zFrac, float3 worldPos)
         if (lightType == XII_LIGHT_TYPE_DIRECTIONAL)
             continue;
 
-        const float3 toLight = lightData.PositionAndInvRange.xyz - worldPos;
+        const float3 toLight = GetRepresentativeLightPosition(lightData, worldPos) - worldPos;
         const float distance = length(toLight);
-        const float attenuation = SmoothVolumeAttenuation(distance, lightData.AttenuationAndSize.x);
+        const float3 L = distance > 1e-4f ? toLight / distance : float3(0.0f, 0.0f, 1.0f);
+        const float attenuation = SmoothVolumeAttenuation(distance, lightData.AttenuationAndSize.x) * GetPhotometricEmitterScale(lightData, L);
 
         radiance += lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation;
     }

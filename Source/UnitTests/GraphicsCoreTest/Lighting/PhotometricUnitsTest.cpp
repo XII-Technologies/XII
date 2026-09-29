@@ -6,7 +6,9 @@
 #include <GraphicsCore/Components/Lights/DiscAreaLightComponent.h>
 #include <GraphicsCore/Components/Lights/PointLightComponent.h>
 #include <GraphicsCore/Components/Lights/RectangleAreaLightComponent.h>
+#include <GraphicsCore/Components/Lights/SphereAreaLightComponent.h>
 #include <GraphicsCore/Components/Lights/SpotLightComponent.h>
+#include <GraphicsCore/Components/Lights/TubeAreaLightComponent.h>
 #include <GraphicsCore/Lighting/PhotometricUnits.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(Lighting);
@@ -57,11 +59,15 @@ XII_CREATE_SIMPLE_TEST(Lighting, PhotometricUnits)
     xiiDirectionalLightComponent   directionalLight;
     xiiRectangleAreaLightComponent rectangleLight;
     xiiDiscAreaLightComponent      discLight;
+    xiiSphereAreaLightComponent    sphereLight;
+    xiiTubeAreaLightComponent      tubeLight;
 
     XII_TEST_INT(pointLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Candela);
     XII_TEST_INT(spotLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Candela);
     XII_TEST_INT(directionalLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Lux);
     XII_TEST_INT(rectangleLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Nit);
     XII_TEST_INT(discLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Nit);
+    XII_TEST_INT(sphereLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Nit);
+    XII_TEST_INT(tubeLight.GetIntensityUnit().GetValue(), xiiPhotometricUnit::Nit);
   }
 }

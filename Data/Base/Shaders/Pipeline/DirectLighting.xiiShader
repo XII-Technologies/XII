@@ -79,7 +79,8 @@ float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, 
 {
     const uint lightType = GetLightType(lightData);
 
-    float3 toLight = lightData.PositionAndInvRange.xyz - worldPos;
+    const float3 representativePosition = GetRepresentativeLightPosition(lightData, worldPos);
+    float3 toLight = representativePosition - worldPos;
     float distance = length(toLight);
     float3 L = distance > 1e-4f ? toLight / distance : normalize(-lightData.DirectionAndType.xyz);
 
@@ -89,19 +90,8 @@ float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, 
     {
         attenuation *= SpotConeAttenuation(lightData, L);
     }
-    else if (lightType == XII_LIGHT_TYPE_RECTANGLE)
-    {
-        const float facing = saturate(dot(-L, normalize(lightData.DirectionAndType.xyz)));
-        const float area = max(lightData.SpotAnglesAndRectSize.z * lightData.SpotAnglesAndRectSize.w, 0.001f);
-        attenuation *= facing * area;
-    }
-    else if (lightType == XII_LIGHT_TYPE_DISC)
-    {
-        const float facing = saturate(dot(-L, normalize(lightData.DirectionAndType.xyz)));
-        const float radius = max(lightData.AttenuationAndSize.y, 0.001f);
-        const float area = 3.14159265f * radius * radius;
-        attenuation *= facing * area;
-    }
+
+    attenuation *= GetPhotometricEmitterScale(lightData, L);
 
     const float3 radiance = lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation;
     return BRDF(albedo, roughness, metallic, N, L, V) * radiance;

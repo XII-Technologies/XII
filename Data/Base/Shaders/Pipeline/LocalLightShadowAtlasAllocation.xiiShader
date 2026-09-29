@@ -11,7 +11,7 @@ static const uint XII_LOCAL_SHADOW_ATLAS_SIZE = 4096u;
 
 uint GetLocalShadowFaceCount(uint lightType)
 {
-    return lightType == XII_LIGHT_TYPE_POINT ? 6u : 1u;
+    return (lightType == XII_LIGHT_TYPE_POINT || lightType == XII_LIGHT_TYPE_SPHERE || lightType == XII_LIGHT_TYPE_TUBE) ? 6u : 1u;
 }
 
 [numthreads(64, 1, 1)]

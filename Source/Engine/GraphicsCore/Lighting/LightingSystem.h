@@ -69,6 +69,8 @@ public:
     Spot        = 2U,
     Rectangle   = 3U,
     Disc        = 4U,
+    Sphere      = 5U,
+    Tube        = 6U,
   };
 
   struct FrameStatistics
