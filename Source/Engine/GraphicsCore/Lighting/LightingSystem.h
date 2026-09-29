@@ -67,6 +67,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuLightData
 };
 
 static_assert(sizeof(xiiGpuLightData) == 144);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuLightData);
 
 /// Per-view lighting system that owns extracted light data and GAL upload resources.
 class XII_GRAPHICSCORE_DLL xiiLightingSystem
@@ -81,6 +82,7 @@ public:
     Disc        = 4U,
     Sphere      = 5U,
     Tube        = 6U,
+    EmissiveMesh = 7U,
   };
 
   struct FrameStatistics
@@ -93,6 +95,7 @@ public:
     xiiUInt32 m_uiSkippedLightCount     = 0U;
     xiiUInt32 m_uiActiveIESProfileCount = 0U;
     xiiUInt32 m_uiSkippedIESProfileCount = 0U;
+    xiiUInt32 m_uiEmissiveMeshLightCount = 0U;
   };
 
   xiiLightingSystem();

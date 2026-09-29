@@ -16,6 +16,9 @@
 #include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <GraphicsCore/Components/Lights/TubeAreaLightComponent.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
@@ -85,6 +88,24 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 1, xiiRTTI
     XII_MEMBER_PROPERTY("DirectionalShadowBlockerSamples", m_uiDirectionalShadowBlockerSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("DirectionalShadowFilterSamples", m_uiDirectionalShadowFilterSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("MaxIESProfiles", m_uiMaxIESProfiles)->AddAttributes(new xiiClampValueAttribute(1U, 4096U)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuLightData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuLightData>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("PositionAndInvRange", m_PositionAndInvRange),
+    XII_MEMBER_PROPERTY("DirectionAndType", m_DirectionAndType),
+    XII_MEMBER_PROPERTY("ColorAndIntensity", m_ColorAndIntensity),
+    XII_MEMBER_PROPERTY("AttenuationAndSize", m_AttenuationAndSize),
+    XII_MEMBER_PROPERTY("SpotAnglesAndRectSize", m_SpotAnglesAndRectSize),
+    XII_MEMBER_PROPERTY("ShadowData", m_ShadowData),
+    XII_MEMBER_PROPERTY("BoundsCenterAndRadius", m_BoundsCenterAndRadius),
+    XII_MEMBER_PROPERTY("OrientationRightAndIES", m_OrientationRightAndIES),
+    XII_MEMBER_PROPERTY("Metadata", m_Metadata),
   }
   XII_END_PROPERTIES;
 }
@@ -343,6 +364,60 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
 
       AppendLight(lightData, LightType::Tube, static_cast<xiiUInt32>(pTubeLight->m_uiSortingKey));
       continue;
+    }
+
+    if (const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData))
+    {
+      const xiiVec3 vPosition = pMesh->m_GlobalBounds.m_vCenter;
+      const float fMaterialAreaScale = 1.0f / xiiMath::Sqrt(static_cast<float>(xiiMath::Max(pMesh->m_hMaterials.GetCount(), 1U)));
+      const float fSourceRadius = xiiMath::Max(pMesh->m_GlobalBounds.m_fSphereRadius * fMaterialAreaScale, 0.001f);
+
+      for (xiiUInt32 uiMaterialIndex = 0U; uiMaterialIndex < pMesh->m_hMaterials.GetCount(); ++uiMaterialIndex)
+      {
+        const xiiMaterialResourceHandle& hMaterial = pMesh->m_hMaterials[uiMaterialIndex];
+        if (!hMaterial.IsValid())
+          continue;
+
+        xiiResourceLock<xiiMaterialResource> material(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+        if (!material.IsValid() || material.GetAcquireResult() != xiiResourceAcquireResult::Final)
+          continue;
+
+        const xiiMaterialResourceDescriptor& descriptor = material->GetCurrentDescription();
+        if (descriptor.m_Domain != xiiMaterialDomain::Surface)
+          continue;
+
+        xiiColor emissiveLuminance = descriptor.m_EmissiveColor;
+        const xiiVariant resolvedEmissive = material->GetParameter(xiiTempHashedString("EmissiveColor"));
+        if (resolvedEmissive.IsA<xiiColor>())
+          emissiveLuminance = resolvedEmissive.Get<xiiColor>();
+
+        const float fPeakLuminance = xiiMath::Max(emissiveLuminance.r, emissiveLuminance.g, emissiveLuminance.b);
+        if (!xiiMath::IsFinite(fPeakLuminance) || fPeakLuminance <= 0.0f)
+          continue;
+
+        const float fProjectedArea = xiiMath::Pi<float>() * fSourceRadius * fSourceRadius;
+        const float fPeakCandela = fPeakLuminance * fProjectedArea;
+        const float fRange = xiiMath::Max(xiiLightComponent::CalculateEffectiveRange(0.0f, fPeakCandela), fSourceRadius);
+
+        xiiGpuLightData lightData;
+        xiiMemoryUtils::ZeroFill(&lightData, 1);
+        const xiiColor normalizedColor(
+          emissiveLuminance.r / fPeakLuminance,
+          emissiveLuminance.g / fPeakLuminance,
+          emissiveLuminance.b / fPeakLuminance,
+          1.0f);
+        lightData.m_PositionAndInvRange = MakeVec4(vPosition, 1.0f / fRange);
+        lightData.m_DirectionAndType = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(LightType::EmissiveMesh));
+        lightData.m_ColorAndIntensity = MakeVec4(normalizedColor, fPeakLuminance);
+        lightData.m_AttenuationAndSize = xiiVec4(fRange, fSourceRadius, 0.0f, 0.0f);
+        lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
+        lightData.m_ShadowData = xiiVec4::MakeZero();
+        lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + fSourceRadius);
+
+        const xiiUInt32 uiStableLightId = xiiHashingUtils::CombineHashValues32(pMesh->m_uiUniqueID, uiMaterialIndex);
+        if (AppendLight(lightData, LightType::EmissiveMesh, uiStableLightId))
+          ++m_Stats.m_uiEmissiveMeshLightCount;
+      }
     }
   }
 

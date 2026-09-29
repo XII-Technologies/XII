@@ -10,6 +10,7 @@ static const uint XII_LIGHT_TYPE_RECTANGLE   = 3u;
 static const uint XII_LIGHT_TYPE_DISC        = 4u;
 static const uint XII_LIGHT_TYPE_SPHERE      = 5u;
 static const uint XII_LIGHT_TYPE_TUBE        = 6u;
+static const uint XII_LIGHT_TYPE_EMISSIVE_MESH = 7u;
 
 struct xiiGpuLightData
 {
@@ -71,7 +72,7 @@ float GetPhotometricEmitterScale(xiiGpuLightData lightData, float3 pointToLightD
     return facing * 3.14159265f * radius * radius;
   }
 
-  if (lightType == XII_LIGHT_TYPE_SPHERE)
+  if (lightType == XII_LIGHT_TYPE_SPHERE || lightType == XII_LIGHT_TYPE_EMISSIVE_MESH)
   {
     const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
     return 3.14159265f * radius * radius;
