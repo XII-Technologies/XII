@@ -2,10 +2,12 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <Core/World/Component.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
+#include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
@@ -540,6 +542,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
   const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
   xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  bool bDDGIFrameStarted = false;
 
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
@@ -547,6 +550,12 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
     if (!viewDetail.m_pView->IsValid())
       continue;
+
+    if (!bDDGIFrameStarted && viewDetail.m_pView->GetCamera() != nullptr)
+    {
+      xiiDDGIManager::BeginFrame(viewDetail.m_pView->GetCamera()->GetPosition(), uiFrameIndex);
+      bDDGIFrameStarted = true;
+    }
 
     xiiRenderGraph*              pGraph        = viewDetail.m_pView->GetRenderGraph();
     xiiRenderGraphBlackboard&    blackboard    = viewDetail.m_pView->GetBlackboard();
