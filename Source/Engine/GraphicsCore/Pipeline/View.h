@@ -556,6 +556,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>  m_pShadowDenoisePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pContactShadowPipeline;
       xiiSharedPtr<xiiGALTexture>               m_pDirectionalShadowAtlas; // D32F[4] 4096x4096
+      xiiSharedPtr<xiiGALTextureView>           m_pDirectionalShadowCascadeViews[4]; // Persistent single-slice DSVs; must outlive recorded command lists.
       xiiSharedPtr<xiiGALTexture>               m_pLocalShadowAtlas;       // D32F 2D 4096x4096
       xiiUInt32                                 m_uiActiveCascadeCount = 0U;
     } m_ShadowPasses;

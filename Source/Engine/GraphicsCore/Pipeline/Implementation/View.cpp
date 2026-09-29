@@ -1063,6 +1063,18 @@ void xiiView::SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRend
     description.m_BindFlags                                      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
     description.m_Usage                                          = xiiGALResourceUsage::Default;
     m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+
+    XII_ASSERT_DEV(m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas != nullptr, "Failed to create the directional shadow atlas.");
+    for (xiiUInt32 uiCascade = 0U; uiCascade < 4U; ++uiCascade)
+    {
+      xiiGALTextureViewCreationDescription viewDescription;
+      viewDescription.m_ViewType                  = xiiGALTextureViewType::DepthStencil;
+      viewDescription.m_uiFirstArrayOrDepthSlice  = uiCascade;
+      viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
+
+      m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowCascadeViews[uiCascade] = m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas->CreateView(viewDescription);
+      XII_ASSERT_DEV(m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowCascadeViews[uiCascade] != nullptr, "Failed to create directional shadow cascade view {}.", uiCascade);
+    }
   }
 
   data.m_hCascadeMatrices        = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
@@ -1080,22 +1092,19 @@ void xiiView::ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data,
 
   cmd.BeginDebugGroup("DirectionalShadowMaps");
   {
-    xiiGALTexture* pAtlas = context.GetTexture(data.m_hDirectionalShadowAtlas);
-
     xiiStringBuilder sb;
     for (xiiUInt32 uiCascade = 0; uiCascade < data.m_uiActiveCascades; ++uiCascade)
     {
+      sb.SetFormat("DirectionalShadowCascade{}", uiCascade);
       xiiGALScopedDebugGroup debugGroup(cmd, sb);
 
-      // Bind atlas slice as depth-stencil.
-      xiiGALTextureViewCreationDescription viewDescription;
-      viewDescription.m_ViewType                  = xiiGALTextureViewType::DepthStencil;
-      viewDescription.m_uiFirstArrayOrDepthSlice  = uiCascade;
-      viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
+      xiiGALTextureView* pCascadeDepthView = m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowCascadeViews[uiCascade];
+      XII_ASSERT_DEV(pCascadeDepthView != nullptr, "Directional shadow cascade view {} is unavailable.", uiCascade);
 
-      // Set viewport matching atlas tile.
+      // Clear and render only the current array slice. Clearing the default
+      // array DSV here would erase every previously rendered cascade.
       cmd.SetViewport({0.0f, 0.0f, static_cast<float>(k_uiDirectionalShadowAtlasWidth), static_cast<float>(k_uiDirectionalShadowAtlasHeight), 0.0f, 1.0f});
-      cmd.ClearDepthStencilView(pAtlas->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
+      cmd.ClearDepthStencilView(pCascadeDepthView, true, false, 0.0f, 0U);
 
       if (m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline)
       {
