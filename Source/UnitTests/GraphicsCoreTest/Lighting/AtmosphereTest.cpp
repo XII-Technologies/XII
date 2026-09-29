@@ -33,5 +33,18 @@ XII_CREATE_SIMPLE_TEST(Lighting, Atmosphere)
   XII_TEST_BOOL(xiiAtmosphereManager::Configure(invalid).Failed());
   XII_TEST_INT(xiiAtmosphereManager::GetConfigurationRevision(), uiModifiedRevision);
 
+  xiiAtmosphereSettings second = modified;
+  second.m_fMiePhaseG = 0.71f;
+  xiiAtmosphereLUTHandle hModified;
+  xiiAtmosphereLUTHandle hSecond;
+  XII_TEST_BOOL(xiiAtmosphereManager::AcquireLUTs(modified, hModified).Succeeded());
+  XII_TEST_BOOL(xiiAtmosphereManager::AcquireLUTs(second, hSecond).Succeeded());
+  XII_TEST_BOOL(hModified.IsValid());
+  XII_TEST_BOOL(hSecond.IsValid());
+  XII_TEST_BOOL(!(hModified == hSecond));
+  xiiAtmosphereManager::MarkLUTsGenerated(hModified);
+  XII_TEST_BOOL(!xiiAtmosphereManager::IsGenerationPending(hModified));
+  XII_TEST_BOOL(xiiAtmosphereManager::IsGenerationPending(hSecond));
+
   XII_TEST_BOOL(xiiAtmosphereManager::Configure(original).Succeeded());
 }

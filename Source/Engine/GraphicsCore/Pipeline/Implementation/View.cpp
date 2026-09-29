@@ -1871,9 +1871,9 @@ void xiiView::ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xii
 
 namespace
 {
-  static xiiAtmosphereConstants MakeAtmosphereConstants()
+  static xiiAtmosphereConstants MakeAtmosphereConstants(xiiAtmosphereLUTHandle hCache)
   {
-    const xiiAtmosphereSettings& settings = xiiAtmosphereManager::GetConfiguration();
+    const xiiAtmosphereSettings& settings = xiiAtmosphereManager::GetConfiguration(hCache);
 
     xiiAtmosphereConstants constants = {};
     constants.PlanetAtmosphereRadiiScaleHeights = xiiVec4(settings.m_fPlanetRadiusKm, settings.m_fAtmosphereRadiusKm, settings.m_fRayleighScaleHeightKm, settings.m_fMieScaleHeightKm);
@@ -1910,22 +1910,22 @@ struct xiiAtmosphereTransmittanceData
   xiiRenderGraphTextureHandle m_hTransmittanceLUT;        ///< Imported persistent atmosphere transmittance LUT texture.
   xiiRenderGraphBufferHandle  m_hConstants;               ///< Physical atmosphere parameters used by the integration.
   xiiAtmosphereConstants      m_Constants;
-  xiiUInt64                   m_uiConfigurationRevision = 0U;
+  xiiAtmosphereLUTHandle      m_hCache;
   bool                        m_bNeedsGeneration = false; ///< Whether this frame must dispatch transmittance LUT generation.
 };
 
 void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRenderGraphBuilder& builder)
 {
-  XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources().Succeeded(), "Atmosphere LUT resources are unavailable.");
-  data.m_uiConfigurationRevision = xiiAtmosphereManager::GetConfigurationRevision();
-  data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending();
-  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiAtmosphereManager::GetTransmittanceLUT(), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
+  XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources(data.m_hCache).Succeeded(), "Atmosphere LUT resources are unavailable.");
+  data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
+  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiAtmosphereManager::GetTransmittanceLUT(data.m_hCache), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
 
   if (data.m_bNeedsGeneration)
   {
     data.m_hTransmittanceLUT = builder.WriteTexture(data.m_hTransmittanceLUT, xiiGALResourceStateFlags::UnorderedAccess);
     data.m_hConstants = CreateAtmosphereConstantsBuffer(builder, "AtmosphereTransmittanceConstants");
-    data.m_Constants = MakeAtmosphereConstants();
+    data.m_Constants = MakeAtmosphereConstants(data.m_hCache);
   }
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittancePipeline, "Shaders/Pipeline/AtmosphereTransmittance.xiiShader");
@@ -1962,23 +1962,23 @@ struct xiiAtmosphereMultiScatterData
   xiiRenderGraphTextureHandle m_hTransmittanceLUT;        ///< ShaderResource in (atmosphere transmittance LUT).
   xiiRenderGraphBufferHandle  m_hConstants;               ///< Physical atmosphere parameters used by the integration.
   xiiAtmosphereConstants      m_Constants;
-  xiiUInt64                   m_uiConfigurationRevision = 0U;
+  xiiAtmosphereLUTHandle      m_hCache;
   bool                        m_bNeedsGeneration = false; ///< Whether this frame must dispatch multi-scatter LUT generation.
 };
 
 void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRenderGraphBuilder& builder)
 {
-  XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources().Succeeded(), "Atmosphere LUT resources are unavailable.");
-  data.m_uiConfigurationRevision = xiiAtmosphereManager::GetConfigurationRevision();
-  data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending();
+  data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
+  XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources(data.m_hCache).Succeeded(), "Atmosphere LUT resources are unavailable.");
+  data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
   data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiAtmosphereManager::GetMultiScatterLUT(), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiAtmosphereManager::GetMultiScatterLUT(data.m_hCache), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
 
   if (data.m_bNeedsGeneration)
   {
     data.m_hMultiScatterLUT = builder.WriteTexture(data.m_hMultiScatterLUT, xiiGALResourceStateFlags::UnorderedAccess);
     data.m_hConstants = CreateAtmosphereConstantsBuffer(builder, "AtmosphereMultiScatterConstants");
-    data.m_Constants = MakeAtmosphereConstants();
+    data.m_Constants = MakeAtmosphereConstants(data.m_hCache);
   }
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline, "Shaders/Pipeline/AtmosphereMultiScatter.xiiShader");
@@ -2000,7 +2000,7 @@ void xiiView::ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData&
     cmd.ResolveAndSetUnorderedAccessTextureView("g_MultiScatterLUT", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({4U, 4U, 1U});
-    xiiAtmosphereManager::MarkLUTsGenerated(data.m_uiConfigurationRevision);
+    xiiAtmosphereManager::MarkLUTsGenerated(data.m_hCache);
   }
   cmd.EndDebugGroup();
 }
@@ -2924,7 +2924,7 @@ void xiiView::SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRend
   data.m_hAtmosphereMultiScatterLUT  = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDirectLighting             = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightingBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hConstants                  = CreateAtmosphereConstantsBuffer(builder, "AtmosphereCompositeConstants");
-  data.m_Constants                   = MakeAtmosphereConstants();
+  data.m_Constants                   = MakeAtmosphereConstants(xiiAtmosphereManager::GetDefaultLUTHandle());
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pAtmosphereCompositePipeline, "Shaders/Pipeline/AtmosphereComposite.xiiShader");
 }

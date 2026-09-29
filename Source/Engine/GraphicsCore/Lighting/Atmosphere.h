@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -10,6 +11,19 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 class xiiGALTexture;
+
+/// Stable process-local handle to one immutable atmosphere LUT cache entry.
+struct XII_GRAPHICSCORE_DLL xiiAtmosphereLUTHandle
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiIndex = xiiInvalidIndex;
+
+  [[nodiscard]] bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
+  [[nodiscard]] bool operator==(const xiiAtmosphereLUTHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex; }
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAtmosphereLUTHandle);
 
 /// Physical parameters used to generate the shared atmosphere lookup tables.
 /// Distances and extinction coefficients are expressed in kilometres because
@@ -63,15 +77,27 @@ public:
   [[nodiscard]] static bool IsInitialized();
   [[nodiscard]] static const xiiAtmosphereSettings& GetConfiguration();
 
+  /// Finds or creates an immutable cache entry for a view/world atmosphere.
+  /// Multiple views can therefore render different planets without rewriting
+  /// another graph's persistent LUTs.
+  [[nodiscard]] static xiiResult AcquireLUTs(const xiiAtmosphereSettings& settings, xiiAtmosphereLUTHandle& out_handle);
+  [[nodiscard]] static xiiAtmosphereLUTHandle GetDefaultLUTHandle();
+  [[nodiscard]] static const xiiAtmosphereSettings& GetConfiguration(xiiAtmosphereLUTHandle handle);
+
   /// Ensures textures exist. This permits recovery when the default GAL device
   /// is installed after high-level subsystem startup.
   [[nodiscard]] static xiiResult EnsureGpuResources();
+  [[nodiscard]] static xiiResult EnsureGpuResources(xiiAtmosphereLUTHandle handle);
   [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetTransmittanceLUT();
+  [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetTransmittanceLUT(xiiAtmosphereLUTHandle handle);
   [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetMultiScatterLUT();
+  [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetMultiScatterLUT(xiiAtmosphereLUTHandle handle);
 
   [[nodiscard]] static xiiUInt64 GetConfigurationRevision();
   [[nodiscard]] static bool IsGenerationPending();
+  [[nodiscard]] static bool IsGenerationPending(xiiAtmosphereLUTHandle handle);
   static void MarkLUTsGenerated(xiiUInt64 uiConfigurationRevision);
+  static void MarkLUTsGenerated(xiiAtmosphereLUTHandle handle);
   static void InvalidateLUTs();
   [[nodiscard]] static xiiAtmosphereCacheStats GetCacheStats();
 
