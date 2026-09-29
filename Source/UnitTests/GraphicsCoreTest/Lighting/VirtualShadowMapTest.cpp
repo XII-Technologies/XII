@@ -68,4 +68,3 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   // Restore production defaults for any tests executing after this one.
   XII_TEST_BOOL(xiiVirtualShadowMapManager::Configure(xiiVirtualShadowMapSettings()).Succeeded());
 }
-

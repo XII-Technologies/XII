@@ -6,6 +6,7 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
 
 /// CPU-side residency configuration for the virtual shadow-map physical cache.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapSettings
@@ -87,6 +88,19 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageMapping
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowPageMapping);
 
+/// Frame-sliced physical-page metadata consumed by GPU shadow feedback and sampling.
+struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVirtualShadowPage
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiVirtualKeyLow  = 0U;
+  xiiUInt32 m_uiVirtualKeyHigh = 0U;
+  xiiUInt32 m_uiPhysicalPage   = xiiInvalidIndex;
+  xiiUInt32 m_uiFlags          = 0U; ///< bit 0 resident, bit 1 needs rendering, bit 2 pinned.
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVirtualShadowPage);
+
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapStats
 {
   XII_DECLARE_POD_TYPE();
@@ -136,8 +150,22 @@ public:
   [[nodiscard]] static xiiVirtualShadowMapStats GetStats();
   [[nodiscard]] static const xiiVirtualShadowMapSettings& GetConfiguration();
 
+  struct UploadHandles
+  {
+    xiiRenderGraphBufferHandle m_hPhysicalPageTable;
+    xiiUInt32                  m_uiFrameBaseIndex = 0U;
+    xiiUInt32                  m_uiPhysicalPageCount = 0U;
+  };
+
+  /// Adds a transfer pass that publishes changed residency records to the
+  /// current frame slice. Updates remain retryable if graph execution fails.
+  [[nodiscard]] static UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+
 private:
   static void Startup();
+  static void EngineStartup();
+  static void EngineShutdown();
   static void Shutdown();
+  [[nodiscard]] static xiiResult CreateGpuResources();
   static xiiUniquePtr<xiiVirtualShadowMapManagerState> s_pState;
 };

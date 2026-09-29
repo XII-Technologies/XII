@@ -6,6 +6,8 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 
 namespace
 {
@@ -32,6 +34,7 @@ public:
   {
     xiiVirtualShadowPageMapping m_Mapping;
     bool                        m_bAllocated = false;
+    xiiUInt64                   m_uiDirtyFrameMask = 0U;
   };
 
   xiiVirtualShadowMapSettings              m_Settings;
@@ -41,8 +44,11 @@ public:
   xiiDynamicArray<xiiVirtualShadowPageUpdate>  m_PageTableUpdates;
   xiiDynamicArray<xiiVirtualShadowPageMapping> m_DirtyPages;
   xiiVirtualShadowMapStats                 m_Stats;
+  xiiSharedPtr<xiiGALBuffer>               m_pPhysicalPageTable;
   xiiUInt64                                m_uiFrameIndex = 0U;
   xiiUInt64                                m_uiCompletedFrame = 0U;
+  xiiUInt64                                m_uiAllFrameMask = 0U;
+  bool                                     m_bEngineStarted = false;
   bool                                     m_bInitialized = false;
 };
 
@@ -58,6 +64,16 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, VirtualShadowMapManager)
   ON_CORESYSTEMS_STARTUP
   {
     xiiVirtualShadowMapManager::Startup();
+  }
+
+  ON_HIGHLEVELSYSTEMS_STARTUP
+  {
+    xiiVirtualShadowMapManager::EngineStartup();
+  }
+
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    xiiVirtualShadowMapManager::EngineShutdown();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -79,6 +95,19 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVirtualShadowMapSettings, xiiNoBase, 1, xiiRT
     XII_MEMBER_PROPERTY("MaxFeedbackRequests", m_uiMaxFeedbackRequests)->AddAttributes(new xiiDefaultValueAttribute(16384U), new xiiClampValueAttribute(1U, 1048576U)),
     XII_MEMBER_PROPERTY("MaxPageAllocations", m_uiMaxPageAllocations)->AddAttributes(new xiiDefaultValueAttribute(512U), new xiiClampValueAttribute(1U, 1048576U)),
     XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(1U, 64U)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVirtualShadowPage, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuVirtualShadowPage>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("VirtualKeyLow", m_uiVirtualKeyLow),
+    XII_MEMBER_PROPERTY("VirtualKeyHigh", m_uiVirtualKeyHigh),
+    XII_MEMBER_PROPERTY("PhysicalPage", m_uiPhysicalPage),
+    XII_MEMBER_PROPERTY("Flags", m_uiFlags),
   }
   XII_END_PROPERTIES;
 }
@@ -180,9 +209,50 @@ void xiiVirtualShadowMapManager::Startup()
   Configure(xiiVirtualShadowMapSettings()).IgnoreResult();
 }
 
+void xiiVirtualShadowMapManager::EngineStartup()
+{
+  s_pState->m_bEngineStarted = true;
+  CreateGpuResources().IgnoreResult();
+}
+
+void xiiVirtualShadowMapManager::EngineShutdown()
+{
+  if (s_pState != nullptr)
+  {
+    s_pState->m_pPhysicalPageTable.Clear();
+    s_pState->m_bEngineStarted = false;
+  }
+}
+
 void xiiVirtualShadowMapManager::Shutdown()
 {
+  EngineShutdown();
   s_pState.Clear();
+}
+
+xiiResult xiiVirtualShadowMapManager::CreateGpuResources()
+{
+  if (s_pState == nullptr || !s_pState->m_bEngineStarted)
+    return XII_FAILURE;
+
+  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  const xiiUInt64 uiRecordCount = static_cast<xiiUInt64>(s_pState->m_Settings.m_uiPhysicalPageCount) * s_pState->m_Settings.m_uiFramesInFlight;
+  const xiiUInt64 uiBufferSize = uiRecordCount * sizeof(xiiGpuVirtualShadowPage);
+  if (pDevice == nullptr || uiBufferSize > xiiMath::MaxValue<xiiUInt32>())
+    return XII_FAILURE;
+
+  xiiGALBufferCreationDescription description;
+  description.m_uiSize = static_cast<xiiUInt32>(uiBufferSize);
+  description.m_uiElementByteStride = sizeof(xiiGpuVirtualShadowPage);
+  description.m_BindFlags = xiiGALBindFlags::ShaderResource;
+  description.m_Mode = xiiGALBufferMode::Structured;
+  description.m_Usage = xiiGALResourceUsage::Mutable;
+  s_pState->m_pPhysicalPageTable = pDevice->CreateBuffer(description);
+  if (s_pState->m_pPhysicalPageTable == nullptr)
+    return XII_FAILURE;
+
+  s_pState->m_pPhysicalPageTable->SetDebugName("Virtual Shadow Physical Page Table");
+  return XII_SUCCESS;
 }
 
 xiiResult xiiVirtualShadowMapManager::Configure(const xiiVirtualShadowMapSettings& settings)
@@ -206,7 +276,10 @@ xiiResult xiiVirtualShadowMapManager::Configure(const xiiVirtualShadowMapSetting
   s_pState->m_Stats.m_uiFreePageCount = settings.m_uiPhysicalPageCount;
   s_pState->m_uiFrameIndex = 0U;
   s_pState->m_uiCompletedFrame = 0U;
+  s_pState->m_uiAllFrameMask = settings.m_uiFramesInFlight >= 64U ? xiiMath::MaxValue<xiiUInt64>() : (xiiUInt64(1) << settings.m_uiFramesInFlight) - 1U;
   s_pState->m_bInitialized = true;
+  if (s_pState->m_bEngineStarted)
+    return CreateGpuResources();
   return XII_SUCCESS;
 }
 
@@ -274,9 +347,12 @@ void xiiVirtualShadowMapManager::SubmitFeedback(xiiArrayPtr<const xiiVirtualShad
     if (s_pState->m_PageLookup.TryGetValue(uiKey, uiPhysicalPage))
     {
       auto& mapping = s_pState->m_Slots[uiPhysicalPage].m_Mapping;
+      const bool bPinnedChanged = request.m_bPinned && !mapping.m_bPinned;
       mapping.m_uiLastUsedFrame = s_pState->m_uiFrameIndex;
       mapping.m_uiPriority = xiiMath::Max(mapping.m_uiPriority, request.m_uiPriority);
       mapping.m_bPinned |= request.m_bPinned;
+      if (bPinnedChanged)
+        s_pState->m_Slots[uiPhysicalPage].m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
       continue;
     }
 
@@ -334,6 +410,7 @@ void xiiVirtualShadowMapManager::SubmitFeedback(xiiArrayPtr<const xiiVirtualShad
     slot.m_Mapping.m_uiPriority = request.m_uiPriority;
     slot.m_Mapping.m_bPinned = request.m_bPinned;
     slot.m_Mapping.m_bNeedsRendering = true;
+    slot.m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
     s_pState->m_PageLookup.Insert(uiKey, uiPhysicalPage);
     s_pState->m_DirtyPages.PushBack(slot.m_Mapping);
     s_pState->m_PageTableUpdates.PushBack({request.m_Page, uiPhysicalPage, xiiVirtualShadowPageUpdateType::Map});
@@ -382,6 +459,7 @@ void xiiVirtualShadowMapManager::MarkPageRendered(xiiUInt32 uiPhysicalPage)
 
   auto& mapping = s_pState->m_Slots[uiPhysicalPage].m_Mapping;
   mapping.m_bNeedsRendering = false;
+  s_pState->m_Slots[uiPhysicalPage].m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
   for (xiiUInt32 i = 0U; i < s_pState->m_DirtyPages.GetCount(); ++i)
   {
     if (s_pState->m_DirtyPages[i].m_uiPhysicalPage == uiPhysicalPage)
@@ -402,4 +480,76 @@ const xiiVirtualShadowMapSettings& xiiVirtualShadowMapManager::GetConfiguration(
 {
   XII_ASSERT_RELEASE(IsInitialized(), "Virtual shadow-map manager is not initialized.");
   return s_pState->m_Settings;
+}
+
+xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
+{
+  UploadHandles result;
+  if (!IsInitialized())
+    return result;
+  if (s_pState->m_pPhysicalPageTable == nullptr && CreateGpuResources().Failed())
+    return result;
+
+  struct Upload
+  {
+    xiiUInt32                m_uiPhysicalPage = 0U;
+    xiiUInt32                m_uiByteOffset = 0U;
+    xiiUInt64                m_uiFrameBit = 0U;
+    xiiGpuVirtualShadowPage  m_Record;
+  };
+  struct UploadPassData
+  {
+    xiiRenderGraphBufferHandle m_hPageTable;
+    xiiDynamicArray<Upload>    m_Uploads;
+  };
+
+  auto pass = graph.AddPass<UploadPassData>(
+    "Virtual Shadow Page Table Upload", xiiGALCommandQueueFlags::Transfer,
+    [](UploadPassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_hPageTable = builder.ImportBuffer("Virtual Shadow Physical Page Table", s_pState->m_pPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hPageTable = builder.WriteBuffer(data.m_hPageTable, xiiGALResourceStateFlags::CopyDestination);
+      builder.ExportBuffer(data.m_hPageTable, xiiGALResourceStateFlags::ShaderResource);
+      builder.SetPassSideEffects(true);
+      builder.SetPassAllowMerge(false);
+    },
+    [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
+      for (const Upload& upload : data.m_Uploads)
+        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hPageTable), upload.m_uiByteOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
+
+      for (const Upload& upload : data.m_Uploads)
+      {
+        if (upload.m_uiPhysicalPage >= s_pState->m_Slots.GetCount())
+          continue;
+        auto& slot = s_pState->m_Slots[upload.m_uiPhysicalPage];
+        const xiiUInt64 uiKey = slot.m_bAllocated ? slot.m_Mapping.m_Page.GetPackedValue() : 0U;
+        const xiiUInt32 uiFlags = slot.m_bAllocated ? (1U | (slot.m_Mapping.m_bNeedsRendering ? 2U : 0U) | (slot.m_Mapping.m_bPinned ? 4U : 0U)) : 0U;
+        if (upload.m_Record.m_uiVirtualKeyLow == static_cast<xiiUInt32>(uiKey) && upload.m_Record.m_uiVirtualKeyHigh == static_cast<xiiUInt32>(uiKey >> 32U) && upload.m_Record.m_uiFlags == uiFlags)
+          slot.m_uiDirtyFrameMask &= ~upload.m_uiFrameBit;
+      }
+    }, true);
+
+  const xiiUInt32 uiFrameSlice = static_cast<xiiUInt32>(uiFrameIndex % s_pState->m_Settings.m_uiFramesInFlight);
+  const xiiUInt64 uiFrameBit = xiiUInt64(1) << uiFrameSlice;
+  result.m_hPhysicalPageTable = pass.first->m_hPageTable;
+  result.m_uiFrameBaseIndex = uiFrameSlice * s_pState->m_Settings.m_uiPhysicalPageCount;
+  result.m_uiPhysicalPageCount = s_pState->m_Settings.m_uiPhysicalPageCount;
+
+  for (xiiUInt32 uiPhysicalPage = 0U; uiPhysicalPage < s_pState->m_Slots.GetCount(); ++uiPhysicalPage)
+  {
+    const auto& slot = s_pState->m_Slots[uiPhysicalPage];
+    if ((slot.m_uiDirtyFrameMask & uiFrameBit) == 0U)
+      continue;
+
+    Upload& upload = pass.first->m_Uploads.ExpandAndGetRef();
+    upload.m_uiPhysicalPage = uiPhysicalPage;
+    upload.m_uiByteOffset = (result.m_uiFrameBaseIndex + uiPhysicalPage) * sizeof(xiiGpuVirtualShadowPage);
+    upload.m_uiFrameBit = uiFrameBit;
+    const xiiUInt64 uiKey = slot.m_bAllocated ? slot.m_Mapping.m_Page.GetPackedValue() : 0U;
+    upload.m_Record.m_uiVirtualKeyLow = static_cast<xiiUInt32>(uiKey);
+    upload.m_Record.m_uiVirtualKeyHigh = static_cast<xiiUInt32>(uiKey >> 32U);
+    upload.m_Record.m_uiPhysicalPage = uiPhysicalPage;
+    upload.m_Record.m_uiFlags = slot.m_bAllocated ? (1U | (slot.m_Mapping.m_bNeedsRendering ? 2U : 0U) | (slot.m_Mapping.m_bPinned ? 4U : 0U)) : 0U;
+  }
+
+  return result;
 }
