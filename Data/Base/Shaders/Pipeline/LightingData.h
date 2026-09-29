@@ -20,6 +20,7 @@ struct xiiGpuLightData
   float4 SpotAnglesAndRectSize; // x = cos inner, y = cos outer, zw = rectangle extents
   float4 ShadowData;            // x = casts shadow, y = shadow fade, z = angular/source size
   float4 BoundsCenterAndRadius; // xyz = culling sphere center, w = radius
+  float4 OrientationRightAndIES; // xyz = local right axis, w = compact IES profile index + 1
   uint4  Metadata;               // x = stable light ID, y = compact frame index, z = light type, w = flags
 };
 

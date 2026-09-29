@@ -2512,6 +2512,7 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
   {
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pDirectLightingPipeline);
     m_ViewPassResources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    m_ViewPassResources.m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
 
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);

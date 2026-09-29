@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/Components/Lights/LightComponent.h>
+#include <GraphicsCore/Lighting/IESProfileResource.h>
 
 using xiiSpotLightComponentManager = xiiComponentManager<class xiiSpotLightComponent, xiiBlockStorageType::Compact>;
 
@@ -16,6 +17,7 @@ public:
   float    m_fShadowFadeOutRange;
   xiiAngle m_InnerSpotAngle;
   xiiAngle m_OuterSpotAngle;
+  xiiIESProfileResourceHandle m_hIESProfile;
 };
 
 /// A spot light component. This represents a light source that emits light in a cone shape, like a flashlight or a spotlight on a stage.
@@ -66,6 +68,11 @@ public:
   void     SetOuterSpotAngle(xiiAngle spotAngle); // [ property ]
   xiiAngle GetOuterSpotAngle() const;             // [ property ]
 
+  /// Assigns an LM-63 photometric web. The cone remains a geometric cutoff;
+  /// the IES profile provides the physically measured distribution inside it.
+  void                               SetIESProfile(const xiiIESProfileResourceHandle& hProfile); // [ property ]
+  const xiiIESProfileResourceHandle& GetIESProfile() const;                                     // [ property ]
+
 protected:
   void              OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
   xiiBoundingSphere CalculateBoundingSphere(const xiiTransform& transform, float fRange) const;
@@ -77,6 +84,7 @@ protected:
   float    m_fRadius             = 0.0f;
   xiiAngle m_InnerSpotAngle      = xiiAngle::MakeFromDegree(15.0f);
   xiiAngle m_OuterSpotAngle      = xiiAngle::MakeFromDegree(30.0f);
+  xiiIESProfileResourceHandle m_hIESProfile;
 };
 
 /// Visualizer attribute for spot lights. Also renders a cone when the range is non-zero.

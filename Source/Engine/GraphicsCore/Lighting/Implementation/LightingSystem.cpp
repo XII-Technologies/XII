@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/Graphics/Camera.h>
+#include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Reflection/Implementation/Casts.h>
@@ -83,6 +84,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 1, xiiRTTI
     XII_MEMBER_PROPERTY("DirectionalShadowMaxPenumbra", m_fDirectionalShadowMaxPenumbra)->AddAttributes(new xiiClampValueAttribute(1.0f, 128.0f), new xiiSuffixAttribute(" px")),
     XII_MEMBER_PROPERTY("DirectionalShadowBlockerSamples", m_uiDirectionalShadowBlockerSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("DirectionalShadowFilterSamples", m_uiDirectionalShadowFilterSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+    XII_MEMBER_PROPERTY("MaxIESProfiles", m_uiMaxIESProfiles)->AddAttributes(new xiiClampValueAttribute(1U, 4096U)),
   }
   XII_END_PROPERTIES;
 }
@@ -110,8 +112,11 @@ void xiiLightingSystem::Shutdown()
   m_pLightConstantsBuffer.Clear();
   m_pGlobalConstantsBuffer.Clear();
   m_pLightDataBuffer.Clear();
+  m_pIESProfileDataBuffer.Clear();
   m_pDevice.Clear();
   m_LightData.Clear();
+  m_IESProfileData.Clear();
+  m_IESProfileSlots.Clear();
 }
 
 void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRenderData& extractedData, xiiUInt32 uiFrameIndex)
@@ -211,6 +216,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const float    fRange     = xiiMath::Max(GetSafeRange(pPointLight->m_fRange, pPointLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pPointLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pPointLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
+      const xiiVec3  vRight     = NormalizeOrFallback(pPointLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pPointLight->m_LightColor, pPointLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
@@ -220,6 +226,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pPointLight->m_bCastShadows ? 1.0f : 0.0f, pPointLight->m_fShadowFadeOutRange, pPointLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pPointLight->m_fLength * 0.5f);
+      lightData.m_OrientationRightAndIES = MakeVec4(vRight, static_cast<float>(ResolveIESProfile(pPointLight->m_hIESProfile)));
 
       AppendLight(lightData, LightType::Point, static_cast<xiiUInt32>(pPointLight->m_uiSortingKey));
       continue;
@@ -233,6 +240,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const float    fRange     = xiiMath::Max(GetSafeRange(pSpotLight->m_fRange, pSpotLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pSpotLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pSpotLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
+      const xiiVec3  vRight     = NormalizeOrFallback(pSpotLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pSpotLight->m_LightColor, pSpotLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
@@ -244,6 +252,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
 
       const xiiBoundingSphere boundingSphere = pSpotLight->m_GlobalBounds.GetSphere();
       lightData.m_BoundsCenterAndRadius      = MakeVec4(boundingSphere.m_vCenter, xiiMath::Max(boundingSphere.m_fRadius, fRange));
+      lightData.m_OrientationRightAndIES     = MakeVec4(vRight, static_cast<float>(ResolveIESProfile(pSpotLight->m_hIESProfile)));
 
       AppendLight(lightData, LightType::Spot, static_cast<xiiUInt32>(pSpotLight->m_uiSortingKey));
       continue;
@@ -344,7 +353,7 @@ void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)
 {
   EnsureGpuResources();
 
-  if (m_pCameraConstantsBuffer == nullptr || m_pLightConstantsBuffer == nullptr || m_pGlobalConstantsBuffer == nullptr || m_pLightDataBuffer == nullptr)
+  if (m_pCameraConstantsBuffer == nullptr || m_pLightConstantsBuffer == nullptr || m_pGlobalConstantsBuffer == nullptr || m_pLightDataBuffer == nullptr || m_pIESProfileDataBuffer == nullptr)
     return;
 
   {
@@ -374,6 +383,14 @@ void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)
       xiiMemoryUtils::Copy(pLights.GetMappedData(), lightBytes.GetPtr(), lightBytes.GetCount());
     }
   }
+
+  {
+    xiiGALMapHelper<float> pProfiles(ref_commandList, m_pIESProfileDataBuffer.Borrow(), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+    const xiiUInt32 uiCapacity = m_Settings.m_uiMaxIESProfiles * xiiIESProfileResourceDescriptor::s_uiSampleCount;
+    xiiMemoryUtils::ZeroFill(pProfiles.GetMappedData(), uiCapacity);
+    if (!m_IESProfileData.IsEmpty())
+      xiiMemoryUtils::Copy(pProfiles.GetMappedData(), m_IESProfileData.GetData(), m_IESProfileData.GetCount());
+  }
 }
 
 void xiiLightingSystem::BindFrameConstants(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const
@@ -388,6 +405,14 @@ void xiiLightingSystem::BindLightData(xiiGALCommandList& ref_commandList, xiiBit
   if (m_pLightDataBuffer != nullptr)
   {
     ref_commandList.ResolveAndSetShaderResourceBufferView("g_Lights", m_pLightDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), shaderStages);
+  }
+}
+
+void xiiLightingSystem::BindIESProfiles(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const
+{
+  if (m_pIESProfileDataBuffer != nullptr)
+  {
+    ref_commandList.ResolveAndSetShaderResourceBufferView("g_IESProfiles", m_pIESProfileDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), shaderStages);
   }
 }
 
@@ -449,11 +474,29 @@ void xiiLightingSystem::EnsureGpuResources()
       m_pLightDataBuffer->SetDebugName("Lighting LightData");
     }
   }
+
+  const xiiUInt64 uiRequiredIESBufferSize = static_cast<xiiUInt64>(m_Settings.m_uiMaxIESProfiles) * xiiIESProfileResourceDescriptor::s_uiSampleCount * sizeof(float);
+  if (m_pIESProfileDataBuffer == nullptr || m_pIESProfileDataBuffer->GetSize() < uiRequiredIESBufferSize)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride = sizeof(float);
+    description.m_uiSize              = uiRequiredIESBufferSize;
+    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    description.m_Mode                = xiiGALBufferMode::Structured;
+    description.m_Usage               = xiiGALResourceUsage::Dynamic;
+    description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
+    m_pIESProfileDataBuffer = m_pDevice->CreateBuffer(description);
+    if (m_pIESProfileDataBuffer != nullptr)
+      m_pIESProfileDataBuffer->SetDebugName("Lighting IES Profile Data");
+  }
 }
 
 void xiiLightingSystem::ResetFrameData()
 {
   m_LightData.Clear();
+  m_IESProfileData.Clear();
+  m_IESProfileSlots.Clear();
   m_Stats = {};
 
   m_CameraConstants = {};
@@ -487,6 +530,32 @@ bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type, x
   }
 
   return true;
+}
+
+xiiUInt32 xiiLightingSystem::ResolveIESProfile(const xiiIESProfileResourceHandle& hProfile)
+{
+  if (!hProfile.IsValid())
+    return 0U;
+
+  xiiUInt32 uiSlot = xiiInvalidIndex;
+  if (m_IESProfileSlots.TryGetValue(hProfile, uiSlot))
+    return uiSlot + 1U;
+
+  if (m_IESProfileSlots.GetCount() >= m_Settings.m_uiMaxIESProfiles)
+  {
+    ++m_Stats.m_uiSkippedIESProfileCount;
+    return 0U;
+  }
+
+  xiiResourceLock<xiiIESProfileResource> profile(hProfile, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+  if (!profile.IsValid() || profile.GetAcquireResult() != xiiResourceAcquireResult::Final || !profile->GetDescriptor().IsValid())
+    return 0U;
+
+  uiSlot = m_IESProfileSlots.GetCount();
+  m_IESProfileSlots.Insert(hProfile, uiSlot);
+  m_IESProfileData.PushBackRange(profile->GetDescriptor().m_NormalizedCandela);
+  m_Stats.m_uiActiveIESProfileCount = m_IESProfileSlots.GetCount();
+  return uiSlot + 1U;
 }
 
 xiiColor xiiLightingSystem::EvaluateTemperatureColor(xiiUInt32 uiTemperature)

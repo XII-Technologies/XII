@@ -5,12 +5,14 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/HashTable.h>
 #include <Foundation/Math/Color.h>
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Vec4.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsCore/Lighting/IESProfileResource.h>
 
 class xiiExtractedRenderData;
 class xiiGALBuffer;
@@ -41,6 +43,7 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   float     m_fDirectionalShadowMaxPenumbra = 24.0f; ///< Maximum PCSS filter radius in shadow texels.
   xiiUInt32 m_uiDirectionalShadowBlockerSamples = 12U;
   xiiUInt32 m_uiDirectionalShadowFilterSamples  = 16U;
+  xiiUInt32 m_uiMaxIESProfiles                  = 256U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightingSystemSettings);
@@ -59,10 +62,11 @@ struct XII_GRAPHICSCORE_DLL xiiGpuLightData
   xiiVec4 m_SpotAnglesAndRectSize; ///< x = cos(inner half angle), y = cos(outer half angle), zw = rect extents.
   xiiVec4 m_ShadowData;            ///< x = casts shadow, y = shadow fade range, z = angular/source size, w = reserved.
   xiiVec4 m_BoundsCenterAndRadius; ///< xyz = culling sphere center, w = culling sphere radius.
+  xiiVec4 m_OrientationRightAndIES; ///< xyz = local right axis, w = compact IES profile index plus one (zero means none).
   xiiVec4U32 m_Metadata;           ///< x = stable light ID, y = compact frame index, z = LightType, w = reserved flags.
 };
 
-static_assert(sizeof(xiiGpuLightData) == 128);
+static_assert(sizeof(xiiGpuLightData) == 144);
 
 /// Per-view lighting system that owns extracted light data and GAL upload resources.
 class XII_GRAPHICSCORE_DLL xiiLightingSystem
@@ -87,6 +91,8 @@ public:
     xiiUInt32 m_uiDirectionalLightCount = 0U;
     xiiUInt32 m_uiLocalLightCount       = 0U;
     xiiUInt32 m_uiSkippedLightCount     = 0U;
+    xiiUInt32 m_uiActiveIESProfileCount = 0U;
+    xiiUInt32 m_uiSkippedIESProfileCount = 0U;
   };
 
   xiiLightingSystem();
@@ -100,6 +106,7 @@ public:
 
   void BindFrameConstants(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const;
   void BindLightData(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const;
+  void BindIESProfiles(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const;
   void BindLightingResources(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const;
 
   void WriteBlackboard(xiiRenderGraphBlackboard& ref_blackboard) const;
@@ -171,6 +178,7 @@ private:
   void ResetFrameData();
 
   bool AppendLight(xiiGpuLightData lightData, LightType type, xiiUInt32 uiStableLightId);
+  xiiUInt32 ResolveIESProfile(const xiiIESProfileResourceHandle& hProfile);
 
   static xiiColor EvaluateTemperatureColor(xiiUInt32 uiTemperature);
   static xiiColor EvaluateLightColor(const xiiColorLinearUB& color, xiiUInt32 uiTemperature);
@@ -184,8 +192,11 @@ private:
   xiiSharedPtr<xiiGALBuffer> m_pLightConstantsBuffer;
   xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
   xiiSharedPtr<xiiGALBuffer> m_pLightDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pIESProfileDataBuffer;
 
   xiiDynamicArray<xiiGpuLightData> m_LightData;
+  xiiDynamicArray<float>           m_IESProfileData;
+  xiiHashTable<xiiIESProfileResourceHandle, xiiUInt32> m_IESProfileSlots;
 
   PerFrameCameraConstants m_CameraConstants;
   PerFrameLightConstants  m_LightConstants;

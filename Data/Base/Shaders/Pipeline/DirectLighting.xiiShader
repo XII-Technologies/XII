@@ -20,7 +20,12 @@ StructuredBuffer<uint>                    g_LightIndex            : register(t10
 StructuredBuffer<xiiGpuLightData>         g_Lights                : register(t11);
 StructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs : register(t12);
 Texture2D<uint4>                          g_DirectLightReservoir   : register(t13);
+StructuredBuffer<float>                   g_IESProfiles            : register(t14);
 RWTexture2D<float4>               g_DirectOut  : register(u0);
+
+static const uint XII_IES_VERTICAL_SAMPLES   = 64u;
+static const uint XII_IES_HORIZONTAL_SAMPLES = 32u;
+static const uint XII_IES_PROFILE_SAMPLES    = XII_IES_VERTICAL_SAMPLES * XII_IES_HORIZONTAL_SAMPLES;
 
 float D_GGX(float NoH, float roughness)
 {
@@ -222,6 +227,42 @@ float SpotConeAttenuation(xiiGpuLightData lightData, float3 L)
     return cone * cone * (3.0f - 2.0f * cone);
 }
 
+float SampleIESProfile(xiiGpuLightData lightData, float3 pointToLightDirection)
+{
+    const uint encodedProfile = (uint)(lightData.OrientationRightAndIES.w + 0.5f);
+    if (encodedProfile == 0u)
+        return 1.0f;
+
+    // Type-C vertical zero follows the luminaire's local forward axis. The
+    // stored right vector preserves roll, which is essential for asymmetric
+    // road, surgical, and industrial luminaires.
+    const float3 emissionDirection = -pointToLightDirection;
+    const float3 forward = normalize(lightData.DirectionAndType.xyz);
+    const float3 right = normalize(lightData.OrientationRightAndIES.xyz);
+    const float3 up = normalize(cross(forward, right));
+
+    const float vertical = acos(clamp(dot(emissionDirection, forward), -1.0f, 1.0f)) *
+                           ((float)(XII_IES_VERTICAL_SAMPLES - 1u) / 3.14159265f);
+    float horizontalAngle = atan2(dot(emissionDirection, up), dot(emissionDirection, right));
+    if (horizontalAngle < 0.0f)
+        horizontalAngle += 6.28318531f;
+    const float horizontal = horizontalAngle * ((float)XII_IES_HORIZONTAL_SAMPLES / 6.28318531f);
+
+    const uint v0 = min((uint)floor(vertical), XII_IES_VERTICAL_SAMPLES - 1u);
+    const uint v1 = min(v0 + 1u, XII_IES_VERTICAL_SAMPLES - 1u);
+    const uint h0 = (uint)floor(horizontal) % XII_IES_HORIZONTAL_SAMPLES;
+    const uint h1 = (h0 + 1u) % XII_IES_HORIZONTAL_SAMPLES;
+    const float vWeight = frac(vertical);
+    const float hWeight = frac(horizontal);
+    const uint profileBase = (encodedProfile - 1u) * XII_IES_PROFILE_SAMPLES;
+
+    const float c00 = g_IESProfiles[profileBase + h0 * XII_IES_VERTICAL_SAMPLES + v0];
+    const float c01 = g_IESProfiles[profileBase + h0 * XII_IES_VERTICAL_SAMPLES + v1];
+    const float c10 = g_IESProfiles[profileBase + h1 * XII_IES_VERTICAL_SAMPLES + v0];
+    const float c11 = g_IESProfiles[profileBase + h1 * XII_IES_VERTICAL_SAMPLES + v1];
+    return lerp(lerp(c00, c01, vWeight), lerp(c10, c11, vWeight), hWeight);
+}
+
 float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, float3 V, float3 albedo, float roughness, float metallic)
 {
     const uint lightType = GetLightType(lightData);
@@ -238,6 +279,7 @@ float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, 
         attenuation *= SpotConeAttenuation(lightData, L);
     }
 
+    attenuation *= SampleIESProfile(lightData, L);
     attenuation *= GetPhotometricEmitterScale(lightData, L);
 
     const float3 radiance = lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation;
