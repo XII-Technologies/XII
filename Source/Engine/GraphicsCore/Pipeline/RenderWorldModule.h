@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Core/World/WorldModule.h>
+#include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Declarations.h>
@@ -78,6 +79,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderWorldModuleExtractionEvent
 class XII_GRAPHICSCORE_DLL xiiRenderWorldModule : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RenderWorldEvents);
 
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderWorldModule, xiiWorldModule);
 
@@ -164,6 +166,8 @@ private:
   };
 
   static void SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
+  static void StartupRenderEvents();
+  static void ShutdownRenderEvents();
 
   void OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
   bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const;
@@ -177,6 +181,8 @@ private:
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
 
 private:
+  using ExtractionEvent = xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex>;
+
   struct ViewDetail
   {
     xiiUniquePtr<xiiView>                m_pView;
@@ -191,7 +197,7 @@ private:
   xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
   xiiEvent<xiiViewEvent, xiiMutex>  m_ViewEvents;
 
-  static xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex> s_RenderEvent;
+  static xiiUniquePtr<ExtractionEvent> s_pRenderEvent;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderWorldModule_inl.h>

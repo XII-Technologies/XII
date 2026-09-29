@@ -6,6 +6,7 @@
 #include <Core/World/Component.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
@@ -54,7 +55,39 @@ namespace
   }
 } // namespace
 
-xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex> xiiRenderWorldModule::s_RenderEvent;
+xiiUniquePtr<xiiRenderWorldModule::ExtractionEvent> xiiRenderWorldModule::s_pRenderEvent;
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderWorldEvents)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    xiiRenderWorldModule::StartupRenderEvents();
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiRenderWorldModule::ShutdownRenderEvents();
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
+
+void xiiRenderWorldModule::StartupRenderEvents()
+{
+  XII_ASSERT_DEV(s_pRenderEvent == nullptr, "Render world events were started twice.");
+  s_pRenderEvent = XII_DEFAULT_NEW(ExtractionEvent);
+}
+
+void xiiRenderWorldModule::ShutdownRenderEvents()
+{
+  s_pRenderEvent.Clear();
+}
 
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
@@ -465,7 +498,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     xiiRenderWorldModuleExtractionEvent extractionEvent;
     extractionEvent.m_Type  = xiiRenderWorldModuleExtractionEvent::Type::BeforeViewExtraction;
     extractionEvent.m_pView = viewDetail.m_pView.Borrow();
-    s_RenderEvent.Broadcast(extractionEvent);
+    s_pRenderEvent->Broadcast(extractionEvent);
 
     xiiMsgExtractRenderData msg;
     msg.m_pView                    = viewDetail.m_pView.Borrow();
@@ -521,7 +554,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     viewDetail.m_pExtractedData->SortAndBatches();
 
     extractionEvent.m_Type = xiiRenderWorldModuleExtractionEvent::Type::AfterViewExtraction;
-    s_RenderEvent.Broadcast(extractionEvent);
+    s_pRenderEvent->Broadcast(extractionEvent);
   }
 }
 
