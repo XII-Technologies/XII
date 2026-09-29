@@ -4,20 +4,7 @@
 // Dispatch: ceil(256/8) × ceil(64/8) × 1
 
 #include "PipelineCommon.xiiShader"
-
-cbuffer AtmosphereConstants : register(b3)
-{
-    float g_PlanetRadiusKm;
-    float g_AtmosphereRadiusKm;
-    float g_RayleighScaleHeight;  // km
-    float g_MieScaleHeight;       // km
-    float3 g_RayleighScattering;  float _p0; // km^-1
-    float3 g_MieScattering;       float _p1; // km^-1
-    float3 g_MieAbsorption;       float _p2; // km^-1
-    float3 g_OzoneAbsorption;     float _p3; // km^-1
-    uint   g_IntegrationSteps;
-    float3 _pad;
-};
+#include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 
 RWTexture2D<float4> g_TransmittanceLUT : register(u0);
 
@@ -25,27 +12,28 @@ RWTexture2D<float4> g_TransmittanceLUT : register(u0);
 void TexelToHeightCos(uint2 tid, uint2 dims, out float heightKm, out float cosZenith)
 {
     float2 uv = (float2(tid) + 0.5f) / float2(dims);
-    heightKm  = lerp(g_PlanetRadiusKm, g_AtmosphereRadiusKm, uv.x);
+    heightKm  = lerp(PlanetAtmosphereRadiiScaleHeights.x, PlanetAtmosphereRadiiScaleHeights.y, uv.x);
     cosZenith = uv.y * 2.0f - 1.0f;
 }
 
 // Density of each atmosphere layer at height h above planet surface.
-float RayleighDensity(float h) { return exp(-h / g_RayleighScaleHeight); }
-float MieDensity(float h)      { return exp(-h / g_MieScaleHeight); }
+float RayleighDensity(float h) { return exp(-h / PlanetAtmosphereRadiiScaleHeights.z); }
+float MieDensity(float h)      { return exp(-h / PlanetAtmosphereRadiiScaleHeights.w); }
 float OzoneDensity(float h)    { return max(0.0f, 1.0f - abs(h - 25.0f) / 15.0f); }
 
 float3 IntegrateOpticalDepth(float3 rayStart, float3 rayDir, float rayLen)
 {
     float3 optical = float3(0,0,0);
-    float  dt      = rayLen / float(g_IntegrationSteps);
-    for (uint i = 0u; i < g_IntegrationSteps; ++i)
+    const uint integrationSteps = max(SampleCounts.x, 1u);
+    float  dt      = rayLen / float(integrationSteps);
+    for (uint i = 0u; i < integrationSteps; ++i)
     {
         float3 pos = rayStart + rayDir * (float(i) + 0.5f) * dt;
-        float  h   = length(pos) - g_PlanetRadiusKm;
-        optical   += (g_RayleighScattering * RayleighDensity(h)
-                    + g_MieScattering      * MieDensity(h)
-                    + g_MieAbsorption      * MieDensity(h)
-                    + g_OzoneAbsorption    * OzoneDensity(h)) * dt;
+        float  h   = length(pos) - PlanetAtmosphereRadiiScaleHeights.x;
+        optical   += (RayleighScattering.xyz        * RayleighDensity(h)
+                    + MieScatteringAndPhase.xyz     * MieDensity(h)
+                    + MieAbsorption.xyz             * MieDensity(h)
+                    + OzoneAbsorption.xyz           * OzoneDensity(h)) * dt;
     }
     return optical;
 }
@@ -71,7 +59,7 @@ void CS_AtmosphereTransmittance(uint3 tid : SV_DispatchThreadID)
 
     float3 origin  = float3(0.0f, heightKm, 0.0f);
     float3 rayDir  = float3(sqrt(max(0.0f, 1.0f - cosZenith * cosZenith)), cosZenith, 0.0f);
-    float  rayLen  = RaySphereIntersect(origin, rayDir, g_AtmosphereRadiusKm);
+    float  rayLen  = RaySphereIntersect(origin, rayDir, PlanetAtmosphereRadiiScaleHeights.y);
 
     float3 T = exp(-IntegrateOpticalDepth(origin, rayDir, max(rayLen, 0.0f)));
     g_TransmittanceLUT[tid.xy] = float4(T, 1.0f);

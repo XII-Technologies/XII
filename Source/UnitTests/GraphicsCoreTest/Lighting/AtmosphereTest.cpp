@@ -28,6 +28,10 @@ XII_CREATE_SIMPLE_TEST(Lighting, Atmosphere)
   XII_TEST_BOOL(xiiAtmosphereManager::Configure(invalid).Failed());
   XII_TEST_INT(xiiAtmosphereManager::GetConfigurationRevision(), uiModifiedRevision);
 
+  invalid = modified;
+  invalid.m_vPlanetUpDirection = xiiVec3::MakeZero();
+  XII_TEST_BOOL(xiiAtmosphereManager::Configure(invalid).Failed());
+  XII_TEST_INT(xiiAtmosphereManager::GetConfigurationRevision(), uiModifiedRevision);
+
   XII_TEST_BOOL(xiiAtmosphereManager::Configure(original).Succeeded());
 }
-

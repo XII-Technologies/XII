@@ -17,6 +17,8 @@ namespace
            xiiMath::IsFinite(settings.m_fMieScaleHeightKm) && settings.m_fMieScaleHeightKm > 0.0f &&
            settings.m_vRayleighScattering.IsValid() && settings.m_vMieScattering.IsValid() &&
            settings.m_vMieAbsorption.IsValid() && settings.m_vOzoneAbsorption.IsValid() &&
+           settings.m_vPlanetUpDirection.IsValid() && settings.m_vPlanetUpDirection.GetLengthSquared() > 1e-6f &&
+           xiiMath::IsFinite(settings.m_fGroundAltitudeMeters) &&
            settings.m_vRayleighScattering.x >= 0.0f && settings.m_vRayleighScattering.y >= 0.0f && settings.m_vRayleighScattering.z >= 0.0f &&
            settings.m_vMieScattering.x >= 0.0f && settings.m_vMieScattering.y >= 0.0f && settings.m_vMieScattering.z >= 0.0f &&
            settings.m_vMieAbsorption.x >= 0.0f && settings.m_vMieAbsorption.y >= 0.0f && settings.m_vMieAbsorption.z >= 0.0f &&
@@ -32,6 +34,7 @@ namespace
            lhs.m_fRayleighScaleHeightKm == rhs.m_fRayleighScaleHeightKm && lhs.m_fMieScaleHeightKm == rhs.m_fMieScaleHeightKm &&
            lhs.m_vRayleighScattering == rhs.m_vRayleighScattering && lhs.m_vMieScattering == rhs.m_vMieScattering &&
            lhs.m_vMieAbsorption == rhs.m_vMieAbsorption && lhs.m_vOzoneAbsorption == rhs.m_vOzoneAbsorption &&
+           lhs.m_vPlanetUpDirection == rhs.m_vPlanetUpDirection && lhs.m_fGroundAltitudeMeters == rhs.m_fGroundAltitudeMeters &&
            lhs.m_fMiePhaseG == rhs.m_fMiePhaseG &&
            lhs.m_uiTransmittanceIntegrationSteps == rhs.m_uiTransmittanceIntegrationSteps &&
            lhs.m_uiMultiScatterSqrtSamples == rhs.m_uiMultiScatterSqrtSamples;
@@ -91,6 +94,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 1, xiiRTTIDefa
     XII_MEMBER_PROPERTY("MieScattering", m_vMieScattering),
     XII_MEMBER_PROPERTY("MieAbsorption", m_vMieAbsorption),
     XII_MEMBER_PROPERTY("OzoneAbsorption", m_vOzoneAbsorption),
+    XII_MEMBER_PROPERTY("PlanetUpDirection", m_vPlanetUpDirection),
+    XII_MEMBER_PROPERTY("GroundAltitudeMeters", m_fGroundAltitudeMeters)->AddAttributes(new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("MiePhaseG", m_fMiePhaseG)->AddAttributes(new xiiClampValueAttribute(-0.999f, 0.999f)),
     XII_MEMBER_PROPERTY("TransmittanceIntegrationSteps", m_uiTransmittanceIntegrationSteps)->AddAttributes(new xiiClampValueAttribute(1U, 1024U)),
     XII_MEMBER_PROPERTY("MultiScatterSqrtSamples", m_uiMultiScatterSqrtSamples)->AddAttributes(new xiiClampValueAttribute(1U, 64U)),

@@ -24,6 +24,8 @@ struct XII_GRAPHICSCORE_DLL xiiAtmosphereSettings
   xiiVec3 m_vMieScattering         = xiiVec3(0.003996f);
   xiiVec3 m_vMieAbsorption         = xiiVec3(0.004400f);
   xiiVec3 m_vOzoneAbsorption       = xiiVec3(0.000650f, 0.001881f, 0.000085f);
+  xiiVec3 m_vPlanetUpDirection     = xiiVec3(0.0f, 0.0f, 1.0f);
+  float   m_fGroundAltitudeMeters  = 0.0f;
   float   m_fMiePhaseG             = 0.8f;
   xiiUInt32 m_uiTransmittanceIntegrationSteps = 40U;
   xiiUInt32 m_uiMultiScatterSqrtSamples       = 8U;
@@ -82,4 +84,3 @@ private:
   class State;
   static xiiUniquePtr<State> s_pState;
 };
-

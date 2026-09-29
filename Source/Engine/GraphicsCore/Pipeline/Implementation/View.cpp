@@ -27,6 +27,7 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
+#include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
@@ -1868,11 +1869,47 @@ void xiiView::ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xii
 //
 // Collects all GPU resources related to atmosphere transmittance LUT generation, persisted across frames.
 
+namespace
+{
+  static xiiAtmosphereConstants MakeAtmosphereConstants()
+  {
+    const xiiAtmosphereSettings& settings = xiiAtmosphereManager::GetConfiguration();
+
+    xiiAtmosphereConstants constants = {};
+    constants.PlanetAtmosphereRadiiScaleHeights = xiiVec4(settings.m_fPlanetRadiusKm, settings.m_fAtmosphereRadiusKm, settings.m_fRayleighScaleHeightKm, settings.m_fMieScaleHeightKm);
+    constants.RayleighScattering                = xiiVec4(settings.m_vRayleighScattering, 0.0f);
+    constants.MieScatteringAndPhase             = xiiVec4(settings.m_vMieScattering, settings.m_fMiePhaseG);
+    constants.MieAbsorption                     = xiiVec4(settings.m_vMieAbsorption, 0.0f);
+    constants.OzoneAbsorption                   = xiiVec4(settings.m_vOzoneAbsorption, 0.0f);
+    constants.PlanetUpAndGroundAltitudeMeters   = xiiVec4(settings.m_vPlanetUpDirection.GetNormalized(), settings.m_fGroundAltitudeMeters);
+    constants.SampleCounts                      = xiiVec4U32(settings.m_uiTransmittanceIntegrationSteps, settings.m_uiMultiScatterSqrtSamples, 0U, 0U);
+    return constants;
+  }
+
+  static xiiRenderGraphBufferHandle CreateAtmosphereConstantsBuffer(xiiRenderGraphBuilder& builder, xiiStringView sName)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize         = sizeof(xiiAtmosphereConstants);
+    description.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+    description.m_Usage          = xiiGALResourceUsage::Dynamic;
+    description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+    return builder.WriteBuffer(sName, description, xiiGALResourceStateFlags::ConstantBuffer);
+  }
+
+  static void UploadAtmosphereConstants(xiiGALCommandList& cmd, xiiGALBuffer* pBuffer, const xiiAtmosphereConstants& constants)
+  {
+    xiiGALMapHelper<xiiAtmosphereConstants> mappedConstants(cmd, pBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+    *mappedConstants = constants;
+  }
+}
+
 struct xiiAtmosphereTransmittanceData
 {
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hTransmittanceLUT;        ///< Imported persistent atmosphere transmittance LUT texture.
+  xiiRenderGraphBufferHandle  m_hConstants;               ///< Physical atmosphere parameters used by the integration.
+  xiiAtmosphereConstants      m_Constants;
   xiiUInt64                   m_uiConfigurationRevision = 0U;
   bool                        m_bNeedsGeneration = false; ///< Whether this frame must dispatch transmittance LUT generation.
 };
@@ -1887,6 +1924,8 @@ void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data,
   if (data.m_bNeedsGeneration)
   {
     data.m_hTransmittanceLUT = builder.WriteTexture(data.m_hTransmittanceLUT, xiiGALResourceStateFlags::UnorderedAccess);
+    data.m_hConstants = CreateAtmosphereConstantsBuffer(builder, "AtmosphereTransmittanceConstants");
+    data.m_Constants = MakeAtmosphereConstants();
   }
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittancePipeline, "Shaders/Pipeline/AtmosphereTransmittance.xiiShader");
@@ -1901,8 +1940,10 @@ void xiiView::ExecuteAtmosphereTransmittance(const xiiAtmosphereTransmittanceDat
 
   cmd.BeginDebugGroup("AtmosphereTransmittanceLUT");
   {
+    UploadAtmosphereConstants(cmd, context.GetBuffer(data.m_hConstants), data.m_Constants);
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittancePipeline);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_TransmittanceOut", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiAtmosphereConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_TransmittanceLUT", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({32U, 8U, 1U});
   }
@@ -1919,6 +1960,8 @@ struct xiiAtmosphereMultiScatterData
 
   xiiRenderGraphTextureHandle m_hMultiScatterLUT;         ///< Imported persistent atmosphere multi-scatter LUT texture.
   xiiRenderGraphTextureHandle m_hTransmittanceLUT;        ///< ShaderResource in (atmosphere transmittance LUT).
+  xiiRenderGraphBufferHandle  m_hConstants;               ///< Physical atmosphere parameters used by the integration.
+  xiiAtmosphereConstants      m_Constants;
   xiiUInt64                   m_uiConfigurationRevision = 0U;
   bool                        m_bNeedsGeneration = false; ///< Whether this frame must dispatch multi-scatter LUT generation.
 };
@@ -1934,6 +1977,8 @@ void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, x
   if (data.m_bNeedsGeneration)
   {
     data.m_hMultiScatterLUT = builder.WriteTexture(data.m_hMultiScatterLUT, xiiGALResourceStateFlags::UnorderedAccess);
+    data.m_hConstants = CreateAtmosphereConstantsBuffer(builder, "AtmosphereMultiScatterConstants");
+    data.m_Constants = MakeAtmosphereConstants();
   }
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline, "Shaders/Pipeline/AtmosphereMultiScatter.xiiShader");
@@ -1948,9 +1993,11 @@ void xiiView::ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData&
 
   cmd.BeginDebugGroup("AtmosphereMultiScatterLUT");
   {
+    UploadAtmosphereConstants(cmd, context.GetBuffer(data.m_hConstants), data.m_Constants);
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline);
-    cmd.ResolveAndSetShaderResourceTextureView("g_Transmittance", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_MultiScatterOut", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiAtmosphereConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_TransmittanceLUT", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_MultiScatterLUT", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({4U, 4U, 1U});
     xiiAtmosphereManager::MarkLUTsGenerated(data.m_uiConfigurationRevision);
@@ -2862,18 +2909,22 @@ struct xiiAtmosphereCompositeData
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiRenderGraphTextureHandle m_hSceneDepth;                 ///< ShaderResource in (scene depth texture).
   xiiRenderGraphTextureHandle m_hAtmosphereTransmittanceLUT; ///< ShaderResource in (atmosphere transmittance LUT).
   xiiRenderGraphTextureHandle m_hAtmosphereMultiScatterLUT;  ///< ShaderResource in (atmosphere multi-scatter LUT).
-  xiiRenderGraphTextureHandle m_hVolumetricScattering;       ///< ShaderResource in (volumetric scattering buffer).
-  xiiRenderGraphTextureHandle m_hSkyRadiance;                ///< ShaderResource in (sky radiance texture).
+  xiiRenderGraphTextureHandle m_hDirectLighting;             ///< UnorderedAccess in/out (sky radiance composited over background pixels).
+  xiiRenderGraphBufferHandle  m_hConstants;                  ///< Physical atmosphere parameters.
+  xiiAtmosphereConstants      m_Constants;
 };
 
 void xiiView::SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRenderGraphBuilder& builder)
 {
+  data.m_hSceneDepth                 = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hAtmosphereTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
   data.m_hAtmosphereMultiScatterLUT  = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVolumetricScattering       = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScattering, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSkyRadiance                = builder.ReadTexture(xiiRGBlackboardKeys::k_SkyRadiance, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDirectLighting             = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightingBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hConstants                  = CreateAtmosphereConstantsBuffer(builder, "AtmosphereCompositeConstants");
+  data.m_Constants                   = MakeAtmosphereConstants();
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pAtmosphereCompositePipeline, "Shaders/Pipeline/AtmosphereComposite.xiiShader");
 }
@@ -2884,11 +2935,14 @@ void xiiView::ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data,
 
   cmd.BeginDebugGroup("AtmosphereComposite");
   {
+    UploadAtmosphereConstants(cmd, context.GetBuffer(data.m_hConstants), data.m_Constants);
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pAtmosphereCompositePipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiAtmosphereConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_Transmittance", context.GetTexture(data.m_hAtmosphereTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_MultiScatter", context.GetTexture(data.m_hAtmosphereMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_VolumetricFog", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_PrevSkyRadiance", context.GetTexture(data.m_hSkyRadiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_DirectLight", context.GetTexture(data.m_hDirectLighting)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
   }
@@ -4446,7 +4500,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiScreenSpaceReflectionsData>("SSR", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceReflections, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceReflections, this));
   graph.AddPass<xiiVolumetricFogIntegrationData>("VolumetricFogIntegrate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogIntegration, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogIntegration, this));
   graph.AddPass<xiiVolumetricFogTemporalReprojectionData>("VolumetricFogTemporalRep", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogTemporalReprojection, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogTemporalReprojection, this));
-  graph.AddPass<xiiAtmosphereCompositeData>("VolumetricLightAccumulate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereComposite, this));
+  graph.AddPass<xiiAtmosphereCompositeData>("AtmosphereComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereComposite, this));
 
   // Forward rendering passes, which composite main scene color from lighting buffers and forward geometry.
   graph.AddPass<xiiForwardOpaqueData>("ForwardOpaque", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupForwardOpaque, this), xiiMakeDelegate(&xiiView::ExecuteForwardOpaque, this));
