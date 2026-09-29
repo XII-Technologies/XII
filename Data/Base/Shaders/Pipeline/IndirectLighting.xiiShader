@@ -10,6 +10,7 @@ Texture2D<float> g_AOTerm : register(t4);
 Texture2D<float2> g_BRDFLut : register(t5);
 Texture2D<float4> g_DDGIIr : register(t6);
 Texture2D<float4> g_SkyRadiance : register(t7);
+Texture2D<float4> g_SparseVoxelIrradiance : register(t8);
 RWTexture2D<float4> g_IndirectOut : register(u0);
 
 float3 FresnelSchlickRoughness(float NoV, float3 f0, float roughness)
@@ -45,7 +46,10 @@ void CS_IndirectLighting(uint3 tid : SV_DispatchThreadID)
 
     // DDGI stores incident diffuse irradiance. Lambertian surfaces convert it
     // to outgoing radiance with albedo / pi; metals have no diffuse lobe.
-    const float3 probeIrradiance = max(g_DDGIIr.SampleLevel(g_sLinearClamp, uv, 0.0f).rgb, 0.0f);
+    const float4 ddgiSample = g_DDGIIr.SampleLevel(g_sLinearClamp, uv, 0.0f);
+    const float4 sparseVoxelSample = g_SparseVoxelIrradiance.SampleLevel(g_sLinearClamp, uv, 0.0f);
+    const float3 farFieldIrradiance = lerp(max(g_AmbientLightColor.rgb, 0.0f), max(sparseVoxelSample.rgb, 0.0f), saturate(sparseVoxelSample.a));
+    const float3 probeIrradiance = lerp(farFieldIrradiance, max(ddgiSample.rgb, 0.0f), saturate(ddgiSample.a));
     const float3 diffuse = probeIrradiance * albedo * (1.0f - metallic) * (1.0f / 3.14159265f);
 
     // The atmosphere buffer is the low-frequency specular fallback until a

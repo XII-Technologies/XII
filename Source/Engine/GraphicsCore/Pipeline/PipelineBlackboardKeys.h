@@ -77,6 +77,11 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_DDGIProbeDistanceAtlas     = "DDGIProbeDistanceAtlas"_xiisv;   ///< xiiRenderGraphTextureHandle - persistent probe visibility moments.
   constexpr xiiStringView k_DDGIProbeStates            = "DDGIProbeStates"_xiisv;          ///< xiiRenderGraphBufferHandle - logical cell and validity metadata.
   constexpr xiiStringView k_DDGIProbeConstants         = "DDGIProbeConstants"_xiisv;       ///< xiiRenderGraphBufferHandle - scrolling volume transform and dimensions.
+  constexpr xiiStringView k_SparseVoxelRadiancePool    = "SparseVoxelRadiancePool"_xiisv; ///< xiiRenderGraphBufferHandle - persistent physical voxel radiance pool.
+  constexpr xiiStringView k_SparseVoxelPageTable       = "SparseVoxelPageTable"_xiisv;    ///< xiiRenderGraphBufferHandle - clipmap logical-to-physical brick mapping.
+  constexpr xiiStringView k_SparseVoxelLevelData       = "SparseVoxelLevelData"_xiisv;    ///< xiiRenderGraphBufferHandle - per-level clipmap transforms.
+  constexpr xiiStringView k_SparseVoxelConstants       = "SparseVoxelConstants"_xiisv;    ///< xiiRenderGraphBufferHandle - sparse radiance pool layout.
+  constexpr xiiStringView k_SparseVoxelIrradiance      = "SparseVoxelIrradiance"_xiisv;   ///< xiiRenderGraphTextureHandle - far-field irradiance gather.
   constexpr xiiStringView k_AtmosphereTransmittanceLUT = "AtmTransmittance"_xiisv; ///< xiiRenderGraphTextureHandle - 256x64 R16G16B16A16F atmosphere transmittance LUT.
   constexpr xiiStringView k_AtmosphereMultiScatterLUT  = "AtmMultiScatter"_xiisv;  ///< xiiRenderGraphTextureHandle - 32x32 R16G16B16A16F multiple-scattering LUT.
   constexpr xiiStringView k_RawAOTexture               = "RawAO"_xiisv;            ///< xiiRenderGraphTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).

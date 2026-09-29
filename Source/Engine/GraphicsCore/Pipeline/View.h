@@ -69,6 +69,7 @@ struct xiiSkyIrradianceConvolutionData;
 struct xiiReflectionProbeConvolutionData;
 struct xiiVolumetricFogInitializationData;
 struct xiiDDGIProbeSamplingData;
+struct xiiSparseVoxelRadianceGatherData;
 struct xiiGroundTruthAmbientOcclusionData;
 struct xiiGroundTruthAmbientOcclusionDenoiseData;
 
@@ -358,6 +359,9 @@ private:
   void SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRenderGraphBuilder& builder);
   void ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRenderGraphPassContext& context);
 
+  void SetupSparseVoxelRadianceGather(xiiSparseVoxelRadianceGatherData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteSparseVoxelRadianceGather(const xiiSparseVoxelRadianceGatherData& data, xiiRenderGraphPassContext& context);
+
   void SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphBuilder& builder);
   void ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphPassContext& context);
 
@@ -588,6 +592,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pReflProbeConvPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelFogInitPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pDDGIProbePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSparseVoxelGatherPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pGTAOPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pGTAODenoisePipeline;
       // Persistent once-generated textures

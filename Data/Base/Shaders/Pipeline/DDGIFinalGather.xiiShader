@@ -88,5 +88,5 @@ void CS_DDGIFinalGather(uint3 tid : SV_DispatchThreadID)
         totalWeight += weight;
     }
 
-    g_DDGIOut[tid.xy] = float4(totalWeight > 1e-5f ? irradiance / totalWeight : g_AmbientLightColor.rgb, 1.0f);
+    g_DDGIOut[tid.xy] = float4(totalWeight > 1e-5f ? irradiance / totalWeight : g_AmbientLightColor.rgb, saturate(totalWeight));
 }

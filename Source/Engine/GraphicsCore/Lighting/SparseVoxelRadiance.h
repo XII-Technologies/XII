@@ -8,6 +8,9 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Bitflags.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
+
+class xiiLightingSystem;
 
 /// Configuration for the camera-centred far-field radiance clipmap.
 struct XII_GRAPHICSCORE_DLL xiiSparseVoxelRadianceSettings
@@ -90,6 +93,28 @@ struct XII_GRAPHICSCORE_DLL xiiSparseVoxelRadianceFrameStats
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSparseVoxelRadianceFrameStats);
 
+struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuSparseVoxelBrickUpdate
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiVec4    m_vWorldMinimumAndVoxelSize;
+  xiiVec4U32 m_vPhysicalLevelAndKey;
+};
+
+static_assert(sizeof(xiiGpuSparseVoxelBrickUpdate) == 32U);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSparseVoxelBrickUpdate);
+
+struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuSparseVoxelLevel
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiVec4I32 m_vMinimumCellAndPageOffset;
+  xiiVec4    m_vVoxelAndBrickSize;
+};
+
+static_assert(sizeof(xiiGpuSparseVoxelLevel) == 32U);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSparseVoxelLevel);
+
 /// Subsystem-owned sparse voxel radiance residency and update scheduler.
 ///
 /// The manager maintains nested camera-centred clipmaps in a fixed physical
@@ -115,6 +140,18 @@ public:
   [[nodiscard]] static const xiiSparseVoxelRadianceSettings&        GetConfiguration();
   [[nodiscard]] static const xiiSparseVoxelBrickState*              FindBrick(xiiUInt64 uiPackedKey);
 
+  struct UpdateHandles
+  {
+    xiiRenderGraphBufferHandle m_hRadiancePool;
+    xiiRenderGraphBufferHandle m_hPageTable;
+    xiiRenderGraphBufferHandle m_hLevelData;
+    xiiRenderGraphBufferHandle m_hConstants;
+  };
+
+  /// Adds the sparse radiance injection pass and publishes the page table and
+  /// persistent pool consumed by far-field final gather.
+  [[nodiscard]] static UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
+
   /// Collision-free key used by CPU residency, GPU page tables, captures, and tools.
   [[nodiscard]] static xiiUInt64 PackBrickKey(xiiUInt32 uiClipmapLevel, const xiiVec3I32& vCell);
   static void                    UnpackBrickKey(xiiUInt64 uiPackedKey, xiiUInt32& out_uiClipmapLevel, xiiVec3I32& out_vCell);
@@ -124,8 +161,8 @@ private:
   static void EngineStartup();
   static void EngineShutdown();
   static void Shutdown();
+  [[nodiscard]] static xiiResult CreateGpuResources();
 
   class State;
   static xiiUniquePtr<State> s_pState;
 };
-
