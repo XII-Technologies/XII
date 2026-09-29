@@ -10,6 +10,7 @@
 #include <GraphicsCore/Components/Render/DecalComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Decals/DecalResource.h>
+#include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
@@ -2103,12 +2104,20 @@ struct xiiDDGIProbeSamplingData
   xiiRenderGraphTextureHandle m_hDDGIIrradiance; ///< UnorderedAccess out (DDGI irradiance result texture).
   xiiRenderGraphTextureHandle m_hSceneDepth;     ///< ShaderResource in (scene depth texture).
   xiiRenderGraphTextureHandle m_hGBufferNormal;  ///< ShaderResource in (GBuffer normal texture).
+  xiiRenderGraphTextureHandle m_hProbeIrradianceAtlas;
+  xiiRenderGraphTextureHandle m_hProbeDistanceAtlas;
+  xiiRenderGraphBufferHandle  m_hProbeStates;
+  xiiRenderGraphBufferHandle  m_hProbeConstants;
 };
 
 void xiiView::SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hProbeIrradianceAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIProbeIrradianceAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hProbeDistanceAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIProbeDistanceAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hProbeStates = builder.ReadBuffer(xiiRGBlackboardKeys::k_DDGIProbeStates, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hProbeConstants = builder.ReadBuffer(xiiRGBlackboardKeys::k_DDGIProbeConstants, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -2120,7 +2129,7 @@ void xiiView::SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRenderGr
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hDDGIIrradiance    = builder.WriteTexture(xiiRGBlackboardKeys::k_DDGIIrradiance, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pDDGIProbePipeline, "Shaders/Pipeline/RTGIFinalGather.xiiShader");
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pDDGIProbePipeline, "Shaders/Pipeline/DDGIFinalGather.xiiShader");
 }
 
 void xiiView::ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRenderGraphPassContext& context)
@@ -2130,8 +2139,13 @@ void xiiView::ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xii
   cmd.BeginDebugGroup("DDGIProbeSampling");
   {
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pDDGIProbePipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiDDGIProbeConstants", context.GetBuffer(data.m_hProbeConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_DDGIIrradianceAtlas", context.GetTexture(data.m_hProbeIrradianceAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_DDGIDistanceAtlas", context.GetTexture(data.m_hProbeDistanceAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_DDGIProbeStates", context.GetBuffer(data.m_hProbeStates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DDGIOut", context.GetTexture(data.m_hDDGIIrradiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
@@ -4374,6 +4388,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiSkyIrradianceConvolutionData>("SkyIrradianceConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSkyIrradianceConvolution, this), xiiMakeDelegate(&xiiView::ExecuteSkyIrradianceConvolution, this));
   graph.AddPass<xiiReflectionProbeConvolutionData>("ReflectionProbeConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeConvolution, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeConvolution, this));
   graph.AddPass<xiiVolumetricFogInitializationData>("VolumetricFogInitialization", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogInitialization, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogInitialization, this));
+  XII_IGNORE_UNUSED(xiiDDGIManager::AddUpdatePass(graph, &m_ViewPassResources.m_LightingSystem));
   graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiView::ExecuteDDGIProbeSampling, this));
   graph.AddPass<xiiGroundTruthAmbientOcclusionData>("GroundTruthAmbientOcclusion", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusion, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusion, this));
   graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));

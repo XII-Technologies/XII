@@ -73,6 +73,10 @@ namespace xiiRGBlackboardKeys
 
   constexpr xiiStringView k_BRDFLut                    = "BRDFLut"_xiisv;          ///< xiiRenderGraphTextureHandle - 256x256 R16G16F GGX split-sum BRDF LUT (persistent).
   constexpr xiiStringView k_DDGIIrradiance             = "DDGIIrradiance"_xiisv;   ///< xiiRenderGraphTextureHandle - DDGI probe irradiance atlas (if DDGI enabled).
+  constexpr xiiStringView k_DDGIProbeIrradianceAtlas   = "DDGIProbeIrradianceAtlas"_xiisv; ///< xiiRenderGraphTextureHandle - persistent scrolling probe radiance.
+  constexpr xiiStringView k_DDGIProbeDistanceAtlas     = "DDGIProbeDistanceAtlas"_xiisv;   ///< xiiRenderGraphTextureHandle - persistent probe visibility moments.
+  constexpr xiiStringView k_DDGIProbeStates            = "DDGIProbeStates"_xiisv;          ///< xiiRenderGraphBufferHandle - logical cell and validity metadata.
+  constexpr xiiStringView k_DDGIProbeConstants         = "DDGIProbeConstants"_xiisv;       ///< xiiRenderGraphBufferHandle - scrolling volume transform and dimensions.
   constexpr xiiStringView k_AtmosphereTransmittanceLUT = "AtmTransmittance"_xiisv; ///< xiiRenderGraphTextureHandle - 256x64 R16G16B16A16F atmosphere transmittance LUT.
   constexpr xiiStringView k_AtmosphereMultiScatterLUT  = "AtmMultiScatter"_xiisv;  ///< xiiRenderGraphTextureHandle - 32x32 R16G16B16A16F multiple-scattering LUT.
   constexpr xiiStringView k_RawAOTexture               = "RawAO"_xiisv;            ///< xiiRenderGraphTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).

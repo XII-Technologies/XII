@@ -2,9 +2,24 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/ResourceManager/Implementation/ResourceLock.h>
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Algorithm/Sorting.h>
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
+#include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
+#include <GraphicsCore/Pipeline/PipelineStateCache.h>
+#include <GraphicsCore/Shader/ShaderPermutationResource.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsCore/Shader/ShaderResource.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
+
+#include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
 
 namespace
 {
@@ -36,6 +51,13 @@ public:
   xiiVec3I32 m_vMinimumCell = xiiVec3I32(xiiMath::MaxValue<xiiInt32>());
   xiiVec3 m_vCameraPosition = xiiVec3::MakeZero();
   xiiUInt64 m_uiFrameIndex = 0U;
+  xiiUInt64 m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
+  xiiSharedPtr<xiiGALTexture> m_pIrradianceAtlas;
+  xiiSharedPtr<xiiGALTexture> m_pDistanceAtlas;
+  xiiSharedPtr<xiiGALComputePipelineState> m_pUpdatePipeline;
+  xiiUInt32 m_uiAtlasWidth = 0U;
+  xiiUInt32 m_uiAtlasHeight = 0U;
+  bool m_bEngineStarted = false;
   bool m_bInitialized = false;
 };
 
@@ -54,6 +76,16 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DDGIManager)
   ON_CORESYSTEMS_SHUTDOWN
   {
     xiiDDGIManager::Shutdown();
+  }
+
+  ON_HIGHLEVELSYSTEMS_STARTUP
+  {
+    xiiDDGIManager::EngineStartup();
+  }
+
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    xiiDDGIManager::EngineShutdown();
   }
 XII_END_SUBSYSTEM_DECLARATION;
 
@@ -118,6 +150,28 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDDGIFrameStats, xiiNoBase, 1, xiiRTTIDefaultA
   XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDDGIProbeState, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDDGIProbeState>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("PositionAndLastUpdate", m_vPositionAndLastUpdate),
+    XII_MEMBER_PROPERTY("CellAndFlags", m_vCellAndFlags),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDDGIProbeUpdate, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDDGIProbeUpdate>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("PositionAndHistoryWeight", m_vPositionAndHistoryWeight),
+    XII_MEMBER_PROPERTY("Metadata", m_vMetadata),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
 void xiiDDGIManager::Startup()
@@ -126,9 +180,65 @@ void xiiDDGIManager::Startup()
   Configure(xiiDDGISettings()).IgnoreResult();
 }
 
+void xiiDDGIManager::EngineStartup()
+{
+  if (s_pState == nullptr)
+    return;
+  s_pState->m_bEngineStarted = true;
+  CreateGpuResources().IgnoreResult();
+}
+
+void xiiDDGIManager::EngineShutdown()
+{
+  if (s_pState == nullptr)
+    return;
+  s_pState->m_pUpdatePipeline.Clear();
+  s_pState->m_pDistanceAtlas.Clear();
+  s_pState->m_pIrradianceAtlas.Clear();
+  s_pState->m_bEngineStarted = false;
+}
+
 void xiiDDGIManager::Shutdown()
 {
+  EngineShutdown();
   s_pState.Clear();
+}
+
+xiiResult xiiDDGIManager::CreateGpuResources()
+{
+  if (s_pState == nullptr || !s_pState->m_bEngineStarted || s_pState->m_uiAtlasWidth == 0U || s_pState->m_uiAtlasHeight == 0U)
+    return XII_FAILURE;
+
+  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice == nullptr)
+    return XII_FAILURE;
+  const xiiUInt32 uiMaximumDimension = pDevice->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_uiMaxTexture2DDimension;
+  if (s_pState->m_uiAtlasWidth > uiMaximumDimension || s_pState->m_uiAtlasHeight > uiMaximumDimension)
+    return XII_FAILURE;
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type = xiiGALResourceDimension::Texture2D;
+  description.m_Size.width = s_pState->m_uiAtlasWidth;
+  description.m_Size.height = s_pState->m_uiAtlasHeight;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+  description.m_Usage = xiiGALResourceUsage::Default;
+
+  description.m_Format = xiiGALResourceFormat::RGBA16Float;
+  xiiSharedPtr<xiiGALTexture> pIrradianceAtlas = pDevice->CreateTexture(description);
+  if (pIrradianceAtlas == nullptr)
+    return XII_FAILURE;
+  pIrradianceAtlas->SetDebugName("DDGI Probe Irradiance Atlas");
+
+  description.m_Format = xiiGALResourceFormat::RG16Float;
+  xiiSharedPtr<xiiGALTexture> pDistanceAtlas = pDevice->CreateTexture(description);
+  if (pDistanceAtlas == nullptr)
+    return XII_FAILURE;
+  pDistanceAtlas->SetDebugName("DDGI Probe Distance Atlas");
+
+  s_pState->m_pIrradianceAtlas = std::move(pIrradianceAtlas);
+  s_pState->m_pDistanceAtlas = std::move(pDistanceAtlas);
+  return XII_SUCCESS;
 }
 
 xiiResult xiiDDGIManager::Configure(const xiiDDGISettings& settings)
@@ -144,7 +254,12 @@ xiiResult xiiDDGIManager::Configure(const xiiDDGISettings& settings)
   s_pState->m_vMinimumCell = xiiVec3I32(xiiMath::MaxValue<xiiInt32>());
   s_pState->m_Stats = {};
   s_pState->m_Stats.m_uiProbeCount = uiProbeCount;
+  s_pState->m_uiAtlasWidth = xiiMath::Max(static_cast<xiiUInt32>(xiiMath::Ceil(xiiMath::Sqrt(static_cast<float>(uiProbeCount)))), 1U);
+  s_pState->m_uiAtlasHeight = (uiProbeCount + s_pState->m_uiAtlasWidth - 1U) / s_pState->m_uiAtlasWidth;
+  s_pState->m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
   s_pState->m_bInitialized = true;
+  if (s_pState->m_bEngineStarted)
+    return CreateGpuResources();
   return XII_SUCCESS;
 }
 
@@ -279,6 +394,157 @@ const xiiDDGISettings& xiiDDGIManager::GetConfiguration()
 {
   XII_ASSERT_RELEASE(IsInitialized(), "DDGI manager is not initialized.");
   return s_pState->m_Settings;
+}
+
+xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem)
+{
+  UpdateHandles result;
+  if (!IsInitialized() || pLightingSystem == nullptr)
+    return result;
+  if ((s_pState->m_pIrradianceAtlas == nullptr || s_pState->m_pDistanceAtlas == nullptr) && CreateGpuResources().Failed())
+    return result;
+
+  if (s_pState->m_pUpdatePipeline == nullptr)
+  {
+    const xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/DDGIProbeUpdate.xiiShader");
+    xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
+    const xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+    xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+    if (!permutation.IsValid())
+      return result;
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pComputeShader = permutation->GetGALShader(xiiGALShaderType::Compute);
+    pipelineDescription.m_pPipelineResourceSignature = permutation->GetPipelineResourceSignature();
+    s_pState->m_pUpdatePipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+    if (s_pState->m_pUpdatePipeline == nullptr)
+      return result;
+  }
+
+  struct UpdatePassData
+  {
+    xiiRenderGraphTextureHandle m_hIrradianceAtlas;
+    xiiRenderGraphTextureHandle m_hDistanceAtlas;
+    xiiRenderGraphBufferHandle m_hProbeStates;
+    xiiRenderGraphBufferHandle m_hProbeUpdates;
+    xiiRenderGraphBufferHandle m_hConstants;
+    xiiDynamicArray<xiiGpuDDGIProbeState> m_ProbeStates;
+    xiiDynamicArray<xiiGpuDDGIProbeUpdate> m_ProbeUpdates;
+    xiiVec3I32 m_vMinimumCell;
+    const xiiLightingSystem* m_pLightingSystem = nullptr;
+  };
+
+  const bool bPerformUpdates = s_pState->m_uiLastGpuUpdateFrame != s_pState->m_uiFrameIndex;
+
+  auto pass = graph.AddPass<UpdatePassData>(
+    "DDGI Probe Update", xiiGALCommandQueueFlags::Compute,
+    [bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+      xiiGALBufferCreationDescription bufferDescription;
+      bufferDescription.m_uiSize = xiiMath::Max(s_pState->m_Probes.GetCount(), 1U) * sizeof(xiiGpuDDGIProbeState);
+      bufferDescription.m_uiElementByteStride = sizeof(xiiGpuDDGIProbeState);
+      bufferDescription.m_BindFlags = xiiGALBindFlags::ShaderResource;
+      bufferDescription.m_Mode = xiiGALBufferMode::Structured;
+      bufferDescription.m_Usage = xiiGALResourceUsage::Dynamic;
+      bufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      data.m_hProbeStates = builder.WriteBuffer(xiiRGBlackboardKeys::k_DDGIProbeStates, bufferDescription, xiiGALResourceStateFlags::ShaderResource);
+
+      bufferDescription.m_uiSize = xiiMath::Max(bPerformUpdates ? s_pState->m_ScheduledUpdates.GetCount() : 0U, 1U) * sizeof(xiiGpuDDGIProbeUpdate);
+      bufferDescription.m_uiElementByteStride = sizeof(xiiGpuDDGIProbeUpdate);
+      data.m_hProbeUpdates = builder.WriteBuffer("DDGIProbeUpdates", bufferDescription, xiiGALResourceStateFlags::ShaderResource);
+
+      bufferDescription = {};
+      bufferDescription.m_uiSize = sizeof(xiiDDGIProbeConstants);
+      bufferDescription.m_BindFlags = xiiGALBindFlags::UniformBuffer;
+      bufferDescription.m_Usage = xiiGALResourceUsage::Dynamic;
+      bufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      data.m_hConstants = builder.WriteBuffer(xiiRGBlackboardKeys::k_DDGIProbeConstants, bufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+      data.m_hIrradianceAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DDGIProbeIrradianceAtlas, s_pState->m_pIrradianceAtlas, s_pState->m_pIrradianceAtlas->GetResourceState());
+      data.m_hDistanceAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DDGIProbeDistanceAtlas, s_pState->m_pDistanceAtlas, s_pState->m_pDistanceAtlas->GetResourceState());
+      if (bPerformUpdates)
+      {
+        data.m_hIrradianceAtlas = builder.WriteTexture(data.m_hIrradianceAtlas, xiiGALResourceStateFlags::UnorderedAccess);
+        data.m_hDistanceAtlas = builder.WriteTexture(data.m_hDistanceAtlas, xiiGALResourceStateFlags::UnorderedAccess);
+      }
+      else
+      {
+        data.m_hIrradianceAtlas = builder.ReadTexture(data.m_hIrradianceAtlas, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hDistanceAtlas = builder.ReadTexture(data.m_hDistanceAtlas, xiiGALResourceStateFlags::ShaderResource);
+      }
+      builder.ExportTexture(data.m_hIrradianceAtlas, xiiGALResourceStateFlags::ShaderResource);
+      builder.ExportTexture(data.m_hDistanceAtlas, xiiGALResourceStateFlags::ShaderResource);
+      builder.SetPassSideEffects(bPerformUpdates);
+      builder.SetPassAllowMerge(false);
+    },
+    [](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
+      xiiGALCommandList& cmd = context.GetCommandList();
+      {
+        xiiGALMapHelper<xiiUInt8> mapped(cmd, context.GetBuffer(data.m_hProbeStates), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        xiiMemoryUtils::Copy(mapped.GetMappedData(), reinterpret_cast<const xiiUInt8*>(data.m_ProbeStates.GetData()), data.m_ProbeStates.GetCount() * sizeof(xiiGpuDDGIProbeState));
+      }
+      if (!data.m_ProbeUpdates.IsEmpty())
+      {
+        xiiGALMapHelper<xiiUInt8> mapped(cmd, context.GetBuffer(data.m_hProbeUpdates), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        xiiMemoryUtils::Copy(mapped.GetMappedData(), reinterpret_cast<const xiiUInt8*>(data.m_ProbeUpdates.GetData()), data.m_ProbeUpdates.GetCount() * sizeof(xiiGpuDDGIProbeUpdate));
+      }
+      {
+        xiiGALMapHelper<xiiDDGIProbeConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        constants->MinimumCellAndAtlasWidth = xiiVec4I32(data.m_vMinimumCell.x, data.m_vMinimumCell.y, data.m_vMinimumCell.z, static_cast<xiiInt32>(s_pState->m_uiAtlasWidth));
+        constants->ProbeCountsAndUpdateCount = xiiVec4U32(s_pState->m_Settings.m_uiProbeCountX, s_pState->m_Settings.m_uiProbeCountY, s_pState->m_Settings.m_uiProbeCountZ, data.m_ProbeUpdates.GetCount());
+        constants->SpacingHysteresisDistance = xiiVec4(s_pState->m_Settings.m_fProbeSpacing, s_pState->m_Settings.m_fTemporalHysteresis,
+          s_pState->m_Settings.m_fProbeSpacing * 4.0f, 0.0f);
+      }
+
+      if (!data.m_ProbeUpdates.IsEmpty())
+      {
+        cmd.SetPipelineState(s_pState->m_pUpdatePipeline);
+        if (data.m_pLightingSystem != nullptr)
+          data.m_pLightingSystem->BindFrameConstants(cmd, xiiGALShaderType::Compute);
+        cmd.ResolveAndSetConstantBuffer("xiiDDGIProbeConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+        cmd.ResolveAndSetShaderResourceBufferView("g_DDGIProbeUpdates", context.GetBuffer(data.m_hProbeUpdates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+        cmd.ResolveAndSetUnorderedAccessTextureView("g_DDGIIrradianceAtlas", context.GetTexture(data.m_hIrradianceAtlas)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+        cmd.ResolveAndSetUnorderedAccessTextureView("g_DDGIDistanceAtlas", context.GetTexture(data.m_hDistanceAtlas)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+        cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+        cmd.DispatchCompute({(data.m_ProbeUpdates.GetCount() + 63U) / 64U, 1U, 1U});
+
+        for (const xiiGpuDDGIProbeUpdate& update : data.m_ProbeUpdates)
+          CommitProbeUpdate(update.m_vMetadata.x, xiiVec3::MakeZero(), true);
+      }
+      if (s_pState->m_uiLastGpuUpdateFrame != s_pState->m_uiFrameIndex)
+        s_pState->m_uiLastGpuUpdateFrame = s_pState->m_uiFrameIndex;
+    });
+
+  pass.first->m_vMinimumCell = s_pState->m_vMinimumCell;
+  pass.first->m_pLightingSystem = pLightingSystem;
+  pass.first->m_ProbeStates.SetCount(s_pState->m_Probes.GetCount());
+  for (xiiUInt32 i = 0U; i < s_pState->m_Probes.GetCount(); ++i)
+  {
+    const xiiDDGIProbeState& probe = s_pState->m_Probes[i];
+    xiiGpuDDGIProbeState& gpuProbe = pass.first->m_ProbeStates[i];
+    gpuProbe.m_vPositionAndLastUpdate = xiiVec4(probe.m_vWorldPosition + probe.m_vRelocationOffset, static_cast<float>(probe.m_uiLastUpdatedFrame));
+    gpuProbe.m_vCellAndFlags = xiiVec4I32(probe.m_iCellX, probe.m_iCellY, probe.m_iCellZ, static_cast<xiiInt32>(probe.m_Flags.GetValue()));
+  }
+
+  if (bPerformUpdates)
+  {
+    pass.first->m_ProbeUpdates.Reserve(s_pState->m_ScheduledUpdates.GetCount());
+    for (const xiiDDGIProbeUpdate& update : s_pState->m_ScheduledUpdates)
+    {
+      xiiGpuDDGIProbeUpdate& gpuUpdate = pass.first->m_ProbeUpdates.ExpandAndGetRef();
+      gpuUpdate.m_vPositionAndHistoryWeight = xiiVec4(update.m_vWorldPosition, update.m_fHistoryWeight);
+      gpuUpdate.m_vMetadata = xiiVec4U32(update.m_uiPhysicalProbe, 0U, 0U, 0U);
+
+      xiiGpuDDGIProbeState& gpuProbe = pass.first->m_ProbeStates[update.m_uiPhysicalProbe];
+      gpuProbe.m_vCellAndFlags.w |= xiiDDGIProbeFlags::Valid;
+      gpuProbe.m_vCellAndFlags.w &= ~xiiDDGIProbeFlags::NeedsUpdate;
+    }
+  }
+
+  result.m_hIrradianceAtlas = pass.first->m_hIrradianceAtlas;
+  result.m_hDistanceAtlas = pass.first->m_hDistanceAtlas;
+  result.m_hProbeStates = pass.first->m_hProbeStates;
+  result.m_hProbeConstants = pass.first->m_hConstants;
+  return result;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_DynamicGlobalIllumination);

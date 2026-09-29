@@ -1,0 +1,92 @@
+// XII Engine - scrolling DDGI trilinear probe gather.
+
+#include "PipelineCommon.xiiShader"
+#include "Passes/DDGI/DDGIConstants.h"
+
+struct xiiGpuDDGIProbeState
+{
+    float4 PositionAndLastUpdate;
+    int4 CellAndFlags;
+};
+
+Texture2D<float> g_SceneDepth : register(t0);
+Texture2D<float2> g_GBufNormal : register(t1);
+Texture2D<float4> g_DDGIIrradianceAtlas : register(t2);
+Texture2D<float2> g_DDGIDistanceAtlas : register(t3);
+StructuredBuffer<xiiGpuDDGIProbeState> g_DDGIProbeStates : register(t4);
+RWTexture2D<float4> g_DDGIOut : register(u0);
+
+int PositiveModulo(int value, uint divisor)
+{
+    const int signedDivisor = (int)divisor;
+    const int result = value % signedDivisor;
+    return result < 0 ? result + signedDivisor : result;
+}
+
+uint PhysicalProbeIndex(int3 cell)
+{
+    const uint3 counts = ProbeCountsAndUpdateCount.xyz;
+    const uint3 slot = uint3(PositiveModulo(cell.x, counts.x), PositiveModulo(cell.y, counts.y), PositiveModulo(cell.z, counts.z));
+    return (slot.z * counts.y + slot.y) * counts.x + slot.x;
+}
+
+[numthreads(8, 8, 1)]
+void CS_DDGIFinalGather(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dimensions;
+    g_DDGIOut.GetDimensions(dimensions.x, dimensions.y);
+    if (any(tid.xy >= dimensions))
+        return;
+
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dimensions);
+    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0.0f);
+    if (depth <= 0.0f)
+    {
+        g_DDGIOut[tid.xy] = 0.0f;
+        return;
+    }
+
+    const float3 worldPosition = ReconstructWorldPos(uv, depth);
+    const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0.0f));
+    const float spacing = max(SpacingHysteresisDistance.x, 0.001f);
+    const float3 probeCoordinate = worldPosition / spacing - 0.5f;
+    const int3 baseCell = (int3)floor(probeCoordinate);
+    const float3 blend = frac(probeCoordinate);
+    const uint atlasWidth = max((uint)MinimumCellAndAtlasWidth.w, 1u);
+
+    float3 irradiance = 0.0f;
+    float totalWeight = 0.0f;
+    [unroll]
+    for (uint corner = 0u; corner < 8u; ++corner)
+    {
+        const int3 offset = int3((corner >> 0u) & 1u, (corner >> 1u) & 1u, (corner >> 2u) & 1u);
+        const int3 cell = baseCell + offset;
+        if (any(cell < MinimumCellAndAtlasWidth.xyz) || any(cell >= MinimumCellAndAtlasWidth.xyz + (int3)ProbeCountsAndUpdateCount.xyz))
+            continue;
+
+        const uint physicalProbe = PhysicalProbeIndex(cell);
+        const xiiGpuDDGIProbeState state = g_DDGIProbeStates[physicalProbe];
+        if (any(state.CellAndFlags.xyz != cell) || (state.CellAndFlags.w & 1) == 0)
+            continue;
+
+        const float3 axisWeight = lerp(1.0f - blend, blend, float3(offset));
+        float weight = axisWeight.x * axisWeight.y * axisWeight.z;
+
+        const float3 toProbe = state.PositionAndLastUpdate.xyz - worldPosition;
+        const float probeDistance = length(toProbe);
+        const float3 probeDirection = probeDistance > 1e-5f ? toProbe / probeDistance : normal;
+        weight *= saturate(dot(normal, probeDirection) * 0.5f + 0.5f);
+        if (weight <= 0.0f)
+            continue;
+
+        const uint2 atlasPixel = uint2(physicalProbe % atlasWidth, physicalProbe / atlasWidth);
+        const float2 distanceMoments = g_DDGIDistanceAtlas.Load(int3(atlasPixel, 0));
+        const float variance = max(distanceMoments.y - distanceMoments.x * distanceMoments.x, 1e-4f);
+        const float delta = max(probeDistance - distanceMoments.x, 0.0f);
+        weight *= delta > 0.0f ? variance / (variance + delta * delta) : 1.0f;
+        irradiance += g_DDGIIrradianceAtlas.Load(int3(atlasPixel, 0)).rgb * weight;
+        totalWeight += weight;
+    }
+
+    g_DDGIOut[tid.xy] = float4(totalWeight > 1e-5f ? irradiance / totalWeight : g_AmbientLightColor.rgb, 1.0f);
+}

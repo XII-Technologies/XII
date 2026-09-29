@@ -8,6 +8,9 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Bitflags.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
+
+class xiiLightingSystem;
 
 /// Runtime controls for the camera-centred mid-field DDGI clipmap.
 struct XII_GRAPHICSCORE_DLL xiiDDGISettings
@@ -84,6 +87,28 @@ struct XII_GRAPHICSCORE_DLL xiiDDGIFrameStats
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDDGIFrameStats);
 
+struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuDDGIProbeState
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiVec4    m_vPositionAndLastUpdate;
+  xiiVec4I32 m_vCellAndFlags;
+};
+
+static_assert(sizeof(xiiGpuDDGIProbeState) == 32U);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuDDGIProbeState);
+
+struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuDDGIProbeUpdate
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiVec4    m_vPositionAndHistoryWeight;
+  xiiVec4U32 m_vMetadata;
+};
+
+static_assert(sizeof(xiiGpuDDGIProbeUpdate) == 32U);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuDDGIProbeUpdate);
+
 /// Process-wide DDGI clipmap scheduler.
 ///
 /// The state is allocated during GraphicsCore subsystem startup, never from a
@@ -109,11 +134,25 @@ public:
   [[nodiscard]] static xiiDDGIFrameStats GetFrameStats();
   [[nodiscard]] static const xiiDDGISettings& GetConfiguration();
 
+  struct UpdateHandles
+  {
+    xiiRenderGraphTextureHandle m_hIrradianceAtlas;
+    xiiRenderGraphTextureHandle m_hDistanceAtlas;
+    xiiRenderGraphBufferHandle  m_hProbeStates;
+    xiiRenderGraphBufferHandle  m_hProbeConstants;
+  };
+
+  /// Adds the temporally accumulated probe update pass and publishes resources
+  /// consumed by the per-pixel DDGI final gather.
+  [[nodiscard]] static UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
+
 private:
   static void Startup();
+  static void EngineStartup();
+  static void EngineShutdown();
   static void Shutdown();
+  [[nodiscard]] static xiiResult CreateGpuResources();
 
   class State;
   static xiiUniquePtr<State> s_pState;
 };
-
