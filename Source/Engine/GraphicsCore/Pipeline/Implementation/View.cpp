@@ -6,6 +6,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Components/Fog/VolumetricCloudComponent.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Components/Render/DecalComponent.h>
@@ -29,6 +30,7 @@
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
+#include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
@@ -100,6 +102,24 @@ namespace
           (pAtmosphere->m_iPriority == pBest->m_iPriority && pAtmosphere->m_uiSortingKey < pBest->m_uiSortingKey))
       {
         pBest = pAtmosphere;
+      }
+    }
+    return pBest;
+  }
+
+  static const xiiVolumetricCloudRenderData* SelectVolumetricCloudLayer(const xiiArrayPtr<xiiRenderData* const>& renderData)
+  {
+    const xiiVolumetricCloudRenderData* pBest = nullptr;
+    for (const xiiRenderData* pRenderData : renderData)
+    {
+      const xiiVolumetricCloudRenderData* pCloud = xiiDynamicCast<const xiiVolumetricCloudRenderData*>(pRenderData);
+      if (pCloud == nullptr)
+        continue;
+
+      if (pBest == nullptr || pCloud->m_iPriority > pBest->m_iPriority ||
+          (pCloud->m_iPriority == pBest->m_iPriority && pCloud->m_uiSortingKey < pBest->m_uiSortingKey))
+      {
+        pBest = pCloud;
       }
     }
     return pBest;
@@ -2525,7 +2545,9 @@ struct xiiDeferredDirectLightingData
   xiiRenderGraphBufferHandle  m_hLightIndexBuffer;     ///< ShaderResource in (cluster light indices).
   xiiRenderGraphTextureHandle m_hDirectLightReservoir; ///< ShaderResource in (spatially reused ReSTIR DI sample).
   xiiRenderGraphTextureHandle m_hReservoirSurface;     ///< ShaderResource in (history state transition and dependency).
+  xiiRenderGraphBufferHandle  m_hCloudShadowConstants; ///< ConstantBuffer in (world-space cloud shadow projection).
   xiiRenderGraphTextureHandle m_hDirectLightingBuffer; ///< UnorderedAccess out (direct lighting HDR buffer).
+  xiiCloudShadowConstants     m_CloudShadowConstants;
 };
 
 void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRenderGraphBuilder& builder)
@@ -2546,6 +2568,21 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   data.m_hDirectLightReservoir        = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, xiiGALResourceStateFlags::ShaderResource);
   data.m_hReservoirSurface            = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoirSurface, xiiGALResourceStateFlags::ShaderResource);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiCloudShadowConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Mode           = xiiGALBufferMode::Undefined;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  data.m_hCloudShadowConstants          = builder.WriteBuffer("xiiCloudShadowConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  const auto& cloudState = m_ViewPassResources.m_LightingPasses.m_CloudShadowState;
+  data.m_CloudShadowConstants.LayerOriginAndInvScale      = cloudState.m_vLayerOriginAndInvScale;
+  data.m_CloudShadowConstants.ProjectionAxisUAndDetail    = cloudState.m_vProjectionAxisUAndDetail;
+  data.m_CloudShadowConstants.ProjectionAxisVAndCoverage  = cloudState.m_vProjectionAxisVAndCoverage;
+  data.m_CloudShadowConstants.LayerNormalAndOpticalDepth  = cloudState.m_vLayerNormalAndOpticalDepth;
+  data.m_CloudShadowConstants.WindStrengthAndEnabled      = cloudState.m_vWindStrengthAndEnabled;
+
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
   description.m_Format         = xiiGALResourceFormat::RGBA16Float;
@@ -2565,6 +2602,11 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
 
   cmd.BeginDebugGroup("DeferredDirectLighting");
   {
+    {
+      xiiGALMapHelper<xiiCloudShadowConstants> pConstants(cmd, context.GetBuffer(data.m_hCloudShadowConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *pConstants = data.m_CloudShadowConstants;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pDirectLightingPipeline);
     m_ViewPassResources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
     m_ViewPassResources.m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
@@ -2577,6 +2619,7 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
     cmd.ResolveAndSetShaderResourceTextureView("g_RTShadow", context.GetTexture(data.m_hRayTracedFinalShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ContactShadow", context.GetTexture(data.m_hContactShadowTerm)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hShadowCascadeConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiCloudShadowConstants", context.GetBuffer(data.m_hCloudShadowConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ShadowAtlas", context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_LocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -4458,6 +4501,22 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
       {
         hAtmosphereLUT = xiiAtmosphereManager::GetDefaultLUTHandle();
       }
+    }
+  }
+
+  auto& cloudState = m_ViewPassResources.m_LightingPasses.m_CloudShadowState;
+  cloudState = {};
+  if (m_pExtractedData != nullptr)
+  {
+    if (const xiiVolumetricCloudRenderData* pCloud = SelectVolumetricCloudLayer(m_pExtractedData->GetAllRenderData()))
+    {
+      const xiiVolumetricCloudSettings& settings = pCloud->m_Settings;
+      const float fInvScale = 1.0f / xiiMath::Max(settings.m_fShadowScaleMeters, 1.0f);
+      cloudState.m_vLayerOriginAndInvScale = xiiVec4(pCloud->m_vLayerOrigin.x, pCloud->m_vLayerOrigin.y, pCloud->m_vLayerOrigin.z, fInvScale);
+      cloudState.m_vProjectionAxisUAndDetail = xiiVec4(pCloud->m_vProjectionAxisU.x, pCloud->m_vProjectionAxisU.y, pCloud->m_vProjectionAxisU.z, xiiMath::Max(settings.m_fDetailScale, 1.0f));
+      cloudState.m_vProjectionAxisVAndCoverage = xiiVec4(pCloud->m_vProjectionAxisV.x, pCloud->m_vProjectionAxisV.y, pCloud->m_vProjectionAxisV.z, xiiMath::Saturate(settings.m_fCoverage));
+      cloudState.m_vLayerNormalAndOpticalDepth = xiiVec4(pCloud->m_vLayerNormal.x, pCloud->m_vLayerNormal.y, pCloud->m_vLayerNormal.z, xiiMath::Max(settings.m_fOpticalDepth, 0.0f));
+      cloudState.m_vWindStrengthAndEnabled = xiiVec4(settings.m_vWindVelocityMetersPerSecond.x, settings.m_vWindVelocityMetersPerSecond.y, xiiMath::Saturate(settings.m_fShadowStrength), settings.m_bCastShadows ? 1.0f : 0.0f);
     }
   }
   m_ViewPassResources.m_LightingSystem.WriteBlackboard(blackboard);

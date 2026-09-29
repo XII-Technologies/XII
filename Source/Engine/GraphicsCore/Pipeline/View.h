@@ -605,6 +605,15 @@ private:
     //  Stage 6 - Main Lighting
     struct LightingPasses
     {
+      struct CloudShadowState
+      {
+        xiiVec4 m_vLayerOriginAndInvScale     = xiiVec4::MakeZero();
+        xiiVec4 m_vProjectionAxisUAndDetail   = xiiVec4::MakeZero();
+        xiiVec4 m_vProjectionAxisVAndCoverage = xiiVec4::MakeZero();
+        xiiVec4 m_vLayerNormalAndOpticalDepth = xiiVec4::MakeZero();
+        xiiVec4 m_vWindStrengthAndEnabled     = xiiVec4::MakeZero();
+      } m_CloudShadowState;
+
       xiiSharedPtr<xiiGALComputePipelineState> m_pReSTIRDITemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pReSTIRDISpatialPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pDirectLightingPipeline;
