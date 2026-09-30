@@ -185,6 +185,19 @@ xiiMaterialGpuStorageStatistics xiiMaterialGpuStorage::GetStatistics() const
   return result;
 }
 
+void xiiMaterialGpuStorage::GetActiveMaterials(xiiDynamicArray<xiiSharedPtr<xiiMaterialInstance>>& out_materials) const
+{
+  XII_LOCK(m_Mutex);
+  out_materials.Clear();
+  out_materials.Reserve(m_uiActiveCount);
+
+  for (const Slot& slot : m_Slots)
+  {
+    if (slot.m_pInstance != nullptr)
+      out_materials.PushBack(slot.m_pInstance);
+  }
+}
+
 void xiiMaterialGpuStorage::GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpuUploadBatch& out_batch) const
 {
   XII_LOCK(m_Mutex);
