@@ -32,7 +32,6 @@ Texture2D<float>                 g_SceneDepth      : register(t5);
 Texture2D<float2>                g_GBufferNormal   : register(t6);
 Texture2D<float4>                g_GBufferAlbedo   : register(t7);
 RWTexture2D<float4>              g_RTGIRaw         : register(u8);
-RWTexture2D<float4>              g_RTGIFinal       : register(u9);
 
 [shader("raygeneration")]
 void main()
@@ -65,8 +64,7 @@ void main()
     result = float4(albedo * max(payload.Radiance, 0.0f), payload.Confidence);
   }
 
-  g_RTGIRaw[pixel]   = result;
-  g_RTGIFinal[pixel] = result;
+  g_RTGIRaw[pixel] = result;
 }
 
 [RAY_MISS_SHADER]

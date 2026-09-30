@@ -1,0 +1,114 @@
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+// Motion-aware temporal accumulation shared by stochastic AO and near-field GI.
+// History is clipped to a current-frame edge-aware neighbourhood before blending,
+// which bounds ghost energy while retaining a high effective sample count.
+
+#include "PipelineCommon.xiiShader"
+#include "Passes/Denoising/TemporalDenoiseConstants.h"
+
+Texture2D<float4> g_CurrentSignal   : register(t4);
+Texture2D<float4> g_PreviousSignal  : register(t5);
+Texture2D<float>  g_SceneDepth      : register(t6);
+Texture2D<float2> g_GBufferNormal   : register(t7);
+Texture2D<float2> g_Velocity        : register(t8);
+Texture2D<float4> g_PreviousSurface : register(t9);
+RWTexture2D<float4> g_DenoisedOutput : register(u10);
+
+float4 LoadSignal(int2 pixel, uint2 dimensions)
+{
+  const int2 clampedPixel = clamp(pixel, int2(0, 0), int2(dimensions) - 1);
+  const float4 signal = g_CurrentSignal.Load(int3(clampedPixel, 0));
+  return SignalMode == 0U ? signal.xxxx : signal;
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_DenoisedOutput.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const uint2 pixel = dispatchThreadId.xy;
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  float4 current = LoadSignal(int2(pixel), dimensions);
+  if (depth <= 0.0f)
+  {
+    g_DenoisedOutput[pixel] = SignalMode == 0U ? 1.0f.xxxx : current;
+    return;
+  }
+
+  const float2 encodedNormal = g_GBufferNormal.Load(int3(pixel, 0));
+  const float3 normal = DecodeOctNormal(encodedNormal);
+  const float linearDepth = LinearizeDepth(depth);
+
+  float4 localMinimum = current;
+  float4 localMaximum = current;
+  float4 spatialSum = current;
+  float spatialSamples = 1.0f;
+
+  [unroll]
+  for (int y = -1; y <= 1; ++y)
+  {
+    [unroll]
+    for (int x = -1; x <= 1; ++x)
+    {
+      if (x == 0 && y == 0)
+        continue;
+
+      const int2 samplePixel = clamp(int2(pixel) + int2(x, y), int2(0, 0), int2(dimensions) - 1);
+      const float sampleDepth = g_SceneDepth.Load(int3(samplePixel, 0));
+      if (sampleDepth <= 0.0f)
+        continue;
+
+      const float sampleLinearDepth = LinearizeDepth(sampleDepth);
+      const float3 sampleNormal = DecodeOctNormal(g_GBufferNormal.Load(int3(samplePixel, 0)));
+      if (abs(sampleLinearDepth - linearDepth) > max(linearDepth * DepthThreshold, 0.01f) || dot(sampleNormal, normal) < NormalThreshold)
+        continue;
+
+      const float4 sampleSignal = LoadSignal(samplePixel, dimensions);
+      localMinimum = min(localMinimum, sampleSignal);
+      localMaximum = max(localMaximum, sampleSignal);
+      spatialSum += sampleSignal;
+      spatialSamples += 1.0f;
+    }
+  }
+
+  current = lerp(current, spatialSum / spatialSamples, saturate(SpatialWeight));
+  if (HistoryValid == 0U)
+  {
+    g_DenoisedOutput[pixel] = current;
+    return;
+  }
+
+  const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+  const float2 velocity = g_Velocity.Load(int3(pixel, 0));
+  const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
+  if (any(previousUV <= 0.0f) || any(previousUV >= 1.0f))
+  {
+    g_DenoisedOutput[pixel] = current;
+    return;
+  }
+
+  const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
+  const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
+  const float3 previousNormal = DecodeOctNormal(previousSurface.xy);
+  const bool surfaceMatches = previousSurface.w > 0.0f &&
+    abs(previousSurface.z - linearDepth) <= max(linearDepth * DepthThreshold, 0.01f) &&
+    dot(previousNormal, normal) >= NormalThreshold;
+  if (!surfaceMatches)
+  {
+    g_DenoisedOutput[pixel] = current;
+    return;
+  }
+
+  float4 history = g_PreviousSignal.Load(int3(previousPixel, 0));
+  history = SignalMode == 0U ? history.xxxx : history;
+  history = clamp(history, localMinimum, localMaximum);
+  g_DenoisedOutput[pixel] = lerp(current, history, saturate(HistoryWeight));
+}
+

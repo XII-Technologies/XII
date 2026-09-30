@@ -35,6 +35,7 @@
 
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
+#include <Shaders/Pipeline/Passes/Denoising/TemporalDenoiseConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
@@ -2519,27 +2520,62 @@ void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOccl
 
 struct xiiGroundTruthAmbientOcclusionDenoiseData
 {
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hRawAmbientOcclusion;    ///< ShaderResource in (raw ambient occlusion texture).
-  xiiRenderGraphTextureHandle m_hStableAmbientOcclusion; ///< UnorderedAccess out (denoised ambient occlusion texture).
+  xiiRenderGraphTextureHandle m_hRawAmbientOcclusion;      ///< ShaderResource in (raw ambient visibility).
+  xiiRenderGraphTextureHandle m_hPreviousAmbientOcclusion; ///< ShaderResource in (previous temporally accumulated visibility).
+  xiiRenderGraphTextureHandle m_hSceneDepth;               ///< ShaderResource in (current reversed-Z depth).
+  xiiRenderGraphTextureHandle m_hGBufferNormal;            ///< ShaderResource in (current octahedral normal).
+  xiiRenderGraphTextureHandle m_hVelocity;                 ///< ShaderResource in (current-to-previous NDC velocity).
+  xiiRenderGraphTextureHandle m_hPreviousSurface;          ///< ShaderResource in (previous normal and linear depth).
+  xiiRenderGraphTextureHandle m_hStableAmbientOcclusion;   ///< UnorderedAccess out (persistent denoised visibility).
+  xiiRenderGraphBufferHandle  m_hConstants;
+  bool                         m_bHistoryValid = false;
 };
 
 void xiiView::SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hRawAmbientOcclusion = builder.ReadTexture(xiiRGBlackboardKeys::k_RawAOTexture, xiiGALResourceStateFlags::ShaderResource);
+  const xiiUInt32 uiWidth        = GetRenderResolutionWidth();
+  const xiiUInt32 uiHeight       = GetRenderResolutionHeight();
+  const xiiUInt32 uiCurrentSlot  = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
+  auto& resources                = m_ViewPassResources.m_LightingPrepPasses;
 
-  xiiGALTextureCreationDescription description;
-  description.m_Type             = xiiGALResourceDimension::Texture2D;
-  description.m_Format           = xiiGALResourceFormat::R8UNormalized;
-  description.m_Size.width       = GetRenderResolutionWidth();
-  description.m_Size.height      = GetRenderResolutionHeight();
-  description.m_uiMipLevels      = 1U;
-  description.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage            = xiiGALResourceUsage::Default;
-  data.m_hStableAmbientOcclusion = builder.WriteTexture(xiiRGBlackboardKeys::k_StableAOTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
+  auto HistoryMatchesResolution = [uiWidth, uiHeight](const xiiSharedPtr<xiiGALTexture>& pTexture) {
+    return pTexture != nullptr && pTexture->GetDescription().m_Size.width == uiWidth && pTexture->GetDescription().m_Size.height == uiHeight;
+  };
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pGTAODenoisePipeline, "Shaders/Pipeline/SeparatedBilateralBlur.xiiShader");
+  if (!HistoryMatchesResolution(resources.m_pAmbientOcclusionHistory[0]) || !HistoryMatchesResolution(resources.m_pAmbientOcclusionHistory[1]))
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type        = xiiGALResourceDimension::Texture2D;
+    description.m_Format      = xiiGALResourceFormat::R8UNormalized;
+    description.m_Size.width  = uiWidth;
+    description.m_Size.height = uiHeight;
+    description.m_uiMipLevels = 1U;
+    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage       = xiiGALResourceUsage::Default;
+
+    resources.m_pAmbientOcclusionHistory[0] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    resources.m_pAmbientOcclusionHistory[1] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    resources.m_bAmbientOcclusionHistoryValid = false;
+  }
+
+  data.m_bHistoryValid           = resources.m_bAmbientOcclusionHistoryValid;
+  data.m_hRawAmbientOcclusion    = builder.ReadTexture(xiiRGBlackboardKeys::k_RawAOTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth             = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity               = builder.ReadTexture(xiiRGBlackboardKeys::k_VelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface        = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousAmbientOcclusion = builder.ReadTexture(builder.ImportTexture("AO Previous History", resources.m_pAmbientOcclusionHistory[uiPreviousSlot], resources.m_pAmbientOcclusionHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hStableAmbientOcclusion = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_StableAOTexture, resources.m_pAmbientOcclusionHistory[uiCurrentSlot], resources.m_pAmbientOcclusionHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiTemporalDenoiseConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants = builder.WriteBuffer("AO Temporal Denoise Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  xiiView::EnsureComputePipeline(resources.m_pAOTemporalDenoisePipeline, "Shaders/Pipeline/TemporalDenoise.xiiShader");
 }
 
 void xiiView::ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphPassContext& context)
@@ -2548,11 +2584,30 @@ void xiiView::ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbi
 
   cmd.BeginDebugGroup("GroundTruthAmbientOcclusionDenoise");
   {
-    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pGTAODenoisePipeline);
-    cmd.ResolveAndSetShaderResourceTextureView("g_Input", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_Output", context.GetTexture(data.m_hStableAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    {
+      xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->HistoryWeight   = 0.92f;
+      pConstants->DepthThreshold  = 0.08f;
+      pConstants->NormalThreshold = 0.82f;
+      pConstants->SpatialWeight   = 0.35f;
+      pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
+      pConstants->SignalMode      = 0U;
+      pConstants->_Padding        = xiiVec2::MakeZero();
+    }
+
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pAOTemporalDenoisePipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiTemporalDenoiseConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_CurrentSignal", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSignal", context.GetTexture(data.m_hPreviousAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSurface", context.GetTexture(data.m_hPreviousSurface)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_DenoisedOutput", context.GetTexture(data.m_hStableAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+    m_ViewPassResources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = true;
   }
   cmd.EndDebugGroup();
 }
@@ -2929,9 +2984,7 @@ struct xiiRayTracedGlobalIlluminationData
   xiiRenderGraphTextureHandle m_hSceneDepth;                       ///< ShaderResource in (scene depth texture).
   xiiRenderGraphTextureHandle m_hGBufferNormal;                    ///< ShaderResource in (G-Buffer normal).
   xiiRenderGraphTextureHandle m_hGBufferAlbedo;                    ///< ShaderResource in (surface albedo for diffuse bounce response).
-  xiiRenderGraphTextureHandle m_hIndirectLightingInput;            ///< ShaderResource in (deferred indirect lighting input).
   xiiRenderGraphTextureHandle m_hRayTracedRawGlobalIllumination;   ///< UnorderedAccess out (raw RT GI texture).
-  xiiRenderGraphTextureHandle m_hRayTracedFinalGlobalIllumination; ///< UnorderedAccess out (final RT GI texture).
   xiiRenderGraphBufferHandle  m_hSceneDependency;
   xiiRenderGraphBufferHandle  m_hShaderBindingTable;
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
@@ -2945,7 +2998,6 @@ void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationDat
   data.m_hSceneDepth            = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal         = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferAlbedo         = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hIndirectLightingInput = builder.ReadTexture(xiiRGBlackboardKeys::k_IndirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type                       = xiiGALResourceDimension::Texture2D;
@@ -2956,10 +3008,10 @@ void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationDat
   description.m_BindFlags                  = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage                      = xiiGALResourceUsage::Default;
   data.m_hRayTracedRawGlobalIllumination   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawGI, description, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hRayTracedFinalGlobalIllumination = builder.WriteTexture(xiiRGBlackboardKeys::k_RTFinalGI, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
   data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingGlobalIlluminationResources();
+  lightingPasses.m_bRTGIAvailableThisFrame = data.m_bUseHardwareRayTracing;
   if (data.m_bUseHardwareRayTracing)
   {
     data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
@@ -2992,7 +3044,6 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIRaw", context.GetTexture(data.m_hRayTracedRawGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
-      cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIFinal", context.GetTexture(data.m_hRayTracedFinalGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
       const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
@@ -3014,10 +3065,107 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
     {
       cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pRTGIFallbackPipeline);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIRaw", context.GetTexture(data.m_hRayTracedRawGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-      cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIFinal", context.GetTexture(data.m_hRayTracedFinalGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
       cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
     }
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Ray Traced Global Illumination Denoise Data //////////
+
+struct xiiRayTracedGlobalIlluminationDenoiseData
+{
+  xiiRenderGraphTextureHandle m_hRawGlobalIllumination;
+  xiiRenderGraphTextureHandle m_hPreviousGlobalIllumination;
+  xiiRenderGraphTextureHandle m_hSceneDepth;
+  xiiRenderGraphTextureHandle m_hGBufferNormal;
+  xiiRenderGraphTextureHandle m_hVelocity;
+  xiiRenderGraphTextureHandle m_hPreviousSurface;
+  xiiRenderGraphTextureHandle m_hFinalGlobalIllumination;
+  xiiRenderGraphBufferHandle  m_hConstants;
+  bool                         m_bHistoryValid = false;
+  bool                         m_bSignalValid  = false;
+};
+
+void xiiView::SetupRayTracedGlobalIlluminationDenoise(xiiRayTracedGlobalIlluminationDenoiseData& data, xiiRenderGraphBuilder& builder)
+{
+  const xiiUInt32 uiWidth        = GetRenderResolutionWidth();
+  const xiiUInt32 uiHeight       = GetRenderResolutionHeight();
+  const xiiUInt32 uiCurrentSlot  = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
+  auto& resources                = m_ViewPassResources.m_LightingPasses;
+
+  auto HistoryMatchesResolution = [uiWidth, uiHeight](const xiiSharedPtr<xiiGALTexture>& pTexture) {
+    return pTexture != nullptr && pTexture->GetDescription().m_Size.width == uiWidth && pTexture->GetDescription().m_Size.height == uiHeight;
+  };
+
+  if (!HistoryMatchesResolution(resources.m_pRTGIHistory[0]) || !HistoryMatchesResolution(resources.m_pRTGIHistory[1]))
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type        = xiiGALResourceDimension::Texture2D;
+    description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+    description.m_Size.width  = uiWidth;
+    description.m_Size.height = uiHeight;
+    description.m_uiMipLevels = 1U;
+    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage       = xiiGALResourceUsage::Default;
+
+    resources.m_pRTGIHistory[0] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    resources.m_pRTGIHistory[1] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    resources.m_bRTGIHistoryValid = false;
+  }
+
+  data.m_bSignalValid                  = resources.m_bRTGIAvailableThisFrame;
+  data.m_bHistoryValid                 = resources.m_bRTGIHistoryValid && data.m_bSignalValid;
+  data.m_hRawGlobalIllumination        = builder.ReadTexture(xiiRGBlackboardKeys::k_RTRawGI, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth                   = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal                = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity                     = builder.ReadTexture(xiiRGBlackboardKeys::k_VelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface              = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousGlobalIllumination   = builder.ReadTexture(builder.ImportTexture("RTGI Previous History", resources.m_pRTGIHistory[uiPreviousSlot], resources.m_pRTGIHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFinalGlobalIllumination      = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_RTFinalGI, resources.m_pRTGIHistory[uiCurrentSlot], resources.m_pRTGIHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiTemporalDenoiseConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants = builder.WriteBuffer("RTGI Temporal Denoise Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  xiiView::EnsureComputePipeline(resources.m_pRTGITemporalDenoisePipeline, "Shaders/Pipeline/TemporalDenoise.xiiShader");
+}
+
+void xiiView::ExecuteRayTracedGlobalIlluminationDenoise(const xiiRayTracedGlobalIlluminationDenoiseData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("RTGITemporalDenoise");
+  {
+    {
+      xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->HistoryWeight    = 0.94f;
+      pConstants->DepthThreshold   = 0.06f;
+      pConstants->NormalThreshold = 0.86f;
+      pConstants->SpatialWeight   = 0.20f;
+      pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
+      pConstants->SignalMode      = 1U;
+      pConstants->_Padding        = xiiVec2::MakeZero();
+    }
+
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pRTGITemporalDenoisePipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiTemporalDenoiseConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_CurrentSignal", context.GetTexture(data.m_hRawGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSignal", context.GetTexture(data.m_hPreviousGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSurface", context.GetTexture(data.m_hPreviousSurface)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_DenoisedOutput", context.GetTexture(data.m_hFinalGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+    m_ViewPassResources.m_LightingPasses.m_bRTGIHistoryValid = data.m_bSignalValid;
   }
   cmd.EndDebugGroup();
 }
@@ -4971,14 +5119,15 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   XII_IGNORE_UNUSED(xiiDDGIManager::AddUpdatePass(graph, &m_ViewPassResources.m_LightingSystem));
   graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiView::ExecuteDDGIProbeSampling, this));
   graph.AddPass<xiiGroundTruthAmbientOcclusionData>("GroundTruthAmbientOcclusion", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusion, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusion, this));
-  graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));
 
   // Main lighting passes, which produce direct and indirect lighting results.
   graph.AddPass<xiiReSTIRDITemporalData>("ReSTIRDITemporal", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDITemporal, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDITemporal, this));
   graph.AddPass<xiiReSTIRDISpatialData>("ReSTIRDISpatial", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDISpatial, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDISpatial, this));
+  graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));
   graph.AddPass<xiiDeferredDirectLightingData>("DeferredDirectLighting", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDirectLighting, this), xiiMakeDelegate(&xiiView::ExecuteDirectLighting, this));
   graph.AddPass<xiiDeferredIndirectLightingData>("DeferredIndirectLighting", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupIndirectLighting, this), xiiMakeDelegate(&xiiView::ExecuteIndirectLighting, this));
   graph.AddPass<xiiRayTracedGlobalIlluminationData>("RTGIFinalGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedGlobalIllumination, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedGlobalIllumination, this));
+  graph.AddPass<xiiRayTracedGlobalIlluminationDenoiseData>("RTGITemporalDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedGlobalIlluminationDenoise, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedGlobalIlluminationDenoise, this));
   graph.AddPass<xiiRayTracedReflectionsData>("RTReflections", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedReflections, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedReflections, this));
   graph.AddPass<xiiVolumetricFogIntegrationData>("VolumetricFogIntegrate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogIntegration, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogIntegration, this));
   graph.AddPass<xiiVolumetricFogTemporalReprojectionData>("VolumetricFogTemporalRep", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogTemporalReprojection, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogTemporalReprojection, this));

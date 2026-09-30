@@ -81,6 +81,7 @@ struct xiiReSTIRDISpatialData;
 struct xiiDeferredDirectLightingData;
 struct xiiDeferredIndirectLightingData;
 struct xiiRayTracedGlobalIlluminationData;
+struct xiiRayTracedGlobalIlluminationDenoiseData;
 struct xiiRayTracedReflectionsData;
 struct xiiScreenSpaceReflectionsData;
 struct xiiHybridReflectionCompositeData;
@@ -385,6 +386,9 @@ private:
   void SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationData& data, xiiRenderGraphBuilder& builder);
   void ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIlluminationData& data, xiiRenderGraphPassContext& context);
 
+  void SetupRayTracedGlobalIlluminationDenoise(xiiRayTracedGlobalIlluminationDenoiseData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteRayTracedGlobalIlluminationDenoise(const xiiRayTracedGlobalIlluminationDenoiseData& data, xiiRenderGraphPassContext& context);
+
   void SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRenderGraphBuilder& builder);
   void ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& data, xiiRenderGraphPassContext& context);
 
@@ -608,11 +612,13 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pGTAOFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTAOPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTAOShaderBindingTable;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pGTAODenoisePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pAOTemporalDenoisePipeline;
       // Persistent once-generated textures
       xiiSharedPtr<xiiGALTexture> m_pBRDFLut;             // 256x256 R16G16F, generated once
       xiiUInt32                   m_uiRTAOShaderRecordStride = 0U;
       bool                        m_bBRDFLutGenerated = false;
+      xiiSharedPtr<xiiGALTexture> m_pAmbientOcclusionHistory[2];
+      bool                        m_bAmbientOcclusionHistoryValid = false;
       xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;
       xiiSharedPtr<xiiGALTexture>                       m_pFallbackReflectionProbeTexture;
     } m_LightingPrepPasses;
@@ -641,6 +647,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGIFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTGIPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTGIShaderBindingTable;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGITemporalDenoisePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTReflectionFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTReflectionPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTReflectionShaderBindingTable;
@@ -648,6 +655,9 @@ private:
       xiiRenderGraphBufferHandle                  m_hRayTracingSceneDependency;
       xiiUInt32                                   m_uiRTGIShaderRecordStride = 0U;
       xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
+      xiiSharedPtr<xiiGALTexture>              m_pRTGIHistory[2];
+      bool                                     m_bRTGIHistoryValid       = false;
+      bool                                     m_bRTGIAvailableThisFrame = false;
       xiiSharedPtr<xiiGALTexture>              m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
       xiiSharedPtr<xiiGALTexture>              m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
       xiiSharedPtr<xiiGALTexture>              m_pFroxelHistoryBuffer; // prev-frame froxel
