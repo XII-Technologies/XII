@@ -54,6 +54,7 @@
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
+#include <Shaders/Pipeline/Passes/Visibility/InstanceUpdateConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/LODSelectionConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
@@ -767,22 +768,66 @@ void xiiView::ExecuteLODSelect(const xiiLODSelectData& data, xiiRenderGraphPassC
 
 ////////// GPU Instance Update //////////
 //
-// Updates instance data on the GPU, including world matrices and bounds, for the next frame's LOD selection and rendering passes.
+// Compacts extracted transforms and bounds into GPU rendering streams using the visible packet list.
+
+struct alignas(16) xiiInstanceUpdateSource
+{
+  xiiShaderTransform m_GlobalTransform;
+  xiiVec4            m_CenterRadius;
+  xiiVec4            m_Extents;
+};
+
+static_assert(sizeof(xiiInstanceUpdateSource) == 80U);
 
 struct xiiInstanceUpdateData
 {
-  XII_DECLARE_POD_TYPE();
+  xiiRenderGraphBufferHandle m_hVisibleCandidates; ///< SRV in ([0]=count, [1..]=visible packet indices).
+  xiiRenderGraphBufferHandle m_hInstanceSource;    ///< SRV in (current extracted transform and bounds).
+  xiiRenderGraphBufferHandle m_hInstanceMatrices;  ///< UAV out (world transforms indexed by packet index).
+  xiiRenderGraphBufferHandle m_hInstanceBoundsOut; ///< UAV out (world bounds indexed by packet index).
+  xiiRenderGraphBufferHandle m_hConstants;
 
-  xiiRenderGraphBufferHandle m_hVisibleCandidates;  ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
-  xiiRenderGraphBufferHandle m_hInstanceMatrices;   ///< UAV out (structured buffer of instance world matrices, one per instance, consumed by next frame's LOD Selection and Frustum Culling).
-  xiiRenderGraphBufferHandle m_hInstanceBoundsOut;  ///< UAV out (structured buffer of xiiBoundingSphere, one per instance, consumed by next frame's Frustum Culling).
-  xiiUInt32                  m_uiInstanceCount = 0; ///< Number of instances to process (from previous frame's Instance Update). This is used to avoid processing the entire buffer when only a subset is populated.
+  xiiDynamicArray<xiiInstanceUpdateSource, xiiAlignedAllocatorWrapper> m_InstanceSource;
+  xiiInstanceUpdateConstants m_Constants       = {};
+  xiiUInt32                  m_uiInstanceCount = 0U;
 };
 
 void xiiView::SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hVisibleCandidates = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_uiInstanceCount    = k_uiMaxInstances;
+
+  xiiUInt32 uiExtractedMeshCount = 0U;
+  const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, uiExtractedMeshCount);
+  XII_IGNORE_UNUSED(bHasExtractedMeshCount);
+
+  data.m_InstanceSource.Reserve(uiExtractedMeshCount);
+  if (m_pExtractedData != nullptr)
+  {
+    for (const xiiRenderData* pRenderData : m_pExtractedData->GetAllRenderData())
+    {
+      const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData);
+      if (pMesh == nullptr || !pMesh->m_GlobalBounds.IsValid())
+        continue;
+
+      xiiInstanceUpdateSource& source = data.m_InstanceSource.ExpandAndGetRef();
+      source.m_GlobalTransform        = pMesh->m_GlobalTransform;
+      source.m_CenterRadius           = xiiVec4(pMesh->m_GlobalBounds.m_vCenter.x, pMesh->m_GlobalBounds.m_vCenter.y, pMesh->m_GlobalBounds.m_vCenter.z, pMesh->m_GlobalBounds.m_fSphereRadius);
+      source.m_Extents                = xiiVec4(pMesh->m_GlobalBounds.m_vBoxHalfExtents.x, pMesh->m_GlobalBounds.m_vBoxHalfExtents.y, pMesh->m_GlobalBounds.m_vBoxHalfExtents.z, 0.0f);
+
+      if (data.m_InstanceSource.GetCount() == uiExtractedMeshCount)
+        break;
+    }
+  }
+  data.m_uiInstanceCount         = data.m_InstanceSource.GetCount();
+  data.m_Constants.InstanceCount = data.m_uiInstanceCount;
+
+  xiiGALBufferCreationDescription sourceDescription;
+  sourceDescription.m_uiElementByteStride = sizeof(xiiInstanceUpdateSource);
+  sourceDescription.m_uiSize              = sizeof(xiiInstanceUpdateSource) * xiiMath::Max(1U, data.m_uiInstanceCount);
+  sourceDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  sourceDescription.m_Mode                = xiiGALBufferMode::Structured;
+  sourceDescription.m_Usage               = xiiGALResourceUsage::Default;
+  data.m_hInstanceSource                  = builder.WriteBuffer("ExtractedInstanceSource", sourceDescription, xiiGALResourceStateFlags::ShaderResource);
 
   // Ensure persistent matrix buffer.
   if (!m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer)
@@ -803,11 +848,19 @@ void xiiView::SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRenderGraphBui
   xiiGALBufferCreationDescription boundsBufferDescription;
   boundsBufferDescription.m_uiElementByteStride = 32U;
   boundsBufferDescription.m_uiSize              = boundsBufferDescription.m_uiElementByteStride * k_uiMaxInstances;
-  boundsBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  boundsBufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
   boundsBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hInstanceBoundsOut                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_InstanceBoundsBuffer, boundsBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiInstanceUpdateConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("xiiInstanceUpdateConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pInstanceUpdatePipeline, "Shaders/Pipeline/InstanceUpdate.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRenderGraphPassContext& context)
@@ -816,8 +869,23 @@ void xiiView::ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRender
 
   cmd.BeginDebugGroup("InstanceUpdate");
   {
+    if (data.m_uiInstanceCount == 0U)
+    {
+      cmd.EndDebugGroup();
+      return;
+    }
+
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hInstanceSource), 0U,
+      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_InstanceSource.GetData()), data.m_InstanceSource.GetCount() * sizeof(xiiInstanceUpdateSource)));
+    {
+      xiiGALMapHelper<xiiInstanceUpdateConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *pConstants = data.m_Constants;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pInstanceUpdatePipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiInstanceUpdateConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_VisibleIn", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_InstanceSource", context.GetBuffer(data.m_hInstanceSource)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_MatricesOut", context.GetBuffer(data.m_hInstanceMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_BoundsOut", context.GetBuffer(data.m_hInstanceBoundsOut)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
