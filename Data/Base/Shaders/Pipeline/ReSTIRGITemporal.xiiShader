@@ -1,0 +1,78 @@
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+// Motion-vector reprojection and temporal reservoir reuse for stochastic near-field GI.
+
+#include "PipelineCommon.xiiShader"
+#include "Passes/GlobalIllumination/ReSTIRGIConstants.h"
+#include "ReSTIRGICommon.h"
+
+Texture2D<float4> g_CurrentRadiance : register(t4);
+Texture2D<float>  g_SceneDepth      : register(t5);
+Texture2D<float2> g_GBufferNormal   : register(t6);
+Texture2D<float4> g_GBufferAlbedo   : register(t7);
+Texture2D<float2> g_Velocity        : register(t8);
+Texture2D<float4> g_PreviousSample  : register(t9);
+Texture2D<float2> g_PreviousState   : register(t10);
+Texture2D<float4> g_PreviousSurface : register(t11);
+RWTexture2D<float4> g_TemporalSample : register(u12);
+RWTexture2D<float2> g_TemporalState  : register(u13);
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_TemporalSample.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const uint2 pixel = dispatchThreadId.xy;
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  if (depth <= 0.0f)
+  {
+    g_TemporalSample[pixel] = 0.0f;
+    g_TemporalState[pixel]  = 0.0f;
+    return;
+  }
+
+  const float2 uv             = (float2(pixel) + 0.5f) / float2(dimensions);
+  const float3 normal         = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
+  const float linearDepth     = LinearizeDepth(depth);
+  const float albedoLuminance = dot(g_GBufferAlbedo.Load(int3(pixel, 0)).rgb, float3(0.2126f, 0.7152f, 0.0722f));
+  uint randomState = ReSTIRGIHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x9E3779B9U);
+  xiiReSTIRGIReservoir reservoir = ReSTIRGIEmptyReservoir();
+
+  const float4 currentSample = g_CurrentRadiance.Load(int3(pixel, 0));
+  const float currentTarget = ReSTIRGITarget(currentSample.rgb, RadianceClamp);
+  if (currentSample.a > 0.0f && ReSTIRGIIsFinitePositive(currentTarget))
+    ReSTIRGIUpdateReservoir(reservoir, currentSample, currentTarget, 1U, randomState);
+
+  if (HistoryValid != 0U)
+  {
+    const float2 velocity   = g_Velocity.Load(int3(pixel, 0));
+    const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
+    if (all(previousUV > 0.0f) && all(previousUV < 1.0f))
+    {
+      const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
+      const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
+      if (ReSTIRGISurfaceMatches(previousSurface, linearDepth, normal, albedoLuminance))
+      {
+        xiiReSTIRGIReservoir previous = ReSTIRGIUnpackReservoir(
+          g_PreviousSample.Load(int3(previousPixel, 0)),
+          g_PreviousState.Load(int3(previousPixel, 0)));
+        if (ReSTIRGIValidateReservoir(previous, RadianceClamp))
+        {
+          const uint previousM = min(previous.M, max(MaxTemporalM, 1U));
+          const float target = ReSTIRGITarget(previous.Sample.rgb, RadianceClamp);
+          ReSTIRGIUpdateReservoir(reservoir, previous.Sample, target * previous.WeightSum * (float)previousM, previousM, randomState);
+        }
+      }
+    }
+  }
+
+  ReSTIRGIFinalizeReservoir(reservoir, RadianceClamp);
+  g_TemporalSample[pixel] = reservoir.Sample;
+  g_TemporalState[pixel]  = float2(reservoir.WeightSum, (float)reservoir.M);
+}

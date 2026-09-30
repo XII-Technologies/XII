@@ -471,6 +471,8 @@ private:
   void CreateRayTracingValidationResources()
   {
     XII_ASSERT_ALWAYS(ValidateComputePipeline("Shaders/Pipeline/TemporalDenoise.xiiShader"), "Failed to validate the production temporal denoising pipeline.");
+    XII_ASSERT_ALWAYS(ValidateComputePipeline("Shaders/Pipeline/ReSTIRGITemporal.xiiShader"), "Failed to validate the production temporal ReSTIR GI pipeline.");
+    XII_ASSERT_ALWAYS(ValidateComputePipeline("Shaders/Pipeline/ReSTIRGISpatial.xiiShader"), "Failed to validate the production spatial ReSTIR GI pipeline.");
 
     if (m_pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
       return;
