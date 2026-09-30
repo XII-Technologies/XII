@@ -27,6 +27,9 @@ struct xiiRayTracingSceneManager::GeometrySlot
   xiiUInt64                         m_uiVertexStride       = 0U;
   xiiUInt32                         m_uiNormalStride       = 0U;
   xiiUInt32                         m_uiNormalOffset       = xiiInvalidIndex;
+  xiiUInt32                         m_uiTangentStride      = 0U;
+  xiiUInt32                         m_uiTangentOffset      = xiiInvalidIndex;
+  xiiUInt32                         m_uiTexCoordStride     = 0U;
   xiiUInt32                         m_uiTexCoordOffset     = xiiInvalidIndex;
   xiiUInt32                         m_uiIndexStride        = 0U;
   xiiUInt32                         m_uiPrimitiveCount     = 0U;
@@ -185,6 +188,18 @@ namespace
       inout_value = xiiVec4(vector3.x, vector3.y, vector3.z, inout_value.w);
   }
 
+  xiiUInt32 ResolveMaterialTexture(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView sName)
+  {
+    if (snapshot.m_pSchema == nullptr)
+      return xiiInvalidIndex;
+
+    const xiiUInt32 uiTextureIndex = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(sName));
+    if (uiTextureIndex == xiiInvalidIndex || uiTextureIndex >= snapshot.m_ResourceBindings.GetCount())
+      return xiiInvalidIndex;
+
+    return snapshot.m_ResourceBindings[uiTextureIndex].m_uiBindlessIndex;
+  }
+
   xiiRayTracingMaterialData ResolveRayTracingMaterial(const xiiRayTracingInstanceDescription& instance)
   {
     xiiRayTracingMaterialData result;
@@ -192,6 +207,8 @@ namespace
     result.EmissiveColorAndRoughness = xiiVec4(0.0f, 0.0f, 0.0f, 0.5f);
     result.SurfaceParameters         = xiiVec4(0.0f, 0.5f, 0.0f, 1.0f);
     result.Metadata                  = xiiVec4U32(instance.m_hMaterial.m_uiSlot, instance.m_uiStableObjectId, static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U);
+    result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
+    result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
 
     if (!instance.m_hMaterial.IsValid() || !xiiMaterialManager::IsInitialized())
       return result;
@@ -211,6 +228,19 @@ namespace
     const xiiMaterialRuntimeState runtimeState = material->GetRuntimeState();
     result.Metadata.z = runtimeState.m_ShadingModel.GetValue();
     result.Metadata.w = runtimeState.m_FeatureFlags.GetValue();
+
+    xiiMaterialInstanceSnapshot snapshot;
+    material->CreateSnapshot(snapshot);
+    result.TextureIndices0 = xiiVec4U32(
+      ResolveMaterialTexture(snapshot, "BaseColorTexture"),
+      ResolveMaterialTexture(snapshot, "NormalTexture"),
+      ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"),
+      ResolveMaterialTexture(snapshot, "OcclusionTexture"));
+    result.TextureIndices1 = xiiVec4U32(
+      ResolveMaterialTexture(snapshot, "EmissiveTexture"),
+      ResolveMaterialTexture(snapshot, "HeightTexture"),
+      ResolveMaterialTexture(snapshot, "ClearCoatTexture"),
+      ResolveMaterialTexture(snapshot, "TransmissionTexture"));
     return result;
   }
 
@@ -222,7 +252,8 @@ xiiUniquePtr<xiiRayTracingSceneManager::State> xiiRayTracingSceneManager::s_pSta
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RayTracingSceneManager)
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
-    "Core"
+    "Core",
+    "MaterialManager"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
@@ -536,6 +567,7 @@ bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
 
   const xiiMeshVertexStream* pPositionStream = nullptr;
   const xiiMeshVertexStream* pNormalStream   = nullptr;
+  const xiiMeshVertexStream* pTangentStream  = nullptr;
   const xiiMeshVertexStream* pTexCoordStream = nullptr;
   for (const xiiMeshVertexStream& stream : mesh->GetVertexStreams())
   {
@@ -543,6 +575,8 @@ bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
       pPositionStream = &stream;
     else if (stream.m_Semantic == xiiMeshVertexSemantic::Normal && stream.m_Format == xiiMeshVertexStreamFormat::Float3)
       pNormalStream = &stream;
+    else if (stream.m_Semantic == xiiMeshVertexSemantic::Tangent && stream.m_Format == xiiMeshVertexStreamFormat::Float4)
+      pTangentStream = &stream;
     else if (stream.m_Semantic == xiiMeshVertexSemantic::TexCoord0 && stream.m_Format == xiiMeshVertexStreamFormat::Float2)
       pTexCoordStream = &stream;
   }
@@ -634,6 +668,9 @@ bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   slot.m_uiVertexStride       = pPositionStream->m_uiStride;
   slot.m_uiNormalStride       = pNormalStream != nullptr ? pNormalStream->m_uiStride : 0U;
   slot.m_uiNormalOffset       = pNormalStream != nullptr ? pNormalStream->m_uiOffset : xiiInvalidIndex;
+  slot.m_uiTangentStride      = pTangentStream != nullptr ? pTangentStream->m_uiStride : 0U;
+  slot.m_uiTangentOffset      = pTangentStream != nullptr ? pTangentStream->m_uiOffset : xiiInvalidIndex;
+  slot.m_uiTexCoordStride     = pTexCoordStream != nullptr ? pTexCoordStream->m_uiStride : 0U;
   slot.m_uiTexCoordOffset     = pTexCoordStream != nullptr ? pTexCoordStream->m_uiOffset : xiiInvalidIndex;
   slot.m_uiIndexStride        = pIndexBuffer == nullptr ? 0U : (mesh->GetIndexType() == xiiGALValueType::UInt32 ? 4U : 2U);
   slot.m_uiPrimitiveCount     = mesh->GetPrimitiveCount();
@@ -777,6 +814,11 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
       static_cast<xiiUInt32>(geometry.m_uiVertexBufferOffset),
       geometry.m_uiNormalOffset,
       geometry.m_uiTexCoordOffset);
+    gpuGeometry.VertexAttributes = xiiVec4U32(
+      geometry.m_uiTangentOffset,
+      geometry.m_uiTangentStride,
+      geometry.m_uiTexCoordStride,
+      0U);
   }
 
   if (instanceData.IsEmpty())

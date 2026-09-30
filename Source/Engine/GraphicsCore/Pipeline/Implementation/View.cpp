@@ -3102,7 +3102,10 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
       if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+      {
         pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayClosestHit);
+        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayClosestHit);
+      }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
       const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
@@ -3479,7 +3482,10 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
       if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+      {
         pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayClosestHit);
+        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayClosestHit);
+      }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
       const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
