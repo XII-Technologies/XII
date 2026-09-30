@@ -34,7 +34,7 @@
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Visibility/GpuHiZPyramid.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 #include <Shaders/GpuDrivenSceneConstants.h>
 
@@ -243,7 +243,8 @@ public:
     visibilityDescription.m_uiMaxDrawCommands    = 1U;
     visibilityDescription.m_uiFramesInFlight     = m_Configuration.m_uiFramesInFlight;
     visibilityDescription.m_uiMaxVisibilitySets  = 2U;
-    m_Visibility.Initialize(m_pDevice.Borrow(), visibilityDescription).AssertSuccess();
+    m_hVisibility                                = xiiGpuVisibilityManager::CreateContext(visibilityDescription);
+    XII_ASSERT_ALWAYS(m_hVisibility.IsValid(), "Failed to create the GPU visibility context.");
     xiiGpuHiZPyramidDescription hiZDescription;
     hiZDescription.m_uiFramesInFlight = visibilityDescription.m_uiFramesInFlight;
     m_HiZPyramid.Initialize(m_pDevice.Borrow(), hiZDescription).AssertSuccess();
@@ -269,7 +270,8 @@ public:
       m_pDevice->WaitIdle();
     xiiRenderGraphManager::UnregisterGraph(m_hRenderGraph);
     m_HiZPyramid.Shutdown();
-    m_Visibility.Shutdown();
+    xiiGpuVisibilityManager::DestroyContext(m_hVisibility);
+    m_hVisibility = {};
     m_World.Shutdown(m_uiFrameIndex);
     m_hShaderPermutation.Invalidate();
     m_hRayTracingValidationPermutation.Invalidate();
@@ -337,8 +339,8 @@ private:
     visibilityPass.m_sName                   = "Main View";
     visibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::MainView;
     visibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
-    const xiiGpuVisibilityOutputs visibility = m_Visibility.AddPasses(
-      graph, m_uiFrameIndex, m_World.GetScene(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
+    const xiiGpuVisibilityOutputs visibility = xiiGpuVisibilityManager::AddPasses(
+      m_hVisibility, graph, m_uiFrameIndex, m_World.GetScene(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
 
     // A robotics/medical sensor view owns independent frame-sliced constants. Only its instance
     // count is exported; unused meshlet and command stages are culled by the render graph.
@@ -348,8 +350,8 @@ private:
     sensorVisibilityPass.m_sName                   = "Sensor View";
     sensorVisibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::Sensor;
     sensorVisibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
-    const xiiGpuVisibilityOutputs sensorVisibility = m_Visibility.AddPasses(
-      graph, m_uiFrameIndex, m_World.GetScene(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
+    const xiiGpuVisibilityOutputs sensorVisibility = xiiGpuVisibilityManager::AddPasses(
+      m_hVisibility, graph, m_uiFrameIndex, m_World.GetScene(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
 
     graph.AddPass<SceneTargetsPassData>(
       "Create Scene Targets", xiiGALCommandQueueFlags::Graphics,
@@ -632,8 +634,8 @@ private:
       constants->MaterialFrameBase       = data.m_uiMaterialFrameBase;
       constants->MaterialStride          = data.m_uiMaterialStride;
       constants->VertexStride            = sizeof(xiiMeshPackedVertex);
-      constants->MeshDispatchGroupCountX = m_Visibility.GetMeshDispatchGroupCountX();
-      constants->MeshDispatchGroupCountY = m_Visibility.GetMeshDispatchGroupCountY();
+      constants->MeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility);
+      constants->MeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility);
       constants->Padding                 = xiiVec2U32::MakeZero();
       const xiiGpuDrivenSceneLight& sun  = m_World.GetSunLight();
       constants->SunDirectionIntensity   = xiiVec4(sun.m_vDirection.x, sun.m_vDirection.y, sun.m_vDirection.z, sun.m_fIntensity);
@@ -667,7 +669,7 @@ private:
   xiiGpuDrivenSceneConfiguration     m_Configuration;
   xiiGpuDrivenSceneWorld             m_World;
   xiiGpuHiZPyramid                   m_HiZPyramid;
-  xiiGpuVisibilitySystem             m_Visibility;
+  xiiGpuVisibilityContextHandle      m_hVisibility;
   xiiCamera                          m_Camera;
   xiiRenderGraphGraphId              m_hRenderGraph;
   xiiSizeU32                         m_TargetSize;
