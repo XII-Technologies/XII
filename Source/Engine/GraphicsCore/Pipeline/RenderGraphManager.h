@@ -57,6 +57,19 @@ class xiiRenderGraphManagerState;
 class xiiRenderGraphResourceCache;
 class xiiRenderGraphTimestampProfiler;
 
+/// Generation-checked reference to an independently owned render-graph runtime context.
+struct XII_GRAPHICSCORE_DLL xiiRenderGraphContextHandle
+{
+  XII_DECLARE_POD_TYPE();
+
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
+
+  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
+  xiiUInt32 m_uiGeneration = 0U;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphContextHandle);
+
 /// Process-wide deterministic scheduler for multiple render graphs in a frame.
 ///
 /// The manager's state is created by the GraphicsCore startup system after Foundation allocators
@@ -71,6 +84,18 @@ public:
   using BuildDelegate = xiiDelegate<void(xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
 
   xiiRenderGraphManager() = delete;
+
+  [[nodiscard]] static bool IsInitialized();
+
+  /// Creates an isolated graph, blackboard, transient cache, and timestamp profiler.
+  [[nodiscard]] static xiiRenderGraphContextHandle CreateContext(xiiStringView sName = {});
+  static void                                       DestroyContext(xiiRenderGraphContextHandle handle);
+  [[nodiscard]] static bool                         IsValid(xiiRenderGraphContextHandle handle);
+
+  [[nodiscard]] static xiiRenderGraph*                  GetGraph(xiiRenderGraphContextHandle handle);
+  [[nodiscard]] static xiiRenderGraphBlackboard*        GetBlackboard(xiiRenderGraphContextHandle handle);
+  [[nodiscard]] static xiiRenderGraphResourceCache*     GetResourceCache(xiiRenderGraphContextHandle handle);
+  [[nodiscard]] static xiiRenderGraphTimestampProfiler* GetProfiler(xiiRenderGraphContextHandle handle);
 
   [[nodiscard]] static xiiRenderGraphGraphId RegisterGraph(const xiiRenderGraphRegistrationDescription& description, BuildDelegate buildDelegate);
   static bool                                UnregisterGraph(xiiRenderGraphGraphId id);
@@ -101,4 +126,29 @@ private:
   static void Shutdown();
 
   static xiiUniquePtr<xiiRenderGraphManagerState> s_pState;
+};
+
+/// Lightweight owner-facing facade for a subsystem-owned render-graph context.
+class XII_GRAPHICSCORE_DLL xiiRenderGraphContext
+{
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphContext);
+
+public:
+  xiiRenderGraphContext() = default;
+  ~xiiRenderGraphContext();
+
+  [[nodiscard]] xiiResult Initialize(xiiStringView sName = {});
+  void                    Shutdown();
+  [[nodiscard]] bool      IsInitialized() const;
+
+  [[nodiscard]] xiiRenderGraph&                    GetGraph();
+  [[nodiscard]] const xiiRenderGraph&              GetGraph() const;
+  [[nodiscard]] xiiRenderGraphBlackboard&          GetBlackboard();
+  [[nodiscard]] const xiiRenderGraphBlackboard&    GetBlackboard() const;
+  [[nodiscard]] xiiRenderGraphResourceCache&       GetResourceCache();
+  [[nodiscard]] const xiiRenderGraphResourceCache& GetResourceCache() const;
+  [[nodiscard]] xiiRenderGraphTimestampProfiler&   GetProfiler();
+
+private:
+  xiiRenderGraphContextHandle m_Handle;
 };

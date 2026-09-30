@@ -19,6 +19,7 @@
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
@@ -245,20 +246,20 @@ public:
   xiiTagSet m_IncludeTags;
   xiiTagSet m_ExcludeTags;
 
-  xiiRenderGraph*       GetRenderGraph() { return m_pRenderGraph.Borrow(); }
-  const xiiRenderGraph* GetRenderGraph() const { return m_pRenderGraph.Borrow(); }
+  xiiRenderGraph*       GetRenderGraph() { return &m_RenderGraphContext.GetGraph(); }
+  const xiiRenderGraph* GetRenderGraph() const { return &m_RenderGraphContext.GetGraph(); }
 
   xiiExtractedRenderData*       GetExtractedRenderData() { return m_pExtractedData; }
   const xiiExtractedRenderData* GetExtractedRenderData() const { return m_pExtractedData; }
 
-  xiiRenderGraphBlackboard&       GetBlackboard() { return m_Blackboard; }
-  const xiiRenderGraphBlackboard& GetBlackboard() const { return m_Blackboard; }
+  xiiRenderGraphBlackboard&       GetBlackboard() { return m_RenderGraphContext.GetBlackboard(); }
+  const xiiRenderGraphBlackboard& GetBlackboard() const { return m_RenderGraphContext.GetBlackboard(); }
 
-  xiiRenderGraphResourceCache&       GetResourceCache() { return m_ResourceCache; }
-  const xiiRenderGraphResourceCache& GetResourceCache() const { return m_ResourceCache; }
+  xiiRenderGraphResourceCache&       GetResourceCache() { return m_RenderGraphContext.GetResourceCache(); }
+  const xiiRenderGraphResourceCache& GetResourceCache() const { return m_RenderGraphContext.GetResourceCache(); }
 
   /// Returns the per-view GPU timestamp profiler. Used by xiiRenderWorldModule to pass into graph execution.
-  xiiRenderGraphTimestampProfiler& GetProfiler() { return m_ViewPassResources.m_Profiler; }
+  xiiRenderGraphTimestampProfiler& GetProfiler() { return m_RenderGraphContext.GetProfiler(); }
 
 private:
   friend class xiiRenderWorldModule;
@@ -541,7 +542,7 @@ private:
 
   mutable xiiViewData m_Data;
 
-  xiiUniquePtr<xiiRenderGraph> m_pRenderGraph;
+  xiiRenderGraphContext m_RenderGraphContext;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.
   xiiExtractedRenderData* m_pExtractedData = nullptr;
@@ -551,14 +552,8 @@ private:
   const xiiGALSwapChain* m_pSwapChain        = nullptr;
   xiiGALTextureView*     m_pRenderTargetView = nullptr;
 
-  xiiRenderGraphBlackboard    m_Blackboard;
-  xiiRenderGraphResourceCache m_ResourceCache;
-
   struct ViewPassResources
   {
-    // GPU timestamp profiler (Duration queries, 3-frame ring)
-    xiiRenderGraphTimestampProfiler m_Profiler;
-
     //  CPU PID state for dynamic resolution
     struct DynamicResolution
     {

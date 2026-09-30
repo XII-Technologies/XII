@@ -204,14 +204,12 @@ xiiView::xiiView(xiiWorld* pWorld) :
   m_pWorld(pWorld)
 {
   m_DisplayOutputSettings = xiiDisplayOutputManager::GetDefaults();
-  m_pRenderGraph = XII_DEFAULT_NEW(xiiRenderGraph);
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "No default device available. A view requires a device to initialize its resources.");
 
-  m_ViewPassResources.m_Profiler.Initialize(pDevice);
+  XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
   XII_VERIFY(m_ViewPassResources.m_LightingSystem.Initialize().Succeeded(), "Failed to create the view lighting context.");
-  m_ResourceCache.Initialize(pDevice);
 
   UpdateRenderResolutionState();
 }
@@ -249,9 +247,7 @@ xiiView::~xiiView()
   m_InternalId.Invalidate();
 
   m_ViewPassResources.m_LightingSystem.Shutdown();
-  m_ViewPassResources.m_Profiler.Shutdown();
-
-  m_ResourceCache.Shutdown();
+  m_RenderGraphContext.Shutdown();
 }
 
 xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)
@@ -370,7 +366,7 @@ void xiiView::RunDynamicResolutionPID()
 {
   // Try the GPU profiler's resolved duration from 2 frames ago.
   // Falls back to CPU wall-clock when the profiler ring hasn't warmed up yet.
-  float fGpuTimeMs = m_ViewPassResources.m_Profiler.GetFrameDurationMs();
+  float fGpuTimeMs = m_RenderGraphContext.GetProfiler().GetFrameDurationMs();
   if (fGpuTimeMs <= 0.0f)
   {
     fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
@@ -4622,7 +4618,7 @@ void xiiView::SetupDecalUpload(xiiDecalUploadData& data, xiiRenderGraphBuilder& 
   }
 
   data.m_uiDecalCount = data.m_Decals.GetCount();
-  m_Blackboard.Set(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
+  GetBlackboard().Set(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
 
   xiiGALBufferCreationDescription bufferDescription;
   bufferDescription.m_uiElementByteStride = sizeof(xiiGPUDecalInstance);
@@ -4682,7 +4678,7 @@ void xiiView::SetupDecalCullBatch(xiiDecalCullBatchData& data, xiiRenderGraphBui
   data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDecalData  = builder.ReadBuffer(xiiRGBlackboardKeys::k_DecalDataBuffer, xiiGALResourceStateFlags::ShaderResource);
 
-  const bool bHasDecalCount = m_Blackboard.TryGet(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
+  const bool bHasDecalCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
   XII_IGNORE_UNUSED(bHasDecalCount);
 
   const xiiUInt32 uiTileCountX = (GetRenderResolutionWidth() + k_uiDecalTileSize - 1U) / k_uiDecalTileSize;
@@ -4803,7 +4799,7 @@ void xiiView::SetupProjectedDecalResolve(xiiProjectedDecalResolveData& data, xii
   data.m_hGBufferMaterial = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hGBufferEmissive = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferEmissive, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
 
-  const bool bHasProjectedDecalCount = m_Blackboard.TryGet(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
+  const bool bHasProjectedDecalCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
   XII_IGNORE_UNUSED(bHasProjectedDecalCount);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_TransparencyPasses.m_pSSDecalResolvePipeline, "Shaders/Pipeline/DecalResolve.xiiShader");
@@ -4878,7 +4874,7 @@ void xiiView::SetupMeshDecalDraw(xiiMeshDecalDrawData& data, xiiRenderGraphBuild
   data.m_hGBufferMaterial = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hGBufferEmissive = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferEmissive, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
 
-  const bool bHasMeshDecalCount = m_Blackboard.TryGet(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
+  const bool bHasMeshDecalCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_DecalCount, data.m_uiDecalCount);
   XII_IGNORE_UNUSED(bHasMeshDecalCount);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_TransparencyPasses.m_pMeshDecalResolvePipeline, "Shaders/Pipeline/MeshDecalResolve.xiiShader");
