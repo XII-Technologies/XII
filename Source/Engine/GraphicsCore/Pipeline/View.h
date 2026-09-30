@@ -291,6 +291,8 @@ private:
   void ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRenderGraphPassContext& context);
 
   void SetupDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder);
+  void SetupCoarseDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder);
+  void SetupDrawBuildResources(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder, xiiStringView sCandidateBuffer, xiiStringView sCommandBuffer, xiiStringView sCountBuffer, bool bUploadSource);
   void ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassContext& context);
 
   void SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRenderGraphBuilder& builder);

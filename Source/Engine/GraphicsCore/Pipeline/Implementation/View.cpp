@@ -45,6 +45,7 @@
 #include <Shaders/Pipeline/Passes/Exposure/ExposureHistogramConstants.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/ReSTIRGIConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
+#include <Shaders/Pipeline/Passes/HiZPyramid/HiZOcclusionConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/Output/BloomConstants.h>
 #include <Shaders/Pipeline/Passes/Output/ColorGradingConstants.h>
@@ -936,50 +937,66 @@ struct xiiDrawBuildData
   xiiDynamicArray<xiiExtractedDrawCommand> m_SourceCommands;
   xiiDrawCommandBuildConstants             m_Constants       = {};
   xiiUInt32                                m_uiInstanceCount = 0U;
+  bool                                     m_bUploadSource   = false;
 };
 
-void xiiView::SetupDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder)
+void xiiView::SetupDrawBuildResources(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder, xiiStringView sCandidateBuffer, xiiStringView sCommandBuffer, xiiStringView sCountBuffer, bool bUploadSource)
 {
-  data.m_hSurvivors   = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSurvivors   = builder.ReadBuffer(sCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hInstanceLOD = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_bUploadSource = bUploadSource;
 
   xiiUInt32 uiExtractedMeshCount = 0U;
   const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, uiExtractedMeshCount);
   XII_IGNORE_UNUSED(bHasExtractedMeshCount);
 
-  data.m_SourceCommands.Reserve(uiExtractedMeshCount);
-  if (m_pExtractedData != nullptr)
+  if (bUploadSource)
   {
-    for (const xiiRenderData* pRenderData : m_pExtractedData->GetAllRenderData())
+    data.m_SourceCommands.Reserve(uiExtractedMeshCount);
+    if (m_pExtractedData != nullptr)
     {
-      const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData);
-      if (pMesh == nullptr || !pMesh->m_GlobalBounds.IsValid())
-        continue;
+      for (const xiiRenderData* pRenderData : m_pExtractedData->GetAllRenderData())
+      {
+        const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData);
+        if (pMesh == nullptr || !pMesh->m_GlobalBounds.IsValid())
+          continue;
 
-      xiiExtractedDrawCommand& command = data.m_SourceCommands.ExpandAndGetRef();
-      command.m_uiIndexCountPerInstance = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(static_cast<xiiUInt64>(pMesh->m_uiPrimitiveCount) * 3ULL, xiiMath::MaxValue<xiiUInt32>()));
-      command.m_uiInstanceCount         = 1U;
-      command.m_uiStartIndexLocation    = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(static_cast<xiiUInt64>(pMesh->m_uiFirstPrimitive) * 3ULL, xiiMath::MaxValue<xiiUInt32>()));
-      command.m_iBaseVertexLocation     = 0;
-      command.m_uiStartInstanceLocation = data.m_SourceCommands.GetCount() - 1U;
+        xiiExtractedDrawCommand& command = data.m_SourceCommands.ExpandAndGetRef();
+        command.m_uiIndexCountPerInstance = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(static_cast<xiiUInt64>(pMesh->m_uiPrimitiveCount) * 3ULL, xiiMath::MaxValue<xiiUInt32>()));
+        command.m_uiInstanceCount         = 1U;
+        command.m_uiStartIndexLocation    = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(static_cast<xiiUInt64>(pMesh->m_uiFirstPrimitive) * 3ULL, xiiMath::MaxValue<xiiUInt32>()));
+        command.m_iBaseVertexLocation     = 0;
+        command.m_uiStartInstanceLocation = data.m_SourceCommands.GetCount() - 1U;
 
-      if (data.m_SourceCommands.GetCount() == uiExtractedMeshCount)
-        break;
+        if (data.m_SourceCommands.GetCount() == uiExtractedMeshCount)
+          break;
+      }
     }
+    data.m_uiInstanceCount = data.m_SourceCommands.GetCount();
+  }
+  else
+  {
+    data.m_uiInstanceCount = uiExtractedMeshCount;
   }
 
-  data.m_uiInstanceCount           = data.m_SourceCommands.GetCount();
   data.m_Constants.InstanceCount   = data.m_uiInstanceCount;
   data.m_Constants.MaxCommandCount = data.m_uiInstanceCount;
   GetBlackboard().Set(xiiRGBlackboardKeys::k_DrawCommandCapacity, data.m_uiInstanceCount);
 
-  xiiGALBufferCreationDescription sourceDescription;
-  sourceDescription.m_uiElementByteStride = sizeof(xiiExtractedDrawCommand);
-  sourceDescription.m_uiSize              = sizeof(xiiExtractedDrawCommand) * xiiMath::Max(1U, data.m_uiInstanceCount);
-  sourceDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-  sourceDescription.m_Mode                = xiiGALBufferMode::Structured;
-  sourceDescription.m_Usage               = xiiGALResourceUsage::Default;
-  data.m_hSourceCommands                  = builder.WriteBuffer(xiiRGBlackboardKeys::k_ExtractedDrawCommands, sourceDescription, xiiGALResourceStateFlags::ShaderResource);
+  if (bUploadSource)
+  {
+    xiiGALBufferCreationDescription sourceDescription;
+    sourceDescription.m_uiElementByteStride = sizeof(xiiExtractedDrawCommand);
+    sourceDescription.m_uiSize              = sizeof(xiiExtractedDrawCommand) * xiiMath::Max(1U, data.m_uiInstanceCount);
+    sourceDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    sourceDescription.m_Mode                = xiiGALBufferMode::Structured;
+    sourceDescription.m_Usage               = xiiGALResourceUsage::Default;
+    data.m_hSourceCommands                  = builder.WriteBuffer(xiiRGBlackboardKeys::k_ExtractedDrawCommands, sourceDescription, xiiGALResourceStateFlags::ShaderResource);
+  }
+  else
+  {
+    data.m_hSourceCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_ExtractedDrawCommands, xiiGALResourceStateFlags::ShaderResource);
+  }
 
   xiiGALBufferCreationDescription commandDescription;
   commandDescription.m_uiElementByteStride = sizeof(xiiExtractedDrawCommand);
@@ -987,14 +1004,14 @@ void xiiView::SetupDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& buil
   commandDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
   commandDescription.m_Mode                = xiiGALBufferMode::Structured;
   commandDescription.m_Usage               = xiiGALResourceUsage::Default;
-  data.m_hDrawCommands                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, commandDescription, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hDrawCommands                     = builder.WriteBuffer(sCommandBuffer, commandDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALBufferCreationDescription counterBufferDescription;
   counterBufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
   counterBufferDescription.m_uiSize              = sizeof(xiiUInt32);
   counterBufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
   counterBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hDrawCounts                             = builder.WriteBuffer(xiiRGBlackboardKeys::k_DrawCountBuffer, counterBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hDrawCounts                             = builder.WriteBuffer(sCountBuffer, counterBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALBufferCreationDescription constantsDescription;
   constantsDescription.m_uiSize         = sizeof(xiiDrawCommandBuildConstants);
@@ -1005,6 +1022,16 @@ void xiiView::SetupDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& buil
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pDrawBuildPipeline, "Shaders/Pipeline/DrawCommandBuild.xiiShader");
   builder.SetPassAllowMerge(false);
+}
+
+void xiiView::SetupCoarseDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder)
+{
+  SetupDrawBuildResources(data, builder, xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiRGBlackboardKeys::k_CoarseDrawIndirectCommands, xiiRGBlackboardKeys::k_CoarseDrawCountBuffer, true);
+}
+
+void xiiView::SetupDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder)
+{
+  SetupDrawBuildResources(data, builder, xiiRGBlackboardKeys::k_SurvivingInstanceBuffer, xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiRGBlackboardKeys::k_DrawCountBuffer, false);
 }
 
 void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassContext& context)
@@ -1028,8 +1055,11 @@ void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassC
       return;
     }
 
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hSourceCommands), 0U,
-      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+    if (data.m_bUploadSource)
+    {
+      cmd.UpdateBuffer(context.GetBuffer(data.m_hSourceCommands), 0U,
+        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+    }
     {
       xiiGALMapHelper<xiiDrawCommandBuildConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *pConstants = data.m_Constants;
@@ -2125,7 +2155,7 @@ void xiiView::SetupDepthPrepass(xiiDepthPrepassData& data, xiiRenderGraphBuilder
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hSceneDepth        = builder.WriteTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, description, xiiGALResourceStateFlags::DepthWrite);
 
-  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_CoarseDrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
 
   builder.SetPassAllowMerge(false);
 }
@@ -2156,10 +2186,9 @@ void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRenderGrap
 
 struct xiiHiZPyramidData
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiRenderGraphTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
-  xiiRenderGraphTextureHandle m_hHiZPyramid;      ///< UnorderedAccess out (R32F max-depth hierarchy texture, consumed by Hi-Z occlusion culling and depth-aware effects).
+  xiiRenderGraphTextureHandle m_hHiZPyramid;      ///< UnorderedAccess out (R32F reversed-Z minimum hierarchy consumed by occlusion and depth-aware effects).
+  xiiRenderGraphBufferHandle  m_hConstants;
   xiiUInt32                   m_uiMipLevels = 1U; ///< Number of mips in the Hi-Z pyramid, derived from the current viewport size.
 };
 
@@ -2189,7 +2218,15 @@ void xiiView::SetupHiZPyramid(xiiHiZPyramidData& data, xiiRenderGraphBuilder& bu
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hHiZPyramid        = builder.WriteTexture(xiiRGBlackboardKeys::k_HiZPyramid, description, xiiGALResourceStateFlags::UnorderedAccess);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiHiZBuildConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("xiiHiZBuildConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_DepthPasses.m_pHiZBuildPipeline, "Shaders/Pipeline/HiZBuild.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRenderGraphPassContext& context)
@@ -2202,33 +2239,80 @@ void xiiView::ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRenderGraphPas
     {
       cmd.SetPipelineState(m_ViewPassResources.m_DepthPasses.m_pHiZBuildPipeline);
 
-      xiiGALTexture* pDepth = context.GetTexture(data.m_hSceneDepth);
-      xiiGALTexture* pHiZ   = context.GetTexture(data.m_hHiZPyramid);
+      xiiGALTexture* pDepth     = context.GetTexture(data.m_hSceneDepth);
+      xiiGALTexture* pHiZ       = context.GetTexture(data.m_hHiZPyramid);
+      xiiGALBuffer*  pConstants = context.GetBuffer(data.m_hConstants);
+
+      xiiDynamicArray<xiiSharedPtr<xiiGALTextureView>> sourceViews;
+      xiiDynamicArray<xiiSharedPtr<xiiGALTextureView>> destinationViews;
+      sourceViews.SetCount(data.m_uiMipLevels);
+      destinationViews.SetCount(data.m_uiMipLevels);
+      for (xiiUInt32 uiMip = 0U; uiMip < data.m_uiMipLevels; ++uiMip)
+      {
+        xiiGALTextureViewCreationDescription viewDescription;
+        viewDescription.m_ViewType          = xiiGALTextureViewType::ShaderResource;
+        viewDescription.m_uiMostDetailedMip = uiMip;
+        viewDescription.m_uiMipLevelCount   = 1U;
+        sourceViews[uiMip]                  = pHiZ->CreateView(viewDescription);
+
+        viewDescription.m_ViewType = xiiGALTextureViewType::UnorderedAccess;
+        destinationViews[uiMip]    = pHiZ->CreateView(viewDescription);
+        XII_ASSERT_DEV(sourceViews[uiMip] != nullptr && destinationViews[uiMip] != nullptr, "Failed to create Hi-Z mip views.");
+      }
+
+      auto transitionMip = [&cmd, pHiZ](xiiUInt32 uiMip, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState) {
+        xiiGALStateTransitionDescription transition;
+        transition.m_pResource       = pHiZ;
+        transition.m_uiFirstMipLevel = uiMip;
+        transition.m_uiMipLevelCount = 1U;
+        transition.m_OldState        = oldState;
+        transition.m_NewState        = newState;
+        cmd.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1U));
+      };
+
+      // The reduction intentionally keeps completed mips in ShaderResource while the next mip
+      // remains UnorderedAccess. Whole-resource tracking resumes after the loop.
+      pHiZ->SetResourceState(xiiGALResourceStateFlags::Unknown);
+      cmd.ResolveAndSetConstantBuffer("xiiHiZBuildConstants", pConstants, xiiGALShaderType::Compute);
 
       xiiUInt32 uiSrcWidth  = GetRenderResolutionWidth();
       xiiUInt32 uiSrcHeight = GetRenderResolutionHeight();
 
-      for (xiiUInt32 uiMip = 0U; uiMip + 1U < data.m_uiMipLevels; ++uiMip)
+      for (xiiUInt32 uiMip = 0U; uiMip < data.m_uiMipLevels; ++uiMip)
       {
-        const xiiUInt32 uiDestinationWidth  = xiiMath::Max(uiSrcWidth >> 1U, 1U);
-        const xiiUInt32 uiDestinationHeight = xiiMath::Max(uiSrcHeight >> 1U, 1U);
+        const bool      bCopyDepth          = uiMip == 0U;
+        const xiiUInt32 uiDestinationWidth  = bCopyDepth ? uiSrcWidth : xiiMath::Max(uiSrcWidth >> 1U, 1U);
+        const xiiUInt32 uiDestinationHeight = bCopyDepth ? uiSrcHeight : xiiMath::Max(uiSrcHeight >> 1U, 1U);
 
-        if (uiMip == 0U)
         {
-          cmd.ResolveAndSetShaderResourceTextureView("g_DepthSrc", pDepth->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+          xiiGALMapHelper<xiiHiZBuildConstants> constants(cmd, pConstants, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+          constants->SrcSize = xiiVec2U32(uiSrcWidth, uiSrcHeight);
+          constants->DstSize = xiiVec2U32(uiDestinationWidth, uiDestinationHeight);
+          constants->Reduce  = bCopyDepth ? 0U : 1U;
         }
-        else
-        {
-          cmd.ResolveAndSetShaderResourceTextureView("g_DepthSrc", pHiZ->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-        }
+        xiiGALStateTransitionDescription constantsTransition;
+        constantsTransition.m_pResource       = pConstants;
+        constantsTransition.m_OldState        = xiiGALResourceStateFlags::CopyDestination;
+        constantsTransition.m_NewState        = xiiGALResourceStateFlags::ConstantBuffer;
+        constantsTransition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+        cmd.TransitionResourceStates(xiiMakeArrayPtr(&constantsTransition, 1U));
 
-        cmd.ResolveAndSetUnorderedAccessTextureView("g_HiZOut", pHiZ->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-        cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+        xiiGALTextureView* pSourceView = bCopyDepth ? pDepth->GetDefaultView(xiiGALTextureViewType::ShaderResource).Borrow() : sourceViews[uiMip - 1U].Borrow();
+        cmd.ResolveAndSetShaderResourceTextureView("g_DepthSrc", pSourceView, xiiGALShaderType::Compute);
+        cmd.ResolveAndSetUnorderedAccessTextureView("g_HiZOut", destinationViews[uiMip].Borrow(), xiiGALShaderType::Compute);
+        cmd.CommitShaderResources(xiiGALStateTransitionMode::None).AssertSuccess();
         cmd.DispatchCompute({(uiDestinationWidth + 7U) / 8U, (uiDestinationHeight + 7U) / 8U, 1U});
+
+        if (uiMip + 1U < data.m_uiMipLevels)
+          transitionMip(uiMip, xiiGALResourceStateFlags::UnorderedAccess, xiiGALResourceStateFlags::ShaderResource);
 
         uiSrcWidth  = uiDestinationWidth;
         uiSrcHeight = uiDestinationHeight;
       }
+
+      for (xiiUInt32 uiMip = 0U; uiMip + 1U < data.m_uiMipLevels; ++uiMip)
+        transitionMip(uiMip, xiiGALResourceStateFlags::ShaderResource, xiiGALResourceStateFlags::UnorderedAccess);
+      pHiZ->SetResourceState(xiiGALResourceStateFlags::UnorderedAccess);
     }
   }
   cmd.EndDebugGroup();
@@ -2240,13 +2324,13 @@ void xiiView::ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRenderGraphPas
 
 struct xiiHiZOcclusionCullData
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiRenderGraphTextureHandle m_hHiZPyramid;         ///< ShaderResource in (Hi-Z pyramid generated by this frame's Hi-Z Pyramid pass).
   xiiRenderGraphBufferHandle  m_hVisibleCandidates;  ///< ShaderResource in (visible instance candidate list generated by this frame's Frustum Culling pass).
   xiiRenderGraphBufferHandle  m_hSurvivingInstances; ///< UnorderedAccess out (instance list surviving Hi-Z occlusion culling, consumed by later depth/lighting passes).
   xiiRenderGraphBufferHandle  m_hInstanceBounds;     ///< ShaderResource in (instance bounds buffer for occlusion testing).
-  xiiUInt32                   m_uiInstanceCount = 0; ///< Number of instances to process.
+  xiiRenderGraphBufferHandle  m_hConstants;
+  xiiHiZOcclusionConstants    m_Constants       = {};
+  xiiUInt32                   m_uiInstanceCount = 0U; ///< Maximum number of candidates to process.
 };
 
 void xiiView::SetupHiZOcclusionCull(xiiHiZOcclusionCullData& data, xiiRenderGraphBuilder& builder)
@@ -2256,16 +2340,36 @@ void xiiView::SetupHiZOcclusionCull(xiiHiZOcclusionCullData& data, xiiRenderGrap
   data.m_hInstanceBounds    = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription description;
-  description.m_uiElementByteStride = 4U;
-  description.m_uiSize              = 4U + 4U * k_uiMaxInstances;
-  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, data.m_uiInstanceCount);
+  XII_IGNORE_UNUSED(bHasExtractedMeshCount);
+  description.m_uiElementByteStride = sizeof(xiiUInt32);
+  description.m_uiSize              = sizeof(xiiUInt32) * (xiiMath::Max(1U, data.m_uiInstanceCount) + 1U);
+  description.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
   description.m_Mode                = xiiGALBufferMode::Structured;
   description.m_Usage               = xiiGALResourceUsage::Default;
   data.m_hSurvivingInstances        = builder.WriteBuffer(xiiRGBlackboardKeys::k_SurvivingInstanceBuffer, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  data.m_uiInstanceCount = k_uiMaxInstances;
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiHiZOcclusionConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("xiiHiZOcclusionConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  data.m_Constants.ViewProjectionMatrix = GetViewProjectionMatrix(xiiCameraEye::Left);
+  data.m_Constants.HiZSize               = xiiVec2U32(GetRenderResolutionWidth(), GetRenderResolutionHeight());
+  data.m_Constants.HiZMipCount           = 1U;
+  for (xiiUInt32 uiWidth = GetRenderResolutionWidth(), uiHeight = GetRenderResolutionHeight(); uiWidth > 1U || uiHeight > 1U;)
+  {
+    uiWidth  = xiiMath::Max(uiWidth >> 1U, 1U);
+    uiHeight = xiiMath::Max(uiHeight >> 1U, 1U);
+    ++data.m_Constants.HiZMipCount;
+  }
+  data.m_Constants.CandidateCapacity = data.m_uiInstanceCount;
+  data.m_Constants.DepthBias         = 0.0001f;
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_DepthPasses.m_pHiZOcclusionCullPipeline, "Shaders/Pipeline/HiZOcclusionCulling.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteHiZOcclusionCull(const xiiHiZOcclusionCullData& data, xiiRenderGraphPassContext& context)
@@ -2274,13 +2378,22 @@ void xiiView::ExecuteHiZOcclusionCull(const xiiHiZOcclusionCullData& data, xiiRe
 
   cmd.BeginDebugGroup("HiZOcclusionCull");
   {
-    if (m_ViewPassResources.m_DepthPasses.m_pHiZOcclusionCullPipeline)
+    const xiiUInt32 uiZero = 0U;
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hSurvivingInstances), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
+
+    if (data.m_uiInstanceCount > 0U && m_ViewPassResources.m_DepthPasses.m_pHiZOcclusionCullPipeline)
     {
+      {
+        xiiGALMapHelper<xiiHiZOcclusionConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        *constants = data.m_Constants;
+      }
+
       cmd.SetPipelineState(m_ViewPassResources.m_DepthPasses.m_pHiZOcclusionCullPipeline);
+      cmd.ResolveAndSetConstantBuffer("xiiHiZOcclusionConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceTextureView("g_HiZPyramid", context.GetTexture(data.m_hHiZPyramid)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_Candidates", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", context.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-      cmd.ResolveAndSetUnorderedAccessBufferView("g_Survivors", context.GetBuffer(data.m_hSurvivingInstances)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_SurvivingOut", context.GetBuffer(data.m_hSurvivingInstances)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
       cmd.DispatchCompute({(data.m_uiInstanceCount + 63U) / 64U, 1U, 1U});
     }
@@ -6093,7 +6206,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiFrustumCullData>("FrustumCulling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFrustumCull, this), xiiMakeDelegate(&xiiView::ExecuteFrustumCull, this));
   graph.AddPass<xiiLODSelectData>("LODSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLODSelect, this), xiiMakeDelegate(&xiiView::ExecuteLODSelect, this));
   graph.AddPass<xiiInstanceUpdateData>("InstanceUpdate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupInstanceUpdate, this), xiiMakeDelegate(&xiiView::ExecuteInstanceUpdate, this));
-  graph.AddPass<xiiDrawBuildData>("DrawCommandBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDrawBuild, this), xiiMakeDelegate(&xiiView::ExecuteDrawBuild, this));
+  graph.AddPass<xiiDrawBuildData>("CoarseDrawCommandBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupCoarseDrawBuild, this), xiiMakeDelegate(&xiiView::ExecuteDrawBuild, this));
   graph.AddPass<xiiClusterBuildData>("ClusterGridBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupClusterBuild, this), xiiMakeDelegate(&xiiView::ExecuteClusterBuild, this));
   graph.AddPass<xiiLightListClearData>("LightListClear", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListClear, this), xiiMakeDelegate(&xiiView::ExecuteLightListClear, this));
   graph.AddPass<xiiLightListData>("LightListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListBuild, this), xiiMakeDelegate(&xiiView::ExecuteLightListBuild, this));
@@ -6122,6 +6235,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   }
   graph.AddPass<xiiHiZPyramidData>("HiZPyramid", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZPyramid, this), xiiMakeDelegate(&xiiView::ExecuteHiZPyramid, this));
   graph.AddPass<xiiHiZOcclusionCullData>("HiZOcclusionCull", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZOcclusionCull, this), xiiMakeDelegate(&xiiView::ExecuteHiZOcclusionCull, this));
+  graph.AddPass<xiiDrawBuildData>("DrawCommandBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDrawBuild, this), xiiMakeDelegate(&xiiView::ExecuteDrawBuild, this));
   graph.AddPass<xiiMotionVectorsData>("MotionVectors", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupMotionVectors, this), xiiMakeDelegate(&xiiView::ExecuteMotionVectors, this));
   graph.AddPass<xiiVelocityDilationData>("VelocityDilation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVelocityDilation, this), xiiMakeDelegate(&xiiView::ExecuteVelocityDilation, this));
 
