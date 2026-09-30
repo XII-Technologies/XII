@@ -42,7 +42,11 @@ XII_ALWAYS_INLINE void xiiView::SetSwapChain(const xiiGALSwapChain* pSwapChain)
 
 XII_ALWAYS_INLINE void xiiView::SetCamera(xiiCamera* pCamera)
 {
+  if (m_pCamera == pCamera)
+    return;
+
   m_pCamera = pCamera;
+  InvalidateTemporalHistory();
 }
 
 XII_ALWAYS_INLINE xiiCamera* xiiView::GetCamera()

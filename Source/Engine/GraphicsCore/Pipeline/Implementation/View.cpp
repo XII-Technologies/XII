@@ -229,6 +229,19 @@ const xiiDisplayOutputSettings& xiiView::GetDisplayOutputSettings() const
   return m_DisplayOutputSettings;
 }
 
+void xiiView::InvalidateTemporalHistory()
+{
+  m_ViewPassResources.m_ShadowPasses.m_bRayTracedShadowHistoryValid        = false;
+  m_ViewPassResources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = false;
+  m_ViewPassResources.m_LightingPasses.m_bRTGIReservoirHistoryValid        = false;
+  m_ViewPassResources.m_LightingPasses.m_bRTGIHistoryValid                 = false;
+  m_ViewPassResources.m_LightingPasses.m_bRTReflectionHistoryValid         = false;
+  m_ViewPassResources.m_LightingPasses.m_bVolumetricHistoryValid           = false;
+  m_ViewPassResources.m_TemporalPasses.m_uiTAAHistoryWriteIndex            = 0U;
+  m_ViewPassResources.m_TemporalPasses.m_bTAAHistoryValid                  = false;
+  m_ViewPassResources.m_TemporalPasses.m_bExposureHistoryValid             = false;
+}
+
 xiiView::~xiiView()
 {
   m_InternalId.Invalidate();
@@ -5276,8 +5289,11 @@ struct xiiTemporalAntiAliasingData
 
   xiiRenderGraphTextureHandle m_hHDRIn;    ///< ShaderResource in (current HDR scene color).
   xiiRenderGraphTextureHandle m_hVelocity; ///< ShaderResource in (motion vectors).
+  xiiRenderGraphTextureHandle m_hDepth;    ///< ShaderResource in (reversed-Z scene depth).
   xiiRenderGraphTextureHandle m_hHistory;  ///< ShaderResource in (history color).
   xiiRenderGraphTextureHandle m_hTAAOut;   ///< UnorderedAccess out (TAA resolved color).
+  xiiUInt32                    m_uiHistoryWriteIndex = 0U;
+  bool                         m_bHistoryValid       = false;
 };
 
 void xiiView::SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRenderGraphBuilder& builder)
@@ -5287,33 +5303,46 @@ void xiiView::SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRe
 
   data.m_hHDRIn    = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
   data.m_hVelocity = builder.ReadTexture(xiiRGBlackboardKeys::k_VelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
 
-  if (!m_ViewPassResources.m_TemporalPasses.m_pTAAHistoryBuffer)
+  auto& temporalResources = m_ViewPassResources.m_TemporalPasses;
+  bool  bRecreateHistory  = false;
+  for (const xiiSharedPtr<xiiGALTexture>& pHistory : temporalResources.m_pTAAHistoryBuffers)
+  {
+    bRecreateHistory |= pHistory == nullptr || pHistory->GetDescription().m_Size != xiiSizeU32(uiRenderWidth, uiRenderHeight);
+  }
+
+  if (bRecreateHistory)
   {
     xiiGALTextureCreationDescription description;
     description.m_Type        = xiiGALResourceDimension::Texture2D;
     description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-    description.m_Size.width  = uiRenderWidth;
-    description.m_Size.height = uiRenderHeight;
+    description.m_Size        = xiiSizeU32(uiRenderWidth, uiRenderHeight);
     description.m_uiMipLevels = 1U;
     description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
     description.m_Usage       = xiiGALResourceUsage::Default;
 
-    m_ViewPassResources.m_TemporalPasses.m_pTAAHistoryBuffer = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    for (xiiSharedPtr<xiiGALTexture>& pHistory : temporalResources.m_pTAAHistoryBuffers)
+    {
+      if (pHistory != nullptr)
+        temporalResources.m_RetiredTAAHistoryBuffers.PushBack(pHistory);
+
+      pHistory = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    }
+
+    temporalResources.m_uiTAAHistoryWriteIndex = 0U;
+    temporalResources.m_bTAAHistoryValid       = false;
   }
 
-  data.m_hHistory = builder.ImportTexture("TAAHistory", m_ViewPassResources.m_TemporalPasses.m_pTAAHistoryBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_uiHistoryWriteIndex = temporalResources.m_uiTAAHistoryWriteIndex;
+  data.m_bHistoryValid       = temporalResources.m_bTAAHistoryValid;
+
+  const xiiUInt32 uiHistoryReadIndex = 1U - data.m_uiHistoryWriteIndex;
+  data.m_hHistory = builder.ImportTexture("TAAHistory", temporalResources.m_pTAAHistoryBuffers[uiHistoryReadIndex], temporalResources.m_pTAAHistoryBuffers[uiHistoryReadIndex]->GetResourceState());
   data.m_hHistory = builder.ReadTexture(data.m_hHistory, xiiGALResourceStateFlags::ShaderResource);
 
-  xiiGALTextureCreationDescription taaOutputDescription;
-  taaOutputDescription.m_Type        = xiiGALResourceDimension::Texture2D;
-  taaOutputDescription.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  taaOutputDescription.m_Size.width  = uiRenderWidth;
-  taaOutputDescription.m_Size.height = uiRenderHeight;
-  taaOutputDescription.m_uiMipLevels = 1U;
-  taaOutputDescription.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  taaOutputDescription.m_Usage       = xiiGALResourceUsage::Default;
-  data.m_hTAAOut                     = builder.WriteTexture(xiiRGBlackboardKeys::k_TAAResolvedColor, taaOutputDescription, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hTAAOut = builder.ImportTexture(xiiRGBlackboardKeys::k_TAAResolvedColor, temporalResources.m_pTAAHistoryBuffers[data.m_uiHistoryWriteIndex], temporalResources.m_pTAAHistoryBuffers[data.m_uiHistoryWriteIndex]->GetResourceState());
+  data.m_hTAAOut = builder.WriteTexture(data.m_hTAAOut, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_TemporalPasses.m_pTAAPipeline, "Shaders/Pipeline/TAA.xiiShader");
 }
@@ -5327,12 +5356,16 @@ void xiiView::ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& dat
   cmd.BeginDebugGroup("TAA");
   {
     cmd.SetPipelineState(m_ViewPassResources.m_TemporalPasses.m_pTAAPipeline);
-    cmd.ResolveAndSetShaderResourceTextureView("g_HDRCurrent", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_History", context.GetTexture(data.m_hHistory)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_TAAOut", context.GetTexture(data.m_hTAAOut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_CurrentFrame", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_VelocityBuffer", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_HistoryFrame", context.GetTexture(data.m_bHistoryValid ? data.m_hHistory : data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_Resolved", context.GetTexture(data.m_hTAAOut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+
+    m_ViewPassResources.m_TemporalPasses.m_uiTAAHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
+    m_ViewPassResources.m_TemporalPasses.m_bTAAHistoryValid       = true;
   }
   cmd.EndDebugGroup();
 }
@@ -5351,16 +5384,16 @@ struct xiiUpscaleData
 
 void xiiView::SetupUpscale(xiiUpscaleData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiRenderWidth  = GetRenderResolutionWidth();
-  const xiiUInt32 uiRenderHeight = GetRenderResolutionHeight();
+  const xiiUInt32 uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
+  const xiiUInt32 uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
   data.m_hTAAIn = builder.ReadTexture(xiiRGBlackboardKeys::k_TAAResolvedColor, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width  = uiRenderWidth;
-  description.m_Size.height = uiRenderHeight;
+  description.m_Size.width  = uiOutputWidth;
+  description.m_Size.height = uiOutputHeight;
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -5372,8 +5405,8 @@ void xiiView::SetupUpscale(xiiUpscaleData& data, xiiRenderGraphBuilder& builder)
 void xiiView::ExecuteUpscale(const xiiUpscaleData& data, xiiRenderGraphPassContext& context)
 {
   xiiGALCommandList& cmd            = context.GetCommandList();
-  const xiiUInt32    uiRenderWidth  = GetRenderResolutionWidth();
-  const xiiUInt32    uiRenderHeight = GetRenderResolutionHeight();
+  const xiiUInt32    uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
+  const xiiUInt32    uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
   cmd.BeginDebugGroup("Upscale");
   {
@@ -5381,7 +5414,7 @@ void xiiView::ExecuteUpscale(const xiiUpscaleData& data, xiiRenderGraphPassConte
     cmd.ResolveAndSetShaderResourceTextureView("g_TAAIn", context.GetTexture(data.m_hTAAIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_Upscaled", context.GetTexture(data.m_hUpscaled)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(uiOutputWidth + 7U) / 8U, (uiOutputHeight + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -5400,16 +5433,16 @@ struct xiiBloomData
 
 void xiiView::SetupBloom(xiiBloomData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiRenderWidth  = GetRenderResolutionWidth();
-  const xiiUInt32 uiRenderHeight = GetRenderResolutionHeight();
+  const xiiUInt32 uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
+  const xiiUInt32 uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
   data.m_hHDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_UpscaledColor, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width  = uiRenderWidth;
-  description.m_Size.height = uiRenderHeight;
+  description.m_Size.width  = uiOutputWidth;
+  description.m_Size.height = uiOutputHeight;
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -5421,8 +5454,8 @@ void xiiView::SetupBloom(xiiBloomData& data, xiiRenderGraphBuilder& builder)
 void xiiView::ExecuteBloom(const xiiBloomData& data, xiiRenderGraphPassContext& context)
 {
   xiiGALCommandList& cmd            = context.GetCommandList();
-  const xiiUInt32    uiRenderWidth  = GetRenderResolutionWidth();
-  const xiiUInt32    uiRenderHeight = GetRenderResolutionHeight();
+  const xiiUInt32    uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
+  const xiiUInt32    uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
   cmd.BeginDebugGroup("Bloom");
   {
@@ -5430,7 +5463,7 @@ void xiiView::ExecuteBloom(const xiiBloomData& data, xiiRenderGraphPassContext& 
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_BloomOut", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(uiOutputWidth + 7U) / 8U, (uiOutputHeight + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -5450,8 +5483,8 @@ struct xiiColorGradingData
 
 void xiiView::SetupColorGrading(xiiColorGradingData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiRenderWidth  = GetRenderResolutionWidth();
-  const xiiUInt32 uiRenderHeight = GetRenderResolutionHeight();
+  const xiiUInt32 uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
+  const xiiUInt32 uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
   data.m_hHDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_UpscaledColor, xiiGALResourceStateFlags::ShaderResource);
   data.m_hBloom = builder.ReadTexture(xiiRGBlackboardKeys::k_BloomTexture, xiiGALResourceStateFlags::ShaderResource);
@@ -5459,8 +5492,8 @@ void xiiView::SetupColorGrading(xiiColorGradingData& data, xiiRenderGraphBuilder
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width  = uiRenderWidth;
-  description.m_Size.height = uiRenderHeight;
+  description.m_Size.width  = uiOutputWidth;
+  description.m_Size.height = uiOutputHeight;
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -5472,8 +5505,8 @@ void xiiView::SetupColorGrading(xiiColorGradingData& data, xiiRenderGraphBuilder
 void xiiView::ExecuteColorGrading(const xiiColorGradingData& data, xiiRenderGraphPassContext& context)
 {
   xiiGALCommandList& cmd            = context.GetCommandList();
-  const xiiUInt32    uiRenderWidth  = GetRenderResolutionWidth();
-  const xiiUInt32    uiRenderHeight = GetRenderResolutionHeight();
+  const xiiUInt32    uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
+  const xiiUInt32    uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
   cmd.BeginDebugGroup("ColorGrading");
   {
@@ -5482,7 +5515,7 @@ void xiiView::ExecuteColorGrading(const xiiColorGradingData& data, xiiRenderGrap
     cmd.ResolveAndSetShaderResourceTextureView("g_Bloom", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_Graded", context.GetTexture(data.m_hGraded)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(uiOutputWidth + 7U) / 8U, (uiOutputHeight + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -5504,8 +5537,8 @@ struct xiiToneMappingData
 
 void xiiView::SetupToneMapping(xiiToneMappingData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiRenderWidth  = GetRenderResolutionWidth();
-  const xiiUInt32 uiRenderHeight = GetRenderResolutionHeight();
+  const xiiUInt32 uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
+  const xiiUInt32 uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
   data.m_hHDRInput = builder.ReadTexture(xiiRGBlackboardKeys::k_UpscaledColor, xiiGALResourceStateFlags::ShaderResource);
   data.m_hBloom    = builder.ReadTexture(xiiRGBlackboardKeys::k_BloomTexture, xiiGALResourceStateFlags::ShaderResource);
@@ -5514,8 +5547,8 @@ void xiiView::SetupToneMapping(xiiToneMappingData& data, xiiRenderGraphBuilder& 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width  = uiRenderWidth;
-  description.m_Size.height = uiRenderHeight;
+  description.m_Size.width  = uiOutputWidth;
+  description.m_Size.height = uiOutputHeight;
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -5534,8 +5567,8 @@ void xiiView::SetupToneMapping(xiiToneMappingData& data, xiiRenderGraphBuilder& 
 void xiiView::ExecuteToneMapping(const xiiToneMappingData& data, xiiRenderGraphPassContext& context)
 {
   xiiGALCommandList& cmd            = context.GetCommandList();
-  const xiiUInt32    uiRenderWidth  = GetRenderResolutionWidth();
-  const xiiUInt32    uiRenderHeight = GetRenderResolutionHeight();
+  const xiiUInt32    uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
+  const xiiUInt32    uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
   cmd.BeginDebugGroup("ToneMapping");
   {
@@ -5556,7 +5589,7 @@ void xiiView::ExecuteToneMapping(const xiiToneMappingData& data, xiiRenderGraphP
     cmd.ResolveAndSetShaderResourceBufferView("g_Exposure", context.GetBuffer(data.m_hExposure)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_LDROut", context.GetTexture(data.m_hDisplayLinear)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(uiOutputWidth + 7U) / 8U, (uiOutputHeight + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }

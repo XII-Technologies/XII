@@ -182,6 +182,9 @@ public:
   [[nodiscard]] xiiResult SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
   [[nodiscard]] const xiiDisplayOutputSettings& GetDisplayOutputSettings() const;
 
+  /// Invalidates all per-view temporal lighting and reconstruction history after a camera cut or teleport.
+  void InvalidateTemporalHistory();
+
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
 
@@ -762,8 +765,11 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pTAAPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pUpscalePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSharpenPipeline;
-      xiiSharedPtr<xiiGALTexture>              m_pTAAHistoryBuffer; // prev-frame resolved color
-      xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer;   // persistent exposure multiplier + average luminance
+      xiiSharedPtr<xiiGALTexture>              m_pTAAHistoryBuffers[2]; // ping-pong resolved color history
+      xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_RetiredTAAHistoryBuffers;
+      xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer; // persistent exposure multiplier + average luminance
+      xiiUInt32                                m_uiTAAHistoryWriteIndex = 0U;
+      bool                                     m_bTAAHistoryValid      = false;
       bool                                     m_bExposureHistoryValid = false;
     } m_TemporalPasses;
 
