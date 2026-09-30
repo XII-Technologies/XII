@@ -1,17 +1,21 @@
-// Deterministic fallback for devices or frames without a valid scene TLAS.
+[PLATFORMS]
+ALL
 
-RWTexture2D<float4> g_RTGIRaw : register(u0);
+[COMPUTE_SHADER]
+
+// Transparent near-field contribution for devices or frames without a valid scene TLAS.
+
+RWTexture2D<float4> g_RTGIRaw   : register(u0);
 RWTexture2D<float4> g_RTGIFinal : register(u1);
 
 [numthreads(8, 8, 1)]
-void CS_RTGIFallback(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
-    uint2 dimensions;
-    g_RTGIFinal.GetDimensions(dimensions.x, dimensions.y);
-    if (any(tid.xy >= dimensions))
-        return;
+  uint2 dimensions;
+  g_RTGIFinal.GetDimensions(dimensions.x, dimensions.y);
+  if (any(tid.xy >= dimensions))
+    return;
 
-    g_RTGIRaw[tid.xy] = 0.0f;
-    g_RTGIFinal[tid.xy] = 0.0f;
+  g_RTGIRaw[tid.xy]   = 0.0f;
+  g_RTGIFinal[tid.xy] = 0.0f;
 }
-

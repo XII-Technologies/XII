@@ -480,6 +480,7 @@ private:
   ///        If the pipeline already exists this is a no-op.
   static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
   bool EnsureRayTracingShadowResources();
+  bool EnsureRayTracingGlobalIlluminationResources();
   bool EnsureRayTracingReflectionResources();
 
 private:
@@ -633,12 +634,15 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricIntegratePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricTemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pAtmosphereCompositePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGIPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGIFallbackPipeline;
+      xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTGIPipeline;
+      xiiSharedPtr<xiiGALBuffer>                  m_pRTGIShaderBindingTable;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTReflectionFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTReflectionPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTReflectionShaderBindingTable;
       xiiSharedPtr<xiiGALTopLevelAS>              m_pRayTracingScene;
       xiiRenderGraphBufferHandle                  m_hRayTracingSceneDependency;
+      xiiUInt32                                   m_uiRTGIShaderRecordStride = 0U;
       xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>              m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
       xiiSharedPtr<xiiGALTexture>              m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
