@@ -1,107 +1,47 @@
-// XII Engine - BloomChain.xiiShader  [NEW]
-// Passes 57-59: Soft-knee prefilter, 13-tap downsample, tent upsample.
-// Three entry points, selected via pipeline permutation.
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
+[COMPUTE_SHADER]
 
-cbuffer BloomConstants : register(b3)
+// Full-resolution soft-knee bloom extraction with a tent filter.
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/Passes/Output/BloomConstants.h>
+
+Texture2D<float4>   g_HDRIn;
+RWTexture2D<float4> g_BloomOut;
+
+float3 ExtractBloom(float3 color)
 {
-    float  g_Threshold;     // HDR luminance threshold (knee base)
-    float  g_KneeWidth;     // soft knee width above threshold
-    float  g_Intensity;     // final bloom intensity
-    float2 g_InvSrcSize;    // 1/srcResolution for this mip pass
-    float2 g_InvDstSize;    // 1/dstResolution
-    uint   g_MipLevel;
-    float  _pad;
-};
-
-Texture2D<float4>   g_SrcTex  : register(t0);
-RWTexture2D<float4> g_DstTex  : register(u0);
-
-// 
-// Soft-knee threshold function (Siggraph 2015 Frostbite).
-// 
-float3 SoftKnee(float3 c)
-{
-    float lum = dot(c, float3(0.2126f, 0.7152f, 0.0722f));
-    float knee0 = max(0.0f, g_Threshold - g_KneeWidth);
-    float knee1 = g_Threshold + g_KneeWidth;
-    float rq = clamp(lum - knee0, 0.0f, 2.0f * g_KneeWidth);
-    float w = rq * rq / (4.0f * g_KneeWidth + 1e-5f);
-    float weight = max(w, lum - g_Threshold) / max(lum, 1e-5f);
-    return c * weight;
+  const float luminance = max(GetLuminance(color), 0.0f);
+  const float threshold = BloomParameters.x;
+  const float knee = BloomParameters.y;
+  const float soft = clamp(luminance - threshold + knee, 0.0f, 2.0f * knee);
+  const float softContribution = soft * soft / max(4.0f * knee, 1.0e-5f);
+  const float contribution = max(luminance - threshold, softContribution) / max(luminance, 1.0e-5f);
+  return max(color, 0.0f) * contribution;
 }
 
-// 
-// Pass 57: Prefilter
-// 
 [numthreads(8, 8, 1)]
-void CS_BloomPrefilter(uint3 tid : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    uint2 dims; g_DstTex.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims)) return;
-    float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
-    float3 col = g_SrcTex.SampleLevel(g_sLinearClamp, uv, 0).rgb;
-    g_DstTex[tid.xy] = float4(SoftKnee(col), 1.0f);
-}
+  uint2 dimensions;
+  g_BloomOut.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
 
-// 
-// Pass 58: Downsample - Dual-Kawase 13-tap filter (Call of Duty 2014).
-// 
-[numthreads(8, 8, 1)]
-void CS_BloomDownsample(uint3 tid : SV_DispatchThreadID)
-{
-    uint2 dims; g_DstTex.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims)) return;
+  const float2 uv = (float2(dispatchThreadId.xy) + 0.5f) / float2(dimensions);
+  const float2 texel = rcp(float2(dimensions)) * BloomParameters.z;
 
-    float2 uv   = (float2(tid.xy) + 0.5f) / float2(dims);
-    float2 hts  = g_InvSrcSize * 0.5f;
+  float3 bloom = ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv, 0.0f).rgb) * 0.25f;
+  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(-texel.x, 0.0f), 0.0f).rgb) * 0.125f;
+  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(texel.x, 0.0f), 0.0f).rgb) * 0.125f;
+  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(0.0f, -texel.y), 0.0f).rgb) * 0.125f;
+  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(0.0f, texel.y), 0.0f).rgb) * 0.125f;
+  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(-texel.x, -texel.y), 0.0f).rgb) * 0.0625f;
+  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(texel.x, -texel.y), 0.0f).rgb) * 0.0625f;
+  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(-texel.x, texel.y), 0.0f).rgb) * 0.0625f;
+  bloom += ExtractBloom(g_HDRIn.SampleLevel(LinearClampSampler, uv + float2(texel.x, texel.y), 0.0f).rgb) * 0.0625f;
 
-    // Sample the 13 taps (5 bilinear + 4 diagonal).
-    float3 A = g_SrcTex.SampleLevel(g_sLinearClamp, uv,            g_MipLevel).rgb;
-    float3 B = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2(-2*hts.x,-2*hts.y), g_MipLevel).rgb;
-    float3 C = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2( 2*hts.x,-2*hts.y), g_MipLevel).rgb;
-    float3 D = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2(-2*hts.x, 2*hts.y), g_MipLevel).rgb;
-    float3 E = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2( 2*hts.x, 2*hts.y), g_MipLevel).rgb;
-    float3 F = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2(-hts.x, -hts.y),    g_MipLevel).rgb;
-    float3 G = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2( hts.x, -hts.y),    g_MipLevel).rgb;
-    float3 H = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2(-hts.x,  hts.y),    g_MipLevel).rgb;
-    float3 I = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2( hts.x,  hts.y),    g_MipLevel).rgb;
-    float3 J = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2(-2*hts.x, 0),       g_MipLevel).rgb;
-    float3 K = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2( 2*hts.x, 0),       g_MipLevel).rgb;
-    float3 L = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2(0, -2*hts.y),       g_MipLevel).rgb;
-    float3 M = g_SrcTex.SampleLevel(g_sLinearClamp, uv + float2(0,  2*hts.y),       g_MipLevel).rgb;
-
-    float3 result = A * 0.125f
-                  + (B + C + D + E) * 0.03125f
-                  + (F + G + H + I) * 0.125f
-                  + (J + K + L + M) * 0.0625f;
-
-    g_DstTex[tid.xy] = float4(result, 1.0f);
-}
-
-// 
-// Pass 59: Upsample - tent filter (Jimenez 2014) + additive intensity blend.
-// 
-[numthreads(8, 8, 1)]
-void CS_BloomUpsample(uint3 tid : SV_DispatchThreadID)
-{
-    uint2 dims; g_DstTex.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims)) return;
-
-    float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
-    float2 ts = g_InvSrcSize;
-
-    // 3×3 tent filter (bilinear samples).
-    float3 up = float3(0,0,0);
-    [unroll(3)] for (int dy = -1; dy <= 1; ++dy)
-    [unroll(3)] for (int dx = -1; dx <= 1; ++dx)
-    {
-        float w    = (1.0f - abs(float(dx))) * (1.0f - abs(float(dy))) / 4.0f;
-        float2 t   = uv + float2(float(dx), float(dy)) * ts;
-        up        += g_SrcTex.SampleLevel(g_sLinearClamp, t, g_MipLevel).rgb * w;
-    }
-
-    float3 current = g_DstTex[tid.xy].rgb;
-    g_DstTex[tid.xy] = float4(current + up * g_Intensity, 1.0f);
+  g_BloomOut[dispatchThreadId.xy] = float4(bloom, 1.0f);
 }

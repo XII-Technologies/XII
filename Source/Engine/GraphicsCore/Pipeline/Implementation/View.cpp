@@ -44,6 +44,7 @@
 #include <Shaders/Pipeline/Passes/GlobalIllumination/ReSTIRGIConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+#include <Shaders/Pipeline/Passes/Output/BloomConstants.h>
 #include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
@@ -5429,6 +5430,7 @@ struct xiiBloomData
 
   xiiRenderGraphTextureHandle m_hHDRIn; ///< ShaderResource in (upscaled HDR input).
   xiiRenderGraphTextureHandle m_hBloom; ///< UnorderedAccess out (bloom result).
+  xiiRenderGraphBufferHandle  m_hConstants;
 };
 
 void xiiView::SetupBloom(xiiBloomData& data, xiiRenderGraphBuilder& builder)
@@ -5448,6 +5450,13 @@ void xiiView::SetupBloom(xiiBloomData& data, xiiRenderGraphBuilder& builder)
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hBloom             = builder.WriteTexture(xiiRGBlackboardKeys::k_BloomTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiBloomConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("Bloom Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_PostProcessPasses.m_pBloomPipeline, "Shaders/Pipeline/BloomChain.xiiShader");
 }
 
@@ -5459,7 +5468,13 @@ void xiiView::ExecuteBloom(const xiiBloomData& data, xiiRenderGraphPassContext& 
 
   cmd.BeginDebugGroup("Bloom");
   {
+    {
+      xiiGALMapHelper<xiiBloomConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->BloomParameters = xiiVec4(m_DisplayOutputSettings.m_fBloomThreshold, m_DisplayOutputSettings.m_fBloomKnee, m_DisplayOutputSettings.m_fBloomRadius, 0.0f);
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_PostProcessPasses.m_pBloomPipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiBloomConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_BloomOut", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();

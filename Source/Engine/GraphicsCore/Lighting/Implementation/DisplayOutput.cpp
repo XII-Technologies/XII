@@ -74,6 +74,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDisplayOutputSettings, xiiNoBase, 1, xiiRTTID
     XII_ENUM_MEMBER_PROPERTY("ToneMappingOperator", xiiToneMappingOperator, m_ToneMappingOperator),
     XII_ENUM_MEMBER_PROPERTY("OutputMode", xiiDisplayOutputMode, m_OutputMode),
     XII_MEMBER_PROPERTY("BloomStrength", m_fBloomStrength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("BloomThreshold", m_fBloomThreshold)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("BloomKnee", m_fBloomKnee)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("BloomRadius", m_fBloomRadius)->AddAttributes(new xiiClampValueAttribute(0.0f, 8.0f), new xiiSuffixAttribute(" px")),
     XII_MEMBER_PROPERTY("PaperWhiteNits", m_fPaperWhiteNits)->AddAttributes(new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" nit")),
     XII_MEMBER_PROPERTY("MaximumDisplayNits", m_fMaximumDisplayNits)->AddAttributes(new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" nit")),
   }
@@ -106,6 +109,9 @@ bool xiiDisplayOutputManager::IsValid(const xiiDisplayOutputSettings& settings)
          settings.m_ToneMappingOperator.GetValue() < xiiToneMappingOperator::ENUM_COUNT &&
          settings.m_OutputMode.GetValue() < xiiDisplayOutputMode::ENUM_COUNT &&
          xiiMath::IsFinite(settings.m_fBloomStrength) && settings.m_fBloomStrength >= 0.0f &&
+         xiiMath::IsFinite(settings.m_fBloomThreshold) && settings.m_fBloomThreshold >= 0.0f &&
+         xiiMath::IsFinite(settings.m_fBloomKnee) && settings.m_fBloomKnee >= 0.0f &&
+         xiiMath::IsFinite(settings.m_fBloomRadius) && settings.m_fBloomRadius >= 0.0f && settings.m_fBloomRadius <= 8.0f &&
          xiiMath::IsFinite(settings.m_fPaperWhiteNits) && settings.m_fPaperWhiteNits > 0.0f &&
          xiiMath::IsFinite(settings.m_fMaximumDisplayNits) && settings.m_fMaximumDisplayNits >= settings.m_fPaperWhiteNits;
 }

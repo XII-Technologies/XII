@@ -41,6 +41,10 @@ XII_CREATE_SIMPLE_TEST(Lighting, DisplayOutput)
     invalid = xiiDisplayOutputManager::GetDefaults();
     invalid.m_Exposure.m_fLowPercentile = invalid.m_Exposure.m_fHighPercentile;
     XII_TEST_BOOL(!xiiDisplayOutputManager::IsValid(invalid));
+
+    invalid = xiiDisplayOutputManager::GetDefaults();
+    invalid.m_fBloomRadius = 9.0f;
+    XII_TEST_BOOL(!xiiDisplayOutputManager::IsValid(invalid));
   }
 }
 

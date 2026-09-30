@@ -93,6 +93,9 @@ struct XII_GRAPHICSCORE_DLL xiiDisplayOutputSettings
   xiiEnum<xiiDisplayOutputMode>     m_OutputMode;
 
   float m_fBloomStrength       = 0.05f;
+  float m_fBloomThreshold      = 1.0f;
+  float m_fBloomKnee           = 0.5f;
+  float m_fBloomRadius         = 1.0f;
   float m_fPaperWhiteNits      = 203.0f;
   float m_fMaximumDisplayNits  = 1000.0f;
 };
