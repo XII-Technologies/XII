@@ -40,6 +40,10 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCameraUsageHint, 1U)
   XII_ENUM_CONSTANT(xiiCameraUsageHint::PathTracingView),
   XII_ENUM_CONSTANT(xiiCameraUsageHint::ComputeView),
   XII_ENUM_CONSTANT(xiiCameraUsageHint::LowFrequencyView),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::SensorRGB),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::SensorInfrared),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::SensorDepth),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::SensorLiDAR),
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewRenderMode, 1U)
