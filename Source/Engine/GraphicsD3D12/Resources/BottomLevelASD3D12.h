@@ -16,6 +16,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE ID3D12Resource*    GetD3D12Resource() const { return m_pD3D12Resource; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiD3D12Allocation GetAllocationDescription() const { return m_ResourceAllocation; }
   [[nodiscard]] xiiUInt64                            GetD3D12GPUVirtualAddress() const;
+  [[nodiscard]] virtual xiiUInt64                    GetDeviceAddress() const override final { return GetD3D12GPUVirtualAddress(); }
 
 protected:
   friend class xiiGALDeviceD3D12;

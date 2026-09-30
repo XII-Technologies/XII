@@ -26,6 +26,84 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALHitGroupBindingMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALHitGroupBindingMode);
 
+/// Portable ray tracing instance flags. Vulkan and D3D12 intentionally assign
+/// identical bit values to these four semantics.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingInstanceFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None                       = 0U,
+    TriangleCullDisable        = XII_BIT(0),
+    TriangleFrontCounterClockwise = XII_BIT(1),
+    ForceOpaque                = XII_BIT(2),
+    ForceNonOpaque             = XII_BIT(3),
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType TriangleCullDisable : 1;
+    StorageType TriangleFrontCounterClockwise : 1;
+    StorageType ForceOpaque : 1;
+    StorageType ForceNonOpaque : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingInstanceFlags);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingInstanceFlags);
+
+/// Backend-independent 64-byte TLAS instance record.
+///
+/// Its binary layout matches VkAccelerationStructureInstanceKHR and
+/// D3D12_RAYTRACING_INSTANCE_DESC: row-major float3x4 transform, two packed
+/// 24:8 words, and the BLAS device address. This lets GraphicsCore stream one
+/// instance buffer on both backends without including native API headers.
+struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
+{
+  XII_DECLARE_POD_TYPE();
+
+  [[nodiscard]] xiiMat4 GetTransform() const;
+  void                  SetTransform(xiiMat4 transform);
+
+  [[nodiscard]] xiiUInt32 GetInstanceID() const { return m_uiInstanceIDAndMask & 0x00FFFFFFU; }
+  void                    SetInstanceID(xiiUInt32 uiInstanceID);
+
+  [[nodiscard]] xiiUInt8 GetMask() const { return static_cast<xiiUInt8>(m_uiInstanceIDAndMask >> 24U); }
+  void                   SetMask(xiiUInt8 uiMask);
+
+  [[nodiscard]] xiiUInt32 GetHitGroupContribution() const { return m_uiHitGroupContributionAndFlags & 0x00FFFFFFU; }
+  void                    SetHitGroupContribution(xiiUInt32 uiContribution);
+
+  [[nodiscard]] xiiBitflags<xiiGALRayTracingInstanceFlags> GetFlags() const
+  {
+    xiiBitflags<xiiGALRayTracingInstanceFlags> flags;
+    flags.SetValue(static_cast<xiiUInt8>(m_uiHitGroupContributionAndFlags >> 24U));
+    return flags;
+  }
+  void                                                     SetFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags);
+  [[nodiscard]] xiiUInt8                                   GetFlagsValue() const { return GetFlags().GetValue(); }
+  void                                                     SetFlagsValue(xiiUInt8 uiFlags)
+  {
+    xiiBitflags<xiiGALRayTracingInstanceFlags> flags;
+    flags.SetValue(uiFlags);
+    SetFlags(flags);
+  }
+
+  xiiVec4   m_TransformRow0 = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
+  xiiVec4   m_TransformRow1 = xiiVec4(0.0f, 1.0f, 0.0f, 0.0f);
+  xiiVec4   m_TransformRow2 = xiiVec4(0.0f, 0.0f, 1.0f, 0.0f);
+  xiiUInt32 m_uiInstanceIDAndMask              = 0xFF000000U;
+  xiiUInt32 m_uiHitGroupContributionAndFlags   = 0U;
+  xiiUInt64 m_uiBottomLevelASDeviceAddress     = 0U;
+};
+
+static_assert(sizeof(xiiGALTLASInstanceData) == 64U, "TLAS instance records must match the native Vulkan and D3D12 ABI.");
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTLASInstanceData);
+
 /// This describes the top level acceleration state that was used in the last build.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelASBuildDescription : public xiiHashableStruct<xiiGALTopLevelASBuildDescription>
 {

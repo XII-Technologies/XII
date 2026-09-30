@@ -14,6 +14,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::AccelerationStructureKHR GetVulkanAccelerationStructure() const { return m_vkAccelerationStructure; }
   [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer GetVulkanBuffer() const { return m_vkBuffer; }
   [[nodiscard]] vk::DeviceAddress            GetVulkanDeviceAddress() const;
+  [[nodiscard]] virtual xiiUInt64             GetDeviceAddress() const override final { return static_cast<xiiUInt64>(GetVulkanDeviceAddress()); }
 
 protected:
   friend class xiiGALDeviceVulkan;
