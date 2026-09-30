@@ -21,7 +21,6 @@ struct InstanceBounds
   float4 Extents;
 };
 
-StructuredBuffer<uint> g_VisibleIn; // [0] = count, [1..] = packet indices.
 StructuredBuffer<InstanceUpdateSource> g_InstanceSource;
 RWStructuredBuffer<Transform> g_MatricesOut;
 RWStructuredBuffer<InstanceBounds> g_BoundsOut;
@@ -29,12 +28,7 @@ RWStructuredBuffer<InstanceBounds> g_BoundsOut;
 [numthreads(64, 1, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-  const uint visibleIndex = dispatchThreadId.x;
-  const uint visibleCount = min(g_VisibleIn[0], InstanceCount);
-  if (visibleIndex >= visibleCount)
-    return;
-
-  const uint instanceIndex = g_VisibleIn[visibleIndex + 1u];
+  const uint instanceIndex = dispatchThreadId.x;
   if (instanceIndex >= InstanceCount)
     return;
 

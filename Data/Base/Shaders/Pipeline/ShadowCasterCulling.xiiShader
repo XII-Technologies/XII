@@ -1,67 +1,78 @@
+// Builds a global local-light caster stream and four cascade-culled command streams.
 [PLATFORMS]
 ALL
 
 [PERMUTATIONS]
 
-[COMPUTESHADER]
+[COMPUTE_SHADER]
 
-StructuredBuffer<float4> GpuSceneBounds;
-StructuredBuffer<float4> ShadowCascadeData;
-RWStructuredBuffer<uint> ShadowVisibleList;
-RWStructuredBuffer<uint> ShadowVisibleCount;
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/Visibility/ShadowCasterCullingConstants.h>
+
+struct DrawIndexedIndirectCommand
+{
+  uint IndexCountPerInstance;
+  uint InstanceCount;
+  uint StartIndexLocation;
+  int BaseVertexLocation;
+  uint StartInstanceLocation;
+};
+
+struct InstanceBounds
+{
+  float4 CenterRadius;
+  float4 Extents;
+};
+
+StructuredBuffer<DrawIndexedIndirectCommand> g_SourceCommands;
+StructuredBuffer<InstanceBounds> g_InstanceBounds;
+RWStructuredBuffer<DrawIndexedIndirectCommand> g_ShadowDrawArgs;
+RWStructuredBuffer<uint> g_ShadowDrawCounts; // Global block, then four cascade blocks.
+
+bool IntersectsCascade(InstanceBounds bounds, uint cascadeIndex)
+{
+  const float4x4 viewProjection = CascadeViewProjection[cascadeIndex];
+  const float4 clipCenter = mul(viewProjection, float4(bounds.CenterRadius.xyz, 1.0f));
+  const float radius = max(bounds.CenterRadius.w, 0.0f);
+
+  const float radiusX = radius * length(float3(viewProjection[0][0], viewProjection[0][1], viewProjection[0][2]));
+  const float radiusY = radius * length(float3(viewProjection[1][0], viewProjection[1][1], viewProjection[1][2]));
+  const float radiusZ = radius * length(float3(viewProjection[2][0], viewProjection[2][1], viewProjection[2][2]));
+
+  return clipCenter.x + radiusX >= -clipCenter.w &&
+         clipCenter.x - radiusX <= clipCenter.w &&
+         clipCenter.y + radiusY >= -clipCenter.w &&
+         clipCenter.y - radiusY <= clipCenter.w &&
+         clipCenter.z + radiusZ >= 0.0f &&
+         clipCenter.z - radiusZ <= clipCenter.w;
+}
+
+void AppendCommand(uint blockIndex, DrawIndexedIndirectCommand command)
+{
+  uint destination;
+  InterlockedAdd(g_ShadowDrawCounts[blockIndex], 1u, destination);
+  if (destination < MaxCommandCount)
+    g_ShadowDrawArgs[blockIndex * MaxCommandCount + destination] = command;
+}
 
 [numthreads(64, 1, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
   const uint instanceIndex = dispatchThreadId.x;
-
-  if (instanceIndex == 0)
-  {
-    [unroll]
-    for (uint cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex)
-    {
-      if (cascadeIndex < ShadowVisibleCount.Length)
-      {
-        ShadowVisibleCount[cascadeIndex] = 0;
-      }
-    }
-  }
-
-  const uint instanceCount = GpuSceneBounds.Length;
-
-  if (instanceIndex >= instanceCount || ShadowVisibleList.Length == 0 || ShadowVisibleCount.Length < 4 || ShadowCascadeData.Length < 8)
-  {
+  if (instanceIndex >= InstanceCount || MaxCommandCount == 0u)
     return;
-  }
 
-  const float4 bounds = GpuSceneBounds[instanceIndex];
-  const float3 center = bounds.xyz;
-  const float  radius = max(bounds.w, 0.001f);
-  const float  centerDistance = length(center);
+  const DrawIndexedIndirectCommand command = g_SourceCommands[instanceIndex];
+  if (command.IndexCountPerInstance == 0u || command.InstanceCount == 0u)
+    return;
 
+  AppendCommand(0u, command);
+
+  const InstanceBounds bounds = g_InstanceBounds[instanceIndex];
   [unroll]
-  for (uint cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex)
+  for (uint cascadeIndex = 0u; cascadeIndex < 4u; ++cascadeIndex)
   {
-    const float4 cascadeSplit = ShadowCascadeData[cascadeIndex * 2 + 0];
-
-    const float splitNear = max(cascadeSplit.x, 0.0f);
-    const float splitFar  = max(cascadeSplit.y, splitNear + 0.001f);
-
-    const bool intersectsCascade = (centerDistance + radius) >= splitNear && (centerDistance - radius) <= splitFar;
-    if (!intersectsCascade)
-    {
-      continue;
-    }
-
-    uint visibleWriteIndex = 0;
-    InterlockedAdd(ShadowVisibleCount[cascadeIndex], 1, visibleWriteIndex);
-
-    const uint cascadeBaseIndex = cascadeIndex * instanceCount;
-    const uint listIndex        = cascadeBaseIndex + visibleWriteIndex;
-
-    if (listIndex < ShadowVisibleList.Length)
-    {
-      ShadowVisibleList[listIndex] = (cascadeIndex << 24) | (instanceIndex & 0x00FFFFFFu);
-    }
+    if (cascadeIndex < CullingActiveCascadeCount && IntersectsCascade(bounds, cascadeIndex))
+      AppendCommand(cascadeIndex + 1u, command);
   }
 }

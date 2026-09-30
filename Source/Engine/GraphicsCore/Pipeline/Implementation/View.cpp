@@ -57,6 +57,7 @@
 #include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/InstanceUpdateConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/LODSelectionConstants.h>
+#include <Shaders/Pipeline/Passes/Visibility/ShadowCasterCullingConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
@@ -66,8 +67,7 @@ xiiCVarFloat cvar_DynamicRenderingMaxScale("Rendering.DynamicResolution.MaximumR
 namespace
 {
   // Shared constants (sizes of persistent GPU buffers, aligned to typical instance budgets)
-  static constexpr xiiUInt32 k_uiMaxInstances    = 65536U; ///< The maximum number of drawable objects in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
-  static constexpr xiiUInt32 k_uiMaxMaterialBins = 512U;   ///< The maximum number of distinct (mesh x material) draw bins in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
+  static constexpr xiiUInt32 k_uiMaxInstances = 65536U; ///< The maximum number of drawable objects in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
 
   static constexpr xiiUInt32 k_uiDirectionalShadowAtlasWidth  = 4096U; ///< The width of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The height will be the same as the width, and each cascade will be allocated a quadrant of the atlas.
   static constexpr xiiUInt32 k_uiDirectionalShadowAtlasHeight = 4096U; ///< The height of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The width will be the same as the height, and each cascade will be allocated a quadrant of the atlas.
@@ -99,6 +99,14 @@ namespace
     const bool bHasDrawCommandCapacity = blackboard.TryGet(xiiRGBlackboardKeys::k_DrawCommandCapacity, uiDrawCommandCapacity);
     XII_IGNORE_UNUSED(bHasDrawCommandCapacity);
     return uiDrawCommandCapacity;
+  }
+
+  static xiiUInt32 GetShadowCommandCapacity(const xiiRenderGraphBlackboard& blackboard)
+  {
+    xiiUInt32 uiShadowCommandCapacity = 0U;
+    const bool bHasShadowCommandCapacity = blackboard.TryGet(xiiRGBlackboardKeys::k_ShadowCommandCapacity, uiShadowCommandCapacity);
+    XII_IGNORE_UNUSED(bHasShadowCommandCapacity);
+    return uiShadowCommandCapacity;
   }
 
   static const xiiDirectionalLightRenderData* SelectMainDirectionalLight(const xiiArrayPtr<xiiRenderData* const>& renderData)
@@ -790,7 +798,6 @@ static_assert(sizeof(xiiInstanceUpdateSource) == 80U);
 
 struct xiiInstanceUpdateData
 {
-  xiiRenderGraphBufferHandle m_hVisibleCandidates; ///< SRV in ([0]=count, [1..]=visible packet indices).
   xiiRenderGraphBufferHandle m_hInstanceSource;    ///< SRV in (current extracted transform and bounds).
   xiiRenderGraphBufferHandle m_hInstanceMatrices;  ///< UAV out (world transforms indexed by packet index).
   xiiRenderGraphBufferHandle m_hInstanceBoundsOut; ///< UAV out (world bounds indexed by packet index).
@@ -803,8 +810,6 @@ struct xiiInstanceUpdateData
 
 void xiiView::SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hVisibleCandidates = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
-
   xiiUInt32 uiExtractedMeshCount = 0U;
   const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, uiExtractedMeshCount);
   XII_IGNORE_UNUSED(bHasExtractedMeshCount);
@@ -893,7 +898,6 @@ void xiiView::ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRender
 
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pInstanceUpdatePipeline);
     cmd.ResolveAndSetConstantBuffer("xiiInstanceUpdateConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_VisibleIn", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_InstanceSource", context.GetBuffer(data.m_hInstanceSource)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_MatricesOut", context.GetBuffer(data.m_hInstanceMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_BoundsOut", context.GetBuffer(data.m_hInstanceBoundsOut)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -975,7 +979,7 @@ void xiiView::SetupDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& buil
   sourceDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
   sourceDescription.m_Mode                = xiiGALBufferMode::Structured;
   sourceDescription.m_Usage               = xiiGALResourceUsage::Default;
-  data.m_hSourceCommands                  = builder.WriteBuffer("ExtractedDrawCommands", sourceDescription, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSourceCommands                  = builder.WriteBuffer(xiiRGBlackboardKeys::k_ExtractedDrawCommands, sourceDescription, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription commandDescription;
   commandDescription.m_uiElementByteStride = sizeof(xiiExtractedDrawCommand);
@@ -1046,29 +1050,56 @@ void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassC
 
 ////////// GPU Shadow Caster List Build //////////
 //
-// Builds a list of shadow-casting instances for the current frame on the GPU, using the visible instance list from the current frame's Frustum Culling pass.
-// This is a compute pass that writes out a compact list of shadow-casting instance indices for the current frame, which is then consumed by the Shadow Passes.
+// Builds one global caster command block for local lights and one culled block per cascade.
 
 struct xiiShadowCasterBuildData
 {
-  XII_DECLARE_POD_TYPE();
+  xiiRenderGraphBufferHandle m_hSourceCommands;
+  xiiRenderGraphBufferHandle m_hInstanceBounds;
+  xiiRenderGraphBufferHandle m_hCascadeConstants;
+  xiiRenderGraphBufferHandle m_hShadowCasterCommands;
+  xiiRenderGraphBufferHandle m_hShadowCasterCounts;
+  xiiRenderGraphBufferHandle m_hConstants;
 
-  xiiRenderGraphBufferHandle m_hVisibleCandidates;    ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
-  xiiRenderGraphBufferHandle m_hShadowCasterCommands; ///< UAV out (structured buffer of uint, [0]=count, [1..]=indices of shadow-casting instances for current frame, consumed by Shadow Passes).
+  xiiShadowCasterCullingConstants m_Constants       = {};
+  xiiUInt32                       m_uiInstanceCount = 0U;
 };
 
 void xiiView::SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hVisibleCandidates = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSourceCommands   = builder.ReadBuffer(xiiRGBlackboardKeys::k_ExtractedDrawCommands, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceBounds   = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hCascadeConstants = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
+
+  const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, data.m_uiInstanceCount);
+  XII_IGNORE_UNUSED(bHasExtractedMeshCount);
+  data.m_Constants.InstanceCount             = data.m_uiInstanceCount;
+  data.m_Constants.MaxCommandCount           = data.m_uiInstanceCount;
+  data.m_Constants.CullingActiveCascadeCount = m_ViewPassResources.m_ShadowPasses.m_uiActiveCascadeCount;
+  GetBlackboard().Set(xiiRGBlackboardKeys::k_ShadowCommandCapacity, data.m_uiInstanceCount);
 
   xiiGALBufferCreationDescription description;
-  description.m_uiElementByteStride = 20U;                                                          // DrawIndexedIndirectArguments per cascade-per-bin
-  description.m_uiSize              = description.m_uiElementByteStride * k_uiMaxMaterialBins * 4U; // 4 cascades
+  description.m_uiElementByteStride = sizeof(xiiExtractedDrawCommand);
+  description.m_uiSize              = description.m_uiElementByteStride * xiiMath::Max(1U, data.m_uiInstanceCount) * 5U; // Global block followed by four cascade blocks.
   description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
-  description.m_Mode                = xiiGALBufferMode::Formatted;
+  description.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hShadowCasterCommands      = builder.WriteBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, description, xiiGALResourceStateFlags::UnorderedAccess);
 
+  description.m_uiElementByteStride = sizeof(xiiUInt32);
+  description.m_uiSize              = sizeof(xiiUInt32) * 5U;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  data.m_hShadowCasterCounts        = builder.WriteBuffer("ShadowCasterCommandCounts", description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiShadowCasterCullingConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("xiiShadowCasterCullingConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pShadowCasterBuildPipeline, "Shaders/Pipeline/ShadowCasterCulling.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xiiRenderGraphPassContext& context)
@@ -1077,11 +1108,36 @@ void xiiView::ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xii
 
   cmd.BeginDebugGroup("ShadowCasterListBuild");
   {
+    xiiDynamicArray<xiiExtractedDrawCommand> zeroCommands;
+    zeroCommands.SetCount(xiiMath::Max(1U, data.m_uiInstanceCount) * 5U);
+    xiiMemoryUtils::ZeroFill(zeroCommands.GetData(), zeroCommands.GetCount());
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hShadowCasterCommands), 0U,
+      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+
+    xiiUInt32 zeroCounts[5] = {};
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hShadowCasterCounts), 0U,
+      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCounts), sizeof(zeroCounts)));
+
+    if (data.m_uiInstanceCount == 0U)
+    {
+      cmd.EndDebugGroup();
+      return;
+    }
+
+    {
+      xiiGALMapHelper<xiiShadowCasterCullingConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *pConstants = data.m_Constants;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pShadowCasterBuildPipeline);
-    cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiShadowCasterCullingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hCascadeConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_SourceCommands", context.GetBuffer(data.m_hSourceCommands)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_InstanceBounds", context.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_ShadowDrawArgs", context.GetBuffer(data.m_hShadowCasterCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_ShadowDrawCounts", context.GetBuffer(data.m_hShadowCasterCounts)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(k_uiMaxInstances + 63u) / 64u, 1u, 1u});
+    cmd.DispatchCompute({(data.m_uiInstanceCount + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1676,9 +1732,10 @@ void xiiView::ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data,
         xiiGALDrawIndexedIndirectDescription indexedIndirectDrawDescription;
         indexedIndirectDrawDescription.m_IndexType             = xiiGALValueType::UInt32;
         indexedIndirectDrawDescription.m_pBuffer               = context.GetBuffer(data.m_hShadowCasterCommands);
-        indexedIndirectDrawDescription.m_uiDrawArgumentOffset  = uiCascade * 20U; // offset per cascade DrawIndexedIndirectArguments (uint index count, uint instance count, uint start index location, int base vertex location, uint start instance location).
+        const xiiUInt32 uiShadowCommandCapacity = GetShadowCommandCapacity(GetBlackboard());
+        indexedIndirectDrawDescription.m_uiDrawArgumentOffset  = static_cast<xiiUInt64>(uiCascade + 1U) * uiShadowCommandCapacity * sizeof(xiiExtractedDrawCommand);
         indexedIndirectDrawDescription.m_uiDrawArgumentStride  = 20U;             // stride per cascade DrawIndexedIndirectArguments (uint index count, uint instance count, uint start index location, int base vertex location, uint start instance location).
-        indexedIndirectDrawDescription.m_uiDrawCount           = 1U;              // one draw call per cascade, with instance count in argument buffer specifying how many instances to draw for that cascade.
+        indexedIndirectDrawDescription.m_uiDrawCount           = uiShadowCommandCapacity;
         indexedIndirectDrawDescription.m_BufferStateTransition = xiiGALStateTransitionMode::Transition;
 
         // Cascade index uploaded via push constant / cbuffer update.
@@ -1745,7 +1802,7 @@ void xiiView::ExecuteSpotShadowData(const xiiSpotShadowData& data, xiiRenderGrap
     cmd.ClearDepthStencilView(pAtlas->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
     cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline);
     cmd.SetViewport({0.0f, 0.0f, static_cast<float>(k_uiLocalShadowAtlasSize), static_cast<float>(k_uiLocalShadowAtlasSize), 0.0f, 1.0f});
-    cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hShadowCasterCommands)}); // // Indirect multi-draw from shadow caster argument buffer.
+    cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hShadowCasterCommands), GetShadowCommandCapacity(GetBlackboard())});
   }
   cmd.EndDebugGroup();
 }
@@ -1804,7 +1861,7 @@ void xiiView::ExecutePointShadowData(const xiiPointShadowData& data, xiiRenderGr
     // Each point light: 6 draw calls placing results into 6 atlas tiles.
     for (xiiUInt32 uiFace = 0; uiFace < data.m_uiPointLightCount * 6U; ++uiFace)
     {
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hShadowCasterCommands), 1U, uiFace * 20U});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hShadowCasterCommands), GetShadowCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -6035,9 +6092,8 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiView::ExecuteOcclusionReadback, this));
   graph.AddPass<xiiFrustumCullData>("FrustumCulling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFrustumCull, this), xiiMakeDelegate(&xiiView::ExecuteFrustumCull, this));
   graph.AddPass<xiiLODSelectData>("LODSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLODSelect, this), xiiMakeDelegate(&xiiView::ExecuteLODSelect, this));
-  graph.AddPass<xiiDrawBuildData>("DrawCommandBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDrawBuild, this), xiiMakeDelegate(&xiiView::ExecuteDrawBuild, this));
-  graph.AddPass<xiiShadowCasterBuildData>("ShadowCasterListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCasterBuild, this), xiiMakeDelegate(&xiiView::ExecuteShadowCasterBuild, this));
   graph.AddPass<xiiInstanceUpdateData>("InstanceUpdate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupInstanceUpdate, this), xiiMakeDelegate(&xiiView::ExecuteInstanceUpdate, this));
+  graph.AddPass<xiiDrawBuildData>("DrawCommandBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDrawBuild, this), xiiMakeDelegate(&xiiView::ExecuteDrawBuild, this));
   graph.AddPass<xiiClusterBuildData>("ClusterGridBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupClusterBuild, this), xiiMakeDelegate(&xiiView::ExecuteClusterBuild, this));
   graph.AddPass<xiiLightListClearData>("LightListClear", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListClear, this), xiiMakeDelegate(&xiiView::ExecuteLightListClear, this));
   graph.AddPass<xiiLightListData>("LightListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListBuild, this), xiiMakeDelegate(&xiiView::ExecuteLightListBuild, this));
@@ -6046,6 +6102,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
   auto shadowCascadePass = graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiView::ExecuteShadowCascadeSetup, this));
+  graph.AddPass<xiiShadowCasterBuildData>("ShadowCasterListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCasterBuild, this), xiiMakeDelegate(&xiiView::ExecuteShadowCasterBuild, this));
   graph.AddPass<xiiLocalShadowAtlasAllocationData>("LocalShadowAtlasAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLocalShadowAtlasAllocation, this), xiiMakeDelegate(&xiiView::ExecuteLocalShadowAtlasAllocation, this));
   graph.AddPass<xiiDirectionalShadowData>("DirectionalShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDirectionalShadowData, this), xiiMakeDelegate(&xiiView::ExecuteDirectionalShadowData, this));
   graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupSpotShadowData, this), xiiMakeDelegate(&xiiView::ExecuteSpotShadowData, this));
