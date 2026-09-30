@@ -244,9 +244,12 @@ xiiString xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnu
     case xiiGALShaderType::RayIntersection:
     case xiiGALShaderType::Callable:
     {
-      if (szMajor >= '6' && szMinor >= '3')
+      if (szMajor >= '6')
       {
-        sb.SetFormat("{}_{}_{}", "lib", xiiArgC(szMajor), xiiArgC(szMinor));
+        // Ray-tracing stages require SM 6.3, but the renderer-wide platform baseline may
+        // intentionally remain VK_SM60. Raise only the ray library profile instead of
+        // silently omitting otherwise supported stages.
+        sb.SetFormat("{}_{}_{}", "lib", xiiArgC(szMajor), xiiArgC(xiiMath::Max(szMinor, '3')));
       }
     }
     break;
