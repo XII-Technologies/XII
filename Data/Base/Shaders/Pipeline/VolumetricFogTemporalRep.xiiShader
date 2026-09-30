@@ -1,61 +1,104 @@
-// XII Engine - VolumetricFogTemporalRep.xiiShader
-// Stage 6: Blend current froxel scattering volume with persistent history.
-// Dispatch: 16 × 9 × 8 (froxel grid 128×72×64, each thread handles one froxel column slice).
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+// Motion-aware temporal accumulation of the integrated volumetric signal. History is kept at
+// render resolution because integration has already collapsed the froxel depth axis.
 
 #include "PipelineCommon.xiiShader"
+#include "Passes/Denoising/TemporalDenoiseConstants.h"
 
-cbuffer VolumetricTemporalConstants : register(b3)
+Texture2D<float4>   g_FroxelCurrent  : register(t4);
+Texture2D<float4>   g_FroxelHistory  : register(t5);
+Texture2D<float>    g_SceneDepth     : register(t6);
+Texture2D<float2>   g_GBufferNormal  : register(t7);
+Texture2D<float2>   g_Velocity       : register(t8);
+Texture2D<float4>   g_PreviousSurface : register(t9);
+RWTexture2D<float4> g_FroxelBlended  : register(u10);
+
+float4 LoadCurrent(int2 pixel, uint2 dimensions)
 {
-    float4x4 g_PrevViewProjection; // reprojection matrix for history lookup
-    float    g_TemporalBlend;       // 0.1 = 10% new, 90% history
-    float    g_FrustumNear;
-    float    g_FrustumFar;
-    float    _pad;
-};
-
-Texture3D<float4>   g_FroxelHistory    : register(t0); // previous-frame accumulated volume
-RWTexture3D<float4> g_FroxelBlended    : register(u0); // in-out: current frame integrate, output
-
-// Linear depth to froxel Z slice (exponential distribution).
-float DepthToFroxelZ(float linearDepth, float near, float far, float numSlices)
-{
-    return log2(linearDepth / near) / log2(far / near) * numSlices;
+  return g_FroxelCurrent.Load(int3(clamp(pixel, int2(0, 0), int2(dimensions) - 1), 0));
 }
 
 [numthreads(8, 8, 1)]
-void CS_VolumetricFogTemporalRep(uint3 tid : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    uint3 dims;
-    g_FroxelBlended.GetDimensions(dims.x, dims.y, dims.z);
-    if (any(tid >= dims)) return;
+  uint2 dimensions;
+  g_FroxelBlended.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
 
-    // Current frame froxel data (already integrated by VolumetricLightIntegration).
-    float4 curr = g_FroxelBlended[tid];
+  const uint2 pixel = dispatchThreadId.xy;
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  float4 current = LoadCurrent(int2(pixel), dimensions);
 
-    // Compute froxel world-space centre for reprojection.
-    float3 uvw = (float3(tid) + 0.5f) / float3(dims);
+  float4 localMinimum = current;
+  float4 localMaximum = current;
+  float4 spatialSum = current;
+  float spatialSamples = 1.0f;
+  const float3 normal = depth > 0.0f ? DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0))) : float3(0.0f, 0.0f, 1.0f);
+  const float linearDepth = depth > 0.0f ? LinearizeDepth(depth) : 0.0f;
 
-    // Exponential froxel depth.
-    float linDepth = g_FrustumNear * pow(g_FrustumFar / g_FrustumNear, uvw.z);
+  [unroll]
+  for (int y = -1; y <= 1; ++y)
+  {
+    [unroll]
+    for (int x = -1; x <= 1; ++x)
+    {
+      if (x == 0 && y == 0)
+        continue;
 
-    // NDC xy for this froxel at screen UV.
-    float2 ndc = uvw.xy * 2.0f - 1.0f;
-    float4 worldPos4 = mul(g_InverseViewProjectionMatrix, float4(ndc, 0.5f /* mid-depth */, 1.0f));
-    float3 worldPos  = worldPos4.xyz / worldPos4.w;
+      const int2 samplePixel = clamp(int2(pixel) + int2(x, y), int2(0, 0), int2(dimensions) - 1);
+      const float sampleDepth = g_SceneDepth.Load(int3(samplePixel, 0));
+      if ((depth > 0.0f) != (sampleDepth > 0.0f))
+        continue;
 
-    // Reproject to previous frame.
-    float4 prevClip = mul(g_PrevViewProjection, float4(worldPos, 1.0f));
-    prevClip.xyz /= prevClip.w;
-    float3 prevUVW = float3(prevClip.xy * 0.5f + 0.5f,
-                            DepthToFroxelZ(linDepth, g_FrustumNear, g_FrustumFar, float(dims.z)) / float(dims.z));
+      if (depth > 0.0f)
+      {
+        const float sampleLinearDepth = LinearizeDepth(sampleDepth);
+        const float3 sampleNormal = DecodeOctNormal(g_GBufferNormal.Load(int3(samplePixel, 0)));
+        if (abs(sampleLinearDepth - linearDepth) > max(linearDepth * DepthThreshold, 0.01f) || dot(sampleNormal, normal) < NormalThreshold)
+          continue;
+      }
 
-    // Boundary check (discard history outside frustum).
-    bool valid = all(prevUVW >= 0.0f) && all(prevUVW <= 1.0f);
+      const float4 sample = LoadCurrent(samplePixel, dimensions);
+      localMinimum = min(localMinimum, sample);
+      localMaximum = max(localMaximum, sample);
+      spatialSum += sample;
+      spatialSamples += 1.0f;
+    }
+  }
 
-    float4 history = valid ? g_FroxelHistory.SampleLevel(g_sLinearClamp, prevUVW, 0) : curr;
+  current = lerp(current, spatialSum / spatialSamples, saturate(SpatialWeight));
+  if (HistoryValid == 0U || depth <= 0.0f)
+  {
+    g_FroxelBlended[pixel] = current;
+    return;
+  }
 
-    // Temporal blend.
-    float4 blended = lerp(history, curr, saturate(g_TemporalBlend));
+  const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+  const float2 velocity = g_Velocity.Load(int3(pixel, 0));
+  const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
+  if (any(previousUV <= 0.0f) || any(previousUV >= 1.0f))
+  {
+    g_FroxelBlended[pixel] = current;
+    return;
+  }
 
-    g_FroxelBlended[tid] = blended;
+  const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
+  const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
+  const float3 previousNormal = DecodeOctNormal(previousSurface.xy);
+  const bool surfaceMatches = previousSurface.w > 0.0f &&
+    abs(previousSurface.z - linearDepth) <= max(linearDepth * DepthThreshold, 0.01f) &&
+    dot(previousNormal, normal) >= NormalThreshold;
+  if (!surfaceMatches)
+  {
+    g_FroxelBlended[pixel] = current;
+    return;
+  }
+
+  const float4 history = clamp(g_FroxelHistory.Load(int3(previousPixel, 0)), localMinimum, localMaximum);
+  g_FroxelBlended[pixel] = lerp(current, history, saturate(HistoryWeight));
 }

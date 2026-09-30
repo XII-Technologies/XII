@@ -3790,7 +3790,7 @@ void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& dat
   description.m_uiMipLevels    = 1U;
   description.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage          = xiiGALResourceUsage::Default;
-  data.m_hVolumetricScattering = builder.WriteTexture(xiiRGBlackboardKeys::k_VolumetricScattering, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hVolumetricScattering = builder.WriteTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pVolumetricIntegratePipeline, "Shaders/Pipeline/VolumetricLightIntegration.xiiShader");
 }
@@ -3822,32 +3822,42 @@ struct xiiVolumetricFogTemporalReprojectionData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hFroxelHistory;        ///< ShaderResource in (history froxel volume from previous frame).
-  xiiRenderGraphTextureHandle m_hVolumetricScattering; ///< UnorderedAccess in/out (current volumetric scattering buffer).
+  xiiRenderGraphTextureHandle m_hCurrentScattering;    ///< ShaderResource in (current integrated scattering).
+  xiiRenderGraphTextureHandle m_hPreviousScattering;   ///< ShaderResource in (previous temporally filtered scattering).
+  xiiRenderGraphTextureHandle m_hSceneDepth;
+  xiiRenderGraphTextureHandle m_hGBufferNormal;
+  xiiRenderGraphTextureHandle m_hVelocity;
+  xiiRenderGraphTextureHandle m_hPreviousSurface;
+  xiiRenderGraphTextureHandle m_hVolumetricScattering; ///< UnorderedAccess out (current persistent history and final signal).
+  xiiRenderGraphBufferHandle  m_hConstants;
+  bool                         m_bHistoryValid = false;
 };
 
 void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphBuilder& builder)
 {
-  if (m_ViewPassResources.m_LightingPasses.m_pFroxelHistoryBuffer == nullptr)
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type               = xiiGALResourceDimension::Texture3D;
-    description.m_Format             = xiiGALResourceFormat::RGBA16Float;
-    description.m_Size.width         = GetRenderResolutionWidth();
-    description.m_Size.height        = GetRenderResolutionHeight();
-    description.m_uiArraySizeOrDepth = 64U;
-    description.m_uiMipLevels        = 1U;
-    description.m_BindFlags          = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage              = xiiGALResourceUsage::Default;
+  const xiiUInt32 uiWidth        = GetRenderResolutionWidth();
+  const xiiUInt32 uiHeight       = GetRenderResolutionHeight();
+  const xiiUInt32 uiCurrentSlot  = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
+  auto&           resources      = m_ViewPassResources.m_LightingPasses;
 
-    m_ViewPassResources.m_LightingPasses.m_pFroxelHistoryBuffer = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+  if (EnsureTemporalHistoryTextures(resources.m_pVolumetricHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight))
+  {
+    resources.m_bVolumetricHistoryValid = false;
   }
 
-  data.m_hFroxelHistory        = builder.ImportTexture("FroxelHistory", m_ViewPassResources.m_LightingPasses.m_pFroxelHistoryBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hFroxelHistory        = builder.ReadTexture(data.m_hFroxelHistory, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVolumetricScattering = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScattering, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_bHistoryValid       = resources.m_bVolumetricHistoryValid;
+  data.m_hCurrentScattering  = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousScattering = builder.ReadTexture(builder.ImportTexture("Volumetric Scattering Previous", resources.m_pVolumetricHistory[uiPreviousSlot], resources.m_pVolumetricHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth         = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal      = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity           = builder.ReadTexture(xiiRGBlackboardKeys::k_VelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface    = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVolumetricScattering = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_VolumetricScattering, resources.m_pVolumetricHistory[uiCurrentSlot], resources.m_pVolumetricHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hConstants = CreateTemporalDenoiseConstants(builder, "Volumetric Temporal Constants");
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pVolumetricTemporalPipeline, "Shaders/Pipeline/VolumetricFogTemporalRep.xiiShader");
+  xiiView::EnsureComputePipeline(resources.m_pVolumetricTemporalPipeline, "Shaders/Pipeline/VolumetricFogTemporalRep.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphPassContext& context)
@@ -3856,11 +3866,30 @@ void xiiView::ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTem
 
   cmd.BeginDebugGroup("VolumetricFogTemporalRep");
   {
+    {
+      xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->HistoryWeight    = 0.92f;
+      pConstants->DepthThreshold   = 0.08f;
+      pConstants->NormalThreshold = 0.80f;
+      pConstants->SpatialWeight   = 0.10f;
+      pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
+      pConstants->SignalMode      = 1U;
+      pConstants->_Padding        = xiiVec2::MakeZero();
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pVolumetricTemporalPipeline);
-    cmd.ResolveAndSetShaderResourceTextureView("g_FroxelHistory", context.GetTexture(data.m_hFroxelHistory)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiTemporalDenoiseConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_FroxelCurrent", context.GetTexture(data.m_hCurrentScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_FroxelHistory", context.GetTexture(data.m_hPreviousScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSurface", context.GetTexture(data.m_hPreviousSurface)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelBlended", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({16U, 9U, 8U});
+    cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+    m_ViewPassResources.m_LightingPasses.m_bVolumetricHistoryValid = true;
   }
   cmd.EndDebugGroup();
 }

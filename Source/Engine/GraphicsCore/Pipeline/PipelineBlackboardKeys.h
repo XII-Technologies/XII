@@ -102,6 +102,7 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_RTFinalGI              = "RTFinalGI"_xiisv;            ///< xiiRenderGraphTextureHandle - denoised RT GI.
   constexpr xiiStringView k_RTRawReflections       = "RTRawReflections"_xiisv;     ///< xiiRenderGraphTextureHandle - raw RT reflection radiance.
   constexpr xiiStringView k_RTFinalReflections     = "RTFinalReflections"_xiisv;   ///< xiiRenderGraphTextureHandle - denoised RT reflections.
+  constexpr xiiStringView k_VolumetricScatteringRaw = "VolumetricScatteringRaw"_xiisv; ///< xiiRenderGraphTextureHandle - current-frame integrated volumetric light before temporal filtering.
   constexpr xiiStringView k_VolumetricScattering   = "VolumetricScattering"_xiisv; ///< xiiRenderGraphTextureHandle - integrated volumetric light contribution.
   constexpr xiiStringView k_SkyRadiance            = "SkyRadiance"_xiisv;          ///< xiiRenderGraphTextureHandle - sky + atmosphere contribution.
 
