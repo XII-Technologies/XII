@@ -15,7 +15,7 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
-#include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
@@ -594,7 +594,7 @@ private:
     } m_VisibilityPasses;
 
     //  Frame lighting data uploaded once and consumed by clustered, deferred, and forward lighting passes.
-    xiiLightingSystem m_LightingSystem;
+    xiiLightingContext m_LightingSystem;
 
     //  Stage 2 - Shadows
     struct ShadowPasses

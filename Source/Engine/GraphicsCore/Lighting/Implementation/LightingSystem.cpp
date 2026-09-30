@@ -119,8 +119,9 @@ xiiLightingSystem::~xiiLightingSystem()
   Shutdown();
 }
 
-void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice)
+void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings)
 {
+  m_Settings = settings;
   m_pDevice = std::move(pDevice);
   m_LightData.Reserve(m_Settings.m_uiMaxActiveLights);
 

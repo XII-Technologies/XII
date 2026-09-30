@@ -101,7 +101,7 @@ public:
   xiiLightingSystem();
   ~xiiLightingSystem();
 
-  void Initialize(xiiSharedPtr<xiiGALDevice> pDevice);
+  void Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings = {});
   void Shutdown();
 
   void BuildFrameData(const xiiView& view, const xiiExtractedRenderData& extractedData, xiiUInt32 uiFrameIndex);

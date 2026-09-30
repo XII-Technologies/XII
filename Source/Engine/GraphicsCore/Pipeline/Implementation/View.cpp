@@ -210,7 +210,7 @@ xiiView::xiiView(xiiWorld* pWorld) :
   XII_ASSERT_DEV(pDevice != nullptr, "No default device available. A view requires a device to initialize its resources.");
 
   m_ViewPassResources.m_Profiler.Initialize(pDevice);
-  m_ViewPassResources.m_LightingSystem.Initialize(pDevice);
+  XII_VERIFY(m_ViewPassResources.m_LightingSystem.Initialize().Succeeded(), "Failed to create the view lighting context.");
   m_ResourceCache.Initialize(pDevice);
 
   UpdateRenderResolutionState();
@@ -5805,9 +5805,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiAtmosphereMultiScatterData>("AtmosphereMultiScatterLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereMultiScatter, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereMultiScatter, this));
   graph.AddPass<xiiSkyIrradianceConvolutionData>("SkyIrradianceConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSkyIrradianceConvolution, this), xiiMakeDelegate(&xiiView::ExecuteSkyIrradianceConvolution, this));
   graph.AddPass<xiiVolumetricFogInitializationData>("VolumetricFogInitialization", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogInitialization, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogInitialization, this));
-  XII_IGNORE_UNUSED(xiiSparseVoxelRadianceManager::AddUpdatePass(graph, &m_ViewPassResources.m_LightingSystem));
+  XII_IGNORE_UNUSED(xiiSparseVoxelRadianceManager::AddUpdatePass(graph, m_ViewPassResources.m_LightingSystem.BorrowSystem()));
   graph.AddPass<xiiSparseVoxelRadianceGatherData>("SparseVoxelRadianceGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSparseVoxelRadianceGather, this), xiiMakeDelegate(&xiiView::ExecuteSparseVoxelRadianceGather, this));
-  XII_IGNORE_UNUSED(xiiDDGIManager::AddUpdatePass(graph, &m_ViewPassResources.m_LightingSystem));
+  XII_IGNORE_UNUSED(xiiDDGIManager::AddUpdatePass(graph, m_ViewPassResources.m_LightingSystem.BorrowSystem()));
   graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiView::ExecuteDDGIProbeSampling, this));
   graph.AddPass<xiiGroundTruthAmbientOcclusionData>("GroundTruthAmbientOcclusion", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusion, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusion, this));
 
