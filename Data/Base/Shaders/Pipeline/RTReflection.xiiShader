@@ -8,6 +8,7 @@ ALL
 // that the hybrid reflection composite can blend with SSR and reflection probes.
 
 #include "PipelineCommon.xiiShader"
+#include "Passes/RayTracing/RayTracingMaterialData.h"
 
 struct xiiReflectionPayload
 {
@@ -71,13 +72,21 @@ void main(inout xiiReflectionPayload payload)
 
 [RAY_CLOSEST_HIT_SHADER]
 
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+
 [shader("closesthit")]
 void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
-  // Material-aware hit shading is layered on top of this visibility path by the GPU material
-  // records. Until those records are addressable from the SBT, return conservative scene-linear
-  // radiance and a valid-hit mask rather than fabricating environment contribution on misses.
-  const float barycentricEdge = min(attributes.barycentrics.x, attributes.barycentrics.y);
-  payload.Radiance   = lerp(0.025f.xxx, 0.08f.xxx, saturate(barycentricEdge * 8.0f));
+  const xiiRayTracingMaterialData material = g_RayTracingMaterials[InstanceIndex()];
+  const float3 baseColor    = max(material.BaseColorOpacity.rgb, 0.0f);
+  const float3 emissive     = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
+  const float  roughness    = saturate(material.EmissiveColorAndRoughness.w);
+  const float  metallic     = saturate(material.SurfaceParameters.x);
+  const float  specular     = saturate(material.SurfaceParameters.y);
+  const float3 dielectricF0 = (0.08f * specular).xxx;
+  const float3 f0           = lerp(dielectricF0, baseColor, metallic);
+  const float3 ambient      = max(g_AmbientLightColor.rgb, 0.0f) * baseColor * (1.0f - metallic);
+  const float3 directSpecular = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * f0 * lerp(0.07957747f, 0.01989437f, roughness);
+  payload.Radiance   = emissive + ambient + directSpecular;
   payload.Confidence = 1.0f;
 }

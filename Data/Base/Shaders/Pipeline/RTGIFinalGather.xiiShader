@@ -7,6 +7,7 @@ ALL
 // radiance remain active independently; alpha marks pixels with a valid traced near-field hit.
 
 #include "PipelineCommon.xiiShader"
+#include "Passes/RayTracing/RayTracingMaterialData.h"
 
 struct xiiGlobalIlluminationPayload
 {
@@ -78,11 +79,19 @@ void main(inout xiiGlobalIlluminationPayload payload)
 
 [RAY_CLOSEST_HIT_SHADER]
 
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+
 [shader("closesthit")]
 void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
-  const float edgeWeight = saturate(min(attributes.barycentrics.x, attributes.barycentrics.y) * 8.0f);
-  const float3 localFill = g_AmbientLightColor.rgb + g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * lerp(0.01f, 0.04f, edgeWeight);
-  payload.Radiance   = max(localFill, 0.0f);
+  const xiiRayTracingMaterialData material = g_RayTracingMaterials[InstanceIndex()];
+  const float3 baseColor    = max(material.BaseColorOpacity.rgb, 0.0f);
+  const float3 emissive     = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
+  const float  metallic     = saturate(material.SurfaceParameters.x);
+  const float  occlusion    = saturate(material.SurfaceParameters.w);
+  const float3 irradiance   = max(g_AmbientLightColor.rgb, 0.0f) +
+                              max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * 0.07957747f;
+  const float3 diffuseBounce = baseColor * (1.0f - metallic) * irradiance * occlusion * 0.31830989f;
+  payload.Radiance   = emissive + diffuseBounce;
   payload.Confidence = 1.0f;
 }

@@ -660,6 +660,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTReflectionTemporalDenoisePipeline;
       xiiSharedPtr<xiiGALTopLevelAS>              m_pRayTracingScene;
       xiiRenderGraphBufferHandle                  m_hRayTracingSceneDependency;
+      xiiRenderGraphBufferHandle                  m_hRayTracingMaterialData;
       xiiUInt32                                   m_uiRTGIShaderRecordStride = 0U;
       xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>              m_pRTGIHistory[2];

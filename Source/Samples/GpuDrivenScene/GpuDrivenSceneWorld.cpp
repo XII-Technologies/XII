@@ -315,6 +315,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
 
     xiiRayTracingInstanceDescription rayTracingInstance;
     rayTracingInstance.m_hGeometry       = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
+    rayTracingInstance.m_hMaterial       = m_Materials[i % m_Materials.GetCount()];
     rayTracingInstance.m_Transform       = m_Scene.GetGlobalTransform(object);
     rayTracingInstance.m_uiStableObjectId = i;
     const xiiRayTracingInstanceHandle handle = xiiRayTracingSceneManager::CreateInstance(rayTracingInstance);
@@ -360,6 +361,7 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
 
     xiiRayTracingInstanceDescription rayTracingInstance;
     rayTracingInstance.m_hGeometry        = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
+    rayTracingInstance.m_hMaterial        = m_Materials[i % m_Materials.GetCount()];
     rayTracingInstance.m_Transform        = m_Scene.GetGlobalTransform(m_Objects[i]);
     rayTracingInstance.m_uiStableObjectId = i;
     XII_IGNORE_UNUSED(xiiRayTracingSceneManager::UpdateInstance(m_RayTracingInstances[i], rayTracingInstance));

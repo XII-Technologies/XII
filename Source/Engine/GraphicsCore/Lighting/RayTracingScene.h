@@ -6,6 +6,7 @@
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Material/MaterialTypes.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
@@ -52,6 +53,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRayTracingGeometryDescript
 struct XII_GRAPHICSCORE_DLL xiiRayTracingInstanceDescription
 {
   xiiRayTracingGeometryHandle               m_hGeometry;
+  xiiMaterialGpuHandle                      m_hMaterial;
   xiiMat4                                   m_Transform       = xiiMat4::MakeIdentity();
   xiiUInt32                                 m_uiStableObjectId = 0U;
   xiiUInt8                                  m_uiVisibilityMask = 0xFFU;
@@ -118,6 +120,8 @@ public:
     xiiSharedPtr<xiiGALTopLevelAS> m_pTopLevelAS;
     /// Render-graph dependency token for ray-dispatch passes that consume m_pTopLevelAS.
     xiiRenderGraphBufferHandle     m_hSceneDependency;
+    /// Shader-readable canonical material records indexed by HLSL InstanceIndex().
+    xiiRenderGraphBufferHandle     m_hMaterialData;
     xiiUInt32                      m_uiInstanceCount = 0U;
   };
 

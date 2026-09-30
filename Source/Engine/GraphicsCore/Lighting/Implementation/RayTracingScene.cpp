@@ -6,10 +6,12 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
 
 struct xiiRayTracingSceneManager::GeometrySlot
 {
@@ -37,6 +39,7 @@ struct xiiRayTracingSceneManager::FrameResources
 {
   xiiSharedPtr<xiiGALTopLevelAS> m_pTopLevelAS;
   xiiSharedPtr<xiiGALBuffer>     m_pInstanceBuffer;
+  xiiSharedPtr<xiiGALBuffer>     m_pMaterialBuffer;
   xiiSharedPtr<xiiGALBuffer>     m_pScratchBuffer;
   xiiUInt64                      m_uiBuiltRevision = xiiMath::MaxValue<xiiUInt64>();
   xiiUInt32                      m_uiBuiltInstanceCount = 0U;
@@ -104,6 +107,79 @@ namespace
     xiiUInt32                            m_uiFrameSlot     = 0U;
     bool                                 m_bUpdateTLAS     = false;
   };
+
+  struct RayTracingMaterialUploadPassData
+  {
+    xiiDynamicArray<xiiRayTracingMaterialData, xiiAlignedAllocatorWrapper> m_Materials;
+    xiiSharedPtr<xiiGALBuffer>                  m_pMaterialBuffer;
+    xiiRenderGraphBufferHandle                  m_hMaterialBuffer;
+  };
+
+  template <typename T>
+  bool TryGetMaterialParameter(const xiiMaterialInstance& material, xiiStringView sName, T& out_value)
+  {
+    const xiiVariant value = material.GetParameter(xiiMaterialParameterId::Make(sName));
+    if (!value.IsValid() || !value.CanConvertTo<T>())
+      return false;
+
+    out_value = value.ConvertTo<T>();
+    return true;
+  }
+
+  void ResolveMaterialColor(const xiiMaterialInstance& material, xiiStringView sName, xiiVec4& inout_value, bool bPreserveAlpha)
+  {
+    const float fPreviousAlpha = inout_value.w;
+    xiiColor color;
+    if (TryGetMaterialParameter(material, sName, color))
+    {
+      inout_value = xiiVec4(color.r, color.g, color.b, color.a);
+      if (bPreserveAlpha)
+        inout_value.w = fPreviousAlpha;
+      return;
+    }
+
+    xiiVec4 vector4;
+    if (TryGetMaterialParameter(material, sName, vector4))
+    {
+      inout_value = vector4;
+      if (bPreserveAlpha)
+        inout_value.w = fPreviousAlpha;
+      return;
+    }
+
+    xiiVec3 vector3;
+    if (TryGetMaterialParameter(material, sName, vector3))
+      inout_value = xiiVec4(vector3.x, vector3.y, vector3.z, inout_value.w);
+  }
+
+  xiiRayTracingMaterialData ResolveRayTracingMaterial(const xiiRayTracingInstanceDescription& instance)
+  {
+    xiiRayTracingMaterialData result;
+    result.BaseColorOpacity          = xiiVec4(1.0f);
+    result.EmissiveColorAndRoughness = xiiVec4(0.0f, 0.0f, 0.0f, 0.5f);
+    result.SurfaceParameters         = xiiVec4(0.0f, 0.5f, 0.0f, 1.0f);
+    result.Metadata                  = xiiVec4U32(instance.m_hMaterial.m_uiSlot, instance.m_uiStableObjectId, static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U);
+
+    if (!instance.m_hMaterial.IsValid() || !xiiMaterialManager::IsInitialized())
+      return result;
+
+    const xiiSharedPtr<xiiMaterialInstance> material = xiiMaterialManager::GetGpuStorage().GetMaterial(instance.m_hMaterial);
+    if (material == nullptr)
+      return result;
+
+    ResolveMaterialColor(*material, "BaseColor", result.BaseColorOpacity, false);
+    ResolveMaterialColor(*material, "EmissiveColor", result.EmissiveColorAndRoughness, true);
+    TryGetMaterialParameter(*material, "Roughness", result.EmissiveColorAndRoughness.w);
+    TryGetMaterialParameter(*material, "Metallic", result.SurfaceParameters.x);
+    TryGetMaterialParameter(*material, "Specular", result.SurfaceParameters.y);
+    TryGetMaterialParameter(*material, "Transmission", result.SurfaceParameters.z);
+    TryGetMaterialParameter(*material, "OcclusionStrength", result.SurfaceParameters.w);
+
+    const xiiMaterialRuntimeState runtimeState = material->GetRuntimeState();
+    result.Metadata.z = runtimeState.m_ShadingModel.GetValue();
+    result.Metadata.w = runtimeState.m_FeatureFlags.GetValue();
+    return result;
+  }
 }
 
 xiiUniquePtr<xiiRayTracingSceneManager::State> xiiRayTracingSceneManager::s_pState;
@@ -175,6 +251,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingInstanceDescription, xiiNoBase, 1, 
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Geometry", m_hGeometry),
+    XII_MEMBER_PROPERTY("Material", m_hMaterial),
     XII_MEMBER_PROPERTY("Transform", m_Transform),
     XII_MEMBER_PROPERTY("StableObjectId", m_uiStableObjectId),
     XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
@@ -506,6 +583,13 @@ bool xiiRayTracingSceneManager::PrepareFrameResources(xiiUInt32 uiFrameSlot)
   bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   frame.m_pInstanceBuffer = pDevice->CreateBuffer(bufferDescription);
 
+  bufferDescription.m_uiSize              = static_cast<xiiUInt64>(s_pState->m_Configuration.m_uiMaxInstances) * sizeof(xiiRayTracingMaterialData);
+  bufferDescription.m_uiElementByteStride = sizeof(xiiRayTracingMaterialData);
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+  bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+  frame.m_pMaterialBuffer = pDevice->CreateBuffer(bufferDescription);
+
   const xiiGALScratchBufferSizeDescription scratchSizes = frame.m_pTopLevelAS->GetScratchBufferSizeDescription();
   const xiiUInt32 uiScratchAlignment = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiScratchBufferAlignment);
   bufferDescription                    = {};
@@ -514,7 +598,7 @@ bool xiiRayTracingSceneManager::PrepareFrameResources(xiiUInt32 uiFrameSlot)
   bufferDescription.m_Usage            = xiiGALResourceUsage::Mutable;
   bufferDescription.m_Mode             = xiiGALBufferMode::Raw;
   frame.m_pScratchBuffer = pDevice->CreateBuffer(bufferDescription);
-  if (frame.m_pInstanceBuffer == nullptr || frame.m_pScratchBuffer == nullptr)
+  if (frame.m_pInstanceBuffer == nullptr || frame.m_pMaterialBuffer == nullptr || frame.m_pScratchBuffer == nullptr)
   {
     frame = {};
     return false;
@@ -525,6 +609,8 @@ bool xiiRayTracingSceneManager::PrepareFrameResources(xiiUInt32 uiFrameSlot)
   frame.m_pTopLevelAS->SetDebugName(debugName);
   debugName.SetFormat("Ray Tracing Instance Data [{}]", uiFrameSlot);
   frame.m_pInstanceBuffer->SetDebugName(debugName);
+  debugName.SetFormat("Ray Tracing Material Data [{}]", uiFrameSlot);
+  frame.m_pMaterialBuffer->SetDebugName(debugName);
   debugName.SetFormat("Ray Tracing TLAS Scratch [{}]", uiFrameSlot);
   frame.m_pScratchBuffer->SetDebugName(debugName);
   return true;
@@ -538,7 +624,9 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
 
   xiiDynamicArray<RayTracingBLASBuild> pendingBLASBuilds;
   xiiDynamicArray<xiiGALTLASInstanceData, xiiAlignedAllocatorWrapper> instanceData;
+  xiiDynamicArray<xiiRayTracingMaterialData, xiiAlignedAllocatorWrapper> materialData;
   instanceData.Reserve(s_pState->m_uiInstanceCount);
+  materialData.Reserve(s_pState->m_uiInstanceCount);
 
   for (xiiUInt32 uiGeometryIndex = 0U; uiGeometryIndex < s_pState->m_Geometries.GetCount(); ++uiGeometryIndex)
   {
@@ -580,6 +668,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     }
     gpuInstance.SetFlags(flags);
     gpuInstance.m_uiBottomLevelASDeviceAddress = geometry.m_pBottomLevelAS->GetDeviceAddress();
+    materialData.PushBack(ResolveRayTracingMaterial(instance.m_Description));
   }
 
   if (instanceData.IsEmpty())
@@ -590,6 +679,29 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     return result;
 
   FrameResources& frame = s_pState->m_Frames[uiFrameSlot];
+
+  auto materialUploadPass = graph.AddPass<RayTracingMaterialUploadPassData>(
+    "Ray Tracing Material Upload", xiiGALCommandQueueFlags::Transfer,
+    [&, uiFrameSlot](RayTracingMaterialUploadPassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_Materials       = materialData;
+      data.m_pMaterialBuffer = frame.m_pMaterialBuffer;
+
+      xiiStringBuilder name;
+      name.SetFormat("Ray Tracing Material Data [{}]", uiFrameSlot);
+      data.m_hMaterialBuffer = builder.ImportBuffer(name, data.m_pMaterialBuffer, data.m_pMaterialBuffer->GetResourceState());
+      data.m_hMaterialBuffer = builder.WriteBuffer(data.m_hMaterialBuffer, xiiGALResourceStateFlags::CopyDestination);
+      builder.ExportBuffer(data.m_hMaterialBuffer, xiiGALResourceStateFlags::ShaderResource);
+      builder.SetPassSideEffects(true);
+      builder.SetPassAllowMerge(false);
+    },
+    [](const RayTracingMaterialUploadPassData& data, xiiRenderGraphPassContext& context) {
+      context.GetCommandList().UpdateBuffer(
+        context.GetBuffer(data.m_hMaterialBuffer), 0U,
+        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Materials.GetData()), data.m_Materials.GetCount() * sizeof(xiiRayTracingMaterialData)));
+    },
+    true);
+
+  result.m_hMaterialData = materialUploadPass.first->m_hMaterialBuffer;
   if (frame.m_bReady && frame.m_uiBuiltRevision == s_pState->m_uiSceneRevision && pendingBLASBuilds.IsEmpty())
   {
     result.m_pTopLevelAS    = frame.m_pTopLevelAS;
