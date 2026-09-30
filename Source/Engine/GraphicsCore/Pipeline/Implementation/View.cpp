@@ -7,6 +7,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Components/Fog/VolumetricCloudComponent.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/ReflectionCaptureComponent.h>
@@ -22,6 +23,7 @@
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
@@ -51,6 +53,7 @@
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
@@ -343,6 +346,23 @@ void xiiView::UpdateCachedMatrices() const
   }
 }
 
+void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
+{
+  const xiiCamera* pCullingCamera = GetCullingCamera();
+  if (pCullingCamera == nullptr)
+  {
+    out_frustum = xiiFrustum::MakeInvalid();
+    return;
+  }
+
+  const xiiRectFloat& viewport    = GetViewport();
+  const float         fAspectRatio = viewport.HasNonZeroArea() ? viewport.width / viewport.height : 1.0f;
+
+  xiiMat4 projectionMatrix;
+  pCullingCamera->GetProjectionMatrix(fAspectRatio, projectionMatrix, xiiCameraEye::Left);
+  out_frustum = xiiFrustum::MakeFromMVP(projectionMatrix * pCullingCamera->GetViewMatrix(xiiCameraEye::Left));
+}
+
 void xiiView::UpdateRenderResolutionState() const
 {
   const float fRenderScale = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
@@ -511,22 +531,48 @@ void xiiView::ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xii
 
 ////////// GPU Frustum Culling //////////
 //
-// Culls instances against the view frustum on the GPU, using instance bounds from the previous frame (updated by the Instance Update pass) and LOD metadata from the previous frame (updated by the LOD Selection pass).
-// This is a compute pass that writes out a compact list of visible instance indices for the current frame, which is then consumed by the Instance Update pass to only update visible instances, and by the Draw Build pass to only draw visible instances.
+// Culls the current frame's extracted mesh packets against the view frustum on the GPU.
+// The compact output is consumed by LOD selection, instance update, and indirect draw construction.
+
+struct xiiFrustumCullInstanceBounds
+{
+  xiiVec4 m_CenterRadius;
+  xiiVec4 m_Extents;
+};
+
+static_assert(sizeof(xiiFrustumCullInstanceBounds) == 32U);
 
 struct xiiFrustumCullData
 {
-  XII_DECLARE_POD_TYPE();
+  xiiRenderGraphBufferHandle m_hInstanceBounds;    ///< SRV in (one world-space bound per extracted mesh packet).
+  xiiRenderGraphBufferHandle m_hVisibleCandidates; ///< UAV out ([0]=count, [1..]=visible packet indices).
+  xiiRenderGraphBufferHandle m_hConstants;
 
-  xiiRenderGraphBufferHandle m_hInstanceBounds;     ///< SRV in (structured buffer of xiiBoundingSphere, one per instance, from previous frame's Instance Update).
-  xiiRenderGraphBufferHandle m_hLODMetadata;        ///< SRV in (structured buffer of LOD metadata, one per instance, from previous frame's LOD Selection).
-  xiiRenderGraphBufferHandle m_hVisibleCandidates;  ///< UAV out (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, consumed by Instance Update and Draw Build).
-  xiiUInt32                  m_uiInstanceCount = 0; ///< Number of instances to process (from previous frame's Instance Update). This is used to avoid processing the entire buffer when only a subset is populated.
+  xiiDynamicArray<xiiFrustumCullInstanceBounds, xiiAlignedAllocatorWrapper> m_InstanceBounds;
+  xiiFrustumCullingConstants m_Constants       = {};
+  xiiUInt32                  m_uiInstanceCount = 0U;
 };
 
 void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& builder)
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
+  data.m_InstanceBounds.Reserve(xiiMath::Min(renderData.GetCount(), k_uiMaxInstances));
+  for (const xiiRenderData* pRenderData : renderData)
+  {
+    const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData);
+    if (pMesh == nullptr || !pMesh->m_GlobalBounds.IsValid())
+      continue;
+
+    xiiFrustumCullInstanceBounds& bounds = data.m_InstanceBounds.ExpandAndGetRef();
+    bounds.m_CenterRadius = xiiVec4(pMesh->m_GlobalBounds.m_vCenter.x, pMesh->m_GlobalBounds.m_vCenter.y, pMesh->m_GlobalBounds.m_vCenter.z, pMesh->m_GlobalBounds.m_fSphereRadius);
+    bounds.m_Extents      = xiiVec4(pMesh->m_GlobalBounds.m_vBoxHalfExtents.x, pMesh->m_GlobalBounds.m_vBoxHalfExtents.y, pMesh->m_GlobalBounds.m_vBoxHalfExtents.z, 0.0f);
+
+    if (data.m_InstanceBounds.GetCount() == k_uiMaxInstances)
+      break;
+  }
+  data.m_uiInstanceCount = data.m_InstanceBounds.GetCount();
 
   // Ensure persistent instance bounds buffer exists.
   if (!m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer)
@@ -540,34 +586,42 @@ void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& 
     m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer = pDevice->CreateBuffer(description);
   }
 
-  // Import persistent instance bounds as read-only SRV.
+  // Import persistent instance bounds as read-only SRV. Their contents are refreshed before dispatch.
   data.m_hInstanceBounds = builder.ImportBuffer("InstanceBoundsIn", m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hInstanceBounds = builder.ReadBuffer(data.m_hInstanceBounds, xiiGALResourceStateFlags::ShaderResource);
-
-  // LOD metadata (also persistent, updated by CPU each frame before dispatch).
-  if (!m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride                              = 4U; // packed uint: LOD + flags
-    description.m_uiSize                                           = description.m_uiElementByteStride * k_uiMaxInstances;
-    description.m_BindFlags                                        = xiiGALBindFlags::ShaderResource;
-    description.m_Mode                                             = xiiGALBufferMode::Structured;
-    description.m_Usage                                            = xiiGALResourceUsage::Default;
-    m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer = pDevice->CreateBuffer(description);
-  }
-  data.m_hLODMetadata = builder.ImportBuffer("LODMetadataIn", m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLODMetadata = builder.ReadBuffer(data.m_hLODMetadata, xiiGALResourceStateFlags::ShaderResource);
 
   // Transient visible candidate buffer.
   xiiGALBufferCreationDescription visibleCandidateBufferDescription;
   visibleCandidateBufferDescription.m_uiElementByteStride = 4U;                         // uint
   visibleCandidateBufferDescription.m_uiSize              = 4U + 4U * k_uiMaxInstances; // [0]=count + indices
-  visibleCandidateBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  visibleCandidateBufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
   visibleCandidateBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   visibleCandidateBufferDescription.m_Usage               = xiiGALResourceUsage::Default;
   data.m_hVisibleCandidates                               = builder.WriteBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, visibleCandidateBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
-  data.m_uiInstanceCount = k_uiMaxInstances; // Driven by CPU-side count from extraction.
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiFrustumCullingConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("xiiFrustumCullingConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  if (GetCullingCamera() != nullptr)
+  {
+    xiiFrustum frustum;
+    ComputeCullingFrustum(frustum);
+    data.m_Constants.FrustumPlane0 = frustum.GetPlane(xiiFrustum::NearPlane).GetAsVec4();
+    data.m_Constants.FrustumPlane1 = frustum.GetPlane(xiiFrustum::LeftPlane).GetAsVec4();
+    data.m_Constants.FrustumPlane2 = frustum.GetPlane(xiiFrustum::RightPlane).GetAsVec4();
+    data.m_Constants.FrustumPlane3 = frustum.GetPlane(xiiFrustum::FarPlane).GetAsVec4();
+    data.m_Constants.FrustumPlane4 = frustum.GetPlane(xiiFrustum::BottomPlane).GetAsVec4();
+    data.m_Constants.FrustumPlane5 = frustum.GetPlane(xiiFrustum::TopPlane).GetAsVec4();
+  }
+  else
+  {
+    data.m_uiInstanceCount = 0U;
+  }
+  data.m_Constants.InstanceCount = data.m_uiInstanceCount;
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pFrustumCullPipeline, "Shaders/Pipeline/CoarseFrustumCulling.xiiShader");
 
@@ -580,9 +634,29 @@ void xiiView::ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRenderGraphP
 
   cmd.BeginDebugGroup("FrustumCulling");
   {
+    if (!data.m_InstanceBounds.IsEmpty())
+    {
+      const xiiUInt8* pBoundsBytes = reinterpret_cast<const xiiUInt8*>(data.m_InstanceBounds.GetData());
+      cmd.UpdateBuffer(context.GetBuffer(data.m_hInstanceBounds), 0U, xiiMakeArrayPtr(pBoundsBytes, data.m_InstanceBounds.GetCount() * sizeof(xiiFrustumCullInstanceBounds)));
+    }
+
+    const xiiUInt32 uiZero = 0U;
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hVisibleCandidates), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
+
+    {
+      xiiGALMapHelper<xiiFrustumCullingConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *pConstants = data.m_Constants;
+    }
+
+    if (data.m_uiInstanceCount == 0U)
+    {
+      cmd.EndDebugGroup();
+      return;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pFrustumCullPipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiFrustumCullingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", context.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_LODMetadata", context.GetBuffer(data.m_hLODMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_VisibleOut", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(data.m_uiInstanceCount + 63U) / 64U, 1U, 1U});
