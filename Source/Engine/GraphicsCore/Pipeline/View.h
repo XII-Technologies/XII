@@ -83,6 +83,7 @@ struct xiiDeferredIndirectLightingData;
 struct xiiRayTracedGlobalIlluminationData;
 struct xiiRayTracedGlobalIlluminationDenoiseData;
 struct xiiRayTracedReflectionsData;
+struct xiiRayTracedReflectionsDenoiseData;
 struct xiiScreenSpaceReflectionsData;
 struct xiiHybridReflectionCompositeData;
 struct xiiVolumetricFogIntegrationData;
@@ -392,6 +393,9 @@ private:
   void SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRenderGraphBuilder& builder);
   void ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& data, xiiRenderGraphPassContext& context);
 
+  void SetupRayTracedReflectionsDenoise(xiiRayTracedReflectionsDenoiseData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteRayTracedReflectionsDenoise(const xiiRayTracedReflectionsDenoiseData& data, xiiRenderGraphPassContext& context);
+
   void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRenderGraphBuilder& builder);
   void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRenderGraphPassContext& context);
 
@@ -577,8 +581,10 @@ private:
       xiiSharedPtr<xiiGALTexture>               m_pDirectionalShadowAtlas; // D32F[4] 4096x4096
       xiiSharedPtr<xiiGALTextureView>           m_pDirectionalShadowCascadeViews[4]; // Persistent single-slice DSVs; must outlive recorded command lists.
       xiiSharedPtr<xiiGALTexture>               m_pLocalShadowAtlas;       // D32F 2D 4096x4096
+      xiiSharedPtr<xiiGALTexture>               m_pRayTracedShadowHistory[2];
       xiiUInt32                                 m_uiActiveCascadeCount = 0U;
       xiiUInt32                                 m_uiRayTracedShadowShaderRecordStride = 0U;
+      bool                                      m_bRayTracedShadowHistoryValid = false;
     } m_ShadowPasses;
 
     //  Stage 3 - Depth & Hi-Z
@@ -651,6 +657,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTReflectionFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTReflectionPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTReflectionShaderBindingTable;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pRTReflectionTemporalDenoisePipeline;
       xiiSharedPtr<xiiGALTopLevelAS>              m_pRayTracingScene;
       xiiRenderGraphBufferHandle                  m_hRayTracingSceneDependency;
       xiiUInt32                                   m_uiRTGIShaderRecordStride = 0U;
@@ -658,6 +665,9 @@ private:
       xiiSharedPtr<xiiGALTexture>              m_pRTGIHistory[2];
       bool                                     m_bRTGIHistoryValid       = false;
       bool                                     m_bRTGIAvailableThisFrame = false;
+      xiiSharedPtr<xiiGALTexture>              m_pRTReflectionHistory[2];
+      bool                                     m_bRTReflectionHistoryValid       = false;
+      bool                                     m_bRTReflectionAvailableThisFrame = false;
       xiiSharedPtr<xiiGALTexture>              m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
       xiiSharedPtr<xiiGALTexture>              m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
       xiiSharedPtr<xiiGALTexture>              m_pFroxelHistoryBuffer; // prev-frame froxel

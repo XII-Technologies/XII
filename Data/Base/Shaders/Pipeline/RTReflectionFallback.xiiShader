@@ -1,17 +1,14 @@
 // Deterministic fallback for devices or frames without a valid scene TLAS.
 
 RWTexture2D<float4> g_RTReflRaw : register(u0);
-RWTexture2D<float4> g_RTReflFinal : register(u1);
 
 [numthreads(8, 8, 1)]
 void CS_RTReflectionFallback(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dimensions;
-    g_RTReflFinal.GetDimensions(dimensions.x, dimensions.y);
+    g_RTReflRaw.GetDimensions(dimensions.x, dimensions.y);
     if (any(tid.xy >= dimensions))
         return;
 
     g_RTReflRaw[tid.xy] = 0.0f;
-    g_RTReflFinal[tid.xy] = 0.0f;
 }
-

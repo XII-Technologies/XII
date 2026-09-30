@@ -22,7 +22,7 @@ float4 LoadSignal(int2 pixel, uint2 dimensions)
 {
   const int2 clampedPixel = clamp(pixel, int2(0, 0), int2(dimensions) - 1);
   const float4 signal = g_CurrentSignal.Load(int3(clampedPixel, 0));
-  return SignalMode == 0U ? signal.xxxx : signal;
+  return SignalMode == 1U ? signal : signal.xxxx;
 }
 
 [numthreads(8, 8, 1)]
@@ -107,8 +107,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   }
 
   float4 history = g_PreviousSignal.Load(int3(previousPixel, 0));
-  history = SignalMode == 0U ? history.xxxx : history;
+  history = SignalMode == 1U ? history : history.xxxx;
   history = clamp(history, localMinimum, localMaximum);
   g_DenoisedOutput[pixel] = lerp(current, history, saturate(HistoryWeight));
 }
-
