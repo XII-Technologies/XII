@@ -473,6 +473,11 @@ private:
     if (m_pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
       return;
 
+    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTShadow.xiiShader", sizeof(xiiUInt32)), "Failed to validate the production ray-traced shadow pipeline.");
+    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTAO.xiiShader", sizeof(xiiUInt32)), "Failed to validate the production ray-traced ambient-occlusion pipeline.");
+    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTGIFinalGather.xiiShader", 16U), "Failed to validate the production ray-traced GI pipeline.");
+    XII_ASSERT_ALWAYS(ValidateRayTracingPipeline("Shaders/Pipeline/RTReflection.xiiShader", 16U), "Failed to validate the production ray-traced reflection pipeline.");
+
     const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/RayTracingValidation.xiiShader");
     m_hRayTracingValidationPermutation   = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
 
@@ -490,6 +495,38 @@ private:
     XII_ASSERT_DEV(m_pRayTracingValidationSBT != nullptr, "Failed to create ray tracing validation SBT.");
     m_pRayTracingValidationSBT->SetDebugName("Ray Tracing Validation SBT");
     m_uiRayTracingValidationShaderRecordStride = static_cast<xiiUInt32>(uiStride);
+  }
+
+  bool ValidateRayTracingPipeline(xiiStringView sShaderPath, xiiUInt32 uiPayloadSize)
+  {
+    const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
+    const xiiShaderPermutationResourceHandle permutationHandle = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
+    xiiResourceLock<xiiShaderPermutationResource> permutation(permutationHandle, xiiResourceAcquireMode::BlockTillLoaded);
+    if (!permutation.IsValid() || !permutation->IsShaderValid())
+      return false;
+
+    const xiiSharedPtr<xiiGALShader> rayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
+    const xiiSharedPtr<xiiGALShader> miss          = permutation->GetGALShader(xiiGALShaderType::RayMiss);
+    const xiiSharedPtr<xiiGALShader> closestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
+    if (rayGeneration == nullptr || miss == nullptr || closestHit == nullptr)
+      return false;
+
+    xiiGALRayTracingPipelineStateCreationDescription description;
+    description.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
+    description.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
+    description.m_uiMaximumPayloadSize                     = uiPayloadSize;
+    description.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
+    auto& rayGenerationGroup = description.m_GeneralShaders.ExpandAndGetRef();
+    rayGenerationGroup.m_sName.Assign("ProductionValidationRayGeneration");
+    rayGenerationGroup.m_pShader = rayGeneration;
+    auto& missGroup = description.m_GeneralShaders.ExpandAndGetRef();
+    missGroup.m_sName.Assign("ProductionValidationMiss");
+    missGroup.m_pShader = miss;
+    auto& hitGroup = description.m_TriangleHitShaders.ExpandAndGetRef();
+    hitGroup.m_sName.Assign("ProductionValidationTriangleHit");
+    hitGroup.m_pClosestHitShader = closestHit;
+
+    return xiiGALPipelineCache::GetPipeline(description) != nullptr;
   }
 
   void ExecuteRayTracingValidation(const RayTracingValidationPassData& data, xiiRenderGraphPassContext& context)
