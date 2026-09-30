@@ -14,6 +14,24 @@ struct xiiShadowPayload
   uint Occluded;
 };
 
+// Samples a uniform solid angle around an infinite emitter direction. The authored radius is
+// sin(source half-angle), matching the directional-light component and raster PCSS path.
+float3 SampleDirectionalEmitter(float3 centerDirection, float2 randomSample, float sourceRadius)
+{
+  const float sinThetaMax = saturate(sourceRadius);
+  if (sinThetaMax <= 1e-6f)
+    return centerDirection;
+
+  const float cosThetaMax = sqrt(max(1.0f - sinThetaMax * sinThetaMax, 0.0f));
+  const float cosTheta = lerp(1.0f, cosThetaMax, randomSample.x);
+  const float sinTheta = sqrt(max(1.0f - cosTheta * cosTheta, 0.0f));
+  const float phi = 6.28318530718f * randomSample.y;
+  const float3 helper = abs(centerDirection.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+  const float3 tangent = normalize(cross(helper, centerDirection));
+  const float3 bitangent = cross(centerDirection, tangent);
+  return normalize(centerDirection * cosTheta + tangent * (cos(phi) * sinTheta) + bitangent * (sin(phi) * sinTheta));
+}
+
 [RAY_GENERATION_SHADER]
 
 RaytracingAccelerationStructure g_RayTracingScene : register(t4);
@@ -34,7 +52,11 @@ void main()
     const float2 uv       = (float2(pixel) + 0.5f) / float2(dimensions);
     const float3 worldPos = ReconstructWorldPos(uv, depth);
     const float3 normal   = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
-    const float3 lightDir = normalize(-g_MainLightDirectionAndIntensity.xyz);
+    const float3 lightCenterDirection = normalize(-g_MainLightDirectionAndIntensity.xyz);
+    const float2 randomSample = float2(
+      InterleavedGradientNoise(float2(pixel) + 13.17f, g_FrameIndex),
+      InterleavedGradientNoise(float2(pixel.yx) + 71.43f, g_FrameIndex + 23U));
+    const float3 lightDir = SampleDirectionalEmitter(lightCenterDirection, randomSample, g_DirectionalShadowSourceRadius);
 
     RayDesc ray;
     ray.Origin    = worldPos + normal * 0.01f;
