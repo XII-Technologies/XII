@@ -470,6 +470,8 @@ private:
 
   void CreateRayTracingValidationResources()
   {
+    XII_ASSERT_ALWAYS(ValidateComputePipeline("Shaders/Pipeline/TemporalDenoise.xiiShader"), "Failed to validate the production temporal denoising pipeline.");
+
     if (m_pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
       return;
 
@@ -495,6 +497,24 @@ private:
     XII_ASSERT_DEV(m_pRayTracingValidationSBT != nullptr, "Failed to create ray tracing validation SBT.");
     m_pRayTracingValidationSBT->SetDebugName("Ray Tracing Validation SBT");
     m_uiRayTracingValidationShaderRecordStride = static_cast<xiiUInt32>(uiStride);
+  }
+
+  bool ValidateComputePipeline(xiiStringView sShaderPath)
+  {
+    const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
+    const xiiShaderPermutationResourceHandle permutationHandle = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
+    xiiResourceLock<xiiShaderPermutationResource> permutation(permutationHandle, xiiResourceAcquireMode::BlockTillLoaded);
+    if (!permutation.IsValid() || !permutation->IsShaderValid())
+      return false;
+
+    const xiiSharedPtr<xiiGALShader> computeShader = permutation->GetGALShader(xiiGALShaderType::Compute);
+    if (computeShader == nullptr)
+      return false;
+
+    xiiGALComputePipelineStateCreationDescription description;
+    description.m_pComputeShader             = computeShader;
+    description.m_pPipelineResourceSignature = permutation->GetPipelineResourceSignature();
+    return xiiGALPipelineCache::GetPipeline(description) != nullptr;
   }
 
   bool ValidateRayTracingPipeline(xiiStringView sShaderPath, xiiUInt32 uiPayloadSize)
