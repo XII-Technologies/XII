@@ -1528,7 +1528,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
     XII_GAL_DEVICE_CHECK(!description.m_sShaderRecordName.IsEmpty() == description.m_RayTracingPipeline.m_uiShaderRecordSize > 0U, "Shader record name must not be empty if shader record size is non-zero.");
   }
 
-  XII_GAL_DEVICE_CHECK(description.m_RayTracingPipeline.m_uiMaxRecursionDepth > m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth, "Max recursion depth ({}) exceeds device limit ({}).", description.m_RayTracingPipeline.m_uiMaxRecursionDepth, m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth);
+  XII_GAL_DEVICE_CHECK(description.m_RayTracingPipeline.m_uiMaxRecursionDepth <= m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth, "Max recursion depth ({}) exceeds device limit ({}).", description.m_RayTracingPipeline.m_uiMaxRecursionDepth, m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth);
 
   xiiSet<xiiStringView> groupNames(m_Allocator.GetParent());
   for (xiiUInt32 i = 0; i < description.m_GeneralShaders.GetCount(); ++i)
