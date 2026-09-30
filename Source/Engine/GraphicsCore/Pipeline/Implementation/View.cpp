@@ -17,6 +17,7 @@
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
+#include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
@@ -41,6 +42,7 @@
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
+#include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
@@ -214,6 +216,37 @@ xiiView::~xiiView()
   m_ViewPassResources.m_Profiler.Shutdown();
 
   m_ResourceCache.Shutdown();
+}
+
+xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)
+{
+  if (hProfile.IsValid())
+  {
+    xiiSensorProfile profile;
+    if (xiiSensorRenderingManager::GetProfile(hProfile, profile).Failed())
+      return XII_FAILURE;
+  }
+
+  auto& outputPasses = m_ViewPassResources.m_OutputPasses;
+  if (outputPasses.m_hSensorProfile == hProfile)
+    return XII_SUCCESS;
+
+  outputPasses.m_hSensorProfile = hProfile;
+  if (outputPasses.m_pSensorOutputTexture != nullptr)
+  {
+    outputPasses.m_RetiredSensorOutputTextures.PushBack(std::move(outputPasses.m_pSensorOutputTexture));
+  }
+  return XII_SUCCESS;
+}
+
+xiiSensorProfileHandle xiiView::GetSensorProfile() const
+{
+  return m_ViewPassResources.m_OutputPasses.m_hSensorProfile;
+}
+
+xiiSharedPtr<xiiGALTexture> xiiView::GetSensorOutputTexture() const
+{
+  return m_ViewPassResources.m_OutputPasses.m_pSensorOutputTexture;
 }
 
 void xiiView::SetRenderScale(float fRenderScale)
@@ -3942,6 +3975,111 @@ void xiiView::ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data,
   cmd.EndDebugGroup();
 }
 
+////////// Calibrated Sensor Output Data //////////
+
+struct xiiSensorOutputData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphTextureHandle m_hSceneRadiance;
+  xiiRenderGraphTextureHandle m_hSceneDepth;
+  xiiRenderGraphTextureHandle m_hSceneNormal;
+  xiiRenderGraphTextureHandle m_hBaseColor;
+  xiiRenderGraphTextureHandle m_hSensorOutput;
+  xiiRenderGraphBufferHandle  m_hConstants;
+  xiiSensorProfile            m_Profile;
+  xiiUInt32                   m_uiFrameIndex = 0U;
+};
+
+void xiiView::SetupSensorOutput(xiiSensorOutputData& data, xiiRenderGraphBuilder& builder)
+{
+  auto& resources = m_ViewPassResources.m_OutputPasses;
+  if (xiiSensorRenderingManager::GetProfile(resources.m_hSensorProfile, data.m_Profile).Failed())
+    return;
+
+  const auto MatchesProfile = [&data](const xiiSharedPtr<xiiGALTexture>& pTexture) {
+    return pTexture != nullptr && pTexture->GetDescription().m_Size.width == data.m_Profile.m_uiResolutionX &&
+           pTexture->GetDescription().m_Size.height == data.m_Profile.m_uiResolutionY;
+  };
+
+  if (!MatchesProfile(resources.m_pSensorOutputTexture))
+  {
+    if (resources.m_pSensorOutputTexture != nullptr)
+      resources.m_RetiredSensorOutputTextures.PushBack(std::move(resources.m_pSensorOutputTexture));
+
+    xiiGALTextureCreationDescription description;
+    description.m_Type        = xiiGALResourceDimension::Texture2D;
+    description.m_Format      = xiiGALResourceFormat::RGBA32Float;
+    description.m_Size.width  = data.m_Profile.m_uiResolutionX;
+    description.m_Size.height = data.m_Profile.m_uiResolutionY;
+    description.m_uiMipLevels = 1U;
+    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage       = xiiGALResourceUsage::Default;
+
+    const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+    if (pDevice == nullptr)
+      return;
+
+    resources.m_pSensorOutputTexture = pDevice->CreateTexture(description);
+    if (resources.m_pSensorOutputTexture == nullptr)
+      return;
+    resources.m_pSensorOutputTexture->SetDebugName("Calibrated Sensor Output");
+  }
+
+  data.m_hSceneRadiance = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hBaseColor     = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSensorOutput  = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_SensorOutput, resources.m_pSensorOutputTexture, resources.m_pSensorOutputTexture->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiSensorOutputConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("Sensor Output Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_uiFrameIndex                    = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex;
+
+  builder.ExportTexture(data.m_hSensorOutput, xiiGALResourceStateFlags::ShaderResource);
+  builder.SetPassSideEffects(true);
+  builder.SetPassAllowMerge(false);
+  xiiView::EnsureComputePipeline(resources.m_pSensorOutputPipeline, "Shaders/Pipeline/SensorOutput.xiiShader");
+}
+
+void xiiView::ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGraphPassContext& context)
+{
+  if (!data.m_hSceneRadiance.IsValid() || !data.m_hSceneDepth.IsValid() || !data.m_hSceneNormal.IsValid() ||
+      !data.m_hBaseColor.IsValid() || !data.m_hSensorOutput.IsValid() || !data.m_hConstants.IsValid())
+    return;
+
+  xiiGALCommandList& cmd = context.GetCommandList();
+  cmd.BeginDebugGroup("CalibratedSensorOutput");
+  {
+    {
+      xiiGALMapHelper<xiiSensorOutputConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->Intrinsics                  = xiiVec4(data.m_Profile.m_fFocalLengthXPixels, data.m_Profile.m_fFocalLengthYPixels, data.m_Profile.m_fPrincipalPointXPixels, data.m_Profile.m_fPrincipalPointYPixels);
+      pConstants->RangeAndExposure            = xiiVec4(data.m_Profile.m_fNearPlaneMeters, data.m_Profile.m_fFarPlaneMeters, data.m_Profile.m_fExposureSeconds, data.m_Profile.m_fRollingShutterSeconds);
+      pConstants->SpectralSensitivityAndQE    = xiiVec4(data.m_Profile.m_vSpectralSensitivity.x, data.m_Profile.m_vSpectralSensitivity.y, data.m_Profile.m_vSpectralSensitivity.z, data.m_Profile.m_fQuantumEfficiency);
+      pConstants->SignalConversion            = xiiVec4(data.m_Profile.m_fRadianceToElectrons, data.m_Profile.m_fAnalogGain, data.m_Profile.m_fSaturationElectrons, data.m_Profile.m_fWavelengthNanometers);
+      pConstants->NoiseParameters             = xiiVec4(data.m_Profile.m_fReadNoiseElectrons, data.m_Profile.m_fShotNoiseScale, data.m_Profile.m_fDepthNoiseStandardDeviationMeters, data.m_Profile.m_fDepthNoiseScalePerMeter);
+      pConstants->OutputDescription           = xiiVec4U32(data.m_Profile.m_Type.GetValue(), data.m_Profile.m_NoiseModel.GetValue(), data.m_Profile.m_uiOutputBitDepth, data.m_Profile.m_uiNoiseSeed);
+      pConstants->FrameAndResolution          = xiiVec4U32(data.m_uiFrameIndex, data.m_Profile.m_uiResolutionX, data.m_Profile.m_uiResolutionY, data.m_Profile.m_Shutter.GetValue());
+    }
+
+    cmd.SetPipelineState(m_ViewPassResources.m_OutputPasses.m_pSensorOutputPipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiSensorOutputConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneRadiance", context.GetTexture(data.m_hSceneRadiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneNormal", context.GetTexture(data.m_hSceneNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_BaseColor", context.GetTexture(data.m_hBaseColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_SensorOutput", context.GetTexture(data.m_hSensorOutput)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(data.m_Profile.m_uiResolutionX + 7U) / 8U, (data.m_Profile.m_uiResolutionY + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 ////////// GPU Forward Opaque Data //////////
 //
 // Collects all GPU resources related to the forward opaque pass.
@@ -5535,6 +5673,11 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiScreenSpaceRefractionData>("SSRefraction", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceRefraction, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceRefraction, this));
   graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPlanarReflections, this), xiiMakeDelegate(&xiiView::ExecutePlanarReflections, this));
   graph.AddPass<xiiAtmosphereCompositeData>("AtmosphereComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereComposite, this));
+
+  if (m_ViewPassResources.m_OutputPasses.m_hSensorProfile.IsValid())
+  {
+    graph.AddPass<xiiSensorOutputData>("CalibratedSensorOutput", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSensorOutput, this), xiiMakeDelegate(&xiiView::ExecuteSensorOutput, this));
+  }
 
   // Temporal reconstruction passes.
   graph.AddPass<xiiLuminanceHistogramData>("LuminanceHistogram", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLuminanceHistogram, this), xiiMakeDelegate(&xiiView::ExecuteLuminanceHistogram, this));

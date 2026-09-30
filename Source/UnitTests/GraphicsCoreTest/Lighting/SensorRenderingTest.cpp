@@ -63,6 +63,9 @@ XII_CREATE_SIMPLE_TEST(Lighting, SensorRendering)
     XII_TEST_BOOL(stats.m_uiProfileCount >= 2U);
     XII_TEST_BOOL(stats.m_uiRGBProfileCount >= 1U);
     XII_TEST_BOOL(stats.m_uiInfraredProfileCount >= 1U);
+    XII_TEST_BOOL(stats.m_uiDepthProfileCount >= 1U);
+    XII_TEST_BOOL(stats.m_uiLiDARProfileCount >= 1U);
+    XII_TEST_BOOL(xiiSensorRenderingManager::GetDefaultProfileHandle(xiiSensorType::LiDAR).IsValid());
   }
 }
 

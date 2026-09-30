@@ -109,6 +109,7 @@ namespace xiiRGBlackboardKeys
   // Stage 7 - Forward / Composite.
 
   constexpr xiiStringView k_HDRSceneColor = "HDRSceneColor"_xiisv; ///< xiiRenderGraphTextureHandle - combined HDR scene color after opaque (R16G16B16A16F).
+  constexpr xiiStringView k_SensorOutput  = "SensorOutput"_xiisv;  ///< xiiRenderGraphTextureHandle - calibrated RGB, IR, depth or LiDAR samples (RGBA32F).
 
   // Stage 8 - Transparency.
 

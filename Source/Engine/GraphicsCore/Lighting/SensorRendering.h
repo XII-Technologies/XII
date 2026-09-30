@@ -94,10 +94,13 @@ struct XII_GRAPHICSCORE_DLL xiiSensorProfile
   float   m_fWavelengthNanometers = 550.0f;
   xiiVec3 m_vSpectralSensitivity = xiiVec3(0.2126f, 0.7152f, 0.0722f);
   float   m_fQuantumEfficiency = 0.72f;
+  float   m_fRadianceToElectrons = 10000.0f;
   float   m_fAnalogGain = 1.0f;
   float   m_fReadNoiseElectrons = 1.5f;
   float   m_fShotNoiseScale = 1.0f;
   float   m_fSaturationElectrons = 30000.0f;
+  float   m_fDepthNoiseStandardDeviationMeters = 0.002f;
+  float   m_fDepthNoiseScalePerMeter = 0.001f;
   xiiUInt32 m_uiOutputBitDepth = 16U;
   xiiUInt32 m_uiNoiseSeed = 0U;
 };
@@ -148,6 +151,7 @@ public:
   /// Finds an identical immutable profile or appends a new one.
   [[nodiscard]] static xiiResult AcquireProfile(const xiiSensorProfile& profile, xiiSensorProfileHandle& out_handle);
   [[nodiscard]] static xiiSensorProfileHandle GetDefaultProfileHandle();
+  [[nodiscard]] static xiiSensorProfileHandle GetDefaultProfileHandle(xiiSensorType::Enum type);
   [[nodiscard]] static xiiResult GetProfile(xiiSensorProfileHandle handle, xiiSensorProfile& out_profile);
   [[nodiscard]] static xiiSensorProfileRegistryStats GetRegistryStats();
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Strings/HashedString.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -14,6 +15,7 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
@@ -91,6 +93,7 @@ struct xiiHybridReflectionCompositeData;
 struct xiiVolumetricFogIntegrationData;
 struct xiiVolumetricFogTemporalReprojectionData;
 struct xiiAtmosphereCompositeData;
+struct xiiSensorOutputData;
 
 struct xiiForwardOpaqueData;
 struct xiiForwardMaskedData;
@@ -168,6 +171,11 @@ public:
 
   void                       SetViewRenderMode(xiiEnum<xiiViewRenderMode> value);
   xiiEnum<xiiViewRenderMode> GetViewRenderMode() const;
+
+  /// Enables calibrated sensor output for this view. Passing an invalid handle disables it.
+  [[nodiscard]] xiiResult SetSensorProfile(xiiSensorProfileHandle hProfile);
+  [[nodiscard]] xiiSensorProfileHandle GetSensorProfile() const;
+  [[nodiscard]] xiiSharedPtr<xiiGALTexture> GetSensorOutputTexture() const;
 
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
@@ -418,6 +426,9 @@ private:
 
   void SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRenderGraphBuilder& builder);
   void ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data, xiiRenderGraphPassContext& context);
+
+  void SetupSensorOutput(xiiSensorOutputData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGraphPassContext& context);
 
 
   void SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRenderGraphBuilder& builder);
@@ -771,6 +782,10 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>  m_pHDRtoSDRPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pFinalResolvePipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pFinalBlitPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pSensorOutputPipeline;
+      xiiSharedPtr<xiiGALTexture>               m_pSensorOutputTexture;
+      xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_RetiredSensorOutputTextures; ///< Kept alive until the view is destroyed so profile changes cannot race in-flight GPU work.
+      xiiSensorProfileHandle                    m_hSensorProfile;
     } m_OutputPasses;
 
   } m_ViewPassResources;
