@@ -1472,6 +1472,8 @@ struct xiiRayTracedShadowData
   xiiRenderGraphTextureHandle m_hSceneDepth;      ///< SRV in (depth texture from main render pass, used for ray-traced shadow ray generation and occlusion testing).
   xiiRenderGraphTextureHandle m_hGBufferNormal;   ///< SRV in (surface normal used to offset the shadow-ray origin).
   xiiRenderGraphBufferHandle  m_hSceneDependency; ///< BuildASRead dependency on this frame's TLAS build.
+  xiiRenderGraphBufferHandle  m_hMaterialData;    ///< SRV in (canonical material records used by any-hit alpha testing).
+  xiiRenderGraphBufferHandle  m_hGeometryData;    ///< SRV in (geometry addressing records used by any-hit alpha testing).
   xiiRenderGraphBufferHandle  m_hShaderBindingTable;
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
   xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
@@ -1504,6 +1506,10 @@ void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRenderGr
     data.m_uiShaderRecordStride = shadowPasses.m_uiRayTracedShadowShaderRecordStride;
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
+    if (lightingPasses.m_hRayTracingMaterialData.IsValid())
+      data.m_hMaterialData = builder.ReadBuffer(lightingPasses.m_hRayTracingMaterialData, xiiGALResourceStateFlags::ShaderResource);
+    if (lightingPasses.m_hRayTracingGeometryData.IsValid())
+      data.m_hGeometryData = builder.ReadBuffer(lightingPasses.m_hRayTracingGeometryData, xiiGALResourceStateFlags::ShaderResource);
     data.m_hShaderBindingTable = builder.ImportBuffer("RT Shadow Shader Binding Table", shadowPasses.m_pRayTracedShadowShaderBindingTable, shadowPasses.m_pRayTracedShadowShaderBindingTable->GetResourceState());
     data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
   }
@@ -1531,6 +1537,13 @@ void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xii
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTShadowOut", context.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
+      if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+      {
+        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
+        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
+      }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
       const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
@@ -2496,6 +2509,8 @@ struct xiiGroundTruthAmbientOcclusionData
   xiiRenderGraphTextureHandle m_hNormalRoughness;     ///< ShaderResource in (normal/roughness buffer).
   xiiRenderGraphTextureHandle m_hRawAmbientOcclusion; ///< UnorderedAccess out (raw ambient occlusion result).
   xiiRenderGraphBufferHandle  m_hSceneDependency;
+  xiiRenderGraphBufferHandle  m_hMaterialData;
+  xiiRenderGraphBufferHandle  m_hGeometryData;
   xiiRenderGraphBufferHandle  m_hShaderBindingTable;
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
   xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
@@ -2528,6 +2543,10 @@ void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionDat
     data.m_uiShaderRecordStride = lightingPrepPasses.m_uiRTAOShaderRecordStride;
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
+    if (lightingPasses.m_hRayTracingMaterialData.IsValid())
+      data.m_hMaterialData = builder.ReadBuffer(lightingPasses.m_hRayTracingMaterialData, xiiGALResourceStateFlags::ShaderResource);
+    if (lightingPasses.m_hRayTracingGeometryData.IsValid())
+      data.m_hGeometryData = builder.ReadBuffer(lightingPasses.m_hRayTracingGeometryData, xiiGALResourceStateFlags::ShaderResource);
     data.m_hShaderBindingTable = builder.ImportBuffer("RT AO Shader Binding Table", lightingPrepPasses.m_pRTAOShaderBindingTable, lightingPrepPasses.m_pRTAOShaderBindingTable->GetResourceState());
     data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
     builder.SetPassAllowMerge(false);
@@ -2552,6 +2571,13 @@ void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOccl
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_NormalRoughness", context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_AOOut", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
+      if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+      {
+        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
+        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
+      }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
       const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
@@ -5522,9 +5548,10 @@ bool xiiView::EnsureRayTracingShadowResources()
   xiiSharedPtr<xiiGALShader> pRayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
   xiiSharedPtr<xiiGALShader> pRayMiss       = permutation->GetGALShader(xiiGALShaderType::RayMiss);
   xiiSharedPtr<xiiGALShader> pClosestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
-  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr)
+  xiiSharedPtr<xiiGALShader> pAnyHit        = permutation->GetGALShader(xiiGALShaderType::RayAnyHit);
+  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr || pAnyHit == nullptr)
   {
-    xiiLog::Error("The hardware shadow permutation does not contain ray-generation, miss, and closest-hit stages.");
+    xiiLog::Error("The hardware shadow permutation does not contain ray-generation, miss, closest-hit, and any-hit stages.");
     return false;
   }
 
@@ -5543,6 +5570,7 @@ bool xiiView::EnsureRayTracingShadowResources()
   auto& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
   hit.m_sName.Assign("RTShadowTriangleHit");
   hit.m_pClosestHitShader = pClosestHit;
+  hit.m_pAnyHitShader     = pAnyHit;
 
   shadowPasses.m_pRayTracedShadowPipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
   if (shadowPasses.m_pRayTracedShadowPipeline == nullptr)
@@ -5603,9 +5631,10 @@ bool xiiView::EnsureRayTracingAmbientOcclusionResources()
   xiiSharedPtr<xiiGALShader> pRayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
   xiiSharedPtr<xiiGALShader> pRayMiss       = permutation->GetGALShader(xiiGALShaderType::RayMiss);
   xiiSharedPtr<xiiGALShader> pClosestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
-  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr)
+  xiiSharedPtr<xiiGALShader> pAnyHit        = permutation->GetGALShader(xiiGALShaderType::RayAnyHit);
+  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr || pAnyHit == nullptr)
   {
-    xiiLog::Error("The ambient-occlusion permutation does not contain ray-generation, miss, and closest-hit stages.");
+    xiiLog::Error("The ambient-occlusion permutation does not contain ray-generation, miss, closest-hit, and any-hit stages.");
     return false;
   }
 
@@ -5624,6 +5653,7 @@ bool xiiView::EnsureRayTracingAmbientOcclusionResources()
   auto& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
   hit.m_sName.Assign("RTAOTriangleHit");
   hit.m_pClosestHitShader = pClosestHit;
+  hit.m_pAnyHitShader     = pAnyHit;
 
   lightingPrepPasses.m_pRTAOPipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
   if (lightingPrepPasses.m_pRTAOPipeline == nullptr)

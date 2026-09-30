@@ -176,35 +176,11 @@ StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10)
 ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
 Texture2D<float4> g_RayTracingTextures[] : register(t12);
 
+#include "Passes/RayTracing/RayTracingAlphaTest.h"
+
 [shader("anyhit")]
 void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
-  const xiiRayTracingMaterialData material = g_RayTracingMaterials[InstanceIndex()];
-  if (material.Rendering.x != 1U) // xiiMaterialAlphaMode::Mask
-    return;
-
-  float alpha = saturate(material.BaseColorOpacity.w);
-  const xiiRayTracingGeometryData geometry = g_RayTracingGeometry[InstanceIndex()];
-  if (material.TextureIndices0.x != 0xFFFFFFFFU && geometry.VertexLayout.w != 0xFFFFFFFFU && geometry.VertexAttributes.z != 0U)
-  {
-    const uint vertexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.x);
-    uint3 indices = PrimitiveIndex() * 3U + uint3(0U, 1U, 2U);
-    if (geometry.BufferIndices.z != 0U)
-    {
-      const uint indexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.y);
-      indices.x = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.x, geometry.BufferIndices.z);
-      indices.y = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.y, geometry.BufferIndices.z);
-      indices.z = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.z, geometry.BufferIndices.z);
-    }
-
-    const float3 barycentrics = float3(1.0f - attributes.barycentrics.x - attributes.barycentrics.y, attributes.barycentrics.x, attributes.barycentrics.y);
-    const float2 texCoord =
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x) * barycentrics.x +
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y) * barycentrics.y +
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z) * barycentrics.z;
-    alpha *= g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).a;
-  }
-
-  if (alpha < saturate(material.LayerParameters.x))
+  if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics))
     IgnoreHit();
 }

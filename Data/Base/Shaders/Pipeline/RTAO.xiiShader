@@ -7,6 +7,7 @@ ALL
 // pass reconstructs a stable ambient-visibility term from the temporally jittered samples.
 
 #include "PipelineCommon.xiiShader"
+#include "Passes/RayTracing/RayTracingMaterialData.h"
 
 struct xiiAmbientOcclusionPayload
 {
@@ -77,4 +78,20 @@ void main(inout xiiAmbientOcclusionPayload payload)
 void main(inout xiiAmbientOcclusionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
   payload.Occluded = 1U;
+}
+
+[RAY_ANY_HIT_SHADER]
+
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
+ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
+Texture2D<float4> g_RayTracingTextures[] : register(t12);
+
+#include "Passes/RayTracing/RayTracingAlphaTest.h"
+
+[shader("anyhit")]
+void main(inout xiiAmbientOcclusionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics))
+    IgnoreHit();
 }
