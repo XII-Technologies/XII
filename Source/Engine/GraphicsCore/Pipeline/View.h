@@ -661,6 +661,7 @@ private:
       xiiSharedPtr<xiiGALTopLevelAS>              m_pRayTracingScene;
       xiiRenderGraphBufferHandle                  m_hRayTracingSceneDependency;
       xiiRenderGraphBufferHandle                  m_hRayTracingMaterialData;
+      xiiRenderGraphBufferHandle                  m_hRayTracingGeometryData;
       xiiUInt32                                   m_uiRTGIShaderRecordStride = 0U;
       xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>              m_pRTGIHistory[2];

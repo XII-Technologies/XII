@@ -3,9 +3,8 @@ ALL
 
 [SHADER]
 
-// Hardware ray-traced reflection visibility. The first production slice deliberately keeps
-// closest-hit shading compact: it proves the TLAS/SBT/dispatch path and returns a validity mask
-// that the hybrid reflection composite can blend with SSR and reflection probes.
+// Hardware ray-traced reflections with material-aware hit shading and geometry-derived normals.
+// Misses remain invalid so the hybrid composite can resolve from SSR and reflection probes.
 
 #include "PipelineCommon.xiiShader"
 #include "Passes/RayTracing/RayTracingMaterialData.h"
@@ -73,11 +72,40 @@ void main(inout xiiReflectionPayload payload)
 [RAY_CLOSEST_HIT_SHADER]
 
 StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
+ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
 
 [shader("closesthit")]
 void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
   const xiiRayTracingMaterialData material = g_RayTracingMaterials[InstanceIndex()];
+  const xiiRayTracingGeometryData geometry = g_RayTracingGeometry[InstanceIndex()];
+  const uint vertexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.x);
+  uint3 indices = PrimitiveIndex() * 3U + uint3(0U, 1U, 2U);
+  if (geometry.BufferIndices.z != 0U)
+  {
+    const uint indexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.y);
+    indices.x = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.x, geometry.BufferIndices.z);
+    indices.y = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.y, geometry.BufferIndices.z);
+    indices.z = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.z, geometry.BufferIndices.z);
+  }
+
+  const float3 position0 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
+  const float3 position1 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
+  const float3 position2 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
+  const float3 barycentrics = float3(1.0f - attributes.barycentrics.x - attributes.barycentrics.y, attributes.barycentrics.x, attributes.barycentrics.y);
+  float3 objectNormal = normalize(cross(position1 - position0, position2 - position0));
+  if (geometry.VertexLayout.z != 0xFFFFFFFFU)
+  {
+    objectNormal = normalize(
+      xiiLoadRayTracingNormal(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x) * barycentrics.x +
+      xiiLoadRayTracingNormal(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y) * barycentrics.y +
+      xiiLoadRayTracingNormal(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z) * barycentrics.z);
+  }
+  float3 worldNormal = normalize(mul(objectNormal, (float3x3)WorldToObject3x4()));
+  if (dot(worldNormal, WorldRayDirection()) > 0.0f)
+    worldNormal = -worldNormal;
+
   const float3 baseColor    = max(material.BaseColorOpacity.rgb, 0.0f);
   const float3 emissive     = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
   const float  roughness    = saturate(material.EmissiveColorAndRoughness.w);
@@ -85,8 +113,15 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
   const float  specular     = saturate(material.SurfaceParameters.y);
   const float3 dielectricF0 = (0.08f * specular).xxx;
   const float3 f0           = lerp(dielectricF0, baseColor, metallic);
-  const float3 ambient      = max(g_AmbientLightColor.rgb, 0.0f) * baseColor * (1.0f - metallic);
-  const float3 directSpecular = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * f0 * lerp(0.07957747f, 0.01989437f, roughness);
-  payload.Radiance   = emissive + ambient + directSpecular;
+  const float3 viewDirection  = normalize(-WorldRayDirection());
+  const float3 lightDirection = normalize(-g_MainLightDirectionAndIntensity.xyz);
+  const float  nDotL          = saturate(dot(worldNormal, lightDirection));
+  const float  nDotV          = saturate(dot(worldNormal, viewDirection));
+  const float3 fresnel        = f0 + (1.0f - f0) * pow(1.0f - nDotV, 5.0f);
+  const float3 directRadiance = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * nDotL;
+  const float3 ambient        = max(g_AmbientLightColor.rgb, 0.0f) * baseColor * (1.0f - metallic) * material.SurfaceParameters.w;
+  const float3 directDiffuse  = directRadiance * baseColor * (1.0f - metallic) * 0.31830989f;
+  const float3 directSpecular = directRadiance * fresnel * lerp(0.25f, 0.04f, roughness);
+  payload.Radiance   = emissive + ambient + directDiffuse + directSpecular;
   payload.Confidence = 1.0f;
 }

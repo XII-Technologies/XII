@@ -29,6 +29,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
@@ -3034,6 +3035,7 @@ struct xiiRayTracedGlobalIlluminationData
   xiiRenderGraphTextureHandle m_hRayTracedRawGlobalIllumination;   ///< UnorderedAccess out (raw RT GI texture).
   xiiRenderGraphBufferHandle  m_hSceneDependency;
   xiiRenderGraphBufferHandle  m_hMaterialData;
+  xiiRenderGraphBufferHandle  m_hGeometryData;
   xiiRenderGraphBufferHandle  m_hShaderBindingTable;
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
   xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
@@ -3069,6 +3071,8 @@ void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationDat
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
     if (lightingPasses.m_hRayTracingMaterialData.IsValid())
       data.m_hMaterialData = builder.ReadBuffer(lightingPasses.m_hRayTracingMaterialData, xiiGALResourceStateFlags::ShaderResource);
+    if (lightingPasses.m_hRayTracingGeometryData.IsValid())
+      data.m_hGeometryData = builder.ReadBuffer(lightingPasses.m_hRayTracingGeometryData, xiiGALResourceStateFlags::ShaderResource);
     data.m_hShaderBindingTable = builder.ImportBuffer("RT GI Shader Binding Table", lightingPasses.m_pRTGIShaderBindingTable, lightingPasses.m_pRTGIShaderBindingTable->GetResourceState());
     data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
     builder.SetPassAllowMerge(false);
@@ -3095,6 +3099,9 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIRaw", context.GetTexture(data.m_hRayTracedRawGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayClosestHit);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
       const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
@@ -3214,6 +3221,7 @@ struct xiiRayTracedReflectionsData
   xiiRenderGraphTextureHandle m_hRayTracedRawReflections;   ///< UnorderedAccess out (raw RT reflections texture).
   xiiRenderGraphBufferHandle  m_hSceneDependency;           ///< BuildASRead dependency on this frame's TLAS build.
   xiiRenderGraphBufferHandle  m_hMaterialData;               ///< ShaderResource canonical material records indexed by TLAS instance.
+  xiiRenderGraphBufferHandle  m_hGeometryData;               ///< ShaderResource geometry records indexed by TLAS instance.
   xiiRenderGraphBufferHandle  m_hShaderBindingTable;        ///< RayTracing in (shader group records).
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
   xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
@@ -3250,6 +3258,8 @@ void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRe
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
     if (lightingPasses.m_hRayTracingMaterialData.IsValid())
       data.m_hMaterialData = builder.ReadBuffer(lightingPasses.m_hRayTracingMaterialData, xiiGALResourceStateFlags::ShaderResource);
+    if (lightingPasses.m_hRayTracingGeometryData.IsValid())
+      data.m_hGeometryData = builder.ReadBuffer(lightingPasses.m_hRayTracingGeometryData, xiiGALResourceStateFlags::ShaderResource);
     data.m_hShaderBindingTable  = builder.ImportBuffer("RT Reflection Shader Binding Table", lightingPasses.m_pRTReflectionShaderBindingTable, lightingPasses.m_pRTReflectionShaderBindingTable->GetResourceState());
     data.m_hShaderBindingTable  = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
     builder.SetPassAllowMerge(false);
@@ -3277,6 +3287,9 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayClosestHit);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
       const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
@@ -5128,6 +5141,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   m_ViewPassResources.m_LightingPasses.m_pRayTracingScene            = rayTracingScene.m_pTopLevelAS;
   m_ViewPassResources.m_LightingPasses.m_hRayTracingSceneDependency = rayTracingScene.m_hSceneDependency;
   m_ViewPassResources.m_LightingPasses.m_hRayTracingMaterialData     = rayTracingScene.m_hMaterialData;
+  m_ViewPassResources.m_LightingPasses.m_hRayTracingGeometryData     = rayTracingScene.m_hGeometryData;
 
   if (m_pExtractedData != nullptr)
   {

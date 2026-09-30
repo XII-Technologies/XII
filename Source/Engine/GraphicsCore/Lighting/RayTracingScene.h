@@ -122,6 +122,8 @@ public:
     xiiRenderGraphBufferHandle     m_hSceneDependency;
     /// Shader-readable canonical material records indexed by HLSL InstanceIndex().
     xiiRenderGraphBufferHandle     m_hMaterialData;
+    /// Shader-readable geometry addressing records indexed by HLSL InstanceIndex().
+    xiiRenderGraphBufferHandle     m_hGeometryData;
     xiiUInt32                      m_uiInstanceCount = 0U;
   };
 
