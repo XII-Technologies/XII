@@ -180,6 +180,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryResidencyDescription, xiiNoBase, 1, x
       XII_MEMBER_PROPERTY("MaxGeometries", m_uiMaxGeometries)->AddAttributes(new xiiDefaultValueAttribute(65536U), new xiiClampValueAttribute(1U, 1048576U)),
       XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(1U, 64U)),
       XII_MEMBER_PROPERTY("BudgetBytes", m_uiBudgetBytes)->AddAttributes(new xiiDefaultValueAttribute(512ULL * 1024ULL * 1024ULL)),
+      XII_MEMBER_PROPERTY("UploadBudgetPerFrameBytes", m_uiUploadBudgetPerFrameBytes)->AddAttributes(new xiiDefaultValueAttribute(32ULL * 1024ULL * 1024ULL)),
       XII_MEMBER_PROPERTY("MaxMeshlets", m_uiMaxMeshlets)->AddAttributes(new xiiDefaultValueAttribute(1024U * 1024U), new xiiClampValueAttribute(1U, 64U * 1024U * 1024U)),
     } XII_END_PROPERTIES;
   }
@@ -207,6 +208,7 @@ xiiResult xiiGeometryResidencyManager::Configure(const xiiGeometryResidencyDescr
     s_pState->m_Configuration.m_uiMaxGeometries == description.m_uiMaxGeometries &&
     s_pState->m_Configuration.m_uiFramesInFlight == description.m_uiFramesInFlight &&
     s_pState->m_Configuration.m_uiBudgetBytes == description.m_uiBudgetBytes &&
+    s_pState->m_Configuration.m_uiUploadBudgetPerFrameBytes == description.m_uiUploadBudgetPerFrameBytes &&
     s_pState->m_Configuration.m_uiMaxMeshlets == description.m_uiMaxMeshlets;
   if (bSameConfiguration && s_pState->m_bInitialized)
     return XII_SUCCESS;

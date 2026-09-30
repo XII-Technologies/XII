@@ -3,6 +3,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
@@ -66,6 +69,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderGraphManager)
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
     "Core",
+    "GeometryResidencyManager",
+    "MaterialManager",
+    "VirtualShadowMapManager",
     "RenderPassCache",
     "PipelineCache"
   END_SUBSYSTEM_DEPENDENCIES
@@ -196,6 +202,10 @@ xiiUInt64 xiiRenderGraphManager::PrepareFrame(xiiUInt64 uiFrameIndex, xiiUInt32 
   const xiiUInt64 uiCompletedFrame = s_pState->m_FrameCompletionTracker.PollCompletedFrames();
   if (xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
     pBindlessTable->Collect(uiCompletedFrame);
+  if (xiiMaterialManager::IsInitialized())
+    xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  if (xiiVirtualShadowMapManager::IsInitialized())
+    xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   return uiCompletedFrame;
 }
 
@@ -207,6 +217,12 @@ xiiResult xiiRenderGraphManager::ExecuteFrame(xiiUInt64 uiFrameIndex, xiiUInt64 
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (pDevice == nullptr || s_pState->m_pResourceCache == nullptr)
     return XII_FAILURE;
+
+  if (xiiGeometryResidencyManager::IsInitialized())
+  {
+    const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
+    xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
+  }
 
   s_pState->m_pResourceCache->BeginFrame(uiFrameIndex, uiCompletedFrame);
   const xiiResult result = ExecuteFrame(uiFrameIndex, pDevice.Borrow(), pView, s_pState->m_pResourceCache.Borrow(), s_pState->m_pProfiler.Borrow(), settings, out_pError);

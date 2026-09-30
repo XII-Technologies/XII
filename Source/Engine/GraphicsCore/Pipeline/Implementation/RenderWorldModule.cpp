@@ -8,9 +8,11 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Configuration/CVar.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -580,6 +582,13 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
   if (xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
     pBindlessTable->Collect(uiCompletedFrame);
+  if (xiiMaterialManager::IsInitialized())
+    xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  if (xiiGeometryResidencyManager::IsInitialized())
+  {
+    const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
+    xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
+  }
   xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   bool bGlobalIlluminationFrameStarted = false;
 

@@ -56,10 +56,11 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   XII_SUCCEED_OR_RETURN(pBindlessResources->Configure(bindlessDescription));
 
   xiiGeometryResidencyDescription geometryDescription;
-  geometryDescription.m_uiMaxGeometries  = 64U;
-  geometryDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
-  geometryDescription.m_uiBudgetBytes    = 128ULL * 1024ULL * 1024ULL;
-  geometryDescription.m_uiMaxMeshlets    = configuration.m_uiMaxVisibleMeshlets;
+  geometryDescription.m_uiMaxGeometries             = 64U;
+  geometryDescription.m_uiFramesInFlight            = configuration.m_uiFramesInFlight;
+  geometryDescription.m_uiBudgetBytes               = 128ULL * 1024ULL * 1024ULL;
+  geometryDescription.m_uiUploadBudgetPerFrameBytes = 8ULL * 1024ULL * 1024ULL;
+  geometryDescription.m_uiMaxMeshlets               = configuration.m_uiMaxVisibleMeshlets;
   XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::Configure(geometryDescription));
 
   xiiMaterialGpuStorageDescription materialDescription;
@@ -326,7 +327,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   return XII_SUCCESS;
 }
 
-void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiTime deltaTime)
+void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
 {
   m_fAnimationTime += static_cast<float>(deltaTime.GetSeconds());
   const xiiUInt32              animatedCount = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64U);
@@ -367,16 +368,13 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
     XII_IGNORE_UNUSED(xiiRayTracingSceneManager::UpdateInstance(m_RayTracingInstances[i], rayTracingInstance));
   }
 
-  xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   if (uiFrameIndex == 30U)
   {
     for (const GeometryAsset& asset : m_GeometryAssets)
       xiiGeometryResidencyManager::RequestResidency(asset.m_hGeometry, 0U, uiFrameIndex);
   }
-  xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, 8ULL * 1024ULL * 1024ULL);
   for (const GeometryAsset& asset : m_GeometryAssets)
     xiiGeometryResidencyManager::Touch(asset.m_hGeometry, uiFrameIndex);
-  GetBindlessResources().Collect(uiCompletedFrame);
 }
 
 xiiUInt32 xiiGpuDrivenSceneWorld::GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const

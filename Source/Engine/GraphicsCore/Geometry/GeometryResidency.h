@@ -109,10 +109,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyStats);
 /// Startup configuration for the process-wide geometry residency service.
 struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyDescription
 {
-  xiiUInt32 m_uiMaxGeometries  = 65536U;
-  xiiUInt32 m_uiFramesInFlight = 3U;
-  xiiUInt64 m_uiBudgetBytes    = 512ULL * 1024ULL * 1024ULL;
-  xiiUInt32 m_uiMaxMeshlets    = 1024U * 1024U;
+  xiiUInt32 m_uiMaxGeometries             = 65536U;
+  xiiUInt32 m_uiFramesInFlight            = 3U;
+  xiiUInt64 m_uiBudgetBytes               = 512ULL * 1024ULL * 1024ULL;
+  xiiUInt64 m_uiUploadBudgetPerFrameBytes = 32ULL * 1024ULL * 1024ULL;
+  xiiUInt32 m_uiMaxMeshlets               = 1024U * 1024U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyDescription);

@@ -128,7 +128,7 @@ public:
     {
       ++m_uiFrameIndex;
       const xiiUInt64 uiCompletedFrame = xiiRenderGraphManager::PrepareFrame(m_uiFrameIndex, m_Configuration.m_uiFramesInFlight);
-      m_World.Update(m_uiFrameIndex, uiCompletedFrame, xiiClock::GetGlobalClock()->GetTimeDiff());
+      m_World.Update(m_uiFrameIndex, xiiClock::GetGlobalClock()->GetTimeDiff());
 
       m_TargetSize       = m_pWindow->GetClientAreaSize();
       const float aspect = static_cast<float>(m_TargetSize.width) / static_cast<float>(m_TargetSize.height);

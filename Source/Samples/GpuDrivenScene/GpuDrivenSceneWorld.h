@@ -48,7 +48,7 @@ public:
   [[nodiscard]] static xiiResult ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration);
   xiiResult                      Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration);
   void                           Shutdown(xiiUInt64 uiLastSubmittedFrame);
-  void                           Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiTime deltaTime);
+  void                           Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime);
 
   [[nodiscard]] xiiSceneDatabase&             GetScene() { return m_Scene; }
   [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_Scene; }
