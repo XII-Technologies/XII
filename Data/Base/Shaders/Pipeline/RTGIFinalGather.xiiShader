@@ -27,12 +27,12 @@ float3 CosineSampleHemisphere(float3 normal, float2 randomSample)
 
 [RAY_GENERATION_SHADER]
 
-RaytracingAccelerationStructure g_RayTracingScene : register(t0);
-Texture2D<float>                 g_SceneDepth      : register(t1);
-Texture2D<float2>                g_GBufferNormal   : register(t2);
-Texture2D<float4>                g_GBufferAlbedo   : register(t3);
-RWTexture2D<float4>              g_RTGIRaw         : register(u4);
-RWTexture2D<float4>              g_RTGIFinal       : register(u5);
+RaytracingAccelerationStructure g_RayTracingScene : register(t4);
+Texture2D<float>                 g_SceneDepth      : register(t5);
+Texture2D<float2>                g_GBufferNormal   : register(t6);
+Texture2D<float4>                g_GBufferAlbedo   : register(t7);
+RWTexture2D<float4>              g_RTGIRaw         : register(u8);
+RWTexture2D<float4>              g_RTGIFinal       : register(u9);
 
 [shader("raygeneration")]
 void main()

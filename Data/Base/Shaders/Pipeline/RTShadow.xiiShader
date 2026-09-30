@@ -15,10 +15,10 @@ struct xiiShadowPayload
 
 [RAY_GENERATION_SHADER]
 
-RaytracingAccelerationStructure g_RayTracingScene : register(t0);
-Texture2D<float>                 g_SceneDepth      : register(t1);
-Texture2D<float2>                g_GBufferNormal   : register(t2);
-RWTexture2D<float>               g_RTShadowOut     : register(u3);
+RaytracingAccelerationStructure g_RayTracingScene : register(t4);
+Texture2D<float>                 g_SceneDepth      : register(t5);
+Texture2D<float2>                g_GBufferNormal   : register(t6);
+RWTexture2D<float>               g_RTShadowOut     : register(u7);
 
 [shader("raygeneration")]
 void main()

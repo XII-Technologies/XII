@@ -8,8 +8,8 @@ ALL
 
 #include "PipelineCommon.xiiShader"
 
-Texture2D<float>   g_SceneDepth  : register(t0);
-RWTexture2D<float> g_RTShadowOut : register(u3);
+Texture2D<float>   g_SceneDepth  : register(t5);
+RWTexture2D<float> g_RTShadowOut : register(u6);
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

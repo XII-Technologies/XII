@@ -17,12 +17,12 @@ struct xiiReflectionPayload
 
 [RAY_GENERATION_SHADER]
 
-RaytracingAccelerationStructure g_RayTracingScene : register(t0);
-Texture2D<float>                 g_SceneDepth      : register(t1);
-Texture2D<float2>                g_GBufNormal      : register(t2);
-Texture2D<float4>                g_GBufMaterial    : register(t3);
-RWTexture2D<float4>              g_RTReflRaw       : register(u4);
-RWTexture2D<float4>              g_RTReflFinal     : register(u5);
+RaytracingAccelerationStructure g_RayTracingScene : register(t4);
+Texture2D<float>                 g_SceneDepth      : register(t5);
+Texture2D<float2>                g_GBufNormal      : register(t6);
+Texture2D<float4>                g_GBufMaterial    : register(t7);
+RWTexture2D<float4>              g_RTReflRaw       : register(u8);
+RWTexture2D<float4>              g_RTReflFinal     : register(u9);
 
 [shader("raygeneration")]
 void main()
