@@ -204,9 +204,17 @@ void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
         const xiiMaterialResourceBinding& binding = snapshot.m_ResourceBindings[uiTexture];
         xiiUInt32 uiBindlessIndex = xiiInvalidIndex;
         if (definition.m_TextureType == xiiGALShaderTextureType::Texture2D || definition.m_TextureType == xiiGALShaderTextureType::Texture2DArray)
+        {
+          if (!binding.m_hTexture2D.IsValid())
+            continue; // No resource handle means an explicitly assigned descriptor is caller-owned.
           uiBindlessIndex = ResolveBindlessTexture<xiiTexture2DResource>(s_pState->m_Texture2DCache, binding.m_hTexture2D, uiFrameIndex, *pTable);
+        }
         else if (definition.m_TextureType == xiiGALShaderTextureType::TextureCube || definition.m_TextureType == xiiGALShaderTextureType::TextureCubeArray)
+        {
+          if (!binding.m_hTextureCube.IsValid())
+            continue;
           uiBindlessIndex = ResolveBindlessTexture<xiiTextureCubeResource>(s_pState->m_TextureCubeCache, binding.m_hTextureCube, uiFrameIndex, *pTable);
+        }
 
         pMaterial->SetBindlessIndex(binding.m_Id, uiBindlessIndex).IgnoreResult();
       }

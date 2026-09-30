@@ -168,13 +168,15 @@ xiiResult xiiMaterialInstance::SetResourceBinding(xiiMaterialParameterId id, con
   bool                        bChanged = false;
   if (pTexture2D != nullptr && binding.m_hTexture2D != *pTexture2D)
   {
-    binding.m_hTexture2D = *pTexture2D;
-    bChanged             = true;
+    binding.m_hTexture2D    = *pTexture2D;
+    binding.m_uiBindlessIndex = xiiInvalidIndex;
+    bChanged                = true;
   }
   if (pTextureCube != nullptr && binding.m_hTextureCube != *pTextureCube)
   {
-    binding.m_hTextureCube = *pTextureCube;
-    bChanged               = true;
+    binding.m_hTextureCube   = *pTextureCube;
+    binding.m_uiBindlessIndex = xiiInvalidIndex;
+    bChanged                 = true;
   }
   if (pBindlessIndex != nullptr && binding.m_uiBindlessIndex != *pBindlessIndex)
   {
