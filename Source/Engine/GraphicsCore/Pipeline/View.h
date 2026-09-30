@@ -480,6 +480,7 @@ private:
   ///        If the pipeline already exists this is a no-op.
   static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
   bool EnsureRayTracingShadowResources();
+  bool EnsureRayTracingAmbientOcclusionResources();
   bool EnsureRayTracingGlobalIlluminationResources();
   bool EnsureRayTracingReflectionResources();
 
@@ -604,10 +605,13 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelFogInitPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pDDGIProbePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSparseVoxelGatherPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pGTAOPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pGTAOFallbackPipeline;
+      xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTAOPipeline;
+      xiiSharedPtr<xiiGALBuffer>                  m_pRTAOShaderBindingTable;
       xiiSharedPtr<xiiGALComputePipelineState> m_pGTAODenoisePipeline;
       // Persistent once-generated textures
       xiiSharedPtr<xiiGALTexture> m_pBRDFLut;             // 256x256 R16G16F, generated once
+      xiiUInt32                   m_uiRTAOShaderRecordStride = 0U;
       bool                        m_bBRDFLutGenerated = false;
       xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;
       xiiSharedPtr<xiiGALTexture>                       m_pFallbackReflectionProbeTexture;

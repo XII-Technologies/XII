@@ -2422,11 +2422,15 @@ void xiiView::ExecuteSparseVoxelRadianceGather(const xiiSparseVoxelRadianceGathe
 
 struct xiiGroundTruthAmbientOcclusionData
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiRenderGraphTextureHandle m_hSceneDepth;          ///< ShaderResource in (scene depth texture).
   xiiRenderGraphTextureHandle m_hNormalRoughness;     ///< ShaderResource in (normal/roughness buffer).
   xiiRenderGraphTextureHandle m_hRawAmbientOcclusion; ///< UnorderedAccess out (raw ambient occlusion result).
+  xiiRenderGraphBufferHandle  m_hSceneDependency;
+  xiiRenderGraphBufferHandle  m_hShaderBindingTable;
+  xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
+  xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
+  xiiUInt32                                    m_uiShaderRecordStride = 0U;
+  bool                                         m_bUseHardwareRayTracing = false;
 };
 
 void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphBuilder& builder)
@@ -2444,7 +2448,24 @@ void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionDat
   description.m_Usage         = xiiGALResourceUsage::Default;
   data.m_hRawAmbientOcclusion = builder.WriteTexture(xiiRGBlackboardKeys::k_RawAOTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pGTAOPipeline, "Shaders/Pipeline/GTAO.xiiShader");
+  auto& lightingPrepPasses = m_ViewPassResources.m_LightingPrepPasses;
+  const auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
+  data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingAmbientOcclusionResources();
+  if (data.m_bUseHardwareRayTracing)
+  {
+    data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
+    data.m_pRayTracingPipeline = lightingPrepPasses.m_pRTAOPipeline;
+    data.m_uiShaderRecordStride = lightingPrepPasses.m_uiRTAOShaderRecordStride;
+    if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
+      data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
+    data.m_hShaderBindingTable = builder.ImportBuffer("RT AO Shader Binding Table", lightingPrepPasses.m_pRTAOShaderBindingTable, lightingPrepPasses.m_pRTAOShaderBindingTable->GetResourceState());
+    data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
+    builder.SetPassAllowMerge(false);
+  }
+  else
+  {
+    xiiView::EnsureComputePipeline(lightingPrepPasses.m_pGTAOFallbackPipeline, "Shaders/Pipeline/GTAO.xiiShader");
+  }
 }
 
 void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphPassContext& context)
@@ -2453,12 +2474,41 @@ void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOccl
 
   cmd.BeginDebugGroup("GroundTruthAmbientOcclusion");
   {
-    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pGTAOPipeline);
-    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_NormalRoughness", context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_AOOut", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+    if (data.m_bUseHardwareRayTracing)
+    {
+      cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
+      m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
+      cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetShaderResourceTextureView("g_NormalRoughness", context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetUnorderedAccessTextureView("g_AOOut", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+
+      const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
+      xiiGALUpdateSBTDescription sbtUpdate;
+      sbtUpdate.m_pPipelineState      = data.m_pRayTracingPipeline.Borrow();
+      sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
+      sbtUpdate.m_RayGenerationTable  = {0U, uiStride, uiStride};
+      sbtUpdate.m_MissTable           = {uiStride, uiStride, uiStride};
+      sbtUpdate.m_HitTable            = {uiStride * 2U, uiStride, uiStride};
+      cmd.UpdateSBT(sbtUpdate);
+
+      xiiGALTraceRaysDescription trace(sbtUpdate.m_pShaderBindingTable, GetRenderResolutionWidth(), GetRenderResolutionHeight());
+      trace.m_RayGenerationTable = sbtUpdate.m_RayGenerationTable;
+      trace.m_MissTable          = sbtUpdate.m_MissTable;
+      trace.m_HitTable           = sbtUpdate.m_HitTable;
+      cmd.TraceRays(trace);
+    }
+    else
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pGTAOFallbackPipeline);
+      m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceTextureView("g_NormalRoughness", context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessTextureView("g_AOOut", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+    }
   }
   cmd.EndDebugGroup();
 }
@@ -5053,6 +5103,87 @@ bool xiiView::EnsureRayTracingShadowResources()
 
   shadowPasses.m_pRayTracedShadowShaderBindingTable->SetDebugName("RT Shadow Shader Binding Table");
   shadowPasses.m_uiRayTracedShadowShaderRecordStride = static_cast<xiiUInt32>(uiRecordStride);
+  return true;
+}
+
+bool xiiView::EnsureRayTracingAmbientOcclusionResources()
+{
+  auto& lightingPrepPasses = m_ViewPassResources.m_LightingPrepPasses;
+  if (lightingPrepPasses.m_pRTAOPipeline != nullptr && lightingPrepPasses.m_pRTAOShaderBindingTable != nullptr)
+    return true;
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice == nullptr || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
+    return false;
+
+  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTAO.xiiShader");
+  xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
+  xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  if (!permutation.IsValid() || !permutation->IsShaderValid())
+  {
+    xiiLog::Error("Failed to load the ray-traced ambient-occlusion shader permutation.");
+    return false;
+  }
+
+  xiiSharedPtr<xiiGALShader> pRayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
+  xiiSharedPtr<xiiGALShader> pRayMiss       = permutation->GetGALShader(xiiGALShaderType::RayMiss);
+  xiiSharedPtr<xiiGALShader> pClosestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
+  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr)
+  {
+    xiiLog::Error("The ambient-occlusion permutation does not contain ray-generation, miss, and closest-hit stages.");
+    return false;
+  }
+
+  xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
+  pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
+  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
+  pipelineDescription.m_uiMaximumPayloadSize                     = sizeof(xiiUInt32);
+  pipelineDescription.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
+
+  auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  rayGeneration.m_sName.Assign("RTAORayGeneration");
+  rayGeneration.m_pShader = pRayGeneration;
+  auto& miss = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  miss.m_sName.Assign("RTAOMiss");
+  miss.m_pShader = pRayMiss;
+  auto& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
+  hit.m_sName.Assign("RTAOTriangleHit");
+  hit.m_pClosestHitShader = pClosestHit;
+
+  lightingPrepPasses.m_pRTAOPipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  if (lightingPrepPasses.m_pRTAOPipeline == nullptr)
+  {
+    xiiLog::Error("Failed to create the ray-traced ambient-occlusion pipeline.");
+    return false;
+  }
+  lightingPrepPasses.m_pRTAOPipeline->SetDebugName("RT AO Pipeline");
+
+  const xiiGALRayTracingProperties& properties = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiUInt64 uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
+  const xiiUInt64 uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
+  if (uiRecordStride == 0U || (properties.m_uiMaxShaderRecordStride != 0U && uiRecordStride > properties.m_uiMaxShaderRecordStride))
+  {
+    xiiLog::Error("The device reported invalid ambient-occlusion shader binding table alignment properties.");
+    lightingPrepPasses.m_pRTAOPipeline.Clear();
+    return false;
+  }
+
+  xiiGALBufferCreationDescription sbtDescription;
+  sbtDescription.m_uiSize    = uiRecordStride * 3U;
+  sbtDescription.m_BindFlags = xiiGALBindFlags::RayTracing;
+  sbtDescription.m_Usage     = xiiGALResourceUsage::Mutable;
+  sbtDescription.m_Mode      = xiiGALBufferMode::Raw;
+  lightingPrepPasses.m_pRTAOShaderBindingTable = pDevice->CreateBuffer(sbtDescription);
+  if (lightingPrepPasses.m_pRTAOShaderBindingTable == nullptr)
+  {
+    xiiLog::Error("Failed to create the ambient-occlusion shader binding table.");
+    lightingPrepPasses.m_pRTAOPipeline.Clear();
+    return false;
+  }
+
+  lightingPrepPasses.m_pRTAOShaderBindingTable->SetDebugName("RT AO Shader Binding Table");
+  lightingPrepPasses.m_uiRTAOShaderRecordStride = static_cast<xiiUInt32>(uiRecordStride);
   return true;
 }
 
