@@ -16,6 +16,7 @@
 #include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
+#include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
@@ -28,6 +29,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
@@ -2882,14 +2884,18 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
 
 struct xiiRayTracedReflectionsData
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiRenderGraphTextureHandle m_hSceneDepth;                ///< ShaderResource in (scene depth texture).
   xiiRenderGraphTextureHandle m_hGBufferNormal;             ///< ShaderResource in (G-Buffer normal).
   xiiRenderGraphTextureHandle m_hGBufferMaterial;           ///< ShaderResource in (G-Buffer material).
   xiiRenderGraphTextureHandle m_hBRDFLut;                   ///< ShaderResource in (BRDF lookup texture).
   xiiRenderGraphTextureHandle m_hRayTracedRawReflections;   ///< UnorderedAccess out (raw RT reflections texture).
   xiiRenderGraphTextureHandle m_hRayTracedFinalReflections; ///< UnorderedAccess out (final RT reflections texture).
+  xiiRenderGraphBufferHandle  m_hSceneDependency;           ///< BuildASRead dependency on this frame's TLAS build.
+  xiiRenderGraphBufferHandle  m_hShaderBindingTable;        ///< RayTracing in (shader group records).
+  xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
+  xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
+  xiiUInt32                                    m_uiShaderRecordStride = 0U;
+  bool                                         m_bUseHardwareRayTracing = false;
 };
 
 void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRenderGraphBuilder& builder)
@@ -2910,9 +2916,24 @@ void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRe
   data.m_hRayTracedRawReflections   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawReflections, description, xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hRayTracedFinalReflections = builder.WriteTexture(xiiRGBlackboardKeys::k_RTFinalReflections, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  // See RTGI above: the transparent result preserves probe/SSR fallbacks on
-  // devices or frames without a frame-valid TLAS.
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pRTReflectionPipeline, "Shaders/Pipeline/RTReflectionFallback.xiiShader");
+  auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
+  data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingReflectionResources();
+  if (data.m_bUseHardwareRayTracing)
+  {
+    data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
+    data.m_pRayTracingPipeline = lightingPasses.m_pRTReflectionPipeline;
+    data.m_uiShaderRecordStride = lightingPasses.m_uiRTReflectionShaderRecordStride;
+    if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
+      data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
+    data.m_hShaderBindingTable  = builder.ImportBuffer("RT Reflection Shader Binding Table", lightingPasses.m_pRTReflectionShaderBindingTable, lightingPasses.m_pRTReflectionShaderBindingTable->GetResourceState());
+    data.m_hShaderBindingTable  = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
+    builder.SetPassAllowMerge(false);
+  }
+  else
+  {
+    // Preserve the SSR/probe fallback contract on devices or frames without a valid TLAS.
+    xiiView::EnsureComputePipeline(lightingPasses.m_pRTReflectionFallbackPipeline, "Shaders/Pipeline/RTReflectionFallback.xiiShader");
+  }
 }
 
 void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& data, xiiRenderGraphPassContext& context)
@@ -2921,16 +2942,45 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
 
   cmd.BeginDebugGroup("RTReflections");
   {
-    cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pRTReflectionPipeline);
+    if (data.m_bUseHardwareRayTracing)
+    {
+      cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
+      m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
+      cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflFinal", context.GetTexture(data.m_hRayTracedFinalReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
-    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_BRDFLut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflFinal", context.GetTexture(data.m_hRayTracedFinalReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+      const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
+      xiiGALUpdateSBTDescription sbtUpdate;
+      sbtUpdate.m_pPipelineState      = data.m_pRayTracingPipeline.Borrow();
+      sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
+      sbtUpdate.m_RayGenerationTable  = {0U, uiStride, uiStride};
+      sbtUpdate.m_MissTable           = {uiStride, uiStride, uiStride};
+      sbtUpdate.m_HitTable            = {uiStride * 2U, uiStride, uiStride};
+      cmd.UpdateSBT(sbtUpdate);
+
+      xiiGALTraceRaysDescription trace(sbtUpdate.m_pShaderBindingTable, GetRenderResolutionWidth(), GetRenderResolutionHeight());
+      trace.m_RayGenerationTable = sbtUpdate.m_RayGenerationTable;
+      trace.m_MissTable          = sbtUpdate.m_MissTable;
+      trace.m_HitTable           = sbtUpdate.m_HitTable;
+      cmd.TraceRays(trace);
+    }
+    else
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pRTReflectionFallbackPipeline);
+      cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceTextureView("g_BRDFLut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflFinal", context.GetTexture(data.m_hRayTracedFinalReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+    }
   }
   cmd.EndDebugGroup();
 }
@@ -4673,6 +4723,10 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   bool      bResult      = blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
   XII_IGNORE_UNUSED(bResult);
 
+  const xiiRayTracingSceneManager::BuildHandles rayTracingScene = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
+  m_ViewPassResources.m_LightingPasses.m_pRayTracingScene            = rayTracingScene.m_pTopLevelAS;
+  m_ViewPassResources.m_LightingPasses.m_hRayTracingSceneDependency = rayTracingScene.m_hSceneDependency;
+
   if (m_pExtractedData != nullptr)
   {
     m_ViewPassResources.m_LightingSystem.BuildFrameData(*this, *m_pExtractedData, uiFrameIndex);
@@ -4825,6 +4879,89 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Final output pass.
   graph.AddPass<xiiFinalBlitData>("BackbufferPresent", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupFinalBlit, this), xiiMakeDelegate(&xiiView::ExecuteFinalBlit, this));
+}
+
+bool xiiView::EnsureRayTracingReflectionResources()
+{
+  auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
+  if (lightingPasses.m_pRTReflectionPipeline != nullptr && lightingPasses.m_pRTReflectionShaderBindingTable != nullptr)
+    return true;
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice == nullptr || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
+    return false;
+
+  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTReflection.xiiShader");
+  xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
+  xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  if (!permutation.IsValid() || !permutation->IsShaderValid())
+  {
+    xiiLog::Error("Failed to load the hardware ray-tracing reflection shader permutation.");
+    return false;
+  }
+
+  xiiSharedPtr<xiiGALShader> pRayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
+  xiiSharedPtr<xiiGALShader> pRayMiss       = permutation->GetGALShader(xiiGALShaderType::RayMiss);
+  xiiSharedPtr<xiiGALShader> pClosestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
+  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr)
+  {
+    xiiLog::Error("The hardware reflection permutation does not contain ray-generation, miss, and closest-hit stages.");
+    return false;
+  }
+
+  xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
+  pipelineDescription.m_pPipelineResourceSignature              = permutation->GetPipelineResourceSignature();
+  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
+  pipelineDescription.m_uiMaximumPayloadSize                     = 16U;
+  pipelineDescription.m_uiMaximumAttributeSize                   = 8U;
+
+  xiiGALRayTracingGeneralShaderGroupDescription& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  rayGeneration.m_sName.Assign("RTReflectionRayGeneration");
+  rayGeneration.m_pShader = pRayGeneration;
+
+  xiiGALRayTracingGeneralShaderGroupDescription& miss = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  miss.m_sName.Assign("RTReflectionMiss");
+  miss.m_pShader = pRayMiss;
+
+  xiiGALRayTracingTriangleHitShaderGroupDescription& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
+  hit.m_sName.Assign("RTReflectionTriangleHit");
+  hit.m_pClosestHitShader = pClosestHit;
+
+  lightingPasses.m_pRTReflectionPipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  if (lightingPasses.m_pRTReflectionPipeline == nullptr)
+  {
+    xiiLog::Error("Failed to create the hardware ray-tracing reflection pipeline.");
+    return false;
+  }
+  lightingPasses.m_pRTReflectionPipeline->SetDebugName("RT Reflection Pipeline");
+
+  const xiiGALRayTracingProperties& rayTracingProperties = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiUInt64 uiBaseAlignment = xiiMath::Max(1U, rayTracingProperties.m_uiShaderGroupBaseAlignment);
+  const xiiUInt64 uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(rayTracingProperties.m_uiShaderGroupHandleSize), uiBaseAlignment);
+  if (uiRecordStride == 0U || (rayTracingProperties.m_uiMaxShaderRecordStride != 0U && uiRecordStride > rayTracingProperties.m_uiMaxShaderRecordStride))
+  {
+    xiiLog::Error("The device reported invalid shader binding table alignment properties.");
+    lightingPasses.m_pRTReflectionPipeline.Clear();
+    return false;
+  }
+
+  xiiGALBufferCreationDescription sbtDescription;
+  sbtDescription.m_uiSize    = uiRecordStride * 3U;
+  sbtDescription.m_BindFlags = xiiGALBindFlags::RayTracing;
+  sbtDescription.m_Usage     = xiiGALResourceUsage::Mutable;
+  sbtDescription.m_Mode      = xiiGALBufferMode::Raw;
+  lightingPasses.m_pRTReflectionShaderBindingTable = pDevice->CreateBuffer(sbtDescription);
+  if (lightingPasses.m_pRTReflectionShaderBindingTable == nullptr)
+  {
+    xiiLog::Error("Failed to create the hardware reflection shader binding table.");
+    lightingPasses.m_pRTReflectionPipeline.Clear();
+    return false;
+  }
+
+  lightingPasses.m_pRTReflectionShaderBindingTable->SetDebugName("RT Reflection Shader Binding Table");
+  lightingPasses.m_uiRTReflectionShaderRecordStride = static_cast<xiiUInt32>(uiRecordStride);
+  return true;
 }
 
 // static

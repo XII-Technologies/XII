@@ -14,6 +14,7 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -31,6 +32,8 @@ class xiiGALTexture;
 class xiiGALSampler;
 class xiiGALComputePipelineState;
 class xiiGALGraphicsPipelineState;
+class xiiGALRayTracingPipelineState;
+class xiiGALTopLevelAS;
 
 struct xiiOcclusionReadbackData;
 struct xiiFrustumCullData;
@@ -476,6 +479,7 @@ private:
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
   static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
+  bool EnsureRayTracingReflectionResources();
 
 private:
   friend class xiiRenderWorldModule;
@@ -625,8 +629,13 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricIntegratePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricTemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pAtmosphereCompositePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pRTGIPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pRTReflectionPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGIPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pRTReflectionFallbackPipeline;
+      xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTReflectionPipeline;
+      xiiSharedPtr<xiiGALBuffer>                  m_pRTReflectionShaderBindingTable;
+      xiiSharedPtr<xiiGALTopLevelAS>              m_pRayTracingScene;
+      xiiRenderGraphBufferHandle                  m_hRayTracingSceneDependency;
+      xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>              m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
       xiiSharedPtr<xiiGALTexture>              m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
       xiiSharedPtr<xiiGALTexture>              m_pFroxelHistoryBuffer; // prev-frame froxel
