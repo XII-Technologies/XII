@@ -11,6 +11,7 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderPermutationResource, 1, xiiRTTIDefaultAllocator<xiiShaderPermutationResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -172,7 +173,8 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
           if (bRuntimeArray)
           {
             pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::RuntimeArray);
-            pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::NoDynamicBuffers);
+            if (xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(pExistingResource->m_ResourceType).IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers))
+              pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::NoDynamicBuffers);
           }
 
           // If resource types differ, prefer the existing one but log a warning.
@@ -192,7 +194,9 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
           resourceSignature.m_uiArraySize           = uiDescriptorCount;
           resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
           resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
-          resourceSignature.m_PipelineResourceFlags = bRuntimeArray ? xiiGALPipelineResourceFlags::RuntimeArray | xiiGALPipelineResourceFlags::NoDynamicBuffers : xiiGALPipelineResourceFlags::None;
+          resourceSignature.m_PipelineResourceFlags = bRuntimeArray ? xiiBitflags<xiiGALPipelineResourceFlags>(xiiGALPipelineResourceFlags::RuntimeArray) : xiiBitflags<xiiGALPipelineResourceFlags>(xiiGALPipelineResourceFlags::None);
+          if (bRuntimeArray && xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_Type).IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers))
+            resourceSignature.m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::NoDynamicBuffers);
         }
 
         // Immutable Samplers: only add if resource is a sampler and not already present.
