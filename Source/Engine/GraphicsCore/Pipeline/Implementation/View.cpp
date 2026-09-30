@@ -54,6 +54,7 @@
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
+#include <Shaders/Pipeline/Passes/Visibility/LODSelectionConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
@@ -573,6 +574,7 @@ void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& 
       break;
   }
   data.m_uiInstanceCount = data.m_InstanceBounds.GetCount();
+  GetBlackboard().Set(xiiRGBlackboardKeys::k_ExtractedMeshCount, data.m_uiInstanceCount);
 
   // Ensure persistent instance bounds buffer exists.
   if (!m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer)
@@ -666,32 +668,71 @@ void xiiView::ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRenderGraphP
 
 ////////// GPU LOD Selection //////////
 //
-// Selects LOD levels for visible instances on the GPU, using instance bounds from the previous frame (updated by the Instance Update pass) and LOD metadata from the previous frame (updated by the previous frame's LOD Selection pass).
+// Resolves the LOD selected during mesh extraction into a GPU-visible metadata stream. The
+// residency-aware xiiGpuVisibilitySystem performs fully GPU-driven LOD selection for GPU scenes.
 
 struct xiiLODSelectData
 {
-  XII_DECLARE_POD_TYPE();
+  xiiRenderGraphBufferHandle m_hVisibleCandidates; ///< SRV in ([0]=count, [1..]=visible packet indices).
+  xiiRenderGraphBufferHandle m_hPreferredLOD;      ///< SRV in (extracted LOD and flags for every packet).
+  xiiRenderGraphBufferHandle m_hInstanceLOD;       ///< UAV out (packed LOD, material bin, and flags).
+  xiiRenderGraphBufferHandle m_hConstants;
 
-  xiiRenderGraphBufferHandle m_hVisibleCandidates;  ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
-  xiiRenderGraphBufferHandle m_hInstanceBounds;     ///< SRV in (structured buffer of xiiBoundingSphere, one per instance, from previous frame's Instance Update).
-  xiiRenderGraphBufferHandle m_hInstanceLOD;        ///< UAV out (structured buffer of uint, one per instance, packed LOD level + meshlet offset, consumed by Draw Build).
-  xiiUInt32                  m_uiInstanceCount = 0; ///< Number of instances to process (from previous frame's Instance Update). This is used to avoid processing the entire buffer when only a subset is populated.
+  xiiDynamicArray<xiiUInt32> m_PreferredLOD;
+  xiiLODSelectionConstants   m_Constants       = {};
+  xiiUInt32                  m_uiInstanceCount = 0U;
 };
 
 void xiiView::SetupLODSelect(xiiLODSelectData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hVisibleCandidates = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hInstanceBounds    = builder.ReadBuffer(builder.ImportBuffer("InstanceBoundsLOD", m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-  data.m_uiInstanceCount    = k_uiMaxInstances;
+
+  const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, data.m_uiInstanceCount);
+  XII_IGNORE_UNUSED(bHasExtractedMeshCount);
+
+  data.m_PreferredLOD.Reserve(data.m_uiInstanceCount);
+  if (m_pExtractedData != nullptr)
+  {
+    for (const xiiRenderData* pRenderData : m_pExtractedData->GetAllRenderData())
+    {
+      const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData);
+      if (pMesh == nullptr || !pMesh->m_GlobalBounds.IsValid())
+        continue;
+
+      const xiiUInt32 uiLod   = xiiMath::Min(pMesh->m_uiLODIndex, 0xFFU);
+      const xiiUInt32 uiFlags = pMesh->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? XII_BIT(0) : 0U;
+      data.m_PreferredLOD.PushBack(uiLod | (uiFlags << 16U));
+      if (data.m_PreferredLOD.GetCount() == data.m_uiInstanceCount)
+        break;
+    }
+  }
+  data.m_uiInstanceCount         = data.m_PreferredLOD.GetCount();
+  data.m_Constants.InstanceCount = data.m_uiInstanceCount;
+
+  xiiGALBufferCreationDescription preferredDescription;
+  preferredDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+  preferredDescription.m_uiSize              = sizeof(xiiUInt32) * xiiMath::Max(1U, data.m_uiInstanceCount);
+  preferredDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  preferredDescription.m_Mode                = xiiGALBufferMode::Structured;
+  preferredDescription.m_Usage               = xiiGALResourceUsage::Default;
+  data.m_hPreferredLOD                        = builder.WriteBuffer("ExtractedLODMetadata", preferredDescription, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 4U; // packed uint: LOD level + meshlet offset
   description.m_uiSize              = description.m_uiElementByteStride * k_uiMaxInstances;
-  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  description.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
   description.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hInstanceLOD               = builder.WriteBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, description, xiiGALResourceStateFlags::UnorderedAccess);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiLODSelectionConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("xiiLODSelectionConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pLODSelectPipeline, "Shaders/Pipeline/LodSelection.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteLODSelect(const xiiLODSelectData& data, xiiRenderGraphPassContext& context)
@@ -700,9 +741,23 @@ void xiiView::ExecuteLODSelect(const xiiLODSelectData& data, xiiRenderGraphPassC
 
   cmd.BeginDebugGroup("LODSelection");
   {
+    if (data.m_uiInstanceCount == 0U)
+    {
+      cmd.EndDebugGroup();
+      return;
+    }
+
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hPreferredLOD), 0U,
+      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_PreferredLOD.GetData()), data.m_PreferredLOD.GetCount() * sizeof(xiiUInt32)));
+    {
+      xiiGALMapHelper<xiiLODSelectionConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *pConstants = data.m_Constants;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pLODSelectPipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiLODSelectionConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", context.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_PreferredLOD", context.GetBuffer(data.m_hPreferredLOD)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_InstanceLODOut", context.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(data.m_uiInstanceCount + 63U) / 64U, 1U, 1U});

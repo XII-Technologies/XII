@@ -11,6 +11,7 @@ namespace xiiRGBlackboardKeys
 
   constexpr xiiStringView k_FrameIndex                = "FrameIndex"_xiisv;               ///< uint32 - monotonically increasing frame counter.
   constexpr xiiStringView k_ActiveLightCount          = "ActiveLightCount"_xiisv;         ///< uint32 - number of valid light entries in the light data buffer.
+  constexpr xiiStringView k_ExtractedMeshCount        = "ExtractedMeshCount"_xiisv;       ///< uint32 - number of mesh packets represented by the legacy visibility buffers.
   constexpr xiiStringView k_InstanceWorldMatrixBuffer = "InstanceWorldMatrices"_xiisv;    ///< xiiRenderGraphBufferHandle - per-instance world matrices (float4x3 structs).
   constexpr xiiStringView k_InstanceBoundsBuffer      = "InstanceBounds"_xiisv;           ///< xiiRenderGraphBufferHandle - per-instance AABB (center + extents + radius).
   constexpr xiiStringView k_InstanceLODBuffer         = "InstanceLOD"_xiisv;              ///< xiiRenderGraphBufferHandle - per-instance LOD level + meshlet metadata.
