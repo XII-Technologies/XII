@@ -7,10 +7,12 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 #include <GraphicsCore/Pipeline/RenderGraphSkills.h>
+#include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 // clang-format off
@@ -452,6 +454,11 @@ void xiiRenderGraphBuilder::SetPassAllowMerge(bool bAllowMerge)
   m_Graph.m_Passes[m_uiPassIndex].m_bAllowMerge = bAllowMerge;
 }
 
+void xiiRenderGraphBuilder::SetPassRenderPassManaged(bool bManaged)
+{
+  m_Graph.m_Passes[m_uiPassIndex].m_bManagedRenderPass = bManaged;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 xiiRenderGraph::xiiRenderGraph(xiiStringView sName)
@@ -763,6 +770,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
       compiledPass.m_uiQueueIndex              = 0U;
       compiledPass.m_bHasSideEffects           = m_Passes[uiIndex].m_bHasSideEffects;
       compiledPass.m_bAllowMerge               = m_Passes[uiIndex].m_bAllowMerge;
+      compiledPass.m_bManagedRenderPass        = m_Passes[uiIndex].m_bManagedRenderPass;
       compiledPass.m_bIsCulled                 = false;
       compiledPass.m_pPassData                 = m_Passes[uiIndex].m_pPassData;
       compiledPass.m_ExecuteDelegate           = m_Passes[uiIndex].m_ExecuteDelegate;
@@ -840,6 +848,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
     compiledPass.m_uiQueueIndex              = 0U;
     compiledPass.m_bHasSideEffects           = m_Passes[uiIndex].m_bHasSideEffects;
     compiledPass.m_bAllowMerge               = m_Passes[uiIndex].m_bAllowMerge;
+    compiledPass.m_bManagedRenderPass        = m_Passes[uiIndex].m_bManagedRenderPass;
     compiledPass.m_bIsCulled                 = !isLive[uiIndex];
     compiledPass.m_pPassData                 = m_Passes[uiIndex].m_pPassData;
     compiledPass.m_ExecuteDelegate           = m_Passes[uiIndex].m_ExecuteDelegate;
@@ -1249,59 +1258,161 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
 void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null for render pass merging.");
+  XII_IGNORE_UNUSED(pDevice);
+
   m_MergeGroups.Clear();
 
-  // Scan compiled passes for consecutive graphics-queue mergeable passes that all write only render-targets / depth-stencil.
+  for (xiiRenderGraphCompiledPass& compiledPass : m_CompiledPasses)
+  {
+    compiledPass.m_uiMergeGroupIndex = xiiInvalidIndex;
+  }
+
+  // Native render-pass ownership is opt-in while legacy passes still call BeginRenderPass themselves.
+  // Each managed pass currently receives an independent native scope. Keeping these groups explicit
+  // makes framebuffer lifetime and pipeline compatibility correct today, while retaining the data
+  // model needed to merge attachment-compatible scopes in a later optimization pass.
   auto IsRTOrDepth = [](xiiBitflags<xiiGALResourceStateFlags> state) -> bool {
     return state.IsAnySet(xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead);
   };
 
-  auto CanMerge = [&](const xiiRenderGraphCompiledPass& compiledPass) -> bool {
-    if (compiledPass.m_bIsCulled || !compiledPass.m_bAllowMerge || compiledPass.m_uiQueueIndex != 0U)
-      return false;
+  for (xiiUInt32 uiCompiledPassIndex = 0U; uiCompiledPassIndex < m_CompiledPasses.GetCount(); ++uiCompiledPassIndex)
+  {
+    xiiRenderGraphCompiledPass& compiledPass = m_CompiledPasses[uiCompiledPassIndex];
+    if (compiledPass.m_bIsCulled || !compiledPass.m_bManagedRenderPass)
+      continue;
 
-    const PassEntry& passEntry = m_Passes[compiledPass.m_uiPassIndex];
+    XII_ASSERT_DEV(compiledPass.m_uiQueueIndex == 0U, "Graph-managed render pass '{}' must execute on the graphics queue.", compiledPass.m_sName);
+    if (compiledPass.m_uiQueueIndex != 0U)
+      continue;
+
+    xiiRenderGraphMergeGroup group;
+    const PassEntry&         passEntry = m_Passes[compiledPass.m_uiPassIndex];
+    bool                     bHasDepth = false;
     for (const ResourceUsage& write : passEntry.m_Writes)
     {
-      if (!IsRTOrDepth(write.m_RequiredState))
-        return false;
-    }
-    return true;
-  };
+      if (!write.m_bIsTexture || !IsRTOrDepth(write.m_RequiredState))
+        continue;
 
-  const xiiUInt32 uiCount = m_CompiledPasses.GetCount();
-  xiiUInt32       i       = 0U;
-  while (i < uiCount)
-  {
-    if (!CanMerge(m_CompiledPasses[i]))
-    {
-      ++i;
+      const bool bDepth = write.m_RequiredState.IsAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead);
+      XII_ASSERT_DEV(!bDepth || !bHasDepth, "Graph-managed render pass '{}' declares more than one depth attachment.", compiledPass.m_sName);
+      if (bDepth && bHasDepth)
+        continue;
+
+      bHasDepth |= bDepth;
+      group.m_AttachmentResourceIndices.PushBack(write.m_uiResourceIndex);
+      group.m_AttachmentStates.PushBack(write.m_RequiredState);
+    }
+
+    XII_ASSERT_DEV(!group.m_AttachmentResourceIndices.IsEmpty(), "Graph-managed render pass '{}' must declare at least one render-target or depth texture write.", compiledPass.m_sName);
+    if (group.m_AttachmentResourceIndices.IsEmpty())
       continue;
-    }
 
-    // Start a merge group.
-    xiiRenderGraphMergeGroup& group        = m_MergeGroups.ExpandAndGetRef();
-    const xiiUInt32           uiGroupIndex = m_MergeGroups.GetCount() - 1U;
-
-    while (i < uiCount && CanMerge(m_CompiledPasses[i]))
-    {
-      group.m_PassIndices.PushBack(i);
-
-      m_CompiledPasses[i].m_uiMergeGroupIndex = uiGroupIndex;
-
-      ++i;
-    }
-
-    // Groups of size 1 get no native render pass object, no benefit.
-    if (group.m_PassIndices.GetCount() < 2U)
-    {
-      m_CompiledPasses[group.m_PassIndices[0]].m_uiMergeGroupIndex = xiiInvalidIndex;
-
-      m_MergeGroups.PopBack();
-    }
+    group.m_PassIndices.PushBack(uiCompiledPassIndex);
+    compiledPass.m_uiMergeGroupIndex = m_MergeGroups.GetCount();
+    m_MergeGroups.PushBack(std::move(group));
   }
 
   m_Statistics.m_uiMergeGroupCount = m_MergeGroups.GetCount();
+}
+
+xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError)
+{
+  XII_ASSERT_DEV(uiGroupIndex < m_MergeGroups.GetCount(), "Render pass group index is out of range.");
+  XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null when materializing a render pass.");
+
+  xiiRenderGraphMergeGroup& group = m_MergeGroups[uiGroupIndex];
+  if (group.m_pNativeRenderPass != nullptr && group.m_pFramebuffer != nullptr)
+    return XII_SUCCESS;
+
+  xiiGALRenderPassCreationDescription renderPassDescription;
+  xiiGALSubPassDescription&           subpass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
+
+  xiiGALFramebufferCreationDescription framebufferDescription;
+  xiiSizeU32                           framebufferSize;
+  xiiUInt32                            uiArraySliceCount = 0U;
+
+  for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < group.m_AttachmentResourceIndices.GetCount(); ++uiAttachmentIndex)
+  {
+    const xiiUInt32 uiResourceIndex = group.m_AttachmentResourceIndices[uiAttachmentIndex];
+    if (uiResourceIndex >= resolvedTextures.GetCount() || resolvedTextures[uiResourceIndex] == nullptr)
+    {
+      if (out_pError != nullptr)
+        out_pError->SetFormat("Render pass attachment resource {} has not been resolved.", uiResourceIndex);
+      return XII_FAILURE;
+    }
+
+    xiiGALTexture*                              pTexture           = resolvedTextures[uiResourceIndex].Borrow();
+    const xiiGALTextureCreationDescription&     textureDescription = pTexture->GetDescription();
+    const xiiBitflags<xiiGALResourceStateFlags> attachmentState    = group.m_AttachmentStates[uiAttachmentIndex];
+    const bool                                  bDepth             = attachmentState.IsAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead);
+
+    XII_ASSERT_DEV(textureDescription.Is2D(), "Render graph native attachments must be 2D textures.");
+    if (!textureDescription.Is2D())
+    {
+      if (out_pError != nullptr)
+        out_pError->SetFormat("Render pass attachment '{}' is not a 2D texture.", m_Resources[uiResourceIndex].m_sName);
+      return XII_FAILURE;
+    }
+
+    if (framebufferSize.HasNonZeroArea())
+    {
+      XII_ASSERT_DEV(framebufferSize == textureDescription.m_Size, "All framebuffer attachments must have identical dimensions.");
+      if (framebufferSize != textureDescription.m_Size)
+      {
+        if (out_pError != nullptr)
+          out_pError->SetFormat("Render pass attachment '{}' dimensions do not match the framebuffer.", m_Resources[uiResourceIndex].m_sName);
+        return XII_FAILURE;
+      }
+    }
+    else
+    {
+      framebufferSize   = textureDescription.m_Size;
+      uiArraySliceCount = textureDescription.IsArray() ? textureDescription.m_uiArraySizeOrDepth : 1U;
+    }
+
+    xiiGALRenderPassAttachmentDescription& attachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
+    attachment.m_Format                               = textureDescription.m_Format;
+    attachment.m_uiSampleCount                        = static_cast<xiiUInt8>(textureDescription.m_uiSampleCount);
+    attachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
+    attachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
+    attachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
+    attachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
+    attachment.m_InitialStateFlags                    = attachmentState;
+    attachment.m_FinalStateFlags                      = attachmentState;
+
+    if (bDepth)
+    {
+      subpass.m_DepthStencilAttachment.PushBack({uiAttachmentIndex, attachmentState});
+      framebufferDescription.m_Attachments.PushBack(pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+    }
+    else
+    {
+      subpass.m_RenderTargetAttachments.PushBack({uiAttachmentIndex, xiiGALResourceStateFlags::RenderTarget});
+      framebufferDescription.m_Attachments.PushBack(pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    }
+  }
+
+  group.m_pNativeRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
+  if (group.m_pNativeRenderPass == nullptr)
+  {
+    if (out_pError != nullptr)
+      *out_pError = "Failed to create the graph-managed render pass.";
+    return XII_FAILURE;
+  }
+
+  framebufferDescription.m_pRenderPass       = group.m_pNativeRenderPass;
+  framebufferDescription.m_FramebufferSize   = framebufferSize;
+  framebufferDescription.m_uiArraySliceCount = uiArraySliceCount;
+  group.m_pFramebuffer                       = pDevice->CreateFramebuffer(framebufferDescription);
+  if (group.m_pFramebuffer == nullptr)
+  {
+    if (out_pError != nullptr)
+      *out_pError = "Failed to create the graph-managed framebuffer.";
+    group.m_pNativeRenderPass = nullptr;
+    return XII_FAILURE;
+  }
+
+  return XII_SUCCESS;
 }
 
 // static
@@ -1314,6 +1425,7 @@ xiiUInt64 xiiRenderGraph::ComputeSignature(const xiiDynamicArray<PassEntry>& pas
     uiHash = xiiHashingUtils::xxHash64(&passEntry.m_QueueFlags, sizeof(passEntry.m_QueueFlags), uiHash);
     uiHash = xiiHashingUtils::xxHash64String(passEntry.m_sName.GetView(), uiHash);
     uiHash = xiiHashingUtils::xxHash64(&passEntry.m_bHasSideEffects, sizeof(bool), uiHash);
+    uiHash = xiiHashingUtils::xxHash64(&passEntry.m_bManagedRenderPass, sizeof(bool), uiHash);
 
     for (const ResourceUsage& read : passEntry.m_Reads)
     {
@@ -1565,6 +1677,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       {
         xiiRenderGraphMergeGroup& mergeGroup = m_MergeGroups[compiledPass.m_uiMergeGroupIndex];
 
+        if (MaterializeRenderPassGroup(compiledPass.m_uiMergeGroupIndex, pDevice, resolvedTextures, out_pError).Failed())
+        {
+          pCommandList->End();
+          return XII_FAILURE;
+        }
+
         if (mergeGroup.m_pNativeRenderPass != nullptr && mergeGroup.m_pFramebuffer != nullptr)
         {
           xiiGALBeginRenderPassDescription renderPassDescription;
@@ -1594,7 +1712,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
       // Execute pass.
       xiiRenderGraphPassContext context;
-      context.m_pCommandList     = pCommandList.Borrow();
+      context.m_pCommandList = pCommandList.Borrow();
+      if (compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex)
+      {
+        context.m_pRenderPass    = m_MergeGroups[compiledPass.m_uiMergeGroupIndex].m_pNativeRenderPass.Borrow();
+        context.m_uiSubpassIndex = 0U;
+      }
       context.m_pBlackboard      = pBlackboard;
       context.m_pResourceCache   = pResourceCache;
       context.m_pView            = pView;

@@ -194,9 +194,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphResourceDescrip
 /// All passes must be on the same queue index.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphMergeGroup
 {
-  xiiHybridArray<xiiUInt32, 8>    m_PassIndices; ///< Ordered pass indices belonging to this group.
-  xiiSharedPtr<xiiGALRenderPass>  m_pNativeRenderPass;
-  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
+  xiiHybridArray<xiiUInt32, 8>                             m_PassIndices;               ///< Ordered compiled-pass indices belonging to this native render-pass scope.
+  xiiHybridArray<xiiUInt32, 8>                             m_AttachmentResourceIndices; ///< Graph resource indices in native framebuffer attachment order.
+  xiiHybridArray<xiiBitflags<xiiGALResourceStateFlags>, 8> m_AttachmentStates;          ///< Attachment state used by each framebuffer entry.
+  xiiSharedPtr<xiiGALRenderPass>                           m_pNativeRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer>                          m_pFramebuffer;
 };
 
 /// A batch of passes submitted together to a single command queue.
@@ -218,22 +220,23 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueueSubmission
 /// A fully compiled render pass ready for execution.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 {
-  xiiRenderGraphPassId                                m_Id;                                  ///< Stable pass ID for tools and profiling.
-  xiiHashedString                                     m_sName;                               ///< Debug name for this pass, used in profiling and diagnostics.
-  xiiUInt32                                           m_uiPassIndex       = xiiInvalidIndex; ///< Index into the graph's pass table.
-  xiiUInt32                                           m_uiQueueIndex      = 0U;              ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
-  xiiUInt32                                           m_uiMergeGroupIndex = xiiInvalidIndex; ///< Index into the graph's merge group array, or xiiInvalidIndex if this pass is not merged with any others.
-  bool                                                m_bHasSideEffects   = false;           ///< Whether this pass has side effects (e.g. present, copy to readback, UAV write with unknown output, etc.) that must be preserved even if no other pass reads from it.
-  bool                                                m_bAllowMerge       = true;            ///< Whether this pass is allowed to be merged with adjacent passes on the same queue. This is a hint to the compiler, but not a guarantee.
-  bool                                                m_bIsCulled         = false;           ///< Whether this pass was culled during compilation. Culled passes are not executed, but may still have side effects if they are reachable from a side-effect pass.
-  xiiHybridArray<xiiUInt32, 4>                        m_PreBarrierIndices;                   ///< For split barriers, the end barrier is emitted before the pass and the begin barrier is emitted after the pass, so the compiler can overlap the transition with GPU execution of this pass and future consumers.
-  xiiHybridArray<xiiUInt32, 4>                        m_PostBarrierBeginIndices;             ///< For split barriers, the begin barrier is emitted after the pass and the end barrier is emitted before the next producer, so the compiler can overlap the transition with GPU execution of this pass and past producers.
-  xiiHybridArray<xiiUInt32, 4>                        m_PostBarrierIndices;                  ///< Immediate export/ownership transitions emitted after the pass.
-  xiiHybridArray<xiiUInt32, 4>                        m_AcquireResourceIndices;              ///< Indices into the graph's resource table for transient resources whose lifetime starts at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
-  xiiHybridArray<xiiUInt32, 4>                        m_ReleaseResourceIndices;              ///< Indices into the graph's resource table for transient resources whose lifetime ends at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
-  xiiHybridArray<xiiUInt32, 4>                        m_DependencyPassIndices;               ///< Indices of passes that this pass depends on (i.e. there is a path of resource reads/writes from those passes to this pass). This is used for diagnostics and profiling, but not for execution order, which is determined by the queue submission order.
-  void*                                               m_pPassData = nullptr;                 ///< The pass data struct is defined by the user in the setup callback and contains all information needed to execute the pass. The execute callback will cast this pointer back to the correct type.
-  xiiDelegate<void(class xiiRenderGraphPassContext&)> m_ExecuteDelegate;                     ///< The execute callback records GPU commands for this pass into the command list provided by the context, using the resolved resources and blackboard data. The callback must not modify the graph or its resources, as it may be executed multiple times during the frame (e.g. for multi-GPU or split-frame rendering).
+  xiiRenderGraphPassId                                m_Id;                                   ///< Stable pass ID for tools and profiling.
+  xiiHashedString                                     m_sName;                                ///< Debug name for this pass, used in profiling and diagnostics.
+  xiiUInt32                                           m_uiPassIndex        = xiiInvalidIndex; ///< Index into the graph's pass table.
+  xiiUInt32                                           m_uiQueueIndex       = 0U;              ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
+  xiiUInt32                                           m_uiMergeGroupIndex  = xiiInvalidIndex; ///< Index into the graph's merge group array, or xiiInvalidIndex if this pass is not merged with any others.
+  bool                                                m_bHasSideEffects    = false;           ///< Whether this pass has side effects (e.g. present, copy to readback, UAV write with unknown output, etc.) that must be preserved even if no other pass reads from it.
+  bool                                                m_bAllowMerge        = true;            ///< Whether this pass is allowed to be merged with adjacent passes on the same queue. This is a hint to the compiler, but not a guarantee.
+  bool                                                m_bManagedRenderPass = false;           ///< Whether the graph owns the native render-pass scope for this pass. Legacy passes may continue to open their own scopes.
+  bool                                                m_bIsCulled          = false;           ///< Whether this pass was culled during compilation. Culled passes are not executed, but may still have side effects if they are reachable from a side-effect pass.
+  xiiHybridArray<xiiUInt32, 4>                        m_PreBarrierIndices;                    ///< For split barriers, the end barrier is emitted before the pass and the begin barrier is emitted after the pass, so the compiler can overlap the transition with GPU execution of this pass and future consumers.
+  xiiHybridArray<xiiUInt32, 4>                        m_PostBarrierBeginIndices;              ///< For split barriers, the begin barrier is emitted after the pass and the end barrier is emitted before the next producer, so the compiler can overlap the transition with GPU execution of this pass and past producers.
+  xiiHybridArray<xiiUInt32, 4>                        m_PostBarrierIndices;                   ///< Immediate export/ownership transitions emitted after the pass.
+  xiiHybridArray<xiiUInt32, 4>                        m_AcquireResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime starts at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
+  xiiHybridArray<xiiUInt32, 4>                        m_ReleaseResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime ends at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
+  xiiHybridArray<xiiUInt32, 4>                        m_DependencyPassIndices;                ///< Indices of passes that this pass depends on (i.e. there is a path of resource reads/writes from those passes to this pass). This is used for diagnostics and profiling, but not for execution order, which is determined by the queue submission order.
+  void*                                               m_pPassData = nullptr;                  ///< The pass data struct is defined by the user in the setup callback and contains all information needed to execute the pass. The execute callback will cast this pointer back to the correct type.
+  xiiDelegate<void(class xiiRenderGraphPassContext&)> m_ExecuteDelegate;                      ///< The execute callback records GPU commands for this pass into the command list provided by the context, using the resolved resources and blackboard data. The callback must not modify the graph or its resources, as it may be executed multiple times during the frame (e.g. for multi-GPU or split-frame rendering).
 };
 
 /// Controls optional features of the render graph compiler.
@@ -280,6 +283,12 @@ public:
   /// Returns the command list for this pass to record GPU commands into.
   [[nodiscard]] xiiGALCommandList& GetCommandList() const;
 
+  /// Returns the graph-owned native render pass active for this callback, or null when the pass manages its own scope.
+  [[nodiscard]] xiiGALRenderPass* GetRenderPass() const;
+
+  /// Returns the subpass index within GetRenderPass(). Graph-managed standalone passes use subpass zero.
+  [[nodiscard]] xiiUInt32 GetSubpassIndex() const;
+
   /// Resolves a virtual texture handle to its actual GPU texture for this frame.
   [[nodiscard]] xiiGALTexture* GetTexture(xiiRenderGraphTextureHandle hTexture) const;
 
@@ -307,10 +316,12 @@ private:
   xiiRenderGraphPassContext() = default;
 
   xiiGALCommandList*           m_pCommandList   = nullptr;
+  xiiGALRenderPass*            m_pRenderPass    = nullptr;
   xiiRenderGraphBlackboard*    m_pBlackboard    = nullptr;
   xiiRenderGraphResourceCache* m_pResourceCache = nullptr;
   const xiiView*               m_pView          = nullptr;
   xiiUInt64                    m_uiFrameIndex   = 0ULL;
+  xiiUInt32                    m_uiSubpassIndex = 0U;
   xiiHashedString              m_sPassName;
 
   // Resource resolution tables is owned by the graph, borrowed for pass duration.
@@ -390,6 +401,11 @@ public:
   /// Controls whether this pass participates in render-pass merge groups.
   ///        Default is true. Set to false if the pass must stand alone (e.g. readback).
   void SetPassAllowMerge(bool bAllowMerge);
+
+  /// Lets the render graph create and begin the native render pass and framebuffer from declared
+  /// RenderTarget / DepthRead / DepthWrite texture writes. The default is false so existing passes
+  /// that call BeginRenderPass themselves remain source compatible.
+  void SetPassRenderPassManaged(bool bManaged = true);
 
 private:
   friend class xiiRenderGraph;
@@ -601,8 +617,9 @@ private:
 
     xiiHashedString                      m_sName;
     xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;
-    bool                                 m_bHasSideEffects = false;
-    bool                                 m_bAllowMerge     = true;
+    bool                                 m_bHasSideEffects    = false;
+    bool                                 m_bAllowMerge        = true;
+    bool                                 m_bManagedRenderPass = false;
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;
 
@@ -611,12 +628,13 @@ private:
     xiiDelegate<void(xiiRenderGraphPassContext&)> m_ExecuteDelegate;
   };
 
-  void PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
-  void PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices);
-  void PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings);
-  void PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* pDevice, const xiiRenderGraphCompileSettings& settings);
-  void PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
-  void PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
+  void                    PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
+  void                    PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices);
+  void                    PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings);
+  void                    PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* pDevice, const xiiRenderGraphCompileSettings& settings);
+  void                    PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
+  [[nodiscard]] xiiResult MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError);
+  void                    PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 

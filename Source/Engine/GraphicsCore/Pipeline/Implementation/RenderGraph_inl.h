@@ -9,6 +9,16 @@ XII_ALWAYS_INLINE xiiGALCommandList& xiiRenderGraphPassContext::GetCommandList()
   return *m_pCommandList;
 }
 
+XII_ALWAYS_INLINE xiiGALRenderPass* xiiRenderGraphPassContext::GetRenderPass() const
+{
+  return m_pRenderPass;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiRenderGraphPassContext::GetSubpassIndex() const
+{
+  return m_uiSubpassIndex;
+}
+
 XII_ALWAYS_INLINE xiiRenderGraphBlackboard& xiiRenderGraphPassContext::GetBlackboard() const
 {
   XII_ASSERT_DEV(m_pBlackboard != nullptr, "Blackboard is null.");
