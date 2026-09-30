@@ -16,6 +16,7 @@ StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData : register(t9);
 StructuredBuffer<uint2> g_ReflectionProbeClusters : register(t10);
 TextureCube<float4> g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES] : register(t11);
 RWTexture2D<float4> g_IndirectOut : register(u0);
+RWTexture2D<float4> g_EnvironmentSpecularOut : register(u1);
 
 float3 FresnelSchlickRoughness(float NoV, float3 f0, float roughness)
 {
@@ -105,6 +106,7 @@ void CS_IndirectLighting(uint3 tid : SV_DispatchThreadID)
     if (depth <= 0.0f)
     {
         g_IndirectOut[tid.xy] = 0.0f;
+        g_EnvironmentSpecularOut[tid.xy] = 0.0f;
         return;
     }
 
@@ -143,5 +145,7 @@ void CS_IndirectLighting(uint3 tid : SV_DispatchThreadID)
     const float3 environmentRadiance = lerp(skyRadiance, probeRadiance, saturate(totalProbeWeight));
     const float3 specular = environmentRadiance * (fresnel * brdf.x + brdf.y);
 
-    g_IndirectOut[tid.xy] = float4((diffuse + specular) * ao * g_IBLIntensity, 1.0f);
+    const float3 environmentSpecular = specular * ao * g_IBLIntensity;
+    g_EnvironmentSpecularOut[tid.xy] = float4(environmentSpecular, 1.0f);
+    g_IndirectOut[tid.xy] = float4(diffuse * ao * g_IBLIntensity + environmentSpecular, 1.0f);
 }

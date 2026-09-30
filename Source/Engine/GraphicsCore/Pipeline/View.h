@@ -80,6 +80,7 @@ struct xiiDeferredIndirectLightingData;
 struct xiiRayTracedGlobalIlluminationData;
 struct xiiRayTracedReflectionsData;
 struct xiiScreenSpaceReflectionsData;
+struct xiiHybridReflectionCompositeData;
 struct xiiVolumetricFogIntegrationData;
 struct xiiVolumetricFogTemporalReprojectionData;
 struct xiiAtmosphereCompositeData;
@@ -387,6 +388,9 @@ private:
   void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRenderGraphBuilder& builder);
   void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRenderGraphPassContext& context);
 
+  void SetupHybridReflectionComposite(xiiHybridReflectionCompositeData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteHybridReflectionComposite(const xiiHybridReflectionCompositeData& data, xiiRenderGraphPassContext& context);
+
   void SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationData& data, xiiRenderGraphPassContext& context);
 
@@ -617,6 +621,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pDirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pIndirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSRPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pReflectionCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricIntegratePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricTemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pAtmosphereCompositePipeline;
@@ -631,7 +636,7 @@ private:
     //  Stage 7 - Forward Passes
     struct ForwardPasses
     {
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pForwardOpaquePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pForwardOpaquePipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pForwardMaskedPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pHairPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pWaterPipeline;
