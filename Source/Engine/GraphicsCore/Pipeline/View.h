@@ -14,6 +14,7 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
+#include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -176,6 +177,10 @@ public:
   [[nodiscard]] xiiResult SetSensorProfile(xiiSensorProfileHandle hProfile);
   [[nodiscard]] xiiSensorProfileHandle GetSensorProfile() const;
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> GetSensorOutputTexture() const;
+
+  /// Applies validated, view-local exposure, tone-mapping and display calibration.
+  [[nodiscard]] xiiResult SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
+  [[nodiscard]] const xiiDisplayOutputSettings& GetDisplayOutputSettings() const;
 
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
@@ -757,7 +762,8 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pUpscalePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSharpenPipeline;
       xiiSharedPtr<xiiGALTexture>              m_pTAAHistoryBuffer; // prev-frame resolved color
-      xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer;   // persistent float EV100
+      xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer;   // persistent exposure multiplier + average luminance
+      bool                                     m_bExposureHistoryValid = false;
     } m_TemporalPasses;
 
     //  Stage 11 - Post-Processing
@@ -789,6 +795,8 @@ private:
     } m_OutputPasses;
 
   } m_ViewPassResources;
+
+  xiiDisplayOutputSettings m_DisplayOutputSettings;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

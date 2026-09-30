@@ -132,7 +132,7 @@ namespace xiiRGBlackboardKeys
   // Stage 10 - Temporal Reconstruction.
 
   constexpr xiiStringView k_LuminanceHistogram = "LuminanceHistogram"_xiisv; ///< xiiRenderGraphBufferHandle - 256-bin log-luminance histogram.
-  constexpr xiiStringView k_CurrentExposure    = "CurrentExposure"_xiisv;    ///< xiiRenderGraphBufferHandle - single float EV100 exposure value.
+  constexpr xiiStringView k_CurrentExposure    = "CurrentExposure"_xiisv;    ///< xiiRenderGraphBufferHandle - exposure multiplier and metered average luminance.
   constexpr xiiStringView k_TAAResolvedColor   = "TAAResolved"_xiisv;        ///< xiiRenderGraphTextureHandle - temporally-resolved color (R16G16B16A16F).
   constexpr xiiStringView k_UpscaledColor      = "UpscaledColor"_xiisv;      ///< xiiRenderGraphTextureHandle - upscaled output at native resolution.
 
@@ -140,6 +140,6 @@ namespace xiiRGBlackboardKeys
 
   constexpr xiiStringView k_BloomTexture   = "BloomTexture"_xiisv;   ///< xiiRenderGraphTextureHandle - bloom-composited HDR result.
   constexpr xiiStringView k_GradedColor    = "GradedColor"_xiisv;    ///< xiiRenderGraphTextureHandle - color-graded + filmic output.
-  constexpr xiiStringView k_LDRSceneColor  = "LDRSceneColor"_xiisv;  ///< xiiRenderGraphTextureHandle - tone-mapped LDR output.
+  constexpr xiiStringView k_DisplayLinearColor = "DisplayLinearColor"_xiisv; ///< xiiRenderGraphTextureHandle - tone-mapped scene-linear display signal.
   constexpr xiiStringView k_SharpenedColor = "SharpenedColor"_xiisv; ///< xiiRenderGraphTextureHandle - final sharpened LDR output.
 } // namespace xiiRGBlackboardKeys

@@ -15,6 +15,7 @@
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
+#include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
@@ -38,9 +39,11 @@
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
 #include <Shaders/Pipeline/Passes/Denoising/TemporalDenoiseConstants.h>
+#include <Shaders/Pipeline/Passes/Exposure/ExposureConstants.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/ReSTIRGIConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+#include <Shaders/Pipeline/Passes/Output/DisplayOutputConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
@@ -196,6 +199,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiView::xiiView(xiiWorld* pWorld) :
   m_pWorld(pWorld)
 {
+  m_DisplayOutputSettings = xiiDisplayOutputManager::GetDefaults();
   m_pRenderGraph = XII_DEFAULT_NEW(xiiRenderGraph);
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -206,6 +210,21 @@ xiiView::xiiView(xiiWorld* pWorld) :
   m_ResourceCache.Initialize(pDevice);
 
   UpdateRenderResolutionState();
+}
+
+xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings)
+{
+  if (!xiiDisplayOutputManager::IsValid(settings))
+    return XII_FAILURE;
+
+  m_DisplayOutputSettings = settings;
+  m_ViewPassResources.m_TemporalPasses.m_bExposureHistoryValid = false;
+  return XII_SUCCESS;
+}
+
+const xiiDisplayOutputSettings& xiiView::GetDisplayOutputSettings() const
+{
+  return m_DisplayOutputSettings;
 }
 
 xiiView::~xiiView()
@@ -5117,6 +5136,7 @@ struct xiiLuminanceHistogramData
 
   xiiRenderGraphTextureHandle m_hHDRIn;     ///< ShaderResource in (current HDR scene color).
   xiiRenderGraphBufferHandle  m_hHistogram; ///< UnorderedAccess out (256-bin luminance histogram).
+  xiiRenderGraphBufferHandle  m_hConstants;
 };
 
 void xiiView::SetupLuminanceHistogram(xiiLuminanceHistogramData& data, xiiRenderGraphBuilder& builder)
@@ -5131,6 +5151,13 @@ void xiiView::SetupLuminanceHistogram(xiiLuminanceHistogramData& data, xiiRender
   description.m_Usage               = xiiGALResourceUsage::Default;
   data.m_hHistogram                 = builder.WriteBuffer(xiiRGBlackboardKeys::k_LuminanceHistogram, description, xiiGALResourceStateFlags::UnorderedAccess);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiExposureHistogramConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("Exposure Histogram Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_TemporalPasses.m_pLuminanceHistogramPipeline, "Shaders/Pipeline/ExposureHistogram.xiiShader");
 }
 
@@ -5142,11 +5169,23 @@ void xiiView::ExecuteLuminanceHistogram(const xiiLuminanceHistogramData& data, x
 
   cmd.BeginDebugGroup("LuminanceHistogram");
   {
+    const xiiExposureSettings& settings = m_DisplayOutputSettings.m_Exposure;
+    const float                fRange   = settings.m_fMaximumLogLuminance - settings.m_fMinimumLogLuminance;
+    {
+      xiiGALMapHelper<xiiExposureHistogramConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->LogLuminanceRange = xiiVec4(settings.m_fMinimumLogLuminance, settings.m_fMaximumLogLuminance, 1.0f / fRange, fRange);
+      pConstants->InputResolution   = xiiVec2U32(uiRenderWidth, uiRenderHeight);
+      pConstants->_Padding          = xiiVec2::MakeZero();
+    }
+
+    xiiUInt32 zeroHistogram[256] = {};
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hHistogram), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroHistogram), sizeof(zeroHistogram)));
     cmd.SetPipelineState(m_ViewPassResources.m_TemporalPasses.m_pLuminanceHistogramPipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiExposureHistogramConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_Histogram", context.GetBuffer(data.m_hHistogram)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(uiRenderWidth + 15U) / 16U, (uiRenderHeight + 15U) / 16U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -5161,6 +5200,8 @@ struct xiiAutoExposureData
 
   xiiRenderGraphBufferHandle m_hHistogram; ///< ShaderResource in (luminance histogram).
   xiiRenderGraphBufferHandle m_hExposure;  ///< UnorderedAccess in/out (persistent exposure value).
+  xiiRenderGraphBufferHandle m_hConstants;
+  bool                        m_bHistoryValid = false;
 };
 
 void xiiView::SetupAutoExposure(xiiAutoExposureData& data, xiiRenderGraphBuilder& builder)
@@ -5171,7 +5212,7 @@ void xiiView::SetupAutoExposure(xiiAutoExposureData& data, xiiRenderGraphBuilder
   {
     xiiGALBufferCreationDescription description;
     description.m_uiElementByteStride = 4U;
-    description.m_uiSize              = 4U; // single float EV100 value
+    description.m_uiSize              = sizeof(float) * 2U;
     description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
     description.m_Mode                = xiiGALBufferMode::Structured;
     description.m_Usage               = xiiGALResourceUsage::Default;
@@ -5179,8 +5220,16 @@ void xiiView::SetupAutoExposure(xiiAutoExposureData& data, xiiRenderGraphBuilder
     m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
   }
 
-  data.m_hExposure = builder.ImportBuffer(xiiRGBlackboardKeys::k_CurrentExposure, m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hExposure = builder.ImportBuffer(xiiRGBlackboardKeys::k_CurrentExposure, m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer, m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer->GetResourceState());
   data.m_hExposure = builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_bHistoryValid = m_ViewPassResources.m_TemporalPasses.m_bExposureHistoryValid;
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiExposureAdaptationConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("Exposure Adaptation Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_TemporalPasses.m_pAutoExposurePipeline, "Shaders/Pipeline/ExposureAdaptation.xiiShader");
 }
@@ -5191,11 +5240,26 @@ void xiiView::ExecuteAutoExposure(const xiiAutoExposureData& data, xiiRenderGrap
 
   cmd.BeginDebugGroup("AutoExposure");
   {
+    const xiiExposureSettings& settings = m_DisplayOutputSettings.m_Exposure;
+    const float                fRange   = settings.m_fMaximumLogLuminance - settings.m_fMinimumLogLuminance;
+    {
+      xiiGALMapHelper<xiiExposureAdaptationConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->LogLuminanceRange = xiiVec4(settings.m_fMinimumLogLuminance, settings.m_fMaximumLogLuminance, fRange, 0.0f);
+      pConstants->Metering          = xiiVec4(settings.m_fLowPercentile, settings.m_fHighPercentile, settings.m_fAdaptationSpeedBright, settings.m_fAdaptationSpeedDark);
+      pConstants->Exposure          = xiiVec4(xiiMath::Clamp(static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()), 0.0f, 0.25f), settings.m_fMinimumEV100, settings.m_fMaximumEV100, settings.m_fExposureCompensation);
+      pConstants->ManualExposure    = GetCamera() != nullptr ? GetCamera()->GetExposure() : 1.0f;
+      pConstants->AutomaticExposure = settings.m_Mode == xiiExposureMode::Automatic ? 1U : 0U;
+      pConstants->HistoryValid      = data.m_bHistoryValid ? 1U : 0U;
+      pConstants->_Padding          = 0.0f;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_TemporalPasses.m_pAutoExposurePipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiExposureAdaptationConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Histogram", context.GetBuffer(data.m_hHistogram)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_Exposure", context.GetBuffer(data.m_hExposure)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({1U, 1U, 1U});
+    m_ViewPassResources.m_TemporalPasses.m_bExposureHistoryValid = true;
   }
   cmd.EndDebugGroup();
 }
@@ -5429,8 +5493,11 @@ struct xiiToneMappingData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hGraded; ///< ShaderResource in (graded HDR input).
-  xiiRenderGraphTextureHandle m_hLDROut; ///< UnorderedAccess out (tone-mapped LDR output).
+  xiiRenderGraphTextureHandle m_hHDRInput;
+  xiiRenderGraphTextureHandle m_hBloom;
+  xiiRenderGraphBufferHandle  m_hExposure;
+  xiiRenderGraphTextureHandle m_hDisplayLinear;
+  xiiRenderGraphBufferHandle  m_hConstants;
 };
 
 void xiiView::SetupToneMapping(xiiToneMappingData& data, xiiRenderGraphBuilder& builder)
@@ -5438,17 +5505,26 @@ void xiiView::SetupToneMapping(xiiToneMappingData& data, xiiRenderGraphBuilder& 
   const xiiUInt32 uiRenderWidth  = GetRenderResolutionWidth();
   const xiiUInt32 uiRenderHeight = GetRenderResolutionHeight();
 
-  data.m_hGraded = builder.ReadTexture(xiiRGBlackboardKeys::k_GradedColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDRInput = builder.ReadTexture(xiiRGBlackboardKeys::k_UpscaledColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hBloom    = builder.ReadTexture(xiiRGBlackboardKeys::k_BloomTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hExposure = builder.ReadBuffer(xiiRGBlackboardKeys::k_CurrentExposure, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
-  description.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
   description.m_Size.width  = uiRenderWidth;
   description.m_Size.height = uiRenderHeight;
   description.m_uiMipLevels = 1U;
-  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
   description.m_Usage       = xiiGALResourceUsage::Default;
-  data.m_hLDROut            = builder.WriteTexture(xiiRGBlackboardKeys::k_LDRSceneColor, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hDisplayLinear     = builder.WriteTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiToneMappingConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("Tone Mapping Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_PostProcessPasses.m_pToneMappingPipeline, "Shaders/Pipeline/ToneMapping.xiiShader");
 }
@@ -5461,9 +5537,22 @@ void xiiView::ExecuteToneMapping(const xiiToneMappingData& data, xiiRenderGraphP
 
   cmd.BeginDebugGroup("ToneMapping");
   {
+    {
+      xiiGALMapHelper<xiiToneMappingConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->Operator           = m_DisplayOutputSettings.m_ToneMappingOperator.GetValue();
+      pConstants->OutputMode         = m_DisplayOutputSettings.m_OutputMode.GetValue();
+      pConstants->BloomStrength      = m_DisplayOutputSettings.m_fBloomStrength;
+      pConstants->PaperWhiteNits     = m_DisplayOutputSettings.m_fPaperWhiteNits;
+      pConstants->MaximumDisplayNits = m_DisplayOutputSettings.m_fMaximumDisplayNits;
+      pConstants->_Padding           = xiiVec3::MakeZero();
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_PostProcessPasses.m_pToneMappingPipeline);
-    cmd.ResolveAndSetShaderResourceTextureView("g_HDRGraded", context.GetTexture(data.m_hGraded)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_LDROut", context.GetTexture(data.m_hLDROut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiToneMappingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_HDRInput", context.GetTexture(data.m_hHDRInput)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_BloomTex", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_Exposure", context.GetBuffer(data.m_hExposure)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_LDROut", context.GetTexture(data.m_hDisplayLinear)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
   }
@@ -5478,13 +5567,15 @@ struct xiiFinalBlitData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hLDRIn;      ///< ShaderResource in (final LDR scene color).
+  xiiRenderGraphTextureHandle m_hDisplayLinear; ///< ShaderResource in (tone-mapped scene-linear display signal).
   xiiRenderGraphTextureHandle m_hBackbuffer; ///< RenderTarget out (swapchain backbuffer).
+  xiiRenderGraphBufferHandle  m_hConstants;
+  bool                        m_bApplySRGBTransfer = false;
 };
 
 void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hLDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_LDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDisplayLinear = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::ShaderResource);
 
   if (const xiiGALSwapChain* pSwapChain = GetSwapChain(); pSwapChain != nullptr)
   {
@@ -5493,8 +5584,16 @@ void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& buil
     {
       data.m_hBackbuffer = builder.ImportTexture("Backbuffer", pBackbufferTexture, xiiGALResourceStateFlags::RenderTarget);
       data.m_hBackbuffer = builder.WriteTexture(data.m_hBackbuffer, xiiGALResourceStateFlags::RenderTarget);
+      data.m_bApplySRGBTransfer = !xiiGALResourceFormat::IsSrgb(pBackbufferTexture->GetDescription().m_Format);
     }
   }
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiFinalBlitConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("Final Blit Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   builder.SetPassSideEffects(true);
   builder.SetPassAllowMerge(false);
@@ -5506,12 +5605,21 @@ void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassC
 
   cmd.BeginDebugGroup("BackbufferPresent");
   {
-    if (data.m_hLDRIn.IsValid() && data.m_hBackbuffer.IsValid() && m_ViewPassResources.m_OutputPasses.m_pFinalBlitPipeline)
+    if (data.m_hDisplayLinear.IsValid() && data.m_hBackbuffer.IsValid() && data.m_hConstants.IsValid() && m_ViewPassResources.m_OutputPasses.m_pFinalBlitPipeline)
     {
+      {
+        xiiGALMapHelper<xiiFinalBlitConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        pConstants->OutputMode             = m_DisplayOutputSettings.m_OutputMode.GetValue();
+        pConstants->ApplySRGBTransfer      = data.m_bApplySRGBTransfer ? 1U : 0U;
+        pConstants->PaperWhiteNits         = m_DisplayOutputSettings.m_fPaperWhiteNits;
+        pConstants->MaximumDisplayNits     = m_DisplayOutputSettings.m_fMaximumDisplayNits;
+      }
+
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hBackbuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 1.0f));
       cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
       cmd.SetPipelineState(m_ViewPassResources.m_OutputPasses.m_pFinalBlitPipeline);
-      cmd.ResolveAndSetShaderResourceTextureView("g_LDRIn", context.GetTexture(data.m_hLDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetConstantBuffer("xiiFinalBlitConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetShaderResourceTextureView("g_FinalColor", context.GetTexture(data.m_hDisplayLinear)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
       cmd.Draw({3U, 1U, 0U, 0U});
     }
