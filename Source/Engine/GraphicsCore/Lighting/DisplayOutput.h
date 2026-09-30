@@ -82,6 +82,18 @@ struct XII_GRAPHICSCORE_DLL xiiExposureSettings
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiExposureSettings);
 
+/// Optional artistic display-linear grading. Identity defaults preserve calibrated simulation output.
+struct XII_GRAPHICSCORE_DLL xiiColorGradingSettings
+{
+  float m_fSaturation        = 1.0f;
+  float m_fContrast          = 1.0f;
+  float m_fVignetteStrength  = 0.0f;
+  float m_fVignetteRoundness = 1.0f;
+  float m_fFilmGrainStrength = 0.0f;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiColorGradingSettings);
+
 /// Per-view tone mapping and display calibration.
 ///
 /// Scene values are kept linear through tone mapping. The presentation pass applies
@@ -89,6 +101,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiExposureSettings);
 struct XII_GRAPHICSCORE_DLL xiiDisplayOutputSettings
 {
   xiiExposureSettings              m_Exposure;
+  xiiColorGradingSettings          m_ColorGrading;
   xiiEnum<xiiToneMappingOperator>  m_ToneMappingOperator;
   xiiEnum<xiiDisplayOutputMode>     m_OutputMode;
 

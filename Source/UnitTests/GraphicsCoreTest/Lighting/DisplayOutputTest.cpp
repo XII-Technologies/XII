@@ -45,6 +45,10 @@ XII_CREATE_SIMPLE_TEST(Lighting, DisplayOutput)
     invalid = xiiDisplayOutputManager::GetDefaults();
     invalid.m_fBloomRadius = 9.0f;
     XII_TEST_BOOL(!xiiDisplayOutputManager::IsValid(invalid));
+
+    invalid = xiiDisplayOutputManager::GetDefaults();
+    invalid.m_ColorGrading.m_fVignetteRoundness = 0.0f;
+    XII_TEST_BOOL(!xiiDisplayOutputManager::IsValid(invalid));
   }
 }
 

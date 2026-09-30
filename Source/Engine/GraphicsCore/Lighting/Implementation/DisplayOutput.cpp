@@ -66,11 +66,26 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiExposureSettings, xiiNoBase, 1, xiiRTTIDefaul
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDisplayOutputSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiDisplayOutputSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiColorGradingSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiColorGradingSettings>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Saturation", m_fSaturation)->AddAttributes(new xiiClampValueAttribute(0.0f, 4.0f)),
+    XII_MEMBER_PROPERTY("Contrast", m_fContrast)->AddAttributes(new xiiClampValueAttribute(0.0f, 4.0f)),
+    XII_MEMBER_PROPERTY("VignetteStrength", m_fVignetteStrength)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("VignetteRoundness", m_fVignetteRoundness)->AddAttributes(new xiiClampValueAttribute(0.25f, 4.0f)),
+    XII_MEMBER_PROPERTY("FilmGrainStrength", m_fFilmGrainStrength)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDisplayOutputSettings, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiDisplayOutputSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Exposure", m_Exposure),
+    XII_MEMBER_PROPERTY("ColorGrading", m_ColorGrading),
     XII_ENUM_MEMBER_PROPERTY("ToneMappingOperator", xiiToneMappingOperator, m_ToneMappingOperator),
     XII_ENUM_MEMBER_PROPERTY("OutputMode", xiiDisplayOutputMode, m_OutputMode),
     XII_MEMBER_PROPERTY("BloomStrength", m_fBloomStrength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
@@ -105,7 +120,13 @@ bool xiiDisplayOutputManager::IsValid(const xiiExposureSettings& settings)
 
 bool xiiDisplayOutputManager::IsValid(const xiiDisplayOutputSettings& settings)
 {
+  const xiiColorGradingSettings& grading = settings.m_ColorGrading;
   return IsValid(settings.m_Exposure) &&
+         xiiMath::IsFinite(grading.m_fSaturation) && grading.m_fSaturation >= 0.0f && grading.m_fSaturation <= 4.0f &&
+         xiiMath::IsFinite(grading.m_fContrast) && grading.m_fContrast >= 0.0f && grading.m_fContrast <= 4.0f &&
+         xiiMath::IsFinite(grading.m_fVignetteStrength) && grading.m_fVignetteStrength >= 0.0f && grading.m_fVignetteStrength <= 1.0f &&
+         xiiMath::IsFinite(grading.m_fVignetteRoundness) && grading.m_fVignetteRoundness >= 0.25f && grading.m_fVignetteRoundness <= 4.0f &&
+         xiiMath::IsFinite(grading.m_fFilmGrainStrength) && grading.m_fFilmGrainStrength >= 0.0f && grading.m_fFilmGrainStrength <= 1.0f &&
          settings.m_ToneMappingOperator.GetValue() < xiiToneMappingOperator::ENUM_COUNT &&
          settings.m_OutputMode.GetValue() < xiiDisplayOutputMode::ENUM_COUNT &&
          xiiMath::IsFinite(settings.m_fBloomStrength) && settings.m_fBloomStrength >= 0.0f &&

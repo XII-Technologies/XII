@@ -1,82 +1,50 @@
-// XII Engine - ColorGrading.xiiShader  [NEW]
-// Pass 61: 33³ 3D LUT sample + vignette + film grain + gamut compression.
-// Dispatch: ceil(W/8) × ceil(H/8) × 1
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
+[COMPUTE_SHADER]
 
-cbuffer ColorGradingConstants : register(b3)
+// Optional display-linear grading. Identity defaults preserve calibrated simulation output.
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/Passes/Output/ColorGradingConstants.h>
+
+Texture2D<float4>   g_DisplayLinear;
+RWTexture2D<float4> g_GradedOut;
+
+float HashNoise(uint2 pixel, uint frameIndex)
 {
-    float  g_Saturation;     // 0=greyscale, 1=identity, >1=boosted
-    float  g_Contrast;       // 0=flat, 1=identity
-    float  g_VignetteStrength;
-    float  g_VignetteRoundness;
-    float  g_GrainStrength;
-    uint   g_LUTSize;        // usually 33
-    float2 _pad;
-};
-
-Texture2D<float4>   g_LDRInput : register(t0);
-Texture3D<float4>   g_ColorLUT : register(t1); // 33³ sRGB LUT
-RWTexture2D<float4> g_GradedOut: register(u0);
-
-float3 SampleLUT(float3 color, uint lutSize)
-{
-    float scale  = float(lutSize - 1u) / float(lutSize);
-    float offset = 0.5f / float(lutSize);
-    float3 uvw   = saturate(color) * scale + offset;
-    return g_ColorLUT.SampleLevel(g_sLinearClamp, uvw, 0).rgb;
-}
-
-// Perceptual saturation via luminance lerp.
-float3 AdjustSaturation(float3 color, float saturation)
-{
-    float lum = dot(color, float3(0.2126f, 0.7152f, 0.0722f));
-    return lerp(float3(lum,lum,lum), color, saturation);
-}
-
-// S-curve contrast (midpoint at 0.5).
-float3 AdjustContrast(float3 color, float contrast)
-{
-    return saturate((color - 0.5f) * contrast + 0.5f);
-}
-
-// Subtle optical vignette.
-float Vignette(float2 uv, float strength, float roundness)
-{
-    float2 d = abs(uv - 0.5f) * 2.0f;
-    d.x     *= roundness;
-    float v  = saturate(1.0f - dot(d, d));
-    return lerp(1.0f, v * v, strength);
-}
-
-// High-frequency film grain (screen-space noise).
-float3 FilmGrain(float3 color, float2 uv, float strength)
-{
-    float noise = InterleavedGradientNoise(uv * float2(1920u, 1080u), g_FrameIndex);
-    noise       = (noise - 0.5f) * strength;
-    return color + noise;
+  uint hash = pixel.x * 0x9E3779B9U ^ pixel.y * 0x85EBCA6BU ^ frameIndex * 0xC2B2AE35U;
+  hash ^= hash >> 16U;
+  hash *= 0x7FEB352DU;
+  hash ^= hash >> 15U;
+  hash *= 0x846CA68BU;
+  hash ^= hash >> 16U;
+  return (float(hash) + 0.5f) * (1.0f / 4294967296.0f);
 }
 
 [numthreads(8, 8, 1)]
-void CS_ColorGrading(uint3 tid : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    uint2 dims; g_GradedOut.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims)) return;
+  uint2 dimensions;
+  g_GradedOut.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
 
-    float2 uv      = (float2(tid.xy) + 0.5f) / float2(dims);
-    float3 color   = g_LDRInput.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+  const float2 uv = (float2(dispatchThreadId.xy) + 0.5f) / float2(dimensions);
+  float3 color = max(g_DisplayLinear.Load(int3(dispatchThreadId.xy, 0)).rgb, 0.0f);
 
-    // Adjustments in scene-linear space before LUT.
-    color = AdjustSaturation(color, g_Saturation);
-    color = AdjustContrast(color, g_Contrast);
+  const float luminance = GetLuminance(color);
+  color = lerp(luminance.xxx, color, ColorAdjustments.x);
+  color = max((color - 0.18f) * ColorAdjustments.y + 0.18f, 0.0f);
 
-    // 3D LUT (applied in sRGB-like perceptual space).
-    if (g_LUTSize > 1u)
-        color = SampleLUT(color, g_LUTSize);
+  const float2 centered = abs(uv - 0.5f) * 2.0f;
+  const float2 vignetteShape = float2(centered.x * ColorAdjustments.w, centered.y);
+  const float vignette = saturate(1.0f - dot(vignetteShape, vignetteShape));
+  color *= lerp(1.0f, vignette * vignette, ColorAdjustments.z);
 
-    // Post-LUT screen-space effects.
-    color *= Vignette(uv, g_VignetteStrength, g_VignetteRoundness);
-    color  = FilmGrain(color, uv, g_GrainStrength);
+  const uint frameIndex = (uint)FilmGrain.y;
+  const float grain = (HashNoise(dispatchThreadId.xy, frameIndex) - 0.5f) * FilmGrain.x;
+  color = max(color + grain * sqrt(max(color, 0.0f) + 0.01f), 0.0f);
 
-    g_GradedOut[tid.xy] = float4(saturate(color), 1.0f);
+  g_GradedOut[dispatchThreadId.xy] = float4(color, 1.0f);
 }

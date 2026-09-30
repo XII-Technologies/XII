@@ -45,6 +45,7 @@
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/Output/BloomConstants.h>
+#include <Shaders/Pipeline/Passes/Output/ColorGradingConstants.h>
 #include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
@@ -5491,9 +5492,9 @@ struct xiiColorGradingData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hHDRIn;  ///< ShaderResource in (upscaled HDR input).
-  xiiRenderGraphTextureHandle m_hBloom;  ///< ShaderResource in (bloom result).
-  xiiRenderGraphTextureHandle m_hGraded; ///< UnorderedAccess out (graded HDR output).
+  xiiRenderGraphTextureHandle m_hDisplayLinear; ///< ShaderResource in (tone-mapped display-linear input).
+  xiiRenderGraphTextureHandle m_hGraded;        ///< UnorderedAccess out (graded display-linear output).
+  xiiRenderGraphBufferHandle  m_hConstants;
 };
 
 void xiiView::SetupColorGrading(xiiColorGradingData& data, xiiRenderGraphBuilder& builder)
@@ -5501,8 +5502,7 @@ void xiiView::SetupColorGrading(xiiColorGradingData& data, xiiRenderGraphBuilder
   const xiiUInt32 uiOutputWidth  = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().width, 1.0f));
   const xiiUInt32 uiOutputHeight = static_cast<xiiUInt32>(xiiMath::Max(GetViewport().height, 1.0f));
 
-  data.m_hHDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_UpscaledColor, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hBloom = builder.ReadTexture(xiiRGBlackboardKeys::k_BloomTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDisplayLinear = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -5513,6 +5513,13 @@ void xiiView::SetupColorGrading(xiiColorGradingData& data, xiiRenderGraphBuilder
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hGraded            = builder.WriteTexture(xiiRGBlackboardKeys::k_GradedColor, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiColorGradingConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("Color Grading Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_PostProcessPasses.m_pColorGradingPipeline, "Shaders/Pipeline/ColorGrading.xiiShader");
 }
@@ -5525,10 +5532,17 @@ void xiiView::ExecuteColorGrading(const xiiColorGradingData& data, xiiRenderGrap
 
   cmd.BeginDebugGroup("ColorGrading");
   {
+    const xiiColorGradingSettings& settings = m_DisplayOutputSettings.m_ColorGrading;
+    {
+      xiiGALMapHelper<xiiColorGradingConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->ColorAdjustments = xiiVec4(settings.m_fSaturation, settings.m_fContrast, settings.m_fVignetteStrength, settings.m_fVignetteRoundness);
+      pConstants->FilmGrain        = xiiVec4(settings.m_fFilmGrainStrength, static_cast<float>(context.GetFrameIndex() & 0x00FFFFFFU), 0.0f, 0.0f);
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_PostProcessPasses.m_pColorGradingPipeline);
-    cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_Bloom", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_Graded", context.GetTexture(data.m_hGraded)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiColorGradingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_DisplayLinear", context.GetTexture(data.m_hDisplayLinear)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_GradedOut", context.GetTexture(data.m_hGraded)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(uiOutputWidth + 7U) / 8U, (uiOutputHeight + 7U) / 8U, 1U});
   }
@@ -5625,7 +5639,7 @@ struct xiiFinalBlitData
 
 void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hDisplayLinear = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDisplayLinear = builder.ReadTexture(xiiRGBlackboardKeys::k_GradedColor, xiiGALResourceStateFlags::ShaderResource);
 
   if (const xiiGALSwapChain* pSwapChain = GetSwapChain(); pSwapChain != nullptr)
   {
@@ -5851,11 +5865,13 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Post-processing passes.
   graph.AddPass<xiiBloomData>("Bloom", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupBloom, this), xiiMakeDelegate(&xiiView::ExecuteBloom, this));
-  graph.AddPass<xiiColorGradingData>("ColorGrading", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupColorGrading, this), xiiMakeDelegate(&xiiView::ExecuteColorGrading, this));
   graph.AddPass<xiiToneMappingData>("ToneMapping", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupToneMapping, this), xiiMakeDelegate(&xiiView::ExecuteToneMapping, this));
 
   // Debug and visualization passes.
   xiiDebugRenderer::AddRenderGraphPasses(graph);
+
+  // Display-linear grading follows debug composition so overlays remain visible at presentation.
+  graph.AddPass<xiiColorGradingData>("ColorGrading", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupColorGrading, this), xiiMakeDelegate(&xiiView::ExecuteColorGrading, this));
 
   // Final output pass.
   graph.AddPass<xiiFinalBlitData>("BackbufferPresent", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupFinalBlit, this), xiiMakeDelegate(&xiiView::ExecuteFinalBlit, this));
