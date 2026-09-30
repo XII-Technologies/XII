@@ -22,6 +22,9 @@ public:
   /// Creates a pipeline or retrieves it from the cache.
   static xiiSharedPtr<xiiGALComputePipelineState> GetPipeline(const xiiGALComputePipelineStateCreationDescription& description);
 
+  /// Creates a ray-tracing pipeline or retrieves it from the cache.
+  static xiiSharedPtr<xiiGALRayTracingPipelineState> GetPipeline(const xiiGALRayTracingPipelineStateCreationDescription& description);
+
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, PipelineCache);
 
@@ -39,6 +42,12 @@ private:
     xiiGALComputePipelineStateCreationDescription m_Description;
   };
 
+  struct RayTracingPipelineCacheKey
+  {
+    xiiUInt32                                        m_uiHash = 0U;
+    xiiGALRayTracingPipelineStateCreationDescription m_Description;
+  };
+
   struct CacheKeyHasher
   {
     static xiiUInt32 Hash(const GraphicsPipelineCacheKey& a);
@@ -46,6 +55,9 @@ private:
 
     static xiiUInt32 Hash(const ComputePipelineCacheKey& a);
     static bool      Equal(const ComputePipelineCacheKey& a, const ComputePipelineCacheKey& b);
+
+    static xiiUInt32 Hash(const RayTracingPipelineCacheKey& a);
+    static bool      Equal(const RayTracingPipelineCacheKey& a, const RayTracingPipelineCacheKey& b);
   };
 
 private:
@@ -65,6 +77,7 @@ private:
   xiiGALDevice*                                                                                     m_pDevice;
   xiiHashTable<GraphicsPipelineCacheKey, xiiSharedPtr<xiiGALGraphicsPipelineState>, CacheKeyHasher> m_GraphicsPipelines;
   xiiHashTable<ComputePipelineCacheKey, xiiSharedPtr<xiiGALComputePipelineState>, CacheKeyHasher>   m_ComputePipelines;
+  xiiHashTable<RayTracingPipelineCacheKey, xiiSharedPtr<xiiGALRayTracingPipelineState>, CacheKeyHasher> m_RayTracingPipelines;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/PipelineStateCache_inl.h>

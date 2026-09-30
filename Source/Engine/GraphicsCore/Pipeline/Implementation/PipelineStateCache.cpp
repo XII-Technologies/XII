@@ -43,6 +43,7 @@ void xiiGALPipelineCache::Clear()
 
   m_GraphicsPipelines.Clear();
   m_ComputePipelines.Clear();
+  m_RayTracingPipelines.Clear();
 }
 
 xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALPipelineCache::GetPipeline(const xiiGALGraphicsPipelineStateCreationDescription& description)
@@ -83,6 +84,25 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGALPipelineCache::GetPipeline(const 
   return pComputePipeline;
 }
 
+xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALPipelineCache::GetPipeline(const xiiGALRayTracingPipelineStateCreationDescription& description)
+{
+  xiiGALPipelineCache* pCache = xiiGALPipelineCache::GetSingleton();
+
+  xiiSharedPtr<xiiGALRayTracingPipelineState> pRayTracingPipeline = pCache->TryGetPipeline<xiiSharedPtr<xiiGALRayTracingPipelineState>>(description, pCache->m_RayTracingPipelines);
+
+  if (!pRayTracingPipeline)
+  {
+    pRayTracingPipeline = pCache->m_pDevice->CreateRayTracingPipelineState(description);
+
+    if (!pRayTracingPipeline)
+      return {};
+
+    pCache->TryInsertPipeline<xiiSharedPtr<xiiGALRayTracingPipelineState>>(description, pRayTracingPipeline, pCache->m_RayTracingPipelines).IgnoreResult();
+  }
+
+  return pRayTracingPipeline;
+}
+
 xiiUInt32 xiiGALPipelineCache::CacheKeyHasher::Hash(const xiiGALPipelineCache::GraphicsPipelineCacheKey& a)
 {
   return a.m_uiHash;
@@ -99,6 +119,16 @@ xiiUInt32 xiiGALPipelineCache::CacheKeyHasher::Hash(const xiiGALPipelineCache::C
 }
 
 bool xiiGALPipelineCache::CacheKeyHasher::Equal(const xiiGALPipelineCache::ComputePipelineCacheKey& a, const xiiGALPipelineCache::ComputePipelineCacheKey& b)
+{
+  return a.m_uiHash == b.m_uiHash && a.m_Description == b.m_Description;
+}
+
+xiiUInt32 xiiGALPipelineCache::CacheKeyHasher::Hash(const xiiGALPipelineCache::RayTracingPipelineCacheKey& a)
+{
+  return a.m_uiHash;
+}
+
+bool xiiGALPipelineCache::CacheKeyHasher::Equal(const xiiGALPipelineCache::RayTracingPipelineCacheKey& a, const xiiGALPipelineCache::RayTracingPipelineCacheKey& b)
 {
   return a.m_uiHash == b.m_uiHash && a.m_Description == b.m_Description;
 }
