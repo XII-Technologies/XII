@@ -1,0 +1,63 @@
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+// Screen-space fallback for directional shadow visibility when hardware ray tracing or a frame
+// TLAS is unavailable.
+
+#include "PipelineCommon.xiiShader"
+
+Texture2D<float>   g_SceneDepth  : register(t0);
+RWTexture2D<float> g_RTShadowOut : register(u3);
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims;
+    g_RTShadowOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims))
+        return;
+
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
+    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    if (depth <= 0.0f || depth >= 1.0f || g_MainLightDirectionAndIntensity.w <= 0.0f)
+    {
+        g_RTShadowOut[tid.xy] = 0.0f;
+        return;
+    }
+
+    const float3 worldPos = ReconstructWorldPos(uv, depth);
+    const float3 lightDir = normalize(-g_MainLightDirectionAndIntensity.xyz);
+    const uint raySteps = 24u;
+    const float maxRayDistance = max(g_CameraForwardAndFarPlane.w * 0.05f, 10.0f);
+    const float stepSize = maxRayDistance / (float)raySteps;
+    const float jitter = InterleavedGradientNoise((float2)tid.xy, g_FrameIndex);
+
+    float shadow = 0.0f;
+
+    [loop]
+    for (uint i = 0u; i < raySteps; ++i)
+    {
+        const float rayDistance = (float(i) + jitter + 1.0f) * stepSize;
+        const float3 sampleWorldPos = worldPos + lightDir * rayDistance;
+        const float4 clipPos = mul(g_ViewProjectionMatrix, float4(sampleWorldPos, 1.0f));
+
+        if (clipPos.w <= 0.0f)
+            break;
+
+        const float2 sampleUv = (clipPos.xy / clipPos.w) * float2(0.5f, -0.5f) + 0.5f;
+        if (any(sampleUv < 0.0f) || any(sampleUv > 1.0f))
+            break;
+
+        const float sampleDepth = g_SceneDepth.SampleLevel(g_sPointClamp, sampleUv, 0);
+        const float rayDepth = clipPos.z / clipPos.w;
+        if (sampleDepth > rayDepth + 0.001f)
+        {
+            shadow = saturate(1.0f - (float)i / (float)raySteps);
+            break;
+        }
+    }
+
+    g_RTShadowOut[tid.xy] = shadow;
+}

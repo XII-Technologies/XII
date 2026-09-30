@@ -479,6 +479,7 @@ private:
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
   static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
+  bool EnsureRayTracingShadowResources();
   bool EnsureRayTracingReflectionResources();
 
 private:
@@ -562,13 +563,16 @@ private:
     {
       xiiSharedPtr<xiiGALComputePipelineState>  m_pLocalShadowAtlasAllocationPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pShadowDepthPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pRayTracedShadowPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pRayTracedShadowFallbackPipeline;
+      xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracedShadowPipeline;
+      xiiSharedPtr<xiiGALBuffer>                  m_pRayTracedShadowShaderBindingTable;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pShadowDenoisePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pContactShadowPipeline;
       xiiSharedPtr<xiiGALTexture>               m_pDirectionalShadowAtlas; // D32F[4] 4096x4096
       xiiSharedPtr<xiiGALTextureView>           m_pDirectionalShadowCascadeViews[4]; // Persistent single-slice DSVs; must outlive recorded command lists.
       xiiSharedPtr<xiiGALTexture>               m_pLocalShadowAtlas;       // D32F 2D 4096x4096
       xiiUInt32                                 m_uiActiveCascadeCount = 0U;
+      xiiUInt32                                 m_uiRayTracedShadowShaderRecordStride = 0U;
     } m_ShadowPasses;
 
     //  Stage 3 - Depth & Hi-Z
