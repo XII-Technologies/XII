@@ -79,6 +79,16 @@ namespace
     xiiRenderGraphTextureHandle m_hColor;
     xiiRenderGraphTextureHandle m_hBackBuffer;
   };
+
+  struct RayTracingValidationPassData
+  {
+    xiiRenderGraphBufferHandle             m_hSceneDependency;
+    xiiRenderGraphBufferHandle             m_hShaderBindingTable;
+    xiiRenderGraphBufferHandle             m_hValidationResult;
+    xiiShaderPermutationResourceHandle     m_hShaderPermutation;
+    xiiSharedPtr<xiiGALTopLevelAS>          m_pTopLevelAS;
+    xiiUInt32                               m_uiShaderRecordStride = 0U;
+  };
 } // namespace
 
 class xiiGpuDrivenSceneApp final : public xiiApplication
@@ -242,6 +252,7 @@ public:
 
     const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/GpuDrivenScene.xiiShader");
     m_hShaderPermutation                 = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
+    CreateRayTracingValidationResources();
     CreateSceneRenderPass();
 
     xiiRenderGraphRegistrationDescription graphDescription;
@@ -261,6 +272,8 @@ public:
     m_Visibility.Shutdown();
     m_World.Shutdown(m_uiFrameIndex);
     m_hShaderPermutation.Invalidate();
+    m_hRayTracingValidationPermutation.Invalidate();
+    m_pRayTracingValidationSBT.Clear();
     m_pSceneRenderPass.Clear();
     m_pSwapChain.Clear();
     xiiStartup::ShutdownHighLevelSystems();
@@ -282,10 +295,39 @@ private:
   {
     XII_IGNORE_UNUSED(blackboard);
 
-    const auto                        geometry     = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
-    const xiiRenderGraphBufferHandle  hMaterials   = xiiMaterialManager::AddUploadPass(graph);
-    XII_IGNORE_UNUSED(xiiRayTracingSceneManager::AddBuildPass(graph, m_uiFrameIndex));
+    const auto                        geometry       = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
+    const xiiRenderGraphBufferHandle  hMaterials     = xiiMaterialManager::AddUploadPass(graph);
+    const auto                        rayTracingScene = xiiRayTracingSceneManager::AddBuildPass(graph, m_uiFrameIndex);
     const xiiRenderGraphTextureHandle hPreviousHiZ = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
+
+    if (rayTracingScene.m_pTopLevelAS != nullptr && m_pRayTracingValidationSBT != nullptr && m_hRayTracingValidationPermutation.IsValid())
+    {
+      auto validationPass = graph.AddPass<RayTracingValidationPassData>(
+        "Ray Tracing Dispatch Validation", xiiGALCommandQueueFlags::Compute,
+        [this, rayTracingScene](RayTracingValidationPassData& data, xiiRenderGraphBuilder& builder) {
+          data.m_pTopLevelAS          = rayTracingScene.m_pTopLevelAS;
+          data.m_hShaderPermutation   = m_hRayTracingValidationPermutation;
+          data.m_uiShaderRecordStride = m_uiRayTracingValidationShaderRecordStride;
+          if (rayTracingScene.m_hSceneDependency.IsValid())
+            data.m_hSceneDependency = builder.ReadBuffer(rayTracingScene.m_hSceneDependency, xiiGALResourceStateFlags::BuildASRead);
+
+          data.m_hShaderBindingTable = builder.ImportBuffer("Ray Tracing Validation SBT", m_pRayTracingValidationSBT, m_pRayTracingValidationSBT->GetResourceState());
+          data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
+
+          xiiGALBufferCreationDescription resultDescription;
+          resultDescription.m_uiSize              = sizeof(xiiUInt32);
+          resultDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+          resultDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+          resultDescription.m_Usage               = xiiGALResourceUsage::Default;
+          resultDescription.m_Mode                = xiiGALBufferMode::Structured;
+          data.m_hValidationResult                 = builder.WriteBuffer("Ray Tracing Validation Result", resultDescription, xiiGALResourceStateFlags::UnorderedAccess);
+          builder.SetPassSideEffects(true);
+          builder.SetPassAllowMerge(false);
+        },
+        [this](const RayTracingValidationPassData& data, xiiRenderGraphPassContext& context) { ExecuteRayTracingValidation(data, context); },
+        true);
+      XII_IGNORE_UNUSED(validationPass);
+    }
 
     xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
       m_ViewProjection, m_ViewFrustum, m_Camera.GetPosition(), m_TargetSize.width, m_TargetSize.height,
@@ -426,6 +468,80 @@ private:
     m_pSceneRenderPass = xiiGALRenderPassCache::GetRenderPass(description);
   }
 
+  void CreateRayTracingValidationResources()
+  {
+    if (m_pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
+      return;
+
+    const xiiShaderResourceHandle shader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/RayTracingValidation.xiiShader");
+    m_hRayTracingValidationPermutation   = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
+
+    const xiiGALRayTracingProperties& properties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+    const xiiUInt64 uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
+    const xiiUInt64 uiStride        = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
+    XII_ASSERT_DEV(uiStride != 0U, "Ray tracing shader record stride must be non-zero.");
+
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize    = uiStride * 3U;
+    description.m_BindFlags = xiiGALBindFlags::RayTracing;
+    description.m_Usage     = xiiGALResourceUsage::Mutable;
+    description.m_Mode      = xiiGALBufferMode::Raw;
+    m_pRayTracingValidationSBT = m_pDevice->CreateBuffer(description);
+    XII_ASSERT_DEV(m_pRayTracingValidationSBT != nullptr, "Failed to create ray tracing validation SBT.");
+    m_pRayTracingValidationSBT->SetDebugName("Ray Tracing Validation SBT");
+    m_uiRayTracingValidationShaderRecordStride = static_cast<xiiUInt32>(uiStride);
+  }
+
+  void ExecuteRayTracingValidation(const RayTracingValidationPassData& data, xiiRenderGraphPassContext& context)
+  {
+    xiiResourceLock<xiiShaderPermutationResource> permutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+    if (!permutation.IsValid() || !permutation->IsShaderValid())
+    {
+      xiiLog::Error("Ray tracing validation shader failed to load; skipping the validation dispatch.");
+      return;
+    }
+
+    xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
+    pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
+    pipelineDescription.m_uiMaximumPayloadSize                     = sizeof(xiiUInt32);
+    pipelineDescription.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
+
+    auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+    rayGeneration.m_sName.Assign("ValidationRayGeneration");
+    rayGeneration.m_pShader = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
+    auto& miss = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+    miss.m_sName.Assign("ValidationMiss");
+    miss.m_pShader = permutation->GetGALShader(xiiGALShaderType::RayMiss);
+    auto& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
+    hit.m_sName.Assign("ValidationTriangleHit");
+    hit.m_pClosestHitShader = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
+
+    const xiiSharedPtr<xiiGALRayTracingPipelineState> pipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+    XII_ASSERT_DEV(pipeline != nullptr, "Failed to create ray tracing validation pipeline.");
+
+    xiiGALCommandList& commandList = context.GetCommandList();
+    commandList.SetPipelineState(pipeline.Borrow());
+    commandList.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
+    commandList.ResolveAndSetUnorderedAccessBufferView("g_ValidationResult", context.GetBuffer(data.m_hValidationResult)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+    commandList.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
+
+    const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
+    xiiGALUpdateSBTDescription sbtUpdate;
+    sbtUpdate.m_pPipelineState      = pipeline.Borrow();
+    sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
+    sbtUpdate.m_RayGenerationTable  = {0U, uiStride, uiStride};
+    sbtUpdate.m_MissTable           = {uiStride, uiStride, uiStride};
+    sbtUpdate.m_HitTable            = {uiStride * 2U, uiStride, uiStride};
+    commandList.UpdateSBT(sbtUpdate);
+
+    xiiGALTraceRaysDescription trace(sbtUpdate.m_pShaderBindingTable, 1U, 1U, 1U);
+    trace.m_RayGenerationTable = sbtUpdate.m_RayGenerationTable;
+    trace.m_MissTable          = sbtUpdate.m_MissTable;
+    trace.m_HitTable           = sbtUpdate.m_HitTable;
+    commandList.TraceRays(trace);
+  }
+
   void ExecuteGpuDrivenDraw(const GpuDrivenDrawPassData& data, xiiRenderGraphPassContext& context)
   {
     xiiResourceLock<xiiShaderPermutationResource>  permutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
@@ -486,6 +602,9 @@ private:
   xiiUniquePtr<xiiWindow>            m_pWindow;
   xiiSharedPtr<xiiGALRenderPass>     m_pSceneRenderPass;
   xiiShaderPermutationResourceHandle m_hShaderPermutation;
+  xiiShaderPermutationResourceHandle m_hRayTracingValidationPermutation;
+  xiiSharedPtr<xiiGALBuffer>          m_pRayTracingValidationSBT;
+  xiiUInt32                           m_uiRayTracingValidationShaderRecordStride = 0U;
   xiiGpuDrivenSceneConfiguration     m_Configuration;
   xiiGpuDrivenSceneWorld             m_World;
   xiiGpuHiZPyramid                   m_HiZPyramid;

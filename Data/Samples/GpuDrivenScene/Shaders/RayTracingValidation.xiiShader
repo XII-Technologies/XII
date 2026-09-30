@@ -1,0 +1,45 @@
+[PLATFORMS]
+ALL
+
+[SHADER]
+
+struct xiiRayTracingValidationPayload
+{
+  uint Hit;
+};
+
+[RAY_GENERATION_SHADER]
+
+RaytracingAccelerationStructure g_RayTracingScene   : register(t0);
+RWStructuredBuffer<uint>         g_ValidationResult : register(u1);
+
+[shader("raygeneration")]
+void main()
+{
+  RayDesc ray;
+  ray.Origin    = float3(0.0f, 0.0f, 100.0f);
+  ray.Direction = float3(0.0f, 0.0f, -1.0f);
+  ray.TMin      = 0.001f;
+  ray.TMax      = 1000.0f;
+
+  xiiRayTracingValidationPayload payload;
+  payload.Hit = 0U;
+  TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
+  g_ValidationResult[0] = payload.Hit;
+}
+
+[RAY_MISS_SHADER]
+
+[shader("miss")]
+void main(inout xiiRayTracingValidationPayload payload)
+{
+  payload.Hit = 0U;
+}
+
+[RAY_CLOSEST_HIT_SHADER]
+
+[shader("closesthit")]
+void main(inout xiiRayTracingValidationPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  payload.Hit = 1U + uint(any(attributes.barycentrics < 0.0f));
+}
