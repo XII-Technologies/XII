@@ -7,6 +7,7 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 
 /// Generation-checked handle for one mesh geometry in the hardware ray-tracing scene.
@@ -111,16 +112,35 @@ public:
 
   [[nodiscard]] static xiiRayTracingSceneStats GetStats();
 
+  struct BuildHandles
+  {
+    /// Rotating TLAS owned by the subsystem. It becomes trace-ready after the build pass executes.
+    xiiSharedPtr<xiiGALTopLevelAS> m_pTopLevelAS;
+    /// Render-graph dependency token for ray-dispatch passes that consume m_pTopLevelAS.
+    xiiRenderGraphBufferHandle     m_hSceneDependency;
+    xiiUInt32                      m_uiInstanceCount = 0U;
+  };
+
+  /// Adds BLAS/TLAS construction to the graph on the compute queue.
+  ///
+  /// A frame-in-flight TLAS ring prevents updates from mutating acceleration structures still used
+  /// by older GPU submissions. The returned dependency buffer must be declared as a BuildASRead by
+  /// every trace pass that consumes the returned TLAS.
+  [[nodiscard]] static BuildHandles AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] static xiiSharedPtr<xiiGALTopLevelAS> GetTopLevelAS(xiiUInt64 uiFrameIndex);
+
 private:
   static void      Startup();
   static void      EngineStartup();
   static void      EngineShutdown();
   static void      Shutdown();
   static xiiResult ApplyConfiguration();
+  static bool      PrepareGeometry(xiiUInt32 uiGeometryIndex);
+  static bool      PrepareFrameResources(xiiUInt32 uiFrameSlot);
 
   struct GeometrySlot;
   struct InstanceSlot;
+  struct FrameResources;
   class State;
   static xiiUniquePtr<State> s_pState;
 };
-

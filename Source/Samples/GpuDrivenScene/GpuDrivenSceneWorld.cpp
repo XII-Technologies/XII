@@ -66,7 +66,13 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   materialDescription.m_uiMaxMaterials      = 64U;
   materialDescription.m_uiMaxParameterBytes = 64U;
   materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
-  return xiiMaterialManager::Configure(materialDescription);
+  XII_SUCCEED_OR_RETURN(xiiMaterialManager::Configure(materialDescription));
+
+  xiiRayTracingSceneDescription rayTracingDescription;
+  rayTracingDescription.m_uiMaxGeometries  = 4U;
+  rayTracingDescription.m_uiMaxInstances   = configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U;
+  rayTracingDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
+  return xiiRayTracingSceneManager::Configure(rayTracingDescription);
 }
 
 xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
@@ -88,11 +94,14 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
 
 void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
 {
+  for (xiiRayTracingInstanceHandle handle : m_RayTracingInstances)
+    xiiRayTracingSceneManager::DestroyInstance(handle);
   for (GeometryAsset& asset : m_GeometryAssets)
   {
     for (xiiGALBindlessResourceHandle handle : asset.m_BindlessBuffers)
       GetBindlessResources().RetireBufferSRV(handle, uiLastSubmittedFrame);
     xiiGeometryResidencyManager::UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
+    xiiRayTracingSceneManager::UnregisterGeometry(asset.m_hRayTracingGeometry);
   }
   for (xiiMaterialGpuHandle handle : m_Materials)
     xiiMaterialManager::UnregisterMaterial(handle);
@@ -104,6 +113,7 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   m_MaterialSchemas.Clear();
   m_MaterialInstances.Clear();
   m_Objects.Clear();
+  m_RayTracingInstances.Clear();
   m_BasePositions.Clear();
   m_hAssemblyRoot.Invalidate();
   m_Scene.Clear();
@@ -199,6 +209,12 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     // Start from the coarsest LOD. Update() requests the fine range later, exercising
     // incremental residency without invalidating metadata used by frames already in flight.
     xiiGeometryResidencyManager::RequestResidency(asset.m_hGeometry, asset.m_Lods.GetCount() - 1U, 0U);
+
+    xiiRayTracingGeometryDescription rayTracingDescription;
+    rayTracingDescription.m_hMeshBuffer = asset.m_Lods[0U];
+    asset.m_hRayTracingGeometry = xiiRayTracingSceneManager::RegisterGeometry(rayTracingDescription);
+    if (!asset.m_hRayTracingGeometry.IsValid())
+      return XII_FAILURE;
   }
 
   xiiGeometryResidencyManager::ProcessStreaming(0U, 0U, 128ULL * 1024ULL * 1024ULL);
@@ -243,6 +259,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
 {
   const xiiUInt32 objectCount = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight;
   m_Objects.Reserve(objectCount);
+  m_RayTracingInstances.Reserve(objectCount);
   m_BasePositions.Reserve(objectCount);
 
   // A non-renderable assembly root demonstrates hierarchy propagation without requiring a
@@ -290,10 +307,20 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   }
 
   m_Scene.CommitFrame(0U);
-  for (xiiSceneObjectHandle object : m_Objects)
+  for (xiiUInt32 i = 0U; i < m_Objects.GetCount(); ++i)
   {
+    const xiiSceneObjectHandle object = m_Objects[i];
     if (!m_SpatialHierarchy.Insert(object, m_Scene.GetGlobalBounds(object).GetBox(), m_Scene.GetVisibilityMask(object), m_Scene.GetFlags(object)))
       return XII_FAILURE;
+
+    xiiRayTracingInstanceDescription rayTracingInstance;
+    rayTracingInstance.m_hGeometry       = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
+    rayTracingInstance.m_Transform       = m_Scene.GetGlobalTransform(object);
+    rayTracingInstance.m_uiStableObjectId = i;
+    const xiiRayTracingInstanceHandle handle = xiiRayTracingSceneManager::CreateInstance(rayTracingInstance);
+    if (!handle.IsValid())
+      return XII_FAILURE;
+    m_RayTracingInstances.PushBack(handle);
   }
   return XII_SUCCESS;
 }
@@ -330,6 +357,12 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
   {
     const xiiBoundingBoxSphere& bounds = m_Scene.GetGlobalBounds(m_Objects[i]);
     m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], m_Scene.GetVisibilityMask(m_Objects[i]), m_Scene.GetFlags(m_Objects[i]));
+
+    xiiRayTracingInstanceDescription rayTracingInstance;
+    rayTracingInstance.m_hGeometry        = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
+    rayTracingInstance.m_Transform        = m_Scene.GetGlobalTransform(m_Objects[i]);
+    rayTracingInstance.m_uiStableObjectId = i;
+    XII_IGNORE_UNUSED(xiiRayTracingSceneManager::UpdateInstance(m_RayTracingInstances[i], rayTracingInstance));
   }
 
   xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);

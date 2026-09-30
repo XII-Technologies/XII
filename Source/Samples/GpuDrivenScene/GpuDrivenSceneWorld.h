@@ -5,6 +5,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Color.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
@@ -60,6 +61,7 @@ private:
   struct GeometryAsset
   {
     xiiGeometryHandle                             m_hGeometry;
+    xiiRayTracingGeometryHandle                   m_hRayTracingGeometry;
     xiiDynamicArray<xiiMeshBufferResourceHandle>  m_Lods;
     xiiDynamicArray<xiiGALBindlessResourceHandle> m_BindlessBuffers;
   };
@@ -79,6 +81,7 @@ private:
   xiiDynamicArray<xiiSharedPtr<xiiMaterialInstance>> m_MaterialInstances;
   xiiSceneObjectHandle                               m_hAssemblyRoot;
   xiiDynamicArray<xiiSceneObjectHandle>              m_Objects;
+  xiiDynamicArray<xiiRayTracingInstanceHandle>       m_RayTracingInstances;
   xiiDynamicArray<xiiVec3>                           m_BasePositions;
   float                                              m_fAnimationTime = 0.0f;
 };

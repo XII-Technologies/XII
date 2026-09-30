@@ -815,7 +815,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   // resource remains valid on integrated/fallback hardware.
   xiiBitflags<xiiGALBindFlags> vertexBindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::ShaderResource;
   xiiBitflags<xiiGALBindFlags> indexBindFlags  = xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource;
-  if (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled)
+  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice != nullptr && pDevice->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled)
   {
     vertexBindFlags.Add(xiiGALBindFlags::RayTracing);
     indexBindFlags.Add(xiiGALBindFlags::RayTracing);

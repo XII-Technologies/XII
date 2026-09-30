@@ -198,6 +198,7 @@ public:
     deviceDescription.m_DeviceFeatures.m_TimestampQueries              = xiiGALDeviceFeatureState::Optional;
     deviceDescription.m_DeviceFeatures.m_DurationQueries               = xiiGALDeviceFeatureState::Optional;
     deviceDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Optional;
+    deviceDescription.m_DeviceFeatures.m_RayTracing                    = xiiGALDeviceFeatureState::Optional;
     // Timeline fences are required for GPU-side synchronization between the
     // graphics, asynchronous-compute, and transfer queues.
     deviceDescription.m_DeviceFeatures.m_NativeFence = xiiGALDeviceFeatureState::Optional;
@@ -283,6 +284,7 @@ private:
 
     const auto                        geometry     = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
     const xiiRenderGraphBufferHandle  hMaterials   = xiiMaterialManager::AddUploadPass(graph);
+    XII_IGNORE_UNUSED(xiiRayTracingSceneManager::AddBuildPass(graph, m_uiFrameIndex));
     const xiiRenderGraphTextureHandle hPreviousHiZ = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
 
     xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
