@@ -4,6 +4,7 @@
 
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Shader/Shader.h>
@@ -18,7 +19,27 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiShaderPermutationResource);
 
-static xiiShaderPermutationResourceLoader g_PermutationResourceLoader;
+static xiiUniquePtr<xiiShaderPermutationResourceLoader> s_pPermutationResourceLoader;
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, ShaderPermutationResourceLoader)
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    XII_ASSERT_DEV(s_pPermutationResourceLoader == nullptr, "Shader permutation resource loader was started twice.");
+    s_pPermutationResourceLoader = XII_DEFAULT_NEW(xiiShaderPermutationResourceLoader);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    s_pPermutationResourceLoader.Clear();
+  }
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
 
 xiiShaderPermutationResource::xiiShaderPermutationResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
@@ -331,7 +352,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiShaderPermutationResource, xiiShaderPermuta
 
 xiiResourceTypeLoader* xiiShaderPermutationResource::GetDefaultResourceTypeLoader() const
 {
-  return &g_PermutationResourceLoader;
+  XII_ASSERT_DEV(s_pPermutationResourceLoader != nullptr, "Shader permutation resource loader is not started.");
+  return s_pPermutationResourceLoader.Borrow();
 }
 
 struct ShaderPermutationResourceLoadData
