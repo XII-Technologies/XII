@@ -3099,12 +3099,13 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIRaw", context.GetTexture(data.m_hRayTracedRawGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
-      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
-      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      const xiiBitflags<xiiGALShaderType> hitStages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
       if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
       {
-        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayClosestHit);
-        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayClosestHit);
+        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", hitStages);
+        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", hitStages);
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
@@ -3479,12 +3480,13 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
-      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
-      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      const xiiBitflags<xiiGALShaderType> hitStages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
+      cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
       if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
       {
-        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayClosestHit);
-        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayClosestHit);
+        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", hitStages);
+        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", hitStages);
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
@@ -5682,9 +5684,10 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
   xiiSharedPtr<xiiGALShader> pRayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
   xiiSharedPtr<xiiGALShader> pRayMiss       = permutation->GetGALShader(xiiGALShaderType::RayMiss);
   xiiSharedPtr<xiiGALShader> pClosestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
-  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr)
+  xiiSharedPtr<xiiGALShader> pAnyHit        = permutation->GetGALShader(xiiGALShaderType::RayAnyHit);
+  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr || pAnyHit == nullptr)
   {
-    xiiLog::Error("The hardware GI permutation does not contain ray-generation, miss, and closest-hit stages.");
+    xiiLog::Error("The hardware GI permutation does not contain ray-generation, miss, closest-hit, and any-hit stages.");
     return false;
   }
 
@@ -5703,6 +5706,7 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
   auto& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
   hit.m_sName.Assign("RTGITriangleHit");
   hit.m_pClosestHitShader = pClosestHit;
+  hit.m_pAnyHitShader     = pAnyHit;
 
   lightingPasses.m_pRTGIPipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
   if (lightingPasses.m_pRTGIPipeline == nullptr)
@@ -5763,9 +5767,10 @@ bool xiiView::EnsureRayTracingReflectionResources()
   xiiSharedPtr<xiiGALShader> pRayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
   xiiSharedPtr<xiiGALShader> pRayMiss       = permutation->GetGALShader(xiiGALShaderType::RayMiss);
   xiiSharedPtr<xiiGALShader> pClosestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
-  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr)
+  xiiSharedPtr<xiiGALShader> pAnyHit        = permutation->GetGALShader(xiiGALShaderType::RayAnyHit);
+  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr || pAnyHit == nullptr)
   {
-    xiiLog::Error("The hardware reflection permutation does not contain ray-generation, miss, and closest-hit stages.");
+    xiiLog::Error("The hardware reflection permutation does not contain ray-generation, miss, closest-hit, and any-hit stages.");
     return false;
   }
 
@@ -5786,6 +5791,7 @@ bool xiiView::EnsureRayTracingReflectionResources()
   xiiGALRayTracingTriangleHitShaderGroupDescription& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
   hit.m_sName.Assign("RTReflectionTriangleHit");
   hit.m_pClosestHitShader = pClosestHit;
+  hit.m_pAnyHitShader     = pAnyHit;
 
   lightingPasses.m_pRTReflectionPipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
   if (lightingPasses.m_pRTReflectionPipeline == nullptr)

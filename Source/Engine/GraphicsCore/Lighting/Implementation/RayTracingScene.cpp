@@ -42,7 +42,8 @@ struct xiiRayTracingSceneManager::InstanceSlot
 {
   xiiRayTracingInstanceDescription m_Description;
   xiiUInt32                         m_uiGeneration = 1U;
-  bool                              m_bAllocated  = false;
+  bool                              m_bAllocated      = false;
+  bool                              m_bRequiresAnyHit = false;
 };
 
 struct xiiRayTracingSceneManager::FrameResources
@@ -209,6 +210,8 @@ namespace
     result.Metadata                  = xiiVec4U32(instance.m_hMaterial.m_uiSlot, instance.m_uiStableObjectId, static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U);
     result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
     result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
+    result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
+    result.Rendering                 = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque), 0U, 0U);
 
     if (!instance.m_hMaterial.IsValid() || !xiiMaterialManager::IsInitialized())
       return result;
@@ -224,10 +227,19 @@ namespace
     TryGetMaterialParameter(*material, "Specular", result.SurfaceParameters.y);
     TryGetMaterialParameter(*material, "Transmission", result.SurfaceParameters.z);
     TryGetMaterialParameter(*material, "OcclusionStrength", result.SurfaceParameters.w);
+    TryGetMaterialParameter(*material, "AlphaCutoff", result.LayerParameters.x);
+    TryGetMaterialParameter(*material, "NormalScale", result.LayerParameters.y);
+    TryGetMaterialParameter(*material, "ClearCoat", result.LayerParameters.z);
+    TryGetMaterialParameter(*material, "ClearCoatRoughness", result.LayerParameters.w);
 
     const xiiMaterialRuntimeState runtimeState = material->GetRuntimeState();
     result.Metadata.z = runtimeState.m_ShadingModel.GetValue();
     result.Metadata.w = runtimeState.m_FeatureFlags.GetValue();
+    result.Rendering  = xiiVec4U32(
+      static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()),
+      runtimeState.m_BlendMode.GetValue(),
+      runtimeState.m_uiTextureMask,
+      0U);
 
     xiiMaterialInstanceSnapshot snapshot;
     material->CreateSnapshot(snapshot);
@@ -513,6 +525,7 @@ xiiRayTracingInstanceHandle xiiRayTracingSceneManager::CreateInstance(const xiiR
   s_pState->m_FreeInstances.PopBack();
   InstanceSlot& slot = s_pState->m_Instances[uiIndex];
   slot.m_Description = description;
+  slot.m_bRequiresAnyHit = false;
   slot.m_bAllocated = true;
   ++s_pState->m_uiInstanceCount;
   ++s_pState->m_uiSceneRevision;
@@ -526,6 +539,7 @@ void xiiRayTracingSceneManager::DestroyInstance(xiiRayTracingInstanceHandle hand
 
   InstanceSlot& slot = s_pState->m_Instances[handle.m_uiIndex];
   slot.m_Description = {};
+  slot.m_bRequiresAnyHit = false;
   slot.m_bAllocated = false;
   ++slot.m_uiGeneration;
   if (slot.m_uiGeneration == 0U)
@@ -779,7 +793,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     build.m_uiPrimitiveCount     = geometry.m_uiPrimitiveCount;
   }
 
-  for (const InstanceSlot& instance : s_pState->m_Instances)
+  for (InstanceSlot& instance : s_pState->m_Instances)
   {
     if (!instance.m_bAllocated || !IsValid(instance.m_Description.m_hGeometry))
       continue;
@@ -794,10 +808,27 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     gpuInstance.SetMask(instance.m_Description.m_uiVisibilityMask);
     gpuInstance.SetHitGroupContribution(0U);
     xiiBitflags<xiiGALRayTracingInstanceFlags> flags = instance.m_Description.m_Flags;
-    if (geometry.m_Description.m_bOpaque)
+    bool bRequiresAnyHit = !geometry.m_Description.m_bOpaque;
+    if (instance.m_Description.m_hMaterial.IsValid() && xiiMaterialManager::IsInitialized())
+    {
+      const xiiSharedPtr<xiiMaterialInstance> pMaterial = xiiMaterialManager::GetGpuStorage().GetMaterial(instance.m_Description.m_hMaterial);
+      bRequiresAnyHit = bRequiresAnyHit || (pMaterial != nullptr && pMaterial->GetRuntimeState().IsMasked());
+    }
+    if (instance.m_bRequiresAnyHit != bRequiresAnyHit)
+    {
+      instance.m_bRequiresAnyHit = bRequiresAnyHit;
+      ++s_pState->m_uiSceneRevision;
+    }
+
+    if (!bRequiresAnyHit)
     {
       flags.Remove(xiiGALRayTracingInstanceFlags::ForceNonOpaque);
       flags.Add(xiiGALRayTracingInstanceFlags::ForceOpaque);
+    }
+    else
+    {
+      flags.Remove(xiiGALRayTracingInstanceFlags::ForceOpaque);
+      flags.Add(xiiGALRayTracingInstanceFlags::ForceNonOpaque);
     }
     gpuInstance.SetFlags(flags);
     gpuInstance.m_uiBottomLevelASDeviceAddress = geometry.m_pBottomLevelAS->GetDeviceAddress();

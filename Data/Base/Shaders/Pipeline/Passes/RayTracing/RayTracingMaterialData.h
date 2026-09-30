@@ -17,6 +17,8 @@ struct XII_SHADER_STRUCT xiiRayTracingMaterialData
   UINT4(Metadata);                      ///< x = material slot, y = stable object ID, z = shading model, w = feature flags.
   UINT4(TextureIndices0);               ///< Base color, normal, metallic-roughness and occlusion bindless SRVs.
   UINT4(TextureIndices1);               ///< Emissive, height, clear-coat and transmission bindless SRVs.
+  FLOAT4(LayerParameters);              ///< x = alpha cutoff, y = normal scale, z = clear coat, w = clear-coat roughness.
+  UINT4(Rendering);                     ///< x = effective alpha mode, y = blend mode, z = texture mask, w = reserved.
 };
 
 /// Geometry addressing record parallel to xiiRayTracingMaterialData and indexed by
@@ -59,13 +61,13 @@ float2 xiiLoadRayTracingTexCoord(ByteAddressBuffer vertexBuffer, xiiRayTracingGe
   return asfloat(vertexBuffer.Load2(vertexIndex * geometry.VertexAttributes.z + geometry.VertexLayout.w));
 }
 
-float3 xiiDecodeRayTracingNormal(float4 normalSample)
+float3 xiiDecodeRayTracingNormal(float4 normalSample, float normalScale)
 {
-  const float2 xy = normalSample.xy * 2.0f - 1.0f;
+  const float2 xy = (normalSample.xy * 2.0f - 1.0f) * normalScale;
   return float3(xy, sqrt(max(1.0f - dot(xy, xy), 0.0f)));
 }
 #else
-static_assert(sizeof(xiiRayTracingMaterialData) == 96U, "Ray-tracing material records must match the HLSL structured-buffer stride.");
+static_assert(sizeof(xiiRayTracingMaterialData) == 128U, "Ray-tracing material records must match the HLSL structured-buffer stride.");
 static_assert(alignof(xiiRayTracingMaterialData) == 16U, "Ray-tracing material records require aligned CPU storage.");
 static_assert(sizeof(xiiRayTracingGeometryData) == 48U, "Ray-tracing geometry records must match the HLSL structured-buffer stride.");
 static_assert(alignof(xiiRayTracingGeometryData) == 16U, "Ray-tracing geometry records require aligned CPU storage.");
