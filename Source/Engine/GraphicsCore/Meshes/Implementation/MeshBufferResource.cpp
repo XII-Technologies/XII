@@ -810,12 +810,23 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
 
   m_Descriptor = std::move(descriptor);
 
+  // BLAS builds consume the canonical render vertex/index buffers directly.
+  // Request device addresses only on ray-tracing-capable devices so the same
+  // resource remains valid on integrated/fallback hardware.
+  xiiBitflags<xiiGALBindFlags> vertexBindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::ShaderResource;
+  xiiBitflags<xiiGALBindFlags> indexBindFlags  = xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource;
+  if (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled)
+  {
+    vertexBindFlags.Add(xiiGALBindFlags::RayTracing);
+    indexBindFlags.Add(xiiGALBindFlags::RayTracing);
+  }
+
   xiiStringBuilder sDebugName;
   sDebugName.Set(GetResourceIdOrDescription(), " Vertex Data");
-  CreateGpuBuffer(m_pVertexBuffer, m_Descriptor.m_VertexData, m_Descriptor.GetVertexStride(), xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::ShaderResource, sDebugName);
+  CreateGpuBuffer(m_pVertexBuffer, m_Descriptor.m_VertexData, m_Descriptor.GetVertexStride(), vertexBindFlags, sDebugName);
 
   sDebugName.Set(GetResourceIdOrDescription(), " Index Data");
-  CreateGpuBuffer(m_pIndexBuffer, m_Descriptor.m_IndexData, GetIndexSize(m_Descriptor.m_IndexType), xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource, sDebugName);
+  CreateGpuBuffer(m_pIndexBuffer, m_Descriptor.m_IndexData, GetIndexSize(m_Descriptor.m_IndexType), indexBindFlags, sDebugName);
 
   sDebugName.Set(GetResourceIdOrDescription(), " Meshlets");
   CreateGpuBuffer(m_pMeshletBuffer, m_Descriptor.m_Meshlets, sizeof(xiiMeshlet), xiiGALBindFlags::ShaderResource, sDebugName);
