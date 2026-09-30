@@ -1188,6 +1188,8 @@ struct xiiClusterBuildData
 
 void xiiView::SetupClusterBuild(xiiClusterBuildData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hLightingDataReady = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightingDataReady, xiiGALResourceStateFlags::ShaderResource);
 
   const xiiUInt32 uiTotalClusters = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);
@@ -1266,6 +1268,8 @@ struct xiiLightListClearData
 
 void xiiView::SetupLightListClear(xiiLightListClearData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hClusterConstants = builder.ReadBuffer("xiiLightClusteringConstants", xiiGALResourceStateFlags::ConstantBuffer);
 
   const xiiUInt32 uiMaxClusters = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);
@@ -1308,6 +1312,8 @@ struct xiiLightListData
 
 void xiiView::SetupLightListBuild(xiiLightListData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hClusterConstants = builder.ReadBuffer("xiiLightClusteringConstants", xiiGALResourceStateFlags::ConstantBuffer);
 
   const xiiUInt32 uiMaxClusters    = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);

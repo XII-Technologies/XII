@@ -1,28 +1,20 @@
 // XII Engine - LightListBuild.xiiShader
 // Light-centric assignment of stable-ID GPU lights to logarithmic clusters.
 
-#include "PipelineCommon.xiiShader"
-#include "LightingData.h"
+[PLATFORMS]
+ALL
 
-cbuffer xiiLightClusteringConstants : register(b3)
-{
-    uint  ClusterCountX;
-    uint  ClusterCountY;
-    uint  ClusterCountZ;
-    uint  TotalClusters;
-    float NearPlane;
-    float FarPlane;
-    float LogFarOverNear;
-    float Padding1;
-    uint  TilePixelsX;
-    uint  TilePixelsY;
-    uint  MaxLightsPerCluster;
-    uint  ActiveLightCount;
-};
+[PERMUTATIONS]
 
-StructuredBuffer<xiiGpuLightData>      g_Lights     : register(t0);
-RWStructuredBuffer<uint>               g_LightIndex : register(u0);
-RWStructuredBuffer<uint2>              g_LightGrid  : register(u1);
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+#include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+
+StructuredBuffer<xiiGpuLightData> g_Lights;
+RWStructuredBuffer<uint>          g_LightIndex;
+RWStructuredBuffer<uint2>         g_LightGrid;
 
 uint LinearDepthToSlice(float linearDepth)
 {
@@ -30,8 +22,24 @@ uint LinearDepthToSlice(float linearDepth)
     return min((uint)max(normalized * (float)ClusterCountZ, 0.0f), ClusterCountZ - 1u);
 }
 
+uint ReserveClusterLight(uint clusterIndex)
+{
+    [loop]
+    for (;;)
+    {
+        const uint currentCount = g_LightGrid[clusterIndex].y;
+        if (currentCount >= MaxLightsPerCluster)
+            return MaxLightsPerCluster;
+
+        uint originalCount;
+        InterlockedCompareExchange(g_LightGrid[clusterIndex].y, currentCount, currentCount + 1u, originalCount);
+        if (originalCount == currentCount)
+            return currentCount;
+    }
+}
+
 [numthreads(64, 1, 1)]
-void CS_LightListBuild(uint3 dispatchThreadId : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     const uint lightIndex = dispatchThreadId.x;
     if (lightIndex >= ActiveLightCount)
@@ -84,8 +92,7 @@ void CS_LightListBuild(uint3 dispatchThreadId : SV_DispatchThreadID)
             for (uint x = minTile.x; x <= maxTile.x; ++x)
             {
                 const uint clusterIndex = (z * ClusterCountY + y) * ClusterCountX + x;
-                uint listSlot;
-                InterlockedAdd(g_LightGrid[clusterIndex].y, 1u, listSlot);
+                const uint listSlot = ReserveClusterLight(clusterIndex);
                 if (listSlot < MaxLightsPerCluster)
                 {
                     g_LightIndex[clusterIndex * MaxLightsPerCluster + listSlot] = lightIndex;

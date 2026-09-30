@@ -1,26 +1,18 @@
 // XII Engine - ClusterGridBuild.xiiShader
 // Builds logarithmic view-space cluster bounds for Forward+ and deferred lighting.
 
-#include "PipelineCommon.xiiShader"
-#include "LightingData.h"
+[PLATFORMS]
+ALL
 
-cbuffer xiiLightClusteringConstants : register(b3)
-{
-    uint  ClusterCountX;
-    uint  ClusterCountY;
-    uint  ClusterCountZ;
-    uint  TotalClusters;
-    float NearPlane;
-    float FarPlane;
-    float LogFarOverNear;
-    float Padding1;
-    uint  TilePixelsX;
-    uint  TilePixelsY;
-    uint  MaxLightsPerCluster;
-    uint  ActiveLightCount;
-};
+[PERMUTATIONS]
 
-RWStructuredBuffer<xiiClusterDescriptor> g_ClustersOut : register(u0);
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+#include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+
+RWStructuredBuffer<xiiClusterDescriptor> g_ClustersOut;
 
 float GetSliceLinearDepth(uint slice)
 {
@@ -33,14 +25,14 @@ float GetReversedZFromLinearDepth(float linearDepth)
     return saturate(NearPlane / max(linearDepth, NearPlane));
 }
 
-void IncludePoint(inout float3 minBounds, inout float3 maxBounds, float3 point)
+void IncludePoint(inout float3 minBounds, inout float3 maxBounds, float3 samplePoint)
 {
-    minBounds = min(minBounds, point);
-    maxBounds = max(maxBounds, point);
+    minBounds = min(minBounds, samplePoint);
+    maxBounds = max(maxBounds, samplePoint);
 }
 
 [numthreads(64, 1, 1)]
-void CS_ClusterGridBuild(uint3 dispatchThreadId : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     const uint clusterIndex = dispatchThreadId.x;
     if (clusterIndex >= TotalClusters)
