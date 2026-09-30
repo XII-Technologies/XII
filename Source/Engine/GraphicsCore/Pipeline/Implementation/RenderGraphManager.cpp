@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 class xiiRenderGraphManagerState
 {
@@ -185,9 +186,17 @@ xiiUInt64 xiiRenderGraphManager::PrepareFrame(xiiUInt64 uiFrameIndex, xiiUInt32 
   if (s_pState == nullptr || !s_pState->m_bEngineStarted || uiFramesInFlight == 0U)
     return 0ULL;
 
+  XII_ASSERT_DEV(uiFrameIndex > 0U, "Frame zero is reserved as the no-completed-frame sentinel.");
+  if (uiFrameIndex == 0U)
+    return 0ULL;
+
   if (uiFrameIndex > uiFramesInFlight)
     s_pState->m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
-  return s_pState->m_FrameCompletionTracker.PollCompletedFrames();
+
+  const xiiUInt64 uiCompletedFrame = s_pState->m_FrameCompletionTracker.PollCompletedFrames();
+  if (xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+    pBindlessTable->Collect(uiCompletedFrame);
+  return uiCompletedFrame;
 }
 
 xiiResult xiiRenderGraphManager::ExecuteFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, const xiiView* pView, const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)

@@ -19,6 +19,7 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewEventType, 1)
@@ -570,11 +571,15 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     m_bFrameCompletionTrackerInitialized = true;
   }
 
-  const xiiUInt64 uiFrameIndex = m_uiRenderFrameIndex++;
+  // Frame zero is the conservative "nothing has completed" sentinel used by all deferred
+  // resource managers. Real submissions therefore start at one.
+  const xiiUInt64 uiFrameIndex = ++m_uiRenderFrameIndex;
   constexpr xiiUInt32 uiFramesInFlight = 3U;
-  if (uiFrameIndex >= uiFramesInFlight)
+  if (uiFrameIndex > uiFramesInFlight)
     m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
   const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
+  if (xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+    pBindlessTable->Collect(uiCompletedFrame);
   xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   bool bGlobalIlluminationFrameStarted = false;
 

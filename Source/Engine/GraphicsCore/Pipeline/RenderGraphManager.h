@@ -83,6 +83,9 @@ public:
   [[nodiscard]] static xiiRenderGraphTimestampProfiler* GetProfiler();
 
   /// Waits before a frame-ring slot is reused and returns the latest fully completed GPU frame.
+  /// Waits for a reusable frame slot, advances deferred bindless descriptor collection, and
+  /// returns the latest completed frame. Frame indices start at one; zero is reserved as the
+  /// conservative "none completed" sentinel.
   [[nodiscard]] static xiiUInt64 PrepareFrame(xiiUInt64 uiFrameIndex, xiiUInt32 uiFramesInFlight);
 
   /// Executes eligible graphs using the default GAL device and subsystem-owned cache/profiler.

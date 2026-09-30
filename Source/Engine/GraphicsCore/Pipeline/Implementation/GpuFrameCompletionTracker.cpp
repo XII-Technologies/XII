@@ -37,7 +37,11 @@ void xiiGpuFrameCompletionTracker::Reset()
 void xiiGpuFrameCompletionTracker::CaptureSubmittedFrame(xiiUInt64 uiFrameIndex)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "GPU frame completion tracker is not initialized.");
+  XII_ASSERT_DEV(uiFrameIndex > 0U, "Frame zero is reserved as the no-completed-frame sentinel.");
   XII_ASSERT_DEV(!m_bHasCapturedFrame || uiFrameIndex > m_Stats.m_uiLastCapturedFrame, "Frames must be captured in increasing order.");
+
+  if (m_pDevice == nullptr || uiFrameIndex == 0U)
+    return;
 
   FramePoint& frame    = m_PendingFrames.ExpandAndGetRef();
   frame.m_uiFrameIndex = uiFrameIndex;

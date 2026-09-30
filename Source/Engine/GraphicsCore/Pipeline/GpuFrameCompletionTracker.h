@@ -29,6 +29,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuFrameCompletionStats);
 /// PollCompletedFrames() advances only when every unique queue used by that frame has
 /// completed the value captured for it. The result is safe for deferred destruction,
 /// bindless index recycling, streaming eviction, and frame-ring reuse.
+/// Frame indices start at one; zero is reserved as the conservative "none completed" value.
 class XII_GRAPHICSCORE_DLL xiiGpuFrameCompletionTracker
 {
 public:
