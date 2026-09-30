@@ -9,7 +9,7 @@ XII_ALWAYS_INLINE xiiGALCommandList& xiiRenderGraphPassContext::GetCommandList()
   return *m_pCommandList;
 }
 
-XII_ALWAYS_INLINE xiiGALRenderPass* xiiRenderGraphPassContext::GetRenderPass() const
+XII_ALWAYS_INLINE const xiiSharedPtr<xiiGALRenderPass>& xiiRenderGraphPassContext::GetRenderPass() const
 {
   return m_pRenderPass;
 }

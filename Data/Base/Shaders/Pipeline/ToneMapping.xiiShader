@@ -3,7 +3,7 @@
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
 #include "PipelineCommon.xiiShader"
-#include "Passes/Output/DisplayOutputConstants.h"
+#include "Passes/Output/ToneMappingConstants.h"
 
 Texture2D<float4>          g_HDRInput  : register(t0);
 Texture2D<float4>          g_BloomTex  : register(t1);

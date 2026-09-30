@@ -1715,7 +1715,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       context.m_pCommandList = pCommandList.Borrow();
       if (compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex)
       {
-        context.m_pRenderPass    = m_MergeGroups[compiledPass.m_uiMergeGroupIndex].m_pNativeRenderPass.Borrow();
+        context.m_pRenderPass    = m_MergeGroups[compiledPass.m_uiMergeGroupIndex].m_pNativeRenderPass;
         context.m_uiSubpassIndex = 0U;
       }
       context.m_pBlackboard      = pBlackboard;

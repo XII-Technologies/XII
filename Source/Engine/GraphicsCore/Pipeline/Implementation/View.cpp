@@ -43,7 +43,8 @@
 #include <Shaders/Pipeline/Passes/GlobalIllumination/ReSTIRGIConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
-#include <Shaders/Pipeline/Passes/Output/DisplayOutputConstants.h>
+#include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
+#include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
@@ -5597,15 +5598,21 @@ void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& buil
 
   builder.SetPassSideEffects(true);
   builder.SetPassAllowMerge(false);
+  builder.SetPassRenderPassManaged(data.m_hBackbuffer.IsValid());
 }
 
 void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassContext& context)
 {
   xiiGALCommandList& cmd = context.GetCommandList();
+  xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline;
+  if (data.m_hDisplayLinear.IsValid() && data.m_hBackbuffer.IsValid() && data.m_hConstants.IsValid() && context.GetRenderPass() != nullptr)
+  {
+    pPipeline = xiiView::EnsureGraphicsPipeline(m_ViewPassResources.m_OutputPasses.m_pFinalBlitPipeline, "Shaders/Pipeline/FinalBlit.xiiShader", context.GetRenderPass(), context.GetSubpassIndex());
+  }
 
   cmd.BeginDebugGroup("BackbufferPresent");
   {
-    if (data.m_hDisplayLinear.IsValid() && data.m_hBackbuffer.IsValid() && data.m_hConstants.IsValid() && m_ViewPassResources.m_OutputPasses.m_pFinalBlitPipeline)
+    if (data.m_hDisplayLinear.IsValid() && data.m_hBackbuffer.IsValid() && data.m_hConstants.IsValid() && pPipeline != nullptr)
     {
       {
         xiiGALMapHelper<xiiFinalBlitConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -5617,7 +5624,7 @@ void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassC
 
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hBackbuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 1.0f));
       cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
-      cmd.SetPipelineState(m_ViewPassResources.m_OutputPasses.m_pFinalBlitPipeline);
+      cmd.SetPipelineState(pPipeline.Borrow());
       cmd.ResolveAndSetConstantBuffer("xiiFinalBlitConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceTextureView("g_FinalColor", context.GetTexture(data.m_hDisplayLinear)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -6159,6 +6166,43 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiView::EnsureComputePipeline(xiiShare
 
   inout_pPipeline = xiiGALPipelineCache::GetPipeline(description);
   XII_ASSERT_DEV(inout_pPipeline != nullptr, "Failed to create compute pipeline: '{}'.", sShaderPath);
+
+  return inout_pPipeline;
+}
+
+// static
+xiiSharedPtr<xiiGALGraphicsPipelineState> xiiView::EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex)
+{
+  XII_ASSERT_DEV(pRenderPass != nullptr, "A graphics pipeline requires a compatible render pass.");
+
+  if (inout_pPipeline != nullptr)
+  {
+    const xiiGALGraphicsPipelineDescription& pipelineDescription = inout_pPipeline->GetDescription().m_GraphicsPipeline;
+    if (pipelineDescription.m_pRenderPass == pRenderPass && pipelineDescription.m_uiSubpassIndex == uiSubpassIndex)
+      return inout_pPipeline;
+  }
+
+  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
+
+  xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, /*bBlockTillLoaded=*/true);
+
+  xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  XII_ASSERT_DEV(pPermutation.IsValid(), "Failed to load shader permutation: '{}'.", sShaderPath);
+
+  xiiGALGraphicsPipelineStateCreationDescription description;
+  description.m_pPipelineResourceSignature            = pPermutation->GetPipelineResourceSignature();
+  description.m_pVertexShader                         = pPermutation->GetGALShader(xiiGALShaderType::Vertex);
+  description.m_pPixelShader                          = pPermutation->GetGALShader(xiiGALShaderType::Pixel);
+  description.m_GraphicsPipeline.m_pBlendState        = pPermutation->GetBlendState();
+  description.m_GraphicsPipeline.m_pRasterizerState   = pPermutation->GetRasterizerState();
+  description.m_GraphicsPipeline.m_pDepthStencilState = pPermutation->GetDepthStencilState();
+  description.m_GraphicsPipeline.m_pRenderPass        = pRenderPass;
+  description.m_GraphicsPipeline.m_uiSubpassIndex     = static_cast<xiiUInt8>(uiSubpassIndex);
+  description.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
+
+  inout_pPipeline = xiiGALPipelineCache::GetPipeline(description);
+  XII_ASSERT_DEV(inout_pPipeline != nullptr, "Failed to create graphics pipeline: '{}'.", sShaderPath);
 
   return inout_pPipeline;
 }

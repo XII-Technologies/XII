@@ -284,7 +284,7 @@ public:
   [[nodiscard]] xiiGALCommandList& GetCommandList() const;
 
   /// Returns the graph-owned native render pass active for this callback, or null when the pass manages its own scope.
-  [[nodiscard]] xiiGALRenderPass* GetRenderPass() const;
+  [[nodiscard]] const xiiSharedPtr<xiiGALRenderPass>& GetRenderPass() const;
 
   /// Returns the subpass index within GetRenderPass(). Graph-managed standalone passes use subpass zero.
   [[nodiscard]] xiiUInt32 GetSubpassIndex() const;
@@ -315,14 +315,14 @@ private:
 
   xiiRenderGraphPassContext() = default;
 
-  xiiGALCommandList*           m_pCommandList   = nullptr;
-  xiiGALRenderPass*            m_pRenderPass    = nullptr;
-  xiiRenderGraphBlackboard*    m_pBlackboard    = nullptr;
-  xiiRenderGraphResourceCache* m_pResourceCache = nullptr;
-  const xiiView*               m_pView          = nullptr;
-  xiiUInt64                    m_uiFrameIndex   = 0ULL;
-  xiiUInt32                    m_uiSubpassIndex = 0U;
-  xiiHashedString              m_sPassName;
+  xiiGALCommandList*             m_pCommandList = nullptr;
+  xiiSharedPtr<xiiGALRenderPass> m_pRenderPass;
+  xiiRenderGraphBlackboard*      m_pBlackboard    = nullptr;
+  xiiRenderGraphResourceCache*   m_pResourceCache = nullptr;
+  const xiiView*                 m_pView          = nullptr;
+  xiiUInt64                      m_uiFrameIndex   = 0ULL;
+  xiiUInt32                      m_uiSubpassIndex = 0U;
+  xiiHashedString                m_sPassName;
 
   // Resource resolution tables is owned by the graph, borrowed for pass duration.
   xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> m_ResolvedTextures;
