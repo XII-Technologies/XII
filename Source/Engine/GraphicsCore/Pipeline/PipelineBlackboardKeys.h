@@ -98,6 +98,7 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_EnvironmentSpecular    = "EnvironmentSpecular"_xiisv;  ///< xiiRenderGraphTextureHandle - Tier 2 probe/sky specular contribution already evaluated through the material BRDF.
   constexpr xiiStringView k_SSRTexture             = "SSRTerm"_xiisv;              ///< xiiRenderGraphTextureHandle - screen-space reflection radiance (R16G16B16A16F).
   constexpr xiiStringView k_RTRawGI                = "RTRawGI"_xiisv;              ///< xiiRenderGraphTextureHandle - raw RT indirect diffuse before denoising.
+  constexpr xiiStringView k_RTResampledGI          = "RTResampledGI"_xiisv;        ///< xiiRenderGraphTextureHandle - spatiotemporally resampled RT indirect diffuse.
   constexpr xiiStringView k_RTFinalGI              = "RTFinalGI"_xiisv;            ///< xiiRenderGraphTextureHandle - denoised RT GI.
   constexpr xiiStringView k_RTRawReflections       = "RTRawReflections"_xiisv;     ///< xiiRenderGraphTextureHandle - raw RT reflection radiance.
   constexpr xiiStringView k_RTFinalReflections     = "RTFinalReflections"_xiisv;   ///< xiiRenderGraphTextureHandle - denoised RT reflections.

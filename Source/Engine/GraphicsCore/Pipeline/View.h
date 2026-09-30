@@ -81,6 +81,8 @@ struct xiiReSTIRDISpatialData;
 struct xiiDeferredDirectLightingData;
 struct xiiDeferredIndirectLightingData;
 struct xiiRayTracedGlobalIlluminationData;
+struct xiiReSTIRGITemporalData;
+struct xiiReSTIRGISpatialData;
 struct xiiRayTracedGlobalIlluminationDenoiseData;
 struct xiiRayTracedReflectionsData;
 struct xiiRayTracedReflectionsDenoiseData;
@@ -387,6 +389,12 @@ private:
   void SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationData& data, xiiRenderGraphBuilder& builder);
   void ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIlluminationData& data, xiiRenderGraphPassContext& context);
 
+  void SetupReSTIRGITemporal(xiiReSTIRGITemporalData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReSTIRGITemporal(const xiiReSTIRGITemporalData& data, xiiRenderGraphPassContext& context);
+
+  void SetupReSTIRGISpatial(xiiReSTIRGISpatialData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReSTIRGISpatial(const xiiReSTIRGISpatialData& data, xiiRenderGraphPassContext& context);
+
   void SetupRayTracedGlobalIlluminationDenoise(xiiRayTracedGlobalIlluminationDenoiseData& data, xiiRenderGraphBuilder& builder);
   void ExecuteRayTracedGlobalIlluminationDenoise(const xiiRayTracedGlobalIlluminationDenoiseData& data, xiiRenderGraphPassContext& context);
 
@@ -653,6 +661,8 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGIFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTGIPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTGIShaderBindingTable;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRGITemporalPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRGISpatialPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGITemporalDenoisePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTReflectionFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTReflectionPipeline;
@@ -667,6 +677,10 @@ private:
       xiiSharedPtr<xiiGALTexture>              m_pRTGIHistory[2];
       bool                                     m_bRTGIHistoryValid       = false;
       bool                                     m_bRTGIAvailableThisFrame = false;
+      xiiSharedPtr<xiiGALTexture> m_pRTGIReservoirSampleHistory[2];
+      xiiSharedPtr<xiiGALTexture> m_pRTGIReservoirStateHistory[2];
+      xiiSharedPtr<xiiGALTexture> m_pRTGIReservoirSurfaceHistory[2];
+      bool                        m_bRTGIReservoirHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>              m_pRTReflectionHistory[2];
       bool                                     m_bRTReflectionHistoryValid       = false;
       bool                                     m_bRTReflectionAvailableThisFrame = false;
