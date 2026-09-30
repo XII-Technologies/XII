@@ -99,4 +99,3 @@ private:
 
   xiiLightingContextHandle m_Handle;
 };
-

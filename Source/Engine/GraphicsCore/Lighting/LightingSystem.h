@@ -20,6 +20,7 @@ class xiiGALCommandList;
 class xiiGALDevice;
 class xiiRenderGraphBlackboard;
 class xiiView;
+class xiiLightingManager;
 
 /// CPU-side settings for the clustered lighting data path.
 struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
@@ -98,11 +99,7 @@ public:
     xiiUInt32 m_uiEmissiveMeshLightCount = 0U;
   };
 
-  xiiLightingSystem();
   ~xiiLightingSystem();
-
-  void Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings = {});
-  void Shutdown();
 
   void BuildFrameData(const xiiView& view, const xiiExtractedRenderData& extractedData, xiiUInt32 uiFrameIndex);
   void UploadFrameData(xiiGALCommandList& ref_commandList);
@@ -126,6 +123,13 @@ public:
   xiiGALBuffer* GetLightDataBuffer() const;
 
 private:
+  friend class xiiLightingManager;
+
+  xiiLightingSystem();
+
+  void Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings = {});
+  void Shutdown();
+
   struct PerFrameCameraConstants
   {
     XII_DECLARE_POD_TYPE();

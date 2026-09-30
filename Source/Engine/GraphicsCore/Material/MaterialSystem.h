@@ -4,6 +4,8 @@
 
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 
+class xiiMaterialManager;
+
 /// Frame-local draw/dispatch payload produced by the material system. Renderers use the GPU offset
 /// for parameter access and the resource bindings for descriptor or bindless table resolution.
 struct XII_GRAPHICSCORE_DLL xiiMaterialRenderData
@@ -28,6 +30,13 @@ class XII_GRAPHICSCORE_DLL xiiMaterialSystem
   XII_DISALLOW_COPY_AND_ASSIGN(xiiMaterialSystem);
 
 public:
+  /// Builds a standalone runtime material without going through the resource manager. This is the
+  /// preferred path for generated simulation, robotics sensor, and medical visualization materials.
+  static xiiResult CreateRuntimeMaterial(const xiiMaterialSchemaDescription& description, const xiiMaterialRuntimeState& runtimeState, xiiSharedPtr<xiiMaterialSchema>& out_pSchema, xiiSharedPtr<xiiMaterialInstance>& out_pInstance, xiiStringBuilder* out_pError = nullptr);
+
+private:
+  friend class xiiMaterialManager;
+
   xiiMaterialSystem() = default;
 
   xiiResult Initialize(xiiGALDevice* pDevice, const xiiMaterialGpuStorageDescription& description = {});
@@ -44,11 +53,6 @@ public:
   [[nodiscard]] xiiMaterialGpuStorage&       GetGpuStorage() { return m_GpuStorage; }
   [[nodiscard]] const xiiMaterialGpuStorage& GetGpuStorage() const { return m_GpuStorage; }
 
-  /// Builds a standalone runtime material without going through the resource manager. This is the
-  /// preferred path for generated simulation, robotics sensor, and medical visualization materials.
-  static xiiResult CreateRuntimeMaterial(const xiiMaterialSchemaDescription& description, const xiiMaterialRuntimeState& runtimeState, xiiSharedPtr<xiiMaterialSchema>& out_pSchema, xiiSharedPtr<xiiMaterialInstance>& out_pInstance, xiiStringBuilder* out_pError = nullptr);
-
-private:
   xiiMaterialGpuStorage m_GpuStorage;
   xiiUInt64             m_uiFrameIndex = 0ULL;
   bool                  m_bInitialized = false;

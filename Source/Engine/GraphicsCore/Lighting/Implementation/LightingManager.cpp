@@ -283,4 +283,3 @@ xiiLightingSystem* xiiLightingContext::GetSystem() const
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_LightingManager);
-

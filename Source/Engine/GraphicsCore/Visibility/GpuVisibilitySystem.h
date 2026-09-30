@@ -8,6 +8,8 @@
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
 
+class xiiGpuVisibilityManager;
+
 struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
 {
   XII_DECLARE_POD_TYPE();
@@ -94,13 +96,17 @@ class XII_GRAPHICSCORE_DLL xiiGpuVisibilitySystem
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGpuVisibilitySystem);
 
 public:
-  xiiGpuVisibilitySystem() = default;
   ~xiiGpuVisibilitySystem();
+
+  static xiiGpuVisibilityView BuildView(const xiiMat4& viewProjectionMatrix, const xiiFrustum& frustum, const xiiVec3& vCameraPosition, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiHiZMipCount, xiiUInt32 uiInstanceCount, xiiUInt32 uiVisibilityMask = 0xFFFFFFFFU);
+
+private:
+  friend class xiiGpuVisibilityManager;
+
+  xiiGpuVisibilitySystem() = default;
 
   xiiResult Initialize(xiiGALDevice* pDevice, const xiiGpuVisibilityDescription& description = {});
   void      Shutdown();
-
-  static xiiGpuVisibilityView BuildView(const xiiMat4& viewProjectionMatrix, const xiiFrustum& frustum, const xiiVec3& vCameraPosition, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiHiZMipCount, xiiUInt32 uiInstanceCount, xiiUInt32 uiVisibilityMask = 0xFFFFFFFFU);
 
   /// Adds upload and async-compute visibility passes. The geometry handles must be returned by
   /// xiiGeometryResidencyManager::AddUploadPass in the same graph setup.
@@ -115,7 +121,6 @@ public:
   [[nodiscard]] xiiUInt32 GetMeshDispatchGroupCountX() const { return m_uiMeshDispatchGroupCountX; }
   [[nodiscard]] xiiUInt32 GetMeshDispatchGroupCountY() const { return m_uiMeshDispatchGroupCountY; }
 
-private:
   xiiSharedPtr<xiiGALComputePipelineState> LoadComputePipeline(xiiStringView sShaderPath);
   xiiUInt32                                GetOrCreateVisibilitySetIndex(xiiStringView sName);
 
