@@ -4,14 +4,6 @@
 
 #include <Shaders/Common/ShaderResourceMacros.h>
 
-/// Log-luminance mapping used while building the per-frame histogram.
-DECLARE_CONSTANT_BUFFER_AUTO(xiiExposureHistogramConstants)
-{
-  FLOAT4(LogLuminanceRange); // minimum, maximum, inverse range, range.
-  UINT2(InputResolution);
-  FLOAT2(_Padding);
-};
-
 /// Physical camera and temporal adaptation controls.
 DECLARE_CONSTANT_BUFFER_AUTO(xiiExposureAdaptationConstants)
 {
@@ -25,7 +17,5 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiExposureAdaptationConstants)
 };
 
 #if XII_DISABLED(XII_SHADER_PLATFORM)
-static_assert(sizeof(xiiExposureHistogramConstants) == 32U, "Exposure histogram constants must remain byte-compatible with the shader.");
 static_assert(sizeof(xiiExposureAdaptationConstants) == 64U, "Exposure adaptation constants must remain byte-compatible with the shader.");
 #endif
-

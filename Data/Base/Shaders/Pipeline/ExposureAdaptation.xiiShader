@@ -1,18 +1,21 @@
-// XII Engine - ExposureAdaptation.xiiShader  [NEW]
-// Pass 54: Eye adaptation - reads histogram, emits adapted exposure value.
-// Dispatch: 1 × 1 × 1
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
-#include "Passes/Exposure/ExposureConstants.h"
+[COMPUTE_SHADER]
+
+// Eye adaptation reads the histogram and emits the temporally adapted exposure value.
+// Dispatch: 1 x 1 x 1.
+
+#include <Shaders/Pipeline/Passes/Exposure/ExposureAdaptationConstants.h>
 
 StructuredBuffer<uint>     g_Histogram  : register(t0);
 RWStructuredBuffer<float>  g_Exposure   : register(u0); // [0]=exposure, [1]=avgLum
 
 [numthreads(1, 1, 1)]
-void CS_ExposureAdaptation(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
-    float manualExposure = GET_CONSTANT(xiiExposureAdaptationConstants, ManualExposure) * exp2(GET_CONSTANT(xiiExposureAdaptationConstants, Exposure).w);
-    if (GET_CONSTANT(xiiExposureAdaptationConstants, AutomaticExposure) == 0u)
+    float manualExposure = ManualExposure * exp2(Exposure.w);
+    if (AutomaticExposure == 0u)
     {
         g_Exposure[0] = manualExposure;
         g_Exposure[1] = 0.0f;
@@ -25,8 +28,8 @@ void CS_ExposureAdaptation(uint3 tid : SV_DispatchThreadID)
     if (totalPixels == 0u) return;
 
     // Weighted average of log-luminance (clip low/high percentiles).
-    float lowCount  = float(totalPixels) * GET_CONSTANT(xiiExposureAdaptationConstants, Metering).x;
-    float highCount = float(totalPixels) * GET_CONSTANT(xiiExposureAdaptationConstants, Metering).y;
+    float lowCount  = float(totalPixels) * Metering.x;
+    float highCount = float(totalPixels) * Metering.y;
     float count     = 0.0f;
     float weightedAvg = 0.0f;
 
@@ -36,7 +39,7 @@ void CS_ExposureAdaptation(uint3 tid : SV_DispatchThreadID)
         float minCount = max(0.0f, lowCount - count);
         float maxCount = min(bCount, highCount - count);
         float contribution = max(0.0f, maxCount - minCount);
-        float logLum = GET_CONSTANT(xiiExposureAdaptationConstants, LogLuminanceRange).x + (float(b) / 255.0f) * GET_CONSTANT(xiiExposureAdaptationConstants, LogLuminanceRange).z;
+        float logLum = LogLuminanceRange.x + (float(b) / 255.0f) * LogLuminanceRange.z;
         weightedAvg += logLum * contribution;
         count += bCount;
         if (count >= highCount) break;
@@ -47,14 +50,14 @@ void CS_ExposureAdaptation(uint3 tid : SV_DispatchThreadID)
     float avgLum       = exp2(avgLogLum);
 
     float ev100        = log2(avgLum * 100.0f / 12.5f);
-    ev100              = clamp(ev100, GET_CONSTANT(xiiExposureAdaptationConstants, Exposure).y, GET_CONSTANT(xiiExposureAdaptationConstants, Exposure).z);
-    float targetExp    = exp2(GET_CONSTANT(xiiExposureAdaptationConstants, Exposure).w) / (1.2f * exp2(ev100));
+    ev100              = clamp(ev100, Exposure.y, Exposure.z);
+    float targetExp    = exp2(Exposure.w) / (1.2f * exp2(ev100));
 
     // Exponential temporal adaptation is stable across variable frame rates.
     float prevExp      = g_Exposure[0];
-    if (GET_CONSTANT(xiiExposureAdaptationConstants, HistoryValid) == 0u || prevExp <= 0.0f) prevExp = targetExp;
-    float speed        = targetExp > prevExp ? GET_CONSTANT(xiiExposureAdaptationConstants, Metering).z : GET_CONSTANT(xiiExposureAdaptationConstants, Metering).w;
-    float blend        = 1.0f - exp2(-max(speed, 0.0f) * GET_CONSTANT(xiiExposureAdaptationConstants, Exposure).x);
+    if (HistoryValid == 0u || prevExp <= 0.0f) prevExp = targetExp;
+    float speed        = targetExp > prevExp ? Metering.z : Metering.w;
+    float blend        = 1.0f - exp2(-max(speed, 0.0f) * Exposure.x);
     float newExp       = lerp(prevExp, targetExp, saturate(blend));
 
     g_Exposure[0] = newExp;

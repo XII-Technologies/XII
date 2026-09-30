@@ -1,9 +1,13 @@
-// XII Engine - ToneMapping.xiiShader  [NEW]
-// Pass 60: HDR → LDR tone mapping with multiple operator support + bloom composite.
-// Dispatch: ceil(W/8) × ceil(H/8) × 1
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
-#include "Passes/Output/ToneMappingConstants.h"
+[COMPUTE_SHADER]
+
+// HDR to display-linear tone mapping with multiple operator support and bloom composite.
+// Dispatch: ceil(W/8) x ceil(H/8) x 1.
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 
 Texture2D<float4>          g_HDRInput  : register(t0);
 Texture2D<float4>          g_BloomTex  : register(t1);
@@ -37,7 +41,7 @@ float3 Uncharted2(float3 x)
 
 float3 ToneMapSDR(float3 color)
 {
-    uint op = GET_CONSTANT(xiiToneMappingConstants, Operator);
+    uint op = Operator;
     if (op == 1u) return Reinhard(color);
     if (op == 2u) return Uncharted2(color);
     return ACES_Narkowicz(color);
@@ -47,25 +51,25 @@ float3 ToneMapSDR(float3 color)
 // signal to the calibrated display peak. One unit represents paper white.
 float3 ToneMapHDR(float3 color)
 {
-    float peakRelative = max(GET_CONSTANT(xiiToneMappingConstants, MaximumDisplayNits) / GET_CONSTANT(xiiToneMappingConstants, PaperWhiteNits), 1.0f);
+    float peakRelative = max(MaximumDisplayNits / PaperWhiteNits, 1.0f);
     float luminance = max(dot(color, float3(0.2126f, 0.7152f, 0.0722f)), 0.0f);
     float mappedLuminance = luminance / (1.0f + luminance / peakRelative);
     return max(color, 0.0f) * (mappedLuminance / max(luminance, 1.0e-6f));
 }
 
 [numthreads(8, 8, 1)]
-void CS_ToneMapping(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims; g_LDROut.GetDimensions(dims.x, dims.y);
     if (any(tid.xy >= dims)) return;
 
     float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
-    float3 hdr   = g_HDRInput.SampleLevel(g_sLinearClamp, uv, 0).rgb;
-    float3 bloom = g_BloomTex.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+    float3 hdr   = g_HDRInput.SampleLevel(LinearClampSampler, uv, 0).rgb;
+    float3 bloom = g_BloomTex.SampleLevel(LinearClampSampler, uv, 0).rgb;
     float  exp   = g_Exposure[0];
 
-    hdr = (hdr + bloom * GET_CONSTANT(xiiToneMappingConstants, BloomStrength)) * exp;
+    hdr = (hdr + bloom * BloomStrength) * exp;
 
-    float3 displayLinear = GET_CONSTANT(xiiToneMappingConstants, OutputMode) == 0u ? ToneMapSDR(hdr) : ToneMapHDR(hdr);
+    float3 displayLinear = OutputMode == 0u ? ToneMapSDR(hdr) : ToneMapHDR(hdr);
     g_LDROut[tid.xy] = float4(displayLinear, 1.0f);
 }
