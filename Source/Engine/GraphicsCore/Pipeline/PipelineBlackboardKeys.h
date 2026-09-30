@@ -12,13 +12,14 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_FrameIndex                = "FrameIndex"_xiisv;               ///< uint32 - monotonically increasing frame counter.
   constexpr xiiStringView k_ActiveLightCount          = "ActiveLightCount"_xiisv;         ///< uint32 - number of valid light entries in the light data buffer.
   constexpr xiiStringView k_ExtractedMeshCount        = "ExtractedMeshCount"_xiisv;       ///< uint32 - number of mesh packets represented by the legacy visibility buffers.
+  constexpr xiiStringView k_DrawCommandCapacity       = "DrawCommandCapacity"_xiisv;       ///< uint32 - allocated indexed-indirect command slots for extracted mesh packets.
   constexpr xiiStringView k_InstanceWorldMatrixBuffer = "InstanceWorldMatrices"_xiisv;    ///< xiiRenderGraphBufferHandle - per-instance world matrices (float4x3 structs).
   constexpr xiiStringView k_InstanceBoundsBuffer      = "InstanceBounds"_xiisv;           ///< xiiRenderGraphBufferHandle - per-instance AABB (center + extents + radius).
   constexpr xiiStringView k_InstanceLODBuffer         = "InstanceLOD"_xiisv;              ///< xiiRenderGraphBufferHandle - per-instance LOD level + meshlet metadata.
   constexpr xiiStringView k_VisibleCandidateBuffer    = "VisibleCandidates"_xiisv;        ///< xiiRenderGraphBufferHandle - coarse-frustum-culled instance index list [0]=count.
   constexpr xiiStringView k_SurvivingInstanceBuffer   = "SurvivingInstances"_xiisv;       ///< xiiRenderGraphBufferHandle - Hi-Z occlusion-culled instance index list [0]=count.
-  constexpr xiiStringView k_DrawIndirectCommands      = "DrawIndirectCommands"_xiisv;     ///< xiiRenderGraphBufferHandle - packed DrawIndexedIndirect args, one per material bin.
-  constexpr xiiStringView k_DrawCountBuffer           = "DrawCounts"_xiisv;               ///< xiiRenderGraphBufferHandle - per-material-bin indirect draw count.
+  constexpr xiiStringView k_DrawIndirectCommands      = "DrawIndirectCommands"_xiisv;     ///< xiiRenderGraphBufferHandle - compact DrawIndexedIndirect commands for visible mesh packets.
+  constexpr xiiStringView k_DrawCountBuffer           = "DrawCounts"_xiisv;               ///< xiiRenderGraphBufferHandle - compact indexed-indirect command count.
   constexpr xiiStringView k_DrawShadowCasterCommands  = "DrawShadowCasterCommands"_xiisv; ///< xiiRenderGraphBufferHandle - packed indirect args for shadow depth renders.
   constexpr xiiStringView k_ReflectionProbeData       = "ReflectionProbeData"_xiisv;      ///< xiiRenderGraphBufferHandle - compact xiiGPUReflectionProbe records for active captures.
   constexpr xiiStringView k_ReflectionProbeConstants  = "ReflectionProbeConstants"_xiisv; ///< xiiRenderGraphBufferHandle - active probe and cluster counts.

@@ -53,6 +53,7 @@
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/Visibility/DrawCommandBuildConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/InstanceUpdateConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/LODSelectionConstants.h>
@@ -90,6 +91,14 @@ namespace
     }
 
     return uiCount;
+  }
+
+  static xiiUInt32 GetDrawCommandCapacity(const xiiRenderGraphBlackboard& blackboard)
+  {
+    xiiUInt32 uiDrawCommandCapacity = 0U;
+    const bool bHasDrawCommandCapacity = blackboard.TryGet(xiiRGBlackboardKeys::k_DrawCommandCapacity, uiDrawCommandCapacity);
+    XII_IGNORE_UNUSED(bHasDrawCommandCapacity);
+    return uiDrawCommandCapacity;
   }
 
   static const xiiDirectionalLightRenderData* SelectMainDirectionalLight(const xiiArrayPtr<xiiRenderData* const>& renderData)
@@ -896,49 +905,102 @@ void xiiView::ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRender
 
 ////////// GPU Draw Command Build //////////
 //
-// Builds indirect draw command buffers on the GPU, using the visible instance list from this frame's Frustum Culling and LOD selection from this frame's LOD Selection.
-// This is a compute pass that writes out a DrawIndexedIndirectArguments buffer for each draw bin (mesh x material), which is then consumed by the main GBuffer and Shadow Passes to execute GPU-driven indirect draws.
+// Compacts exact draw ranges extracted from mesh resources into an indexed-indirect stream.
 
-struct xiiDrawBuildData
+struct xiiExtractedDrawCommand
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphBufferHandle m_hSurvivors;          ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
-  xiiRenderGraphBufferHandle m_hInstanceLOD;        ///< SRV in (structured buffer of uint, one per instance, packed LOD level + meshlet offset, from this frame's LOD Selection).
-  xiiRenderGraphBufferHandle m_hDrawCommands;       ///< UAV out (structured buffer of DrawIndexedIndirectArguments, one per draw bin, consumed by GBuffer and Shadow Passes).
-  xiiRenderGraphBufferHandle m_hDrawCounts;         ///< UAV out (structured buffer of uint, one per draw bin, used for indirect count in multi-draw scenarios).
-  xiiUInt32                  m_uiInstanceCount = 0; ///< Number of instances to process (from previous frame's Instance Update). This is used to avoid processing the entire buffer when only a subset is populated.
+  xiiUInt32 m_uiIndexCountPerInstance = 0U;
+  xiiUInt32 m_uiInstanceCount         = 0U;
+  xiiUInt32 m_uiStartIndexLocation    = 0U;
+  xiiInt32  m_iBaseVertexLocation     = 0;
+  xiiUInt32 m_uiStartInstanceLocation = 0U;
+};
+
+static_assert(sizeof(xiiExtractedDrawCommand) == 20U);
+
+struct xiiDrawBuildData
+{
+  xiiRenderGraphBufferHandle m_hSurvivors;
+  xiiRenderGraphBufferHandle m_hInstanceLOD;
+  xiiRenderGraphBufferHandle m_hSourceCommands;
+  xiiRenderGraphBufferHandle m_hDrawCommands;
+  xiiRenderGraphBufferHandle m_hDrawCounts;
+  xiiRenderGraphBufferHandle m_hConstants;
+
+  xiiDynamicArray<xiiExtractedDrawCommand> m_SourceCommands;
+  xiiDrawCommandBuildConstants             m_Constants       = {};
+  xiiUInt32                                m_uiInstanceCount = 0U;
 };
 
 void xiiView::SetupDrawBuild(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hSurvivors      = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hInstanceLOD    = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_uiInstanceCount = k_uiMaxInstances;
+  data.m_hSurvivors   = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceLOD = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, xiiGALResourceStateFlags::ShaderResource);
 
-  // Persistent indirect argument buffer (resized lazily).
-  const xiiUInt32 uiArgStride = 20U; // DrawIndexedIndirectArguments: 5 x uint
-  if (!m_ViewPassResources.m_VisibilityPasses.m_pDrawIndirectArgBuffer)
+  xiiUInt32 uiExtractedMeshCount = 0U;
+  const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, uiExtractedMeshCount);
+  XII_IGNORE_UNUSED(bHasExtractedMeshCount);
+
+  data.m_SourceCommands.Reserve(uiExtractedMeshCount);
+  if (m_pExtractedData != nullptr)
   {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride                               = uiArgStride;
-    description.m_uiSize                                            = uiArgStride * k_uiMaxMaterialBins;
-    description.m_BindFlags                                         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
-    description.m_Mode                                              = xiiGALBufferMode::Formatted;
-    description.m_Usage                                             = xiiGALResourceUsage::Default;
-    m_ViewPassResources.m_VisibilityPasses.m_pDrawIndirectArgBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+    for (const xiiRenderData* pRenderData : m_pExtractedData->GetAllRenderData())
+    {
+      const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData);
+      if (pMesh == nullptr || !pMesh->m_GlobalBounds.IsValid())
+        continue;
+
+      xiiExtractedDrawCommand& command = data.m_SourceCommands.ExpandAndGetRef();
+      command.m_uiIndexCountPerInstance = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(static_cast<xiiUInt64>(pMesh->m_uiPrimitiveCount) * 3ULL, xiiMath::MaxValue<xiiUInt32>()));
+      command.m_uiInstanceCount         = 1U;
+      command.m_uiStartIndexLocation    = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(static_cast<xiiUInt64>(pMesh->m_uiFirstPrimitive) * 3ULL, xiiMath::MaxValue<xiiUInt32>()));
+      command.m_iBaseVertexLocation     = 0;
+      command.m_uiStartInstanceLocation = data.m_SourceCommands.GetCount() - 1U;
+
+      if (data.m_SourceCommands.GetCount() == uiExtractedMeshCount)
+        break;
+    }
   }
-  data.m_hDrawCommands = builder.ImportBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, m_ViewPassResources.m_VisibilityPasses.m_pDrawIndirectArgBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hDrawCommands = builder.WriteBuffer(data.m_hDrawCommands, xiiGALResourceStateFlags::UnorderedAccess);
+
+  data.m_uiInstanceCount           = data.m_SourceCommands.GetCount();
+  data.m_Constants.InstanceCount   = data.m_uiInstanceCount;
+  data.m_Constants.MaxCommandCount = data.m_uiInstanceCount;
+  GetBlackboard().Set(xiiRGBlackboardKeys::k_DrawCommandCapacity, data.m_uiInstanceCount);
+
+  xiiGALBufferCreationDescription sourceDescription;
+  sourceDescription.m_uiElementByteStride = sizeof(xiiExtractedDrawCommand);
+  sourceDescription.m_uiSize              = sizeof(xiiExtractedDrawCommand) * xiiMath::Max(1U, data.m_uiInstanceCount);
+  sourceDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  sourceDescription.m_Mode                = xiiGALBufferMode::Structured;
+  sourceDescription.m_Usage               = xiiGALResourceUsage::Default;
+  data.m_hSourceCommands                  = builder.WriteBuffer("ExtractedDrawCommands", sourceDescription, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALBufferCreationDescription commandDescription;
+  commandDescription.m_uiElementByteStride = sizeof(xiiExtractedDrawCommand);
+  commandDescription.m_uiSize              = sizeof(xiiExtractedDrawCommand) * xiiMath::Max(1U, data.m_uiInstanceCount);
+  commandDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
+  commandDescription.m_Mode                = xiiGALBufferMode::Structured;
+  commandDescription.m_Usage               = xiiGALResourceUsage::Default;
+  data.m_hDrawCommands                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, commandDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALBufferCreationDescription counterBufferDescription;
-  counterBufferDescription.m_uiElementByteStride = 4U;
-  counterBufferDescription.m_uiSize              = 4U * k_uiMaxMaterialBins;
-  counterBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-  counterBufferDescription.m_Mode                = xiiGALBufferMode::Formatted;
+  counterBufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+  counterBufferDescription.m_uiSize              = sizeof(xiiUInt32);
+  counterBufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
+  counterBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hDrawCounts                             = builder.WriteBuffer(xiiRGBlackboardKeys::k_DrawCountBuffer, counterBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiDrawCommandBuildConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("xiiDrawCommandBuildConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pDrawBuildPipeline, "Shaders/Pipeline/DrawCommandBuild.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassContext& context)
@@ -947,9 +1009,33 @@ void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassC
 
   cmd.BeginDebugGroup("DrawCommandBuild");
   {
+    const xiiUInt32 uiZero = 0U;
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hDrawCounts), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
+
+    xiiDynamicArray<xiiExtractedDrawCommand> zeroCommands;
+    zeroCommands.SetCount(xiiMath::Max(1U, data.m_uiInstanceCount));
+    xiiMemoryUtils::ZeroFill(zeroCommands.GetData(), zeroCommands.GetCount());
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hDrawCommands), 0U,
+      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+
+    if (data.m_uiInstanceCount == 0U)
+    {
+      cmd.EndDebugGroup();
+      return;
+    }
+
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hSourceCommands), 0U,
+      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+    {
+      xiiGALMapHelper<xiiDrawCommandBuildConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *pConstants = data.m_Constants;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pDrawBuildPipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiDrawCommandBuildConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Survivors", context.GetBuffer(data.m_hSurvivors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_InstanceLOD", context.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_SourceCommands", context.GetBuffer(data.m_hSourceCommands)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_DrawArgs", context.GetBuffer(data.m_hDrawCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_DrawCounts", context.GetBuffer(data.m_hDrawCounts)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -2001,7 +2087,7 @@ void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRenderGrap
     {
       cmd.SetPipelineState(m_ViewPassResources.m_DepthPasses.m_pDepthPrepassPipeline);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -2189,7 +2275,7 @@ void xiiView::ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRenderGr
     {
       cmd.SetPipelineState(m_ViewPassResources.m_DepthPasses.m_pMotionVectorPipeline);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -2303,7 +2389,7 @@ void xiiView::ExecuteGBufferBase(const xiiGBufferBaseData& data, xiiRenderGraphP
     {
       cmd.SetPipelineState(m_ViewPassResources.m_GBufferPasses.m_pGBufferPipeline);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -2353,7 +2439,7 @@ void xiiView::ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData&
     {
       cmd.SetPipelineState(m_ViewPassResources.m_GBufferPasses.m_pNormalRoughnessPipeline);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -4400,7 +4486,7 @@ void xiiView::ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRenderGr
     {
       cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pForwardMaskedPipeline);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -4440,7 +4526,7 @@ void xiiView::ExecuteHairRendering(const xiiHairRenderingData& data, xiiRenderGr
     {
       cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pHairPipeline);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -4486,7 +4572,7 @@ void xiiView::ExecuteWaterRendering(const xiiWaterRenderingData& data, xiiRender
         cmd.ResolveAndSetShaderResourceTextureView("g_PlanarRefl", context.GetTexture(data.m_hPlanarReflectionMap)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -4577,7 +4663,7 @@ void xiiView::ExecuteEyeShader(const xiiEyeShaderData& data, xiiRenderGraphPassC
     {
       cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pEyePipeline);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
   }
   cmd.EndDebugGroup();
@@ -5173,7 +5259,7 @@ void xiiView::ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, x
     {
       cmd.SetPipelineState(m_ViewPassResources.m_TransparencyPasses.m_pTranslucentPipeline);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
     }
 
     if (m_ViewPassResources.m_TransparencyPasses.m_pOITResolvePipeline)
