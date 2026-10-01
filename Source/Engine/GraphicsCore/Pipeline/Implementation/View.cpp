@@ -2637,22 +2637,13 @@ struct xiiBRDFLutGenerationData
 
 void xiiView::SetupBRDFLutGeneration(xiiBRDFLutGenerationData& data, xiiRenderGraphBuilder& builder)
 {
-  if (!m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut)
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type                                  = xiiGALResourceDimension::Texture2D;
-    description.m_Format                                = xiiGALResourceFormat::RG16Float;
-    description.m_Size.width                            = 256U;
-    description.m_Size.height                           = 256U;
-    description.m_uiMipLevels                           = 1U;
-    description.m_BindFlags                             = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                                 = xiiGALResourceUsage::Default;
-    m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-  }
+  builder.SetPassAllowMerge(false);
 
-  data.m_bNeedsGeneration = !m_ViewPassResources.m_LightingPrepPasses.m_bBRDFLutGenerated;
+  XII_VERIFY(xiiLightingManager::EnsureBRDFLUTResources().Succeeded(), "The shared BRDF LUT resource is unavailable.");
+  xiiSharedPtr<xiiGALTexture> pBRDFLUT = xiiLightingManager::GetBRDFLUT();
+  data.m_bNeedsGeneration             = xiiLightingManager::IsBRDFLUTGenerationPending();
 
-  data.m_hBRDFLut = builder.ImportTexture(xiiRGBlackboardKeys::k_BRDFLut, m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  data.m_hBRDFLut = builder.ImportTexture(xiiRGBlackboardKeys::k_BRDFLut, pBRDFLUT, pBRDFLUT->GetResourceState());
 
   if (data.m_bNeedsGeneration)
   {
@@ -2675,7 +2666,7 @@ void xiiView::ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xii
     cmd.ResolveAndSetUnorderedAccessTextureView("g_BRDFLutOut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({32U, 32U, 1U});
-    m_ViewPassResources.m_LightingPrepPasses.m_bBRDFLutGenerated = true;
+    xiiLightingManager::MarkBRDFLUTGenerated();
   }
   cmd.EndDebugGroup();
 }

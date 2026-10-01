@@ -4,10 +4,12 @@
 
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
 
 class xiiLightingManagerState;
+class xiiGALTexture;
 
 /// Generation-checked reference to one view's lighting data and GPU resources.
 ///
@@ -47,6 +49,14 @@ public:
   /// Returns a non-owning context pointer. It is valid until DestroyContext or subsystem shutdown.
   [[nodiscard]] static xiiLightingSystem*       GetContext(xiiLightingContextHandle handle);
   [[nodiscard]] static const xiiLightingSystem* GetContextConst(xiiLightingContextHandle handle);
+
+  /// Ensures the process-wide split-sum BRDF lookup texture exists. The texture
+  /// is owned by this subsystem so views cannot outlive the allocator or GAL
+  /// device that created it.
+  [[nodiscard]] static xiiResult EnsureBRDFLUTResources();
+  [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetBRDFLUT();
+  [[nodiscard]] static bool IsBRDFLUTGenerationPending();
+  static void MarkBRDFLUTGenerated();
 
 private:
   static void Startup();

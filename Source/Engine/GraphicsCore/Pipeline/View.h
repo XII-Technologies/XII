@@ -643,10 +643,7 @@ private:
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTAOPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTAOShaderBindingTable;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pAOTemporalDenoisePipeline;
-      // Persistent once-generated textures
-      xiiSharedPtr<xiiGALTexture> m_pBRDFLut;             // 256x256 R16G16F, generated once
       xiiUInt32                   m_uiRTAOShaderRecordStride = 0U;
-      bool                        m_bBRDFLutGenerated = false;
       xiiSharedPtr<xiiGALTexture> m_pAmbientOcclusionHistory[2];
       bool                        m_bAmbientOcclusionHistoryValid = false;
       xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;

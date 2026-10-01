@@ -5,9 +5,14 @@
 // Output: x=DFG1 (Schlick fresnel term), y=DFG2 (full integral term).
 // Dispatch: 32 × 32 × 1 (each thread covers an 8×8 region).
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
 
-RWTexture2D<float2> g_BRDFLutOut : register(u0);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+RWTexture2D<float2> g_BRDFLutOut;
 
 // Hammersley low-discrepancy sequence.
 float2 Hammersley(uint i, uint n)
@@ -50,7 +55,7 @@ float GeometrySmith(float NdotV, float NdotL, float roughness)
 static const uint k_uiSampleCount = 1024u;
 
 [numthreads(8, 8, 1)]
-void CS_BRDFLutGenerate(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims;
     g_BRDFLutOut.GetDimensions(dims.x, dims.y);
