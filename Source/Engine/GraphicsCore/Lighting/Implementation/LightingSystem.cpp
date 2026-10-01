@@ -295,6 +295,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const float    fRange     = xiiMath::Max(pRectangleLight->m_fRadius, 0.001f);
       const xiiVec3  vPosition  = pRectangleLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pRectangleLight->m_qGlobalRotation * xiiVec3(-1.0f, 0.0f, 0.0f), xiiVec3(-1.0f, 0.0f, 0.0f));
+      const xiiVec3  vRight     = NormalizeOrFallback(pRectangleLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pRectangleLight->m_LightColor, pRectangleLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
@@ -304,6 +305,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, xiiMath::Max(pRectangleLight->m_vExtents.x, 0.001f), xiiMath::Max(pRectangleLight->m_vExtents.y, 0.001f));
       lightData.m_ShadowData            = xiiVec4(pRectangleLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pRectangleLight->m_vExtents.GetLength() * 0.5f);
+      lightData.m_OrientationRightAndIES = MakeVec4(vRight, 0.0f);
 
       AppendLight(lightData, LightType::Rectangle, static_cast<xiiUInt32>(pRectangleLight->m_uiSortingKey));
       continue;
@@ -317,6 +319,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       const float    fRange     = xiiMath::Max(GetSafeRange(pDiscLight->m_fRange, pDiscLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pDiscLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pDiscLight->m_qGlobalRotation * xiiVec3(-1.0f, 0.0f, 0.0f), xiiVec3(-1.0f, 0.0f, 0.0f));
+      const xiiVec3  vRight     = NormalizeOrFallback(pDiscLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pDiscLight->m_LightColor, pDiscLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
@@ -326,6 +329,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f);
       lightData.m_ShadowData            = xiiVec4(pDiscLight->m_bCastShadows ? 1.0f : 0.0f, pDiscLight->m_fShadowFadeOutRange, pDiscLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pDiscLight->m_fRadius);
+      lightData.m_OrientationRightAndIES = MakeVec4(vRight, 0.0f);
 
       AppendLight(lightData, LightType::Disc, static_cast<xiiUInt32>(pDiscLight->m_uiSortingKey));
       continue;
