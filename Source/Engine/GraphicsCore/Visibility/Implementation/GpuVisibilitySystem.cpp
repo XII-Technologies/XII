@@ -453,7 +453,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       data.m_hView             = builder.ReadBuffer(viewUpload.first->m_hView, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometry         = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVisibleInstances = builder.WriteBuffer(makeName(" GPU Visible Instances"), visibleDesc, xiiGALResourceStateFlags::UnorderedAccess);
-      data.m_hVisibleCount     = builder.WriteBuffer(reset.first->m_hVisibleInstanceCount, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hVisibleCount     = builder.ReadWriteBuffer(reset.first->m_hVisibleInstanceCount, xiiGALResourceStateFlags::UnorderedAccess);
     },
     [](const InstanceCullPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd = context.GetCommandList();
@@ -546,7 +546,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       data.m_hVisibleInstanceCount = builder.ReadBuffer(hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
       data.m_hDispatchArguments    = builder.ReadBuffer(meshletDispatchBuild.first->m_hDispatchArguments, xiiGALResourceStateFlags::IndirectArgument);
       data.m_hVisibleMeshlets      = builder.WriteBuffer(makeName(" GPU Visible Meshlets"), meshletDesc, xiiGALResourceStateFlags::UnorderedAccess);
-      data.m_hVisibleMeshletCount  = builder.WriteBuffer(reset.first->m_hVisibleMeshletCount, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hVisibleMeshletCount  = builder.ReadWriteBuffer(reset.first->m_hVisibleMeshletCount, xiiGALResourceStateFlags::UnorderedAccess);
     },
     [](const MeshletCullPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd = context.GetCommandList();
@@ -570,7 +570,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       data.m_hVisibleMeshlets     = builder.ReadBuffer(meshletCull.first->m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVisibleMeshletCount = builder.ReadBuffer(meshletCull.first->m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
       data.m_hCommands            = builder.WriteBuffer(makeName(" GPU Mesh Indirect Commands"), commandDesc, xiiGALResourceStateFlags::UnorderedAccess);
-      data.m_hCommandCount        = builder.WriteBuffer(reset.first->m_hDrawCount, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hCommandCount        = builder.ReadWriteBuffer(reset.first->m_hDrawCount, xiiGALResourceStateFlags::UnorderedAccess);
 
       xiiGALBufferCreationDescription constantsDescription;
       constantsDescription.m_uiSize         = sizeof(xiiGpuSceneCommandBuildConstants);

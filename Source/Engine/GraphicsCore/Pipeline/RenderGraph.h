@@ -391,10 +391,6 @@ public:
   /// and partial UAV updates that depend on contents produced by the parent version.
   [[nodiscard]] xiiRenderGraphBufferHandle ReadWriteBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// Declares a read-modify-write dependency on a buffer. Use this for atomics, append counters,
-  /// and partial UAV updates that depend on contents produced by the parent version.
-  [[nodiscard]] xiiRenderGraphBufferHandle ReadWriteBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState);
-
   /// Declares a new transient buffer resource owned by the graph and registers the first write in one call.
   [[nodiscard]] xiiRenderGraphBufferHandle WriteBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 

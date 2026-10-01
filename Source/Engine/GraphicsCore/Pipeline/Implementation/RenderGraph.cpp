@@ -434,7 +434,7 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadWriteBuffer(xiiRenderGraph
   // The explicit read is a data-flow edge, so pass culling retains the producer of the parent
   // version. A plain WriteBuffer intentionally permits that producer to be culled when the new
   // version completely replaces the resource contents.
-  ReadBuffer(hBuffer, requiredState);
+  static_cast<void>(ReadBuffer(hBuffer, requiredState));
   return WriteBuffer(hBuffer, requiredState);
 }
 
