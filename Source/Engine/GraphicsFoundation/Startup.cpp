@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 
 // clang-format off
@@ -18,12 +19,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, ShaderCompiler)
   {
     xiiGALShaderManager::Startup();
     xiiGALShaderParser::OnEngineStartup();
+    xiiGALShaderStateResourceDescriptor::OnEngineStartup();
     xiiGALShaderStageBinary::OnEngineStartup();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
     xiiGALShaderStageBinary::OnEngineShutdown();
+    xiiGALShaderStateResourceDescriptor::OnEngineShutdown();
     xiiGALShaderParser::OnEngineShutdown();
     xiiGALShaderManager::Shutdown();
   }

@@ -32,6 +32,7 @@ XII_CREATE_SIMPLE_TEST(ShaderManagerLifecycle, Startup)
   {
     XII_TEST_BOOL(xiiGALShaderManager::IsInitialized());
     XII_TEST_BOOL(xiiGALShaderParser::IsRegistryInitialized());
+    XII_TEST_BOOL(xiiGALShaderStateResourceDescriptor::IsParserStateInitialized());
     XII_TEST_BOOL(xiiGALShaderStageBinary::IsCacheInitialized());
   }
 }

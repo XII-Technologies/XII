@@ -22,6 +22,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStateResourceDescriptor
   void      Save(xiiStreamWriter& inout_stream) const;
 
   xiiUInt32 CalculateHash() const;
+
+  /// Shader-state parser tables are owned by the GraphicsFoundation ShaderCompiler subsystem.
+  [[nodiscard]] static bool IsParserStateInitialized();
+  static void               OnEngineStartup();
+  static void               OnEngineShutdown();
 };
 
 /// Serialized state of a shader permutation.

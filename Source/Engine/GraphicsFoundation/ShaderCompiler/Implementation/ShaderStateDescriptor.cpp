@@ -182,15 +182,40 @@ static xiiStringView InsertNumber(const char* szString, xiiUInt32 uiNumber, xiiS
   return ref_sTemp.GetView();
 }
 
+namespace
+{
+  struct ShaderStateParserState
+  {
+    xiiMutex                    m_Lock;
+    xiiMap<xiiString, xiiInt32> m_BlendFactors;
+    xiiMap<xiiString, xiiInt32> m_BlendOperations;
+    xiiMap<xiiString, xiiInt32> m_FillModes;
+    xiiMap<xiiString, xiiInt32> m_CullModes;
+    xiiMap<xiiString, xiiInt32> m_ComparisonFunctions;
+    xiiMap<xiiString, xiiInt32> m_StencilOperations;
+    xiiMap<xiiString, xiiInt32> m_LogicOperations;
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-static xiiSet<xiiString> s_AllAllowedVariables;
+    xiiSet<xiiString> m_AllAllowedVariables;
 #endif
+  };
+
+  static xiiUniquePtr<ShaderStateParserState> s_pParserState;
+
+  static void RegisterAllowedVariable(xiiStringView sVariable)
+  {
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    XII_LOCK(s_pParserState->m_Lock);
+    s_pParserState->m_AllAllowedVariables.Insert(sVariable);
+#else
+    XII_IGNORE_UNUSED(sVariable);
+#endif
+  }
+} // namespace
 
 static bool GetBoolStateVariable(const xiiMap<xiiString, xiiString>& variables, xiiStringView sVariable, bool bDefValue)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  s_AllAllowedVariables.Insert(sVariable);
-#endif
+  RegisterAllowedVariable(sVariable);
 
   auto it = variables.Find(sVariable);
 
@@ -208,9 +233,7 @@ static bool GetBoolStateVariable(const xiiMap<xiiString, xiiString>& variables, 
 
 static xiiInt32 GetEnumStateVariable(const xiiMap<xiiString, xiiString>& variables, const xiiMap<xiiString, xiiInt32>& values, xiiStringView sVariable, xiiInt32 iDefValue)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  s_AllAllowedVariables.Insert(sVariable);
-#endif
+  RegisterAllowedVariable(sVariable);
 
   auto it = variables.Find(sVariable);
 
@@ -235,9 +258,7 @@ static xiiInt32 GetEnumStateVariable(const xiiMap<xiiString, xiiString>& variabl
 
 static float GetFloatStateVariable(const xiiMap<xiiString, xiiString>& variables, xiiStringView sVariable, float fDefValue)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  s_AllAllowedVariables.Insert(sVariable);
-#endif
+  RegisterAllowedVariable(sVariable);
 
   auto it = variables.Find(sVariable);
 
@@ -256,9 +277,7 @@ static float GetFloatStateVariable(const xiiMap<xiiString, xiiString>& variables
 
 static xiiInt32 GetIntStateVariable(const xiiMap<xiiString, xiiString>& variables, xiiStringView sVariable, xiiInt32 iDefValue)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  s_AllAllowedVariables.Insert(sVariable);
-#endif
+  RegisterAllowedVariable(sVariable);
 
   auto it = variables.Find(sVariable);
 
@@ -275,18 +294,37 @@ static xiiInt32 GetIntStateVariable(const xiiMap<xiiString, xiiString>& variable
   return result;
 }
 
-// Global variables don't use memory tracking, so these won't reported as memory leaks.
-static xiiMutex                    StateValuesLock;
-static xiiMap<xiiString, xiiInt32> StateValuesBlendFactor;
-static xiiMap<xiiString, xiiInt32> StateValuesBlendOperation;
-static xiiMap<xiiString, xiiInt32> StateValuesFillMode;
-static xiiMap<xiiString, xiiInt32> StateValuesCullMode;
-static xiiMap<xiiString, xiiInt32> StateValuesComparisonFunction;
-static xiiMap<xiiString, xiiInt32> StateValuesStencilOperation;
-static xiiMap<xiiString, xiiInt32> StateValuesLogicOperation;
+bool xiiGALShaderStateResourceDescriptor::IsParserStateInitialized()
+{
+  return s_pParserState != nullptr;
+}
+
+void xiiGALShaderStateResourceDescriptor::OnEngineStartup()
+{
+  XII_ASSERT_DEV(s_pParserState == nullptr, "Shader-state parser subsystem started twice.");
+  s_pParserState = XII_DEFAULT_NEW(ShaderStateParserState);
+}
+
+void xiiGALShaderStateResourceDescriptor::OnEngineShutdown()
+{
+  s_pParserState.Clear();
+}
 
 xiiResult xiiGALShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 {
+  XII_ASSERT_DEV(s_pParserState != nullptr, "The shader-state parser subsystem is not started.");
+  if (s_pParserState == nullptr)
+    return XII_FAILURE;
+
+  auto& StateValuesLock               = s_pParserState->m_Lock;
+  auto& StateValuesBlendFactor        = s_pParserState->m_BlendFactors;
+  auto& StateValuesBlendOperation     = s_pParserState->m_BlendOperations;
+  auto& StateValuesFillMode           = s_pParserState->m_FillModes;
+  auto& StateValuesCullMode           = s_pParserState->m_CullModes;
+  auto& StateValuesComparisonFunction = s_pParserState->m_ComparisonFunctions;
+  auto& StateValuesStencilOperation   = s_pParserState->m_StencilOperations;
+  auto& StateValuesLogicOperation     = s_pParserState->m_LogicOperations;
+
   xiiMap<xiiString, xiiString> VariableValues;
 
   // extract all state assignments
@@ -469,9 +507,11 @@ xiiResult xiiGALShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   // check for invalid variable names
   {
+    XII_LOCK(s_pParserState->m_Lock);
+
     for (auto it = VariableValues.GetIterator(); it.IsValid(); ++it)
     {
-      if (!s_AllAllowedVariables.Contains(it.Key()))
+      if (!s_pParserState->m_AllAllowedVariables.Contains(it.Key()))
       {
         xiiLog::Error("The shader state variable '{0}' does not exist.", it.Key());
       }
