@@ -1,10 +1,17 @@
 // XII Engine - demand-driven directional virtual shadow-map feedback.
 
-#include "PipelineCommon.xiiShader"
-#include "Passes/ShadowCascade/ShadowCascadeConstants.h"
-#include "Passes/VirtualShadowMap/VirtualShadowMapConstants.h"
+[PLATFORMS]
+ALL
 
-Texture2D<float> g_SceneDepth : register(t0);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
+
+Texture2D<float> g_SceneDepth;
 
 struct xiiGpuVirtualShadowFeedback
 {
@@ -14,10 +21,10 @@ struct xiiGpuVirtualShadowFeedback
     uint Flags;
 };
 
-RWStructuredBuffer<xiiGpuVirtualShadowFeedback> g_VirtualShadowFeedback : register(u0);
+RWStructuredBuffer<xiiGpuVirtualShadowFeedback> g_VirtualShadowFeedback;
 
 [numthreads(8, 8, 1)]
-void CS_VirtualShadowFeedback(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dimensions;
     g_SceneDepth.GetDimensions(dimensions.x, dimensions.y);

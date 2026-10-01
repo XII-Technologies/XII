@@ -767,7 +767,7 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
     [hSceneDepth, hCascadeConstants](FeedbackPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hSceneDepth = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::ShaderResource);
       data.m_hCascadeConstants = builder.ReadBuffer(hCascadeConstants, xiiGALResourceStateFlags::ConstantBuffer);
-      data.m_hFeedback = builder.ImportBuffer("Virtual Shadow Feedback", s_pState->m_pFeedbackBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hFeedback = builder.ImportBuffer("Virtual Shadow Feedback", s_pState->m_pFeedbackBuffer, s_pState->m_pFeedbackBuffer->GetResourceState());
       data.m_hFeedback = builder.WriteBuffer(data.m_hFeedback, xiiGALResourceStateFlags::UnorderedAccess);
       xiiGALBufferCreationDescription constantsDescription;
       constantsDescription.m_uiSize = sizeof(xiiVirtualShadowFeedbackConstants);
@@ -817,7 +817,7 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
     "Virtual Shadow Feedback Readback", xiiGALCommandQueueFlags::Transfer,
     [hFeedback = feedbackPass.first->m_hFeedback, uiSlot](ReadbackPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hFeedback = builder.ReadBuffer(hFeedback, xiiGALResourceStateFlags::CopySource);
-      data.m_hReadback = builder.ImportBuffer("Virtual Shadow Feedback Readback", s_pState->m_FeedbackReadbackRing[uiSlot], xiiGALResourceStateFlags::CopyDestination);
+      data.m_hReadback = builder.ImportBuffer("Virtual Shadow Feedback Readback", s_pState->m_FeedbackReadbackRing[uiSlot], s_pState->m_FeedbackReadbackRing[uiSlot]->GetResourceState());
       data.m_hReadback = builder.WriteBuffer(data.m_hReadback, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hFeedback, xiiGALResourceStateFlags::UnorderedAccess);
       builder.ExportBuffer(data.m_hReadback, xiiGALResourceStateFlags::CopyDestination);

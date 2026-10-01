@@ -1,11 +1,18 @@
 // XII Engine - LocalLightShadowAtlasAllocation.xiiShader
 // Computes deterministic per-light atlas placement descriptors for shadowed local lights.
 
-#include "PipelineCommon.xiiShader"
-#include "LightingData.h"
+[PLATFORMS]
+ALL
 
-StructuredBuffer<xiiGpuLightData>           g_Lights                : register(t0);
-RWStructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs : register(u0);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+
+StructuredBuffer<xiiGpuLightData>           g_Lights;
+RWStructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs;
 
 static const uint XII_LOCAL_SHADOW_ATLAS_SIZE = 4096u;
 
@@ -15,7 +22,7 @@ uint GetLocalShadowFaceCount(uint lightType)
 }
 
 [numthreads(64, 1, 1)]
-void CS_LocalLightShadowAtlasAllocation(uint3 dispatchThreadId : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     const uint lightIndex = dispatchThreadId.x;
     if (lightIndex >= g_ActiveLightCount)
