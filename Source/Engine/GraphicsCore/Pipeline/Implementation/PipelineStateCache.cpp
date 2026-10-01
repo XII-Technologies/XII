@@ -3,7 +3,62 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/HashTable.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
+
+class xiiGALPipelineCache::State
+{
+public:
+  template <typename HandleType, typename DescriptorType, typename KeyType>
+  HandleType TryGetPipeline(const DescriptorType& description, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table)
+  {
+    XII_ASSERT_DEV(m_pDevice != nullptr, "GAL device not initialized.");
+
+    KeyType key;
+    key.m_Description = description;
+    key.m_uiHash      = xiiGALDescriptorHash::Hash(description);
+
+    XII_LOCK(m_Mutex);
+    if (HandleType* pExistingPipeline = table.GetValue(key))
+      return *pExistingPipeline;
+    return {};
+  }
+
+  template <typename HandleType, typename DescriptorType, typename KeyType>
+  xiiResult TryInsertPipeline(const DescriptorType& description, HandleType hNewPipeline, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table)
+  {
+    KeyType key;
+    key.m_Description = description;
+    key.m_uiHash      = xiiGALDescriptorHash::Hash(description);
+
+    XII_LOCK(m_Mutex);
+    HandleType hExistingPipeline;
+    if (table.Insert(key, hNewPipeline, &hExistingPipeline))
+    {
+      XII_ASSERT_DEBUG(hExistingPipeline == hNewPipeline, "On collision, both pipelines must be the same (create should have just increased the ref count).");
+      return XII_FAILURE;
+    }
+    return XII_SUCCESS;
+  }
+
+  void Clear()
+  {
+    XII_LOCK(m_Mutex);
+    m_GraphicsPipelines.Clear();
+    m_ComputePipelines.Clear();
+    m_RayTracingPipelines.Clear();
+  }
+
+  xiiMutex                                                                                              m_Mutex;
+  xiiSharedPtr<xiiGALDevice>                                                                            m_pDevice;
+  xiiHashTable<GraphicsPipelineCacheKey, xiiSharedPtr<xiiGALGraphicsPipelineState>, CacheKeyHasher>     m_GraphicsPipelines;
+  xiiHashTable<ComputePipelineCacheKey, xiiSharedPtr<xiiGALComputePipelineState>, CacheKeyHasher>       m_ComputePipelines;
+  xiiHashTable<RayTracingPipelineCacheKey, xiiSharedPtr<xiiGALRayTracingPipelineState>, CacheKeyHasher> m_RayTracingPipelines;
+};
+
+xiiUniquePtr<xiiGALPipelineCache::State> xiiGALPipelineCache::s_pState;
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, PipelineCache)
@@ -13,53 +68,78 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, PipelineCache)
     "Core"
   END_SUBSYSTEM_DEPENDENCIES
 
+  ON_CORESYSTEMS_STARTUP
+  {
+    xiiGALPipelineCache::Startup();
+  }
+
   ON_HIGHLEVELSYSTEMS_STARTUP
   {
-    XII_DEFAULT_NEW(xiiGALPipelineCache);
+    xiiGALPipelineCache::EngineStartup();
   }
 
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
-    xiiGALPipelineCache* pSingleton = xiiGALPipelineCache::GetSingleton();
+    xiiGALPipelineCache::EngineShutdown();
+  }
 
-    XII_DEFAULT_DELETE(pSingleton);
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiGALPipelineCache::Shutdown();
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-XII_IMPLEMENT_SINGLETON(xiiGALPipelineCache);
-
-xiiGALPipelineCache::xiiGALPipelineCache() :
-  m_SingletonRegistrar(this), m_pDevice(xiiGALDevice::GetDefaultDevice())
+bool xiiGALPipelineCache::IsInitialized()
 {
+  return s_pState != nullptr && s_pState->m_pDevice != nullptr;
 }
 
-xiiGALPipelineCache::~xiiGALPipelineCache() = default;
-
-void xiiGALPipelineCache::Clear()
+void xiiGALPipelineCache::Startup()
 {
-  XII_LOCK(m_Mutex);
+  XII_ASSERT_DEV(s_pState == nullptr, "Pipeline cache started twice.");
+  s_pState = XII_DEFAULT_NEW(State);
+}
 
-  m_GraphicsPipelines.Clear();
-  m_ComputePipelines.Clear();
-  m_RayTracingPipelines.Clear();
+void xiiGALPipelineCache::EngineStartup()
+{
+  XII_ASSERT_DEV(s_pState != nullptr, "Core startup must precede pipeline cache engine startup.");
+  if (s_pState != nullptr)
+    s_pState->m_pDevice = xiiGALDevice::GetDefaultDevice();
+}
+
+void xiiGALPipelineCache::EngineShutdown()
+{
+  if (s_pState == nullptr)
+    return;
+
+  s_pState->Clear();
+  s_pState->m_pDevice.Clear();
+}
+
+void xiiGALPipelineCache::Shutdown()
+{
+  EngineShutdown();
+  s_pState.Clear();
 }
 
 xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALPipelineCache::GetPipeline(const xiiGALGraphicsPipelineStateCreationDescription& description)
 {
-  xiiGALPipelineCache* pCache = xiiGALPipelineCache::GetSingleton();
+  XII_ASSERT_DEV(IsInitialized(), "The pipeline cache subsystem is not initialized.");
+  if (!IsInitialized())
+    return {};
 
-  xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipeline = pCache->TryGetPipeline<xiiSharedPtr<xiiGALGraphicsPipelineState>>(description, pCache->m_GraphicsPipelines);
+  xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipeline = s_pState->TryGetPipeline<xiiSharedPtr<xiiGALGraphicsPipelineState>>(description, s_pState->m_GraphicsPipelines);
 
   if (!pGraphicsPipeline)
   {
-    pGraphicsPipeline = pCache->m_pDevice->CreateGraphicsPipelineState(description);
+    pGraphicsPipeline = s_pState->m_pDevice->CreateGraphicsPipelineState(description);
 
     if (!pGraphicsPipeline)
       return {};
 
-    pCache->TryInsertPipeline<xiiSharedPtr<xiiGALGraphicsPipelineState>>(description, pGraphicsPipeline, pCache->m_GraphicsPipelines).IgnoreResult();
+    s_pState->TryInsertPipeline<xiiSharedPtr<xiiGALGraphicsPipelineState>>(description, pGraphicsPipeline, s_pState->m_GraphicsPipelines).IgnoreResult();
   }
 
   return pGraphicsPipeline;
@@ -67,18 +147,20 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALPipelineCache::GetPipeline(const
 
 xiiSharedPtr<xiiGALComputePipelineState> xiiGALPipelineCache::GetPipeline(const xiiGALComputePipelineStateCreationDescription& description)
 {
-  xiiGALPipelineCache* pCache = xiiGALPipelineCache::GetSingleton();
+  XII_ASSERT_DEV(IsInitialized(), "The pipeline cache subsystem is not initialized.");
+  if (!IsInitialized())
+    return {};
 
-  xiiSharedPtr<xiiGALComputePipelineState> pComputePipeline = pCache->TryGetPipeline<xiiSharedPtr<xiiGALComputePipelineState>>(description, pCache->m_ComputePipelines);
+  xiiSharedPtr<xiiGALComputePipelineState> pComputePipeline = s_pState->TryGetPipeline<xiiSharedPtr<xiiGALComputePipelineState>>(description, s_pState->m_ComputePipelines);
 
   if (!pComputePipeline)
   {
-    pComputePipeline = pCache->m_pDevice->CreateComputePipelineState(description);
+    pComputePipeline = s_pState->m_pDevice->CreateComputePipelineState(description);
 
     if (!pComputePipeline)
       return {};
 
-    pCache->TryInsertPipeline<xiiSharedPtr<xiiGALComputePipelineState>>(description, pComputePipeline, pCache->m_ComputePipelines).IgnoreResult();
+    s_pState->TryInsertPipeline<xiiSharedPtr<xiiGALComputePipelineState>>(description, pComputePipeline, s_pState->m_ComputePipelines).IgnoreResult();
   }
 
   return pComputePipeline;
@@ -86,18 +168,20 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGALPipelineCache::GetPipeline(const 
 
 xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALPipelineCache::GetPipeline(const xiiGALRayTracingPipelineStateCreationDescription& description)
 {
-  xiiGALPipelineCache* pCache = xiiGALPipelineCache::GetSingleton();
+  XII_ASSERT_DEV(IsInitialized(), "The pipeline cache subsystem is not initialized.");
+  if (!IsInitialized())
+    return {};
 
-  xiiSharedPtr<xiiGALRayTracingPipelineState> pRayTracingPipeline = pCache->TryGetPipeline<xiiSharedPtr<xiiGALRayTracingPipelineState>>(description, pCache->m_RayTracingPipelines);
+  xiiSharedPtr<xiiGALRayTracingPipelineState> pRayTracingPipeline = s_pState->TryGetPipeline<xiiSharedPtr<xiiGALRayTracingPipelineState>>(description, s_pState->m_RayTracingPipelines);
 
   if (!pRayTracingPipeline)
   {
-    pRayTracingPipeline = pCache->m_pDevice->CreateRayTracingPipelineState(description);
+    pRayTracingPipeline = s_pState->m_pDevice->CreateRayTracingPipelineState(description);
 
     if (!pRayTracingPipeline)
       return {};
 
-    pCache->TryInsertPipeline<xiiSharedPtr<xiiGALRayTracingPipelineState>>(description, pRayTracingPipeline, pCache->m_RayTracingPipelines).IgnoreResult();
+    s_pState->TryInsertPipeline<xiiSharedPtr<xiiGALRayTracingPipelineState>>(description, pRayTracingPipeline, s_pState->m_RayTracingPipelines).IgnoreResult();
   }
 
   return pRayTracingPipeline;

@@ -14,7 +14,9 @@
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Particles/ParticleSystemManager.h>
+#include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
@@ -37,6 +39,8 @@ static_assert(!std::is_default_constructible_v<xiiSceneDatabaseManager>, "Render
 static_assert(!std::is_default_constructible_v<xiiSceneDatabase>, "Scene database storage must be created through the subsystem.");
 static_assert(!std::is_default_constructible_v<xiiParticleSystemManager>, "Particle runtimes must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiParticleSystemRuntime>, "Particle runtime storage must be created through the subsystem.");
+static_assert(!std::is_default_constructible_v<xiiGALPipelineCache>, "Pipeline cache storage must be owned by its subsystem.");
+static_assert(!std::is_default_constructible_v<xiiGALRenderPassCache>, "Render-pass cache storage must be owned by its subsystem.");
 
 XII_CREATE_SIMPLE_TEST_GROUP(Pipeline);
 
