@@ -1,8 +1,21 @@
-// XII Engine - DepthPrepass.xiiShader  [NEW]
-// Pass 13: Full-resolution reversed-Z depth prepass via GPU-driven indirect draw.
-// Minimal VS+PS - no colour output, only depth writes.
+// XII Engine - DepthPrepass.xiiShader
+// Full-resolution reversed-Z depth prepass via GPU-driven indirect draw.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[RENDERSTATE]
+
+DepthEnable = true
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
+DepthWriteEnable = true
+CullMode = CullMode_Back
+
+[SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 struct VS_In
 {
@@ -15,9 +28,11 @@ struct VS_Out
     float4 ClipPos : SV_Position;
 };
 
-StructuredBuffer<float4x3> g_WorldMatrices : register(t0);
+[VERTEX_SHADER]
 
-VS_Out VS_DepthPrepass(VS_In In)
+StructuredBuffer<float4x3> g_WorldMatrices;
+
+VS_Out main(VS_In In)
 {
     float4x3 world = g_WorldMatrices[In.InstanceID];
     float3 worldPos = mul(float4(In.Position, 1.0f), world).xyz;
@@ -26,5 +41,8 @@ VS_Out VS_DepthPrepass(VS_In In)
     return o;
 }
 
-// No pixel shader output - depth only. Clip alpha-masked surfaces here if needed.
-void PS_DepthPrepass(VS_Out In) {}
+[PIXEL_SHADER]
+
+// A pixel stage is retained so masked-material coverage can be added without
+// changing the pipeline layout. Opaque depth needs no color output.
+void main(VS_Out In) {}

@@ -1,10 +1,28 @@
-// XII Engine - MotionVectors.xiiShader  [NEW]
-// Pass 14: Fullscreen triangle - reconstruct world position, reproject with previous VP matrix.
+// XII Engine - MotionVectors.xiiShader
+// Fullscreen triangle - reconstruct world position, reproject with previous VP matrix.
 // Produces screen-space velocity in normalised device coordinates [-1,1].
 
-#include "PipelineCommon.xiiShader"
-#include "FullscreenTriangleVertexShader.h"
-#include "FullscreenTriangleInterpolator.h"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+CAMERA_MODE = CAMERA_MODE_PERSPECTIVE
+
+[RENDERSTATE]
+
+DepthEnable = false
+DepthWriteEnable = false
+CullMode = CullMode_None
+
+[VERTEX_SHADER]
+
+#include <Shaders/Pipeline/FullscreenTriangleVertexShader.h>
+
+[PIXEL_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/FullscreenTriangleInterpolator.h>
 
 cbuffer MotionVectorConstants : register(b3)
 {
@@ -14,13 +32,13 @@ cbuffer MotionVectorConstants : register(b3)
     float2   g_JitterPrevious;  // previous frame Halton jitter (NDC)
 };
 
-Texture2D<float> g_SceneDepth : register(t0);
+Texture2D<float> g_SceneDepth;
 
 struct PS_Out { float2 Velocity : SV_Target0; };
 
-PS_Out PS_MotionVectors(FullscreenInterpolators In)
+PS_Out main(PS_IN In)
 {
-    float2 uv = In.TexCoord;
+    float2 uv = In.TexCoord0;
     float  rawDepth = g_SceneDepth.Sample(g_sPointClamp, uv);
 
     // Reconstruct world position.
