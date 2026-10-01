@@ -84,7 +84,7 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   XII_SUCCEED_OR_RETURN(ConfigureSubsystems(configuration));
 
   m_Configuration = configuration;
-  m_Scene.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U);
+  XII_SUCCEED_OR_RETURN(m_SceneContext.Initialize(configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U));
   m_SpatialHierarchy.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight);
 
   XII_SUCCEED_OR_RETURN(CreateMaterials());
@@ -117,7 +117,7 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   m_RayTracingInstances.Clear();
   m_BasePositions.Clear();
   m_hAssemblyRoot.Invalidate();
-  m_Scene.Clear();
+  m_SceneContext.Shutdown();
 }
 
 xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
@@ -267,7 +267,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   // parallel scene representation. The first objects below are authored in its local space.
   xiiSceneObjectDesc rootDescription;
   rootDescription.m_Flags = xiiSceneObjectFlags::None;
-  m_hAssemblyRoot         = m_Scene.CreateObject(rootDescription);
+  m_hAssemblyRoot         = GetScene().CreateObject(rootDescription);
   if (!m_hAssemblyRoot.IsValid())
     return XII_FAILURE;
 
@@ -299,7 +299,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       if (objectIndex < 64U)
         description.m_hParent = m_hAssemblyRoot;
 
-      const xiiSceneObjectHandle object = m_Scene.CreateObject(description);
+      const xiiSceneObjectHandle object = GetScene().CreateObject(description);
       if (!object.IsValid())
         return XII_FAILURE;
       m_Objects.PushBack(object);
@@ -307,17 +307,17 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
     }
   }
 
-  m_Scene.CommitFrame(0U);
+  GetScene().CommitFrame(0U);
   for (xiiUInt32 i = 0U; i < m_Objects.GetCount(); ++i)
   {
     const xiiSceneObjectHandle object = m_Objects[i];
-    if (!m_SpatialHierarchy.Insert(object, m_Scene.GetGlobalBounds(object).GetBox(), m_Scene.GetVisibilityMask(object), m_Scene.GetFlags(object)))
+    if (!m_SpatialHierarchy.Insert(object, GetScene().GetGlobalBounds(object).GetBox(), GetScene().GetVisibilityMask(object), GetScene().GetFlags(object)))
       return XII_FAILURE;
 
     xiiRayTracingInstanceDescription rayTracingInstance;
     rayTracingInstance.m_hGeometry       = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
     rayTracingInstance.m_hMaterial       = m_Materials[i % m_Materials.GetCount()];
-    rayTracingInstance.m_Transform       = m_Scene.GetGlobalTransform(object);
+    rayTracingInstance.m_Transform       = GetScene().GetGlobalTransform(object);
     rayTracingInstance.m_uiStableObjectId = i;
     const xiiRayTracingInstanceHandle handle = xiiRayTracingSceneManager::CreateInstance(rayTracingInstance);
     if (!handle.IsValid())
@@ -335,35 +335,35 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
   previousCenters.SetCountUninitialized(animatedCount);
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
   {
-    previousCenters[i] = m_Scene.GetGlobalBounds(m_Objects[i]).m_vCenter;
+    previousCenters[i] = GetScene().GetGlobalBounds(m_Objects[i]).m_vCenter;
     xiiVec3 position   = m_BasePositions[i];
     position.z += 0.45f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7f + static_cast<float>(i) * 0.31f));
     // Exercise the canonical inverse-transpose normal transform with an animated,
     // non-uniformly scaled instance while the remaining objects use rigid transforms.
     const xiiMat4 scale     = i == 0U ? xiiMat4::MakeScaling(xiiVec3(1.0f, 0.65f, 1.35f)) : xiiMat4::MakeIdentity();
     const xiiMat4 transform = xiiMat4::MakeTranslation(position) * xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(m_fAnimationTime * 0.3f + static_cast<float>(i) * 0.01f)) * scale;
-    m_Scene.SetLocalTransform(m_Objects[i], transform);
+    GetScene().SetLocalTransform(m_Objects[i], transform);
   }
 
   if (m_hAssemblyRoot.IsValid())
   {
     const float fRootAngle  = 0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f));
     const float fRootHeight = 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f));
-    m_Scene.SetLocalTransform(m_hAssemblyRoot,
-                              xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
-                                xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
+    GetScene().SetLocalTransform(m_hAssemblyRoot,
+      xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
+        xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
   }
 
-  m_Scene.CommitFrame(uiFrameIndex);
+  GetScene().CommitFrame(uiFrameIndex);
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
   {
-    const xiiBoundingBoxSphere& bounds = m_Scene.GetGlobalBounds(m_Objects[i]);
-    m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], m_Scene.GetVisibilityMask(m_Objects[i]), m_Scene.GetFlags(m_Objects[i]));
+    const xiiBoundingBoxSphere& bounds = GetScene().GetGlobalBounds(m_Objects[i]);
+    m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], GetScene().GetVisibilityMask(m_Objects[i]), GetScene().GetFlags(m_Objects[i]));
 
     xiiRayTracingInstanceDescription rayTracingInstance;
     rayTracingInstance.m_hGeometry        = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
     rayTracingInstance.m_hMaterial        = m_Materials[i % m_Materials.GetCount()];
-    rayTracingInstance.m_Transform        = m_Scene.GetGlobalTransform(m_Objects[i]);
+    rayTracingInstance.m_Transform        = GetScene().GetGlobalTransform(m_Objects[i]);
     rayTracingInstance.m_uiStableObjectId = i;
     XII_IGNORE_UNUSED(xiiRayTracingSceneManager::UpdateInstance(m_RayTracingInstances[i], rayTracingInstance));
   }

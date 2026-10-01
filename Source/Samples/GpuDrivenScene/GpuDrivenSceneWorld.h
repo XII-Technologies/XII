@@ -7,7 +7,7 @@
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Material/MaterialManager.h>
-#include <GraphicsCore/Scene/SceneDatabase.h>
+#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
@@ -50,8 +50,8 @@ public:
   void                           Shutdown(xiiUInt64 uiLastSubmittedFrame);
   void                           Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime);
 
-  [[nodiscard]] xiiSceneDatabase&             GetScene() { return m_Scene; }
-  [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_Scene; }
+  [[nodiscard]] xiiSceneDatabase&             GetScene() { return m_SceneContext.GetDatabase(); }
+  [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_SceneContext.GetDatabase(); }
   [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
   [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return *xiiGALBindlessResourceTable::GetSingleton(); }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
@@ -73,7 +73,7 @@ private:
 
   xiiGpuDrivenSceneConfiguration                     m_Configuration;
   xiiGpuDrivenSceneLight                             m_SunLight;
-  xiiSceneDatabase                                   m_Scene;
+  xiiSceneDatabaseContext                            m_SceneContext;
   xiiSceneSpatialHierarchy                           m_SpatialHierarchy;
   xiiDynamicArray<GeometryAsset>                     m_GeometryAssets;
   xiiDynamicArray<xiiMaterialGpuHandle>              m_Materials;

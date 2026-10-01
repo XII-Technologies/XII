@@ -13,6 +13,7 @@
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 #include <type_traits>
@@ -29,6 +30,8 @@ static_assert(!std::is_default_constructible_v<xiiAtmosphereManager>, "Atmospher
 static_assert(!std::is_default_constructible_v<xiiRayTracingSceneManager>, "Ray tracing scene state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSensorRenderingManager>, "Sensor profiles must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiDisplayOutputManager>, "Display defaults must be owned by their subsystem.");
+static_assert(!std::is_default_constructible_v<xiiSceneDatabaseManager>, "Render scenes must be owned by the scene database subsystem.");
+static_assert(!std::is_default_constructible_v<xiiSceneDatabase>, "Scene database storage must be created through the subsystem.");
 
 XII_CREATE_SIMPLE_TEST_GROUP(Pipeline);
 
@@ -36,15 +39,30 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Context handles are inert before allocation")
   {
-    const xiiLightingContextHandle    lightingHandle;
-    const xiiRenderGraphContextHandle renderGraphHandle;
+    const xiiLightingContextHandle      lightingHandle;
+    const xiiRenderGraphContextHandle   renderGraphHandle;
     const xiiGpuVisibilityContextHandle visibilityHandle;
+    const xiiSceneDatabaseContextHandle sceneHandle;
 
     XII_TEST_BOOL(!lightingHandle.IsValid());
     XII_TEST_BOOL(!renderGraphHandle.IsValid());
     XII_TEST_BOOL(!visibilityHandle.IsValid());
+    XII_TEST_BOOL(!sceneHandle.IsValid());
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiLightingContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiRenderGraphContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuVisibilityContextHandle>() != nullptr);
+    XII_TEST_BOOL(xiiGetStaticRTTI<xiiSceneDatabaseContextHandle>() != nullptr);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Scene database contexts are generation checked")
+  {
+    XII_TEST_BOOL(xiiSceneDatabaseManager::IsInitialized());
+    const xiiSceneDatabaseContextHandle handle = xiiSceneDatabaseManager::CreateContext(16U);
+    XII_TEST_BOOL(handle.IsValid());
+    XII_TEST_BOOL(xiiSceneDatabaseManager::IsValid(handle));
+    XII_TEST_BOOL(xiiSceneDatabaseManager::GetDatabase(handle) != nullptr);
+
+    xiiSceneDatabaseManager::DestroyContext(handle);
+    XII_TEST_BOOL(!xiiSceneDatabaseManager::IsValid(handle));
   }
 }
