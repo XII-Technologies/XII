@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 // Shared cutout-material evaluation for ray-tracing any-hit shaders. The including stage must

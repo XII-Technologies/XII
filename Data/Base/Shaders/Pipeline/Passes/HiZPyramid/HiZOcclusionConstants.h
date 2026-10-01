@@ -14,4 +14,3 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiHiZOcclusionConstants)
   FLOAT1(DepthBias);
   FLOAT3(_Padding);
 };
-

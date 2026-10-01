@@ -18,4 +18,3 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiSSRConstants)
   UINT1(HiZMipCount);
   FLOAT1(_Padding);
 };
-

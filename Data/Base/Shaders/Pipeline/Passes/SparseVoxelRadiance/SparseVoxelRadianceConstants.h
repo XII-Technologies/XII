@@ -10,4 +10,3 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiSparseVoxelRadianceConstants)
   UINT4(PoolLayout);            ///< x = voxels per brick, y = maximum resident bricks, z = frame index, w = unused.
   FLOAT4(RadianceSettings);     ///< x = temporal hysteresis, yzw = reserved.
 };
-

@@ -30,4 +30,3 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiReflectionProbeConstants)
   UINT1(TotalClusterCount);
   UINT2(_ReflectionProbePadding);
 };
-
