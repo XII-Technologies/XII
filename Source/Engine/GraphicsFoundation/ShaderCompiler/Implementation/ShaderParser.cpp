@@ -14,78 +14,87 @@ using namespace xiiTokenParseUtils;
 
 namespace
 {
-  static xiiMutex                                                       s_TableLock;
-  static xiiHashTable<xiiStringView, const xiiRTTI*>                    s_NameToTypeTable;
-  static xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderResourceType>> s_NameToDescriptorTable;
-  static xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderTextureType>>  s_NameToTextureTable;
+  struct ShaderParserTables
+  {
+    xiiMutex                                                       m_TableLock;
+    xiiHashTable<xiiStringView, const xiiRTTI*>                    m_NameToTypeTable;
+    xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderResourceType>> m_NameToDescriptorTable;
+    xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderTextureType>>  m_NameToTextureTable;
+  };
+
+  static xiiUniquePtr<ShaderParserTables> s_pParserTables;
 
   void InitializeTables()
   {
-    XII_LOCK(s_TableLock);
-
-    if (!s_NameToTypeTable.IsEmpty())
+    XII_ASSERT_DEV(s_pParserTables != nullptr, "The shader-parser registry subsystem is not started.");
+    if (s_pParserTables == nullptr)
       return;
 
-    s_NameToTypeTable.Insert("float"_xiisv, xiiGetStaticRTTI<float>());
-    s_NameToTypeTable.Insert("float2"_xiisv, xiiGetStaticRTTI<xiiVec2>());
-    s_NameToTypeTable.Insert("float3"_xiisv, xiiGetStaticRTTI<xiiVec3>());
-    s_NameToTypeTable.Insert("float4"_xiisv, xiiGetStaticRTTI<xiiVec4>());
-    s_NameToTypeTable.Insert("int"_xiisv, xiiGetStaticRTTI<xiiInt32>());
-    s_NameToTypeTable.Insert("int2"_xiisv, xiiGetStaticRTTI<xiiVec2I32>());
-    s_NameToTypeTable.Insert("int3"_xiisv, xiiGetStaticRTTI<xiiVec3I32>());
-    s_NameToTypeTable.Insert("int4"_xiisv, xiiGetStaticRTTI<xiiVec4I32>());
-    s_NameToTypeTable.Insert("uint"_xiisv, xiiGetStaticRTTI<xiiUInt32>());
-    s_NameToTypeTable.Insert("uint2"_xiisv, xiiGetStaticRTTI<xiiVec2U32>());
-    s_NameToTypeTable.Insert("uint3"_xiisv, xiiGetStaticRTTI<xiiVec3U32>());
-    s_NameToTypeTable.Insert("uint4"_xiisv, xiiGetStaticRTTI<xiiVec4U32>());
-    s_NameToTypeTable.Insert("bool"_xiisv, xiiGetStaticRTTI<bool>());
-    s_NameToTypeTable.Insert("Color"_xiisv, xiiGetStaticRTTI<xiiColor>());
+    XII_LOCK(s_pParserTables->m_TableLock);
+
+    if (!s_pParserTables->m_NameToTypeTable.IsEmpty())
+      return;
+
+    s_pParserTables->m_NameToTypeTable.Insert("float"_xiisv, xiiGetStaticRTTI<float>());
+    s_pParserTables->m_NameToTypeTable.Insert("float2"_xiisv, xiiGetStaticRTTI<xiiVec2>());
+    s_pParserTables->m_NameToTypeTable.Insert("float3"_xiisv, xiiGetStaticRTTI<xiiVec3>());
+    s_pParserTables->m_NameToTypeTable.Insert("float4"_xiisv, xiiGetStaticRTTI<xiiVec4>());
+    s_pParserTables->m_NameToTypeTable.Insert("int"_xiisv, xiiGetStaticRTTI<xiiInt32>());
+    s_pParserTables->m_NameToTypeTable.Insert("int2"_xiisv, xiiGetStaticRTTI<xiiVec2I32>());
+    s_pParserTables->m_NameToTypeTable.Insert("int3"_xiisv, xiiGetStaticRTTI<xiiVec3I32>());
+    s_pParserTables->m_NameToTypeTable.Insert("int4"_xiisv, xiiGetStaticRTTI<xiiVec4I32>());
+    s_pParserTables->m_NameToTypeTable.Insert("uint"_xiisv, xiiGetStaticRTTI<xiiUInt32>());
+    s_pParserTables->m_NameToTypeTable.Insert("uint2"_xiisv, xiiGetStaticRTTI<xiiVec2U32>());
+    s_pParserTables->m_NameToTypeTable.Insert("uint3"_xiisv, xiiGetStaticRTTI<xiiVec3U32>());
+    s_pParserTables->m_NameToTypeTable.Insert("uint4"_xiisv, xiiGetStaticRTTI<xiiVec4U32>());
+    s_pParserTables->m_NameToTypeTable.Insert("bool"_xiisv, xiiGetStaticRTTI<bool>());
+    s_pParserTables->m_NameToTypeTable.Insert("Color"_xiisv, xiiGetStaticRTTI<xiiColor>());
     /// \todo Are we going to support linear UB colors ?
-    s_NameToTypeTable.Insert("Texture2D"_xiisv, xiiGetStaticRTTI<xiiString>());
-    s_NameToTypeTable.Insert("Texture3D"_xiisv, xiiGetStaticRTTI<xiiString>());
-    s_NameToTypeTable.Insert("TextureCube"_xiisv, xiiGetStaticRTTI<xiiString>());
+    s_pParserTables->m_NameToTypeTable.Insert("Texture2D"_xiisv, xiiGetStaticRTTI<xiiString>());
+    s_pParserTables->m_NameToTypeTable.Insert("Texture3D"_xiisv, xiiGetStaticRTTI<xiiString>());
+    s_pParserTables->m_NameToTypeTable.Insert("TextureCube"_xiisv, xiiGetStaticRTTI<xiiString>());
 
-    s_NameToDescriptorTable.Insert("cbuffer"_xiisv, xiiGALShaderResourceType::ConstantBuffer);
-    s_NameToDescriptorTable.Insert("ConstantBuffer"_xiisv, xiiGALShaderResourceType::ConstantBuffer);
-    s_NameToDescriptorTable.Insert("SamplerState"_xiisv, xiiGALShaderResourceType::Sampler);
-    s_NameToDescriptorTable.Insert("SamplerComparisonState"_xiisv, xiiGALShaderResourceType::Sampler);
-    s_NameToDescriptorTable.Insert("Texture1D"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("Texture1DArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("Texture2D"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("Texture2DArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("Texture2DMS"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("Texture2DMSArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("Texture3D"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("TextureCube"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("TextureCubeArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
-    s_NameToDescriptorTable.Insert("Buffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
-    s_NameToDescriptorTable.Insert("StructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
-    s_NameToDescriptorTable.Insert("ByteAddressBuffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
-    s_NameToDescriptorTable.Insert("RWTexture1D"_xiisv, xiiGALShaderResourceType::TextureUAV);
-    s_NameToDescriptorTable.Insert("RWTexture1DArray"_xiisv, xiiGALShaderResourceType::TextureUAV);
-    s_NameToDescriptorTable.Insert("RWTexture2D"_xiisv, xiiGALShaderResourceType::TextureUAV);
-    s_NameToDescriptorTable.Insert("RWTexture2DArray"_xiisv, xiiGALShaderResourceType::TextureUAV);
-    s_NameToDescriptorTable.Insert("RWTexture3D"_xiisv, xiiGALShaderResourceType::TextureUAV);
-    s_NameToDescriptorTable.Insert("RWBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
-    s_NameToDescriptorTable.Insert("RWStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
-    s_NameToDescriptorTable.Insert("RWByteAddressBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
-    s_NameToDescriptorTable.Insert("AppendStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
-    s_NameToDescriptorTable.Insert("ConsumeStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("cbuffer"_xiisv, xiiGALShaderResourceType::ConstantBuffer);
+    s_pParserTables->m_NameToDescriptorTable.Insert("ConstantBuffer"_xiisv, xiiGALShaderResourceType::ConstantBuffer);
+    s_pParserTables->m_NameToDescriptorTable.Insert("SamplerState"_xiisv, xiiGALShaderResourceType::Sampler);
+    s_pParserTables->m_NameToDescriptorTable.Insert("SamplerComparisonState"_xiisv, xiiGALShaderResourceType::Sampler);
+    s_pParserTables->m_NameToDescriptorTable.Insert("Texture1D"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("Texture1DArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("Texture2D"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("Texture2DArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("Texture2DMS"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("Texture2DMSArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("Texture3D"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("TextureCube"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("TextureCubeArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("Buffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("StructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("ByteAddressBuffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RWTexture1D"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RWTexture1DArray"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RWTexture2D"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RWTexture2DArray"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RWTexture3D"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RWBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RWStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RWByteAddressBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("AppendStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("ConsumeStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
 
-    s_NameToTextureTable.Insert("Texture1D"_xiisv, xiiGALShaderTextureType::Texture1D);
-    s_NameToTextureTable.Insert("Texture1DArray"_xiisv, xiiGALShaderTextureType::Texture1DArray);
-    s_NameToTextureTable.Insert("Texture2D"_xiisv, xiiGALShaderTextureType::Texture2D);
-    s_NameToTextureTable.Insert("Texture2DArray"_xiisv, xiiGALShaderTextureType::Texture2DArray);
-    s_NameToTextureTable.Insert("Texture2DMS"_xiisv, xiiGALShaderTextureType::Texture2DMS);
-    s_NameToTextureTable.Insert("Texture2DMSArray"_xiisv, xiiGALShaderTextureType::Texture2DMSArray);
-    s_NameToTextureTable.Insert("Texture3D"_xiisv, xiiGALShaderTextureType::Texture3D);
-    s_NameToTextureTable.Insert("TextureCube"_xiisv, xiiGALShaderTextureType::TextureCube);
-    s_NameToTextureTable.Insert("TextureCubeArray"_xiisv, xiiGALShaderTextureType::TextureCubeArray);
-    s_NameToTextureTable.Insert("RWTexture1D"_xiisv, xiiGALShaderTextureType::Texture1D);
-    s_NameToTextureTable.Insert("RWTexture1DArray"_xiisv, xiiGALShaderTextureType::Texture1DArray);
-    s_NameToTextureTable.Insert("RWTexture2D"_xiisv, xiiGALShaderTextureType::Texture2D);
-    s_NameToTextureTable.Insert("RWTexture2DArray"_xiisv, xiiGALShaderTextureType::Texture2DArray);
-    s_NameToTextureTable.Insert("RWTexture3D"_xiisv, xiiGALShaderTextureType::Texture3D);
+    s_pParserTables->m_NameToTextureTable.Insert("Texture1D"_xiisv, xiiGALShaderTextureType::Texture1D);
+    s_pParserTables->m_NameToTextureTable.Insert("Texture1DArray"_xiisv, xiiGALShaderTextureType::Texture1DArray);
+    s_pParserTables->m_NameToTextureTable.Insert("Texture2D"_xiisv, xiiGALShaderTextureType::Texture2D);
+    s_pParserTables->m_NameToTextureTable.Insert("Texture2DArray"_xiisv, xiiGALShaderTextureType::Texture2DArray);
+    s_pParserTables->m_NameToTextureTable.Insert("Texture2DMS"_xiisv, xiiGALShaderTextureType::Texture2DMS);
+    s_pParserTables->m_NameToTextureTable.Insert("Texture2DMSArray"_xiisv, xiiGALShaderTextureType::Texture2DMSArray);
+    s_pParserTables->m_NameToTextureTable.Insert("Texture3D"_xiisv, xiiGALShaderTextureType::Texture3D);
+    s_pParserTables->m_NameToTextureTable.Insert("TextureCube"_xiisv, xiiGALShaderTextureType::TextureCube);
+    s_pParserTables->m_NameToTextureTable.Insert("TextureCubeArray"_xiisv, xiiGALShaderTextureType::TextureCubeArray);
+    s_pParserTables->m_NameToTextureTable.Insert("RWTexture1D"_xiisv, xiiGALShaderTextureType::Texture1D);
+    s_pParserTables->m_NameToTextureTable.Insert("RWTexture1DArray"_xiisv, xiiGALShaderTextureType::Texture1DArray);
+    s_pParserTables->m_NameToTextureTable.Insert("RWTexture2D"_xiisv, xiiGALShaderTextureType::Texture2D);
+    s_pParserTables->m_NameToTextureTable.Insert("RWTexture2DArray"_xiisv, xiiGALShaderTextureType::Texture2DArray);
+    s_pParserTables->m_NameToTextureTable.Insert("RWTexture3D"_xiisv, xiiGALShaderTextureType::Texture3D);
   }
 
   const xiiRTTI* GetType(xiiStringView sType)
@@ -93,7 +102,7 @@ namespace
     InitializeTables();
 
     const xiiRTTI* pType = nullptr;
-    s_NameToTypeTable.TryGetValue(sType, pType);
+    s_pParserTables->m_NameToTypeTable.TryGetValue(sType, pType);
     return pType;
   }
 
@@ -150,7 +159,7 @@ namespace
     {
       // complex type constructor
       const xiiRTTI* pType = nullptr;
-      if (!s_NameToTypeTable.TryGetValue(sDataView, pType))
+      if (!s_pParserTables->m_NameToTypeTable.TryGetValue(sDataView, pType))
       {
         xiiLog::Error("Invalid type name '{}'", sDataView);
         return xiiVariant();
@@ -387,6 +396,22 @@ namespace
     }
   }
 } // namespace
+
+bool xiiGALShaderParser::IsRegistryInitialized()
+{
+  return s_pParserTables != nullptr;
+}
+
+void xiiGALShaderParser::OnEngineStartup()
+{
+  XII_ASSERT_DEV(s_pParserTables == nullptr, "Shader-parser registry started twice.");
+  s_pParserTables = XII_DEFAULT_NEW(ShaderParserTables);
+}
+
+void xiiGALShaderParser::OnEngineShutdown()
+{
+  s_pParserTables.Clear();
+}
 
 // static
 xiiResult xiiGALShaderParser::PreprocessSection(xiiStreamReader& inout_stream, xiiEnum<xiiGALShaderSections> section, xiiArrayPtr<xiiString> pCustomDefines, xiiStringBuilder& out_sResult)
@@ -653,10 +678,10 @@ xiiResult ParseResource(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xi
     return XII_FAILURE;
   }
 
-  if (!s_NameToDescriptorTable.TryGetValue(tokens[uiTypeToken]->m_DataView, out_resourceDefinition.m_ResourceDescription.m_Type))
+  if (!s_pParserTables->m_NameToDescriptorTable.TryGetValue(tokens[uiTypeToken]->m_DataView, out_resourceDefinition.m_ResourceDescription.m_Type))
     return XII_FAILURE;
 
-  s_NameToTextureTable.TryGetValue(tokens[uiTypeToken]->m_DataView, out_resourceDefinition.m_ResourceDescription.m_TextureType);
+  s_pParserTables->m_NameToTextureTable.TryGetValue(tokens[uiTypeToken]->m_DataView, out_resourceDefinition.m_ResourceDescription.m_TextureType);
   out_resourceDefinition.m_ResourceDescription.m_uiArraySize = 1U;
 
   // Skip optional template

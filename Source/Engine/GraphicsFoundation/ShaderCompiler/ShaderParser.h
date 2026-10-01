@@ -13,6 +13,10 @@ class xiiPropertyAttribute;
 class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderParser
 {
 public:
+  [[nodiscard]] static bool IsRegistryInitialized();
+  static void               OnEngineStartup();
+  static void               OnEngineShutdown();
+
   struct AttributeDefinition
   {
     xiiString                      m_sType;
