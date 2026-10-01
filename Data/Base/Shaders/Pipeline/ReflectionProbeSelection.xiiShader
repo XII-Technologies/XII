@@ -1,12 +1,19 @@
 // XII Engine - GPU reflection probe assignment.
 // Selects two deterministic local probes for every logarithmic lighting cluster.
 
-#include "LightingData.h"
-#include "ReflectionProbeData.h"
+[PLATFORMS]
+ALL
 
-StructuredBuffer<xiiClusterDescriptor> g_Clusters : register(t0);
-StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData : register(t1);
-RWStructuredBuffer<uint2> g_ReflectionProbeClusters : register(u0);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/LightingData.h>
+#include <Shaders/Pipeline/ReflectionProbeData.h>
+
+StructuredBuffer<xiiClusterDescriptor>   g_Clusters;
+StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData;
+RWStructuredBuffer<uint2>                g_ReflectionProbeClusters;
 
 bool IntersectsCluster(xiiGPUReflectionProbe probe, xiiClusterDescriptor cluster)
 {
@@ -24,7 +31,7 @@ bool IsBetterProbe(int priority, float distanceSquared, uint stableId,
 }
 
 [numthreads(64, 1, 1)]
-void CS_ReflectionProbeSelection(uint3 dispatchThreadId : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     const uint clusterIndex = dispatchThreadId.x;
     if (clusterIndex >= TotalClusterCount)

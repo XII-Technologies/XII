@@ -1353,7 +1353,7 @@ void xiiView::ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraph
   cmd.EndDebugGroup();
 }
 
-////////// GPU Reflection Proble Select Data //////////
+////////// GPU Reflection Probe Select Data //////////
 //
 // Selects relevant reflection probes for the current frame on the GPU, using the visible instance list from the current frame's Frustum Culling pass and instance bounds from the previous frame's Instance Update pass.
 // This is a compute pass that writes out a structured buffer of reflection probe indices and a bitmask of which probes affect which instances, which are then consumed by the main lighting pass for reflection probe sampling.
@@ -1370,6 +1370,8 @@ struct xiiReflectionProbeSelectData
 
 void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hClusterDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, xiiGALResourceStateFlags::ShaderResource);
 
   auto& reflectionResources = m_ViewPassResources.m_LightingPrepPasses;
