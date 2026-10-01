@@ -6,10 +6,13 @@
 
 DECLARE_CONSTANT_BUFFER_AUTO(xiiVirtualShadowFeedbackConstants)
 {
+  MAT4(VirtualShadowInverseViewProjection);
   UINT1(VirtualResolution);
   UINT1(PageSize);
   UINT1(MaxFeedbackRequests);
   UINT1(DirectionalLightId);
+  FLOAT1(VirtualShadowNearPlane);
+  FLOAT3(_VirtualShadowFeedbackPadding);
 };
 
 /// Frame-sliced virtual-to-physical lookup metadata shared by every VSM

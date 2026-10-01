@@ -6698,7 +6698,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows)
     {
       xiiVirtualShadowMapManager::AddFeedbackPasses(graph, depthPrepass.first->m_hSceneDepth, shadowCascadePass.first->m_hCascadeMatrices,
-                                                    GetRenderResolutionWidth(), GetRenderResolutionHeight(), static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey), uiFrameIndex);
+                                                    GetRenderResolutionWidth(), GetRenderResolutionHeight(), GetInverseViewProjectionMatrix(xiiCameraEye::Left),
+                                                    m_pCamera != nullptr ? m_pCamera->GetNearPlane() : 0.1f,
+                                                    static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey), uiFrameIndex);
     }
   }
   graph.AddPass<xiiHiZPyramidData>("HiZPyramid", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZPyramid, this), xiiMakeDelegate(&xiiView::ExecuteHiZPyramid, this));

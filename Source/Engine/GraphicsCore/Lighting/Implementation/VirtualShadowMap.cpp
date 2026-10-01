@@ -908,6 +908,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
 
 void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth,
                                                    xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight,
+                                                   const xiiMat4& inverseViewProjection, float fNearPlane,
                                                    xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex)
 {
   if (!IsInitialized() || !hSceneDepth.IsValid() || !hCascadeConstants.IsValid() || uiWidth == 0U || uiHeight == 0U)
@@ -940,6 +941,8 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
     xiiUInt32                   m_uiWidth   = 0U;
     xiiUInt32                   m_uiHeight  = 0U;
     xiiUInt32                   m_uiLightId = 0U;
+    xiiMat4                     m_InverseViewProjection = xiiMat4::MakeIdentity();
+    float                       m_fNearPlane = 0.1f;
     bool                        m_bClear    = false;
   };
 
@@ -970,10 +973,13 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
       }
       {
         xiiGALMapHelper<xiiVirtualShadowFeedbackConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        constants->VirtualShadowInverseViewProjection = data.m_InverseViewProjection;
         constants->VirtualResolution   = s_pState->m_Settings.m_uiVirtualResolution;
         constants->PageSize            = s_pState->m_Settings.m_uiPageSize;
         constants->MaxFeedbackRequests = s_pState->m_Settings.m_uiMaxFeedbackRequests;
         constants->DirectionalLightId  = data.m_uiLightId;
+        constants->VirtualShadowNearPlane = data.m_fNearPlane;
+        constants->_VirtualShadowFeedbackPadding = xiiVec3::MakeZero();
       }
       cmd.SetPipelineState(s_pState->m_pFeedbackPipeline);
       cmd.ResolveAndSetConstantBuffer("xiiVirtualShadowFeedbackConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
@@ -986,6 +992,8 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
   feedbackPass.first->m_uiWidth   = uiWidth;
   feedbackPass.first->m_uiHeight  = uiHeight;
   feedbackPass.first->m_uiLightId = uiDirectionalLightId & 0x00FFFFFFU;
+  feedbackPass.first->m_InverseViewProjection = inverseViewProjection;
+  feedbackPass.first->m_fNearPlane = xiiMath::Max(fNearPlane, 0.0001f);
   feedbackPass.first->m_bClear    = bClear;
 
   struct ReadbackPassData

@@ -7,7 +7,6 @@ ALL
 
 [COMPUTE_SHADER]
 
-#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 
@@ -23,6 +22,19 @@ struct xiiGpuVirtualShadowFeedback
 
 RWStructuredBuffer<xiiGpuVirtualShadowFeedback> g_VirtualShadowFeedback;
 
+float VirtualShadowLinearizeDepth(float depth)
+{
+    return VirtualShadowNearPlane / max(depth, 1e-7f);
+}
+
+float3 VirtualShadowReconstructWorldPosition(float2 uv, float depth)
+{
+    float4 clipPosition = float4(uv * 2.0f - 1.0f, depth, 1.0f);
+    clipPosition.y = -clipPosition.y;
+    const float4 worldPosition = mul(VirtualShadowInverseViewProjection, clipPosition);
+    return worldPosition.xyz / worldPosition.w;
+}
+
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)
 {
@@ -36,7 +48,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     if (depth <= 0.0f || ActiveCascadeCount == 0u)
         return;
 
-    const float linearDepth = LinearizeDepth(depth);
+    const float linearDepth = VirtualShadowLinearizeDepth(depth);
     uint cascade = 0u;
     [unroll]
     for (uint i = 0u; i < 4u; ++i)
@@ -46,7 +58,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     }
 
     const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
-    const float3 worldPosition = ReconstructWorldPos(uv, depth);
+    const float3 worldPosition = VirtualShadowReconstructWorldPosition(uv, depth);
     const float4 shadowClip = mul(CascadeViewProjection[cascade], float4(worldPosition, 1.0f));
     if (shadowClip.w <= 0.0f)
         return;

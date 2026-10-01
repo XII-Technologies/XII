@@ -213,6 +213,7 @@ public:
   /// feedback stream into the completed-frame readback ring.
   static void AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth,
                                 xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight,
+                                const xiiMat4& inverseViewProjection, float fNearPlane,
                                 xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex);
 
 private:
