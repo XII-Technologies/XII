@@ -52,6 +52,7 @@
 #include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/DrawCommandBuildConstants.h>
@@ -259,6 +260,7 @@ void xiiView::InvalidateTemporalHistory()
   m_ViewPassResources.m_LightingPasses.m_bRTGIReservoirHistoryValid        = false;
   m_ViewPassResources.m_LightingPasses.m_bRTGIHistoryValid                 = false;
   m_ViewPassResources.m_LightingPasses.m_bRTReflectionHistoryValid         = false;
+  m_ViewPassResources.m_LightingPasses.m_bDirectReservoirHistoryValid      = false;
   m_ViewPassResources.m_LightingPasses.m_bVolumetricHistoryValid           = false;
   m_ViewPassResources.m_TemporalPasses.m_uiTAAHistoryWriteIndex            = 0U;
   m_ViewPassResources.m_TemporalPasses.m_bTAAHistoryValid                  = false;
@@ -3226,7 +3228,9 @@ struct xiiReSTIRDITemporalData
   xiiRenderGraphBufferHandle  m_hLightIndexBuffer;
   xiiRenderGraphTextureHandle m_hPreviousReservoir;
   xiiRenderGraphTextureHandle m_hPreviousSurface;
+  xiiRenderGraphBufferHandle  m_hConstants;
   xiiRenderGraphTextureHandle m_hTemporalReservoir;
+  bool                        m_bHistoryValid = false;
 };
 
 void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGraphBuilder& builder)
@@ -3238,8 +3242,11 @@ void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGrap
     return pTexture != nullptr && pTexture->GetDescription().m_Size.width == uiWidth && pTexture->GetDescription().m_Size.height == uiHeight;
   };
 
-  if (!HistoryMatchesResolution(m_ViewPassResources.m_LightingPasses.m_pDirectReservoirHistory[0]) ||
-      !HistoryMatchesResolution(m_ViewPassResources.m_LightingPasses.m_pDirectReservoirHistory[1]))
+  auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
+  bool  bHistoryReset  = false;
+
+  if (!HistoryMatchesResolution(lightingPasses.m_pDirectReservoirHistory[0]) ||
+      !HistoryMatchesResolution(lightingPasses.m_pDirectReservoirHistory[1]))
   {
     xiiGALTextureCreationDescription description;
     description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -3252,12 +3259,13 @@ void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGrap
 
     for (xiiUInt32 uiSlot = 0U; uiSlot < 2U; ++uiSlot)
     {
-      m_ViewPassResources.m_LightingPasses.m_pDirectReservoirHistory[uiSlot] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+      lightingPasses.m_pDirectReservoirHistory[uiSlot] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
     }
+    bHistoryReset = true;
   }
 
-  if (!HistoryMatchesResolution(m_ViewPassResources.m_LightingPasses.m_pDirectSurfaceHistory[0]) ||
-      !HistoryMatchesResolution(m_ViewPassResources.m_LightingPasses.m_pDirectSurfaceHistory[1]))
+  if (!HistoryMatchesResolution(lightingPasses.m_pDirectSurfaceHistory[0]) ||
+      !HistoryMatchesResolution(lightingPasses.m_pDirectSurfaceHistory[1]))
   {
     xiiGALTextureCreationDescription description;
     description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -3270,19 +3278,32 @@ void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGrap
 
     for (xiiUInt32 uiSlot = 0U; uiSlot < 2U; ++uiSlot)
     {
-      m_ViewPassResources.m_LightingPasses.m_pDirectSurfaceHistory[uiSlot] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+      lightingPasses.m_pDirectSurfaceHistory[uiSlot] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
     }
+    bHistoryReset = true;
   }
 
-  const xiiUInt32 uiPreviousSlot = (m_ViewPassResources.m_LightingPasses.m_uiFrameIndex + 1U) & 1U;
+  if (bHistoryReset)
+    lightingPasses.m_bDirectReservoirHistoryValid = false;
+
+  data.m_bHistoryValid           = lightingPasses.m_bDirectReservoirHistoryValid;
+  const xiiUInt32 uiPreviousSlot = (lightingPasses.m_uiFrameIndex + 1U) & 1U;
 
   data.m_hSceneDepth         = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal      = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hVelocity           = builder.ReadTexture(xiiRGBlackboardKeys::k_VelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightGridBuffer    = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightIndexBuffer   = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousReservoir  = builder.ReadTexture(builder.ImportTexture("ReSTIRDIReservoirPrevious", m_ViewPassResources.m_LightingPasses.m_pDirectReservoirHistory[uiPreviousSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousSurface    = builder.ReadTexture(builder.ImportTexture("ReSTIRDISurfacePrevious", m_ViewPassResources.m_LightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousReservoir  = builder.ReadTexture(builder.ImportTexture("ReSTIRDIReservoirPrevious", lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot], lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface    = builder.ReadTexture(builder.ImportTexture("ReSTIRDISurfacePrevious", lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot], lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiReSTIRDIConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Mode           = xiiGALBufferMode::Undefined;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  data.m_hConstants                     = builder.WriteBuffer("xiiReSTIRDIConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -3295,6 +3316,7 @@ void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGrap
   data.m_hTemporalReservoir = builder.WriteTexture("ReSTIRDITemporalReservoir", description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pReSTIRDITemporalPipeline, "Shaders/Pipeline/ReSTIRDITemporal.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteReSTIRDITemporal(const xiiReSTIRDITemporalData& data, xiiRenderGraphPassContext& context)
@@ -3303,8 +3325,15 @@ void xiiView::ExecuteReSTIRDITemporal(const xiiReSTIRDITemporalData& data, xiiRe
 
   cmd.BeginDebugGroup("ReSTIRDITemporal");
   {
+    {
+      xiiGALMapHelper<xiiReSTIRDIConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->HistoryValid = data.m_bHistoryValid ? 1U : 0U;
+      pConstants->_Padding     = xiiVec3U32::MakeZero();
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pReSTIRDITemporalPipeline);
     m_ViewPassResources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiReSTIRDIConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -3333,14 +3362,16 @@ struct xiiReSTIRDISpatialData
 void xiiView::SetupReSTIRDISpatial(xiiReSTIRDISpatialData& data, xiiRenderGraphBuilder& builder)
 {
   const xiiUInt32 uiCurrentSlot = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
+  auto&           lightingPasses = m_ViewPassResources.m_LightingPasses;
 
   data.m_hSceneDepth        = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal     = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hTemporalReservoir = builder.ReadTexture("ReSTIRDITemporalReservoir", xiiGALResourceStateFlags::ShaderResource);
-  data.m_hReservoir         = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, m_ViewPassResources.m_LightingPasses.m_pDirectReservoirHistory[uiCurrentSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hReservoirSurface  = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DirectLightReservoirSurface, m_ViewPassResources.m_LightingPasses.m_pDirectSurfaceHistory[uiCurrentSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hReservoir         = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, lightingPasses.m_pDirectReservoirHistory[uiCurrentSlot], lightingPasses.m_pDirectReservoirHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hReservoirSurface  = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DirectLightReservoirSurface, lightingPasses.m_pDirectSurfaceHistory[uiCurrentSlot], lightingPasses.m_pDirectSurfaceHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pReSTIRDISpatialPipeline, "Shaders/Pipeline/ReSTIRDISpatial.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRenderGraphPassContext& context)
@@ -3358,6 +3389,7 @@ void xiiView::ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRend
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SurfaceOut", context.GetTexture(data.m_hReservoirSurface)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+    m_ViewPassResources.m_LightingPasses.m_bDirectReservoirHistoryValid = true;
   }
   cmd.EndDebugGroup();
 }

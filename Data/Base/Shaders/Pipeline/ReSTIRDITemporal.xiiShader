@@ -1,17 +1,28 @@
 // XII Engine - ReSTIR DI candidate generation and temporal reuse.
 
-#include "PipelineCommon.xiiShader"
-#include "ReSTIRDICommon.h"
+[PLATFORMS]
+ALL
 
-Texture2D<float>  g_SceneDepth       : register(t0);
-Texture2D<float2> g_GBufferNormal    : register(t1);
-Texture2D<float2> g_Velocity         : register(t2);
-StructuredBuffer<uint2>           g_LightGrid : register(t3);
-StructuredBuffer<uint>            g_LightIndex : register(t4);
-StructuredBuffer<xiiGpuLightData> g_Lights : register(t5);
-Texture2D<uint4>  g_PreviousReservoir : register(t6);
-Texture2D<float4> g_PreviousSurface   : register(t7);
-RWTexture2D<uint4> g_TemporalReservoir : register(u0);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+
+StructuredBuffer<xiiGpuLightData> g_Lights;
+
+#include <Shaders/Pipeline/ReSTIRDICommon.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
+
+Texture2D<float>        g_SceneDepth;
+Texture2D<float2>       g_GBufferNormal;
+Texture2D<float2>       g_Velocity;
+StructuredBuffer<uint2> g_LightGrid;
+StructuredBuffer<uint>  g_LightIndex;
+Texture2D<uint4>        g_PreviousReservoir;
+Texture2D<float4>       g_PreviousSurface;
+RWTexture2D<uint4>      g_TemporalReservoir;
 
 uint ComputeReSTIRClusterIndex(float2 uv, float depth)
 {
@@ -28,7 +39,7 @@ uint ComputeReSTIRClusterIndex(float2 uv, float depth)
 }
 
 [numthreads(8, 8, 1)]
-void CS_ReSTIRDITemporal(uint3 dispatchThreadId : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
   uint2 dimensions;
   g_TemporalReservoir.GetDimensions(dimensions.x, dimensions.y);
@@ -70,7 +81,7 @@ void CS_ReSTIRDITemporal(uint3 dispatchThreadId : SV_DispatchThreadID)
   // robust to compaction and reject a recycled compact index automatically.
   const float2 velocity = g_Velocity.Load(int3(pixel, 0));
   const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
-  if (all(previousUV > 0.0f) && all(previousUV < 1.0f))
+  if (HistoryValid != 0u && all(previousUV > 0.0f) && all(previousUV < 1.0f))
   {
     const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1u);
     xiiReSTIRDIReservoir previous = ReSTIRUnpackReservoir(g_PreviousReservoir.Load(int3(previousPixel, 0)));

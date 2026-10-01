@@ -1,14 +1,24 @@
 // XII Engine - ReSTIR DI edge-aware spatial reservoir reuse.
 
-#include "PipelineCommon.xiiShader"
-#include "ReSTIRDICommon.h"
+[PLATFORMS]
+ALL
 
-Texture2D<float>  g_SceneDepth       : register(t0);
-Texture2D<float2> g_GBufferNormal    : register(t1);
-Texture2D<uint4>  g_TemporalReservoir : register(t2);
-StructuredBuffer<xiiGpuLightData> g_Lights : register(t3);
-RWTexture2D<uint4>  g_ReservoirOut : register(u0);
-RWTexture2D<float4> g_SurfaceOut   : register(u1);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+
+StructuredBuffer<xiiGpuLightData> g_Lights;
+
+#include <Shaders/Pipeline/ReSTIRDICommon.h>
+
+Texture2D<float>       g_SceneDepth;
+Texture2D<float2>      g_GBufferNormal;
+Texture2D<uint4>       g_TemporalReservoir;
+RWTexture2D<uint4>     g_ReservoirOut;
+RWTexture2D<float4>    g_SurfaceOut;
 
 static const int2 XII_RESTIR_NEIGHBOR_OFFSETS[8] =
 {
@@ -17,7 +27,7 @@ static const int2 XII_RESTIR_NEIGHBOR_OFFSETS[8] =
 };
 
 [numthreads(8, 8, 1)]
-void CS_ReSTIRDISpatial(uint3 dispatchThreadId : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
   uint2 dimensions;
   g_ReservoirOut.GetDimensions(dimensions.x, dimensions.y);
