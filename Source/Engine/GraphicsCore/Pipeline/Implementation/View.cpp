@@ -58,6 +58,7 @@
 #include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/Temporal/TAAConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/DrawCommandBuildConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/InstanceUpdateConstants.h>
@@ -5969,6 +5970,8 @@ struct xiiTemporalAntiAliasingData
   xiiRenderGraphTextureHandle m_hDepth;    ///< ShaderResource in (reversed-Z scene depth).
   xiiRenderGraphTextureHandle m_hHistory;  ///< ShaderResource in (history color).
   xiiRenderGraphTextureHandle m_hTAAOut;   ///< UnorderedAccess out (TAA resolved color).
+  xiiRenderGraphBufferHandle  m_hConstants;
+  xiiTAAConstants             m_Constants = {};
   xiiUInt32                    m_uiHistoryWriteIndex = 0U;
   bool                         m_bHistoryValid       = false;
 };
@@ -6021,6 +6024,18 @@ void xiiView::SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRe
   data.m_hTAAOut = builder.ImportTexture(xiiRGBlackboardKeys::k_TAAResolvedColor, temporalResources.m_pTAAHistoryBuffers[data.m_uiHistoryWriteIndex], temporalResources.m_pTAAHistoryBuffers[data.m_uiHistoryWriteIndex]->GetResourceState());
   data.m_hTAAOut = builder.WriteTexture(data.m_hTAAOut, xiiGALResourceStateFlags::UnorderedAccess);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiTAAConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("TAA Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  data.m_Constants.HistoryValid     = data.m_bHistoryValid ? 1U : 0U;
+  data.m_Constants.BaseBlendAlpha   = 0.08f;
+  data.m_Constants.MotionBlendScale = 12.0f;
+  data.m_Constants.Padding          = 0.0f;
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_TemporalPasses.m_pTAAPipeline, "Shaders/Pipeline/TAA.xiiShader");
 }
 
@@ -6032,7 +6047,13 @@ void xiiView::ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& dat
 
   cmd.BeginDebugGroup("TAA");
   {
+    {
+      xiiGALMapHelper<xiiTAAConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *constants = data.m_Constants;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_TemporalPasses.m_pTAAPipeline);
+    cmd.ResolveAndSetConstantBuffer("xiiTAAConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_CurrentFrame", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_VelocityBuffer", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
