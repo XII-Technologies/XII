@@ -4297,6 +4297,8 @@ struct xiiHybridReflectionCompositeData
 
 void xiiView::SetupHybridReflectionComposite(xiiHybridReflectionCompositeData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hEnvironmentSpecular    = builder.ReadTexture(xiiRGBlackboardKeys::k_EnvironmentSpecular, xiiGALResourceStateFlags::ShaderResource);
   data.m_hScreenSpaceReflections = builder.ReadTexture(xiiRGBlackboardKeys::k_SSRTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hRayTracedReflections   = builder.ReadTexture(xiiRGBlackboardKeys::k_RTFinalReflections, xiiGALResourceStateFlags::ShaderResource);

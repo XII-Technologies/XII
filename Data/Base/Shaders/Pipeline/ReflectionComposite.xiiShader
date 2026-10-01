@@ -1,14 +1,21 @@
 // XII Engine - confidence-aware hybrid reflection tier composition.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
 
-Texture2D<float4> g_EnvironmentSpecular : register(t0);
-Texture2D<float4> g_ScreenSpaceReflection : register(t1);
-Texture2D<float4> g_RayTracedReflection : register(t2);
-RWTexture2D<float4> g_HDRScene : register(u0);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+
+Texture2D<float4>   g_EnvironmentSpecular;
+Texture2D<float4>   g_ScreenSpaceReflection;
+Texture2D<float4>   g_RayTracedReflection;
+RWTexture2D<float4> g_HDRScene;
 
 [numthreads(8, 8, 1)]
-void CS_ReflectionComposite(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dimensions;
     g_HDRScene.GetDimensions(dimensions.x, dimensions.y);
@@ -17,9 +24,9 @@ void CS_ReflectionComposite(uint3 tid : SV_DispatchThreadID)
 
     const float2 uv = (float2(tid.xy) + 0.5f) / float2(dimensions);
     const float4 baseScene = g_HDRScene[tid.xy];
-    const float3 environment = max(g_EnvironmentSpecular.SampleLevel(g_sLinearClamp, uv, 0.0f).rgb, 0.0f);
-    const float4 traced = g_RayTracedReflection.SampleLevel(g_sLinearClamp, uv, 0.0f);
-    const float4 screen = g_ScreenSpaceReflection.SampleLevel(g_sLinearClamp, uv, 0.0f);
+    const float3 environment = max(g_EnvironmentSpecular.SampleLevel(LinearClampSampler, uv, 0.0f).rgb, 0.0f);
+    const float4 traced = g_RayTracedReflection.SampleLevel(LinearClampSampler, uv, 0.0f);
+    const float4 screen = g_ScreenSpaceReflection.SampleLevel(LinearClampSampler, uv, 0.0f);
 
     // Tier 2 (local probes / sky) is already included in baseScene. Tier 3
     // fills geometry that screen space cannot see, and Tier 1 has priority for
