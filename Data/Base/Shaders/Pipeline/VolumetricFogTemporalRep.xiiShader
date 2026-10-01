@@ -7,7 +7,7 @@ ALL
 // render resolution because integration has already collapsed the froxel depth axis.
 
 #include "PipelineCommon.xiiShader"
-#include "Passes/Denoising/TemporalDenoiseConstants.h"
+#include "Passes/Volumetrics/VolumetricTemporalConstants.h"
 
 Texture2D<float4>   g_FroxelCurrent  : register(t4);
 Texture2D<float4>   g_FroxelHistory  : register(t5);
@@ -72,15 +72,34 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   }
 
   current = lerp(current, spatialSum / spatialSamples, saturate(SpatialWeight));
-  if (HistoryValid == 0U || depth <= 0.0f)
+  if (HistoryValid == 0U)
   {
     g_FroxelBlended[pixel] = current;
     return;
   }
 
   const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
-  const float2 velocity = g_Velocity.Load(int3(pixel, 0));
-  const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
+  float2 previousUV;
+  if (depth > 0.0f)
+  {
+    const float2 velocity = g_Velocity.Load(int3(pixel, 0));
+    previousUV = uv - velocity * float2(0.5f, -0.5f);
+  }
+  else
+  {
+    const float farDeviceDepth = g_CameraPositionAndNearPlane.w / max(g_CameraForwardAndFarPlane.w, g_CameraPositionAndNearPlane.w);
+    const float3 farWorldPosition = ReconstructWorldPos(uv, farDeviceDepth);
+    const float4 previousClip = mul(PreviousViewProjectionMatrix, float4(farWorldPosition, 1.0f));
+    if (previousClip.w <= 1e-5f)
+    {
+      g_FroxelBlended[pixel] = current;
+      return;
+    }
+
+    const float2 previousNDC = previousClip.xy / previousClip.w;
+    previousUV = float2(previousNDC.x * 0.5f + 0.5f, -previousNDC.y * 0.5f + 0.5f);
+  }
+
   if (any(previousUV <= 0.0f) || any(previousUV >= 1.0f))
   {
     g_FroxelBlended[pixel] = current;
@@ -90,9 +109,10 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
   const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
   const float3 previousNormal = DecodeOctNormal(previousSurface.xy);
-  const bool surfaceMatches = previousSurface.w > 0.0f &&
-    abs(previousSurface.z - linearDepth) <= max(linearDepth * DepthThreshold, 0.01f) &&
-    dot(previousNormal, normal) >= NormalThreshold;
+  const bool surfaceMatches = depth <= 0.0f ? previousSurface.w <= 0.0f :
+    previousSurface.w > 0.0f &&
+      abs(previousSurface.z - linearDepth) <= max(linearDepth * DepthThreshold, 0.01f) &&
+      dot(previousNormal, normal) >= NormalThreshold;
   if (!surfaceMatches)
   {
     g_FroxelBlended[pixel] = current;

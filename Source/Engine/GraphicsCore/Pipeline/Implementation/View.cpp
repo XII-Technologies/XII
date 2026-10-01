@@ -66,6 +66,7 @@
 #include <Shaders/Pipeline/Passes/Visibility/LODSelectionConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/ShadowCasterCullingConstants.h>
 #include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumConstants.h>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricTemporalConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
@@ -4619,6 +4620,7 @@ struct xiiVolumetricFogTemporalReprojectionData
   xiiRenderGraphTextureHandle m_hPreviousSurface;
   xiiRenderGraphTextureHandle m_hVolumetricScattering; ///< UnorderedAccess out (current persistent history and final signal).
   xiiRenderGraphBufferHandle  m_hConstants;
+  xiiMat4                     m_PreviousViewProjection = xiiMat4::MakeIdentity();
   bool                        m_bHistoryValid = false;
 };
 
@@ -4635,7 +4637,9 @@ void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalRep
     resources.m_bVolumetricHistoryValid = false;
   }
 
-  data.m_bHistoryValid         = resources.m_bVolumetricHistoryValid;
+  const auto& depthPasses      = m_ViewPassResources->m_DepthPasses;
+  data.m_bHistoryValid         = resources.m_bVolumetricHistoryValid && depthPasses.m_bMotionHistoryValid;
+  data.m_PreviousViewProjection = depthPasses.m_bMotionHistoryValid ? depthPasses.m_PreviousViewProjectionMatrix : GetViewProjectionMatrix(xiiCameraEye::Left);
   data.m_hCurrentScattering    = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousScattering   = builder.ReadTexture(builder.ImportTexture("Volumetric Scattering Previous", resources.m_pVolumetricHistory[uiPreviousSlot], resources.m_pVolumetricHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneDepth           = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
@@ -4643,7 +4647,12 @@ void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalRep
   data.m_hVelocity             = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousSurface      = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
   data.m_hVolumetricScattering = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_VolumetricScattering, resources.m_pVolumetricHistory[uiCurrentSlot], resources.m_pVolumetricHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hConstants            = CreateTemporalDenoiseConstants(builder, "Volumetric Temporal Constants");
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiVolumetricTemporalConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                      = builder.WriteBuffer("Volumetric Temporal Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(resources.m_pVolumetricTemporalPipeline, "Shaders/Pipeline/VolumetricFogTemporalRep.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -4656,19 +4665,19 @@ void xiiView::ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTem
   cmd.BeginDebugGroup("VolumetricFogTemporalRep");
   {
     {
-      xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->HistoryWeight   = 0.92f;
-      pConstants->DepthThreshold  = 0.08f;
-      pConstants->NormalThreshold = 0.80f;
-      pConstants->SpatialWeight   = 0.10f;
-      pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
-      pConstants->SignalMode      = 1U;
-      pConstants->_Padding        = xiiVec2::MakeZero();
+      xiiGALMapHelper<xiiVolumetricTemporalConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->PreviousViewProjectionMatrix = data.m_PreviousViewProjection;
+      pConstants->HistoryWeight                = 0.92f;
+      pConstants->DepthThreshold               = 0.08f;
+      pConstants->NormalThreshold              = 0.80f;
+      pConstants->SpatialWeight                = 0.10f;
+      pConstants->HistoryValid                 = data.m_bHistoryValid ? 1U : 0U;
+      pConstants->_Padding                     = xiiVec3U32::MakeZero();
     }
 
     cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pVolumetricTemporalPipeline);
     m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
-    cmd.ResolveAndSetConstantBuffer("xiiTemporalDenoiseConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiVolumetricTemporalConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_FroxelCurrent", context.GetTexture(data.m_hCurrentScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_FroxelHistory", context.GetTexture(data.m_hPreviousScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
