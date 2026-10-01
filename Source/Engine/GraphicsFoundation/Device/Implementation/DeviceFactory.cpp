@@ -26,7 +26,8 @@ xiiUniquePtr<xiiGALDeviceFactory::State> xiiGALDeviceFactory::s_pState;
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, DeviceFactoryRegistry)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation"
+    "Foundation",
+    "DeviceRegistry"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
