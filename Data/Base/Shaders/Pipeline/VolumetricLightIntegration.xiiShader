@@ -1,5 +1,5 @@
 // XII Engine - VolumetricLightIntegration.xiiShader
-// Integrates pre-lit froxel radiance through the view volume.
+// Builds a front-to-back scattering and opacity prefix volume per froxel column.
 
 [PLATFORMS]
 ALL
@@ -8,23 +8,19 @@ ALL
 
 [COMPUTE_SHADER]
 
-#include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 Texture3D<float4>   g_FroxelScattering;
-RWTexture2D<float4> g_VolumetricOut;
+RWTexture3D<float4> g_FroxelIntegratedOut;
 
 static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)
 {
-    uint2 dims;
-    g_VolumetricOut.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims))
+    if (any(tid.xy >= XII_FROXEL_COUNT.xy))
         return;
 
-    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
     float3 accumulatedScattering = float3(0.0f, 0.0f, 0.0f);
     float transmittance = 1.0f;
     const float nearPlane = max(g_CameraPositionAndNearPlane.w, 1e-3f);
@@ -34,24 +30,16 @@ void main(uint3 tid : SV_DispatchThreadID)
     [loop]
     for (uint z = 0u; z < XII_FROXEL_COUNT.z; ++z)
     {
-        const float zFrac = (float(z) + 0.5f) / (float)XII_FROXEL_COUNT.z;
-        const float4 froxel = g_FroxelScattering.SampleLevel(LinearClampSampler, float3(uv, zFrac), 0);
+        const float4 froxel = g_FroxelScattering.Load(int4(tid.xy, z, 0));
         const float extinction = max(froxel.a, 0.0f);
-        if (extinction <= 0.0f)
-            continue;
-
         const float sliceNearFraction = (float)z / (float)XII_FROXEL_COUNT.z;
         const float sliceFarFraction = (float)(z + 1u) / (float)XII_FROXEL_COUNT.z;
         const float sliceDepth = nearPlane * (exp(sliceFarFraction * logFarOverNear) - exp(sliceNearFraction * logFarOverNear));
         const float sliceTransmittance = exp(-extinction * sliceDepth);
-        const float3 inscatter = froxel.rgb * (1.0f - sliceTransmittance) / max(extinction, 1e-5f);
+        const float3 inscatter = extinction > 1e-5f ? froxel.rgb * (1.0f - sliceTransmittance) / extinction : froxel.rgb * sliceDepth;
 
         accumulatedScattering += transmittance * inscatter;
         transmittance *= sliceTransmittance;
-
-        if (transmittance < 0.01f)
-            break;
+        g_FroxelIntegratedOut[uint3(tid.xy, z)] = float4(accumulatedScattering, 1.0f - transmittance);
     }
-
-    g_VolumetricOut[tid.xy] = float4(accumulatedScattering, 1.0f - transmittance);
 }

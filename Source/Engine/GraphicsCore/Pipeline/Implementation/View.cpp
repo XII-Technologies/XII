@@ -4514,7 +4514,7 @@ struct xiiVolumetricFogIntegrationData
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hFroxelScatteringBuffer; ///< ShaderResource in (pre-lit froxel scattering buffer).
-  xiiRenderGraphTextureHandle m_hVolumetricScattering;   ///< UnorderedAccess out (integrated volumetric scattering).
+  xiiRenderGraphTextureHandle m_hFroxelIntegratedBuffer; ///< UnorderedAccess out (front-to-back scattering prefix volume).
 };
 
 void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRenderGraphBuilder& builder)
@@ -4522,14 +4522,15 @@ void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& dat
   data.m_hFroxelScatteringBuffer = builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type           = xiiGALResourceDimension::Texture2D;
-  description.m_Format         = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width     = GetRenderResolutionWidth();
-  description.m_Size.height    = GetRenderResolutionHeight();
-  description.m_uiMipLevels    = 1U;
-  description.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage          = xiiGALResourceUsage::Default;
-  data.m_hVolumetricScattering = builder.WriteTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, description, xiiGALResourceStateFlags::UnorderedAccess);
+  description.m_Type               = xiiGALResourceDimension::Texture3D;
+  description.m_Format             = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width         = 128U;
+  description.m_Size.height        = 72U;
+  description.m_uiArraySizeOrDepth = 64U;
+  description.m_uiMipLevels        = 1U;
+  description.m_BindFlags          = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage              = xiiGALResourceUsage::Default;
+  data.m_hFroxelIntegratedBuffer   = builder.WriteTexture(xiiRGBlackboardKeys::k_FroxelIntegratedBuffer, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources->m_LightingPasses.m_pVolumetricIntegratePipeline, "Shaders/Pipeline/VolumetricLightIntegration.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -4545,6 +4546,55 @@ void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationD
 
     m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_FroxelScattering", context.GetTexture(data.m_hFroxelScatteringBuffer)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelIntegratedOut", context.GetTexture(data.m_hFroxelIntegratedBuffer)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({16U, 9U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Volumetric Fog Resolve Data //////////
+//
+// Samples the integrated froxel prefix at the opaque surface depth.
+
+struct xiiVolumetricFogResolveData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphTextureHandle m_hFroxelIntegratedBuffer;
+  xiiRenderGraphTextureHandle m_hSceneDepth;
+  xiiRenderGraphTextureHandle m_hVolumetricScattering;
+};
+
+void xiiView::SetupVolumetricFogResolve(xiiVolumetricFogResolveData& data, xiiRenderGraphBuilder& builder)
+{
+  data.m_hFroxelIntegratedBuffer = builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelIntegratedBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth              = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type           = xiiGALResourceDimension::Texture2D;
+  description.m_Format         = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width     = GetRenderResolutionWidth();
+  description.m_Size.height    = GetRenderResolutionHeight();
+  description.m_uiMipLevels    = 1U;
+  description.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage          = xiiGALResourceUsage::Default;
+  data.m_hVolumetricScattering = builder.WriteTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources->m_LightingPasses.m_pVolumetricResolvePipeline, "Shaders/Pipeline/VolumetricFogResolve.xiiShader");
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteVolumetricFogResolve(const xiiVolumetricFogResolveData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("VolumetricFogResolve");
+  {
+    cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pVolumetricResolvePipeline);
+    m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_FroxelIntegrated", context.GetTexture(data.m_hFroxelIntegratedBuffer)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_VolumetricOut", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
@@ -6640,6 +6690,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiRayTracedReflectionsDenoiseData>("RTReflectionTemporalDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedReflectionsDenoise, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedReflectionsDenoise, this));
   graph.AddPass<xiiVolumetricLightInjectionData>("VolumetricLightInjection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricLightInjection, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricLightInjection, this));
   graph.AddPass<xiiVolumetricFogIntegrationData>("VolumetricFogIntegrate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogIntegration, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogIntegration, this));
+  graph.AddPass<xiiVolumetricFogResolveData>("VolumetricFogResolve", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogResolve, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogResolve, this));
   graph.AddPass<xiiVolumetricFogTemporalReprojectionData>("VolumetricFogTemporalRep", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogTemporalReprojection, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogTemporalReprojection, this));
 
   // Forward rendering passes, which composite main scene color from lighting buffers and forward geometry.

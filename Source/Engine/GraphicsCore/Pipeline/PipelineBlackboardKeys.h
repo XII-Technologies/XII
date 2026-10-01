@@ -49,6 +49,7 @@ namespace xiiRGBlackboardKeys
 
   constexpr xiiStringView k_FroxelMetadataBuffer   = "FroxelMetadata"_xiisv;   ///< xiiRenderGraphBufferHandle - froxel bounds + phase + density terms.
   constexpr xiiStringView k_FroxelScatteringBuffer = "FroxelScattering"_xiisv; ///< xiiRenderGraphTextureHandle - 3D froxel scattering/extinction (R16G16B16A16F vol texture).
+  constexpr xiiStringView k_FroxelIntegratedBuffer = "FroxelIntegrated"_xiisv; ///< xiiRenderGraphTextureHandle - 3D front-to-back integrated scattering and opacity.
   constexpr xiiStringView k_FroxelDepthRange       = "FroxelDepthRange"_xiisv; ///< xiiRenderGraphBufferHandle - (near, far, sliceCount, pad) packed into float4.
 
   // Stage 2 - Shadows.

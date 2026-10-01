@@ -95,6 +95,7 @@ struct xiiScreenSpaceReflectionsData;
 struct xiiHybridReflectionCompositeData;
 struct xiiVolumetricLightInjectionData;
 struct xiiVolumetricFogIntegrationData;
+struct xiiVolumetricFogResolveData;
 struct xiiVolumetricFogTemporalReprojectionData;
 struct xiiAtmosphereCompositeData;
 struct xiiSensorOutputData;
@@ -441,6 +442,9 @@ private:
   void SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationData& data, xiiRenderGraphPassContext& context);
 
+  void SetupVolumetricFogResolve(xiiVolumetricFogResolveData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteVolumetricFogResolve(const xiiVolumetricFogResolveData& data, xiiRenderGraphPassContext& context);
+
   void SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphPassContext& context);
 
@@ -685,6 +689,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReflectionCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricLightInjectionPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricIntegratePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricResolvePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricTemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pAtmosphereCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGIFallbackPipeline;
