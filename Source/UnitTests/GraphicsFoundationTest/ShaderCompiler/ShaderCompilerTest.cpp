@@ -20,6 +20,20 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
+#include <type_traits>
+
+static_assert(!std::is_default_constructible_v<xiiGALShaderManager>, "Shader configuration storage must be owned by its subsystem.");
+
+XII_CREATE_SIMPLE_TEST_GROUP(ShaderManagerLifecycle);
+
+XII_CREATE_SIMPLE_TEST(ShaderManagerLifecycle, Startup)
+{
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subsystem owns shader configuration storage")
+  {
+    XII_TEST_BOOL(xiiGALShaderManager::IsInitialized());
+  }
+}
+
 XII_CREATE_SIMPLE_TEST_GROUP(ShaderCompiler);
 
 XII_CREATE_SIMPLE_TEST(ShaderCompiler, ShaderCompiler)

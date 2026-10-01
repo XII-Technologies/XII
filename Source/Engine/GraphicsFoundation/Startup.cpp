@@ -3,6 +3,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 
 // clang-format off
@@ -14,12 +15,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, ShaderCompiler)
 
   ON_CORESYSTEMS_STARTUP
   {
+    xiiGALShaderManager::Startup();
     xiiGALShaderStageBinary::OnEngineStartup();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
     xiiGALShaderStageBinary::OnEngineShutdown();
+    xiiGALShaderManager::Shutdown();
   }
 
   ON_HIGHLEVELSYSTEMS_STARTUP
