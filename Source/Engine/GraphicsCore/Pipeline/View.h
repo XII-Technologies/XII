@@ -625,6 +625,9 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>  m_pHiZOcclusionCullPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pMotionVectorPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pVelocityDilationPipeline;
+      xiiMat4                                    m_PreviousViewProjectionMatrix = xiiMat4::MakeIdentity();
+      xiiVec2                                    m_vPreviousJitter              = xiiVec2::MakeZero();
+      bool                                       m_bMotionHistoryValid          = false;
     } m_DepthPasses;
 
     //  Stage 4 - G-Buffer

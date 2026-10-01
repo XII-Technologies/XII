@@ -48,6 +48,7 @@
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZOcclusionConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+#include <Shaders/Pipeline/Passes/MotionVectors/MotionVectorConstants.h>
 #include <Shaders/Pipeline/Passes/Output/BloomConstants.h>
 #include <Shaders/Pipeline/Passes/Output/ColorGradingConstants.h>
 #include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
@@ -257,6 +258,7 @@ const xiiDisplayOutputSettings& xiiView::GetDisplayOutputSettings() const
 
 void xiiView::InvalidateTemporalHistory()
 {
+  m_ViewPassResources.m_DepthPasses.m_bMotionHistoryValid                  = false;
   m_ViewPassResources.m_ShadowPasses.m_bRayTracedShadowHistoryValid        = false;
   m_ViewPassResources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = false;
   m_ViewPassResources.m_LightingPasses.m_bRTGIReservoirHistoryValid        = false;
@@ -2423,15 +2425,17 @@ struct xiiMotionVectorsData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hSceneDepth;           ///< DepthStencil inout (scene depth target reused for depth-tested motion vector rendering).
-  xiiRenderGraphTextureHandle m_hVelocityBuffer;       ///< RenderTarget out (screen-space velocity buffer written by this pass).
-  xiiRenderGraphBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin).
+  xiiRenderGraphTextureHandle m_hSceneDepth;     ///< ShaderResource in (current reversed-Z scene depth).
+  xiiRenderGraphTextureHandle m_hVelocityBuffer; ///< RenderTarget out (current-to-previous NDC velocity).
+  xiiRenderGraphBufferHandle  m_hConstants;
+  xiiMotionVectorConstants    m_Constants = {};
+  xiiMat4                     m_CurrentViewProjection = xiiMat4::MakeIdentity();
+  xiiVec2                     m_vCurrentJitter        = xiiVec2::MakeZero();
 };
 
 void xiiView::SetupMotionVectors(xiiMotionVectorsData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
-  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -2443,23 +2447,56 @@ void xiiView::SetupMotionVectors(xiiMotionVectorsData& data, xiiRenderGraphBuild
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hVelocityBuffer    = builder.WriteTexture(xiiRGBlackboardKeys::k_VelocityBuffer, description, xiiGALResourceStateFlags::RenderTarget);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiMotionVectorConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("Motion Vector Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  auto& depthPasses                             = m_ViewPassResources.m_DepthPasses;
+  data.m_CurrentViewProjection                  = GetViewProjectionMatrix(xiiCameraEye::Left);
+  data.m_vCurrentJitter                         = xiiVec2::MakeZero();
+  data.m_Constants.PreviousViewProjectionMatrix = depthPasses.m_bMotionHistoryValid ? depthPasses.m_PreviousViewProjectionMatrix : data.m_CurrentViewProjection;
+  data.m_Constants.CurrentJitter                = data.m_vCurrentJitter;
+  data.m_Constants.PreviousJitter               = depthPasses.m_bMotionHistoryValid ? depthPasses.m_vPreviousJitter : data.m_vCurrentJitter;
+
   builder.SetPassAllowMerge(false);
+  builder.SetPassRenderPassManaged(true);
 }
 
 void xiiView::ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRenderGraphPassContext& context)
 {
   xiiGALCommandList& cmd = context.GetCommandList();
+  xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline;
+  if (data.m_hSceneDepth.IsValid() && data.m_hVelocityBuffer.IsValid() && data.m_hConstants.IsValid() && context.GetRenderPass() != nullptr)
+  {
+    pPipeline = xiiView::EnsureGraphicsPipeline(m_ViewPassResources.m_DepthPasses.m_pMotionVectorPipeline, "Shaders/Pipeline/MotionVectors.xiiShader", context.GetRenderPass(), context.GetSubpassIndex());
+  }
 
   cmd.BeginDebugGroup("MotionVectors");
   {
     cmd.ClearRenderTargetView(context.GetTexture(data.m_hVelocityBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
     cmd.SetViewport({0.0f, 0.0f, static_cast<float>(GetRenderResolutionWidth()), static_cast<float>(GetRenderResolutionHeight()), 0.0f, 1.0f});
 
-    if (m_ViewPassResources.m_DepthPasses.m_pMotionVectorPipeline)
+    if (pPipeline != nullptr)
     {
-      cmd.SetPipelineState(m_ViewPassResources.m_DepthPasses.m_pMotionVectorPipeline);
+      {
+        xiiGALMapHelper<xiiMotionVectorConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        *constants = data.m_Constants;
+      }
+
+      cmd.SetPipelineState(pPipeline.Borrow());
+      m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetConstantBuffer("xiiMotionVectorConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
+      cmd.Draw({3U, 1U, 0U, 0U});
+
+      auto& depthPasses                          = m_ViewPassResources.m_DepthPasses;
+      depthPasses.m_PreviousViewProjectionMatrix = data.m_CurrentViewProjection;
+      depthPasses.m_vPreviousJitter               = data.m_vCurrentJitter;
+      depthPasses.m_bMotionHistoryValid            = true;
     }
   }
   cmd.EndDebugGroup();
