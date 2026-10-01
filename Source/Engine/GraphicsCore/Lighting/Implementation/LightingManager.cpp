@@ -293,6 +293,16 @@ const xiiLightingSystem::FrameStatistics& xiiLightingContext::GetFrameStatistics
   return GetSystem()->GetFrameStatistics();
 }
 
+const xiiLocalShadowAtlasStatistics& xiiLightingContext::GetLocalShadowStatistics() const
+{
+  return GetSystem()->GetLocalShadowStatistics();
+}
+
+xiiArrayPtr<const xiiLocalShadowAtlasData> xiiLightingContext::GetLocalShadowData() const
+{
+  return GetSystem()->GetLocalShadowData();
+}
+
 xiiUInt32 xiiLightingContext::GetActiveLightCount() const
 {
   return GetSystem()->GetActiveLightCount();

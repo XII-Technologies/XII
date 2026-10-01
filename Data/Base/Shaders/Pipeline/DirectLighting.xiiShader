@@ -26,14 +26,12 @@ Texture2D<float>       g_AOTerm;
 Texture2DArray<float>  g_ShadowAtlas;
 Texture2D<float>       g_ContactShadow;
 Texture2D<float>       g_RTShadow;
-Texture2D<float>       g_LocalShadowAtlas;
 
-StructuredBuffer<uint2>                   g_LightGrid;
-StructuredBuffer<uint>                    g_LightIndex;
-StructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs;
-Texture2D<uint4>                          g_DirectLightReservoir;
-StructuredBuffer<float>                   g_IESProfiles;
-RWTexture2D<float4>                       g_DirectOut;
+StructuredBuffer<uint2> g_LightGrid;
+StructuredBuffer<uint>  g_LightIndex;
+Texture2D<uint4>        g_DirectLightReservoir;
+StructuredBuffer<float> g_IESProfiles;
+RWTexture2D<float4>     g_DirectOut;
 
 static const uint XII_IES_VERTICAL_SAMPLES   = 64u;
 static const uint XII_IES_HORIZONTAL_SAMPLES = 32u;
@@ -420,14 +418,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     {
         const xiiGpuLightData lightData = g_Lights[reservoir.LightIndex];
 
-        float localShadow = 1.0f;
-        if (lightData.ShadowData.x > 0.5f)
-        {
-            const xiiLocalShadowAtlasData shadowData = g_LocalShadowAtlasDescs[reservoir.LightIndex];
-            localShadow = shadowData.Meta.y > 0.0f ? localShadow : 1.0f;
-        }
-
-        direct += EvaluateLocalLight(lightData, worldPos, N, V, albedo, roughness, metallic) * localShadow * reservoir.WeightSum;
+        direct += EvaluateLocalLight(lightData, worldPos, N, V, albedo, roughness, metallic) * reservoir.WeightSum;
     }
     else
     {

@@ -601,7 +601,6 @@ private:
     //  Stage 2 - Shadows
     struct ShadowPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pLocalShadowAtlasAllocationPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pShadowDepthPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRayTracedShadowFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracedShadowPipeline;

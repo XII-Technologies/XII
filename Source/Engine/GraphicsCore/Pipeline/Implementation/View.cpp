@@ -77,7 +77,6 @@ namespace
 
   static constexpr xiiUInt32 k_uiDirectionalShadowAtlasWidth  = 4096U; ///< The width of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The height will be the same as the width, and each cascade will be allocated a quadrant of the atlas.
   static constexpr xiiUInt32 k_uiDirectionalShadowAtlasHeight = 4096U; ///< The height of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The width will be the same as the height, and each cascade will be allocated a quadrant of the atlas.
-  static constexpr xiiUInt32 k_uiLocalShadowAtlasSize         = 4096U; ///< The size of the local shadow atlas. This should be sized to fit the maximum number of local shadows in one frame. The atlas will be a single 2D texture for spot and point lights.
 
   static bool IsRenderDataTypeName(const xiiRenderData* pRenderData, xiiStringView sTypeName)
   {
@@ -1660,26 +1659,23 @@ void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, x
 
 struct xiiLocalShadowAtlasAllocationData
 {
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphBufferHandle m_hLightingDataReady;
   xiiRenderGraphBufferHandle m_hLocalShadowAtlasDescriptors;
+  xiiLocalShadowAtlasDataArray m_ShadowData;
 };
 
 void xiiView::SetupLocalShadowAtlasAllocation(xiiLocalShadowAtlasAllocationData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hLightingDataReady = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightingDataReady, xiiGALResourceStateFlags::ShaderResource);
-
   xiiGALBufferCreationDescription description;
-  description.m_uiElementByteStride = 32U;
+  description.m_uiElementByteStride = sizeof(xiiLocalShadowAtlasData);
   description.m_uiSize              = description.m_uiElementByteStride * m_ViewPassResources.m_LightingSystem.GetSettings().m_uiMaxActiveLights;
-  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
   description.m_Mode                = xiiGALBufferMode::Structured;
   description.m_Usage               = xiiGALResourceUsage::Default;
 
-  data.m_hLocalShadowAtlasDescriptors = builder.WriteBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hLocalShadowAtlasDescriptors = builder.WriteBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, description, xiiGALResourceStateFlags::CopyDestination);
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlasAllocationPipeline, "Shaders/Pipeline/LocalLightShadowAtlasAllocation.xiiShader");
+  data.m_ShadowData.PushBackRange(m_ViewPassResources.m_LightingSystem.GetLocalShadowData());
+
   builder.SetPassAllowMerge(false);
 }
 
@@ -1687,13 +1683,13 @@ void xiiView::ExecuteLocalShadowAtlasAllocation(const xiiLocalShadowAtlasAllocat
 {
   xiiGALCommandList& cmd = context.GetCommandList();
 
-  cmd.BeginDebugGroup("LocalShadowAtlasAllocation");
+  cmd.BeginDebugGroup("LocalShadowAtlasUpload");
   {
-    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlasAllocationPipeline);
-    m_ViewPassResources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessBufferView("g_LocalShadowAtlasDescs", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetActiveLightCount(), 1U) + 63U) / 64U, 1U, 1U});
+    if (!data.m_ShadowData.IsEmpty())
+    {
+      cmd.UpdateBuffer(context.GetBuffer(data.m_hLocalShadowAtlasDescriptors), 0U,
+        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_ShadowData.GetData()), data.m_ShadowData.GetCount() * sizeof(xiiLocalShadowAtlasData)));
+    }
   }
   cmd.EndDebugGroup();
 }
@@ -1809,11 +1805,12 @@ void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRenderGraphBuilder
 {
   if (!m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas)
   {
+    const xiiUInt32 uiAtlasSize = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
     xiiGALTextureCreationDescription description;
     description.m_Type                                     = xiiGALResourceDimension::Texture2D;
     description.m_Format                                   = xiiGALResourceFormat::D32Float;
-    description.m_Size.width                               = k_uiLocalShadowAtlasSize;
-    description.m_Size.height                              = k_uiLocalShadowAtlasSize;
+    description.m_Size.width                               = uiAtlasSize;
+    description.m_Size.height                              = uiAtlasSize;
     description.m_uiMipLevels                              = 1U;
     description.m_BindFlags                                = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
     description.m_Usage                                    = xiiGALResourceUsage::Default;
@@ -1842,11 +1839,11 @@ void xiiView::ExecuteSpotShadowData(const xiiSpotShadowData& data, xiiRenderGrap
   {
     xiiGALTexture* pAtlas = context.GetTexture(data.m_hLocalShadowAtlas);
 
-    // For each spot light, render into its atlas tile.
-    // Atlas allocation managed by LocalLightShadowAtlasAllocation pass (deferred to full impl).
+    // For each spot light, render into its collision-free atlas tile.
     cmd.ClearDepthStencilView(pAtlas->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
     cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline);
-    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(k_uiLocalShadowAtlasSize), static_cast<float>(k_uiLocalShadowAtlasSize), 0.0f, 1.0f});
+    const float fAtlasSize = static_cast<float>(m_ViewPassResources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize);
+    cmd.SetViewport({0.0f, 0.0f, fAtlasSize, fAtlasSize, 0.0f, 1.0f});
     cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hShadowCasterCommands), GetShadowCommandCapacity(GetBlackboard())});
   }
   cmd.EndDebugGroup();
@@ -1870,11 +1867,12 @@ void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRenderGraphBuild
 {
   if (!m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas)
   {
+    const xiiUInt32 uiAtlasSize = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
     xiiGALTextureCreationDescription description;
     description.m_Type                                     = xiiGALResourceDimension::Texture2D;
     description.m_Format                                   = xiiGALResourceFormat::D32Float;
-    description.m_Size.width                               = k_uiLocalShadowAtlasSize;
-    description.m_Size.height                              = k_uiLocalShadowAtlasSize;
+    description.m_Size.width                               = uiAtlasSize;
+    description.m_Size.height                              = uiAtlasSize;
     description.m_uiMipLevels                              = 1U;
     description.m_BindFlags                                = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
     description.m_Usage                                    = xiiGALResourceUsage::Default;
@@ -3467,8 +3465,6 @@ struct xiiDeferredDirectLightingData
   xiiRenderGraphTextureHandle m_hContactShadowTerm;        ///< ShaderResource in (contact shadow mask).
   xiiRenderGraphBufferHandle  m_hShadowCascadeConstants;   ///< ConstantBuffer in (directional cascade matrices, split depths, and active count).
   xiiRenderGraphTextureHandle m_hDirectionalShadowAtlas;   ///< ShaderResource in (directional shadow atlas).
-  xiiRenderGraphTextureHandle m_hLocalShadowAtlas;         ///< ShaderResource in (local light shadow atlas).
-  xiiRenderGraphBufferHandle  m_hLocalShadowAtlasDescriptors;
   xiiRenderGraphBufferHandle  m_hLightGridBuffer;      ///< ShaderResource in (cluster light grid).
   xiiRenderGraphBufferHandle  m_hLightIndexBuffer;     ///< ShaderResource in (cluster light indices).
   xiiRenderGraphTextureHandle m_hDirectLightReservoir; ///< ShaderResource in (spatially reused ReSTIR DI sample).
@@ -3491,8 +3487,6 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   data.m_hContactShadowTerm           = builder.ReadTexture(xiiRGBlackboardKeys::k_ContactShadowTerm, xiiGALResourceStateFlags::ShaderResource);
   data.m_hShadowCascadeConstants      = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
   data.m_hDirectionalShadowAtlas      = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLocalShadowAtlas            = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightGridBuffer             = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightIndexBuffer            = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDirectLightReservoir        = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, xiiGALResourceStateFlags::ShaderResource);
@@ -3551,10 +3545,8 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
     cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hShadowCascadeConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiCloudShadowConstants", context.GetBuffer(data.m_hCloudShadowConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ShadowAtlas", context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_LocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_LocalShadowAtlasDescs", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_DirectLightReservoir", context.GetTexture(data.m_hDirectLightReservoir)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DirectOut", context.GetTexture(data.m_hDirectLightingBuffer)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -6463,7 +6455,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
   auto shadowCascadePass = graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiView::ExecuteShadowCascadeSetup, this));
   graph.AddPass<xiiShadowCasterBuildData>("ShadowCasterListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCasterBuild, this), xiiMakeDelegate(&xiiView::ExecuteShadowCasterBuild, this));
-  graph.AddPass<xiiLocalShadowAtlasAllocationData>("LocalShadowAtlasAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLocalShadowAtlasAllocation, this), xiiMakeDelegate(&xiiView::ExecuteLocalShadowAtlasAllocation, this));
+  graph.AddPass<xiiLocalShadowAtlasAllocationData>("LocalShadowAtlasUpload", xiiGALCommandQueueFlags::Transfer, xiiMakeDelegate(&xiiView::SetupLocalShadowAtlasAllocation, this), xiiMakeDelegate(&xiiView::ExecuteLocalShadowAtlasAllocation, this));
   graph.AddPass<xiiDirectionalShadowData>("DirectionalShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDirectionalShadowData, this), xiiMakeDelegate(&xiiView::ExecuteDirectionalShadowData, this));
   graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupSpotShadowData, this), xiiMakeDelegate(&xiiView::ExecuteSpotShadowData, this));
   graph.AddPass<xiiPointShadowData>("PointShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPointShadowData, this), xiiMakeDelegate(&xiiView::ExecutePointShadowData, this));

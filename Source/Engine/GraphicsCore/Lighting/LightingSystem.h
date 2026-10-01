@@ -13,6 +13,7 @@
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsCore/Lighting/IESProfileResource.h>
+#include <GraphicsCore/Lighting/LocalShadow.h>
 
 class xiiExtractedRenderData;
 class xiiGALBuffer;
@@ -43,6 +44,7 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   float     m_fSSRefractionScale       = 0.05f;
   float     m_fSSRefractionMaxDistance = 0.1f;
   float     m_fSSRefractionChromatic   = 0.002f;
+  xiiUInt32 m_uiLocalShadowAtlasSize   = 4096U;
   xiiUInt32 m_uiLocalShadowTileSize    = 256U;
   float     m_fVolumetricFogDensity    = 0.015f;
   float     m_fVolumetricHeightFalloff = 0.08f;
@@ -120,6 +122,8 @@ public:
 
   const xiiLightingSystemSettings& GetSettings() const { return m_Settings; }
   const FrameStatistics&           GetFrameStatistics() const { return m_Stats; }
+  const xiiLocalShadowAtlasStatistics& GetLocalShadowStatistics() const { return m_LocalShadowStatistics; }
+  [[nodiscard]] xiiArrayPtr<const xiiLocalShadowAtlasData> GetLocalShadowData() const { return xiiArrayPtr<const xiiLocalShadowAtlasData>(m_LocalShadowData.GetData(), m_LocalShadowData.GetCount()); }
   xiiUInt32                        GetActiveLightCount() const { return m_Stats.m_uiActiveLightCount; }
 
   xiiUInt32 GetClusterCountX() const { return m_uiClusterCountX; }
@@ -209,6 +213,8 @@ private:
   xiiSharedPtr<xiiGALBuffer> m_pIESProfileDataBuffer;
 
   xiiDynamicArray<xiiGpuLightData> m_LightData;
+  xiiLocalShadowAtlasDataArray     m_LocalShadowData;
+  xiiLocalShadowAtlasStatistics   m_LocalShadowStatistics;
   xiiDynamicArray<float>           m_IESProfileData;
   xiiHashTable<xiiIESProfileResourceHandle, xiiUInt32> m_IESProfileSlots;
 

@@ -66,7 +66,7 @@ namespace
 } // namespace
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -86,6 +86,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 3, xiiRTTI
     XII_MEMBER_PROPERTY("SSRefractionScale", m_fSSRefractionScale)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f)),
     XII_MEMBER_PROPERTY("SSRefractionMaxDistance", m_fSSRefractionMaxDistance)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f)),
     XII_MEMBER_PROPERTY("SSRefractionChromatic", m_fSSRefractionChromatic)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.1f)),
+    XII_MEMBER_PROPERTY("LocalShadowAtlasSize", m_uiLocalShadowAtlasSize)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
     XII_MEMBER_PROPERTY("LocalShadowTileSize", m_uiLocalShadowTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U)),
     XII_MEMBER_PROPERTY("VolumetricFogDensity", m_fVolumetricFogDensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("VolumetricHeightFalloff", m_fVolumetricHeightFalloff)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
@@ -131,6 +132,7 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
   m_Settings = settings;
   m_pDevice = std::move(pDevice);
   m_LightData.Reserve(m_Settings.m_uiMaxActiveLights);
+  m_LocalShadowData.Reserve(m_Settings.m_uiMaxActiveLights);
 
   EnsureGpuResources();
 }
@@ -144,6 +146,7 @@ void xiiLightingSystem::Shutdown()
   m_pIESProfileDataBuffer.Clear();
   m_pDevice.Clear();
   m_LightData.Clear();
+  m_LocalShadowData.Clear();
   m_IESProfileData.Clear();
   m_IESProfileSlots.Clear();
 }
@@ -434,6 +437,12 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   }
 
   m_LightConstants.m_uiActiveLightCount = m_Stats.m_uiActiveLightCount;
+
+  xiiLocalShadowAtlasSettings localShadowSettings;
+  localShadowSettings.m_uiAtlasSize = m_Settings.m_uiLocalShadowAtlasSize;
+  localShadowSettings.m_uiTileSize  = m_Settings.m_uiLocalShadowTileSize;
+  xiiLocalShadowAtlasBuilder::Build(localShadowSettings,
+    xiiArrayPtr<const xiiGpuLightData>(m_LightData.GetData(), m_LightData.GetCount()), m_LocalShadowData, m_LocalShadowStatistics);
 }
 
 void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)
@@ -582,6 +591,8 @@ void xiiLightingSystem::EnsureGpuResources()
 void xiiLightingSystem::ResetFrameData()
 {
   m_LightData.Clear();
+  m_LocalShadowData.Clear();
+  m_LocalShadowStatistics = {};
   m_IESProfileData.Clear();
   m_IESProfileSlots.Clear();
   m_Stats = {};

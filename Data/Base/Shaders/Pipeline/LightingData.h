@@ -33,8 +33,10 @@ struct xiiClusterDescriptor
 
 struct xiiLocalShadowAtlasData
 {
-  float4 ScaleBias; // xy = tile scale, zw = tile bias
-  float4 Meta;      // x = base tile, y = face count, z = tile size, w = light type
+  float4x4 ViewProjection[6];
+  float4   AtlasScaleBias[6]; // xy = tile scale, zw = tile bias for each face
+  float4   LightPositionAndInvRange;
+  uint4    Metadata; // x = face count, y = tile size, z = valid, w = light type
 };
 
 uint GetLightType(xiiGpuLightData lightData)

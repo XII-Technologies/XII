@@ -94,6 +94,8 @@ public:
 
   [[nodiscard]] const xiiLightingSystemSettings&          GetSettings() const;
   [[nodiscard]] const xiiLightingSystem::FrameStatistics& GetFrameStatistics() const;
+  [[nodiscard]] const xiiLocalShadowAtlasStatistics&      GetLocalShadowStatistics() const;
+  [[nodiscard]] xiiArrayPtr<const xiiLocalShadowAtlasData> GetLocalShadowData() const;
   [[nodiscard]] xiiUInt32                                 GetActiveLightCount() const;
   [[nodiscard]] xiiUInt32                                 GetClusterCountX() const;
   [[nodiscard]] xiiUInt32                                 GetClusterCountY() const;
