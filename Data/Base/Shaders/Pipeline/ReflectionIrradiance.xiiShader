@@ -3,10 +3,10 @@ ALL
 
 [PERMUTATIONS]
 
-[COMPUTESHADER]
+[COMPUTE_SHADER]
 
 #include <Shaders/Common/AmbientCubeBasis.h>
-#include "ReflectionIrradianceConstants.h"
+#include <Shaders/Pipeline/ReflectionIrradianceConstants.h>
 
 float3 FibonacciSphere(int sampleIndex, int numSamples)
 {
@@ -25,7 +25,7 @@ float3 FibonacciSphere(int sampleIndex, int numSamples)
 }
 
 #define NUM_THREADS 64
-#define NUM_SAMPLES_PER_THREAD 1
+#define NUM_SAMPLES_PER_THREAD 4
 
 TextureCube InputCubemap;
 RWTexture2D<float4> IrradianceOutput;
@@ -33,7 +33,7 @@ RWTexture2D<float4> IrradianceOutput;
 groupshared AmbientCubeFloat3 SharedACs[NUM_THREADS];
 
 [numthreads(NUM_THREADS, 1, 1)]
-void main(uint DispatchId : SV_DispatchThreadID)
+void main(uint groupThreadId : SV_GroupThreadID)
 {
   uint totalNumSamples = NUM_THREADS * NUM_SAMPLES_PER_THREAD;
   float weight = (4.0f * PI) / totalNumSamples;
@@ -42,29 +42,34 @@ void main(uint DispatchId : SV_DispatchThreadID)
 
   for (uint sampleIndex = 0; sampleIndex < NUM_SAMPLES_PER_THREAD; ++sampleIndex)
   {
-    float3 dir = FibonacciSphere(DispatchId * NUM_SAMPLES_PER_THREAD + sampleIndex, totalNumSamples);
+    float3 dir = FibonacciSphere(groupThreadId * NUM_SAMPLES_PER_THREAD + sampleIndex, totalNumSamples);
 
     float3 inputColor = InputCubemap.SampleLevel(LinearSampler, CubeMapDirection(dir), LodLevel).rgb;
 
     AddSampleToAmbientCube(localAC, inputColor, dir, weight);
   }
 
-  SharedACs[DispatchId] = localAC;
+  SharedACs[groupThreadId] = localAC;
 
   GroupMemoryBarrierWithGroupSync();
 
-  if (DispatchId == 0)
+  // Tree reduction keeps every lane busy during the expensive part and avoids
+  // the serial 63-element accumulation previously performed by lane zero.
+  [unroll]
+  for (uint stride = NUM_THREADS / 2; stride > 0; stride >>= 1)
   {
-    // TODO: proper parallel reduction
-    for (uint threadIndex = 1; threadIndex < NUM_THREADS; ++threadIndex)
-    {
-      AddAmbientCube(localAC, SharedACs[threadIndex]);
-    }
+    if (groupThreadId < stride)
+      AddAmbientCube(SharedACs[groupThreadId], SharedACs[groupThreadId + stride]);
 
+    GroupMemoryBarrierWithGroupSync();
+  }
+
+  if (groupThreadId == 0)
+  {
     // Apply intensity, saturation and write out
     for (uint i = 0; i < AMBIENT_CUBE_NUM_DIRS; ++i)
     {
-      float3 color = localAC.m_Values[i];
+      float3 color = SharedACs[0].m_Values[i];
       float luminance = GetLuminance(color);
       color = lerp(luminance, color, Saturation) * Intensity;
 
