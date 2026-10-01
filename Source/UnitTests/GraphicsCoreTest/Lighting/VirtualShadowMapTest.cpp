@@ -55,6 +55,22 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   XII_TEST_INT(secondPageViewport.height, 128U);
   XII_TEST_BOOL(!xiiVirtualShadowMapManager::GetPhysicalPageViewport(2U, secondPageViewport));
 
+  {
+    xiiVirtualShadowPageId page;
+    page.m_uiLightId  = 1U;
+    page.m_uiMipLevel = 1U;
+    page.m_uiPageX    = 1U;
+    page.m_uiPageY    = 2U;
+
+    xiiMat4 pageProjection;
+    XII_TEST_BOOL(xiiVirtualShadowMapManager::BuildPageViewProjection(xiiMat4::MakeIdentity(), page, 1024U, 128U, pageProjection));
+    XII_TEST_VEC4(pageProjection * xiiVec4(-0.5f, 0.0f, 0.25f, 1.0f), xiiVec4(-1.0f, 1.0f, 0.25f, 1.0f), 0.0001f);
+    XII_TEST_VEC4(pageProjection * xiiVec4(0.0f, -0.5f, 0.25f, 1.0f), xiiVec4(1.0f, -1.0f, 0.25f, 1.0f), 0.0001f);
+
+    page.m_uiPageX = 4U;
+    XII_TEST_BOOL(!xiiVirtualShadowMapManager::BuildPageViewProjection(xiiMat4::MakeIdentity(), page, 1024U, 128U, pageProjection));
+  }
+
   xiiVirtualShadowMapManager::BeginFrame(1U, 0U);
   xiiVirtualShadowPageRequest initial[] = {
     MakeRequest(1U, 0U, 10U),

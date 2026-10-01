@@ -3,11 +3,14 @@
 #pragma once
 
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
 /// CPU-side residency configuration for the virtual shadow-map physical cache.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapSettings
@@ -176,6 +179,12 @@ public:
   /// Returns the texel viewport assigned to a physical page.
   [[nodiscard]] static bool GetPhysicalPageViewport(xiiUInt32 uiPhysicalPage, xiiRectU32& out_viewport);
 
+  /// Crops one cascade view-projection matrix to the requested virtual page.
+  /// The resulting clip space fills a physical page viewport without changing
+  /// reversed-Z depth. Exposed for tooling and deterministic validation.
+  [[nodiscard]] static bool BuildPageViewProjection(const xiiMat4& cascadeViewProjection, const xiiVirtualShadowPageId& page,
+                                                    xiiUInt32 uiVirtualResolution, xiiUInt32 uiPageSize, xiiMat4& out_pageViewProjection);
+
   struct UploadHandles
   {
     xiiRenderGraphBufferHandle m_hPhysicalPageTable;
@@ -189,6 +198,16 @@ public:
   /// Adds a transfer pass that publishes changed residency records to the
   /// current frame slice. Updates remain retryable if graph execution fails.
   [[nodiscard]] static UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+
+  /// Rasterizes every dirty page for one directional light through the shared
+  /// GPU visibility and mesh-shader geometry path. A completion pass clears
+  /// residency dirty bits only when all scheduled page writes execute.
+  [[nodiscard]] static xiiRenderGraphTextureHandle AddRasterPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hPhysicalAtlas,
+                                                                   const xiiGpuVisibilityOutputs& visibility,
+                                                                   const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                                   xiiArrayPtr<const xiiMat4> cascadeViewProjections,
+                                                                   xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride,
+                                                                   xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY);
 
   /// Appends screen-derived directional shadow requests and copies the cumulative
   /// feedback stream into the completed-frame readback ring.

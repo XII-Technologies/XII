@@ -8,6 +8,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -681,6 +682,112 @@ bool xiiVirtualShadowMapManager::GetPhysicalPageViewport(xiiUInt32 uiPhysicalPag
   out_viewport            = xiiRectU32(uiPageX * s_pState->m_Settings.m_uiPageSize, uiPageY * s_pState->m_Settings.m_uiPageSize,
                                        s_pState->m_Settings.m_uiPageSize, s_pState->m_Settings.m_uiPageSize);
   return true;
+}
+
+bool xiiVirtualShadowMapManager::BuildPageViewProjection(const xiiMat4& cascadeViewProjection, const xiiVirtualShadowPageId& page,
+                                                         xiiUInt32 uiVirtualResolution, xiiUInt32 uiPageSize, xiiMat4& out_pageViewProjection)
+{
+  if (!page.IsValid() || uiVirtualResolution == 0U || uiPageSize == 0U || uiVirtualResolution % uiPageSize != 0U)
+    return false;
+
+  const xiiUInt32 uiBasePagesPerAxis = uiVirtualResolution / uiPageSize;
+  if (uiBasePagesPerAxis == 0U || page.m_uiMipLevel >= 32U)
+    return false;
+
+  const xiiUInt32 uiPagesPerAxis = xiiMath::Max(uiBasePagesPerAxis >> page.m_uiMipLevel, 1U);
+  if (page.m_uiPageX >= uiPagesPerAxis || page.m_uiPageY >= uiPagesPerAxis)
+    return false;
+
+  // Convert the selected virtual-UV tile back into the full [-1, 1] clip
+  // range. Y is inverted because shadow UV uses the top-left texture origin.
+  const float fPagesPerAxis = static_cast<float>(uiPagesPerAxis);
+  xiiMat4     crop          = xiiMat4::MakeIdentity();
+  crop.Element(0, 0)        = fPagesPerAxis;
+  crop.Element(1, 1)        = fPagesPerAxis;
+  crop.Element(3, 0)        = fPagesPerAxis - 2.0f * static_cast<float>(page.m_uiPageX) - 1.0f;
+  crop.Element(3, 1)        = 1.0f - fPagesPerAxis + 2.0f * static_cast<float>(page.m_uiPageY);
+  out_pageViewProjection    = crop * cascadeViewProjection;
+  return out_pageViewProjection.IsValid();
+}
+
+xiiRenderGraphTextureHandle xiiVirtualShadowMapManager::AddRasterPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hPhysicalAtlas,
+                                                                        const xiiGpuVisibilityOutputs& visibility,
+                                                                        const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                                        xiiArrayPtr<const xiiMat4> cascadeViewProjections,
+                                                                        xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride,
+                                                                        xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY)
+{
+  if (!IsInitialized() || !xiiGpuShadowRasterManager::IsSupported() || !hPhysicalAtlas.IsValid() || cascadeViewProjections.IsEmpty() ||
+      !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() || !visibility.m_hVisibleMeshletCount.IsValid() ||
+      !visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || !geometry.m_hGeometryMetadata.IsValid() ||
+      !geometry.m_hMeshletMetadata.IsValid() || uiVertexStride == 0U || uiMeshDispatchGroupCountX == 0U || uiMeshDispatchGroupCountY == 0U)
+    return hPhysicalAtlas;
+
+  struct RenderedPage
+  {
+    xiiVirtualShadowPageId m_Page;
+    xiiUInt32              m_uiPhysicalPage = xiiInvalidIndex;
+  };
+  xiiDynamicArray<RenderedPage> renderedPages;
+
+  const xiiVirtualShadowMapSettings& settings = GetConfiguration();
+  for (const xiiVirtualShadowPageMapping& mapping : GetDirtyPages())
+  {
+    if (mapping.m_Page.m_uiLightId != (uiDirectionalLightId & s_uiMaximumLightId) || mapping.m_Page.m_uiMipLevel >= cascadeViewProjections.GetCount())
+      continue;
+
+    xiiMat4 pageViewProjection;
+    if (!BuildPageViewProjection(cascadeViewProjections[mapping.m_Page.m_uiMipLevel], mapping.m_Page,
+                                 settings.m_uiVirtualResolution, settings.m_uiPageSize, pageViewProjection))
+      continue;
+
+    xiiRectU32 viewport;
+    if (!GetPhysicalPageViewport(mapping.m_uiPhysicalPage, viewport))
+      continue;
+
+    xiiGpuShadowRasterDescription rasterDescription;
+    rasterDescription.m_ViewProjectionMatrix      = pageViewProjection;
+    rasterDescription.m_Viewport                  = xiiVec4U32(viewport.x, viewport.y, viewport.width, viewport.height);
+    rasterDescription.m_uiVertexStride            = uiVertexStride;
+    rasterDescription.m_uiMeshDispatchGroupCountX = uiMeshDispatchGroupCountX;
+    rasterDescription.m_uiMeshDispatchGroupCountY = uiMeshDispatchGroupCountY;
+    rasterDescription.m_bClearViewport             = true;
+
+    xiiStringBuilder passName;
+    passName.SetFormat("Virtual Shadow Page L{} ({}, {})", mapping.m_Page.m_uiMipLevel, mapping.m_Page.m_uiPageX, mapping.m_Page.m_uiPageY);
+    hPhysicalAtlas = xiiGpuShadowRasterManager::AddPass(graph, passName, hPhysicalAtlas, visibility, geometry, rasterDescription);
+
+    RenderedPage& renderedPage       = renderedPages.ExpandAndGetRef();
+    renderedPage.m_Page              = mapping.m_Page;
+    renderedPage.m_uiPhysicalPage    = mapping.m_uiPhysicalPage;
+  }
+
+  if (renderedPages.IsEmpty())
+    return hPhysicalAtlas;
+
+  struct CompletionPassData
+  {
+    xiiRenderGraphTextureHandle   m_hPhysicalAtlas;
+    xiiDynamicArray<RenderedPage> m_RenderedPages;
+  };
+
+  auto completionPass = graph.AddPass<CompletionPassData>(
+    "Virtual Shadow Page Completion", xiiGALCommandQueueFlags::Graphics,
+    [hPhysicalAtlas](CompletionPassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_hPhysicalAtlas = builder.ReadTexture(hPhysicalAtlas, xiiGALResourceStateFlags::ShaderResource);
+      builder.SetPassSideEffects(true);
+      builder.SetPassAllowMerge(false);
+    },
+    [](const CompletionPassData& data, xiiRenderGraphPassContext&) {
+      for (const RenderedPage& renderedPage : data.m_RenderedPages)
+      {
+        xiiVirtualShadowPageMapping currentMapping;
+        if (xiiVirtualShadowMapManager::TryGetMapping(renderedPage.m_Page, currentMapping) && currentMapping.m_uiPhysicalPage == renderedPage.m_uiPhysicalPage)
+          xiiVirtualShadowMapManager::MarkPageRendered(renderedPage.m_uiPhysicalPage);
+      }
+    });
+  completionPass.first->m_RenderedPages = std::move(renderedPages);
+  return completionPass.first->m_hPhysicalAtlas;
 }
 
 xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
