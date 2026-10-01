@@ -34,13 +34,13 @@ namespace
 } // namespace
 
 xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRatio, const xiiVec3& vLightDirection,
-  const xiiShadowCascadeSettings& settings, xiiStaticArray<xiiShadowCascadeDescription, 4>& out_cascades)
+                                       const xiiShadowCascadeSettings& settings, xiiStaticArray<xiiShadowCascadeDescription, 4>& out_cascades)
 {
   out_cascades.Clear();
 
   const xiiUInt32 uiCascadeCount = xiiMath::Clamp(settings.m_uiCascadeCount, 1U, 4U);
-  const float fNearPlane = xiiMath::Max(camera.GetNearPlane(), 0.001f);
-  const float fFarPlane = xiiMath::Min(camera.GetFarPlane(), xiiMath::Max(settings.m_fMaximumShadowDistance, fNearPlane + 0.001f));
+  const float     fNearPlane     = xiiMath::Max(camera.GetNearPlane(), 0.001f);
+  const float     fFarPlane      = xiiMath::Min(camera.GetFarPlane(), xiiMath::Max(settings.m_fMaximumShadowDistance, fNearPlane + 0.001f));
   if (!xiiMath::IsFinite(fFarPlane) || fFarPlane <= fNearPlane || fAspectRatio <= 0.0f)
     return XII_FAILURE;
 
@@ -52,17 +52,17 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
   const xiiVec3 vCameraForward  = camera.GetDirForwards().GetNormalized();
   const xiiVec3 vCameraRight    = camera.GetDirRight().GetNormalized();
   const xiiVec3 vCameraUp       = camera.GetDirUp().GetNormalized();
-  const float fSplitLambda      = xiiMath::Clamp(settings.m_fSplitLambda, 0.0f, 1.0f);
-  const float fDepthPadding     = xiiMath::Max(settings.m_fDepthPadding, 0.0f);
-  const float fResolution       = static_cast<float>(xiiMath::Max(settings.m_uiShadowMapResolution, 1U));
+  const float   fSplitLambda    = xiiMath::Clamp(settings.m_fSplitLambda, 0.0f, 1.0f);
+  const float   fDepthPadding   = xiiMath::Max(settings.m_fDepthPadding, 0.0f);
+  const float   fResolution     = static_cast<float>(xiiMath::Max(settings.m_uiShadowMapResolution, 1U));
 
   float fPreviousSplit = fNearPlane;
   for (xiiUInt32 uiCascade = 0U; uiCascade < uiCascadeCount; ++uiCascade)
   {
-    const float fT = static_cast<float>(uiCascade + 1U) / static_cast<float>(uiCascadeCount);
+    const float fT            = static_cast<float>(uiCascade + 1U) / static_cast<float>(uiCascadeCount);
     const float fUniformSplit = fNearPlane + (fFarPlane - fNearPlane) * fT;
-    const float fLogSplit = fNearPlane * xiiMath::Pow(fFarPlane / fNearPlane, fT);
-    const float fSplitFar = xiiMath::Lerp(fUniformSplit, fLogSplit, fSplitLambda);
+    const float fLogSplit     = fNearPlane * xiiMath::Pow(fFarPlane / fNearPlane, fT);
+    const float fSplitFar     = xiiMath::Lerp(fUniformSplit, fLogSplit, fSplitLambda);
 
     xiiVec3 vCorners[8];
     if (camera.IsOrthographic())
@@ -94,15 +94,15 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
     if (xiiMath::Abs(vLightUp.Dot(vSunDirection)) > 0.95f)
       vLightUp = vCameraRight;
 
-    const xiiMat3 mLightRotation = xiiGraphicsUtils::CreateLookAtViewMatrix(vSunDirection, vLightUp, xiiHandedness::LeftHanded);
-    const xiiVec3 vLightSpaceCenter = mLightRotation * vCascadeCenter;
-    const float fWorldUnitsPerTexel = (2.0f * fRadius) / fResolution;
-    const float fSnappedX = xiiMath::Floor(vLightSpaceCenter.x / fWorldUnitsPerTexel) * fWorldUnitsPerTexel;
-    const float fSnappedY = xiiMath::Floor(vLightSpaceCenter.y / fWorldUnitsPerTexel) * fWorldUnitsPerTexel;
+    const xiiMat3 mLightRotation      = xiiGraphicsUtils::CreateLookAtViewMatrix(vSunDirection, vLightUp, xiiHandedness::LeftHanded);
+    const xiiVec3 vLightSpaceCenter   = mLightRotation * vCascadeCenter;
+    const float   fWorldUnitsPerTexel = (2.0f * fRadius) / fResolution;
+    const float   fSnappedX           = xiiMath::Floor(vLightSpaceCenter.x / fWorldUnitsPerTexel) * fWorldUnitsPerTexel;
+    const float   fSnappedY           = xiiMath::Floor(vLightSpaceCenter.y / fWorldUnitsPerTexel) * fWorldUnitsPerTexel;
     vCascadeCenter += mLightRotation.GetRow(0) * (fSnappedX - vLightSpaceCenter.x);
     vCascadeCenter += mLightRotation.GetRow(1) * (fSnappedY - vLightSpaceCenter.y);
 
-    const xiiVec3 vLightEye = vCascadeCenter - vSunDirection * (fRadius + fDepthPadding);
+    const xiiVec3 vLightEye  = vCascadeCenter - vSunDirection * (fRadius + fDepthPadding);
     const xiiMat4 mLightView = xiiGraphicsUtils::CreateLookAtViewMatrix(vLightEye, vCascadeCenter, vLightUp, xiiHandedness::LeftHanded);
 
     float fMinDepth = xiiMath::MaxValue<float>();
@@ -110,22 +110,22 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
     for (const xiiVec3& vCorner : vCorners)
     {
       const float fDepth = mLightView.TransformPosition(vCorner).z;
-      fMinDepth = xiiMath::Min(fMinDepth, fDepth);
-      fMaxDepth = xiiMath::Max(fMaxDepth, fDepth);
+      fMinDepth          = xiiMath::Min(fMinDepth, fDepth);
+      fMaxDepth          = xiiMath::Max(fMaxDepth, fDepth);
     }
 
     // Reversed-Z projection matches the engine depth convention and a clear value of zero.
-    const float fNearDepth = fMaxDepth + fDepthPadding;
-    const float fFarDepth  = xiiMath::Max(fMinDepth - fDepthPadding, 0.001f);
+    const float   fNearDepth       = fMaxDepth + fDepthPadding;
+    const float   fFarDepth        = xiiMath::Max(fMinDepth - fDepthPadding, 0.001f);
     const xiiMat4 mLightProjection = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(-fRadius, fRadius, -fRadius, fRadius,
-      fNearDepth, fFarDepth, xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+                                                                                          fNearDepth, fFarDepth, xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
 
     xiiShadowCascadeDescription& cascade = out_cascades.ExpandAndGetRef();
-    cascade.m_mViewProjection = mLightProjection * mLightView;
-    cascade.m_fSplitNear      = fPreviousSplit;
-    cascade.m_fSplitFar       = fSplitFar;
-    cascade.m_fWorldRadius    = fRadius;
-    fPreviousSplit            = fSplitFar;
+    cascade.m_mViewProjection            = mLightProjection * mLightView;
+    cascade.m_fSplitNear                 = fPreviousSplit;
+    cascade.m_fSplitFar                  = fSplitFar;
+    cascade.m_fWorldRadius               = fRadius;
+    fPreviousSplit                       = fSplitFar;
   }
 
   return XII_SUCCESS;

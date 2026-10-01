@@ -12,34 +12,34 @@ namespace
   bool IsValid(const xiiAtmosphereSettings& settings)
   {
     return xiiMath::IsFinite(settings.m_fPlanetRadiusKm) && settings.m_fPlanetRadiusKm > 0.0f &&
-           xiiMath::IsFinite(settings.m_fAtmosphereRadiusKm) && settings.m_fAtmosphereRadiusKm > settings.m_fPlanetRadiusKm &&
-           xiiMath::IsFinite(settings.m_fRayleighScaleHeightKm) && settings.m_fRayleighScaleHeightKm > 0.0f &&
-           xiiMath::IsFinite(settings.m_fMieScaleHeightKm) && settings.m_fMieScaleHeightKm > 0.0f &&
-           settings.m_vRayleighScattering.IsValid() && settings.m_vMieScattering.IsValid() &&
-           settings.m_vMieAbsorption.IsValid() && settings.m_vOzoneAbsorption.IsValid() &&
-           settings.m_vPlanetUpDirection.IsValid() && settings.m_vPlanetUpDirection.GetLengthSquared() > 1e-6f &&
-           xiiMath::IsFinite(settings.m_fGroundAltitudeMeters) &&
-           settings.m_vRayleighScattering.x >= 0.0f && settings.m_vRayleighScattering.y >= 0.0f && settings.m_vRayleighScattering.z >= 0.0f &&
-           settings.m_vMieScattering.x >= 0.0f && settings.m_vMieScattering.y >= 0.0f && settings.m_vMieScattering.z >= 0.0f &&
-           settings.m_vMieAbsorption.x >= 0.0f && settings.m_vMieAbsorption.y >= 0.0f && settings.m_vMieAbsorption.z >= 0.0f &&
-           settings.m_vOzoneAbsorption.x >= 0.0f && settings.m_vOzoneAbsorption.y >= 0.0f && settings.m_vOzoneAbsorption.z >= 0.0f &&
-           xiiMath::IsFinite(settings.m_fMiePhaseG) && settings.m_fMiePhaseG > -1.0f && settings.m_fMiePhaseG < 1.0f &&
-           settings.m_uiTransmittanceIntegrationSteps > 0U && settings.m_uiTransmittanceIntegrationSteps <= 1024U &&
-           settings.m_uiMultiScatterSqrtSamples > 0U && settings.m_uiMultiScatterSqrtSamples <= 64U;
+      xiiMath::IsFinite(settings.m_fAtmosphereRadiusKm) && settings.m_fAtmosphereRadiusKm > settings.m_fPlanetRadiusKm &&
+      xiiMath::IsFinite(settings.m_fRayleighScaleHeightKm) && settings.m_fRayleighScaleHeightKm > 0.0f &&
+      xiiMath::IsFinite(settings.m_fMieScaleHeightKm) && settings.m_fMieScaleHeightKm > 0.0f &&
+      settings.m_vRayleighScattering.IsValid() && settings.m_vMieScattering.IsValid() &&
+      settings.m_vMieAbsorption.IsValid() && settings.m_vOzoneAbsorption.IsValid() &&
+      settings.m_vPlanetUpDirection.IsValid() && settings.m_vPlanetUpDirection.GetLengthSquared() > 1e-6f &&
+      xiiMath::IsFinite(settings.m_fGroundAltitudeMeters) &&
+      settings.m_vRayleighScattering.x >= 0.0f && settings.m_vRayleighScattering.y >= 0.0f && settings.m_vRayleighScattering.z >= 0.0f &&
+      settings.m_vMieScattering.x >= 0.0f && settings.m_vMieScattering.y >= 0.0f && settings.m_vMieScattering.z >= 0.0f &&
+      settings.m_vMieAbsorption.x >= 0.0f && settings.m_vMieAbsorption.y >= 0.0f && settings.m_vMieAbsorption.z >= 0.0f &&
+      settings.m_vOzoneAbsorption.x >= 0.0f && settings.m_vOzoneAbsorption.y >= 0.0f && settings.m_vOzoneAbsorption.z >= 0.0f &&
+      xiiMath::IsFinite(settings.m_fMiePhaseG) && settings.m_fMiePhaseG > -1.0f && settings.m_fMiePhaseG < 1.0f &&
+      settings.m_uiTransmittanceIntegrationSteps > 0U && settings.m_uiTransmittanceIntegrationSteps <= 1024U &&
+      settings.m_uiMultiScatterSqrtSamples > 0U && settings.m_uiMultiScatterSqrtSamples <= 64U;
   }
 
   bool IsEqual(const xiiAtmosphereSettings& lhs, const xiiAtmosphereSettings& rhs)
   {
     return lhs.m_fPlanetRadiusKm == rhs.m_fPlanetRadiusKm && lhs.m_fAtmosphereRadiusKm == rhs.m_fAtmosphereRadiusKm &&
-           lhs.m_fRayleighScaleHeightKm == rhs.m_fRayleighScaleHeightKm && lhs.m_fMieScaleHeightKm == rhs.m_fMieScaleHeightKm &&
-           lhs.m_vRayleighScattering == rhs.m_vRayleighScattering && lhs.m_vMieScattering == rhs.m_vMieScattering &&
-           lhs.m_vMieAbsorption == rhs.m_vMieAbsorption && lhs.m_vOzoneAbsorption == rhs.m_vOzoneAbsorption &&
-           lhs.m_vPlanetUpDirection == rhs.m_vPlanetUpDirection && lhs.m_fGroundAltitudeMeters == rhs.m_fGroundAltitudeMeters &&
-           lhs.m_fMiePhaseG == rhs.m_fMiePhaseG &&
-           lhs.m_uiTransmittanceIntegrationSteps == rhs.m_uiTransmittanceIntegrationSteps &&
-           lhs.m_uiMultiScatterSqrtSamples == rhs.m_uiMultiScatterSqrtSamples;
+      lhs.m_fRayleighScaleHeightKm == rhs.m_fRayleighScaleHeightKm && lhs.m_fMieScaleHeightKm == rhs.m_fMieScaleHeightKm &&
+      lhs.m_vRayleighScattering == rhs.m_vRayleighScattering && lhs.m_vMieScattering == rhs.m_vMieScattering &&
+      lhs.m_vMieAbsorption == rhs.m_vMieAbsorption && lhs.m_vOzoneAbsorption == rhs.m_vOzoneAbsorption &&
+      lhs.m_vPlanetUpDirection == rhs.m_vPlanetUpDirection && lhs.m_fGroundAltitudeMeters == rhs.m_fGroundAltitudeMeters &&
+      lhs.m_fMiePhaseG == rhs.m_fMiePhaseG &&
+      lhs.m_uiTransmittanceIntegrationSteps == rhs.m_uiTransmittanceIntegrationSteps &&
+      lhs.m_uiMultiScatterSqrtSamples == rhs.m_uiMultiScatterSqrtSamples;
   }
-}
+} // namespace
 
 class xiiAtmosphereManager::State
 {
@@ -66,8 +66,8 @@ public:
   xiiAtmosphereSettings       m_Settings;
   xiiAtmosphereLUTHandle      m_hDefaultEntry;
   xiiUInt64                   m_uiConfigurationRevision = 1U;
-  bool                        m_bEngineStarted           = false;
-  bool                        m_bInitialized             = false;
+  bool                        m_bEngineStarted          = false;
+  bool                        m_bInitialized            = false;
 };
 
 xiiUniquePtr<xiiAtmosphereManager::State> xiiAtmosphereManager::s_pState;
@@ -147,7 +147,7 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 void xiiAtmosphereManager::Startup()
 {
-  s_pState = XII_DEFAULT_NEW(State);
+  s_pState                 = XII_DEFAULT_NEW(State);
   s_pState->m_bInitialized = true;
   AcquireLUTs(s_pState->m_Settings, s_pState->m_hDefaultEntry).AssertSuccess("Failed to create the default atmosphere LUT cache entry.");
 }
@@ -194,7 +194,7 @@ xiiResult xiiAtmosphereManager::Configure(const xiiAtmosphereSettings& settings)
   if (AcquireLUTs(settings, hEntry).Failed())
     return XII_FAILURE;
 
-  s_pState->m_Settings = settings;
+  s_pState->m_Settings      = settings;
   s_pState->m_hDefaultEntry = hEntry;
   ++s_pState->m_uiConfigurationRevision;
   return XII_SUCCESS;
@@ -227,8 +227,8 @@ xiiResult xiiAtmosphereManager::AcquireLUTs(const xiiAtmosphereSettings& setting
   }
 
   State::CacheEntry& entry = s_pState->m_Entries.ExpandAndGetRef();
-  entry.m_Settings = settings;
-  out_handle.m_uiIndex = s_pState->m_Entries.GetCount() - 1U;
+  entry.m_Settings         = settings;
+  out_handle.m_uiIndex     = s_pState->m_Entries.GetCount() - 1U;
   return s_pState->m_bEngineStarted ? EnsureGpuResources(out_handle) : XII_SUCCESS;
 }
 
@@ -264,21 +264,21 @@ xiiResult xiiAtmosphereManager::EnsureGpuResources(xiiAtmosphereLUTHandle handle
     return XII_FAILURE;
 
   xiiGALTextureCreationDescription description;
-  description.m_Type       = xiiGALResourceDimension::Texture2D;
-  description.m_Format     = xiiGALResourceFormat::RGBA16Float;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
   description.m_uiMipLevels = 1U;
-  description.m_BindFlags  = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage      = xiiGALResourceUsage::Default;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
 
-  description.m_Size.width  = 256U;
-  description.m_Size.height = 64U;
+  description.m_Size.width                   = 256U;
+  description.m_Size.height                  = 64U;
   xiiSharedPtr<xiiGALTexture> pTransmittance = pDevice->CreateTexture(description);
   if (pTransmittance == nullptr)
     return XII_FAILURE;
   pTransmittance->SetDebugName("Atmosphere Transmittance LUT");
 
-  description.m_Size.width  = 32U;
-  description.m_Size.height = 32U;
+  description.m_Size.width                  = 32U;
+  description.m_Size.height                 = 32U;
   xiiSharedPtr<xiiGALTexture> pMultiScatter = pDevice->CreateTexture(description);
   if (pMultiScatter == nullptr)
     return XII_FAILURE;
@@ -286,7 +286,7 @@ xiiResult xiiAtmosphereManager::EnsureGpuResources(xiiAtmosphereLUTHandle handle
 
   pEntry->m_pTransmittanceLUT = std::move(pTransmittance);
   pEntry->m_pMultiScatterLUT  = std::move(pMultiScatter);
-  pEntry->m_bGenerated = false;
+  pEntry->m_bGenerated        = false;
   return XII_SUCCESS;
 }
 
@@ -358,9 +358,9 @@ xiiAtmosphereCacheStats xiiAtmosphereManager::GetCacheStats()
   {
     stats.m_uiConfigurationRevision = s_pState->m_uiConfigurationRevision;
     const State::CacheEntry* pEntry = s_pState->GetEntry(s_pState->m_hDefaultEntry);
-    stats.m_uiGeneratedRevision = pEntry != nullptr && pEntry->m_bGenerated ? s_pState->m_uiConfigurationRevision : 0U;
-    stats.m_bGpuResourcesAvailable = pEntry != nullptr && pEntry->m_pTransmittanceLUT != nullptr && pEntry->m_pMultiScatterLUT != nullptr;
-    stats.m_bGenerationPending = pEntry == nullptr || !pEntry->m_bGenerated;
+    stats.m_uiGeneratedRevision     = pEntry != nullptr && pEntry->m_bGenerated ? s_pState->m_uiConfigurationRevision : 0U;
+    stats.m_bGpuResourcesAvailable  = pEntry != nullptr && pEntry->m_pTransmittanceLUT != nullptr && pEntry->m_pMultiScatterLUT != nullptr;
+    stats.m_bGenerationPending      = pEntry == nullptr || !pEntry->m_bGenerated;
   }
   return stats;
 }

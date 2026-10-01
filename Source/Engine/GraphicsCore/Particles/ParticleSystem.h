@@ -374,7 +374,7 @@ public:
   [[nodiscard]] xiiResult PrepareRuntimeResources(xiiSharedPtr<xiiGALDevice> pDevice) const;
 
   /// Returns a reference to the particle system runtime, which manages the GPU resources and simulation for this particle system. This can be used for accessing buffers, adding simulation passes, or other operations related to the runtime. The exact semantics of the runtime (e.g., whether it reflects pending changes that have not yet been applied to GPU resources) are defined by the implementation of the component and runtime.
-  [[nodiscard]] xiiParticleSystemRuntime&       GetRuntime() const;
+  [[nodiscard]] xiiParticleSystemRuntime&      GetRuntime() const;
   [[nodiscard]] xiiParticleSystemRuntimeHandle GetRuntimeHandle() const { return m_hRuntime; }
 
 protected:

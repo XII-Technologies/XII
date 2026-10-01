@@ -89,8 +89,8 @@ public:
 
   /// Creates an isolated graph, blackboard, transient cache, and timestamp profiler.
   [[nodiscard]] static xiiRenderGraphContextHandle CreateContext(xiiStringView sName = {});
-  static void                                       DestroyContext(xiiRenderGraphContextHandle handle);
-  [[nodiscard]] static bool                         IsValid(xiiRenderGraphContextHandle handle);
+  static void                                      DestroyContext(xiiRenderGraphContextHandle handle);
+  [[nodiscard]] static bool                        IsValid(xiiRenderGraphContextHandle handle);
 
   [[nodiscard]] static xiiRenderGraph*                  GetGraph(xiiRenderGraphContextHandle handle);
   [[nodiscard]] static xiiRenderGraphBlackboard*        GetBlackboard(xiiRenderGraphContextHandle handle);

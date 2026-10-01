@@ -12,10 +12,10 @@ XII_CREATE_SIMPLE_TEST(Lighting, ShadowCascades)
   camera.LookAt(xiiVec3(10.0f, -4.0f, 2.0f), xiiVec3(11.0f, -4.0f, 2.0f), xiiVec3::MakeAxisZ());
 
   xiiShadowCascadeSettings settings;
-  settings.m_uiCascadeCount = 4U;
+  settings.m_uiCascadeCount         = 4U;
   settings.m_fMaximumShadowDistance = 300.0f;
-  settings.m_fSplitLambda = 0.7f;
-  settings.m_uiShadowMapResolution = 2048U;
+  settings.m_fSplitLambda           = 0.7f;
+  settings.m_uiShadowMapResolution  = 2048U;
 
   xiiStaticArray<xiiShadowCascadeDescription, 4> cascades;
   XII_TEST_BOOL(xiiShadowCascadeUtils::Build(camera, 16.0f / 9.0f, xiiVec3(-0.5f, 0.25f, -1.0f), settings, cascades).Succeeded());

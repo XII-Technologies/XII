@@ -6,8 +6,8 @@
 #include <Core/World/Component.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
-#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Configuration/CVar.h>
+#include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
@@ -575,7 +575,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
   // Frame zero is the conservative "nothing has completed" sentinel used by all deferred
   // resource managers. Real submissions therefore start at one.
-  const xiiUInt64 uiFrameIndex = ++m_uiRenderFrameIndex;
+  const xiiUInt64     uiFrameIndex     = ++m_uiRenderFrameIndex;
   constexpr xiiUInt32 uiFramesInFlight = 3U;
   if (uiFrameIndex > uiFramesInFlight)
     m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);

@@ -100,17 +100,17 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiColorGradingSettings);
 /// the transfer function required by the swapchain: sRGB, ST.2084/PQ, or scRGB.
 struct XII_GRAPHICSCORE_DLL xiiDisplayOutputSettings
 {
-  xiiExposureSettings              m_Exposure;
-  xiiColorGradingSettings          m_ColorGrading;
-  xiiEnum<xiiToneMappingOperator>  m_ToneMappingOperator;
-  xiiEnum<xiiDisplayOutputMode>     m_OutputMode;
+  xiiExposureSettings             m_Exposure;
+  xiiColorGradingSettings         m_ColorGrading;
+  xiiEnum<xiiToneMappingOperator> m_ToneMappingOperator;
+  xiiEnum<xiiDisplayOutputMode>   m_OutputMode;
 
-  float m_fBloomStrength       = 0.05f;
-  float m_fBloomThreshold      = 1.0f;
-  float m_fBloomKnee           = 0.5f;
-  float m_fBloomRadius         = 1.0f;
-  float m_fPaperWhiteNits      = 203.0f;
-  float m_fMaximumDisplayNits  = 1000.0f;
+  float m_fBloomStrength      = 0.05f;
+  float m_fBloomThreshold     = 1.0f;
+  float m_fBloomKnee          = 0.5f;
+  float m_fBloomRadius        = 1.0f;
+  float m_fPaperWhiteNits     = 203.0f;
+  float m_fMaximumDisplayNits = 1000.0f;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDisplayOutputSettings);
@@ -133,8 +133,8 @@ public:
   [[nodiscard]] static bool IsValid(const xiiDisplayOutputSettings& settings);
 
   [[nodiscard]] static xiiDisplayOutputSettings GetDefaults();
-  [[nodiscard]] static xiiUInt64 GetDefaultsRevision();
-  [[nodiscard]] static xiiResult ConfigureDefaults(const xiiDisplayOutputSettings& settings);
+  [[nodiscard]] static xiiUInt64                GetDefaultsRevision();
+  [[nodiscard]] static xiiResult                ConfigureDefaults(const xiiDisplayOutputSettings& settings);
 
 private:
   static void Startup();
@@ -143,4 +143,3 @@ private:
   class State;
   static xiiUniquePtr<State> s_pState;
 };
-

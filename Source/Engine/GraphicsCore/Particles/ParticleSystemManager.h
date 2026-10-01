@@ -23,8 +23,8 @@ public:
   [[nodiscard]] static bool IsInitialized();
 
   [[nodiscard]] static xiiParticleSystemRuntimeHandle CreateRuntime(xiiSharedPtr<xiiGALDevice> pDevice, const xiiParticleSystemDescriptor& descriptor);
-  static void                                          DestroyRuntime(xiiParticleSystemRuntimeHandle handle);
-  [[nodiscard]] static bool                            IsValid(xiiParticleSystemRuntimeHandle handle);
+  static void                                         DestroyRuntime(xiiParticleSystemRuntimeHandle handle);
+  [[nodiscard]] static bool                           IsValid(xiiParticleSystemRuntimeHandle handle);
 
   /// Returns a borrowed pointer valid until DestroyRuntime() or subsystem shutdown.
   [[nodiscard]] static xiiParticleSystemRuntime* GetRuntime(xiiParticleSystemRuntimeHandle handle);

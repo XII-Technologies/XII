@@ -11,14 +11,14 @@ struct xiiMsgExtractRenderData;
 /// Physical and procedural controls for a world-scale cloud layer.
 struct XII_GRAPHICSCORE_DLL xiiVolumetricCloudSettings
 {
-  float   m_fLayerAltitudeMeters       = 2000.0f;
-  float   m_fShadowScaleMeters         = 4000.0f;
-  float   m_fDetailScale               = 4.0f;
-  float   m_fCoverage                  = 0.55f;
-  float   m_fOpticalDepth              = 2.0f;
-  float   m_fShadowStrength            = 1.0f;
+  float   m_fLayerAltitudeMeters         = 2000.0f;
+  float   m_fShadowScaleMeters           = 4000.0f;
+  float   m_fDetailScale                 = 4.0f;
+  float   m_fCoverage                    = 0.55f;
+  float   m_fOpticalDepth                = 2.0f;
+  float   m_fShadowStrength              = 1.0f;
   xiiVec2 m_vWindVelocityMetersPerSecond = xiiVec2(12.0f, 4.0f);
-  bool    m_bCastShadows               = true;
+  bool    m_bCastShadows                 = true;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVolumetricCloudSettings);
@@ -30,11 +30,11 @@ class XII_GRAPHICSCORE_DLL xiiVolumetricCloudRenderData : public xiiRenderData
 
 public:
   xiiVolumetricCloudSettings m_Settings;
-  xiiVec3                    m_vLayerOrigin = xiiVec3::MakeZero();
+  xiiVec3                    m_vLayerOrigin     = xiiVec3::MakeZero();
   xiiVec3                    m_vProjectionAxisU = xiiVec3(1.0f, 0.0f, 0.0f);
   xiiVec3                    m_vProjectionAxisV = xiiVec3(0.0f, 1.0f, 0.0f);
-  xiiVec3                    m_vLayerNormal = xiiVec3(0.0f, 0.0f, 1.0f);
-  xiiInt32                   m_iPriority = 0;
+  xiiVec3                    m_vLayerNormal     = xiiVec3(0.0f, 0.0f, 1.0f);
+  xiiInt32                   m_iPriority        = 0;
 };
 
 using xiiVolumetricCloudComponentManager = xiiComponentManager<class xiiVolumetricCloudComponent, xiiBlockStorageType::Compact>;
@@ -49,14 +49,14 @@ public:
   xiiVolumetricCloudComponent();
   ~xiiVolumetricCloudComponent();
 
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void      DeserializeComponent(xiiWorldReader& inout_stream) override;
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& out_bounds, bool& out_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
-  void SetCloudSettings(const xiiVolumetricCloudSettings& settings);
+  void                              SetCloudSettings(const xiiVolumetricCloudSettings& settings);
   const xiiVolumetricCloudSettings& GetCloudSettings() const;
 
-  void SetPriority(xiiInt32 iPriority);
+  void     SetPriority(xiiInt32 iPriority);
   xiiInt32 GetPriority() const;
 
 protected:

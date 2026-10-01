@@ -80,3 +80,9 @@ void main(uint threadIndex : SV_GroupThreadID,
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
   }
 }
+
+[PIXEL_SHADER]
+
+void main()
+{
+}

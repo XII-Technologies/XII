@@ -50,8 +50,8 @@ public:
   void  SetIntensity(float fIntensity); // [ property ]
   float GetIntensity() const;           // [ property ]
 
-  void                            SetIntensityUnit(xiiEnum<xiiPhotometricUnit> unit); // [ property ]
-  xiiEnum<xiiPhotometricUnit>     GetIntensityUnit() const;                          // [ property ]
+  void                        SetIntensityUnit(xiiEnum<xiiPhotometricUnit> unit); // [ property ]
+  xiiEnum<xiiPhotometricUnit> GetIntensityUnit() const;                           // [ property ]
 
   void SetCastShadows(bool bCastShadows); // [ property ]
   bool GetCastShadows() const;            // [ property ]
@@ -78,9 +78,9 @@ protected:
   float GetLuminance(float fEmittingAreaSquareMeters, float fProjectedAreaSquareMeters) const;
 
 protected:
-  xiiColorGammaUB m_LightColor    = xiiColor::White;
-  xiiUInt32       m_uiTemperature = 6550;
-  float           m_fIntensity    = 1.0f;
+  xiiColorGammaUB             m_LightColor    = xiiColor::White;
+  xiiUInt32                   m_uiTemperature = 6550;
+  float                       m_fIntensity    = 1.0f;
   xiiEnum<xiiPhotometricUnit> m_IntensityUnit = xiiPhotometricUnit::Candela;
-  bool            m_bCastShadows  = false;
+  bool                        m_bCastShadows  = false;
 };

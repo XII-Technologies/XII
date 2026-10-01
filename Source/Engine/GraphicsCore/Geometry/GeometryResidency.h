@@ -199,13 +199,13 @@ private:
 
   struct UploadPassData
   {
-    xiiRenderGraphBufferHandle m_hGeometryBuffer;
-    xiiRenderGraphBufferHandle m_hMeshletBuffer;
+    xiiRenderGraphBufferHandle                          m_hGeometryBuffer;
+    xiiRenderGraphBufferHandle                          m_hMeshletBuffer;
     xiiDynamicArray<Upload, xiiAlignedAllocatorWrapper> m_Uploads;
     struct MeshletUpload
     {
-      xiiUInt64                   m_uiUploadId = 0U;
-      xiiUInt32                   m_uiOffset   = 0U;
+      xiiUInt64                                               m_uiUploadId = 0U;
+      xiiUInt32                                               m_uiOffset   = 0U;
       xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> m_Meshlets;
     };
     xiiDynamicArray<MeshletUpload> m_MeshletUploads;

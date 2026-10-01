@@ -18,12 +18,13 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiVec4   m_FrustumPlanes[6];
   xiiVec4   m_CameraPosition;
   xiiVec4   m_ViewportAndHiZ; // width, height, Hi-Z mip count, occlusion bias
-  xiiUInt32 m_uiInstanceCount     = 0U;
-  xiiUInt32 m_uiVisibilityMask    = 0xFFFFFFFFU;
-  xiiUInt32 m_uiRequiredFlags     = xiiSceneObjectFlags::Enabled;
-  xiiUInt32 m_uiExcludedFlags     = 0U;
-  xiiUInt32 m_uiGeometryBaseIndex = 0U;
-  xiiUInt32 m_uiPadding[3]        = {};
+  xiiUInt32 m_uiInstanceCount      = 0U;
+  xiiUInt32 m_uiVisibilityMask     = 0xFFFFFFFFU;
+  xiiUInt32 m_uiRequiredFlags      = xiiSceneObjectFlags::Enabled;
+  xiiUInt32 m_uiExcludedFlags      = 0U;
+  xiiUInt32 m_uiGeometryBaseIndex  = 0U;
+  xiiUInt32 m_uiMaxVisibleMeshlets = 0U;
+  xiiUInt32 m_uiPadding[2]         = {};
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetFrustumPlaneCount() const { return 6U; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiVec4   GetFrustumPlane(xiiUInt32 uiIndex) const { return m_FrustumPlanes[uiIndex]; }
@@ -53,9 +54,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPurpose);
 /// same graph without resource-name collisions.
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPassDescription
 {
-  xiiString                        m_sName         = "Main View";
-  xiiEnum<xiiGpuVisibilityPurpose> m_Purpose       = xiiGpuVisibilityPurpose::MainView;
-  bool                             m_bAsyncCompute = true;
+  xiiString                        m_sName                = "Main View";
+  xiiEnum<xiiGpuVisibilityPurpose> m_Purpose              = xiiGpuVisibilityPurpose::MainView;
+  float                            m_fLodScreenScale      = 1.0f; ///< Scales projected coverage for purpose-specific LOD selection.
+  xiiUInt32                        m_uiMaxVisibleMeshlets = 0U;   ///< Zero uses the visibility context capacity.
+  bool                             m_bAsyncCompute        = true;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPassDescription);

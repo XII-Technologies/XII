@@ -94,7 +94,7 @@ xiiLightingContextHandle xiiLightingManager::CreateContext(const xiiLightingSyst
   }
 
   xiiLightingManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-  slot.m_pSystem                       = std::move(pSystem);
+  slot.m_pSystem                      = std::move(pSystem);
 
   xiiLightingContextHandle handle;
   handle.m_uiIndex      = uiIndex;

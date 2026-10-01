@@ -11,7 +11,7 @@
 class xiiDisplayOutputManager::State
 {
 public:
-  mutable xiiMutex        m_Mutex;
+  mutable xiiMutex         m_Mutex;
   xiiDisplayOutputSettings m_Defaults;
   xiiUInt64                m_uiRevision = 1U;
 };
@@ -108,33 +108,33 @@ bool xiiDisplayOutputManager::IsInitialized()
 bool xiiDisplayOutputManager::IsValid(const xiiExposureSettings& settings)
 {
   return settings.m_Mode.GetValue() < xiiExposureMode::ENUM_COUNT &&
-         xiiMath::IsFinite(settings.m_fMinimumEV100) && xiiMath::IsFinite(settings.m_fMaximumEV100) && settings.m_fMinimumEV100 <= settings.m_fMaximumEV100 &&
-         xiiMath::IsFinite(settings.m_fExposureCompensation) &&
-         xiiMath::IsFinite(settings.m_fLowPercentile) && xiiMath::IsFinite(settings.m_fHighPercentile) &&
-         settings.m_fLowPercentile >= 0.0f && settings.m_fLowPercentile < settings.m_fHighPercentile && settings.m_fHighPercentile <= 1.0f &&
-         xiiMath::IsFinite(settings.m_fAdaptationSpeedBright) && settings.m_fAdaptationSpeedBright >= 0.0f &&
-         xiiMath::IsFinite(settings.m_fAdaptationSpeedDark) && settings.m_fAdaptationSpeedDark >= 0.0f &&
-         xiiMath::IsFinite(settings.m_fMinimumLogLuminance) && xiiMath::IsFinite(settings.m_fMaximumLogLuminance) &&
-         settings.m_fMinimumLogLuminance < settings.m_fMaximumLogLuminance;
+    xiiMath::IsFinite(settings.m_fMinimumEV100) && xiiMath::IsFinite(settings.m_fMaximumEV100) && settings.m_fMinimumEV100 <= settings.m_fMaximumEV100 &&
+    xiiMath::IsFinite(settings.m_fExposureCompensation) &&
+    xiiMath::IsFinite(settings.m_fLowPercentile) && xiiMath::IsFinite(settings.m_fHighPercentile) &&
+    settings.m_fLowPercentile >= 0.0f && settings.m_fLowPercentile < settings.m_fHighPercentile && settings.m_fHighPercentile <= 1.0f &&
+    xiiMath::IsFinite(settings.m_fAdaptationSpeedBright) && settings.m_fAdaptationSpeedBright >= 0.0f &&
+    xiiMath::IsFinite(settings.m_fAdaptationSpeedDark) && settings.m_fAdaptationSpeedDark >= 0.0f &&
+    xiiMath::IsFinite(settings.m_fMinimumLogLuminance) && xiiMath::IsFinite(settings.m_fMaximumLogLuminance) &&
+    settings.m_fMinimumLogLuminance < settings.m_fMaximumLogLuminance;
 }
 
 bool xiiDisplayOutputManager::IsValid(const xiiDisplayOutputSettings& settings)
 {
   const xiiColorGradingSettings& grading = settings.m_ColorGrading;
   return IsValid(settings.m_Exposure) &&
-         xiiMath::IsFinite(grading.m_fSaturation) && grading.m_fSaturation >= 0.0f && grading.m_fSaturation <= 4.0f &&
-         xiiMath::IsFinite(grading.m_fContrast) && grading.m_fContrast >= 0.0f && grading.m_fContrast <= 4.0f &&
-         xiiMath::IsFinite(grading.m_fVignetteStrength) && grading.m_fVignetteStrength >= 0.0f && grading.m_fVignetteStrength <= 1.0f &&
-         xiiMath::IsFinite(grading.m_fVignetteRoundness) && grading.m_fVignetteRoundness >= 0.25f && grading.m_fVignetteRoundness <= 4.0f &&
-         xiiMath::IsFinite(grading.m_fFilmGrainStrength) && grading.m_fFilmGrainStrength >= 0.0f && grading.m_fFilmGrainStrength <= 1.0f &&
-         settings.m_ToneMappingOperator.GetValue() < xiiToneMappingOperator::ENUM_COUNT &&
-         settings.m_OutputMode.GetValue() < xiiDisplayOutputMode::ENUM_COUNT &&
-         xiiMath::IsFinite(settings.m_fBloomStrength) && settings.m_fBloomStrength >= 0.0f &&
-         xiiMath::IsFinite(settings.m_fBloomThreshold) && settings.m_fBloomThreshold >= 0.0f &&
-         xiiMath::IsFinite(settings.m_fBloomKnee) && settings.m_fBloomKnee >= 0.0f &&
-         xiiMath::IsFinite(settings.m_fBloomRadius) && settings.m_fBloomRadius >= 0.0f && settings.m_fBloomRadius <= 8.0f &&
-         xiiMath::IsFinite(settings.m_fPaperWhiteNits) && settings.m_fPaperWhiteNits > 0.0f &&
-         xiiMath::IsFinite(settings.m_fMaximumDisplayNits) && settings.m_fMaximumDisplayNits >= settings.m_fPaperWhiteNits;
+    xiiMath::IsFinite(grading.m_fSaturation) && grading.m_fSaturation >= 0.0f && grading.m_fSaturation <= 4.0f &&
+    xiiMath::IsFinite(grading.m_fContrast) && grading.m_fContrast >= 0.0f && grading.m_fContrast <= 4.0f &&
+    xiiMath::IsFinite(grading.m_fVignetteStrength) && grading.m_fVignetteStrength >= 0.0f && grading.m_fVignetteStrength <= 1.0f &&
+    xiiMath::IsFinite(grading.m_fVignetteRoundness) && grading.m_fVignetteRoundness >= 0.25f && grading.m_fVignetteRoundness <= 4.0f &&
+    xiiMath::IsFinite(grading.m_fFilmGrainStrength) && grading.m_fFilmGrainStrength >= 0.0f && grading.m_fFilmGrainStrength <= 1.0f &&
+    settings.m_ToneMappingOperator.GetValue() < xiiToneMappingOperator::ENUM_COUNT &&
+    settings.m_OutputMode.GetValue() < xiiDisplayOutputMode::ENUM_COUNT &&
+    xiiMath::IsFinite(settings.m_fBloomStrength) && settings.m_fBloomStrength >= 0.0f &&
+    xiiMath::IsFinite(settings.m_fBloomThreshold) && settings.m_fBloomThreshold >= 0.0f &&
+    xiiMath::IsFinite(settings.m_fBloomKnee) && settings.m_fBloomKnee >= 0.0f &&
+    xiiMath::IsFinite(settings.m_fBloomRadius) && settings.m_fBloomRadius >= 0.0f && settings.m_fBloomRadius <= 8.0f &&
+    xiiMath::IsFinite(settings.m_fPaperWhiteNits) && settings.m_fPaperWhiteNits > 0.0f &&
+    xiiMath::IsFinite(settings.m_fMaximumDisplayNits) && settings.m_fMaximumDisplayNits >= settings.m_fPaperWhiteNits;
 }
 
 xiiDisplayOutputSettings xiiDisplayOutputManager::GetDefaults()
@@ -178,4 +178,3 @@ void xiiDisplayOutputManager::Shutdown()
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_DisplayOutput);
-

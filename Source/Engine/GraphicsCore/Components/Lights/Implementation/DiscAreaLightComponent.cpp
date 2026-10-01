@@ -70,8 +70,8 @@ xiiResult xiiDiscAreaLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bo
   const float fNits          = GetLuminance(fArea, fArea);
   const float fOnAxisCandela = xiiPhotometricUtils::LuminanceToLuminousIntensity(fNits, fArea);
   m_fEffectiveRange          = CalculateEffectiveRange(m_fRange, fOnAxisCandela);
-  ref_bounds         = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fEffectiveRange + m_fRadius);
-  ref_bAlwaysVisible = false;
+  ref_bounds                 = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fEffectiveRange + m_fRadius);
+  ref_bAlwaysVisible         = false;
 
   return XII_SUCCESS;
 }

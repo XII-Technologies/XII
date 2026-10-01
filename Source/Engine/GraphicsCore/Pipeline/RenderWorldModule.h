@@ -190,7 +190,7 @@ private:
     ViewExtractionCache                  m_ExtractionCache;
   };
 
-  xiiUInt64 m_uiRenderFrameIndex = 0;
+  xiiUInt64                    m_uiRenderFrameIndex = 0;
   xiiGpuFrameCompletionTracker m_FrameCompletionTracker;
   bool                         m_bFrameCompletionTrackerInitialized = false;
 

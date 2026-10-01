@@ -157,10 +157,10 @@ public:
   static void                    UnpackBrickKey(xiiUInt64 uiPackedKey, xiiUInt32& out_uiClipmapLevel, xiiVec3I32& out_vCell);
 
 private:
-  static void Startup();
-  static void EngineStartup();
-  static void EngineShutdown();
-  static void Shutdown();
+  static void                    Startup();
+  static void                    EngineStartup();
+  static void                    EngineShutdown();
+  static void                    Shutdown();
   [[nodiscard]] static xiiResult CreateGpuResources();
 
   class State;

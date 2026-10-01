@@ -60,12 +60,12 @@ xiiResult xiiRectangleAreaLightComponent::GetLocalBounds(xiiBoundingBoxSphere& r
 {
   XII_IGNORE_UNUSED(ref_msg);
 
-  const float fArea             = m_vExtents.x * m_vExtents.y;
-  const float fNits             = GetLuminance(fArea, fArea);
-  const float fOnAxisCandela    = xiiPhotometricUtils::LuminanceToLuminousIntensity(fNits, fArea);
-  const float fInfluenceRange   = CalculateEffectiveRange(0.0f, fOnAxisCandela);
-  ref_bounds                    = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_vExtents);
-  ref_bounds.m_fSphereRadius   += fInfluenceRange;
+  const float fArea           = m_vExtents.x * m_vExtents.y;
+  const float fNits           = GetLuminance(fArea, fArea);
+  const float fOnAxisCandela  = xiiPhotometricUtils::LuminanceToLuminousIntensity(fNits, fArea);
+  const float fInfluenceRange = CalculateEffectiveRange(0.0f, fOnAxisCandela);
+  ref_bounds                  = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_vExtents);
+  ref_bounds.m_fSphereRadius += fInfluenceRange;
   ref_bAlwaysVisible = false;
 
   return XII_SUCCESS;

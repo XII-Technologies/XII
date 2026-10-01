@@ -813,9 +813,9 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   // BLAS builds consume the canonical render vertex/index buffers directly.
   // Request device addresses only on ray-tracing-capable devices so the same
   // resource remains valid on integrated/fallback hardware.
-  xiiBitflags<xiiGALBindFlags> vertexBindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::ShaderResource;
-  xiiBitflags<xiiGALBindFlags> indexBindFlags  = xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource;
-  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiBitflags<xiiGALBindFlags>     vertexBindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::ShaderResource;
+  xiiBitflags<xiiGALBindFlags>     indexBindFlags  = xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource;
+  const xiiSharedPtr<xiiGALDevice> pDevice         = xiiGALDevice::GetDefaultDevice();
   if (pDevice != nullptr && pDevice->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled)
   {
     vertexBindFlags.Add(xiiGALBindFlags::RayTracing);

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Foundation/Strings/HashedString.h>
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Strings/HashedString.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -177,12 +177,12 @@ public:
   xiiEnum<xiiViewRenderMode> GetViewRenderMode() const;
 
   /// Enables calibrated sensor output for this view. Passing an invalid handle disables it.
-  [[nodiscard]] xiiResult SetSensorProfile(xiiSensorProfileHandle hProfile);
-  [[nodiscard]] xiiSensorProfileHandle GetSensorProfile() const;
+  [[nodiscard]] xiiResult                   SetSensorProfile(xiiSensorProfileHandle hProfile);
+  [[nodiscard]] xiiSensorProfileHandle      GetSensorProfile() const;
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> GetSensorOutputTexture() const;
 
   /// Applies validated, view-local exposure, tone-mapping and display calibration.
-  [[nodiscard]] xiiResult SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
+  [[nodiscard]] xiiResult                       SetDisplayOutputSettings(const xiiDisplayOutputSettings& settings);
   [[nodiscard]] const xiiDisplayOutputSettings& GetDisplayOutputSettings() const;
 
   /// Invalidates all per-view temporal lighting and reconstruction history after a camera cut or teleport.
@@ -522,12 +522,12 @@ private:
 
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
-  static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
+  static xiiSharedPtr<xiiGALComputePipelineState>  EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
   static xiiSharedPtr<xiiGALGraphicsPipelineState> EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex);
-  bool EnsureRayTracingShadowResources();
-  bool EnsureRayTracingAmbientOcclusionResources();
-  bool EnsureRayTracingGlobalIlluminationResources();
-  bool EnsureRayTracingReflectionResources();
+  bool                                             EnsureRayTracingShadowResources();
+  bool                                             EnsureRayTracingAmbientOcclusionResources();
+  bool                                             EnsureRayTracingGlobalIlluminationResources();
+  bool                                             EnsureRayTracingReflectionResources();
 
 private:
   friend class xiiRenderWorldModule;
@@ -580,8 +580,8 @@ private:
       xiiSharedPtr<xiiGALBuffer> m_pOcclusionReadbackRing[s_uiReadbackRingSize];
       xiiUInt32                  m_uiReadbackWriteSlot = 0U;
 
-      xiiSharedPtr<xiiGALBuffer> m_pInstanceBoundsBuffer;  // StructuredBuffer<InstanceBounds>
-      xiiSharedPtr<xiiGALBuffer> m_pInstanceMatrixBuffer;  // StructuredBuffer<float4x3>
+      xiiSharedPtr<xiiGALBuffer> m_pInstanceBoundsBuffer; // StructuredBuffer<InstanceBounds>
+      xiiSharedPtr<xiiGALBuffer> m_pInstanceMatrixBuffer; // StructuredBuffer<float4x3>
 
       xiiSharedPtr<xiiGALComputePipelineState> m_pFrustumCullPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pLODSelectPipeline;
@@ -601,19 +601,19 @@ private:
     //  Stage 2 - Shadows
     struct ShadowPasses
     {
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pShadowDepthPipeline;
+      xiiSharedPtr<xiiGALGraphicsPipelineState>   m_pShadowDepthPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRayTracedShadowFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracedShadowPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRayTracedShadowShaderBindingTable;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pShadowDenoisePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pContactShadowPipeline;
-      xiiSharedPtr<xiiGALTexture>               m_pDirectionalShadowAtlas; // D32F[4] 4096x4096
-      xiiSharedPtr<xiiGALTextureView>           m_pDirectionalShadowCascadeViews[4]; // Persistent single-slice DSVs; must outlive recorded command lists.
-      xiiSharedPtr<xiiGALTexture>               m_pLocalShadowAtlas;       // D32F 2D 4096x4096
-      xiiSharedPtr<xiiGALTexture>               m_pRayTracedShadowHistory[2];
-      xiiUInt32                                 m_uiActiveCascadeCount = 0U;
-      xiiUInt32                                 m_uiRayTracedShadowShaderRecordStride = 0U;
-      bool                                      m_bRayTracedShadowHistoryValid = false;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pShadowDenoisePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pContactShadowPipeline;
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectionalShadowAtlas;           // D32F[4] 4096x4096
+      xiiSharedPtr<xiiGALTextureView>             m_pDirectionalShadowCascadeViews[4]; // Persistent single-slice DSVs; must outlive recorded command lists.
+      xiiSharedPtr<xiiGALTexture>                 m_pLocalShadowAtlas;                 // D32F 2D 4096x4096
+      xiiSharedPtr<xiiGALTexture>                 m_pRayTracedShadowHistory[2];
+      xiiUInt32                                   m_uiActiveCascadeCount                = 0U;
+      xiiUInt32                                   m_uiRayTracedShadowShaderRecordStride = 0U;
+      bool                                        m_bRayTracedShadowHistoryValid        = false;
     } m_ShadowPasses;
 
     //  Stage 3 - Depth & Hi-Z
@@ -624,9 +624,9 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>  m_pHiZOcclusionCullPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pMotionVectorPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pVelocityDilationPipeline;
-      xiiMat4                                    m_PreviousViewProjectionMatrix = xiiMat4::MakeIdentity();
-      xiiVec2                                    m_vPreviousJitter              = xiiVec2::MakeZero();
-      bool                                       m_bMotionHistoryValid          = false;
+      xiiMat4                                   m_PreviousViewProjectionMatrix = xiiMat4::MakeIdentity();
+      xiiVec2                                   m_vPreviousJitter              = xiiVec2::MakeZero();
+      bool                                      m_bMotionHistoryValid          = false;
     } m_DepthPasses;
 
     //  Stage 4 - G-Buffer
@@ -639,23 +639,23 @@ private:
     //  Stage 5 - Lighting Preparation
     struct LightingPrepPasses
     {
-      xiiAtmosphereLUTHandle                    m_hAtmosphereLUT;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pBRDFLutPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pAtmTransmittancePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pAtmMultiScatterPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSkyIrradiancePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelFogInitPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pDDGIProbePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSparseVoxelGatherPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>    m_pGTAOFallbackPipeline;
-      xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTAOPipeline;
-      xiiSharedPtr<xiiGALBuffer>                  m_pRTAOShaderBindingTable;
-      xiiSharedPtr<xiiGALComputePipelineState>    m_pAOTemporalDenoisePipeline;
-      xiiUInt32                   m_uiRTAOShaderRecordStride = 0U;
-      xiiSharedPtr<xiiGALTexture> m_pAmbientOcclusionHistory[2];
-      bool                        m_bAmbientOcclusionHistoryValid = false;
+      xiiAtmosphereLUTHandle                           m_hAtmosphereLUT;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pBRDFLutPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pAtmTransmittancePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pAtmMultiScatterPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pSkyIrradiancePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pFroxelFogInitPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pDDGIProbePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pSparseVoxelGatherPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pGTAOFallbackPipeline;
+      xiiSharedPtr<xiiGALRayTracingPipelineState>      m_pRTAOPipeline;
+      xiiSharedPtr<xiiGALBuffer>                       m_pRTAOShaderBindingTable;
+      xiiSharedPtr<xiiGALComputePipelineState>         m_pAOTemporalDenoisePipeline;
+      xiiUInt32                                        m_uiRTAOShaderRecordStride = 0U;
+      xiiSharedPtr<xiiGALTexture>                      m_pAmbientOcclusionHistory[2];
+      bool                                             m_bAmbientOcclusionHistoryValid = false;
       xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;
-      xiiSharedPtr<xiiGALTexture>                       m_pFallbackReflectionProbeTexture;
+      xiiSharedPtr<xiiGALTexture>                      m_pFallbackReflectionProbeTexture;
     } m_LightingPrepPasses;
 
     //  Stage 6 - Main Lighting
@@ -670,15 +670,15 @@ private:
         xiiVec4 m_vWindStrengthAndEnabled     = xiiVec4::MakeZero();
       } m_CloudShadowState;
 
-      xiiSharedPtr<xiiGALComputePipelineState> m_pReSTIRDITemporalPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pReSTIRDISpatialPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pDirectLightingPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pIndirectLightingPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSSRPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pReflectionCompositePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricIntegratePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricTemporalPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pAtmosphereCompositePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDITemporalPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDISpatialPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pDirectLightingPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pIndirectLightingPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pReflectionCompositePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricIntegratePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricTemporalPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pAtmosphereCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pRTGIFallbackPipeline;
       xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRTGIPipeline;
       xiiSharedPtr<xiiGALBuffer>                  m_pRTGIShaderBindingTable;
@@ -693,24 +693,24 @@ private:
       xiiRenderGraphBufferHandle                  m_hRayTracingSceneDependency;
       xiiRenderGraphBufferHandle                  m_hRayTracingMaterialData;
       xiiRenderGraphBufferHandle                  m_hRayTracingGeometryData;
-      xiiUInt32                                   m_uiRTGIShaderRecordStride = 0U;
+      xiiUInt32                                   m_uiRTGIShaderRecordStride         = 0U;
       xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
-      xiiSharedPtr<xiiGALTexture>              m_pRTGIHistory[2];
-      bool                                     m_bRTGIHistoryValid       = false;
-      bool                                     m_bRTGIAvailableThisFrame = false;
-      xiiSharedPtr<xiiGALTexture> m_pRTGIReservoirSampleHistory[2];
-      xiiSharedPtr<xiiGALTexture> m_pRTGIReservoirStateHistory[2];
-      xiiSharedPtr<xiiGALTexture> m_pRTGIReservoirSurfaceHistory[2];
-      bool                        m_bRTGIReservoirHistoryValid = false;
-      xiiSharedPtr<xiiGALTexture>              m_pRTReflectionHistory[2];
-      bool                                     m_bRTReflectionHistoryValid       = false;
-      bool                                     m_bRTReflectionAvailableThisFrame = false;
-      xiiSharedPtr<xiiGALTexture>              m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
-      xiiSharedPtr<xiiGALTexture>              m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
-      bool                                     m_bDirectReservoirHistoryValid = false;
-      xiiSharedPtr<xiiGALTexture>              m_pVolumetricHistory[2]; ///< Ping-pong integrated scattering history at render resolution.
-      bool                                     m_bVolumetricHistoryValid = false;
-      xiiUInt32                                m_uiFrameIndex = 0U;
+      xiiSharedPtr<xiiGALTexture>                 m_pRTGIHistory[2];
+      bool                                        m_bRTGIHistoryValid       = false;
+      bool                                        m_bRTGIAvailableThisFrame = false;
+      xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirSampleHistory[2];
+      xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirStateHistory[2];
+      xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirSurfaceHistory[2];
+      bool                                        m_bRTGIReservoirHistoryValid = false;
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHistory[2];
+      bool                                        m_bRTReflectionHistoryValid       = false;
+      bool                                        m_bRTReflectionAvailableThisFrame = false;
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
+      bool                                        m_bDirectReservoirHistoryValid = false;
+      xiiSharedPtr<xiiGALTexture>                 m_pVolumetricHistory[2]; ///< Ping-pong integrated scattering history at render resolution.
+      bool                                        m_bVolumetricHistoryValid = false;
+      xiiUInt32                                   m_uiFrameIndex            = 0U;
     } m_LightingPasses;
 
     //  Stage 7 - Forward Passes
@@ -763,17 +763,17 @@ private:
     //  Stage 10 - Temporal Reconstruction
     struct TemporalPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState> m_pLuminanceHistogramPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pAutoExposurePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pTAAPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pUpscalePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState> m_pSharpenPipeline;
-      xiiSharedPtr<xiiGALTexture>              m_pTAAHistoryBuffers[2]; // ping-pong resolved color history
+      xiiSharedPtr<xiiGALComputePipelineState>     m_pLuminanceHistogramPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>     m_pAutoExposurePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>     m_pTAAPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>     m_pUpscalePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>     m_pSharpenPipeline;
+      xiiSharedPtr<xiiGALTexture>                  m_pTAAHistoryBuffers[2]; // ping-pong resolved color history
       xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_RetiredTAAHistoryBuffers;
-      xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer; // persistent exposure multiplier + average luminance
-      xiiUInt32                                m_uiTAAHistoryWriteIndex = 0U;
-      bool                                     m_bTAAHistoryValid      = false;
-      bool                                     m_bExposureHistoryValid = false;
+      xiiSharedPtr<xiiGALBuffer>                   m_pExposureBuffer; // persistent exposure multiplier + average luminance
+      xiiUInt32                                    m_uiTAAHistoryWriteIndex = 0U;
+      bool                                         m_bTAAHistoryValid       = false;
+      bool                                         m_bExposureHistoryValid  = false;
     } m_TemporalPasses;
 
     //  Stage 11 - Post-Processing
@@ -795,13 +795,13 @@ private:
     //  Stage 12 - Final Output
     struct OutputPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pHDRtoSDRPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pFinalResolvePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pFinalBlitPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSensorOutputPipeline;
-      xiiSharedPtr<xiiGALTexture>               m_pSensorOutputTexture;
+      xiiSharedPtr<xiiGALComputePipelineState>     m_pHDRtoSDRPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>     m_pFinalResolvePipeline;
+      xiiSharedPtr<xiiGALGraphicsPipelineState>    m_pFinalBlitPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>     m_pSensorOutputPipeline;
+      xiiSharedPtr<xiiGALTexture>                  m_pSensorOutputTexture;
       xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_RetiredSensorOutputTextures; ///< Kept alive until the view is destroyed so profile changes cannot race in-flight GPU work.
-      xiiSensorProfileHandle                    m_hSensorProfile;
+      xiiSensorProfileHandle                       m_hSensorProfile;
     } m_OutputPasses;
 
   } m_ViewPassResources;

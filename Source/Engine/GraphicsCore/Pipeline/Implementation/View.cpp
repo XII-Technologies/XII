@@ -20,8 +20,8 @@
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
-#include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
+#include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
@@ -53,9 +53,9 @@
 #include <Shaders/Pipeline/Passes/Output/ColorGradingConstants.h>
 #include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 #include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
-#include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/Temporal/TAAConstants.h>
@@ -100,7 +100,7 @@ namespace
 
   static xiiUInt32 GetDrawCommandCapacity(const xiiRenderGraphBlackboard& blackboard)
   {
-    xiiUInt32 uiDrawCommandCapacity = 0U;
+    xiiUInt32  uiDrawCommandCapacity   = 0U;
     const bool bHasDrawCommandCapacity = blackboard.TryGet(xiiRGBlackboardKeys::k_DrawCommandCapacity, uiDrawCommandCapacity);
     XII_IGNORE_UNUSED(bHasDrawCommandCapacity);
     return uiDrawCommandCapacity;
@@ -108,7 +108,7 @@ namespace
 
   static xiiUInt32 GetShadowCommandCapacity(const xiiRenderGraphBlackboard& blackboard)
   {
-    xiiUInt32 uiShadowCommandCapacity = 0U;
+    xiiUInt32  uiShadowCommandCapacity   = 0U;
     const bool bHasShadowCommandCapacity = blackboard.TryGet(xiiRGBlackboardKeys::k_ShadowCommandCapacity, uiShadowCommandCapacity);
     XII_IGNORE_UNUSED(bHasShadowCommandCapacity);
     return uiShadowCommandCapacity;
@@ -246,7 +246,7 @@ xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& sett
   if (!xiiDisplayOutputManager::IsValid(settings))
     return XII_FAILURE;
 
-  m_DisplayOutputSettings = settings;
+  m_DisplayOutputSettings                                      = settings;
   m_ViewPassResources.m_TemporalPasses.m_bExposureHistoryValid = false;
   return XII_SUCCESS;
 }
@@ -381,7 +381,7 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
     return;
   }
 
-  const xiiRectFloat& viewport    = GetViewport();
+  const xiiRectFloat& viewport     = GetViewport();
   const float         fAspectRatio = viewport.HasNonZeroArea() ? viewport.width / viewport.height : 1.0f;
 
   xiiMat4 projectionMatrix;
@@ -575,8 +575,8 @@ struct xiiFrustumCullData
   xiiRenderGraphBufferHandle m_hConstants;
 
   xiiDynamicArray<xiiFrustumCullInstanceBounds, xiiAlignedAllocatorWrapper> m_InstanceBounds;
-  xiiFrustumCullingConstants m_Constants       = {};
-  xiiUInt32                  m_uiInstanceCount = 0U;
+  xiiFrustumCullingConstants                                                m_Constants       = {};
+  xiiUInt32                                                                 m_uiInstanceCount = 0U;
 };
 
 void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& builder)
@@ -592,8 +592,8 @@ void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& 
       continue;
 
     xiiFrustumCullInstanceBounds& bounds = data.m_InstanceBounds.ExpandAndGetRef();
-    bounds.m_CenterRadius = xiiVec4(pMesh->m_GlobalBounds.m_vCenter.x, pMesh->m_GlobalBounds.m_vCenter.y, pMesh->m_GlobalBounds.m_vCenter.z, pMesh->m_GlobalBounds.m_fSphereRadius);
-    bounds.m_Extents      = xiiVec4(pMesh->m_GlobalBounds.m_vBoxHalfExtents.x, pMesh->m_GlobalBounds.m_vBoxHalfExtents.y, pMesh->m_GlobalBounds.m_vBoxHalfExtents.z, 0.0f);
+    bounds.m_CenterRadius                = xiiVec4(pMesh->m_GlobalBounds.m_vCenter.x, pMesh->m_GlobalBounds.m_vCenter.y, pMesh->m_GlobalBounds.m_vCenter.z, pMesh->m_GlobalBounds.m_fSphereRadius);
+    bounds.m_Extents                     = xiiVec4(pMesh->m_GlobalBounds.m_vBoxHalfExtents.x, pMesh->m_GlobalBounds.m_vBoxHalfExtents.y, pMesh->m_GlobalBounds.m_vBoxHalfExtents.z, 0.0f);
 
     if (data.m_InstanceBounds.GetCount() == k_uiMaxInstances)
       break;
@@ -631,7 +631,7 @@ void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& 
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("xiiFrustumCullingConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("xiiFrustumCullingConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   if (GetCullingCamera() != nullptr)
   {
@@ -740,7 +740,7 @@ void xiiView::SetupLODSelect(xiiLODSelectData& data, xiiRenderGraphBuilder& buil
   preferredDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
   preferredDescription.m_Mode                = xiiGALBufferMode::Structured;
   preferredDescription.m_Usage               = xiiGALResourceUsage::Default;
-  data.m_hPreferredLOD                        = builder.WriteBuffer("ExtractedLODMetadata", preferredDescription, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreferredLOD                       = builder.WriteBuffer("ExtractedLODMetadata", preferredDescription, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 4U; // packed uint: LOD level + meshlet offset
@@ -754,7 +754,7 @@ void xiiView::SetupLODSelect(xiiLODSelectData& data, xiiRenderGraphBuilder& buil
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("xiiLODSelectionConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("xiiLODSelectionConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pLODSelectPipeline, "Shaders/Pipeline/LodSelection.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -773,7 +773,7 @@ void xiiView::ExecuteLODSelect(const xiiLODSelectData& data, xiiRenderGraphPassC
     }
 
     cmd.UpdateBuffer(context.GetBuffer(data.m_hPreferredLOD), 0U,
-      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_PreferredLOD.GetData()), data.m_PreferredLOD.GetCount() * sizeof(xiiUInt32)));
+                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_PreferredLOD.GetData()), data.m_PreferredLOD.GetCount() * sizeof(xiiUInt32)));
     {
       xiiGALMapHelper<xiiLODSelectionConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *pConstants = data.m_Constants;
@@ -811,13 +811,13 @@ struct xiiInstanceUpdateData
   xiiRenderGraphBufferHandle m_hConstants;
 
   xiiDynamicArray<xiiInstanceUpdateSource, xiiAlignedAllocatorWrapper> m_InstanceSource;
-  xiiInstanceUpdateConstants m_Constants       = {};
-  xiiUInt32                  m_uiInstanceCount = 0U;
+  xiiInstanceUpdateConstants                                           m_Constants       = {};
+  xiiUInt32                                                            m_uiInstanceCount = 0U;
 };
 
 void xiiView::SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRenderGraphBuilder& builder)
 {
-  xiiUInt32 uiExtractedMeshCount = 0U;
+  xiiUInt32  uiExtractedMeshCount   = 0U;
   const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, uiExtractedMeshCount);
   XII_IGNORE_UNUSED(bHasExtractedMeshCount);
 
@@ -878,7 +878,7 @@ void xiiView::SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRenderGraphBui
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("xiiInstanceUpdateConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("xiiInstanceUpdateConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pInstanceUpdatePipeline, "Shaders/Pipeline/InstanceUpdate.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -897,7 +897,7 @@ void xiiView::ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRender
     }
 
     cmd.UpdateBuffer(context.GetBuffer(data.m_hInstanceSource), 0U,
-      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_InstanceSource.GetData()), data.m_InstanceSource.GetCount() * sizeof(xiiInstanceUpdateSource)));
+                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_InstanceSource.GetData()), data.m_InstanceSource.GetCount() * sizeof(xiiInstanceUpdateSource)));
     {
       xiiGALMapHelper<xiiInstanceUpdateConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *pConstants = data.m_Constants;
@@ -948,11 +948,11 @@ struct xiiDrawBuildData
 
 void xiiView::SetupDrawBuildResources(xiiDrawBuildData& data, xiiRenderGraphBuilder& builder, xiiStringView sCandidateBuffer, xiiStringView sCommandBuffer, xiiStringView sCountBuffer, bool bUploadSource)
 {
-  data.m_hSurvivors   = builder.ReadBuffer(sCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hInstanceLOD = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSurvivors    = builder.ReadBuffer(sCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceLOD  = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_bUploadSource = bUploadSource;
 
-  xiiUInt32 uiExtractedMeshCount = 0U;
+  xiiUInt32  uiExtractedMeshCount   = 0U;
   const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, uiExtractedMeshCount);
   XII_IGNORE_UNUSED(bHasExtractedMeshCount);
 
@@ -967,7 +967,7 @@ void xiiView::SetupDrawBuildResources(xiiDrawBuildData& data, xiiRenderGraphBuil
         if (pMesh == nullptr || !pMesh->m_GlobalBounds.IsValid())
           continue;
 
-        xiiExtractedDrawCommand& command = data.m_SourceCommands.ExpandAndGetRef();
+        xiiExtractedDrawCommand& command  = data.m_SourceCommands.ExpandAndGetRef();
         command.m_uiIndexCountPerInstance = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(static_cast<xiiUInt64>(pMesh->m_uiPrimitiveCount) * 3ULL, xiiMath::MaxValue<xiiUInt32>()));
         command.m_uiInstanceCount         = 1U;
         command.m_uiStartIndexLocation    = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(static_cast<xiiUInt64>(pMesh->m_uiFirstPrimitive) * 3ULL, xiiMath::MaxValue<xiiUInt32>()));
@@ -1024,7 +1024,7 @@ void xiiView::SetupDrawBuildResources(xiiDrawBuildData& data, xiiRenderGraphBuil
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("xiiDrawCommandBuildConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("xiiDrawCommandBuildConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pDrawBuildPipeline, "Shaders/Pipeline/DrawCommandBuild.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -1053,7 +1053,7 @@ void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassC
     zeroCommands.SetCount(xiiMath::Max(1U, data.m_uiInstanceCount));
     xiiMemoryUtils::ZeroFill(zeroCommands.GetData(), zeroCommands.GetCount());
     cmd.UpdateBuffer(context.GetBuffer(data.m_hDrawCommands), 0U,
-      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
 
     if (data.m_uiInstanceCount == 0U)
     {
@@ -1064,7 +1064,7 @@ void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRenderGraphPassC
     if (data.m_bUploadSource)
     {
       cmd.UpdateBuffer(context.GetBuffer(data.m_hSourceCommands), 0U,
-        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+                       xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
     }
     {
       xiiGALMapHelper<xiiDrawCommandBuildConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -1132,7 +1132,7 @@ void xiiView::SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRenderGr
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("xiiShadowCasterCullingConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("xiiShadowCasterCullingConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pShadowCasterBuildPipeline, "Shaders/Pipeline/ShadowCasterCulling.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -1148,11 +1148,11 @@ void xiiView::ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xii
     zeroCommands.SetCount(xiiMath::Max(1U, data.m_uiInstanceCount) * 5U);
     xiiMemoryUtils::ZeroFill(zeroCommands.GetData(), zeroCommands.GetCount());
     cmd.UpdateBuffer(context.GetBuffer(data.m_hShadowCasterCommands), 0U,
-      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
 
     xiiUInt32 zeroCounts[5] = {};
     cmd.UpdateBuffer(context.GetBuffer(data.m_hShadowCasterCounts), 0U,
-      xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCounts), sizeof(zeroCounts)));
+                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCounts), sizeof(zeroCounts)));
 
     if (data.m_uiInstanceCount == 0U)
     {
@@ -1364,12 +1364,12 @@ void xiiView::ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraph
 
 struct xiiReflectionProbeSelectData
 {
-  xiiRenderGraphBufferHandle m_hClusterDescriptors; ///< SRV in: world-space lighting-cluster AABBs.
-  xiiRenderGraphBufferHandle m_hProbeData;          ///< SRV in: active probe transforms, volumes, and texture slots.
-  xiiRenderGraphBufferHandle m_hProbeConstants;     ///< Constant buffer in: active probe and cluster counts.
-  xiiRenderGraphBufferHandle m_hProbeClusters;      ///< UAV out: primary and secondary probe indices per cluster.
+  xiiRenderGraphBufferHandle                                         m_hClusterDescriptors; ///< SRV in: world-space lighting-cluster AABBs.
+  xiiRenderGraphBufferHandle                                         m_hProbeData;          ///< SRV in: active probe transforms, volumes, and texture slots.
+  xiiRenderGraphBufferHandle                                         m_hProbeConstants;     ///< Constant buffer in: active probe and cluster counts.
+  xiiRenderGraphBufferHandle                                         m_hProbeClusters;      ///< UAV out: primary and secondary probe indices per cluster.
   xiiDynamicArray<xiiGPUReflectionProbe, xiiAlignedAllocatorWrapper> m_Probes;
-  xiiUInt32 m_uiTotalClusterCount = 1U;
+  xiiUInt32                                                          m_uiTotalClusterCount = 1U;
 };
 
 void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRenderGraphBuilder& builder)
@@ -1393,7 +1393,7 @@ void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xii
     textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
     textureDescription.m_Usage              = xiiGALResourceUsage::Immutable;
 
-    const xiiUInt32 uiBlackPixel = 0xFF000000U;
+    const xiiUInt32                                  uiBlackPixel = 0xFF000000U;
     xiiHybridArray<xiiGALTextureSubResourceData, 6U> initialData;
     for (xiiUInt32 uiFace = 0U; uiFace < 6U; ++uiFace)
     {
@@ -1439,17 +1439,18 @@ void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xii
     if (pTexture == nullptr)
       continue;
 
-    const xiiVec3 vAbsoluteScale = pProbe->m_GlobalTransform.m_vScale.Abs();
-    const float fMaximumScale = xiiMath::Max(vAbsoluteScale.x, xiiMath::Max(vAbsoluteScale.y, vAbsoluteScale.z));
-    const float fInfluenceRadius = pProbe->m_InfluenceShape == xiiReflectionProbeInfluenceShape::Sphere ?
-      pProbe->m_fSphereRadius * fMaximumScale : pProbe->m_vHalfExtents.CompMul(vAbsoluteScale).GetLength();
+    const xiiVec3 vAbsoluteScale   = pProbe->m_GlobalTransform.m_vScale.Abs();
+    const float   fMaximumScale    = xiiMath::Max(vAbsoluteScale.x, xiiMath::Max(vAbsoluteScale.y, vAbsoluteScale.z));
+    const float   fInfluenceRadius = pProbe->m_InfluenceShape == xiiReflectionProbeInfluenceShape::Sphere ?
+        pProbe->m_fSphereRadius * fMaximumScale :
+        pProbe->m_vHalfExtents.CompMul(vAbsoluteScale).GetLength();
 
     xiiGPUReflectionProbe& gpuProbe = data.m_Probes.ExpandAndGetRef();
-    gpuProbe.WorldToProbe          = pProbe->m_GlobalTransform.GetInverse().GetAsMat4();
-    gpuProbe.PositionAndRadius     = xiiVec4(pProbe->m_GlobalTransform.m_vPosition, xiiMath::Max(fInfluenceRadius, 0.01f));
-    gpuProbe.HalfExtentsAndBlend   = xiiVec4(pProbe->m_vHalfExtents, pProbe->m_fBlendDistance);
-    gpuProbe.ProbeParameters       = xiiVec4(pProbe->m_fSphereRadius, pProbe->m_fIntensity, pProbe->m_fSaturation, static_cast<float>(pProbe->m_InfluenceShape.GetValue()));
-    gpuProbe.Metadata              = xiiVec4U32(static_cast<xiiUInt32>(pProbe->m_uiSortingKey), data.m_Probes.GetCount() - 1U, static_cast<xiiUInt32>(pProbe->m_iPriority), pProbe->m_bParallaxCorrected ? 1U : 0U);
+    gpuProbe.WorldToProbe           = pProbe->m_GlobalTransform.GetInverse().GetAsMat4();
+    gpuProbe.PositionAndRadius      = xiiVec4(pProbe->m_GlobalTransform.m_vPosition, xiiMath::Max(fInfluenceRadius, 0.01f));
+    gpuProbe.HalfExtentsAndBlend    = xiiVec4(pProbe->m_vHalfExtents, pProbe->m_fBlendDistance);
+    gpuProbe.ProbeParameters        = xiiVec4(pProbe->m_fSphereRadius, pProbe->m_fIntensity, pProbe->m_fSaturation, static_cast<float>(pProbe->m_InfluenceShape.GetValue()));
+    gpuProbe.Metadata               = xiiVec4U32(static_cast<xiiUInt32>(pProbe->m_uiSortingKey), data.m_Probes.GetCount() - 1U, static_cast<xiiUInt32>(pProbe->m_iPriority), pProbe->m_bParallaxCorrected ? 1U : 0U);
 
     reflectionResources.m_ReflectionProbeTextures.PushBack(std::move(pTexture));
   }
@@ -1498,9 +1499,9 @@ void xiiView::ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& d
     }
     {
       xiiGALMapHelper<xiiReflectionProbeConstants> pConstants(cmd, context.GetBuffer(data.m_hProbeConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->ActiveProbeCount          = data.m_Probes.GetCount();
-      pConstants->TotalClusterCount         = data.m_uiTotalClusterCount;
-      pConstants->_ReflectionProbePadding   = xiiVec2U32::MakeZero();
+      pConstants->ActiveProbeCount        = data.m_Probes.GetCount();
+      pConstants->TotalClusterCount       = data.m_uiTotalClusterCount;
+      pConstants->_ReflectionProbePadding = xiiVec2U32::MakeZero();
     }
 
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pProbeSelectPipeline);
@@ -1577,11 +1578,11 @@ struct xiiShadowCascadeSetupData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphBufferHandle m_hCascadeMatrices;                              ///< CPU-uploaded constant buffer of cascade view-projection matrices and split depths.
-  xiiUInt32                  m_uiActiveCascades = 0U;                         ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes.
+  xiiRenderGraphBufferHandle m_hCascadeMatrices;      ///< CPU-uploaded constant buffer of cascade view-projection matrices and split depths.
+  xiiUInt32                  m_uiActiveCascades = 0U; ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes.
   xiiMat4                    m_CascadeViewProjection[4];
   xiiVec4                    m_vCascadeSplitDepths = xiiVec4::MakeZero();
-  xiiVec4                    m_vCascadeWorldRadii = xiiVec4::MakeZero();
+  xiiVec4                    m_vCascadeWorldRadii  = xiiVec4::MakeZero();
 };
 
 void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRenderGraphBuilder& builder)
@@ -1591,27 +1592,27 @@ void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRender
     mCascadeViewProjection = xiiMat4::MakeIdentity();
   }
 
-  xiiVec3 vLightDirection = xiiVec3(0.0f, 0.0f, -1.0f);
-  const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
-  const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(renderData);
-  const bool bHasShadowCastingDirectionalLight = pMainDirectional != nullptr && pMainDirectional->m_bCastShadows;
+  xiiVec3                                 vLightDirection                   = xiiVec3(0.0f, 0.0f, -1.0f);
+  const xiiArrayPtr<xiiRenderData* const> renderData                        = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
+  const xiiDirectionalLightRenderData*    pMainDirectional                  = SelectMainDirectionalLight(renderData);
+  const bool                              bHasShadowCastingDirectionalLight = pMainDirectional != nullptr && pMainDirectional->m_bCastShadows;
   if (bHasShadowCastingDirectionalLight)
   {
     vLightDirection = pMainDirectional->m_vDirection;
   }
 
   xiiStaticArray<xiiShadowCascadeDescription, 4> cascades;
-  xiiShadowCascadeSettings settings;
+  xiiShadowCascadeSettings                       settings;
   settings.m_uiShadowMapResolution = k_uiDirectionalShadowAtlasWidth;
-  const float fAspectRatio = static_cast<float>(GetRenderResolutionWidth()) / static_cast<float>(xiiMath::Max(GetRenderResolutionHeight(), 1U));
+  const float fAspectRatio         = static_cast<float>(GetRenderResolutionWidth()) / static_cast<float>(xiiMath::Max(GetRenderResolutionHeight(), 1U));
   if (bHasShadowCastingDirectionalLight && xiiShadowCascadeUtils::Build(*m_pCamera, fAspectRatio, vLightDirection, settings, cascades).Succeeded())
   {
     data.m_uiActiveCascades = cascades.GetCount();
     for (xiiUInt32 uiCascade = 0U; uiCascade < cascades.GetCount(); ++uiCascade)
     {
-      data.m_CascadeViewProjection[uiCascade] = cascades[uiCascade].m_mViewProjection;
+      data.m_CascadeViewProjection[uiCascade]         = cascades[uiCascade].m_mViewProjection;
       data.m_vCascadeSplitDepths.GetData()[uiCascade] = cascades[uiCascade].m_fSplitFar;
-      data.m_vCascadeWorldRadii.GetData()[uiCascade] = cascades[uiCascade].m_fWorldRadius;
+      data.m_vCascadeWorldRadii.GetData()[uiCascade]  = cascades[uiCascade].m_fWorldRadius;
     }
   }
   m_ViewPassResources.m_ShadowPasses.m_uiActiveCascadeCount = data.m_uiActiveCascades;
@@ -1643,7 +1644,7 @@ void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, x
       pConstants->ActiveCascadeCount = data.m_uiActiveCascades;
 
       pConstants->CascadeSplitDepths = data.m_vCascadeSplitDepths;
-      pConstants->CascadeWorldRadii = data.m_vCascadeWorldRadii;
+      pConstants->CascadeWorldRadii  = data.m_vCascadeWorldRadii;
       for (xiiUInt32 i = 0; i < 4; ++i)
       {
         pConstants->CascadeViewProjection[i] = data.m_CascadeViewProjection[i];
@@ -1659,7 +1660,7 @@ void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, x
 
 struct xiiLocalShadowAtlasAllocationData
 {
-  xiiRenderGraphBufferHandle m_hLocalShadowAtlasDescriptors;
+  xiiRenderGraphBufferHandle   m_hLocalShadowAtlasDescriptors;
   xiiLocalShadowAtlasDataArray m_ShadowData;
 };
 
@@ -1688,7 +1689,7 @@ void xiiView::ExecuteLocalShadowAtlasAllocation(const xiiLocalShadowAtlasAllocat
     if (!data.m_ShadowData.IsEmpty())
     {
       cmd.UpdateBuffer(context.GetBuffer(data.m_hLocalShadowAtlasDescriptors), 0U,
-        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_ShadowData.GetData()), data.m_ShadowData.GetCount() * sizeof(xiiLocalShadowAtlasData)));
+                       xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_ShadowData.GetData()), data.m_ShadowData.GetCount() * sizeof(xiiLocalShadowAtlasData)));
     }
   }
   cmd.EndDebugGroup();
@@ -1773,9 +1774,9 @@ void xiiView::ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data,
         xiiGALDrawIndexedIndirectDescription indexedIndirectDrawDescription;
         indexedIndirectDrawDescription.m_IndexType             = xiiGALValueType::UInt32;
         indexedIndirectDrawDescription.m_pBuffer               = context.GetBuffer(data.m_hShadowCasterCommands);
-        const xiiUInt32 uiShadowCommandCapacity = GetShadowCommandCapacity(GetBlackboard());
+        const xiiUInt32 uiShadowCommandCapacity                = GetShadowCommandCapacity(GetBlackboard());
         indexedIndirectDrawDescription.m_uiDrawArgumentOffset  = static_cast<xiiUInt64>(uiCascade + 1U) * uiShadowCommandCapacity * sizeof(xiiExtractedDrawCommand);
-        indexedIndirectDrawDescription.m_uiDrawArgumentStride  = 20U;             // stride per cascade DrawIndexedIndirectArguments (uint index count, uint instance count, uint start index location, int base vertex location, uint start instance location).
+        indexedIndirectDrawDescription.m_uiDrawArgumentStride  = 20U; // stride per cascade DrawIndexedIndirectArguments (uint index count, uint instance count, uint start index location, int base vertex location, uint start instance location).
         indexedIndirectDrawDescription.m_uiDrawCount           = uiShadowCommandCapacity;
         indexedIndirectDrawDescription.m_BufferStateTransition = xiiGALStateTransitionMode::Transition;
 
@@ -1805,7 +1806,7 @@ void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRenderGraphBuilder
 {
   if (!m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas)
   {
-    const xiiUInt32 uiAtlasSize = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
+    const xiiUInt32                  uiAtlasSize = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
     xiiGALTextureCreationDescription description;
     description.m_Type                                     = xiiGALResourceDimension::Texture2D;
     description.m_Format                                   = xiiGALResourceFormat::D32Float;
@@ -1871,7 +1872,7 @@ void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRenderGraphBuild
 {
   if (!m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas)
   {
-    const xiiUInt32 uiAtlasSize = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
+    const xiiUInt32                  uiAtlasSize = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
     xiiGALTextureCreationDescription description;
     description.m_Type                                     = xiiGALResourceDimension::Texture2D;
     description.m_Format                                   = xiiGALResourceFormat::D32Float;
@@ -1920,22 +1921,22 @@ void xiiView::ExecutePointShadowData(const xiiPointShadowData& data, xiiRenderGr
 
 struct xiiRayTracedShadowData
 {
-  xiiRenderGraphTextureHandle m_hRTRawShadowMask; ///< UAV out (texture containing raw ray-traced shadow masks, written by Ray-Traced Shadow Pass, read by Shadow Denoise Pass).
-  xiiRenderGraphTextureHandle m_hSceneDepth;      ///< SRV in (depth texture from main render pass, used for ray-traced shadow ray generation and occlusion testing).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;   ///< SRV in (surface normal used to offset the shadow-ray origin).
-  xiiRenderGraphBufferHandle  m_hSceneDependency; ///< BuildASRead dependency on this frame's TLAS build.
-  xiiRenderGraphBufferHandle  m_hMaterialData;    ///< SRV in (canonical material records used by any-hit alpha testing).
-  xiiRenderGraphBufferHandle  m_hGeometryData;    ///< SRV in (geometry addressing records used by any-hit alpha testing).
-  xiiRenderGraphBufferHandle  m_hShaderBindingTable;
+  xiiRenderGraphTextureHandle                 m_hRTRawShadowMask; ///< UAV out (texture containing raw ray-traced shadow masks, written by Ray-Traced Shadow Pass, read by Shadow Denoise Pass).
+  xiiRenderGraphTextureHandle                 m_hSceneDepth;      ///< SRV in (depth texture from main render pass, used for ray-traced shadow ray generation and occlusion testing).
+  xiiRenderGraphTextureHandle                 m_hGBufferNormal;   ///< SRV in (surface normal used to offset the shadow-ray origin).
+  xiiRenderGraphBufferHandle                  m_hSceneDependency; ///< BuildASRead dependency on this frame's TLAS build.
+  xiiRenderGraphBufferHandle                  m_hMaterialData;    ///< SRV in (canonical material records used by any-hit alpha testing).
+  xiiRenderGraphBufferHandle                  m_hGeometryData;    ///< SRV in (geometry addressing records used by any-hit alpha testing).
+  xiiRenderGraphBufferHandle                  m_hShaderBindingTable;
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
   xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
-  xiiUInt32                                    m_uiShaderRecordStride = 0U;
-  bool                                         m_bUseHardwareRayTracing = false;
+  xiiUInt32                                   m_uiShaderRecordStride   = 0U;
+  bool                                        m_bUseHardwareRayTracing = false;
 };
 
 void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
@@ -1948,13 +1949,13 @@ void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRenderGr
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hRTRawShadowMask   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawShadowMask, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  auto& shadowPasses = m_ViewPassResources.m_ShadowPasses;
-  const auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
+  auto&       shadowPasses      = m_ViewPassResources.m_ShadowPasses;
+  const auto& lightingPasses    = m_ViewPassResources.m_LightingPasses;
   data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingShadowResources();
   if (data.m_bUseHardwareRayTracing)
   {
     data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
-    data.m_pRayTracingPipeline = shadowPasses.m_pRayTracedShadowPipeline;
+    data.m_pRayTracingPipeline  = shadowPasses.m_pRayTracedShadowPipeline;
     data.m_uiShaderRecordStride = shadowPasses.m_uiRayTracedShadowShaderRecordStride;
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
@@ -1998,7 +1999,7 @@ void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xii
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
-      const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
+      const xiiUInt64            uiStride = data.m_uiShaderRecordStride;
       xiiGALUpdateSBTDescription sbtUpdate;
       sbtUpdate.m_pPipelineState      = data.m_pRayTracingPipeline.Borrow();
       sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
@@ -2040,7 +2041,7 @@ struct xiiShadowDenoiseData
   xiiRenderGraphTextureHandle m_hPreviousSurface;
   xiiRenderGraphTextureHandle m_hRTFinalShadowMask;
   xiiRenderGraphBufferHandle  m_hConstants;
-  bool                         m_bHistoryValid = false;
+  bool                        m_bHistoryValid = false;
 };
 
 void xiiView::SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRenderGraphBuilder& builder)
@@ -2049,7 +2050,7 @@ void xiiView::SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRenderGraphB
   const xiiUInt32 uiHeight       = GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
-  auto& resources                = m_ViewPassResources.m_ShadowPasses;
+  auto&           resources      = m_ViewPassResources.m_ShadowPasses;
 
   if (EnsureTemporalHistoryTextures(resources.m_pRayTracedShadowHistory, xiiGALResourceFormat::R8UNormalized, uiWidth, uiHeight))
   {
@@ -2077,8 +2078,8 @@ void xiiView::ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRend
   {
     {
       xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->HistoryWeight    = 0.88f;
-      pConstants->DepthThreshold   = 0.05f;
+      pConstants->HistoryWeight   = 0.88f;
+      pConstants->DepthThreshold  = 0.05f;
       pConstants->NormalThreshold = 0.90f;
       pConstants->SpatialWeight   = 0.25f;
       pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
@@ -2205,8 +2206,8 @@ void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRenderGrap
 
 struct xiiHiZPyramidData
 {
-  xiiRenderGraphTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
-  xiiRenderGraphTextureHandle m_hHiZPyramid;      ///< UnorderedAccess out (R32F reversed-Z minimum hierarchy consumed by occlusion and depth-aware effects).
+  xiiRenderGraphTextureHandle m_hSceneDepth; ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
+  xiiRenderGraphTextureHandle m_hHiZPyramid; ///< UnorderedAccess out (R32F reversed-Z minimum hierarchy consumed by occlusion and depth-aware effects).
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiUInt32                   m_uiMipLevels = 1U; ///< Number of mips in the Hi-Z pyramid, derived from the current viewport size.
 };
@@ -2242,7 +2243,7 @@ void xiiView::SetupHiZPyramid(xiiHiZPyramidData& data, xiiRenderGraphBuilder& bu
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("xiiHiZBuildConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("xiiHiZBuildConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_DepthPasses.m_pHiZBuildPipeline, "Shaders/Pipeline/HiZBuild.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -2359,7 +2360,7 @@ void xiiView::SetupHiZOcclusionCull(xiiHiZOcclusionCullData& data, xiiRenderGrap
   data.m_hInstanceBounds    = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription description;
-  const bool bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, data.m_uiInstanceCount);
+  const bool                      bHasExtractedMeshCount = GetBlackboard().TryGet(xiiRGBlackboardKeys::k_ExtractedMeshCount, data.m_uiInstanceCount);
   XII_IGNORE_UNUSED(bHasExtractedMeshCount);
   description.m_uiElementByteStride = sizeof(xiiUInt32);
   description.m_uiSize              = sizeof(xiiUInt32) * (xiiMath::Max(1U, data.m_uiInstanceCount) + 1U);
@@ -2373,11 +2374,11 @@ void xiiView::SetupHiZOcclusionCull(xiiHiZOcclusionCullData& data, xiiRenderGrap
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("xiiHiZOcclusionConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("xiiHiZOcclusionConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   data.m_Constants.ViewProjectionMatrix = GetViewProjectionMatrix(xiiCameraEye::Left);
-  data.m_Constants.HiZSize               = xiiVec2U32(GetRenderResolutionWidth(), GetRenderResolutionHeight());
-  data.m_Constants.HiZMipCount           = 1U;
+  data.m_Constants.HiZSize              = xiiVec2U32(GetRenderResolutionWidth(), GetRenderResolutionHeight());
+  data.m_Constants.HiZMipCount          = 1U;
   for (xiiUInt32 uiWidth = GetRenderResolutionWidth(), uiHeight = GetRenderResolutionHeight(); uiWidth > 1U || uiHeight > 1U;)
   {
     uiWidth  = xiiMath::Max(uiWidth >> 1U, 1U);
@@ -2431,7 +2432,7 @@ struct xiiMotionVectorsData
   xiiRenderGraphTextureHandle m_hSceneDepth;     ///< ShaderResource in (current reversed-Z scene depth).
   xiiRenderGraphTextureHandle m_hVelocityBuffer; ///< RenderTarget out (current-to-previous NDC velocity).
   xiiRenderGraphBufferHandle  m_hConstants;
-  xiiMotionVectorConstants    m_Constants = {};
+  xiiMotionVectorConstants    m_Constants             = {};
   xiiMat4                     m_CurrentViewProjection = xiiMat4::MakeIdentity();
   xiiVec2                     m_vCurrentJitter        = xiiVec2::MakeZero();
 };
@@ -2470,7 +2471,7 @@ void xiiView::SetupMotionVectors(xiiMotionVectorsData& data, xiiRenderGraphBuild
 
 void xiiView::ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRenderGraphPassContext& context)
 {
-  xiiGALCommandList& cmd = context.GetCommandList();
+  xiiGALCommandList&                        cmd = context.GetCommandList();
   xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline;
   if (data.m_hSceneDepth.IsValid() && data.m_hVelocityBuffer.IsValid() && data.m_hConstants.IsValid() && context.GetRenderPass() != nullptr)
   {
@@ -2498,8 +2499,8 @@ void xiiView::ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRenderGr
 
       auto& depthPasses                          = m_ViewPassResources.m_DepthPasses;
       depthPasses.m_PreviousViewProjectionMatrix = data.m_CurrentViewProjection;
-      depthPasses.m_vPreviousJitter               = data.m_vCurrentJitter;
-      depthPasses.m_bMotionHistoryValid            = true;
+      depthPasses.m_vPreviousJitter              = data.m_vCurrentJitter;
+      depthPasses.m_bMotionHistoryValid          = true;
     }
   }
   cmd.EndDebugGroup();
@@ -2691,7 +2692,7 @@ void xiiView::SetupBRDFLutGeneration(xiiBRDFLutGenerationData& data, xiiRenderGr
 
   XII_VERIFY(xiiLightingManager::EnsureBRDFLUTResources().Succeeded(), "The shared BRDF LUT resource is unavailable.");
   xiiSharedPtr<xiiGALTexture> pBRDFLUT = xiiLightingManager::GetBRDFLUT();
-  data.m_bNeedsGeneration             = xiiLightingManager::IsBRDFLUTGenerationPending();
+  data.m_bNeedsGeneration              = xiiLightingManager::IsBRDFLUTGenerationPending();
 
   data.m_hBRDFLut = builder.ImportTexture(xiiRGBlackboardKeys::k_BRDFLut, pBRDFLUT, pBRDFLUT->GetResourceState());
 
@@ -2731,7 +2732,7 @@ namespace
   {
     const xiiAtmosphereSettings& settings = xiiAtmosphereManager::GetConfiguration(hCache);
 
-    xiiAtmosphereConstants constants = {};
+    xiiAtmosphereConstants constants            = {};
     constants.PlanetAtmosphereRadiiScaleHeights = xiiVec4(settings.m_fPlanetRadiusKm, settings.m_fAtmosphereRadiusKm, settings.m_fRayleighScaleHeightKm, settings.m_fMieScaleHeightKm);
     constants.RayleighScattering                = xiiVec4(settings.m_vRayleighScattering, 0.0f);
     constants.MieScatteringAndPhase             = xiiVec4(settings.m_vMieScattering, settings.m_fMiePhaseG);
@@ -2757,14 +2758,14 @@ namespace
     xiiGALMapHelper<xiiAtmosphereConstants> mappedConstants(cmd, pBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
     *mappedConstants = constants;
   }
-}
+} // namespace
 
 struct xiiAtmosphereTransmittanceData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hTransmittanceLUT;        ///< Imported persistent atmosphere transmittance LUT texture.
-  xiiRenderGraphBufferHandle  m_hConstants;               ///< Physical atmosphere parameters used by the integration.
+  xiiRenderGraphTextureHandle m_hTransmittanceLUT; ///< Imported persistent atmosphere transmittance LUT texture.
+  xiiRenderGraphBufferHandle  m_hConstants;        ///< Physical atmosphere parameters used by the integration.
   xiiAtmosphereConstants      m_Constants;
   xiiAtmosphereLUTHandle      m_hCache;
   bool                        m_bNeedsGeneration = false; ///< Whether this frame must dispatch transmittance LUT generation.
@@ -2780,15 +2781,15 @@ void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data,
     data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
   }
   XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources(data.m_hCache).Succeeded(), "Atmosphere LUT resources are unavailable.");
-  data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
+  data.m_bNeedsGeneration                       = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
   xiiSharedPtr<xiiGALTexture> pTransmittanceLUT = xiiAtmosphereManager::GetTransmittanceLUT(data.m_hCache);
-  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, pTransmittanceLUT, pTransmittanceLUT->GetResourceState());
+  data.m_hTransmittanceLUT                      = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, pTransmittanceLUT, pTransmittanceLUT->GetResourceState());
 
   if (data.m_bNeedsGeneration)
   {
     data.m_hTransmittanceLUT = builder.WriteTexture(data.m_hTransmittanceLUT, xiiGALResourceStateFlags::UnorderedAccess);
-    data.m_hConstants = CreateAtmosphereConstantsBuffer(builder, "AtmosphereTransmittanceConstants");
-    data.m_Constants = MakeAtmosphereConstants(data.m_hCache);
+    data.m_hConstants        = CreateAtmosphereConstantsBuffer(builder, "AtmosphereTransmittanceConstants");
+    data.m_Constants         = MakeAtmosphereConstants(data.m_hCache);
   }
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittancePipeline, "Shaders/Pipeline/AtmosphereTransmittance.xiiShader");
@@ -2821,9 +2822,9 @@ struct xiiAtmosphereMultiScatterData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hMultiScatterLUT;         ///< Imported persistent atmosphere multi-scatter LUT texture.
-  xiiRenderGraphTextureHandle m_hTransmittanceLUT;        ///< ShaderResource in (atmosphere transmittance LUT).
-  xiiRenderGraphBufferHandle  m_hConstants;               ///< Physical atmosphere parameters used by the integration.
+  xiiRenderGraphTextureHandle m_hMultiScatterLUT;  ///< Imported persistent atmosphere multi-scatter LUT texture.
+  xiiRenderGraphTextureHandle m_hTransmittanceLUT; ///< ShaderResource in (atmosphere transmittance LUT).
+  xiiRenderGraphBufferHandle  m_hConstants;        ///< Physical atmosphere parameters used by the integration.
   xiiAtmosphereConstants      m_Constants;
   xiiAtmosphereLUTHandle      m_hCache;
   bool                        m_bNeedsGeneration = false; ///< Whether this frame must dispatch multi-scatter LUT generation.
@@ -2839,16 +2840,16 @@ void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, x
     data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
   }
   XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources(data.m_hCache).Succeeded(), "Atmosphere LUT resources are unavailable.");
-  data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
-  data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
+  data.m_bNeedsGeneration                      = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
+  data.m_hTransmittanceLUT                     = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
   xiiSharedPtr<xiiGALTexture> pMultiScatterLUT = xiiAtmosphereManager::GetMultiScatterLUT(data.m_hCache);
-  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, pMultiScatterLUT, pMultiScatterLUT->GetResourceState());
+  data.m_hMultiScatterLUT                      = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, pMultiScatterLUT, pMultiScatterLUT->GetResourceState());
 
   if (data.m_bNeedsGeneration)
   {
     data.m_hMultiScatterLUT = builder.WriteTexture(data.m_hMultiScatterLUT, xiiGALResourceStateFlags::UnorderedAccess);
-    data.m_hConstants = CreateAtmosphereConstantsBuffer(builder, "AtmosphereMultiScatterConstants");
-    data.m_Constants = MakeAtmosphereConstants(data.m_hCache);
+    data.m_hConstants       = CreateAtmosphereConstantsBuffer(builder, "AtmosphereMultiScatterConstants");
+    data.m_Constants        = MakeAtmosphereConstants(data.m_hCache);
   }
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline, "Shaders/Pipeline/AtmosphereMultiScatter.xiiShader");
@@ -2989,12 +2990,12 @@ void xiiView::SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRenderGr
 {
   builder.SetPassAllowMerge(false);
 
-  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth           = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal        = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hProbeIrradianceAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIProbeIrradianceAtlas, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hProbeDistanceAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIProbeDistanceAtlas, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hProbeStates = builder.ReadBuffer(xiiRGBlackboardKeys::k_DDGIProbeStates, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hProbeConstants = builder.ReadBuffer(xiiRGBlackboardKeys::k_DDGIProbeConstants, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hProbeDistanceAtlas   = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIProbeDistanceAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hProbeStates          = builder.ReadBuffer(xiiRGBlackboardKeys::k_DDGIProbeStates, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hProbeConstants       = builder.ReadBuffer(xiiRGBlackboardKeys::k_DDGIProbeConstants, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -3047,22 +3048,22 @@ void xiiView::SetupSparseVoxelRadianceGather(xiiSparseVoxelRadianceGatherData& d
 {
   builder.SetPassAllowMerge(false);
 
-  data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hRadiancePool = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelRadiancePool, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPageTable = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelPageTable, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLevelData = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelLevelData, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hConstants = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelConstants, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hRadiancePool  = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelRadiancePool, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPageTable     = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelPageTable, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLevelData     = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelLevelData, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hConstants     = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelConstants, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type = xiiGALResourceDimension::Texture2D;
-  description.m_Format = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width = GetRenderResolutionWidth();
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = GetRenderResolutionWidth();
   description.m_Size.height = GetRenderResolutionHeight();
   description.m_uiMipLevels = 1U;
-  description.m_BindFlags = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage = xiiGALResourceUsage::Default;
-  data.m_hIrradiance = builder.WriteTexture(xiiRGBlackboardKeys::k_SparseVoxelIrradiance, description, xiiGALResourceStateFlags::UnorderedAccess);
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hIrradiance        = builder.WriteTexture(xiiRGBlackboardKeys::k_SparseVoxelIrradiance, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pSparseVoxelGatherPipeline, "Shaders/Pipeline/SparseVoxelRadianceGather.xiiShader");
 }
@@ -3093,17 +3094,17 @@ void xiiView::ExecuteSparseVoxelRadianceGather(const xiiSparseVoxelRadianceGathe
 
 struct xiiGroundTruthAmbientOcclusionData
 {
-  xiiRenderGraphTextureHandle m_hSceneDepth;          ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hNormalRoughness;     ///< ShaderResource in (normal/roughness buffer).
-  xiiRenderGraphTextureHandle m_hRawAmbientOcclusion; ///< UnorderedAccess out (raw ambient occlusion result).
-  xiiRenderGraphBufferHandle  m_hSceneDependency;
-  xiiRenderGraphBufferHandle  m_hMaterialData;
-  xiiRenderGraphBufferHandle  m_hGeometryData;
-  xiiRenderGraphBufferHandle  m_hShaderBindingTable;
+  xiiRenderGraphTextureHandle                 m_hSceneDepth;          ///< ShaderResource in (scene depth texture).
+  xiiRenderGraphTextureHandle                 m_hNormalRoughness;     ///< ShaderResource in (normal/roughness buffer).
+  xiiRenderGraphTextureHandle                 m_hRawAmbientOcclusion; ///< UnorderedAccess out (raw ambient occlusion result).
+  xiiRenderGraphBufferHandle                  m_hSceneDependency;
+  xiiRenderGraphBufferHandle                  m_hMaterialData;
+  xiiRenderGraphBufferHandle                  m_hGeometryData;
+  xiiRenderGraphBufferHandle                  m_hShaderBindingTable;
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
   xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
-  xiiUInt32                                    m_uiShaderRecordStride = 0U;
-  bool                                         m_bUseHardwareRayTracing = false;
+  xiiUInt32                                   m_uiShaderRecordStride   = 0U;
+  bool                                        m_bUseHardwareRayTracing = false;
 };
 
 void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRenderGraphBuilder& builder)
@@ -3121,13 +3122,13 @@ void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionDat
   description.m_Usage         = xiiGALResourceUsage::Default;
   data.m_hRawAmbientOcclusion = builder.WriteTexture(xiiRGBlackboardKeys::k_RawAOTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  auto& lightingPrepPasses = m_ViewPassResources.m_LightingPrepPasses;
-  const auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
-  data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingAmbientOcclusionResources();
+  auto&       lightingPrepPasses = m_ViewPassResources.m_LightingPrepPasses;
+  const auto& lightingPasses     = m_ViewPassResources.m_LightingPasses;
+  data.m_bUseHardwareRayTracing  = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingAmbientOcclusionResources();
   if (data.m_bUseHardwareRayTracing)
   {
     data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
-    data.m_pRayTracingPipeline = lightingPrepPasses.m_pRTAOPipeline;
+    data.m_pRayTracingPipeline  = lightingPrepPasses.m_pRTAOPipeline;
     data.m_uiShaderRecordStride = lightingPrepPasses.m_uiRTAOShaderRecordStride;
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
@@ -3168,7 +3169,7 @@ void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOccl
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
-      const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
+      const xiiUInt64            uiStride = data.m_uiShaderRecordStride;
       xiiGALUpdateSBTDescription sbtUpdate;
       sbtUpdate.m_pPipelineState      = data.m_pRayTracingPipeline.Borrow();
       sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
@@ -3211,7 +3212,7 @@ struct xiiGroundTruthAmbientOcclusionDenoiseData
   xiiRenderGraphTextureHandle m_hPreviousSurface;          ///< ShaderResource in (previous normal and linear depth).
   xiiRenderGraphTextureHandle m_hStableAmbientOcclusion;   ///< UnorderedAccess out (persistent denoised visibility).
   xiiRenderGraphBufferHandle  m_hConstants;
-  bool                         m_bHistoryValid = false;
+  bool                        m_bHistoryValid = false;
 };
 
 void xiiView::SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphBuilder& builder)
@@ -3220,21 +3221,21 @@ void xiiView::SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclu
   const xiiUInt32 uiHeight       = GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
-  auto& resources                = m_ViewPassResources.m_LightingPrepPasses;
+  auto&           resources      = m_ViewPassResources.m_LightingPrepPasses;
 
   if (EnsureTemporalHistoryTextures(resources.m_pAmbientOcclusionHistory, xiiGALResourceFormat::R8UNormalized, uiWidth, uiHeight))
   {
     resources.m_bAmbientOcclusionHistoryValid = false;
   }
 
-  data.m_bHistoryValid           = resources.m_bAmbientOcclusionHistoryValid;
-  data.m_hRawAmbientOcclusion    = builder.ReadTexture(xiiRGBlackboardKeys::k_RawAOTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneDepth             = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVelocity               = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousSurface        = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
+  data.m_bHistoryValid             = resources.m_bAmbientOcclusionHistoryValid;
+  data.m_hRawAmbientOcclusion      = builder.ReadTexture(xiiRGBlackboardKeys::k_RawAOTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth               = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal            = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity                 = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface          = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousAmbientOcclusion = builder.ReadTexture(builder.ImportTexture("AO Previous History", resources.m_pAmbientOcclusionHistory[uiPreviousSlot], resources.m_pAmbientOcclusionHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hStableAmbientOcclusion = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_StableAOTexture, resources.m_pAmbientOcclusionHistory[uiCurrentSlot], resources.m_pAmbientOcclusionHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hStableAmbientOcclusion   = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_StableAOTexture, resources.m_pAmbientOcclusionHistory[uiCurrentSlot], resources.m_pAmbientOcclusionHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
 
   data.m_hConstants = CreateTemporalDenoiseConstants(builder, "AO Temporal Denoise Constants");
 
@@ -3351,13 +3352,13 @@ void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGrap
   data.m_bHistoryValid           = lightingPasses.m_bDirectReservoirHistoryValid;
   const xiiUInt32 uiPreviousSlot = (lightingPasses.m_uiFrameIndex + 1U) & 1U;
 
-  data.m_hSceneDepth         = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal      = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVelocity           = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLightGridBuffer    = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLightIndexBuffer   = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousReservoir  = builder.ReadTexture(builder.ImportTexture("ReSTIRDIReservoirPrevious", lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot], lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousSurface    = builder.ReadTexture(builder.ImportTexture("ReSTIRDISurfacePrevious", lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot], lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth        = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal     = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity          = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightGridBuffer   = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightIndexBuffer  = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousReservoir = builder.ReadTexture(builder.ImportTexture("ReSTIRDIReservoirPrevious", lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot], lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface   = builder.ReadTexture(builder.ImportTexture("ReSTIRDISurfacePrevious", lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot], lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription constantsDescription;
   constantsDescription.m_uiSize         = sizeof(xiiReSTIRDIConstants);
@@ -3423,7 +3424,7 @@ struct xiiReSTIRDISpatialData
 
 void xiiView::SetupReSTIRDISpatial(xiiReSTIRDISpatialData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiCurrentSlot = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiCurrentSlot  = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
   auto&           lightingPasses = m_ViewPassResources.m_LightingPasses;
 
   data.m_hSceneDepth        = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
@@ -3508,12 +3509,12 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   data.m_hCloudShadowConstants          = builder.WriteBuffer("xiiCloudShadowConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
-  const auto& cloudState = m_ViewPassResources.m_LightingPasses.m_CloudShadowState;
-  data.m_CloudShadowConstants.LayerOriginAndInvScale      = cloudState.m_vLayerOriginAndInvScale;
-  data.m_CloudShadowConstants.ProjectionAxisUAndDetail    = cloudState.m_vProjectionAxisUAndDetail;
-  data.m_CloudShadowConstants.ProjectionAxisVAndCoverage  = cloudState.m_vProjectionAxisVAndCoverage;
-  data.m_CloudShadowConstants.LayerNormalAndOpticalDepth  = cloudState.m_vLayerNormalAndOpticalDepth;
-  data.m_CloudShadowConstants.WindStrengthAndEnabled      = cloudState.m_vWindStrengthAndEnabled;
+  const auto& cloudState                                 = m_ViewPassResources.m_LightingPasses.m_CloudShadowState;
+  data.m_CloudShadowConstants.LayerOriginAndInvScale     = cloudState.m_vLayerOriginAndInvScale;
+  data.m_CloudShadowConstants.ProjectionAxisUAndDetail   = cloudState.m_vProjectionAxisUAndDetail;
+  data.m_CloudShadowConstants.ProjectionAxisVAndCoverage = cloudState.m_vProjectionAxisVAndCoverage;
+  data.m_CloudShadowConstants.LayerNormalAndOpticalDepth = cloudState.m_vLayerNormalAndOpticalDepth;
+  data.m_CloudShadowConstants.WindStrengthAndEnabled     = cloudState.m_vWindStrengthAndEnabled;
 
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
@@ -3571,37 +3572,37 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
 
 struct xiiDeferredIndirectLightingData
 {
-  xiiRenderGraphTextureHandle m_hGBufferAlbedo;          ///< ShaderResource in (G-Buffer albedo).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;          ///< ShaderResource in (G-Buffer normal).
-  xiiRenderGraphTextureHandle m_hGBufferMaterial;        ///< ShaderResource in (G-Buffer material).
-  xiiRenderGraphTextureHandle m_hSceneDepth;             ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hStableAmbientOcclusion; ///< ShaderResource in (stable ambient occlusion).
-  xiiRenderGraphTextureHandle m_hBRDFLut;                ///< ShaderResource in (BRDF lookup texture).
-  xiiRenderGraphTextureHandle m_hDDGIIrradiance;         ///< ShaderResource in (DDGI irradiance texture).
-  xiiRenderGraphTextureHandle m_hSparseVoxelIrradiance;  ///< ShaderResource in (far-field sparse voxel irradiance).
-  xiiRenderGraphTextureHandle m_hSkyRadiance;            ///< ShaderResource in (sky radiance texture).
-  xiiRenderGraphBufferHandle  m_hReflectionProbeData;    ///< ShaderResource in (active local reflection probes).
-  xiiRenderGraphBufferHandle  m_hReflectionProbeClusters; ///< ShaderResource in (two selected probes per cluster).
+  xiiRenderGraphTextureHandle                                            m_hGBufferAlbedo;           ///< ShaderResource in (G-Buffer albedo).
+  xiiRenderGraphTextureHandle                                            m_hGBufferNormal;           ///< ShaderResource in (G-Buffer normal).
+  xiiRenderGraphTextureHandle                                            m_hGBufferMaterial;         ///< ShaderResource in (G-Buffer material).
+  xiiRenderGraphTextureHandle                                            m_hSceneDepth;              ///< ShaderResource in (scene depth texture).
+  xiiRenderGraphTextureHandle                                            m_hStableAmbientOcclusion;  ///< ShaderResource in (stable ambient occlusion).
+  xiiRenderGraphTextureHandle                                            m_hBRDFLut;                 ///< ShaderResource in (BRDF lookup texture).
+  xiiRenderGraphTextureHandle                                            m_hDDGIIrradiance;          ///< ShaderResource in (DDGI irradiance texture).
+  xiiRenderGraphTextureHandle                                            m_hSparseVoxelIrradiance;   ///< ShaderResource in (far-field sparse voxel irradiance).
+  xiiRenderGraphTextureHandle                                            m_hSkyRadiance;             ///< ShaderResource in (sky radiance texture).
+  xiiRenderGraphBufferHandle                                             m_hReflectionProbeData;     ///< ShaderResource in (active local reflection probes).
+  xiiRenderGraphBufferHandle                                             m_hReflectionProbeClusters; ///< ShaderResource in (two selected probes per cluster).
   xiiHybridArray<xiiRenderGraphTextureHandle, XII_MAX_REFLECTION_PROBES> m_hReflectionProbeTextures;
-  xiiRenderGraphTextureHandle m_hFallbackReflectionProbe;
-  xiiRenderGraphTextureHandle m_hIndirectLightingBuffer; ///< UnorderedAccess out (indirect lighting HDR buffer).
-  xiiRenderGraphTextureHandle m_hEnvironmentSpecular;    ///< UnorderedAccess out (probe/sky specular contribution for tier replacement).
+  xiiRenderGraphTextureHandle                                            m_hFallbackReflectionProbe;
+  xiiRenderGraphTextureHandle                                            m_hIndirectLightingBuffer; ///< UnorderedAccess out (indirect lighting HDR buffer).
+  xiiRenderGraphTextureHandle                                            m_hEnvironmentSpecular;    ///< UnorderedAccess out (probe/sky specular contribution for tier replacement).
 };
 
 void xiiView::SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRenderGraphBuilder& builder)
 {
   builder.SetPassAllowMerge(false);
 
-  data.m_hGBufferAlbedo          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferMaterial        = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneDepth             = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hStableAmbientOcclusion = builder.ReadTexture(xiiRGBlackboardKeys::k_StableAOTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hBRDFLut                = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hDDGIIrradiance         = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIIrradiance, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSparseVoxelIrradiance  = builder.ReadTexture(xiiRGBlackboardKeys::k_SparseVoxelIrradiance, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSkyRadiance            = builder.ReadTexture(xiiRGBlackboardKeys::k_SkyRadiance, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hReflectionProbeData    = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeData, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferAlbedo           = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal           = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial         = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth              = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hStableAmbientOcclusion  = builder.ReadTexture(xiiRGBlackboardKeys::k_StableAOTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hBRDFLut                 = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDDGIIrradiance          = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIIrradiance, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSparseVoxelIrradiance   = builder.ReadTexture(xiiRGBlackboardKeys::k_SparseVoxelIrradiance, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSkyRadiance             = builder.ReadTexture(xiiRGBlackboardKeys::k_SkyRadiance, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hReflectionProbeData     = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeData, xiiGALResourceStateFlags::ShaderResource);
   data.m_hReflectionProbeClusters = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeMask, xiiGALResourceStateFlags::ShaderResource);
 
   auto& reflectionResources = m_ViewPassResources.m_LightingPrepPasses;
@@ -3661,7 +3662,8 @@ void xiiView::ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& dat
     for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < XII_MAX_REFLECTION_PROBES; ++uiProbeIndex)
     {
       reflectionProbeViews[uiProbeIndex] = uiProbeIndex < data.m_hReflectionProbeTextures.GetCount() ?
-        context.GetTexture(data.m_hReflectionProbeTextures[uiProbeIndex])->GetDefaultView(xiiGALTextureViewType::ShaderResource) : pFallbackView;
+        context.GetTexture(data.m_hReflectionProbeTextures[uiProbeIndex])->GetDefaultView(xiiGALTextureViewType::ShaderResource) :
+        pFallbackView;
     }
     cmd.ResolveAndSetShaderResourceTextureViews("g_ReflectionProbeTextures", 0U, reflectionProbeViews, xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_IndirectOut", context.GetTexture(data.m_hIndirectLightingBuffer)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -3678,43 +3680,43 @@ void xiiView::ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& dat
 
 struct xiiRayTracedGlobalIlluminationData
 {
-  xiiRenderGraphTextureHandle m_hSceneDepth;                       ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;                    ///< ShaderResource in (G-Buffer normal).
-  xiiRenderGraphTextureHandle m_hGBufferAlbedo;                    ///< ShaderResource in (surface albedo for diffuse bounce response).
-  xiiRenderGraphTextureHandle m_hRayTracedRawGlobalIllumination;   ///< UnorderedAccess out (raw RT GI texture).
-  xiiRenderGraphBufferHandle  m_hSceneDependency;
-  xiiRenderGraphBufferHandle  m_hMaterialData;
-  xiiRenderGraphBufferHandle  m_hGeometryData;
-  xiiRenderGraphBufferHandle  m_hShaderBindingTable;
+  xiiRenderGraphTextureHandle                 m_hSceneDepth;                     ///< ShaderResource in (scene depth texture).
+  xiiRenderGraphTextureHandle                 m_hGBufferNormal;                  ///< ShaderResource in (G-Buffer normal).
+  xiiRenderGraphTextureHandle                 m_hGBufferAlbedo;                  ///< ShaderResource in (surface albedo for diffuse bounce response).
+  xiiRenderGraphTextureHandle                 m_hRayTracedRawGlobalIllumination; ///< UnorderedAccess out (raw RT GI texture).
+  xiiRenderGraphBufferHandle                  m_hSceneDependency;
+  xiiRenderGraphBufferHandle                  m_hMaterialData;
+  xiiRenderGraphBufferHandle                  m_hGeometryData;
+  xiiRenderGraphBufferHandle                  m_hShaderBindingTable;
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
   xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
-  xiiUInt32                                    m_uiShaderRecordStride = 0U;
-  bool                                         m_bUseHardwareRayTracing = false;
+  xiiUInt32                                   m_uiShaderRecordStride   = 0U;
+  bool                                        m_bUseHardwareRayTracing = false;
 };
 
 void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hSceneDepth            = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal         = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferAlbedo         = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferAlbedo = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type                       = xiiGALResourceDimension::Texture2D;
-  description.m_Format                     = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width                 = GetRenderResolutionWidth();
-  description.m_Size.height                = GetRenderResolutionHeight();
-  description.m_uiMipLevels                = 1U;
-  description.m_BindFlags                  = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage                      = xiiGALResourceUsage::Default;
-  data.m_hRayTracedRawGlobalIllumination   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawGI, description, xiiGALResourceStateFlags::UnorderedAccess);
+  description.m_Type                     = xiiGALResourceDimension::Texture2D;
+  description.m_Format                   = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width               = GetRenderResolutionWidth();
+  description.m_Size.height              = GetRenderResolutionHeight();
+  description.m_uiMipLevels              = 1U;
+  description.m_BindFlags                = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage                    = xiiGALResourceUsage::Default;
+  data.m_hRayTracedRawGlobalIllumination = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawGI, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
-  data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingGlobalIlluminationResources();
+  auto& lightingPasses                     = m_ViewPassResources.m_LightingPasses;
+  data.m_bUseHardwareRayTracing            = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingGlobalIlluminationResources();
   lightingPasses.m_bRTGIAvailableThisFrame = data.m_bUseHardwareRayTracing;
   if (data.m_bUseHardwareRayTracing)
   {
     data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
-    data.m_pRayTracingPipeline = lightingPasses.m_pRTGIPipeline;
+    data.m_pRayTracingPipeline  = lightingPasses.m_pRTGIPipeline;
     data.m_uiShaderRecordStride = lightingPasses.m_uiRTGIShaderRecordStride;
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
@@ -3757,7 +3759,7 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
-      const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
+      const xiiUInt64            uiStride = data.m_uiShaderRecordStride;
       xiiGALUpdateSBTDescription sbtUpdate;
       sbtUpdate.m_pPipelineState      = data.m_pRayTracingPipeline.Borrow();
       sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
@@ -3845,7 +3847,7 @@ void xiiView::SetupReSTIRGITemporal(xiiReSTIRGITemporalData& data, xiiRenderGrap
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants = builder.WriteBuffer("ReSTIR GI Temporal Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("ReSTIR GI Temporal Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(resources.m_pReSTIRGITemporalPipeline, "Shaders/Pipeline/ReSTIRGITemporal.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -3909,13 +3911,13 @@ void xiiView::SetupReSTIRGISpatial(xiiReSTIRGISpatialData& data, xiiRenderGraphB
   const xiiUInt32 uiCurrentSlot = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
   auto&           resources     = m_ViewPassResources.m_LightingPasses;
 
-  data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferAlbedo   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hTemporalSample  = builder.ReadTexture("ReSTIR GI Temporal Sample", xiiGALResourceStateFlags::ShaderResource);
-  data.m_hTemporalState   = builder.ReadTexture("ReSTIR GI Temporal State", xiiGALResourceStateFlags::ShaderResource);
-  data.m_hReservoirSample = builder.WriteTexture(builder.ImportTexture("ReSTIR GI Current Sample", resources.m_pRTGIReservoirSampleHistory[uiCurrentSlot], resources.m_pRTGIReservoirSampleHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hReservoirState  = builder.WriteTexture(builder.ImportTexture("ReSTIR GI Current State", resources.m_pRTGIReservoirStateHistory[uiCurrentSlot], resources.m_pRTGIReservoirStateHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hSceneDepth       = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal    = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferAlbedo    = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hTemporalSample   = builder.ReadTexture("ReSTIR GI Temporal Sample", xiiGALResourceStateFlags::ShaderResource);
+  data.m_hTemporalState    = builder.ReadTexture("ReSTIR GI Temporal State", xiiGALResourceStateFlags::ShaderResource);
+  data.m_hReservoirSample  = builder.WriteTexture(builder.ImportTexture("ReSTIR GI Current Sample", resources.m_pRTGIReservoirSampleHistory[uiCurrentSlot], resources.m_pRTGIReservoirSampleHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hReservoirState   = builder.WriteTexture(builder.ImportTexture("ReSTIR GI Current State", resources.m_pRTGIReservoirStateHistory[uiCurrentSlot], resources.m_pRTGIReservoirStateHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hReservoirSurface = builder.WriteTexture(builder.ImportTexture("ReSTIR GI Current Surface", resources.m_pRTGIReservoirSurfaceHistory[uiCurrentSlot], resources.m_pRTGIReservoirSurfaceHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALTextureCreationDescription description;
@@ -3933,7 +3935,7 @@ void xiiView::SetupReSTIRGISpatial(xiiReSTIRGISpatialData& data, xiiRenderGraphB
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants = builder.WriteBuffer("ReSTIR GI Spatial Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("ReSTIR GI Spatial Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(resources.m_pReSTIRGISpatialPipeline, "Shaders/Pipeline/ReSTIRGISpatial.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -3984,8 +3986,8 @@ struct xiiRayTracedGlobalIlluminationDenoiseData
   xiiRenderGraphTextureHandle m_hPreviousSurface;
   xiiRenderGraphTextureHandle m_hFinalGlobalIllumination;
   xiiRenderGraphBufferHandle  m_hConstants;
-  bool                         m_bHistoryValid = false;
-  bool                         m_bSignalValid  = false;
+  bool                        m_bHistoryValid = false;
+  bool                        m_bSignalValid  = false;
 };
 
 void xiiView::SetupRayTracedGlobalIlluminationDenoise(xiiRayTracedGlobalIlluminationDenoiseData& data, xiiRenderGraphBuilder& builder)
@@ -3994,22 +3996,22 @@ void xiiView::SetupRayTracedGlobalIlluminationDenoise(xiiRayTracedGlobalIllumina
   const xiiUInt32 uiHeight       = GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
-  auto& resources                = m_ViewPassResources.m_LightingPasses;
+  auto&           resources      = m_ViewPassResources.m_LightingPasses;
 
   if (EnsureTemporalHistoryTextures(resources.m_pRTGIHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight))
   {
     resources.m_bRTGIHistoryValid = false;
   }
 
-  data.m_bSignalValid                  = resources.m_bRTGIAvailableThisFrame;
-  data.m_bHistoryValid                 = resources.m_bRTGIHistoryValid && data.m_bSignalValid;
-  data.m_hRawGlobalIllumination        = builder.ReadTexture(xiiRGBlackboardKeys::k_RTResampledGI, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneDepth                   = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal                = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVelocity                     = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousSurface              = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousGlobalIllumination   = builder.ReadTexture(builder.ImportTexture("RTGI Previous History", resources.m_pRTGIHistory[uiPreviousSlot], resources.m_pRTGIHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hFinalGlobalIllumination      = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_RTFinalGI, resources.m_pRTGIHistory[uiCurrentSlot], resources.m_pRTGIHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_bSignalValid                = resources.m_bRTGIAvailableThisFrame;
+  data.m_bHistoryValid               = resources.m_bRTGIHistoryValid && data.m_bSignalValid;
+  data.m_hRawGlobalIllumination      = builder.ReadTexture(xiiRGBlackboardKeys::k_RTResampledGI, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth                 = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal              = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity                   = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface            = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousGlobalIllumination = builder.ReadTexture(builder.ImportTexture("RTGI Previous History", resources.m_pRTGIHistory[uiPreviousSlot], resources.m_pRTGIHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFinalGlobalIllumination    = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_RTFinalGI, resources.m_pRTGIHistory[uiCurrentSlot], resources.m_pRTGIHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
 
   data.m_hConstants = CreateTemporalDenoiseConstants(builder, "RTGI Temporal Denoise Constants");
 
@@ -4024,8 +4026,8 @@ void xiiView::ExecuteRayTracedGlobalIlluminationDenoise(const xiiRayTracedGlobal
   {
     {
       xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->HistoryWeight    = 0.94f;
-      pConstants->DepthThreshold   = 0.06f;
+      pConstants->HistoryWeight   = 0.94f;
+      pConstants->DepthThreshold  = 0.06f;
       pConstants->NormalThreshold = 0.86f;
       pConstants->SpatialWeight   = 0.20f;
       pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
@@ -4056,19 +4058,19 @@ void xiiView::ExecuteRayTracedGlobalIlluminationDenoise(const xiiRayTracedGlobal
 
 struct xiiRayTracedReflectionsData
 {
-  xiiRenderGraphTextureHandle m_hSceneDepth;                ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;             ///< ShaderResource in (G-Buffer normal).
-  xiiRenderGraphTextureHandle m_hGBufferMaterial;           ///< ShaderResource in (G-Buffer material).
-  xiiRenderGraphTextureHandle m_hBRDFLut;                   ///< ShaderResource in (BRDF lookup texture).
-  xiiRenderGraphTextureHandle m_hRayTracedRawReflections;   ///< UnorderedAccess out (raw RT reflections texture).
-  xiiRenderGraphBufferHandle  m_hSceneDependency;           ///< BuildASRead dependency on this frame's TLAS build.
-  xiiRenderGraphBufferHandle  m_hMaterialData;               ///< ShaderResource canonical material records indexed by TLAS instance.
-  xiiRenderGraphBufferHandle  m_hGeometryData;               ///< ShaderResource geometry records indexed by TLAS instance.
-  xiiRenderGraphBufferHandle  m_hShaderBindingTable;        ///< RayTracing in (shader group records).
+  xiiRenderGraphTextureHandle                 m_hSceneDepth;              ///< ShaderResource in (scene depth texture).
+  xiiRenderGraphTextureHandle                 m_hGBufferNormal;           ///< ShaderResource in (G-Buffer normal).
+  xiiRenderGraphTextureHandle                 m_hGBufferMaterial;         ///< ShaderResource in (G-Buffer material).
+  xiiRenderGraphTextureHandle                 m_hBRDFLut;                 ///< ShaderResource in (BRDF lookup texture).
+  xiiRenderGraphTextureHandle                 m_hRayTracedRawReflections; ///< UnorderedAccess out (raw RT reflections texture).
+  xiiRenderGraphBufferHandle                  m_hSceneDependency;         ///< BuildASRead dependency on this frame's TLAS build.
+  xiiRenderGraphBufferHandle                  m_hMaterialData;            ///< ShaderResource canonical material records indexed by TLAS instance.
+  xiiRenderGraphBufferHandle                  m_hGeometryData;            ///< ShaderResource geometry records indexed by TLAS instance.
+  xiiRenderGraphBufferHandle                  m_hShaderBindingTable;      ///< RayTracing in (shader group records).
   xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
   xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
-  xiiUInt32                                    m_uiShaderRecordStride = 0U;
-  bool                                         m_bUseHardwareRayTracing = false;
+  xiiUInt32                                   m_uiShaderRecordStride   = 0U;
+  bool                                        m_bUseHardwareRayTracing = false;
 };
 
 void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRenderGraphBuilder& builder)
@@ -4081,22 +4083,22 @@ void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRe
   data.m_hBRDFLut         = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type                = xiiGALResourceDimension::Texture2D;
-  description.m_Format              = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width          = GetRenderResolutionWidth();
-  description.m_Size.height         = GetRenderResolutionHeight();
-  description.m_uiMipLevels         = 1U;
-  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage               = xiiGALResourceUsage::Default;
-  data.m_hRayTracedRawReflections   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawReflections, description, xiiGALResourceStateFlags::UnorderedAccess);
+  description.m_Type              = xiiGALResourceDimension::Texture2D;
+  description.m_Format            = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width        = GetRenderResolutionWidth();
+  description.m_Size.height       = GetRenderResolutionHeight();
+  description.m_uiMipLevels       = 1U;
+  description.m_BindFlags         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage             = xiiGALResourceUsage::Default;
+  data.m_hRayTracedRawReflections = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawReflections, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  auto& lightingPasses = m_ViewPassResources.m_LightingPasses;
-  data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingReflectionResources();
+  auto& lightingPasses                             = m_ViewPassResources.m_LightingPasses;
+  data.m_bUseHardwareRayTracing                    = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingReflectionResources();
   lightingPasses.m_bRTReflectionAvailableThisFrame = data.m_bUseHardwareRayTracing;
   if (data.m_bUseHardwareRayTracing)
   {
     data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
-    data.m_pRayTracingPipeline = lightingPasses.m_pRTReflectionPipeline;
+    data.m_pRayTracingPipeline  = lightingPasses.m_pRTReflectionPipeline;
     data.m_uiShaderRecordStride = lightingPasses.m_uiRTReflectionShaderRecordStride;
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
@@ -4104,8 +4106,8 @@ void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRe
       data.m_hMaterialData = builder.ReadBuffer(lightingPasses.m_hRayTracingMaterialData, xiiGALResourceStateFlags::ShaderResource);
     if (lightingPasses.m_hRayTracingGeometryData.IsValid())
       data.m_hGeometryData = builder.ReadBuffer(lightingPasses.m_hRayTracingGeometryData, xiiGALResourceStateFlags::ShaderResource);
-    data.m_hShaderBindingTable  = builder.ImportBuffer("RT Reflection Shader Binding Table", lightingPasses.m_pRTReflectionShaderBindingTable, lightingPasses.m_pRTReflectionShaderBindingTable->GetResourceState());
-    data.m_hShaderBindingTable  = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
+    data.m_hShaderBindingTable = builder.ImportBuffer("RT Reflection Shader Binding Table", lightingPasses.m_pRTReflectionShaderBindingTable, lightingPasses.m_pRTReflectionShaderBindingTable->GetResourceState());
+    data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
   }
   else
   {
@@ -4139,7 +4141,7 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
-      const xiiUInt64 uiStride = data.m_uiShaderRecordStride;
+      const xiiUInt64            uiStride = data.m_uiShaderRecordStride;
       xiiGALUpdateSBTDescription sbtUpdate;
       sbtUpdate.m_pPipelineState      = data.m_pRayTracingPipeline.Borrow();
       sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
@@ -4177,8 +4179,8 @@ struct xiiRayTracedReflectionsDenoiseData
   xiiRenderGraphTextureHandle m_hPreviousSurface;
   xiiRenderGraphTextureHandle m_hFinalReflections;
   xiiRenderGraphBufferHandle  m_hConstants;
-  bool                         m_bHistoryValid = false;
-  bool                         m_bSignalValid  = false;
+  bool                        m_bHistoryValid = false;
+  bool                        m_bSignalValid  = false;
 };
 
 void xiiView::SetupRayTracedReflectionsDenoise(xiiRayTracedReflectionsDenoiseData& data, xiiRenderGraphBuilder& builder)
@@ -4187,23 +4189,23 @@ void xiiView::SetupRayTracedReflectionsDenoise(xiiRayTracedReflectionsDenoiseDat
   const xiiUInt32 uiHeight       = GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex & 1U;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
-  auto& resources                = m_ViewPassResources.m_LightingPasses;
+  auto&           resources      = m_ViewPassResources.m_LightingPasses;
 
   if (EnsureTemporalHistoryTextures(resources.m_pRTReflectionHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight))
   {
     resources.m_bRTReflectionHistoryValid = false;
   }
 
-  data.m_bSignalValid        = resources.m_bRTReflectionAvailableThisFrame;
-  data.m_bHistoryValid       = resources.m_bRTReflectionHistoryValid && data.m_bSignalValid;
-  data.m_hRawReflections     = builder.ReadTexture(xiiRGBlackboardKeys::k_RTRawReflections, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneDepth         = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal      = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVelocity           = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousSurface    = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
+  data.m_bSignalValid         = resources.m_bRTReflectionAvailableThisFrame;
+  data.m_bHistoryValid        = resources.m_bRTReflectionHistoryValid && data.m_bSignalValid;
+  data.m_hRawReflections      = builder.ReadTexture(xiiRGBlackboardKeys::k_RTRawReflections, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth          = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal       = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity            = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface     = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousReflections = builder.ReadTexture(builder.ImportTexture("RT Reflection Previous History", resources.m_pRTReflectionHistory[uiPreviousSlot], resources.m_pRTReflectionHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hFinalReflections   = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_RTFinalReflections, resources.m_pRTReflectionHistory[uiCurrentSlot], resources.m_pRTReflectionHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hConstants          = CreateTemporalDenoiseConstants(builder, "RT Reflection Temporal Denoise Constants");
+  data.m_hFinalReflections    = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_RTFinalReflections, resources.m_pRTReflectionHistory[uiCurrentSlot], resources.m_pRTReflectionHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hConstants           = CreateTemporalDenoiseConstants(builder, "RT Reflection Temporal Denoise Constants");
 
   xiiView::EnsureComputePipeline(resources.m_pRTReflectionTemporalDenoisePipeline, "Shaders/Pipeline/TemporalDenoise.xiiShader");
 }
@@ -4216,8 +4218,8 @@ void xiiView::ExecuteRayTracedReflectionsDenoise(const xiiRayTracedReflectionsDe
   {
     {
       xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->HistoryWeight    = 0.90f;
-      pConstants->DepthThreshold   = 0.04f;
+      pConstants->HistoryWeight   = 0.90f;
+      pConstants->DepthThreshold  = 0.04f;
       pConstants->NormalThreshold = 0.92f;
       pConstants->SpatialWeight   = 0.12f;
       pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
@@ -4289,7 +4291,7 @@ void xiiView::SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, x
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("xiiSSRConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("xiiSSRConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiUInt32 uiMipWidth  = GetRenderResolutionWidth();
   xiiUInt32 uiMipHeight = GetRenderResolutionHeight();
@@ -4301,13 +4303,13 @@ void xiiView::SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, x
     ++uiMipCount;
   }
 
-  data.m_Constants.MaxSteps       = 96U;
-  data.m_Constants.Thickness      = 0.0025f;
-  data.m_Constants.MaxRoughness   = 0.72f;
-  data.m_Constants.StrideZCutoff  = 0.25f;
-  data.m_Constants.InvResolution  = xiiVec2(1.0f / static_cast<float>(GetRenderResolutionWidth()), 1.0f / static_cast<float>(GetRenderResolutionHeight()));
-  data.m_Constants.HiZMipCount    = uiMipCount;
-  data.m_Constants._Padding       = 0.0f;
+  data.m_Constants.MaxSteps      = 96U;
+  data.m_Constants.Thickness     = 0.0025f;
+  data.m_Constants.MaxRoughness  = 0.72f;
+  data.m_Constants.StrideZCutoff = 0.25f;
+  data.m_Constants.InvResolution = xiiVec2(1.0f / static_cast<float>(GetRenderResolutionWidth()), 1.0f / static_cast<float>(GetRenderResolutionHeight()));
+  data.m_Constants.HiZMipCount   = uiMipCount;
+  data.m_Constants._Padding      = 0.0f;
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pSSRPipeline, "Shaders/Pipeline/SSR.xiiShader");
 }
@@ -4446,15 +4448,15 @@ struct xiiVolumetricFogTemporalReprojectionData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hCurrentScattering;    ///< ShaderResource in (current integrated scattering).
-  xiiRenderGraphTextureHandle m_hPreviousScattering;   ///< ShaderResource in (previous temporally filtered scattering).
+  xiiRenderGraphTextureHandle m_hCurrentScattering;  ///< ShaderResource in (current integrated scattering).
+  xiiRenderGraphTextureHandle m_hPreviousScattering; ///< ShaderResource in (previous temporally filtered scattering).
   xiiRenderGraphTextureHandle m_hSceneDepth;
   xiiRenderGraphTextureHandle m_hGBufferNormal;
   xiiRenderGraphTextureHandle m_hVelocity;
   xiiRenderGraphTextureHandle m_hPreviousSurface;
   xiiRenderGraphTextureHandle m_hVolumetricScattering; ///< UnorderedAccess out (current persistent history and final signal).
   xiiRenderGraphBufferHandle  m_hConstants;
-  bool                         m_bHistoryValid = false;
+  bool                        m_bHistoryValid = false;
 };
 
 void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphBuilder& builder)
@@ -4470,15 +4472,15 @@ void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalRep
     resources.m_bVolumetricHistoryValid = false;
   }
 
-  data.m_bHistoryValid       = resources.m_bVolumetricHistoryValid;
-  data.m_hCurrentScattering  = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousScattering = builder.ReadTexture(builder.ImportTexture("Volumetric Scattering Previous", resources.m_pVolumetricHistory[uiPreviousSlot], resources.m_pVolumetricHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneDepth         = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal      = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVelocity           = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousSurface    = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
+  data.m_bHistoryValid         = resources.m_bVolumetricHistoryValid;
+  data.m_hCurrentScattering    = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousScattering   = builder.ReadTexture(builder.ImportTexture("Volumetric Scattering Previous", resources.m_pVolumetricHistory[uiPreviousSlot], resources.m_pVolumetricHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth           = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal        = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity             = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface      = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
   data.m_hVolumetricScattering = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_VolumetricScattering, resources.m_pVolumetricHistory[uiCurrentSlot], resources.m_pVolumetricHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hConstants = CreateTemporalDenoiseConstants(builder, "Volumetric Temporal Constants");
+  data.m_hConstants            = CreateTemporalDenoiseConstants(builder, "Volumetric Temporal Constants");
 
   xiiView::EnsureComputePipeline(resources.m_pVolumetricTemporalPipeline, "Shaders/Pipeline/VolumetricFogTemporalRep.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -4492,8 +4494,8 @@ void xiiView::ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTem
   {
     {
       xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->HistoryWeight    = 0.92f;
-      pConstants->DepthThreshold   = 0.08f;
+      pConstants->HistoryWeight   = 0.92f;
+      pConstants->DepthThreshold  = 0.08f;
       pConstants->NormalThreshold = 0.80f;
       pConstants->SpatialWeight   = 0.10f;
       pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
@@ -4592,7 +4594,7 @@ void xiiView::SetupSensorOutput(xiiSensorOutputData& data, xiiRenderGraphBuilder
 
   const auto MatchesProfile = [&data](const xiiSharedPtr<xiiGALTexture>& pTexture) {
     return pTexture != nullptr && pTexture->GetDescription().m_Size.width == data.m_Profile.m_uiResolutionX &&
-           pTexture->GetDescription().m_Size.height == data.m_Profile.m_uiResolutionY;
+      pTexture->GetDescription().m_Size.height == data.m_Profile.m_uiResolutionY;
   };
 
   if (!MatchesProfile(resources.m_pSensorOutputTexture))
@@ -4630,8 +4632,8 @@ void xiiView::SetupSensorOutput(xiiSensorOutputData& data, xiiRenderGraphBuilder
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("Sensor Output Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
-  data.m_uiFrameIndex                    = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex;
+  data.m_hConstants                     = builder.WriteBuffer("Sensor Output Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_uiFrameIndex                   = m_ViewPassResources.m_LightingPasses.m_uiFrameIndex;
 
   builder.ExportTexture(data.m_hSensorOutput, xiiGALResourceStateFlags::ShaderResource);
   builder.SetPassSideEffects(true);
@@ -4650,13 +4652,13 @@ void xiiView::ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGrap
   {
     {
       xiiGALMapHelper<xiiSensorOutputConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->Intrinsics                  = xiiVec4(data.m_Profile.m_fFocalLengthXPixels, data.m_Profile.m_fFocalLengthYPixels, data.m_Profile.m_fPrincipalPointXPixels, data.m_Profile.m_fPrincipalPointYPixels);
-      pConstants->RangeAndExposure            = xiiVec4(data.m_Profile.m_fNearPlaneMeters, data.m_Profile.m_fFarPlaneMeters, data.m_Profile.m_fExposureSeconds, data.m_Profile.m_fRollingShutterSeconds);
-      pConstants->SpectralSensitivityAndQE    = xiiVec4(data.m_Profile.m_vSpectralSensitivity.x, data.m_Profile.m_vSpectralSensitivity.y, data.m_Profile.m_vSpectralSensitivity.z, data.m_Profile.m_fQuantumEfficiency);
-      pConstants->SignalConversion            = xiiVec4(data.m_Profile.m_fRadianceToElectrons, data.m_Profile.m_fAnalogGain, data.m_Profile.m_fSaturationElectrons, data.m_Profile.m_fWavelengthNanometers);
-      pConstants->NoiseParameters             = xiiVec4(data.m_Profile.m_fReadNoiseElectrons, data.m_Profile.m_fShotNoiseScale, data.m_Profile.m_fDepthNoiseStandardDeviationMeters, data.m_Profile.m_fDepthNoiseScalePerMeter);
-      pConstants->OutputDescription           = xiiVec4U32(data.m_Profile.m_Type.GetValue(), data.m_Profile.m_NoiseModel.GetValue(), data.m_Profile.m_uiOutputBitDepth, data.m_Profile.m_uiNoiseSeed);
-      pConstants->FrameAndResolution          = xiiVec4U32(data.m_uiFrameIndex, data.m_Profile.m_uiResolutionX, data.m_Profile.m_uiResolutionY, data.m_Profile.m_Shutter.GetValue());
+      pConstants->Intrinsics               = xiiVec4(data.m_Profile.m_fFocalLengthXPixels, data.m_Profile.m_fFocalLengthYPixels, data.m_Profile.m_fPrincipalPointXPixels, data.m_Profile.m_fPrincipalPointYPixels);
+      pConstants->RangeAndExposure         = xiiVec4(data.m_Profile.m_fNearPlaneMeters, data.m_Profile.m_fFarPlaneMeters, data.m_Profile.m_fExposureSeconds, data.m_Profile.m_fRollingShutterSeconds);
+      pConstants->SpectralSensitivityAndQE = xiiVec4(data.m_Profile.m_vSpectralSensitivity.x, data.m_Profile.m_vSpectralSensitivity.y, data.m_Profile.m_vSpectralSensitivity.z, data.m_Profile.m_fQuantumEfficiency);
+      pConstants->SignalConversion         = xiiVec4(data.m_Profile.m_fRadianceToElectrons, data.m_Profile.m_fAnalogGain, data.m_Profile.m_fSaturationElectrons, data.m_Profile.m_fWavelengthNanometers);
+      pConstants->NoiseParameters          = xiiVec4(data.m_Profile.m_fReadNoiseElectrons, data.m_Profile.m_fShotNoiseScale, data.m_Profile.m_fDepthNoiseStandardDeviationMeters, data.m_Profile.m_fDepthNoiseScalePerMeter);
+      pConstants->OutputDescription        = xiiVec4U32(data.m_Profile.m_Type.GetValue(), data.m_Profile.m_NoiseModel.GetValue(), data.m_Profile.m_uiOutputBitDepth, data.m_Profile.m_uiNoiseSeed);
+      pConstants->FrameAndResolution       = xiiVec4U32(data.m_uiFrameIndex, data.m_Profile.m_uiResolutionX, data.m_Profile.m_uiResolutionY, data.m_Profile.m_Shutter.GetValue());
     }
 
     cmd.SetPipelineState(m_ViewPassResources.m_OutputPasses.m_pSensorOutputPipeline);
@@ -5578,11 +5580,11 @@ void xiiView::SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminatio
   const xiiUInt32 uiRenderWidth  = GetRenderResolutionWidth();
   const xiiUInt32 uiRenderHeight = GetRenderResolutionHeight();
 
-  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferAlbedo = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferAlbedo   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hHDRIn         = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDRIn           = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -5602,10 +5604,10 @@ void xiiView::SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminatio
   data.m_hConstants                     = builder.WriteBuffer("xiiSSGIConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   const xiiLightingSystemSettings& settings = m_ViewPassResources.m_LightingSystem.GetSettings();
-  data.m_Constants.RayLength   = xiiMath::Max(settings.m_fSSGIRayLength, 0.0f);
-  data.m_Constants.SampleCount = xiiMath::Clamp(settings.m_uiSSGISampleCount, 1U, 32U);
-  data.m_Constants.Thickness   = xiiMath::Max(settings.m_fSSGIThickness, 0.001f);
-  data.m_Constants.Intensity   = xiiMath::Max(settings.m_fSSGIIntensity, 0.0f);
+  data.m_Constants.RayLength                = xiiMath::Max(settings.m_fSSGIRayLength, 0.0f);
+  data.m_Constants.SampleCount              = xiiMath::Clamp(settings.m_uiSSGISampleCount, 1U, 32U);
+  data.m_Constants.Thickness                = xiiMath::Max(settings.m_fSSGIThickness, 0.001f);
+  data.m_Constants.Intensity                = xiiMath::Max(settings.m_fSSGIIntensity, 0.0f);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_ScreenSpacePasses.m_pSSGIPipeline, "Shaders/Pipeline/SSGI.xiiShader");
 }
@@ -5648,7 +5650,7 @@ struct xiiScreenSpaceGlobalIlluminationCompositeData
 void xiiView::SetupScreenSpaceGlobalIlluminationComposite(xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphBuilder& builder)
 {
   builder.SetPassAllowMerge(false);
-  data.m_hSSGI = builder.ReadTexture(xiiRGBlackboardKeys::k_SSGITexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSSGI     = builder.ReadTexture(xiiRGBlackboardKeys::k_SSGITexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hHDRScene = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_ScreenSpacePasses.m_pSSGICompositePipeline, "Shaders/Pipeline/SSGIComposite.xiiShader");
 }
@@ -5736,10 +5738,10 @@ void xiiView::SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xii
   data.m_hConstants                     = builder.WriteBuffer("xiiSSRefractionConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   const xiiLightingSystemSettings& settings = m_ViewPassResources.m_LightingSystem.GetSettings();
-  data.m_Constants.PerturbScale = xiiMath::Clamp(settings.m_fSSRefractionScale, 0.0f, 0.5f);
-  data.m_Constants.MaxDistance  = xiiMath::Clamp(settings.m_fSSRefractionMaxDistance, 0.0f, 0.5f);
-  data.m_Constants.Chromatic    = xiiMath::Clamp(settings.m_fSSRefractionChromatic, 0.0f, 0.1f);
-  data.m_Constants.Padding      = 0.0f;
+  data.m_Constants.PerturbScale             = xiiMath::Clamp(settings.m_fSSRefractionScale, 0.0f, 0.5f);
+  data.m_Constants.MaxDistance              = xiiMath::Clamp(settings.m_fSSRefractionMaxDistance, 0.0f, 0.5f);
+  data.m_Constants.Chromatic                = xiiMath::Clamp(settings.m_fSSRefractionChromatic, 0.0f, 0.1f);
+  data.m_Constants.Padding                  = 0.0f;
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_ScreenSpacePasses.m_pSSRefractionPipeline, "Shaders/Pipeline/SSRefraction.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -5896,7 +5898,7 @@ struct xiiAutoExposureData
   xiiRenderGraphBufferHandle m_hHistogram; ///< ShaderResource in (luminance histogram).
   xiiRenderGraphBufferHandle m_hExposure;  ///< UnorderedAccess in/out (persistent exposure value).
   xiiRenderGraphBufferHandle m_hConstants;
-  bool                        m_bHistoryValid = false;
+  bool                       m_bHistoryValid = false;
 };
 
 void xiiView::SetupAutoExposure(xiiAutoExposureData& data, xiiRenderGraphBuilder& builder)
@@ -5915,8 +5917,8 @@ void xiiView::SetupAutoExposure(xiiAutoExposureData& data, xiiRenderGraphBuilder
     m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
   }
 
-  data.m_hExposure = builder.ImportBuffer(xiiRGBlackboardKeys::k_CurrentExposure, m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer, m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer->GetResourceState());
-  data.m_hExposure = builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hExposure     = builder.ImportBuffer(xiiRGBlackboardKeys::k_CurrentExposure, m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer, m_ViewPassResources.m_TemporalPasses.m_pExposureBuffer->GetResourceState());
+  data.m_hExposure     = builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
   data.m_bHistoryValid = m_ViewPassResources.m_TemporalPasses.m_bExposureHistoryValid;
 
   xiiGALBufferCreationDescription constantsDescription;
@@ -5973,9 +5975,9 @@ struct xiiTemporalAntiAliasingData
   xiiRenderGraphTextureHandle m_hHistory;  ///< ShaderResource in (history color).
   xiiRenderGraphTextureHandle m_hTAAOut;   ///< UnorderedAccess out (TAA resolved color).
   xiiRenderGraphBufferHandle  m_hConstants;
-  xiiTAAConstants             m_Constants = {};
-  xiiUInt32                    m_uiHistoryWriteIndex = 0U;
-  bool                         m_bHistoryValid       = false;
+  xiiTAAConstants             m_Constants           = {};
+  xiiUInt32                   m_uiHistoryWriteIndex = 0U;
+  bool                        m_bHistoryValid       = false;
 };
 
 void xiiView::SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRenderGraphBuilder& builder)
@@ -6020,8 +6022,8 @@ void xiiView::SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRe
   data.m_bHistoryValid       = temporalResources.m_bTAAHistoryValid;
 
   const xiiUInt32 uiHistoryReadIndex = 1U - data.m_uiHistoryWriteIndex;
-  data.m_hHistory = builder.ImportTexture("TAAHistory", temporalResources.m_pTAAHistoryBuffers[uiHistoryReadIndex], temporalResources.m_pTAAHistoryBuffers[uiHistoryReadIndex]->GetResourceState());
-  data.m_hHistory = builder.ReadTexture(data.m_hHistory, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHistory                    = builder.ImportTexture("TAAHistory", temporalResources.m_pTAAHistoryBuffers[uiHistoryReadIndex], temporalResources.m_pTAAHistoryBuffers[uiHistoryReadIndex]->GetResourceState());
+  data.m_hHistory                    = builder.ReadTexture(data.m_hHistory, xiiGALResourceStateFlags::ShaderResource);
 
   data.m_hTAAOut = builder.ImportTexture(xiiRGBlackboardKeys::k_TAAResolvedColor, temporalResources.m_pTAAHistoryBuffers[data.m_uiHistoryWriteIndex], temporalResources.m_pTAAHistoryBuffers[data.m_uiHistoryWriteIndex]->GetResourceState());
   data.m_hTAAOut = builder.WriteTexture(data.m_hTAAOut, xiiGALResourceStateFlags::UnorderedAccess);
@@ -6330,7 +6332,7 @@ struct xiiFinalBlitData
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hDisplayLinear; ///< ShaderResource in (tone-mapped scene-linear display signal).
-  xiiRenderGraphTextureHandle m_hBackbuffer; ///< RenderTarget out (swapchain backbuffer).
+  xiiRenderGraphTextureHandle m_hBackbuffer;    ///< RenderTarget out (swapchain backbuffer).
   xiiRenderGraphBufferHandle  m_hConstants;
   bool                        m_bApplySRGBTransfer = false;
 };
@@ -6344,8 +6346,8 @@ void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& buil
     xiiSharedPtr<xiiGALTexture> pBackbufferTexture = pSwapChain->GetBackBufferTexture();
     if (pBackbufferTexture)
     {
-      data.m_hBackbuffer = builder.ImportTexture("Backbuffer", pBackbufferTexture, xiiGALResourceStateFlags::RenderTarget);
-      data.m_hBackbuffer = builder.WriteTexture(data.m_hBackbuffer, xiiGALResourceStateFlags::RenderTarget);
+      data.m_hBackbuffer        = builder.ImportTexture("Backbuffer", pBackbufferTexture, xiiGALResourceStateFlags::RenderTarget);
+      data.m_hBackbuffer        = builder.WriteTexture(data.m_hBackbuffer, xiiGALResourceStateFlags::RenderTarget);
       data.m_bApplySRGBTransfer = !xiiGALResourceFormat::IsSrgb(pBackbufferTexture->GetDescription().m_Format);
     }
   }
@@ -6364,7 +6366,7 @@ void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRenderGraphBuilder& buil
 
 void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassContext& context)
 {
-  xiiGALCommandList& cmd = context.GetCommandList();
+  xiiGALCommandList&                        cmd = context.GetCommandList();
   xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline;
   if (data.m_hDisplayLinear.IsValid() && data.m_hBackbuffer.IsValid() && data.m_hConstants.IsValid() && context.GetRenderPass() != nullptr)
   {
@@ -6377,10 +6379,10 @@ void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassC
     {
       {
         xiiGALMapHelper<xiiFinalBlitConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-        pConstants->OutputMode             = m_DisplayOutputSettings.m_OutputMode.GetValue();
-        pConstants->ApplySRGBTransfer      = data.m_bApplySRGBTransfer ? 1U : 0U;
-        pConstants->PaperWhiteNits         = m_DisplayOutputSettings.m_fPaperWhiteNits;
-        pConstants->MaximumDisplayNits     = m_DisplayOutputSettings.m_fMaximumDisplayNits;
+        pConstants->OutputMode         = m_DisplayOutputSettings.m_OutputMode.GetValue();
+        pConstants->ApplySRGBTransfer  = data.m_bApplySRGBTransfer ? 1U : 0U;
+        pConstants->PaperWhiteNits     = m_DisplayOutputSettings.m_fPaperWhiteNits;
+        pConstants->MaximumDisplayNits = m_DisplayOutputSettings.m_fMaximumDisplayNits;
       }
 
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hBackbuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 1.0f));
@@ -6404,11 +6406,11 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   bool      bResult      = blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
   XII_IGNORE_UNUSED(bResult);
 
-  const xiiRayTracingSceneManager::BuildHandles rayTracingScene = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
-  m_ViewPassResources.m_LightingPasses.m_pRayTracingScene            = rayTracingScene.m_pTopLevelAS;
+  const xiiRayTracingSceneManager::BuildHandles rayTracingScene     = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
+  m_ViewPassResources.m_LightingPasses.m_pRayTracingScene           = rayTracingScene.m_pTopLevelAS;
   m_ViewPassResources.m_LightingPasses.m_hRayTracingSceneDependency = rayTracingScene.m_hSceneDependency;
-  m_ViewPassResources.m_LightingPasses.m_hRayTracingMaterialData     = rayTracingScene.m_hMaterialData;
-  m_ViewPassResources.m_LightingPasses.m_hRayTracingGeometryData     = rayTracingScene.m_hGeometryData;
+  m_ViewPassResources.m_LightingPasses.m_hRayTracingMaterialData    = rayTracingScene.m_hMaterialData;
+  m_ViewPassResources.m_LightingPasses.m_hRayTracingGeometryData    = rayTracingScene.m_hGeometryData;
 
   if (m_pExtractedData != nullptr)
   {
@@ -6416,7 +6418,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   }
 
   xiiAtmosphereLUTHandle& hAtmosphereLUT = m_ViewPassResources.m_LightingPrepPasses.m_hAtmosphereLUT;
-  hAtmosphereLUT = xiiAtmosphereManager::GetDefaultLUTHandle();
+  hAtmosphereLUT                         = xiiAtmosphereManager::GetDefaultLUTHandle();
   if (m_pExtractedData != nullptr)
   {
     if (const xiiSkyAtmosphereRenderData* pAtmosphere = SelectSkyAtmosphere(m_pExtractedData->GetAllRenderData()))
@@ -6429,18 +6431,18 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   }
 
   auto& cloudState = m_ViewPassResources.m_LightingPasses.m_CloudShadowState;
-  cloudState = {};
+  cloudState       = {};
   if (m_pExtractedData != nullptr)
   {
     if (const xiiVolumetricCloudRenderData* pCloud = SelectVolumetricCloudLayer(m_pExtractedData->GetAllRenderData()))
     {
-      const xiiVolumetricCloudSettings& settings = pCloud->m_Settings;
-      const float fInvScale = 1.0f / xiiMath::Max(settings.m_fShadowScaleMeters, 1.0f);
-      cloudState.m_vLayerOriginAndInvScale = xiiVec4(pCloud->m_vLayerOrigin.x, pCloud->m_vLayerOrigin.y, pCloud->m_vLayerOrigin.z, fInvScale);
-      cloudState.m_vProjectionAxisUAndDetail = xiiVec4(pCloud->m_vProjectionAxisU.x, pCloud->m_vProjectionAxisU.y, pCloud->m_vProjectionAxisU.z, xiiMath::Max(settings.m_fDetailScale, 1.0f));
-      cloudState.m_vProjectionAxisVAndCoverage = xiiVec4(pCloud->m_vProjectionAxisV.x, pCloud->m_vProjectionAxisV.y, pCloud->m_vProjectionAxisV.z, xiiMath::Saturate(settings.m_fCoverage));
-      cloudState.m_vLayerNormalAndOpticalDepth = xiiVec4(pCloud->m_vLayerNormal.x, pCloud->m_vLayerNormal.y, pCloud->m_vLayerNormal.z, xiiMath::Max(settings.m_fOpticalDepth, 0.0f));
-      cloudState.m_vWindStrengthAndEnabled = xiiVec4(settings.m_vWindVelocityMetersPerSecond.x, settings.m_vWindVelocityMetersPerSecond.y, xiiMath::Saturate(settings.m_fShadowStrength), settings.m_bCastShadows ? 1.0f : 0.0f);
+      const xiiVolumetricCloudSettings& settings  = pCloud->m_Settings;
+      const float                       fInvScale = 1.0f / xiiMath::Max(settings.m_fShadowScaleMeters, 1.0f);
+      cloudState.m_vLayerOriginAndInvScale        = xiiVec4(pCloud->m_vLayerOrigin.x, pCloud->m_vLayerOrigin.y, pCloud->m_vLayerOrigin.z, fInvScale);
+      cloudState.m_vProjectionAxisUAndDetail      = xiiVec4(pCloud->m_vProjectionAxisU.x, pCloud->m_vProjectionAxisU.y, pCloud->m_vProjectionAxisU.z, xiiMath::Max(settings.m_fDetailScale, 1.0f));
+      cloudState.m_vProjectionAxisVAndCoverage    = xiiVec4(pCloud->m_vProjectionAxisV.x, pCloud->m_vProjectionAxisV.y, pCloud->m_vProjectionAxisV.z, xiiMath::Saturate(settings.m_fCoverage));
+      cloudState.m_vLayerNormalAndOpticalDepth    = xiiVec4(pCloud->m_vLayerNormal.x, pCloud->m_vLayerNormal.y, pCloud->m_vLayerNormal.z, xiiMath::Max(settings.m_fOpticalDepth, 0.0f));
+      cloudState.m_vWindStrengthAndEnabled        = xiiVec4(settings.m_vWindVelocityMetersPerSecond.x, settings.m_vWindVelocityMetersPerSecond.y, xiiMath::Saturate(settings.m_fShadowStrength), settings.m_bCastShadows ? 1.0f : 0.0f);
     }
   }
   m_ViewPassResources.m_LightingSystem.WriteBlackboard(blackboard);
@@ -6479,7 +6481,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows)
     {
       xiiVirtualShadowMapManager::AddFeedbackPasses(graph, depthPrepass.first->m_hSceneDepth, shadowCascadePass.first->m_hCascadeMatrices,
-        GetRenderResolutionWidth(), GetRenderResolutionHeight(), static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey), uiFrameIndex);
+                                                    GetRenderResolutionWidth(), GetRenderResolutionHeight(), static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey), uiFrameIndex);
     }
   }
   graph.AddPass<xiiHiZPyramidData>("HiZPyramid", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZPyramid, this), xiiMakeDelegate(&xiiView::ExecuteHiZPyramid, this));
@@ -6595,10 +6597,10 @@ bool xiiView::EnsureRayTracingShadowResources()
   if (pDevice == nullptr || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
     return false;
 
-  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTShadow.xiiShader");
+  xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTShadow.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the hardware ray-traced shadow shader permutation.");
@@ -6624,10 +6626,10 @@ bool xiiView::EnsureRayTracingShadowResources()
   auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
   rayGeneration.m_sName.Assign("RTShadowRayGeneration");
   rayGeneration.m_pShader = pRayGeneration;
-  auto& miss = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  auto& miss              = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
   miss.m_sName.Assign("RTShadowMiss");
   miss.m_pShader = pRayMiss;
-  auto& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
+  auto& hit      = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
   hit.m_sName.Assign("RTShadowTriangleHit");
   hit.m_pClosestHitShader = pClosestHit;
   hit.m_pAnyHitShader     = pAnyHit;
@@ -6640,9 +6642,9 @@ bool xiiView::EnsureRayTracingShadowResources()
   }
   shadowPasses.m_pRayTracedShadowPipeline->SetDebugName("RT Shadow Pipeline");
 
-  const xiiGALRayTracingProperties& properties = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
-  const xiiUInt64 uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
-  const xiiUInt64 uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
+  const xiiGALRayTracingProperties& properties      = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiUInt64                   uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
+  const xiiUInt64                   uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
   if (uiRecordStride == 0U || (properties.m_uiMaxShaderRecordStride != 0U && uiRecordStride > properties.m_uiMaxShaderRecordStride))
   {
     xiiLog::Error("The device reported invalid shadow shader binding table alignment properties.");
@@ -6651,10 +6653,10 @@ bool xiiView::EnsureRayTracingShadowResources()
   }
 
   xiiGALBufferCreationDescription sbtDescription;
-  sbtDescription.m_uiSize    = uiRecordStride * 3U;
-  sbtDescription.m_BindFlags = xiiGALBindFlags::RayTracing;
-  sbtDescription.m_Usage     = xiiGALResourceUsage::Mutable;
-  sbtDescription.m_Mode      = xiiGALBufferMode::Raw;
+  sbtDescription.m_uiSize                           = uiRecordStride * 3U;
+  sbtDescription.m_BindFlags                        = xiiGALBindFlags::RayTracing;
+  sbtDescription.m_Usage                            = xiiGALResourceUsage::Mutable;
+  sbtDescription.m_Mode                             = xiiGALBufferMode::Raw;
   shadowPasses.m_pRayTracedShadowShaderBindingTable = pDevice->CreateBuffer(sbtDescription);
   if (shadowPasses.m_pRayTracedShadowShaderBindingTable == nullptr)
   {
@@ -6678,10 +6680,10 @@ bool xiiView::EnsureRayTracingAmbientOcclusionResources()
   if (pDevice == nullptr || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
     return false;
 
-  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTAO.xiiShader");
+  xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTAO.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the ray-traced ambient-occlusion shader permutation.");
@@ -6707,10 +6709,10 @@ bool xiiView::EnsureRayTracingAmbientOcclusionResources()
   auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
   rayGeneration.m_sName.Assign("RTAORayGeneration");
   rayGeneration.m_pShader = pRayGeneration;
-  auto& miss = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  auto& miss              = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
   miss.m_sName.Assign("RTAOMiss");
   miss.m_pShader = pRayMiss;
-  auto& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
+  auto& hit      = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
   hit.m_sName.Assign("RTAOTriangleHit");
   hit.m_pClosestHitShader = pClosestHit;
   hit.m_pAnyHitShader     = pAnyHit;
@@ -6723,9 +6725,9 @@ bool xiiView::EnsureRayTracingAmbientOcclusionResources()
   }
   lightingPrepPasses.m_pRTAOPipeline->SetDebugName("RT AO Pipeline");
 
-  const xiiGALRayTracingProperties& properties = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
-  const xiiUInt64 uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
-  const xiiUInt64 uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
+  const xiiGALRayTracingProperties& properties      = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiUInt64                   uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
+  const xiiUInt64                   uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
   if (uiRecordStride == 0U || (properties.m_uiMaxShaderRecordStride != 0U && uiRecordStride > properties.m_uiMaxShaderRecordStride))
   {
     xiiLog::Error("The device reported invalid ambient-occlusion shader binding table alignment properties.");
@@ -6734,10 +6736,10 @@ bool xiiView::EnsureRayTracingAmbientOcclusionResources()
   }
 
   xiiGALBufferCreationDescription sbtDescription;
-  sbtDescription.m_uiSize    = uiRecordStride * 3U;
-  sbtDescription.m_BindFlags = xiiGALBindFlags::RayTracing;
-  sbtDescription.m_Usage     = xiiGALResourceUsage::Mutable;
-  sbtDescription.m_Mode      = xiiGALBufferMode::Raw;
+  sbtDescription.m_uiSize                      = uiRecordStride * 3U;
+  sbtDescription.m_BindFlags                   = xiiGALBindFlags::RayTracing;
+  sbtDescription.m_Usage                       = xiiGALResourceUsage::Mutable;
+  sbtDescription.m_Mode                        = xiiGALBufferMode::Raw;
   lightingPrepPasses.m_pRTAOShaderBindingTable = pDevice->CreateBuffer(sbtDescription);
   if (lightingPrepPasses.m_pRTAOShaderBindingTable == nullptr)
   {
@@ -6761,10 +6763,10 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
   if (pDevice == nullptr || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
     return false;
 
-  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTGIFinalGather.xiiShader");
+  xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTGIFinalGather.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the hardware ray-traced GI shader permutation.");
@@ -6790,10 +6792,10 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
   auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
   rayGeneration.m_sName.Assign("RTGIRayGeneration");
   rayGeneration.m_pShader = pRayGeneration;
-  auto& miss = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  auto& miss              = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
   miss.m_sName.Assign("RTGIMiss");
   miss.m_pShader = pRayMiss;
-  auto& hit = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
+  auto& hit      = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
   hit.m_sName.Assign("RTGITriangleHit");
   hit.m_pClosestHitShader = pClosestHit;
   hit.m_pAnyHitShader     = pAnyHit;
@@ -6806,9 +6808,9 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
   }
   lightingPasses.m_pRTGIPipeline->SetDebugName("RT GI Pipeline");
 
-  const xiiGALRayTracingProperties& properties = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
-  const xiiUInt64 uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
-  const xiiUInt64 uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
+  const xiiGALRayTracingProperties& properties      = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiUInt64                   uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
+  const xiiUInt64                   uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
   if (uiRecordStride == 0U || (properties.m_uiMaxShaderRecordStride != 0U && uiRecordStride > properties.m_uiMaxShaderRecordStride))
   {
     xiiLog::Error("The device reported invalid GI shader binding table alignment properties.");
@@ -6817,10 +6819,10 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
   }
 
   xiiGALBufferCreationDescription sbtDescription;
-  sbtDescription.m_uiSize    = uiRecordStride * 3U;
-  sbtDescription.m_BindFlags = xiiGALBindFlags::RayTracing;
-  sbtDescription.m_Usage     = xiiGALResourceUsage::Mutable;
-  sbtDescription.m_Mode      = xiiGALBufferMode::Raw;
+  sbtDescription.m_uiSize                  = uiRecordStride * 3U;
+  sbtDescription.m_BindFlags               = xiiGALBindFlags::RayTracing;
+  sbtDescription.m_Usage                   = xiiGALResourceUsage::Mutable;
+  sbtDescription.m_Mode                    = xiiGALBufferMode::Raw;
   lightingPasses.m_pRTGIShaderBindingTable = pDevice->CreateBuffer(sbtDescription);
   if (lightingPasses.m_pRTGIShaderBindingTable == nullptr)
   {
@@ -6844,10 +6846,10 @@ bool xiiView::EnsureRayTracingReflectionResources()
   if (pDevice == nullptr || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
     return false;
 
-  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTReflection.xiiShader");
+  xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTReflection.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the hardware ray-tracing reflection shader permutation.");
@@ -6865,7 +6867,7 @@ bool xiiView::EnsureRayTracingReflectionResources()
   }
 
   xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
-  pipelineDescription.m_pPipelineResourceSignature              = permutation->GetPipelineResourceSignature();
+  pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
   pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
   pipelineDescription.m_uiMaximumPayloadSize                     = 16U;
   pipelineDescription.m_uiMaximumAttributeSize                   = 8U;
@@ -6892,8 +6894,8 @@ bool xiiView::EnsureRayTracingReflectionResources()
   lightingPasses.m_pRTReflectionPipeline->SetDebugName("RT Reflection Pipeline");
 
   const xiiGALRayTracingProperties& rayTracingProperties = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
-  const xiiUInt64 uiBaseAlignment = xiiMath::Max(1U, rayTracingProperties.m_uiShaderGroupBaseAlignment);
-  const xiiUInt64 uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(rayTracingProperties.m_uiShaderGroupHandleSize), uiBaseAlignment);
+  const xiiUInt64                   uiBaseAlignment      = xiiMath::Max(1U, rayTracingProperties.m_uiShaderGroupBaseAlignment);
+  const xiiUInt64                   uiRecordStride       = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(rayTracingProperties.m_uiShaderGroupHandleSize), uiBaseAlignment);
   if (uiRecordStride == 0U || (rayTracingProperties.m_uiMaxShaderRecordStride != 0U && uiRecordStride > rayTracingProperties.m_uiMaxShaderRecordStride))
   {
     xiiLog::Error("The device reported invalid shader binding table alignment properties.");
@@ -6902,10 +6904,10 @@ bool xiiView::EnsureRayTracingReflectionResources()
   }
 
   xiiGALBufferCreationDescription sbtDescription;
-  sbtDescription.m_uiSize    = uiRecordStride * 3U;
-  sbtDescription.m_BindFlags = xiiGALBindFlags::RayTracing;
-  sbtDescription.m_Usage     = xiiGALResourceUsage::Mutable;
-  sbtDescription.m_Mode      = xiiGALBufferMode::Raw;
+  sbtDescription.m_uiSize                          = uiRecordStride * 3U;
+  sbtDescription.m_BindFlags                       = xiiGALBindFlags::RayTracing;
+  sbtDescription.m_Usage                           = xiiGALResourceUsage::Mutable;
+  sbtDescription.m_Mode                            = xiiGALBufferMode::Raw;
   lightingPasses.m_pRTReflectionShaderBindingTable = pDevice->CreateBuffer(sbtDescription);
   if (lightingPasses.m_pRTReflectionShaderBindingTable == nullptr)
   {

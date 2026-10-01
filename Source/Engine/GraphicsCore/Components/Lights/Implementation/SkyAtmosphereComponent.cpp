@@ -67,7 +67,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkyAtmosphereComponent, 1, xiiComponentMode::Static)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiSkyAtmosphereComponent::xiiSkyAtmosphereComponent() = default;
+xiiSkyAtmosphereComponent::xiiSkyAtmosphereComponent()  = default;
 xiiSkyAtmosphereComponent::~xiiSkyAtmosphereComponent() = default;
 
 void xiiSkyAtmosphereComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
@@ -155,9 +155,9 @@ void xiiSkyAtmosphereComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& 
     return;
 
   xiiSkyAtmosphereRenderData* pRenderData = pWorldModule->CreateRenderDataForThisFrame<xiiSkyAtmosphereRenderData>(this);
-  pRenderData->m_AtmosphereSettings = m_AtmosphereSettings;
-  pRenderData->m_iPriority = m_iPriority;
-  pRenderData->m_uiSortingKey = GetUniqueIdForRendering();
+  pRenderData->m_AtmosphereSettings       = m_AtmosphereSettings;
+  pRenderData->m_iPriority                = m_iPriority;
+  pRenderData->m_uiSortingKey             = GetUniqueIdForRendering();
   ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 

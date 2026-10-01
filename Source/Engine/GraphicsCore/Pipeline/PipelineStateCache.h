@@ -73,10 +73,10 @@ private:
   XII_ALWAYS_INLINE xiiResult TryInsertPipeline(const DescriptorType& description, HandleType hNewPipeline, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table);
 
 private:
-  xiiMutex                                                                                          m_Mutex;
-  xiiGALDevice*                                                                                     m_pDevice;
-  xiiHashTable<GraphicsPipelineCacheKey, xiiSharedPtr<xiiGALGraphicsPipelineState>, CacheKeyHasher> m_GraphicsPipelines;
-  xiiHashTable<ComputePipelineCacheKey, xiiSharedPtr<xiiGALComputePipelineState>, CacheKeyHasher>   m_ComputePipelines;
+  xiiMutex                                                                                              m_Mutex;
+  xiiGALDevice*                                                                                         m_pDevice;
+  xiiHashTable<GraphicsPipelineCacheKey, xiiSharedPtr<xiiGALGraphicsPipelineState>, CacheKeyHasher>     m_GraphicsPipelines;
+  xiiHashTable<ComputePipelineCacheKey, xiiSharedPtr<xiiGALComputePipelineState>, CacheKeyHasher>       m_ComputePipelines;
   xiiHashTable<RayTracingPipelineCacheKey, xiiSharedPtr<xiiGALRayTracingPipelineState>, CacheKeyHasher> m_RayTracingPipelines;
 };
 

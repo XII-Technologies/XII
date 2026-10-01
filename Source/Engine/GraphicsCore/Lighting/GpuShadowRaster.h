@@ -14,11 +14,11 @@
 /// Describes one independently culled shadow view rasterized into a depth atlas region.
 struct XII_GRAPHICSCORE_DLL xiiGpuShadowRasterDescription
 {
-  xiiMat4   m_ViewProjectionMatrix = xiiMat4::MakeIdentity();
-  xiiVec4U32 m_Viewport = xiiVec4U32::MakeZero(); ///< x, y, width, height in atlas texels.
-  xiiUInt32 m_uiVertexStride            = 0U;
-  xiiUInt32 m_uiMeshDispatchGroupCountX = 1U;
-  xiiUInt32 m_uiMeshDispatchGroupCountY = 1U;
+  xiiMat4    m_ViewProjectionMatrix      = xiiMat4::MakeIdentity();
+  xiiVec4U32 m_Viewport                  = xiiVec4U32::MakeZero(); ///< x, y, width, height in atlas texels.
+  xiiUInt32  m_uiVertexStride            = 0U;
+  xiiUInt32  m_uiMeshDispatchGroupCountX = 1U;
+  xiiUInt32  m_uiMeshDispatchGroupCountY = 1U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuShadowRasterDescription);
@@ -41,8 +41,8 @@ public:
 
   /// Adds one graph-managed depth-only mesh dispatch. The returned handle is the new atlas version.
   [[nodiscard]] static xiiRenderGraphTextureHandle AddPass(xiiRenderGraph& graph, xiiStringView sName,
-    xiiRenderGraphTextureHandle hDepthAtlas, const xiiGpuVisibilityOutputs& visibility,
-    const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuShadowRasterDescription& description);
+                                                           xiiRenderGraphTextureHandle hDepthAtlas, const xiiGpuVisibilityOutputs& visibility,
+                                                           const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuShadowRasterDescription& description);
 
 private:
   static void Startup();

@@ -62,4 +62,3 @@ protected:
 private:
   xiiIESProfileResourceDescriptor m_Descriptor;
 };
-

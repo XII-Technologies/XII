@@ -19,7 +19,7 @@ XII_CREATE_SIMPLE_TEST(Lighting, IESProfileResource)
       "100 50 0\n";
 
     xiiIESProfileResourceDescriptor descriptor;
-    xiiStringBuilder error;
+    xiiStringBuilder                error;
     XII_TEST_BOOL_MSG(descriptor.ParseLM63(szProfile, &error).Succeeded(), error);
     XII_TEST_BOOL(descriptor.IsValid());
     XII_TEST_FLOAT(descriptor.m_fMaximumCandela, 200.0f, 0.001f);
@@ -53,10 +53,9 @@ XII_CREATE_SIMPLE_TEST(Lighting, IESProfileResource)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Reject unsupported tilt data")
   {
     xiiIESProfileResourceDescriptor descriptor;
-    xiiStringBuilder error;
+    xiiStringBuilder                error;
     XII_TEST_BOOL(descriptor.ParseLM63("IESNA:LM-63-2002\nTILT=INCLUDE\n", &error).Failed());
     XII_TEST_BOOL(!descriptor.IsValid());
     XII_TEST_BOOL(!error.IsEmpty());
   }
 }
-

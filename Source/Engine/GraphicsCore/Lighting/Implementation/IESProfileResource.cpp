@@ -73,7 +73,7 @@ namespace
   }
 
   float InterpolateSource(const xiiDynamicArray<float>& verticalAngles, const xiiDynamicArray<float>& horizontalAngles,
-    const xiiDynamicArray<float>& candela, float verticalDegrees, float horizontalDegrees)
+                          const xiiDynamicArray<float>& candela, float verticalDegrees, float horizontalDegrees)
   {
     verticalDegrees = xiiMath::Clamp(verticalDegrees, verticalAngles[0], verticalAngles.PeekBack());
 
@@ -102,21 +102,21 @@ namespace
       horizontalDegrees = xiiMath::Clamp(horizontalDegrees, horizontalAngles[0], maximumHorizontal);
     }
 
-    const xiiUInt32 v0 = FindLowerSample(verticalAngles, verticalDegrees);
-    const xiiUInt32 v1 = xiiMath::Min(v0 + 1U, verticalAngles.GetCount() - 1U);
-    const float verticalSpan = verticalAngles[v1] - verticalAngles[v0];
-    const float verticalWeight = verticalSpan > 0.0f ? (verticalDegrees - verticalAngles[v0]) / verticalSpan : 0.0f;
+    const xiiUInt32 v0             = FindLowerSample(verticalAngles, verticalDegrees);
+    const xiiUInt32 v1             = xiiMath::Min(v0 + 1U, verticalAngles.GetCount() - 1U);
+    const float     verticalSpan   = verticalAngles[v1] - verticalAngles[v0];
+    const float     verticalWeight = verticalSpan > 0.0f ? (verticalDegrees - verticalAngles[v0]) / verticalSpan : 0.0f;
 
-    const xiiUInt32 h0 = horizontalAngles.GetCount() > 1U ? FindLowerSample(horizontalAngles, horizontalDegrees) : 0U;
-    const xiiUInt32 h1 = xiiMath::Min(h0 + 1U, horizontalAngles.GetCount() - 1U);
-    const float horizontalSpan = horizontalAngles[h1] - horizontalAngles[h0];
-    const float horizontalWeight = horizontalSpan > 0.0f ? (horizontalDegrees - horizontalAngles[h0]) / horizontalSpan : 0.0f;
+    const xiiUInt32 h0               = horizontalAngles.GetCount() > 1U ? FindLowerSample(horizontalAngles, horizontalDegrees) : 0U;
+    const xiiUInt32 h1               = xiiMath::Min(h0 + 1U, horizontalAngles.GetCount() - 1U);
+    const float     horizontalSpan   = horizontalAngles[h1] - horizontalAngles[h0];
+    const float     horizontalWeight = horizontalSpan > 0.0f ? (horizontalDegrees - horizontalAngles[h0]) / horizontalSpan : 0.0f;
 
     const xiiUInt32 verticalCount = verticalAngles.GetCount();
-    const float c00 = candela[h0 * verticalCount + v0];
-    const float c01 = candela[h0 * verticalCount + v1];
-    const float c10 = candela[h1 * verticalCount + v0];
-    const float c11 = candela[h1 * verticalCount + v1];
+    const float     c00           = candela[h0 * verticalCount + v0];
+    const float     c01           = candela[h0 * verticalCount + v1];
+    const float     c10           = candela[h1 * verticalCount + v0];
+    const float     c11           = candela[h1 * verticalCount + v1];
     return xiiMath::Lerp(xiiMath::Lerp(c00, c01, verticalWeight), xiiMath::Lerp(c10, c11, verticalWeight), horizontalWeight);
   }
 } // namespace
@@ -167,13 +167,13 @@ xiiResult xiiIESProfileResourceDescriptor::ParseLM63(xiiStringView sSource, xiiS
   }
 
   NumericTokenReader reader(xiiStringView(pLineEnd, sSource.GetEndPointer()));
-  xiiUInt32 lampCount = 0U;
-  xiiUInt32 verticalCount = 0U;
-  xiiUInt32 horizontalCount = 0U;
-  xiiUInt32 photometricType = 0U;
-  double lumensPerLamp = 0.0;
-  double candelaMultiplier = 0.0;
-  double ignored = 0.0;
+  xiiUInt32          lampCount         = 0U;
+  xiiUInt32          verticalCount     = 0U;
+  xiiUInt32          horizontalCount   = 0U;
+  xiiUInt32          photometricType   = 0U;
+  double             lumensPerLamp     = 0.0;
+  double             candelaMultiplier = 0.0;
+  double             ignored           = 0.0;
 
   if (!reader.ReadCount(lampCount) || !reader.Read(lumensPerLamp) || !reader.Read(candelaMultiplier) ||
       !reader.ReadCount(verticalCount) || !reader.ReadCount(horizontalCount) || !reader.ReadCount(photometricType))
@@ -217,7 +217,7 @@ xiiResult xiiIESProfileResourceDescriptor::ParseLM63(xiiStringView sSource, xiiS
       double value = 0.0;
       if (!reader.Read(value) || !xiiMath::IsFinite(value) || value < previous)
         return false;
-      angle = static_cast<float>(value);
+      angle    = static_cast<float>(value);
       previous = angle;
     }
     return true;
@@ -238,7 +238,7 @@ xiiResult xiiIESProfileResourceDescriptor::ParseLM63(xiiStringView sSource, xiiS
       SetError(pError, "IES candela table is incomplete or contains invalid values.");
       return XII_FAILURE;
     }
-    sample = static_cast<float>(value * candelaMultiplier);
+    sample         = static_cast<float>(value * candelaMultiplier);
     maximumCandela = xiiMath::Max(maximumCandela, sample);
   }
 
@@ -259,8 +259,8 @@ xiiResult xiiIESProfileResourceDescriptor::ParseLM63(xiiStringView sSource, xiiS
     const float horizontalDegrees = 360.0f * static_cast<float>(h) / static_cast<float>(s_uiHorizontalSampleCount);
     for (xiiUInt32 v = 0U; v < s_uiVerticalSampleCount; ++v)
     {
-      const float verticalDegrees = 180.0f * static_cast<float>(v) / static_cast<float>(s_uiVerticalSampleCount - 1U);
-      const float candela = InterpolateSource(verticalAngles, horizontalAngles, sourceCandela, verticalDegrees, horizontalDegrees);
+      const float verticalDegrees                                 = 180.0f * static_cast<float>(v) / static_cast<float>(s_uiVerticalSampleCount - 1U);
+      const float candela                                         = InterpolateSource(verticalAngles, horizontalAngles, sourceCandela, verticalDegrees, horizontalDegrees);
       parsed.m_NormalizedCandela[h * s_uiVerticalSampleCount + v] = xiiMath::Saturate(candela / maximumCandela);
     }
   }
@@ -276,18 +276,18 @@ float xiiIESProfileResourceDescriptor::Sample(xiiAngle verticalAngle, xiiAngle h
   if (!IsValid())
     return 1.0f;
 
-  const float v = xiiMath::Clamp(verticalAngle.GetDegree() / 180.0f, 0.0f, 1.0f) * static_cast<float>(s_uiVerticalSampleCount - 1U);
-  float hNormalized = xiiMath::Mod(horizontalAngle.GetDegree(), 360.0f) / 360.0f;
+  const float v           = xiiMath::Clamp(verticalAngle.GetDegree() / 180.0f, 0.0f, 1.0f) * static_cast<float>(s_uiVerticalSampleCount - 1U);
+  float       hNormalized = xiiMath::Mod(horizontalAngle.GetDegree(), 360.0f) / 360.0f;
   if (hNormalized < 0.0f)
     hNormalized += 1.0f;
   const float h = hNormalized * static_cast<float>(s_uiHorizontalSampleCount);
 
-  const xiiUInt32 v0 = xiiMath::Min(static_cast<xiiUInt32>(xiiMath::Floor(v)), s_uiVerticalSampleCount - 1U);
-  const xiiUInt32 v1 = xiiMath::Min(v0 + 1U, s_uiVerticalSampleCount - 1U);
-  const xiiUInt32 h0 = static_cast<xiiUInt32>(xiiMath::Floor(h)) % s_uiHorizontalSampleCount;
-  const xiiUInt32 h1 = (h0 + 1U) % s_uiHorizontalSampleCount;
-  const float vWeight = v - static_cast<float>(v0);
-  const float hWeight = h - xiiMath::Floor(h);
+  const xiiUInt32 v0      = xiiMath::Min(static_cast<xiiUInt32>(xiiMath::Floor(v)), s_uiVerticalSampleCount - 1U);
+  const xiiUInt32 v1      = xiiMath::Min(v0 + 1U, s_uiVerticalSampleCount - 1U);
+  const xiiUInt32 h0      = static_cast<xiiUInt32>(xiiMath::Floor(h)) % s_uiHorizontalSampleCount;
+  const xiiUInt32 h1      = (h0 + 1U) % s_uiHorizontalSampleCount;
+  const float     vWeight = v - static_cast<float>(v0);
+  const float     hWeight = h - xiiMath::Floor(h);
 
   const float c00 = m_NormalizedCandela[h0 * s_uiVerticalSampleCount + v0];
   const float c01 = m_NormalizedCandela[h0 * s_uiVerticalSampleCount + v1];
@@ -324,8 +324,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiIESProfileResource, xiiIESProfileResourceDe
 
   xiiResourceLoadDescription result;
   result.m_uiQualityLevelsDiscardable = 0U;
-  result.m_uiQualityLevelsLoadable = 0U;
-  result.m_State = m_Descriptor.IsValid() ? xiiResourceState::Loaded : xiiResourceState::LoadedResourceMissing;
+  result.m_uiQualityLevelsLoadable    = 0U;
+  result.m_State                      = m_Descriptor.IsValid() ? xiiResourceState::Loaded : xiiResourceState::LoadedResourceMissing;
   return result;
 }
 
@@ -336,8 +336,8 @@ xiiResourceLoadDescription xiiIESProfileResource::UnloadData(Unload whatToUnload
 
   xiiResourceLoadDescription result;
   result.m_uiQualityLevelsDiscardable = 0U;
-  result.m_uiQualityLevelsLoadable = 0U;
-  result.m_State = xiiResourceState::Unloaded;
+  result.m_uiQualityLevelsLoadable    = 0U;
+  result.m_State                      = xiiResourceState::Unloaded;
   return result;
 }
 
@@ -345,9 +345,9 @@ xiiResourceLoadDescription xiiIESProfileResource::UpdateContent(xiiStreamReader*
 {
   xiiResourceLoadDescription result;
   result.m_uiQualityLevelsDiscardable = 0U;
-  result.m_uiQualityLevelsLoadable = 0U;
-  result.m_State = xiiResourceState::LoadedResourceMissing;
-  m_Descriptor = {};
+  result.m_uiQualityLevelsLoadable    = 0U;
+  result.m_State                      = xiiResourceState::LoadedResourceMissing;
+  m_Descriptor                        = {};
 
   if (pStream == nullptr)
     return result;
@@ -375,4 +375,3 @@ void xiiIESProfileResource::UpdateMemoryUsage(MemoryUsage& out_memoryUsage)
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_IESProfileResource);
-

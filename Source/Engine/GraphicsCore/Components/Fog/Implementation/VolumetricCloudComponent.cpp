@@ -52,7 +52,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiVolumetricCloudComponent, 1, xiiComponentMode::Stati
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiVolumetricCloudComponent::xiiVolumetricCloudComponent() = default;
+xiiVolumetricCloudComponent::xiiVolumetricCloudComponent()  = default;
 xiiVolumetricCloudComponent::~xiiVolumetricCloudComponent() = default;
 
 void xiiVolumetricCloudComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
@@ -129,15 +129,15 @@ void xiiVolumetricCloudComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData
   if (pWorldModule == nullptr)
     return;
 
-  const xiiQuat rotation = GetOwner()->GetGlobalRotation();
+  const xiiQuat                 rotation    = GetOwner()->GetGlobalRotation();
   xiiVolumetricCloudRenderData* pRenderData = pWorldModule->CreateRenderDataForThisFrame<xiiVolumetricCloudRenderData>(this);
-  pRenderData->m_Settings        = m_Settings;
-  pRenderData->m_vLayerNormal   = rotation * xiiVec3(0.0f, 0.0f, 1.0f);
-  pRenderData->m_vProjectionAxisU = rotation * xiiVec3(1.0f, 0.0f, 0.0f);
-  pRenderData->m_vProjectionAxisV = rotation * xiiVec3(0.0f, 1.0f, 0.0f);
-  pRenderData->m_vLayerOrigin   = GetOwner()->GetGlobalPosition() + pRenderData->m_vLayerNormal * m_Settings.m_fLayerAltitudeMeters;
-  pRenderData->m_iPriority      = m_iPriority;
-  pRenderData->m_uiSortingKey   = GetUniqueIdForRendering();
+  pRenderData->m_Settings                   = m_Settings;
+  pRenderData->m_vLayerNormal               = rotation * xiiVec3(0.0f, 0.0f, 1.0f);
+  pRenderData->m_vProjectionAxisU           = rotation * xiiVec3(1.0f, 0.0f, 0.0f);
+  pRenderData->m_vProjectionAxisV           = rotation * xiiVec3(0.0f, 1.0f, 0.0f);
+  pRenderData->m_vLayerOrigin               = GetOwner()->GetGlobalPosition() + pRenderData->m_vLayerNormal * m_Settings.m_fLayerAltitudeMeters;
+  pRenderData->m_iPriority                  = m_iPriority;
+  pRenderData->m_uiSortingKey               = GetUniqueIdForRendering();
   ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 

@@ -25,8 +25,8 @@ public:
   xiiSphereAreaLightComponent();
   ~xiiSphereAreaLightComponent();
 
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void      DeserializeComponent(xiiWorldReader& inout_stream) override;
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   void  SetRadius(float fRadius); // [ property ]

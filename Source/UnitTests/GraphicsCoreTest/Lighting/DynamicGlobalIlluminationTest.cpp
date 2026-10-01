@@ -7,12 +7,12 @@
 XII_CREATE_SIMPLE_TEST(Lighting, DynamicGlobalIllumination)
 {
   xiiDDGISettings settings;
-  settings.m_uiProbeCountX = 4U;
-  settings.m_uiProbeCountY = 2U;
-  settings.m_uiProbeCountZ = 4U;
-  settings.m_fProbeSpacing = 2.0f;
-  settings.m_uiProbeUpdateBudget = 32U;
-  settings.m_fTemporalHysteresis = 0.9f;
+  settings.m_uiProbeCountX              = 4U;
+  settings.m_uiProbeCountY              = 2U;
+  settings.m_uiProbeCountZ              = 4U;
+  settings.m_fProbeSpacing              = 2.0f;
+  settings.m_uiProbeUpdateBudget        = 32U;
+  settings.m_fTemporalHysteresis        = 0.9f;
   settings.m_fMaximumRelocationDistance = 0.75f;
   XII_TEST_BOOL(xiiDDGIManager::Configure(settings).Succeeded());
 
@@ -41,4 +41,3 @@ XII_CREATE_SIMPLE_TEST(Lighting, DynamicGlobalIllumination)
 
   XII_TEST_BOOL(xiiDDGIManager::Configure(xiiDDGISettings()).Succeeded());
 }
-

@@ -15,22 +15,22 @@ namespace
   template <typename ResourceHandle>
   struct MaterialTextureBindingCacheEntry
   {
-    xiiSharedPtr<xiiGALTextureView>   m_pView;
-    xiiGALBindlessResourceHandle      m_hBindless;
-    xiiUInt64                         m_uiLastReferencedFrame = 0ULL;
+    xiiSharedPtr<xiiGALTextureView> m_pView;
+    xiiGALBindlessResourceHandle    m_hBindless;
+    xiiUInt64                       m_uiLastReferencedFrame = 0ULL;
   };
 } // namespace
 
 class xiiMaterialManagerState
 {
 public:
-  xiiUniquePtr<xiiMaterialSystem>  m_pSystem;
-  xiiMaterialGpuStorageDescription m_Description;
+  xiiUniquePtr<xiiMaterialSystem>                                                                            m_pSystem;
+  xiiMaterialGpuStorageDescription                                                                           m_Description;
   xiiHashTable<xiiTexture2DResourceHandle, MaterialTextureBindingCacheEntry<xiiTexture2DResourceHandle>>     m_Texture2DCache;
   xiiHashTable<xiiTextureCubeResourceHandle, MaterialTextureBindingCacheEntry<xiiTextureCubeResourceHandle>> m_TextureCubeCache;
-  xiiUInt64                       m_uiFrameIndex    = 0ULL;
-  bool                             m_bEngineStarted = false;
-  bool                             m_bInitialized   = false;
+  xiiUInt64                                                                                                  m_uiFrameIndex   = 0ULL;
+  bool                                                                                                       m_bEngineStarted = false;
+  bool                                                                                                       m_bInitialized   = false;
 };
 
 namespace
@@ -193,16 +193,16 @@ void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
       if (snapshot.m_pSchema == nullptr)
         continue;
 
-      const auto textureDefinitions = snapshot.m_pSchema->GetTextures();
-      const xiiUInt32 uiTextureCount = xiiMath::Min(textureDefinitions.GetCount(), snapshot.m_ResourceBindings.GetCount());
+      const auto      textureDefinitions = snapshot.m_pSchema->GetTextures();
+      const xiiUInt32 uiTextureCount     = xiiMath::Min(textureDefinitions.GetCount(), snapshot.m_ResourceBindings.GetCount());
       for (xiiUInt32 uiTexture = 0U; uiTexture < uiTextureCount; ++uiTexture)
       {
         const xiiMaterialTextureDefinition& definition = textureDefinitions[uiTexture];
         if (!definition.m_bBindless)
           continue;
 
-        const xiiMaterialResourceBinding& binding = snapshot.m_ResourceBindings[uiTexture];
-        xiiUInt32 uiBindlessIndex = xiiInvalidIndex;
+        const xiiMaterialResourceBinding& binding         = snapshot.m_ResourceBindings[uiTexture];
+        xiiUInt32                         uiBindlessIndex = xiiInvalidIndex;
         if (definition.m_TextureType == xiiGALShaderTextureType::Texture2D || definition.m_TextureType == xiiGALShaderTextureType::Texture2DArray)
         {
           if (!binding.m_hTexture2D.IsValid())
@@ -294,7 +294,7 @@ void xiiMaterialManager::EngineShutdown()
   if (s_pState->m_pSystem != nullptr)
     s_pState->m_pSystem->Shutdown();
   s_pState->m_pSystem.Clear();
-  s_pState->m_uiFrameIndex     = 0ULL;
+  s_pState->m_uiFrameIndex   = 0ULL;
   s_pState->m_bInitialized   = false;
   s_pState->m_bEngineStarted = false;
 }

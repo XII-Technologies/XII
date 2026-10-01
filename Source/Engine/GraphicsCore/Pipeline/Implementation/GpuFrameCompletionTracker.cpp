@@ -29,9 +29,9 @@ void xiiGpuFrameCompletionTracker::Initialize(xiiGALDevice* pDevice)
 void xiiGpuFrameCompletionTracker::Reset()
 {
   m_PendingFrames.Clear();
-  m_Stats               = {};
-  m_pDevice             = nullptr;
-  m_bHasCapturedFrame   = false;
+  m_Stats             = {};
+  m_pDevice           = nullptr;
+  m_bHasCapturedFrame = false;
 }
 
 void xiiGpuFrameCompletionTracker::CaptureSubmittedFrame(xiiUInt64 uiFrameIndex)
@@ -79,7 +79,7 @@ void xiiGpuFrameCompletionTracker::CaptureSubmittedFrame(xiiUInt64 uiFrameIndex)
   m_Stats.m_uiLastCapturedFrame = uiFrameIndex;
   m_Stats.m_uiPendingFrameCount = m_PendingFrames.GetCount();
   m_Stats.m_uiTrackedQueueCount = frame.m_QueuePoints.GetCount();
-  m_bHasCapturedFrame            = true;
+  m_bHasCapturedFrame           = true;
 }
 
 xiiUInt64 xiiGpuFrameCompletionTracker::PollCompletedFrames()

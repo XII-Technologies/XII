@@ -97,17 +97,17 @@ namespace
 } // namespace
 
 void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
-  xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics)
+                                       xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics)
 {
   out_statistics = {};
   out_shadowData.SetCount(lights.GetCount());
   xiiMemoryUtils::ZeroFill(out_shadowData.GetData(), out_shadowData.GetCount());
 
-  const xiiUInt32 uiAtlasSize = xiiMath::Max(settings.m_uiAtlasSize, 1U);
-  const xiiUInt32 uiTileSize  = xiiMath::Clamp(xiiMath::PowerOfTwo_Floor(xiiMath::Max(settings.m_uiTileSize, 1U)), 1U, uiAtlasSize);
-  const xiiUInt32 uiTilesPerAxis = xiiMath::Max(uiAtlasSize / uiTileSize, 1U);
-  const xiiUInt32 uiTileCapacity = uiTilesPerAxis * uiTilesPerAxis;
-  const float fTileScale = static_cast<float>(uiTileSize) / static_cast<float>(uiAtlasSize);
+  const xiiUInt32 uiAtlasSize     = xiiMath::Max(settings.m_uiAtlasSize, 1U);
+  const xiiUInt32 uiTileSize      = xiiMath::Clamp(xiiMath::PowerOfTwo_Floor(xiiMath::Max(settings.m_uiTileSize, 1U)), 1U, uiAtlasSize);
+  const xiiUInt32 uiTilesPerAxis  = xiiMath::Max(uiAtlasSize / uiTileSize, 1U);
+  const xiiUInt32 uiTileCapacity  = uiTilesPerAxis * uiTilesPerAxis;
+  const float     fTileScale      = static_cast<float>(uiTileSize) / static_cast<float>(uiAtlasSize);
   out_statistics.m_uiTileCapacity = uiTileCapacity;
 
   xiiUInt32 uiNextTile = 0U;
@@ -117,7 +117,7 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
     if (light.m_ShadowData.x <= 0.5f)
       continue;
 
-    const auto type = static_cast<xiiLightingSystem::LightType>(light.m_Metadata.z);
+    const auto      type        = static_cast<xiiLightingSystem::LightType>(light.m_Metadata.z);
     const xiiUInt32 uiFaceCount = GetFaceCount(type);
     if (uiFaceCount == 0U)
       continue;
@@ -129,16 +129,16 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
       continue;
     }
 
-    const xiiVec3 vPosition = light.m_PositionAndInvRange.GetAsVec3();
-    const float fRange      = xiiMath::Max(light.m_AttenuationAndSize.x, settings.m_fMinimumNearPlane * 2.0f);
-    const float fNearPlane  = xiiMath::Min(xiiMath::Max(settings.m_fMinimumNearPlane, light.m_AttenuationAndSize.y * 0.05f), fRange * 0.5f);
+    const xiiVec3  vPosition   = light.m_PositionAndInvRange.GetAsVec3();
+    const float    fRange      = xiiMath::Max(light.m_AttenuationAndSize.x, settings.m_fMinimumNearPlane * 2.0f);
+    const float    fNearPlane  = xiiMath::Min(xiiMath::Max(settings.m_fMinimumNearPlane, light.m_AttenuationAndSize.y * 0.05f), fRange * 0.5f);
     const xiiAngle fieldOfView = GetProjectionFieldOfView(light, type);
-    const xiiMat4 projection = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(fieldOfView, 1.0f, fRange, fNearPlane,
-      xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    const xiiMat4  projection  = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(fieldOfView, 1.0f, fRange, fNearPlane,
+                                                                                             xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
 
-    xiiLocalShadowAtlasData& shadow = out_shadowData[uiLight];
+    xiiLocalShadowAtlasData& shadow   = out_shadowData[uiLight];
     shadow.m_LightPositionAndInvRange = xiiVec4(vPosition, 1.0f / fRange);
-    shadow.m_Metadata = xiiVec4U32(uiFaceCount, uiTileSize, 1U, static_cast<xiiUInt32>(type));
+    shadow.m_Metadata                 = xiiVec4U32(uiFaceCount, uiTileSize, 1U, static_cast<xiiUInt32>(type));
 
     for (xiiUInt32 uiFace = 0U; uiFace < uiFaceCount; ++uiFace)
     {
@@ -157,12 +157,12 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
         vUp = GetProjectedLightUp(light, vDirection);
       }
 
-      const xiiMat4 view = xiiGraphicsUtils::CreateLookAtViewMatrix(vPosition, vPosition + vDirection, vUp, xiiHandedness::LeftHanded);
+      const xiiMat4 view              = xiiGraphicsUtils::CreateLookAtViewMatrix(vPosition, vPosition + vDirection, vUp, xiiHandedness::LeftHanded);
       shadow.m_ViewProjection[uiFace] = projection * view;
 
-      const xiiUInt32 uiTile = uiNextTile + uiFace;
-      const xiiUInt32 uiTileX = uiTile % uiTilesPerAxis;
-      const xiiUInt32 uiTileY = uiTile / uiTilesPerAxis;
+      const xiiUInt32 uiTile          = uiNextTile + uiFace;
+      const xiiUInt32 uiTileX         = uiTile % uiTilesPerAxis;
+      const xiiUInt32 uiTileY         = uiTile / uiTilesPerAxis;
       shadow.m_AtlasScaleBias[uiFace] = xiiVec4(fTileScale, fTileScale, static_cast<float>(uiTileX) * fTileScale, static_cast<float>(uiTileY) * fTileScale);
     }
 

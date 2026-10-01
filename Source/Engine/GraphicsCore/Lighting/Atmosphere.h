@@ -30,17 +30,17 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAtmosphereLUTHandle);
 /// that keeps the values numerically well-conditioned in the GPU integration.
 struct XII_GRAPHICSCORE_DLL xiiAtmosphereSettings
 {
-  float   m_fPlanetRadiusKm       = 6360.0f;
-  float   m_fAtmosphereRadiusKm   = 6460.0f;
-  float   m_fRayleighScaleHeightKm = 8.0f;
-  float   m_fMieScaleHeightKm      = 1.2f;
-  xiiVec3 m_vRayleighScattering    = xiiVec3(0.005802f, 0.013558f, 0.033100f);
-  xiiVec3 m_vMieScattering         = xiiVec3(0.003996f);
-  xiiVec3 m_vMieAbsorption         = xiiVec3(0.004400f);
-  xiiVec3 m_vOzoneAbsorption       = xiiVec3(0.000650f, 0.001881f, 0.000085f);
-  xiiVec3 m_vPlanetUpDirection     = xiiVec3(0.0f, 0.0f, 1.0f);
-  float   m_fGroundAltitudeMeters  = 0.0f;
-  float   m_fMiePhaseG             = 0.8f;
+  float     m_fPlanetRadiusKm                 = 6360.0f;
+  float     m_fAtmosphereRadiusKm             = 6460.0f;
+  float     m_fRayleighScaleHeightKm          = 8.0f;
+  float     m_fMieScaleHeightKm               = 1.2f;
+  xiiVec3   m_vRayleighScattering             = xiiVec3(0.005802f, 0.013558f, 0.033100f);
+  xiiVec3   m_vMieScattering                  = xiiVec3(0.003996f);
+  xiiVec3   m_vMieAbsorption                  = xiiVec3(0.004400f);
+  xiiVec3   m_vOzoneAbsorption                = xiiVec3(0.000650f, 0.001881f, 0.000085f);
+  xiiVec3   m_vPlanetUpDirection              = xiiVec3(0.0f, 0.0f, 1.0f);
+  float     m_fGroundAltitudeMeters           = 0.0f;
+  float     m_fMiePhaseG                      = 0.8f;
   xiiUInt32 m_uiTransmittanceIntegrationSteps = 40U;
   xiiUInt32 m_uiMultiScatterSqrtSamples       = 8U;
 };
@@ -73,32 +73,32 @@ class XII_GRAPHICSCORE_DLL xiiAtmosphereManager
 public:
   xiiAtmosphereManager() = delete;
 
-  [[nodiscard]] static xiiResult Configure(const xiiAtmosphereSettings& settings);
-  [[nodiscard]] static bool IsInitialized();
+  [[nodiscard]] static xiiResult                    Configure(const xiiAtmosphereSettings& settings);
+  [[nodiscard]] static bool                         IsInitialized();
   [[nodiscard]] static const xiiAtmosphereSettings& GetConfiguration();
 
   /// Finds or creates an immutable cache entry for a view/world atmosphere.
   /// Multiple views can therefore render different planets without rewriting
   /// another graph's persistent LUTs.
-  [[nodiscard]] static xiiResult AcquireLUTs(const xiiAtmosphereSettings& settings, xiiAtmosphereLUTHandle& out_handle);
-  [[nodiscard]] static xiiAtmosphereLUTHandle GetDefaultLUTHandle();
+  [[nodiscard]] static xiiResult                    AcquireLUTs(const xiiAtmosphereSettings& settings, xiiAtmosphereLUTHandle& out_handle);
+  [[nodiscard]] static xiiAtmosphereLUTHandle       GetDefaultLUTHandle();
   [[nodiscard]] static const xiiAtmosphereSettings& GetConfiguration(xiiAtmosphereLUTHandle handle);
 
   /// Ensures textures exist. This permits recovery when the default GAL device
   /// is installed after high-level subsystem startup.
-  [[nodiscard]] static xiiResult EnsureGpuResources();
-  [[nodiscard]] static xiiResult EnsureGpuResources(xiiAtmosphereLUTHandle handle);
+  [[nodiscard]] static xiiResult                   EnsureGpuResources();
+  [[nodiscard]] static xiiResult                   EnsureGpuResources(xiiAtmosphereLUTHandle handle);
   [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetTransmittanceLUT();
   [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetTransmittanceLUT(xiiAtmosphereLUTHandle handle);
   [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetMultiScatterLUT();
   [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetMultiScatterLUT(xiiAtmosphereLUTHandle handle);
 
-  [[nodiscard]] static xiiUInt64 GetConfigurationRevision();
-  [[nodiscard]] static bool IsGenerationPending();
-  [[nodiscard]] static bool IsGenerationPending(xiiAtmosphereLUTHandle handle);
-  static void MarkLUTsGenerated(xiiUInt64 uiConfigurationRevision);
-  static void MarkLUTsGenerated(xiiAtmosphereLUTHandle handle);
-  static void InvalidateLUTs();
+  [[nodiscard]] static xiiUInt64               GetConfigurationRevision();
+  [[nodiscard]] static bool                    IsGenerationPending();
+  [[nodiscard]] static bool                    IsGenerationPending(xiiAtmosphereLUTHandle handle);
+  static void                                  MarkLUTsGenerated(xiiUInt64 uiConfigurationRevision);
+  static void                                  MarkLUTsGenerated(xiiAtmosphereLUTHandle handle);
+  static void                                  InvalidateLUTs();
   [[nodiscard]] static xiiAtmosphereCacheStats GetCacheStats();
 
 private:

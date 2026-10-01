@@ -34,11 +34,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingInstanceFlags
 
   enum Enum : StorageType
   {
-    None                       = 0U,
-    TriangleCullDisable        = XII_BIT(0),
+    None                          = 0U,
+    TriangleCullDisable           = XII_BIT(0),
     TriangleFrontCounterClockwise = XII_BIT(1),
-    ForceOpaque                = XII_BIT(2),
-    ForceNonOpaque             = XII_BIT(3),
+    ForceOpaque                   = XII_BIT(2),
+    ForceNonOpaque                = XII_BIT(3),
 
     Default = None
   };
@@ -83,21 +83,21 @@ struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
     flags.SetValue(static_cast<xiiUInt8>(m_uiHitGroupContributionAndFlags >> 24U));
     return flags;
   }
-  void                                                     SetFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags);
-  [[nodiscard]] xiiUInt8                                   GetFlagsValue() const { return GetFlags().GetValue(); }
-  void                                                     SetFlagsValue(xiiUInt8 uiFlags)
+  void                   SetFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags);
+  [[nodiscard]] xiiUInt8 GetFlagsValue() const { return GetFlags().GetValue(); }
+  void                   SetFlagsValue(xiiUInt8 uiFlags)
   {
     xiiBitflags<xiiGALRayTracingInstanceFlags> flags;
     flags.SetValue(uiFlags);
     SetFlags(flags);
   }
 
-  xiiVec4   m_TransformRow0 = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
-  xiiVec4   m_TransformRow1 = xiiVec4(0.0f, 1.0f, 0.0f, 0.0f);
-  xiiVec4   m_TransformRow2 = xiiVec4(0.0f, 0.0f, 1.0f, 0.0f);
-  xiiUInt32 m_uiInstanceIDAndMask              = 0xFF000000U;
-  xiiUInt32 m_uiHitGroupContributionAndFlags   = 0U;
-  xiiUInt64 m_uiBottomLevelASDeviceAddress     = 0U;
+  xiiVec4   m_TransformRow0                  = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
+  xiiVec4   m_TransformRow1                  = xiiVec4(0.0f, 1.0f, 0.0f, 0.0f);
+  xiiVec4   m_TransformRow2                  = xiiVec4(0.0f, 0.0f, 1.0f, 0.0f);
+  xiiUInt32 m_uiInstanceIDAndMask            = 0xFF000000U;
+  xiiUInt32 m_uiHitGroupContributionAndFlags = 0U;
+  xiiUInt64 m_uiBottomLevelASDeviceAddress   = 0U;
 };
 
 static_assert(sizeof(xiiGALTLASInstanceData) == 64U, "TLAS instance records must match the native Vulkan and D3D12 ABI.");

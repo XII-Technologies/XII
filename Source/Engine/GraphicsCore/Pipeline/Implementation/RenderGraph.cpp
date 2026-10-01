@@ -429,6 +429,15 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::WriteBuffer(xiiRenderGraphBuff
   return hNewBuffer;
 }
 
+xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadWriteBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState)
+{
+  // The explicit read is a data-flow edge, so pass culling retains the producer of the parent
+  // version. A plain WriteBuffer intentionally permits that producer to be culled when the new
+  // version completely replaces the resource contents.
+  ReadBuffer(hBuffer, requiredState);
+  return WriteBuffer(hBuffer, requiredState);
+}
+
 void xiiRenderGraphBuilder::ExportBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> finalState)
 {
   XII_ASSERT_DEV(hBuffer.IsValid() && hBuffer.m_uiIndex < m_Graph.m_Resources.GetCount(), "Invalid buffer export handle.");
@@ -1328,7 +1337,7 @@ xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xii
   xiiGALSubPassDescription&           subpass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
 
   xiiGALFramebufferCreationDescription framebufferDescription;
-  xiiSizeU32                           framebufferSize;
+  xiiSizeU32                           framebufferSize   = xiiSizeU32::MakeZero();
   xiiUInt32                            uiArraySliceCount = 0U;
 
   for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < group.m_AttachmentResourceIndices.GetCount(); ++uiAttachmentIndex)

@@ -12,12 +12,12 @@
 /// CPU-side residency configuration for the virtual shadow-map physical cache.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapSettings
 {
-  xiiUInt32 m_uiVirtualResolution      = 16384U;
-  xiiUInt32 m_uiPageSize               = 128U;
-  xiiUInt32 m_uiPhysicalPageCount      = 4096U;
-  xiiUInt32 m_uiMaxFeedbackRequests    = 16384U;
-  xiiUInt32 m_uiMaxPageAllocations     = 512U;
-  xiiUInt32 m_uiFramesInFlight         = 3U;
+  xiiUInt32 m_uiVirtualResolution   = 16384U;
+  xiiUInt32 m_uiPageSize            = 128U;
+  xiiUInt32 m_uiPhysicalPageCount   = 4096U;
+  xiiUInt32 m_uiMaxFeedbackRequests = 16384U;
+  xiiUInt32 m_uiMaxPageAllocations  = 512U;
+  xiiUInt32 m_uiFramesInFlight      = 3U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowMapSettings);
@@ -31,8 +31,8 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageId
 {
   XII_DECLARE_POD_TYPE();
 
-  [[nodiscard]] bool      IsValid() const;
-  [[nodiscard]] xiiUInt64 GetPackedValue() const;
+  [[nodiscard]] bool                          IsValid() const;
+  [[nodiscard]] xiiUInt64                     GetPackedValue() const;
   [[nodiscard]] static xiiVirtualShadowPageId FromPackedValue(xiiUInt64 uiPackedValue);
 
   xiiUInt32 m_uiLightId  = xiiInvalidIndex;
@@ -70,7 +70,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowPageUpdateTyp
 /// Incremental page-table edit consumed by the GPU page-table update pass.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageUpdate
 {
-  xiiVirtualShadowPageId                   m_Page;
+  xiiVirtualShadowPageId                  m_Page;
   xiiUInt32                               m_uiPhysicalPage = xiiInvalidIndex;
   xiiEnum<xiiVirtualShadowPageUpdateType> m_Type;
 };
@@ -83,8 +83,8 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageMapping
   xiiVirtualShadowPageId m_Page;
   xiiUInt32              m_uiPhysicalPage  = xiiInvalidIndex;
   xiiUInt64              m_uiLastUsedFrame = 0U;
-  xiiUInt32              m_uiPriority = 0U;
-  bool                   m_bPinned = false;
+  xiiUInt32              m_uiPriority      = 0U;
+  bool                   m_bPinned         = false;
   bool                   m_bNeedsRendering = false;
 };
 
@@ -159,12 +159,12 @@ public:
   /// Deduplicates, prioritizes, touches, allocates, and safely evicts pages.
   static void SubmitFeedback(xiiArrayPtr<const xiiVirtualShadowPageRequest> requests);
 
-  [[nodiscard]] static bool TryGetMapping(const xiiVirtualShadowPageId& page, xiiVirtualShadowPageMapping& out_mapping);
-  [[nodiscard]] static xiiArrayPtr<const xiiVirtualShadowPageUpdate> GetPageTableUpdates();
+  [[nodiscard]] static bool                                           TryGetMapping(const xiiVirtualShadowPageId& page, xiiVirtualShadowPageMapping& out_mapping);
+  [[nodiscard]] static xiiArrayPtr<const xiiVirtualShadowPageUpdate>  GetPageTableUpdates();
   [[nodiscard]] static xiiArrayPtr<const xiiVirtualShadowPageMapping> GetDirtyPages();
-  static void                      MarkPageRendered(xiiUInt32 uiPhysicalPage);
+  static void                                                         MarkPageRendered(xiiUInt32 uiPhysicalPage);
 
-  [[nodiscard]] static xiiVirtualShadowMapStats GetStats();
+  [[nodiscard]] static xiiVirtualShadowMapStats           GetStats();
   [[nodiscard]] static const xiiVirtualShadowMapSettings& GetConfiguration();
 
   /// Persistent depth atlas owned by the subsystem. Consumers import this
@@ -177,7 +177,7 @@ public:
   struct UploadHandles
   {
     xiiRenderGraphBufferHandle m_hPhysicalPageTable;
-    xiiUInt32                  m_uiFrameBaseIndex = 0U;
+    xiiUInt32                  m_uiFrameBaseIndex    = 0U;
     xiiUInt32                  m_uiPhysicalPageCount = 0U;
   };
 
@@ -188,14 +188,14 @@ public:
   /// Appends screen-derived directional shadow requests and copies the cumulative
   /// feedback stream into the completed-frame readback ring.
   static void AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth,
-    xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight,
-    xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex);
+                                xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight,
+                                xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex);
 
 private:
-  static void Startup();
-  static void EngineStartup();
-  static void EngineShutdown();
-  static void Shutdown();
-  [[nodiscard]] static xiiResult CreateGpuResources();
+  static void                                          Startup();
+  static void                                          EngineStartup();
+  static void                                          EngineShutdown();
+  static void                                          Shutdown();
+  [[nodiscard]] static xiiResult                       CreateGpuResources();
   static xiiUniquePtr<xiiVirtualShadowMapManagerState> s_pState;
 };

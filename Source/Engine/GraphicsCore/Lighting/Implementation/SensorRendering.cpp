@@ -13,25 +13,25 @@ namespace
   bool IsEqual(const xiiSensorProfile& lhs, const xiiSensorProfile& rhs)
   {
     return lhs.m_Type == rhs.m_Type && lhs.m_Shutter == rhs.m_Shutter && lhs.m_NoiseModel == rhs.m_NoiseModel &&
-           lhs.m_uiResolutionX == rhs.m_uiResolutionX && lhs.m_uiResolutionY == rhs.m_uiResolutionY &&
-           lhs.m_fFocalLengthXPixels == rhs.m_fFocalLengthXPixels && lhs.m_fFocalLengthYPixels == rhs.m_fFocalLengthYPixels &&
-           lhs.m_fPrincipalPointXPixels == rhs.m_fPrincipalPointXPixels && lhs.m_fPrincipalPointYPixels == rhs.m_fPrincipalPointYPixels &&
-           lhs.m_fNearPlaneMeters == rhs.m_fNearPlaneMeters && lhs.m_fFarPlaneMeters == rhs.m_fFarPlaneMeters &&
-           lhs.m_fExposureSeconds == rhs.m_fExposureSeconds && lhs.m_fRollingShutterSeconds == rhs.m_fRollingShutterSeconds &&
-           lhs.m_fWavelengthNanometers == rhs.m_fWavelengthNanometers && lhs.m_vSpectralSensitivity == rhs.m_vSpectralSensitivity &&
-           lhs.m_fQuantumEfficiency == rhs.m_fQuantumEfficiency && lhs.m_fRadianceToElectrons == rhs.m_fRadianceToElectrons && lhs.m_fAnalogGain == rhs.m_fAnalogGain &&
-           lhs.m_fReadNoiseElectrons == rhs.m_fReadNoiseElectrons && lhs.m_fShotNoiseScale == rhs.m_fShotNoiseScale &&
-           lhs.m_fSaturationElectrons == rhs.m_fSaturationElectrons &&
-           lhs.m_fDepthNoiseStandardDeviationMeters == rhs.m_fDepthNoiseStandardDeviationMeters && lhs.m_fDepthNoiseScalePerMeter == rhs.m_fDepthNoiseScalePerMeter &&
-           lhs.m_uiOutputBitDepth == rhs.m_uiOutputBitDepth &&
-           lhs.m_uiNoiseSeed == rhs.m_uiNoiseSeed;
+      lhs.m_uiResolutionX == rhs.m_uiResolutionX && lhs.m_uiResolutionY == rhs.m_uiResolutionY &&
+      lhs.m_fFocalLengthXPixels == rhs.m_fFocalLengthXPixels && lhs.m_fFocalLengthYPixels == rhs.m_fFocalLengthYPixels &&
+      lhs.m_fPrincipalPointXPixels == rhs.m_fPrincipalPointXPixels && lhs.m_fPrincipalPointYPixels == rhs.m_fPrincipalPointYPixels &&
+      lhs.m_fNearPlaneMeters == rhs.m_fNearPlaneMeters && lhs.m_fFarPlaneMeters == rhs.m_fFarPlaneMeters &&
+      lhs.m_fExposureSeconds == rhs.m_fExposureSeconds && lhs.m_fRollingShutterSeconds == rhs.m_fRollingShutterSeconds &&
+      lhs.m_fWavelengthNanometers == rhs.m_fWavelengthNanometers && lhs.m_vSpectralSensitivity == rhs.m_vSpectralSensitivity &&
+      lhs.m_fQuantumEfficiency == rhs.m_fQuantumEfficiency && lhs.m_fRadianceToElectrons == rhs.m_fRadianceToElectrons && lhs.m_fAnalogGain == rhs.m_fAnalogGain &&
+      lhs.m_fReadNoiseElectrons == rhs.m_fReadNoiseElectrons && lhs.m_fShotNoiseScale == rhs.m_fShotNoiseScale &&
+      lhs.m_fSaturationElectrons == rhs.m_fSaturationElectrons &&
+      lhs.m_fDepthNoiseStandardDeviationMeters == rhs.m_fDepthNoiseStandardDeviationMeters && lhs.m_fDepthNoiseScalePerMeter == rhs.m_fDepthNoiseScalePerMeter &&
+      lhs.m_uiOutputBitDepth == rhs.m_uiOutputBitDepth &&
+      lhs.m_uiNoiseSeed == rhs.m_uiNoiseSeed;
   }
 } // namespace
 
 class xiiSensorRenderingManager::State
 {
 public:
-  mutable xiiMutex                 m_Mutex;
+  mutable xiiMutex                  m_Mutex;
   xiiDynamicArray<xiiSensorProfile> m_Profiles;
   xiiSensorProfileHandle            m_hDefaultProfiles[xiiSensorType::ENUM_COUNT];
 };
@@ -134,31 +134,31 @@ bool xiiSensorRenderingManager::IsInitialized()
 bool xiiSensorRenderingManager::IsValidProfile(const xiiSensorProfile& profile)
 {
   return profile.m_Type.GetValue() < xiiSensorType::ENUM_COUNT &&
-         profile.m_Shutter.GetValue() < xiiSensorShutterType::ENUM_COUNT &&
-         profile.m_NoiseModel.GetValue() < xiiSensorNoiseModel::ENUM_COUNT &&
-         profile.m_uiResolutionX > 0U && profile.m_uiResolutionX <= 32768U &&
-         profile.m_uiResolutionY > 0U && profile.m_uiResolutionY <= 32768U &&
-         xiiMath::IsFinite(profile.m_fFocalLengthXPixels) && profile.m_fFocalLengthXPixels > 0.0f &&
-         xiiMath::IsFinite(profile.m_fFocalLengthYPixels) && profile.m_fFocalLengthYPixels > 0.0f &&
-         xiiMath::IsFinite(profile.m_fPrincipalPointXPixels) && xiiMath::IsFinite(profile.m_fPrincipalPointYPixels) &&
-         xiiMath::IsFinite(profile.m_fNearPlaneMeters) && profile.m_fNearPlaneMeters > 0.0f &&
-         xiiMath::IsFinite(profile.m_fFarPlaneMeters) && profile.m_fFarPlaneMeters > profile.m_fNearPlaneMeters &&
-         xiiMath::IsFinite(profile.m_fExposureSeconds) && profile.m_fExposureSeconds > 0.0f &&
-         xiiMath::IsFinite(profile.m_fRollingShutterSeconds) && profile.m_fRollingShutterSeconds >= 0.0f &&
-         xiiMath::IsFinite(profile.m_fWavelengthNanometers) && profile.m_fWavelengthNanometers > 0.0f &&
-         profile.m_vSpectralSensitivity.IsValid() && profile.m_vSpectralSensitivity.x >= 0.0f &&
-         profile.m_vSpectralSensitivity.y >= 0.0f && profile.m_vSpectralSensitivity.z >= 0.0f &&
-         profile.m_vSpectralSensitivity.GetLengthSquared() > 0.0f &&
-         xiiMath::IsFinite(profile.m_fQuantumEfficiency) && profile.m_fQuantumEfficiency >= 0.0f && profile.m_fQuantumEfficiency <= 1.0f &&
-         xiiMath::IsFinite(profile.m_fRadianceToElectrons) && profile.m_fRadianceToElectrons >= 0.0f &&
-         xiiMath::IsFinite(profile.m_fAnalogGain) && profile.m_fAnalogGain >= 0.0f &&
-         xiiMath::IsFinite(profile.m_fReadNoiseElectrons) && profile.m_fReadNoiseElectrons >= 0.0f &&
-         xiiMath::IsFinite(profile.m_fShotNoiseScale) && profile.m_fShotNoiseScale >= 0.0f &&
-         xiiMath::IsFinite(profile.m_fSaturationElectrons) && profile.m_fSaturationElectrons > 0.0f &&
-         xiiMath::IsFinite(profile.m_fDepthNoiseStandardDeviationMeters) && profile.m_fDepthNoiseStandardDeviationMeters >= 0.0f &&
-         xiiMath::IsFinite(profile.m_fDepthNoiseScalePerMeter) && profile.m_fDepthNoiseScalePerMeter >= 0.0f &&
-         profile.m_uiOutputBitDepth > 0U && profile.m_uiOutputBitDepth <= 32U &&
-         (profile.m_Shutter != xiiSensorShutterType::Global || profile.m_fRollingShutterSeconds == 0.0f);
+    profile.m_Shutter.GetValue() < xiiSensorShutterType::ENUM_COUNT &&
+    profile.m_NoiseModel.GetValue() < xiiSensorNoiseModel::ENUM_COUNT &&
+    profile.m_uiResolutionX > 0U && profile.m_uiResolutionX <= 32768U &&
+    profile.m_uiResolutionY > 0U && profile.m_uiResolutionY <= 32768U &&
+    xiiMath::IsFinite(profile.m_fFocalLengthXPixels) && profile.m_fFocalLengthXPixels > 0.0f &&
+    xiiMath::IsFinite(profile.m_fFocalLengthYPixels) && profile.m_fFocalLengthYPixels > 0.0f &&
+    xiiMath::IsFinite(profile.m_fPrincipalPointXPixels) && xiiMath::IsFinite(profile.m_fPrincipalPointYPixels) &&
+    xiiMath::IsFinite(profile.m_fNearPlaneMeters) && profile.m_fNearPlaneMeters > 0.0f &&
+    xiiMath::IsFinite(profile.m_fFarPlaneMeters) && profile.m_fFarPlaneMeters > profile.m_fNearPlaneMeters &&
+    xiiMath::IsFinite(profile.m_fExposureSeconds) && profile.m_fExposureSeconds > 0.0f &&
+    xiiMath::IsFinite(profile.m_fRollingShutterSeconds) && profile.m_fRollingShutterSeconds >= 0.0f &&
+    xiiMath::IsFinite(profile.m_fWavelengthNanometers) && profile.m_fWavelengthNanometers > 0.0f &&
+    profile.m_vSpectralSensitivity.IsValid() && profile.m_vSpectralSensitivity.x >= 0.0f &&
+    profile.m_vSpectralSensitivity.y >= 0.0f && profile.m_vSpectralSensitivity.z >= 0.0f &&
+    profile.m_vSpectralSensitivity.GetLengthSquared() > 0.0f &&
+    xiiMath::IsFinite(profile.m_fQuantumEfficiency) && profile.m_fQuantumEfficiency >= 0.0f && profile.m_fQuantumEfficiency <= 1.0f &&
+    xiiMath::IsFinite(profile.m_fRadianceToElectrons) && profile.m_fRadianceToElectrons >= 0.0f &&
+    xiiMath::IsFinite(profile.m_fAnalogGain) && profile.m_fAnalogGain >= 0.0f &&
+    xiiMath::IsFinite(profile.m_fReadNoiseElectrons) && profile.m_fReadNoiseElectrons >= 0.0f &&
+    xiiMath::IsFinite(profile.m_fShotNoiseScale) && profile.m_fShotNoiseScale >= 0.0f &&
+    xiiMath::IsFinite(profile.m_fSaturationElectrons) && profile.m_fSaturationElectrons > 0.0f &&
+    xiiMath::IsFinite(profile.m_fDepthNoiseStandardDeviationMeters) && profile.m_fDepthNoiseStandardDeviationMeters >= 0.0f &&
+    xiiMath::IsFinite(profile.m_fDepthNoiseScalePerMeter) && profile.m_fDepthNoiseScalePerMeter >= 0.0f &&
+    profile.m_uiOutputBitDepth > 0U && profile.m_uiOutputBitDepth <= 32U &&
+    (profile.m_Shutter != xiiSensorShutterType::Global || profile.m_fRollingShutterSeconds == 0.0f);
 }
 
 xiiResult xiiSensorRenderingManager::AcquireProfile(const xiiSensorProfile& profile, xiiSensorProfileHandle& out_handle)
@@ -248,23 +248,23 @@ void xiiSensorRenderingManager::Startup()
   xiiSensorProfile profile;
   AcquireProfile(profile, s_pState->m_hDefaultProfiles[xiiSensorType::RGBCamera]).AssertSuccess("Failed to register the default RGB sensor profile.");
 
-  profile.m_Type = xiiSensorType::InfraredCamera;
+  profile.m_Type                  = xiiSensorType::InfraredCamera;
   profile.m_fWavelengthNanometers = 850.0f;
-  profile.m_vSpectralSensitivity = xiiVec3(0.02f, 0.18f, 0.80f);
+  profile.m_vSpectralSensitivity  = xiiVec3(0.02f, 0.18f, 0.80f);
   AcquireProfile(profile, s_pState->m_hDefaultProfiles[xiiSensorType::InfraredCamera]).AssertSuccess("Failed to register the default infrared sensor profile.");
 
-  profile.m_Type = xiiSensorType::DepthCamera;
-  profile.m_NoiseModel = xiiSensorNoiseModel::Gaussian;
+  profile.m_Type                  = xiiSensorType::DepthCamera;
+  profile.m_NoiseModel            = xiiSensorNoiseModel::Gaussian;
   profile.m_fWavelengthNanometers = 940.0f;
-  profile.m_vSpectralSensitivity = xiiVec3(0.01f, 0.09f, 0.90f);
+  profile.m_vSpectralSensitivity  = xiiVec3(0.01f, 0.09f, 0.90f);
   AcquireProfile(profile, s_pState->m_hDefaultProfiles[xiiSensorType::DepthCamera]).AssertSuccess("Failed to register the default depth sensor profile.");
 
-  profile.m_Type = xiiSensorType::LiDAR;
-  profile.m_fWavelengthNanometers = 905.0f;
-  profile.m_vSpectralSensitivity = xiiVec3(0.01f, 0.12f, 0.87f);
-  profile.m_fFarPlaneMeters = 250.0f;
+  profile.m_Type                               = xiiSensorType::LiDAR;
+  profile.m_fWavelengthNanometers              = 905.0f;
+  profile.m_vSpectralSensitivity               = xiiVec3(0.01f, 0.12f, 0.87f);
+  profile.m_fFarPlaneMeters                    = 250.0f;
   profile.m_fDepthNoiseStandardDeviationMeters = 0.01f;
-  profile.m_fDepthNoiseScalePerMeter = 0.0005f;
+  profile.m_fDepthNoiseScalePerMeter           = 0.0005f;
   AcquireProfile(profile, s_pState->m_hDefaultProfiles[xiiSensorType::LiDAR]).AssertSuccess("Failed to register the default LiDAR sensor profile.");
 }
 
@@ -274,4 +274,3 @@ void xiiSensorRenderingManager::Shutdown()
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_SensorRendering);
-

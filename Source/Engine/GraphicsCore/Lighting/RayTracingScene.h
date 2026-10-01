@@ -52,11 +52,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRayTracingGeometryDescript
 /// Mutable scene instance. Transform updates only invalidate the rotating TLAS frame slice.
 struct XII_GRAPHICSCORE_DLL xiiRayTracingInstanceDescription
 {
-  xiiRayTracingGeometryHandle               m_hGeometry;
-  xiiMaterialGpuHandle                      m_hMaterial;
-  xiiMat4                                   m_Transform       = xiiMat4::MakeIdentity();
-  xiiUInt32                                 m_uiStableObjectId = 0U;
-  xiiUInt8                                  m_uiVisibilityMask = 0xFFU;
+  xiiRayTracingGeometryHandle                m_hGeometry;
+  xiiMaterialGpuHandle                       m_hMaterial;
+  xiiMat4                                    m_Transform        = xiiMat4::MakeIdentity();
+  xiiUInt32                                  m_uiStableObjectId = 0U;
+  xiiUInt8                                   m_uiVisibilityMask = 0xFFU;
   xiiBitflags<xiiGALRayTracingInstanceFlags> m_Flags;
 };
 
@@ -98,19 +98,19 @@ class XII_GRAPHICSCORE_DLL xiiRayTracingSceneManager
 public:
   xiiRayTracingSceneManager() = delete;
 
-  [[nodiscard]] static xiiResult                             Configure(const xiiRayTracingSceneDescription& description);
+  [[nodiscard]] static xiiResult                            Configure(const xiiRayTracingSceneDescription& description);
   [[nodiscard]] static const xiiRayTracingSceneDescription& GetConfiguration();
-  [[nodiscard]] static bool                                  IsInitialized();
-  [[nodiscard]] static bool                                  IsHardwareRayTracingSupported();
+  [[nodiscard]] static bool                                 IsInitialized();
+  [[nodiscard]] static bool                                 IsHardwareRayTracingSupported();
 
   [[nodiscard]] static xiiRayTracingGeometryHandle RegisterGeometry(const xiiRayTracingGeometryDescription& description);
-  static void                                                UnregisterGeometry(xiiRayTracingGeometryHandle handle);
-  [[nodiscard]] static bool                                  IsValid(xiiRayTracingGeometryHandle handle);
+  static void                                      UnregisterGeometry(xiiRayTracingGeometryHandle handle);
+  [[nodiscard]] static bool                        IsValid(xiiRayTracingGeometryHandle handle);
 
   [[nodiscard]] static xiiRayTracingInstanceHandle CreateInstance(const xiiRayTracingInstanceDescription& description);
-  static void                                                DestroyInstance(xiiRayTracingInstanceHandle handle);
-  [[nodiscard]] static bool                                  UpdateInstance(xiiRayTracingInstanceHandle handle, const xiiRayTracingInstanceDescription& description);
-  [[nodiscard]] static bool                                  IsValid(xiiRayTracingInstanceHandle handle);
+  static void                                      DestroyInstance(xiiRayTracingInstanceHandle handle);
+  [[nodiscard]] static bool                        UpdateInstance(xiiRayTracingInstanceHandle handle, const xiiRayTracingInstanceDescription& description);
+  [[nodiscard]] static bool                        IsValid(xiiRayTracingInstanceHandle handle);
 
   [[nodiscard]] static xiiRayTracingSceneStats GetStats();
 
@@ -119,12 +119,12 @@ public:
     /// Rotating TLAS owned by the subsystem. It becomes trace-ready after the build pass executes.
     xiiSharedPtr<xiiGALTopLevelAS> m_pTopLevelAS;
     /// Render-graph dependency token for ray-dispatch passes that consume m_pTopLevelAS.
-    xiiRenderGraphBufferHandle     m_hSceneDependency;
+    xiiRenderGraphBufferHandle m_hSceneDependency;
     /// Shader-readable canonical material records indexed by HLSL InstanceIndex().
-    xiiRenderGraphBufferHandle     m_hMaterialData;
+    xiiRenderGraphBufferHandle m_hMaterialData;
     /// Shader-readable geometry addressing records indexed by HLSL InstanceIndex().
-    xiiRenderGraphBufferHandle     m_hGeometryData;
-    xiiUInt32                      m_uiInstanceCount = 0U;
+    xiiRenderGraphBufferHandle m_hGeometryData;
+    xiiUInt32                  m_uiInstanceCount = 0U;
   };
 
   /// Adds BLAS/TLAS construction to the graph on the compute queue.
@@ -132,7 +132,7 @@ public:
   /// A frame-in-flight TLAS ring prevents updates from mutating acceleration structures still used
   /// by older GPU submissions. The returned dependency buffer must be declared as a BuildASRead by
   /// every trace pass that consumes the returned TLAS.
-  [[nodiscard]] static BuildHandles AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] static BuildHandles                   AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
   [[nodiscard]] static xiiSharedPtr<xiiGALTopLevelAS> GetTopLevelAS(xiiUInt64 uiFrameIndex);
 
 private:

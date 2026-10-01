@@ -183,14 +183,14 @@ public:
   xiiSkyAtmosphereComponent();
   ~xiiSkyAtmosphereComponent();
 
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void      DeserializeComponent(xiiWorldReader& inout_stream) override;
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& out_bounds, bool& out_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
-  void SetAtmosphereSettings(const xiiAtmosphereSettings& settings);
+  void                         SetAtmosphereSettings(const xiiAtmosphereSettings& settings);
   const xiiAtmosphereSettings& GetAtmosphereSettings() const;
 
-  void SetPriority(xiiInt32 iPriority);
+  void     SetPriority(xiiInt32 iPriority);
   xiiInt32 GetPriority() const;
 
 protected:

@@ -40,7 +40,7 @@ public:
   };
 
   xiiDynamicArray<xiiUniquePtr<Entry>>          m_Entries;
-  xiiDynamicArray<ContextSlot>                   m_ContextSlots;
+  xiiDynamicArray<ContextSlot>                  m_ContextSlots;
   xiiDynamicArray<xiiUInt32>                    m_FreeContextSlots;
   xiiUniquePtr<xiiRenderGraphResourceCache>     m_pResourceCache;
   xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pProfiler;
@@ -173,11 +173,11 @@ xiiRenderGraphContextHandle xiiRenderGraphManager::CreateContext(xiiStringView s
   if (!IsInitialized())
     return {};
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>                        pDevice  = xiiGALDevice::GetDefaultDevice();
   xiiUniquePtr<xiiRenderGraphManagerState::Context> pContext = XII_DEFAULT_NEW(xiiRenderGraphManagerState::Context);
-  pContext->m_pGraph         = XII_DEFAULT_NEW(xiiRenderGraph, sName);
-  pContext->m_pResourceCache = XII_DEFAULT_NEW(xiiRenderGraphResourceCache);
-  pContext->m_pProfiler      = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
+  pContext->m_pGraph                                         = XII_DEFAULT_NEW(xiiRenderGraph, sName);
+  pContext->m_pResourceCache                                 = XII_DEFAULT_NEW(xiiRenderGraphResourceCache);
+  pContext->m_pProfiler                                      = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
   pContext->m_pResourceCache->Initialize(pDevice);
   pContext->m_pProfiler->Initialize(pDevice);
 

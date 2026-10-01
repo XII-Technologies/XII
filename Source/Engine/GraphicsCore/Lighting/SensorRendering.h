@@ -81,28 +81,28 @@ struct XII_GRAPHICSCORE_DLL xiiSensorProfile
   xiiUInt32 m_uiResolutionX = 1280U;
   xiiUInt32 m_uiResolutionY = 720U;
 
-  float m_fFocalLengthXPixels = 640.0f;
-  float m_fFocalLengthYPixels = 640.0f;
+  float m_fFocalLengthXPixels    = 640.0f;
+  float m_fFocalLengthYPixels    = 640.0f;
   float m_fPrincipalPointXPixels = 639.5f;
   float m_fPrincipalPointYPixels = 359.5f;
 
-  float m_fNearPlaneMeters = 0.05f;
-  float m_fFarPlaneMeters = 1000.0f;
-  float m_fExposureSeconds = 1.0f / 60.0f;
+  float m_fNearPlaneMeters       = 0.05f;
+  float m_fFarPlaneMeters        = 1000.0f;
+  float m_fExposureSeconds       = 1.0f / 60.0f;
   float m_fRollingShutterSeconds = 0.0f;
 
-  float   m_fWavelengthNanometers = 550.0f;
-  xiiVec3 m_vSpectralSensitivity = xiiVec3(0.2126f, 0.7152f, 0.0722f);
-  float   m_fQuantumEfficiency = 0.72f;
-  float   m_fRadianceToElectrons = 10000.0f;
-  float   m_fAnalogGain = 1.0f;
-  float   m_fReadNoiseElectrons = 1.5f;
-  float   m_fShotNoiseScale = 1.0f;
-  float   m_fSaturationElectrons = 30000.0f;
-  float   m_fDepthNoiseStandardDeviationMeters = 0.002f;
-  float   m_fDepthNoiseScalePerMeter = 0.001f;
-  xiiUInt32 m_uiOutputBitDepth = 16U;
-  xiiUInt32 m_uiNoiseSeed = 0U;
+  float     m_fWavelengthNanometers              = 550.0f;
+  xiiVec3   m_vSpectralSensitivity               = xiiVec3(0.2126f, 0.7152f, 0.0722f);
+  float     m_fQuantumEfficiency                 = 0.72f;
+  float     m_fRadianceToElectrons               = 10000.0f;
+  float     m_fAnalogGain                        = 1.0f;
+  float     m_fReadNoiseElectrons                = 1.5f;
+  float     m_fShotNoiseScale                    = 1.0f;
+  float     m_fSaturationElectrons               = 30000.0f;
+  float     m_fDepthNoiseStandardDeviationMeters = 0.002f;
+  float     m_fDepthNoiseScalePerMeter           = 0.001f;
+  xiiUInt32 m_uiOutputBitDepth                   = 16U;
+  xiiUInt32 m_uiNoiseSeed                        = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSensorProfile);
@@ -123,11 +123,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSensorProfileHandle);
 /// Tool-facing registry statistics.
 struct XII_GRAPHICSCORE_DLL xiiSensorProfileRegistryStats
 {
-  xiiUInt32 m_uiProfileCount = 0U;
-  xiiUInt32 m_uiRGBProfileCount = 0U;
+  xiiUInt32 m_uiProfileCount         = 0U;
+  xiiUInt32 m_uiRGBProfileCount      = 0U;
   xiiUInt32 m_uiInfraredProfileCount = 0U;
-  xiiUInt32 m_uiDepthProfileCount = 0U;
-  xiiUInt32 m_uiLiDARProfileCount = 0U;
+  xiiUInt32 m_uiDepthProfileCount    = 0U;
+  xiiUInt32 m_uiLiDARProfileCount    = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSensorProfileRegistryStats);
@@ -149,10 +149,10 @@ public:
   [[nodiscard]] static bool IsValidProfile(const xiiSensorProfile& profile);
 
   /// Finds an identical immutable profile or appends a new one.
-  [[nodiscard]] static xiiResult AcquireProfile(const xiiSensorProfile& profile, xiiSensorProfileHandle& out_handle);
-  [[nodiscard]] static xiiSensorProfileHandle GetDefaultProfileHandle();
-  [[nodiscard]] static xiiSensorProfileHandle GetDefaultProfileHandle(xiiSensorType::Enum type);
-  [[nodiscard]] static xiiResult GetProfile(xiiSensorProfileHandle handle, xiiSensorProfile& out_profile);
+  [[nodiscard]] static xiiResult                     AcquireProfile(const xiiSensorProfile& profile, xiiSensorProfileHandle& out_handle);
+  [[nodiscard]] static xiiSensorProfileHandle        GetDefaultProfileHandle();
+  [[nodiscard]] static xiiSensorProfileHandle        GetDefaultProfileHandle(xiiSensorType::Enum type);
+  [[nodiscard]] static xiiResult                     GetProfile(xiiSensorProfileHandle handle, xiiSensorProfile& out_profile);
   [[nodiscard]] static xiiSensorProfileRegistryStats GetRegistryStats();
 
 private:
@@ -162,4 +162,3 @@ private:
   class State;
   static xiiUniquePtr<State> s_pState;
 };
-

@@ -39,13 +39,13 @@ class XII_GRAPHICSCORE_DLL xiiReflectionCaptureRenderData : public xiiRenderData
 public:
   xiiTextureCubeResourceHandle              m_hReflectionMap;
   xiiTransform                              m_GlobalTransform = xiiTransform::MakeIdentity();
-  xiiVec3                                   m_vHalfExtents     = xiiVec3(5.0f);
+  xiiVec3                                   m_vHalfExtents    = xiiVec3(5.0f);
   xiiEnum<xiiReflectionProbeInfluenceShape> m_InfluenceShape;
-  float                                     m_fSphereRadius     = 5.0f;
-  float                                     m_fBlendDistance    = 1.0f;
-  float                                     m_fIntensity        = 1.0f;
-  float                                     m_fSaturation       = 1.0f;
-  xiiInt32                                  m_iPriority         = 0;
+  float                                     m_fSphereRadius      = 5.0f;
+  float                                     m_fBlendDistance     = 1.0f;
+  float                                     m_fIntensity         = 1.0f;
+  float                                     m_fSaturation        = 1.0f;
+  xiiInt32                                  m_iPriority          = 0;
   bool                                      m_bParallaxCorrected = true;
 };
 
@@ -62,32 +62,32 @@ public:
   xiiReflectionCaptureComponent();
   ~xiiReflectionCaptureComponent();
 
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void      DeserializeComponent(xiiWorldReader& inout_stream) override;
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& out_bounds, bool& out_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
-  void SetReflectionMap(const xiiTextureCubeResourceHandle& hReflectionMap);
+  void                                SetReflectionMap(const xiiTextureCubeResourceHandle& hReflectionMap);
   const xiiTextureCubeResourceHandle& GetReflectionMap() const;
 
-  void SetInfluenceShape(xiiEnum<xiiReflectionProbeInfluenceShape> shape);
+  void                                      SetInfluenceShape(xiiEnum<xiiReflectionProbeInfluenceShape> shape);
   xiiEnum<xiiReflectionProbeInfluenceShape> GetInfluenceShape() const;
 
-  void SetHalfExtents(xiiVec3 vHalfExtents);
+  void    SetHalfExtents(xiiVec3 vHalfExtents);
   xiiVec3 GetHalfExtents() const;
 
-  void SetSphereRadius(float fRadius);
+  void  SetSphereRadius(float fRadius);
   float GetSphereRadius() const;
 
-  void SetBlendDistance(float fDistance);
+  void  SetBlendDistance(float fDistance);
   float GetBlendDistance() const;
 
-  void SetIntensity(float fIntensity);
+  void  SetIntensity(float fIntensity);
   float GetIntensity() const;
 
-  void SetSaturation(float fSaturation);
+  void  SetSaturation(float fSaturation);
   float GetSaturation() const;
 
-  void SetPriority(xiiInt32 iPriority);
+  void     SetPriority(xiiInt32 iPriority);
   xiiInt32 GetPriority() const;
 
   void SetParallaxCorrected(bool bEnabled);
@@ -99,7 +99,7 @@ protected:
 private:
   xiiTextureCubeResourceHandle              m_hReflectionMap;
   xiiEnum<xiiReflectionProbeInfluenceShape> m_InfluenceShape;
-  xiiVec3                                   m_vHalfExtents      = xiiVec3(5.0f);
+  xiiVec3                                   m_vHalfExtents       = xiiVec3(5.0f);
   float                                     m_fSphereRadius      = 5.0f;
   float                                     m_fBlendDistance     = 1.0f;
   float                                     m_fIntensity         = 1.0f;

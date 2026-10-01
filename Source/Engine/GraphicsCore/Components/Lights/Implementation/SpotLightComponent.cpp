@@ -87,8 +87,8 @@ xiiResult xiiSpotLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds
   const float fProjectedArea = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
   const float fCandela       = fSolidAngle > 0.0f ? GetLuminousIntensity(fSolidAngle, fProjectedArea) : 0.0f;
   m_fEffectiveRange          = CalculateEffectiveRange(m_fRange, fCandela);
-  ref_bounds         = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_fEffectiveRange);
-  ref_bAlwaysVisible = false;
+  ref_bounds                 = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_fEffectiveRange);
+  ref_bAlwaysVisible         = false;
 
   return XII_SUCCESS;
 }
@@ -180,9 +180,9 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
-  const float fSolidAngle    = xiiPhotometricUtils::ConeSolidAngle(m_OuterSpotAngle);
-  const float fProjectedArea = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
-  const float fCandela       = fSolidAngle > 0.0f ? GetLuminousIntensity(fSolidAngle, fProjectedArea) : 0.0f;
+  const float fSolidAngle     = xiiPhotometricUtils::ConeSolidAngle(m_OuterSpotAngle);
+  const float fProjectedArea  = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
+  const float fCandela        = fSolidAngle > 0.0f ? GetLuminousIntensity(fSolidAngle, fProjectedArea) : 0.0f;
   const float fEffectiveRange = CalculateEffectiveRange(m_fRange, fCandela);
 
   if (fCandela <= 0.0f || fEffectiveRange <= 0.0f || m_OuterSpotAngle.GetRadian() <= 0.0f)

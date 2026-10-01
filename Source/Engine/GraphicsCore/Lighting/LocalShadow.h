@@ -40,8 +40,8 @@ struct XII_GRAPHICSCORE_DLL xiiLocalShadowAtlasSettings
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiAtlasSize = 4096U;
-  xiiUInt32 m_uiTileSize  = 256U;
+  xiiUInt32 m_uiAtlasSize       = 4096U;
+  xiiUInt32 m_uiTileSize        = 256U;
   float     m_fMinimumNearPlane = 0.01f;
 };
 
@@ -68,5 +68,5 @@ public:
   xiiLocalShadowAtlasBuilder() = delete;
 
   static void Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
-    xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics);
+                    xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics);
 };

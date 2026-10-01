@@ -44,4 +44,3 @@ XII_CREATE_SIMPLE_TEST(Lighting, ReflectionProbes)
     XII_TEST_FLOAT(probe.GetSaturation(), 0.0f, 0.0f);
   }
 }
-

@@ -117,7 +117,7 @@ xiiParticleSystemRuntimeHandle xiiParticleSystemManager::CreateRuntime(xiiShared
   }
 
   xiiParticleSystemManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-  slot.m_pRuntime                          = std::move(pRuntime);
+  slot.m_pRuntime                           = std::move(pRuntime);
 
   xiiParticleSystemRuntimeHandle handle;
   handle.m_uiIndex      = uiIndex;

@@ -20,9 +20,9 @@ XII_CREATE_SIMPLE_TEST(Lighting, SensorRendering)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Stable deduplicated profiles")
   {
     xiiSensorProfile profile;
-    profile.m_Type = xiiSensorType::InfraredCamera;
+    profile.m_Type                  = xiiSensorType::InfraredCamera;
     profile.m_fWavelengthNanometers = 850.0f;
-    profile.m_vSpectralSensitivity = xiiVec3(0.02f, 0.18f, 0.80f);
+    profile.m_vSpectralSensitivity  = xiiVec3(0.02f, 0.18f, 0.80f);
 
     xiiSensorProfileHandle hFirst;
     xiiSensorProfileHandle hSecond;
@@ -43,12 +43,12 @@ XII_CREATE_SIMPLE_TEST(Lighting, SensorRendering)
     invalid.m_fFarPlaneMeters = invalid.m_fNearPlaneMeters;
     XII_TEST_BOOL(!xiiSensorRenderingManager::IsValidProfile(invalid));
 
-    invalid = {};
+    invalid                        = {};
     invalid.m_vSpectralSensitivity = xiiVec3::MakeZero();
     XII_TEST_BOOL(!xiiSensorRenderingManager::IsValidProfile(invalid));
 
-    invalid = {};
-    invalid.m_Shutter = xiiSensorShutterType::Global;
+    invalid                          = {};
+    invalid.m_Shutter                = xiiSensorShutterType::Global;
     invalid.m_fRollingShutterSeconds = 0.01f;
     XII_TEST_BOOL(!xiiSensorRenderingManager::IsValidProfile(invalid));
 
@@ -68,4 +68,3 @@ XII_CREATE_SIMPLE_TEST(Lighting, SensorRendering)
     XII_TEST_BOOL(xiiSensorRenderingManager::GetDefaultProfileHandle(xiiSensorType::LiDAR).IsValid());
   }
 }
-

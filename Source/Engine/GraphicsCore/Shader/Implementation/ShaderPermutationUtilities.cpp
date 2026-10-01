@@ -11,7 +11,7 @@
 class xiiShaderPermutationUtilitiesState
 {
 public:
-  xiiMutex                                     m_Mutex;
+  xiiMutex                                    m_Mutex;
   xiiHashTable<xiiUInt64, xiiUntrackedString> m_PermutationPaths;
 };
 

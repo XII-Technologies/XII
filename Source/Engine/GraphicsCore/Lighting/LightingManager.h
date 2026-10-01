@@ -43,8 +43,8 @@ public:
   [[nodiscard]] static bool IsInitialized();
 
   [[nodiscard]] static xiiLightingContextHandle CreateContext(const xiiLightingSystemSettings& settings = {});
-  static void                                      DestroyContext(xiiLightingContextHandle handle);
-  [[nodiscard]] static bool                        IsValid(xiiLightingContextHandle handle);
+  static void                                   DestroyContext(xiiLightingContextHandle handle);
+  [[nodiscard]] static bool                     IsValid(xiiLightingContextHandle handle);
 
   /// Returns a non-owning context pointer. It is valid until DestroyContext or subsystem shutdown.
   [[nodiscard]] static xiiLightingSystem*       GetContext(xiiLightingContextHandle handle);
@@ -53,10 +53,10 @@ public:
   /// Ensures the process-wide split-sum BRDF lookup texture exists. The texture
   /// is owned by this subsystem so views cannot outlive the allocator or GAL
   /// device that created it.
-  [[nodiscard]] static xiiResult EnsureBRDFLUTResources();
+  [[nodiscard]] static xiiResult                   EnsureBRDFLUTResources();
   [[nodiscard]] static xiiSharedPtr<xiiGALTexture> GetBRDFLUT();
-  [[nodiscard]] static bool IsBRDFLUTGenerationPending();
-  static void MarkBRDFLUTGenerated();
+  [[nodiscard]] static bool                        IsBRDFLUTGenerationPending();
+  static void                                      MarkBRDFLUTGenerated();
 
 private:
   static void Startup();
@@ -92,16 +92,16 @@ public:
   void BindLightingResources(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const;
   void WriteBlackboard(xiiRenderGraphBlackboard& ref_blackboard) const;
 
-  [[nodiscard]] const xiiLightingSystemSettings&          GetSettings() const;
-  [[nodiscard]] const xiiLightingSystem::FrameStatistics& GetFrameStatistics() const;
-  [[nodiscard]] const xiiLocalShadowAtlasStatistics&      GetLocalShadowStatistics() const;
+  [[nodiscard]] const xiiLightingSystemSettings&           GetSettings() const;
+  [[nodiscard]] const xiiLightingSystem::FrameStatistics&  GetFrameStatistics() const;
+  [[nodiscard]] const xiiLocalShadowAtlasStatistics&       GetLocalShadowStatistics() const;
   [[nodiscard]] xiiArrayPtr<const xiiLocalShadowAtlasData> GetLocalShadowData() const;
-  [[nodiscard]] xiiUInt32                                 GetActiveLightCount() const;
-  [[nodiscard]] xiiUInt32                                 GetClusterCountX() const;
-  [[nodiscard]] xiiUInt32                                 GetClusterCountY() const;
-  [[nodiscard]] xiiUInt32                                 GetClusterCountZ() const;
-  [[nodiscard]] xiiUInt32                                 GetTotalClusterCount() const;
-  [[nodiscard]] xiiGALBuffer*                             GetLightDataBuffer() const;
+  [[nodiscard]] xiiUInt32                                  GetActiveLightCount() const;
+  [[nodiscard]] xiiUInt32                                  GetClusterCountX() const;
+  [[nodiscard]] xiiUInt32                                  GetClusterCountY() const;
+  [[nodiscard]] xiiUInt32                                  GetClusterCountZ() const;
+  [[nodiscard]] xiiUInt32                                  GetTotalClusterCount() const;
+  [[nodiscard]] xiiGALBuffer*                              GetLightDataBuffer() const;
 
   /// Non-owning access for graph extensions that consume the view's lighting context.
   [[nodiscard]] xiiLightingSystem* BorrowSystem() const;

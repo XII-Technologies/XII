@@ -18,11 +18,11 @@ XII_CREATE_SIMPLE_TEST(Lighting, Atmosphere)
   XII_TEST_BOOL(pCloudComponentType->FindPropertyByName("Cloud") != nullptr);
   XII_TEST_BOOL(pCloudComponentType->FindPropertyByName("Priority") != nullptr);
 
-  const xiiAtmosphereSettings original = xiiAtmosphereManager::GetConfiguration();
-  const xiiUInt64 uiOriginalRevision = xiiAtmosphereManager::GetConfigurationRevision();
+  const xiiAtmosphereSettings original           = xiiAtmosphereManager::GetConfiguration();
+  const xiiUInt64             uiOriginalRevision = xiiAtmosphereManager::GetConfigurationRevision();
 
   xiiAtmosphereSettings modified = original;
-  modified.m_fMiePhaseG = 0.72f;
+  modified.m_fMiePhaseG          = 0.72f;
   XII_TEST_BOOL(xiiAtmosphereManager::Configure(modified).Succeeded());
   XII_TEST_BOOL(xiiAtmosphereManager::GetConfigurationRevision() > uiOriginalRevision);
   XII_TEST_BOOL(xiiAtmosphereManager::IsGenerationPending());
@@ -38,13 +38,13 @@ XII_CREATE_SIMPLE_TEST(Lighting, Atmosphere)
   XII_TEST_BOOL(xiiAtmosphereManager::Configure(invalid).Failed());
   XII_TEST_INT(xiiAtmosphereManager::GetConfigurationRevision(), uiModifiedRevision);
 
-  invalid = modified;
+  invalid                      = modified;
   invalid.m_vPlanetUpDirection = xiiVec3::MakeZero();
   XII_TEST_BOOL(xiiAtmosphereManager::Configure(invalid).Failed());
   XII_TEST_INT(xiiAtmosphereManager::GetConfigurationRevision(), uiModifiedRevision);
 
   xiiAtmosphereSettings second = modified;
-  second.m_fMiePhaseG = 0.71f;
+  second.m_fMiePhaseG          = 0.71f;
   xiiAtmosphereLUTHandle hModified;
   xiiAtmosphereLUTHandle hSecond;
   XII_TEST_BOOL(xiiAtmosphereManager::AcquireLUTs(modified, hModified).Succeeded());

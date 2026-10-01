@@ -213,7 +213,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
 
     xiiRayTracingGeometryDescription rayTracingDescription;
     rayTracingDescription.m_hMeshBuffer = asset.m_Lods[0U];
-    asset.m_hRayTracingGeometry = xiiRayTracingSceneManager::RegisterGeometry(rayTracingDescription);
+    asset.m_hRayTracingGeometry         = xiiRayTracingSceneManager::RegisterGeometry(rayTracingDescription);
     if (!asset.m_hRayTracingGeometry.IsValid())
       return XII_FAILURE;
   }
@@ -315,10 +315,10 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       return XII_FAILURE;
 
     xiiRayTracingInstanceDescription rayTracingInstance;
-    rayTracingInstance.m_hGeometry       = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
-    rayTracingInstance.m_hMaterial       = m_Materials[i % m_Materials.GetCount()];
-    rayTracingInstance.m_Transform       = GetScene().GetGlobalTransform(object);
-    rayTracingInstance.m_uiStableObjectId = i;
+    rayTracingInstance.m_hGeometry           = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
+    rayTracingInstance.m_hMaterial           = m_Materials[i % m_Materials.GetCount()];
+    rayTracingInstance.m_Transform           = GetScene().GetGlobalTransform(object);
+    rayTracingInstance.m_uiStableObjectId    = i;
     const xiiRayTracingInstanceHandle handle = xiiRayTracingSceneManager::CreateInstance(rayTracingInstance);
     if (!handle.IsValid())
       return XII_FAILURE;
@@ -350,8 +350,8 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
     const float fRootAngle  = 0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f));
     const float fRootHeight = 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f));
     GetScene().SetLocalTransform(m_hAssemblyRoot,
-      xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
-        xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
+                                 xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
+                                   xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
   }
 
   GetScene().CommitFrame(uiFrameIndex);

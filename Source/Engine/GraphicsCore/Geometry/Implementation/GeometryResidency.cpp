@@ -252,18 +252,18 @@ xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, const x
     return XII_FAILURE;
 
   xiiGALBufferCreationDescription desc;
-  desc.m_uiSize              = static_cast<xiiUInt32>(uiSize);
-  desc.m_uiElementByteStride = sizeof(xiiGpuGeometryRecord);
-  desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-  desc.m_Mode                = xiiGALBufferMode::Structured;
-  desc.m_Usage               = xiiGALResourceUsage::Mutable;
+  desc.m_uiSize               = static_cast<xiiUInt32>(uiSize);
+  desc.m_uiElementByteStride  = sizeof(xiiGpuGeometryRecord);
+  desc.m_BindFlags            = xiiGALBindFlags::ShaderResource;
+  desc.m_Mode                 = xiiGALBufferMode::Structured;
+  desc.m_Usage                = xiiGALResourceUsage::Mutable;
   s_pState->m_pMetadataBuffer = pDevice->CreateBuffer(desc);
   if (s_pState->m_pMetadataBuffer == nullptr)
     return XII_FAILURE;
   s_pState->m_pMetadataBuffer->SetDebugName("GPU Geometry Metadata");
 
-  desc.m_uiSize              = uiMaxMeshlets * sizeof(xiiMeshlet);
-  desc.m_uiElementByteStride = sizeof(xiiMeshlet);
+  desc.m_uiSize                      = uiMaxMeshlets * sizeof(xiiMeshlet);
+  desc.m_uiElementByteStride         = sizeof(xiiMeshlet);
   s_pState->m_pMeshletMetadataBuffer = pDevice->CreateBuffer(desc);
   if (s_pState->m_pMeshletMetadataBuffer == nullptr)
   {
@@ -546,12 +546,12 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
 bool xiiGeometryResidencyManager::SetBindlessIndices(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt32 uiVertex, xiiUInt32 uiIndex, xiiUInt32 uiMeshlet, xiiUInt32 uiRemap, xiiUInt32 uiPrimitive)
 {
   if (!IsValid(handle) || uiLod >= s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord.m_uiLodCount) return false;
-  xiiGpuGeometryLod& lod                       = s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord.m_Lods[uiLod];
-  lod.m_uiVertexBufferIndex                    = uiVertex;
-  lod.m_uiIndexBufferIndex                     = uiIndex;
-  lod.m_uiMeshletBufferIndex                   = uiMeshlet;
-  lod.m_uiMeshletRemapBufferIndex              = uiRemap;
-  lod.m_uiMeshletPrimitiveBufferIndex          = uiPrimitive;
+  xiiGpuGeometryLod& lod                                 = s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord.m_Lods[uiLod];
+  lod.m_uiVertexBufferIndex                              = uiVertex;
+  lod.m_uiIndexBufferIndex                               = uiIndex;
+  lod.m_uiMeshletBufferIndex                             = uiMeshlet;
+  lod.m_uiMeshletRemapBufferIndex                        = uiRemap;
+  lod.m_uiMeshletPrimitiveBufferIndex                    = uiPrimitive;
   s_pState->m_Slots[handle.m_uiIndex].m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
   return true;
 }
@@ -608,7 +608,7 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
     return {};
 
   State* pState = s_pState.Borrow();
-  auto pass = graph.AddPass<UploadPassData>(
+  auto   pass   = graph.AddPass<UploadPassData>(
     "Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer,
     [pState](UploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hGeometryBuffer = builder.ImportBuffer("GPU Geometry Metadata", pState->m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);

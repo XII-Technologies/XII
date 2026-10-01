@@ -10,22 +10,22 @@ namespace
   {
     xiiVirtualShadowPageRequest request;
     request.m_Page.m_uiLightId = uiLight;
-    request.m_Page.m_uiPageX = uiX;
-    request.m_Page.m_uiPageY = 0U;
-    request.m_uiPriority = uiPriority;
-    request.m_bPinned = bPinned;
+    request.m_Page.m_uiPageX   = uiX;
+    request.m_Page.m_uiPageY   = 0U;
+    request.m_uiPriority       = uiPriority;
+    request.m_bPinned          = bPinned;
     return request;
   }
-}
+} // namespace
 
 XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
 {
   {
     xiiVirtualShadowPageId page;
-    page.m_uiLightId = 0x00ABCDEU;
+    page.m_uiLightId  = 0x00ABCDEU;
     page.m_uiMipLevel = 47U;
-    page.m_uiPageX = 0x1ABCDU;
-    page.m_uiPageY = 0x12345U;
+    page.m_uiPageX    = 0x1ABCDU;
+    page.m_uiPageY    = 0x12345U;
 
     const xiiVirtualShadowPageId decoded = xiiVirtualShadowPageId::FromPackedValue(page.GetPackedValue());
     XII_TEST_INT(decoded.m_uiLightId, page.m_uiLightId);
@@ -35,12 +35,12 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   }
 
   xiiVirtualShadowMapSettings settings;
-  settings.m_uiVirtualResolution = 1024U;
-  settings.m_uiPageSize = 128U;
-  settings.m_uiPhysicalPageCount = 2U;
+  settings.m_uiVirtualResolution   = 1024U;
+  settings.m_uiPageSize            = 128U;
+  settings.m_uiPhysicalPageCount   = 2U;
   settings.m_uiMaxFeedbackRequests = 16U;
-  settings.m_uiMaxPageAllocations = 2U;
-  settings.m_uiFramesInFlight = 2U;
+  settings.m_uiMaxPageAllocations  = 2U;
+  settings.m_uiFramesInFlight      = 2U;
   XII_TEST_BOOL(xiiVirtualShadowMapManager::Configure(settings).Succeeded());
 
   const xiiVirtualShadowMapStats configuredStats = xiiVirtualShadowMapManager::GetStats();

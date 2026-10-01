@@ -80,8 +80,8 @@ void xiiReflectionCaptureComponent::DeserializeComponent(xiiWorldReader& inout_s
   stream >> m_iPriority;
   stream >> m_bParallaxCorrected;
 
-  m_vHalfExtents  = m_vHalfExtents.CompMax(xiiVec3(0.01f));
-  m_fSphereRadius = xiiMath::Max(m_fSphereRadius, 0.01f);
+  m_vHalfExtents   = m_vHalfExtents.CompMax(xiiVec3(0.01f));
+  m_fSphereRadius  = xiiMath::Max(m_fSphereRadius, 0.01f);
   m_fBlendDistance = xiiMath::Max(m_fBlendDistance, 0.0f);
   m_fIntensity     = xiiMath::Max(m_fIntensity, 0.0f);
   m_fSaturation    = xiiMath::Max(m_fSaturation, 0.0f);
@@ -238,17 +238,17 @@ void xiiReflectionCaptureComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDa
     return;
 
   xiiReflectionCaptureRenderData* pRenderData = pWorldModule->CreateRenderDataForThisFrame<xiiReflectionCaptureRenderData>(this);
-  pRenderData->m_hReflectionMap                = m_hReflectionMap;
-  pRenderData->m_GlobalTransform               = GetOwner()->GetGlobalTransform();
-  pRenderData->m_vHalfExtents                  = m_vHalfExtents;
-  pRenderData->m_InfluenceShape                = m_InfluenceShape;
-  pRenderData->m_fSphereRadius                 = m_fSphereRadius;
-  pRenderData->m_fBlendDistance                = m_fBlendDistance;
-  pRenderData->m_fIntensity                    = m_fIntensity;
-  pRenderData->m_fSaturation                   = m_fSaturation;
-  pRenderData->m_iPriority                     = m_iPriority;
-  pRenderData->m_bParallaxCorrected            = m_bParallaxCorrected;
-  pRenderData->m_uiSortingKey                  = GetUniqueIdForRendering();
+  pRenderData->m_hReflectionMap               = m_hReflectionMap;
+  pRenderData->m_GlobalTransform              = GetOwner()->GetGlobalTransform();
+  pRenderData->m_vHalfExtents                 = m_vHalfExtents;
+  pRenderData->m_InfluenceShape               = m_InfluenceShape;
+  pRenderData->m_fSphereRadius                = m_fSphereRadius;
+  pRenderData->m_fBlendDistance               = m_fBlendDistance;
+  pRenderData->m_fIntensity                   = m_fIntensity;
+  pRenderData->m_fSaturation                  = m_fSaturation;
+  pRenderData->m_iPriority                    = m_iPriority;
+  pRenderData->m_bParallaxCorrected           = m_bParallaxCorrected;
+  pRenderData->m_uiSortingKey                 = GetUniqueIdForRendering();
 
   ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::IfStatic);
 }

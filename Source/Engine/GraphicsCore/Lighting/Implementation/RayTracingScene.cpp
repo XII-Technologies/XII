@@ -16,7 +16,7 @@
 
 struct xiiRayTracingSceneManager::GeometrySlot
 {
-  xiiRayTracingGeometryDescription m_Description;
+  xiiRayTracingGeometryDescription  m_Description;
   xiiSharedPtr<xiiGALBuffer>        m_pVertexBuffer;
   xiiSharedPtr<xiiGALBuffer>        m_pIndexBuffer;
   xiiSharedPtr<xiiGALBuffer>        m_pScratchBuffer;
@@ -41,9 +41,9 @@ struct xiiRayTracingSceneManager::GeometrySlot
 struct xiiRayTracingSceneManager::InstanceSlot
 {
   xiiRayTracingInstanceDescription m_Description;
-  xiiUInt32                         m_uiGeneration = 1U;
-  bool                              m_bAllocated      = false;
-  bool                              m_bRequiresAnyHit = false;
+  xiiUInt32                        m_uiGeneration    = 1U;
+  bool                             m_bAllocated      = false;
+  bool                             m_bRequiresAnyHit = false;
 };
 
 struct xiiRayTracingSceneManager::FrameResources
@@ -53,9 +53,9 @@ struct xiiRayTracingSceneManager::FrameResources
   xiiSharedPtr<xiiGALBuffer>     m_pMaterialBuffer;
   xiiSharedPtr<xiiGALBuffer>     m_pGeometryBuffer;
   xiiSharedPtr<xiiGALBuffer>     m_pScratchBuffer;
-  xiiUInt64                      m_uiBuiltRevision = xiiMath::MaxValue<xiiUInt64>();
+  xiiUInt64                      m_uiBuiltRevision      = xiiMath::MaxValue<xiiUInt64>();
   xiiUInt32                      m_uiBuiltInstanceCount = 0U;
-  bool                           m_bReady          = false;
+  bool                           m_bReady               = false;
 };
 
 class xiiRayTracingSceneManager::State
@@ -84,19 +84,19 @@ public:
     m_bInitialized = false;
   }
 
-  xiiDynamicArray<GeometrySlot> m_Geometries;
-  xiiDynamicArray<InstanceSlot> m_Instances;
-  xiiDynamicArray<xiiUInt32>    m_FreeGeometries;
-  xiiDynamicArray<xiiUInt32>    m_FreeInstances;
+  xiiDynamicArray<GeometrySlot>   m_Geometries;
+  xiiDynamicArray<InstanceSlot>   m_Instances;
+  xiiDynamicArray<xiiUInt32>      m_FreeGeometries;
+  xiiDynamicArray<xiiUInt32>      m_FreeInstances;
   xiiDynamicArray<FrameResources> m_Frames;
-  xiiRayTracingSceneDescription m_Configuration;
-  xiiUInt64                      m_uiSceneRevision = 0U;
-  xiiUInt32                      m_uiGeometryCount = 0U;
-  xiiUInt32                      m_uiInstanceCount = 0U;
-  xiiUInt64                      m_uiLastFrameIndex = 0U;
-  bool                           m_bEngineStarted = false;
-  bool                           m_bHardwareSupported = false;
-  bool                           m_bInitialized = false;
+  xiiRayTracingSceneDescription   m_Configuration;
+  xiiUInt64                       m_uiSceneRevision    = 0U;
+  xiiUInt32                       m_uiGeometryCount    = 0U;
+  xiiUInt32                       m_uiInstanceCount    = 0U;
+  xiiUInt64                       m_uiLastFrameIndex   = 0U;
+  bool                            m_bEngineStarted     = false;
+  bool                            m_bHardwareSupported = false;
+  bool                            m_bInitialized       = false;
 };
 
 namespace
@@ -119,35 +119,35 @@ namespace
 
   struct RayTracingSceneBuildPassData
   {
-    xiiDynamicArray<RayTracingBLASBuild> m_BLASBuilds;
+    xiiDynamicArray<RayTracingBLASBuild>                                m_BLASBuilds;
     xiiDynamicArray<xiiGALTLASInstanceData, xiiAlignedAllocatorWrapper> m_Instances;
-    xiiSharedPtr<xiiGALTopLevelAS>       m_pTopLevelAS;
-    xiiSharedPtr<xiiGALBuffer>           m_pInstanceBuffer;
-    xiiSharedPtr<xiiGALBuffer>           m_pTLASScratchBuffer;
-    xiiRenderGraphBufferHandle           m_hInstanceBuffer;
-    xiiRenderGraphBufferHandle           m_hTLASScratchBuffer;
-    xiiUInt64                            m_uiSceneRevision = 0U;
-    xiiUInt32                            m_uiFrameSlot     = 0U;
-    bool                                 m_bUpdateTLAS     = false;
+    xiiSharedPtr<xiiGALTopLevelAS>                                      m_pTopLevelAS;
+    xiiSharedPtr<xiiGALBuffer>                                          m_pInstanceBuffer;
+    xiiSharedPtr<xiiGALBuffer>                                          m_pTLASScratchBuffer;
+    xiiRenderGraphBufferHandle                                          m_hInstanceBuffer;
+    xiiRenderGraphBufferHandle                                          m_hTLASScratchBuffer;
+    xiiUInt64                                                           m_uiSceneRevision = 0U;
+    xiiUInt32                                                           m_uiFrameSlot     = 0U;
+    bool                                                                m_bUpdateTLAS     = false;
   };
 
   struct RayTracingHitDataUploadPassData
   {
     xiiDynamicArray<xiiRayTracingMaterialData, xiiAlignedAllocatorWrapper> m_Materials;
     xiiDynamicArray<xiiRayTracingGeometryData, xiiAlignedAllocatorWrapper> m_Geometries;
-    xiiSharedPtr<xiiGALBuffer>                  m_pMaterialBuffer;
-    xiiSharedPtr<xiiGALBuffer>                  m_pGeometryBuffer;
-    xiiRenderGraphBufferHandle                  m_hMaterialBuffer;
-    xiiRenderGraphBufferHandle                  m_hGeometryBuffer;
-    xiiRenderGraphBufferHandle                  m_hSceneDependency;
+    xiiSharedPtr<xiiGALBuffer>                                             m_pMaterialBuffer;
+    xiiSharedPtr<xiiGALBuffer>                                             m_pGeometryBuffer;
+    xiiRenderGraphBufferHandle                                             m_hMaterialBuffer;
+    xiiRenderGraphBufferHandle                                             m_hGeometryBuffer;
+    xiiRenderGraphBufferHandle                                             m_hSceneDependency;
 
     struct GeometryDependency
     {
       xiiSharedPtr<xiiGALBuffer> m_pBuffer;
       xiiRenderGraphBufferHandle m_hBuffer;
-      xiiUInt32                   m_uiGeometryIndex = xiiInvalidIndex;
-      xiiUInt32                   m_uiGeneration    = 0U;
-      bool                        m_bIndexBuffer    = false;
+      xiiUInt32                  m_uiGeometryIndex = xiiInvalidIndex;
+      xiiUInt32                  m_uiGeneration    = 0U;
+      bool                       m_bIndexBuffer    = false;
     };
     xiiDynamicArray<GeometryDependency> m_GeometryDependencies;
   };
@@ -166,7 +166,7 @@ namespace
   void ResolveMaterialColor(const xiiMaterialInstance& material, xiiStringView sName, xiiVec4& inout_value, bool bPreserveAlpha)
   {
     const float fPreviousAlpha = inout_value.w;
-    xiiColor color;
+    xiiColor    color;
     if (TryGetMaterialParameter(material, sName, color))
     {
       inout_value = xiiVec4(color.r, color.g, color.b, color.a);
@@ -233,9 +233,9 @@ namespace
     TryGetMaterialParameter(*material, "ClearCoatRoughness", result.LayerParameters.w);
 
     const xiiMaterialRuntimeState runtimeState = material->GetRuntimeState();
-    result.Metadata.z = runtimeState.m_ShadingModel.GetValue();
-    result.Metadata.w = runtimeState.m_FeatureFlags.GetValue();
-    result.Rendering  = xiiVec4U32(
+    result.Metadata.z                          = runtimeState.m_ShadingModel.GetValue();
+    result.Metadata.w                          = runtimeState.m_FeatureFlags.GetValue();
+    result.Rendering                           = xiiVec4U32(
       static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()),
       runtimeState.m_BlendMode.GetValue(),
       runtimeState.m_uiTextureMask,
@@ -256,7 +256,7 @@ namespace
     return result;
   }
 
-}
+} // namespace
 
 xiiUniquePtr<xiiRayTracingSceneManager::State> xiiRayTracingSceneManager::s_pState;
 
@@ -291,76 +291,70 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingGeometryHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingGeometryHandle>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Index", m_uiIndex),
-    XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Index", m_uiIndex),
+      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingInstanceHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingInstanceHandle>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Index", m_uiIndex),
-    XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Index", m_uiIndex),
+      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingGeometryDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingGeometryDescription>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("MeshBuffer", GetMeshBufferResourceId, SetMeshBufferResourceId),
-    XII_MEMBER_PROPERTY("Opaque", m_bOpaque),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_ACCESSOR_PROPERTY("MeshBuffer", GetMeshBufferResourceId, SetMeshBufferResourceId),
+      XII_MEMBER_PROPERTY("Opaque", m_bOpaque),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingInstanceDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingInstanceDescription>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Geometry", m_hGeometry),
-    XII_MEMBER_PROPERTY("Material", m_hMaterial),
-    XII_MEMBER_PROPERTY("Transform", m_Transform),
-    XII_MEMBER_PROPERTY("StableObjectId", m_uiStableObjectId),
-    XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
-    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiGALRayTracingInstanceFlags, m_Flags),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Geometry", m_hGeometry),
+      XII_MEMBER_PROPERTY("Material", m_hMaterial),
+      XII_MEMBER_PROPERTY("Transform", m_Transform),
+      XII_MEMBER_PROPERTY("StableObjectId", m_uiStableObjectId),
+      XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
+      XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiGALRayTracingInstanceFlags, m_Flags),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingSceneDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingSceneDescription>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("MaxGeometries", m_uiMaxGeometries)->AddAttributes(new xiiDefaultValueAttribute(16384U), new xiiClampValueAttribute(1U, 1048576U)),
-    XII_MEMBER_PROPERTY("MaxInstances", m_uiMaxInstances)->AddAttributes(new xiiDefaultValueAttribute(65536U), new xiiClampValueAttribute(1U, 16777215U)),
-    XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(1U, 64U)),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("MaxGeometries", m_uiMaxGeometries)->AddAttributes(new xiiDefaultValueAttribute(16384U), new xiiClampValueAttribute(1U, 1048576U)),
+      XII_MEMBER_PROPERTY("MaxInstances", m_uiMaxInstances)->AddAttributes(new xiiDefaultValueAttribute(65536U), new xiiClampValueAttribute(1U, 16777215U)),
+      XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(1U, 64U)),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingSceneStats, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingSceneStats>)
-{
-  XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("GeometryCount", m_uiGeometryCount),
-    XII_MEMBER_PROPERTY("InstanceCount", m_uiInstanceCount),
-    XII_MEMBER_PROPERTY("PendingBLASCount", m_uiPendingBLASCount),
-    XII_MEMBER_PROPERTY("SceneRevision", m_uiSceneRevision),
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("GeometryCount", m_uiGeometryCount),
+      XII_MEMBER_PROPERTY("InstanceCount", m_uiInstanceCount),
+      XII_MEMBER_PROPERTY("PendingBLASCount", m_uiPendingBLASCount),
+      XII_MEMBER_PROPERTY("SceneRevision", m_uiSceneRevision),
+    } XII_END_PROPERTIES;
   }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 xiiString xiiRayTracingGeometryDescription::GetMeshBufferResourceId() const
@@ -386,9 +380,9 @@ void xiiRayTracingSceneManager::EngineStartup()
   if (s_pState == nullptr)
     return;
 
-  s_pState->m_bEngineStarted = true;
+  s_pState->m_bEngineStarted               = true;
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-  s_pState->m_bHardwareSupported = pDevice != nullptr && pDevice->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled;
+  s_pState->m_bHardwareSupported           = pDevice != nullptr && pDevice->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled;
   if (!s_pState->m_bInitialized)
     ApplyConfiguration().IgnoreResult();
 }
@@ -401,7 +395,7 @@ void xiiRayTracingSceneManager::EngineShutdown()
   // Future BLAS/TLAS objects live in these slots and therefore release before the GAL device.
   s_pState->ClearScene();
   s_pState->m_bHardwareSupported = false;
-  s_pState->m_bEngineStarted = false;
+  s_pState->m_bEngineStarted     = false;
 }
 
 void xiiRayTracingSceneManager::Shutdown()
@@ -465,8 +459,8 @@ xiiRayTracingGeometryHandle xiiRayTracingSceneManager::RegisterGeometry(const xi
   s_pState->m_FreeGeometries.PopBack();
   GeometrySlot& slot = s_pState->m_Geometries[uiIndex];
   slot.m_Description = description;
-  slot.m_bAllocated = true;
-  slot.m_bBLASDirty = true;
+  slot.m_bAllocated  = true;
+  slot.m_bBLASDirty  = true;
   ++s_pState->m_uiGeometryCount;
   ++s_pState->m_uiSceneRevision;
   return {uiIndex, slot.m_uiGeneration};
@@ -500,9 +494,9 @@ void xiiRayTracingSceneManager::UnregisterGeometry(xiiRayTracingGeometryHandle h
   slot.m_pIndexBuffer.Clear();
   slot.m_hVertexBufferSRV = {};
   slot.m_hIndexBufferSRV  = {};
-  slot.m_Description = {};
-  slot.m_bAllocated = false;
-  slot.m_bBLASDirty = true;
+  slot.m_Description      = {};
+  slot.m_bAllocated       = false;
+  slot.m_bBLASDirty       = true;
   ++slot.m_uiGeneration;
   if (slot.m_uiGeneration == 0U)
     slot.m_uiGeneration = 1U;
@@ -523,10 +517,10 @@ xiiRayTracingInstanceHandle xiiRayTracingSceneManager::CreateInstance(const xiiR
 
   const xiiUInt32 uiIndex = s_pState->m_FreeInstances.PeekBack();
   s_pState->m_FreeInstances.PopBack();
-  InstanceSlot& slot = s_pState->m_Instances[uiIndex];
-  slot.m_Description = description;
+  InstanceSlot& slot     = s_pState->m_Instances[uiIndex];
+  slot.m_Description     = description;
   slot.m_bRequiresAnyHit = false;
-  slot.m_bAllocated = true;
+  slot.m_bAllocated      = true;
   ++s_pState->m_uiInstanceCount;
   ++s_pState->m_uiSceneRevision;
   return {uiIndex, slot.m_uiGeneration};
@@ -537,10 +531,10 @@ void xiiRayTracingSceneManager::DestroyInstance(xiiRayTracingInstanceHandle hand
   if (!IsValid(handle))
     return;
 
-  InstanceSlot& slot = s_pState->m_Instances[handle.m_uiIndex];
-  slot.m_Description = {};
+  InstanceSlot& slot     = s_pState->m_Instances[handle.m_uiIndex];
+  slot.m_Description     = {};
   slot.m_bRequiresAnyHit = false;
-  slot.m_bAllocated = false;
+  slot.m_bAllocated      = false;
   ++slot.m_uiGeneration;
   if (slot.m_uiGeneration == 0U)
     slot.m_uiGeneration = 1U;
@@ -622,14 +616,14 @@ bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   }
 
   xiiGALBottomLevelASCreationDescription blasDescription;
-  blasDescription.m_BuildASFlags = xiiGALRayTracingBuildASFlags::PreferFastTrace;
+  blasDescription.m_BuildASFlags          = xiiGALRayTracingBuildASFlags::PreferFastTrace;
   xiiGALBLASTriangleDescription& triangle = blasDescription.m_Triangles.ExpandAndGetRef();
-  triangle.m_sGeometryName        = "Mesh";
-  triangle.m_uiMaxVertexCount     = mesh->GetVertexCount();
-  triangle.m_VertexValueType      = xiiGALValueType::Float32;
-  triangle.m_uiVertexComponentCount = 3U;
-  triangle.m_uiMaxPrimitiveCount  = mesh->GetPrimitiveCount();
-  triangle.m_IndexType            = xiiGALValueType::Undefined;
+  triangle.m_sGeometryName                = "Mesh";
+  triangle.m_uiMaxVertexCount             = mesh->GetVertexCount();
+  triangle.m_VertexValueType              = xiiGALValueType::Float32;
+  triangle.m_uiVertexComponentCount       = 3U;
+  triangle.m_uiMaxPrimitiveCount          = mesh->GetPrimitiveCount();
+  triangle.m_IndexType                    = xiiGALValueType::Undefined;
   if (mesh->GetIndexCount() > 0U)
     triangle.m_IndexType = mesh->GetIndexType();
 
@@ -651,12 +645,12 @@ bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
     return false;
   }
 
-  const xiiUInt32 uiScratchAlignment = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiScratchBufferAlignment);
+  const xiiUInt32                 uiScratchAlignment = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiScratchBufferAlignment);
   xiiGALBufferCreationDescription scratchDescription;
-  scratchDescription.m_uiSize    = xiiMemoryUtils::AlignSize(pBottomLevelAS->GetScratchBufferSizeDescription().m_uiBuild, static_cast<xiiUInt64>(uiScratchAlignment));
-  scratchDescription.m_BindFlags = xiiGALBindFlags::RayTracing;
-  scratchDescription.m_Usage     = xiiGALResourceUsage::Mutable;
-  scratchDescription.m_Mode      = xiiGALBufferMode::Raw;
+  scratchDescription.m_uiSize               = xiiMemoryUtils::AlignSize(pBottomLevelAS->GetScratchBufferSizeDescription().m_uiBuild, static_cast<xiiUInt64>(uiScratchAlignment));
+  scratchDescription.m_BindFlags            = xiiGALBindFlags::RayTracing;
+  scratchDescription.m_Usage                = xiiGALResourceUsage::Mutable;
+  scratchDescription.m_Mode                 = xiiGALBufferMode::Raw;
   xiiSharedPtr<xiiGALBuffer> pScratchBuffer = pDevice->CreateBuffer(scratchDescription);
   if (pScratchBuffer == nullptr)
   {
@@ -707,8 +701,8 @@ bool xiiRayTracingSceneManager::PrepareFrameResources(xiiUInt32 uiFrameSlot)
 
   xiiGALTopLevelASCreationDescription tlasDescription;
   tlasDescription.m_uiMaxInstanceCount = s_pState->m_Configuration.m_uiMaxInstances;
-  tlasDescription.m_Flags = xiiGALRayTracingBuildASFlags::AllowUpdate | xiiGALRayTracingBuildASFlags::PreferFastTrace;
-  frame.m_pTopLevelAS = pDevice->CreateTopLevelAS(tlasDescription);
+  tlasDescription.m_Flags              = xiiGALRayTracingBuildASFlags::AllowUpdate | xiiGALRayTracingBuildASFlags::PreferFastTrace;
+  frame.m_pTopLevelAS                  = pDevice->CreateTopLevelAS(tlasDescription);
   if (frame.m_pTopLevelAS == nullptr)
     return false;
 
@@ -718,27 +712,27 @@ bool xiiRayTracingSceneManager::PrepareFrameResources(xiiUInt32 uiFrameSlot)
   bufferDescription.m_BindFlags           = xiiGALBindFlags::RayTracing;
   bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
   bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
-  frame.m_pInstanceBuffer = pDevice->CreateBuffer(bufferDescription);
+  frame.m_pInstanceBuffer                 = pDevice->CreateBuffer(bufferDescription);
 
   bufferDescription.m_uiSize              = static_cast<xiiUInt64>(s_pState->m_Configuration.m_uiMaxInstances) * sizeof(xiiRayTracingMaterialData);
   bufferDescription.m_uiElementByteStride = sizeof(xiiRayTracingMaterialData);
   bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
   bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
   bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
-  frame.m_pMaterialBuffer = pDevice->CreateBuffer(bufferDescription);
+  frame.m_pMaterialBuffer                 = pDevice->CreateBuffer(bufferDescription);
 
   bufferDescription.m_uiSize              = static_cast<xiiUInt64>(s_pState->m_Configuration.m_uiMaxInstances) * sizeof(xiiRayTracingGeometryData);
   bufferDescription.m_uiElementByteStride = sizeof(xiiRayTracingGeometryData);
-  frame.m_pGeometryBuffer = pDevice->CreateBuffer(bufferDescription);
+  frame.m_pGeometryBuffer                 = pDevice->CreateBuffer(bufferDescription);
 
-  const xiiGALScratchBufferSizeDescription scratchSizes = frame.m_pTopLevelAS->GetScratchBufferSizeDescription();
-  const xiiUInt32 uiScratchAlignment = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiScratchBufferAlignment);
-  bufferDescription                    = {};
-  bufferDescription.m_uiSize           = xiiMemoryUtils::AlignSize(xiiMath::Max(scratchSizes.m_uiBuild, scratchSizes.m_uiUpdate), static_cast<xiiUInt64>(uiScratchAlignment));
-  bufferDescription.m_BindFlags        = xiiGALBindFlags::RayTracing;
-  bufferDescription.m_Usage            = xiiGALResourceUsage::Mutable;
-  bufferDescription.m_Mode             = xiiGALBufferMode::Raw;
-  frame.m_pScratchBuffer = pDevice->CreateBuffer(bufferDescription);
+  const xiiGALScratchBufferSizeDescription scratchSizes       = frame.m_pTopLevelAS->GetScratchBufferSizeDescription();
+  const xiiUInt32                          uiScratchAlignment = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiScratchBufferAlignment);
+  bufferDescription                                           = {};
+  bufferDescription.m_uiSize                                  = xiiMemoryUtils::AlignSize(xiiMath::Max(scratchSizes.m_uiBuild, scratchSizes.m_uiUpdate), static_cast<xiiUInt64>(uiScratchAlignment));
+  bufferDescription.m_BindFlags                               = xiiGALBindFlags::RayTracing;
+  bufferDescription.m_Usage                                   = xiiGALResourceUsage::Mutable;
+  bufferDescription.m_Mode                                    = xiiGALBufferMode::Raw;
+  frame.m_pScratchBuffer                                      = pDevice->CreateBuffer(bufferDescription);
   if (frame.m_pInstanceBuffer == nullptr || frame.m_pMaterialBuffer == nullptr || frame.m_pGeometryBuffer == nullptr || frame.m_pScratchBuffer == nullptr)
   {
     frame = {};
@@ -767,8 +761,8 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
 
   s_pState->m_uiLastFrameIndex = uiFrameIndex;
 
-  xiiDynamicArray<RayTracingBLASBuild> pendingBLASBuilds;
-  xiiDynamicArray<xiiGALTLASInstanceData, xiiAlignedAllocatorWrapper> instanceData;
+  xiiDynamicArray<RayTracingBLASBuild>                                   pendingBLASBuilds;
+  xiiDynamicArray<xiiGALTLASInstanceData, xiiAlignedAllocatorWrapper>    instanceData;
   xiiDynamicArray<xiiRayTracingMaterialData, xiiAlignedAllocatorWrapper> materialData;
   xiiDynamicArray<xiiRayTracingGeometryData, xiiAlignedAllocatorWrapper> geometryData;
   instanceData.Reserve(s_pState->m_uiInstanceCount);
@@ -781,7 +775,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     if (!geometry.m_bAllocated || !PrepareGeometry(uiGeometryIndex) || !geometry.m_bBLASDirty)
       continue;
 
-    RayTracingBLASBuild& build = pendingBLASBuilds.ExpandAndGetRef();
+    RayTracingBLASBuild& build   = pendingBLASBuilds.ExpandAndGetRef();
     build.m_uiGeometryIndex      = uiGeometryIndex;
     build.m_uiGeometryGeneration = geometry.m_uiGeneration;
     build.m_pBottomLevelAS       = geometry.m_pBottomLevelAS;
@@ -807,12 +801,12 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     gpuInstance.SetInstanceID(instance.m_Description.m_uiStableObjectId & 0x00FFFFFFU);
     gpuInstance.SetMask(instance.m_Description.m_uiVisibilityMask);
     gpuInstance.SetHitGroupContribution(0U);
-    xiiBitflags<xiiGALRayTracingInstanceFlags> flags = instance.m_Description.m_Flags;
-    bool bRequiresAnyHit = !geometry.m_Description.m_bOpaque;
+    xiiBitflags<xiiGALRayTracingInstanceFlags> flags           = instance.m_Description.m_Flags;
+    bool                                       bRequiresAnyHit = !geometry.m_Description.m_bOpaque;
     if (instance.m_Description.m_hMaterial.IsValid() && xiiMaterialManager::IsInitialized())
     {
       const xiiSharedPtr<xiiMaterialInstance> pMaterial = xiiMaterialManager::GetGpuStorage().GetMaterial(instance.m_Description.m_hMaterial);
-      bRequiresAnyHit = bRequiresAnyHit || (pMaterial != nullptr && pMaterial->GetRuntimeState().IsMasked());
+      bRequiresAnyHit                                   = bRequiresAnyHit || (pMaterial != nullptr && pMaterial->GetRuntimeState().IsMasked());
     }
     if (instance.m_bRequiresAnyHit != bRequiresAnyHit)
     {
@@ -835,7 +829,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     materialData.PushBack(ResolveRayTracingMaterial(instance.m_Description));
 
     xiiRayTracingGeometryData& gpuGeometry = geometryData.ExpandAndGetRef();
-    gpuGeometry.BufferIndices = xiiVec4U32(
+    gpuGeometry.BufferIndices              = xiiVec4U32(
       geometry.m_hVertexBufferSRV.m_uiIndex,
       geometry.m_hIndexBufferSRV.m_uiIndex,
       geometry.m_uiIndexStride,
@@ -859,9 +853,9 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
   if (!PrepareFrameResources(uiFrameSlot))
     return result;
 
-  FrameResources& frame = s_pState->m_Frames[uiFrameSlot];
-  State*         pState      = s_pState.Borrow();
-  const bool     bNeedsBuild = !frame.m_bReady || frame.m_uiBuiltRevision != s_pState->m_uiSceneRevision || !pendingBLASBuilds.IsEmpty();
+  FrameResources& frame       = s_pState->m_Frames[uiFrameSlot];
+  State*          pState      = s_pState.Borrow();
+  const bool      bNeedsBuild = !frame.m_bReady || frame.m_uiBuiltRevision != s_pState->m_uiSceneRevision || !pendingBLASBuilds.IsEmpty();
   if (bNeedsBuild)
   {
     auto pass = graph.AddPass<RayTracingSceneBuildPassData>(
@@ -911,15 +905,15 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
         for (const RayTracingBLASBuild& build : data.m_BLASBuilds)
         {
           xiiGALBuildBLASDescription description;
-          description.m_pBottomLevelAS  = build.m_pBottomLevelAS.Borrow();
-          description.m_pScratchBuffer  = context.GetBuffer(build.m_hScratchBuffer);
-          description.m_BuildFlags      = xiiGALRayTracingBuildASFlags::PreferFastTrace;
+          description.m_pBottomLevelAS                 = build.m_pBottomLevelAS.Borrow();
+          description.m_pScratchBuffer                 = context.GetBuffer(build.m_hScratchBuffer);
+          description.m_BuildFlags                     = xiiGALRayTracingBuildASFlags::PreferFastTrace;
           xiiGALBLASTriangleBuildDescription& triangle = description.m_Triangles.ExpandAndGetRef();
-          triangle.m_pVertexBuffer        = context.GetBuffer(build.m_hVertexBuffer);
-          triangle.m_uiVertexBufferOffset = build.m_uiVertexBufferOffset;
-          triangle.m_uiVertexStride       = build.m_uiVertexStride;
-          triangle.m_pIndexBuffer         = build.m_hIndexBuffer.IsValid() ? context.GetBuffer(build.m_hIndexBuffer) : nullptr;
-          triangle.m_uiPrimitiveCount     = build.m_uiPrimitiveCount;
+          triangle.m_pVertexBuffer                     = context.GetBuffer(build.m_hVertexBuffer);
+          triangle.m_uiVertexBufferOffset              = build.m_uiVertexBufferOffset;
+          triangle.m_uiVertexStride                    = build.m_uiVertexStride;
+          triangle.m_pIndexBuffer                      = build.m_hIndexBuffer.IsValid() ? context.GetBuffer(build.m_hIndexBuffer) : nullptr;
+          triangle.m_uiPrimitiveCount                  = build.m_uiPrimitiveCount;
           commandList.BuildBLAS(description);
         }
 
@@ -989,9 +983,9 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
           continue;
 
         RayTracingHitDataUploadPassData::GeometryDependency& vertex = data.m_GeometryDependencies.ExpandAndGetRef();
-        vertex.m_pBuffer        = geometry.m_pVertexBuffer;
-        vertex.m_uiGeometryIndex = uiGeometryIndex;
-        vertex.m_uiGeneration    = geometry.m_uiGeneration;
+        vertex.m_pBuffer                                            = geometry.m_pVertexBuffer;
+        vertex.m_uiGeometryIndex                                    = uiGeometryIndex;
+        vertex.m_uiGeneration                                       = geometry.m_uiGeneration;
         name.SetFormat("Ray Tracing Vertex Data [{}:{}]", uiGeometryIndex, geometry.m_uiGeneration);
         vertex.m_hBuffer = builder.ImportBuffer(name, vertex.m_pBuffer, vertex.m_pBuffer->GetResourceState());
         vertex.m_hBuffer = builder.ReadBuffer(vertex.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);
@@ -999,10 +993,10 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
         if (geometry.m_pIndexBuffer != nullptr)
         {
           RayTracingHitDataUploadPassData::GeometryDependency& index = data.m_GeometryDependencies.ExpandAndGetRef();
-          index.m_pBuffer         = geometry.m_pIndexBuffer;
-          index.m_uiGeometryIndex = uiGeometryIndex;
-          index.m_uiGeneration    = geometry.m_uiGeneration;
-          index.m_bIndexBuffer    = true;
+          index.m_pBuffer                                            = geometry.m_pIndexBuffer;
+          index.m_uiGeometryIndex                                    = uiGeometryIndex;
+          index.m_uiGeneration                                       = geometry.m_uiGeneration;
+          index.m_bIndexBuffer                                       = true;
           name.SetFormat("Ray Tracing Index Data [{}:{}]", uiGeometryIndex, geometry.m_uiGeneration);
           index.m_hBuffer = builder.ImportBuffer(name, index.m_pBuffer, index.m_pBuffer->GetResourceState());
           index.m_hBuffer = builder.ReadBuffer(index.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);

@@ -58,7 +58,7 @@ namespace
       case xiiGALDescriporTypeVulkan::StorageImage:
         return GetDescriptorElement(resources.m_pBoundUnorderedAccessTextureResourceViews, resources.m_pBoundUnorderedAccessTextureResourceViewArrays, layout.m_uiBindingIndex, uiElement) != nullptr;
       case xiiGALDescriporTypeVulkan::Sampler:
-        return GetDescriptorElement(resources.m_pBoundSamplerStates, resources.m_pBoundSamplerStateArrays, layout.m_uiBindingIndex, uiElement) != nullptr;
+        return layout.m_bHasImmutableSampler || GetDescriptorElement(resources.m_pBoundSamplerStates, resources.m_pBoundSamplerStateArrays, layout.m_uiBindingIndex, uiElement) != nullptr;
       case xiiGALDescriporTypeVulkan::AccelerationStructure:
         return uiElement == 0U && layout.m_uiBindingIndex < resources.m_pBoundAccelerationStructures.GetCount() && resources.m_pBoundAccelerationStructures[layout.m_uiBindingIndex] != nullptr;
       default:
@@ -1183,6 +1183,11 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
 
           for (xiiUInt32 uiArrayElement = 0U; uiArrayElement < resourceLayout.m_uiArraySize; ++uiArrayElement)
           {
+            // Immutable standalone samplers are populated by the descriptor-set layout and must
+            // not be written or supplied dynamically when committing the descriptor set.
+            if (resourceLayout.m_DescriptorType == xiiGALDescriporTypeVulkan::Sampler && resourceLayout.m_bHasImmutableSampler)
+              continue;
+
             // Runtime tables are sparse: descriptors without a live resource remain unbound.
             if (resourceLayout.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && !IsDescriptorElementBound(resourceLayout, resources, uiArrayElement))
               continue;
@@ -2428,7 +2433,7 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
   // inferred by TransitionOrVerifyBufferState(). Make all preceding BLAS writes visible to the
   // TLAS build before vkCmdBuildAccelerationStructuresKHR consumes their device addresses.
   MemoryBarrier(vk::AccessFlagBits::eAccelerationStructureWriteKHR, vk::AccessFlagBits::eAccelerationStructureReadKHR,
-    vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR, vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR);
+                vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR, vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR);
 
   vk::AccelerationStructureGeometryInstancesDataKHR vkInstancesData = {};
   vkInstancesData.arrayOfPointers                                   = vk::False;

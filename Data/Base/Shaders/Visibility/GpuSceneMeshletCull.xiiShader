@@ -17,10 +17,11 @@ StructuredBuffer<uint> g_VisibleInstanceCount;
 RWStructuredBuffer<uint2> g_VisibleMeshlets;
 RWStructuredBuffer<uint> g_VisibleMeshletCount;
 
-bool ReserveVisibleMeshlet(out uint destination)
+bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
 {
   uint capacity, stride;
   g_VisibleMeshlets.GetDimensions(capacity, stride);
+  capacity = min(capacity, maximumCount);
 
   // A plain InterlockedAdd can leave the counter larger than the output buffer. The
   // indirect mesh dispatch consumes this counter, so reserve with compare/exchange and
@@ -94,6 +95,6 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   }
 
   uint destination;
-  if (ReserveVisibleMeshlet(destination))
+  if (ReserveVisibleMeshlet(view.MaxVisibleMeshlets, destination))
     g_VisibleMeshlets[destination] = uint2(instanceIndex, meshletIndex);
 }
