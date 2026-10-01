@@ -214,6 +214,7 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
           return;
 
         cmd.SetPipelineState(pClearPipeline.Borrow());
+        cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess();
         cmd.Draw({3U});
       }
 

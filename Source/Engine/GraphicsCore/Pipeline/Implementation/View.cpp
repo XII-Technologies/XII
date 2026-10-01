@@ -3570,11 +3570,7 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   data.m_hReservoirSurface            = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoirSurface, xiiGALResourceStateFlags::ShaderResource);
   data.m_hVirtualShadowPageTable      = builder.ReadBuffer(xiiRGBlackboardKeys::k_VirtualShadowPageTable, xiiGALResourceStateFlags::ShaderResource);
 
-  const xiiSharedPtr<xiiGALTexture> pVirtualShadowAtlas = xiiVirtualShadowMapManager::GetPhysicalAtlas();
-  XII_ASSERT_DEV(pVirtualShadowAtlas != nullptr, "Virtual shadow atlas must exist before direct lighting setup.");
-  data.m_hVirtualShadowAtlas = builder.ReadTexture(
-    builder.ImportTexture(xiiRGBlackboardKeys::k_VirtualShadowAtlas, pVirtualShadowAtlas, pVirtualShadowAtlas->GetResourceState()),
-    xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVirtualShadowAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_VirtualShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription constantsDescription;
   constantsDescription.m_uiSize         = sizeof(xiiCloudShadowConstants);

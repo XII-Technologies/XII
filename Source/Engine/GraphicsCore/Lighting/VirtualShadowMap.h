@@ -94,7 +94,7 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowPageMapping
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowPageMapping);
 
 /// Frame-sliced physical-page metadata consumed by GPU shadow feedback and sampling.
-struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVirtualShadowPage
+struct XII_GRAPHICSCORE_DLL xiiGpuVirtualShadowPage
 {
   XII_DECLARE_POD_TYPE();
 
@@ -104,10 +104,13 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVirtualShadowPage
   xiiUInt32 m_uiFlags          = 0U; ///< bit 0 resident, bit 1 needs rendering, bit 2 pinned.
 };
 
+static_assert(sizeof(xiiGpuVirtualShadowPage) == 16U, "Virtual shadow page records must match the GPU structured-buffer layout.");
+static_assert(alignof(xiiGpuVirtualShadowPage) <= 8U, "Virtual shadow page records must remain compatible with the default engine allocator.");
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVirtualShadowPage);
 
 /// GPU feedback record. Element zero uses VirtualKeyLow as the append counter.
-struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVirtualShadowFeedback
+struct XII_GRAPHICSCORE_DLL xiiGpuVirtualShadowFeedback
 {
   XII_DECLARE_POD_TYPE();
 
@@ -116,6 +119,9 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVirtualShadowFeedback
   xiiUInt32 m_uiPriority       = 0U;
   xiiUInt32 m_uiFlags          = 0U; ///< bit 0 requests pinned residency.
 };
+
+static_assert(sizeof(xiiGpuVirtualShadowFeedback) == 16U, "Virtual shadow feedback records must match the GPU structured-buffer layout.");
+static_assert(alignof(xiiGpuVirtualShadowFeedback) <= 8U, "Virtual shadow feedback records must remain compatible with the default engine allocator.");
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVirtualShadowFeedback);
 
@@ -189,6 +195,7 @@ public:
   {
     xiiRenderGraphBufferHandle m_hPhysicalPageTable;
     xiiRenderGraphBufferHandle m_hVirtualPageTable;
+    xiiRenderGraphTextureHandle m_hPhysicalAtlas;
     xiiUInt32                  m_uiFrameBaseIndex    = 0U;
     xiiUInt32                  m_uiPhysicalPageCount = 0U;
     xiiUInt32                  m_uiVirtualTableBaseIndex = 0U;

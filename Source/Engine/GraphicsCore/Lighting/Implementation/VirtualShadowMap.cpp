@@ -809,6 +809,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
   {
     xiiRenderGraphBufferHandle               m_hPhysicalPageTable;
     xiiRenderGraphBufferHandle               m_hVirtualPageTable;
+    xiiRenderGraphTextureHandle              m_hPhysicalAtlas;
     xiiDynamicArray<Upload>                  m_PhysicalUploads;
     xiiDynamicArray<xiiGpuVirtualShadowPage> m_VirtualTable;
     xiiUInt32                                m_uiVirtualTableByteOffset = 0U;
@@ -823,6 +824,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
       data.m_hVirtualPageTable = builder.ImportBuffer(xiiRGBlackboardKeys::k_VirtualShadowPageTable, s_pState->m_pVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVirtualPageTable = builder.WriteBuffer(data.m_hVirtualPageTable, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hPhysicalAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_VirtualShadowAtlas, s_pState->m_pPhysicalAtlas, s_pState->m_pPhysicalAtlas->GetResourceState());
       builder.SetPassSideEffects(true);
       builder.SetPassAllowMerge(false);
     },
@@ -854,6 +856,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
   const xiiUInt64 uiFrameBit   = xiiUInt64(1) << uiFrameSlice;
   result.m_hPhysicalPageTable  = pass.first->m_hPhysicalPageTable;
   result.m_hVirtualPageTable   = pass.first->m_hVirtualPageTable;
+  result.m_hPhysicalAtlas      = pass.first->m_hPhysicalAtlas;
   result.m_uiFrameBaseIndex    = uiFrameSlice * s_pState->m_Settings.m_uiPhysicalPageCount;
   result.m_uiPhysicalPageCount = s_pState->m_Settings.m_uiPhysicalPageCount;
   result.m_uiVirtualTableBaseIndex = uiFrameSlice * s_pState->m_uiVirtualPageTableCapacity;
