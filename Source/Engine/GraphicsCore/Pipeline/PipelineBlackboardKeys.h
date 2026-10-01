@@ -61,6 +61,7 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_RTRawShadowMask        = "RTRawShadows"_xiisv;          ///< xiiRenderGraphTextureHandle - raw RT shadow mask per light (R8_UNORM).
   constexpr xiiStringView k_RTFinalShadowMask      = "RTFinalShadows"_xiisv;        ///< xiiRenderGraphTextureHandle - denoised RT shadow mask.
   constexpr xiiStringView k_ContactShadowTerm      = "ContactShadows"_xiisv;        ///< xiiRenderGraphTextureHandle - screen-space contact shadow mask (R8_UNORM).
+  constexpr xiiStringView k_CloudShadowConstants   = "CloudShadowConstants"_xiisv;  ///< xiiRenderGraphBufferHandle - procedural cloud layer projection and optical depth.
 
   // Stage 3 - Depth & Motion.
 

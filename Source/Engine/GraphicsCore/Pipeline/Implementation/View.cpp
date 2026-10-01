@@ -3567,7 +3567,7 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   constantsDescription.m_Mode           = xiiGALBufferMode::Undefined;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
-  data.m_hCloudShadowConstants          = builder.WriteBuffer("xiiCloudShadowConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hCloudShadowConstants          = builder.WriteBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   const auto& cloudState                                 = m_ViewPassResources->m_LightingPasses.m_CloudShadowState;
   data.m_CloudShadowConstants.LayerOriginAndInvScale     = cloudState.m_vLayerOriginAndInvScale;
@@ -4463,6 +4463,7 @@ struct xiiVolumetricFogIntegrationData
   xiiRenderGraphTextureHandle m_hDirectionalShadowAtlas;
   xiiRenderGraphTextureHandle m_hLocalShadowAtlas;
   xiiRenderGraphBufferHandle  m_hLocalShadowAtlasDescriptors;
+  xiiRenderGraphBufferHandle  m_hCloudShadowConstants;
   xiiRenderGraphTextureHandle m_hVolumetricScattering;   ///< UnorderedAccess out (integrated volumetric scattering).
 };
 
@@ -4476,6 +4477,7 @@ void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& dat
   data.m_hDirectionalShadowAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLocalShadowAtlas       = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hCloudShadowConstants         = builder.ReadBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
@@ -4508,6 +4510,7 @@ void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationD
     cmd.ResolveAndSetShaderResourceTextureView("g_VolumetricDirectionalShadowAtlas", context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_VolumetricLocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_VolumetricLocalShadowData", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiCloudShadowConstants", context.GetBuffer(data.m_hCloudShadowConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_VolumetricOut", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});

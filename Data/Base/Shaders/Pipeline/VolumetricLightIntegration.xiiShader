@@ -13,6 +13,7 @@ ALL
 #include <Shaders/Pipeline/LightingData.h>
 #include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumData.h>
 #include <Shaders/Pipeline/Passes/Volumetrics/VolumetricShadowSampling.h>
+#include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowSampling.h>
 
 Texture3D<float4>                 g_FroxelScattering;
 StructuredBuffer<xiiFroxelMediumData> g_FroxelMeta;
@@ -122,7 +123,7 @@ void main(uint3 tid : SV_DispatchThreadID)
         const float linearDepth = nearPlane * exp(zFrac * logFarOverNear);
         const float ndcDepth = saturate(nearPlane / max(linearDepth, 1e-4f));
         const float3 worldPos = ReconstructWorldPos(uv, ndcDepth);
-        const float directionalVisibility = EvaluateVolumetricDirectionalShadow(worldPos, mainLight, linearDepth);
+        const float directionalVisibility = EvaluateVolumetricDirectionalShadow(worldPos, mainLight, linearDepth) * EvaluateCloudShadow(worldPos, mainLight);
         const float3 directRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * phase * directionalVisibility;
         const float3 localRadiance = EstimateLocalScattering(uv, zFrac, worldPos, viewRay, anisotropy);
         const float sliceNearFraction = (float)z / (float)XII_FROXEL_COUNT.z;
