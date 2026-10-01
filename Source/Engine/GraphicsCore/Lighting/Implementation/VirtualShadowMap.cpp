@@ -827,13 +827,46 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterP
   xiiDynamicArray<RenderedPage> renderedPages;
 
   const xiiVirtualShadowMapSettings& settings = GetConfiguration();
-  for (const xiiVirtualShadowPageMapping& mapping : GetDirtyPages())
+  xiiDynamicArray<xiiUInt32>         rasterCandidates;
+  rasterCandidates.Reserve(s_pState->m_DirtyPages.GetCount());
+  for (const xiiVirtualShadowPageMapping& dirtyPage : GetDirtyPages())
+  {
+    if (dirtyPage.m_uiPhysicalPage >= s_pState->m_Slots.GetCount())
+      continue;
+
+    const auto& slot = s_pState->m_Slots[dirtyPage.m_uiPhysicalPage];
+    if (!slot.m_bAllocated || !slot.m_Mapping.m_bNeedsRendering ||
+        slot.m_Mapping.m_Page.m_uiLightId != (uiDirectionalLightId & s_uiMaximumLightId) ||
+        slot.m_Mapping.m_Page.m_uiMipLevel >= cascadeViewProjections.GetCount())
+      continue;
+
+    rasterCandidates.PushBack(dirtyPage.m_uiPhysicalPage);
+  }
+
+  // The dirty list records insertion order, which is not a useful visibility
+  // policy once raster work is bounded. Rank live slot metadata every frame so
+  // a newly invalidated near-field page cannot sit behind stale low-priority
+  // allocations. Stable page keys make otherwise equal schedules reproducible.
+  rasterCandidates.Sort([](xiiUInt32 uiLhs, xiiUInt32 uiRhs) {
+    const xiiVirtualShadowPageMapping& lhs = s_pState->m_Slots[uiLhs].m_Mapping;
+    const xiiVirtualShadowPageMapping& rhs = s_pState->m_Slots[uiRhs].m_Mapping;
+    if (lhs.m_bPinned != rhs.m_bPinned)
+      return lhs.m_bPinned;
+    if (lhs.m_uiPriority != rhs.m_uiPriority)
+      return lhs.m_uiPriority > rhs.m_uiPriority;
+    if (lhs.m_uiLastUsedFrame != rhs.m_uiLastUsedFrame)
+      return lhs.m_uiLastUsedFrame > rhs.m_uiLastUsedFrame;
+    if (lhs.m_Page.m_uiMipLevel != rhs.m_Page.m_uiMipLevel)
+      return lhs.m_Page.m_uiMipLevel < rhs.m_Page.m_uiMipLevel;
+    return lhs.m_Page.GetPackedValue() < rhs.m_Page.GetPackedValue();
+  });
+
+  for (xiiUInt32 uiPhysicalPage : rasterCandidates)
   {
     if (s_pState->m_uiRasterizationsThisFrame >= settings.m_uiMaxPageRasterizations)
       break;
 
-    if (mapping.m_Page.m_uiLightId != (uiDirectionalLightId & s_uiMaximumLightId) || mapping.m_Page.m_uiMipLevel >= cascadeViewProjections.GetCount())
-      continue;
+    const auto& mapping = s_pState->m_Slots[uiPhysicalPage].m_Mapping;
 
     xiiMat4 pageViewProjection;
     if (!BuildPageViewProjection(cascadeViewProjections[mapping.m_Page.m_uiMipLevel], mapping.m_Page,
@@ -843,7 +876,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterP
     xiiRectU32 viewport;
     if (!GetPhysicalPageViewport(mapping.m_uiPhysicalPage, viewport))
       continue;
-    const xiiVirtualShadowMapManagerState::Slot& slot = s_pState->m_Slots[mapping.m_uiPhysicalPage];
+    const xiiVirtualShadowMapManagerState::Slot& slot = s_pState->m_Slots[uiPhysicalPage];
     if (slot.m_uiVirtualTableBucket == xiiInvalidIndex || slot.m_uiVirtualTableBucket >= result.m_uiVirtualTableCapacity)
       continue;
 
