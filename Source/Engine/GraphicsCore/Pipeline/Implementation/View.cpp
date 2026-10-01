@@ -4490,6 +4490,7 @@ void xiiView::ExecuteVolumetricLightInjection(const xiiVolumetricLightInjectionD
   {
     cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pVolumetricLightInjectionPipeline);
     m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    m_ViewPassResources->m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelScattering", context.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_FroxelMeta", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);

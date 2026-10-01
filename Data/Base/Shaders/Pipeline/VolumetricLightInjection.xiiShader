@@ -11,6 +11,7 @@ ALL
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/LightingData.h>
+#include <Shaders/Pipeline/PhotometricLightSampling.h>
 #include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumData.h>
 #include <Shaders/Pipeline/Passes/Volumetrics/VolumetricShadowSampling.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowSampling.h>
@@ -73,7 +74,11 @@ float3 EvaluateLocalLighting(float2 uv, float zFraction, float3 worldPosition, f
     const float3 toLight = GetRepresentativeLightPosition(lightData, worldPosition) - worldPosition;
     const float distanceToLight = length(toLight);
     const float3 directionToLight = distanceToLight > 1e-4f ? toLight / distanceToLight : float3(0.0f, 0.0f, 1.0f);
-    const float attenuation = SmoothVolumeAttenuation(distanceToLight, lightData.AttenuationAndSize.x) * GetPhotometricEmitterScale(lightData, directionToLight);
+    float attenuation = SmoothVolumeAttenuation(distanceToLight, lightData.AttenuationAndSize.x);
+    if (GetLightType(lightData) == XII_LIGHT_TYPE_SPOT)
+      attenuation *= EvaluateSpotCone(lightData, directionToLight);
+    attenuation *= SampleIESProfile(lightData, directionToLight);
+    attenuation *= GetPhotometricEmitterScale(lightData, directionToLight);
     const float phase = PhaseHG(dot(viewRay, directionToLight), anisotropy);
     const float visibility = EvaluateVolumetricLocalShadow(lightIndex, lightData, worldPosition);
     radiance += lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation * phase * visibility;
