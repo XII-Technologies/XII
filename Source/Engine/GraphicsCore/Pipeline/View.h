@@ -23,6 +23,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
+#include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
 class xiiFrustum;
@@ -131,9 +132,9 @@ struct xiiFinalBlitData;
 /// Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
-/// The view owns its entire rendering pipeline: every pass's persistent GPU resources
-/// (pipeline states, persistent textures, ring buffers) live in m_ViewPassResources.
-/// BuildDefaultRenderGraph() populates the render graph each frame.
+/// The view owns a generation-checked context for its rendering pipeline. Persistent GPU resources
+/// are stored by xiiViewRenderResourceManager so they are released before allocator and GAL
+/// shutdown regardless of world lifetime. BuildDefaultRenderGraph() populates the graph each frame.
 class XII_GRAPHICSCORE_DLL xiiView : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiView, xiiReflectedClass);
@@ -265,6 +266,8 @@ public:
 
 private:
   friend class xiiRenderWorldModule;
+  friend class xiiViewRenderResourceManager;
+  friend class xiiViewRenderResourceManagerState;
   friend class xiiMemoryUtils;
 
   void SetExtractedRenderData(xiiExtractedRenderData* pExtractedData) { m_pExtractedData = pExtractedData; }
@@ -804,7 +807,19 @@ private:
       xiiSensorProfileHandle                       m_hSensorProfile;
     } m_OutputPasses;
 
+  };
+
+  struct ViewPassResourceContext
+  {
+    [[nodiscard]] XII_ALWAYS_INLINE ViewPassResources* operator->() const
+    {
+      return xiiView::ResolveViewPassResources(m_Handle);
+    }
+
+    xiiViewRenderResourceContextHandle m_Handle;
   } m_ViewPassResources;
+
+  [[nodiscard]] static ViewPassResources* ResolveViewPassResources(xiiViewRenderResourceContextHandle handle);
 
   xiiDisplayOutputSettings m_DisplayOutputSettings;
 };
