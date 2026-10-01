@@ -70,12 +70,13 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   XII_SUCCEED_OR_RETURN(xiiMaterialManager::Configure(materialDescription));
 
   xiiVirtualShadowMapSettings virtualShadowDescription;
-  virtualShadowDescription.m_uiVirtualResolution   = 16384U;
-  virtualShadowDescription.m_uiPageSize            = 128U;
-  virtualShadowDescription.m_uiPhysicalPageCount   = 1024U;
-  virtualShadowDescription.m_uiMaxFeedbackRequests = 8192U;
-  virtualShadowDescription.m_uiMaxPageAllocations  = 128U;
-  virtualShadowDescription.m_uiFramesInFlight      = configuration.m_uiFramesInFlight;
+  virtualShadowDescription.m_uiVirtualResolution     = 16384U;
+  virtualShadowDescription.m_uiPageSize              = 128U;
+  virtualShadowDescription.m_uiPhysicalPageCount     = 1024U;
+  virtualShadowDescription.m_uiMaxFeedbackRequests   = 8192U;
+  virtualShadowDescription.m_uiMaxPageAllocations    = 128U;
+  virtualShadowDescription.m_uiMaxPageRasterizations = 16U;
+  virtualShadowDescription.m_uiFramesInFlight        = configuration.m_uiFramesInFlight;
   XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::Configure(virtualShadowDescription));
 
   xiiRayTracingSceneDescription rayTracingDescription;
@@ -342,8 +343,10 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
   const xiiUInt32              animatedCount = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64U);
   xiiHybridArray<xiiVec3, 64U> previousCenters;
   previousCenters.SetCountUninitialized(animatedCount);
+  m_AnimatedShadowInvalidationBounds = xiiBoundingBox::MakeInvalid();
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
   {
+    m_AnimatedShadowInvalidationBounds.ExpandToInclude(GetScene().GetGlobalBounds(m_Objects[i]).GetBox());
     previousCenters[i] = GetScene().GetGlobalBounds(m_Objects[i]).m_vCenter;
     xiiVec3 position   = m_BasePositions[i];
     position.z += 0.45f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7f + static_cast<float>(i) * 0.31f));
@@ -367,6 +370,7 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
   {
     const xiiBoundingBoxSphere& bounds = GetScene().GetGlobalBounds(m_Objects[i]);
+    m_AnimatedShadowInvalidationBounds.ExpandToInclude(bounds.GetBox());
     m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], GetScene().GetVisibilityMask(m_Objects[i]), GetScene().GetFlags(m_Objects[i]));
 
     xiiRayTracingInstanceDescription rayTracingInstance;
@@ -384,6 +388,11 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
   }
   for (const GeometryAsset& asset : m_GeometryAssets)
     xiiGeometryResidencyManager::Touch(asset.m_hGeometry, uiFrameIndex);
+}
+
+xiiBoundingBox xiiGpuDrivenSceneWorld::GetAnimatedShadowBounds() const
+{
+  return m_AnimatedShadowInvalidationBounds;
 }
 
 xiiUInt32 xiiGpuDrivenSceneWorld::GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const

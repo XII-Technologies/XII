@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Math/BoundingBox.h>
 #include <Foundation/Math/Color.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
@@ -55,6 +56,7 @@ public:
   [[nodiscard]] xiiSceneDatabaseContextHandle GetSceneHandle() const { return m_SceneContext.GetHandle(); }
   [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
+  [[nodiscard]] xiiBoundingBox                GetAnimatedShadowBounds() const;
   [[nodiscard]] xiiUInt32                     GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;
 
 private:
@@ -83,5 +85,6 @@ private:
   xiiDynamicArray<xiiSceneObjectHandle>              m_Objects;
   xiiDynamicArray<xiiRayTracingInstanceHandle>       m_RayTracingInstances;
   xiiDynamicArray<xiiVec3>                           m_BasePositions;
-  float                                              m_fAnimationTime = 0.0f;
+  xiiBoundingBox                                     m_AnimatedShadowInvalidationBounds = xiiBoundingBox::MakeInvalid();
+  float                                              m_fAnimationTime                   = 0.0f;
 };

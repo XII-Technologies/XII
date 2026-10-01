@@ -51,8 +51,46 @@ xiiCommandLineOptionInt opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height"
 
 namespace
 {
-  bool g_bWindowResized = false;
+  bool                g_bWindowResized       = false;
   constexpr xiiUInt32 g_uiDirectionalLightId = 1U;
+
+  bool BuildVirtualShadowPageRegion(const xiiMat4& viewProjection, const xiiBoundingBox& worldBounds,
+                                    xiiUInt32 uiVirtualResolution, xiiUInt32 uiPageSize, xiiUInt32 uiMipLevel,
+                                    xiiRectU32& out_region)
+  {
+    if (!worldBounds.IsValid() || uiVirtualResolution == 0U || uiPageSize == 0U || uiVirtualResolution % uiPageSize != 0U || uiMipLevel >= 32U)
+      return false;
+
+    xiiVec3 corners[8];
+    worldBounds.GetCorners(corners);
+    xiiVec2 vMinimum(xiiMath::MaxValue<float>());
+    xiiVec2 vMaximum(-xiiMath::MaxValue<float>());
+    bool    bProjected = false;
+    for (const xiiVec3& corner : corners)
+    {
+      const xiiVec4 clip = viewProjection * xiiVec4(corner.x, corner.y, corner.z, 1.0f);
+      if (xiiMath::Abs(clip.w) <= 1e-6f)
+        continue;
+
+      const xiiVec2 uv(clip.x / clip.w * 0.5f + 0.5f, -clip.y / clip.w * 0.5f + 0.5f);
+      vMinimum.x = xiiMath::Min(vMinimum.x, uv.x);
+      vMinimum.y = xiiMath::Min(vMinimum.y, uv.y);
+      vMaximum.x = xiiMath::Max(vMaximum.x, uv.x);
+      vMaximum.y = xiiMath::Max(vMaximum.y, uv.y);
+      bProjected = true;
+    }
+    if (!bProjected || vMaximum.x < 0.0f || vMaximum.y < 0.0f || vMinimum.x >= 1.0f || vMinimum.y >= 1.0f)
+      return false;
+
+    const xiiUInt32 uiBasePages    = uiVirtualResolution / uiPageSize;
+    const xiiUInt32 uiPagesPerAxis = xiiMath::Max(uiBasePages >> uiMipLevel, 1U);
+    const xiiUInt32 uiMinimumX     = xiiMath::Min(static_cast<xiiUInt32>(xiiMath::Saturate(vMinimum.x) * uiPagesPerAxis), uiPagesPerAxis - 1U);
+    const xiiUInt32 uiMinimumY     = xiiMath::Min(static_cast<xiiUInt32>(xiiMath::Saturate(vMinimum.y) * uiPagesPerAxis), uiPagesPerAxis - 1U);
+    const xiiUInt32 uiMaximumX     = xiiMath::Min(static_cast<xiiUInt32>(xiiMath::Saturate(vMaximum.x) * uiPagesPerAxis), uiPagesPerAxis - 1U);
+    const xiiUInt32 uiMaximumY     = xiiMath::Min(static_cast<xiiUInt32>(xiiMath::Saturate(vMaximum.y) * uiPagesPerAxis), uiPagesPerAxis - 1U);
+    out_region                     = xiiRectU32(uiMinimumX, uiMinimumY, uiMaximumX - uiMinimumX + 1U, uiMaximumY - uiMinimumY + 1U);
+    return true;
+  }
 
   struct SceneTargetsPassData
   {
@@ -84,29 +122,29 @@ namespace
     xiiRenderGraphBufferHandle         m_hMaterials;
     xiiShaderPermutationResourceHandle m_hShaderPermutation;
     xiiSharedPtr<xiiGALRenderPass>     m_pRenderPass;
-    xiiMat4                            m_ViewProjection            = xiiMat4::MakeIdentity();
-    xiiMat4                            m_ShadowViewProjection      = xiiMat4::MakeIdentity();
-    float                              m_fShadowWorldUnitsPerTexel = 0.0f;
-    xiiUInt32                          m_uiGeometryBase            = 0U;
-    xiiUInt32                          m_uiMaterialFrameBase                   = 0U;
-    xiiUInt32                          m_uiMaterialStride                      = 0U;
-    xiiUInt32                          m_uiVirtualShadowPageTableBaseIndex     = 0U;
-    xiiUInt32                          m_uiVirtualShadowPageTableCapacity      = 0U;
-    xiiUInt32                          m_uiVirtualShadowResolution              = 0U;
-    xiiUInt32                          m_uiVirtualShadowPageSize                = 0U;
-    xiiUInt32                          m_uiVirtualShadowPhysicalAtlasWidth      = 0U;
-    xiiUInt32                          m_uiVirtualShadowPhysicalAtlasHeight     = 0U;
-    xiiUInt32                          m_uiVirtualShadowDirectionalLightId      = 0U;
-    xiiUInt32                          m_uiVirtualShadowEnabled                 = 0U;
+    xiiMat4                            m_ViewProjection                     = xiiMat4::MakeIdentity();
+    xiiMat4                            m_ShadowViewProjection               = xiiMat4::MakeIdentity();
+    float                              m_fShadowWorldUnitsPerTexel          = 0.0f;
+    xiiUInt32                          m_uiGeometryBase                     = 0U;
+    xiiUInt32                          m_uiMaterialFrameBase                = 0U;
+    xiiUInt32                          m_uiMaterialStride                   = 0U;
+    xiiUInt32                          m_uiVirtualShadowPageTableBaseIndex  = 0U;
+    xiiUInt32                          m_uiVirtualShadowPageTableCapacity   = 0U;
+    xiiUInt32                          m_uiVirtualShadowResolution          = 0U;
+    xiiUInt32                          m_uiVirtualShadowPageSize            = 0U;
+    xiiUInt32                          m_uiVirtualShadowPhysicalAtlasWidth  = 0U;
+    xiiUInt32                          m_uiVirtualShadowPhysicalAtlasHeight = 0U;
+    xiiUInt32                          m_uiVirtualShadowDirectionalLightId  = 0U;
+    xiiUInt32                          m_uiVirtualShadowEnabled             = 0U;
   };
 
   struct VirtualShadowCascadePassData
   {
     xiiRenderGraphBufferHandle m_hConstants;
-    xiiMat4                     m_CascadeViewProjection[4];
-    xiiVec4                     m_vCascadeSplitDepths = xiiVec4::MakeZero();
-    xiiVec4                     m_vCascadeWorldRadii = xiiVec4::MakeZero();
-    xiiUInt32                   m_uiActiveCascadeCount = 0U;
+    xiiMat4                    m_CascadeViewProjection[4];
+    xiiVec4                    m_vCascadeSplitDepths  = xiiVec4::MakeZero();
+    xiiVec4                    m_vCascadeWorldRadii   = xiiVec4::MakeZero();
+    xiiUInt32                  m_uiActiveCascadeCount = 0U;
   };
 
   struct PresentPassData
@@ -330,11 +368,11 @@ public:
 private:
   void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
   {
-    const auto                                      geometry            = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
-    const xiiRenderGraphBufferHandle                hMaterials          = xiiMaterialManager::AddUploadPass(graph);
-    const auto                                      rayTracingScene     = xiiRayTracingSceneManager::AddBuildPass(graph, m_uiFrameIndex);
-    const xiiRenderGraphTextureHandle               hPreviousHiZ        = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
-    const xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
+    const auto                                geometry            = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
+    const xiiRenderGraphBufferHandle          hMaterials          = xiiMaterialManager::AddUploadPass(graph);
+    const auto                                rayTracingScene     = xiiRayTracingSceneManager::AddBuildPass(graph, m_uiFrameIndex);
+    const xiiRenderGraphTextureHandle         hPreviousHiZ        = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
+    xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowUpload.m_uiFrameBaseIndex);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowUpload.m_uiPhysicalPageCount);
     blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowUpload.m_uiVirtualTableBaseIndex);
@@ -447,12 +485,19 @@ private:
       virtualShadowCascadePass.first->m_vCascadeWorldRadii.x     = shadowCascades[0].m_fWorldRadius;
     }
 
-    xiiRenderGraphTextureHandle hVirtualShadowAtlas = virtualShadowUpload.m_hPhysicalAtlas;
     if (bHasShadowCascade)
     {
+      const xiiVirtualShadowMapSettings& settings = xiiVirtualShadowMapManager::GetConfiguration();
+      xiiRectU32                         animatedPageRegion;
+      if (BuildVirtualShadowPageRegion(shadowCascades[0].m_mViewProjection, m_World.GetAnimatedShadowBounds(),
+                                       settings.m_uiVirtualResolution, settings.m_uiPageSize, 0U, animatedPageRegion))
+      {
+        XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::InvalidateRegion(g_uiDirectionalLightId, 0U, animatedPageRegion));
+      }
+
       const xiiMat4 cascadeViewProjection[] = {shadowCascades[0].m_mViewProjection};
-      hVirtualShadowAtlas = xiiVirtualShadowMapManager::AddRasterPasses(
-        graph, hVirtualShadowAtlas, shadowVisibility, geometry, cascadeViewProjection, g_uiDirectionalLightId,
+      virtualShadowUpload                   = xiiVirtualShadowMapManager::AddRasterPasses(
+        graph, virtualShadowUpload, shadowVisibility, geometry, cascadeViewProjection, g_uiDirectionalLightId,
         sizeof(xiiMeshPackedVertex), xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility),
         xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility));
     }
@@ -479,7 +524,7 @@ private:
     shadowRasterDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
     shadowRasterDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility);
     shadowRasterDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility);
-    const xiiRenderGraphTextureHandle hShadowMap = xiiGpuShadowRasterManager::AddPass(
+    const xiiRenderGraphTextureHandle hShadowMap        = xiiGpuShadowRasterManager::AddPass(
       graph, "GPU Scene Sun Shadow Raster", shadowTarget.first->m_hDepth, shadowVisibility, geometry, shadowRasterDescription);
 
     graph.AddPass<SceneTargetsPassData>(
@@ -503,20 +548,20 @@ private:
 
     auto drawPass = graph.AddPass<GpuDrivenDrawPassData>(
       "GPU Driven Mesh Dispatch", xiiGALCommandQueueFlags::Graphics,
-      [geometry, visibility, hMaterials, hShadowMap, hVirtualShadowAtlas, virtualShadowUpload](GpuDrivenDrawPassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hColor                = builder.WriteTexture(builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-        data.m_hDepth                = builder.WriteTexture(builder.ReadTexture("GPU Scene Depth", xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
-        data.m_hShadowMap            = builder.ReadTexture(hShadowMap, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVirtualShadowAtlas   = builder.ReadTexture(hVirtualShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+      [geometry, visibility, hMaterials, hShadowMap, virtualShadowUpload](GpuDrivenDrawPassData& data, xiiRenderGraphBuilder& builder) {
+        data.m_hColor                  = builder.WriteTexture(builder.ReadTexture("GPU Scene Color", xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+        data.m_hDepth                  = builder.WriteTexture(builder.ReadTexture("GPU Scene Depth", xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+        data.m_hShadowMap              = builder.ReadTexture(hShadowMap, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hVirtualShadowAtlas     = builder.ReadTexture(virtualShadowUpload.m_hPhysicalAtlas, xiiGALResourceStateFlags::ShaderResource);
         data.m_hVirtualShadowPageTable = builder.ReadBuffer(virtualShadowUpload.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hSceneInstances       = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hGeometry             = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hMeshlets             = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVisibleMeshlets      = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hVisibleMeshletCount  = builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
-        data.m_hIndirectCommands     = builder.ReadBuffer(visibility.m_hIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
-        data.m_hIndirectCommandCount = builder.ReadBuffer(visibility.m_hIndirectCommandCount, xiiGALResourceStateFlags::IndirectArgument);
-        data.m_hMaterials            = builder.ReadBuffer(hMaterials, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hSceneInstances         = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hGeometry               = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hMeshlets               = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hVisibleMeshlets        = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hVisibleMeshletCount    = builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hIndirectCommands       = builder.ReadBuffer(visibility.m_hIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+        data.m_hIndirectCommandCount   = builder.ReadBuffer(visibility.m_hIndirectCommandCount, xiiGALResourceStateFlags::IndirectArgument);
+        data.m_hMaterials              = builder.ReadBuffer(hMaterials, xiiGALResourceStateFlags::ShaderResource);
 
         xiiGALBufferCreationDescription constantsDescription;
         constantsDescription.m_uiSize         = sizeof(xiiGpuDrivenSceneConstants);
@@ -539,14 +584,14 @@ private:
 
     const xiiVirtualShadowMapSettings& virtualShadowSettings = xiiVirtualShadowMapManager::GetConfiguration();
     const xiiVirtualShadowMapStats     virtualShadowStats    = xiiVirtualShadowMapManager::GetStats();
-    drawPass.first->m_uiVirtualShadowPageTableBaseIndex = virtualShadowUpload.m_uiVirtualTableBaseIndex;
-    drawPass.first->m_uiVirtualShadowPageTableCapacity  = virtualShadowUpload.m_uiVirtualTableCapacity;
-    drawPass.first->m_uiVirtualShadowResolution          = virtualShadowSettings.m_uiVirtualResolution;
-    drawPass.first->m_uiVirtualShadowPageSize            = virtualShadowSettings.m_uiPageSize;
-    drawPass.first->m_uiVirtualShadowPhysicalAtlasWidth  = virtualShadowStats.m_uiPhysicalAtlasWidth;
-    drawPass.first->m_uiVirtualShadowPhysicalAtlasHeight = virtualShadowStats.m_uiPhysicalAtlasHeight;
-    drawPass.first->m_uiVirtualShadowDirectionalLightId  = g_uiDirectionalLightId;
-    drawPass.first->m_uiVirtualShadowEnabled             = bHasShadowCascade ? 1U : 0U;
+    drawPass.first->m_uiVirtualShadowPageTableBaseIndex      = virtualShadowUpload.m_uiVirtualTableBaseIndex;
+    drawPass.first->m_uiVirtualShadowPageTableCapacity       = virtualShadowUpload.m_uiVirtualTableCapacity;
+    drawPass.first->m_uiVirtualShadowResolution              = virtualShadowSettings.m_uiVirtualResolution;
+    drawPass.first->m_uiVirtualShadowPageSize                = virtualShadowSettings.m_uiPageSize;
+    drawPass.first->m_uiVirtualShadowPhysicalAtlasWidth      = virtualShadowStats.m_uiPhysicalAtlasWidth;
+    drawPass.first->m_uiVirtualShadowPhysicalAtlasHeight     = virtualShadowStats.m_uiPhysicalAtlasHeight;
+    drawPass.first->m_uiVirtualShadowDirectionalLightId      = g_uiDirectionalLightId;
+    drawPass.first->m_uiVirtualShadowEnabled                 = bHasShadowCascade ? 1U : 0U;
 
     m_HiZPyramid.AddBuildPass(graph, m_uiFrameIndex, drawPass.first->m_hDepth, m_Configuration.m_bAsyncCompute);
     xiiVirtualShadowMapManager::AddFeedbackPasses(
@@ -796,8 +841,8 @@ private:
     }
     {
       xiiGALMapHelper<xiiVirtualShadowSamplingConstants> constants(commandList, context.GetBuffer(data.m_hVirtualShadowConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      constants->VirtualShadowPageTableBaseIndex = data.m_uiVirtualShadowPageTableBaseIndex;
-      constants->VirtualShadowPageTableCapacity  = data.m_uiVirtualShadowPageTableCapacity;
+      constants->VirtualShadowPageTableBaseIndex  = data.m_uiVirtualShadowPageTableBaseIndex;
+      constants->VirtualShadowPageTableCapacity   = data.m_uiVirtualShadowPageTableCapacity;
       constants->VirtualShadowResolution          = data.m_uiVirtualShadowResolution;
       constants->VirtualShadowPageSize            = data.m_uiVirtualShadowPageSize;
       constants->VirtualShadowPhysicalAtlasWidth  = data.m_uiVirtualShadowPhysicalAtlasWidth;
