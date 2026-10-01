@@ -14,12 +14,54 @@ StructuredBuffer<GpuGeometryRecord> g_Geometry;
 RWStructuredBuffer<uint> g_VisibleInstances;
 RWStructuredBuffer<uint> g_VisibleInstanceCount;
 
+bool ReserveVisibleInstance(out uint destination)
+{
+  uint outputCapacity, outputStride;
+  uint counterCapacity, counterStride;
+  g_VisibleInstances.GetDimensions(outputCapacity, outputStride);
+  g_VisibleInstanceCount.GetDimensions(counterCapacity, counterStride);
+  if (outputCapacity == 0u || counterCapacity == 0u)
+  {
+    destination = 0u;
+    return false;
+  }
+
+  // Saturating reservation keeps both the compact list and its published count valid even
+  // when a prior reset was skipped or a future producer accidentally over-subscribes it.
+  for (;;)
+  {
+    const uint currentCount = g_VisibleInstanceCount[0];
+    if (currentCount >= outputCapacity)
+    {
+      destination = 0u;
+      return false;
+    }
+
+    uint observedCount;
+    InterlockedCompareExchange(g_VisibleInstanceCount[0], currentCount, currentCount + 1u, observedCount);
+    if (observedCount == currentCount)
+    {
+      destination = currentCount;
+      return true;
+    }
+  }
+}
+
 [numthreads(64, 1, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
+  uint viewCount, viewStride;
+  uint sceneCount, sceneStride;
+  uint geometryCount, geometryStride;
+  g_VisibilityView.GetDimensions(viewCount, viewStride);
+  g_SceneInstances.GetDimensions(sceneCount, sceneStride);
+  g_Geometry.GetDimensions(geometryCount, geometryStride);
+  if (viewCount == 0u)
+    return;
+
   const GpuVisibilityView view = g_VisibilityView[0];
   const uint instanceIndex = dispatchThreadId.x;
-  if (instanceIndex >= view.InstanceCount)
+  if (instanceIndex >= min(view.InstanceCount, sceneCount))
     return;
 
   GpuSceneInstance instance = g_SceneInstances[instanceIndex];
@@ -28,11 +70,14 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   if (instance.GeometryIndex == 0xFFFFFFFFu)
     return;
 
-  GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
+  if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex)
+    return;
+
+  const GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
   if (geometry.ResidentLodMask == 0u || !SphereInsideFrustum(instance.BoundsCenterRadius.xyz, instance.BoundsCenterRadius.w, view))
     return;
 
   uint destination;
-  InterlockedAdd(g_VisibleInstanceCount[0], 1u, destination);
-  g_VisibleInstances[destination] = instanceIndex;
+  if (ReserveVisibleInstance(destination))
+    g_VisibleInstances[destination] = instanceIndex;
 }
