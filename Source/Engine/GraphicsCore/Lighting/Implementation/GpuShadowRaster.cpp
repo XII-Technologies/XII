@@ -21,6 +21,7 @@ class xiiGpuShadowRasterManagerState
 {
 public:
   xiiShaderPermutationResourceHandle m_hShaderPermutation;
+  xiiShaderPermutationResourceHandle m_hClearShaderPermutation;
   bool                               m_bEngineStarted        = false;
   bool                               m_bMeshShadersSupported = false;
 };
@@ -70,6 +71,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuShadowRasterDescription, xiiNoBase, 1, xii
     XII_MEMBER_PROPERTY("VertexStride", m_uiVertexStride),
     XII_MEMBER_PROPERTY("MeshDispatchGroupCountX", m_uiMeshDispatchGroupCountX),
     XII_MEMBER_PROPERTY("MeshDispatchGroupCountY", m_uiMeshDispatchGroupCountY),
+    XII_MEMBER_PROPERTY("ClearViewport", m_bClearViewport),
   }
   XII_END_PROPERTIES;
 }
@@ -98,6 +100,7 @@ namespace
     xiiRenderGraphBufferHandle         m_hIndirectCommandCount;
     xiiGpuShadowRasterDescription      m_Description;
     xiiShaderPermutationResourceHandle m_hShaderPermutation;
+    xiiShaderPermutationResourceHandle m_hClearShaderPermutation;
   };
 } // namespace
 
@@ -108,7 +111,7 @@ bool xiiGpuShadowRasterManager::IsSubsystemInitialized()
 
 bool xiiGpuShadowRasterManager::IsSupported()
 {
-  return IsInitialized() && s_pState->m_bMeshShadersSupported && s_pState->m_hShaderPermutation.IsValid();
+  return IsInitialized() && s_pState->m_bMeshShadersSupported && s_pState->m_hShaderPermutation.IsValid() && s_pState->m_hClearShaderPermutation.IsValid();
 }
 
 bool xiiGpuShadowRasterManager::IsInitialized()
@@ -168,7 +171,8 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
     },
     [](const ShadowRasterPassData& data, xiiRenderGraphPassContext& context) {
       xiiResourceLock<xiiShaderPermutationResource> permutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-      if (!permutation.IsValid() || !permutation->IsShaderValid() || context.GetRenderPass() == nullptr)
+      xiiResourceLock<xiiShaderPermutationResource> clearPermutation(data.m_hClearShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+      if (!permutation.IsValid() || !permutation->IsShaderValid() || !clearPermutation.IsValid() || !clearPermutation->IsShaderValid() || context.GetRenderPass() == nullptr)
         return;
 
       xiiGALGraphicsPipelineStateCreationDescription pipelineDescription;
@@ -191,6 +195,28 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
       const xiiRectU32   scissor(viewport.x, viewport.y, viewport.z, viewport.w);
       cmd.SetViewport({static_cast<float>(viewport.x), static_cast<float>(viewport.y), static_cast<float>(viewport.z), static_cast<float>(viewport.w), 0.0f, 1.0f});
       cmd.SetScissorRect(scissor);
+
+      if (data.m_Description.m_bClearViewport)
+      {
+        xiiGALGraphicsPipelineStateCreationDescription clearPipelineDescription;
+        clearPipelineDescription.m_PipelineType                          = xiiGALPipelineType::Graphics;
+        clearPipelineDescription.m_pPipelineResourceSignature            = clearPermutation->GetPipelineResourceSignature();
+        clearPipelineDescription.m_pVertexShader                          = clearPermutation->GetGALShader(xiiGALShaderType::Vertex);
+        clearPipelineDescription.m_pPixelShader                           = clearPermutation->GetGALShader(xiiGALShaderType::Pixel);
+        clearPipelineDescription.m_GraphicsPipeline.m_pBlendState        = clearPermutation->GetBlendState();
+        clearPipelineDescription.m_GraphicsPipeline.m_pRasterizerState   = clearPermutation->GetRasterizerState();
+        clearPipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = clearPermutation->GetDepthStencilState();
+        clearPipelineDescription.m_GraphicsPipeline.m_pRenderPass        = context.GetRenderPass();
+        clearPipelineDescription.m_GraphicsPipeline.m_uiSubpassIndex     = static_cast<xiiUInt8>(context.GetSubpassIndex());
+        clearPipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
+        const xiiSharedPtr<xiiGALGraphicsPipelineState> pClearPipeline   = xiiGALPipelineCache::GetPipeline(clearPipelineDescription);
+        if (pClearPipeline == nullptr)
+          return;
+
+        cmd.SetPipelineState(pClearPipeline.Borrow());
+        cmd.Draw({3U});
+      }
+
       cmd.SetPipelineState(pPipeline.Borrow());
       cmd.ResolveAndSetConstantBuffer("xiiGpuShadowRasterConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Mesh);
       cmd.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
@@ -204,8 +230,9 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
       cmd.DrawMeshIndirect({context.GetBuffer(data.m_hIndirectCommands), 1U, 0U, xiiGALStateTransitionMode::None, context.GetBuffer(data.m_hIndirectCommandCount)});
     });
 
-  pass.first->m_Description        = description;
-  pass.first->m_hShaderPermutation = s_pState->m_hShaderPermutation;
+  pass.first->m_Description             = description;
+  pass.first->m_hShaderPermutation      = s_pState->m_hShaderPermutation;
+  pass.first->m_hClearShaderPermutation = s_pState->m_hClearShaderPermutation;
   return pass.first->m_hDepthAtlas;
 }
 
@@ -228,6 +255,8 @@ void xiiGpuShadowRasterManager::EngineStartup()
 
   const xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowDepth.xiiShader");
   s_pState->m_hShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);
+  const xiiShaderResourceHandle hClearShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowPageClear.xiiShader");
+  s_pState->m_hClearShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hClearShader, {}, true);
 }
 
 void xiiGpuShadowRasterManager::EngineShutdown()
@@ -236,6 +265,7 @@ void xiiGpuShadowRasterManager::EngineShutdown()
     return;
 
   s_pState->m_hShaderPermutation.Invalidate();
+  s_pState->m_hClearShaderPermutation.Invalidate();
   s_pState->m_bMeshShadersSupported = false;
   s_pState->m_bEngineStarted        = false;
 }

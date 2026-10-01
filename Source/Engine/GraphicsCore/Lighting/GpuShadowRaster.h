@@ -19,6 +19,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuShadowRasterDescription
   xiiUInt32  m_uiVertexStride            = 0U;
   xiiUInt32  m_uiMeshDispatchGroupCountX = 1U;
   xiiUInt32  m_uiMeshDispatchGroupCountY = 1U;
+  bool       m_bClearViewport             = true; ///< Clear only this viewport to reversed-Z far depth before rasterization.
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuShadowRasterDescription);
