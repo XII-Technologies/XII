@@ -3,9 +3,9 @@ ALL
 
 [PERMUTATIONS]
 
-[COMPUTESHADER]
+[COMPUTE_SHADER]
 
-#include "PipelineCommon.xiiShader"
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 #define DECAL_CHANNEL_ALBEDO   1u
 #define DECAL_CHANNEL_NORMAL   2u
