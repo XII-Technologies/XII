@@ -4,6 +4,7 @@
 
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/Containers/Map.h>
 
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
@@ -21,8 +22,14 @@ struct xiiGALShaderStageBinaryVersion
   };
 };
 
-xiiMutex                                                                                           xiiGALShaderStageBinary::s_ShaderStageBinariesLock;
-xiiMap<xiiUInt32, xiiGALShaderStageBinary, xiiCompareHelper<xiiUInt32>, xiiStaticAllocatorWrapper> xiiGALShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
+class xiiGALShaderStageBinary::CacheState
+{
+public:
+  xiiMutex                                  m_Mutex;
+  xiiMap<xiiUInt32, xiiGALShaderStageBinary> m_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
+};
+
+xiiUniquePtr<xiiGALShaderStageBinary::CacheState> xiiGALShaderStageBinary::s_pCacheState;
 
 xiiGALShaderStageBinary::xiiGALShaderStageBinary() = default;
 
@@ -258,9 +265,14 @@ xiiResult xiiGALShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog, xiiSt
 // static
 xiiGALShaderStageBinary* xiiGALShaderStageBinary::LoadStageBinary(xiiEnum<xiiGALShaderType> stage, xiiUInt32 uiHash, xiiStringView sPlatform)
 {
-  XII_LOCK(s_ShaderStageBinariesLock);
+  XII_ASSERT_DEV(s_pCacheState != nullptr, "The shader-stage cache subsystem is not started.");
+  if (s_pCacheState == nullptr)
+    return nullptr;
 
-  auto itStage = s_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(stage)].Find(uiHash);
+  XII_LOCK(s_pCacheState->m_Mutex);
+
+  auto& stageBinaries = s_pCacheState->m_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(stage)];
+  auto  itStage       = stageBinaries.Find(uiHash);
 
   if (!itStage.IsValid())
   {
@@ -283,7 +295,7 @@ xiiGALShaderStageBinary* xiiGALShaderStageBinary::LoadStageBinary(xiiEnum<xiiGAL
       return nullptr;
     }
 
-    itStage = xiiGALShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(stage)].Insert(uiHash, shaderStageBinary);
+    itStage = stageBinaries.Insert(uiHash, shaderStageBinary);
   }
 
   xiiGALShaderStageBinary* pShaderStageBinary = &itStage.Value();
@@ -291,26 +303,32 @@ xiiGALShaderStageBinary* xiiGALShaderStageBinary::LoadStageBinary(xiiEnum<xiiGAL
   return pShaderStageBinary;
 }
 
+void xiiGALShaderStageBinary::StoreStageBinary(xiiEnum<xiiGALShaderType> stage, const xiiGALShaderStageBinary& binary)
+{
+  XII_ASSERT_DEV(s_pCacheState != nullptr, "The shader-stage cache subsystem is not started.");
+  if (s_pCacheState == nullptr)
+    return;
+
+  XII_LOCK(s_pCacheState->m_Mutex);
+  s_pCacheState->m_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(stage)].Insert(binary.m_uiSourceHash, binary);
+}
+
+bool xiiGALShaderStageBinary::IsCacheInitialized()
+{
+  return s_pCacheState != nullptr;
+}
+
 // static
 void xiiGALShaderStageBinary::OnEngineStartup()
 {
-  XII_LOCK(s_ShaderStageBinariesLock);
-
-  for (xiiUInt32 uiShaderType = 0; uiShaderType < xiiGALShaderType::ENUM_COUNT; ++uiShaderType)
-  {
-    s_ShaderStageBinaries[uiShaderType].Clear();
-  }
+  XII_ASSERT_DEV(s_pCacheState == nullptr, "Shader-stage cache started twice.");
+  s_pCacheState = XII_DEFAULT_NEW(CacheState);
 }
 
 // static
 void xiiGALShaderStageBinary::OnEngineShutdown()
 {
-  XII_LOCK(s_ShaderStageBinariesLock);
-
-  for (xiiUInt32 uiShaderType = 0; uiShaderType < xiiGALShaderType::ENUM_COUNT; ++uiShaderType)
-  {
-    s_ShaderStageBinaries[uiShaderType].Clear();
-  }
+  s_pCacheState.Clear();
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_ShaderStageBinary);

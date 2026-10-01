@@ -31,6 +31,7 @@ XII_CREATE_SIMPLE_TEST(ShaderManagerLifecycle, Startup)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subsystem owns shader configuration storage")
   {
     XII_TEST_BOOL(xiiGALShaderManager::IsInitialized());
+    XII_TEST_BOOL(xiiGALShaderStageBinary::IsCacheInitialized());
   }
 }
 
