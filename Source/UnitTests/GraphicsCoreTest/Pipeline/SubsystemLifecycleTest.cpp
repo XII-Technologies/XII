@@ -12,6 +12,7 @@
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Particles/ParticleSystemManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
@@ -32,6 +33,8 @@ static_assert(!std::is_default_constructible_v<xiiSensorRenderingManager>, "Sens
 static_assert(!std::is_default_constructible_v<xiiDisplayOutputManager>, "Display defaults must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSceneDatabaseManager>, "Render scenes must be owned by the scene database subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSceneDatabase>, "Scene database storage must be created through the subsystem.");
+static_assert(!std::is_default_constructible_v<xiiParticleSystemManager>, "Particle runtimes must be owned by their subsystem.");
+static_assert(!std::is_default_constructible_v<xiiParticleSystemRuntime>, "Particle runtime storage must be created through the subsystem.");
 
 XII_CREATE_SIMPLE_TEST_GROUP(Pipeline);
 
@@ -43,15 +46,18 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     const xiiRenderGraphContextHandle   renderGraphHandle;
     const xiiGpuVisibilityContextHandle visibilityHandle;
     const xiiSceneDatabaseContextHandle sceneHandle;
+    const xiiParticleSystemRuntimeHandle particleHandle;
 
     XII_TEST_BOOL(!lightingHandle.IsValid());
     XII_TEST_BOOL(!renderGraphHandle.IsValid());
     XII_TEST_BOOL(!visibilityHandle.IsValid());
     XII_TEST_BOOL(!sceneHandle.IsValid());
+    XII_TEST_BOOL(!particleHandle.IsValid());
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiLightingContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiRenderGraphContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuVisibilityContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiSceneDatabaseContextHandle>() != nullptr);
+    XII_TEST_BOOL(xiiGetStaticRTTI<xiiParticleSystemRuntimeHandle>() != nullptr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Scene database contexts are generation checked")

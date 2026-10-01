@@ -6,6 +6,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
+#include <GraphicsCore/Particles/ParticleSystemManager.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
@@ -156,8 +157,12 @@ void xiiParticleSystemDescriptor::Load(xiiStreamReader& ref_stream)
   m_fNeighborCellSize = xiiMath::Max(0.0001f, m_fNeighborCellSize);
 }
 
-xiiParticleSystemRuntime::xiiParticleSystemRuntime()  = default;
-xiiParticleSystemRuntime::~xiiParticleSystemRuntime() = default;
+xiiParticleSystemRuntime::xiiParticleSystemRuntime() = default;
+
+xiiParticleSystemRuntime::~xiiParticleSystemRuntime()
+{
+  Shutdown();
+}
 
 xiiResult xiiParticleSystemRuntime::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiParticleSystemDescriptor& descriptor)
 {
@@ -418,8 +423,13 @@ xiiSharedPtr<xiiGALBuffer> xiiParticleSystemRuntime::CreateRawBuffer(xiiStringVi
   return pBuffer;
 }
 
-xiiParticleSystemComponent::xiiParticleSystemComponent()  = default;
-xiiParticleSystemComponent::~xiiParticleSystemComponent() = default;
+xiiParticleSystemComponent::xiiParticleSystemComponent() = default;
+
+xiiParticleSystemComponent::~xiiParticleSystemComponent()
+{
+  xiiParticleSystemManager::DestroyRuntime(m_hRuntime);
+  m_hRuntime = {};
+}
 
 void xiiParticleSystemComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
@@ -448,7 +458,8 @@ void xiiParticleSystemComponent::SetDescriptor(const xiiParticleSystemDescriptor
   m_Descriptor                  = descriptor;
   m_Descriptor.m_uiMaxParticles = ClampParticleCapacity(m_Descriptor.m_uiMaxParticles);
 
-  m_Runtime.Shutdown();
+  xiiParticleSystemManager::DestroyRuntime(m_hRuntime);
+  m_hRuntime = {};
   TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
 }
@@ -474,7 +485,21 @@ const xiiParticleGraphResourceHandle& xiiParticleSystemComponent::GetParticleGra
 
 xiiResult xiiParticleSystemComponent::PrepareRuntimeResources(xiiSharedPtr<xiiGALDevice> pDevice) const
 {
-  return m_Runtime.Initialize(std::move(pDevice), m_Descriptor);
+  if (pDevice == nullptr)
+    return XII_FAILURE;
+
+  if (xiiParticleSystemRuntime* pRuntime = xiiParticleSystemManager::GetRuntime(m_hRuntime))
+    return pRuntime->EnsureCapacity(m_Descriptor);
+
+  m_hRuntime = xiiParticleSystemManager::CreateRuntime(std::move(pDevice), m_Descriptor);
+  return m_hRuntime.IsValid() ? XII_SUCCESS : XII_FAILURE;
+}
+
+xiiParticleSystemRuntime& xiiParticleSystemComponent::GetRuntime() const
+{
+  xiiParticleSystemRuntime* pRuntime = xiiParticleSystemManager::GetRuntime(m_hRuntime);
+  XII_ASSERT_DEV(pRuntime != nullptr, "Particle runtime has not been prepared or was destroyed during subsystem shutdown.");
+  return *pRuntime;
 }
 
 void xiiParticleSystemComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const
@@ -489,18 +514,19 @@ void xiiParticleSystemComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData&
   xiiParticleRenderData* pRenderData = pWorldModule->CreateRenderDataForThisFrame<xiiParticleRenderData>(this);
   pRenderData->m_Descriptor          = m_Descriptor;
   pRenderData->m_uiUniqueID          = GetUniqueIdForRendering();
-  pRenderData->m_pRuntime            = &m_Runtime;
+  pRenderData->m_hRuntime            = m_hRuntime;
 
   pRenderData->m_GlobalTransform = GetOwner()->GetGlobalTransform();
   pRenderData->m_GlobalBounds    = m_Descriptor.m_LocalBounds;
   pRenderData->m_GlobalBounds.Transform(pRenderData->m_GlobalTransform.GetAsMat4());
 
-  if (m_Runtime.IsInitialized())
+  const xiiParticleSystemRuntime* pRuntime = xiiParticleSystemManager::GetRuntime(m_hRuntime);
+  if (pRuntime != nullptr && pRuntime->IsInitialized())
   {
-    pRenderData->m_pParticleStateBuffer = m_Runtime.GetCurrentParticleStateBuffer();
-    pRenderData->m_pAliveIndexBuffer    = m_Runtime.GetAliveIndexBuffer();
-    pRenderData->m_pCountersBuffer      = m_Runtime.GetCountersBuffer();
-    pRenderData->m_pDrawIndirectBuffer  = m_Runtime.GetDrawIndirectBuffer();
+    pRenderData->m_pParticleStateBuffer = pRuntime->GetCurrentParticleStateBuffer();
+    pRenderData->m_pAliveIndexBuffer    = pRuntime->GetAliveIndexBuffer();
+    pRenderData->m_pCountersBuffer      = pRuntime->GetCountersBuffer();
+    pRenderData->m_pDrawIndirectBuffer  = pRuntime->GetDrawIndirectBuffer();
   }
 
   pRenderData->m_uiSortingKey = (static_cast<xiiUInt64>(m_Descriptor.m_uiMaxParticles) << 32U) ^ pRenderData->m_uiUniqueID;

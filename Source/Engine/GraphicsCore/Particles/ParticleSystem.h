@@ -14,6 +14,7 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 
 class xiiParticleSystemRuntime;
+class xiiParticleSystemManager;
 struct xiiMsgExtractRenderData;
 
 using xiiParticleSystemComponentManager = xiiComponentManager<class xiiParticleSystemComponent, xiiBlockStorageType::FreeList>;
@@ -168,6 +169,19 @@ public:
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemDescriptor);
 
+/// Generation-checked reference to one subsystem-owned GPU particle runtime.
+struct XII_GRAPHICSCORE_DLL xiiParticleSystemRuntimeHandle
+{
+  XII_DECLARE_POD_TYPE();
+
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
+
+  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
+  xiiUInt32 m_uiGeneration = 0U;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemRuntimeHandle);
+
 /// Renderer-facing packet for GPU particle systems.
 class XII_GRAPHICSCORE_DLL xiiParticleRenderData : public xiiRenderData
 {
@@ -182,7 +196,7 @@ public:
   xiiSharedPtr<xiiGALBuffer> m_pCountersBuffer;      ///< A buffer containing various counters related to the particle system (e.g., alive count, dead count, spawn request count, event count), which is updated by the GPU during simulation passes and can be read by the renderer for rendering or debugging purposes.
   xiiSharedPtr<xiiGALBuffer> m_pDrawIndirectBuffer;  ///< A buffer containing the arguments for indirect draw calls, which is updated by the GPU during simulation passes (e.g., based on the alive count) and read by the renderer for rendering. This allows for efficient rendering of a variable number of particles without needing to read back counts to the CPU.
 
-  xiiParticleSystemRuntime* m_pRuntime = nullptr; ///< Pointer to the particle system runtime that owns the resources and manages the simulation for this render data. This can be used by the renderer to access additional information or functionality related to the particle system, such as updating simulation parameters or triggering events.
+  xiiParticleSystemRuntimeHandle m_hRuntime; ///< Stable subsystem handle for the runtime that owns the simulation resources.
 };
 
 /// Render graph pass data used by xiiParticleSystemRuntime::AddSimulationPasses().
@@ -258,7 +272,6 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetDispatchIndirectBuffer() const { return m_pDispatchIndirectBuffer; }
 
 public:
-  xiiParticleSystemRuntime();
   ~xiiParticleSystemRuntime();
 
   /// Initializes the runtime with the given device and descriptor, creating necessary GPU resources. Returns failure if initialization fails (e.g., due to insufficient GPU resources or invalid descriptor parameters), in which case the runtime should not be used.
@@ -286,6 +299,10 @@ public:
   [[nodiscard]] xiiResult AddSimulationPasses(xiiRenderGraph& ref_graph, xiiStringView sNamePrefix, const xiiParticleSystemDescriptor& descriptor);
 
 private:
+  friend class xiiParticleSystemManager;
+
+  xiiParticleSystemRuntime();
+
   void SetupSimulationPass(xiiParticleSimulationPassData& ref_data, xiiRenderGraphBuilder& ref_builder);
   void ExecuteSimulationPass(const xiiParticleSimulationPassData& data, xiiRenderGraphPassContext& ref_context);
 
@@ -357,12 +374,13 @@ public:
   [[nodiscard]] xiiResult PrepareRuntimeResources(xiiSharedPtr<xiiGALDevice> pDevice) const;
 
   /// Returns a reference to the particle system runtime, which manages the GPU resources and simulation for this particle system. This can be used for accessing buffers, adding simulation passes, or other operations related to the runtime. The exact semantics of the runtime (e.g., whether it reflects pending changes that have not yet been applied to GPU resources) are defined by the implementation of the component and runtime.
-  [[nodiscard]] xiiParticleSystemRuntime& GetRuntime() const { return m_Runtime; }
+  [[nodiscard]] xiiParticleSystemRuntime&       GetRuntime() const;
+  [[nodiscard]] xiiParticleSystemRuntimeHandle GetRuntimeHandle() const { return m_hRuntime; }
 
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
 
 private:
-  xiiParticleSystemDescriptor      m_Descriptor; ///< The descriptor for the particle system, which contains the configuration for the simulation and rendering. This is set by the user of the component and is used to prepare the runtime resources and to provide information for rendering. The exact semantics of this descriptor (e.g., whether it reflects pending changes that have not yet been applied to the runtime) are defined by the implementation of the component and runtime.
-  mutable xiiParticleSystemRuntime m_Runtime;    ///< The runtime for the particle system, which manages the GPU resources and simulation. This is mutable to allow for lazy initialization and resource preparation based on the current descriptor and graph settings. The exact semantics of the runtime (e.g., whether it reflects pending changes that have not yet been applied to GPU resources) are defined by the implementation of the component and runtime.
+  xiiParticleSystemDescriptor            m_Descriptor; ///< The authored particle-system configuration.
+  mutable xiiParticleSystemRuntimeHandle m_hRuntime;   ///< Runtime storage is owned and torn down by the GraphicsCore subsystem.
 };
