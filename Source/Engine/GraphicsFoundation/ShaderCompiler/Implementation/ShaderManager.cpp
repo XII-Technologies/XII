@@ -10,23 +10,23 @@
 
 struct xiiGALShaderManager::PermutationVarConfig
 {
-  xiiHashedString                                  m_sName;
-  xiiVariant                                       m_DefaultValue;
-  xiiDynamicArray<xiiGALShaderParser::EnumValue>   m_EnumValues;
+  xiiHashedString                                m_sName;
+  xiiVariant                                     m_DefaultValue;
+  xiiDynamicArray<xiiGALShaderParser::EnumValue> m_EnumValues;
 };
 
 class xiiGALShaderManager::State
 {
 public:
-  xiiMutex                                              m_Mutex;
-  xiiDeque<PermutationVarConfig>                        m_PermutationConfigurationsStorage;
-  xiiHashTable<xiiHashedString, PermutationVarConfig*>  m_PermutationConfigurations;
-  xiiHashedString                                       m_sTrue;
-  xiiHashedString                                       m_sFalse;
-  xiiString                                             m_sPlatform;
-  xiiString                                             m_sPermutationVariableSubDirectory;
-  xiiString                                             m_sShaderCacheDirectory;
-  bool                                                  m_bEnableRuntimeCompilation = false;
+  xiiMutex                                             m_Mutex;
+  xiiDeque<PermutationVarConfig>                       m_PermutationConfigurationsStorage;
+  xiiHashTable<xiiHashedString, PermutationVarConfig*> m_PermutationConfigurations;
+  xiiHashedString                                      m_sTrue;
+  xiiHashedString                                      m_sFalse;
+  xiiString                                            m_sPlatform;
+  xiiString                                            m_sPermutationVariableSubDirectory;
+  xiiString                                            m_sShaderCacheDirectory;
+  bool                                                 m_bEnableRuntimeCompilation = false;
 };
 
 xiiUniquePtr<xiiGALShaderManager::State> xiiGALShaderManager::s_pState;

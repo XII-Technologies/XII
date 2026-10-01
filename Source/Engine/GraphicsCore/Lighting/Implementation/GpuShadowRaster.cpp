@@ -201,8 +201,8 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
         xiiGALGraphicsPipelineStateCreationDescription clearPipelineDescription;
         clearPipelineDescription.m_PipelineType                          = xiiGALPipelineType::Graphics;
         clearPipelineDescription.m_pPipelineResourceSignature            = clearPermutation->GetPipelineResourceSignature();
-        clearPipelineDescription.m_pVertexShader                          = clearPermutation->GetGALShader(xiiGALShaderType::Vertex);
-        clearPipelineDescription.m_pPixelShader                           = clearPermutation->GetGALShader(xiiGALShaderType::Pixel);
+        clearPipelineDescription.m_pVertexShader                         = clearPermutation->GetGALShader(xiiGALShaderType::Vertex);
+        clearPipelineDescription.m_pPixelShader                          = clearPermutation->GetGALShader(xiiGALShaderType::Pixel);
         clearPipelineDescription.m_GraphicsPipeline.m_pBlendState        = clearPermutation->GetBlendState();
         clearPipelineDescription.m_GraphicsPipeline.m_pRasterizerState   = clearPermutation->GetRasterizerState();
         clearPipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = clearPermutation->GetDepthStencilState();
@@ -248,14 +248,14 @@ void xiiGpuShadowRasterManager::EngineStartup()
   if (s_pState == nullptr)
     return;
 
-  s_pState->m_bEngineStarted                = true;
+  s_pState->m_bEngineStarted               = true;
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   s_pState->m_bMeshShadersSupported        = pDevice != nullptr && pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled;
   if (!s_pState->m_bMeshShadersSupported)
     return;
 
-  const xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowDepth.xiiShader");
-  s_pState->m_hShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);
+  const xiiShaderResourceHandle hShader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowDepth.xiiShader");
+  s_pState->m_hShaderPermutation             = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);
   const xiiShaderResourceHandle hClearShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowPageClear.xiiShader");
   s_pState->m_hClearShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hClearShader, {}, true);
 }

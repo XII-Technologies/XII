@@ -20,17 +20,17 @@ public:
   static xiiGALShaderStageBinary* LoadStageBinary(xiiEnum<xiiGALShaderType> stage, xiiUInt32 uiHash, xiiStringView sPlatform);
 
   [[nodiscard]] static bool IsCacheInitialized();
-  static void OnEngineStartup();
-  static void OnEngineShutdown();
+  static void               OnEngineStartup();
+  static void               OnEngineShutdown();
 
 private:
   friend class xiiGALShaderCompiler;
 
-  xiiResult WriteStageBinary(xiiLogInterface* pLog, xiiStringView sPlatform) const;
-  xiiResult Write(xiiStreamWriter& inout_stream) const;
-  xiiResult Read(xiiStreamReader& inout_stream);
-  xiiResult Write(xiiStreamWriter& inout_stream, const xiiDynamicArray<xiiGALShaderVariableDescription>& layout) const;
-  xiiResult Read(xiiStreamReader& inout_stream, xiiDynamicArray<xiiGALShaderVariableDescription>& out_layout);
+  xiiResult   WriteStageBinary(xiiLogInterface* pLog, xiiStringView sPlatform) const;
+  xiiResult   Write(xiiStreamWriter& inout_stream) const;
+  xiiResult   Read(xiiStreamReader& inout_stream);
+  xiiResult   Write(xiiStreamWriter& inout_stream, const xiiDynamicArray<xiiGALShaderVariableDescription>& layout) const;
+  xiiResult   Read(xiiStreamReader& inout_stream, xiiDynamicArray<xiiGALShaderVariableDescription>& out_layout);
   static void StoreStageBinary(xiiEnum<xiiGALShaderType> stage, const xiiGALShaderStageBinary& binary);
 
 private:

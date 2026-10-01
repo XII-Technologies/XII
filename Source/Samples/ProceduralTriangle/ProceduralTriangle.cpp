@@ -116,8 +116,8 @@ public:
         // Build a minimal render graph that clears the depth and backbuffer.
         ++m_uiFrameIndex;
 
-        xiiRenderGraph&              renderGraph  = m_RenderGraphContext.GetGraph();
-        xiiRenderGraphBlackboard&    blackboard   = m_RenderGraphContext.GetBlackboard();
+        xiiRenderGraph&              renderGraph   = m_RenderGraphContext.GetGraph();
+        xiiRenderGraphBlackboard&    blackboard    = m_RenderGraphContext.GetBlackboard();
         xiiRenderGraphResourceCache& resourceCache = m_RenderGraphContext.GetResourceCache();
 
         renderGraph.BeginSetup(m_uiFrameIndex);

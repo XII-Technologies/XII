@@ -42,9 +42,9 @@ public:
   struct Slot
   {
     xiiVolumetricMediumDescription m_Description;
-    xiiDynamicArray<xiiUInt64>      m_CellKeys;
-    xiiUInt32                       m_uiGeneration = 1U;
-    bool                            m_bAllocated  = false;
+    xiiDynamicArray<xiiUInt64>     m_CellKeys;
+    xiiUInt32                      m_uiGeneration = 1U;
+    bool                           m_bAllocated   = false;
   };
 
   struct Cell
@@ -53,13 +53,13 @@ public:
     bool                       m_bResident = true;
   };
 
-  xiiMutex                                  m_Mutex;
-  xiiVolumetricMediumSettings               m_Settings;
-  xiiDynamicArray<Slot>                     m_Slots;
-  xiiDynamicArray<xiiUInt32>                m_FreeSlots;
-  xiiHashTable<xiiUInt64, Cell>             m_Cells;
+  xiiMutex                      m_Mutex;
+  xiiVolumetricMediumSettings   m_Settings;
+  xiiDynamicArray<Slot>         m_Slots;
+  xiiDynamicArray<xiiUInt32>    m_FreeSlots;
+  xiiHashTable<xiiUInt64, Cell> m_Cells;
 
-  void RemoveSlotFromCells(xiiUInt32 uiSlot);
+  void               RemoveSlotFromCells(xiiUInt32 uiSlot);
   [[nodiscard]] bool InsertSlotIntoCells(xiiUInt32 uiSlot);
 };
 
@@ -175,9 +175,9 @@ void xiiVolumetricMediumManager::State::RemoveSlotFromCells(xiiUInt32 uiSlot)
 
 bool xiiVolumetricMediumManager::State::InsertSlotIntoCells(xiiUInt32 uiSlot)
 {
-  auto&       slot      = m_Slots[uiSlot];
-  const float fCellSize = m_Settings.m_fCellSizeMeters;
-  xiiVec3 vWorldHalfExtents = xiiVec3::MakeZero();
+  auto&       slot              = m_Slots[uiSlot];
+  const float fCellSize         = m_Settings.m_fCellSizeMeters;
+  xiiVec3     vWorldHalfExtents = xiiVec3::MakeZero();
   for (xiiUInt32 uiCorner = 0U; uiCorner < 8U; ++uiCorner)
   {
     const xiiVec3 vCorner(
@@ -187,11 +187,11 @@ bool xiiVolumetricMediumManager::State::InsertSlotIntoCells(xiiUInt32 uiSlot)
     vWorldHalfExtents = vWorldHalfExtents.CompMax((slot.m_Description.m_qRotation * vCorner).Abs());
   }
 
-  const xiiVec3 vMinimum = slot.m_Description.m_vCenter - vWorldHalfExtents;
-  const xiiVec3 vMaximum = slot.m_Description.m_vCenter + vWorldHalfExtents;
+  const xiiVec3    vMinimum = slot.m_Description.m_vCenter - vWorldHalfExtents;
+  const xiiVec3    vMaximum = slot.m_Description.m_vCenter + vWorldHalfExtents;
   const xiiVec3I32 vMinimumCell(static_cast<xiiInt32>(xiiMath::Floor(vMinimum.x / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor(vMinimum.y / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor(vMinimum.z / fCellSize)));
   const xiiVec3I32 vMaximumCell(static_cast<xiiInt32>(xiiMath::Floor(vMaximum.x / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor(vMaximum.y / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor(vMaximum.z / fCellSize)));
-  const xiiUInt64 uiCellCount = static_cast<xiiUInt64>(vMaximumCell.x - vMinimumCell.x + 1) * static_cast<xiiUInt64>(vMaximumCell.y - vMinimumCell.y + 1) * static_cast<xiiUInt64>(vMaximumCell.z - vMinimumCell.z + 1);
+  const xiiUInt64  uiCellCount = static_cast<xiiUInt64>(vMaximumCell.x - vMinimumCell.x + 1) * static_cast<xiiUInt64>(vMaximumCell.y - vMinimumCell.y + 1) * static_cast<xiiUInt64>(vMaximumCell.z - vMinimumCell.z + 1);
   if (uiCellCount > m_Settings.m_uiMaxCellsPerMedium)
     return false;
 
@@ -201,7 +201,7 @@ bool xiiVolumetricMediumManager::State::InsertSlotIntoCells(xiiUInt32 uiSlot)
       for (xiiInt32 x = vMinimumCell.x; x <= vMaximumCell.x; ++x)
       {
         const xiiUInt64 uiKey = xiiVolumetricMediumManager::PackCellKey(xiiVec3I32(x, y, z));
-        auto& cell = m_Cells[uiKey];
+        auto&           cell  = m_Cells[uiKey];
         cell.m_Media.PushBack(uiSlot);
         slot.m_CellKeys.PushBack(uiKey);
       }
@@ -254,9 +254,9 @@ xiiVolumetricMediumHandle xiiVolumetricMediumManager::RegisterMedium(const xiiVo
   else
     s_pState->m_Slots.ExpandAndGetRef();
 
-  State::Slot& slot     = s_pState->m_Slots[uiSlot];
-  slot.m_Description   = description;
-  slot.m_bAllocated    = true;
+  State::Slot& slot  = s_pState->m_Slots[uiSlot];
+  slot.m_Description = description;
+  slot.m_bAllocated  = true;
   if (!s_pState->InsertSlotIntoCells(uiSlot))
   {
     slot.m_bAllocated = false;
@@ -347,12 +347,12 @@ void xiiVolumetricMediumManager::GatherGpuMedia(const xiiVec3& vViewPosition, xi
   };
 
   XII_LOCK(s_pState->m_Mutex);
-  const float fCellSize = s_pState->m_Settings.m_fCellSizeMeters;
-  const float fRange = s_pState->m_Settings.m_fViewDistanceMeters;
+  const float      fCellSize = s_pState->m_Settings.m_fCellSizeMeters;
+  const float      fRange    = s_pState->m_Settings.m_fViewDistanceMeters;
   const xiiVec3I32 vMinimumCell(static_cast<xiiInt32>(xiiMath::Floor((vViewPosition.x - fRange) / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor((vViewPosition.y - fRange) / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor((vViewPosition.z - fRange) / fCellSize)));
   const xiiVec3I32 vMaximumCell(static_cast<xiiInt32>(xiiMath::Floor((vViewPosition.x + fRange) / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor((vViewPosition.y + fRange) / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor((vViewPosition.z + fRange) / fCellSize)));
 
-  xiiHashSet<xiiUInt32> visited;
+  xiiHashSet<xiiUInt32>      visited;
   xiiDynamicArray<Candidate> candidates;
   for (xiiInt32 z = vMinimumCell.z; z <= vMaximumCell.z; ++z)
     for (xiiInt32 y = vMinimumCell.y; y <= vMaximumCell.y; ++y)
@@ -378,21 +378,21 @@ void xiiVolumetricMediumManager::GatherGpuMedia(const xiiVec3& vViewPosition, xi
 
   candidates.Sort([](const Candidate& lhs, const Candidate& rhs) {
     return lhs.m_iPriority != rhs.m_iPriority ? lhs.m_iPriority > rhs.m_iPriority :
-      (lhs.m_fDistanceSquared != rhs.m_fDistanceSquared ? lhs.m_fDistanceSquared < rhs.m_fDistanceSquared : lhs.m_uiSlot < rhs.m_uiSlot);
+                                                (lhs.m_fDistanceSquared != rhs.m_fDistanceSquared ? lhs.m_fDistanceSquared < rhs.m_fDistanceSquared : lhs.m_uiSlot < rhs.m_uiSlot);
   });
 
   const xiiUInt32 uiCount = xiiMath::Min(candidates.GetCount(), s_pState->m_Settings.m_uiMaxVisibleMedia);
   out_media.SetCountUninitialized(uiCount);
   for (xiiUInt32 i = 0U; i < uiCount; ++i)
   {
-    const auto& description = s_pState->m_Slots[candidates[i].m_uiSlot].m_Description;
-    auto& gpu = out_media[i];
-    gpu.m_vCenterAndShape             = xiiVec4(description.m_vCenter, static_cast<float>(description.m_Shape.GetValue()));
-    gpu.m_vRotation                   = xiiVec4(description.m_qRotation.GetVectorPart(), description.m_qRotation.w);
-    gpu.m_vHalfExtentsAndAnisotropy  = xiiVec4(description.m_vHalfExtents, description.m_fAnisotropy);
-    gpu.m_vScatteringAndPriority     = xiiVec4(description.m_vScattering, static_cast<float>(description.m_iPriority));
-    gpu.m_vAbsorptionAndPadding      = xiiVec4(description.m_vAbsorption, 0.0f);
-    gpu.m_vEmissionAndPadding        = xiiVec4(description.m_vEmission, 0.0f);
+    const auto& description         = s_pState->m_Slots[candidates[i].m_uiSlot].m_Description;
+    auto&       gpu                 = out_media[i];
+    gpu.m_vCenterAndShape           = xiiVec4(description.m_vCenter, static_cast<float>(description.m_Shape.GetValue()));
+    gpu.m_vRotation                 = xiiVec4(description.m_qRotation.GetVectorPart(), description.m_qRotation.w);
+    gpu.m_vHalfExtentsAndAnisotropy = xiiVec4(description.m_vHalfExtents, description.m_fAnisotropy);
+    gpu.m_vScatteringAndPriority    = xiiVec4(description.m_vScattering, static_cast<float>(description.m_iPriority));
+    gpu.m_vAbsorptionAndPadding     = xiiVec4(description.m_vAbsorption, 0.0f);
+    gpu.m_vEmissionAndPadding       = xiiVec4(description.m_vEmission, 0.0f);
   }
 }
 
@@ -418,7 +418,7 @@ xiiUInt64 xiiVolumetricMediumManager::PackCellKey(const xiiVec3I32& vCell)
   XII_ASSERT_DEV(vCell.x >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.x < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) &&
                    vCell.y >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.y < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) &&
                    vCell.z >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.z < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias),
-    "Volumetric medium cell coordinate exceeds the packed-key range.");
+                 "Volumetric medium cell coordinate exceeds the packed-key range.");
   return ((static_cast<xiiUInt64>(vCell.x + s_uiVolumetricCoordinateBias) & s_uiVolumetricCoordinateMask) << (s_uiVolumetricCoordinateBits * 2U)) |
     ((static_cast<xiiUInt64>(vCell.y + s_uiVolumetricCoordinateBias) & s_uiVolumetricCoordinateMask) << s_uiVolumetricCoordinateBits) |
     (static_cast<xiiUInt64>(vCell.z + s_uiVolumetricCoordinateBias) & s_uiVolumetricCoordinateMask);

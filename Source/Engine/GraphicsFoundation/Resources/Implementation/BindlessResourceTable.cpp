@@ -19,14 +19,14 @@ public:
     xiiDynamicArray<xiiUInt64>             m_RetireFences;
   };
 
-  xiiMutex                                  m_Mutex;
-  TableStorage<xiiGALBufferView>            m_BufferSRVs;
-  TableStorage<xiiGALBufferView>            m_BufferUAVs;
-  TableStorage<xiiGALTextureView>           m_TextureSRVs;
-  TableStorage<xiiGALTextureView>           m_TextureUAVs;
-  TableStorage<xiiGALSampler>               m_Samplers;
-  xiiGALBindlessResourceTableDescription    m_Description;
-  bool                                      m_bInitialized = false;
+  xiiMutex                               m_Mutex;
+  TableStorage<xiiGALBufferView>         m_BufferSRVs;
+  TableStorage<xiiGALBufferView>         m_BufferUAVs;
+  TableStorage<xiiGALTextureView>        m_TextureSRVs;
+  TableStorage<xiiGALTextureView>        m_TextureUAVs;
+  TableStorage<xiiGALSampler>            m_Samplers;
+  xiiGALBindlessResourceTableDescription m_Description;
+  bool                                   m_bInitialized = false;
 };
 
 xiiUniquePtr<xiiGALBindlessResourceTable::State> xiiGALBindlessResourceTable::s_pState;
@@ -145,50 +145,50 @@ const xiiGALBindlessResourceTableDescription& xiiGALBindlessResourceTable::GetCo
 
 namespace
 {
-template <typename TTable, typename TObject>
-xiiGALBindlessResourceHandle RegisterResource(TTable& table, xiiSharedPtr<TObject> pObject)
-{
-  if (pObject == nullptr)
-    return {};
-  const xiiGALBindlessResourceHandle handle = table.m_Allocator.Allocate();
-  if (!handle.IsValid())
-    return {};
-  table.m_Objects[handle.m_uiIndex]      = std::move(pObject);
-  table.m_RetireFences[handle.m_uiIndex] = s_uiNotRetired;
-  return handle;
-}
-
-template <typename TTable, typename TObject>
-bool UpdateResource(TTable& table, xiiGALBindlessResourceHandle handle, xiiSharedPtr<TObject> pObject)
-{
-  if (pObject == nullptr || !table.m_Allocator.IsAlive(handle))
-    return false;
-  table.m_Objects[handle.m_uiIndex] = std::move(pObject);
-  return true;
-}
-
-template <typename TTable>
-bool RetireResource(TTable& table, xiiGALBindlessResourceHandle handle, xiiUInt64 uiFenceValue)
-{
-  if (!table.m_Allocator.Retire(handle, uiFenceValue))
-    return false;
-  table.m_RetireFences[handle.m_uiIndex] = uiFenceValue;
-  return true;
-}
-
-template <typename TTable>
-void CollectResources(TTable& table, xiiUInt64 uiCompletedFenceValue)
-{
-  for (xiiUInt32 i = 0; i < table.m_RetireFences.GetCount(); ++i)
+  template <typename TTable, typename TObject>
+  xiiGALBindlessResourceHandle RegisterResource(TTable& table, xiiSharedPtr<TObject> pObject)
   {
-    if (table.m_RetireFences[i] != s_uiNotRetired && table.m_RetireFences[i] <= uiCompletedFenceValue)
-    {
-      table.m_Objects[i].Clear();
-      table.m_RetireFences[i] = s_uiNotRetired;
-    }
+    if (pObject == nullptr)
+      return {};
+    const xiiGALBindlessResourceHandle handle = table.m_Allocator.Allocate();
+    if (!handle.IsValid())
+      return {};
+    table.m_Objects[handle.m_uiIndex]      = std::move(pObject);
+    table.m_RetireFences[handle.m_uiIndex] = s_uiNotRetired;
+    return handle;
   }
-  table.m_Allocator.Collect(uiCompletedFenceValue);
-}
+
+  template <typename TTable, typename TObject>
+  bool UpdateResource(TTable& table, xiiGALBindlessResourceHandle handle, xiiSharedPtr<TObject> pObject)
+  {
+    if (pObject == nullptr || !table.m_Allocator.IsAlive(handle))
+      return false;
+    table.m_Objects[handle.m_uiIndex] = std::move(pObject);
+    return true;
+  }
+
+  template <typename TTable>
+  bool RetireResource(TTable& table, xiiGALBindlessResourceHandle handle, xiiUInt64 uiFenceValue)
+  {
+    if (!table.m_Allocator.Retire(handle, uiFenceValue))
+      return false;
+    table.m_RetireFences[handle.m_uiIndex] = uiFenceValue;
+    return true;
+  }
+
+  template <typename TTable>
+  void CollectResources(TTable& table, xiiUInt64 uiCompletedFenceValue)
+  {
+    for (xiiUInt32 i = 0; i < table.m_RetireFences.GetCount(); ++i)
+    {
+      if (table.m_RetireFences[i] != s_uiNotRetired && table.m_RetireFences[i] <= uiCompletedFenceValue)
+      {
+        table.m_Objects[i].Clear();
+        table.m_RetireFences[i] = s_uiNotRetired;
+      }
+    }
+    table.m_Allocator.Collect(uiCompletedFenceValue);
+  }
 } // namespace
 
 xiiResult xiiGALBindlessResourceTable::Configure(const xiiGALBindlessResourceTableDescription& description)

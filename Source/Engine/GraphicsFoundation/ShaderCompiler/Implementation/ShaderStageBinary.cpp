@@ -2,9 +2,9 @@
 
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <Foundation/Containers/Map.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
-#include <Foundation/Containers/Map.h>
 
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
@@ -25,7 +25,7 @@ struct xiiGALShaderStageBinaryVersion
 class xiiGALShaderStageBinary::CacheState
 {
 public:
-  xiiMutex                                  m_Mutex;
+  xiiMutex                                   m_Mutex;
   xiiMap<xiiUInt32, xiiGALShaderStageBinary> m_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
 };
 

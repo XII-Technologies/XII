@@ -62,14 +62,14 @@ private:
   void SynchronizeMedium();
   void ReleaseMedium();
 
-  xiiEnum<xiiVolumetricMediumShape> m_Shape = xiiVolumetricMediumShape::Box;
+  xiiEnum<xiiVolumetricMediumShape> m_Shape        = xiiVolumetricMediumShape::Box;
   xiiVec3                           m_vHalfExtents = xiiVec3(1.0f);
-  xiiVec3                           m_vScattering = xiiVec3(0.08f);
-  xiiVec3                           m_vAbsorption = xiiVec3(0.02f);
-  xiiVec3                           m_vEmission = xiiVec3::MakeZero();
-  float                             m_fAnisotropy = 0.0f;
-  xiiInt32                          m_iPriority = 0;
-  xiiVolumetricMediumHandle        m_hMedium;
-  xiiTransform                     m_LastGlobalTransform;
-  bool                             m_bSynchronizationDirty = true;
+  xiiVec3                           m_vScattering  = xiiVec3(0.08f);
+  xiiVec3                           m_vAbsorption  = xiiVec3(0.02f);
+  xiiVec3                           m_vEmission    = xiiVec3::MakeZero();
+  float                             m_fAnisotropy  = 0.0f;
+  xiiInt32                          m_iPriority    = 0;
+  xiiVolumetricMediumHandle         m_hMedium;
+  xiiTransform                      m_LastGlobalTransform;
+  bool                              m_bSynchronizationDirty = true;
 };

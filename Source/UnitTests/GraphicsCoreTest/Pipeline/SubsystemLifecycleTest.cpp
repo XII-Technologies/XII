@@ -75,11 +75,11 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Context handles are inert before allocation")
   {
-    const xiiLightingContextHandle       lightingHandle;
-    const xiiRenderGraphContextHandle    renderGraphHandle;
-    const xiiGpuVisibilityContextHandle  visibilityHandle;
-    const xiiSceneDatabaseContextHandle  sceneHandle;
-    const xiiParticleSystemRuntimeHandle particleHandle;
+    const xiiLightingContextHandle           lightingHandle;
+    const xiiRenderGraphContextHandle        renderGraphHandle;
+    const xiiGpuVisibilityContextHandle      visibilityHandle;
+    const xiiSceneDatabaseContextHandle      sceneHandle;
+    const xiiParticleSystemRuntimeHandle     particleHandle;
     const xiiViewRenderResourceContextHandle viewResourceHandle;
 
     XII_TEST_BOOL(!lightingHandle.IsValid());

@@ -22,8 +22,8 @@
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
-#include <GraphicsCore/Lighting/VolumetricMedium.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Lighting/VolumetricMedium.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -59,8 +59,8 @@
 #include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
-#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 #include <Shaders/Pipeline/Passes/Temporal/TAAConstants.h>
+#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/DrawCommandBuildConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/InstanceUpdateConstants.h>
@@ -259,7 +259,7 @@ xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& sett
   if (!xiiDisplayOutputManager::IsValid(settings))
     return XII_FAILURE;
 
-  m_DisplayOutputSettings                                      = settings;
+  m_DisplayOutputSettings                                       = settings;
   m_ViewPassResources->m_TemporalPasses.m_bExposureHistoryValid = false;
   return XII_SUCCESS;
 }
@@ -625,11 +625,11 @@ void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRenderGraphBuilder& 
   if (!m_ViewPassResources->m_VisibilityPasses.m_pInstanceBoundsBuffer)
   {
     xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride                              = 32U; // float3 center + float radius + float3 extents + float pad.
-    description.m_uiSize                                           = description.m_uiElementByteStride * k_uiMaxInstances;
-    description.m_BindFlags                                        = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-    description.m_Mode                                             = xiiGALBufferMode::Structured;
-    description.m_Usage                                            = xiiGALResourceUsage::Default;
+    description.m_uiElementByteStride                               = 32U; // float3 center + float radius + float3 extents + float pad.
+    description.m_uiSize                                            = description.m_uiElementByteStride * k_uiMaxInstances;
+    description.m_BindFlags                                         = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    description.m_Mode                                              = xiiGALBufferMode::Structured;
+    description.m_Usage                                             = xiiGALResourceUsage::Default;
     m_ViewPassResources->m_VisibilityPasses.m_pInstanceBoundsBuffer = pDevice->CreateBuffer(description);
   }
 
@@ -874,11 +874,11 @@ void xiiView::SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRenderGraphBui
   if (!m_ViewPassResources->m_VisibilityPasses.m_pInstanceMatrixBuffer)
   {
     xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride                              = 48U; // float4x3 (3 rows x 4 floats)
-    description.m_uiSize                                           = description.m_uiElementByteStride * k_uiMaxInstances;
-    description.m_BindFlags                                        = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-    description.m_Mode                                             = xiiGALBufferMode::Structured;
-    description.m_Usage                                            = xiiGALResourceUsage::Default;
+    description.m_uiElementByteStride                               = 48U; // float4x3 (3 rows x 4 floats)
+    description.m_uiSize                                            = description.m_uiElementByteStride * k_uiMaxInstances;
+    description.m_BindFlags                                         = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    description.m_Mode                                              = xiiGALBufferMode::Structured;
+    description.m_Usage                                             = xiiGALResourceUsage::Default;
     m_ViewPassResources->m_VisibilityPasses.m_pInstanceMatrixBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
   }
 
@@ -1548,8 +1548,8 @@ struct xiiFroxelAllocationData
   xiiRenderGraphBufferHandle  m_hVolumetricConstants;
   xiiGpuVolumetricMediumArray m_Media;
   xiiUInt32                   m_uiMediumBufferCapacity = 1U;
-  xiiUInt32                   m_uiRenderWidth  = 1920U;
-  xiiUInt32                   m_uiRenderHeight = 1080U;
+  xiiUInt32                   m_uiRenderWidth          = 1920U;
+  xiiUInt32                   m_uiRenderHeight         = 1080U;
 };
 
 void xiiView::SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRenderGraphBuilder& builder)
@@ -1586,14 +1586,14 @@ void xiiView::SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRenderGrap
   mediumBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   mediumBufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
   mediumBufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-  data.m_hVolumetricMedia                        = builder.WriteBuffer("Volumetric Media", mediumBufferDescription, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVolumetricMedia                       = builder.WriteBuffer("Volumetric Media", mediumBufferDescription, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription constantBufferDescription;
   constantBufferDescription.m_uiSize         = sizeof(xiiVolumetricMediumConstants);
   constantBufferDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantBufferDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantBufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hVolumetricConstants                 = builder.WriteBuffer("Volumetric Medium Constants", constantBufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hVolumetricConstants                = builder.WriteBuffer("Volumetric Medium Constants", constantBufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources->m_VisibilityPasses.m_pFroxelSetupPipeline, "Shaders/Pipeline/FroxelSetup.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -1616,7 +1616,7 @@ void xiiView::ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRe
     }
     {
       xiiGALMapHelper<xiiVolumetricMediumConstants> pConstants(cmd, context.GetBuffer(data.m_hVolumetricConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->ActiveMediumCount         = data.m_Media.GetCount();
+      pConstants->ActiveMediumCount        = data.m_Media.GetCount();
       pConstants->_VolumetricMediumPadding = xiiVec3U32::MakeZero();
     }
 
@@ -1777,14 +1777,14 @@ void xiiView::SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRend
   if (!m_ViewPassResources->m_ShadowPasses.m_pDirectionalShadowAtlas)
   {
     xiiGALTextureCreationDescription description;
-    description.m_Type                                           = xiiGALResourceDimension::Texture2DArray;
-    description.m_Format                                         = xiiGALResourceFormat::D32Float;
-    description.m_Size.width                                     = k_uiDirectionalShadowAtlasWidth;
-    description.m_Size.height                                    = k_uiDirectionalShadowAtlasHeight;
-    description.m_uiArraySizeOrDepth                             = 4U;
-    description.m_uiMipLevels                                    = 1U;
-    description.m_BindFlags                                      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                                          = xiiGALResourceUsage::Default;
+    description.m_Type                                            = xiiGALResourceDimension::Texture2DArray;
+    description.m_Format                                          = xiiGALResourceFormat::D32Float;
+    description.m_Size.width                                      = k_uiDirectionalShadowAtlasWidth;
+    description.m_Size.height                                     = k_uiDirectionalShadowAtlasHeight;
+    description.m_uiArraySizeOrDepth                              = 4U;
+    description.m_uiMipLevels                                     = 1U;
+    description.m_BindFlags                                       = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                           = xiiGALResourceUsage::Default;
     m_ViewPassResources->m_ShadowPasses.m_pDirectionalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
 
     XII_ASSERT_DEV(m_ViewPassResources->m_ShadowPasses.m_pDirectionalShadowAtlas != nullptr, "Failed to create the directional shadow atlas.");
@@ -1870,13 +1870,13 @@ void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRenderGraphBuilder
   {
     const xiiUInt32                  uiAtlasSize = m_ViewPassResources->m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
     xiiGALTextureCreationDescription description;
-    description.m_Type                                     = xiiGALResourceDimension::Texture2D;
-    description.m_Format                                   = xiiGALResourceFormat::D32Float;
-    description.m_Size.width                               = uiAtlasSize;
-    description.m_Size.height                              = uiAtlasSize;
-    description.m_uiMipLevels                              = 1U;
-    description.m_BindFlags                                = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                                    = xiiGALResourceUsage::Default;
+    description.m_Type                                      = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                    = xiiGALResourceFormat::D32Float;
+    description.m_Size.width                                = uiAtlasSize;
+    description.m_Size.height                               = uiAtlasSize;
+    description.m_uiMipLevels                               = 1U;
+    description.m_BindFlags                                 = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                     = xiiGALResourceUsage::Default;
     m_ViewPassResources->m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   }
 
@@ -1936,13 +1936,13 @@ void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRenderGraphBuild
   {
     const xiiUInt32                  uiAtlasSize = m_ViewPassResources->m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
     xiiGALTextureCreationDescription description;
-    description.m_Type                                     = xiiGALResourceDimension::Texture2D;
-    description.m_Format                                   = xiiGALResourceFormat::D32Float;
-    description.m_Size.width                               = uiAtlasSize;
-    description.m_Size.height                              = uiAtlasSize;
-    description.m_uiMipLevels                              = 1U;
-    description.m_BindFlags                                = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                                    = xiiGALResourceUsage::Default;
+    description.m_Type                                      = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                    = xiiGALResourceFormat::D32Float;
+    description.m_Size.width                                = uiAtlasSize;
+    description.m_Size.height                               = uiAtlasSize;
+    description.m_uiMipLevels                               = 1U;
+    description.m_BindFlags                                 = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                     = xiiGALResourceUsage::Default;
     m_ViewPassResources->m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   }
 
@@ -3525,22 +3525,22 @@ struct xiiDeferredDirectLightingData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hGBufferAlbedo;            ///< ShaderResource in (G-Buffer albedo).
-  xiiRenderGraphTextureHandle m_hGBufferNormal;            ///< ShaderResource in (G-Buffer normal).
-  xiiRenderGraphTextureHandle m_hGBufferMaterial;          ///< ShaderResource in (G-Buffer material).
-  xiiRenderGraphTextureHandle m_hSceneDepth;               ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hStableAmbientOcclusion;   ///< ShaderResource in (stable ambient occlusion).
-  xiiRenderGraphTextureHandle m_hRayTracedFinalShadowMask; ///< ShaderResource in (denoised ray traced shadows).
-  xiiRenderGraphTextureHandle m_hContactShadowTerm;        ///< ShaderResource in (contact shadow mask).
-  xiiRenderGraphBufferHandle  m_hShadowCascadeConstants;   ///< ConstantBuffer in (directional cascade matrices, split depths, and active count).
-  xiiRenderGraphTextureHandle m_hDirectionalShadowAtlas;   ///< ShaderResource in (directional shadow atlas).
-  xiiRenderGraphTextureHandle m_hLocalShadowAtlas;         ///< ShaderResource in (local light shadow atlas).
-  xiiRenderGraphBufferHandle  m_hLocalShadowAtlasDescriptors;
-  xiiRenderGraphBufferHandle  m_hLightGridBuffer;      ///< ShaderResource in (cluster light grid).
-  xiiRenderGraphBufferHandle  m_hLightIndexBuffer;     ///< ShaderResource in (cluster light indices).
-  xiiRenderGraphTextureHandle m_hDirectLightReservoir; ///< ShaderResource in (spatially reused ReSTIR DI sample).
-  xiiRenderGraphTextureHandle m_hReservoirSurface;     ///< ShaderResource in (history state transition and dependency).
-  xiiRenderGraphBufferHandle  m_hCloudShadowConstants; ///< ConstantBuffer in (world-space cloud shadow projection).
+  xiiRenderGraphTextureHandle       m_hGBufferAlbedo;            ///< ShaderResource in (G-Buffer albedo).
+  xiiRenderGraphTextureHandle       m_hGBufferNormal;            ///< ShaderResource in (G-Buffer normal).
+  xiiRenderGraphTextureHandle       m_hGBufferMaterial;          ///< ShaderResource in (G-Buffer material).
+  xiiRenderGraphTextureHandle       m_hSceneDepth;               ///< ShaderResource in (scene depth texture).
+  xiiRenderGraphTextureHandle       m_hStableAmbientOcclusion;   ///< ShaderResource in (stable ambient occlusion).
+  xiiRenderGraphTextureHandle       m_hRayTracedFinalShadowMask; ///< ShaderResource in (denoised ray traced shadows).
+  xiiRenderGraphTextureHandle       m_hContactShadowTerm;        ///< ShaderResource in (contact shadow mask).
+  xiiRenderGraphBufferHandle        m_hShadowCascadeConstants;   ///< ConstantBuffer in (directional cascade matrices, split depths, and active count).
+  xiiRenderGraphTextureHandle       m_hDirectionalShadowAtlas;   ///< ShaderResource in (directional shadow atlas).
+  xiiRenderGraphTextureHandle       m_hLocalShadowAtlas;         ///< ShaderResource in (local light shadow atlas).
+  xiiRenderGraphBufferHandle        m_hLocalShadowAtlasDescriptors;
+  xiiRenderGraphBufferHandle        m_hLightGridBuffer;      ///< ShaderResource in (cluster light grid).
+  xiiRenderGraphBufferHandle        m_hLightIndexBuffer;     ///< ShaderResource in (cluster light indices).
+  xiiRenderGraphTextureHandle       m_hDirectLightReservoir; ///< ShaderResource in (spatially reused ReSTIR DI sample).
+  xiiRenderGraphTextureHandle       m_hReservoirSurface;     ///< ShaderResource in (history state transition and dependency).
+  xiiRenderGraphBufferHandle        m_hCloudShadowConstants; ///< ConstantBuffer in (world-space cloud shadow projection).
   xiiRenderGraphBufferHandle        m_hVirtualShadowPageTable;
   xiiRenderGraphTextureHandle       m_hVirtualShadowAtlas;
   xiiRenderGraphBufferHandle        m_hVirtualShadowSamplingConstants;
@@ -3580,10 +3580,10 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   data.m_hCloudShadowConstants          = builder.WriteBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
-  constantsDescription.m_uiSize = sizeof(xiiVirtualShadowSamplingConstants);
-  data.m_hVirtualShadowSamplingConstants = builder.WriteBuffer(xiiRGBlackboardKeys::k_VirtualShadowSamplingConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
-  const xiiVirtualShadowMapSettings& virtualShadowSettings = xiiVirtualShadowMapManager::GetConfiguration();
-  const xiiVirtualShadowMapStats     virtualShadowStats    = xiiVirtualShadowMapManager::GetStats();
+  constantsDescription.m_uiSize                                 = sizeof(xiiVirtualShadowSamplingConstants);
+  data.m_hVirtualShadowSamplingConstants                        = builder.WriteBuffer(xiiRGBlackboardKeys::k_VirtualShadowSamplingConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  const xiiVirtualShadowMapSettings& virtualShadowSettings      = xiiVirtualShadowMapManager::GetConfiguration();
+  const xiiVirtualShadowMapStats     virtualShadowStats         = xiiVirtualShadowMapManager::GetStats();
   data.m_VirtualShadowConstants.VirtualShadowPageTableBaseIndex = 0U;
   data.m_VirtualShadowConstants.VirtualShadowPageTableCapacity  = 0U;
   XII_IGNORE_UNUSED(GetBlackboard().TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, data.m_VirtualShadowConstants.VirtualShadowPageTableBaseIndex));
@@ -4510,13 +4510,13 @@ struct xiiVolumetricLightInjectionData
 
 void xiiView::SetupVolumetricLightInjection(xiiVolumetricLightInjectionData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hFroxelScattering           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hFroxelMetadata             = builder.ReadBuffer(xiiRGBlackboardKeys::k_FroxelMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLightGridBuffer            = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLightIndexBuffer           = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hShadowCascadeConstants     = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
-  data.m_hDirectionalShadowAtlas     = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLocalShadowAtlas           = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFroxelScattering            = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hFroxelMetadata              = builder.ReadBuffer(xiiRGBlackboardKeys::k_FroxelMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightGridBuffer             = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightIndexBuffer            = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hShadowCascadeConstants      = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hDirectionalShadowAtlas      = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlas            = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
   data.m_hCloudShadowConstants        = builder.ReadBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, xiiGALResourceStateFlags::ConstantBuffer);
 
@@ -4612,7 +4612,7 @@ struct xiiVolumetricFogResolveData
 void xiiView::SetupVolumetricFogResolve(xiiVolumetricFogResolveData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hFroxelIntegratedBuffer = builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelIntegratedBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneDepth              = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth             = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
@@ -4662,7 +4662,7 @@ struct xiiVolumetricFogTemporalReprojectionData
   xiiRenderGraphTextureHandle m_hVolumetricScattering; ///< UnorderedAccess out (current persistent history and final signal).
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiMat4                     m_PreviousViewProjection = xiiMat4::MakeIdentity();
-  bool                        m_bHistoryValid = false;
+  bool                        m_bHistoryValid          = false;
 };
 
 void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphBuilder& builder)
@@ -4678,22 +4678,22 @@ void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalRep
     resources.m_bVolumetricHistoryValid = false;
   }
 
-  const auto& depthPasses      = m_ViewPassResources->m_DepthPasses;
-  data.m_bHistoryValid         = resources.m_bVolumetricHistoryValid && depthPasses.m_bMotionHistoryValid;
+  const auto& depthPasses       = m_ViewPassResources->m_DepthPasses;
+  data.m_bHistoryValid          = resources.m_bVolumetricHistoryValid && depthPasses.m_bMotionHistoryValid;
   data.m_PreviousViewProjection = depthPasses.m_bMotionHistoryValid ? depthPasses.m_PreviousViewProjectionMatrix : GetViewProjectionMatrix(xiiCameraEye::Left);
-  data.m_hCurrentScattering    = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousScattering   = builder.ReadTexture(builder.ImportTexture("Volumetric Scattering Previous", resources.m_pVolumetricHistory[uiPreviousSlot], resources.m_pVolumetricHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneDepth           = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal        = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVelocity             = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hPreviousSurface      = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
-  data.m_hVolumetricScattering = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_VolumetricScattering, resources.m_pVolumetricHistory[uiCurrentSlot], resources.m_pVolumetricHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hCurrentScattering     = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScatteringRaw, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousScattering    = builder.ReadTexture(builder.ImportTexture("Volumetric Scattering Previous", resources.m_pVolumetricHistory[uiPreviousSlot], resources.m_pVolumetricHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth            = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal         = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity              = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousSurface       = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVolumetricScattering  = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_VolumetricScattering, resources.m_pVolumetricHistory[uiCurrentSlot], resources.m_pVolumetricHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
   xiiGALBufferCreationDescription constantsDescription;
   constantsDescription.m_uiSize         = sizeof(xiiVolumetricTemporalConstants);
   constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                      = builder.WriteBuffer("Volumetric Temporal Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hConstants                     = builder.WriteBuffer("Volumetric Temporal Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiView::EnsureComputePipeline(resources.m_pVolumetricTemporalPipeline, "Shaders/Pipeline/VolumetricFogTemporalRep.xiiShader");
   builder.SetPassAllowMerge(false);
@@ -5331,10 +5331,10 @@ void xiiView::SetupDecalUpload(xiiDecalUploadData& data, xiiRenderGraphBuilder& 
 
     if (m_ViewPassResources->m_TransparencyPasses.m_pFallbackDecalAtlasSampler == nullptr)
     {
-      xiiGALSamplerCreationDescription samplerDescription                   = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
-      samplerDescription.m_AddressU                                         = xiiGALTextureAddressMode::Clamp;
-      samplerDescription.m_AddressV                                         = xiiGALTextureAddressMode::Clamp;
-      samplerDescription.m_AddressW                                         = xiiGALTextureAddressMode::Clamp;
+      xiiGALSamplerCreationDescription samplerDescription                    = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
+      samplerDescription.m_AddressU                                          = xiiGALTextureAddressMode::Clamp;
+      samplerDescription.m_AddressV                                          = xiiGALTextureAddressMode::Clamp;
+      samplerDescription.m_AddressW                                          = xiiGALTextureAddressMode::Clamp;
       m_ViewPassResources->m_TransparencyPasses.m_pFallbackDecalAtlasSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(samplerDescription);
     }
   };
@@ -6619,7 +6619,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   bool      bResult      = blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
   XII_IGNORE_UNUSED(bResult);
 
-  const xiiRayTracingSceneManager::BuildHandles rayTracingScene     = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
+  const xiiRayTracingSceneManager::BuildHandles rayTracingScene      = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
   m_ViewPassResources->m_LightingPasses.m_pRayTracingScene           = rayTracingScene.m_pTopLevelAS;
   m_ViewPassResources->m_LightingPasses.m_hRayTracingSceneDependency = rayTracingScene.m_hSceneDependency;
   m_ViewPassResources->m_LightingPasses.m_hRayTracingMaterialData    = rayTracingScene.m_hMaterialData;

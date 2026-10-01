@@ -4,8 +4,8 @@
 
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/Math/Vec3.h>
 #include <Foundation/Math/Quat.h>
+#include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
@@ -44,16 +44,16 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVolumetricMediumHandle);
 /// Coefficients use inverse metres. Scattering plus absorption is the extinction coefficient.
 struct XII_GRAPHICSCORE_DLL xiiVolumetricMediumDescription
 {
-  xiiEnum<xiiVolumetricMediumShape> m_Shape = xiiVolumetricMediumShape::Box;
-  xiiVec3                           m_vCenter = xiiVec3::MakeZero();
-  xiiQuat                           m_qRotation = xiiQuat::MakeIdentity();
+  xiiEnum<xiiVolumetricMediumShape> m_Shape        = xiiVolumetricMediumShape::Box;
+  xiiVec3                           m_vCenter      = xiiVec3::MakeZero();
+  xiiQuat                           m_qRotation    = xiiQuat::MakeIdentity();
   xiiVec3                           m_vHalfExtents = xiiVec3(1.0f);
-  xiiVec3                           m_vScattering = xiiVec3(0.08f);
-  xiiVec3                           m_vAbsorption = xiiVec3(0.02f);
-  xiiVec3                           m_vEmission = xiiVec3::MakeZero();
-  float                             m_fAnisotropy = 0.0f;
-  xiiInt32                          m_iPriority = 0;
-  bool                              m_bEnabled = true;
+  xiiVec3                           m_vScattering  = xiiVec3(0.08f);
+  xiiVec3                           m_vAbsorption  = xiiVec3(0.02f);
+  xiiVec3                           m_vEmission    = xiiVec3::MakeZero();
+  float                             m_fAnisotropy  = 0.0f;
+  xiiInt32                          m_iPriority    = 0;
+  bool                              m_bEnabled     = true;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVolumetricMediumDescription);
@@ -61,10 +61,10 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVolumetricMediumDescriptio
 /// Configuration of the sparse world-cell hierarchy used for medium streaming.
 struct XII_GRAPHICSCORE_DLL xiiVolumetricMediumSettings
 {
-  float     m_fCellSizeMeters       = 64.0f;
-  float     m_fViewDistanceMeters   = 512.0f;
-  xiiUInt32 m_uiMaxVisibleMedia     = 32U;
-  xiiUInt32 m_uiMaxCellsPerMedium   = 4096U;
+  float     m_fCellSizeMeters     = 64.0f;
+  float     m_fViewDistanceMeters = 512.0f;
+  xiiUInt32 m_uiMaxVisibleMedia   = 32U;
+  xiiUInt32 m_uiMaxCellsPerMedium = 4096U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVolumetricMediumSettings);
@@ -89,8 +89,8 @@ using xiiGpuVolumetricMediumArray = xiiDynamicArray<xiiGpuVolumetricMedium, xiiA
 
 struct XII_GRAPHICSCORE_DLL xiiVolumetricMediumStats
 {
-  xiiUInt32 m_uiRegisteredMedia = 0U;
-  xiiUInt32 m_uiResidentCells   = 0U;
+  xiiUInt32 m_uiRegisteredMedia  = 0U;
+  xiiUInt32 m_uiResidentCells    = 0U;
   xiiUInt32 m_uiStreamedOutCells = 0U;
 };
 
@@ -109,21 +109,21 @@ class XII_GRAPHICSCORE_DLL xiiVolumetricMediumManager
 public:
   xiiVolumetricMediumManager() = delete;
 
-  [[nodiscard]] static bool IsSubsystemInitialized();
-  [[nodiscard]] static xiiResult Configure(const xiiVolumetricMediumSettings& settings);
+  [[nodiscard]] static bool                               IsSubsystemInitialized();
+  [[nodiscard]] static xiiResult                          Configure(const xiiVolumetricMediumSettings& settings);
   [[nodiscard]] static const xiiVolumetricMediumSettings& GetConfiguration();
 
   [[nodiscard]] static xiiVolumetricMediumHandle RegisterMedium(const xiiVolumetricMediumDescription& description);
-  static void                                          UnregisterMedium(xiiVolumetricMediumHandle handle);
-  [[nodiscard]] static xiiResult                       UpdateMedium(xiiVolumetricMediumHandle handle, const xiiVolumetricMediumDescription& description);
-  [[nodiscard]] static bool                            IsValid(xiiVolumetricMediumHandle handle);
+  static void                                    UnregisterMedium(xiiVolumetricMediumHandle handle);
+  [[nodiscard]] static xiiResult                 UpdateMedium(xiiVolumetricMediumHandle handle, const xiiVolumetricMediumDescription& description);
+  [[nodiscard]] static bool                      IsValid(xiiVolumetricMediumHandle handle);
 
   /// Changes streaming residency for one spatial cell. Medium handles remain valid while streamed out.
-  static void SetCellResident(const xiiVec3I32& vCell, bool bResident);
+  static void               SetCellResident(const xiiVec3I32& vCell, bool bResident);
   [[nodiscard]] static bool IsCellResident(const xiiVec3I32& vCell);
 
   /// Builds the bounded GPU working set for a view. The result is deterministic for identical state.
-  static void GatherGpuMedia(const xiiVec3& vViewPosition, xiiGpuVolumetricMediumArray& out_media);
+  static void                                   GatherGpuMedia(const xiiVec3& vViewPosition, xiiGpuVolumetricMediumArray& out_media);
   [[nodiscard]] static xiiVolumetricMediumStats GetStats();
 
   [[nodiscard]] static xiiUInt64 PackCellKey(const xiiVec3I32& vCell);

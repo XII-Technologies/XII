@@ -40,8 +40,8 @@ XII_CREATE_SIMPLE_TEST(VolumetricMedium, StreamingHierarchy)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Streaming cells preserve stable handles")
   {
     xiiVolumetricMediumDescription description;
-    description.m_vCenter      = xiiVec3(8.0f, 8.0f, 8.0f);
-    description.m_vHalfExtents = xiiVec3(1.0f);
+    description.m_vCenter                  = xiiVec3(8.0f, 8.0f, 8.0f);
+    description.m_vHalfExtents             = xiiVec3(1.0f);
     const xiiVolumetricMediumHandle handle = xiiVolumetricMediumManager::RegisterMedium(description);
     XII_TEST_BOOL(handle.IsValid());
 

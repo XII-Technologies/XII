@@ -16,8 +16,8 @@ struct xiiGALDeviceFactory::CreatorFuncInfo
 class xiiGALDeviceFactory::State
 {
 public:
-  xiiMutex                                  m_Mutex;
-  xiiHashTable<xiiString, CreatorFuncInfo>  m_CreatorFunctions;
+  xiiMutex                                 m_Mutex;
+  xiiHashTable<xiiString, CreatorFuncInfo> m_CreatorFunctions;
 };
 
 xiiUniquePtr<xiiGALDeviceFactory::State> xiiGALDeviceFactory::s_pState;

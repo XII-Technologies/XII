@@ -97,7 +97,7 @@ xiiResult xiiVolumetricMediumComponent::GetLocalBounds(xiiBoundingBoxSphere& out
 {
   XII_IGNORE_UNUSED(ref_msg);
   out_bAlwaysVisible = false;
-  out_bounds = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), m_vHalfExtents, m_vHalfExtents.GetLength());
+  out_bounds         = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), m_vHalfExtents, m_vHalfExtents.GetLength());
   return XII_SUCCESS;
 }
 
@@ -105,7 +105,7 @@ void xiiVolumetricMediumComponent::SetShape(xiiEnum<xiiVolumetricMediumShape> sh
 {
   if (m_Shape == shape)
     return;
-  m_Shape = shape;
+  m_Shape                 = shape;
   m_bSynchronizationDirty = true;
   SynchronizeMedium();
 }
@@ -117,7 +117,7 @@ void xiiVolumetricMediumComponent::SetHalfExtents(xiiVec3 vHalfExtents)
   vHalfExtents = vHalfExtents.CompMax(xiiVec3(0.01f));
   if (m_vHalfExtents == vHalfExtents)
     return;
-  m_vHalfExtents = vHalfExtents;
+  m_vHalfExtents          = vHalfExtents;
   m_bSynchronizationDirty = true;
   TriggerLocalBoundsUpdate();
   SynchronizeMedium();
@@ -127,7 +127,7 @@ xiiVec3 xiiVolumetricMediumComponent::GetHalfExtents() const { return m_vHalfExt
 
 void xiiVolumetricMediumComponent::SetScattering(xiiVec3 vScattering)
 {
-  m_vScattering = vScattering.CompMax(xiiVec3::MakeZero());
+  m_vScattering           = vScattering.CompMax(xiiVec3::MakeZero());
   m_bSynchronizationDirty = true;
   SynchronizeMedium();
 }
@@ -136,7 +136,7 @@ xiiVec3 xiiVolumetricMediumComponent::GetScattering() const { return m_vScatteri
 
 void xiiVolumetricMediumComponent::SetAbsorption(xiiVec3 vAbsorption)
 {
-  m_vAbsorption = vAbsorption.CompMax(xiiVec3::MakeZero());
+  m_vAbsorption           = vAbsorption.CompMax(xiiVec3::MakeZero());
   m_bSynchronizationDirty = true;
   SynchronizeMedium();
 }
@@ -145,7 +145,7 @@ xiiVec3 xiiVolumetricMediumComponent::GetAbsorption() const { return m_vAbsorpti
 
 void xiiVolumetricMediumComponent::SetEmission(xiiVec3 vEmission)
 {
-  m_vEmission = vEmission.CompMax(xiiVec3::MakeZero());
+  m_vEmission             = vEmission.CompMax(xiiVec3::MakeZero());
   m_bSynchronizationDirty = true;
   SynchronizeMedium();
 }
@@ -154,7 +154,7 @@ xiiVec3 xiiVolumetricMediumComponent::GetEmission() const { return m_vEmission; 
 
 void xiiVolumetricMediumComponent::SetAnisotropy(float fAnisotropy)
 {
-  m_fAnisotropy = xiiMath::Clamp(fAnisotropy, -0.95f, 0.95f);
+  m_fAnisotropy           = xiiMath::Clamp(fAnisotropy, -0.95f, 0.95f);
   m_bSynchronizationDirty = true;
   SynchronizeMedium();
 }
@@ -163,7 +163,7 @@ float xiiVolumetricMediumComponent::GetAnisotropy() const { return m_fAnisotropy
 
 void xiiVolumetricMediumComponent::SetPriority(xiiInt32 iPriority)
 {
-  m_iPriority = iPriority;
+  m_iPriority             = iPriority;
   m_bSynchronizationDirty = true;
   SynchronizeMedium();
 }

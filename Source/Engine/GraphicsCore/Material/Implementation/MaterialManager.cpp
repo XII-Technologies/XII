@@ -88,7 +88,7 @@ namespace
   template <typename ResourceHandle>
   void RetireUnreferencedTextures(
     xiiHashTable<ResourceHandle, MaterialTextureBindingCacheEntry<ResourceHandle>>& cache,
-    xiiUInt64 uiFrameIndex)
+    xiiUInt64                                                                       uiFrameIndex)
   {
     for (auto it = cache.GetIterator(); it.IsValid();)
     {
@@ -106,7 +106,7 @@ namespace
   template <typename ResourceHandle>
   void RetireAllTextures(
     xiiHashTable<ResourceHandle, MaterialTextureBindingCacheEntry<ResourceHandle>>& cache,
-    xiiUInt64 uiFrameIndex)
+    xiiUInt64                                                                       uiFrameIndex)
   {
     for (auto it = cache.GetIterator(); it.IsValid(); ++it)
       xiiGALBindlessResourceTable::RetireTextureSRV(it.Value().m_hBindless, uiFrameIndex);

@@ -816,7 +816,6 @@ private:
       xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_RetiredSensorOutputTextures; ///< Kept alive until the view is destroyed so profile changes cannot race in-flight GPU work.
       xiiSensorProfileHandle                       m_hSensorProfile;
     } m_OutputPasses;
-
   };
 
   struct ViewPassResourceContext

@@ -95,7 +95,7 @@ xiiViewRenderResourceContextHandle xiiViewRenderResourceManager::CreateContext()
   }
 
   xiiViewRenderResourceManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-  slot.m_pResources                            = XII_DEFAULT_NEW(xiiView::ViewPassResources);
+  slot.m_pResources                             = XII_DEFAULT_NEW(xiiView::ViewPassResources);
 
   xiiViewRenderResourceContextHandle handle;
   handle.m_uiIndex      = uiIndex;
