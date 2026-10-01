@@ -150,6 +150,7 @@ public:
   xiiVirtualShadowMapManager() = delete;
 
   [[nodiscard]] static xiiResult Configure(const xiiVirtualShadowMapSettings& settings);
+  [[nodiscard]] static bool      IsSubsystemInitialized();
   [[nodiscard]] static bool      IsInitialized();
 
   /// Starts a residency frame. completedFrame is the newest frame whose GPU

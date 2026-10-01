@@ -40,6 +40,7 @@ class XII_GRAPHICSCORE_DLL xiiLightingManager
 public:
   xiiLightingManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
   [[nodiscard]] static xiiLightingContextHandle CreateContext(const xiiLightingSystemSettings& settings = {});

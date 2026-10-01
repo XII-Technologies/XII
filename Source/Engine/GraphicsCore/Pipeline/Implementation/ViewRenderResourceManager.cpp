@@ -66,6 +66,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiViewRenderResourceContextHandle, xiiNoBase, 1
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
+bool xiiViewRenderResourceManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiViewRenderResourceManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();

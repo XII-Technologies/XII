@@ -37,6 +37,8 @@ class XII_GRAPHICSCORE_DLL xiiGpuShadowRasterManager
 public:
   xiiGpuShadowRasterManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
+  [[nodiscard]] static bool IsInitialized();
   [[nodiscard]] static bool IsSupported();
 
   /// Adds one graph-managed depth-only mesh dispatch. The returned handle is the new atlas version.

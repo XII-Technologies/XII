@@ -276,6 +276,11 @@ xiiResult xiiSparseVoxelRadianceManager::Configure(const xiiSparseVoxelRadianceS
   return XII_SUCCESS;
 }
 
+bool xiiSparseVoxelRadianceManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiSparseVoxelRadianceManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bInitialized;

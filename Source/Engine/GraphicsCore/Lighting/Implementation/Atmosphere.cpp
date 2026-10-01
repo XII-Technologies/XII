@@ -200,6 +200,11 @@ xiiResult xiiAtmosphereManager::Configure(const xiiAtmosphereSettings& settings)
   return XII_SUCCESS;
 }
 
+bool xiiAtmosphereManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiAtmosphereManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bInitialized;

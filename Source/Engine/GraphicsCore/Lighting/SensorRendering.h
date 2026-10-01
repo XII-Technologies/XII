@@ -145,6 +145,7 @@ class XII_GRAPHICSCORE_DLL xiiSensorRenderingManager
 public:
   xiiSensorRenderingManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
   [[nodiscard]] static bool IsValidProfile(const xiiSensorProfile& profile);
 

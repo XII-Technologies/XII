@@ -87,6 +87,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderPassCache)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
+bool xiiGALRenderPassCache::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiGALRenderPassCache::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_pDevice != nullptr;

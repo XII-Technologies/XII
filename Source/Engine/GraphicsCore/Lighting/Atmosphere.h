@@ -74,6 +74,7 @@ public:
   xiiAtmosphereManager() = delete;
 
   [[nodiscard]] static xiiResult                    Configure(const xiiAtmosphereSettings& settings);
+  [[nodiscard]] static bool                         IsSubsystemInitialized();
   [[nodiscard]] static bool                         IsInitialized();
   [[nodiscard]] static const xiiAtmosphereSettings& GetConfiguration();
 

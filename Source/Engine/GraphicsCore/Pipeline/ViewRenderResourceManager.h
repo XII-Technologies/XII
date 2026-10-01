@@ -40,6 +40,7 @@ class XII_GRAPHICSCORE_DLL xiiViewRenderResourceManager
 public:
   xiiViewRenderResourceManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
 private:

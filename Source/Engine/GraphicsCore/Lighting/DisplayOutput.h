@@ -128,6 +128,7 @@ class XII_GRAPHICSCORE_DLL xiiDisplayOutputManager
 public:
   xiiDisplayOutputManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
   [[nodiscard]] static bool IsValid(const xiiExposureSettings& settings);
   [[nodiscard]] static bool IsValid(const xiiDisplayOutputSettings& settings);

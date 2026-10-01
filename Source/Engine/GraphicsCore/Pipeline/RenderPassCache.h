@@ -18,6 +18,7 @@ class XII_GRAPHICSCORE_DLL xiiGALRenderPassCache
 public:
   xiiGALRenderPassCache() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
   /// Creates a render pass or retrieves it from the cache.

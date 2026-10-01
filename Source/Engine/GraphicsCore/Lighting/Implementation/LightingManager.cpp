@@ -67,6 +67,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingContextHandle, xiiNoBase, 1, xiiRTTID
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
+bool xiiLightingManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiLightingManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();

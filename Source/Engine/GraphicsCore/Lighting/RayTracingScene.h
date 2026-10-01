@@ -100,6 +100,7 @@ public:
 
   [[nodiscard]] static xiiResult                            Configure(const xiiRayTracingSceneDescription& description);
   [[nodiscard]] static const xiiRayTracingSceneDescription& GetConfiguration();
+  [[nodiscard]] static bool                                 IsSubsystemInitialized();
   [[nodiscard]] static bool                                 IsInitialized();
   [[nodiscard]] static bool                                 IsHardwareRayTracingSupported();
 

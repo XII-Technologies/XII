@@ -67,6 +67,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityContextHandle, xiiNoBase, 1, xii
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
+bool xiiGpuVisibilityManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiGpuVisibilityManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();

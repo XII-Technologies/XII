@@ -89,6 +89,11 @@ namespace
   }
 } // namespace
 
+bool xiiParticleSystemManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiParticleSystemManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bEngineStarted;

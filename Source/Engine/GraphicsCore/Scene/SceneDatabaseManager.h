@@ -34,6 +34,7 @@ class XII_GRAPHICSCORE_DLL xiiSceneDatabaseManager
 public:
   xiiSceneDatabaseManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
   [[nodiscard]] static xiiSceneDatabaseContextHandle CreateContext(xiiUInt32 uiInitialCapacity = 0U);

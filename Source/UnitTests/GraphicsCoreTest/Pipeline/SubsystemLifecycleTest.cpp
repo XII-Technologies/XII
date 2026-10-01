@@ -48,6 +48,28 @@ XII_CREATE_SIMPLE_TEST_GROUP(Pipeline);
 
 XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Graphics services are subsystem owned")
+  {
+    XII_TEST_BOOL(xiiGeometryResidencyManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiGpuVisibilityManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiLightingManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiGpuShadowRasterManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiVirtualShadowMapManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiDDGIManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiSparseVoxelRadianceManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiAtmosphereManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiRayTracingSceneManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiSensorRenderingManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiDisplayOutputManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiMaterialManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiParticleSystemManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiGALPipelineCache::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiGALRenderPassCache::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiRenderGraphManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiViewRenderResourceManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiSceneDatabaseManager::IsSubsystemInitialized());
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Context handles are inert before allocation")
   {
     const xiiLightingContextHandle       lightingHandle;

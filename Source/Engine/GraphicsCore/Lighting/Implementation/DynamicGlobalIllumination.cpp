@@ -263,6 +263,11 @@ xiiResult xiiDDGIManager::Configure(const xiiDDGISettings& settings)
   return XII_SUCCESS;
 }
 
+bool xiiDDGIManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiDDGIManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bInitialized;

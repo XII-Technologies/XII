@@ -18,6 +18,7 @@ class XII_GRAPHICSCORE_DLL xiiGALPipelineCache
 public:
   xiiGALPipelineCache() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
   /// Creates a pipeline or retrieves it from the cache.

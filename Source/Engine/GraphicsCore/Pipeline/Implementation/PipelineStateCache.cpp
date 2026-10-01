@@ -91,6 +91,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, PipelineCache)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
+bool xiiGALPipelineCache::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiGALPipelineCache::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_pDevice != nullptr;

@@ -39,6 +39,7 @@ class XII_GRAPHICSCORE_DLL xiiGpuVisibilityManager
 public:
   xiiGpuVisibilityManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
   /// Creates an isolated visibility context on the current default GAL device.

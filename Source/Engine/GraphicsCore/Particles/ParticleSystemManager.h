@@ -20,6 +20,7 @@ class XII_GRAPHICSCORE_DLL xiiParticleSystemManager
 public:
   xiiParticleSystemManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
   [[nodiscard]] static xiiParticleSystemRuntimeHandle CreateRuntime(xiiSharedPtr<xiiGALDevice> pDevice, const xiiParticleSystemDescriptor& descriptor);

@@ -228,6 +228,11 @@ const xiiGeometryResidencyDescription& xiiGeometryResidencyManager::GetConfigura
   return s_pState != nullptr ? s_pState->m_Configuration : s_DefaultConfiguration;
 }
 
+bool xiiGeometryResidencyManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiGeometryResidencyManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bInitialized;

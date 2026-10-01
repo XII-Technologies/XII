@@ -100,6 +100,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDisplayOutputSettings, xiiNoBase, 2, xiiRTTID
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
+bool xiiDisplayOutputManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiDisplayOutputManager::IsInitialized()
 {
   return s_pState != nullptr;

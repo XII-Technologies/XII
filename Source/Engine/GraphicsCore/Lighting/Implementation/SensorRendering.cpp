@@ -126,6 +126,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfileRegistryStats, xiiNoBase, 1, xii
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
+bool xiiSensorRenderingManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiSensorRenderingManager::IsInitialized()
 {
   return s_pState != nullptr;

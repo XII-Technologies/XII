@@ -388,6 +388,11 @@ xiiResult xiiVirtualShadowMapManager::Configure(const xiiVirtualShadowMapSetting
   return XII_SUCCESS;
 }
 
+bool xiiVirtualShadowMapManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiVirtualShadowMapManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bInitialized;

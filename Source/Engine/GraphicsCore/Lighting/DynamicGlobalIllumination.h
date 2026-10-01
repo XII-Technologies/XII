@@ -124,6 +124,7 @@ public:
   xiiDDGIManager() = delete;
 
   [[nodiscard]] static xiiResult Configure(const xiiDDGISettings& settings);
+  [[nodiscard]] static bool      IsSubsystemInitialized();
   [[nodiscard]] static bool      IsInitialized();
 
   static void BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);

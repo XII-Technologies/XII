@@ -440,6 +440,11 @@ const xiiRayTracingSceneDescription& xiiRayTracingSceneManager::GetConfiguration
   return s_pState != nullptr ? s_pState->m_Configuration : s_Default;
 }
 
+bool xiiRayTracingSceneManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiRayTracingSceneManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bInitialized;

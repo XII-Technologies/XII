@@ -171,6 +171,11 @@ xiiResult xiiMaterialManager::Configure(const xiiMaterialGpuStorageDescription& 
   return s_pState->m_bEngineStarted ? ApplyConfiguration() : XII_SUCCESS;
 }
 
+bool xiiMaterialManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiMaterialManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bInitialized;

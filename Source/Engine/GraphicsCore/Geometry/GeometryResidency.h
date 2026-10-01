@@ -133,6 +133,7 @@ public:
   /// Stores startup configuration or reapplies it while no geometry handles are active.
   [[nodiscard]] static xiiResult                              Configure(const xiiGeometryResidencyDescription& description);
   [[nodiscard]] static const xiiGeometryResidencyDescription& GetConfiguration();
+  [[nodiscard]] static bool                                   IsSubsystemInitialized();
   [[nodiscard]] static bool                                   IsInitialized();
 
   [[nodiscard]] static xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);

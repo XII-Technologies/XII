@@ -21,6 +21,7 @@ class xiiGpuShadowRasterManagerState
 {
 public:
   xiiShaderPermutationResourceHandle m_hShaderPermutation;
+  bool                               m_bEngineStarted        = false;
   bool                               m_bMeshShadersSupported = false;
 };
 
@@ -100,9 +101,19 @@ namespace
   };
 } // namespace
 
+bool xiiGpuShadowRasterManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiGpuShadowRasterManager::IsSupported()
 {
-  return s_pState != nullptr && s_pState->m_bMeshShadersSupported && s_pState->m_hShaderPermutation.IsValid();
+  return IsInitialized() && s_pState->m_bMeshShadersSupported && s_pState->m_hShaderPermutation.IsValid();
+}
+
+bool xiiGpuShadowRasterManager::IsInitialized()
+{
+  return s_pState != nullptr && s_pState->m_bEngineStarted;
 }
 
 xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& graph, xiiStringView sName,
@@ -209,6 +220,7 @@ void xiiGpuShadowRasterManager::EngineStartup()
   if (s_pState == nullptr)
     return;
 
+  s_pState->m_bEngineStarted                = true;
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   s_pState->m_bMeshShadersSupported        = pDevice != nullptr && pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled;
   if (!s_pState->m_bMeshShadersSupported)
@@ -225,6 +237,7 @@ void xiiGpuShadowRasterManager::EngineShutdown()
 
   s_pState->m_hShaderPermutation.Invalidate();
   s_pState->m_bMeshShadersSupported = false;
+  s_pState->m_bEngineStarted        = false;
 }
 
 void xiiGpuShadowRasterManager::Shutdown()

@@ -63,6 +63,11 @@ namespace
   }
 } // namespace
 
+bool xiiSceneDatabaseManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiSceneDatabaseManager::IsInitialized()
 {
   return s_pState != nullptr;

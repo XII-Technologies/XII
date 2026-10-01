@@ -85,6 +85,7 @@ public:
 
   xiiRenderGraphManager() = delete;
 
+  [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
   /// Creates an isolated graph, blackboard, transient cache, and timestamp profiler.

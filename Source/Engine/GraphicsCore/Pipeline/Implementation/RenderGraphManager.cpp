@@ -162,6 +162,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderGraphContextHandle, xiiNoBase, 1, xiiRT
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
+bool xiiRenderGraphManager::IsSubsystemInitialized()
+{
+  return s_pState != nullptr;
+}
+
 bool xiiRenderGraphManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();
