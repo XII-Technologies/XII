@@ -7,20 +7,21 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
 /// CPU-side residency configuration for the virtual shadow-map physical cache.
 struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapSettings
 {
-  xiiUInt32 m_uiVirtualResolution   = 16384U;
-  xiiUInt32 m_uiPageSize            = 128U;
-  xiiUInt32 m_uiPhysicalPageCount   = 4096U;
-  xiiUInt32 m_uiMaxFeedbackRequests = 16384U;
-  xiiUInt32 m_uiMaxPageAllocations  = 512U;
-  xiiUInt32 m_uiFramesInFlight      = 3U;
+  xiiUInt32 m_uiVirtualResolution     = 16384U;
+  xiiUInt32 m_uiPageSize              = 128U;
+  xiiUInt32 m_uiPhysicalPageCount     = 4096U;
+  xiiUInt32 m_uiMaxFeedbackRequests   = 16384U;
+  xiiUInt32 m_uiMaxPageAllocations    = 512U;
+  xiiUInt32 m_uiMaxPageRasterizations = 128U;
+  xiiUInt32 m_uiFramesInFlight        = 3U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowMapSettings);
@@ -129,16 +130,18 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapStats
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiResidentPageCount    = 0U;
-  xiiUInt32 m_uiFreePageCount        = 0U;
-  xiiUInt32 m_uiFeedbackRequestCount = 0U;
-  xiiUInt32 m_uiUniqueRequestCount   = 0U;
-  xiiUInt32 m_uiAllocationCount      = 0U;
-  xiiUInt32 m_uiEvictionCount        = 0U;
-  xiiUInt32 m_uiDroppedRequestCount  = 0U;
-  xiiUInt32 m_uiDirtyPageCount       = 0U;
-  xiiUInt32 m_uiPhysicalAtlasWidth   = 0U;
-  xiiUInt32 m_uiPhysicalAtlasHeight  = 0U;
+  xiiUInt32 m_uiResidentPageCount        = 0U;
+  xiiUInt32 m_uiFreePageCount            = 0U;
+  xiiUInt32 m_uiFeedbackRequestCount     = 0U;
+  xiiUInt32 m_uiUniqueRequestCount       = 0U;
+  xiiUInt32 m_uiAllocationCount          = 0U;
+  xiiUInt32 m_uiEvictionCount            = 0U;
+  xiiUInt32 m_uiDroppedRequestCount      = 0U;
+  xiiUInt32 m_uiInvalidationCount        = 0U;
+  xiiUInt32 m_uiRasterizedPageCount      = 0U;
+  xiiUInt32 m_uiDirtyPageCount           = 0U;
+  xiiUInt32 m_uiPhysicalAtlasWidth       = 0U;
+  xiiUInt32 m_uiPhysicalAtlasHeight      = 0U;
   xiiUInt32 m_uiVirtualPageTableCapacity = 0U;
 };
 
@@ -173,7 +176,17 @@ public:
   [[nodiscard]] static bool                                           TryGetMapping(const xiiVirtualShadowPageId& page, xiiVirtualShadowPageMapping& out_mapping);
   [[nodiscard]] static xiiArrayPtr<const xiiVirtualShadowPageUpdate>  GetPageTableUpdates();
   [[nodiscard]] static xiiArrayPtr<const xiiVirtualShadowPageMapping> GetDirtyPages();
-  static void                                                         MarkPageRendered(xiiUInt32 uiPhysicalPage);
+  /// Marks one resident page dirty after an occluder, light, or projection change.
+  /// Call before graph setup; the page remains sampleable in the same frame once
+  /// AddRasterPasses has completed its atlas and page-table writes.
+  [[nodiscard]] static bool InvalidatePage(const xiiVirtualShadowPageId& page);
+  /// Invalidates resident pages inside a virtual page-space rectangle.
+  [[nodiscard]] static xiiUInt32 InvalidateRegion(xiiUInt32 uiLightId, xiiUInt32 uiMipLevel, const xiiRectU32& pageRegion);
+  /// Invalidates every resident page owned by one stable light identifier.
+  [[nodiscard]] static xiiUInt32 InvalidateLight(xiiUInt32 uiLightId);
+  /// Invalidates all resident pages, for example after a scene-wide origin shift.
+  [[nodiscard]] static xiiUInt32 InvalidateAll();
+  static void                    MarkPageRendered(xiiUInt32 uiPhysicalPage);
 
   [[nodiscard]] static xiiVirtualShadowMapStats           GetStats();
   [[nodiscard]] static const xiiVirtualShadowMapSettings& GetConfiguration();
@@ -193,13 +206,13 @@ public:
 
   struct UploadHandles
   {
-    xiiRenderGraphBufferHandle m_hPhysicalPageTable;
-    xiiRenderGraphBufferHandle m_hVirtualPageTable;
+    xiiRenderGraphBufferHandle  m_hPhysicalPageTable;
+    xiiRenderGraphBufferHandle  m_hVirtualPageTable;
     xiiRenderGraphTextureHandle m_hPhysicalAtlas;
-    xiiUInt32                  m_uiFrameBaseIndex    = 0U;
-    xiiUInt32                  m_uiPhysicalPageCount = 0U;
-    xiiUInt32                  m_uiVirtualTableBaseIndex = 0U;
-    xiiUInt32                  m_uiVirtualTableCapacity  = 0U;
+    xiiUInt32                   m_uiFrameBaseIndex        = 0U;
+    xiiUInt32                   m_uiPhysicalPageCount     = 0U;
+    xiiUInt32                   m_uiVirtualTableBaseIndex = 0U;
+    xiiUInt32                   m_uiVirtualTableCapacity  = 0U;
   };
 
   /// Adds a transfer pass that publishes changed residency records to the
@@ -208,13 +221,14 @@ public:
 
   /// Rasterizes every dirty page for one directional light through the shared
   /// GPU visibility and mesh-shader geometry path. A completion pass clears
-  /// residency dirty bits only when all scheduled page writes execute.
-  [[nodiscard]] static xiiRenderGraphTextureHandle AddRasterPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hPhysicalAtlas,
-                                                                   const xiiGpuVisibilityOutputs& visibility,
-                                                                   const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                                   xiiArrayPtr<const xiiMat4> cascadeViewProjections,
-                                                                   xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride,
-                                                                   xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY);
+  /// residency dirty bits and patches the current frame's hashed table only
+  /// after all scheduled atlas writes execute.
+  [[nodiscard]] static UploadHandles AddRasterPasses(xiiRenderGraph& graph, const UploadHandles& upload,
+                                                     const xiiGpuVisibilityOutputs&                    visibility,
+                                                     const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                     xiiArrayPtr<const xiiMat4>                        cascadeViewProjections,
+                                                     xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride,
+                                                     xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY);
 
   /// Appends screen-derived directional shadow requests and copies the cumulative
   /// feedback stream into the completed-frame readback ring.

@@ -35,12 +35,13 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   }
 
   xiiVirtualShadowMapSettings settings;
-  settings.m_uiVirtualResolution   = 1024U;
-  settings.m_uiPageSize            = 128U;
-  settings.m_uiPhysicalPageCount   = 2U;
-  settings.m_uiMaxFeedbackRequests = 16U;
-  settings.m_uiMaxPageAllocations  = 2U;
-  settings.m_uiFramesInFlight      = 2U;
+  settings.m_uiVirtualResolution     = 1024U;
+  settings.m_uiPageSize              = 128U;
+  settings.m_uiPhysicalPageCount     = 2U;
+  settings.m_uiMaxFeedbackRequests   = 16U;
+  settings.m_uiMaxPageAllocations    = 2U;
+  settings.m_uiMaxPageRasterizations = 2U;
+  settings.m_uiFramesInFlight        = 2U;
   XII_TEST_BOOL(xiiVirtualShadowMapManager::Configure(settings).Succeeded());
 
   const xiiVirtualShadowMapStats configuredStats = xiiVirtualShadowMapManager::GetStats();
@@ -88,6 +89,14 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   xiiVirtualShadowPageMapping mapping;
   XII_TEST_BOOL(xiiVirtualShadowMapManager::TryGetMapping(initial[0].m_Page, mapping));
   const xiiUInt32 uiFirstPhysicalPage = mapping.m_uiPhysicalPage;
+  xiiVirtualShadowMapManager::MarkPageRendered(uiFirstPhysicalPage);
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 1U);
+
+  XII_TEST_INT(xiiVirtualShadowMapManager::InvalidateLight(1U), 1U);
+  XII_TEST_INT(xiiVirtualShadowMapManager::InvalidateLight(1U), 0U); // already dirty
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiInvalidationCount, 1U);
+  XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 2U);
+  XII_TEST_BOOL(xiiVirtualShadowMapManager::InvalidatePage(initial[0].m_Page));
   xiiVirtualShadowMapManager::MarkPageRendered(uiFirstPhysicalPage);
   XII_TEST_INT(xiiVirtualShadowMapManager::GetStats().m_uiDirtyPageCount, 1U);
 
