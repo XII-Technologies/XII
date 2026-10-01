@@ -12,6 +12,7 @@ ALL
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/LightingData.h>
 #include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumData.h>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricShadowSampling.h>
 
 Texture3D<float4>                 g_FroxelScattering;
 StructuredBuffer<xiiFroxelMediumData> g_FroxelMeta;
@@ -77,7 +78,8 @@ float3 EstimateLocalScattering(float2 uv, float zFrac, float3 worldPos, float3 v
         const float attenuation = SmoothVolumeAttenuation(distance, lightData.AttenuationAndSize.x) * GetPhotometricEmitterScale(lightData, L);
 
         const float phase = PhaseHG(dot(viewRay, L), anisotropy);
-        radiance += lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation * phase;
+        const float shadowVisibility = EvaluateVolumetricLocalShadow(lightIndex, lightData, worldPos);
+        radiance += lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation * phase * shadowVisibility;
     }
 
     return radiance;
@@ -120,7 +122,8 @@ void main(uint3 tid : SV_DispatchThreadID)
         const float linearDepth = nearPlane * exp(zFrac * logFarOverNear);
         const float ndcDepth = saturate(nearPlane / max(linearDepth, 1e-4f));
         const float3 worldPos = ReconstructWorldPos(uv, ndcDepth);
-        const float3 directRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * phase;
+        const float directionalVisibility = EvaluateVolumetricDirectionalShadow(worldPos, mainLight, linearDepth);
+        const float3 directRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * phase * directionalVisibility;
         const float3 localRadiance = EstimateLocalScattering(uv, zFrac, worldPos, viewRay, anisotropy);
         const float sliceNearFraction = (float)z / (float)XII_FROXEL_COUNT.z;
         const float sliceFarFraction = (float)(z + 1u) / (float)XII_FROXEL_COUNT.z;
