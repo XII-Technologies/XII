@@ -2939,6 +2939,8 @@ struct xiiDDGIProbeSamplingData
 
 void xiiView::SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hProbeIrradianceAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_DDGIProbeIrradianceAtlas, xiiGALResourceStateFlags::ShaderResource);

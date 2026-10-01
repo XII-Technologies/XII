@@ -1,7 +1,14 @@
 // XII Engine - temporally accumulated DDGI probe update fallback.
 
-#include "PipelineCommon.xiiShader"
-#include "Passes/DDGI/DDGIConstants.h"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
 
 struct xiiGpuDDGIProbeUpdate
 {
@@ -9,12 +16,12 @@ struct xiiGpuDDGIProbeUpdate
     uint4 Metadata;
 };
 
-StructuredBuffer<xiiGpuDDGIProbeUpdate> g_DDGIProbeUpdates : register(t0);
-RWTexture2D<float4> g_DDGIIrradianceAtlas : register(u0);
-RWTexture2D<float2> g_DDGIDistanceAtlas : register(u1);
+StructuredBuffer<xiiGpuDDGIProbeUpdate> g_DDGIProbeUpdates;
+RWTexture2D<float4>                     g_DDGIIrradianceAtlas;
+RWTexture2D<float2>                     g_DDGIDistanceAtlas;
 
 [numthreads(64, 1, 1)]
-void CS_DDGIProbeUpdate(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     const uint updateIndex = tid.x;
     const uint updateCount = ProbeCountsAndUpdateCount.w;

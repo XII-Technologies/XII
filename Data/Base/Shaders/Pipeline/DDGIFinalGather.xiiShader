@@ -1,7 +1,15 @@
 // XII Engine - scrolling DDGI trilinear probe gather.
 
-#include "PipelineCommon.xiiShader"
-#include "Passes/DDGI/DDGIConstants.h"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
 
 struct xiiGpuDDGIProbeState
 {
@@ -9,12 +17,12 @@ struct xiiGpuDDGIProbeState
     int4 CellAndFlags;
 };
 
-Texture2D<float> g_SceneDepth : register(t0);
-Texture2D<float2> g_GBufNormal : register(t1);
-Texture2D<float4> g_DDGIIrradianceAtlas : register(t2);
-Texture2D<float2> g_DDGIDistanceAtlas : register(t3);
-StructuredBuffer<xiiGpuDDGIProbeState> g_DDGIProbeStates : register(t4);
-RWTexture2D<float4> g_DDGIOut : register(u0);
+Texture2D<float>                       g_SceneDepth;
+Texture2D<float2>                      g_GBufNormal;
+Texture2D<float4>                      g_DDGIIrradianceAtlas;
+Texture2D<float2>                      g_DDGIDistanceAtlas;
+StructuredBuffer<xiiGpuDDGIProbeState> g_DDGIProbeStates;
+RWTexture2D<float4>                    g_DDGIOut;
 
 int PositiveModulo(int value, uint divisor)
 {
@@ -31,7 +39,7 @@ uint PhysicalProbeIndex(int3 cell)
 }
 
 [numthreads(8, 8, 1)]
-void CS_DDGIFinalGather(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dimensions;
     g_DDGIOut.GetDimensions(dimensions.x, dimensions.y);
@@ -39,7 +47,7 @@ void CS_DDGIFinalGather(uint3 tid : SV_DispatchThreadID)
         return;
 
     const float2 uv = (float2(tid.xy) + 0.5f) / float2(dimensions);
-    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0.0f);
+    const float depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0.0f);
     if (depth <= 0.0f)
     {
         g_DDGIOut[tid.xy] = 0.0f;
@@ -47,7 +55,7 @@ void CS_DDGIFinalGather(uint3 tid : SV_DispatchThreadID)
     }
 
     const float3 worldPosition = ReconstructWorldPos(uv, depth);
-    const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0.0f));
+    const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler, uv, 0.0f));
     const float spacing = max(SpacingHysteresisDistance.x, 0.001f);
     const float3 probeCoordinate = worldPosition / spacing - 0.5f;
     const int3 baseCell = (int3)floor(probeCoordinate);
