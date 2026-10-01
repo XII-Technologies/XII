@@ -1,91 +1,191 @@
-// XII Engine - RTReflection.xiiShader  [NEW]
-// Pass 39: DXR ray-generation for glossy reflections.
-// Budget-based: rougher pixels fire fewer rays, smoother pixels fire more.
+[PLATFORMS]
+ALL
+
+[SHADER]
+
+// Hardware ray-traced reflections with material-aware hit shading and geometry-derived normals.
+// Misses remain invalid so the hybrid composite can resolve from SSR and reflection probes.
 
 #include "PipelineCommon.xiiShader"
+#include "Passes/RayTracing/RayTracingMaterialData.h"
 
-RaytracingAccelerationStructure g_TLAS       : register(t0);
-Texture2D<float>                g_SceneDepth : register(t1);
-Texture2D<float2>               g_NRBuffer   : register(t2); // oct-normal + roughness in .g
-Texture2D<float4>               g_GBufMat    : register(t3); // r=roughness
-TextureCube<float4>             g_EnvCube    : register(t4); // fallback IBL
-RWTexture2D<float4>             g_ReflOut    : register(u0);
-
-cbuffer RTReflConstants : register(b3)
+struct xiiReflectionPayload
 {
-    float g_MaxRoughnessForRT;
-    uint  g_MaxRaysPerPixel;
-    float g_RayBias;
-    float _pad;
+  float3 Radiance;
+  float  Confidence;
 };
 
-struct ReflPayload { float4 radiance; float hitT; };
+[RAY_GENERATION_SHADER]
+
+RaytracingAccelerationStructure g_RayTracingScene : register(t4);
+Texture2D<float>                 g_SceneDepth      : register(t5);
+Texture2D<float2>                g_GBufNormal      : register(t6);
+Texture2D<float4>                g_GBufMaterial    : register(t7);
+RWTexture2D<float4>              g_RTReflRaw       : register(u8);
 
 [shader("raygeneration")]
-void RGS_RTReflection()
+void main()
 {
-    uint2 idx  = DispatchRaysIndex().xy;
-    uint2 dims = DispatchRaysDimensions().xy;
-    float2 uv  = (float2(idx) + 0.5f) / float2(dims);
+  const uint2 pixel      = DispatchRaysIndex().xy;
+  const uint2 dimensions = DispatchRaysDimensions().xy;
+  const float  depth     = g_SceneDepth.Load(int3(pixel, 0));
+  const float  roughness = saturate(g_GBufMaterial.Load(int3(pixel, 0)).r);
 
-    float  roughness = g_GBufMat.SampleLevel(g_sPointClamp, uv, 0).r;
-    g_ReflOut[idx]   = float4(0,0,0,0);
-    if (roughness > g_MaxRoughnessForRT) return;
+  float4 reflection = 0.0f;
+  if (depth > 0.0f && roughness <= 0.65f)
+  {
+    const float2 uv       = (float2(pixel) + 0.5f) / float2(dimensions);
+    const float3 worldPos = ReconstructWorldPos(uv, depth);
+    const float3 normal   = DecodeOctNormal(g_GBufNormal.Load(int3(pixel, 0)));
+    const float3 view     = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
+    const float3 rayDir   = normalize(reflect(-view, normal));
 
-    float  depth    = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
-    if (depth <= 0.0f) return;
+    RayDesc ray;
+    ray.Origin    = worldPos + normal * 0.01f;
+    ray.Direction = rayDir;
+    ray.TMin      = 0.001f;
+    ray.TMax      = 500.0f;
 
-    float3 worldPos = ReconstructWorldPos(uv, depth);
-    float3 V        = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
-    float3 N        = DecodeOctNormal(g_NRBuffer.SampleLevel(g_sPointClamp, uv, 0));
+    xiiReflectionPayload payload;
+    payload.Radiance   = 0.0f;
+    payload.Confidence = 0.0f;
+    TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
 
-    // Reduce ray count for rougher surfaces.
-    uint rays = max(1u, uint(float(g_MaxRaysPerPixel) * (1.0f - roughness / g_MaxRoughnessForRT)));
+    // Rough surfaces smoothly hand back to probes/SSR rather than terminating abruptly.
+    payload.Confidence *= saturate(1.0f - roughness / 0.65f);
+    reflection = float4(max(payload.Radiance, 0.0f), payload.Confidence);
+  }
 
-    float4 totalRad = float4(0,0,0,0);
-    for (uint r = 0u; r < rays; ++r)
-    {
-        // GGX importance sample direction.
-        float noise  = InterleavedGradientNoise(float2(idx), g_FrameIndex * g_MaxRaysPerPixel + r);
-        float noise2 = HaltonSample(g_FrameIndex * g_MaxRaysPerPixel + r, 3u);
-        float a  = roughness * roughness;
-        float phi = 2.0f * 3.14159265f * noise;
-        float cosTheta = sqrt((1.0f - noise2) / (1.0f + (a*a - 1.0f) * noise2));
-        float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
-        float3 up   = abs(N.y) < 0.99f ? float3(0,1,0) : float3(1,0,0);
-        float3 T    = normalize(cross(up, N));
-        float3 B    = cross(N, T);
-        float3 H    = normalize(T * sinTheta * cos(phi) + B * sinTheta * sin(phi) + N * cosTheta);
-        float3 R    = reflect(-V, H);
-
-        RayDesc ray;
-        ray.Origin    = worldPos + N * g_RayBias;
-        ray.Direction = R;
-        ray.TMin      = 0.001f;
-        ray.TMax      = 500.0f;
-
-        ReflPayload payload = { float4(0,0,0,0), 0.0f };
-        TraceRay(g_TLAS, 0u, 0xFFu, 0u, 0u, 0u, ray, payload);
-        totalRad += payload.radiance;
-    }
-
-    g_ReflOut[idx] = totalRad / float(rays);
+  g_RTReflRaw[pixel] = reflection;
 }
+
+[RAY_MISS_SHADER]
 
 [shader("miss")]
-void MISS_RTReflection(inout ReflPayload payload)
+void main(inout xiiReflectionPayload payload)
 {
-    // Sample environment cube as infinite fallback.
-    float3 dir = WorldRayDirection();
-    payload.radiance = float4(g_EnvCube.SampleLevel(g_sLinearClamp, dir, 4.0f).rgb, 0.0f);
-    payload.hitT     = -1.0f;
+  // A miss remains invalid so the hybrid composite resolves from SSR or the local/sky probe.
+  payload.Radiance   = 0.0f;
+  payload.Confidence = 0.0f;
 }
 
+[RAY_CLOSEST_HIT_SHADER]
+
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
+ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
+Texture2D<float4> g_RayTracingTextures[] : register(t12);
+
 [shader("closesthit")]
-void CHS_RTReflection(inout ReflPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
-    // Simplified: re-shade hit surface with direct lighting only.
-    // Production: trace secondary shadow rays here.
-    payload.radiance = float4(0.2f, 0.2f, 0.2f, 1.0f); // placeholder shading at hit
-    payload.hitT     = RayTCurrent();
+  const xiiRayTracingMaterialData material = g_RayTracingMaterials[InstanceIndex()];
+  const xiiRayTracingGeometryData geometry = g_RayTracingGeometry[InstanceIndex()];
+  const uint vertexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.x);
+  uint3 indices = PrimitiveIndex() * 3U + uint3(0U, 1U, 2U);
+  if (geometry.BufferIndices.z != 0U)
+  {
+    const uint indexBufferIndex = NonUniformResourceIndex(geometry.BufferIndices.y);
+    indices.x = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.x, geometry.BufferIndices.z);
+    indices.y = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.y, geometry.BufferIndices.z);
+    indices.z = xiiLoadRayTracingIndex(g_RayTracingBuffers[indexBufferIndex], indices.z, geometry.BufferIndices.z);
+  }
+
+  const float3 position0 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
+  const float3 position1 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
+  const float3 position2 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
+  const float3 barycentrics = float3(1.0f - attributes.barycentrics.x - attributes.barycentrics.y, attributes.barycentrics.x, attributes.barycentrics.y);
+  float3 objectNormal = normalize(cross(position1 - position0, position2 - position0));
+  if (geometry.VertexLayout.z != 0xFFFFFFFFU)
+  {
+    objectNormal = normalize(
+      xiiLoadRayTracingNormal(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x) * barycentrics.x +
+      xiiLoadRayTracingNormal(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y) * barycentrics.y +
+      xiiLoadRayTracingNormal(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z) * barycentrics.z);
+  }
+  float3 worldNormal = normalize(mul(objectNormal, (float3x3)WorldToObject3x4()));
+
+  const bool hasTexCoord = geometry.VertexLayout.w != 0xFFFFFFFFU && geometry.VertexAttributes.z != 0U;
+  float2 texCoord = 0.0f;
+  if (hasTexCoord)
+  {
+    texCoord =
+      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x) * barycentrics.x +
+      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y) * barycentrics.y +
+      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z) * barycentrics.z;
+  }
+
+  if (hasTexCoord && geometry.VertexAttributes.x != 0xFFFFFFFFU && geometry.VertexAttributes.y != 0U && material.TextureIndices0.y != 0xFFFFFFFFU)
+  {
+    const float4 objectTangent =
+      xiiLoadRayTracingTangent(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x) * barycentrics.x +
+      xiiLoadRayTracingTangent(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y) * barycentrics.y +
+      xiiLoadRayTracingTangent(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z) * barycentrics.z;
+    float3 worldTangent = normalize(mul((float3x3)ObjectToWorld3x4(), objectTangent.xyz));
+    worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
+    const float3 worldBitangent = cross(worldNormal, worldTangent) * (objectTangent.w < 0.0f ? -1.0f : 1.0f);
+    const uint normalTextureIndex = NonUniformResourceIndex(material.TextureIndices0.y);
+    const float3 tangentNormal = xiiDecodeRayTracingNormal(g_RayTracingTextures[normalTextureIndex].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f), material.LayerParameters.y);
+    worldNormal = normalize(worldTangent * tangentNormal.x + worldBitangent * tangentNormal.y + worldNormal * tangentNormal.z);
+  }
+  if (dot(worldNormal, WorldRayDirection()) > 0.0f)
+    worldNormal = -worldNormal;
+
+  float3 baseColor = max(material.BaseColorOpacity.rgb, 0.0f);
+  float3 emissive  = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
+  float  roughness = saturate(material.EmissiveColorAndRoughness.w);
+  float  metallic  = saturate(material.SurfaceParameters.x);
+  float  occlusion = 1.0f;
+  if (hasTexCoord && material.TextureIndices0.x != 0xFFFFFFFFU)
+    baseColor *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+  if (hasTexCoord && material.TextureIndices0.z != 0xFFFFFFFFU)
+  {
+    const float4 metallicRoughness = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.z)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f);
+    roughness *= metallicRoughness.g;
+    metallic *= metallicRoughness.b;
+  }
+  if (hasTexCoord && material.TextureIndices0.w != 0xFFFFFFFFU)
+  {
+    const float sampledOcclusion = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.w)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).r;
+    occlusion = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
+  }
+  if (hasTexCoord && material.TextureIndices1.x != 0xFFFFFFFFU)
+    emissive *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices1.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+
+  const float  specular     = saturate(material.SurfaceParameters.y);
+  const float3 dielectricF0 = (0.08f * specular).xxx;
+  const float3 f0           = lerp(dielectricF0, baseColor, metallic);
+  const float3 viewDirection  = normalize(-WorldRayDirection());
+  const float3 lightDirection = normalize(-g_MainLightDirectionAndIntensity.xyz);
+  const float  nDotL          = saturate(dot(worldNormal, lightDirection));
+  const float  nDotV          = saturate(dot(worldNormal, viewDirection));
+  const float3 fresnel        = f0 + (1.0f - f0) * pow(1.0f - nDotV, 5.0f);
+  const float3 directRadiance = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * nDotL;
+  const float3 ambient        = max(g_AmbientLightColor.rgb, 0.0f) * baseColor * (1.0f - metallic) * occlusion;
+  const float3 directDiffuse  = directRadiance * baseColor * (1.0f - metallic) * 0.31830989f;
+  float3 directSpecular = directRadiance * fresnel * lerp(0.25f, 0.04f, roughness);
+  const float clearCoat = saturate(material.LayerParameters.z);
+  if (clearCoat > 0.0f)
+  {
+    const float coatFresnel = 0.04f + 0.96f * pow(1.0f - nDotV, 5.0f);
+    directSpecular += directRadiance * clearCoat * coatFresnel * lerp(0.25f, 0.04f, saturate(material.LayerParameters.w));
+  }
+  payload.Radiance   = emissive + ambient + directDiffuse + directSpecular;
+  payload.Confidence = 1.0f;
+}
+
+[RAY_ANY_HIT_SHADER]
+
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
+ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
+Texture2D<float4> g_RayTracingTextures[] : register(t12);
+
+#include "Passes/RayTracing/RayTracingAlphaTest.h"
+
+[shader("anyhit")]
+void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics))
+    IgnoreHit();
 }

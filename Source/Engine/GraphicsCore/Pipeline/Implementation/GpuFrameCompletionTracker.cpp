@@ -29,14 +29,19 @@ void xiiGpuFrameCompletionTracker::Initialize(xiiGALDevice* pDevice)
 void xiiGpuFrameCompletionTracker::Reset()
 {
   m_PendingFrames.Clear();
-  m_Stats   = {};
-  m_pDevice = nullptr;
+  m_Stats             = {};
+  m_pDevice           = nullptr;
+  m_bHasCapturedFrame = false;
 }
 
 void xiiGpuFrameCompletionTracker::CaptureSubmittedFrame(xiiUInt64 uiFrameIndex)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "GPU frame completion tracker is not initialized.");
-  XII_ASSERT_DEV(uiFrameIndex > m_Stats.m_uiLastCapturedFrame, "Frames must be captured in increasing order.");
+  XII_ASSERT_DEV(uiFrameIndex > 0U, "Frame zero is reserved as the no-completed-frame sentinel.");
+  XII_ASSERT_DEV(!m_bHasCapturedFrame || uiFrameIndex > m_Stats.m_uiLastCapturedFrame, "Frames must be captured in increasing order.");
+
+  if (m_pDevice == nullptr || uiFrameIndex == 0U)
+    return;
 
   FramePoint& frame    = m_PendingFrames.ExpandAndGetRef();
   frame.m_uiFrameIndex = uiFrameIndex;
@@ -74,6 +79,7 @@ void xiiGpuFrameCompletionTracker::CaptureSubmittedFrame(xiiUInt64 uiFrameIndex)
   m_Stats.m_uiLastCapturedFrame = uiFrameIndex;
   m_Stats.m_uiPendingFrameCount = m_PendingFrames.GetCount();
   m_Stats.m_uiTrackedQueueCount = frame.m_QueuePoints.GetCount();
+  m_bHasCapturedFrame           = true;
 }
 
 xiiUInt64 xiiGpuFrameCompletionTracker::PollCompletedFrames()

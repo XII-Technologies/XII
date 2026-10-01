@@ -1,15 +1,24 @@
 // XII Engine - FroxelSetup.xiiShader
-// Initializes view-aligned froxel density and extinction for volumetric lighting.
+// Builds view-aligned froxel density and extinction metadata.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
 
-RWStructuredBuffer<float4> g_FroxelMetadata   : register(u0);
-RWTexture3D<float4>        g_FroxelScattering : register(u1);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumConstants.h>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumData.h>
+
+StructuredBuffer<xiiGpuVolumetricMedium> g_VolumetricMedia;
+RWStructuredBuffer<xiiFroxelMediumData>  g_FroxelMetadata;
 
 static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 
 [numthreads(8, 8, 1)]
-void CS_FroxelSetup(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     if (any(tid >= XII_FROXEL_COUNT))
         return;
@@ -22,10 +31,43 @@ void CS_FroxelSetup(uint3 tid : SV_DispatchThreadID)
 
     const float heightDelta = worldPos.y - g_VolumetricBaseHeight;
     const float heightTerm = exp(-max(heightDelta, 0.0f) * g_VolumetricHeightFalloff);
-    const float density = saturate(g_VolumetricFogDensity * heightTerm);
-    const float extinction = density;
+    const float density = max(g_VolumetricFogDensity * heightTerm, 0.0f);
+    float3 scattering = density.xxx;
+    float extinction = density;
+    float3 emission = 0.0f;
+    float weightedAnisotropy = density * g_VolumetricAnisotropy;
+    float scatteringWeight = density;
+
+    [loop]
+    for (uint mediumIndex = 0u; mediumIndex < ActiveMediumCount; ++mediumIndex)
+    {
+        const xiiGpuVolumetricMedium medium = g_VolumetricMedia[mediumIndex];
+        const float4 inverseRotation = float4(-medium.Rotation.xyz, medium.Rotation.w);
+        const float3 localPosition = RotateVolumetricVector(worldPos - medium.CenterAndShape.xyz, inverseRotation);
+        const float3 normalizedPosition = localPosition / max(medium.HalfExtentsAndAnisotropy.xyz, float3(1e-4f, 1e-4f, 1e-4f));
+        const float3 absolutePosition = abs(normalizedPosition);
+        const float shapeDistance = medium.CenterAndShape.w < 0.5f ? length(normalizedPosition) : max(absolutePosition.x, max(absolutePosition.y, absolutePosition.z));
+        const float influence = 1.0f - smoothstep(0.9f, 1.0f, shapeDistance);
+        if (influence <= 0.0f)
+            continue;
+
+        const float3 localScattering = max(medium.ScatteringAndPriority.xyz, 0.0f) * influence;
+        const float3 localAbsorption = max(medium.AbsorptionAndPadding.xyz, 0.0f) * influence;
+        const float localScatteringWeight = dot(localScattering, float3(0.2126f, 0.7152f, 0.0722f));
+        const float localExtinction = dot(localScattering + localAbsorption, float3(0.2126f, 0.7152f, 0.0722f));
+
+        scattering += localScattering;
+        extinction += localExtinction;
+        emission += max(medium.EmissionAndPadding.xyz, 0.0f) * influence;
+        weightedAnisotropy += localScatteringWeight * clamp(medium.HalfExtentsAndAnisotropy.w, -0.95f, 0.95f);
+        scatteringWeight += localScatteringWeight;
+    }
+
+    const float anisotropy = scatteringWeight > 1e-5f ? weightedAnisotropy / scatteringWeight : 0.0f;
 
     const uint linearIndex = (tid.z * XII_FROXEL_COUNT.y + tid.y) * XII_FROXEL_COUNT.x + tid.x;
-    g_FroxelMetadata[linearIndex] = float4(density, g_VolumetricAnisotropy, linearDepth, extinction);
-    g_FroxelScattering[tid] = float4(g_AmbientLightColor.rgb * density, extinction);
+    xiiFroxelMediumData froxel;
+    froxel.ScatteringAndExtinction = float4(scattering, extinction);
+    froxel.EmissionAndAnisotropy = float4(emission, anisotropy);
+    g_FroxelMetadata[linearIndex] = froxel;
 }

@@ -3,16 +3,22 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/Graphics/Camera.h>
+#include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Reflection/Implementation/Casts.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/DiscAreaLightComponent.h>
 #include <GraphicsCore/Components/Lights/PointLightComponent.h>
 #include <GraphicsCore/Components/Lights/RectangleAreaLightComponent.h>
+#include <GraphicsCore/Components/Lights/SphereAreaLightComponent.h>
 #include <GraphicsCore/Components/Lights/SpotLightComponent.h>
+#include <GraphicsCore/Components/Lights/TubeAreaLightComponent.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
+#include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
@@ -59,6 +65,61 @@ namespace
   }
 } // namespace
 
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("MaxActiveLights", m_uiMaxActiveLights)->AddAttributes(new xiiClampValueAttribute(1U, 1048576U)),
+    XII_MEMBER_PROPERTY("MaxLightsPerCluster", m_uiMaxLightsPerCluster)->AddAttributes(new xiiClampValueAttribute(1U, 1024U)),
+    XII_MEMBER_PROPERTY("ClusterTileSize", m_uiClusterTileSize)->AddAttributes(new xiiClampValueAttribute(4U, 128U)),
+    XII_MEMBER_PROPERTY("ClusterDepthSlices", m_uiClusterDepthSlices)->AddAttributes(new xiiClampValueAttribute(1U, 128U)),
+    XII_MEMBER_PROPERTY("AmbientLightColor", m_AmbientLightColor),
+    XII_MEMBER_PROPERTY("IndirectLightIntensity", m_fIndirectLightIntensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("ContactShadowLength", m_fContactShadowLength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("ContactShadowThickness", m_fContactShadowThickness)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("ContactShadowSteps", m_uiContactShadowSteps)->AddAttributes(new xiiClampValueAttribute(1U, 128U)),
+    XII_MEMBER_PROPERTY("SSGIRayLength", m_fSSGIRayLength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("SSGISampleCount", m_uiSSGISampleCount)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+    XII_MEMBER_PROPERTY("SSGIThickness", m_fSSGIThickness)->AddAttributes(new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("SSGIIntensity", m_fSSGIIntensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("SSRefractionScale", m_fSSRefractionScale)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f)),
+    XII_MEMBER_PROPERTY("SSRefractionMaxDistance", m_fSSRefractionMaxDistance)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f)),
+    XII_MEMBER_PROPERTY("SSRefractionChromatic", m_fSSRefractionChromatic)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.1f)),
+    XII_MEMBER_PROPERTY("LocalShadowAtlasSize", m_uiLocalShadowAtlasSize)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
+    XII_MEMBER_PROPERTY("LocalShadowTileSize", m_uiLocalShadowTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U)),
+    XII_MEMBER_PROPERTY("VolumetricFogDensity", m_fVolumetricFogDensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("VolumetricHeightFalloff", m_fVolumetricHeightFalloff)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("VolumetricBaseHeight", m_fVolumetricBaseHeight)->AddAttributes(new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("VolumetricAnisotropy", m_fVolumetricAnisotropy)->AddAttributes(new xiiClampValueAttribute(-0.99f, 0.99f)),
+    XII_MEMBER_PROPERTY("DirectionalShadowMaxPenumbra", m_fDirectionalShadowMaxPenumbra)->AddAttributes(new xiiClampValueAttribute(1.0f, 128.0f), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("DirectionalShadowBlockerSamples", m_uiDirectionalShadowBlockerSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+    XII_MEMBER_PROPERTY("DirectionalShadowFilterSamples", m_uiDirectionalShadowFilterSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+    XII_MEMBER_PROPERTY("MaxIESProfiles", m_uiMaxIESProfiles)->AddAttributes(new xiiClampValueAttribute(1U, 4096U)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuLightData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuLightData>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("PositionAndInvRange", m_PositionAndInvRange),
+    XII_MEMBER_PROPERTY("DirectionAndType", m_DirectionAndType),
+    XII_MEMBER_PROPERTY("ColorAndIntensity", m_ColorAndIntensity),
+    XII_MEMBER_PROPERTY("AttenuationAndSize", m_AttenuationAndSize),
+    XII_MEMBER_PROPERTY("SpotAnglesAndRectSize", m_SpotAnglesAndRectSize),
+    XII_MEMBER_PROPERTY("ShadowData", m_ShadowData),
+    XII_MEMBER_PROPERTY("BoundsCenterAndRadius", m_BoundsCenterAndRadius),
+    XII_MEMBER_PROPERTY("OrientationRightAndIES", m_OrientationRightAndIES),
+    XII_MEMBER_PROPERTY("Metadata", m_Metadata),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiLightingSystem::xiiLightingSystem() = default;
 
 xiiLightingSystem::~xiiLightingSystem()
@@ -66,10 +127,12 @@ xiiLightingSystem::~xiiLightingSystem()
   Shutdown();
 }
 
-void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice)
+void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings)
 {
-  m_pDevice = std::move(pDevice);
+  m_Settings = settings;
+  m_pDevice  = std::move(pDevice);
   m_LightData.Reserve(m_Settings.m_uiMaxActiveLights);
+  m_LocalShadowData.Reserve(m_Settings.m_uiMaxActiveLights);
 
   EnsureGpuResources();
 }
@@ -80,8 +143,12 @@ void xiiLightingSystem::Shutdown()
   m_pLightConstantsBuffer.Clear();
   m_pGlobalConstantsBuffer.Clear();
   m_pLightDataBuffer.Clear();
+  m_pIESProfileDataBuffer.Clear();
   m_pDevice.Clear();
   m_LightData.Clear();
+  m_LocalShadowData.Clear();
+  m_IESProfileData.Clear();
+  m_IESProfileSlots.Clear();
 }
 
 void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRenderData& extractedData, xiiUInt32 uiFrameIndex)
@@ -110,20 +177,23 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
     m_LightConstants.m_fClusterLogFarOverNear = GetClusterLogFarOverNear(m_LightConstants.m_fClusterNearPlane, pCamera->GetFarPlane());
   }
 
-  m_LightConstants.m_uiClusterCountX          = m_uiClusterCountX;
-  m_LightConstants.m_uiClusterCountY          = m_uiClusterCountY;
-  m_LightConstants.m_uiClusterCountZ          = m_Settings.m_uiClusterDepthSlices;
-  m_LightConstants.m_uiMaxLightsPerCluster    = m_Settings.m_uiMaxLightsPerCluster;
-  m_LightConstants.m_AmbientLightColor        = MakeVec4(m_Settings.m_AmbientLightColor, 1.0f);
-  m_LightConstants.m_fIndirectLightIntensity  = m_Settings.m_fIndirectLightIntensity;
-  m_LightConstants.m_fContactShadowLength     = m_Settings.m_fContactShadowLength;
-  m_LightConstants.m_fContactShadowThickness  = m_Settings.m_fContactShadowThickness;
-  m_LightConstants.m_uiContactShadowSteps     = m_Settings.m_uiContactShadowSteps;
-  m_LightConstants.m_uiLocalShadowTileSize    = m_Settings.m_uiLocalShadowTileSize;
-  m_LightConstants.m_fVolumetricFogDensity    = m_Settings.m_fVolumetricFogDensity;
-  m_LightConstants.m_fVolumetricHeightFalloff = m_Settings.m_fVolumetricHeightFalloff;
-  m_LightConstants.m_fVolumetricBaseHeight    = m_Settings.m_fVolumetricBaseHeight;
-  m_LightConstants.m_fVolumetricAnisotropy    = m_Settings.m_fVolumetricAnisotropy;
+  m_LightConstants.m_uiClusterCountX                   = m_uiClusterCountX;
+  m_LightConstants.m_uiClusterCountY                   = m_uiClusterCountY;
+  m_LightConstants.m_uiClusterCountZ                   = m_Settings.m_uiClusterDepthSlices;
+  m_LightConstants.m_uiMaxLightsPerCluster             = m_Settings.m_uiMaxLightsPerCluster;
+  m_LightConstants.m_AmbientLightColor                 = MakeVec4(m_Settings.m_AmbientLightColor, 1.0f);
+  m_LightConstants.m_fIndirectLightIntensity           = m_Settings.m_fIndirectLightIntensity;
+  m_LightConstants.m_fContactShadowLength              = m_Settings.m_fContactShadowLength;
+  m_LightConstants.m_fContactShadowThickness           = m_Settings.m_fContactShadowThickness;
+  m_LightConstants.m_uiContactShadowSteps              = m_Settings.m_uiContactShadowSteps;
+  m_LightConstants.m_uiLocalShadowTileSize             = m_Settings.m_uiLocalShadowTileSize;
+  m_LightConstants.m_fVolumetricFogDensity             = m_Settings.m_fVolumetricFogDensity;
+  m_LightConstants.m_fVolumetricHeightFalloff          = m_Settings.m_fVolumetricHeightFalloff;
+  m_LightConstants.m_fVolumetricBaseHeight             = m_Settings.m_fVolumetricBaseHeight;
+  m_LightConstants.m_fVolumetricAnisotropy             = m_Settings.m_fVolumetricAnisotropy;
+  m_LightConstants.m_fDirectionalShadowMaxPenumbra     = m_Settings.m_fDirectionalShadowMaxPenumbra;
+  m_LightConstants.m_uiDirectionalShadowBlockerSamples = xiiMath::Clamp(m_Settings.m_uiDirectionalShadowBlockerSamples, 1U, 32U);
+  m_LightConstants.m_uiDirectionalShadowFilterSamples  = xiiMath::Clamp(m_Settings.m_uiDirectionalShadowFilterSamples, 1U, 32U);
 
   m_GlobalConstants.m_uiFrameIndex = uiFrameIndex;
   if (xiiClock* pClock = xiiClock::GetGlobalClock())
@@ -134,7 +204,8 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   }
   m_GlobalConstants.m_RenderScaleJitter = xiiVec4(view.GetRenderResolutionScale(), 0.0f, 0.0f, 0.0f);
 
-  float fBestDirectionalIntensity = -1.0f;
+  float     fBestDirectionalIntensity = -1.0f;
+  xiiUInt32 uiBestDirectionalLightId  = xiiInvalidIndex;
 
   for (const xiiRenderData* pRenderData : extractedData.GetAllRenderData())
   {
@@ -148,16 +219,22 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
 
       lightData.m_PositionAndInvRange   = xiiVec4::MakeZero();
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Directional));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pDirectionalLight->m_fIntensity);
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pDirectionalLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(0.0f, pDirectionalLight->m_fRadius, 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pDirectionalLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, pDirectionalLight->m_fRadius, 0.0f);
       lightData.m_BoundsCenterAndRadius = xiiVec4::MakeZero();
 
-      if (AppendLight(lightData, LightType::Directional) && pDirectionalLight->m_fIntensity > fBestDirectionalIntensity)
+      const xiiUInt32 uiStableLightId = static_cast<xiiUInt32>(pDirectionalLight->m_uiSortingKey);
+      const bool      bAppended       = AppendLight(lightData, LightType::Directional, uiStableLightId);
+      const bool      bIsBetter       = pDirectionalLight->m_fPhotometricIntensity > fBestDirectionalIntensity ||
+        (pDirectionalLight->m_fPhotometricIntensity == fBestDirectionalIntensity && uiStableLightId < uiBestDirectionalLightId);
+      if (bAppended && bIsBetter)
       {
-        fBestDirectionalIntensity                         = pDirectionalLight->m_fIntensity;
-        m_LightConstants.m_MainLightDirectionAndIntensity = MakeVec4(vDirection, pDirectionalLight->m_fIntensity);
+        fBestDirectionalIntensity                         = pDirectionalLight->m_fPhotometricIntensity;
+        uiBestDirectionalLightId                          = uiStableLightId;
+        m_LightConstants.m_MainLightDirectionAndIntensity = MakeVec4(vDirection, pDirectionalLight->m_fPhotometricIntensity);
         m_LightConstants.m_MainLightColor                 = MakeVec4(lightColor, 1.0f);
+        m_LightConstants.m_fDirectionalShadowSourceRadius = xiiMath::Max(pDirectionalLight->m_fRadius, 0.0f);
       }
 
       continue;
@@ -168,20 +245,22 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const float    fRange     = xiiMath::Max(GetSafeRange(pPointLight->m_fRange, pPointLight->m_fIntensity), 0.001f);
+      const float    fRange     = xiiMath::Max(GetSafeRange(pPointLight->m_fRange, pPointLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pPointLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pPointLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
+      const xiiVec3  vRight     = NormalizeOrFallback(pPointLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pPointLight->m_LightColor, pPointLight->m_uiTemperature);
 
-      lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Point));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pPointLight->m_fIntensity);
-      lightData.m_AttenuationAndSize    = xiiVec4(fRange, pPointLight->m_fRadius, pPointLight->m_fLength, 0.0f);
-      lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
-      lightData.m_ShadowData            = xiiVec4(pPointLight->m_bCastShadows ? 1.0f : 0.0f, pPointLight->m_fShadowFadeOutRange, pPointLight->m_fRadius, 0.0f);
-      lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pPointLight->m_fLength * 0.5f);
+      lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
+      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(LightType::Point));
+      lightData.m_ColorAndIntensity      = MakeVec4(lightColor, pPointLight->m_fPhotometricIntensity);
+      lightData.m_AttenuationAndSize     = xiiVec4(fRange, pPointLight->m_fRadius, pPointLight->m_fLength, 0.0f);
+      lightData.m_SpotAnglesAndRectSize  = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
+      lightData.m_ShadowData             = xiiVec4(pPointLight->m_bCastShadows ? 1.0f : 0.0f, pPointLight->m_fShadowFadeOutRange, pPointLight->m_fRadius, 0.0f);
+      lightData.m_BoundsCenterAndRadius  = MakeVec4(vPosition, fRange + pPointLight->m_fLength * 0.5f);
+      lightData.m_OrientationRightAndIES = MakeVec4(vRight, static_cast<float>(ResolveIESProfile(pPointLight->m_hIESProfile)));
 
-      AppendLight(lightData, LightType::Point);
+      AppendLight(lightData, LightType::Point, static_cast<xiiUInt32>(pPointLight->m_uiSortingKey));
       continue;
     }
 
@@ -190,22 +269,24 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const float    fRange     = xiiMath::Max(GetSafeRange(pSpotLight->m_fRange, pSpotLight->m_fIntensity), 0.001f);
+      const float    fRange     = xiiMath::Max(GetSafeRange(pSpotLight->m_fRange, pSpotLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pSpotLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pSpotLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
+      const xiiVec3  vRight     = NormalizeOrFallback(pSpotLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pSpotLight->m_LightColor, pSpotLight->m_uiTemperature);
 
       lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
       lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Spot));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pSpotLight->m_fIntensity);
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pSpotLight->m_fPhotometricIntensity);
       lightData.m_AttenuationAndSize    = xiiVec4(fRange, pSpotLight->m_fRadius, 0.0f, 0.0f);
       lightData.m_SpotAnglesAndRectSize = xiiVec4(xiiMath::Cos(pSpotLight->m_InnerSpotAngle * 0.5f), xiiMath::Cos(pSpotLight->m_OuterSpotAngle * 0.5f), 0.0f, 0.0f);
       lightData.m_ShadowData            = xiiVec4(pSpotLight->m_bCastShadows ? 1.0f : 0.0f, pSpotLight->m_fShadowFadeOutRange, pSpotLight->m_fRadius, 0.0f);
 
       const xiiBoundingSphere boundingSphere = pSpotLight->m_GlobalBounds.GetSphere();
       lightData.m_BoundsCenterAndRadius      = MakeVec4(boundingSphere.m_vCenter, xiiMath::Max(boundingSphere.m_fRadius, fRange));
+      lightData.m_OrientationRightAndIES     = MakeVec4(vRight, static_cast<float>(ResolveIESProfile(pSpotLight->m_hIESProfile)));
 
-      AppendLight(lightData, LightType::Spot);
+      AppendLight(lightData, LightType::Spot, static_cast<xiiUInt32>(pSpotLight->m_uiSortingKey));
       continue;
     }
 
@@ -214,20 +295,22 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const float    fRange     = xiiMath::Max(xiiLightComponent::CalculateEffectiveRange(0.0f, pRectangleLight->m_fIntensity), 0.001f);
+      const float    fRange     = xiiMath::Max(pRectangleLight->m_fRadius, 0.001f);
       const xiiVec3  vPosition  = pRectangleLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pRectangleLight->m_qGlobalRotation * xiiVec3(-1.0f, 0.0f, 0.0f), xiiVec3(-1.0f, 0.0f, 0.0f));
+      const xiiVec3  vRight     = NormalizeOrFallback(pRectangleLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pRectangleLight->m_LightColor, pRectangleLight->m_uiTemperature);
 
-      lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Rectangle));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pRectangleLight->m_fIntensity);
-      lightData.m_AttenuationAndSize    = xiiVec4(fRange, 0.0f, 0.0f, 0.0f);
-      lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, xiiMath::Max(pRectangleLight->m_vExtents.x, 0.001f), xiiMath::Max(pRectangleLight->m_vExtents.y, 0.001f));
-      lightData.m_ShadowData            = xiiVec4(pRectangleLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f);
-      lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pRectangleLight->m_vExtents.GetLength() * 0.5f);
+      lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
+      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(LightType::Rectangle));
+      lightData.m_ColorAndIntensity      = MakeVec4(lightColor, pRectangleLight->m_fPhotometricIntensity);
+      lightData.m_AttenuationAndSize     = xiiVec4(fRange, 0.0f, 0.0f, 0.0f);
+      lightData.m_SpotAnglesAndRectSize  = xiiVec4(1.0f, -1.0f, xiiMath::Max(pRectangleLight->m_vExtents.x, 0.001f), xiiMath::Max(pRectangleLight->m_vExtents.y, 0.001f));
+      lightData.m_ShadowData             = xiiVec4(pRectangleLight->m_bCastShadows ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f);
+      lightData.m_BoundsCenterAndRadius  = MakeVec4(vPosition, fRange + pRectangleLight->m_vExtents.GetLength() * 0.5f);
+      lightData.m_OrientationRightAndIES = MakeVec4(vRight, 0.0f);
 
-      AppendLight(lightData, LightType::Rectangle);
+      AppendLight(lightData, LightType::Rectangle, static_cast<xiiUInt32>(pRectangleLight->m_uiSortingKey));
       continue;
     }
 
@@ -236,32 +319,137 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       xiiGpuLightData lightData;
       xiiMemoryUtils::ZeroFill(&lightData, 1);
 
-      const float    fRange     = xiiMath::Max(GetSafeRange(pDiscLight->m_fRange, pDiscLight->m_fIntensity), 0.001f);
+      const float    fRange     = xiiMath::Max(GetSafeRange(pDiscLight->m_fRange, pDiscLight->m_fPhotometricIntensity), 0.001f);
       const xiiVec3  vPosition  = pDiscLight->m_GlobalTransform.m_vPosition;
       const xiiVec3  vDirection = NormalizeOrFallback(pDiscLight->m_qGlobalRotation * xiiVec3(-1.0f, 0.0f, 0.0f), xiiVec3(-1.0f, 0.0f, 0.0f));
+      const xiiVec3  vRight     = NormalizeOrFallback(pDiscLight->m_qGlobalRotation * xiiVec3(0.0f, 1.0f, 0.0f), xiiVec3(0.0f, 1.0f, 0.0f));
       const xiiColor lightColor = EvaluateLightColor(pDiscLight->m_LightColor, pDiscLight->m_uiTemperature);
 
-      lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
-      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Disc));
-      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pDiscLight->m_fIntensity);
-      lightData.m_AttenuationAndSize    = xiiVec4(fRange, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f, 0.0f);
-      lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f);
-      lightData.m_ShadowData            = xiiVec4(pDiscLight->m_bCastShadows ? 1.0f : 0.0f, pDiscLight->m_fShadowFadeOutRange, pDiscLight->m_fRadius, 0.0f);
-      lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pDiscLight->m_fRadius);
+      lightData.m_PositionAndInvRange    = MakeVec4(vPosition, 1.0f / fRange);
+      lightData.m_DirectionAndType       = MakeVec4(vDirection, static_cast<float>(LightType::Disc));
+      lightData.m_ColorAndIntensity      = MakeVec4(lightColor, pDiscLight->m_fPhotometricIntensity);
+      lightData.m_AttenuationAndSize     = xiiVec4(fRange, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f, 0.0f);
+      lightData.m_SpotAnglesAndRectSize  = xiiVec4(1.0f, -1.0f, xiiMath::Max(pDiscLight->m_fRadius, 0.001f), 0.0f);
+      lightData.m_ShadowData             = xiiVec4(pDiscLight->m_bCastShadows ? 1.0f : 0.0f, pDiscLight->m_fShadowFadeOutRange, pDiscLight->m_fRadius, 0.0f);
+      lightData.m_BoundsCenterAndRadius  = MakeVec4(vPosition, fRange + pDiscLight->m_fRadius);
+      lightData.m_OrientationRightAndIES = MakeVec4(vRight, 0.0f);
 
-      AppendLight(lightData, LightType::Disc);
+      AppendLight(lightData, LightType::Disc, static_cast<xiiUInt32>(pDiscLight->m_uiSortingKey));
       continue;
+    }
+
+    if (const xiiSphereAreaLightRenderData* pSphereLight = xiiDynamicCast<const xiiSphereAreaLightRenderData*>(pRenderData))
+    {
+      xiiGpuLightData lightData;
+      xiiMemoryUtils::ZeroFill(&lightData, 1);
+
+      const float    fRange     = xiiMath::Max(pSphereLight->m_fRange, 0.001f);
+      const xiiVec3  vPosition  = pSphereLight->m_GlobalTransform.m_vPosition;
+      const xiiColor lightColor = EvaluateLightColor(pSphereLight->m_LightColor, pSphereLight->m_uiTemperature);
+
+      lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
+      lightData.m_DirectionAndType      = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(LightType::Sphere));
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pSphereLight->m_fPhotometricIntensity);
+      lightData.m_AttenuationAndSize    = xiiVec4(fRange, xiiMath::Max(pSphereLight->m_fRadius, 0.001f), 0.0f, 0.0f);
+      lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
+      lightData.m_ShadowData            = xiiVec4(pSphereLight->m_bCastShadows ? 1.0f : 0.0f, pSphereLight->m_fShadowFadeOutRange, pSphereLight->m_fRadius, 0.0f);
+      lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pSphereLight->m_fRadius);
+
+      AppendLight(lightData, LightType::Sphere, static_cast<xiiUInt32>(pSphereLight->m_uiSortingKey));
+      continue;
+    }
+
+    if (const xiiTubeAreaLightRenderData* pTubeLight = xiiDynamicCast<const xiiTubeAreaLightRenderData*>(pRenderData))
+    {
+      xiiGpuLightData lightData;
+      xiiMemoryUtils::ZeroFill(&lightData, 1);
+
+      const float    fRange     = xiiMath::Max(pTubeLight->m_fRange, 0.001f);
+      const xiiVec3  vPosition  = pTubeLight->m_GlobalTransform.m_vPosition;
+      const xiiVec3  vDirection = NormalizeOrFallback(pTubeLight->m_qGlobalRotation * xiiVec3(1.0f, 0.0f, 0.0f), xiiVec3(1.0f, 0.0f, 0.0f));
+      const xiiColor lightColor = EvaluateLightColor(pTubeLight->m_LightColor, pTubeLight->m_uiTemperature);
+
+      lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
+      lightData.m_DirectionAndType      = MakeVec4(vDirection, static_cast<float>(LightType::Tube));
+      lightData.m_ColorAndIntensity     = MakeVec4(lightColor, pTubeLight->m_fPhotometricIntensity);
+      lightData.m_AttenuationAndSize    = xiiVec4(fRange, xiiMath::Max(pTubeLight->m_fRadius, 0.001f), xiiMath::Max(pTubeLight->m_fLength, 0.001f), 0.0f);
+      lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
+      lightData.m_ShadowData            = xiiVec4(pTubeLight->m_bCastShadows ? 1.0f : 0.0f, pTubeLight->m_fShadowFadeOutRange, pTubeLight->m_fRadius, 0.0f);
+      lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + pTubeLight->m_fLength * 0.5f + pTubeLight->m_fRadius);
+
+      AppendLight(lightData, LightType::Tube, static_cast<xiiUInt32>(pTubeLight->m_uiSortingKey));
+      continue;
+    }
+
+    if (const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData))
+    {
+      const xiiVec3 vPosition          = pMesh->m_GlobalBounds.m_vCenter;
+      const float   fMaterialAreaScale = 1.0f / xiiMath::Sqrt(static_cast<float>(xiiMath::Max(pMesh->m_hMaterials.GetCount(), 1U)));
+      const float   fSourceRadius      = xiiMath::Max(pMesh->m_GlobalBounds.m_fSphereRadius * fMaterialAreaScale, 0.001f);
+
+      for (xiiUInt32 uiMaterialIndex = 0U; uiMaterialIndex < pMesh->m_hMaterials.GetCount(); ++uiMaterialIndex)
+      {
+        const xiiMaterialResourceHandle& hMaterial = pMesh->m_hMaterials[uiMaterialIndex];
+        if (!hMaterial.IsValid())
+          continue;
+
+        xiiResourceLock<xiiMaterialResource> material(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+        if (!material.IsValid() || material.GetAcquireResult() != xiiResourceAcquireResult::Final)
+          continue;
+
+        const xiiMaterialResourceDescriptor& descriptor = material->GetCurrentDescription();
+        if (descriptor.m_Domain != xiiMaterialDomain::Surface)
+          continue;
+
+        xiiColor         emissiveLuminance = descriptor.m_EmissiveColor;
+        const xiiVariant resolvedEmissive  = material->GetParameter(xiiTempHashedString("EmissiveColor"));
+        if (resolvedEmissive.IsA<xiiColor>())
+          emissiveLuminance = resolvedEmissive.Get<xiiColor>();
+
+        const float fPeakLuminance = xiiMath::Max(emissiveLuminance.r, emissiveLuminance.g, emissiveLuminance.b);
+        if (!xiiMath::IsFinite(fPeakLuminance) || fPeakLuminance <= 0.0f)
+          continue;
+
+        const float fProjectedArea = xiiMath::Pi<float>() * fSourceRadius * fSourceRadius;
+        const float fPeakCandela   = fPeakLuminance * fProjectedArea;
+        const float fRange         = xiiMath::Max(xiiLightComponent::CalculateEffectiveRange(0.0f, fPeakCandela), fSourceRadius);
+
+        xiiGpuLightData lightData;
+        xiiMemoryUtils::ZeroFill(&lightData, 1);
+        const xiiColor normalizedColor(
+          emissiveLuminance.r / fPeakLuminance,
+          emissiveLuminance.g / fPeakLuminance,
+          emissiveLuminance.b / fPeakLuminance,
+          1.0f);
+        lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
+        lightData.m_DirectionAndType      = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(LightType::EmissiveMesh));
+        lightData.m_ColorAndIntensity     = MakeVec4(normalizedColor, fPeakLuminance);
+        lightData.m_AttenuationAndSize    = xiiVec4(fRange, fSourceRadius, 0.0f, 0.0f);
+        lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
+        lightData.m_ShadowData            = xiiVec4::MakeZero();
+        lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + fSourceRadius);
+
+        const xiiUInt32 uiStableLightId = xiiHashingUtils::CombineHashValues32(pMesh->m_uiUniqueID, uiMaterialIndex);
+        if (AppendLight(lightData, LightType::EmissiveMesh, uiStableLightId))
+          ++m_Stats.m_uiEmissiveMeshLightCount;
+      }
     }
   }
 
   m_LightConstants.m_uiActiveLightCount = m_Stats.m_uiActiveLightCount;
+
+  xiiLocalShadowAtlasSettings localShadowSettings;
+  localShadowSettings.m_uiAtlasSize = m_Settings.m_uiLocalShadowAtlasSize;
+  localShadowSettings.m_uiTileSize  = m_Settings.m_uiLocalShadowTileSize;
+  xiiLocalShadowAtlasBuilder::Build(localShadowSettings,
+                                    xiiArrayPtr<const xiiGpuLightData>(m_LightData.GetData(), m_LightData.GetCount()), m_LocalShadowData, m_LocalShadowStatistics);
 }
 
 void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)
 {
   EnsureGpuResources();
 
-  if (m_pCameraConstantsBuffer == nullptr || m_pLightConstantsBuffer == nullptr || m_pGlobalConstantsBuffer == nullptr || m_pLightDataBuffer == nullptr)
+  if (m_pCameraConstantsBuffer == nullptr || m_pLightConstantsBuffer == nullptr || m_pGlobalConstantsBuffer == nullptr || m_pLightDataBuffer == nullptr || m_pIESProfileDataBuffer == nullptr)
     return;
 
   {
@@ -291,6 +479,14 @@ void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)
       xiiMemoryUtils::Copy(pLights.GetMappedData(), lightBytes.GetPtr(), lightBytes.GetCount());
     }
   }
+
+  {
+    xiiGALMapHelper<float> pProfiles(ref_commandList, m_pIESProfileDataBuffer.Borrow(), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+    const xiiUInt32        uiCapacity = m_Settings.m_uiMaxIESProfiles * xiiIESProfileResourceDescriptor::s_uiSampleCount;
+    xiiMemoryUtils::ZeroFill(pProfiles.GetMappedData(), uiCapacity);
+    if (!m_IESProfileData.IsEmpty())
+      xiiMemoryUtils::Copy(pProfiles.GetMappedData(), m_IESProfileData.GetData(), m_IESProfileData.GetCount());
+  }
 }
 
 void xiiLightingSystem::BindFrameConstants(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const
@@ -305,6 +501,14 @@ void xiiLightingSystem::BindLightData(xiiGALCommandList& ref_commandList, xiiBit
   if (m_pLightDataBuffer != nullptr)
   {
     ref_commandList.ResolveAndSetShaderResourceBufferView("g_Lights", m_pLightDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), shaderStages);
+  }
+}
+
+void xiiLightingSystem::BindIESProfiles(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const
+{
+  if (m_pIESProfileDataBuffer != nullptr)
+  {
+    ref_commandList.ResolveAndSetShaderResourceBufferView("g_IESProfiles", m_pIESProfileDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), shaderStages);
   }
 }
 
@@ -366,11 +570,31 @@ void xiiLightingSystem::EnsureGpuResources()
       m_pLightDataBuffer->SetDebugName("Lighting LightData");
     }
   }
+
+  const xiiUInt64 uiRequiredIESBufferSize = static_cast<xiiUInt64>(m_Settings.m_uiMaxIESProfiles) * xiiIESProfileResourceDescriptor::s_uiSampleCount * sizeof(float);
+  if (m_pIESProfileDataBuffer == nullptr || m_pIESProfileDataBuffer->GetSize() < uiRequiredIESBufferSize)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride = sizeof(float);
+    description.m_uiSize              = uiRequiredIESBufferSize;
+    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    description.m_Mode                = xiiGALBufferMode::Structured;
+    description.m_Usage               = xiiGALResourceUsage::Dynamic;
+    description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
+    m_pIESProfileDataBuffer = m_pDevice->CreateBuffer(description);
+    if (m_pIESProfileDataBuffer != nullptr)
+      m_pIESProfileDataBuffer->SetDebugName("Lighting IES Profile Data");
+  }
 }
 
 void xiiLightingSystem::ResetFrameData()
 {
   m_LightData.Clear();
+  m_LocalShadowData.Clear();
+  m_LocalShadowStatistics = {};
+  m_IESProfileData.Clear();
+  m_IESProfileSlots.Clear();
   m_Stats = {};
 
   m_CameraConstants = {};
@@ -378,7 +602,7 @@ void xiiLightingSystem::ResetFrameData()
   m_GlobalConstants = {};
 }
 
-bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type)
+bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type, xiiUInt32 uiStableLightId)
 {
   if (m_LightData.GetCount() >= m_Settings.m_uiMaxActiveLights)
   {
@@ -386,7 +610,10 @@ bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type)
     return false;
   }
 
-  lightData.m_UserData.x = static_cast<float>(m_LightData.GetCount());
+  lightData.m_Metadata.x = uiStableLightId;
+  lightData.m_Metadata.y = m_LightData.GetCount();
+  lightData.m_Metadata.z = static_cast<xiiUInt32>(type);
+  lightData.m_Metadata.w = 0U;
 
   m_LightData.PushBack(lightData);
   ++m_Stats.m_uiActiveLightCount;
@@ -401,6 +628,32 @@ bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type)
   }
 
   return true;
+}
+
+xiiUInt32 xiiLightingSystem::ResolveIESProfile(const xiiIESProfileResourceHandle& hProfile)
+{
+  if (!hProfile.IsValid())
+    return 0U;
+
+  xiiUInt32 uiSlot = xiiInvalidIndex;
+  if (m_IESProfileSlots.TryGetValue(hProfile, uiSlot))
+    return uiSlot + 1U;
+
+  if (m_IESProfileSlots.GetCount() >= m_Settings.m_uiMaxIESProfiles)
+  {
+    ++m_Stats.m_uiSkippedIESProfileCount;
+    return 0U;
+  }
+
+  xiiResourceLock<xiiIESProfileResource> profile(hProfile, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+  if (!profile.IsValid() || profile.GetAcquireResult() != xiiResourceAcquireResult::Final || !profile->GetDescriptor().IsValid())
+    return 0U;
+
+  uiSlot = m_IESProfileSlots.GetCount();
+  m_IESProfileSlots.Insert(hProfile, uiSlot);
+  m_IESProfileData.PushBackRange(profile->GetDescriptor().m_NormalizedCandela);
+  m_Stats.m_uiActiveIESProfileCount = m_IESProfileSlots.GetCount();
+  return uiSlot + 1U;
 }
 
 xiiColor xiiLightingSystem::EvaluateTemperatureColor(xiiUInt32 uiTemperature)

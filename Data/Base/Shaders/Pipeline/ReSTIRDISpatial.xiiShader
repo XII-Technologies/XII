@@ -1,0 +1,96 @@
+// XII Engine - ReSTIR DI edge-aware spatial reservoir reuse.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+
+StructuredBuffer<xiiGpuLightData> g_Lights;
+
+#include <Shaders/Pipeline/ReSTIRDICommon.h>
+
+Texture2D<float>       g_SceneDepth;
+Texture2D<float2>      g_GBufferNormal;
+Texture2D<uint4>       g_TemporalReservoir;
+RWTexture2D<uint4>     g_ReservoirOut;
+RWTexture2D<float4>    g_SurfaceOut;
+
+static const int2 XII_RESTIR_NEIGHBOR_OFFSETS[8] =
+{
+  int2(-1, 0), int2(1, 0), int2(0, -1), int2(0, 1),
+  int2(-2, -1), int2(2, 1), int2(-1, 2), int2(1, -2)
+};
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_ReservoirOut.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const uint2 pixel = dispatchThreadId.xy;
+  const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  if (depth <= 0.0f)
+  {
+    g_ReservoirOut[pixel] = ReSTIRPackReservoir(ReSTIREmptyReservoir());
+    g_SurfaceOut[pixel] = 0.0f;
+    return;
+  }
+
+  const float2 encodedNormal = g_GBufferNormal.Load(int3(pixel, 0));
+  const float3 normal = DecodeOctNormal(encodedNormal);
+  const float3 worldPosition = ReconstructWorldPos(uv, depth);
+  const float linearDepth = LinearizeDepth(depth);
+  uint randomState = ReSTIRHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x85EBCA6Bu);
+
+  xiiReSTIRDIReservoir source = ReSTIRUnpackReservoir(g_TemporalReservoir.Load(int3(pixel, 0)));
+  xiiReSTIRDIReservoir reservoir = ReSTIREmptyReservoir();
+  if (ReSTIRValidateReservoir(source))
+  {
+    // Keep part of the bounded reservoir budget available for neighbours even
+    // after temporal history has reached its maximum effective age.
+    const uint sourceM = min(source.M, 16u);
+    const float target = ReSTIREstimateTarget(g_Lights[source.LightIndex], worldPosition, normal);
+    ReSTIRUpdateReservoir(reservoir, source.LightIndex, source.StableLightId, target * source.WeightSum * (float)sourceM, sourceM, randomState);
+  }
+
+  const uint rotation = ReSTIRHash(randomState) & 7u;
+  [unroll]
+  for (uint tap = 0u; tap < 4u; ++tap)
+  {
+    const int2 neighborPixel = int2(pixel) + XII_RESTIR_NEIGHBOR_OFFSETS[(rotation + tap) & 7u];
+    if (any(neighborPixel < 0) || any(neighborPixel >= int2(dimensions)))
+      continue;
+
+    const float neighborDepth = g_SceneDepth.Load(int3(neighborPixel, 0));
+    if (neighborDepth <= 0.0f)
+      continue;
+
+    const float3 neighborNormal = DecodeOctNormal(g_GBufferNormal.Load(int3(neighborPixel, 0)));
+    const float neighborLinearDepth = LinearizeDepth(neighborDepth);
+    if (abs(neighborLinearDepth - linearDepth) > max(linearDepth * 0.08f, 0.02f) || dot(neighborNormal, normal) < 0.85f)
+      continue;
+
+    xiiReSTIRDIReservoir neighbor = ReSTIRUnpackReservoir(g_TemporalReservoir.Load(int3(neighborPixel, 0)));
+    if (!ReSTIRValidateReservoir(neighbor))
+      continue;
+
+    const uint neighborM = min(neighbor.M, 8u);
+    const float target = ReSTIREstimateTarget(g_Lights[neighbor.LightIndex], worldPosition, normal);
+    ReSTIRUpdateReservoir(reservoir, neighbor.LightIndex, neighbor.StableLightId,
+      target * neighbor.WeightSum * (float)neighborM, neighborM, randomState);
+  }
+
+  const float selectedTarget = reservoir.LightIndex < g_ActiveLightCount ?
+    ReSTIREstimateTarget(g_Lights[reservoir.LightIndex], worldPosition, normal) : 0.0f;
+  ReSTIRFinalizeReservoir(reservoir, selectedTarget);
+  g_ReservoirOut[pixel] = ReSTIRPackReservoir(reservoir);
+  g_SurfaceOut[pixel] = float4(encodedNormal, linearDepth, 1.0f);
+}

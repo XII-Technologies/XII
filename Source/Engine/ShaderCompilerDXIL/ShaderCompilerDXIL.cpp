@@ -261,9 +261,11 @@ xiiString xiiShaderCompilerDXIL::GetProfileName(xiiStringView sPlatform, xiiEnum
     case xiiGALShaderType::RayIntersection:
     case xiiGALShaderType::Callable:
     {
-      if (szMajor >= '6' && szMinor >= '3')
+      if (szMajor >= '6')
       {
-        sb.SetFormat("{}_{}_{}", "lib", xiiArgC(szMajor), xiiArgC(szMinor));
+        // Keep the renderer baseline independent from the minimum profile required by
+        // DXR. A SM 6.x platform may compile ray libraries at the mandatory SM 6.3 floor.
+        sb.SetFormat("{}_{}_{}", "lib", xiiArgC(szMajor), xiiArgC(xiiMath::Max(szMinor, '3')));
       }
     }
     break;

@@ -59,7 +59,8 @@ xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocator* pAllocat
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsVulkan, DeviceFactory)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation"
+    "Foundation",
+    "DeviceFactoryRegistry"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP

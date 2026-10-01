@@ -3,10 +3,12 @@
 #pragma once
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Math/BoundingBox.h>
 #include <Foundation/Math/Color.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Material/MaterialManager.h>
-#include <GraphicsCore/Scene/SceneDatabase.h>
+#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
@@ -47,20 +49,21 @@ public:
   [[nodiscard]] static xiiResult ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration);
   xiiResult                      Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration);
   void                           Shutdown(xiiUInt64 uiLastSubmittedFrame);
-  void                           Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiTime deltaTime);
+  void                           Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime);
 
-  [[nodiscard]] xiiSceneDatabase&             GetScene() { return m_Scene; }
-  [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_Scene; }
+  [[nodiscard]] xiiSceneDatabase&             GetScene() { return m_SceneContext.GetDatabase(); }
+  [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_SceneContext.GetDatabase(); }
+  [[nodiscard]] xiiSceneDatabaseContextHandle GetSceneHandle() const { return m_SceneContext.GetHandle(); }
   [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
-  [[nodiscard]] xiiGeometryResidencyManager&  GetGeometryResidency() { return *xiiGeometryResidencyManager::GetSingleton(); }
-  [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return *xiiGALBindlessResourceTable::GetSingleton(); }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
+  [[nodiscard]] xiiBoundingBox                GetAnimatedShadowBounds() const;
   [[nodiscard]] xiiUInt32                     GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;
 
 private:
   struct GeometryAsset
   {
     xiiGeometryHandle                             m_hGeometry;
+    xiiRayTracingGeometryHandle                   m_hRayTracingGeometry;
     xiiDynamicArray<xiiMeshBufferResourceHandle>  m_Lods;
     xiiDynamicArray<xiiGALBindlessResourceHandle> m_BindlessBuffers;
   };
@@ -72,7 +75,7 @@ private:
 
   xiiGpuDrivenSceneConfiguration                     m_Configuration;
   xiiGpuDrivenSceneLight                             m_SunLight;
-  xiiSceneDatabase                                   m_Scene;
+  xiiSceneDatabaseContext                            m_SceneContext;
   xiiSceneSpatialHierarchy                           m_SpatialHierarchy;
   xiiDynamicArray<GeometryAsset>                     m_GeometryAssets;
   xiiDynamicArray<xiiMaterialGpuHandle>              m_Materials;
@@ -80,6 +83,8 @@ private:
   xiiDynamicArray<xiiSharedPtr<xiiMaterialInstance>> m_MaterialInstances;
   xiiSceneObjectHandle                               m_hAssemblyRoot;
   xiiDynamicArray<xiiSceneObjectHandle>              m_Objects;
+  xiiDynamicArray<xiiRayTracingInstanceHandle>       m_RayTracingInstances;
   xiiDynamicArray<xiiVec3>                           m_BasePositions;
-  float                                              m_fAnimationTime = 0.0f;
+  xiiBoundingBox                                     m_AnimatedShadowInvalidationBounds = xiiBoundingBox::MakeInvalid();
+  float                                              m_fAnimationTime                   = 0.0f;
 };

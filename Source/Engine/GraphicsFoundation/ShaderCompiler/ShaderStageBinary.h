@@ -4,8 +4,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Containers/Map.h>
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Types/UniquePtr.h>
 
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
@@ -19,23 +19,25 @@ public:
 
   static xiiGALShaderStageBinary* LoadStageBinary(xiiEnum<xiiGALShaderType> stage, xiiUInt32 uiHash, xiiStringView sPlatform);
 
-  static void OnEngineStartup();
-  static void OnEngineShutdown();
+  [[nodiscard]] static bool IsCacheInitialized();
+  static void               OnEngineStartup();
+  static void               OnEngineShutdown();
 
 private:
   friend class xiiGALShaderCompiler;
 
-  xiiResult WriteStageBinary(xiiLogInterface* pLog, xiiStringView sPlatform) const;
-  xiiResult Write(xiiStreamWriter& inout_stream) const;
-  xiiResult Read(xiiStreamReader& inout_stream);
-  xiiResult Write(xiiStreamWriter& inout_stream, const xiiDynamicArray<xiiGALShaderVariableDescription>& layout) const;
-  xiiResult Read(xiiStreamReader& inout_stream, xiiDynamicArray<xiiGALShaderVariableDescription>& out_layout);
+  xiiResult   WriteStageBinary(xiiLogInterface* pLog, xiiStringView sPlatform) const;
+  xiiResult   Write(xiiStreamWriter& inout_stream) const;
+  xiiResult   Read(xiiStreamReader& inout_stream);
+  xiiResult   Write(xiiStreamWriter& inout_stream, const xiiDynamicArray<xiiGALShaderVariableDescription>& layout) const;
+  xiiResult   Read(xiiStreamReader& inout_stream, xiiDynamicArray<xiiGALShaderVariableDescription>& out_layout);
+  static void StoreStageBinary(xiiEnum<xiiGALShaderType> stage, const xiiGALShaderStageBinary& binary);
 
 private:
   xiiUInt32                          m_uiSourceHash = 0U;
   xiiSharedPtr<xiiGALShaderByteCode> m_pGALByteCode;
 
-private: // statics
-  static xiiMutex                                                                                           s_ShaderStageBinariesLock;
-  static xiiMap<xiiUInt32, xiiGALShaderStageBinary, xiiCompareHelper<xiiUInt32>, xiiStaticAllocatorWrapper> s_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
+private:
+  class CacheState;
+  static xiiUniquePtr<CacheState> s_pCacheState;
 };

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/Components/Lights/LightComponent.h>
+#include <GraphicsCore/Lighting/IESProfileResource.h>
 
 using xiiPointLightComponentManager = xiiComponentManager<class xiiPointLightComponent, xiiBlockStorageType::Compact>;
 
@@ -12,10 +13,11 @@ class XII_GRAPHICSCORE_DLL xiiPointLightRenderData : public xiiLightRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiPointLightRenderData, xiiLightRenderData);
 
 public:
-  float   m_fRange;
-  float   m_fLength;
-  float   m_fShadowFadeOutRange;
-  xiiQuat m_qGlobalRotation;
+  float                       m_fRange;
+  float                       m_fLength;
+  float                       m_fShadowFadeOutRange;
+  xiiQuat                     m_qGlobalRotation;
+  xiiIESProfileResourceHandle m_hIESProfile;
 };
 
 /// A point light component. This represents a light source that emits light in all directions from a single point in space, like a light bulb.
@@ -62,15 +64,21 @@ public:
   void  SetShadowFadeOutRange(float fRange); // [ property ]
   float GetShadowFadeOutRange() const;       // [ property ]
 
+  /// Assigns an LM-63 photometric web. The authored intensity remains the
+  /// peak intensity while the profile controls its angular distribution.
+  void                               SetIESProfile(const xiiIESProfileResourceHandle& hProfile); // [ property ]
+  const xiiIESProfileResourceHandle& GetIESProfile() const;                                      // [ property ]
+
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;
 
 protected:
-  float m_fLength             = 0.0f;
-  float m_fRadius             = 0.0f;
-  float m_fRange              = 0.0f;
-  float m_fEffectiveRange     = 0.0f;
-  float m_fShadowFadeOutRange = 0.0f;
+  float                       m_fLength             = 0.0f;
+  float                       m_fRadius             = 0.0f;
+  float                       m_fRange              = 0.0f;
+  float                       m_fEffectiveRange     = 0.0f;
+  float                       m_fShadowFadeOutRange = 0.0f;
+  xiiIESProfileResourceHandle m_hIESProfile;
 };
 
 /// Visualizer attribute for point lights. Also renders a tube (capsule) when Length or Radius is non-zero.

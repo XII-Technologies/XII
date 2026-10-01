@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -11,13 +12,34 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderStageBinary.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderPermutationResource, 1, xiiRTTIDefaultAllocator<xiiShaderPermutationResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiShaderPermutationResource);
 
-static xiiShaderPermutationResourceLoader g_PermutationResourceLoader;
+static xiiUniquePtr<xiiShaderPermutationResourceLoader> s_pPermutationResourceLoader;
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, ShaderPermutationResourceLoader)
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    XII_ASSERT_DEV(s_pPermutationResourceLoader == nullptr, "Shader permutation resource loader was started twice.");
+    s_pPermutationResourceLoader = XII_DEFAULT_NEW(xiiShaderPermutationResourceLoader);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    s_pPermutationResourceLoader.Clear();
+  }
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
 
 xiiShaderPermutationResource::xiiShaderPermutationResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
@@ -172,7 +194,8 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
           if (bRuntimeArray)
           {
             pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::RuntimeArray);
-            pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::NoDynamicBuffers);
+            if (xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(pExistingResource->m_ResourceType).IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers))
+              pExistingResource->m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::NoDynamicBuffers);
           }
 
           // If resource types differ, prefer the existing one but log a warning.
@@ -192,7 +215,9 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
           resourceSignature.m_uiArraySize           = uiDescriptorCount;
           resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
           resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
-          resourceSignature.m_PipelineResourceFlags = bRuntimeArray ? xiiGALPipelineResourceFlags::RuntimeArray | xiiGALPipelineResourceFlags::NoDynamicBuffers : xiiGALPipelineResourceFlags::None;
+          resourceSignature.m_PipelineResourceFlags = bRuntimeArray ? xiiBitflags<xiiGALPipelineResourceFlags>(xiiGALPipelineResourceFlags::RuntimeArray) : xiiBitflags<xiiGALPipelineResourceFlags>(xiiGALPipelineResourceFlags::None);
+          if (bRuntimeArray && xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_Type).IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers))
+            resourceSignature.m_PipelineResourceFlags.Add(xiiGALPipelineResourceFlags::NoDynamicBuffers);
         }
 
         // Immutable Samplers: only add if resource is a sampler and not already present.
@@ -200,25 +225,31 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
         {
           const xiiHashedString& sImmutableSamplerName = resource.m_sName;
 
-          // Check if an immutable sampler with this name already exists.
-          bool bImmutableSamplerExists = false;
-          for (const xiiGALImmutableSamplerDescription& immutableSampler : resourceSignatureDescription.m_ImmutableSamplers)
+          // A named immutable sampler can be shared by multiple stages. Keep
+          // the reflected stage mask exact so compute and ray-tracing shaders
+          // can legally access it without exposing it to unrelated stages.
+          xiiGALImmutableSamplerDescription* pImmutableSampler = nullptr;
+          for (xiiGALImmutableSamplerDescription& immutableSampler : resourceSignatureDescription.m_ImmutableSamplers)
           {
             if (immutableSampler.m_SamplerOrTextureName == sImmutableSamplerName)
             {
-              bImmutableSamplerExists = true;
+              pImmutableSampler = &immutableSampler;
               break;
             }
           }
 
-          if (!bImmutableSamplerExists)
+          if (pImmutableSampler != nullptr)
+          {
+            pImmutableSampler->m_ShaderStages |= resource.m_ShaderStages;
+          }
+          else
           {
             // Create immutable sampler based on known names.
             if (sImmutableSamplerName == sLinearSampler)
             {
               xiiGALImmutableSamplerDescription& linearSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
               linearSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
-              linearSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              linearSampler.m_ShaderStages                            = resource.m_ShaderStages;
               linearSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
               linearSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
               linearSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
@@ -236,7 +267,7 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
             {
               xiiGALImmutableSamplerDescription& linearClampSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
               linearClampSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
-              linearClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              linearClampSampler.m_ShaderStages                            = resource.m_ShaderStages;
               linearClampSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
               linearClampSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
               linearClampSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
@@ -254,7 +285,7 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
             {
               xiiGALImmutableSamplerDescription& pointSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
               pointSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
-              pointSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              pointSampler.m_ShaderStages                            = resource.m_ShaderStages;
               pointSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
               pointSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
               pointSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
@@ -272,7 +303,7 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
             {
               xiiGALImmutableSamplerDescription& pointClampSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
               pointClampSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
-              pointClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              pointClampSampler.m_ShaderStages                            = resource.m_ShaderStages;
               pointClampSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
               pointClampSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
               pointClampSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
@@ -327,7 +358,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiShaderPermutationResource, xiiShaderPermuta
 
 xiiResourceTypeLoader* xiiShaderPermutationResource::GetDefaultResourceTypeLoader() const
 {
-  return &g_PermutationResourceLoader;
+  XII_ASSERT_DEV(s_pPermutationResourceLoader != nullptr, "Shader permutation resource loader is not started.");
+  return s_pPermutationResourceLoader.Borrow();
 }
 
 struct ShaderPermutationResourceLoadData

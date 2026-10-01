@@ -15,6 +15,21 @@
 #include <GraphicsFoundation/States/RasterizerState.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
+#include <type_traits>
+
+static_assert(!std::is_default_constructible_v<xiiGALDeviceFactory>, "Graphics backend registration must be owned by its subsystem.");
+
+XII_CREATE_SIMPLE_TEST_GROUP(DeviceFactoryLifecycle);
+
+XII_CREATE_SIMPLE_TEST(DeviceFactoryLifecycle, Startup)
+{
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subsystem owns graphics backend registration")
+  {
+    XII_TEST_BOOL(xiiGALDeviceFactory::IsInitialized());
+    XII_TEST_BOOL(xiiGetStaticRTTI<xiiGALDeviceImplementationDescription>() != nullptr);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST_GROUP(Device);
 
 XII_CREATE_SIMPLE_TEST(Device, Device)

@@ -4,29 +4,33 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <Foundation/Configuration/Singleton.h>
-#include <Foundation/Containers/HashTable.h>
-#include <Foundation/Threading/Mutex.h>
+#include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Types/UniquePtr.h>
 
 #include <GraphicsFoundation/States/PipelineState.h>
 
 /// A cache from pipeline descriptor to handle which holds a reference to each pipeline that is never freed until shutdown.
 class XII_GRAPHICSCORE_DLL xiiGALPipelineCache
 {
-  XII_DECLARE_SINGLETON(xiiGALPipelineCache);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGALPipelineCache);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, PipelineCache);
 
 public:
+  xiiGALPipelineCache() = delete;
+
+  [[nodiscard]] static bool IsSubsystemInitialized();
+  [[nodiscard]] static bool IsInitialized();
+
   /// Creates a pipeline or retrieves it from the cache.
   static xiiSharedPtr<xiiGALGraphicsPipelineState> GetPipeline(const xiiGALGraphicsPipelineStateCreationDescription& description);
 
   /// Creates a pipeline or retrieves it from the cache.
   static xiiSharedPtr<xiiGALComputePipelineState> GetPipeline(const xiiGALComputePipelineStateCreationDescription& description);
 
+  /// Creates a ray-tracing pipeline or retrieves it from the cache.
+  static xiiSharedPtr<xiiGALRayTracingPipelineState> GetPipeline(const xiiGALRayTracingPipelineStateCreationDescription& description);
+
 private:
-  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, PipelineCache);
-
-  friend class xiiMemoryUtils;
-
   struct GraphicsPipelineCacheKey
   {
     xiiUInt32                                      m_uiHash = 0U;
@@ -39,6 +43,12 @@ private:
     xiiGALComputePipelineStateCreationDescription m_Description;
   };
 
+  struct RayTracingPipelineCacheKey
+  {
+    xiiUInt32                                        m_uiHash = 0U;
+    xiiGALRayTracingPipelineStateCreationDescription m_Description;
+  };
+
   struct CacheKeyHasher
   {
     static xiiUInt32 Hash(const GraphicsPipelineCacheKey& a);
@@ -46,25 +56,18 @@ private:
 
     static xiiUInt32 Hash(const ComputePipelineCacheKey& a);
     static bool      Equal(const ComputePipelineCacheKey& a, const ComputePipelineCacheKey& b);
+
+    static xiiUInt32 Hash(const RayTracingPipelineCacheKey& a);
+    static bool      Equal(const RayTracingPipelineCacheKey& a, const RayTracingPipelineCacheKey& b);
   };
 
 private:
-  xiiGALPipelineCache();
-  ~xiiGALPipelineCache();
+  class State;
 
-  void Clear();
+  static void Startup();
+  static void EngineStartup();
+  static void EngineShutdown();
+  static void Shutdown();
 
-  template <typename HandleType, typename DescriptorType, typename KeyType>
-  XII_ALWAYS_INLINE HandleType TryGetPipeline(const DescriptorType& description, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table);
-
-  template <typename HandleType, typename DescriptorType, typename KeyType>
-  XII_ALWAYS_INLINE xiiResult TryInsertPipeline(const DescriptorType& description, HandleType hNewPipeline, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table);
-
-private:
-  xiiMutex                                                                                          m_Mutex;
-  xiiGALDevice*                                                                                     m_pDevice;
-  xiiHashTable<GraphicsPipelineCacheKey, xiiSharedPtr<xiiGALGraphicsPipelineState>, CacheKeyHasher> m_GraphicsPipelines;
-  xiiHashTable<ComputePipelineCacheKey, xiiSharedPtr<xiiGALComputePipelineState>, CacheKeyHasher>   m_ComputePipelines;
+  static xiiUniquePtr<State> s_pState;
 };
-
-#include <GraphicsCore/Pipeline/Implementation/PipelineStateCache_inl.h>

@@ -36,7 +36,10 @@ XII_BEGIN_COMPONENT_TYPE(xiiDiscAreaLightComponent, 1, xiiComponentMode::Static)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiDiscAreaLightComponent::xiiDiscAreaLightComponent()  = default;
+xiiDiscAreaLightComponent::xiiDiscAreaLightComponent()
+{
+  m_IntensityUnit = xiiPhotometricUnit::Nit;
+}
 xiiDiscAreaLightComponent::~xiiDiscAreaLightComponent() = default;
 
 void xiiDiscAreaLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
@@ -63,9 +66,12 @@ xiiResult xiiDiscAreaLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bo
 {
   XII_IGNORE_UNUSED(ref_msg);
 
-  m_fEffectiveRange  = CalculateEffectiveRange(m_fRange, m_fIntensity);
-  ref_bounds         = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fEffectiveRange + m_fRadius);
-  ref_bAlwaysVisible = false;
+  const float fArea          = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
+  const float fNits          = GetLuminance(fArea, fArea);
+  const float fOnAxisCandela = xiiPhotometricUtils::LuminanceToLuminousIntensity(fNits, fArea);
+  m_fEffectiveRange          = CalculateEffectiveRange(m_fRange, fOnAxisCandela);
+  ref_bounds                 = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fEffectiveRange + m_fRadius);
+  ref_bAlwaysVisible         = false;
 
   return XII_SUCCESS;
 }
@@ -75,6 +81,7 @@ void xiiDiscAreaLightComponent::SetRadius(float fRadius)
   m_fRadius = xiiMath::Max(fRadius, 0.001f);
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 float xiiDiscAreaLightComponent::GetRadius() const
@@ -87,6 +94,7 @@ void xiiDiscAreaLightComponent::SetRange(float fRange)
   m_fRange = xiiMath::Max(fRange, 0.0f);
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 float xiiDiscAreaLightComponent::GetRange() const
@@ -116,15 +124,18 @@ void xiiDiscAreaLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& 
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
-  const float fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
-  if (m_fIntensity <= 0.0f || fEffectiveRange <= 0.0f || m_fRadius <= 0.0f)
+  const float fArea           = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
+  const float fNits           = GetLuminance(fArea, fArea);
+  const float fOnAxisCandela  = xiiPhotometricUtils::LuminanceToLuminousIntensity(fNits, fArea);
+  const float fEffectiveRange = CalculateEffectiveRange(m_fRange, fOnAxisCandela);
+  if (fNits <= 0.0f || fEffectiveRange <= 0.0f || m_fRadius <= 0.0f)
     return;
 
   auto                        pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
   xiiDiscAreaLightRenderData* pRenderData  = pWorldModule->CreateRenderDataForThisFrame<xiiDiscAreaLightRenderData>(this);
   pRenderData->m_LightColor                = m_LightColor;
   pRenderData->m_uiTemperature             = m_uiTemperature;
-  pRenderData->m_fIntensity                = m_fIntensity;
+  pRenderData->m_fPhotometricIntensity     = fNits;
   pRenderData->m_bCastShadows              = m_bCastShadows;
   pRenderData->m_fRadius                   = m_fRadius;
   pRenderData->m_fRange                    = fEffectiveRange;

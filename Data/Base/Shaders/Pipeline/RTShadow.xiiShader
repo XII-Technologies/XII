@@ -1,58 +1,106 @@
-// XII Engine - RTShadow.xiiShader
-// Compute fallback for screen-space ray-traced directional shadow masks.
+[PLATFORMS]
+ALL
+
+[SHADER]
+
+// Directional-light visibility against the frame TLAS. The output follows the pipeline shadow
+// convention: zero is visible and one is fully occluded.
 
 #include "PipelineCommon.xiiShader"
+#include "Passes/RayTracing/RayTracingMaterialData.h"
 
-Texture2D<float>   g_SceneDepth  : register(t0);
-RWTexture2D<float> g_RTShadowOut : register(u0);
-
-[numthreads(8, 8, 1)]
-void CS_RTShadow(uint3 tid : SV_DispatchThreadID)
+struct xiiShadowPayload
 {
-    uint2 dims;
-    g_RTShadowOut.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims))
-        return;
+  uint Occluded;
+};
 
-    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
-    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
-    if (depth <= 0.0f || depth >= 1.0f || g_MainLightDirectionAndIntensity.w <= 0.0f)
-    {
-        g_RTShadowOut[tid.xy] = 0.0f;
-        return;
-    }
+// Samples a uniform solid angle around an infinite emitter direction. The authored radius is
+// sin(source half-angle), matching the directional-light component and raster PCSS path.
+float3 SampleDirectionalEmitter(float3 centerDirection, float2 randomSample, float sourceRadius)
+{
+  const float sinThetaMax = saturate(sourceRadius);
+  if (sinThetaMax <= 1e-6f)
+    return centerDirection;
 
+  const float cosThetaMax = sqrt(max(1.0f - sinThetaMax * sinThetaMax, 0.0f));
+  const float cosTheta = lerp(1.0f, cosThetaMax, randomSample.x);
+  const float sinTheta = sqrt(max(1.0f - cosTheta * cosTheta, 0.0f));
+  const float phi = 6.28318530718f * randomSample.y;
+  const float3 helper = abs(centerDirection.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+  const float3 tangent = normalize(cross(helper, centerDirection));
+  const float3 bitangent = cross(centerDirection, tangent);
+  return normalize(centerDirection * cosTheta + tangent * (cos(phi) * sinTheta) + bitangent * (sin(phi) * sinTheta));
+}
+
+[RAY_GENERATION_SHADER]
+
+RaytracingAccelerationStructure g_RayTracingScene : register(t4);
+Texture2D<float>                 g_SceneDepth      : register(t5);
+Texture2D<float2>                g_GBufferNormal   : register(t6);
+RWTexture2D<float>               g_RTShadowOut     : register(u7);
+
+[shader("raygeneration")]
+void main()
+{
+  const uint2 pixel      = DispatchRaysIndex().xy;
+  const uint2 dimensions = DispatchRaysDimensions().xy;
+  const float depth      = g_SceneDepth.Load(int3(pixel, 0));
+
+  float shadow = 0.0f;
+  if (depth > 0.0f && g_MainLightDirectionAndIntensity.w > 0.0f)
+  {
+    const float2 uv       = (float2(pixel) + 0.5f) / float2(dimensions);
     const float3 worldPos = ReconstructWorldPos(uv, depth);
-    const float3 lightDir = normalize(-g_MainLightDirectionAndIntensity.xyz);
-    const uint raySteps = 24u;
-    const float maxRayDistance = max(g_CameraForwardAndFarPlane.w * 0.05f, 10.0f);
-    const float stepSize = maxRayDistance / (float)raySteps;
-    const float jitter = InterleavedGradientNoise((float2)tid.xy, g_FrameIndex);
+    const float3 normal   = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
+    const float3 lightCenterDirection = normalize(-g_MainLightDirectionAndIntensity.xyz);
+    const float2 randomSample = float2(
+      InterleavedGradientNoise(float2(pixel) + 13.17f, g_FrameIndex),
+      InterleavedGradientNoise(float2(pixel.yx) + 71.43f, g_FrameIndex + 23U));
+    const float3 lightDir = SampleDirectionalEmitter(lightCenterDirection, randomSample, g_DirectionalShadowSourceRadius);
 
-    float shadow = 0.0f;
+    RayDesc ray;
+    ray.Origin    = worldPos + normal * 0.01f;
+    ray.Direction = lightDir;
+    ray.TMin      = 0.001f;
+    ray.TMax      = max(g_CameraForwardAndFarPlane.w, 500.0f);
 
-    [loop]
-    for (uint i = 0u; i < raySteps; ++i)
-    {
-        const float rayDistance = (float(i) + jitter + 1.0f) * stepSize;
-        const float3 sampleWorldPos = worldPos + lightDir * rayDistance;
-        const float4 clipPos = mul(g_ViewProjectionMatrix, float4(sampleWorldPos, 1.0f));
+    xiiShadowPayload payload;
+    payload.Occluded = 0U;
+    TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFU, 0U, 1U, 0U, ray, payload);
+    shadow = payload.Occluded != 0U ? 1.0f : 0.0f;
+  }
 
-        if (clipPos.w <= 0.0f)
-            break;
+  g_RTShadowOut[pixel] = shadow;
+}
 
-        const float2 sampleUv = (clipPos.xy / clipPos.w) * float2(0.5f, -0.5f) + 0.5f;
-        if (any(sampleUv < 0.0f) || any(sampleUv > 1.0f))
-            break;
+[RAY_MISS_SHADER]
 
-        const float sampleDepth = g_SceneDepth.SampleLevel(g_sPointClamp, sampleUv, 0);
-        const float rayDepth = clipPos.z / clipPos.w;
-        if (sampleDepth > rayDepth + 0.001f)
-        {
-            shadow = saturate(1.0f - (float)i / (float)raySteps);
-            break;
-        }
-    }
+[shader("miss")]
+void main(inout xiiShadowPayload payload)
+{
+  payload.Occluded = 0U;
+}
 
-    g_RTShadowOut[tid.xy] = shadow;
+[RAY_CLOSEST_HIT_SHADER]
+
+[shader("closesthit")]
+void main(inout xiiShadowPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  payload.Occluded = 1U;
+}
+
+[RAY_ANY_HIT_SHADER]
+
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
+ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
+Texture2D<float4> g_RayTracingTextures[] : register(t12);
+
+#include "Passes/RayTracing/RayTracingAlphaTest.h"
+
+[shader("anyhit")]
+void main(inout xiiShadowPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics))
+    IgnoreHit();
 }

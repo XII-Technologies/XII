@@ -244,9 +244,12 @@ xiiString xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnu
     case xiiGALShaderType::RayIntersection:
     case xiiGALShaderType::Callable:
     {
-      if (szMajor >= '6' && szMinor >= '3')
+      if (szMajor >= '6')
       {
-        sb.SetFormat("{}_{}_{}", "lib", xiiArgC(szMajor), xiiArgC(szMinor));
+        // Ray-tracing stages require SM 6.3, but the renderer-wide platform baseline may
+        // intentionally remain VK_SM60. Raise only the ray library profile instead of
+        // silently omitting otherwise supported stages.
+        sb.SetFormat("{}_{}_{}", "lib", xiiArgC(szMajor), xiiArgC(xiiMath::Max(szMinor, '3')));
       }
     }
     break;
@@ -344,6 +347,7 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
   xiiStringView    sCompileSource = sSource;
   xiiStringBuilder sDebugSource;
   const bool       bMeshShaderProfile = sProfile.StartsWith("as_") || sProfile.StartsWith("ms_");
+  const bool       bRayTracingProfile = sProfile.StartsWith("lib_");
 
   xiiDynamicArray<xiiStringWChar> args;
   args.PushBack(xiiStringWChar(sFile));
@@ -354,7 +358,7 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
   args.PushBack(L"-spirv");
   args.PushBack(L"-Zpc"); // Matrices in column-major order
   args.PushBack(L"-fvk-use-dx-position-w");
-  args.PushBack(bMeshShaderProfile ? L"-fspv-target-env=vulkan1.3" : L"-fspv-target-env=vulkan1.1");
+  args.PushBack(bMeshShaderProfile ? L"-fspv-target-env=vulkan1.3" : (bRayTracingProfile ? L"-fspv-target-env=vulkan1.2" : L"-fspv-target-env=vulkan1.1"));
   // Runtime descriptor arrays are the shader-side contract for the engine bindless tables.
   // DXC requires the SPIR-V extension to be explicitly permitted even when the Vulkan target and
   // device expose descriptor indexing.
@@ -363,6 +367,12 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
   if (bMeshShaderProfile)
   {
     args.PushBack(L"-fspv-extension=SPV_EXT_mesh_shader");
+  }
+  else if (bRayTracingProfile)
+  {
+    // DXR library profiles lower to the KHR ray-tracing execution model. Vulkan 1.2 provides
+    // the required SPIR-V 1.4 baseline, and DXC requires the extension to be opted in explicitly.
+    args.PushBack(L"-fspv-extension=SPV_KHR_ray_tracing");
   }
 
   if (bDebug)

@@ -16,7 +16,7 @@
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/ImageConversion.h>
 
-static xiiTextureResourceLoader s_TextureResourceLoader;
+static xiiUniquePtr<xiiTextureResourceLoader> s_pTextureResourceLoader;
 
 xiiCVarFloat cvar_StreamingTextureLoadDelay("Streaming.TextureLoadDelay", 0.0f, xiiCVarFlags::Save, "Artificial texture loading slowdown");
 
@@ -30,9 +30,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, TextureResource)
 
   ON_CORESYSTEMS_STARTUP
   {
-    xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(&s_TextureResourceLoader);
-    xiiResourceManager::SetResourceTypeLoader<xiiTexture3DResource>(&s_TextureResourceLoader);
-    xiiResourceManager::SetResourceTypeLoader<xiiTextureCubeResource>(&s_TextureResourceLoader);
+    XII_ASSERT_DEV(s_pTextureResourceLoader == nullptr, "Texture resource loader was started twice.");
+    s_pTextureResourceLoader = XII_DEFAULT_NEW(xiiTextureResourceLoader);
+    xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(s_pTextureResourceLoader.Borrow());
+    xiiResourceManager::SetResourceTypeLoader<xiiTexture3DResource>(s_pTextureResourceLoader.Borrow());
+    xiiResourceManager::SetResourceTypeLoader<xiiTextureCubeResource>(s_pTextureResourceLoader.Borrow());
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -40,6 +42,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, TextureResource)
     xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiTexture3DResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiTextureCubeResource>(nullptr);
+    s_pTextureResourceLoader.Clear();
   }
 
 XII_END_SUBSYSTEM_DECLARATION;

@@ -4,9 +4,11 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Memory/CommonAllocators.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
 
@@ -16,6 +18,7 @@
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDevice, xiiGALObject);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsFoundation, DeviceRegistry);
 
 public:
   /// Initialize device.
@@ -219,7 +222,10 @@ public:
 
 public:
   /// Registers event handlers.
-  static xiiEvent<const xiiGALDeviceEvent&, xiiMutex> s_Events;
+  [[nodiscard]] static xiiEvent<const xiiGALDeviceEvent&, xiiMutex>& GetEvents();
+
+  /// Returns whether the process-wide device registry is owned by a running subsystem.
+  [[nodiscard]] static bool IsRegistryInitialized();
 
   /// Returns the creation description for this device.
   [[nodiscard]] const xiiGALDeviceCreationDescription& GetDescription() const;
@@ -323,7 +329,12 @@ protected:
 private:
   void UnregisterSampler(xiiUInt32 uiDescriptionHash, const xiiGALSampler* pSampler);
 
-  static xiiSharedPtr<xiiGALDevice> s_pDefaultDevice;
+  class State;
+
+  static void Startup();
+  static void Shutdown();
+
+  static xiiUniquePtr<State> s_pState;
 
 private:
   xiiMap<xiiUInt32, xiiHybridArray<xiiGALSampler*, 1>> m_SamplerCache;

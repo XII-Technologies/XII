@@ -12,7 +12,7 @@ ComparisonDepthFunction = ComparisonFunction_Less
 DepthWriteEnable = false
 CullMode = CullMode_None
 
-[COMPUTESHADER]
+[COMPUTE_SHADER]
 
 #include <Shaders/Common/Common.h>
 #include <Shaders/Common/BRDF.h>
@@ -117,7 +117,7 @@ float4  integrateCubeLDOnly(in float3 V,in float3 N,in float roughness)
       float  NdotH = saturate(dot(N, H));
       float  LdotH = saturate(dot(L, H));
 
-      float  pdf = D_GGX_Divide_Pi(NdotH , roughness) / 4;
+      float  pdf = max(D_GGX_Divide_Pi(NdotH, roughness) * 0.25f, 1e-6f);
       float  omegaS = 1.0 / (sampleCount * pdf);
       float  omegaP = 4.0 * PI / (6.0 * width * width);
       float  mipLevel = 0.5 * log2(omegaS / omegaP);
@@ -128,7 +128,7 @@ float4  integrateCubeLDOnly(in float3 V,in float3 N,in float roughness)
       accBrdfWeight  += NdotL;
     }
   }
-  return  accBrdf * (1.0f / accBrdfWeight);
+  return accBrdf * rcp(max(accBrdfWeight, 1e-6f));
 }
 
 float3 GetRayDir(float2 texCoord, uint faceIndex)

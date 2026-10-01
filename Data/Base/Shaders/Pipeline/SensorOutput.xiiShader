@@ -1,0 +1,150 @@
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+// Converts scene-linear radiance and geometric buffers into calibrated sensor samples.
+// Output layout:
+//   RGB:   normalized digital RGB, alpha=validity
+//   IR:    normalized scalar response, wavelength nm, range m, validity
+//   Depth: axial depth m, radial range m, confidence, validity
+//   LiDAR: radial range m, normalized return intensity, incidence cosine, validity
+
+#include "PipelineCommon.xiiShader"
+#include "Passes/Sensors/SensorOutputConstants.h"
+
+Texture2D<float4>   g_SceneRadiance : register(t4);
+Texture2D<float>    g_SceneDepth    : register(t5);
+Texture2D<float2>   g_SceneNormal   : register(t6);
+Texture2D<float4>   g_BaseColor     : register(t7);
+RWTexture2D<float4> g_SensorOutput  : register(u8);
+
+static const uint SENSOR_RGB = 0U;
+static const uint SENSOR_INFRARED = 1U;
+static const uint SENSOR_DEPTH = 2U;
+static const uint SENSOR_LIDAR = 3U;
+static const uint NOISE_NONE = 0U;
+static const uint NOISE_GAUSSIAN = 1U;
+static const uint NOISE_PHOTON_SHOT_READ = 2U;
+
+float HashToUnitFloat(uint value)
+{
+  value ^= value >> 16U;
+  value *= 0x7feb352dU;
+  value ^= value >> 15U;
+  value *= 0x846ca68bU;
+  value ^= value >> 16U;
+  return (float(value) + 0.5f) * (1.0f / 4294967296.0f);
+}
+
+float GaussianNoise(uint2 pixel, uint stream)
+{
+  const uint seed = OutputDescription.w ^ (FrameAndResolution.x * 0x9e3779b9U) ^
+                    (pixel.x * 0x85ebca6bU) ^ (pixel.y * 0xc2b2ae35U) ^ stream;
+  const float u1 = max(HashToUnitFloat(seed), 1e-7f);
+  const float u2 = HashToUnitFloat(seed ^ 0x68bc21ebU);
+  return sqrt(-2.0f * log(u1)) * cos(6.28318530718f * u2);
+}
+
+float QuantizeNormalized(float value)
+{
+  const uint bits = min(OutputDescription.z, 24U);
+  const float levels = float((1U << bits) - 1U);
+  return round(saturate(value) * levels) / levels;
+}
+
+float AddRangeNoise(float rangeMeters, uint2 pixel)
+{
+  if (OutputDescription.y == NOISE_NONE)
+    return rangeMeters;
+
+  const float sigma = NoiseParameters.z + NoiseParameters.w * rangeMeters;
+  return max(rangeMeters + GaussianNoise(pixel, 0x13a5ba1dU) * sigma, 0.0f);
+}
+
+float3 ConvertRadianceToDigital(float3 radiance, uint2 pixel)
+{
+  float3 electrons = max(radiance, 0.0f) * RangeAndExposure.z * SpectralSensitivityAndQE.w * SignalConversion.x;
+  if (OutputDescription.y == NOISE_GAUSSIAN)
+  {
+    electrons += float3(GaussianNoise(pixel, 0x18U), GaussianNoise(pixel, 0x29U), GaussianNoise(pixel, 0x3aU)) * NoiseParameters.x;
+  }
+  else if (OutputDescription.y == NOISE_PHOTON_SHOT_READ)
+  {
+    const float3 sigma = sqrt(max(electrons, 0.0f)) * NoiseParameters.y + NoiseParameters.x;
+    electrons += float3(GaussianNoise(pixel, 0x4bU), GaussianNoise(pixel, 0x5cU), GaussianNoise(pixel, 0x6dU)) * sigma;
+  }
+
+  const float3 normalized = electrons * SignalConversion.y / max(SignalConversion.z, 1.0f);
+  return float3(QuantizeNormalized(normalized.x), QuantizeNormalized(normalized.y), QuantizeNormalized(normalized.z));
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 outputDimensions;
+  g_SensorOutput.GetDimensions(outputDimensions.x, outputDimensions.y);
+  if (any(dispatchThreadId.xy >= outputDimensions))
+    return;
+
+  uint2 sourceDimensions;
+  g_SceneDepth.GetDimensions(sourceDimensions.x, sourceDimensions.y);
+
+  const uint2 pixel = dispatchThreadId.xy;
+  const float2 uv = (float2(pixel) + 0.5f) / float2(outputDimensions);
+  const uint2 sourcePixel = min((uint2)(uv * float2(sourceDimensions)), sourceDimensions - 1U);
+  const float depth = g_SceneDepth.Load(int3(sourcePixel, 0));
+
+  if (depth <= 0.0f)
+  {
+    g_SensorOutput[pixel] = 0.0f;
+    return;
+  }
+
+  const float axialDepth = LinearizeDepth(depth);
+  const float2 calibratedRay = (float2(pixel) + 0.5f - Intrinsics.zw) / max(Intrinsics.xy, 1e-5f);
+  const float radialRange = axialDepth * length(float3(calibratedRay, 1.0f));
+  const bool inRange = radialRange >= RangeAndExposure.x && radialRange <= RangeAndExposure.y;
+  if (!inRange)
+  {
+    g_SensorOutput[pixel] = 0.0f;
+    return;
+  }
+
+  const float3 radiance = g_SceneRadiance.Load(int3(sourcePixel, 0)).rgb;
+  if (OutputDescription.x == SENSOR_RGB)
+  {
+    g_SensorOutput[pixel] = float4(ConvertRadianceToDigital(radiance, pixel), 1.0f);
+    return;
+  }
+
+  if (OutputDescription.x == SENSOR_INFRARED)
+  {
+    const float response = dot(max(radiance, 0.0f), SpectralSensitivityAndQE.xyz);
+    const float signal = ConvertRadianceToDigital(response.xxx, pixel).x;
+    g_SensorOutput[pixel] = float4(signal, SignalConversion.w, AddRangeNoise(radialRange, pixel), 1.0f);
+    return;
+  }
+
+  if (OutputDescription.x == SENSOR_DEPTH)
+  {
+    const float noisyRange = AddRangeNoise(radialRange, pixel);
+    const float noisyAxialDepth = noisyRange / length(float3(calibratedRay, 1.0f));
+    const float sigma = NoiseParameters.z + NoiseParameters.w * radialRange;
+    const float confidence = saturate(1.0f - sigma / max(radialRange, 1e-4f));
+    g_SensorOutput[pixel] = float4(noisyAxialDepth, noisyRange, confidence, 1.0f);
+    return;
+  }
+
+  const float3 worldPosition = ReconstructWorldPos(uv, depth);
+  const float3 toSensor = normalize(g_CameraPositionAndNearPlane.xyz - worldPosition);
+  const float3 normal = DecodeOctNormal(g_SceneNormal.Load(int3(sourcePixel, 0)));
+  const float incidence = saturate(dot(normal, toSensor));
+  const float3 albedo = max(g_BaseColor.Load(int3(sourcePixel, 0)).rgb, 0.0f);
+  const float spectralReflectance = dot(albedo, SpectralSensitivityAndQE.xyz);
+  const float inverseSquare = rcp(max(radialRange * radialRange, 1e-4f));
+  const float returnRadiance = spectralReflectance * incidence * inverseSquare;
+  const float returnSignal = ConvertRadianceToDigital(returnRadiance.xxx, pixel).x;
+  g_SensorOutput[pixel] = float4(AddRangeNoise(radialRange, pixel), returnSignal, incidence, 1.0f);
+}
+

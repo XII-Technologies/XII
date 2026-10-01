@@ -1,0 +1,45 @@
+// XII Engine - sparse far-field radiance brick injection and temporal accumulation.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
+
+struct xiiGpuSparseVoxelBrickUpdate
+{
+    float4 WorldMinimumAndVoxelSize;
+    uint4 PhysicalLevelAndKey;
+};
+
+StructuredBuffer<xiiGpuSparseVoxelBrickUpdate> g_SparseVoxelUpdates;
+RWStructuredBuffer<float4>                     g_SparseVoxelRadiancePool;
+
+[numthreads(64, 1, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+    const uint voxelsPerBrick = PoolLayout.x;
+    const uint totalVoxelUpdates = ClipmapAndUpdateCounts.w * voxelsPerBrick;
+    if (tid.x >= totalVoxelUpdates)
+        return;
+
+    const uint updateIndex = tid.x / voxelsPerBrick;
+    const uint localVoxel = tid.x - updateIndex * voxelsPerBrick;
+    const xiiGpuSparseVoxelBrickUpdate update = g_SparseVoxelUpdates[updateIndex];
+    const uint poolIndex = update.PhysicalLevelAndKey.x * voxelsPerBrick + localVoxel;
+
+    // Isotropic low-frequency injection is the portable baseline. Geometry
+    // voxelization and directional cone lobes can replace this target without
+    // changing residency, page-table, or temporal storage contracts.
+    const float3 ambientRadiance = max(g_AmbientLightColor.rgb, 0.0f);
+    const float3 sunRadiance = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * 0.08f;
+    const float3 targetRadiance = ambientRadiance + sunRadiance;
+    const float historyWeight = saturate(asfloat(update.PhysicalLevelAndKey.w));
+    const float3 previousRadiance = g_SparseVoxelRadiancePool[poolIndex].rgb;
+    g_SparseVoxelRadiancePool[poolIndex] = float4(lerp(targetRadiance, previousRadiance, historyWeight), 1.0f);
+}
+

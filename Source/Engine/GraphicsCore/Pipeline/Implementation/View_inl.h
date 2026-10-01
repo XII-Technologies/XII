@@ -42,7 +42,11 @@ XII_ALWAYS_INLINE void xiiView::SetSwapChain(const xiiGALSwapChain* pSwapChain)
 
 XII_ALWAYS_INLINE void xiiView::SetCamera(xiiCamera* pCamera)
 {
+  if (m_pCamera == pCamera)
+    return;
+
   m_pCamera = pCamera;
+  InvalidateTemporalHistory();
 }
 
 XII_ALWAYS_INLINE xiiCamera* xiiView::GetCamera()
@@ -83,6 +87,31 @@ XII_ALWAYS_INLINE xiiEnum<xiiCameraUsageHint> xiiView::GetCameraUsageHint() cons
 XII_ALWAYS_INLINE void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
 {
   m_Data.m_CameraUsageHint = hint;
+
+  if (!m_ViewPassResources->m_OutputPasses.m_hSensorProfile.IsValid())
+  {
+    xiiSensorType::Enum sensorType = xiiSensorType::ENUM_COUNT;
+    switch (hint.GetValue())
+    {
+      case xiiCameraUsageHint::SensorRGB:
+        sensorType = xiiSensorType::RGBCamera;
+        break;
+      case xiiCameraUsageHint::SensorInfrared:
+        sensorType = xiiSensorType::InfraredCamera;
+        break;
+      case xiiCameraUsageHint::SensorDepth:
+        sensorType = xiiSensorType::DepthCamera;
+        break;
+      case xiiCameraUsageHint::SensorLiDAR:
+        sensorType = xiiSensorType::LiDAR;
+        break;
+      default:
+        break;
+    }
+
+    if (sensorType != xiiSensorType::ENUM_COUNT)
+      m_ViewPassResources->m_OutputPasses.m_hSensorProfile = xiiSensorRenderingManager::GetDefaultProfileHandle(sensorType);
+  }
 }
 
 XII_ALWAYS_INLINE xiiEnum<xiiViewRenderMode> xiiView::GetViewRenderMode() const
@@ -102,6 +131,9 @@ XII_ALWAYS_INLINE const xiiRectFloat& xiiView::GetViewport() const
 
 XII_ALWAYS_INLINE void xiiView::SetViewport(const xiiRectFloat& viewport)
 {
+  if (m_Data.m_ViewPortRect != viewport)
+    InvalidateTemporalHistory();
+
   m_Data.m_ViewPortRect = viewport;
   UpdateRenderResolutionState();
 }

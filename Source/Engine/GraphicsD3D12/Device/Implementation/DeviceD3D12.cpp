@@ -71,7 +71,8 @@ xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocator* pAllocato
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation"
+    "Foundation",
+    "DeviceFactoryRegistry"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP

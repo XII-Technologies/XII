@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsCore/Components/Render/RenderComponent.h>
+#include <GraphicsCore/Lighting/PhotometricUnits.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 
 class xiiCamera;
@@ -16,7 +17,7 @@ class XII_GRAPHICSCORE_DLL xiiLightRenderData : public xiiRenderData
 public:
   xiiColorLinearUB m_LightColor;
   xiiUInt32        m_uiTemperature;
-  float            m_fIntensity;
+  float            m_fPhotometricIntensity; ///< Candela for local lights, lux for directional lights, and nits for area lights.
   float            m_fRadius;
   bool             m_bCastShadows;
 };
@@ -49,6 +50,9 @@ public:
   void  SetIntensity(float fIntensity); // [ property ]
   float GetIntensity() const;           // [ property ]
 
+  void                        SetIntensityUnit(xiiEnum<xiiPhotometricUnit> unit); // [ property ]
+  xiiEnum<xiiPhotometricUnit> GetIntensityUnit() const;                           // [ property ]
+
   void SetCastShadows(bool bCastShadows); // [ property ]
   bool GetCastShadows() const;            // [ property ]
 
@@ -64,8 +68,19 @@ public:
   static float CalculateScreenSpaceSize(const xiiBoundingSphere& sphere, const xiiCamera& camera);
 
 protected:
-  xiiColorGammaUB m_LightColor    = xiiColor::White;
-  xiiUInt32       m_uiTemperature = 6550;
-  float           m_fIntensity    = 1.0f;
-  bool            m_bCastShadows  = false;
+  /// Converts the authored value to the canonical quantity consumed by a local-light shader.
+  float GetLuminousIntensity(float fEmissionSolidAngleSteradians, float fProjectedAreaSquareMeters = 0.0f) const;
+
+  /// Converts the authored value to illuminance for an infinitely distant emitter.
+  float GetIlluminance(float fSourceSolidAngleSteradians) const;
+
+  /// Converts the authored value to luminance for a finite Lambertian area emitter.
+  float GetLuminance(float fEmittingAreaSquareMeters, float fProjectedAreaSquareMeters) const;
+
+protected:
+  xiiColorGammaUB             m_LightColor    = xiiColor::White;
+  xiiUInt32                   m_uiTemperature = 6550;
+  float                       m_fIntensity    = 1.0f;
+  xiiEnum<xiiPhotometricUnit> m_IntensityUnit = xiiPhotometricUnit::Candela;
+  bool                        m_bCastShadows  = false;
 };

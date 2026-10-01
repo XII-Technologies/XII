@@ -75,6 +75,11 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer>        GetBuffer() const { return m_pBuffer; }
   [[nodiscard]] xiiMaterialGpuStorageStatistics   GetStatistics() const;
 
+  /// Copies strong references to every currently registered instance. The copy deliberately
+  /// releases the storage lock before callers inspect or update instances, avoiding lock-order
+  /// inversions between the central slot table and per-material mutexes.
+  void GetActiveMaterials(xiiDynamicArray<xiiSharedPtr<xiiMaterialInstance>>& out_materials) const;
+
   /// Captures all revisions required by this frame without mutating the live instances.
   void GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpuUploadBatch& out_batch) const;
 

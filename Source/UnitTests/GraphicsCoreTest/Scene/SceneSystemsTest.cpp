@@ -2,7 +2,7 @@
 
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
-#include <GraphicsCore/Scene/SceneDatabase.h>
+#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Scene/SceneSpatialHierarchy.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(Scene);
@@ -11,7 +11,9 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Hierarchy transforms and previous frame state")
   {
-    xiiSceneDatabase scene;
+    xiiSceneDatabaseContext sceneContext;
+    XII_TEST_BOOL(sceneContext.Initialize().Succeeded());
+    xiiSceneDatabase& scene = sceneContext.GetDatabase();
 
     xiiSceneObjectDesc parentDesc;
     parentDesc.m_LocalTransform       = xiiMat4::MakeTranslation(xiiVec3(10.0f, 0.0f, 0.0f));
@@ -59,6 +61,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     XII_TEST_BOOL(scene.IsAlive(child));
     scene.CommitFrame(3U);
     XII_TEST_VEC3(scene.GetGlobalTransform(child).GetTranslationVector(), xiiVec3(20.0f, 2.0f, 0.0f), 0.0001f);
+    sceneContext.Shutdown();
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Balanced ordered spatial hierarchy")

@@ -1,0 +1,50 @@
+// XII Engine - temporally accumulated DDGI probe update fallback.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
+
+struct xiiGpuDDGIProbeUpdate
+{
+    float4 PositionAndHistoryWeight;
+    uint4 Metadata;
+};
+
+StructuredBuffer<xiiGpuDDGIProbeUpdate> g_DDGIProbeUpdates;
+RWTexture2D<float4>                     g_DDGIIrradianceAtlas;
+RWTexture2D<float2>                     g_DDGIDistanceAtlas;
+
+[numthreads(64, 1, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+    const uint updateIndex = tid.x;
+    const uint updateCount = ProbeCountsAndUpdateCount.w;
+    if (updateIndex >= updateCount)
+        return;
+
+    const xiiGpuDDGIProbeUpdate update = g_DDGIProbeUpdates[updateIndex];
+    const uint physicalProbe = update.Metadata.x;
+    const uint atlasWidth = max((uint)MinimumCellAndAtlasWidth.w, 1u);
+    const uint2 atlasPixel = uint2(physicalProbe % atlasWidth, physicalProbe / atlasWidth);
+
+    // This compute path is the non-RT baseline. It seeds probes with the
+    // physically-scaled sky and sun field; hardware ray tracing replaces the
+    // target radiance while retaining the same temporal storage contract.
+    const float3 skyRadiance = max(g_AmbientLightColor.rgb, 0.0f);
+    const float3 sunRadiance = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * 0.25f;
+    const float3 targetRadiance = skyRadiance + sunRadiance;
+    const float historyWeight = saturate(update.PositionAndHistoryWeight.w);
+    const float3 previousRadiance = g_DDGIIrradianceAtlas[atlasPixel].rgb;
+    const float3 accumulatedRadiance = lerp(targetRadiance, previousRadiance, historyWeight);
+
+    g_DDGIIrradianceAtlas[atlasPixel] = float4(accumulatedRadiance, 1.0f);
+    const float maximumDistance = max(SpacingHysteresisDistance.z, SpacingHysteresisDistance.x);
+    g_DDGIDistanceAtlas[atlasPixel] = float2(maximumDistance, maximumDistance * maximumDistance);
+}
+

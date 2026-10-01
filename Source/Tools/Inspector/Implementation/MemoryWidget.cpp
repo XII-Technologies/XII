@@ -177,10 +177,7 @@ void xiiQtMemoryWidget::UpdateStats()
       sText.AppendFormat(" [{0}]", sSize);
 
       xiiStringBuilder sTooltip;
-      sTooltip.SetFormat("<p>Allocator: <b>{}</b><br>Current Memory Used: <b>{}</b><br>Max Memory Used: <b>{}</b><br>Live Allocations: <b>{}</b><br>Allocations: "
-                         "<b>{}</b><br>Deallocations: <b>{}</b><br>",
-                         it.Value().m_sName,
-                         sSize.GetData(), sMaxSize.GetData(), it.Value().m_uiLiveAllocs, it.Value().m_uiAllocs, it.Value().m_uiDeallocs);
+      sTooltip.SetFormat("<p>Allocator: <b>{}</b><br>Current Memory Used: <b>{}</b><br>Max Memory Used: <b>{}</b><br>Live Allocations: <b>{}</b><br>Allocations: <b>{}</b><br>Deallocations: <b>{}</b><br>", it.Value().m_sName, sSize.GetData(), sMaxSize.GetData(), it.Value().m_uiLiveAllocs, it.Value().m_uiAllocs, it.Value().m_uiDeallocs);
 
       it.Value().m_pTreeItem->setText(0, sText.GetData());
       it.Value().m_pTreeItem->setToolTip(0, sTooltip.GetData());
@@ -198,9 +195,7 @@ void xiiQtMemoryWidget::UpdateStats()
       sText.AppendFormat(" [{0}]", sSize);
 
       xiiStringBuilder sTooltip;
-      sTooltip.SetFormat("<p>Current Memory Used: <b>{0}</b><br>Max Memory Used: <b>{1}</b><br>Live Allocations: <b>{2}</b><br>Allocations: "
-                         "<b>{3}</b><br>Deallocations: <b>{4}</b><br>",
-                         sSize.GetData(), sMaxSize.GetData(), m_Accu.m_uiLiveAllocs, m_Accu.m_uiAllocs, m_Accu.m_uiDeallocs);
+      sTooltip.SetFormat("<p>Current Memory Used: <b>{0}</b><br>Max Memory Used: <b>{1}</b><br>Live Allocations: <b>{2}</b><br>Allocations: <b>{3}</b><br>Deallocations: <b>{4}</b><br>", sSize.GetData(), sMaxSize.GetData(), m_Accu.m_uiLiveAllocs, m_Accu.m_uiAllocs, m_Accu.m_uiDeallocs);
 
       m_Accu.m_pTreeItem->setText(0, sText.GetData());
       m_Accu.m_pTreeItem->setToolTip(0, sTooltip.GetData());
@@ -275,10 +270,8 @@ void xiiQtMemoryWidget::UpdateStats()
 
     uiMaxSamples = xiiMath::Max(uiMaxSamples, xiiMath::Min(m_uiDisplaySamples, it.Value().m_UsedMemory.GetCount()));
 
-    const xiiUInt32 uiFirstSample =
-      (it.Value().m_UsedMemory.GetCount() <= m_uiDisplaySamples) ? 0 : (it.Value().m_UsedMemory.GetCount() - m_uiDisplaySamples);
-    const xiiUInt32 uiStartPos =
-      (it.Value().m_UsedMemory.GetCount() >= m_uiDisplaySamples) ? 0 : (m_uiDisplaySamples - it.Value().m_UsedMemory.GetCount());
+    const xiiUInt32 uiFirstSample = (it.Value().m_UsedMemory.GetCount() <= m_uiDisplaySamples) ? 0 : (it.Value().m_UsedMemory.GetCount() - m_uiDisplaySamples);
+    const xiiUInt32 uiStartPos    = (it.Value().m_UsedMemory.GetCount() >= m_uiDisplaySamples) ? 0 : (m_uiDisplaySamples - it.Value().m_UsedMemory.GetCount());
 
     pp[uiColorPath].moveTo(QPointF(uiStartPos, it.Value().m_UsedMemory[uiFirstSample]));
     uiMinUsedMemoryThis = xiiMath::Min(uiMinUsedMemoryThis, it.Value().m_UsedMemory[uiFirstSample]);
@@ -344,15 +337,13 @@ void xiiQtMemoryWidget::UpdateStats()
     FormatSize(s, "Min: ", uiMinUsedMemory);
     LabelMinMemory->setText(QString::fromUtf8(s.GetData()));
 
-    s.SetFormat("<p>Recent Minimum Memory Usage:<br>{0} GB<br>{1} MB<br>{2} KB<br>{3} Byte</p>", xiiArgF(uiMinUsedMemory / 1024.0 / 1024.0 / 1024.0, 2),
-                xiiArgF(uiMinUsedMemory / 1024.0 / 1024.0, 2), xiiArgF(uiMinUsedMemory / 1024.0, 2), uiMinUsedMemory);
+    s.SetFormat("<p>Recent Minimum Memory Usage:<br>{0} GB<br>{1} MB<br>{2} KB<br>{3} Byte</p>", xiiArgF(uiMinUsedMemory / 1024.0 / 1024.0 / 1024.0, 2), xiiArgF(uiMinUsedMemory / 1024.0 / 1024.0, 2), xiiArgF(uiMinUsedMemory / 1024.0, 2), uiMinUsedMemory);
     LabelMinMemory->setToolTip(QString::fromUtf8(s.GetData()));
 
     FormatSize(s, "Max: ", uiMaxUsedMemory);
     LabelMaxMemory->setText(QString::fromUtf8(s.GetData()));
 
-    s.SetFormat("<p>Recent Maximum Memory Usage:<br>{0} GB<br>{1} MB<br>{2} KB<br>{3} Byte</p>", xiiArgF(uiMaxUsedMemory / 1024.0 / 1024.0 / 1024.0, 2),
-                xiiArgF(uiMaxUsedMemory / 1024.0 / 1024.0, 2), xiiArgF(uiMaxUsedMemory / 1024.0, 2), uiMaxUsedMemory);
+    s.SetFormat("<p>Recent Maximum Memory Usage:<br>{0} GB<br>{1} MB<br>{2} KB<br>{3} Byte</p>", xiiArgF(uiMaxUsedMemory / 1024.0 / 1024.0 / 1024.0, 2), xiiArgF(uiMaxUsedMemory / 1024.0 / 1024.0, 2), xiiArgF(uiMaxUsedMemory / 1024.0, 2), uiMaxUsedMemory);
     LabelMaxMemory->setToolTip(QString::fromUtf8(s.GetData()));
 
     const xiiUInt64 uiCurUsedMemory = uiUsedMemory;
@@ -360,8 +351,7 @@ void xiiQtMemoryWidget::UpdateStats()
     FormatSize(s, "Sum: ", uiCurUsedMemory);
     LabelCurMemory->setText(QString::fromUtf8(s.GetData()));
 
-    s.SetFormat("<p>Current Memory Usage:<br>{0} GB<br>{1} MB<br>{2} KB<br>{3} Byte</p>", xiiArgF(uiCurUsedMemory / 1024.0 / 1024.0 / 1024.0, 2),
-                xiiArgF(uiCurUsedMemory / 1024.0 / 1024.0, 2), xiiArgF(uiCurUsedMemory / 1024.0, 2), uiCurUsedMemory);
+    s.SetFormat("<p>Current Memory Usage:<br>{0} GB<br>{1} MB<br>{2} KB<br>{3} Byte</p>", xiiArgF(uiCurUsedMemory / 1024.0 / 1024.0 / 1024.0, 2), xiiArgF(uiCurUsedMemory / 1024.0 / 1024.0, 2), xiiArgF(uiCurUsedMemory / 1024.0, 2), uiCurUsedMemory);
     LabelCurMemory->setToolTip(QString::fromUtf8(s.GetData()));
 
     s.SetFormat("Allocs: {0}", uiLiveAllocs);
@@ -450,9 +440,9 @@ void xiiQtMemoryWidget::ProcessTelemetry(void* pUnuseed)
         s_pWidget->m_bAllocatorsChanged = true;
       }
 
-      ad.m_uiAllocs                = MemStat.m_uiNumAllocations;
-      ad.m_uiDeallocs              = MemStat.m_uiNumDeallocations;
-      ad.m_uiLiveAllocs            = MemStat.m_uiNumAllocations - MemStat.m_uiNumDeallocations;
+      ad.m_uiAllocs                = MemStat.m_uiAllocationCount;
+      ad.m_uiDeallocs              = MemStat.m_uiDeallocationCount;
+      ad.m_uiLiveAllocs            = MemStat.m_uiAllocationCount - MemStat.m_uiDeallocationCount;
       ad.m_uiMaxUsedMemoryRecently = xiiMath::Max(ad.m_uiMaxUsedMemoryRecently, MemStat.m_uiAllocationSize);
       ad.m_uiMaxUsedMemory         = xiiMath::Max(ad.m_uiMaxUsedMemory, MemStat.m_uiAllocationSize);
     }

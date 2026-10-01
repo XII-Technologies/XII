@@ -1,0 +1,39 @@
+// XII Engine - confidence-aware hybrid reflection tier composition.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+
+Texture2D<float4>   g_EnvironmentSpecular;
+Texture2D<float4>   g_ScreenSpaceReflection;
+Texture2D<float4>   g_RayTracedReflection;
+RWTexture2D<float4> g_HDRScene;
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dimensions;
+    g_HDRScene.GetDimensions(dimensions.x, dimensions.y);
+    if (any(tid.xy >= dimensions))
+        return;
+
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dimensions);
+    const float4 baseScene = g_HDRScene[tid.xy];
+    const float3 environment = max(g_EnvironmentSpecular.SampleLevel(LinearClampSampler, uv, 0.0f).rgb, 0.0f);
+    const float4 traced = g_RayTracedReflection.SampleLevel(LinearClampSampler, uv, 0.0f);
+    const float4 screen = g_ScreenSpaceReflection.SampleLevel(LinearClampSampler, uv, 0.0f);
+
+    // Tier 2 (local probes / sky) is already included in baseScene. Tier 3
+    // fills geometry that screen space cannot see, and Tier 1 has priority for
+    // valid on-screen detail. Alpha is confidence/validity for both tiers.
+    float3 selectedSpecular = lerp(environment, max(traced.rgb, 0.0f), saturate(traced.a));
+    selectedSpecular = lerp(selectedSpecular, max(screen.rgb, 0.0f), saturate(screen.a));
+
+    g_HDRScene[tid.xy] = float4(max(baseScene.rgb - environment + selectedSpecular, 0.0f), baseScene.a);
+}
+

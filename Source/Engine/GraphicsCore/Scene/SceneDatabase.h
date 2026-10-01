@@ -5,6 +5,8 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <GraphicsCore/Scene/SceneTypes.h>
 
+class xiiSceneDatabaseManager;
+
 /// Data-oriented render scene independent of xiiWorld's component storage.
 ///
 /// Hot fields are stored in structure-of-arrays form. Stable generation checked handles are
@@ -16,7 +18,6 @@ class XII_GRAPHICSCORE_DLL xiiSceneDatabase
   XII_DISALLOW_COPY_AND_ASSIGN(xiiSceneDatabase);
 
 public:
-  xiiSceneDatabase();
   ~xiiSceneDatabase();
 
   /// Removes every object and resets generations, hierarchy links, GPU mirrors, and revisions.
@@ -53,6 +54,10 @@ public:
   [[nodiscard]] const xiiSceneDatabaseStats&           GetStats() const { return m_Stats; }
 
 private:
+  friend class xiiSceneDatabaseManager;
+
+  xiiSceneDatabase();
+
   static constexpr xiiUInt32 s_uiInvalidIndex = xiiInvalidIndex;
 
   [[nodiscard]] bool WouldCreateCycle(xiiUInt32 uiObject, xiiUInt32 uiParent) const;

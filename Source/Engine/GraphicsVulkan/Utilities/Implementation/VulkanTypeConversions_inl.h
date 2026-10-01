@@ -1271,7 +1271,7 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
   if (e.IsSet(xiiGALResourceStateFlags::Present))
     vkAccessFlags |= static_cast<vk::AccessFlagBits>(0);
   if (e.IsSet(xiiGALResourceStateFlags::BuildASRead))
-    vkAccessFlags |= vk::AccessFlagBits::eShaderRead;
+    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR;
   if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))                                                                       // for vertex, index, transform, AABB, instance buffers
     vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR; // for scratch buffer
   if (e.IsSet(xiiGALResourceStateFlags::RayTracing))

@@ -17,7 +17,7 @@ namespace
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSpotLightRenderData, 1, xiiRTTIDefaultAllocator<xiiSpotLightRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_COMPONENT_TYPE(xiiSpotLightComponent, 1, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiSpotLightComponent, 2, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -26,6 +26,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSpotLightComponent, 1, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("InnerSpotAngle", GetInnerSpotAngle, SetInnerSpotAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeZero(), c_MaxSpotAngle), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(15.0f))),
     XII_ACCESSOR_PROPERTY("OuterSpotAngle", GetOuterSpotAngle, SetOuterSpotAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeZero(), c_MaxSpotAngle), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30.0f))),
     XII_ACCESSOR_PROPERTY("ShadowFadeOutRange", GetShadowFadeOutRange, SetShadowFadeOutRange)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m"), new xiiMinValueTextAttribute("Auto")),
+    XII_RESOURCE_ACCESSOR_PROPERTY("IESProfile", GetIESProfile, SetIESProfile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_IESProfile", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
@@ -59,6 +60,7 @@ void xiiSpotLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) con
   s << m_fRadius;
   s << m_InnerSpotAngle;
   s << m_OuterSpotAngle;
+  s << m_hIESProfile;
 }
 
 void xiiSpotLightComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -72,15 +74,21 @@ void xiiSpotLightComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   s >> m_fRadius;
   s >> m_InnerSpotAngle;
   s >> m_OuterSpotAngle;
+
+  if (inout_stream.GetComponentTypeVersion(GetStaticRTTI()) >= 2U)
+    s >> m_hIESProfile;
 }
 
 xiiResult xiiSpotLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   XII_IGNORE_UNUSED(ref_msg);
 
-  m_fEffectiveRange  = CalculateEffectiveRange(m_fRange, m_fIntensity);
-  ref_bounds         = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_fEffectiveRange);
-  ref_bAlwaysVisible = false;
+  const float fSolidAngle    = xiiPhotometricUtils::ConeSolidAngle(m_OuterSpotAngle);
+  const float fProjectedArea = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
+  const float fCandela       = fSolidAngle > 0.0f ? GetLuminousIntensity(fSolidAngle, fProjectedArea) : 0.0f;
+  m_fEffectiveRange          = CalculateEffectiveRange(m_fRange, fCandela);
+  ref_bounds                 = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_fEffectiveRange);
+  ref_bAlwaysVisible         = false;
 
   return XII_SUCCESS;
 }
@@ -90,6 +98,7 @@ void xiiSpotLightComponent::SetRange(float fRange)
   m_fRange = xiiMath::Max(fRange, 0.0f);
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 float xiiSpotLightComponent::GetRange() const
@@ -106,6 +115,7 @@ void xiiSpotLightComponent::SetRadius(float fRadius)
 {
   m_fRadius = xiiMath::Max(fRadius, 0.0f);
 
+  TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
 }
 
@@ -143,6 +153,7 @@ void xiiSpotLightComponent::SetOuterSpotAngle(xiiAngle spotAngle)
   m_OuterSpotAngle = xiiMath::Clamp(spotAngle, xiiAngle::MakeZero(), c_MaxSpotAngle);
 
   TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
 }
 
 xiiAngle xiiSpotLightComponent::GetOuterSpotAngle() const
@@ -150,20 +161,37 @@ xiiAngle xiiSpotLightComponent::GetOuterSpotAngle() const
   return m_OuterSpotAngle;
 }
 
+void xiiSpotLightComponent::SetIESProfile(const xiiIESProfileResourceHandle& hProfile)
+{
+  if (m_hIESProfile != hProfile)
+  {
+    m_hIESProfile = hProfile;
+    InvalidateCachedRenderData();
+  }
+}
+
+const xiiIESProfileResourceHandle& xiiSpotLightComponent::GetIESProfile() const
+{
+  return m_hIESProfile;
+}
+
 void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const
 {
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
-  const float fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
+  const float fSolidAngle     = xiiPhotometricUtils::ConeSolidAngle(m_OuterSpotAngle);
+  const float fProjectedArea  = xiiMath::Pi<float>() * m_fRadius * m_fRadius;
+  const float fCandela        = fSolidAngle > 0.0f ? GetLuminousIntensity(fSolidAngle, fProjectedArea) : 0.0f;
+  const float fEffectiveRange = CalculateEffectiveRange(m_fRange, fCandela);
 
-  if (m_fIntensity <= 0.0f || fEffectiveRange <= 0.0f || m_OuterSpotAngle.GetRadian() <= 0.0f)
+  if (fCandela <= 0.0f || fEffectiveRange <= 0.0f || m_OuterSpotAngle.GetRadian() <= 0.0f)
     return;
 
   auto                    pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
   xiiSpotLightRenderData* pRenderData  = pWorldModule->CreateRenderDataForThisFrame<xiiSpotLightRenderData>(this);
   pRenderData->m_LightColor            = GetLightColor();
-  pRenderData->m_fIntensity            = GetIntensity();
+  pRenderData->m_fPhotometricIntensity = fCandela;
   pRenderData->m_uiTemperature         = GetTemperature();
   pRenderData->m_fRange                = fEffectiveRange;
   pRenderData->m_fRadius               = m_fRadius;
@@ -172,6 +200,7 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_
   pRenderData->m_qGlobalRotation       = GetOwner()->GetGlobalRotation();
   pRenderData->m_InnerSpotAngle        = m_InnerSpotAngle;
   pRenderData->m_OuterSpotAngle        = m_OuterSpotAngle;
+  pRenderData->m_hIESProfile           = m_hIESProfile;
   pRenderData->m_uiSortingKey          = GetUniqueIdForRendering();
 
   ref_msg.AddRenderData(pRenderData, m_bCastShadows ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never);

@@ -562,7 +562,7 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
           return XII_FAILURE;
         }
 
-        xiiGALShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(it.Key())].Insert(bin.m_uiSourceHash, bin);
+        xiiGALShaderStageBinary::StoreStageBinary(it.Key(), bin);
       }
     }
 

@@ -73,6 +73,10 @@ struct XII_GRAPHICSCORE_DLL xiiCameraUsageHint
     PathTracingView,
     ComputeView,
     LowFrequencyView,
+    SensorRGB,
+    SensorInfrared,
+    SensorDepth,
+    SensorLiDAR,
 
     ENUM_COUNT,
 

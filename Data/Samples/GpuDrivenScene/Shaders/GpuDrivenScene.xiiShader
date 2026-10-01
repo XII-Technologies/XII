@@ -24,6 +24,7 @@ struct MeshVertex
 {
   float4 Position : SV_Position;
   float3 WorldNormal : NORMAL0;
+  float3 WorldPosition : TEXCOORD2;
   nointerpolation uint MaterialIndex : TEXCOORD0;
   nointerpolation uint ObjectIndex : TEXCOORD1;
 };
@@ -75,6 +76,7 @@ void main(uint threadIndex : SV_GroupThreadID,
       dot(instance.NormalTransformRow0.xyz, localNormal),
       dot(instance.NormalTransformRow1.xyz, localNormal),
       dot(instance.NormalTransformRow2.xyz, localNormal)));
+    output.WorldPosition = worldPosition;
     output.MaterialIndex = instance.MaterialIndex;
     output.ObjectIndex = instance.ObjectIndex;
     vertices[threadIndex] = output;
@@ -95,14 +97,51 @@ void main(uint threadIndex : SV_GroupThreadID,
 #include "GpuDrivenSceneConstants.h"
 
 ByteAddressBuffer g_MaterialData;
+Texture2D<float> g_ShadowMap;
+SamplerState PointClampSampler;
+
+#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowSampling.h>
 
 struct MeshVertex
 {
   float4 Position : SV_Position;
   float3 WorldNormal : NORMAL0;
+  float3 WorldPosition : TEXCOORD2;
   nointerpolation uint MaterialIndex : TEXCOORD0;
   nointerpolation uint ObjectIndex : TEXCOORD1;
 };
+
+float EvaluateSunShadow(float3 worldPosition, float3 worldNormal, float3 directionToSun)
+{
+  const float NoL = saturate(dot(worldNormal, directionToSun));
+  const float normalBias = ShadowTexelSize.z * lerp(0.5f, 2.0f, 1.0f - NoL);
+  const float4 shadowClip = mul(ShadowViewProjectionMatrix, float4(worldPosition + worldNormal * normalBias, 1.0f));
+  if (shadowClip.w <= 0.0f)
+    return 1.0f;
+
+  const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
+  const float2 shadowUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+  if (any(shadowUV <= 0.0f) || any(shadowUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
+    return 1.0f;
+
+  const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.00065f, 1.0f - NoL);
+  float virtualVisibility;
+  if (TrySampleVirtualDirectionalShadow(0u, shadowUV, receiverDepth, virtualVisibility))
+    return virtualVisibility;
+
+  float visibility = 0.0f;
+  [unroll]
+  for (int y = -1; y <= 1; ++y)
+  {
+    [unroll]
+    for (int x = -1; x <= 1; ++x)
+    {
+      const float mapDepth = g_ShadowMap.SampleLevel(PointClampSampler, shadowUV + float2(x, y) * ShadowTexelSize.xy, 0.0f);
+      visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
+    }
+  }
+  return visibility * (1.0f / 9.0f);
+}
 
 float4 main(MeshVertex input) : SV_Target0
 {
@@ -110,7 +149,8 @@ float4 main(MeshVertex input) : SV_Target0
   const float4 baseColor = asfloat(g_MaterialData.Load4(materialOffset));
   const float3 lightDirection = normalize(-SunDirectionIntensity.xyz);
   const float diffuse = saturate(dot(normalize(input.WorldNormal), lightDirection));
-  const float3 lighting = AmbientColor.rgb + diffuse * SunDirectionIntensity.w;
+  const float shadow = EvaluateSunShadow(input.WorldPosition, normalize(input.WorldNormal), lightDirection);
+  const float3 lighting = AmbientColor.rgb + diffuse * SunDirectionIntensity.w * shadow;
   const float selectionPulse = 0.04f * sin((float)input.ObjectIndex * 0.6180339f);
   return float4(saturate(baseColor.rgb * lighting + selectionPulse), baseColor.a);
 }

@@ -1,0 +1,101 @@
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+
+// Edge-aware spatial reservoir reuse and final radiance reconstruction for near-field GI.
+
+#include "PipelineCommon.xiiShader"
+#include "Passes/GlobalIllumination/ReSTIRGIConstants.h"
+#include "ReSTIRGICommon.h"
+
+Texture2D<float>  g_SceneDepth    : register(t4);
+Texture2D<float2> g_GBufferNormal : register(t5);
+Texture2D<float4> g_GBufferAlbedo : register(t6);
+Texture2D<float4> g_TemporalSample : register(t7);
+Texture2D<float2> g_TemporalState  : register(t8);
+RWTexture2D<float4> g_ReservoirSampleOut : register(u9);
+RWTexture2D<float2> g_ReservoirStateOut  : register(u10);
+RWTexture2D<float4> g_ReservoirSurfaceOut : register(u11);
+RWTexture2D<float4> g_ResampledRadianceOut : register(u12);
+
+static const int2 XII_RESTIR_GI_NEIGHBOR_OFFSETS[8] =
+{
+  int2(-1, 0), int2(1, 0), int2(0, -1), int2(0, 1),
+  int2(-2, -1), int2(2, 1), int2(-1, 2), int2(1, -2)
+};
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_ResampledRadianceOut.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const uint2 pixel = dispatchThreadId.xy;
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  if (depth <= 0.0f)
+  {
+    g_ReservoirSampleOut[pixel]   = 0.0f;
+    g_ReservoirStateOut[pixel]    = 0.0f;
+    g_ReservoirSurfaceOut[pixel]  = 0.0f;
+    g_ResampledRadianceOut[pixel] = 0.0f;
+    return;
+  }
+
+  const float2 encodedNormal = g_GBufferNormal.Load(int3(pixel, 0));
+  const float3 normal        = DecodeOctNormal(encodedNormal);
+  const float linearDepth    = LinearizeDepth(depth);
+  const float albedoLuminance = dot(g_GBufferAlbedo.Load(int3(pixel, 0)).rgb, float3(0.2126f, 0.7152f, 0.0722f));
+  uint randomState = ReSTIRGIHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x85EBCA6BU);
+  xiiReSTIRGIReservoir reservoir = ReSTIRGIEmptyReservoir();
+
+  xiiReSTIRGIReservoir source = ReSTIRGIUnpackReservoir(
+    g_TemporalSample.Load(int3(pixel, 0)),
+    g_TemporalState.Load(int3(pixel, 0)));
+  if (ReSTIRGIValidateReservoir(source, RadianceClamp))
+  {
+    const uint sourceM = min(source.M, 16U);
+    const float target = ReSTIRGITarget(source.Sample.rgb, RadianceClamp);
+    ReSTIRGIUpdateReservoir(reservoir, source.Sample, target * source.WeightSum * (float)sourceM, sourceM, randomState);
+  }
+
+  const uint rotation = ReSTIRGIHash(randomState) & 7U;
+  const uint spatialSampleCount = min(SpatialSamples, 8U);
+  [loop]
+  for (uint tap = 0U; tap < spatialSampleCount; ++tap)
+  {
+    const int2 neighborPixel = int2(pixel) + XII_RESTIR_GI_NEIGHBOR_OFFSETS[(rotation + tap) & 7U];
+    if (any(neighborPixel < 0) || any(neighborPixel >= int2(dimensions)))
+      continue;
+
+    const float neighborDepth = g_SceneDepth.Load(int3(neighborPixel, 0));
+    if (neighborDepth <= 0.0f)
+      continue;
+
+    const float3 neighborNormal = DecodeOctNormal(g_GBufferNormal.Load(int3(neighborPixel, 0)));
+    const float neighborLinearDepth = LinearizeDepth(neighborDepth);
+    const float neighborAlbedoLuminance = dot(g_GBufferAlbedo.Load(int3(neighborPixel, 0)).rgb, float3(0.2126f, 0.7152f, 0.0722f));
+    if (abs(neighborLinearDepth - linearDepth) > max(linearDepth * 0.06f, 0.02f) ||
+        dot(neighborNormal, normal) < 0.90f || abs(neighborAlbedoLuminance - albedoLuminance) > 0.15f)
+      continue;
+
+    xiiReSTIRGIReservoir neighbor = ReSTIRGIUnpackReservoir(
+      g_TemporalSample.Load(int3(neighborPixel, 0)),
+      g_TemporalState.Load(int3(neighborPixel, 0)));
+    if (!ReSTIRGIValidateReservoir(neighbor, RadianceClamp))
+      continue;
+
+    const uint neighborM = min(neighbor.M, 4U);
+    const float target = ReSTIRGITarget(neighbor.Sample.rgb, RadianceClamp);
+    ReSTIRGIUpdateReservoir(reservoir, neighbor.Sample, target * neighbor.WeightSum * (float)neighborM, neighborM, randomState);
+  }
+
+  ReSTIRGIFinalizeReservoir(reservoir, RadianceClamp);
+  g_ReservoirSampleOut[pixel]  = reservoir.Sample;
+  g_ReservoirStateOut[pixel]   = float2(reservoir.WeightSum, (float)reservoir.M);
+  g_ReservoirSurfaceOut[pixel] = float4(encodedNormal, linearDepth, albedoLuminance);
+  g_ResampledRadianceOut[pixel] = reservoir.M > 0U ?
+    float4(min(reservoir.Sample.rgb * reservoir.WeightSum, RadianceClamp.xxx), reservoir.Sample.a) : 0.0f;
+}

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -110,48 +109,48 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyStats);
 /// Startup configuration for the process-wide geometry residency service.
 struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyDescription
 {
-  xiiUInt32 m_uiMaxGeometries  = 65536U;
-  xiiUInt32 m_uiFramesInFlight = 3U;
-  xiiUInt64 m_uiBudgetBytes    = 512ULL * 1024ULL * 1024ULL;
-  xiiUInt32 m_uiMaxMeshlets    = 1024U * 1024U;
+  xiiUInt32 m_uiMaxGeometries             = 65536U;
+  xiiUInt32 m_uiFramesInFlight            = 3U;
+  xiiUInt64 m_uiBudgetBytes               = 512ULL * 1024ULL * 1024ULL;
+  xiiUInt64 m_uiUploadBudgetPerFrameBytes = 32ULL * 1024ULL * 1024ULL;
+  xiiUInt32 m_uiMaxMeshlets               = 1024U * 1024U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyDescription);
 
-/// Subsystem-owned stable GPU geometry table and mesh LOD residency service.
+/// Static subsystem facade for the stable GPU geometry table and mesh LOD residency service.
 ///
-/// The instance is constructed after Foundation startup and initialized against the default GAL
-/// device during high-level startup. Renderers access GetSingleton(); they never own or destroy the
-/// residency service, preventing allocator and GPU-object lifetime inversions in Debug builds.
+/// Allocator-backed CPU state is created during core startup and GPU resources are created during
+/// high-level startup. Callers never construct, own, cache, or destroy a manager object.
 class XII_GRAPHICSCORE_DLL xiiGeometryResidencyManager
 {
-  XII_DECLARE_SINGLETON(xiiGeometryResidencyManager);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGeometryResidencyManager);
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, GeometryResidencyManager);
 
 public:
-  xiiGeometryResidencyManager();
-  ~xiiGeometryResidencyManager();
+  xiiGeometryResidencyManager() = delete;
 
   /// Stores startup configuration or reapplies it while no geometry handles are active.
-  [[nodiscard]] xiiResult                              Configure(const xiiGeometryResidencyDescription& description);
-  [[nodiscard]] const xiiGeometryResidencyDescription& GetConfiguration() const { return m_Configuration; }
-  [[nodiscard]] bool                                   IsInitialized() const { return m_bInitialized; }
+  [[nodiscard]] static xiiResult                              Configure(const xiiGeometryResidencyDescription& description);
+  [[nodiscard]] static const xiiGeometryResidencyDescription& GetConfiguration();
+  [[nodiscard]] static bool                                   IsSubsystemInitialized();
+  [[nodiscard]] static bool                                   IsInitialized();
 
-  [[nodiscard]] xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
-  void                            UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
-  void                            RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex);
-  void                            Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
-  void                            ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
+  [[nodiscard]] static xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
+  static void                            UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
+  static void                            RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex);
+  static void                            Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
+  static void                            ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
 
   /// Supplies indices allocated by the backend bindless resource table.
-  bool SetBindlessIndices(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt32 uiVertex, xiiUInt32 uiIndex, xiiUInt32 uiMeshlet, xiiUInt32 uiRemap, xiiUInt32 uiPrimitive);
+  static bool SetBindlessIndices(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt32 uiVertex, xiiUInt32 uiIndex, xiiUInt32 uiMeshlet, xiiUInt32 uiRemap, xiiUInt32 uiPrimitive);
 
-  [[nodiscard]] bool                               IsValid(xiiGeometryHandle handle) const;
-  [[nodiscard]] xiiEnum<xiiGeometryResidencyState> GetState(xiiGeometryHandle handle) const;
-  [[nodiscard]] const xiiGpuGeometryRecord*        GetGpuRecord(xiiGeometryHandle handle) const;
-  [[nodiscard]] xiiSharedPtr<xiiGALBuffer>         GetMetadataBuffer() const { return m_pMetadataBuffer; }
-  [[nodiscard]] xiiSharedPtr<xiiGALBuffer>         GetMeshletMetadataBuffer() const { return m_pMeshletMetadataBuffer; }
-  [[nodiscard]] xiiGeometryResidencyStats          GetStats() const;
+  [[nodiscard]] static bool                               IsValid(xiiGeometryHandle handle);
+  [[nodiscard]] static xiiEnum<xiiGeometryResidencyState> GetState(xiiGeometryHandle handle);
+  [[nodiscard]] static const xiiGpuGeometryRecord*        GetGpuRecord(xiiGeometryHandle handle);
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer>         GetMetadataBuffer();
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer>         GetMeshletMetadataBuffer();
+  [[nodiscard]] static xiiGeometryResidencyStats          GetStats();
 
   struct UploadHandles
   {
@@ -164,13 +163,14 @@ public:
     xiiUInt32 m_uiMaximumResidentMeshletCount = 0U;
   };
 
-  [[nodiscard]] UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] static UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
 
 private:
-  xiiResult Initialize(xiiGALDevice* pDevice, const xiiGeometryResidencyDescription& description);
-  void      Shutdown();
-  void      EngineStartup();
-  void      EngineShutdown();
+  static void      Startup();
+  static xiiResult Initialize(xiiGALDevice* pDevice, const xiiGeometryResidencyDescription& description);
+  static void      Shutdown();
+  static void      EngineStartup();
+  static void      EngineShutdown();
 
   struct Slot
   {
@@ -200,13 +200,13 @@ private:
 
   struct UploadPassData
   {
-    xiiRenderGraphBufferHandle m_hGeometryBuffer;
-    xiiRenderGraphBufferHandle m_hMeshletBuffer;
+    xiiRenderGraphBufferHandle                          m_hGeometryBuffer;
+    xiiRenderGraphBufferHandle                          m_hMeshletBuffer;
     xiiDynamicArray<Upload, xiiAlignedAllocatorWrapper> m_Uploads;
     struct MeshletUpload
     {
-      xiiUInt64                   m_uiUploadId = 0U;
-      xiiUInt32                   m_uiOffset   = 0U;
+      xiiUInt64                                               m_uiUploadId = 0U;
+      xiiUInt32                                               m_uiOffset   = 0U;
       xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> m_Meshlets;
     };
     xiiDynamicArray<MeshletUpload> m_MeshletUploads;
@@ -218,25 +218,12 @@ private:
     xiiUInt32 m_uiCount  = 0U;
   };
 
-  bool BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget);
-  void EnforceBudget(xiiUInt64 uiCompletedFrame);
-  bool AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
-  void FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);
-  void ReleaseMeshletAllocations(Slot& slot);
+  static bool BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget);
+  static void EnforceBudget(xiiUInt64 uiCompletedFrame);
+  static bool AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
+  static void FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);
+  static void ReleaseMeshletAllocations(Slot& slot);
 
-  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper> m_Slots;
-  xiiDynamicArray<xiiUInt32>                     m_FreeSlots;
-  xiiSharedPtr<xiiGALBuffer>                     m_pMetadataBuffer;
-  xiiSharedPtr<xiiGALBuffer>                     m_pMeshletMetadataBuffer;
-  xiiDynamicArray<FreeRange>                     m_FreeMeshletRanges;
-  xiiDynamicArray<UploadPassData::MeshletUpload> m_PendingMeshletUploads;
-  xiiUInt32                                      m_uiFramesInFlight      = 0U;
-  xiiUInt64                                      m_uiAllFrameMask        = 0U;
-  xiiUInt64                                      m_uiBudgetBytes         = 0U;
-  xiiUInt64                                      m_uiResidentBytes       = 0U;
-  xiiUInt64                                      m_uiLastUploadedBytes   = 0U;
-  xiiUInt64                                      m_uiNextMeshletUploadId = 1U;
-  xiiGeometryResidencyDescription                m_Configuration;
-  bool                                           m_bEngineStarted = false;
-  bool                                           m_bInitialized   = false;
+  class State;
+  static xiiUniquePtr<State> s_pState;
 };

@@ -9,6 +9,7 @@
 DECLARE_CONSTANT_BUFFER_AUTO(xiiGpuDrivenSceneConstants)
 {
   MAT4(ViewProjectionMatrix);
+  MAT4(ShadowViewProjectionMatrix);
   UINT1(GeometryBaseIndex);
   UINT1(MaterialFrameBase);
   UINT1(MaterialStride);
@@ -18,4 +19,5 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiGpuDrivenSceneConstants)
   UINT2(Padding);
   FLOAT4(SunDirectionIntensity);
   FLOAT4(AmbientColor);
+  FLOAT4(ShadowTexelSize);
 };

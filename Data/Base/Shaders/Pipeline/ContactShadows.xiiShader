@@ -1,13 +1,21 @@
 // XII Engine - ContactShadows.xiiShader
 // Screen-space contact shadows for the dominant directional light.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
 
-Texture2D<float>   g_SceneDepth       : register(t0);
-RWTexture2D<float> g_ContactShadowOut : register(u0);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+
+Texture2D<float>   g_SceneDepth;
+RWTexture2D<float> g_ContactShadowOut;
 
 [numthreads(8, 8, 1)]
-void CS_ContactShadow(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims;
     g_ContactShadowOut.GetDimensions(dims.x, dims.y);
@@ -15,7 +23,7 @@ void CS_ContactShadow(uint3 tid : SV_DispatchThreadID)
         return;
 
     const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
-    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    const float depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0);
 
     float shadow = 0.0f;
     if (depth > 0.0f && depth < 1.0f && g_MainLightDirectionAndIntensity.w > 0.0f)
@@ -41,7 +49,7 @@ void CS_ContactShadow(uint3 tid : SV_DispatchThreadID)
             if (any(sampleUv < 0.0f) || any(sampleUv > 1.0f))
                 break;
 
-            const float sampleDepth = g_SceneDepth.SampleLevel(g_sPointClamp, sampleUv, 0);
+            const float sampleDepth = g_SceneDepth.SampleLevel(PointClampSampler, sampleUv, 0);
             const float rayDepth = clipPos.z / clipPos.w;
 
             if (sampleDepth > rayDepth + g_ContactShadowThickness)

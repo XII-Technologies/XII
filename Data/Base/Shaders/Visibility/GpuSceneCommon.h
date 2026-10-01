@@ -32,7 +32,8 @@ struct GpuVisibilityView
   uint     RequiredFlags;
   uint     ExcludedFlags;
   uint     GeometryBaseIndex;
-  uint3    Padding;
+  uint     MaxVisibleMeshlets;
+  uint2    Padding;
 };
 
 struct GpuGeometryLod
@@ -88,6 +89,8 @@ uint SelectResidentLod(GpuGeometryRecord geometry, float worldSpaceRadius, float
 
 bool SphereInsideFrustum(float3 center, float radius, GpuVisibilityView view)
 {
-  [unroll] for (uint plane = 0u; plane < 6u; ++plane) if (dot(view.FrustumPlanes[plane].xyz, center) + view.FrustumPlanes[plane].w < -radius) return false;
+  // xiiFrustum planes point outwards. A sphere is outside when its signed distance in the
+  // outward normal direction is greater than its radius.
+  [unroll] for (uint plane = 0u; plane < 6u; ++plane) if (dot(view.FrustumPlanes[plane].xyz, center) + view.FrustumPlanes[plane].w > radius) return false;
   return true;
 }

@@ -3,9 +3,9 @@ ALL
 
 [PERMUTATIONS]
 
-[COMPUTESHADER]
+[COMPUTE_SHADER]
 
-#include "PipelineCommon.xiiShader"
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 #define DECAL_TILE_SIZE 16u
 #define MAX_PROJECTED_DECALS_PER_TILE 12u
@@ -35,7 +35,11 @@ RWStructuredBuffer<uint>    g_MeshDecalCommands;
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     const uint decalIndex = dispatchThreadId.x;
-    if (decalIndex >= g_Decals.Length)
+
+    uint decalCount;
+    uint decalStride;
+    g_Decals.GetDimensions(decalCount, decalStride);
+    if (decalIndex >= decalCount)
     {
         return;
     }
@@ -73,7 +77,10 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
     uint visibleSlot = 0u;
     InterlockedAdd(g_VisibleDecals[0], 1u, visibleSlot);
-    if (visibleSlot + 1u < g_VisibleDecals.Length)
+    uint visibleCapacity;
+    uint visibleStride;
+    g_VisibleDecals.GetDimensions(visibleCapacity, visibleStride);
+    if (visibleSlot + 1u < visibleCapacity)
     {
         g_VisibleDecals[visibleSlot + 1u] = decalIndex;
     }
@@ -82,7 +89,10 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     {
         uint meshSlot = 0u;
         InterlockedAdd(g_MeshDecalCommands[0], 1u, meshSlot);
-        if (meshSlot + 1u < g_MeshDecalCommands.Length)
+        uint meshCommandCapacity;
+        uint meshCommandStride;
+        g_MeshDecalCommands.GetDimensions(meshCommandCapacity, meshCommandStride);
+        if (meshSlot + 1u < meshCommandCapacity)
         {
             g_MeshDecalCommands[meshSlot + 1u] = decalIndex;
         }

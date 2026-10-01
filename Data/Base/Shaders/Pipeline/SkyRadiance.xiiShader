@@ -1,0 +1,89 @@
+// XII Engine - Builds view-dependent physical sky radiance for indirect lighting.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
+
+Texture2D<float4>   g_Transmittance;
+Texture2D<float4>   g_MultiScatter;
+RWTexture2D<float4> g_SkyOut;
+
+float RayleighPhase(float cosine)
+{
+  return (3.0f / (16.0f * PI)) * (1.0f + cosine * cosine);
+}
+
+float MiePhase(float cosine, float anisotropy)
+{
+  const float g2 = anisotropy * anisotropy;
+  const float denominator = max((2.0f + g2) * pow(max(1.0f + g2 - 2.0f * anisotropy * cosine, 1e-4f), 1.5f), 1e-4f);
+  return (3.0f / (8.0f * PI)) * (1.0f - g2) * (1.0f + cosine * cosine) / denominator;
+}
+
+float DistanceToAtmosphereExit(float radius, float cosine)
+{
+  const float atmosphereRadius = PlanetAtmosphereRadiiScaleHeights.y;
+  const float b = radius * cosine;
+  const float c = radius * radius - atmosphereRadius * atmosphereRadius;
+  return max(-b + sqrt(max(b * b - c, 0.0f)), 0.0f);
+}
+
+float3 SampleTransmittance(float radius, float cosine)
+{
+  const float2 uv = float2(
+    saturate((radius - PlanetAtmosphereRadiiScaleHeights.x) /
+             max(PlanetAtmosphereRadiiScaleHeights.y - PlanetAtmosphereRadiiScaleHeights.x, 1e-4f)),
+    saturate(cosine * 0.5f + 0.5f));
+  return g_Transmittance.SampleLevel(LinearClampSampler, uv, 0.0f).rgb;
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_SkyOut.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const float2 uv = (float2(dispatchThreadId.xy) + 0.5f) / float2(dimensions);
+  const float3 cameraPosition = g_CameraPositionAndNearPlane.xyz;
+  const float3 viewDirection = normalize(ReconstructWorldPos(uv, 0.001f) - cameraPosition);
+  const float3 sunDirection = normalize(-g_MainLightDirectionAndIntensity.xyz);
+  const float3 planetUp = normalize(PlanetUpAndGroundAltitudeMeters.xyz);
+  const float cameraAltitudeMeters = dot(cameraPosition, planetUp) - PlanetUpAndGroundAltitudeMeters.w;
+  const float cameraRadius = PlanetAtmosphereRadiiScaleHeights.x + max(cameraAltitudeMeters * 0.001f, 0.0f);
+  const float altitude = max(cameraRadius - PlanetAtmosphereRadiiScaleHeights.x, 0.0f);
+  const float viewZenithCosine = dot(viewDirection, planetUp);
+  const float sunZenithCosine = dot(sunDirection, planetUp);
+  const float scatteringCosine = dot(viewDirection, sunDirection);
+
+  const float rayleighDensity = exp(-altitude / PlanetAtmosphereRadiiScaleHeights.z);
+  const float mieDensity = exp(-altitude / PlanetAtmosphereRadiiScaleHeights.w);
+  const float3 scattering = RayleighScattering.xyz * rayleighDensity * RayleighPhase(scatteringCosine) +
+                            MieScatteringAndPhase.xyz * mieDensity * MiePhase(scatteringCosine, MieScatteringAndPhase.w);
+  const float3 viewTransmittance = SampleTransmittance(cameraRadius, viewZenithCosine);
+  const float3 sunTransmittance = SampleTransmittance(cameraRadius, sunZenithCosine);
+  const float pathLength = DistanceToAtmosphereExit(cameraRadius, viewZenithCosine);
+  const float3 solarIlluminance = max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f);
+  float3 radiance = solarIlluminance * scattering * pathLength * viewTransmittance * sunTransmittance;
+
+  const float2 multiScatterUV = float2(saturate(sunZenithCosine * 0.5f + 0.5f),
+    saturate((cameraRadius - PlanetAtmosphereRadiiScaleHeights.x) /
+             max(PlanetAtmosphereRadiiScaleHeights.y - PlanetAtmosphereRadiiScaleHeights.x, 1e-4f)));
+  radiance += g_MultiScatter.SampleLevel(LinearClampSampler, multiScatterUV, 0.0f).rgb * solarIlluminance * pathLength * viewTransmittance;
+
+  const float sourceRadius = saturate(g_DirectionalShadowSourceRadius);
+  if (sourceRadius > 1e-5f && scatteringCosine > sqrt(max(1.0f - sourceRadius * sourceRadius, 0.0f)))
+  {
+    radiance += solarIlluminance * viewTransmittance / max(PI * sourceRadius * sourceRadius, 1e-6f);
+  }
+
+  g_SkyOut[dispatchThreadId.xy] = float4(max(radiance, 0.0f), 1.0f);
+}

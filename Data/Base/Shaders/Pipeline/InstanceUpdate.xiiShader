@@ -1,53 +1,42 @@
-// XII Engine - InstanceUpdate.xiiShader  [REWRITTEN]
-// Pass 5: Compute world matrix + AABB from scene transforms.
-// Dispatch: ceil(InstanceCount/64) × 1 × 1
+// Compacts extracted transforms and bounds into GPU rendering streams.
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
+[PERMUTATIONS]
 
-cbuffer InstanceUpdateConstants : register(b3)
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/Passes/Visibility/InstanceUpdateConstants.h>
+
+struct InstanceUpdateSource
 {
-    uint g_InstanceCount;
-    uint3 _pad;
+  Transform GlobalTransform;
+  float4 CenterRadius;
+  float4 Extents;
 };
 
-struct SceneTransform
+struct InstanceBounds
 {
-    float3 Translation;    float Scale;
-    float4 Rotation;       // quaternion (xyzw)
+  float4 CenterRadius;
+  float4 Extents;
 };
 
-struct InstanceBounds { float3 Center; float Radius; float3 Extents; float _pad; };
-
-StructuredBuffer<SceneTransform> g_SceneTransforms : register(t0);
-RWStructuredBuffer<float4x3>     g_WorldMatrices   : register(u0); // float4x3 row-major TRS
-RWStructuredBuffer<InstanceBounds> g_InstanceBounds: register(u1);
-
-float4x3 QuatScaleTransToMatrix(float4 q, float s, float3 t)
-{
-    // Expand quaternion to 3x3 rotation then scale and embed translation column.
-    float x=q.x,y=q.y,z=q.z,w=q.w;
-    float4x3 m;
-    m[0] = float3(1-2*(y*y+z*z), 2*(x*y+z*w), 2*(x*z-y*w)) * s;
-    m[1] = float3(2*(x*y-z*w), 1-2*(x*x+z*z), 2*(y*z+x*w)) * s;
-    m[2] = float3(2*(x*z+y*w), 2*(y*z-x*w), 1-2*(x*x+y*y)) * s;
-    m[3] = t;
-    return m;
-}
+StructuredBuffer<InstanceUpdateSource> g_InstanceSource;
+RWStructuredBuffer<Transform> g_MatricesOut;
+RWStructuredBuffer<InstanceBounds> g_BoundsOut;
 
 [numthreads(64, 1, 1)]
-void CS_InstanceUpdate(uint3 tid : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    if (tid.x >= g_InstanceCount) return;
+  const uint instanceIndex = dispatchThreadId.x;
+  if (instanceIndex >= InstanceCount)
+    return;
 
-    SceneTransform xf = g_SceneTransforms[tid.x];
-    float4x3 world    = QuatScaleTransToMatrix(xf.Rotation, xf.Scale, xf.Translation);
-    g_WorldMatrices[tid.x] = world;
+  const InstanceUpdateSource source = g_InstanceSource[instanceIndex];
+  InstanceBounds bounds;
+  bounds.CenterRadius = source.CenterRadius;
+  bounds.Extents = source.Extents;
 
-    // Approximate AABB in world space from scaled unit sphere (worst-case for non-uniform scale).
-    float r = xf.Scale; // bounding sphere radius = scale (for unit-mesh assets)
-    InstanceBounds b;
-    b.Center  = xf.Translation;
-    b.Radius  = r;
-    b.Extents = float3(r, r, r);
-    g_InstanceBounds[tid.x] = b;
+  g_MatricesOut[instanceIndex] = source.GlobalTransform;
+  g_BoundsOut[instanceIndex] = bounds;
 }

@@ -20,23 +20,20 @@ xiiStringView xiiGetGPUTestingEnvironmentName(xiiUInt32 uiIndex)
 
 xiiResult xiiConfigureGPUTestDataDirectories()
 {
-  // Unloading a renderer plugin reinitializes core subsystems, which clears all file-system mounts.
-  // Use the actual mount state instead of a process-lifetime flag so every fixture can restore it.
-  if (xiiFileSystem::FindDataDirectoryWithRoot("shadercache") != nullptr)
-    return XII_SUCCESS;
-
   xiiFileSystem::SetSpecialDirectory("testout", xiiTestFramework::GetInstance()->GetAbsOutputPath());
 
+  xiiStringBuilder sBaseDir = ">sdk/Data/Base/";
   xiiStringBuilder sReadDir(">sdk/", xiiTestFramework::GetInstance()->GetRelTestDataPath());
   sReadDir.PathParentDirectory();
 
-  XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites));
-  XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">sdk/Data/Base/", "Base"));
+  XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites)); // for shader files
+  XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sBaseDir, "Base"));
   XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">xiitest/", "ImageComparisonDataDir", "imgout", xiiDataDirUsage::AllowWrites));
   XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sReadDir, "UnitTestData"));
 
   sReadDir.Set(">sdk/", xiiTestFramework::GetInstance()->GetRelTestDataPath());
   XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sReadDir, "ImageComparisonDataDir"));
+
   return XII_SUCCESS;
 }
 

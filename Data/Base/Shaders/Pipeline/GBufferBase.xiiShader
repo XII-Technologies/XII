@@ -1,8 +1,22 @@
-// XII Engine - GBufferBase.xiiShader  [NEW]
-// Pass 27: G-Buffer MRT base pass - albedo, oct-normal, material (roughness/metallic/AO), emissive.
+// XII Engine - GBufferBase.xiiShader
+// G-Buffer MRT base pass - albedo, oct-normal, material (roughness/metallic/AO), emissive.
 // Indirect geometry-driven draw via DrawIndexedIndirect.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[RENDERSTATE]
+
+DepthEnable = true
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
+DepthWriteEnable = false
+CullMode = CullMode_Back
+
+[SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 // 
 // Vertex Input
@@ -27,9 +41,11 @@ struct VS_Out
     uint   MatIndex  : TEXCOORD5;
 };
 
-StructuredBuffer<float4x3> g_WorldMatrices : register(t0); // per-instance world matrix
+[VERTEX_SHADER]
 
-VS_Out VS_GBufferBase(VS_In In)
+StructuredBuffer<float4x3> g_WorldMatrices; // per-instance world matrix
+
+VS_Out main(VS_In In)
 {
     float4x3 world = g_WorldMatrices[In.InstanceID];
 
@@ -48,9 +64,8 @@ VS_Out VS_GBufferBase(VS_In In)
     return o;
 }
 
-// 
-// Pixel / Fragment Output
-// 
+[PIXEL_SHADER]
+
 struct PS_Out
 {
     float4 Albedo   : SV_Target0; // rgb=albedo, a=opacity
@@ -59,12 +74,12 @@ struct PS_Out
     float4 Emissive : SV_Target3; // rgb=emissive HDR
 };
 
-Texture2D<float4> g_AlbedoMap   : register(t1);
-Texture2D<float4> g_NormalMap   : register(t2);
-Texture2D<float4> g_MaterialMap : register(t3); // r=roughness, g=metallic, b=AO
-Texture2D<float4> g_EmissiveMap : register(t4);
+Texture2D<float4> g_AlbedoMap;
+Texture2D<float4> g_NormalMap;
+Texture2D<float4> g_MaterialMap; // r=roughness, g=metallic, b=AO
+Texture2D<float4> g_EmissiveMap;
 
-PS_Out PS_GBufferBase(VS_Out In)
+PS_Out main(VS_Out In)
 {
     // Material sample.
     float4 albedo   = g_AlbedoMap   .Sample(g_sAnisotropicWrap, In.UV0);

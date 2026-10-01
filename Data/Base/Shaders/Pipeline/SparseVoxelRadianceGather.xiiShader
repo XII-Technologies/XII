@@ -1,0 +1,100 @@
+// XII Engine - sparse voxel radiance clipmap final gather.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
+
+struct xiiGpuSparseVoxelLevel
+{
+    int4 MinimumCellAndPageOffset;
+    float4 VoxelAndBrickSize;
+};
+
+Texture2D<float>                          g_SceneDepth;
+Texture2D<float2>                         g_GBufNormal;
+StructuredBuffer<uint>                    g_SparseVoxelPageTable;
+StructuredBuffer<xiiGpuSparseVoxelLevel> g_SparseVoxelLevels;
+StructuredBuffer<float4>                  g_SparseVoxelRadiancePool;
+RWTexture2D<float4>                       g_SparseVoxelIrradianceOut;
+
+float3 LoadBrickRadiance(uint physicalBrick, float3 localVoxelCoordinate)
+{
+    const uint resolution = ClipmapAndUpdateCounts.z;
+    const uint voxelsPerBrick = PoolLayout.x;
+    const float3 clampedCoordinate = clamp(localVoxelCoordinate, 0.0f, (float)resolution - 1.001f);
+    const uint3 baseVoxel = min((uint3)floor(clampedCoordinate), resolution - 2u);
+    const float3 blend = frac(clampedCoordinate);
+    const uint brickBase = physicalBrick * voxelsPerBrick;
+
+    float3 radiance = 0.0f;
+    [unroll]
+    for (uint corner = 0u; corner < 8u; ++corner)
+    {
+        const uint3 offset = uint3((corner >> 0u) & 1u, (corner >> 1u) & 1u, (corner >> 2u) & 1u);
+        const uint3 voxel = baseVoxel + offset;
+        const uint voxelIndex = (voxel.z * resolution + voxel.y) * resolution + voxel.x;
+        const float3 axisWeight = lerp(1.0f - blend, blend, float3(offset));
+        radiance += g_SparseVoxelRadiancePool[brickBase + voxelIndex].rgb * axisWeight.x * axisWeight.y * axisWeight.z;
+    }
+    return radiance;
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dimensions;
+    g_SparseVoxelIrradianceOut.GetDimensions(dimensions.x, dimensions.y);
+    if (any(tid.xy >= dimensions))
+        return;
+
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dimensions);
+    const float depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0.0f);
+    if (depth <= 0.0f)
+    {
+        g_SparseVoxelIrradianceOut[tid.xy] = 0.0f;
+        return;
+    }
+
+    const float3 worldPosition = ReconstructWorldPos(uv, depth);
+    const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler, uv, 0.0f));
+    const uint levelCount = ClipmapAndUpdateCounts.x;
+    const uint brickGridResolution = ClipmapAndUpdateCounts.y;
+
+    [loop]
+    for (uint level = 0u; level < levelCount; ++level)
+    {
+        const xiiGpuSparseVoxelLevel levelData = g_SparseVoxelLevels[level];
+        const float voxelSize = levelData.VoxelAndBrickSize.x;
+        const float brickWorldSize = levelData.VoxelAndBrickSize.y;
+        const int3 cell = (int3)floor(worldPosition / brickWorldSize);
+        const int3 localBrick = cell - levelData.MinimumCellAndPageOffset.xyz;
+        if (any(localBrick < 0) || any(localBrick >= (int)brickGridResolution))
+            continue;
+
+        const uint pageIndex = (uint)levelData.MinimumCellAndPageOffset.w +
+            ((uint)localBrick.z * brickGridResolution + (uint)localBrick.y) * brickGridResolution + (uint)localBrick.x;
+        const uint physicalBrick = g_SparseVoxelPageTable[pageIndex];
+        if (physicalBrick == 0xFFFFFFFFu)
+            continue;
+
+        const float3 brickMinimum = float3(cell) * brickWorldSize;
+        const float3 localVoxelCoordinate = (worldPosition - brickMinimum) / voxelSize - 0.5f;
+        const float3 radiance = max(LoadBrickRadiance(physicalBrick, localVoxelCoordinate), 0.0f);
+
+        // The pool currently stores an isotropic diffuse lobe. Retain a small
+        // normal term so back-facing surfaces do not receive equal energy.
+        const float normalWeight = saturate(normal.z * 0.25f + 0.75f);
+        g_SparseVoxelIrradianceOut[tid.xy] = float4(radiance * normalWeight, 1.0f);
+        return;
+    }
+
+    g_SparseVoxelIrradianceOut[tid.xy] = 0.0f;
+}
+

@@ -13,6 +13,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiShadowCascadeConstants)
   MAT4(CascadeViewProjection)
   [4];                        ///< View-projection matrix for each active cascade (up to 4).
   FLOAT4(CascadeSplitDepths); ///< View-space split depths for the 4 cascade boundaries.
+  FLOAT4(CascadeWorldRadii);  ///< Half-extent in metres of each cascade's orthographic projection.
   UINT1(ActiveCascadeCount);  ///< Number of valid cascades (1–4).
   FLOAT3(_Pad);
 };

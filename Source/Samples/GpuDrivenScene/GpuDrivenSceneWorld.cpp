@@ -7,6 +7,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <GraphicsCore/Lighting/VirtualShadowMap.h>
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDrivenSceneConfiguration>)
   {
@@ -47,27 +48,42 @@ namespace
 
 xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration)
 {
-  xiiGeometryResidencyManager* pGeometryResidency = xiiGeometryResidencyManager::GetSingleton();
-  xiiGALBindlessResourceTable* pBindlessResources = xiiGALBindlessResourceTable::GetSingleton();
-  if (pGeometryResidency == nullptr || pBindlessResources == nullptr)
+  if (!xiiGALBindlessResourceTable::IsInitialized())
     return XII_FAILURE;
 
   xiiGALBindlessResourceTableDescription bindlessDescription;
   bindlessDescription.m_uiBufferSRVCapacity = 256U;
-  XII_SUCCEED_OR_RETURN(pBindlessResources->Configure(bindlessDescription));
+  XII_SUCCEED_OR_RETURN(xiiGALBindlessResourceTable::Configure(bindlessDescription));
 
   xiiGeometryResidencyDescription geometryDescription;
-  geometryDescription.m_uiMaxGeometries  = 64U;
-  geometryDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
-  geometryDescription.m_uiBudgetBytes    = 128ULL * 1024ULL * 1024ULL;
-  geometryDescription.m_uiMaxMeshlets    = configuration.m_uiMaxVisibleMeshlets;
-  XII_SUCCEED_OR_RETURN(pGeometryResidency->Configure(geometryDescription));
+  geometryDescription.m_uiMaxGeometries             = 64U;
+  geometryDescription.m_uiFramesInFlight            = configuration.m_uiFramesInFlight;
+  geometryDescription.m_uiBudgetBytes               = 128ULL * 1024ULL * 1024ULL;
+  geometryDescription.m_uiUploadBudgetPerFrameBytes = 8ULL * 1024ULL * 1024ULL;
+  geometryDescription.m_uiMaxMeshlets               = configuration.m_uiMaxVisibleMeshlets;
+  XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::Configure(geometryDescription));
 
   xiiMaterialGpuStorageDescription materialDescription;
   materialDescription.m_uiMaxMaterials      = 64U;
   materialDescription.m_uiMaxParameterBytes = 64U;
   materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
-  return xiiMaterialManager::Configure(materialDescription);
+  XII_SUCCEED_OR_RETURN(xiiMaterialManager::Configure(materialDescription));
+
+  xiiVirtualShadowMapSettings virtualShadowDescription;
+  virtualShadowDescription.m_uiVirtualResolution     = 16384U;
+  virtualShadowDescription.m_uiPageSize              = 128U;
+  virtualShadowDescription.m_uiPhysicalPageCount     = 1024U;
+  virtualShadowDescription.m_uiMaxFeedbackRequests   = 8192U;
+  virtualShadowDescription.m_uiMaxPageAllocations    = 128U;
+  virtualShadowDescription.m_uiMaxPageRasterizations = 16U;
+  virtualShadowDescription.m_uiFramesInFlight        = configuration.m_uiFramesInFlight;
+  XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::Configure(virtualShadowDescription));
+
+  xiiRayTracingSceneDescription rayTracingDescription;
+  rayTracingDescription.m_uiMaxGeometries  = 4U;
+  rayTracingDescription.m_uiMaxInstances   = configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U;
+  rayTracingDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
+  return xiiRayTracingSceneManager::Configure(rayTracingDescription);
 }
 
 xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
@@ -78,7 +94,7 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   XII_SUCCEED_OR_RETURN(ConfigureSubsystems(configuration));
 
   m_Configuration = configuration;
-  m_Scene.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U);
+  XII_SUCCEED_OR_RETURN(m_SceneContext.Initialize(configuration.m_uiGridWidth * configuration.m_uiGridHeight + 1U));
   m_SpatialHierarchy.Reserve(configuration.m_uiGridWidth * configuration.m_uiGridHeight);
 
   XII_SUCCEED_OR_RETURN(CreateMaterials());
@@ -89,25 +105,29 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
 
 void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
 {
+  for (xiiRayTracingInstanceHandle handle : m_RayTracingInstances)
+    xiiRayTracingSceneManager::DestroyInstance(handle);
   for (GeometryAsset& asset : m_GeometryAssets)
   {
     for (xiiGALBindlessResourceHandle handle : asset.m_BindlessBuffers)
-      GetBindlessResources().RetireBufferSRV(handle, uiLastSubmittedFrame);
-    GetGeometryResidency().UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
+      xiiGALBindlessResourceTable::RetireBufferSRV(handle, uiLastSubmittedFrame);
+    xiiGeometryResidencyManager::UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
+    xiiRayTracingSceneManager::UnregisterGeometry(asset.m_hRayTracingGeometry);
   }
   for (xiiMaterialGpuHandle handle : m_Materials)
     xiiMaterialManager::UnregisterMaterial(handle);
 
-  GetBindlessResources().Collect(uiLastSubmittedFrame);
+  xiiGALBindlessResourceTable::Collect(uiLastSubmittedFrame);
   m_SpatialHierarchy.Clear();
   m_GeometryAssets.Clear();
   m_Materials.Clear();
   m_MaterialSchemas.Clear();
   m_MaterialInstances.Clear();
   m_Objects.Clear();
+  m_RayTracingInstances.Clear();
   m_BasePositions.Clear();
   m_hAssemblyRoot.Invalidate();
-  m_Scene.Clear();
+  m_SceneContext.Shutdown();
 }
 
 xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
@@ -194,18 +214,24 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
       if (!mesh.IsValid())
         return XII_FAILURE;
     }
-    asset.m_hGeometry = GetGeometryResidency().RegisterGeometry(description);
+    asset.m_hGeometry = xiiGeometryResidencyManager::RegisterGeometry(description);
     if (!asset.m_hGeometry.IsValid())
       return XII_FAILURE;
     // Start from the coarsest LOD. Update() requests the fine range later, exercising
     // incremental residency without invalidating metadata used by frames already in flight.
-    GetGeometryResidency().RequestResidency(asset.m_hGeometry, asset.m_Lods.GetCount() - 1U, 0U);
+    xiiGeometryResidencyManager::RequestResidency(asset.m_hGeometry, asset.m_Lods.GetCount() - 1U, 0U);
+
+    xiiRayTracingGeometryDescription rayTracingDescription;
+    rayTracingDescription.m_hMeshBuffer = asset.m_Lods[0U];
+    asset.m_hRayTracingGeometry         = xiiRayTracingSceneManager::RegisterGeometry(rayTracingDescription);
+    if (!asset.m_hRayTracingGeometry.IsValid())
+      return XII_FAILURE;
   }
 
-  GetGeometryResidency().ProcessStreaming(0U, 0U, 128ULL * 1024ULL * 1024ULL);
+  xiiGeometryResidencyManager::ProcessStreaming(0U, 0U, 128ULL * 1024ULL * 1024ULL);
   for (GeometryAsset& asset : m_GeometryAssets)
   {
-    if (GetGeometryResidency().GetState(asset.m_hGeometry) != xiiGeometryResidencyState::Resident)
+    if (xiiGeometryResidencyManager::GetState(asset.m_hGeometry) != xiiGeometryResidencyState::Resident)
       return XII_FAILURE;
     XII_SUCCEED_OR_RETURN(RegisterGeometryBuffers(asset));
   }
@@ -221,11 +247,11 @@ xiiResult xiiGpuDrivenSceneWorld::RegisterGeometryBuffers(GeometryAsset& asset)
       return XII_FAILURE;
 
     xiiGALBindlessResourceHandle handles[5] = {
-      GetBindlessResources().RegisterBufferSRV(mesh->GetVertexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      GetBindlessResources().RegisterBufferSRV(mesh->GetIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletVertexRemapBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletPrimitiveIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetVertexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletVertexRemapBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletPrimitiveIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
     };
     for (const xiiGALBindlessResourceHandle handle : handles)
     {
@@ -234,7 +260,7 @@ xiiResult xiiGpuDrivenSceneWorld::RegisterGeometryBuffers(GeometryAsset& asset)
       asset.m_BindlessBuffers.PushBack(handle);
     }
 
-    if (!GetGeometryResidency().SetBindlessIndices(asset.m_hGeometry, lod, handles[0].m_uiIndex, handles[1].m_uiIndex, handles[2].m_uiIndex, handles[3].m_uiIndex, handles[4].m_uiIndex))
+    if (!xiiGeometryResidencyManager::SetBindlessIndices(asset.m_hGeometry, lod, handles[0].m_uiIndex, handles[1].m_uiIndex, handles[2].m_uiIndex, handles[3].m_uiIndex, handles[4].m_uiIndex))
       return XII_FAILURE;
   }
   return XII_SUCCESS;
@@ -244,13 +270,14 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
 {
   const xiiUInt32 objectCount = m_Configuration.m_uiGridWidth * m_Configuration.m_uiGridHeight;
   m_Objects.Reserve(objectCount);
+  m_RayTracingInstances.Reserve(objectCount);
   m_BasePositions.Reserve(objectCount);
 
   // A non-renderable assembly root demonstrates hierarchy propagation without requiring a
   // parallel scene representation. The first objects below are authored in its local space.
   xiiSceneObjectDesc rootDescription;
   rootDescription.m_Flags = xiiSceneObjectFlags::None;
-  m_hAssemblyRoot         = m_Scene.CreateObject(rootDescription);
+  m_hAssemblyRoot         = GetScene().CreateObject(rootDescription);
   if (!m_hAssemblyRoot.IsValid())
     return XII_FAILURE;
 
@@ -265,7 +292,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
         (static_cast<float>(x) - static_cast<float>(m_Configuration.m_uiGridWidth - 1U) * 0.5f) * m_Configuration.m_fObjectSpacing,
         (static_cast<float>(objectIndex % 5U) - 2.0f) * 0.32f);
 
-      const xiiGpuGeometryRecord* geometry = GetGeometryResidency().GetGpuRecord(m_GeometryAssets[geometryIndex].m_hGeometry);
+      const xiiGpuGeometryRecord* geometry = xiiGeometryResidencyManager::GetGpuRecord(m_GeometryAssets[geometryIndex].m_hGeometry);
       if (geometry == nullptr)
         return XII_FAILURE;
 
@@ -282,7 +309,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       if (objectIndex < 64U)
         description.m_hParent = m_hAssemblyRoot;
 
-      const xiiSceneObjectHandle object = m_Scene.CreateObject(description);
+      const xiiSceneObjectHandle object = GetScene().CreateObject(description);
       if (!object.IsValid())
         return XII_FAILURE;
       m_Objects.PushBack(object);
@@ -290,59 +317,82 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
     }
   }
 
-  m_Scene.CommitFrame(0U);
-  for (xiiSceneObjectHandle object : m_Objects)
+  GetScene().CommitFrame(0U);
+  for (xiiUInt32 i = 0U; i < m_Objects.GetCount(); ++i)
   {
-    if (!m_SpatialHierarchy.Insert(object, m_Scene.GetGlobalBounds(object).GetBox(), m_Scene.GetVisibilityMask(object), m_Scene.GetFlags(object)))
+    const xiiSceneObjectHandle object = m_Objects[i];
+    if (!m_SpatialHierarchy.Insert(object, GetScene().GetGlobalBounds(object).GetBox(), GetScene().GetVisibilityMask(object), GetScene().GetFlags(object)))
       return XII_FAILURE;
+
+    xiiRayTracingInstanceDescription rayTracingInstance;
+    rayTracingInstance.m_hGeometry           = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
+    rayTracingInstance.m_hMaterial           = m_Materials[i % m_Materials.GetCount()];
+    rayTracingInstance.m_Transform           = GetScene().GetGlobalTransform(object);
+    rayTracingInstance.m_uiStableObjectId    = i;
+    const xiiRayTracingInstanceHandle handle = xiiRayTracingSceneManager::CreateInstance(rayTracingInstance);
+    if (!handle.IsValid())
+      return XII_FAILURE;
+    m_RayTracingInstances.PushBack(handle);
   }
   return XII_SUCCESS;
 }
 
-void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiTime deltaTime)
+void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
 {
   m_fAnimationTime += static_cast<float>(deltaTime.GetSeconds());
   const xiiUInt32              animatedCount = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64U);
   xiiHybridArray<xiiVec3, 64U> previousCenters;
   previousCenters.SetCountUninitialized(animatedCount);
+  m_AnimatedShadowInvalidationBounds = xiiBoundingBox::MakeInvalid();
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
   {
-    previousCenters[i] = m_Scene.GetGlobalBounds(m_Objects[i]).m_vCenter;
+    m_AnimatedShadowInvalidationBounds.ExpandToInclude(GetScene().GetGlobalBounds(m_Objects[i]).GetBox());
+    previousCenters[i] = GetScene().GetGlobalBounds(m_Objects[i]).m_vCenter;
     xiiVec3 position   = m_BasePositions[i];
     position.z += 0.45f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7f + static_cast<float>(i) * 0.31f));
     // Exercise the canonical inverse-transpose normal transform with an animated,
     // non-uniformly scaled instance while the remaining objects use rigid transforms.
     const xiiMat4 scale     = i == 0U ? xiiMat4::MakeScaling(xiiVec3(1.0f, 0.65f, 1.35f)) : xiiMat4::MakeIdentity();
     const xiiMat4 transform = xiiMat4::MakeTranslation(position) * xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(m_fAnimationTime * 0.3f + static_cast<float>(i) * 0.01f)) * scale;
-    m_Scene.SetLocalTransform(m_Objects[i], transform);
+    GetScene().SetLocalTransform(m_Objects[i], transform);
   }
 
   if (m_hAssemblyRoot.IsValid())
   {
     const float fRootAngle  = 0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f));
     const float fRootHeight = 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f));
-    m_Scene.SetLocalTransform(m_hAssemblyRoot,
-                              xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
-                                xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
+    GetScene().SetLocalTransform(m_hAssemblyRoot,
+                                 xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
+                                   xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
   }
 
-  m_Scene.CommitFrame(uiFrameIndex);
+  GetScene().CommitFrame(uiFrameIndex);
   for (xiiUInt32 i = 0U; i < animatedCount; ++i)
   {
-    const xiiBoundingBoxSphere& bounds = m_Scene.GetGlobalBounds(m_Objects[i]);
-    m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], m_Scene.GetVisibilityMask(m_Objects[i]), m_Scene.GetFlags(m_Objects[i]));
+    const xiiBoundingBoxSphere& bounds = GetScene().GetGlobalBounds(m_Objects[i]);
+    m_AnimatedShadowInvalidationBounds.ExpandToInclude(bounds.GetBox());
+    m_SpatialHierarchy.Update(m_Objects[i], bounds.GetBox(), bounds.m_vCenter - previousCenters[i], GetScene().GetVisibilityMask(m_Objects[i]), GetScene().GetFlags(m_Objects[i]));
+
+    xiiRayTracingInstanceDescription rayTracingInstance;
+    rayTracingInstance.m_hGeometry        = m_GeometryAssets[i % m_GeometryAssets.GetCount()].m_hRayTracingGeometry;
+    rayTracingInstance.m_hMaterial        = m_Materials[i % m_Materials.GetCount()];
+    rayTracingInstance.m_Transform        = GetScene().GetGlobalTransform(m_Objects[i]);
+    rayTracingInstance.m_uiStableObjectId = i;
+    XII_IGNORE_UNUSED(xiiRayTracingSceneManager::UpdateInstance(m_RayTracingInstances[i], rayTracingInstance));
   }
 
-  xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   if (uiFrameIndex == 30U)
   {
     for (const GeometryAsset& asset : m_GeometryAssets)
-      GetGeometryResidency().RequestResidency(asset.m_hGeometry, 0U, uiFrameIndex);
+      xiiGeometryResidencyManager::RequestResidency(asset.m_hGeometry, 0U, uiFrameIndex);
   }
-  GetGeometryResidency().ProcessStreaming(uiFrameIndex, uiCompletedFrame, 8ULL * 1024ULL * 1024ULL);
   for (const GeometryAsset& asset : m_GeometryAssets)
-    GetGeometryResidency().Touch(asset.m_hGeometry, uiFrameIndex);
-  GetBindlessResources().Collect(uiCompletedFrame);
+    xiiGeometryResidencyManager::Touch(asset.m_hGeometry, uiFrameIndex);
+}
+
+xiiBoundingBox xiiGpuDrivenSceneWorld::GetAnimatedShadowBounds() const
+{
+  return m_AnimatedShadowInvalidationBounds;
 }
 
 xiiUInt32 xiiGpuDrivenSceneWorld::GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const

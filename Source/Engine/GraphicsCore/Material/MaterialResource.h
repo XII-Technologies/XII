@@ -66,7 +66,7 @@ struct xiiMaterialResourceDescriptor
   xiiBitflags<xiiMaterialFeatureFlags> m_FeatureFlags = xiiMaterialFeatureFlags::Default;
 
   xiiColor m_BaseColor           = xiiColor::White;
-  xiiColor m_EmissiveColor       = xiiColor::Black;
+  xiiColor m_EmissiveColor       = xiiColor::Black; ///< Linear RGB surface luminance in nits. Non-zero emissive surfaces participate in mesh-light extraction.
   float    m_fMetallic           = 0.0f;
   float    m_fRoughness          = 0.5f;
   float    m_fOcclusionStrength  = 1.0f;

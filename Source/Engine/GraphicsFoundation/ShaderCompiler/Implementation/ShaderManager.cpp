@@ -8,131 +8,178 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderTextSectionizer.h>
 
-bool      xiiGALShaderManager::s_bEnableRuntimeCompilation = false;
-xiiString xiiGALShaderManager::s_sPlatform;
-xiiString xiiGALShaderManager::s_sPermutationVariableSubDirectory;
-xiiString xiiGALShaderManager::s_sShaderCacheDirectory;
-
-namespace
+struct xiiGALShaderManager::PermutationVarConfig
 {
-  struct PermutationVarConfig
+  xiiHashedString                                m_sName;
+  xiiVariant                                     m_DefaultValue;
+  xiiDynamicArray<xiiGALShaderParser::EnumValue> m_EnumValues;
+};
+
+class xiiGALShaderManager::State
+{
+public:
+  xiiMutex                                             m_Mutex;
+  xiiDeque<PermutationVarConfig>                       m_PermutationConfigurationsStorage;
+  xiiHashTable<xiiHashedString, PermutationVarConfig*> m_PermutationConfigurations;
+  xiiHashedString                                      m_sTrue;
+  xiiHashedString                                      m_sFalse;
+  xiiString                                            m_sPlatform;
+  xiiString                                            m_sPermutationVariableSubDirectory;
+  xiiString                                            m_sShaderCacheDirectory;
+  bool                                                 m_bEnableRuntimeCompilation = false;
+};
+
+xiiUniquePtr<xiiGALShaderManager::State> xiiGALShaderManager::s_pState;
+
+void xiiGALShaderManager::Startup()
+{
+  XII_ASSERT_DEV(s_pState == nullptr, "Shader manager started twice.");
+  s_pState = XII_DEFAULT_NEW(State);
+  s_pState->m_sTrue.Assign("TRUE");
+  s_pState->m_sFalse.Assign("FALSE");
+}
+
+void xiiGALShaderManager::Shutdown()
+{
+  s_pState.Clear();
+}
+
+bool xiiGALShaderManager::IsInitialized()
+{
+  return s_pState != nullptr;
+}
+
+const xiiGALShaderManager::PermutationVarConfig* xiiGALShaderManager::FindConfig(xiiStringView sName, const xiiTempHashedString& sHashedName)
+{
+  XII_ASSERT_DEV(s_pState != nullptr, "The shader manager subsystem is not started.");
+  if (s_pState == nullptr)
+    return nullptr;
+
   {
-    xiiHashedString                                                           m_sName;
-    xiiVariant                                                                m_DefaultValue;
-    xiiDynamicArray<xiiGALShaderParser::EnumValue, xiiStaticAllocatorWrapper> m_EnumValues;
-  };
-
-  static xiiDeque<PermutationVarConfig, xiiStaticAllocatorWrapper> s_PermutationVarConfigurationsStorage;
-  static xiiHashTable<xiiHashedString, PermutationVarConfig*>      s_PermutationVarConfigurations;
-  static xiiMutex                                                  s_PermutationVarConfigurationsMutex;
-
-  const PermutationVarConfig* FindConfig(xiiStringView sName, const xiiTempHashedString& sHashedName)
-  {
-    XII_LOCK(s_PermutationVarConfigurationsMutex);
-
+    XII_LOCK(s_pState->m_Mutex);
     PermutationVarConfig* pConfig = nullptr;
-    if (!s_PermutationVarConfigurations.TryGetValue(sHashedName, pConfig))
-    {
-      xiiGALShaderManager::ReloadPermutationVarConfig(sName, sHashedName);
-      s_PermutationVarConfigurations.TryGetValue(sHashedName, pConfig);
-    }
-
-    return pConfig;
+    if (s_pState->m_PermutationConfigurations.TryGetValue(sHashedName, pConfig))
+      return pConfig;
   }
 
-  const PermutationVarConfig* FindConfig(const xiiHashedString& sName)
-  {
-    XII_LOCK(s_PermutationVarConfigurationsMutex);
+  ReloadPermutationVarConfig(sName, sHashedName);
 
-    PermutationVarConfig* pConfig = nullptr;
-    if (!s_PermutationVarConfigurations.TryGetValue(sName, pConfig))
+  XII_LOCK(s_pState->m_Mutex);
+  PermutationVarConfig* pConfig = nullptr;
+  s_pState->m_PermutationConfigurations.TryGetValue(sHashedName, pConfig);
+  return pConfig;
+}
+
+const xiiGALShaderManager::PermutationVarConfig* xiiGALShaderManager::FindConfig(const xiiHashedString& sName)
+{
+  return FindConfig(sName.GetData(), sName);
+}
+
+bool xiiGALShaderManager::IsValueAllowed(const PermutationVarConfig& config, const xiiTempHashedString& sValue, xiiHashedString& out_sValue)
+{
+  if (config.m_DefaultValue.IsA<bool>())
+  {
+    if (sValue == s_pState->m_sTrue)
     {
-      xiiGALShaderManager::ReloadPermutationVarConfig(sName.GetData(), sName);
-      s_PermutationVarConfigurations.TryGetValue(sName, pConfig);
+      out_sValue = s_pState->m_sTrue;
+      return true;
     }
 
-    return pConfig;
-  }
-
-  static xiiHashedString s_sTrue  = xiiMakeHashedString("TRUE");
-  static xiiHashedString s_sFalse = xiiMakeHashedString("FALSE");
-
-  bool IsValueAllowed(const PermutationVarConfig& config, const xiiTempHashedString& sValue, xiiHashedString& out_sValue)
-  {
-    if (config.m_DefaultValue.IsA<bool>())
+    if (sValue == s_pState->m_sFalse)
     {
-      if (sValue == s_sTrue)
+      out_sValue = s_pState->m_sFalse;
+      return true;
+    }
+  }
+  else
+  {
+    for (const auto& enumValue : config.m_EnumValues)
+    {
+      if (enumValue.m_sValueName == sValue)
       {
-        out_sValue = s_sTrue;
+        out_sValue = enumValue.m_sValueName;
         return true;
       }
-
-      if (sValue == s_sFalse)
-      {
-        out_sValue = s_sFalse;
-        return true;
-      }
     }
-    else
-    {
-      for (auto& enumValue : config.m_EnumValues)
-      {
-        if (enumValue.m_sValueName == sValue)
-        {
-          out_sValue = enumValue.m_sValueName;
-          return true;
-        }
-      }
-    }
-
-    return false;
   }
 
-  bool IsValueAllowed(const PermutationVarConfig& config, const xiiTempHashedString& sValue)
+  return false;
+}
+
+bool xiiGALShaderManager::IsValueAllowed(const PermutationVarConfig& config, const xiiTempHashedString& sValue)
+{
+  if (config.m_DefaultValue.IsA<bool>())
+    return sValue == s_pState->m_sTrue || sValue == s_pState->m_sFalse;
+
+  for (const auto& enumValue : config.m_EnumValues)
   {
-    if (config.m_DefaultValue.IsA<bool>())
-    {
-      return sValue == s_sTrue || sValue == s_sFalse;
-    }
-    else
-    {
-      for (auto& enumValue : config.m_EnumValues)
-      {
-        if (enumValue.m_sValueName == sValue)
-          return true;
-      }
-    }
-
-    return false;
+    if (enumValue.m_sValueName == sValue)
+      return true;
   }
-} // namespace
+
+  return false;
+}
 
 //////////////////////////////////////////////////////////////////////////
 
 void xiiGALShaderManager::Configure(xiiStringView sActivePlatform, bool bEnableRuntimeCompilation, xiiStringView sShaderCacheDirectory, xiiStringView sPermutationVariableSubDirectory)
 {
+  XII_ASSERT_DEV(s_pState != nullptr, "The shader manager subsystem is not started.");
+  if (s_pState == nullptr)
+    return;
+
   xiiStringBuilder sb = sActivePlatform;
   sb.ToUpper();
 
-  s_sPlatform                        = sb;
-  s_bEnableRuntimeCompilation        = bEnableRuntimeCompilation;
-  s_sShaderCacheDirectory            = sShaderCacheDirectory;
-  s_sPermutationVariableSubDirectory = sPermutationVariableSubDirectory;
+  XII_LOCK(s_pState->m_Mutex);
+  s_pState->m_sPlatform                        = sb;
+  s_pState->m_bEnableRuntimeCompilation        = bEnableRuntimeCompilation;
+  s_pState->m_sShaderCacheDirectory            = sShaderCacheDirectory;
+  s_pState->m_sPermutationVariableSubDirectory = sPermutationVariableSubDirectory;
+  s_pState->m_PermutationConfigurations.Clear();
+  s_pState->m_PermutationConfigurationsStorage.Clear();
+}
+
+const xiiString& xiiGALShaderManager::GetPermutationVarSubDirectory()
+{
+  XII_ASSERT_DEV(s_pState != nullptr, "The shader manager subsystem is not started.");
+  return s_pState->m_sPermutationVariableSubDirectory;
+}
+
+const xiiString& xiiGALShaderManager::GetActivePlatform()
+{
+  XII_ASSERT_DEV(s_pState != nullptr, "The shader manager subsystem is not started.");
+  return s_pState->m_sPlatform;
+}
+
+const xiiString& xiiGALShaderManager::GetCacheDirectory()
+{
+  XII_ASSERT_DEV(s_pState != nullptr, "The shader manager subsystem is not started.");
+  return s_pState->m_sShaderCacheDirectory;
+}
+
+bool xiiGALShaderManager::IsRuntimeCompilationEnabled()
+{
+  return s_pState != nullptr && s_pState->m_bEnableRuntimeCompilation;
 }
 
 void xiiGALShaderManager::ReloadPermutationVarConfig(xiiStringView sName, const xiiTempHashedString& sHashedName)
 {
+  XII_ASSERT_DEV(s_pState != nullptr, "The shader manager subsystem is not started.");
+  if (s_pState == nullptr)
+    return;
+
   // clear earlier data
   {
-    XII_LOCK(s_PermutationVarConfigurationsMutex);
+    XII_LOCK(s_pState->m_Mutex);
 
-    s_PermutationVarConfigurations.Remove(sHashedName);
+    s_pState->m_PermutationConfigurations.Remove(sHashedName);
   }
 
   xiiStringBuilder sPath;
-  sPath.SetFormat("{0}/{1}.xiiPermVar", s_sPermutationVariableSubDirectory, sName);
+  sPath.SetFormat("{0}/{1}.xiiPermVar", s_pState->m_sPermutationVariableSubDirectory, sName);
 
-  xiiStringBuilder sTemp = s_sPlatform;
+  xiiStringBuilder sTemp = s_pState->m_sPlatform;
   sTemp.Append(" 1");
 
   xiiPreprocessor pp;
@@ -152,14 +199,14 @@ void xiiGALShaderManager::ReloadPermutationVarConfig(xiiStringView sName, const 
   xiiGALShaderParser::ParsePermutationVariableConfiguration(sTemp, defaultValue, enumDefinition);
   if (defaultValue.IsValid())
   {
-    XII_LOCK(s_PermutationVarConfigurationsMutex);
+    XII_LOCK(s_pState->m_Mutex);
 
-    auto pConfig = &s_PermutationVarConfigurationsStorage.ExpandAndGetRef();
+    auto pConfig = &s_pState->m_PermutationConfigurationsStorage.ExpandAndGetRef();
     pConfig->m_sName.Assign(sName);
     pConfig->m_DefaultValue = defaultValue;
     pConfig->m_EnumValues   = enumDefinition.m_Values;
 
-    s_PermutationVarConfigurations.Insert(pConfig->m_sName, pConfig);
+    s_pState->m_PermutationConfigurations.Insert(pConfig->m_sName, pConfig);
   }
 }
 
@@ -176,15 +223,16 @@ bool xiiGALShaderManager::IsPermutationValueAllowed(xiiStringView sName, const x
 
   if (!IsValueAllowed(*pConfig, sValue, out_sValue))
   {
-    if (!s_bEnableRuntimeCompilation)
+    if (!s_pState->m_bEnableRuntimeCompilation)
     {
       return false;
     }
 
     xiiLog::Debug("Invalid Shader Permutation: '{0}' cannot be set to value '{1}' -> reloading config for variable", sName, sValue.GetHash());
     ReloadPermutationVarConfig(sName, sHashedName);
+    pConfig = FindConfig(sName, sHashedName);
 
-    if (!IsValueAllowed(*pConfig, sValue, out_sValue))
+    if (pConfig == nullptr || !IsValueAllowed(*pConfig, sValue, out_sValue))
     {
       xiiLog::Error("Invalid Shader Permutation: '{0}' cannot be set to value '{1}'", sName, sValue.GetHash());
       return false;
@@ -205,15 +253,16 @@ bool xiiGALShaderManager::IsPermutationValueAllowed(const xiiHashedString& sName
 
   if (!IsValueAllowed(*pConfig, sValue))
   {
-    if (!s_bEnableRuntimeCompilation)
+    if (!s_pState->m_bEnableRuntimeCompilation)
     {
       return false;
     }
 
     xiiLog::Debug("Invalid Shader Permutation: '{0}' cannot be set to value '{1}' -> reloading config for variable", sName, sValue);
     ReloadPermutationVarConfig(sName, sName);
+    pConfig = FindConfig(sName);
 
-    if (!IsValueAllowed(*pConfig, sValue))
+    if (pConfig == nullptr || !IsValueAllowed(*pConfig, sValue))
     {
       xiiLog::Error("Invalid Shader Permutation: '{0}' cannot be set to value '{1}'", sName, sValue);
       return false;
@@ -233,8 +282,8 @@ void xiiGALShaderManager::GetPermutationValues(const xiiHashedString& sName, xii
 
   if (pConfig->m_DefaultValue.IsA<bool>())
   {
-    out_values.PushBack(s_sTrue);
-    out_values.PushBack(s_sFalse);
+    out_values.PushBack(s_pState->m_sTrue);
+    out_values.PushBack(s_pState->m_sFalse);
   }
   else
   {
@@ -272,7 +321,7 @@ xiiUInt32 xiiGALShaderManager::FilterPermutationVariables(xiiArrayPtr<const xiiH
       const xiiVariant& defaultValue = pConfiguration->m_DefaultValue;
       if (defaultValue.IsA<bool>())
       {
-        var.m_sValue = defaultValue.Get<bool>() ? s_sTrue : s_sFalse;
+        var.m_sValue = defaultValue.Get<bool>() ? s_pState->m_sTrue : s_pState->m_sFalse;
       }
       else
       {

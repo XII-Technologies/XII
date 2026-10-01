@@ -2,18 +2,26 @@
 
 #pragma once
 
+#include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
 class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderManager
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGALShaderManager);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsFoundation, ShaderCompiler);
+
 public:
+  xiiGALShaderManager() = delete;
+
   static void             Configure(xiiStringView sActivePlatform, bool bEnableRuntimeCompilation, xiiStringView sShaderCacheDirectory = ":shadercache/ShaderCache"_xiisv, xiiStringView sPermutationVariableSubDirectory = "Shaders/PermutationVariables"_xiisv);
-  static const xiiString& GetPermutationVarSubDirectory() { return s_sPermutationVariableSubDirectory; }
-  static const xiiString& GetActivePlatform() { return s_sPlatform; }
-  static const xiiString& GetCacheDirectory() { return s_sShaderCacheDirectory; }
-  static bool             IsRuntimeCompilationEnabled() { return s_bEnableRuntimeCompilation; }
+  static const xiiString& GetPermutationVarSubDirectory();
+  static const xiiString& GetActivePlatform();
+  static const xiiString& GetCacheDirectory();
+  static bool             IsRuntimeCompilationEnabled();
+  static bool             IsInitialized();
 
   static void ReloadPermutationVarConfig(xiiStringView sName, const xiiTempHashedString& sHashedName);
   static bool IsPermutationValueAllowed(xiiStringView sName, const xiiTempHashedString& sHashedName, const xiiTempHashedString& sValue, xiiHashedString& out_sName, xiiHashedString& out_sValue);
@@ -30,8 +38,16 @@ public:
   static xiiUInt32 FilterPermutationVariables(xiiArrayPtr<const xiiHashedString> usedVariables, const xiiHashTable<xiiHashedString, xiiHashedString>& permutationVariables, xiiDynamicArray<xiiGALPermutationVariable>& out_FilteredPermutationVariables);
 
 private:
-  static bool      s_bEnableRuntimeCompilation;
-  static xiiString s_sPlatform;
-  static xiiString s_sPermutationVariableSubDirectory;
-  static xiiString s_sShaderCacheDirectory;
+  struct PermutationVarConfig;
+  class State;
+
+  static void Startup();
+  static void Shutdown();
+
+  static const PermutationVarConfig* FindConfig(xiiStringView sName, const xiiTempHashedString& sHashedName);
+  static const PermutationVarConfig* FindConfig(const xiiHashedString& sName);
+  static bool                        IsValueAllowed(const PermutationVarConfig& config, const xiiTempHashedString& sValue, xiiHashedString& out_sValue);
+  static bool                        IsValueAllowed(const PermutationVarConfig& config, const xiiTempHashedString& sValue);
+
+  static xiiUniquePtr<State> s_pState;
 };

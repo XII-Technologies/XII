@@ -35,26 +35,6 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALGraphicsDeviceType> xiiGALDevice::GetGraphicsDev
   return m_Description.m_GraphicsDeviceType;
 }
 
-// static
-XII_ALWAYS_INLINE void xiiGALDevice::SetDefaultDevice(xiiSharedPtr<xiiGALDevice> pDefaultDevice)
-{
-  s_pDefaultDevice = pDefaultDevice;
-}
-
-// static
-XII_ALWAYS_INLINE xiiSharedPtr<xiiGALDevice> xiiGALDevice::GetDefaultDevice()
-{
-  XII_ASSERT_DEBUG(s_pDefaultDevice != nullptr, "Default device not set.");
-
-  return s_pDefaultDevice;
-}
-
-// static
-XII_ALWAYS_INLINE bool xiiGALDevice::HasDefaultDevice()
-{
-  return s_pDefaultDevice != nullptr;
-}
-
 XII_ALWAYS_INLINE void xiiGALDevice::VerifyMultithreadedAccess() const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

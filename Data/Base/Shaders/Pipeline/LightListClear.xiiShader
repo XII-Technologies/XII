@@ -1,0 +1,23 @@
+// XII Engine - Initializes fixed-offset clustered light-list metadata.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+
+RWStructuredBuffer<uint2> g_LightGrid;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    const uint clusterIndex = dispatchThreadId.x;
+    if (clusterIndex >= TotalClusters)
+        return;
+
+    g_LightGrid[clusterIndex] = uint2(clusterIndex * MaxLightsPerCluster, 0u);
+}
+

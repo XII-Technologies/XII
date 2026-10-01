@@ -1,35 +1,36 @@
-// XII Engine - HiZBuild.xiiShader
-// Pass 8: Hierarchical-Z max depth pyramid reduction.
-// Dispatch: ceil(W/8) × ceil(H/8) per mip, iterated in C++ per mip level.
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
+[PERMUTATIONS]
 
-cbuffer HiZConstants : register(b3)
-{
-    uint2 g_SrcSize;
-    uint2 g_DstSize;
-    uint  g_SrcMip;
-    float3 _pad;
-};
+[COMPUTE_SHADER]
 
-Texture2D<float>   g_DepthSrc : register(t0);   // source mip (or occluder depth)
-RWTexture2D<float> g_HiZDst   : register(u0);   // destination mip
+#include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
+
+Texture2D<float>   g_DepthSrc;
+RWTexture2D<float> g_HiZOut;
 
 [numthreads(8, 8, 1)]
-void CS_HiZBuild(uint3 tid : SV_DispatchThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    if (any(tid.xy >= g_DstSize)) return;
+  if (any(dispatchThreadId.xy >= DstSize))
+    return;
 
-    // Source texel = 2x2 gather (max reduction for reversed-Z: we want the MINIMUM depth value
-    // i.e. the closest surface, which in reversed-Z is the largest float value).
-    uint2 srcBase = tid.xy * 2u;
+  if (Reduce == 0u)
+  {
+    g_HiZOut[dispatchThreadId.xy] = g_DepthSrc.Load(int3(dispatchThreadId.xy, 0));
+    return;
+  }
 
-    float d00 = g_DepthSrc.Load(int3(srcBase + uint2(0u, 0u), g_SrcMip));
-    float d10 = g_DepthSrc.Load(int3(srcBase + uint2(1u, 0u), g_SrcMip));
-    float d01 = g_DepthSrc.Load(int3(srcBase + uint2(0u, 1u), g_SrcMip));
-    float d11 = g_DepthSrc.Load(int3(srcBase + uint2(1u, 1u), g_SrcMip));
+  const uint2 maximumSource = max(SrcSize, 1u) - 1u;
+  const uint2 sourceBase = dispatchThreadId.xy * 2u;
+  const uint2 p00 = min(sourceBase, maximumSource);
+  const uint2 p10 = min(sourceBase + uint2(1u, 0u), maximumSource);
+  const uint2 p01 = min(sourceBase + uint2(0u, 1u), maximumSource);
+  const uint2 p11 = min(sourceBase + uint2(1u, 1u), maximumSource);
 
-    // Reversed-Z Hi-Z stores minimum depth (largest float = closest to camera).
-    float minDepth = min(min(d00, d10), min(d01, d11));
-    g_HiZDst[tid.xy] = minDepth;
+  // Scene depth is reversed-Z and clears to zero. The minimum is the farthest
+  // occluder in the footprint, so rejection is conservative for every texel.
+  g_HiZOut[dispatchThreadId.xy] = min(min(g_DepthSrc.Load(int3(p00, 0)), g_DepthSrc.Load(int3(p10, 0))),
+                                      min(g_DepthSrc.Load(int3(p01, 0)), g_DepthSrc.Load(int3(p11, 0))));
 }

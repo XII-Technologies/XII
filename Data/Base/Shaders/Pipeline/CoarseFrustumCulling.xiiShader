@@ -1,51 +1,47 @@
-// XII Engine - CoarseFrustumCulling.xiiShader  [REWRITTEN]
-// Pass 9: Per-instance sphere test against 6 camera frustum planes.
-// Dispatch: ceil(InstanceCount/64) × 1 × 1
+// Compacts extracted mesh bounds that overlap the current view frustum.
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
+[PERMUTATIONS]
 
-cbuffer FrustumPlanes : register(b3)
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
+
+struct InstanceBounds
 {
-    float4 g_Planes[6]; // xyz=normal, w=negDistance
+  float4 CenterRadius;
+  float4 Extents;
 };
 
-struct InstanceBounds { float3 Center; float Radius; float3 Extents; float _pad; };
+StructuredBuffer<InstanceBounds> g_Bounds;
+RWStructuredBuffer<uint> g_VisibleOut; // [0] = count, [1..] = compact instance indices.
 
-StructuredBuffer<InstanceBounds> g_Bounds      : register(t0);
-StructuredBuffer<uint>           g_LODMetadata : register(t1);
-RWStructuredBuffer<uint>         g_VisibleOut  : register(u0); // [0]=count, [1..]=indices
-
-groupshared uint gs_Count;
-groupshared uint gs_Scratch[64];
+bool IsOutsidePlane(float4 plane, float3 center, float radius)
+{
+  // XII frustum normals point out of the volume. Positive distance beyond the radius is outside.
+  return dot(plane.xyz, center) + plane.w > radius;
+}
 
 [numthreads(64, 1, 1)]
-void CS_CoarseFrustumCull(uint3 tid : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID)
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    if (gtid.x == 0u) gs_Count = 0u;
-    GroupMemoryBarrierWithGroupSync();
+  const uint instanceIndex = dispatchThreadId.x;
+  if (instanceIndex >= InstanceCount)
+    return;
 
-    uint iIdx = tid.x;
-    bool visible = (iIdx < 65536u);
-    if (visible)
-    {
-        InstanceBounds b = g_Bounds[iIdx];
-        [unroll(6)]
-        for (int p = 0; p < 6; ++p)
-            if (dot(g_Planes[p].xyz, b.Center) + g_Planes[p].w < -b.Radius)
-            { visible = false; break; }
-    }
+  const InstanceBounds bounds = g_Bounds[instanceIndex];
+  const float3 center = bounds.CenterRadius.xyz;
+  const float radius = bounds.CenterRadius.w;
+  if (IsOutsidePlane(FrustumPlane0, center, radius) ||
+      IsOutsidePlane(FrustumPlane1, center, radius) ||
+      IsOutsidePlane(FrustumPlane2, center, radius) ||
+      IsOutsidePlane(FrustumPlane3, center, radius) ||
+      IsOutsidePlane(FrustumPlane4, center, radius) ||
+      IsOutsidePlane(FrustumPlane5, center, radius))
+    return;
 
-    if (visible)
-    {
-        uint slot; InterlockedAdd(gs_Count, 1u, slot);
-        gs_Scratch[slot] = iIdx;
-    }
-    GroupMemoryBarrierWithGroupSync();
-
-    if (gtid.x == 0u && gs_Count > 0u)
-    {
-        uint base; InterlockedAdd(g_VisibleOut[0], gs_Count, base);
-        for (uint i = 0u; i < gs_Count; ++i)
-            g_VisibleOut[base + 1u + i] = gs_Scratch[i];
-    }
+  uint destination;
+  InterlockedAdd(g_VisibleOut[0], 1u, destination);
+  g_VisibleOut[destination + 1u] = instanceIndex;
 }

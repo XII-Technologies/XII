@@ -2,10 +2,17 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <Core/World/Component.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
+#include <Foundation/Configuration/Startup.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
+#include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
+#include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -14,6 +21,7 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewEventType, 1)
@@ -50,7 +58,39 @@ namespace
   }
 } // namespace
 
-xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex> xiiRenderWorldModule::s_RenderEvent;
+xiiUniquePtr<xiiRenderWorldModule::ExtractionEvent> xiiRenderWorldModule::s_pRenderEvent;
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderWorldEvents)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    xiiRenderWorldModule::StartupRenderEvents();
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiRenderWorldModule::ShutdownRenderEvents();
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
+
+void xiiRenderWorldModule::StartupRenderEvents()
+{
+  XII_ASSERT_DEV(s_pRenderEvent == nullptr, "Render world events were started twice.");
+  s_pRenderEvent = XII_DEFAULT_NEW(ExtractionEvent);
+}
+
+void xiiRenderWorldModule::ShutdownRenderEvents()
+{
+  s_pRenderEvent.Clear();
+}
 
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
@@ -95,6 +135,8 @@ void xiiRenderWorldModule::Deinitialize()
   }
 
   m_uiRenderFrameIndex = 0;
+  m_FrameCompletionTracker.Reset();
+  m_bFrameCompletionTrackerInitialized = false;
 }
 
 void xiiRenderWorldModule::OnSimulationStarted()
@@ -459,7 +501,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     xiiRenderWorldModuleExtractionEvent extractionEvent;
     extractionEvent.m_Type  = xiiRenderWorldModuleExtractionEvent::Type::BeforeViewExtraction;
     extractionEvent.m_pView = viewDetail.m_pView.Borrow();
-    s_RenderEvent.Broadcast(extractionEvent);
+    s_pRenderEvent->Broadcast(extractionEvent);
 
     xiiMsgExtractRenderData msg;
     msg.m_pView                    = viewDetail.m_pView.Borrow();
@@ -515,7 +557,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     viewDetail.m_pExtractedData->SortAndBatches();
 
     extractionEvent.m_Type = xiiRenderWorldModuleExtractionEvent::Type::AfterViewExtraction;
-    s_RenderEvent.Broadcast(extractionEvent);
+    s_pRenderEvent->Broadcast(extractionEvent);
   }
 }
 
@@ -525,7 +567,30 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (!pDevice)
     return;
 
-  const xiiUInt64 uiFrameIndex = m_uiRenderFrameIndex++;
+  if (!m_bFrameCompletionTrackerInitialized)
+  {
+    m_FrameCompletionTracker.Initialize(pDevice.Borrow());
+    m_bFrameCompletionTrackerInitialized = true;
+  }
+
+  // Frame zero is the conservative "nothing has completed" sentinel used by all deferred
+  // resource managers. Real submissions therefore start at one.
+  const xiiUInt64     uiFrameIndex     = ++m_uiRenderFrameIndex;
+  constexpr xiiUInt32 uiFramesInFlight = 3U;
+  if (uiFrameIndex > uiFramesInFlight)
+    m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
+  const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
+  if (xiiGALBindlessResourceTable::IsInitialized())
+    xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
+  if (xiiMaterialManager::IsInitialized())
+    xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  if (xiiGeometryResidencyManager::IsInitialized())
+  {
+    const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
+    xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
+  }
+  xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  bool bGlobalIlluminationFrameStarted = false;
 
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
@@ -534,9 +599,17 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     if (!viewDetail.m_pView->IsValid())
       continue;
 
+    if (!bGlobalIlluminationFrameStarted && viewDetail.m_pView->GetCamera() != nullptr)
+    {
+      xiiDDGIManager::BeginFrame(viewDetail.m_pView->GetCamera()->GetPosition(), uiFrameIndex);
+      xiiSparseVoxelRadianceManager::BeginFrame(viewDetail.m_pView->GetCamera()->GetPosition(), uiFrameIndex);
+      bGlobalIlluminationFrameStarted = true;
+    }
+
     xiiRenderGraph*              pGraph        = viewDetail.m_pView->GetRenderGraph();
     xiiRenderGraphBlackboard&    blackboard    = viewDetail.m_pView->GetBlackboard();
     xiiRenderGraphResourceCache& resourceCache = viewDetail.m_pView->GetResourceCache();
+    resourceCache.BeginFrame(uiFrameIndex, uiCompletedFrame);
 
     // Clear the per-view blackboard at the start of each frame so passes start clean.
     // History data lives in persistent GPU resources inside ViewPassResources, not here.
@@ -545,6 +618,15 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
     // Reconstruct the graph for this frame.
     pGraph->BeginSetup(uiFrameIndex);
+
+    // Publish virtual-shadow residency before the view builds its passes. Consumers
+    // can therefore declare proper render-graph reads and inherit the transfer
+    // dependency without reaching into the manager during execution.
+    const xiiVirtualShadowMapManager::UploadHandles virtualShadowHandles = xiiVirtualShadowMapManager::AddUploadPass(*pGraph, uiFrameIndex);
+    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowHandles.m_uiFrameBaseIndex);
+    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowHandles.m_uiPhysicalPageCount);
+    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowHandles.m_uiVirtualTableBaseIndex);
+    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, virtualShadowHandles.m_uiVirtualTableCapacity);
 
     const xiiView::RenderGraphBuilder& graphBuilder = viewDetail.m_pView->GetRenderGraphBuilder();
     if (graphBuilder.IsValid())
@@ -572,5 +654,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       const xiiResult executeResult = pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler());
       XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", viewDetail.m_pView->GetName());
     }
+    resourceCache.EndFrame();
   }
+
+  m_FrameCompletionTracker.CaptureSubmittedFrame(uiFrameIndex);
 }

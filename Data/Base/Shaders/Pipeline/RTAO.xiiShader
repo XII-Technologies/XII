@@ -1,0 +1,97 @@
+[PLATFORMS]
+ALL
+
+[SHADER]
+
+// One stochastic short-range visibility ray per pixel. The bilateral denoiser following this
+// pass reconstructs a stable ambient-visibility term from the temporally jittered samples.
+
+#include "PipelineCommon.xiiShader"
+#include "Passes/RayTracing/RayTracingMaterialData.h"
+
+struct xiiAmbientOcclusionPayload
+{
+  uint Occluded;
+};
+
+float3 CosineSampleHemisphere(float3 normal, float2 randomSample)
+{
+  const float phi = 6.28318530718f * randomSample.x;
+  const float radius = sqrt(randomSample.y);
+  const float z = sqrt(max(0.0f, 1.0f - randomSample.y));
+  const float3 helper = abs(normal.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+  const float3 tangent = normalize(cross(helper, normal));
+  const float3 bitangent = cross(normal, tangent);
+  return normalize(tangent * (radius * cos(phi)) + bitangent * (radius * sin(phi)) + normal * z);
+}
+
+[RAY_GENERATION_SHADER]
+
+RaytracingAccelerationStructure g_RayTracingScene : register(t4);
+Texture2D<float>                 g_SceneDepth      : register(t5);
+Texture2D<float4>                g_NormalRoughness : register(t6);
+RWTexture2D<float>               g_AOOut           : register(u7);
+
+[shader("raygeneration")]
+void main()
+{
+  const uint2 pixel      = DispatchRaysIndex().xy;
+  const uint2 dimensions = DispatchRaysDimensions().xy;
+  const float depth      = g_SceneDepth.Load(int3(pixel, 0));
+
+  float visibility = 1.0f;
+  if (depth > 0.0f)
+  {
+    const float2 uv       = (float2(pixel) + 0.5f) / float2(dimensions);
+    const float3 worldPos = ReconstructWorldPos(uv, depth);
+    const float3 normal   = DecodeOctNormal(g_NormalRoughness.Load(int3(pixel, 0)).rg);
+    const float2 randomSample = float2(
+      InterleavedGradientNoise(float2(pixel), g_FrameIndex),
+      InterleavedGradientNoise(float2(pixel.yx) + 41.73f, g_FrameIndex + 11U));
+
+    RayDesc ray;
+    ray.Origin    = worldPos + normal * 0.005f;
+    ray.Direction = CosineSampleHemisphere(normal, randomSample);
+    ray.TMin      = 0.001f;
+    ray.TMax      = 2.0f;
+
+    xiiAmbientOcclusionPayload payload;
+    payload.Occluded = 0U;
+    TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFU, 0U, 1U, 0U, ray, payload);
+    visibility = payload.Occluded != 0U ? 0.0f : 1.0f;
+  }
+
+  g_AOOut[pixel] = visibility;
+}
+
+[RAY_MISS_SHADER]
+
+[shader("miss")]
+void main(inout xiiAmbientOcclusionPayload payload)
+{
+  payload.Occluded = 0U;
+}
+
+[RAY_CLOSEST_HIT_SHADER]
+
+[shader("closesthit")]
+void main(inout xiiAmbientOcclusionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  payload.Occluded = 1U;
+}
+
+[RAY_ANY_HIT_SHADER]
+
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
+ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
+Texture2D<float4> g_RayTracingTextures[] : register(t12);
+
+#include "Passes/RayTracing/RayTracingAlphaTest.h"
+
+[shader("anyhit")]
+void main(inout xiiAmbientOcclusionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics))
+    IgnoreHit();
+}

@@ -12,13 +12,14 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLightRenderData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiLightComponent, 1)
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiLightComponent, 2)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("LightColor", GetLightColor, SetLightColor),
     XII_ACCESSOR_PROPERTY("Temperature", GetTemperature, SetTemperature)->AddAttributes(new xiiImageSliderUiAttribute("LightTemperature"), new xiiDefaultValueAttribute(6550), new xiiClampValueAttribute(1000, 50000)),
     XII_ACCESSOR_PROPERTY("Intensity", GetIntensity, SetIntensity)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_ENUM_ACCESSOR_PROPERTY("IntensityUnit", xiiPhotometricUnit, GetIntensityUnit, SetIntensityUnit),
     XII_ACCESSOR_PROPERTY("CastShadows", GetCastShadows, SetCastShadows),
   }
   XII_END_PROPERTIES;
@@ -47,6 +48,8 @@ void xiiLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
   s << m_LightColor;
   s << m_uiTemperature;
   s << m_bCastShadows;
+  s << m_fIntensity;
+  s << m_IntensityUnit;
 }
 
 void xiiLightComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -57,6 +60,13 @@ void xiiLightComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   s >> m_LightColor;
   s >> m_uiTemperature;
   s >> m_bCastShadows;
+
+  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(xiiLightComponent::GetStaticRTTI());
+  if (uiVersion >= 2U)
+  {
+    s >> m_fIntensity;
+    s >> m_IntensityUnit;
+  }
 }
 
 void xiiLightComponent::SetLightColor(xiiColorGammaUB lightColor)
@@ -107,6 +117,21 @@ void xiiLightComponent::SetIntensity(float fIntensity)
 float xiiLightComponent::GetIntensity() const
 {
   return m_fIntensity;
+}
+
+void xiiLightComponent::SetIntensityUnit(xiiEnum<xiiPhotometricUnit> unit)
+{
+  if (m_IntensityUnit == unit)
+    return;
+
+  m_IntensityUnit = unit;
+  TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
+}
+
+xiiEnum<xiiPhotometricUnit> xiiLightComponent::GetIntensityUnit() const
+{
+  return m_IntensityUnit;
 }
 
 void xiiLightComponent::SetCastShadows(bool bCastShadows)
@@ -165,4 +190,19 @@ float xiiLightComponent::CalculateScreenSpaceSize(const xiiBoundingSphere& spher
     float fHalfHeight = camera.GetDimensionY(1.0f) * 0.5f;
     return sphere.m_fRadius / fHalfHeight;
   }
+}
+
+float xiiLightComponent::GetLuminousIntensity(float fEmissionSolidAngleSteradians, float fProjectedAreaSquareMeters) const
+{
+  return xiiPhotometricUtils::ToLuminousIntensity(m_fIntensity, m_IntensityUnit, fEmissionSolidAngleSteradians, fProjectedAreaSquareMeters);
+}
+
+float xiiLightComponent::GetIlluminance(float fSourceSolidAngleSteradians) const
+{
+  return xiiPhotometricUtils::ToIlluminance(m_fIntensity, m_IntensityUnit, fSourceSolidAngleSteradians);
+}
+
+float xiiLightComponent::GetLuminance(float fEmittingAreaSquareMeters, float fProjectedAreaSquareMeters) const
+{
+  return xiiPhotometricUtils::ToLuminance(m_fIntensity, m_IntensityUnit, fEmittingAreaSquareMeters, fProjectedAreaSquareMeters);
 }

@@ -2529,7 +2529,7 @@ void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRen
 void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hSyncToken  = builder.ReadBuffer("DebugUploadSyncToken", xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneColor = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_LDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneColor = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
   data.m_hSceneDepth = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
 
   builder.SetPassAllowMerge(false);

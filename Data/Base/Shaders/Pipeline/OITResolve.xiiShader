@@ -4,11 +4,16 @@
 // the result over the opaque HDR scene color in-place.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
 
-Texture2D<float4>   g_OITAccum   : register(t0); // sum( alpha * color * weight )
-Texture2D<float>    g_OITReveal  : register(t1); // product of (1 - alpha)
-RWTexture2D<float4> g_HDROut     : register(u0); // in/out: opaque scene color
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+Texture2D<float4>   g_OITAccum;  // sum(alpha * color * weight)
+Texture2D<float>    g_OITReveal; // product of (1 - alpha)
+RWTexture2D<float4> g_HDROut;    // in/out: opaque scene color
 
 // WBOIT weight function (McGuire & Bavoil 2013, Eq. 7).
 // weight = alpha * max(1e-2, min(3e3, 10 / (1e-5 + |z/5|^2 + |z/200|^6)))
@@ -17,7 +22,7 @@ RWTexture2D<float4> g_HDROut     : register(u0); // in/out: opaque scene color
 // during the translucent pass, so here we just perform the final resolve.
 
 [numthreads(8, 8, 1)]
-void CS_OITResolve(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims;
     g_HDROut.GetDimensions(dims.x, dims.y);

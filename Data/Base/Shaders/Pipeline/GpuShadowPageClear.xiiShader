@@ -1,0 +1,37 @@
+// XII Engine - scissored reversed-Z depth clear for one shadow-atlas page.
+
+[PLATFORMS]
+ALL
+
+[RENDERSTATE]
+
+DepthEnable = true
+DepthWriteEnable = true
+ComparisonDepthFunction = ComparisonFunction_Always
+CullMode = CullMode_None
+ScissorEnable = true
+
+[VERTEX_SHADER]
+
+struct ClearVertex
+{
+  float4 Position : SV_Position;
+};
+
+ClearVertex main(uint vertexId : SV_VertexID)
+{
+  ClearVertex output;
+  output.Position = float4(
+    (float)(vertexId / 2u) * 4.0f - 1.0f,
+    (float)(vertexId % 2u) * 4.0f - 1.0f,
+    0.0f,
+    1.0f);
+  return output;
+}
+
+[PIXEL_SHADER]
+
+float main() : SV_Depth
+{
+  return 0.0f;
+}

@@ -4,6 +4,7 @@
 
 #include <GraphicsFoundation/Device/Device.h>
 
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Profiling/Profiling.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -41,8 +42,34 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
     if (!(expression)) { return {}; }          \
   } while (false)
 
-xiiSharedPtr<xiiGALDevice>                   xiiGALDevice::s_pDefaultDevice;
-xiiEvent<const xiiGALDeviceEvent&, xiiMutex> xiiGALDevice::s_Events;
+class xiiGALDevice::State
+{
+public:
+  xiiEvent<const xiiGALDeviceEvent&, xiiMutex> m_Events;
+  xiiSharedPtr<xiiGALDevice>                   m_pDefaultDevice;
+};
+
+xiiUniquePtr<xiiGALDevice::State> xiiGALDevice::s_pState;
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, DeviceRegistry)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    xiiGALDevice::Startup();
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiGALDevice::Shutdown();
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
 
 xiiGALDevice::xiiGALDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& creationDescription) :
   xiiGALObject(), m_Description(creationDescription), m_Allocator("GALDevice", pAllocator), m_AllocatorWrapper(&m_Allocator)
@@ -51,8 +78,59 @@ xiiGALDevice::xiiGALDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationD
 
 xiiGALDevice::~xiiGALDevice() = default;
 
+bool xiiGALDevice::IsRegistryInitialized()
+{
+  return s_pState != nullptr;
+}
+
+xiiEvent<const xiiGALDeviceEvent&, xiiMutex>& xiiGALDevice::GetEvents()
+{
+  XII_ASSERT_DEV(s_pState != nullptr, "The graphics device registry subsystem is not started.");
+  return s_pState->m_Events;
+}
+
+void xiiGALDevice::SetDefaultDevice(xiiSharedPtr<xiiGALDevice> pDefaultDevice)
+{
+  XII_ASSERT_DEV(s_pState != nullptr, "The graphics device registry subsystem is not started.");
+  if (s_pState != nullptr)
+    s_pState->m_pDefaultDevice = std::move(pDefaultDevice);
+}
+
+xiiSharedPtr<xiiGALDevice> xiiGALDevice::GetDefaultDevice()
+{
+  XII_ASSERT_DEBUG(s_pState != nullptr, "The graphics device registry subsystem is not started.");
+  XII_ASSERT_DEBUG(s_pState->m_pDefaultDevice != nullptr, "Default device not set.");
+  return s_pState->m_pDefaultDevice;
+}
+
+bool xiiGALDevice::HasDefaultDevice()
+{
+  return s_pState != nullptr && s_pState->m_pDefaultDevice != nullptr;
+}
+
+void xiiGALDevice::Startup()
+{
+  XII_ASSERT_DEV(s_pState == nullptr, "Graphics device registry started twice.");
+  s_pState = XII_DEFAULT_NEW(State);
+}
+
+void xiiGALDevice::Shutdown()
+{
+  if (s_pState == nullptr)
+    return;
+
+  XII_ASSERT_DEV(s_pState->m_pDefaultDevice == nullptr, "The default graphics device must be released before the device registry shuts down.");
+  s_pState->m_Events.Clear();
+  s_pState->m_pDefaultDevice.Clear();
+  s_pState.Clear();
+}
+
 xiiResult xiiGALDevice::Initialize()
 {
+  XII_ASSERT_DEV(s_pState != nullptr, "The graphics device registry subsystem is not started.");
+  if (s_pState == nullptr)
+    return XII_FAILURE;
+
   XII_LOG_BLOCK("xiiGALDevice::Initialize");
 
   // Initialize platform device.
@@ -80,7 +158,7 @@ xiiResult xiiGALDevice::Initialize()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::AfterInitialization;
-    s_Events.Broadcast(e);
+    s_pState->m_Events.Broadcast(e);
   }
 
   return XII_SUCCESS;
@@ -99,7 +177,7 @@ void xiiGALDevice::BeginFrame()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::BeforeBeginFrame;
-    s_Events.Broadcast(e);
+    s_pState->m_Events.Broadcast(e);
   }
 
   {
@@ -116,7 +194,7 @@ void xiiGALDevice::BeginFrame()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::AfterBeginFrame;
-    s_Events.Broadcast(e);
+    s_pState->m_Events.Broadcast(e);
   }
 }
 
@@ -126,7 +204,7 @@ void xiiGALDevice::EndFrame()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::BeforeEndFrame;
-    s_Events.Broadcast(e);
+    s_pState->m_Events.Broadcast(e);
   }
 
   {
@@ -143,7 +221,7 @@ void xiiGALDevice::EndFrame()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::AfterEndFrame;
-    s_Events.Broadcast(e);
+    s_pState->m_Events.Broadcast(e);
   }
 }
 
@@ -1528,7 +1606,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
     XII_GAL_DEVICE_CHECK(!description.m_sShaderRecordName.IsEmpty() == description.m_RayTracingPipeline.m_uiShaderRecordSize > 0U, "Shader record name must not be empty if shader record size is non-zero.");
   }
 
-  XII_GAL_DEVICE_CHECK(description.m_RayTracingPipeline.m_uiMaxRecursionDepth > m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth, "Max recursion depth ({}) exceeds device limit ({}).", description.m_RayTracingPipeline.m_uiMaxRecursionDepth, m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth);
+  XII_GAL_DEVICE_CHECK(description.m_RayTracingPipeline.m_uiMaxRecursionDepth <= m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth, "Max recursion depth ({}) exceeds device limit ({}).", description.m_RayTracingPipeline.m_uiMaxRecursionDepth, m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth);
 
   xiiSet<xiiStringView> groupNames(m_Allocator.GetParent());
   for (xiiUInt32 i = 0; i < description.m_GeneralShaders.GetCount(); ++i)

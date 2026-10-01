@@ -1,16 +1,12 @@
-// XII Engine - ExposureHistogram.xiiShader  [NEW]
-// Pass 53: Build a 256-bucket log2-luminance histogram via LDS atomics.
-// Dispatch: ceil(W/16) × ceil(H/16) × 1  (each thread handles one pixel tile)
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
+[COMPUTE_SHADER]
 
-cbuffer ExposureConstants : register(b3)
-{
-    float g_MinLogLum;  // log2 luminance mapped to bucket 0
-    float g_MaxLogLum;  // log2 luminance mapped to bucket 255
-    float g_InvLogLumRange;
-    uint  _pad;
-};
+// Build a 256-bucket log2-luminance histogram via LDS atomics.
+// Dispatch: ceil(W/16) x ceil(H/16) x 1 (each thread handles one pixel tile).
+
+#include <Shaders/Pipeline/Passes/Exposure/ExposureHistogramConstants.h>
 
 Texture2D<float4>          g_HDRInput   : register(t0);
 RWStructuredBuffer<uint>   g_Histogram  : register(u0); // 256 uint counters
@@ -26,14 +22,14 @@ uint LuminanceToBucket(float lum)
 {
     if (lum < 0.0001f) return 0u;
     float logLum = log2(lum);
-    float t      = saturate((logLum - g_MinLogLum) * g_InvLogLumRange);
+    float t      = saturate((logLum - LogLuminanceRange.x) * LogLuminanceRange.z);
     return uint(t * 254.0f + 1.0f); // reserve bucket 0 for very dark pixels
 }
 
 [numthreads(16, 16, 1)]
-void CS_ExposureHistogram(uint3 tid   : SV_DispatchThreadID,
-                          uint3 gtid  : SV_GroupThreadID,
-                          uint3 gid   : SV_GroupID)
+void main(uint3 tid   : SV_DispatchThreadID,
+          uint3 gtid  : SV_GroupThreadID,
+          uint3 gid   : SV_GroupID)
 {
     // Initialise LDS.
     if (gtid.x == 0u && gtid.y == 0u)
@@ -41,14 +37,11 @@ void CS_ExposureHistogram(uint3 tid   : SV_DispatchThreadID,
     GroupMemoryBarrierWithGroupSync();
 
     // Each thread accumulates its pixel into LDS.
-    uint2 dims;
-    uint dummy; g_Histogram.GetDimensions(dummy, dummy); // dims not available from buffer
-    // Use uv clamp instead.
     uint2 pixelCoord = tid.xy;
-    float2 uv = (float2(pixelCoord) + 0.5f) / float2(1920u, 1080u); // patched by CBV in practice
-    if (uv.x <= 1.0f && uv.y <= 1.0f)
+    uint2 resolution = InputResolution;
+    if (all(pixelCoord < resolution))
     {
-        float3 hdr = g_HDRInput.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+        float3 hdr = g_HDRInput.Load(uint3(pixelCoord, 0u)).rgb;
         float  lum = Luminance(hdr);
         uint   bin = LuminanceToBucket(lum);
         InterlockedAdd(gs_LocalHistogram[bin], 1u);

@@ -3,9 +3,9 @@ ALL
 
 [PERMUTATIONS]
 
-[COMPUTESHADER]
+[COMPUTE_SHADER]
 
-#include "PipelineCommon.xiiShader"
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 #define DECAL_TILE_SIZE 16u
 #define MAX_PROJECTED_DECALS_PER_TILE 12u

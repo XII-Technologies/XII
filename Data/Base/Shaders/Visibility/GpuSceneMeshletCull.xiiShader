@@ -17,10 +17,18 @@ StructuredBuffer<uint> g_VisibleInstanceCount;
 RWStructuredBuffer<uint2> g_VisibleMeshlets;
 RWStructuredBuffer<uint> g_VisibleMeshletCount;
 
-bool ReserveVisibleMeshlet(out uint destination)
+bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
 {
   uint capacity, stride;
+  uint counterCapacity, counterStride;
   g_VisibleMeshlets.GetDimensions(capacity, stride);
+  g_VisibleMeshletCount.GetDimensions(counterCapacity, counterStride);
+  capacity = min(capacity, maximumCount);
+  if (capacity == 0u || counterCapacity == 0u)
+  {
+    destination = 0u;
+    return false;
+  }
 
   // A plain InterlockedAdd can leave the counter larger than the output buffer. The
   // indirect mesh dispatch consumes this counter, so reserve with compare/exchange and
@@ -47,18 +55,42 @@ bool ReserveVisibleMeshlet(out uint destination)
 [numthreads(64, 1, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_GroupID)
 {
-  uint visibleCount = g_VisibleInstanceCount[0];
+  uint viewCount, viewStride;
+  uint sceneCount, sceneStride;
+  uint geometryCount, geometryStride;
+  uint meshletCount, meshletStride;
+  uint visibleInstanceCapacity, visibleInstanceStride;
+  uint visibleCountCapacity, visibleCountStride;
+  g_VisibilityView.GetDimensions(viewCount, viewStride);
+  g_SceneInstances.GetDimensions(sceneCount, sceneStride);
+  g_Geometry.GetDimensions(geometryCount, geometryStride);
+  g_Meshlets.GetDimensions(meshletCount, meshletStride);
+  g_VisibleInstances.GetDimensions(visibleInstanceCapacity, visibleInstanceStride);
+  g_VisibleInstanceCount.GetDimensions(visibleCountCapacity, visibleCountStride);
+  if (viewCount == 0u || visibleCountCapacity == 0u)
+    return;
+
+  const uint visibleCount = min(g_VisibleInstanceCount[0], visibleInstanceCapacity);
   const uint visibleInstanceIndex = groupId.y + groupId.z * 65535u;
   if (visibleInstanceIndex >= visibleCount)
     return;
 
   const uint instanceIndex = g_VisibleInstances[visibleInstanceIndex];
+  if (instanceIndex >= sceneCount)
+    return;
+
   const GpuSceneInstance instance = g_SceneInstances[instanceIndex];
   const GpuVisibilityView view = g_VisibilityView[0];
+  if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex)
+    return;
+
   const GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
   const float distanceToCamera = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
   const uint lodIndex = SelectResidentLod(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y);
   if (lodIndex == 0xFFFFFFFFu)
+    return;
+
+  if (lodIndex >= min(geometry.LodCount, 8u))
     return;
 
   const GpuGeometryLod lod = geometry.Lods[lodIndex];
@@ -70,6 +102,9 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
 
   const uint localMeshlet = dispatchThreadId.x;
   if (localMeshlet >= lod.MeshletCount)
+    return;
+
+  if (lod.MeshletMetadataOffset >= meshletCount || localMeshlet >= meshletCount - lod.MeshletMetadataOffset)
     return;
 
   const uint meshletIndex = lod.MeshletMetadataOffset + localMeshlet;
@@ -94,6 +129,6 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   }
 
   uint destination;
-  if (ReserveVisibleMeshlet(destination))
+  if (ReserveVisibleMeshlet(view.MaxVisibleMeshlets, destination))
     g_VisibleMeshlets[destination] = uint2(instanceIndex, meshletIndex);
 }
