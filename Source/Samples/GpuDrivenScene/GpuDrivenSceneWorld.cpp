@@ -7,6 +7,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <GraphicsCore/Lighting/VirtualShadowMap.h>
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDrivenSceneConfiguration>)
   {
@@ -67,6 +68,15 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   materialDescription.m_uiMaxParameterBytes = 64U;
   materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
   XII_SUCCEED_OR_RETURN(xiiMaterialManager::Configure(materialDescription));
+
+  xiiVirtualShadowMapSettings virtualShadowDescription;
+  virtualShadowDescription.m_uiVirtualResolution   = 16384U;
+  virtualShadowDescription.m_uiPageSize            = 128U;
+  virtualShadowDescription.m_uiPhysicalPageCount   = 1024U;
+  virtualShadowDescription.m_uiMaxFeedbackRequests = 8192U;
+  virtualShadowDescription.m_uiMaxPageAllocations  = 128U;
+  virtualShadowDescription.m_uiFramesInFlight      = configuration.m_uiFramesInFlight;
+  XII_SUCCEED_OR_RETURN(xiiVirtualShadowMapManager::Configure(virtualShadowDescription));
 
   xiiRayTracingSceneDescription rayTracingDescription;
   rayTracingDescription.m_uiMaxGeometries  = 4U;
