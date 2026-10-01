@@ -340,7 +340,7 @@ private:
     visibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::MainView;
     visibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
     const xiiGpuVisibilityOutputs visibility = xiiGpuVisibilityManager::AddPasses(
-      m_hVisibility, graph, m_uiFrameIndex, m_World.GetScene(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
+      m_hVisibility, graph, m_uiFrameIndex, m_World.GetSceneHandle(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
 
     // A robotics/medical sensor view owns independent frame-sliced constants. Only its instance
     // count is exported; unused meshlet and command stages are culled by the render graph.
@@ -351,7 +351,7 @@ private:
     sensorVisibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::Sensor;
     sensorVisibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
     const xiiGpuVisibilityOutputs sensorVisibility = xiiGpuVisibilityManager::AddPasses(
-      m_hVisibility, graph, m_uiFrameIndex, m_World.GetScene(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
+      m_hVisibility, graph, m_uiFrameIndex, m_World.GetSceneHandle(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
 
     graph.AddPass<SceneTargetsPassData>(
       "Create Scene Targets", xiiGALCommandQueueFlags::Graphics,

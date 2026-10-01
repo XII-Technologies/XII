@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
 class xiiGpuVisibilityManagerState;
@@ -45,7 +46,7 @@ public:
   static void                                        DestroyContext(xiiGpuVisibilityContextHandle handle);
   [[nodiscard]] static bool                          IsValid(xiiGpuVisibilityContextHandle handle);
 
-  [[nodiscard]] static xiiGpuVisibilityOutputs AddPasses(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
+  [[nodiscard]] static xiiGpuVisibilityOutputs AddPasses(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiSceneDatabaseContextHandle sceneHandle, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ = {});
 
   [[nodiscard]] static xiiUInt32 GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle);
   [[nodiscard]] static xiiUInt32 GetMeshDispatchGroupCountY(xiiGpuVisibilityContextHandle handle);

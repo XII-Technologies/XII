@@ -28,6 +28,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, GpuVisibilityManager)
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
     "Core",
+    "SceneDatabaseManager",
     "GeometryResidencyManager",
     "PipelineCache",
     "ShaderPermutationUtilities"
@@ -123,11 +124,13 @@ bool xiiGpuVisibilityManager::IsValid(xiiGpuVisibilityContextHandle handle)
   return GetSystem(handle) != nullptr;
 }
 
-xiiGpuVisibilityOutputs xiiGpuVisibilityManager::AddPasses(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const xiiSceneDatabase& scene, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ)
+xiiGpuVisibilityOutputs xiiGpuVisibilityManager::AddPasses(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiSceneDatabaseContextHandle sceneHandle, const xiiGpuVisibilityView& view, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuVisibilityPassDescription& description, xiiRenderGraphTextureHandle hHiZ)
 {
   xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  xiiSceneDatabase*       pScene  = xiiSceneDatabaseManager::GetDatabase(sceneHandle);
   XII_ASSERT_DEV(pSystem != nullptr, "GPU visibility context is invalid or has already been destroyed.");
-  return pSystem != nullptr ? pSystem->AddPasses(graph, uiFrameIndex, scene, view, geometry, description, hHiZ) : xiiGpuVisibilityOutputs{};
+  XII_ASSERT_DEV(pScene != nullptr, "Scene database context is invalid or has already been destroyed.");
+  return pSystem != nullptr && pScene != nullptr ? pSystem->AddPasses(graph, uiFrameIndex, *pScene, view, geometry, description, hHiZ) : xiiGpuVisibilityOutputs{};
 }
 
 xiiUInt32 xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle)
