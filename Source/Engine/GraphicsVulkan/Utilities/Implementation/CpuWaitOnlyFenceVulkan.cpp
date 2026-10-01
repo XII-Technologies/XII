@@ -120,7 +120,7 @@ void xiiGALCpuWaitOnlyFenceVulkan::Wait(xiiUInt64 uiValue)
       vkFenceStatus = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
     }
 
-    XII_ASSERT_DEV(vkFenceStatus == vk::Result::eSuccess, "All pending fences must now be complete!");
+    XII_ASSERT_DEV(vkFenceStatus == vk::Result::eSuccess, "Failed to wait for Vulkan fence. FenceValue={}, RequestedValue={}, Result={}.", syncData.m_uiValue, uiValue, vk::to_string(vkFenceStatus).data());
 
     UpdateLastCompletedFenceValue(syncData.m_uiValue);
 
