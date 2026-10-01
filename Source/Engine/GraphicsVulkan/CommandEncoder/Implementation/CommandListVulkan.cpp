@@ -2734,26 +2734,41 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
 
 void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
+  if (pBuffer == nullptr || pSourceData.IsEmpty())
+    return;
+
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
   xiiGALBufferVulkan*              pBufferVulkan          = xiiDynamicCast<xiiGALBufferVulkan*>(pBuffer);
+  const xiiUInt64                  uiUploadSize           = pSourceData.GetCount();
+
+  if (pBufferVulkan == nullptr)
+  {
+    xiiLog::Error("Failed to update Vulkan buffer on command list '{}': incompatible backend buffer type.", GetDebugName());
+    return;
+  }
+  if (static_cast<xiiUInt64>(uiDestinationOffset) + uiUploadSize > pBufferVulkan->GetSize())
+  {
+    xiiLog::Error("Failed to update Vulkan buffer '{}': destination range [{}..{}) exceeds buffer size {}.", pBufferVulkan->GetDebugName(), uiDestinationOffset, static_cast<xiiUInt64>(uiDestinationOffset) + uiUploadSize, pBufferVulkan->GetSize());
+    return;
+  }
 
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
-  xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(pBufferVulkan->GetSize());
+  xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(uiUploadSize);
 
   void* pMappedMemory = nullptr;
   VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(stagingBufferAllocation.m_VulkanAllocation, &pMappedMemory));
-  VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, uiUploadSize));
 
   pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
   xiiMemoryUtils::RawByteCopy(pMappedMemory, pSourceData.GetPtr(), pSourceData.GetCount());
 
-  VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, uiUploadSize));
   pVulkanMemoryAllocator->UnmapMemory(stagingBufferAllocation.m_VulkanAllocation);
 
-  UpdateBufferRegion(pBufferVulkan, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, uiDestinationOffset, pSourceData.GetCount());
+  UpdateBufferRegion(pBufferVulkan, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, uiDestinationOffset, uiUploadSize);
 }
 
 void xiiGALCommandListVulkan::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
