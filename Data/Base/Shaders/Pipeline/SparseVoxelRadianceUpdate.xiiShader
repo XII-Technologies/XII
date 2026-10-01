@@ -1,7 +1,14 @@
 // XII Engine - sparse far-field radiance brick injection and temporal accumulation.
 
-#include "PipelineCommon.xiiShader"
-#include "Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
 
 struct xiiGpuSparseVoxelBrickUpdate
 {
@@ -9,11 +16,11 @@ struct xiiGpuSparseVoxelBrickUpdate
     uint4 PhysicalLevelAndKey;
 };
 
-StructuredBuffer<xiiGpuSparseVoxelBrickUpdate> g_SparseVoxelUpdates : register(t0);
-RWStructuredBuffer<float4> g_SparseVoxelRadiancePool : register(u0);
+StructuredBuffer<xiiGpuSparseVoxelBrickUpdate> g_SparseVoxelUpdates;
+RWStructuredBuffer<float4>                     g_SparseVoxelRadiancePool;
 
 [numthreads(64, 1, 1)]
-void CS_SparseVoxelRadianceUpdate(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     const uint voxelsPerBrick = PoolLayout.x;
     const uint totalVoxelUpdates = ClipmapAndUpdateCounts.w * voxelsPerBrick;

@@ -2997,6 +2997,8 @@ struct xiiSparseVoxelRadianceGatherData
 
 void xiiView::SetupSparseVoxelRadianceGather(xiiSparseVoxelRadianceGatherData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hRadiancePool = builder.ReadBuffer(xiiRGBlackboardKeys::k_SparseVoxelRadiancePool, xiiGALResourceStateFlags::ShaderResource);

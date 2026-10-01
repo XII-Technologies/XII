@@ -1,7 +1,15 @@
 // XII Engine - sparse voxel radiance clipmap final gather.
 
-#include "PipelineCommon.xiiShader"
-#include "Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
 
 struct xiiGpuSparseVoxelLevel
 {
@@ -9,12 +17,12 @@ struct xiiGpuSparseVoxelLevel
     float4 VoxelAndBrickSize;
 };
 
-Texture2D<float> g_SceneDepth : register(t0);
-Texture2D<float2> g_GBufNormal : register(t1);
-StructuredBuffer<uint> g_SparseVoxelPageTable : register(t2);
-StructuredBuffer<xiiGpuSparseVoxelLevel> g_SparseVoxelLevels : register(t3);
-StructuredBuffer<float4> g_SparseVoxelRadiancePool : register(t4);
-RWTexture2D<float4> g_SparseVoxelIrradianceOut : register(u0);
+Texture2D<float>                          g_SceneDepth;
+Texture2D<float2>                         g_GBufNormal;
+StructuredBuffer<uint>                    g_SparseVoxelPageTable;
+StructuredBuffer<xiiGpuSparseVoxelLevel> g_SparseVoxelLevels;
+StructuredBuffer<float4>                  g_SparseVoxelRadiancePool;
+RWTexture2D<float4>                       g_SparseVoxelIrradianceOut;
 
 float3 LoadBrickRadiance(uint physicalBrick, float3 localVoxelCoordinate)
 {
@@ -39,7 +47,7 @@ float3 LoadBrickRadiance(uint physicalBrick, float3 localVoxelCoordinate)
 }
 
 [numthreads(8, 8, 1)]
-void CS_SparseVoxelRadianceGather(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dimensions;
     g_SparseVoxelIrradianceOut.GetDimensions(dimensions.x, dimensions.y);
@@ -47,7 +55,7 @@ void CS_SparseVoxelRadianceGather(uint3 tid : SV_DispatchThreadID)
         return;
 
     const float2 uv = (float2(tid.xy) + 0.5f) / float2(dimensions);
-    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0.0f);
+    const float depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0.0f);
     if (depth <= 0.0f)
     {
         g_SparseVoxelIrradianceOut[tid.xy] = 0.0f;
@@ -55,7 +63,7 @@ void CS_SparseVoxelRadianceGather(uint3 tid : SV_DispatchThreadID)
     }
 
     const float3 worldPosition = ReconstructWorldPos(uv, depth);
-    const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0.0f));
+    const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler, uv, 0.0f));
     const uint levelCount = ClipmapAndUpdateCounts.x;
     const uint brickGridResolution = ClipmapAndUpdateCounts.y;
 
