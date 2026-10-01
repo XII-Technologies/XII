@@ -101,6 +101,7 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_DirectLightReservoirSurface = "DirectLightReservoirSurface"_xiisv; ///< xiiRenderGraphTextureHandle - surface validation history for the reservoir.
   constexpr xiiStringView k_DirectLightingBuffer   = "DirectLighting"_xiisv;       ///< xiiRenderGraphTextureHandle - direct lighting HDR (R16G16B16A16F).
   constexpr xiiStringView k_IndirectLightingBuffer = "IndirectLighting"_xiisv;     ///< xiiRenderGraphTextureHandle - indirect lighting HDR (R16G16B16A16F).
+  constexpr xiiStringView k_SSGITexture            = "SSGITerm"_xiisv;            ///< xiiRenderGraphTextureHandle - non-RT near-field diffuse GI contribution.
   constexpr xiiStringView k_EnvironmentSpecular    = "EnvironmentSpecular"_xiisv;  ///< xiiRenderGraphTextureHandle - Tier 2 probe/sky specular contribution already evaluated through the material BRDF.
   constexpr xiiStringView k_SSRTexture             = "SSRTerm"_xiisv;              ///< xiiRenderGraphTextureHandle - screen-space reflection radiance (R16G16B16A16F).
   constexpr xiiStringView k_RTRawGI                = "RTRawGI"_xiisv;              ///< xiiRenderGraphTextureHandle - raw RT indirect diffuse before denoising.

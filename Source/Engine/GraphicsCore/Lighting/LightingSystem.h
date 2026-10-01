@@ -36,6 +36,10 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   float     m_fContactShadowLength     = 0.35f;
   float     m_fContactShadowThickness  = 0.02f;
   xiiUInt32 m_uiContactShadowSteps     = 16U;
+  float     m_fSSGIRayLength           = 2.0f;
+  xiiUInt32 m_uiSSGISampleCount        = 8U;
+  float     m_fSSGIThickness           = 0.15f;
+  float     m_fSSGIIntensity           = 1.0f;
   xiiUInt32 m_uiLocalShadowTileSize    = 256U;
   float     m_fVolumetricFogDensity    = 0.015f;
   float     m_fVolumetricHeightFalloff = 0.08f;

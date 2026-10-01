@@ -112,6 +112,7 @@ struct xiiMeshDecalDrawData;
 struct xiiWeightedBlendedOITData;
 
 struct xiiScreenSpaceGlobalIlluminationData;
+struct xiiScreenSpaceGlobalIlluminationCompositeData;
 struct xiiScreenSpaceRefractionData;
 struct xiiPlanarReflectionsData;
 
@@ -482,6 +483,8 @@ private:
 
   void SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminationData& data, xiiRenderGraphBuilder& builder);
   void ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIlluminationData& data, xiiRenderGraphPassContext& context);
+  void SetupScreenSpaceGlobalIlluminationComposite(xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteScreenSpaceGlobalIlluminationComposite(const xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphPassContext& context);
 
   void SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xiiRenderGraphBuilder& builder);
   void ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& data, xiiRenderGraphPassContext& context);
@@ -745,6 +748,7 @@ private:
     struct ScreenSpacePasses
     {
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSGIPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSSGICompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSRefractionPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSSSPipeline; // screen-space SSS
       xiiSharedPtr<xiiGALComputePipelineState> m_pSSCausticsPipeline;

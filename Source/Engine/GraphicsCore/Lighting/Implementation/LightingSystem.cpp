@@ -66,7 +66,7 @@ namespace
 } // namespace
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -79,6 +79,10 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 1, xiiRTTI
     XII_MEMBER_PROPERTY("ContactShadowLength", m_fContactShadowLength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("ContactShadowThickness", m_fContactShadowThickness)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("ContactShadowSteps", m_uiContactShadowSteps)->AddAttributes(new xiiClampValueAttribute(1U, 128U)),
+    XII_MEMBER_PROPERTY("SSGIRayLength", m_fSSGIRayLength)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("SSGISampleCount", m_uiSSGISampleCount)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+    XII_MEMBER_PROPERTY("SSGIThickness", m_fSSGIThickness)->AddAttributes(new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("SSGIIntensity", m_fSSGIIntensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("LocalShadowTileSize", m_uiLocalShadowTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U)),
     XII_MEMBER_PROPERTY("VolumetricFogDensity", m_fVolumetricFogDensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("VolumetricHeightFalloff", m_fVolumetricHeightFalloff)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),

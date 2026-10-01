@@ -1,0 +1,23 @@
+// XII Engine - Adds the non-RT near-field GI fallback to the current HDR scene.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+Texture2D<float4>   g_SSGI;
+RWTexture2D<float4> g_HDRScene;
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_HDRScene.GetDimensions(dimensions.x, dimensions.y);
+  if (any(tid.xy >= dimensions))
+    return;
+
+  const float4 scene = g_HDRScene[tid.xy];
+  g_HDRScene[tid.xy] = float4(scene.rgb + max(g_SSGI.Load(int3(tid.xy, 0)).rgb, 0.0f), scene.a);
+}

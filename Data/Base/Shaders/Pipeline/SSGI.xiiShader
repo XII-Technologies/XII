@@ -1,23 +1,26 @@
 // XII Engine - SSGI.xiiShader
 // Stage 9: Screen-Space Global Illumination.
-// Uniform hemisphere ray-march in view space using the Hi-Z depth pyramid for
-// occlusion, reading the current HDR scene as a one-bounce indirect radiance source.
+// Cosine-weighted hemisphere ray marching using the depth buffer for occlusion
+// and the current HDR scene as a one-bounce indirect-radiance source.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
 
-cbuffer SSGIConstants : register(b3)
-{
-    float  g_RayLength;      // max trace distance in view-space units (default 2.0)
-    uint   g_SampleCount;    // hemisphere samples per pixel (default 8)
-    float  g_Thickness;      // depth acceptance threshold (default 0.15)
-    float  g_Intensity;      // output multiplier
-};
+[PERMUTATIONS]
 
-Texture2D<float>  g_SceneDepth  : register(t0); // reversed-Z depth
-Texture2D<float4> g_GBufNormal  : register(t1); // oct-encoded normals in GBuffer
-Texture2D<float4> g_HDRScene    : register(t2);  // current frame HDR scene color
-RWTexture2D<float4> g_SSGIOut   : register(u0);
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/GlobalIllumination/SSGIConstants.h>
+
+Texture2D<float>    g_SceneDepth;  // reversed-Z depth
+Texture2D<float2>   g_GBufNormal;  // oct-encoded normals
+Texture2D<float4>   g_GBufAlbedo;  // linear albedo + material AO
+Texture2D<float4>   g_GBufMaterial; // roughness, metallic, specular, material ID
+Texture2D<float4>   g_HDRScene;    // completed opaque scene before SSGI
+RWTexture2D<float4> g_SSGIOut;     // indirect diffuse contribution
 
 // Build an orthonormal basis around the surface normal.
 void BuildONB(float3 n, out float3 T, out float3 B)
@@ -37,7 +40,7 @@ float3 CosineSampleHemisphere(float2 xi)
 }
 
 [numthreads(8, 8, 1)]
-void CS_SSGI(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims;
     g_SSGIOut.GetDimensions(dims.x, dims.y);
@@ -46,65 +49,67 @@ void CS_SSGI(uint3 tid : SV_DispatchThreadID)
     float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
 
     // Reconstruct world-space position and normal.
-    float  depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    float  depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0);
     if (depth <= 0.0f)
     {
-        g_SSGIOut[tid.xy] = float4(0, 0, 0, 0);
+        g_SSGIOut[tid.xy] = 0.0f;
         return;
     }
 
     float3 worldPos = ReconstructWorldPos(uv, depth);
-    float2 octEnc   = g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0).rg;
+    float2 octEnc   = g_GBufNormal.SampleLevel(PointClampSampler, uv, 0);
     float3 normal   = DecodeOctNormal(octEnc);
+    const float4 albedoAO = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0);
+    const float metallic = saturate(g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0).g);
 
     // Build tangent frame.
     float3 T, B;
     BuildONB(normal, T, B);
 
-    float3 irradiance = float3(0, 0, 0);
-    float  totalWeight = 0.0f;
+    float3 incidentRadiance = 0.0f;
+    const uint sampleCount = clamp(SampleCount, 1u, 32u);
 
     [loop]
-    for (uint i = 0u; i < g_SampleCount; ++i)
+    for (uint i = 0u; i < sampleCount; ++i)
     {
         // Halton quasi-random with temporal offset.
         float2 xi = float2(
-            HaltonSample(i + g_FrameIndex * g_SampleCount, 2u),
-            HaltonSample(i + g_FrameIndex * g_SampleCount, 3u));
+            HaltonSample(i + g_FrameIndex * sampleCount, 2u),
+            HaltonSample(i + g_FrameIndex * sampleCount, 3u));
 
         // Cosine-weighted sample in hemisphere.
         float3 localDir = CosineSampleHemisphere(xi);
         float3 rayDir   = T * localDir.x + B * localDir.y + normal * localDir.z;
-        float  NdotL    = localDir.z; // = dot(normal, rayDir) in tangent space
+        [unroll]
+        for (uint stepIndex = 1u; stepIndex <= 6u; ++stepIndex)
+        {
+            const float traceDistance = RayLength * ((float)stepIndex / 6.0f);
+            const float3 samplePos = worldPos + rayDir * traceDistance;
+            float4 sampleClip = mul(g_ViewProjectionMatrix, float4(samplePos, 1.0f));
+            if (sampleClip.w <= 0.0f)
+                break;
 
-        if (NdotL <= 0.0f) continue;
+            sampleClip.xyz /= sampleClip.w;
+            float2 sampleUV = sampleClip.xy * float2(0.5f, -0.5f) + 0.5f;
+            if (any(sampleUV < 0.0f) || any(sampleUV > 1.0f))
+                break;
 
-        // March in screen space: map world ray to NDC step.
-        float3 samplePos = worldPos + rayDir * g_RayLength;
-        float4 sampleClip = mul(g_ViewProjectionMatrix, float4(samplePos, 1.0f));
-        sampleClip.xyz /= sampleClip.w;
+            const float hitDepth = g_SceneDepth.SampleLevel(LinearClampSampler, sampleUV, 0);
+            if (hitDepth <= 0.0f)
+                continue;
 
-        float2 sampleUV = sampleClip.xy * 0.5f + 0.5f;
-        sampleUV.y = 1.0f - sampleUV.y;
-
-        if (any(sampleUV < 0.0f) || any(sampleUV > 1.0f)) continue;
-
-        // Depth comparison: accept hit only if scene depth roughly matches.
-        float hitDepth    = g_SceneDepth.SampleLevel(g_sLinearClamp, sampleUV, 0);
-        float hitLinear   = LinearizeDepth(hitDepth);
-        float rayLinear   = LinearizeDepth(saturate(sampleClip.z));
-
-        bool hit = (hitLinear < rayLinear) && (rayLinear - hitLinear < g_Thickness * hitLinear);
-        if (!hit) continue;
-
-        // Sample scene radiance at hit point.
-        float3 radiance = g_HDRScene.SampleLevel(g_sLinearClamp, sampleUV, 0).rgb;
-        irradiance     += radiance * NdotL;
-        totalWeight    += NdotL;
+            const float hitLinear = LinearizeDepth(hitDepth);
+            const float rayLinear = LinearizeDepth(saturate(sampleClip.z));
+            if (hitLinear <= rayLinear && rayLinear - hitLinear <= Thickness)
+            {
+                incidentRadiance += max(g_HDRScene.SampleLevel(LinearClampSampler, sampleUV, 0).rgb, 0.0f);
+                break;
+            }
+        }
     }
 
-    if (totalWeight > 0.0f)
-        irradiance /= totalWeight;
-
-    g_SSGIOut[tid.xy] = float4(irradiance * g_Intensity, 1.0f);
+    // Cosine-weighted sampling already accounts for the Lambertian cosine/PDF
+    // ratio. Misses remain black, naturally preserving screen-space occlusion.
+    const float3 indirectDiffuse = (incidentRadiance / (float)sampleCount) * albedoAO.rgb * albedoAO.a * (1.0f - metallic) * Intensity;
+    g_SSGIOut[tid.xy] = float4(indirectDiffuse, 1.0f);
 }

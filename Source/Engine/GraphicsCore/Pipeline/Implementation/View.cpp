@@ -44,6 +44,7 @@
 #include <Shaders/Pipeline/Passes/Exposure/ExposureAdaptationConstants.h>
 #include <Shaders/Pipeline/Passes/Exposure/ExposureHistogramConstants.h>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/ReSTIRGIConstants.h>
+#include <Shaders/Pipeline/Passes/GlobalIllumination/SSGIConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZOcclusionConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
@@ -5515,19 +5516,27 @@ struct xiiScreenSpaceGlobalIlluminationData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hSceneDepth;    ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferNormal; ///< ShaderResource in (G-Buffer normal texture).
-  xiiRenderGraphTextureHandle m_hHDRIn;         ///< ShaderResource in (current HDR scene color).
-  xiiRenderGraphTextureHandle m_hSSGIOut;       ///< UnorderedAccess out (screen-space GI term).
+  xiiRenderGraphTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
+  xiiRenderGraphTextureHandle m_hGBufferNormal;   ///< ShaderResource in (G-Buffer normal texture).
+  xiiRenderGraphTextureHandle m_hGBufferAlbedo;   ///< ShaderResource in (surface albedo and material AO).
+  xiiRenderGraphTextureHandle m_hGBufferMaterial; ///< ShaderResource in (surface metallic response).
+  xiiRenderGraphTextureHandle m_hHDRIn;           ///< ShaderResource in (current HDR scene color).
+  xiiRenderGraphTextureHandle m_hSSGIOut;         ///< UnorderedAccess out (screen-space diffuse GI contribution).
+  xiiRenderGraphBufferHandle  m_hConstants;
+  xiiSSGIConstants            m_Constants;
 };
 
 void xiiView::SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminationData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   const xiiUInt32 uiRenderWidth  = GetRenderResolutionWidth();
   const xiiUInt32 uiRenderHeight = GetRenderResolutionHeight();
 
   data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferAlbedo = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
   data.m_hHDRIn         = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
@@ -5538,7 +5547,20 @@ void xiiView::SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminatio
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
-  data.m_hSSGIOut           = builder.WriteTexture("SSGITerm", description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hSSGIOut           = builder.WriteTexture(xiiRGBlackboardKeys::k_SSGITexture, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiSSGIConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("xiiSSGIConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  const xiiLightingSystemSettings& settings = m_ViewPassResources.m_LightingSystem.GetSettings();
+  data.m_Constants.RayLength   = xiiMath::Max(settings.m_fSSGIRayLength, 0.0f);
+  data.m_Constants.SampleCount = xiiMath::Clamp(settings.m_uiSSGISampleCount, 1U, 32U);
+  data.m_Constants.Thickness   = xiiMath::Max(settings.m_fSSGIThickness, 0.001f);
+  data.m_Constants.Intensity   = xiiMath::Max(settings.m_fSSGIIntensity, 0.0f);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_ScreenSpacePasses.m_pSSGIPipeline, "Shaders/Pipeline/SSGI.xiiShader");
 }
@@ -5551,13 +5573,51 @@ void xiiView::ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIll
 
   cmd.BeginDebugGroup("SSGI");
   {
+    {
+      xiiGALMapHelper<xiiSSGIConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *constants = data.m_Constants;
+    }
     cmd.SetPipelineState(m_ViewPassResources.m_ScreenSpacePasses.m_pSSGIPipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiSSGIConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRScene", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SSGIOut", context.GetTexture(data.m_hSSGIOut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+struct xiiScreenSpaceGlobalIlluminationCompositeData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphTextureHandle m_hSSGI;
+  xiiRenderGraphTextureHandle m_hHDRScene;
+};
+
+void xiiView::SetupScreenSpaceGlobalIlluminationComposite(xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphBuilder& builder)
+{
+  builder.SetPassAllowMerge(false);
+  data.m_hSSGI = builder.ReadTexture(xiiRGBlackboardKeys::k_SSGITexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDRScene = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ScreenSpacePasses.m_pSSGICompositePipeline, "Shaders/Pipeline/SSGIComposite.xiiShader");
+}
+
+void xiiView::ExecuteScreenSpaceGlobalIlluminationComposite(const xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+  cmd.BeginDebugGroup("SSGIComposite");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_ScreenSpacePasses.m_pSSGICompositePipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SSGI", context.GetTexture(data.m_hSSGI)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_HDRScene", context.GetTexture(data.m_hHDRScene)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -6359,7 +6419,12 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiWeightedBlendedOITData>("WeightedBlendedOIT", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupWeightedBlendedOIT, this), xiiMakeDelegate(&xiiView::ExecuteWeightedBlendedOIT, this));
 
   // Screen-space effects.
-  graph.AddPass<xiiScreenSpaceGlobalIlluminationData>("SSGI", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceGlobalIllumination, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceGlobalIllumination, this));
+  const xiiLightingSystemSettings& lightingSettings = m_ViewPassResources.m_LightingSystem.GetSettings();
+  if (!m_ViewPassResources.m_LightingPasses.m_bRTGIAvailableThisFrame && lightingSettings.m_fSSGIIntensity > 0.0f && lightingSettings.m_fSSGIRayLength > 0.0f)
+  {
+    graph.AddPass<xiiScreenSpaceGlobalIlluminationData>("SSGI", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceGlobalIllumination, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceGlobalIllumination, this));
+    graph.AddPass<xiiScreenSpaceGlobalIlluminationCompositeData>("SSGIComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceGlobalIlluminationComposite, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceGlobalIlluminationComposite, this));
+  }
   graph.AddPass<xiiScreenSpaceRefractionData>("SSRefraction", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceRefraction, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceRefraction, this));
   graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPlanarReflections, this), xiiMakeDelegate(&xiiView::ExecutePlanarReflections, this));
   graph.AddPass<xiiAtmosphereCompositeData>("AtmosphereComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereComposite, this));
