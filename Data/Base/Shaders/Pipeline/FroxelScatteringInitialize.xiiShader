@@ -8,9 +8,10 @@ ALL
 [COMPUTE_SHADER]
 
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumData.h>
 
-StructuredBuffer<float4> g_FroxelMeta;
-RWTexture3D<float4>       g_FroxelScatterOut;
+StructuredBuffer<xiiFroxelMediumData> g_FroxelMeta;
+RWTexture3D<float4>                  g_FroxelScatterOut;
 
 static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 
@@ -21,9 +22,10 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     return;
 
   const uint linearIndex = (dispatchThreadId.z * XII_FROXEL_COUNT.y + dispatchThreadId.y) * XII_FROXEL_COUNT.x + dispatchThreadId.x;
-  const float4 metadata = g_FroxelMeta[linearIndex];
-  const float density = max(metadata.x, 0.0f);
-  const float extinction = max(metadata.w, 0.0f);
+  const xiiFroxelMediumData metadata = g_FroxelMeta[linearIndex];
+  const float3 scattering = max(metadata.ScatteringAndExtinction.rgb, 0.0f);
+  const float extinction = max(metadata.ScatteringAndExtinction.a, 0.0f);
+  const float3 emission = max(metadata.EmissionAndAnisotropy.rgb, 0.0f);
 
-  g_FroxelScatterOut[dispatchThreadId] = float4(max(g_AmbientLightColor.rgb, 0.0f) * density, extinction);
+  g_FroxelScatterOut[dispatchThreadId] = float4(max(g_AmbientLightColor.rgb, 0.0f) * scattering + emission, extinction);
 }

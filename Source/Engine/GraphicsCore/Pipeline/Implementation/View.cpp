@@ -22,6 +22,7 @@
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
+#include <GraphicsCore/Lighting/VolumetricMedium.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
@@ -64,6 +65,7 @@
 #include <Shaders/Pipeline/Passes/Visibility/InstanceUpdateConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/LODSelectionConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/ShadowCasterCullingConstants.h>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
@@ -1538,10 +1540,12 @@ void xiiView::ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& d
 
 struct xiiFroxelAllocationData
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiRenderGraphBufferHandle  m_hFroxelMetadata;
   xiiRenderGraphTextureHandle m_hFroxelScattering;
+  xiiRenderGraphBufferHandle  m_hVolumetricMedia;
+  xiiRenderGraphBufferHandle  m_hVolumetricConstants;
+  xiiGpuVolumetricMediumArray m_Media;
+  xiiUInt32                   m_uiMediumBufferCapacity = 1U;
   xiiUInt32                   m_uiRenderWidth  = 1920U;
   xiiUInt32                   m_uiRenderHeight = 1080U;
 };
@@ -1549,7 +1553,7 @@ struct xiiFroxelAllocationData
 void xiiView::SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRenderGraphBuilder& builder)
 {
   xiiGALBufferCreationDescription froxelMetadataBufferDescription;
-  froxelMetadataBufferDescription.m_uiElementByteStride = 16U;                                                                      // per-froxel density + phase + depth + extinction
+  froxelMetadataBufferDescription.m_uiElementByteStride = 32U;                                                                      // scattering/extinction + emission/phase
   froxelMetadataBufferDescription.m_uiSize              = froxelMetadataBufferDescription.m_uiElementByteStride * 128U * 72U * 64U; // froxel volume
   froxelMetadataBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   froxelMetadataBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
@@ -1566,6 +1570,29 @@ void xiiView::SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRenderGrap
   scatteringBufferDescription.m_Usage              = xiiGALResourceUsage::Default;
   data.m_hFroxelScattering                         = builder.WriteTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, scatteringBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
+  if (xiiVolumetricMediumManager::IsSubsystemInitialized())
+  {
+    const xiiVec3 vViewPosition = m_pCamera != nullptr ? m_pCamera->GetCenterPosition() : xiiVec3::MakeZero();
+    xiiVolumetricMediumManager::GatherGpuMedia(vViewPosition, data.m_Media);
+  }
+
+  data.m_uiMediumBufferCapacity = xiiMath::Max(data.m_Media.GetCount(), 1U);
+  xiiGALBufferCreationDescription mediumBufferDescription;
+  mediumBufferDescription.m_uiElementByteStride = sizeof(xiiGpuVolumetricMedium);
+  mediumBufferDescription.m_uiSize              = sizeof(xiiGpuVolumetricMedium) * data.m_uiMediumBufferCapacity;
+  mediumBufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  mediumBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+  mediumBufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+  mediumBufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  data.m_hVolumetricMedia                        = builder.WriteBuffer("Volumetric Media", mediumBufferDescription, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALBufferCreationDescription constantBufferDescription;
+  constantBufferDescription.m_uiSize         = sizeof(xiiVolumetricMediumConstants);
+  constantBufferDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantBufferDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantBufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hVolumetricConstants                 = builder.WriteBuffer("Volumetric Medium Constants", constantBufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources->m_VisibilityPasses.m_pFroxelSetupPipeline, "Shaders/Pipeline/FroxelSetup.xiiShader");
   builder.SetPassAllowMerge(false);
 }
@@ -1576,8 +1603,25 @@ void xiiView::ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRe
 
   cmd.BeginDebugGroup("VolumetricGridAllocation");
   {
+    {
+      xiiGALMapHelper<xiiUInt8> pMediumBytes(cmd, context.GetBuffer(data.m_hVolumetricMedia), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      xiiMemoryUtils::ZeroFill(pMediumBytes.GetMappedData(), sizeof(xiiGpuVolumetricMedium) * data.m_uiMediumBufferCapacity);
+      if (!data.m_Media.IsEmpty())
+      {
+        const xiiArrayPtr<const xiiUInt8> mediumBytes = data.m_Media.GetByteArrayPtr();
+        xiiMemoryUtils::Copy(pMediumBytes.GetMappedData(), mediumBytes.GetPtr(), mediumBytes.GetCount());
+      }
+    }
+    {
+      xiiGALMapHelper<xiiVolumetricMediumConstants> pConstants(cmd, context.GetBuffer(data.m_hVolumetricConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->ActiveMediumCount         = data.m_Media.GetCount();
+      pConstants->_VolumetricMediumPadding = xiiVec3U32::MakeZero();
+    }
+
     cmd.SetPipelineState(m_ViewPassResources->m_VisibilityPasses.m_pFroxelSetupPipeline);
     m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_VolumetricMedia", context.GetBuffer(data.m_hVolumetricMedia)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiVolumetricMediumConstants", context.GetBuffer(data.m_hVolumetricConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_FroxelMetadata", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(128u + 7U) / 8U, (72U + 7U) / 8U, 64U});
@@ -4412,6 +4456,7 @@ struct xiiVolumetricFogIntegrationData
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hFroxelScatteringBuffer; ///< ShaderResource in (froxel scattering buffer).
+  xiiRenderGraphBufferHandle  m_hFroxelMetadata;         ///< ShaderResource in (per-froxel physical medium coefficients).
   xiiRenderGraphBufferHandle  m_hLightGridBuffer;        ///< ShaderResource in (cluster light grid).
   xiiRenderGraphBufferHandle  m_hLightIndexBuffer;       ///< ShaderResource in (cluster light indices).
   xiiRenderGraphTextureHandle m_hVolumetricScattering;   ///< UnorderedAccess out (integrated volumetric scattering).
@@ -4420,6 +4465,7 @@ struct xiiVolumetricFogIntegrationData
 void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hFroxelScatteringBuffer = builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFroxelMetadata         = builder.ReadBuffer(xiiRGBlackboardKeys::k_FroxelMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightGridBuffer        = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightIndexBuffer       = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
 
@@ -4447,6 +4493,7 @@ void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationD
 
     m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_FroxelScattering", context.GetTexture(data.m_hFroxelScatteringBuffer)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_FroxelMeta", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_VolumetricOut", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);

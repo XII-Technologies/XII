@@ -11,8 +11,10 @@ ALL
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/LightingData.h>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumData.h>
 
 Texture3D<float4>                 g_FroxelScattering;
+StructuredBuffer<xiiFroxelMediumData> g_FroxelMeta;
 StructuredBuffer<uint2>           g_LightGrid;
 StructuredBuffer<uint>            g_LightIndex;
 StructuredBuffer<xiiGpuLightData> g_Lights;
@@ -46,7 +48,7 @@ uint ComputeClusterIndex(float2 uv, float zFrac)
     return (cZ * clusterCountY + cY) * clusterCountX + cX;
 }
 
-float3 EstimateLocalScattering(float2 uv, float zFrac, float3 worldPos)
+float3 EstimateLocalScattering(float2 uv, float zFrac, float3 worldPos, float3 viewRay, float anisotropy)
 {
     if (g_ActiveLightCount == 0u)
         return float3(0.0f, 0.0f, 0.0f);
@@ -74,7 +76,8 @@ float3 EstimateLocalScattering(float2 uv, float zFrac, float3 worldPos)
         const float3 L = distance > 1e-4f ? toLight / distance : float3(0.0f, 0.0f, 1.0f);
         const float attenuation = SmoothVolumeAttenuation(distance, lightData.AttenuationAndSize.x) * GetPhotometricEmitterScale(lightData, L);
 
-        radiance += lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation;
+        const float phase = PhaseHG(dot(viewRay, L), anisotropy);
+        radiance += lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation * phase;
     }
 
     return radiance;
@@ -91,7 +94,6 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
     const float3 viewRay = normalize(ReconstructWorldPos(uv, 0.5f) - g_CameraPositionAndNearPlane.xyz);
     const float3 mainLight = normalize(-g_MainLightDirectionAndIntensity.xyz);
-    const float phase = PhaseHG(dot(viewRay, mainLight), g_VolumetricAnisotropy);
 
     float3 accumulatedScattering = float3(0.0f, 0.0f, 0.0f);
     float transmittance = 1.0f;
@@ -108,16 +110,23 @@ void main(uint3 tid : SV_DispatchThreadID)
         if (extinction <= 0.0f)
             continue;
 
+        const uint2 froxelXY = min((uint2)(uv * float2(XII_FROXEL_COUNT.xy)), XII_FROXEL_COUNT.xy - 1u);
+        const uint froxelIndex = (z * XII_FROXEL_COUNT.y + froxelXY.y) * XII_FROXEL_COUNT.x + froxelXY.x;
+        const xiiFroxelMediumData medium = g_FroxelMeta[froxelIndex];
+        const float3 scattering = max(medium.ScatteringAndExtinction.rgb, 0.0f);
+        const float anisotropy = clamp(medium.EmissionAndAnisotropy.a, -0.95f, 0.95f);
+        const float phase = PhaseHG(dot(viewRay, mainLight), anisotropy);
+
         const float linearDepth = nearPlane * exp(zFrac * logFarOverNear);
         const float ndcDepth = saturate(nearPlane / max(linearDepth, 1e-4f));
         const float3 worldPos = ReconstructWorldPos(uv, ndcDepth);
         const float3 directRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * phase;
-        const float3 localRadiance = EstimateLocalScattering(uv, zFrac, worldPos);
+        const float3 localRadiance = EstimateLocalScattering(uv, zFrac, worldPos, viewRay, anisotropy);
         const float sliceNearFraction = (float)z / (float)XII_FROXEL_COUNT.z;
         const float sliceFarFraction = (float)(z + 1u) / (float)XII_FROXEL_COUNT.z;
         const float sliceDepth = nearPlane * (exp(sliceFarFraction * logFarOverNear) - exp(sliceNearFraction * logFarOverNear));
         const float sliceTransmittance = exp(-extinction * sliceDepth);
-        const float3 inscatter = (froxel.rgb + (directRadiance + localRadiance) * extinction) * (1.0f - sliceTransmittance) / max(extinction, 1e-5f);
+        const float3 inscatter = (froxel.rgb + (directRadiance + localRadiance) * scattering) * (1.0f - sliceTransmittance) / max(extinction, 1e-5f);
 
         accumulatedScattering += transmittance * inscatter;
         transmittance *= sliceTransmittance;
