@@ -3528,6 +3528,8 @@ struct xiiDeferredIndirectLightingData
 
 void xiiView::SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hGBufferAlbedo          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferMaterial        = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
@@ -3543,7 +3545,7 @@ void xiiView::SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRe
   auto& reflectionResources = m_ViewPassResources.m_LightingPrepPasses;
   XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before indirect lighting setup.");
   data.m_hFallbackReflectionProbe = builder.ReadTexture(
-    builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, xiiGALResourceStateFlags::ShaderResource),
+    builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()),
     xiiGALResourceStateFlags::ShaderResource);
 
   data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
@@ -3552,7 +3554,7 @@ void xiiView::SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRe
     xiiStringBuilder sResourceName;
     sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
     data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
-      builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], xiiGALResourceStateFlags::ShaderResource),
+      builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()),
       xiiGALResourceStateFlags::ShaderResource));
   }
 

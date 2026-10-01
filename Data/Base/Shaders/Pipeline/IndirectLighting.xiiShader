@@ -1,22 +1,30 @@
 // XII Engine - deferred DDGI and sky indirect lighting.
 
-#include "PipelineCommon.xiiShader"
-#include "ReflectionProbeData.h"
+[PLATFORMS]
+ALL
 
-Texture2D<float2> g_GBufNormal : register(t0);
-Texture2D<float4> g_GBufMaterial : register(t1);
-Texture2D<float4> g_GBufAlbedo : register(t2);
-Texture2D<float> g_SceneDepth : register(t3);
-Texture2D<float> g_AOTerm : register(t4);
-Texture2D<float2> g_BRDFLut : register(t5);
-Texture2D<float4> g_DDGIIr : register(t6);
-Texture2D<float4> g_SkyRadiance : register(t7);
-Texture2D<float4> g_SparseVoxelIrradiance : register(t8);
-StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData : register(t9);
-StructuredBuffer<uint2> g_ReflectionProbeClusters : register(t10);
-TextureCube<float4> g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES] : register(t11);
-RWTexture2D<float4> g_IndirectOut : register(u0);
-RWTexture2D<float4> g_EnvironmentSpecularOut : register(u1);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/ReflectionProbeData.h>
+
+Texture2D<float2> g_GBufNormal;
+Texture2D<float4> g_GBufMaterial;
+Texture2D<float4> g_GBufAlbedo;
+Texture2D<float>  g_SceneDepth;
+Texture2D<float>  g_AOTerm;
+Texture2D<float2> g_BRDFLut;
+Texture2D<float4> g_DDGIIr;
+Texture2D<float4> g_SkyRadiance;
+Texture2D<float4> g_SparseVoxelIrradiance;
+StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData;
+StructuredBuffer<uint2>                 g_ReflectionProbeClusters;
+TextureCube<float4>                     g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES];
+RWTexture2D<float4>                     g_IndirectOut;
+RWTexture2D<float4>                     g_EnvironmentSpecularOut;
 
 float3 FresnelSchlickRoughness(float NoV, float3 f0, float roughness)
 {
@@ -87,14 +95,14 @@ float3 SampleReflectionProbe(uint probeIndexPlusOne, float3 worldPosition, float
     }
 
     const uint textureIndex = NonUniformResourceIndex(probe.Metadata.y);
-    float3 radiance = max(g_ReflectionProbeTextures[textureIndex].SampleLevel(g_sLinearClamp, ReflectionProbeCubeDirection(localDirection), roughness * 8.0f).rgb, 0.0f);
+    float3 radiance = max(g_ReflectionProbeTextures[textureIndex].SampleLevel(LinearClampSampler, ReflectionProbeCubeDirection(localDirection), roughness * 8.0f).rgb, 0.0f);
     const float luminance = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
     radiance = lerp(luminance.xxx, radiance, probe.ProbeParameters.z) * probe.ProbeParameters.y;
     return radiance;
 }
 
 [numthreads(8, 8, 1)]
-void CS_IndirectLighting(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dimensions;
     g_IndirectOut.GetDimensions(dimensions.x, dimensions.y);
@@ -102,7 +110,7 @@ void CS_IndirectLighting(uint3 tid : SV_DispatchThreadID)
         return;
 
     const float2 uv = (float2(tid.xy) + 0.5f) / float2(dimensions);
-    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0.0f);
+    const float depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0.0f);
     if (depth <= 0.0f)
     {
         g_IndirectOut[tid.xy] = 0.0f;
@@ -110,20 +118,20 @@ void CS_IndirectLighting(uint3 tid : SV_DispatchThreadID)
         return;
     }
 
-    const float3 albedo = g_GBufAlbedo.SampleLevel(g_sPointClamp, uv, 0.0f).rgb;
-    const float4 material = g_GBufMaterial.SampleLevel(g_sPointClamp, uv, 0.0f);
+    const float3 albedo = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0.0f).rgb;
+    const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0.0f);
     const float roughness = clamp(material.r, 0.02f, 1.0f);
     const float metallic = saturate(material.g);
-    const float ao = g_AOTerm.SampleLevel(g_sPointClamp, uv, 0.0f);
-    const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0.0f));
+    const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0.0f);
+    const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler, uv, 0.0f));
     const float3 worldPosition = ReconstructWorldPos(uv, depth);
     const float3 viewDirection = normalize(g_CameraPositionAndNearPlane.xyz - worldPosition);
     const float NoV = saturate(dot(normal, viewDirection));
 
     // DDGI stores incident diffuse irradiance. Lambertian surfaces convert it
     // to outgoing radiance with albedo / pi; metals have no diffuse lobe.
-    const float4 ddgiSample = g_DDGIIr.SampleLevel(g_sLinearClamp, uv, 0.0f);
-    const float4 sparseVoxelSample = g_SparseVoxelIrradiance.SampleLevel(g_sLinearClamp, uv, 0.0f);
+    const float4 ddgiSample = g_DDGIIr.SampleLevel(LinearClampSampler, uv, 0.0f);
+    const float4 sparseVoxelSample = g_SparseVoxelIrradiance.SampleLevel(LinearClampSampler, uv, 0.0f);
     const float3 farFieldIrradiance = lerp(max(g_AmbientLightColor.rgb, 0.0f), max(sparseVoxelSample.rgb, 0.0f), saturate(sparseVoxelSample.a));
     const float3 probeIrradiance = lerp(farFieldIrradiance, max(ddgiSample.rgb, 0.0f), saturate(ddgiSample.a));
     const float3 diffuse = probeIrradiance * albedo * (1.0f - metallic) * (1.0f / 3.14159265f);
@@ -132,8 +140,8 @@ void CS_IndirectLighting(uint3 tid : SV_DispatchThreadID)
     // atmosphere fallback; SSR and traced reflections are composited later.
     const float3 f0 = lerp(0.04f.xxx, albedo, metallic);
     const float3 fresnel = FresnelSchlickRoughness(NoV, f0, roughness);
-    const float2 brdf = g_BRDFLut.SampleLevel(g_sLinearClamp, float2(NoV, roughness), 0.0f);
-    const float3 skyRadiance = max(g_SkyRadiance.SampleLevel(g_sLinearClamp, uv, 0.0f).rgb, 0.0f);
+    const float2 brdf = g_BRDFLut.SampleLevel(LinearClampSampler, float2(NoV, roughness), 0.0f);
+    const float3 skyRadiance = max(g_SkyRadiance.SampleLevel(LinearClampSampler, uv, 0.0f).rgb, 0.0f);
     const float3 reflectionDirection = reflect(-viewDirection, normal);
     const uint2 selectedProbes = g_ReflectionProbeClusters[GetReflectionProbeClusterIndex(uv, depth)];
     float firstWeight;
