@@ -1,0 +1,113 @@
+// XII Engine - VolumetricLightInjection.xiiShader
+// Evaluates directional and clustered local lighting once per froxel.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumData.h>
+#include <Shaders/Pipeline/Passes/Volumetrics/VolumetricShadowSampling.h>
+#include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowSampling.h>
+
+RWTexture3D<float4>                  g_FroxelScattering;
+StructuredBuffer<xiiFroxelMediumData> g_FroxelMeta;
+StructuredBuffer<uint2>             g_LightGrid;
+StructuredBuffer<uint>              g_LightIndex;
+StructuredBuffer<xiiGpuLightData>   g_Lights;
+
+static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
+
+float SmoothVolumeAttenuation(float distance, float range)
+{
+  const float normalizedDistance = saturate(distance / max(range, 1e-3f));
+  float attenuation = saturate(1.0f - normalizedDistance * normalizedDistance);
+  attenuation *= attenuation;
+  return attenuation / max(distance * distance, 0.5f);
+}
+
+float PhaseHG(float cosTheta, float anisotropy)
+{
+  const float g = clamp(anisotropy, -0.95f, 0.95f);
+  const float g2 = g * g;
+  return (1.0f - g2) / (4.0f * 3.14159265f * pow(max(1.0f + g2 - 2.0f * g * cosTheta, 1e-4f), 1.5f));
+}
+
+uint ComputeClusterIndex(float2 uv, float zFraction)
+{
+  const uint clusterCountX = max(g_ClusterCountX, 1u);
+  const uint clusterCountY = max(g_ClusterCountY, 1u);
+  const uint clusterCountZ = max(g_ClusterCountZ, 1u);
+  const uint clusterX = min((uint)(uv.x * (float)clusterCountX), clusterCountX - 1u);
+  const uint clusterY = min((uint)(uv.y * (float)clusterCountY), clusterCountY - 1u);
+  const uint clusterZ = min((uint)(zFraction * (float)clusterCountZ), clusterCountZ - 1u);
+  return (clusterZ * clusterCountY + clusterY) * clusterCountX + clusterX;
+}
+
+float3 EvaluateLocalLighting(float2 uv, float zFraction, float3 worldPosition, float3 viewRay, float anisotropy)
+{
+  if (g_ActiveLightCount == 0u)
+    return 0.0f;
+
+  const uint clusterIndex = ComputeClusterIndex(uv, zFraction);
+  const uint2 lightRange = g_LightGrid[clusterIndex];
+  const uint lightCount = min(lightRange.y, min(g_MaxLightsPerCluster, 32u));
+
+  float3 radiance = 0.0f;
+  [loop]
+  for (uint listIndex = 0u; listIndex < lightCount; ++listIndex)
+  {
+    const uint lightIndex = g_LightIndex[lightRange.x + listIndex];
+    if (lightIndex >= g_ActiveLightCount)
+      continue;
+
+    const xiiGpuLightData lightData = g_Lights[lightIndex];
+    if (GetLightType(lightData) == XII_LIGHT_TYPE_DIRECTIONAL)
+      continue;
+
+    const float3 toLight = GetRepresentativeLightPosition(lightData, worldPosition) - worldPosition;
+    const float distanceToLight = length(toLight);
+    const float3 directionToLight = distanceToLight > 1e-4f ? toLight / distanceToLight : float3(0.0f, 0.0f, 1.0f);
+    const float attenuation = SmoothVolumeAttenuation(distanceToLight, lightData.AttenuationAndSize.x) * GetPhotometricEmitterScale(lightData, directionToLight);
+    const float phase = PhaseHG(dot(viewRay, directionToLight), anisotropy);
+    const float visibility = EvaluateVolumetricLocalShadow(lightIndex, lightData, worldPosition);
+    radiance += lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation * phase * visibility;
+  }
+
+  return radiance;
+}
+
+[numthreads(8, 8, 8)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (any(dispatchThreadId >= XII_FROXEL_COUNT))
+    return;
+
+  const float2 uv = (float2(dispatchThreadId.xy) + 0.5f) / float2(XII_FROXEL_COUNT.xy);
+  const float zFraction = (float(dispatchThreadId.z) + 0.5f) / (float)XII_FROXEL_COUNT.z;
+  const float nearPlane = max(g_CameraPositionAndNearPlane.w, 1e-3f);
+  const float farPlane = max(g_CameraForwardAndFarPlane.w, nearPlane + 1e-3f);
+  const float linearDepth = nearPlane * exp(zFraction * log(farPlane / nearPlane));
+  const float ndcDepth = saturate(nearPlane / max(linearDepth, 1e-4f));
+  const float3 worldPosition = ReconstructWorldPos(uv, ndcDepth);
+  const float3 viewRay = normalize(worldPosition - g_CameraPositionAndNearPlane.xyz);
+
+  const uint linearIndex = (dispatchThreadId.z * XII_FROXEL_COUNT.y + dispatchThreadId.y) * XII_FROXEL_COUNT.x + dispatchThreadId.x;
+  const xiiFroxelMediumData medium = g_FroxelMeta[linearIndex];
+  const float3 scattering = max(medium.ScatteringAndExtinction.rgb, 0.0f);
+  const float anisotropy = clamp(medium.EmissionAndAnisotropy.a, -0.95f, 0.95f);
+
+  const float3 directionToMainLight = normalize(-g_MainLightDirectionAndIntensity.xyz);
+  const float directionalVisibility = EvaluateVolumetricDirectionalShadow(worldPosition, directionToMainLight, linearDepth) * EvaluateCloudShadow(worldPosition, directionToMainLight);
+  const float directionalPhase = PhaseHG(dot(viewRay, directionToMainLight), anisotropy);
+  const float3 directionalRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * directionalPhase * directionalVisibility;
+  const float3 localRadiance = EvaluateLocalLighting(uv, zFraction, worldPosition, viewRay, anisotropy);
+
+  const float4 initializedScattering = g_FroxelScattering[dispatchThreadId];
+  g_FroxelScattering[dispatchThreadId] = float4(initializedScattering.rgb + (directionalRadiance + localRadiance) * scattering, initializedScattering.a);
+}

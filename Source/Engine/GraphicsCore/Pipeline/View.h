@@ -93,6 +93,7 @@ struct xiiRayTracedReflectionsData;
 struct xiiRayTracedReflectionsDenoiseData;
 struct xiiScreenSpaceReflectionsData;
 struct xiiHybridReflectionCompositeData;
+struct xiiVolumetricLightInjectionData;
 struct xiiVolumetricFogIntegrationData;
 struct xiiVolumetricFogTemporalReprojectionData;
 struct xiiAtmosphereCompositeData;
@@ -434,6 +435,9 @@ private:
   void SetupHybridReflectionComposite(xiiHybridReflectionCompositeData& data, xiiRenderGraphBuilder& builder);
   void ExecuteHybridReflectionComposite(const xiiHybridReflectionCompositeData& data, xiiRenderGraphPassContext& context);
 
+  void SetupVolumetricLightInjection(xiiVolumetricLightInjectionData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteVolumetricLightInjection(const xiiVolumetricLightInjectionData& data, xiiRenderGraphPassContext& context);
+
   void SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRenderGraphBuilder& builder);
   void ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationData& data, xiiRenderGraphPassContext& context);
 
@@ -679,6 +683,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pIndirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReflectionCompositePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricLightInjectionPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricIntegratePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricTemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pAtmosphereCompositePipeline;

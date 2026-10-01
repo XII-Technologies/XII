@@ -4447,6 +4447,64 @@ void xiiView::ExecuteHybridReflectionComposite(const xiiHybridReflectionComposit
   cmd.EndDebugGroup();
 }
 
+////////// GPU Volumetric Light Injection Data //////////
+//
+// Evaluates shadowed directional and clustered local lighting once per froxel.
+
+struct xiiVolumetricLightInjectionData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphTextureHandle m_hFroxelScattering; ///< UnorderedAccess inout (initialized scattering and injected light).
+  xiiRenderGraphBufferHandle  m_hFroxelMetadata;
+  xiiRenderGraphBufferHandle  m_hLightGridBuffer;
+  xiiRenderGraphBufferHandle  m_hLightIndexBuffer;
+  xiiRenderGraphBufferHandle  m_hShadowCascadeConstants;
+  xiiRenderGraphTextureHandle m_hDirectionalShadowAtlas;
+  xiiRenderGraphTextureHandle m_hLocalShadowAtlas;
+  xiiRenderGraphBufferHandle  m_hLocalShadowAtlasDescriptors;
+  xiiRenderGraphBufferHandle  m_hCloudShadowConstants;
+};
+
+void xiiView::SetupVolumetricLightInjection(xiiVolumetricLightInjectionData& data, xiiRenderGraphBuilder& builder)
+{
+  data.m_hFroxelScattering           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hFroxelMetadata             = builder.ReadBuffer(xiiRGBlackboardKeys::k_FroxelMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightGridBuffer            = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightIndexBuffer           = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hShadowCascadeConstants     = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hDirectionalShadowAtlas     = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlas           = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hCloudShadowConstants        = builder.ReadBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, xiiGALResourceStateFlags::ConstantBuffer);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources->m_LightingPasses.m_pVolumetricLightInjectionPipeline, "Shaders/Pipeline/VolumetricLightInjection.xiiShader");
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteVolumetricLightInjection(const xiiVolumetricLightInjectionData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("VolumetricLightInjection");
+  {
+    cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pVolumetricLightInjectionPipeline);
+    m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelScattering", context.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_FroxelMeta", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hShadowCascadeConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_VolumetricDirectionalShadowAtlas", context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_VolumetricLocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_VolumetricLocalShadowData", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiCloudShadowConstants", context.GetBuffer(data.m_hCloudShadowConstants), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({16U, 9U, 8U});
+  }
+  cmd.EndDebugGroup();
+}
+
 ////////// GPU Volumetric Fog Integration Data //////////
 //
 // Collects all GPU resources related to volumetric fog integration.
@@ -4455,29 +4513,13 @@ struct xiiVolumetricFogIntegrationData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hFroxelScatteringBuffer; ///< ShaderResource in (froxel scattering buffer).
-  xiiRenderGraphBufferHandle  m_hFroxelMetadata;         ///< ShaderResource in (per-froxel physical medium coefficients).
-  xiiRenderGraphBufferHandle  m_hLightGridBuffer;        ///< ShaderResource in (cluster light grid).
-  xiiRenderGraphBufferHandle  m_hLightIndexBuffer;       ///< ShaderResource in (cluster light indices).
-  xiiRenderGraphBufferHandle  m_hShadowCascadeConstants;
-  xiiRenderGraphTextureHandle m_hDirectionalShadowAtlas;
-  xiiRenderGraphTextureHandle m_hLocalShadowAtlas;
-  xiiRenderGraphBufferHandle  m_hLocalShadowAtlasDescriptors;
-  xiiRenderGraphBufferHandle  m_hCloudShadowConstants;
+  xiiRenderGraphTextureHandle m_hFroxelScatteringBuffer; ///< ShaderResource in (pre-lit froxel scattering buffer).
   xiiRenderGraphTextureHandle m_hVolumetricScattering;   ///< UnorderedAccess out (integrated volumetric scattering).
 };
 
 void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hFroxelScatteringBuffer = builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hFroxelMetadata         = builder.ReadBuffer(xiiRGBlackboardKeys::k_FroxelMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLightGridBuffer        = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLightIndexBuffer       = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hShadowCascadeConstants = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
-  data.m_hDirectionalShadowAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLocalShadowAtlas       = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hCloudShadowConstants         = builder.ReadBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
@@ -4501,16 +4543,8 @@ void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationD
   {
     cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pVolumetricIntegratePipeline);
 
-    m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_FroxelScattering", context.GetTexture(data.m_hFroxelScatteringBuffer)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_FroxelMeta", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hShadowCascadeConstants), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_VolumetricDirectionalShadowAtlas", context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_VolumetricLocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceBufferView("g_VolumetricLocalShadowData", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetConstantBuffer("xiiCloudShadowConstants", context.GetBuffer(data.m_hCloudShadowConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_VolumetricOut", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
@@ -6604,6 +6638,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiRayTracedGlobalIlluminationDenoiseData>("RTGITemporalDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedGlobalIlluminationDenoise, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedGlobalIlluminationDenoise, this));
   graph.AddPass<xiiRayTracedReflectionsData>("RTReflections", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedReflections, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedReflections, this));
   graph.AddPass<xiiRayTracedReflectionsDenoiseData>("RTReflectionTemporalDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedReflectionsDenoise, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedReflectionsDenoise, this));
+  graph.AddPass<xiiVolumetricLightInjectionData>("VolumetricLightInjection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricLightInjection, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricLightInjection, this));
   graph.AddPass<xiiVolumetricFogIntegrationData>("VolumetricFogIntegrate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogIntegration, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogIntegration, this));
   graph.AddPass<xiiVolumetricFogTemporalReprojectionData>("VolumetricFogTemporalRep", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogTemporalReprojection, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogTemporalReprojection, this));
 
