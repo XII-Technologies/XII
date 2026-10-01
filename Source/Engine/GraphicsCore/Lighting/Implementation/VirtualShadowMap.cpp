@@ -26,6 +26,17 @@ namespace
   constexpr xiiUInt32 s_uiMaximumMipLevel       = (1U << 6U) - 1U;
   constexpr xiiUInt32 s_uiMaximumPageCoordinate = (1U << 17U) - 1U;
 
+  xiiUInt32 HashVirtualPageKey(xiiUInt32 uiKeyLow, xiiUInt32 uiKeyHigh)
+  {
+    xiiUInt32 uiHash = uiKeyLow ^ (uiKeyHigh * 0x9E3779B9U);
+    uiHash ^= uiHash >> 16U;
+    uiHash *= 0x7FEB352DU;
+    uiHash ^= uiHash >> 15U;
+    uiHash *= 0x846CA68BU;
+    uiHash ^= uiHash >> 16U;
+    return uiHash;
+  }
+
   bool IsConfigurationValid(const xiiVirtualShadowMapSettings& settings)
   {
     if (!xiiMath::IsPowerOf2(settings.m_uiVirtualResolution) || !xiiMath::IsPowerOf2(settings.m_uiPageSize))
@@ -56,6 +67,7 @@ public:
   xiiDynamicArray<xiiVirtualShadowPageMapping> m_DirtyPages;
   xiiVirtualShadowMapStats                     m_Stats;
   xiiSharedPtr<xiiGALBuffer>                   m_pPhysicalPageTable;
+  xiiSharedPtr<xiiGALBuffer>                   m_pVirtualPageTable;
   xiiSharedPtr<xiiGALTexture>                  m_pPhysicalAtlas;
   xiiSharedPtr<xiiGALBuffer>                   m_pFeedbackBuffer;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>  m_FeedbackReadbackRing;
@@ -67,6 +79,7 @@ public:
   xiiUInt64                                    m_uiFeedbackClearFrame  = xiiMath::MaxValue<xiiUInt64>();
   xiiUInt32                                    m_uiPhysicalPagesPerRow = 0U;
   xiiUInt32                                    m_uiPhysicalPageRows    = 0U;
+  xiiUInt32                                    m_uiVirtualPageTableCapacity = 0U;
   bool                                         m_bEngineStarted        = false;
   bool                                         m_bInitialized          = false;
 };
@@ -215,6 +228,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVirtualShadowMapStats, xiiNoBase, 1, xiiRTTID
     XII_MEMBER_PROPERTY("DirtyPageCount", m_uiDirtyPageCount),
     XII_MEMBER_PROPERTY("PhysicalAtlasWidth", m_uiPhysicalAtlasWidth),
     XII_MEMBER_PROPERTY("PhysicalAtlasHeight", m_uiPhysicalAtlasHeight),
+    XII_MEMBER_PROPERTY("VirtualPageTableCapacity", m_uiVirtualPageTableCapacity),
   }
   XII_END_PROPERTIES;
 }
@@ -268,6 +282,7 @@ void xiiVirtualShadowMapManager::EngineShutdown()
     s_pState->m_FeedbackReadbackFrames.Clear();
     s_pState->m_pFeedbackBuffer.Clear();
     s_pState->m_pPhysicalAtlas.Clear();
+    s_pState->m_pVirtualPageTable.Clear();
     s_pState->m_pPhysicalPageTable.Clear();
     s_pState->m_bEngineStarted = false;
   }
@@ -284,10 +299,12 @@ xiiResult xiiVirtualShadowMapManager::CreateGpuResources()
   if (s_pState == nullptr || !s_pState->m_bEngineStarted)
     return XII_FAILURE;
 
-  const xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
-  const xiiUInt64                  uiRecordCount = static_cast<xiiUInt64>(s_pState->m_Settings.m_uiPhysicalPageCount) * s_pState->m_Settings.m_uiFramesInFlight;
-  const xiiUInt64                  uiBufferSize  = uiRecordCount * sizeof(xiiGpuVirtualShadowPage);
-  if (pDevice == nullptr || uiBufferSize > xiiMath::MaxValue<xiiUInt32>())
+  const xiiSharedPtr<xiiGALDevice> pDevice              = xiiGALDevice::GetDefaultDevice();
+  const xiiUInt64                  uiPhysicalRecordCount = static_cast<xiiUInt64>(s_pState->m_Settings.m_uiPhysicalPageCount) * s_pState->m_Settings.m_uiFramesInFlight;
+  const xiiUInt64                  uiPhysicalBufferSize  = uiPhysicalRecordCount * sizeof(xiiGpuVirtualShadowPage);
+  const xiiUInt64                  uiVirtualRecordCount  = static_cast<xiiUInt64>(s_pState->m_uiVirtualPageTableCapacity) * s_pState->m_Settings.m_uiFramesInFlight;
+  const xiiUInt64                  uiVirtualBufferSize   = uiVirtualRecordCount * sizeof(xiiGpuVirtualShadowPage);
+  if (pDevice == nullptr || uiPhysicalBufferSize > xiiMath::MaxValue<xiiUInt32>() || uiVirtualBufferSize > xiiMath::MaxValue<xiiUInt32>())
     return XII_FAILURE;
 
   const xiiUInt64 uiAtlasWidth              = static_cast<xiiUInt64>(s_pState->m_uiPhysicalPagesPerRow) * s_pState->m_Settings.m_uiPageSize;
@@ -297,7 +314,7 @@ xiiResult xiiVirtualShadowMapManager::CreateGpuResources()
     return XII_FAILURE;
 
   xiiGALBufferCreationDescription description;
-  description.m_uiSize                          = static_cast<xiiUInt32>(uiBufferSize);
+  description.m_uiSize                          = static_cast<xiiUInt32>(uiPhysicalBufferSize);
   description.m_uiElementByteStride             = sizeof(xiiGpuVirtualShadowPage);
   description.m_BindFlags                       = xiiGALBindFlags::ShaderResource;
   description.m_Mode                            = xiiGALBufferMode::Structured;
@@ -306,6 +323,12 @@ xiiResult xiiVirtualShadowMapManager::CreateGpuResources()
   if (pPhysicalPageTable == nullptr)
     return XII_FAILURE;
   pPhysicalPageTable->SetDebugName("Virtual Shadow Physical Page Table");
+
+  description.m_uiSize                         = static_cast<xiiUInt32>(uiVirtualBufferSize);
+  xiiSharedPtr<xiiGALBuffer> pVirtualPageTable = pDevice->CreateBuffer(description);
+  if (pVirtualPageTable == nullptr)
+    return XII_FAILURE;
+  pVirtualPageTable->SetDebugName("Virtual Shadow Hashed Page Table");
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_Type                  = xiiGALResourceDimension::Texture2D;
@@ -349,6 +372,7 @@ xiiResult xiiVirtualShadowMapManager::CreateGpuResources()
   }
 
   s_pState->m_pPhysicalPageTable   = std::move(pPhysicalPageTable);
+  s_pState->m_pVirtualPageTable    = std::move(pVirtualPageTable);
   s_pState->m_pPhysicalAtlas       = std::move(pPhysicalAtlas);
   s_pState->m_pFeedbackBuffer      = std::move(pFeedbackBuffer);
   s_pState->m_FeedbackReadbackRing = std::move(feedbackReadbackRing);
@@ -377,8 +401,10 @@ xiiResult xiiVirtualShadowMapManager::Configure(const xiiVirtualShadowMapSetting
   s_pState->m_Stats.m_uiFreePageCount       = settings.m_uiPhysicalPageCount;
   s_pState->m_uiPhysicalPagesPerRow         = xiiMath::Max(static_cast<xiiUInt32>(xiiMath::Ceil(xiiMath::Sqrt(static_cast<float>(settings.m_uiPhysicalPageCount)))), 1U);
   s_pState->m_uiPhysicalPageRows            = (settings.m_uiPhysicalPageCount + s_pState->m_uiPhysicalPagesPerRow - 1U) / s_pState->m_uiPhysicalPagesPerRow;
+  s_pState->m_uiVirtualPageTableCapacity     = xiiMath::PowerOfTwo_Ceil(xiiMath::Max(settings.m_uiPhysicalPageCount * 2U, 2U));
   s_pState->m_Stats.m_uiPhysicalAtlasWidth  = s_pState->m_uiPhysicalPagesPerRow * settings.m_uiPageSize;
   s_pState->m_Stats.m_uiPhysicalAtlasHeight = s_pState->m_uiPhysicalPageRows * settings.m_uiPageSize;
+  s_pState->m_Stats.m_uiVirtualPageTableCapacity = s_pState->m_uiVirtualPageTableCapacity;
   s_pState->m_uiFrameIndex                  = 0U;
   s_pState->m_uiCompletedFrame              = 0U;
   s_pState->m_uiAllFrameMask                = settings.m_uiFramesInFlight >= 64U ? xiiMath::MaxValue<xiiUInt64>() : (xiiUInt64(1) << settings.m_uiFramesInFlight) - 1U;
@@ -661,7 +687,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
   UploadHandles result;
   if (!IsInitialized())
     return result;
-  if (s_pState->m_pPhysicalPageTable == nullptr && CreateGpuResources().Failed())
+  if ((s_pState->m_pPhysicalPageTable == nullptr || s_pState->m_pVirtualPageTable == nullptr) && CreateGpuResources().Failed())
     return result;
 
   struct Upload
@@ -673,24 +699,37 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
   };
   struct UploadPassData
   {
-    xiiRenderGraphBufferHandle m_hPageTable;
-    xiiDynamicArray<Upload>    m_Uploads;
+    xiiRenderGraphBufferHandle               m_hPhysicalPageTable;
+    xiiRenderGraphBufferHandle               m_hVirtualPageTable;
+    xiiDynamicArray<Upload>                  m_PhysicalUploads;
+    xiiDynamicArray<xiiGpuVirtualShadowPage> m_VirtualTable;
+    xiiUInt32                                m_uiVirtualTableByteOffset = 0U;
   };
 
   auto pass = graph.AddPass<UploadPassData>(
     "Virtual Shadow Page Table Upload", xiiGALCommandQueueFlags::Transfer,
     [](UploadPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hPageTable = builder.ImportBuffer("Virtual Shadow Physical Page Table", s_pState->m_pPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hPageTable = builder.WriteBuffer(data.m_hPageTable, xiiGALResourceStateFlags::CopyDestination);
-      builder.ExportBuffer(data.m_hPageTable, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hPhysicalPageTable = builder.ImportBuffer("Virtual Shadow Physical Page Table", s_pState->m_pPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hPhysicalPageTable = builder.WriteBuffer(data.m_hPhysicalPageTable, xiiGALResourceStateFlags::CopyDestination);
+      builder.ExportBuffer(data.m_hPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hVirtualPageTable = builder.ImportBuffer("Virtual Shadow Hashed Page Table", s_pState->m_pVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hVirtualPageTable = builder.WriteBuffer(data.m_hVirtualPageTable, xiiGALResourceStateFlags::CopyDestination);
+      builder.ExportBuffer(data.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(true);
       builder.SetPassAllowMerge(false);
     },
     [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
-      for (const Upload& upload : data.m_Uploads)
-        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hPageTable), upload.m_uiByteOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
+      xiiGALCommandList& cmd = context.GetCommandList();
+      for (const Upload& upload : data.m_PhysicalUploads)
+        cmd.UpdateBuffer(context.GetBuffer(data.m_hPhysicalPageTable), upload.m_uiByteOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
 
-      for (const Upload& upload : data.m_Uploads)
+      if (!data.m_VirtualTable.IsEmpty())
+      {
+        cmd.UpdateBuffer(context.GetBuffer(data.m_hVirtualPageTable), data.m_uiVirtualTableByteOffset,
+                         xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_VirtualTable.GetData()), data.m_VirtualTable.GetCount() * sizeof(xiiGpuVirtualShadowPage)));
+      }
+
+      for (const Upload& upload : data.m_PhysicalUploads)
       {
         if (upload.m_uiPhysicalPage >= s_pState->m_Slots.GetCount())
           continue;
@@ -705,9 +744,39 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
 
   const xiiUInt32 uiFrameSlice = static_cast<xiiUInt32>(uiFrameIndex % s_pState->m_Settings.m_uiFramesInFlight);
   const xiiUInt64 uiFrameBit   = xiiUInt64(1) << uiFrameSlice;
-  result.m_hPhysicalPageTable  = pass.first->m_hPageTable;
+  result.m_hPhysicalPageTable  = pass.first->m_hPhysicalPageTable;
+  result.m_hVirtualPageTable   = pass.first->m_hVirtualPageTable;
   result.m_uiFrameBaseIndex    = uiFrameSlice * s_pState->m_Settings.m_uiPhysicalPageCount;
   result.m_uiPhysicalPageCount = s_pState->m_Settings.m_uiPhysicalPageCount;
+  result.m_uiVirtualTableBaseIndex = uiFrameSlice * s_pState->m_uiVirtualPageTableCapacity;
+  result.m_uiVirtualTableCapacity  = s_pState->m_uiVirtualPageTableCapacity;
+
+  pass.first->m_uiVirtualTableByteOffset = result.m_uiVirtualTableBaseIndex * sizeof(xiiGpuVirtualShadowPage);
+  pass.first->m_VirtualTable.SetCount(s_pState->m_uiVirtualPageTableCapacity);
+  xiiMemoryUtils::ZeroFill(pass.first->m_VirtualTable.GetData(), pass.first->m_VirtualTable.GetCount());
+  for (xiiGpuVirtualShadowPage& record : pass.first->m_VirtualTable)
+    record.m_uiPhysicalPage = xiiInvalidIndex;
+
+  const xiiUInt32 uiVirtualTableMask = s_pState->m_uiVirtualPageTableCapacity - 1U;
+  for (xiiUInt32 uiPhysicalPage = 0U; uiPhysicalPage < s_pState->m_Slots.GetCount(); ++uiPhysicalPage)
+  {
+    const auto& slot = s_pState->m_Slots[uiPhysicalPage];
+    if (!slot.m_bAllocated)
+      continue;
+
+    const xiiUInt64 uiKey     = slot.m_Mapping.m_Page.GetPackedValue();
+    const xiiUInt32 uiKeyLow  = static_cast<xiiUInt32>(uiKey);
+    const xiiUInt32 uiKeyHigh = static_cast<xiiUInt32>(uiKey >> 32U);
+    xiiUInt32 uiTableIndex    = HashVirtualPageKey(uiKeyLow, uiKeyHigh) & uiVirtualTableMask;
+    while ((pass.first->m_VirtualTable[uiTableIndex].m_uiFlags & 1U) != 0U)
+      uiTableIndex = (uiTableIndex + 1U) & uiVirtualTableMask;
+
+    xiiGpuVirtualShadowPage& record = pass.first->m_VirtualTable[uiTableIndex];
+    record.m_uiVirtualKeyLow        = uiKeyLow;
+    record.m_uiVirtualKeyHigh       = uiKeyHigh;
+    record.m_uiPhysicalPage         = uiPhysicalPage;
+    record.m_uiFlags                = 1U | (slot.m_Mapping.m_bNeedsRendering ? 2U : 0U) | (slot.m_Mapping.m_bPinned ? 4U : 0U);
+  }
 
   for (xiiUInt32 uiPhysicalPage = 0U; uiPhysicalPage < s_pState->m_Slots.GetCount(); ++uiPhysicalPage)
   {
@@ -715,7 +784,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
     if ((slot.m_uiDirtyFrameMask & uiFrameBit) == 0U)
       continue;
 
-    Upload& upload                     = pass.first->m_Uploads.ExpandAndGetRef();
+    Upload& upload                     = pass.first->m_PhysicalUploads.ExpandAndGetRef();
     upload.m_uiPhysicalPage            = uiPhysicalPage;
     upload.m_uiByteOffset              = (result.m_uiFrameBaseIndex + uiPhysicalPage) * sizeof(xiiGpuVirtualShadowPage);
     upload.m_uiFrameBit                = uiFrameBit;

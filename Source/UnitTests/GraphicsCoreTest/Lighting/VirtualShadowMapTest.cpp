@@ -46,6 +46,7 @@ XII_CREATE_SIMPLE_TEST(Lighting, VirtualShadowMapResidency)
   const xiiVirtualShadowMapStats configuredStats = xiiVirtualShadowMapManager::GetStats();
   XII_TEST_INT(configuredStats.m_uiPhysicalAtlasWidth, 256U);
   XII_TEST_INT(configuredStats.m_uiPhysicalAtlasHeight, 128U);
+  XII_TEST_INT(configuredStats.m_uiVirtualPageTableCapacity, 4U);
   xiiRectU32 secondPageViewport;
   XII_TEST_BOOL(xiiVirtualShadowMapManager::GetPhysicalPageViewport(1U, secondPageViewport));
   XII_TEST_INT(secondPageViewport.x, 128U);

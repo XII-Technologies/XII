@@ -130,6 +130,7 @@ struct XII_GRAPHICSCORE_DLL xiiVirtualShadowMapStats
   xiiUInt32 m_uiDirtyPageCount       = 0U;
   xiiUInt32 m_uiPhysicalAtlasWidth   = 0U;
   xiiUInt32 m_uiPhysicalAtlasHeight  = 0U;
+  xiiUInt32 m_uiVirtualPageTableCapacity = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVirtualShadowMapStats);
@@ -178,8 +179,11 @@ public:
   struct UploadHandles
   {
     xiiRenderGraphBufferHandle m_hPhysicalPageTable;
+    xiiRenderGraphBufferHandle m_hVirtualPageTable;
     xiiUInt32                  m_uiFrameBaseIndex    = 0U;
     xiiUInt32                  m_uiPhysicalPageCount = 0U;
+    xiiUInt32                  m_uiVirtualTableBaseIndex = 0U;
+    xiiUInt32                  m_uiVirtualTableCapacity  = 0U;
   };
 
   /// Adds a transfer pass that publishes changed residency records to the
