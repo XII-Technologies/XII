@@ -6,6 +6,7 @@
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
+#include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
@@ -24,6 +25,7 @@ static_assert(!std::is_default_constructible_v<xiiMaterialManager>, "Material st
 static_assert(!std::is_default_constructible_v<xiiGeometryResidencyManager>, "Geometry residency must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiGpuVisibilityManager>, "Visibility contexts must be owned by the visibility subsystem.");
 static_assert(!std::is_default_constructible_v<xiiLightingManager>, "Lighting contexts must be owned by the lighting subsystem.");
+static_assert(!std::is_default_constructible_v<xiiGpuShadowRasterManager>, "GPU shadow raster state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiVirtualShadowMapManager>, "Virtual shadow residency must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiDDGIManager>, "DDGI state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSparseVoxelRadianceManager>, "Sparse radiance state must be owned by its subsystem.");
@@ -58,6 +60,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuVisibilityContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiSceneDatabaseContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiParticleSystemRuntimeHandle>() != nullptr);
+    XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuShadowRasterDescription>() != nullptr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Scene database contexts are generation checked")
