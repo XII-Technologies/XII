@@ -1,15 +1,21 @@
 // XII Engine - FroxelSetup.xiiShader
-// Initializes view-aligned froxel density and extinction for volumetric lighting.
+// Builds view-aligned froxel density and extinction metadata.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
 
-RWStructuredBuffer<float4> g_FroxelMetadata   : register(u0);
-RWTexture3D<float4>        g_FroxelScattering : register(u1);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+
+RWStructuredBuffer<float4> g_FroxelMetadata;
 
 static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 
 [numthreads(8, 8, 1)]
-void CS_FroxelSetup(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     if (any(tid >= XII_FROXEL_COUNT))
         return;
@@ -27,5 +33,4 @@ void CS_FroxelSetup(uint3 tid : SV_DispatchThreadID)
 
     const uint linearIndex = (tid.z * XII_FROXEL_COUNT.y + tid.y) * XII_FROXEL_COUNT.x + tid.x;
     g_FroxelMetadata[linearIndex] = float4(density, g_VolumetricAnisotropy, linearDepth, extinction);
-    g_FroxelScattering[tid] = float4(g_AmbientLightColor.rgb * density, extinction);
 }

@@ -1,14 +1,22 @@
 // XII Engine - VolumetricLightIntegration.xiiShader
 // Integrates directional and clustered local light scattering through the froxel volume.
 
-#include "PipelineCommon.xiiShader"
-#include "LightingData.h"
+[PLATFORMS]
+ALL
 
-Texture3D<float4> g_FroxelScattering : register(t0);
-StructuredBuffer<uint2>           g_LightGrid  : register(t1);
-StructuredBuffer<uint>            g_LightIndex : register(t2);
-StructuredBuffer<xiiGpuLightData> g_Lights     : register(t3);
-RWTexture2D<float4>               g_VolumetricOut : register(u0);
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+
+Texture3D<float4>                 g_FroxelScattering;
+StructuredBuffer<uint2>           g_LightGrid;
+StructuredBuffer<uint>            g_LightIndex;
+StructuredBuffer<xiiGpuLightData> g_Lights;
+RWTexture2D<float4>               g_VolumetricOut;
 
 static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 
@@ -29,10 +37,13 @@ float PhaseHG(float cosTheta, float anisotropy)
 
 uint ComputeClusterIndex(float2 uv, float zFrac)
 {
-    const uint cX = min((uint)(uv.x * (float)g_ClusterCountX), max(g_ClusterCountX, 1u) - 1u);
-    const uint cY = min((uint)(uv.y * (float)g_ClusterCountY), max(g_ClusterCountY, 1u) - 1u);
-    const uint cZ = min((uint)(zFrac * (float)g_ClusterCountZ), max(g_ClusterCountZ, 1u) - 1u);
-    return (cZ * g_ClusterCountY + cY) * g_ClusterCountX + cX;
+    const uint clusterCountX = max(g_ClusterCountX, 1u);
+    const uint clusterCountY = max(g_ClusterCountY, 1u);
+    const uint clusterCountZ = max(g_ClusterCountZ, 1u);
+    const uint cX = min((uint)(uv.x * (float)clusterCountX), clusterCountX - 1u);
+    const uint cY = min((uint)(uv.y * (float)clusterCountY), clusterCountY - 1u);
+    const uint cZ = min((uint)(zFrac * (float)clusterCountZ), clusterCountZ - 1u);
+    return (cZ * clusterCountY + cY) * clusterCountX + cX;
 }
 
 float3 EstimateLocalScattering(float2 uv, float zFrac, float3 worldPos)
@@ -70,7 +81,7 @@ float3 EstimateLocalScattering(float2 uv, float zFrac, float3 worldPos)
 }
 
 [numthreads(8, 8, 1)]
-void CS_VolumetricIntegration(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims;
     g_VolumetricOut.GetDimensions(dims.x, dims.y);
@@ -84,22 +95,27 @@ void CS_VolumetricIntegration(uint3 tid : SV_DispatchThreadID)
 
     float3 accumulatedScattering = float3(0.0f, 0.0f, 0.0f);
     float transmittance = 1.0f;
+    const float nearPlane = max(g_CameraPositionAndNearPlane.w, 1e-3f);
+    const float farPlane = max(g_CameraForwardAndFarPlane.w, nearPlane + 1e-3f);
+    const float logFarOverNear = log(farPlane / nearPlane);
 
     [loop]
     for (uint z = 0u; z < XII_FROXEL_COUNT.z; ++z)
     {
         const float zFrac = (float(z) + 0.5f) / (float)XII_FROXEL_COUNT.z;
-        const float4 froxel = g_FroxelScattering.SampleLevel(g_sLinearClamp, float3(uv, zFrac), 0);
+        const float4 froxel = g_FroxelScattering.SampleLevel(LinearClampSampler, float3(uv, zFrac), 0);
         const float extinction = max(froxel.a, 0.0f);
         if (extinction <= 0.0f)
             continue;
 
-        const float linearDepth = g_CameraPositionAndNearPlane.w * exp(zFrac * log(max(g_CameraForwardAndFarPlane.w, g_CameraPositionAndNearPlane.w + 0.001f) / max(g_CameraPositionAndNearPlane.w, 0.001f)));
-        const float ndcDepth = saturate(g_CameraPositionAndNearPlane.w / max(linearDepth, 1e-4f));
+        const float linearDepth = nearPlane * exp(zFrac * logFarOverNear);
+        const float ndcDepth = saturate(nearPlane / max(linearDepth, 1e-4f));
         const float3 worldPos = ReconstructWorldPos(uv, ndcDepth);
         const float3 directRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * phase;
         const float3 localRadiance = EstimateLocalScattering(uv, zFrac, worldPos);
-        const float sliceDepth = (g_CameraForwardAndFarPlane.w - g_CameraPositionAndNearPlane.w) / (float)XII_FROXEL_COUNT.z;
+        const float sliceNearFraction = (float)z / (float)XII_FROXEL_COUNT.z;
+        const float sliceFarFraction = (float)(z + 1u) / (float)XII_FROXEL_COUNT.z;
+        const float sliceDepth = nearPlane * (exp(sliceFarFraction * logFarOverNear) - exp(sliceNearFraction * logFarOverNear));
         const float sliceTransmittance = exp(-extinction * sliceDepth);
         const float3 inscatter = (froxel.rgb + (directRadiance + localRadiance) * extinction) * (1.0f - sliceTransmittance) / max(extinction, 1e-5f);
 
