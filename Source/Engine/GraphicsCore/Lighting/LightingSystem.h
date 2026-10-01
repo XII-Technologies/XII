@@ -40,6 +40,9 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   xiiUInt32 m_uiSSGISampleCount        = 8U;
   float     m_fSSGIThickness           = 0.15f;
   float     m_fSSGIIntensity           = 1.0f;
+  float     m_fSSRefractionScale       = 0.05f;
+  float     m_fSSRefractionMaxDistance = 0.1f;
+  float     m_fSSRefractionChromatic   = 0.002f;
   xiiUInt32 m_uiLocalShadowTileSize    = 256U;
   float     m_fVolumetricFogDensity    = 0.015f;
   float     m_fVolumetricHeightFalloff = 0.08f;

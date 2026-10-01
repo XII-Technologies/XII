@@ -113,6 +113,7 @@ struct xiiWeightedBlendedOITData;
 
 struct xiiScreenSpaceGlobalIlluminationData;
 struct xiiScreenSpaceGlobalIlluminationCompositeData;
+struct xiiScreenSpaceRefractionSnapshotData;
 struct xiiScreenSpaceRefractionData;
 struct xiiPlanarReflectionsData;
 
@@ -486,6 +487,8 @@ private:
   void SetupScreenSpaceGlobalIlluminationComposite(xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphBuilder& builder);
   void ExecuteScreenSpaceGlobalIlluminationComposite(const xiiScreenSpaceGlobalIlluminationCompositeData& data, xiiRenderGraphPassContext& context);
 
+  void SetupScreenSpaceRefractionSnapshot(xiiScreenSpaceRefractionSnapshotData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteScreenSpaceRefractionSnapshot(const xiiScreenSpaceRefractionSnapshotData& data, xiiRenderGraphPassContext& context);
   void SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xiiRenderGraphBuilder& builder);
   void ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& data, xiiRenderGraphPassContext& context);
 

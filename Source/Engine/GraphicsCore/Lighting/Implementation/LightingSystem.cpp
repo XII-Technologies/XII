@@ -66,7 +66,7 @@ namespace
 } // namespace
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -83,6 +83,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 2, xiiRTTI
     XII_MEMBER_PROPERTY("SSGISampleCount", m_uiSSGISampleCount)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("SSGIThickness", m_fSSGIThickness)->AddAttributes(new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("SSGIIntensity", m_fSSGIIntensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("SSRefractionScale", m_fSSRefractionScale)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f)),
+    XII_MEMBER_PROPERTY("SSRefractionMaxDistance", m_fSSRefractionMaxDistance)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f)),
+    XII_MEMBER_PROPERTY("SSRefractionChromatic", m_fSSRefractionChromatic)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.1f)),
     XII_MEMBER_PROPERTY("LocalShadowTileSize", m_uiLocalShadowTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U)),
     XII_MEMBER_PROPERTY("VolumetricFogDensity", m_fVolumetricFogDensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("VolumetricHeightFalloff", m_fVolumetricHeightFalloff)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),

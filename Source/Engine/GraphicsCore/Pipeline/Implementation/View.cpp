@@ -53,6 +53,7 @@
 #include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
+#include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
@@ -5630,24 +5631,78 @@ void xiiView::ExecuteScreenSpaceGlobalIlluminationComposite(const xiiScreenSpace
 //
 // Collects all GPU resources related to screen-space refraction.
 
+struct xiiScreenSpaceRefractionSnapshotData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphTextureHandle m_hHDRSource; ///< CopySource in (completed scene color before refraction).
+  xiiRenderGraphTextureHandle m_hSnapshot;  ///< CopyDestination out (immutable source for neighborhood sampling).
+};
+
+void xiiView::SetupScreenSpaceRefractionSnapshot(xiiScreenSpaceRefractionSnapshotData& data, xiiRenderGraphBuilder& builder)
+{
+  data.m_hHDRSource = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::CopySource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = GetRenderResolutionWidth();
+  description.m_Size.height = GetRenderResolutionHeight();
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hSnapshot          = builder.WriteTexture(xiiRGBlackboardKeys::k_RefractionSceneColorInput, description, xiiGALResourceStateFlags::CopyDestination);
+
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteScreenSpaceRefractionSnapshot(const xiiScreenSpaceRefractionSnapshotData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+  cmd.BeginDebugGroup("SSRefractionSnapshot");
+  {
+    cmd.CopyTexture(context.GetTexture(data.m_hHDRSource), context.GetTexture(data.m_hSnapshot));
+  }
+  cmd.EndDebugGroup();
+}
+
 struct xiiScreenSpaceRefractionData
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiRenderGraphTextureHandle m_hSceneDepth;    ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle m_hGBufferNormal; ///< ShaderResource in (G-Buffer normal texture).
-  xiiRenderGraphTextureHandle m_hHDRIn;         ///< ShaderResource in (current HDR scene color).
-  xiiRenderGraphTextureHandle m_hHDROut;        ///< UnorderedAccess in/out (HDR scene color target).
+  xiiRenderGraphTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
+  xiiRenderGraphTextureHandle m_hGBufferNormal;   ///< ShaderResource in (G-Buffer normal texture).
+  xiiRenderGraphTextureHandle m_hGBufferMaterial; ///< ShaderResource in (material feature flags).
+  xiiRenderGraphTextureHandle m_hHDRIn;           ///< ShaderResource in (immutable pre-refraction HDR snapshot).
+  xiiRenderGraphTextureHandle m_hHDROut;          ///< UnorderedAccess out (authoritative HDR scene color target).
+  xiiRenderGraphBufferHandle  m_hConstants;       ///< ConstantBuffer in (refraction tuning parameters).
+  xiiSSRefractionConstants    m_Constants;
 };
 
 void xiiView::SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xiiRenderGraphBuilder& builder)
 {
-  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hHDRIn         = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hHDROut        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDRIn           = builder.ReadTexture(xiiRGBlackboardKeys::k_RefractionSceneColorInput, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDROut          = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiSSRefractionConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Mode           = xiiGALBufferMode::Undefined;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  data.m_hConstants                     = builder.WriteBuffer("xiiSSRefractionConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  const xiiLightingSystemSettings& settings = m_ViewPassResources.m_LightingSystem.GetSettings();
+  data.m_Constants.PerturbScale = xiiMath::Clamp(settings.m_fSSRefractionScale, 0.0f, 0.5f);
+  data.m_Constants.MaxDistance  = xiiMath::Clamp(settings.m_fSSRefractionMaxDistance, 0.0f, 0.5f);
+  data.m_Constants.Chromatic    = xiiMath::Clamp(settings.m_fSSRefractionChromatic, 0.0f, 0.1f);
+  data.m_Constants.Padding      = 0.0f;
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_ScreenSpacePasses.m_pSSRefractionPipeline, "Shaders/Pipeline/SSRefraction.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& data, xiiRenderGraphPassContext& context)
@@ -5658,9 +5713,17 @@ void xiiView::ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& d
 
   cmd.BeginDebugGroup("SSRefraction");
   {
+    {
+      xiiGALMapHelper<xiiSSRefractionConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *constants = data.m_Constants;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_ScreenSpacePasses.m_pSSRefractionPipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiSSRefractionConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_HDROut", context.GetTexture(data.m_hHDROut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -6429,7 +6492,11 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     graph.AddPass<xiiScreenSpaceGlobalIlluminationData>("SSGI", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceGlobalIllumination, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceGlobalIllumination, this));
     graph.AddPass<xiiScreenSpaceGlobalIlluminationCompositeData>("SSGIComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceGlobalIlluminationComposite, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceGlobalIlluminationComposite, this));
   }
-  graph.AddPass<xiiScreenSpaceRefractionData>("SSRefraction", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceRefraction, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceRefraction, this));
+  if (lightingSettings.m_fSSRefractionScale > 0.0f && lightingSettings.m_fSSRefractionMaxDistance > 0.0f)
+  {
+    graph.AddPass<xiiScreenSpaceRefractionSnapshotData>("SSRefractionSnapshot", xiiGALCommandQueueFlags::Transfer, xiiMakeDelegate(&xiiView::SetupScreenSpaceRefractionSnapshot, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceRefractionSnapshot, this));
+    graph.AddPass<xiiScreenSpaceRefractionData>("SSRefraction", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceRefraction, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceRefraction, this));
+  }
   graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPlanarReflections, this), xiiMakeDelegate(&xiiView::ExecutePlanarReflections, this));
   graph.AddPass<xiiAtmosphereCompositeData>("AtmosphereComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereComposite, this));
 

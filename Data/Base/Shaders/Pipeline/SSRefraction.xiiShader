@@ -4,51 +4,64 @@
 // samples the opaque scene color behind the refractive surface and blends it in.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1.
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
 
-cbuffer SSRefractionConstants : register(b3)
-{
-    float  g_PerturbScale;   // refraction offset scale in screen-space (default 0.05)
-    float  g_MaxDistance;    // max UV offset magnitude (default 0.1)
-    float  g_Chromatic;      // chromatic aberration split amount (default 0.002)
-    float  _pad;
-};
+[PERMUTATIONS]
 
-Texture2D<float>  g_SceneDepth   : register(t0); // to determine refractive surface
-Texture2D<float4> g_GBufNormal   : register(t1); // oct-encoded world normals
-Texture2D<float4> g_HDRIn        : register(t2); // opaque scene color to sample behind
-RWTexture2D<float4> g_HDROut     : register(u0); // output (modifies in-place where refractive)
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
+
+Texture2D<float>    g_SceneDepth;   // reversed-Z surface depth
+Texture2D<float2>   g_GBufNormal;   // oct-encoded world normals
+Texture2D<float4>   g_GBufMaterial; // alpha stores the normalized material-feature byte
+Texture2D<float4>   g_HDRIn;        // immutable scene snapshot sampled behind the surface
+RWTexture2D<float4> g_HDROut;       // authoritative scene output
+
+static const uint MATERIAL_FEATURE_TRANSMISSION = 1u << 6u;
 
 [numthreads(8, 8, 1)]
-void CS_SSRefraction(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims;
     g_HDROut.GetDimensions(dims.x, dims.y);
     if (any(tid.xy >= dims)) return;
 
-    float2 uv     = (float2(tid.xy) + 0.5f) / float2(dims);
-    float  depth  = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    const float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
+    const float  depth = g_SceneDepth.Load(int3(tid.xy, 0));
 
-    // Only process refractive pixels (flagged via material ID in GBuffer alpha channel).
-    // We use the normal alpha = 1.0 as the refraction mask (set by water/glass shaders).
-    float4 gbufNorm = g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0);
-    float  mask     = step(0.5f, gbufNorm.a); // 1 = refractive surface
-    if (mask < 0.5f) return;
+    // The material target is RGBA8 UNORM. Alpha contains the material-feature
+    // byte normalized to [0, 1], matching xiiMaterialFeatureFlags.
+    const uint materialFlags = (uint)round(saturate(g_GBufMaterial.Load(int3(tid.xy, 0)).a) * 255.0f);
+    if (depth <= 0.0f || (materialFlags & MATERIAL_FEATURE_TRANSMISSION) == 0u)
+    {
+        g_HDROut[tid.xy] = g_HDRIn.Load(int3(tid.xy, 0));
+        return;
+    }
 
     // Decode world-space normal.
-    float3 worldNormal = DecodeOctNormal(gbufNorm.rg);
+    const float3 worldNormal = DecodeOctNormal(g_GBufNormal.Load(int3(tid.xy, 0)));
 
-    // Project normal into view-space XY for screen perturbation.
-    float4 viewNormal = mul(g_ViewProjectionMatrix, float4(worldNormal, 0.0f));
-    float2 perturbDir = normalize(viewNormal.xy + 1e-6f);
+    // Project an offset world-space point instead of treating a direction as a
+    // position. This remains correct for arbitrary camera orientation.
+    const float3 worldPosition = ReconstructWorldPos(uv, depth);
+    const float4 surfaceClip   = mul(g_ViewProjectionMatrix, float4(worldPosition, 1.0f));
+    const float4 normalClip    = mul(g_ViewProjectionMatrix, float4(worldPosition + worldNormal, 1.0f));
+    const float2 surfaceNDC    = surfaceClip.xy / max(surfaceClip.w, 1e-6f);
+    const float2 normalNDC     = normalClip.xy / max(normalClip.w, 1e-6f);
+    const float2 projectedNormal = float2(normalNDC.x - surfaceNDC.x, surfaceNDC.y - normalNDC.y);
+    const float projectedLengthSq = dot(projectedNormal, projectedNormal);
+    const float2 perturbDir = projectedLengthSq > 1e-8f ? projectedNormal * rsqrt(projectedLengthSq) : 0.0f;
 
     // Scale offset by depth so deeper water refracts less (underwater bending).
     float linearDepth = LinearizeDepth(depth);
-    float strength    = g_PerturbScale / (1.0f + linearDepth * 0.5f);
+    float strength    = PerturbScale / (1.0f + linearDepth * 0.5f);
 
     float2 offset = perturbDir * strength;
-    offset = clamp(offset, float2(-g_MaxDistance, -g_MaxDistance),
-                            float2( g_MaxDistance,  g_MaxDistance));
+    offset = clamp(offset, float2(-MaxDistance, -MaxDistance),
+                            float2( MaxDistance,  MaxDistance));
 
     float2 refractUV = uv + offset;
 
@@ -61,9 +74,9 @@ void CS_SSRefraction(uint3 tid : SV_DispatchThreadID)
     }
 
     // Chromatic aberration: sample RGB channels at slightly different offsets.
-    float2 rUV = refractUV + offset * g_Chromatic;
+    float2 rUV = refractUV + offset * Chromatic;
     float2 gUV = refractUV;
-    float2 bUV = refractUV - offset * g_Chromatic;
+    float2 bUV = refractUV - offset * Chromatic;
 
     rUV = clamp(rUV, 0.0f, 1.0f);
     gUV = clamp(gUV, 0.0f, 1.0f);
