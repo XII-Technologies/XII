@@ -65,6 +65,8 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_CloudShadowConstants   = "CloudShadowConstants"_xiisv;  ///< xiiRenderGraphBufferHandle - procedural cloud layer projection and optical depth.
   constexpr xiiStringView k_VirtualShadowPhysicalPageTable = "VirtualShadowPhysicalPageTable"_xiisv; ///< xiiRenderGraphBufferHandle - frame-sliced physical-slot residency records.
   constexpr xiiStringView k_VirtualShadowPageTable         = "VirtualShadowPageTable"_xiisv;         ///< xiiRenderGraphBufferHandle - frame-sliced hashed virtual-to-physical lookup table.
+  constexpr xiiStringView k_VirtualShadowAtlas             = "VirtualShadowAtlas"_xiisv;             ///< xiiRenderGraphTextureHandle - persistent physical depth-page atlas.
+  constexpr xiiStringView k_VirtualShadowSamplingConstants = "VirtualShadowSamplingConstants"_xiisv; ///< xiiRenderGraphBufferHandle - current frame lookup and atlas metadata.
   constexpr xiiStringView k_VirtualShadowPhysicalBaseIndex = "VirtualShadowPhysicalBaseIndex"_xiisv; ///< uint32 - first physical-slot record for the current frame.
   constexpr xiiStringView k_VirtualShadowPhysicalPageCount = "VirtualShadowPhysicalPageCount"_xiisv; ///< uint32 - physical page count in one frame slice.
   constexpr xiiStringView k_VirtualShadowTableBaseIndex    = "VirtualShadowTableBaseIndex"_xiisv;    ///< uint32 - first hashed lookup bucket for the current frame.

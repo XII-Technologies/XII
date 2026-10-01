@@ -19,6 +19,7 @@ StructuredBuffer<xiiGpuLightData> g_Lights;
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowSampling.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowSampling.h>
 
 Texture2D<float4>      g_GBufAlbedo;
 Texture2D<float2>      g_GBufNormal;
@@ -128,6 +129,10 @@ float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 
     // than or equal to the stored nearest-occluder depth. Slope bias is added
     // to the receiver depth to suppress self-shadowing at grazing angles.
     const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.00065f, 1.0f - NoL);
+    float virtualVisibility;
+    if (TrySampleVirtualDirectionalShadow(cascadeIndex, shadowUV, receiverDepth, virtualVisibility))
+        return virtualVisibility;
+
     const float sourceRadius = max(g_DirectionalShadowSourceRadius, 0.0f);
     if (sourceRadius <= 1e-6f)
     {

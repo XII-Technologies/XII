@@ -59,6 +59,7 @@
 #include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
 #include <Shaders/Pipeline/Passes/Sensors/SensorOutputConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 #include <Shaders/Pipeline/Passes/Temporal/TAAConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/DrawCommandBuildConstants.h>
 #include <Shaders/Pipeline/Passes/Visibility/FrustumCullingConstants.h>
@@ -3540,8 +3541,12 @@ struct xiiDeferredDirectLightingData
   xiiRenderGraphTextureHandle m_hDirectLightReservoir; ///< ShaderResource in (spatially reused ReSTIR DI sample).
   xiiRenderGraphTextureHandle m_hReservoirSurface;     ///< ShaderResource in (history state transition and dependency).
   xiiRenderGraphBufferHandle  m_hCloudShadowConstants; ///< ConstantBuffer in (world-space cloud shadow projection).
-  xiiRenderGraphTextureHandle m_hDirectLightingBuffer; ///< UnorderedAccess out (direct lighting HDR buffer).
-  xiiCloudShadowConstants     m_CloudShadowConstants;
+  xiiRenderGraphBufferHandle        m_hVirtualShadowPageTable;
+  xiiRenderGraphTextureHandle       m_hVirtualShadowAtlas;
+  xiiRenderGraphBufferHandle        m_hVirtualShadowSamplingConstants;
+  xiiRenderGraphTextureHandle       m_hDirectLightingBuffer; ///< UnorderedAccess out (direct lighting HDR buffer).
+  xiiCloudShadowConstants           m_CloudShadowConstants;
+  xiiVirtualShadowSamplingConstants m_VirtualShadowConstants;
 };
 
 void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRenderGraphBuilder& builder)
@@ -3563,6 +3568,13 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   data.m_hLightIndexBuffer            = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDirectLightReservoir        = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, xiiGALResourceStateFlags::ShaderResource);
   data.m_hReservoirSurface            = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoirSurface, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVirtualShadowPageTable      = builder.ReadBuffer(xiiRGBlackboardKeys::k_VirtualShadowPageTable, xiiGALResourceStateFlags::ShaderResource);
+
+  const xiiSharedPtr<xiiGALTexture> pVirtualShadowAtlas = xiiVirtualShadowMapManager::GetPhysicalAtlas();
+  XII_ASSERT_DEV(pVirtualShadowAtlas != nullptr, "Virtual shadow atlas must exist before direct lighting setup.");
+  data.m_hVirtualShadowAtlas = builder.ReadTexture(
+    builder.ImportTexture(xiiRGBlackboardKeys::k_VirtualShadowAtlas, pVirtualShadowAtlas, pVirtualShadowAtlas->GetResourceState()),
+    xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription constantsDescription;
   constantsDescription.m_uiSize         = sizeof(xiiCloudShadowConstants);
@@ -3571,6 +3583,30 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
   constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
   data.m_hCloudShadowConstants          = builder.WriteBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  constantsDescription.m_uiSize = sizeof(xiiVirtualShadowSamplingConstants);
+  data.m_hVirtualShadowSamplingConstants = builder.WriteBuffer(xiiRGBlackboardKeys::k_VirtualShadowSamplingConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  const xiiVirtualShadowMapSettings& virtualShadowSettings = xiiVirtualShadowMapManager::GetConfiguration();
+  const xiiVirtualShadowMapStats     virtualShadowStats    = xiiVirtualShadowMapManager::GetStats();
+  data.m_VirtualShadowConstants.VirtualShadowPageTableBaseIndex = 0U;
+  data.m_VirtualShadowConstants.VirtualShadowPageTableCapacity  = 0U;
+  XII_IGNORE_UNUSED(GetBlackboard().TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, data.m_VirtualShadowConstants.VirtualShadowPageTableBaseIndex));
+  XII_IGNORE_UNUSED(GetBlackboard().TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, data.m_VirtualShadowConstants.VirtualShadowPageTableCapacity));
+  data.m_VirtualShadowConstants.VirtualShadowResolution          = virtualShadowSettings.m_uiVirtualResolution;
+  data.m_VirtualShadowConstants.VirtualShadowPageSize            = virtualShadowSettings.m_uiPageSize;
+  data.m_VirtualShadowConstants.VirtualShadowPhysicalAtlasWidth  = virtualShadowStats.m_uiPhysicalAtlasWidth;
+  data.m_VirtualShadowConstants.VirtualShadowPhysicalAtlasHeight = virtualShadowStats.m_uiPhysicalAtlasHeight;
+  data.m_VirtualShadowConstants.VirtualShadowDirectionalLightId  = 0U;
+  data.m_VirtualShadowConstants.VirtualShadowEnabled             = 0U;
+  if (m_pExtractedData != nullptr)
+  {
+    const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(m_pExtractedData->GetAllRenderData());
+    if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows)
+    {
+      data.m_VirtualShadowConstants.VirtualShadowDirectionalLightId = static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey) & 0x00FFFFFFU;
+      data.m_VirtualShadowConstants.VirtualShadowEnabled            = 1U;
+    }
+  }
 
   const auto& cloudState                                 = m_ViewPassResources->m_LightingPasses.m_CloudShadowState;
   data.m_CloudShadowConstants.LayerOriginAndInvScale     = cloudState.m_vLayerOriginAndInvScale;
@@ -3602,6 +3638,10 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
       xiiGALMapHelper<xiiCloudShadowConstants> pConstants(cmd, context.GetBuffer(data.m_hCloudShadowConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *pConstants = data.m_CloudShadowConstants;
     }
+    {
+      xiiGALMapHelper<xiiVirtualShadowSamplingConstants> pConstants(cmd, context.GetBuffer(data.m_hVirtualShadowSamplingConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *pConstants = data.m_VirtualShadowConstants;
+    }
 
     cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pDirectLightingPipeline);
     m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
@@ -3616,7 +3656,10 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
     cmd.ResolveAndSetShaderResourceTextureView("g_ContactShadow", context.GetTexture(data.m_hContactShadowTerm)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hShadowCascadeConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiCloudShadowConstants", context.GetBuffer(data.m_hCloudShadowConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiVirtualShadowSamplingConstants", context.GetBuffer(data.m_hVirtualShadowSamplingConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ShadowAtlas", context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_VirtualShadowAtlas", context.GetTexture(data.m_hVirtualShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_VirtualShadowPageTable", context.GetBuffer(data.m_hVirtualShadowPageTable)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_LocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
