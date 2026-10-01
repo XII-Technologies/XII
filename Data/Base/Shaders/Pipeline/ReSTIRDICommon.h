@@ -91,14 +91,6 @@ void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint lightIndex
   }
 }
 
-float ReSTIRDistanceAttenuation(float distanceToLight, float range)
-{
-  const float normalizedDistance = saturate(distanceToLight / max(range, 1e-3f));
-  float attenuation = saturate(1.0f - normalizedDistance * normalizedDistance);
-  attenuation *= attenuation;
-  return attenuation / max(distanceToLight * distanceToLight, 0.25f);
-}
-
 // Scalar importance target used by candidate generation and final normalization.
 // Visibility is deliberately excluded: the selected sample is shadow-tested by the
 // direct-lighting pass while the inexpensive target remains suitable for reuse.
@@ -109,7 +101,7 @@ float ReSTIREstimateTarget(xiiGpuLightData lightData, float3 worldPosition, floa
   const float distanceToLight = length(toLight);
   const float3 pointToLight = distanceToLight > 1e-4f ? toLight / distanceToLight : normalize(-lightData.DirectionAndType.xyz);
 
-  float attenuation = ReSTIRDistanceAttenuation(distanceToLight, lightData.AttenuationAndSize.x);
+  float attenuation = EvaluateFiniteEmitterAttenuation(distanceToLight, lightData.AttenuationAndSize.x, lightData.AttenuationAndSize.y);
   if (GetLightType(lightData) == XII_LIGHT_TYPE_SPOT)
     attenuation *= EvaluateSpotCone(lightData, pointToLight);
 

@@ -324,14 +324,6 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
     return lerp(1.0f, visibility / float(filterSampleCount), saturate(lightData.ShadowData.y));
 }
 
-float SmoothDistanceAttenuation(float distance, float range)
-{
-    const float normalizedDistance = saturate(distance / max(range, 1e-3f));
-    float attenuation = saturate(1.0f - normalizedDistance * normalizedDistance);
-    attenuation *= attenuation;
-    return attenuation / max(distance * distance, 0.25f);
-}
-
 #include <Shaders/Pipeline/FiniteAreaLight.h>
 
 float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, float3 V, float3 albedo, float roughness, float metallic)
@@ -346,7 +338,7 @@ float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, 
     float distance = length(toLight);
     float3 L = distance > 1e-4f ? toLight / distance : normalize(-lightData.DirectionAndType.xyz);
 
-    float attenuation = SmoothDistanceAttenuation(distance, lightData.AttenuationAndSize.x);
+    float attenuation = EvaluateFiniteEmitterAttenuation(distance, lightData.AttenuationAndSize.x, lightData.AttenuationAndSize.y);
 
     if (lightType == XII_LIGHT_TYPE_SPOT)
     {

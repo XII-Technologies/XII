@@ -10,6 +10,18 @@ static const uint XII_IES_VERTICAL_SAMPLES   = 64u;
 static const uint XII_IES_HORIZONTAL_SAMPLES = 32u;
 static const uint XII_IES_PROFILE_SAMPLES    = XII_IES_VERTICAL_SAMPLES * XII_IES_HORIZONTAL_SAMPLES;
 
+/// Inverse-square attenuation with a smooth authored-range window. Inside a
+/// finite emitter the distance is clamped by its physical radius instead of an
+/// arbitrary world-space constant, preserving scale in calibrated scenes.
+float EvaluateFiniteEmitterAttenuation(float distanceToLight, float range, float sourceRadius)
+{
+  const float normalizedDistance = saturate(distanceToLight / max(range, 1e-3f));
+  float rangeWindow = saturate(1.0f - normalizedDistance * normalizedDistance);
+  rangeWindow *= rangeWindow;
+  const float minimumDistanceSquared = max(sourceRadius * sourceRadius, 1e-6f);
+  return rangeWindow / max(distanceToLight * distanceToLight, minimumDistanceSquared);
+}
+
 float EvaluateSpotCone(xiiGpuLightData lightData, float3 pointToLightDirection)
 {
   const float cosTheta = dot(-pointToLightDirection, normalize(lightData.DirectionAndType.xyz));

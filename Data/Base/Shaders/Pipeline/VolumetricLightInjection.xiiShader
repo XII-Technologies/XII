@@ -24,14 +24,6 @@ StructuredBuffer<xiiGpuLightData>   g_Lights;
 
 static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 
-float SmoothVolumeAttenuation(float distance, float range)
-{
-  const float normalizedDistance = saturate(distance / max(range, 1e-3f));
-  float attenuation = saturate(1.0f - normalizedDistance * normalizedDistance);
-  attenuation *= attenuation;
-  return attenuation / max(distance * distance, 0.5f);
-}
-
 float PhaseHG(float cosTheta, float anisotropy)
 {
   const float g = clamp(anisotropy, -0.95f, 0.95f);
@@ -74,7 +66,7 @@ float3 EvaluateLocalLighting(float2 uv, float zFraction, float3 worldPosition, f
     const float3 toLight = GetRepresentativeLightPosition(lightData, worldPosition) - worldPosition;
     const float distanceToLight = length(toLight);
     const float3 directionToLight = distanceToLight > 1e-4f ? toLight / distanceToLight : float3(0.0f, 0.0f, 1.0f);
-    float attenuation = SmoothVolumeAttenuation(distanceToLight, lightData.AttenuationAndSize.x);
+    float attenuation = EvaluateFiniteEmitterAttenuation(distanceToLight, lightData.AttenuationAndSize.x, lightData.AttenuationAndSize.y);
     if (GetLightType(lightData) == XII_LIGHT_TYPE_SPOT)
       attenuation *= EvaluateSpotCone(lightData, directionToLight);
     attenuation *= SampleIESProfile(lightData, directionToLight);
