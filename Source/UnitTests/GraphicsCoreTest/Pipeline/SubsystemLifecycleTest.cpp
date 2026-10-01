@@ -12,6 +12,7 @@
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Lighting/VolumetricMedium.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Particles/ParticleSystemManager.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -36,6 +37,7 @@ static_assert(!std::is_default_constructible_v<xiiAtmosphereManager>, "Atmospher
 static_assert(!std::is_default_constructible_v<xiiRayTracingSceneManager>, "Ray tracing scene state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSensorRenderingManager>, "Sensor profiles must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiDisplayOutputManager>, "Display defaults must be owned by their subsystem.");
+static_assert(!std::is_default_constructible_v<xiiVolumetricMediumManager>, "Volumetric media must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSceneDatabaseManager>, "Render scenes must be owned by the scene database subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSceneDatabase>, "Scene database storage must be created through the subsystem.");
 static_assert(!std::is_default_constructible_v<xiiParticleSystemManager>, "Particle runtimes must be owned by their subsystem.");
@@ -61,6 +63,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(xiiRayTracingSceneManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiSensorRenderingManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiDisplayOutputManager::IsSubsystemInitialized());
+    XII_TEST_BOOL(xiiVolumetricMediumManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiMaterialManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiParticleSystemManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiGALPipelineCache::IsSubsystemInitialized());
