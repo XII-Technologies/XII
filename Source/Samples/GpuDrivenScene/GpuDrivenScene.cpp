@@ -60,11 +60,6 @@ namespace
     xiiRenderGraphTextureHandle m_hDepth;
   };
 
-  struct VisibilityProbePassData
-  {
-    xiiRenderGraphBufferHandle m_hBuffer;
-  };
-
   struct GpuDrivenDrawPassData
   {
     xiiRenderGraphTextureHandle        m_hColor;
@@ -410,14 +405,14 @@ private:
         context.GetCommandList().ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
       });
 
-    graph.AddPass<VisibilityProbePassData>(
-      "Probe Sun Shadow Instance Culling", xiiGALCommandQueueFlags::Graphics,
-      [hProbe = shadowVisibility.m_hVisibleInstanceCount](VisibilityProbePassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hBuffer = builder.ReadBuffer(hProbe, xiiGALResourceStateFlags::ShaderResource);
-        builder.SetPassSideEffects(true);
-      },
-      [](const VisibilityProbePassData&, xiiRenderGraphPassContext&) {});
-    const xiiRenderGraphTextureHandle hShadowMap = shadowTarget.first->m_hDepth;
+    xiiGpuShadowRasterDescription shadowRasterDescription;
+    shadowRasterDescription.m_ViewProjectionMatrix      = shadowViewProjection;
+    shadowRasterDescription.m_Viewport                  = xiiVec4U32(0U, 0U, uiShadowResolution, uiShadowResolution);
+    shadowRasterDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
+    shadowRasterDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility);
+    shadowRasterDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility);
+    const xiiRenderGraphTextureHandle hShadowMap = xiiGpuShadowRasterManager::AddPass(
+      graph, "GPU Scene Sun Shadow Raster", shadowTarget.first->m_hDepth, shadowVisibility, geometry, shadowRasterDescription);
 
     graph.AddPass<SceneTargetsPassData>(
       "Create Scene Targets", xiiGALCommandQueueFlags::Graphics,
