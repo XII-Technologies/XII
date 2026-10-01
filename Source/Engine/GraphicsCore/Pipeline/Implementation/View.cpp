@@ -2110,6 +2110,8 @@ struct xiiContactShadowData
 
 void xiiView::SetupContactShadowData(xiiContactShadowData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription desc;
