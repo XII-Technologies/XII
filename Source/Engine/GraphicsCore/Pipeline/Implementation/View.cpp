@@ -3457,6 +3457,7 @@ void xiiView::ExecuteReSTIRDITemporal(const xiiReSTIRDITemporalData& data, xiiRe
 
     cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pReSTIRDITemporalPipeline);
     m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    m_ViewPassResources->m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiReSTIRDIConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -3506,6 +3507,7 @@ void xiiView::ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRend
   {
     cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pReSTIRDISpatialPipeline);
     m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    m_ViewPassResources->m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_TemporalReservoir", context.GetTexture(data.m_hTemporalReservoir)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);

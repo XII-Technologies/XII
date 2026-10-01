@@ -4,6 +4,7 @@
 #pragma once
 
 #include "LightingData.h"
+#include "PhotometricLightSampling.h"
 
 static const uint XII_RESTIR_INVALID_LIGHT = 0xFFFFFFFFu;
 static const uint XII_RESTIR_CANDIDATES    = 8u;
@@ -98,14 +99,6 @@ float ReSTIRDistanceAttenuation(float distanceToLight, float range)
   return attenuation / max(distanceToLight * distanceToLight, 0.25f);
 }
 
-float ReSTIRSpotAttenuation(xiiGpuLightData lightData, float3 pointToLightDirection)
-{
-  const float cosTheta = dot(-pointToLightDirection, normalize(lightData.DirectionAndType.xyz));
-  const float cone = saturate((cosTheta - lightData.SpotAnglesAndRectSize.y) /
-                              max(lightData.SpotAnglesAndRectSize.x - lightData.SpotAnglesAndRectSize.y, 1e-4f));
-  return cone * cone * (3.0f - 2.0f * cone);
-}
-
 // Scalar importance target used by candidate generation and final normalization.
 // Visibility is deliberately excluded: the selected sample is shadow-tested by the
 // direct-lighting pass while the inexpensive target remains suitable for reuse.
@@ -118,8 +111,9 @@ float ReSTIREstimateTarget(xiiGpuLightData lightData, float3 worldPosition, floa
 
   float attenuation = ReSTIRDistanceAttenuation(distanceToLight, lightData.AttenuationAndSize.x);
   if (GetLightType(lightData) == XII_LIGHT_TYPE_SPOT)
-    attenuation *= ReSTIRSpotAttenuation(lightData, pointToLight);
+    attenuation *= EvaluateSpotCone(lightData, pointToLight);
 
+  attenuation *= SampleIESProfile(lightData, pointToLight);
   attenuation *= GetPhotometricEmitterScale(lightData, pointToLight);
   const float luminance = dot(lightData.ColorAndIntensity.rgb, float3(0.2126f, 0.7152f, 0.0722f));
   return max(luminance * lightData.ColorAndIntensity.w * attenuation * saturate(dot(normal, pointToLight)), 0.0f);
@@ -137,4 +131,3 @@ void ReSTIRFinalizeReservoir(inout xiiReSTIRDIReservoir reservoir, float selecte
   if (!ReSTIRIsFinitePositive(reservoir.WeightSum))
     reservoir = ReSTIREmptyReservoir();
 }
-
