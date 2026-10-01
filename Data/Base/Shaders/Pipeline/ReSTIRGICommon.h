@@ -51,7 +51,7 @@ xiiReSTIRGIReservoir ReSTIRGIEmptyReservoir()
 bool ReSTIRGIValidateReservoir(xiiReSTIRGIReservoir reservoir, float radianceClamp)
 {
   return reservoir.Sample.a > 0.0f && reservoir.M > 0U && reservoir.M <= XII_RESTIR_GI_MAX_M &&
-         ReSTIRGIIsFinitePositive(reservoir.WeightSum) && ReSTIRGIIsFinitePositive(ReSTIRGITarget(reservoir.Sample.rgb, radianceClamp));
+    ReSTIRGIIsFinitePositive(reservoir.WeightSum) && ReSTIRGIIsFinitePositive(ReSTIRGITarget(reservoir.Sample.rgb, radianceClamp));
 }
 
 xiiReSTIRGIReservoir ReSTIRGIUnpackReservoir(float4 sample, float2 state)
@@ -99,6 +99,6 @@ bool ReSTIRGISurfaceMatches(float4 previousSurface, float linearDepth, float3 no
 
   const float3 previousNormal = DecodeOctNormal(previousSurface.xy);
   return abs(previousSurface.z - linearDepth) <= max(linearDepth * 0.08f, 0.02f) &&
-         dot(previousNormal, normal) >= 0.85f &&
-         abs(previousSurface.w - albedoLuminance) <= 0.20f;
+    dot(previousNormal, normal) >= 0.85f &&
+    abs(previousSurface.w - albedoLuminance) <= 0.20f;
 }

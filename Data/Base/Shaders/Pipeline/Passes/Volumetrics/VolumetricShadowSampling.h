@@ -11,8 +11,7 @@ StructuredBuffer<xiiLocalShadowAtlasData> g_VolumetricLocalShadowData;
 uint SelectVolumetricCascade(float linearDepth)
 {
   const uint cascadeCount = min(ActiveCascadeCount, 4u);
-  [unroll]
-  for (uint cascadeIndex = 0u; cascadeIndex < 4u; ++cascadeIndex)
+  [unroll] for (uint cascadeIndex = 0u; cascadeIndex < 4u; ++cascadeIndex)
   {
     if (cascadeIndex < cascadeCount && linearDepth <= CascadeSplitDepths[cascadeIndex])
       return cascadeIndex;
@@ -29,13 +28,13 @@ float EvaluateVolumetricDirectionalShadow(float3 worldPosition, float3 direction
   if (cascadeIndex >= cascadeCount)
     return 1.0f;
 
-  const float rayBias = max(CascadeSplitDepths[cascadeIndex], 1.0f) * 0.00015f;
+  const float  rayBias    = max(CascadeSplitDepths[cascadeIndex], 1.0f) * 0.00015f;
   const float4 shadowClip = mul(CascadeViewProjection[cascadeIndex], float4(worldPosition + directionToLight * rayBias, 1.0f));
   if (shadowClip.w <= 0.0f)
     return 1.0f;
 
   const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
-  const float2 shadowUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+  const float2 shadowUV  = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
   if (any(shadowUV <= 0.0f) || any(shadowUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
     return 1.0f;
 
@@ -43,14 +42,13 @@ float EvaluateVolumetricDirectionalShadow(float3 worldPosition, float3 direction
   uint atlasHeight;
   uint atlasLayers;
   g_VolumetricDirectionalShadowAtlas.GetDimensions(atlasWidth, atlasHeight, atlasLayers);
-  const float2 texelSize = rcp(float2(atlasWidth, atlasHeight));
-  const float receiverDepth = shadowNdc.z + 0.00035f;
-  float visibility = 0.0f;
-  [unroll]
-  for (uint sampleIndex = 0u; sampleIndex < 4u; ++sampleIndex)
+  const float2 texelSize     = rcp(float2(atlasWidth, atlasHeight));
+  const float  receiverDepth = shadowNdc.z + 0.00035f;
+  float        visibility    = 0.0f;
+  [unroll] for (uint sampleIndex = 0u; sampleIndex < 4u; ++sampleIndex)
   {
-    const float2 offset = float2(sampleIndex & 1u, sampleIndex >> 1u) * 2.0f - 1.0f;
-    const float mapDepth = g_VolumetricDirectionalShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + offset * texelSize, cascadeIndex), 0.0f);
+    const float2 offset   = float2(sampleIndex & 1u, sampleIndex >> 1u) * 2.0f - 1.0f;
+    const float  mapDepth = g_VolumetricDirectionalShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + offset * texelSize, cascadeIndex), 0.0f);
     visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
   }
   return visibility * 0.25f;
@@ -79,32 +77,31 @@ float EvaluateVolumetricLocalShadow(uint lightIndex, xiiGpuLightData lightData, 
   if (shadowData.Metadata.z == 0u || shadowData.Metadata.x == 0u)
     return 1.0f;
 
-  const uint faceIndex = SelectVolumetricLocalShadowFace(shadowData, worldPosition);
+  const uint   faceIndex  = SelectVolumetricLocalShadowFace(shadowData, worldPosition);
   const float4 shadowClip = mul(shadowData.ViewProjection[faceIndex], float4(worldPosition, 1.0f));
   if (shadowClip.w <= 0.0f)
     return 1.0f;
 
   const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
-  const float2 localUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+  const float2 localUV   = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
   if (any(localUV <= 0.0f) || any(localUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
     return 1.0f;
 
   uint atlasWidth;
   uint atlasHeight;
   g_VolumetricLocalShadowAtlas.GetDimensions(atlasWidth, atlasHeight);
-  const float2 atlasTexel = rcp(float2(atlasWidth, atlasHeight));
-  const float4 scaleBias = shadowData.AtlasScaleBias[faceIndex];
-  const float2 atlasUV = localUV * scaleBias.xy + scaleBias.zw;
-  const float2 tileMinimum = scaleBias.zw + atlasTexel * 1.5f;
-  const float2 tileMaximum = scaleBias.zw + scaleBias.xy - atlasTexel * 1.5f;
-  const float receiverDepth = shadowNdc.z + 0.0004f;
+  const float2 atlasTexel    = rcp(float2(atlasWidth, atlasHeight));
+  const float4 scaleBias     = shadowData.AtlasScaleBias[faceIndex];
+  const float2 atlasUV       = localUV * scaleBias.xy + scaleBias.zw;
+  const float2 tileMinimum   = scaleBias.zw + atlasTexel * 1.5f;
+  const float2 tileMaximum   = scaleBias.zw + scaleBias.xy - atlasTexel * 1.5f;
+  const float  receiverDepth = shadowNdc.z + 0.0004f;
 
   float visibility = 0.0f;
-  [unroll]
-  for (uint sampleIndex = 0u; sampleIndex < 4u; ++sampleIndex)
+  [unroll] for (uint sampleIndex = 0u; sampleIndex < 4u; ++sampleIndex)
   {
-    const float2 offset = (float2(sampleIndex & 1u, sampleIndex >> 1u) * 2.0f - 1.0f) * atlasTexel;
-    const float mapDepth = g_VolumetricLocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
+    const float2 offset   = (float2(sampleIndex & 1u, sampleIndex >> 1u) * 2.0f - 1.0f) * atlasTexel;
+    const float  mapDepth = g_VolumetricLocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
     visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
   }
   return lerp(1.0f, visibility * 0.25f, saturate(lightData.ShadowData.y));

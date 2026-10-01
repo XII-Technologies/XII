@@ -41,12 +41,11 @@ bool TryResolveVirtualShadowPage(uint2 key, out xiiGpuVirtualShadowPage page)
   if (VirtualShadowEnabled == 0u || VirtualShadowPageTableCapacity == 0u)
     return false;
 
-  const uint tableMask = VirtualShadowPageTableCapacity - 1u;
-  uint bucket = HashVirtualShadowPageKey(key.x, key.y) & tableMask;
+  const uint tableMask  = VirtualShadowPageTableCapacity - 1u;
+  uint       bucket     = HashVirtualShadowPageKey(key.x, key.y) & tableMask;
   const uint probeCount = min(VirtualShadowPageTableCapacity, 32u);
 
-  [loop]
-  for (uint probe = 0u; probe < probeCount; ++probe)
+  [loop] for (uint probe = 0u; probe < probeCount; ++probe)
   {
     const xiiGpuVirtualShadowPage candidate = g_VirtualShadowPageTable[VirtualShadowPageTableBaseIndex + bucket];
     if ((candidate.Flags & 1u) == 0u)
@@ -69,32 +68,30 @@ bool TrySampleVirtualDirectionalShadow(uint mipLevel, float2 shadowUV, float rec
   if (VirtualShadowResolution == 0u || VirtualShadowPageSize == 0u || VirtualShadowPhysicalAtlasWidth == 0u || VirtualShadowPhysicalAtlasHeight == 0u)
     return false;
 
-  const uint basePages = max(VirtualShadowResolution / VirtualShadowPageSize, 1u);
-  const uint pagesPerAxis = max(basePages >> mipLevel, 1u);
+  const uint   basePages           = max(VirtualShadowResolution / VirtualShadowPageSize, 1u);
+  const uint   pagesPerAxis        = max(basePages >> mipLevel, 1u);
   const float2 virtualPagePosition = saturate(shadowUV) * float(pagesPerAxis);
-  const uint2 virtualPage = min((uint2)virtualPagePosition, pagesPerAxis - 1u);
+  const uint2  virtualPage         = min((uint2)virtualPagePosition, pagesPerAxis - 1u);
 
   xiiGpuVirtualShadowPage mapping;
   if (!TryResolveVirtualShadowPage(PackVirtualShadowPageKey(VirtualShadowDirectionalLightId, mipLevel, virtualPage), mapping))
     return false;
 
-  const uint physicalPagesPerRow = max(VirtualShadowPhysicalAtlasWidth / VirtualShadowPageSize, 1u);
-  const uint2 physicalPage = uint2(mapping.PhysicalPage % physicalPagesPerRow, mapping.PhysicalPage / physicalPagesPerRow);
-  const float2 pageMinimum = float2(physicalPage * VirtualShadowPageSize) + 1.5f;
-  const float2 pageMaximum = float2((physicalPage + 1u) * VirtualShadowPageSize) - 1.5f;
-  const float2 pageTexel = frac(virtualPagePosition) * float(VirtualShadowPageSize);
-  const float2 atlasPixel = clamp(float2(physicalPage * VirtualShadowPageSize) + pageTexel, pageMinimum, pageMaximum);
-  const float2 inverseAtlasSize = rcp(float2(VirtualShadowPhysicalAtlasWidth, VirtualShadowPhysicalAtlasHeight));
+  const uint   physicalPagesPerRow = max(VirtualShadowPhysicalAtlasWidth / VirtualShadowPageSize, 1u);
+  const uint2  physicalPage        = uint2(mapping.PhysicalPage % physicalPagesPerRow, mapping.PhysicalPage / physicalPagesPerRow);
+  const float2 pageMinimum         = float2(physicalPage * VirtualShadowPageSize) + 1.5f;
+  const float2 pageMaximum         = float2((physicalPage + 1u) * VirtualShadowPageSize) - 1.5f;
+  const float2 pageTexel           = frac(virtualPagePosition) * float(VirtualShadowPageSize);
+  const float2 atlasPixel          = clamp(float2(physicalPage * VirtualShadowPageSize) + pageTexel, pageMinimum, pageMaximum);
+  const float2 inverseAtlasSize    = rcp(float2(VirtualShadowPhysicalAtlasWidth, VirtualShadowPhysicalAtlasHeight));
 
   visibility = 0.0f;
-  [unroll]
-  for (int y = -1; y <= 1; ++y)
+  [unroll] for (int y = -1; y <= 1; ++y)
   {
-    [unroll]
-    for (int x = -1; x <= 1; ++x)
+    [unroll] for (int x = -1; x <= 1; ++x)
     {
       const float2 samplePixel = clamp(atlasPixel + float2(x, y), pageMinimum, pageMaximum);
-      const float mapDepth = g_VirtualShadowAtlas.SampleLevel(PointClampSampler, samplePixel * inverseAtlasSize, 0.0f);
+      const float  mapDepth    = g_VirtualShadowAtlas.SampleLevel(PointClampSampler, samplePixel * inverseAtlasSize, 0.0f);
       visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
     }
   }

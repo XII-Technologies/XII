@@ -38,10 +38,10 @@ float ReSTIRRandom01(inout uint state)
 xiiReSTIRDIReservoir ReSTIREmptyReservoir()
 {
   xiiReSTIRDIReservoir reservoir;
-  reservoir.LightIndex   = XII_RESTIR_INVALID_LIGHT;
+  reservoir.LightIndex    = XII_RESTIR_INVALID_LIGHT;
   reservoir.StableLightId = 0u;
-  reservoir.WeightSum    = 0.0f;
-  reservoir.M            = 0u;
+  reservoir.WeightSum     = 0.0f;
+  reservoir.M             = 0u;
   return reservoir;
 }
 
@@ -97,9 +97,9 @@ void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint lightIndex
 float ReSTIREstimateTarget(xiiGpuLightData lightData, float3 worldPosition, float3 normal)
 {
   const float3 representativePosition = GetRepresentativeLightPosition(lightData, worldPosition);
-  const float3 toLight = representativePosition - worldPosition;
-  const float distanceToLight = length(toLight);
-  const float3 pointToLight = distanceToLight > 1e-4f ? toLight / distanceToLight : normalize(-lightData.DirectionAndType.xyz);
+  const float3 toLight                = representativePosition - worldPosition;
+  const float  distanceToLight        = length(toLight);
+  const float3 pointToLight           = distanceToLight > 1e-4f ? toLight / distanceToLight : normalize(-lightData.DirectionAndType.xyz);
 
   float attenuation = EvaluateFiniteEmitterAttenuation(distanceToLight, lightData.AttenuationAndSize.x, lightData.AttenuationAndSize.y);
   if (GetLightType(lightData) == XII_LIGHT_TYPE_SPOT)

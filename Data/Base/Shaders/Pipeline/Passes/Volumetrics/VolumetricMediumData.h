@@ -6,12 +6,12 @@
 /// explicit size assertion and is uploaded as a 96-byte structured-buffer record.
 struct xiiGpuVolumetricMedium
 {
-  float4 CenterAndShape;            ///< xyz = centre in metres, w = xiiVolumetricMediumShape.
-  float4 Rotation;                  ///< Local-to-world unit quaternion (xyz, w).
-  float4 HalfExtentsAndAnisotropy;  ///< xyz = half extents in metres, w = Henyey-Greenstein g.
-  float4 ScatteringAndPriority;     ///< xyz = scattering coefficient in m^-1.
-  float4 AbsorptionAndPadding;      ///< xyz = absorption coefficient in m^-1.
-  float4 EmissionAndPadding;        ///< xyz = emitted radiance in cd/m^2.
+  float4 CenterAndShape;           ///< xyz = centre in metres, w = xiiVolumetricMediumShape.
+  float4 Rotation;                 ///< Local-to-world unit quaternion (xyz, w).
+  float4 HalfExtentsAndAnisotropy; ///< xyz = half extents in metres, w = Henyey-Greenstein g.
+  float4 ScatteringAndPriority;    ///< xyz = scattering coefficient in m^-1.
+  float4 AbsorptionAndPadding;     ///< xyz = absorption coefficient in m^-1.
+  float4 EmissionAndPadding;       ///< xyz = emitted radiance in cd/m^2.
 };
 
 float3 RotateVolumetricVector(float3 vector, float4 quaternion)

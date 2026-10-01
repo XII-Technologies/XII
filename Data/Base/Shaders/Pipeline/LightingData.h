@@ -8,8 +8,8 @@ static const uint XII_LIGHT_TYPE_POINT       = 1u;
 static const uint XII_LIGHT_TYPE_SPOT        = 2u;
 static const uint XII_LIGHT_TYPE_RECTANGLE   = 3u;
 static const uint XII_LIGHT_TYPE_DISC        = 4u;
-static const uint XII_LIGHT_TYPE_SPHERE      = 5u;
-static const uint XII_LIGHT_TYPE_TUBE        = 6u;
+static const uint XII_LIGHT_TYPE_SPHERE        = 5u;
+static const uint XII_LIGHT_TYPE_TUBE          = 6u;
 static const uint XII_LIGHT_TYPE_EMISSIVE_MESH = 7u;
 
 struct xiiGpuLightData

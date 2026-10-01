@@ -11,22 +11,22 @@
 /// not depend on a particular schema layout or frame-sliced material-buffer offset.
 struct XII_SHADER_STRUCT xiiRayTracingMaterialData
 {
-  FLOAT4(BaseColorOpacity);             ///< xyz = linear base color, w = opacity.
-  FLOAT4(EmissiveColorAndRoughness);    ///< xyz = emitted radiance in nits, w = perceptual roughness.
-  FLOAT4(SurfaceParameters);            ///< x = metallic, y = dielectric specular, z = transmission, w = occlusion.
-  UINT4(Metadata);                      ///< x = material slot, y = stable object ID, z = shading model, w = feature flags.
-  UINT4(TextureIndices0);               ///< Base color, normal, metallic-roughness and occlusion bindless SRVs.
-  UINT4(TextureIndices1);               ///< Emissive, height, clear-coat and transmission bindless SRVs.
-  FLOAT4(LayerParameters);              ///< x = alpha cutoff, y = normal scale, z = clear coat, w = clear-coat roughness.
-  UINT4(Rendering);                     ///< x = effective alpha mode, y = blend mode, z = texture mask, w = reserved.
+  FLOAT4(BaseColorOpacity);          ///< xyz = linear base color, w = opacity.
+  FLOAT4(EmissiveColorAndRoughness); ///< xyz = emitted radiance in nits, w = perceptual roughness.
+  FLOAT4(SurfaceParameters);         ///< x = metallic, y = dielectric specular, z = transmission, w = occlusion.
+  UINT4(Metadata);                   ///< x = material slot, y = stable object ID, z = shading model, w = feature flags.
+  UINT4(TextureIndices0);            ///< Base color, normal, metallic-roughness and occlusion bindless SRVs.
+  UINT4(TextureIndices1);            ///< Emissive, height, clear-coat and transmission bindless SRVs.
+  FLOAT4(LayerParameters);           ///< x = alpha cutoff, y = normal scale, z = clear coat, w = clear-coat roughness.
+  UINT4(Rendering);                  ///< x = effective alpha mode, y = blend mode, z = texture mask, w = reserved.
 };
 
 /// Geometry addressing record parallel to xiiRayTracingMaterialData and indexed by
 /// HLSL InstanceIndex(). Buffer indices address the engine-wide bindless buffer SRV table.
 struct XII_SHADER_STRUCT xiiRayTracingGeometryData
 {
-  UINT4(BufferIndices); ///< x = vertex SRV, y = index SRV or invalid, z = index stride, w = normal stride.
-  UINT4(VertexLayout);  ///< x = vertex stride, y = position offset, z = normal offset or invalid, w = UV0 offset or invalid.
+  UINT4(BufferIndices);    ///< x = vertex SRV, y = index SRV or invalid, z = index stride, w = normal stride.
+  UINT4(VertexLayout);     ///< x = vertex stride, y = position offset, z = normal offset or invalid, w = UV0 offset or invalid.
   UINT4(VertexAttributes); ///< x = tangent offset or invalid, y = tangent stride, z = UV0 stride, w = reserved.
 };
 

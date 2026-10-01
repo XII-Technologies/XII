@@ -5,13 +5,13 @@
 #include <Shaders/Common/ShaderResourceMacros.h>
 
 #if XII_ENABLED(XII_SHADER_PLATFORM)
-static const uint XII_MAX_REFLECTION_PROBES = 64u;
+static const uint XII_MAX_REFLECTION_PROBES         = 64u;
 static const uint XII_REFLECTION_PROBE_SHAPE_SPHERE = 0u;
-static const uint XII_REFLECTION_PROBE_SHAPE_BOX = 1u;
+static const uint XII_REFLECTION_PROBE_SHAPE_BOX    = 1u;
 #else
-static constexpr xiiUInt32 XII_MAX_REFLECTION_PROBES = 64U;
+static constexpr xiiUInt32 XII_MAX_REFLECTION_PROBES         = 64U;
 static constexpr xiiUInt32 XII_REFLECTION_PROBE_SHAPE_SPHERE = 0U;
-static constexpr xiiUInt32 XII_REFLECTION_PROBE_SHAPE_BOX = 1U;
+static constexpr xiiUInt32 XII_REFLECTION_PROBE_SHAPE_BOX    = 1U;
 #endif
 
 /// GPU representation of one local reflection probe.
