@@ -619,6 +619,15 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     // Reconstruct the graph for this frame.
     pGraph->BeginSetup(uiFrameIndex);
 
+    // Publish virtual-shadow residency before the view builds its passes. Consumers
+    // can therefore declare proper render-graph reads and inherit the transfer
+    // dependency without reaching into the manager during execution.
+    const xiiVirtualShadowMapManager::UploadHandles virtualShadowHandles = xiiVirtualShadowMapManager::AddUploadPass(*pGraph, uiFrameIndex);
+    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowHandles.m_uiFrameBaseIndex);
+    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowHandles.m_uiPhysicalPageCount);
+    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowHandles.m_uiVirtualTableBaseIndex);
+    blackboard.Set(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, virtualShadowHandles.m_uiVirtualTableCapacity);
+
     const xiiView::RenderGraphBuilder& graphBuilder = viewDetail.m_pView->GetRenderGraphBuilder();
     if (graphBuilder.IsValid())
     {
@@ -630,8 +639,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       // Standard full-featured pipeline.
       viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard);
     }
-
-    XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::AddUploadPass(*pGraph, uiFrameIndex));
 
     pGraph->EndSetup();
 

@@ -8,6 +8,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
+#include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
@@ -709,10 +710,10 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
   auto pass = graph.AddPass<UploadPassData>(
     "Virtual Shadow Page Table Upload", xiiGALCommandQueueFlags::Transfer,
     [](UploadPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hPhysicalPageTable = builder.ImportBuffer("Virtual Shadow Physical Page Table", s_pState->m_pPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hPhysicalPageTable = builder.ImportBuffer(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageTable, s_pState->m_pPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
       data.m_hPhysicalPageTable = builder.WriteBuffer(data.m_hPhysicalPageTable, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hVirtualPageTable = builder.ImportBuffer("Virtual Shadow Hashed Page Table", s_pState->m_pVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hVirtualPageTable = builder.ImportBuffer(xiiRGBlackboardKeys::k_VirtualShadowPageTable, s_pState->m_pVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVirtualPageTable = builder.WriteBuffer(data.m_hVirtualPageTable, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(true);
