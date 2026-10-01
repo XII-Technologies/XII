@@ -63,14 +63,14 @@ class xiiRayTracingSceneManager::State
 public:
   void ClearScene()
   {
-    if (xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+    if (xiiGALBindlessResourceTable::IsInitialized())
     {
       for (GeometrySlot& geometry : m_Geometries)
       {
         if (geometry.m_hVertexBufferSRV.IsValid())
-          pBindlessTable->RetireBufferSRV(geometry.m_hVertexBufferSRV, m_uiLastFrameIndex);
+          xiiGALBindlessResourceTable::RetireBufferSRV(geometry.m_hVertexBufferSRV, m_uiLastFrameIndex);
         if (geometry.m_hIndexBufferSRV.IsValid())
-          pBindlessTable->RetireBufferSRV(geometry.m_hIndexBufferSRV, m_uiLastFrameIndex);
+          xiiGALBindlessResourceTable::RetireBufferSRV(geometry.m_hIndexBufferSRV, m_uiLastFrameIndex);
       }
     }
     m_Geometries.Clear();
@@ -481,12 +481,12 @@ void xiiRayTracingSceneManager::UnregisterGeometry(xiiRayTracingGeometryHandle h
   }
 
   GeometrySlot& slot = s_pState->m_Geometries[handle.m_uiIndex];
-  if (xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+  if (xiiGALBindlessResourceTable::IsInitialized())
   {
     if (slot.m_hVertexBufferSRV.IsValid())
-      pBindlessTable->RetireBufferSRV(slot.m_hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
+      xiiGALBindlessResourceTable::RetireBufferSRV(slot.m_hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
     if (slot.m_hIndexBufferSRV.IsValid())
-      pBindlessTable->RetireBufferSRV(slot.m_hIndexBufferSRV, s_pState->m_uiLastFrameIndex);
+      xiiGALBindlessResourceTable::RetireBufferSRV(slot.m_hIndexBufferSRV, s_pState->m_uiLastFrameIndex);
   }
   slot.m_pBottomLevelAS.Clear();
   slot.m_pScratchBuffer.Clear();
@@ -596,21 +596,20 @@ bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   if (pVertexBuffer == nullptr || (mesh->GetIndexCount() > 0U && pIndexBuffer == nullptr))
     return false;
 
-  xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton();
-  if (pBindlessTable == nullptr || !pBindlessTable->IsInitialized())
+  if (!xiiGALBindlessResourceTable::IsInitialized())
     return false;
 
-  const xiiGALBindlessResourceHandle hVertexBufferSRV = pBindlessTable->RegisterBufferSRV(pVertexBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  const xiiGALBindlessResourceHandle hVertexBufferSRV = xiiGALBindlessResourceTable::RegisterBufferSRV(pVertexBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   if (!hVertexBufferSRV.IsValid())
     return false;
 
   xiiGALBindlessResourceHandle hIndexBufferSRV;
   if (pIndexBuffer != nullptr)
   {
-    hIndexBufferSRV = pBindlessTable->RegisterBufferSRV(pIndexBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    hIndexBufferSRV = xiiGALBindlessResourceTable::RegisterBufferSRV(pIndexBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
     if (!hIndexBufferSRV.IsValid())
     {
-      pBindlessTable->RetireBufferSRV(hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
+      xiiGALBindlessResourceTable::RetireBufferSRV(hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
       return false;
     }
   }
@@ -630,18 +629,18 @@ bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (pDevice == nullptr)
   {
-    pBindlessTable->RetireBufferSRV(hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
+    xiiGALBindlessResourceTable::RetireBufferSRV(hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
     if (hIndexBufferSRV.IsValid())
-      pBindlessTable->RetireBufferSRV(hIndexBufferSRV, s_pState->m_uiLastFrameIndex);
+      xiiGALBindlessResourceTable::RetireBufferSRV(hIndexBufferSRV, s_pState->m_uiLastFrameIndex);
     return false;
   }
 
   xiiSharedPtr<xiiGALBottomLevelAS> pBottomLevelAS = pDevice->CreateBottomLevelAS(blasDescription);
   if (pBottomLevelAS == nullptr || pBottomLevelAS->GetScratchBufferSizeDescription().m_uiBuild == 0U)
   {
-    pBindlessTable->RetireBufferSRV(hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
+    xiiGALBindlessResourceTable::RetireBufferSRV(hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
     if (hIndexBufferSRV.IsValid())
-      pBindlessTable->RetireBufferSRV(hIndexBufferSRV, s_pState->m_uiLastFrameIndex);
+      xiiGALBindlessResourceTable::RetireBufferSRV(hIndexBufferSRV, s_pState->m_uiLastFrameIndex);
     return false;
   }
 
@@ -654,9 +653,9 @@ bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   xiiSharedPtr<xiiGALBuffer> pScratchBuffer = pDevice->CreateBuffer(scratchDescription);
   if (pScratchBuffer == nullptr)
   {
-    pBindlessTable->RetireBufferSRV(hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
+    xiiGALBindlessResourceTable::RetireBufferSRV(hVertexBufferSRV, s_pState->m_uiLastFrameIndex);
     if (hIndexBufferSRV.IsValid())
-      pBindlessTable->RetireBufferSRV(hIndexBufferSRV, s_pState->m_uiLastFrameIndex);
+      xiiGALBindlessResourceTable::RetireBufferSRV(hIndexBufferSRV, s_pState->m_uiLastFrameIndex);
     return false;
   }
 

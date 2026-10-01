@@ -1992,10 +1992,10 @@ void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xii
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTShadowOut", context.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
-      if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+      if (xiiGALBindlessResourceTable::IsInitialized())
       {
-        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
-        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
+        xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
+        xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
@@ -3162,10 +3162,10 @@ void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOccl
       cmd.ResolveAndSetUnorderedAccessTextureView("g_AOOut", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
-      if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+      if (xiiGALBindlessResourceTable::IsInitialized())
       {
-        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
-        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
+        xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
+        xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
@@ -3752,10 +3752,10 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
       const xiiBitflags<xiiGALShaderType> hitStages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
-      if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+      if (xiiGALBindlessResourceTable::IsInitialized())
       {
-        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", hitStages);
-        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", hitStages);
+        xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_RayTracingBuffers", hitStages);
+        xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_RayTracingTextures", hitStages);
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
@@ -4134,10 +4134,10 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
       const xiiBitflags<xiiGALShaderType> hitStages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
-      if (const xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
+      if (xiiGALBindlessResourceTable::IsInitialized())
       {
-        pBindlessTable->BindBufferSRVs(cmd, "g_RayTracingBuffers", hitStages);
-        pBindlessTable->BindTextureSRVs(cmd, "g_RayTracingTextures", hitStages);
+        xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_RayTracingBuffers", hitStages);
+        xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_RayTracingTextures", hitStages);
       }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 

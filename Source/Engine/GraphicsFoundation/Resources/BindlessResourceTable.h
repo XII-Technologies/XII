@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Resources/BindlessResource.h>
 #include <GraphicsFoundation/Resources/BufferView.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -44,75 +44,56 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBindlessResourceT
 /// are emitted by descriptor-indexing backends.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBindlessResourceTable
 {
-  XII_DECLARE_SINGLETON(xiiGALBindlessResourceTable);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGALBindlessResourceTable);
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsFoundation, BindlessResourceTable);
 
 public:
-  xiiGALBindlessResourceTable();
-  ~xiiGALBindlessResourceTable();
+  xiiGALBindlessResourceTable() = delete;
 
   /// Rebuilds empty descriptor tables with a new capacity policy.
   /// Reconfiguration is rejected while live or retired handles still occupy slots.
-  [[nodiscard]] xiiResult                                     Configure(const xiiGALBindlessResourceTableDescription& description);
-  [[nodiscard]] const xiiGALBindlessResourceTableDescription& GetConfiguration() const { return m_Description; }
-  [[nodiscard]] bool                                          IsInitialized() const { return m_bInitialized; }
+  [[nodiscard]] static xiiResult                                     Configure(const xiiGALBindlessResourceTableDescription& description);
+  [[nodiscard]] static const xiiGALBindlessResourceTableDescription& GetConfiguration();
+  [[nodiscard]] static bool                                          IsInitialized();
 
-  void Clear();
+  static void Clear();
 
-  [[nodiscard]] xiiGALBindlessResourceHandle RegisterBufferSRV(xiiSharedPtr<xiiGALBufferView> pView);
-  [[nodiscard]] xiiGALBindlessResourceHandle RegisterBufferUAV(xiiSharedPtr<xiiGALBufferView> pView);
-  [[nodiscard]] xiiGALBindlessResourceHandle RegisterTextureSRV(xiiSharedPtr<xiiGALTextureView> pView);
-  [[nodiscard]] xiiGALBindlessResourceHandle RegisterTextureUAV(xiiSharedPtr<xiiGALTextureView> pView);
-  [[nodiscard]] xiiGALBindlessResourceHandle RegisterSampler(xiiSharedPtr<xiiGALSampler> pSampler);
+  [[nodiscard]] static xiiGALBindlessResourceHandle RegisterBufferSRV(xiiSharedPtr<xiiGALBufferView> pView);
+  [[nodiscard]] static xiiGALBindlessResourceHandle RegisterBufferUAV(xiiSharedPtr<xiiGALBufferView> pView);
+  [[nodiscard]] static xiiGALBindlessResourceHandle RegisterTextureSRV(xiiSharedPtr<xiiGALTextureView> pView);
+  [[nodiscard]] static xiiGALBindlessResourceHandle RegisterTextureUAV(xiiSharedPtr<xiiGALTextureView> pView);
+  [[nodiscard]] static xiiGALBindlessResourceHandle RegisterSampler(xiiSharedPtr<xiiGALSampler> pSampler);
 
-  bool UpdateBufferSRV(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALBufferView> pView);
-  bool UpdateBufferUAV(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALBufferView> pView);
-  bool UpdateTextureSRV(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALTextureView> pView);
-  bool UpdateTextureUAV(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALTextureView> pView);
-  bool UpdateSampler(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALSampler> pSampler);
+  static bool UpdateBufferSRV(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALBufferView> pView);
+  static bool UpdateBufferUAV(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALBufferView> pView);
+  static bool UpdateTextureSRV(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALTextureView> pView);
+  static bool UpdateTextureUAV(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALTextureView> pView);
+  static bool UpdateSampler(xiiGALBindlessResourceHandle handle, xiiSharedPtr<xiiGALSampler> pSampler);
 
-  bool RetireBufferSRV(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
-  bool RetireBufferUAV(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
-  bool RetireTextureSRV(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
-  bool RetireTextureUAV(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
-  bool RetireSampler(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
+  static bool RetireBufferSRV(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
+  static bool RetireBufferUAV(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
+  static bool RetireTextureSRV(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
+  static bool RetireTextureUAV(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
+  static bool RetireSampler(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFenceValue);
 
-  void Collect(xiiUInt64 uiCompletedFenceValue);
+  static void Collect(xiiUInt64 uiCompletedFenceValue);
 
-  void BindBufferSRVs(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown) const;
-  void BindBufferUAVs(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown) const;
-  void BindTextureSRVs(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown) const;
-  void BindTextureUAVs(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown) const;
-  void BindSamplers(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown) const;
+  static void BindBufferSRVs(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown);
+  static void BindBufferUAVs(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown);
+  static void BindTextureSRVs(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown);
+  static void BindTextureUAVs(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown);
+  static void BindSamplers(xiiGALCommandList& commandList, const xiiTempHashedString& sResourceName, xiiBitflags<xiiGALShaderType> stages = xiiGALShaderType::Unknown);
 
-  [[nodiscard]] xiiGALBindlessResourceTableStats GetStats() const;
+  [[nodiscard]] static xiiGALBindlessResourceTableStats GetStats();
 
 private:
-  void Initialize(const xiiGALBindlessResourceTableDescription& description);
+  class State;
 
-  template <typename TObject>
-  struct TableStorage
-  {
-    xiiGALBindlessResourceAllocator        m_Allocator;
-    xiiDynamicArray<xiiSharedPtr<TObject>> m_Objects;
-    xiiDynamicArray<xiiUInt64>             m_RetireFences;
-  };
+  static void Startup();
+  static void EngineStartup();
+  static void EngineShutdown();
+  static void Shutdown();
+  static void Initialize(const xiiGALBindlessResourceTableDescription& description);
 
-  template <typename TObject>
-  static xiiGALBindlessResourceHandle Register(TableStorage<TObject>& table, xiiSharedPtr<TObject> pObject);
-  template <typename TObject>
-  static bool Update(TableStorage<TObject>& table, xiiGALBindlessResourceHandle handle, xiiSharedPtr<TObject> pObject);
-  template <typename TObject>
-  static bool Retire(TableStorage<TObject>& table, xiiGALBindlessResourceHandle handle, xiiUInt64 uiFenceValue);
-  template <typename TObject>
-  static void Collect(TableStorage<TObject>& table, xiiUInt64 uiCompletedFenceValue);
-
-  mutable xiiMutex                       m_Mutex;
-  TableStorage<xiiGALBufferView>         m_BufferSRVs;
-  TableStorage<xiiGALBufferView>         m_BufferUAVs;
-  TableStorage<xiiGALTextureView>        m_TextureSRVs;
-  TableStorage<xiiGALTextureView>        m_TextureUAVs;
-  TableStorage<xiiGALSampler>            m_Samplers;
-  xiiGALBindlessResourceTableDescription m_Description;
-  bool                                   m_bInitialized = false;
+  static xiiUniquePtr<State> s_pState;
 };

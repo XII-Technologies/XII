@@ -54,7 +54,6 @@ public:
   [[nodiscard]] const xiiSceneDatabase&       GetScene() const { return m_SceneContext.GetDatabase(); }
   [[nodiscard]] xiiSceneDatabaseContextHandle GetSceneHandle() const { return m_SceneContext.GetHandle(); }
   [[nodiscard]] xiiSceneSpatialHierarchy&     GetSpatialHierarchy() { return m_SpatialHierarchy; }
-  [[nodiscard]] xiiGALBindlessResourceTable&  GetBindlessResources() { return *xiiGALBindlessResourceTable::GetSingleton(); }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
   [[nodiscard]] xiiUInt32                     GetMaterialFrameBase(xiiUInt64 uiFrameIndex) const;
 

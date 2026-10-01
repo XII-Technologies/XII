@@ -580,8 +580,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (uiFrameIndex > uiFramesInFlight)
     m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
   const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
-  if (xiiGALBindlessResourceTable* pBindlessTable = xiiGALBindlessResourceTable::GetSingleton())
-    pBindlessTable->Collect(uiCompletedFrame);
+  if (xiiGALBindlessResourceTable::IsInitialized())
+    xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   if (xiiMaterialManager::IsInitialized())
     xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   if (xiiGeometryResidencyManager::IsInitialized())

@@ -38,7 +38,7 @@ namespace
   template <typename ResourceType, typename ResourceHandle>
   xiiUInt32 ResolveBindlessTexture(
     xiiHashTable<ResourceHandle, MaterialTextureBindingCacheEntry<ResourceHandle>>& cache,
-    const ResourceHandle& hTexture, xiiUInt64 uiFrameIndex, xiiGALBindlessResourceTable& table)
+    const ResourceHandle& hTexture, xiiUInt64 uiFrameIndex)
   {
     if (!hTexture.IsValid())
       return xiiInvalidIndex;
@@ -60,7 +60,7 @@ namespace
     {
       MaterialTextureBindingCacheEntry<ResourceHandle> entry;
       entry.m_pView                 = pView;
-      entry.m_hBindless             = table.RegisterTextureSRV(pView);
+      entry.m_hBindless             = xiiGALBindlessResourceTable::RegisterTextureSRV(pView);
       entry.m_uiLastReferencedFrame = uiFrameIndex;
       if (!entry.m_hBindless.IsValid())
         return xiiInvalidIndex;
@@ -72,10 +72,10 @@ namespace
     {
       // Descriptor contents may still be read by an older frame. Allocate a fresh slot for the
       // streamed view and defer reuse of the old index instead of mutating it in place.
-      const xiiGALBindlessResourceHandle hReplacement = table.RegisterTextureSRV(pView);
+      const xiiGALBindlessResourceHandle hReplacement = xiiGALBindlessResourceTable::RegisterTextureSRV(pView);
       if (hReplacement.IsValid())
       {
-        table.RetireTextureSRV(pEntry->m_hBindless, uiFrameIndex);
+        xiiGALBindlessResourceTable::RetireTextureSRV(pEntry->m_hBindless, uiFrameIndex);
         pEntry->m_pView     = pView;
         pEntry->m_hBindless = hReplacement;
       }
@@ -88,7 +88,7 @@ namespace
   template <typename ResourceHandle>
   void RetireUnreferencedTextures(
     xiiHashTable<ResourceHandle, MaterialTextureBindingCacheEntry<ResourceHandle>>& cache,
-    xiiUInt64 uiFrameIndex, xiiGALBindlessResourceTable& table)
+    xiiUInt64 uiFrameIndex)
   {
     for (auto it = cache.GetIterator(); it.IsValid();)
     {
@@ -98,7 +98,7 @@ namespace
         continue;
       }
 
-      table.RetireTextureSRV(it.Value().m_hBindless, uiFrameIndex);
+      xiiGALBindlessResourceTable::RetireTextureSRV(it.Value().m_hBindless, uiFrameIndex);
       it = cache.Remove(it);
     }
   }
@@ -106,10 +106,10 @@ namespace
   template <typename ResourceHandle>
   void RetireAllTextures(
     xiiHashTable<ResourceHandle, MaterialTextureBindingCacheEntry<ResourceHandle>>& cache,
-    xiiUInt64 uiFrameIndex, xiiGALBindlessResourceTable& table)
+    xiiUInt64 uiFrameIndex)
   {
     for (auto it = cache.GetIterator(); it.IsValid(); ++it)
-      table.RetireTextureSRV(it.Value().m_hBindless, uiFrameIndex);
+      xiiGALBindlessResourceTable::RetireTextureSRV(it.Value().m_hBindless, uiFrameIndex);
     cache.Clear();
   }
 } // namespace
@@ -181,7 +181,7 @@ void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before BeginFrame().");
   s_pState->m_uiFrameIndex = uiFrameIndex;
 
-  if (xiiGALBindlessResourceTable* pTable = xiiGALBindlessResourceTable::GetSingleton(); pTable != nullptr && pTable->IsInitialized())
+  if (xiiGALBindlessResourceTable::IsInitialized())
   {
     xiiDynamicArray<xiiSharedPtr<xiiMaterialInstance>> materials;
     s_pState->m_pSystem->GetGpuStorage().GetActiveMaterials(materials);
@@ -207,21 +207,21 @@ void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
         {
           if (!binding.m_hTexture2D.IsValid())
             continue; // No resource handle means an explicitly assigned descriptor is caller-owned.
-          uiBindlessIndex = ResolveBindlessTexture<xiiTexture2DResource>(s_pState->m_Texture2DCache, binding.m_hTexture2D, uiFrameIndex, *pTable);
+          uiBindlessIndex = ResolveBindlessTexture<xiiTexture2DResource>(s_pState->m_Texture2DCache, binding.m_hTexture2D, uiFrameIndex);
         }
         else if (definition.m_TextureType == xiiGALShaderTextureType::TextureCube || definition.m_TextureType == xiiGALShaderTextureType::TextureCubeArray)
         {
           if (!binding.m_hTextureCube.IsValid())
             continue;
-          uiBindlessIndex = ResolveBindlessTexture<xiiTextureCubeResource>(s_pState->m_TextureCubeCache, binding.m_hTextureCube, uiFrameIndex, *pTable);
+          uiBindlessIndex = ResolveBindlessTexture<xiiTextureCubeResource>(s_pState->m_TextureCubeCache, binding.m_hTextureCube, uiFrameIndex);
         }
 
         pMaterial->SetBindlessIndex(binding.m_Id, uiBindlessIndex).IgnoreResult();
       }
     }
 
-    RetireUnreferencedTextures(s_pState->m_Texture2DCache, uiFrameIndex, *pTable);
-    RetireUnreferencedTextures(s_pState->m_TextureCubeCache, uiFrameIndex, *pTable);
+    RetireUnreferencedTextures(s_pState->m_Texture2DCache, uiFrameIndex);
+    RetireUnreferencedTextures(s_pState->m_TextureCubeCache, uiFrameIndex);
   }
 
   s_pState->m_pSystem->BeginFrame(uiFrameIndex, uiCompletedFrame);
@@ -280,10 +280,10 @@ void xiiMaterialManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
-  if (xiiGALBindlessResourceTable* pTable = xiiGALBindlessResourceTable::GetSingleton(); pTable != nullptr && pTable->IsInitialized())
+  if (xiiGALBindlessResourceTable::IsInitialized())
   {
-    RetireAllTextures(s_pState->m_Texture2DCache, s_pState->m_uiFrameIndex, *pTable);
-    RetireAllTextures(s_pState->m_TextureCubeCache, s_pState->m_uiFrameIndex, *pTable);
+    RetireAllTextures(s_pState->m_Texture2DCache, s_pState->m_uiFrameIndex);
+    RetireAllTextures(s_pState->m_TextureCubeCache, s_pState->m_uiFrameIndex);
   }
   else
   {

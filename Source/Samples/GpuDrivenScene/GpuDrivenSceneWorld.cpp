@@ -47,13 +47,12 @@ namespace
 
 xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration)
 {
-  xiiGALBindlessResourceTable* pBindlessResources = xiiGALBindlessResourceTable::GetSingleton();
-  if (pBindlessResources == nullptr)
+  if (!xiiGALBindlessResourceTable::IsInitialized())
     return XII_FAILURE;
 
   xiiGALBindlessResourceTableDescription bindlessDescription;
   bindlessDescription.m_uiBufferSRVCapacity = 256U;
-  XII_SUCCEED_OR_RETURN(pBindlessResources->Configure(bindlessDescription));
+  XII_SUCCEED_OR_RETURN(xiiGALBindlessResourceTable::Configure(bindlessDescription));
 
   xiiGeometryResidencyDescription geometryDescription;
   geometryDescription.m_uiMaxGeometries             = 64U;
@@ -100,14 +99,14 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
   for (GeometryAsset& asset : m_GeometryAssets)
   {
     for (xiiGALBindlessResourceHandle handle : asset.m_BindlessBuffers)
-      GetBindlessResources().RetireBufferSRV(handle, uiLastSubmittedFrame);
+      xiiGALBindlessResourceTable::RetireBufferSRV(handle, uiLastSubmittedFrame);
     xiiGeometryResidencyManager::UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
     xiiRayTracingSceneManager::UnregisterGeometry(asset.m_hRayTracingGeometry);
   }
   for (xiiMaterialGpuHandle handle : m_Materials)
     xiiMaterialManager::UnregisterMaterial(handle);
 
-  GetBindlessResources().Collect(uiLastSubmittedFrame);
+  xiiGALBindlessResourceTable::Collect(uiLastSubmittedFrame);
   m_SpatialHierarchy.Clear();
   m_GeometryAssets.Clear();
   m_Materials.Clear();
@@ -237,11 +236,11 @@ xiiResult xiiGpuDrivenSceneWorld::RegisterGeometryBuffers(GeometryAsset& asset)
       return XII_FAILURE;
 
     xiiGALBindlessResourceHandle handles[5] = {
-      GetBindlessResources().RegisterBufferSRV(mesh->GetVertexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      GetBindlessResources().RegisterBufferSRV(mesh->GetIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletVertexRemapBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      GetBindlessResources().RegisterBufferSRV(mesh->GetMeshletPrimitiveIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetVertexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletVertexRemapBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
+      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletPrimitiveIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
     };
     for (const xiiGALBindlessResourceHandle handle : handles)
     {

@@ -720,7 +720,7 @@ private:
     commandList.ResolveAndSetShaderResourceBufferView("g_VisibleMeshletCount", context.GetBuffer(data.m_hVisibleMeshletCount)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_MaterialData", context.GetBuffer(data.m_hMaterials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
     commandList.ResolveAndSetShaderResourceTextureView("g_ShadowMap", context.GetTexture(data.m_hShadowMap)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
-    m_World.GetBindlessResources().BindBufferSRVs(commandList, "g_Buffers", xiiGALShaderType::Mesh);
+    xiiGALBindlessResourceTable::BindBufferSRVs(commandList, "g_Buffers", xiiGALShaderType::Mesh);
     commandList.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess();
     commandList.DrawMeshIndirect({context.GetBuffer(data.m_hIndirectCommands), 1U, 0U, xiiGALStateTransitionMode::None, context.GetBuffer(data.m_hIndirectCommandCount)});
     commandList.EndRenderPass();
