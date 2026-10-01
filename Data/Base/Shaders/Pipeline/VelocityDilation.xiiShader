@@ -1,0 +1,57 @@
+// XII Engine - VelocityDilation.xiiShader
+// Expands foreground motion into adjacent disocclusion pixels so temporal
+// reconstruction and denoisers reject stale history at moving silhouettes.
+// Dispatch: ceil(W/8) x ceil(H/8) x 1.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+Texture2D<float2>   g_VelocityInput;
+Texture2D<float>    g_SceneDepth;
+RWTexture2D<float2> g_VelocityOutput;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+    uint width;
+    uint height;
+    g_VelocityOutput.GetDimensions(width, height);
+
+    if (dispatchThreadID.x >= width || dispatchThreadID.y >= height)
+        return;
+
+    const int2 pixel        = int2(dispatchThreadID.xy);
+    const int2 maxPixel     = int2(width, height) - 1;
+    float      bestDepth    = -1.0f;
+    float      bestSpeed    = -1.0f;
+    float2     bestVelocity = 0.0f;
+
+    // XII uses reversed-Z, therefore the largest device depth identifies the
+    // closest surface. Equal-depth samples prefer greater motion so thin
+    // moving silhouettes remain conservative under quantization.
+    [unroll]
+    for (int y = -1; y <= 1; ++y)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; ++x)
+        {
+            const int2   samplePixel    = clamp(pixel + int2(x, y), int2(0, 0), maxPixel);
+            const float  sampleDepth    = g_SceneDepth.Load(int3(samplePixel, 0));
+            const float2 sampleVelocity = g_VelocityInput.Load(int3(samplePixel, 0));
+            const float  sampleSpeed    = dot(sampleVelocity, sampleVelocity);
+
+            if (sampleDepth > bestDepth || (sampleDepth == bestDepth && sampleSpeed > bestSpeed))
+            {
+                bestDepth    = sampleDepth;
+                bestSpeed    = sampleSpeed;
+                bestVelocity = sampleVelocity;
+            }
+        }
+    }
+
+    g_VelocityOutput[dispatchThreadID.xy] = bestVelocity;
+}
