@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Vec3.h>
+#include <Foundation/Math/Quat.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
@@ -45,6 +46,7 @@ struct XII_GRAPHICSCORE_DLL xiiVolumetricMediumDescription
 {
   xiiEnum<xiiVolumetricMediumShape> m_Shape = xiiVolumetricMediumShape::Box;
   xiiVec3                           m_vCenter = xiiVec3::MakeZero();
+  xiiQuat                           m_qRotation = xiiQuat::MakeIdentity();
   xiiVec3                           m_vHalfExtents = xiiVec3(1.0f);
   xiiVec3                           m_vScattering = xiiVec3(0.08f);
   xiiVec3                           m_vAbsorption = xiiVec3(0.02f);
@@ -73,13 +75,14 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVolumetricMedium
   XII_DECLARE_POD_TYPE();
 
   xiiVec4 m_vCenterAndShape;
+  xiiVec4 m_vRotation;
   xiiVec4 m_vHalfExtentsAndAnisotropy;
   xiiVec4 m_vScatteringAndPriority;
   xiiVec4 m_vAbsorptionAndPadding;
   xiiVec4 m_vEmissionAndPadding;
 };
 
-static_assert(sizeof(xiiGpuVolumetricMedium) == 80U);
+static_assert(sizeof(xiiGpuVolumetricMedium) == 96U);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVolumetricMedium);
 
 using xiiGpuVolumetricMediumArray = xiiDynamicArray<xiiGpuVolumetricMedium, xiiAlignedAllocatorWrapper>;

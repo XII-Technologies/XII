@@ -42,7 +42,9 @@ void main(uint3 tid : SV_DispatchThreadID)
     for (uint mediumIndex = 0u; mediumIndex < ActiveMediumCount; ++mediumIndex)
     {
         const xiiGpuVolumetricMedium medium = g_VolumetricMedia[mediumIndex];
-        const float3 normalizedPosition = (worldPos - medium.CenterAndShape.xyz) / max(medium.HalfExtentsAndAnisotropy.xyz, 1e-4f.xxx);
+        const float4 inverseRotation = float4(-medium.Rotation.xyz, medium.Rotation.w);
+        const float3 localPosition = RotateVolumetricVector(worldPos - medium.CenterAndShape.xyz, inverseRotation);
+        const float3 normalizedPosition = localPosition / max(medium.HalfExtentsAndAnisotropy.xyz, float3(1e-4f, 1e-4f, 1e-4f));
         const float3 absolutePosition = abs(normalizedPosition);
         const float shapeDistance = medium.CenterAndShape.w < 0.5f ? length(normalizedPosition) : max(absolutePosition.x, max(absolutePosition.y, absolutePosition.z));
         const float influence = 1.0f - smoothstep(0.9f, 1.0f, shapeDistance);

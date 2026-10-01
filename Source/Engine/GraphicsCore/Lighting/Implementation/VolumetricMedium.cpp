@@ -21,7 +21,7 @@ namespace
 
   bool IsDescriptionValid(const xiiVolumetricMediumDescription& description)
   {
-    return description.m_vCenter.IsValid() && description.m_vHalfExtents.IsValid() &&
+    return description.m_vCenter.IsValid() && description.m_qRotation.IsValid() && description.m_vHalfExtents.IsValid() &&
       description.m_vHalfExtents.x > 0.0f && description.m_vHalfExtents.y > 0.0f && description.m_vHalfExtents.z > 0.0f &&
       IsFiniteNonNegative(description.m_vScattering) && IsFiniteNonNegative(description.m_vAbsorption) && IsFiniteNonNegative(description.m_vEmission) &&
       xiiMath::IsFinite(description.m_fAnisotropy) && description.m_fAnisotropy > -1.0f && description.m_fAnisotropy < 1.0f;
@@ -103,6 +103,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVolumetricMediumDescription, xiiNoBase, 1, xi
   {
     XII_ENUM_MEMBER_PROPERTY("Shape", xiiVolumetricMediumShape, m_Shape),
     XII_MEMBER_PROPERTY("Center", m_vCenter),
+    XII_MEMBER_PROPERTY("Rotation", m_qRotation),
     XII_MEMBER_PROPERTY("HalfExtents", m_vHalfExtents)->AddAttributes(new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("Scattering", m_vScattering)->AddAttributes(new xiiSuffixAttribute(" m^-1")),
     XII_MEMBER_PROPERTY("Absorption", m_vAbsorption)->AddAttributes(new xiiSuffixAttribute(" m^-1")),
@@ -133,6 +134,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVolumetricMedium, xiiNoBase, 1, xiiRTTIDef
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("CenterAndShape", m_vCenterAndShape),
+    XII_MEMBER_PROPERTY("Rotation", m_vRotation),
     XII_MEMBER_PROPERTY("HalfExtentsAndAnisotropy", m_vHalfExtentsAndAnisotropy),
     XII_MEMBER_PROPERTY("ScatteringAndPriority", m_vScatteringAndPriority),
     XII_MEMBER_PROPERTY("AbsorptionAndPadding", m_vAbsorptionAndPadding),
@@ -175,8 +177,18 @@ bool xiiVolumetricMediumManager::State::InsertSlotIntoCells(xiiUInt32 uiSlot)
 {
   auto&       slot      = m_Slots[uiSlot];
   const float fCellSize = m_Settings.m_fCellSizeMeters;
-  const xiiVec3 vMinimum = slot.m_Description.m_vCenter - slot.m_Description.m_vHalfExtents;
-  const xiiVec3 vMaximum = slot.m_Description.m_vCenter + slot.m_Description.m_vHalfExtents;
+  xiiVec3 vWorldHalfExtents = xiiVec3::MakeZero();
+  for (xiiUInt32 uiCorner = 0U; uiCorner < 8U; ++uiCorner)
+  {
+    const xiiVec3 vCorner(
+      (uiCorner & XII_BIT(0)) != 0U ? slot.m_Description.m_vHalfExtents.x : -slot.m_Description.m_vHalfExtents.x,
+      (uiCorner & XII_BIT(1)) != 0U ? slot.m_Description.m_vHalfExtents.y : -slot.m_Description.m_vHalfExtents.y,
+      (uiCorner & XII_BIT(2)) != 0U ? slot.m_Description.m_vHalfExtents.z : -slot.m_Description.m_vHalfExtents.z);
+    vWorldHalfExtents = vWorldHalfExtents.CompMax((slot.m_Description.m_qRotation * vCorner).Abs());
+  }
+
+  const xiiVec3 vMinimum = slot.m_Description.m_vCenter - vWorldHalfExtents;
+  const xiiVec3 vMaximum = slot.m_Description.m_vCenter + vWorldHalfExtents;
   const xiiVec3I32 vMinimumCell(static_cast<xiiInt32>(xiiMath::Floor(vMinimum.x / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor(vMinimum.y / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor(vMinimum.z / fCellSize)));
   const xiiVec3I32 vMaximumCell(static_cast<xiiInt32>(xiiMath::Floor(vMaximum.x / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor(vMaximum.y / fCellSize)), static_cast<xiiInt32>(xiiMath::Floor(vMaximum.z / fCellSize)));
   const xiiUInt64 uiCellCount = static_cast<xiiUInt64>(vMaximumCell.x - vMinimumCell.x + 1) * static_cast<xiiUInt64>(vMaximumCell.y - vMinimumCell.y + 1) * static_cast<xiiUInt64>(vMaximumCell.z - vMinimumCell.z + 1);
@@ -376,6 +388,7 @@ void xiiVolumetricMediumManager::GatherGpuMedia(const xiiVec3& vViewPosition, xi
     const auto& description = s_pState->m_Slots[candidates[i].m_uiSlot].m_Description;
     auto& gpu = out_media[i];
     gpu.m_vCenterAndShape             = xiiVec4(description.m_vCenter, static_cast<float>(description.m_Shape.GetValue()));
+    gpu.m_vRotation                   = xiiVec4(description.m_qRotation.GetVectorPart(), description.m_qRotation.w);
     gpu.m_vHalfExtentsAndAnisotropy  = xiiVec4(description.m_vHalfExtents, description.m_fAnisotropy);
     gpu.m_vScatteringAndPriority     = xiiVec4(description.m_vScattering, static_cast<float>(description.m_iPriority));
     gpu.m_vAbsorptionAndPadding      = xiiVec4(description.m_vAbsorption, 0.0f);
