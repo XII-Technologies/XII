@@ -2,13 +2,21 @@
 // Apply Bruneton-style sky radiance and finite-distance aerial perspective to the completed HDR scene.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 
-Texture2D<float>  g_SceneDepth     : register(t0);
-Texture2D<float4> g_Transmittance  : register(t1); // precomputed LUT
-Texture2D<float4> g_MultiScatter   : register(t2); // 32×32 fms LUT
-RWTexture2D<float4> g_HDRScene     : register(u0);
+Texture2D<float>    g_SceneDepth;
+Texture2D<float4>   g_Transmittance; // precomputed LUT
+Texture2D<float4>   g_MultiScatter;  // 32x32 fms LUT
+RWTexture2D<float4> g_HDRScene;
 
 // Sample the transmittance LUT for a given camera height and sun zenith.
 float3 SampleTransmittance(float heightKm, float cosZenith)
@@ -16,7 +24,7 @@ float3 SampleTransmittance(float heightKm, float cosZenith)
     float2 uv = float2(
         saturate((heightKm - PlanetAtmosphereRadiiScaleHeights.x) / (PlanetAtmosphereRadiiScaleHeights.y - PlanetAtmosphereRadiiScaleHeights.x)),
         saturate(cosZenith * 0.5f + 0.5f));
-    return g_Transmittance.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+    return g_Transmittance.SampleLevel(LinearClampSampler, uv, 0).rgb;
 }
 
 // Rayleigh phase.
@@ -38,13 +46,13 @@ float DistanceToAtmosphereExit(float heightKm, float cosViewZenith)
 }
 
 [numthreads(8, 8, 1)]
-void CS_AtmosphereComposite(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims; g_HDRScene.GetDimensions(dims.x, dims.y);
     if (any(tid.xy >= dims)) return;
 
     float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
-    float  depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    float  depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0);
 
     const bool isSky = depth <= 1e-7f;
     const float3 cameraPosition = g_CameraPositionAndNearPlane.xyz;
@@ -83,7 +91,7 @@ void CS_AtmosphereComposite(uint3 tid : SV_DispatchThreadID)
     // Sample multi-scatter LUT for approximate higher-order scatter.
     float2 msUV   = float2(saturate(cosSunZenith * 0.5f + 0.5f),
                            saturate((cameraHeightKm - PlanetAtmosphereRadiiScaleHeights.x) / (PlanetAtmosphereRadiiScaleHeights.y - PlanetAtmosphereRadiiScaleHeights.x)));
-    float3 ms     = g_MultiScatter.SampleLevel(g_sLinearClamp, msUV, 0).rgb;
+    float3 ms     = g_MultiScatter.SampleLevel(LinearClampSampler, msUV, 0).rgb;
     sky          += ms * solarIlluminance * pathLengthKm * viewTransmittance;
 
     float4 existing = g_HDRScene[tid.xy];

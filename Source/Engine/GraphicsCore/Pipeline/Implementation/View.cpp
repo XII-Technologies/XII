@@ -2731,6 +2731,8 @@ struct xiiAtmosphereTransmittanceData
 
 void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hCache = m_ViewPassResources.m_LightingPrepPasses.m_hAtmosphereLUT;
   if (!data.m_hCache.IsValid())
   {
@@ -2738,7 +2740,8 @@ void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data,
   }
   XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources(data.m_hCache).Succeeded(), "Atmosphere LUT resources are unavailable.");
   data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
-  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiAtmosphereManager::GetTransmittanceLUT(data.m_hCache), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  xiiSharedPtr<xiiGALTexture> pTransmittanceLUT = xiiAtmosphereManager::GetTransmittanceLUT(data.m_hCache);
+  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, pTransmittanceLUT, pTransmittanceLUT->GetResourceState());
 
   if (data.m_bNeedsGeneration)
   {
@@ -2787,6 +2790,8 @@ struct xiiAtmosphereMultiScatterData
 
 void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hCache = m_ViewPassResources.m_LightingPrepPasses.m_hAtmosphereLUT;
   if (!data.m_hCache.IsValid())
   {
@@ -2795,7 +2800,8 @@ void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, x
   XII_VERIFY(xiiAtmosphereManager::EnsureGpuResources(data.m_hCache).Succeeded(), "Atmosphere LUT resources are unavailable.");
   data.m_bNeedsGeneration = xiiAtmosphereManager::IsGenerationPending(data.m_hCache);
   data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiAtmosphereManager::GetMultiScatterLUT(data.m_hCache), data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  xiiSharedPtr<xiiGALTexture> pMultiScatterLUT = xiiAtmosphereManager::GetMultiScatterLUT(data.m_hCache);
+  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, pMultiScatterLUT, pMultiScatterLUT->GetResourceState());
 
   if (data.m_bNeedsGeneration)
   {
@@ -2839,10 +2845,14 @@ struct xiiSkyIrradianceConvolutionData
   xiiRenderGraphTextureHandle m_hTransmittanceLUT; ///< ShaderResource in (atmosphere transmittance LUT).
   xiiRenderGraphTextureHandle m_hMultiScatterLUT;  ///< ShaderResource in (atmosphere multi-scatter LUT).
   xiiRenderGraphTextureHandle m_hSkyRadiance;      ///< UnorderedAccess out (sky radiance texture used by later lighting passes).
+  xiiRenderGraphBufferHandle  m_hConstants;        ///< Physical atmosphere parameters.
+  xiiAtmosphereConstants      m_Constants;
 };
 
 void xiiView::SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
   data.m_hMultiScatterLUT  = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiGALResourceStateFlags::ShaderResource);
 
@@ -2855,8 +2865,10 @@ void xiiView::SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& dat
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hSkyRadiance       = builder.WriteTexture(xiiRGBlackboardKeys::k_SkyRadiance, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hConstants         = CreateAtmosphereConstantsBuffer(builder, "SkyRadianceConstants");
+  data.m_Constants          = MakeAtmosphereConstants(m_ViewPassResources.m_LightingPrepPasses.m_hAtmosphereLUT);
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pSkyIrradiancePipeline, "Shaders/Pipeline/ReflectionIrradiance.xiiShader");
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pSkyIrradiancePipeline, "Shaders/Pipeline/SkyRadiance.xiiShader");
 }
 
 void xiiView::ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionData& data, xiiRenderGraphPassContext& context)
@@ -2865,7 +2877,10 @@ void xiiView::ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionD
 
   cmd.BeginDebugGroup("SkyIrradianceConvolution");
   {
+    UploadAtmosphereConstants(cmd, context.GetBuffer(data.m_hConstants), data.m_Constants);
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pSkyIrradiancePipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiAtmosphereConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_Transmittance", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_MultiScatter", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SkyOut", context.GetTexture(data.m_hSkyRadiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -4479,6 +4494,8 @@ struct xiiAtmosphereCompositeData
 
 void xiiView::SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRenderGraphBuilder& builder)
 {
+  builder.SetPassAllowMerge(false);
+
   data.m_hSceneDepth                 = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hAtmosphereTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
   data.m_hAtmosphereMultiScatterLUT  = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiGALResourceStateFlags::ShaderResource);

@@ -3,11 +3,18 @@
 // Method: Hillaire 2020 - single 2D LUT approximating higher-order scattering.
 // Dispatch: ceil(32/8) × ceil(32/8) × 1
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 
-Texture2D<float4>   g_TransmittanceLUT : register(t0);
-RWTexture2D<float4> g_MultiScatterLUT  : register(u0);
+Texture2D<float4>   g_TransmittanceLUT;
+RWTexture2D<float4> g_MultiScatterLUT;
 
 float RayleighPhase(float cosTheta) { return (3.0f / (16.0f * 3.14159265f)) * (1.0f + cosTheta * cosTheta); }
 float MiePhase(float cosTheta, float g)
@@ -21,7 +28,7 @@ float RayleighDensity(float h) { return exp(-h / PlanetAtmosphereRadiiScaleHeigh
 float MieDensity(float h)      { return exp(-h / PlanetAtmosphereRadiiScaleHeights.w); }
 
 [numthreads(8, 8, 1)]
-void CS_AtmosphereMultiScatter(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims; g_MultiScatterLUT.GetDimensions(dims.x, dims.y);
     if (any(tid.xy >= dims)) return;
@@ -30,7 +37,7 @@ void CS_AtmosphereMultiScatter(uint3 tid : SV_DispatchThreadID)
     float  cosSun  = uv.x * 2.0f - 1.0f;
     float  height  = lerp(PlanetAtmosphereRadiiScaleHeights.x, PlanetAtmosphereRadiiScaleHeights.y, uv.y);
     const uint sqrtSamples = max(SampleCounts.y, 1u);
-    float3 sunTransmittance = g_TransmittanceLUT.SampleLevel(g_sLinearClamp, float2(uv.y, cosSun * 0.5f + 0.5f), 0).rgb;
+    float3 sunTransmittance = g_TransmittanceLUT.SampleLevel(LinearClampSampler, float2(uv.y, cosSun * 0.5f + 0.5f), 0).rgb;
 
     // Integrate sphere of directions - approximation for multiple scatter luminance.
     float3 L2 = float3(0,0,0);

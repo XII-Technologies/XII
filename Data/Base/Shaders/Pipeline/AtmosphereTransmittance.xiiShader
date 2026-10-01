@@ -3,10 +3,16 @@
 // Each texel stores T(viewHeight, sunZenithCos) = exp(-optical depth integral).
 // Dispatch: ceil(256/8) × ceil(64/8) × 1
 
-#include "PipelineCommon.xiiShader"
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
 
-RWTexture2D<float4> g_TransmittanceLUT : register(u0);
+RWTexture2D<float4> g_TransmittanceLUT;
 
 // Map LUT texel to (view height, cos(sunZenith)).
 void TexelToHeightCos(uint2 tid, uint2 dims, out float heightKm, out float cosZenith)
@@ -49,7 +55,7 @@ float RaySphereIntersect(float3 origin, float3 dir, float radius)
 }
 
 [numthreads(8, 8, 1)]
-void CS_AtmosphereTransmittance(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims; g_TransmittanceLUT.GetDimensions(dims.x, dims.y);
     if (any(tid.xy >= dims)) return;
