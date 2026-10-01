@@ -1,28 +1,39 @@
 // XII Engine - DirectLighting.xiiShader
 // Deferred direct lighting: GGX BRDF, clustered local lights, and global shadow masks.
 
-#include "PipelineCommon.xiiShader"
-#include "ReSTIRDICommon.h"
-#include "Passes/Atmosphere/CloudShadowConstants.h"
-#include "Passes/ShadowCascade/ShadowCascadeConstants.h"
+[PLATFORMS]
+ALL
 
-Texture2D<float4> g_GBufAlbedo    : register(t0);
-Texture2D<float2> g_GBufNormal    : register(t1);
-Texture2D<float4> g_GBufMaterial  : register(t2);
-Texture2D<float>  g_SceneDepth    : register(t3);
-Texture2D<float>  g_AOTerm        : register(t4);
-Texture2DArray<float> g_ShadowAtlas : register(t5);
-Texture2D<float>  g_ContactShadow : register(t6);
-Texture2D<float>  g_RTShadow      : register(t7);
-Texture2D<float>  g_LocalShadowAtlas : register(t8);
+[PERMUTATIONS]
 
-StructuredBuffer<uint2>                   g_LightGrid             : register(t9);
-StructuredBuffer<uint>                    g_LightIndex            : register(t10);
-StructuredBuffer<xiiGpuLightData>         g_Lights                : register(t11);
-StructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs : register(t12);
-Texture2D<uint4>                          g_DirectLightReservoir   : register(t13);
-StructuredBuffer<float>                   g_IESProfiles            : register(t14);
-RWTexture2D<float4>               g_DirectOut  : register(u0);
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/LightingData.h>
+
+StructuredBuffer<xiiGpuLightData> g_Lights;
+
+#include <Shaders/Pipeline/ReSTIRDICommon.h>
+#include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+
+Texture2D<float4>      g_GBufAlbedo;
+Texture2D<float2>      g_GBufNormal;
+Texture2D<float4>      g_GBufMaterial;
+Texture2D<float>       g_SceneDepth;
+Texture2D<float>       g_AOTerm;
+Texture2DArray<float>  g_ShadowAtlas;
+Texture2D<float>       g_ContactShadow;
+Texture2D<float>       g_RTShadow;
+Texture2D<float>       g_LocalShadowAtlas;
+
+StructuredBuffer<uint2>                   g_LightGrid;
+StructuredBuffer<uint>                    g_LightIndex;
+StructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs;
+Texture2D<uint4>                          g_DirectLightReservoir;
+StructuredBuffer<float>                   g_IESProfiles;
+RWTexture2D<float4>                       g_DirectOut;
 
 static const uint XII_IES_VERTICAL_SAMPLES   = 64u;
 static const uint XII_IES_HORIZONTAL_SAMPLES = 32u;
@@ -130,7 +141,7 @@ float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 
             [unroll]
             for (int x = -1; x <= 1; ++x)
             {
-                const float mapDepth = g_ShadowAtlas.SampleLevel(g_sPointClamp, float3(shadowUV + float2(x, y) * texelSize, cascadeIndex), 0.0f);
+                const float mapDepth = g_ShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + float2(x, y) * texelSize, cascadeIndex), 0.0f);
                 visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
             }
         }
@@ -154,7 +165,7 @@ float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 
     for (uint sampleIndex = 0u; sampleIndex < blockerSampleCount; ++sampleIndex)
     {
         const float2 offset = VogelDiskSample(sampleIndex, blockerSampleCount, rotation) * blockerSearchRadius * texelSize;
-        const float mapDepth = g_ShadowAtlas.SampleLevel(g_sPointClamp, float3(shadowUV + offset, cascadeIndex), 0.0f);
+        const float mapDepth = g_ShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + offset, cascadeIndex), 0.0f);
         if (mapDepth > receiverDepth)
         {
             blockerDepthSum += mapDepth;
@@ -174,7 +185,7 @@ float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 
     for (uint sampleIndex = 0u; sampleIndex < filterSampleCount; ++sampleIndex)
     {
         const float2 offset = VogelDiskSample(sampleIndex, filterSampleCount, rotation) * penumbraRadius * texelSize;
-        const float mapDepth = g_ShadowAtlas.SampleLevel(g_sPointClamp, float3(shadowUV + offset, cascadeIndex), 0.0f);
+        const float mapDepth = g_ShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + offset, cascadeIndex), 0.0f);
         visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
     }
     return visibility / float(filterSampleCount);
@@ -364,7 +375,7 @@ uint ComputeClusterIndex(float2 uv, float depth)
 }
 
 [numthreads(8, 8, 1)]
-void CS_DirectLighting(uint3 tid : SV_DispatchThreadID)
+void main(uint3 tid : SV_DispatchThreadID)
 {
     uint2 dims;
     g_DirectOut.GetDimensions(dims.x, dims.y);
@@ -372,19 +383,19 @@ void CS_DirectLighting(uint3 tid : SV_DispatchThreadID)
         return;
 
     const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
-    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    const float depth = g_SceneDepth.SampleLevel(PointClampSampler, uv, 0);
     if (depth <= 0.0f)
     {
         g_DirectOut[tid.xy] = float4(0.0f, 0.0f, 0.0f, 1.0f);
         return;
     }
 
-    const float4 albedoA = g_GBufAlbedo.SampleLevel(g_sPointClamp, uv, 0);
-    const float2 octNorm = g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0);
-    const float4 material = g_GBufMaterial.SampleLevel(g_sPointClamp, uv, 0);
-    const float ao = g_AOTerm.SampleLevel(g_sPointClamp, uv, 0);
-    const float rtShadow = g_RTShadow.SampleLevel(g_sPointClamp, uv, 0);
-    const float contactShadow = g_ContactShadow.SampleLevel(g_sPointClamp, uv, 0);
+    const float4 albedoA = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0);
+    const float2 octNorm = g_GBufNormal.SampleLevel(PointClampSampler, uv, 0);
+    const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0);
+    const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0);
+    const float rtShadow = g_RTShadow.SampleLevel(PointClampSampler, uv, 0);
+    const float contactShadow = g_ContactShadow.SampleLevel(PointClampSampler, uv, 0);
 
     const float3 albedo = albedoA.rgb;
     const float roughness = max(material.r, 0.01f);

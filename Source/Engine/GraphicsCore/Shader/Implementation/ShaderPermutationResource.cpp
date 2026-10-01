@@ -225,25 +225,31 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
         {
           const xiiHashedString& sImmutableSamplerName = resource.m_sName;
 
-          // Check if an immutable sampler with this name already exists.
-          bool bImmutableSamplerExists = false;
-          for (const xiiGALImmutableSamplerDescription& immutableSampler : resourceSignatureDescription.m_ImmutableSamplers)
+          // A named immutable sampler can be shared by multiple stages. Keep
+          // the reflected stage mask exact so compute and ray-tracing shaders
+          // can legally access it without exposing it to unrelated stages.
+          xiiGALImmutableSamplerDescription* pImmutableSampler = nullptr;
+          for (xiiGALImmutableSamplerDescription& immutableSampler : resourceSignatureDescription.m_ImmutableSamplers)
           {
             if (immutableSampler.m_SamplerOrTextureName == sImmutableSamplerName)
             {
-              bImmutableSamplerExists = true;
+              pImmutableSampler = &immutableSampler;
               break;
             }
           }
 
-          if (!bImmutableSamplerExists)
+          if (pImmutableSampler != nullptr)
+          {
+            pImmutableSampler->m_ShaderStages |= resource.m_ShaderStages;
+          }
+          else
           {
             // Create immutable sampler based on known names.
             if (sImmutableSamplerName == sLinearSampler)
             {
               xiiGALImmutableSamplerDescription& linearSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
               linearSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
-              linearSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              linearSampler.m_ShaderStages                            = resource.m_ShaderStages;
               linearSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
               linearSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
               linearSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
@@ -261,7 +267,7 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
             {
               xiiGALImmutableSamplerDescription& linearClampSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
               linearClampSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
-              linearClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              linearClampSampler.m_ShaderStages                            = resource.m_ShaderStages;
               linearClampSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
               linearClampSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
               linearClampSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
@@ -279,7 +285,7 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
             {
               xiiGALImmutableSamplerDescription& pointSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
               pointSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
-              pointSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              pointSampler.m_ShaderStages                            = resource.m_ShaderStages;
               pointSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
               pointSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
               pointSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
@@ -297,7 +303,7 @@ xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStream
             {
               xiiGALImmutableSamplerDescription& pointClampSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
               pointClampSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
-              pointClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              pointClampSampler.m_ShaderStages                            = resource.m_ShaderStages;
               pointClampSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
               pointClampSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
               pointClampSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
