@@ -6,51 +6,29 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
-class xiiGPUTestingEnvironmentInterface
+class xiiGPUTestingEnvironment
 {
 public:
-  virtual ~xiiGPUTestingEnvironmentInterface() = default;
-
-  virtual xiiStringView GetName() const = 0;
-
-  virtual xiiGALDevice* GetDevice() const = 0;
-
-  virtual xiiResult Initialize() = 0;
-
-  virtual void Shutdown() = 0;
-
-  virtual xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle = {}) = 0;
-};
-
-/// Mounts shared test data paths after the test framework has started the Foundation systems.
-xiiResult xiiConfigureGPUTestDataDirectories();
-
-class xiiGPUTestingEnvironment final : public xiiGPUTestingEnvironmentInterface
-{
-public:
-  explicit xiiGPUTestingEnvironment(xiiStringView sImplementationName);
+  xiiGPUTestingEnvironment();
 
   ~xiiGPUTestingEnvironment();
 
-  virtual xiiResult Initialize() override;
+  xiiResult Initialize();
 
-  virtual void Shutdown() override;
+  void Shutdown();
 
-  virtual xiiStringView GetName() const override { return m_sImplementationName; }
+  xiiStringView GetName() const { return m_sImplementationName; }
 
-  virtual xiiGALDevice* GetDevice() const override { return m_pDevice.Borrow(); }
+  xiiStringView GetShaderModel() const { return m_sShaderModel; }
+
+  xiiGALDevice* GetDevice() const { return m_pDevice.Borrow(); }
 
   xiiSharedPtr<xiiGALDevice> GetDeviceShared() const { return m_pDevice; }
 
-  virtual xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle) override;
+  xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle);
 
 private:
   xiiString                  m_sImplementationName;
+  xiiString                  m_sShaderModel;
   xiiSharedPtr<xiiGALDevice> m_pDevice;
 };
-
-/// Returns the number of graphics implementations selected for this run.
-xiiUInt32 xiiGetGPUTestingEnvironmentCount();
-
-/// Returns the factory name of one selected graphics implementation.
-xiiStringView xiiGetGPUTestingEnvironmentName(xiiUInt32 uiIndex);

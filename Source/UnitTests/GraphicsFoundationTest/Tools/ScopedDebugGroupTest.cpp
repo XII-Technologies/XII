@@ -8,49 +8,40 @@
 
 XII_CREATE_SIMPLE_TEST(Tools, ScopedDebugGroup)
 {
+  xiiGPUTestingEnvironment environment;
+  XII_TEST_BOOL(environment.Initialize().Succeeded());
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "RAII, null construction, moves, and macros")
   {
     xiiGALScopedDebugGroup emptyGroup;
     xiiGALScopedDebugGroup nullGroup(nullptr, "Ignored null command list");
 
-    for (xiiUInt32 uiImplementation = 0; uiImplementation < xiiGetGPUTestingEnvironmentCount(); ++uiImplementation)
+    xiiGALDevice*       pDevice = environment.GetDevice();
+    xiiGALCommandQueue* pQueue  = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+    XII_TEST_BOOL(pQueue != nullptr);
+
+    xiiGALCommandListCreationDescription commandListDescription;
+    commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics;
+    xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
+    XII_TEST_BOOL(pCommandList != nullptr);
+
+    pCommandList->Begin();
     {
-      xiiGPUTestingEnvironment environment(xiiGetGPUTestingEnvironmentName(uiImplementation));
-      XII_TEST_BOOL(environment.Initialize().Succeeded());
-      if (environment.GetDevice() == nullptr)
-        continue;
+      xiiGALScopedDebugGroup outer(*pCommandList, "Outer", xiiColor::CornflowerBlue);
+      xiiGALScopedDebugGroup moved(std::move(outer));
 
-      xiiGALDevice*       pDevice = environment.GetDevice();
-      xiiGALCommandQueue* pQueue  = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
-      XII_TEST_BOOL(pQueue != nullptr);
-      if (pQueue == nullptr)
-        continue;
+      xiiGALScopedDebugGroup first(pCommandList.Borrow(), "Move assignment destination");
+      xiiGALScopedDebugGroup second(pCommandList.Borrow(), "Move assignment source");
+      first = std::move(second);
+      first = std::move(first);
 
-      xiiGALCommandListCreationDescription commandListDescription;
-      commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Graphics;
-      xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
-      XII_TEST_BOOL(pCommandList != nullptr);
-      if (pCommandList == nullptr)
-        continue;
-
-      pCommandList->Begin();
-      {
-        xiiGALScopedDebugGroup outer(*pCommandList, "Outer", xiiColor::CornflowerBlue);
-        xiiGALScopedDebugGroup moved(std::move(outer));
-
-        xiiGALScopedDebugGroup first(pCommandList.Borrow(), "Move assignment destination");
-        xiiGALScopedDebugGroup second(pCommandList.Borrow(), "Move assignment source");
-        first = std::move(second);
-        first = std::move(first);
-
-        XII_COMMANDLIST_SCOPE(pCommandList.Borrow(), "Macro scope");
-        XII_COMMANDLIST_SCOPE_COLOR(pCommandList.Borrow(), "Colored macro scope", xiiColor::Orange);
-      }
-      pCommandList->End();
-
-      const xiiUInt64 uiFenceValue = pQueue->Submit(pCommandList.Borrow());
-      XII_TEST_BOOL(uiFenceValue > 0U);
-      pQueue->WaitForFenceValue(uiFenceValue);
+      XII_COMMANDLIST_SCOPE(pCommandList.Borrow(), "Macro scope");
+      XII_COMMANDLIST_SCOPE_COLOR(pCommandList.Borrow(), "Colored macro scope", xiiColor::Orange);
     }
+    pCommandList->End();
+
+    const xiiUInt64 uiFenceValue = pQueue->Submit(pCommandList.Borrow());
+    XII_TEST_BOOL(uiFenceValue > 0U);
+    pQueue->WaitForFenceValue(uiFenceValue);
   }
 }

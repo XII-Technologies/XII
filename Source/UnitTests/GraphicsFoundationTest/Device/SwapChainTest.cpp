@@ -33,6 +33,9 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(Device, SwapChain)
 {
+  xiiGPUTestingEnvironment environment;
+  XII_TEST_BOOL(environment.Initialize().Succeeded());
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Description defaults and base contract")
   {
     xiiGALSwapChainCreationDescription description;
@@ -44,23 +47,15 @@ XII_CREATE_SIMPLE_TEST(Device, SwapChain)
     XII_TEST_FLOAT(description.m_fDefaultDepthValue, 1.0f, 0.0f);
     XII_TEST_INT(description.m_uiDefaultStencilValue, 0U);
 
-    for (xiiUInt32 uiImplementation = 0; uiImplementation < xiiGetGPUTestingEnvironmentCount(); ++uiImplementation)
-    {
-      xiiGPUTestingEnvironment environment(xiiGetGPUTestingEnvironmentName(uiImplementation));
-      XII_TEST_BOOL(environment.Initialize().Succeeded());
-      if (environment.GetDevice() == nullptr)
-        continue;
-
-      TestSwapChain swapChain(environment.GetDeviceShared(), description);
-      XII_TEST_BOOL(swapChain.GetDescription() == description);
-      XII_TEST_BOOL(swapChain.GetCurrentSize() == xiiSizeU32(320U, 180U));
-      XII_TEST_BOOL(swapChain.GetPresentMode() == xiiGALPresentMode::VSync);
-      swapChain.SetPresentMode(xiiGALPresentMode::Immediate);
-      XII_TEST_BOOL(swapChain.GetPresentMode() == xiiGALPresentMode::Immediate);
-      XII_TEST_BOOL(swapChain.Resize(xiiSizeU32(640U, 360U), xiiGALSurfaceTransform::Identity).Succeeded());
-      XII_TEST_BOOL(swapChain.GetCurrentSize() == xiiSizeU32(640U, 360U));
-      swapChain.Present();
-      XII_TEST_INT(swapChain.m_uiPresentCount, 1U);
-    }
+    TestSwapChain swapChain(environment.GetDeviceShared(), description);
+    XII_TEST_BOOL(swapChain.GetDescription() == description);
+    XII_TEST_BOOL(swapChain.GetCurrentSize() == xiiSizeU32(320U, 180U));
+    XII_TEST_BOOL(swapChain.GetPresentMode() == xiiGALPresentMode::VSync);
+    swapChain.SetPresentMode(xiiGALPresentMode::Immediate);
+    XII_TEST_BOOL(swapChain.GetPresentMode() == xiiGALPresentMode::Immediate);
+    XII_TEST_BOOL(swapChain.Resize(xiiSizeU32(640U, 360U), xiiGALSurfaceTransform::Identity).Succeeded());
+    XII_TEST_BOOL(swapChain.GetCurrentSize() == xiiSizeU32(640U, 360U));
+    swapChain.Present();
+    XII_TEST_INT(swapChain.m_uiPresentCount, 1U);
   }
 }

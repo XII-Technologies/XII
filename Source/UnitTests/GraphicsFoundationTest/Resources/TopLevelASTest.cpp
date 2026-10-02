@@ -6,6 +6,9 @@
 
 XII_CREATE_SIMPLE_TEST(Resources, TopLevelAS)
 {
+  xiiGPUTestingEnvironment environment;
+  XII_TEST_BOOL(environment.Initialize().Succeeded());
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Descriptor defaults")
   {
     xiiGALTopLevelASCreationDescription description;
@@ -45,38 +48,26 @@ XII_CREATE_SIMPLE_TEST(Resources, TopLevelAS)
     XII_TEST_BOOL(pType->FindPropertyByName("BottomLevelASDeviceAddress") != nullptr);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Feature-gated device creation and initial state")
+  const bool bRayTracingEnabled = environment.GetDevice()->GetGraphicsDeviceAdapterProperties().m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled;
+  XII_TEST_BLOCK(bRayTracingEnabled ? xiiTestBlock::Enabled : xiiTestBlock::Disabled, "Feature-gated device creation and initial state")
   {
-    for (xiiUInt32 uiImplementation = 0; uiImplementation < xiiGetGPUTestingEnvironmentCount(); ++uiImplementation)
-    {
-      xiiGPUTestingEnvironment environment(xiiGetGPUTestingEnvironmentName(uiImplementation));
-      XII_TEST_BOOL(environment.Initialize().Succeeded());
-      if (environment.GetDevice() == nullptr)
-        continue;
+    xiiGALTopLevelASCreationDescription description;
+    description.m_uiMaxInstanceCount = 4U;
+    description.m_Flags              = xiiGALRayTracingBuildASFlags::PreferFastBuild | xiiGALRayTracingBuildASFlags::AllowUpdate;
 
-      if (environment.GetDevice()->GetGraphicsDeviceAdapterProperties().m_Features.m_RayTracing != xiiGALDeviceFeatureState::Enabled)
-        continue;
+    xiiSharedPtr<xiiGALTopLevelAS> pAccelerationStructure = environment.GetDevice()->CreateTopLevelAS(description);
+    XII_TEST_BOOL(pAccelerationStructure != nullptr);
 
-      xiiGALTopLevelASCreationDescription description;
-      description.m_uiMaxInstanceCount = 4U;
-      description.m_Flags              = xiiGALRayTracingBuildASFlags::PreferFastBuild | xiiGALRayTracingBuildASFlags::AllowUpdate;
+    XII_TEST_BOOL(pAccelerationStructure->GetDescription() == description);
+    XII_TEST_BOOL(pAccelerationStructure->GetScratchBufferSizeDescription().m_uiBuild > 0U);
+    XII_TEST_INT(pAccelerationStructure->GetBuildDescription().m_uiInstanceCount, 0U);
 
-      xiiSharedPtr<xiiGALTopLevelAS> pAccelerationStructure = environment.GetDevice()->CreateTopLevelAS(description);
-      XII_TEST_BOOL(pAccelerationStructure != nullptr);
-      if (pAccelerationStructure == nullptr)
-        continue;
+    const xiiGALTopLevelASInstanceDescription missing = pAccelerationStructure->GetInstanceDescription("MissingInstance");
+    XII_TEST_BOOL(missing.m_pBottomLevelAS == nullptr);
+    XII_TEST_INT(missing.m_uiContributionToHitGroupIndex, xiiInvalidIndex);
+    XII_TEST_INT(missing.m_uiInstanceIndex, xiiInvalidIndex);
 
-      XII_TEST_BOOL(pAccelerationStructure->GetDescription() == description);
-      XII_TEST_BOOL(pAccelerationStructure->GetScratchBufferSizeDescription().m_uiBuild > 0U);
-      XII_TEST_INT(pAccelerationStructure->GetBuildDescription().m_uiInstanceCount, 0U);
-
-      const xiiGALTopLevelASInstanceDescription missing = pAccelerationStructure->GetInstanceDescription("MissingInstance");
-      XII_TEST_BOOL(missing.m_pBottomLevelAS == nullptr);
-      XII_TEST_INT(missing.m_uiContributionToHitGroupIndex, xiiInvalidIndex);
-      XII_TEST_INT(missing.m_uiInstanceIndex, xiiInvalidIndex);
-
-      pAccelerationStructure->SetDebugName("Unit Test TLAS");
-      XII_TEST_STRING(pAccelerationStructure->GetDebugName(), "Unit Test TLAS");
-    }
+    pAccelerationStructure->SetDebugName("Unit Test TLAS");
+    XII_TEST_STRING(pAccelerationStructure->GetDebugName(), "Unit Test TLAS");
   }
 }

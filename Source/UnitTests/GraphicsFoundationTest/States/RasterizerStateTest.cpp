@@ -6,6 +6,9 @@
 
 XII_CREATE_SIMPLE_TEST(States, RasterizerState)
 {
+  xiiGPUTestingEnvironment environment;
+  XII_TEST_BOOL(environment.Initialize().Succeeded());
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Defaults and mutation sensitivity")
   {
     xiiGALRasterizerStateCreationDescription a;
@@ -25,26 +28,18 @@ XII_CREATE_SIMPLE_TEST(States, RasterizerState)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Device creation and retained description")
   {
-    for (xiiUInt32 uiImplementation = 0; uiImplementation < xiiGetGPUTestingEnvironmentCount(); ++uiImplementation)
+    xiiGALRasterizerStateCreationDescription description;
+    description.m_CullMode               = xiiGALCullMode::None;
+    description.m_bFrontCounterClockwise = true;
+    description.m_bDepthClipEnable       = true;
+    description.m_bScissorEnable         = true;
+
+    xiiSharedPtr<xiiGALRasterizerState> pState = environment.GetDevice()->CreateRasterizerState(description);
+    XII_TEST_BOOL(pState != nullptr);
+    if (pState != nullptr)
     {
-      xiiGPUTestingEnvironment environment(xiiGetGPUTestingEnvironmentName(uiImplementation));
-      XII_TEST_BOOL(environment.Initialize().Succeeded());
-      if (environment.GetDevice() == nullptr)
-        continue;
-
-      xiiGALRasterizerStateCreationDescription description;
-      description.m_CullMode               = xiiGALCullMode::None;
-      description.m_bFrontCounterClockwise = true;
-      description.m_bDepthClipEnable       = true;
-      description.m_bScissorEnable         = true;
-
-      xiiSharedPtr<xiiGALRasterizerState> pState = environment.GetDevice()->CreateRasterizerState(description);
-      XII_TEST_BOOL(pState != nullptr);
-      if (pState != nullptr)
-      {
-        XII_TEST_BOOL(pState->GetDescription() == description);
-        XII_TEST_BOOL(pState->GetDevice().Borrow() == environment.GetDevice());
-      }
+      XII_TEST_BOOL(pState->GetDescription() == description);
+      XII_TEST_BOOL(pState->GetDevice().Borrow() == environment.GetDevice());
     }
   }
 }

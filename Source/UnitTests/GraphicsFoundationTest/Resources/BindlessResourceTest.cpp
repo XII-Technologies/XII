@@ -11,6 +11,9 @@ static_assert(!std::is_default_constructible_v<xiiGALBindlessResourceTable>, "Bi
 
 XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
 {
+  xiiGPUTestingEnvironment environment;
+  XII_TEST_BOOL(environment.Initialize().Succeeded());
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Generation-checked fence-aware allocation")
   {
     xiiGALBindlessResourceAllocator allocator;
@@ -52,100 +55,88 @@ XII_CREATE_SIMPLE_TEST(Resources, BindlessResource)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Typed table registration, update, retire, collect, and reuse")
   {
-    for (xiiUInt32 uiImplementation = 0; uiImplementation < xiiGetGPUTestingEnvironmentCount(); ++uiImplementation)
-    {
-      xiiGPUTestingEnvironment environment(xiiGetGPUTestingEnvironmentName(uiImplementation));
-      XII_TEST_BOOL(environment.Initialize().Succeeded());
-      if (environment.GetDevice() == nullptr)
-        continue;
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_uiSize              = 64U;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_uiElementByteStride = 4U;
+    xiiSharedPtr<xiiGALBuffer> pBuffer      = environment.GetDevice()->CreateBuffer(bufferDescription);
+    XII_TEST_BOOL(pBuffer != nullptr);
 
-      xiiGALBufferCreationDescription bufferDescription;
-      bufferDescription.m_uiSize              = 64U;
-      bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-      bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
-      bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
-      bufferDescription.m_uiElementByteStride = 4U;
-      xiiSharedPtr<xiiGALBuffer> pBuffer      = environment.GetDevice()->CreateBuffer(bufferDescription);
-      XII_TEST_BOOL(pBuffer != nullptr);
+    xiiGALTextureCreationDescription textureDescription;
+    textureDescription.m_Type               = xiiGALResourceDimension::Texture2D;
+    textureDescription.m_Size               = xiiSizeU32(4U, 4U);
+    textureDescription.m_uiArraySizeOrDepth = 1U;
+    textureDescription.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
+    textureDescription.m_uiMipLevels        = 1U;
+    textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    textureDescription.m_Usage              = xiiGALResourceUsage::Mutable;
+    xiiSharedPtr<xiiGALTexture> pTexture    = environment.GetDevice()->CreateTexture(textureDescription);
+    XII_TEST_BOOL(pTexture != nullptr);
 
-      xiiGALTextureCreationDescription textureDescription;
-      textureDescription.m_Type               = xiiGALResourceDimension::Texture2D;
-      textureDescription.m_Size               = xiiSizeU32(4U, 4U);
-      textureDescription.m_uiArraySizeOrDepth = 1U;
-      textureDescription.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
-      textureDescription.m_uiMipLevels        = 1U;
-      textureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-      textureDescription.m_Usage              = xiiGALResourceUsage::Mutable;
-      xiiSharedPtr<xiiGALTexture> pTexture    = environment.GetDevice()->CreateTexture(textureDescription);
-      XII_TEST_BOOL(pTexture != nullptr);
+    xiiSharedPtr<xiiGALSampler> pSampler = environment.GetDevice()->CreateSampler(xiiGALSamplerCreationDescription());
+    XII_TEST_BOOL(pSampler != nullptr);
 
-      xiiSharedPtr<xiiGALSampler> pSampler = environment.GetDevice()->CreateSampler(xiiGALSamplerCreationDescription());
-      XII_TEST_BOOL(pSampler != nullptr);
-      if (pBuffer == nullptr || pTexture == nullptr || pSampler == nullptr)
-        continue;
+    xiiSharedPtr<xiiGALBufferView>  pBufferSRV  = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+    xiiSharedPtr<xiiGALBufferView>  pBufferUAV  = pBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess);
+    xiiSharedPtr<xiiGALTextureView> pTextureSRV = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+    xiiSharedPtr<xiiGALTextureView> pTextureUAV = pTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess);
+    XII_TEST_BOOL(pBufferSRV != nullptr && pBufferUAV != nullptr && pTextureSRV != nullptr && pTextureUAV != nullptr);
 
-      xiiSharedPtr<xiiGALBufferView>  pBufferSRV  = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
-      xiiSharedPtr<xiiGALBufferView>  pBufferUAV  = pBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess);
-      xiiSharedPtr<xiiGALTextureView> pTextureSRV = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-      xiiSharedPtr<xiiGALTextureView> pTextureUAV = pTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess);
-      XII_TEST_BOOL(pBufferSRV != nullptr && pBufferUAV != nullptr && pTextureSRV != nullptr && pTextureUAV != nullptr);
+    xiiGALBindlessResourceTableDescription tableDescription;
+    tableDescription.m_uiBufferSRVCapacity  = 2U;
+    tableDescription.m_uiBufferUAVCapacity  = 2U;
+    tableDescription.m_uiTextureSRVCapacity = 2U;
+    tableDescription.m_uiTextureUAVCapacity = 2U;
+    tableDescription.m_uiSamplerCapacity    = 2U;
 
-      xiiGALBindlessResourceTableDescription tableDescription;
-      tableDescription.m_uiBufferSRVCapacity  = 2U;
-      tableDescription.m_uiBufferUAVCapacity  = 2U;
-      tableDescription.m_uiTextureSRVCapacity = 2U;
-      tableDescription.m_uiTextureUAVCapacity = 2U;
-      tableDescription.m_uiSamplerCapacity    = 2U;
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::IsInitialized());
 
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::IsInitialized());
-      if (!xiiGALBindlessResourceTable::IsInitialized())
-        continue;
+    const xiiGALBindlessResourceTableDescription originalTableDescription = xiiGALBindlessResourceTable::GetConfiguration();
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::Configure(tableDescription).Succeeded());
+    XII_TEST_BOOL(!xiiGALBindlessResourceTable::RegisterBufferSRV(nullptr).IsValid());
 
-      const xiiGALBindlessResourceTableDescription originalTableDescription = xiiGALBindlessResourceTable::GetConfiguration();
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::Configure(tableDescription).Succeeded());
-      XII_TEST_BOOL(!xiiGALBindlessResourceTable::RegisterBufferSRV(nullptr).IsValid());
+    const auto bufferSRV  = xiiGALBindlessResourceTable::RegisterBufferSRV(pBufferSRV);
+    const auto bufferUAV  = xiiGALBindlessResourceTable::RegisterBufferUAV(pBufferUAV);
+    const auto textureSRV = xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV);
+    const auto textureUAV = xiiGALBindlessResourceTable::RegisterTextureUAV(pTextureUAV);
+    const auto sampler    = xiiGALBindlessResourceTable::RegisterSampler(pSampler);
+    XII_TEST_BOOL(bufferSRV.IsValid() && bufferUAV.IsValid() && textureSRV.IsValid() && textureUAV.IsValid() && sampler.IsValid());
 
-      const auto bufferSRV  = xiiGALBindlessResourceTable::RegisterBufferSRV(pBufferSRV);
-      const auto bufferUAV  = xiiGALBindlessResourceTable::RegisterBufferUAV(pBufferUAV);
-      const auto textureSRV = xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV);
-      const auto textureUAV = xiiGALBindlessResourceTable::RegisterTextureUAV(pTextureUAV);
-      const auto sampler    = xiiGALBindlessResourceTable::RegisterSampler(pSampler);
-      XII_TEST_BOOL(bufferSRV.IsValid() && bufferUAV.IsValid() && textureSRV.IsValid() && textureUAV.IsValid() && sampler.IsValid());
+    const xiiGALBindlessResourceTableStats stats = xiiGALBindlessResourceTable::GetStats();
+    XII_TEST_INT(stats.m_uiBufferSRVCount, 1U);
+    XII_TEST_INT(stats.m_uiBufferUAVCount, 1U);
+    XII_TEST_INT(stats.m_uiTextureSRVCount, 1U);
+    XII_TEST_INT(stats.m_uiTextureUAVCount, 1U);
+    XII_TEST_INT(stats.m_uiSamplerCount, 1U);
 
-      const xiiGALBindlessResourceTableStats stats = xiiGALBindlessResourceTable::GetStats();
-      XII_TEST_INT(stats.m_uiBufferSRVCount, 1U);
-      XII_TEST_INT(stats.m_uiBufferUAVCount, 1U);
-      XII_TEST_INT(stats.m_uiTextureSRVCount, 1U);
-      XII_TEST_INT(stats.m_uiTextureUAVCount, 1U);
-      XII_TEST_INT(stats.m_uiSamplerCount, 1U);
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateBufferSRV(bufferSRV, pBufferSRV));
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateBufferUAV(bufferUAV, pBufferUAV));
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateTextureSRV(textureSRV, pTextureSRV));
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateTextureUAV(textureUAV, pTextureUAV));
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateSampler(sampler, pSampler));
+    XII_TEST_BOOL(!xiiGALBindlessResourceTable::UpdateSampler({}, pSampler));
 
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateBufferSRV(bufferSRV, pBufferSRV));
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateBufferUAV(bufferUAV, pBufferUAV));
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateTextureSRV(textureSRV, pTextureSRV));
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateTextureUAV(textureUAV, pTextureUAV));
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::UpdateSampler(sampler, pSampler));
-      XII_TEST_BOOL(!xiiGALBindlessResourceTable::UpdateSampler({}, pSampler));
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::RetireTextureSRV(textureSRV, 11U));
+    XII_TEST_BOOL(!xiiGALBindlessResourceTable::RetireTextureSRV(textureSRV, 11U));
+    XII_TEST_INT(xiiGALBindlessResourceTable::GetStats().m_uiTextureSRVCount, 0U);
+    const auto secondTexture = xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV);
+    XII_TEST_BOOL(secondTexture.IsValid());
+    XII_TEST_BOOL(secondTexture.m_uiIndex != textureSRV.m_uiIndex);
+    XII_TEST_BOOL(!xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV).IsValid());
 
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::RetireTextureSRV(textureSRV, 11U));
-      XII_TEST_BOOL(!xiiGALBindlessResourceTable::RetireTextureSRV(textureSRV, 11U));
-      XII_TEST_INT(xiiGALBindlessResourceTable::GetStats().m_uiTextureSRVCount, 0U);
-      const auto secondTexture = xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV);
-      XII_TEST_BOOL(secondTexture.IsValid());
-      XII_TEST_BOOL(secondTexture.m_uiIndex != textureSRV.m_uiIndex);
-      XII_TEST_BOOL(!xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV).IsValid());
+    xiiGALBindlessResourceTable::Collect(10U);
+    XII_TEST_BOOL(!xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV).IsValid());
+    xiiGALBindlessResourceTable::Collect(11U);
+    const auto recycledTexture = xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV);
+    XII_TEST_BOOL(recycledTexture.IsValid());
+    XII_TEST_INT(recycledTexture.m_uiIndex, textureSRV.m_uiIndex);
+    XII_TEST_BOOL(recycledTexture.m_uiGeneration != textureSRV.m_uiGeneration);
 
-      xiiGALBindlessResourceTable::Collect(10U);
-      XII_TEST_BOOL(!xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV).IsValid());
-      xiiGALBindlessResourceTable::Collect(11U);
-      const auto recycledTexture = xiiGALBindlessResourceTable::RegisterTextureSRV(pTextureSRV);
-      XII_TEST_BOOL(recycledTexture.IsValid());
-      XII_TEST_INT(recycledTexture.m_uiIndex, textureSRV.m_uiIndex);
-      XII_TEST_BOOL(recycledTexture.m_uiGeneration != textureSRV.m_uiGeneration);
-
-      xiiGALBindlessResourceTable::Clear();
-      const auto clearedStats = xiiGALBindlessResourceTable::GetStats();
-      XII_TEST_INT(clearedStats.m_uiBufferSRVCount + clearedStats.m_uiBufferUAVCount + clearedStats.m_uiTextureSRVCount + clearedStats.m_uiTextureUAVCount + clearedStats.m_uiSamplerCount, 0U);
-      XII_TEST_BOOL(xiiGALBindlessResourceTable::Configure(originalTableDescription).Succeeded());
-    }
+    xiiGALBindlessResourceTable::Clear();
+    const auto clearedStats = xiiGALBindlessResourceTable::GetStats();
+    XII_TEST_INT(clearedStats.m_uiBufferSRVCount + clearedStats.m_uiBufferUAVCount + clearedStats.m_uiTextureSRVCount + clearedStats.m_uiTextureUAVCount + clearedStats.m_uiSamplerCount, 0U);
+    XII_TEST_BOOL(xiiGALBindlessResourceTable::Configure(originalTableDescription).Succeeded());
   }
 }

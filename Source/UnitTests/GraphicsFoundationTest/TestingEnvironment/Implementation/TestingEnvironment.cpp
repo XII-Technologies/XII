@@ -3,11 +3,39 @@
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 #include <Foundation/Configuration/Plugin.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
-xiiGPUTestingEnvironment::xiiGPUTestingEnvironment(xiiStringView sImplementationName) :
-  m_sImplementationName(sImplementationName)
+namespace
 {
-}
+  xiiResult xiiConfigureGPUTestDataDirectories()
+  {
+    xiiFileSystem::SetSpecialDirectory("testout", xiiTestFramework::GetInstance()->GetAbsOutputPath());
+
+    xiiStringBuilder sBaseDir = ">sdk/Data/Base/";
+    xiiStringBuilder sReadDir(">sdk/", xiiTestFramework::GetInstance()->GetRelTestDataPath());
+    sReadDir.PathParentDirectory();
+
+    XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites)); // for shader files
+    XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sBaseDir, "Base"));
+    XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">xiitest/", "ImageComparisonDataDir", "imgout", xiiDataDirUsage::AllowWrites));
+    XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sReadDir, "UnitTestData"));
+
+    sReadDir.Set(">sdk/", xiiTestFramework::GetInstance()->GetRelTestDataPath());
+    XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(sReadDir, "ImageComparisonDataDir"));
+
+    return XII_SUCCESS;
+  }
+
+  void xiiShutdownGPUTestDataDirectories()
+  {
+    xiiFileSystem::RemoveDataDirectoryGroup("ImageComparisonDataDir");
+    xiiFileSystem::RemoveDataDirectoryGroup("UnitTestData");
+    xiiFileSystem::RemoveDataDirectoryGroup("Base");
+    xiiFileSystem::RemoveDataDirectoryGroup("ShaderCache");
+  }
+} // namespace
+
+xiiGPUTestingEnvironment::xiiGPUTestingEnvironment() = default;
 
 xiiGPUTestingEnvironment::~xiiGPUTestingEnvironment()
 {
@@ -70,7 +98,23 @@ xiiResult xiiGPUTestingEnvironment::Initialize()
   description.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
-  m_pDevice = xiiGALDeviceFactory::CreateDevice(m_sImplementationName, xiiFoundation::GetDefaultAllocator(), description);
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+  constexpr const char* szDefaultGraphicsAPI = "Vulkan";
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+  constexpr const char* szDefaultGraphicsAPI = "D3D12";
+#else
+  constexpr const char* szDefaultGraphicsAPI = "";
+#endif
+
+  m_sImplementationName         = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
+  xiiStringView sShaderModel    = {};
+  xiiStringView sShaderCompiler = {};
+  xiiGALDeviceFactory::GetShaderModelAndCompiler(m_sImplementationName, sShaderModel, sShaderCompiler);
+
+  xiiGALShaderManager::Configure(sShaderModel, true);
+  XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found.", sShaderCompiler);
+  m_sShaderModel = sShaderModel;
+
   if (m_pDevice == nullptr || m_pDevice->Initialize().Failed())
   {
     m_pDevice.Clear();
@@ -79,6 +123,7 @@ xiiResult xiiGPUTestingEnvironment::Initialize()
 
   xiiStringBuilder sDebugName("GraphicsFoundationTest ", m_sImplementationName, " Device");
   m_pDevice->SetDebugName(sDebugName);
+
   return XII_SUCCESS;
 }
 
@@ -88,8 +133,11 @@ void xiiGPUTestingEnvironment::Shutdown()
   {
     m_pDevice->WaitIdle();
     m_pDevice.Clear();
+
     xiiPlugin::UnloadAllPlugins();
   }
+
+  xiiShutdownGPUTestDataDirectories();
 }
 
 xiiUniquePtr<xiiWindowBase> xiiGPUTestingEnvironment::CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle)
