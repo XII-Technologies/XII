@@ -184,6 +184,9 @@ bool xiiMaterialManager::IsInitialized()
 void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame)
 {
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before BeginFrame().");
+  if (!IsInitialized())
+    return;
+
   s_pState->m_uiFrameIndex = uiFrameIndex;
 
   if (xiiGALBindlessResourceTable::IsInitialized())
@@ -257,13 +260,16 @@ xiiResult xiiMaterialManager::ExtractRenderData(xiiMaterialGpuHandle handle, xii
 
 xiiMaterialGpuStorage& xiiMaterialManager::GetGpuStorage()
 {
-  XII_ASSERT_DEV(IsInitialized(), "Material manager GPU storage is not initialized.");
+  XII_ASSERT_ALWAYS(IsInitialized(), "Material manager GPU storage is not initialized.");
   return s_pState->m_pSystem->GetGpuStorage();
 }
 
 xiiResult xiiMaterialManager::CreateRuntimeMaterial(const xiiMaterialSchemaDescription& description, const xiiMaterialRuntimeState& runtimeState, xiiSharedPtr<xiiMaterialSchema>& out_pSchema, xiiSharedPtr<xiiMaterialInstance>& out_pInstance, xiiStringBuilder* out_pError)
 {
   XII_ASSERT_DEV(s_pState != nullptr, "Material manager is not started.");
+  if (s_pState == nullptr)
+    return XII_FAILURE;
+
   return xiiMaterialSystem::CreateRuntimeMaterial(description, runtimeState, out_pSchema, out_pInstance, out_pError);
 }
 

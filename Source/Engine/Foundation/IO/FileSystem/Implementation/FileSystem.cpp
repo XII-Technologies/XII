@@ -86,21 +86,23 @@ xiiResult xiiFileSystem::AddDataDirectory(xiiStringView sDataDirectory, xiiStrin
   sPath.MakeCleanPath();
 
   if (!sPath.IsEmpty() && !sPath.EndsWith("/"))
+  {
     sPath.Append("/");
+  }
 
   xiiStringBuilder sCleanRootName = sRootName;
   CleanUpRootName(sCleanRootName);
 
   XII_LOCK(s_pData->m_FsMutex);
 
-  bool failed = false;
+  bool bFailed = false;
   if (FindDataDirectoryWithRoot(sCleanRootName) != nullptr)
   {
     xiiLog::Error("A data directory with root name '{0}' already exists.", sCleanRootName);
-    failed = true;
+    bFailed = true;
   }
 
-  if (!failed)
+  if (!bFailed)
   {
     s_pData->m_DataDirFactories.Sort([](const auto& a, const auto& b) { return a.m_fPriority < b.m_fPriority; });
 

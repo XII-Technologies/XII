@@ -256,6 +256,8 @@ xiiRenderGraphGraphId xiiRenderGraphManager::RegisterGraph(const xiiRenderGraphR
   XII_ASSERT_DEV(s_pState != nullptr, "Render graph manager is not started.");
   XII_ASSERT_DEV(!description.m_sName.IsEmpty(), "A render graph registration requires a name.");
   XII_ASSERT_DEV(buildDelegate.IsValid(), "A render graph registration requires a build delegate.");
+  if (s_pState == nullptr || description.m_sName.IsEmpty() || !buildDelegate.IsValid())
+    return {};
 
   xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry = XII_DEFAULT_NEW(xiiRenderGraphManagerState::Entry);
   xiiRenderGraphManagerState::Entry&              entry  = *pEntry;
@@ -271,6 +273,9 @@ xiiRenderGraphGraphId xiiRenderGraphManager::RegisterGraph(const xiiRenderGraphR
 
 bool xiiRenderGraphManager::UnregisterGraph(xiiRenderGraphGraphId id)
 {
+  if (s_pState == nullptr || !id.IsValid())
+    return false;
+
   const xiiUInt32 uiIndex = FindEntry(*s_pState, id);
   if (uiIndex == xiiInvalidIndex)
     return false;
@@ -280,6 +285,9 @@ bool xiiRenderGraphManager::UnregisterGraph(xiiRenderGraphGraphId id)
 
 bool xiiRenderGraphManager::RequestExecution(xiiRenderGraphGraphId id)
 {
+  if (s_pState == nullptr || !id.IsValid())
+    return false;
+
   const xiiUInt32 uiIndex = FindEntry(*s_pState, id);
   if (uiIndex == xiiInvalidIndex)
     return false;
@@ -289,12 +297,18 @@ bool xiiRenderGraphManager::RequestExecution(xiiRenderGraphGraphId id)
 
 xiiRenderGraph* xiiRenderGraphManager::GetGraph(xiiRenderGraphGraphId id)
 {
+  if (s_pState == nullptr || !id.IsValid())
+    return nullptr;
+
   const xiiUInt32 uiIndex = FindEntry(*s_pState, id);
   return uiIndex == xiiInvalidIndex ? nullptr : s_pState->m_Entries[uiIndex]->m_pGraph.Borrow();
 }
 
 xiiRenderGraphBlackboard* xiiRenderGraphManager::GetBlackboard(xiiRenderGraphGraphId id)
 {
+  if (s_pState == nullptr || !id.IsValid())
+    return nullptr;
+
   const xiiUInt32 uiIndex = FindEntry(*s_pState, id);
   return uiIndex == xiiInvalidIndex ? nullptr : &s_pState->m_Entries[uiIndex]->m_Blackboard;
 }
@@ -361,9 +375,11 @@ xiiResult xiiRenderGraphManager::ExecuteFrame(xiiUInt64 uiFrameIndex, xiiUInt64 
 xiiResult xiiRenderGraphManager::ExecuteFrame(xiiUInt64 uiFrameIndex, xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
 {
   XII_ASSERT_DEV(pDevice != nullptr && pResourceCache != nullptr, "Render graph manager requires a device and resource cache.");
+  XII_ASSERT_DEV(s_pState != nullptr && s_pState->m_bEngineStarted, "Render graph manager is not initialized.");
+  if (s_pState == nullptr || !s_pState->m_bEngineStarted || pDevice == nullptr || pResourceCache == nullptr)
+    return XII_FAILURE;
 
   xiiDynamicArray<xiiUInt32> executionOrder;
-  XII_ASSERT_DEV(s_pState != nullptr, "Render graph manager is not started.");
   for (xiiUInt32 i = 0U; i < s_pState->m_Entries.GetCount(); ++i)
   {
     if (ShouldExecute(*s_pState->m_Entries[i], uiFrameIndex))
