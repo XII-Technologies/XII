@@ -115,6 +115,7 @@ xiiResult xiiGPUTestingEnvironment::Initialize()
   XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found.", sShaderCompiler);
   m_sShaderModel = sShaderModel;
 
+  m_pDevice = xiiGALDeviceFactory::CreateDevice(m_sImplementationName, xiiFoundation::GetDefaultAllocator(), description);
   if (m_pDevice == nullptr || m_pDevice->Initialize().Failed())
   {
     m_pDevice.Clear();
@@ -133,8 +134,6 @@ void xiiGPUTestingEnvironment::Shutdown()
   {
     m_pDevice->WaitIdle();
     m_pDevice.Clear();
-
-    xiiPlugin::UnloadAllPlugins();
   }
 
   xiiShutdownGPUTestDataDirectories();
