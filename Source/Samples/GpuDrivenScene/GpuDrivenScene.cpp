@@ -14,7 +14,6 @@
 
 #include <Core/Graphics/Camera.h>
 #include <Core/Input/InputManager.h>
-#include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
 

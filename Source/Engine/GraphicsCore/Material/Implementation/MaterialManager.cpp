@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashTable.h>
 #include <GraphicsCore/Material/MaterialManager.h>

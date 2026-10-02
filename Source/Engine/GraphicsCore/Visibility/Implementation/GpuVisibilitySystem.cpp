@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>

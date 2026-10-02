@@ -3,7 +3,6 @@
 #include "GpuDrivenSceneWorld.h"
 
 #include <Core/Graphics/Geometry.h>
-#include <Core/ResourceManager/Implementation/ResourceLock.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
