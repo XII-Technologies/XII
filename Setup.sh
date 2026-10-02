@@ -46,6 +46,12 @@ DEB_QT_PKGS=(
   qt6-wayland
 )
 
+DEB_VULKAN_PKGS=(
+  libvulkan-dev
+  vulkan-tools
+  vulkan-validationlayers-dev
+)
+
 # ----------------------------------------
 # Fedora package lists
 # ----------------------------------------
@@ -75,6 +81,12 @@ FEDORA_WAYLAND_PKGS=(
   egl-wayland
 )
 
+FEDORA_VULKAN_PKGS=(
+  vulkan-loader-devel
+  vulkan-validation-layers
+  vulkan-tools
+)
+
 # ----------------------------------------
 # Install dependencies
 # ----------------------------------------
@@ -85,7 +97,8 @@ case "$DISTRO" in
     sudo apt install -y \
       "${DEB_BASE_PKGS[@]}" \
       "${DEB_WAYLAND_PKGS[@]}" \
-      "${DEB_QT_PKGS[@]}"
+      "${DEB_QT_PKGS[@]}" \
+      "${DEB_VULKAN_PKGS[@]}"
 
     echo "Installing Vulkan packages..."
     sudo apt install -y libvulkan-dev vulkan-tools
@@ -95,7 +108,8 @@ case "$DISTRO" in
     sudo dnf install -y \
       "${FEDORA_BASE_PKGS[@]}" \
       "${FEDORA_WAYLAND_PKGS[@]}" \
-      "${FEDORA_QT_PKGS[@]}"
+      "${FEDORA_QT_PKGS[@]}" \
+      "${FEDORA_VULKAN_PKGS[@]}"
 
     echo "Installing Vulkan packages..."
     sudo dnf install -y vulkan-loader-devel vulkan-tools
