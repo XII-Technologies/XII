@@ -10,7 +10,7 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/System/Screen.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
-#include <GameEngine/Components/Gameplay/PlayerStartPointComponent.h>
+#include <GameEngine/Components/GamePlay/PlayerStartPointComponent.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>

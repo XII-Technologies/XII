@@ -8,7 +8,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
-#include <GameEngine/Components/Gameplay/PlayerStartPointComponent.h>
+#include <GameEngine/Components/GamePlay/PlayerStartPointComponent.h>
 #include <GameEngine/Configuration/InputConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameState/FallbackGameState.h>

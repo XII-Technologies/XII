@@ -4,7 +4,7 @@
 
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GameEngine/Components/Gameplay/BlackboardComponent.h>
+#include <GameEngine/Components/GamePlay/BlackboardComponent.h>
 #include <GameEngine/Components/StateMachine/StateMachineComponent.h>
 
 // clang-format off

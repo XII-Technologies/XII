@@ -5,7 +5,7 @@
 #include <GameEngine/GameEngineDLL.h>
 
 #include <Core/ResourceManager/Resource.h>
-#include <GameEngine/Components/Gameplay/BlackboardComponent.h>
+#include <GameEngine/Components/GamePlay/BlackboardComponent.h>
 
 using xiiBlackboardTemplateResourceHandle = xiiTypedResourceHandle<class xiiBlackboardTemplateResource>;
 
