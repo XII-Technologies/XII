@@ -6,6 +6,7 @@
 #include <Foundation/Containers/HybridArray.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsFoundation/Resources/BindlessResource.h>
 
 struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyState
 {
@@ -142,9 +143,6 @@ public:
   static void                            Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
   static void                            ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
 
-  /// Supplies indices allocated by the backend bindless resource table.
-  static bool SetBindlessIndices(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt32 uiVertex, xiiUInt32 uiIndex, xiiUInt32 uiMeshlet, xiiUInt32 uiRemap, xiiUInt32 uiPrimitive);
-
   [[nodiscard]] static bool                               IsValid(xiiGeometryHandle handle);
   [[nodiscard]] static xiiEnum<xiiGeometryResidencyState> GetState(xiiGeometryHandle handle);
   [[nodiscard]] static const xiiGpuGeometryRecord*        GetGpuRecord(xiiGeometryHandle handle);
@@ -174,6 +172,8 @@ private:
 
   struct Slot
   {
+    static constexpr xiiUInt32 s_uiBindlessResourcesPerLod = 5U;
+
     xiiGeometryDescription             m_Description;
     xiiGpuGeometryRecord               m_GpuRecord;
     xiiEnum<xiiGeometryResidencyState> m_State           = xiiGeometryResidencyState::Unloaded;
@@ -188,6 +188,10 @@ private:
     xiiUInt64 m_uiDirtyFrameMask                                        = 0U;
     xiiUInt32 m_uiMeshletArenaOffset[xiiGpuGeometryRecord::s_uiMaxLods] = {};
     xiiUInt32 m_uiMeshletArenaCount[xiiGpuGeometryRecord::s_uiMaxLods]  = {};
+    /// Vertex, index, meshlet, remap and primitive SRVs owned by the residency service.
+    /// Keeping the generation-bearing handles beside the LOD prevents callers from leaking
+    /// descriptors or retiring them while an older frame still references the geometry record.
+    xiiGALBindlessResourceHandle m_BindlessResources[xiiGpuGeometryRecord::s_uiMaxLods][s_uiBindlessResourcesPerLod] = {};
   };
 
   struct Upload
@@ -219,6 +223,8 @@ private:
   };
 
   static bool BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget);
+  static bool RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, xiiMeshBufferResource& mesh);
+  static void ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
   static void EnforceBudget(xiiUInt64 uiCompletedFrame);
   static bool AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
   static void FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);

@@ -5,12 +5,16 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 class xiiGeometryResidencyManager::State
 {
 public:
   void ClearGpuState()
   {
+    for (Slot& slot : m_Slots)
+      xiiGeometryResidencyManager::ReleaseBindlessResources(slot, xiiMath::Max(slot.m_uiLastUsedFrame, slot.m_uiRetireFrame));
+
     m_pMetadataBuffer.Clear();
     m_pMeshletMetadataBuffer.Clear();
     m_Slots.Clear();
@@ -50,7 +54,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, GeometryResidencyManager)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
-    "Core"
+    "Core",
+    "BindlessResourceTable"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
@@ -388,6 +393,7 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
   };
   xiiHybridArray<PendingAllocation, xiiGpuGeometryRecord::s_uiMaxLods>             allocations;
   xiiHybridArray<UploadPassData::MeshletUpload, xiiGpuGeometryRecord::s_uiMaxLods> uploads;
+  xiiHybridArray<xiiUInt32, xiiGpuGeometryRecord::s_uiMaxLods>                     newLods;
   xiiUInt32                                                                        uiBoundsLod = record.m_uiResidentLodMask != 0U ? xiiMath::FirstBitLow(record.m_uiResidentLodMask) : xiiInvalidIndex;
 
   auto rollback = [&]() {
@@ -418,6 +424,7 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
     uiNewBytes += static_cast<xiiUInt64>(mesh->GetIndexCount()) * (mesh->GetIndexType() == xiiGALValueType::UInt16 ? 2U : 4U);
     uiNewBytes += static_cast<xiiUInt64>(mesh->GetMeshletCount()) * sizeof(xiiMeshlet);
     record.m_uiResidentLodMask |= XII_BIT(i);
+    newLods.PushBack(i);
 
     if (lod.m_uiMeshletCount > 0U)
     {
@@ -455,6 +462,26 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
     return false;
   }
 
+  xiiHybridArray<xiiUInt32, xiiGpuGeometryRecord::s_uiMaxLods> registeredLods;
+  for (xiiUInt32 uiLod : newLods)
+  {
+    xiiResourceLock<xiiMeshBufferResource> mesh(slot.m_Description.m_Lods[uiLod].m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
+    if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final || !RegisterBindlessResources(slot, record, uiLod, *mesh.GetPointerNonConst()))
+    {
+      for (xiiUInt32 uiRegisteredLod : registeredLods)
+      {
+        for (xiiUInt32 uiResource = 0U; uiResource < Slot::s_uiBindlessResourcesPerLod; ++uiResource)
+        {
+          xiiGALBindlessResourceTable::RetireBufferSRV(slot.m_BindlessResources[uiRegisteredLod][uiResource], 0U);
+          slot.m_BindlessResources[uiRegisteredLod][uiResource] = {};
+        }
+      }
+      rollback();
+      return false;
+    }
+    registeredLods.PushBack(uiLod);
+  }
+
   for (const PendingAllocation& allocation : allocations)
   {
     slot.m_uiMeshletArenaOffset[allocation.m_uiLod] = allocation.m_uiOffset;
@@ -470,6 +497,73 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
   slot.m_State            = xiiGeometryResidencyState::Resident;
   slot.m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
   return true;
+}
+
+bool xiiGeometryResidencyManager::RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, xiiMeshBufferResource& mesh)
+{
+  if (!xiiGALBindlessResourceTable::IsInitialized() || uiLod >= record.m_uiLodCount)
+    return false;
+
+  xiiSharedPtr<xiiGALBuffer> buffers[Slot::s_uiBindlessResourcesPerLod] = {
+    mesh.GetVertexBuffer(),
+    mesh.GetIndexBuffer(),
+    mesh.GetMeshletBuffer(),
+    mesh.GetMeshletVertexRemapBuffer(),
+    mesh.GetMeshletPrimitiveIndexBuffer(),
+  };
+
+  xiiGALBindlessResourceHandle handles[Slot::s_uiBindlessResourcesPerLod] = {};
+  for (xiiUInt32 uiResource = 0U; uiResource < Slot::s_uiBindlessResourcesPerLod; ++uiResource)
+  {
+    if (buffers[uiResource] == nullptr)
+      break;
+
+    handles[uiResource] = xiiGALBindlessResourceTable::RegisterBufferSRV(buffers[uiResource]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    if (!handles[uiResource].IsValid())
+      break;
+  }
+
+  for (xiiUInt32 uiResource = 0U; uiResource < Slot::s_uiBindlessResourcesPerLod; ++uiResource)
+  {
+    if (handles[uiResource].IsValid())
+      continue;
+
+    for (xiiUInt32 uiRegistered = 0U; uiRegistered < uiResource; ++uiRegistered)
+      xiiGALBindlessResourceTable::RetireBufferSRV(handles[uiRegistered], 0U);
+    return false;
+  }
+
+  for (xiiUInt32 uiResource = 0U; uiResource < Slot::s_uiBindlessResourcesPerLod; ++uiResource)
+    slot.m_BindlessResources[uiLod][uiResource] = handles[uiResource];
+
+  xiiGpuGeometryLod& lod               = record.m_Lods[uiLod];
+  lod.m_uiVertexBufferIndex           = handles[0].m_uiIndex;
+  lod.m_uiIndexBufferIndex            = handles[1].m_uiIndex;
+  lod.m_uiMeshletBufferIndex          = handles[2].m_uiIndex;
+  lod.m_uiMeshletRemapBufferIndex     = handles[3].m_uiIndex;
+  lod.m_uiMeshletPrimitiveBufferIndex = handles[4].m_uiIndex;
+  return true;
+}
+
+void xiiGeometryResidencyManager::ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame)
+{
+  for (xiiUInt32 uiLod = 0U; uiLod < xiiGpuGeometryRecord::s_uiMaxLods; ++uiLod)
+  {
+    for (xiiUInt32 uiResource = 0U; uiResource < Slot::s_uiBindlessResourcesPerLod; ++uiResource)
+    {
+      xiiGALBindlessResourceHandle& handle = slot.m_BindlessResources[uiLod][uiResource];
+      if (handle.IsValid() && xiiGALBindlessResourceTable::IsInitialized())
+        xiiGALBindlessResourceTable::RetireBufferSRV(handle, uiLastUseFrame);
+      handle = {};
+    }
+
+    xiiGpuGeometryLod& lod               = slot.m_GpuRecord.m_Lods[uiLod];
+    lod.m_uiVertexBufferIndex           = xiiInvalidIndex;
+    lod.m_uiIndexBufferIndex            = xiiInvalidIndex;
+    lod.m_uiMeshletBufferIndex          = xiiInvalidIndex;
+    lod.m_uiMeshletRemapBufferIndex     = xiiInvalidIndex;
+    lod.m_uiMeshletPrimitiveBufferIndex = xiiInvalidIndex;
+  }
 }
 
 void xiiGeometryResidencyManager::EnforceBudget(xiiUInt64 uiCompletedFrame)
@@ -492,6 +586,7 @@ void xiiGeometryResidencyManager::EnforceBudget(xiiUInt64 uiCompletedFrame)
     s_pState->m_uiResidentBytes -= victim.m_uiResidentBytes;
     victim.m_uiResidentBytes               = 0U;
     victim.m_GpuRecord.m_uiResidentLodMask = 0U;
+    ReleaseBindlessResources(victim, victim.m_uiLastUsedFrame);
     ReleaseMeshletAllocations(victim);
     victim.m_State            = xiiGeometryResidencyState::Unloaded;
     victim.m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
@@ -513,6 +608,7 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
     if (slot.m_State == xiiGeometryResidencyState::EvictPending && slot.m_uiRetireFrame <= uiCompletedFrame)
     {
       s_pState->m_uiResidentBytes -= slot.m_uiResidentBytes;
+      ReleaseBindlessResources(slot, slot.m_uiRetireFrame);
       ReleaseMeshletAllocations(slot);
       slot.m_bAllocated = false;
       slot.m_Description.m_Lods.Clear();
@@ -545,19 +641,6 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
 
   EnforceBudget(uiCompletedFrame);
   XII_IGNORE_UNUSED(uiFrameIndex);
-}
-
-bool xiiGeometryResidencyManager::SetBindlessIndices(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt32 uiVertex, xiiUInt32 uiIndex, xiiUInt32 uiMeshlet, xiiUInt32 uiRemap, xiiUInt32 uiPrimitive)
-{
-  if (!IsValid(handle) || uiLod >= s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord.m_uiLodCount) return false;
-  xiiGpuGeometryLod& lod                                 = s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord.m_Lods[uiLod];
-  lod.m_uiVertexBufferIndex                              = uiVertex;
-  lod.m_uiIndexBufferIndex                               = uiIndex;
-  lod.m_uiMeshletBufferIndex                             = uiMeshlet;
-  lod.m_uiMeshletRemapBufferIndex                        = uiRemap;
-  lod.m_uiMeshletPrimitiveBufferIndex                    = uiPrimitive;
-  s_pState->m_Slots[handle.m_uiIndex].m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
-  return true;
 }
 
 bool xiiGeometryResidencyManager::IsValid(xiiGeometryHandle handle)

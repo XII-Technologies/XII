@@ -62,16 +62,14 @@ public:
 private:
   struct GeometryAsset
   {
-    xiiGeometryHandle                             m_hGeometry;
-    xiiRayTracingGeometryHandle                   m_hRayTracingGeometry;
-    xiiDynamicArray<xiiMeshBufferResourceHandle>  m_Lods;
-    xiiDynamicArray<xiiGALBindlessResourceHandle> m_BindlessBuffers;
+    xiiGeometryHandle                            m_hGeometry;
+    xiiRayTracingGeometryHandle                  m_hRayTracingGeometry;
+    xiiDynamicArray<xiiMeshBufferResourceHandle> m_Lods;
   };
 
   xiiResult CreateMaterials();
   xiiResult CreateGeometry();
   xiiResult CreateSceneObjects();
-  xiiResult RegisterGeometryBuffers(GeometryAsset& asset);
 
   xiiGpuDrivenSceneConfiguration                     m_Configuration;
   xiiGpuDrivenSceneLight                             m_SunLight;
