@@ -7,6 +7,7 @@
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
+#include <GraphicsCore/Visibility/GpuHiZPyramid.h>
 
 class xiiGpuVisibilityManager;
 
@@ -15,6 +16,9 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   XII_DECLARE_POD_TYPE();
 
   xiiMat4   m_ViewProjectionMatrix;
+  /// Matrix that produced the supplied Hi-Z image. This is normally the previous frame's
+  /// view projection while m_ViewProjectionMatrix remains the current culling matrix.
+  xiiMat4   m_OcclusionViewProjectionMatrix;
   xiiVec4   m_FrustumPlanes[6];
   xiiVec4   m_CameraPosition;
   xiiVec4   m_ViewportAndHiZ; // width, height, Hi-Z mip count, occlusion bias
@@ -147,6 +151,7 @@ private:
   xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletDispatchBuildPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pCommandBuildPipeline;
+  xiiGpuHiZPyramid                                      m_HiZHistory;
   xiiUInt32                                             m_uiLargestReportedInstanceCount = 0U;
   xiiUInt32                                             m_uiLargestReportedMeshletCount  = 0U;
   xiiUInt32                                             m_uiMeshDispatchGroupCountX      = 0U;

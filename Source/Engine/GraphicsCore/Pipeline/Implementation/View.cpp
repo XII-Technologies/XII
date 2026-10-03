@@ -276,6 +276,7 @@ const xiiDisplayOutputSettings& xiiView::GetDisplayOutputSettings() const
 
 void xiiView::InvalidateTemporalHistory()
 {
+  xiiGpuVisibilityManager::InvalidateHiZHistory(m_hGpuVisibilityContext);
   m_ViewPassResources->m_DepthPasses.m_bMotionHistoryValid                  = false;
   m_ViewPassResources->m_ShadowPasses.m_bRayTracedShadowHistoryValid        = false;
   m_ViewPassResources->m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = false;
@@ -6646,18 +6647,32 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   const xiiGeometryResidencyManager::UploadHandles geometry = xiiGeometryResidencyManager::AddUploadPass(graph, uiFrameIndex);
   const xiiMaterialGpuStorage::UploadHandles       materials = xiiMaterialManager::AddUploadPasses(graph);
 
-  // Build the primary view's compact meshlet stream from the subsystem-owned scene. The first
-  // depth pass deliberately performs frustum/LOD culling without Hi-Z; the generated depth then
-  // seeds the existing hierarchical occlusion path for later passes and the following frame.
-  xiiGpuVisibilityOutputs mainVisibility;
+  // Build the primary view's compact meshlet stream from the subsystem-owned scene. Frustum and
+  // LOD culling are refined by the previous frame's subsystem-owned Hi-Z history when valid; the
+  // depth generated below refreshes that history without introducing a same-frame dependency cycle.
+  xiiGpuVisibilityOutputs         mainVisibility;
+  xiiRenderGraphTextureHandle     hPreviousGpuHiZ;
   if (m_pCamera != nullptr && m_GpuSceneContext.IsInitialized() && xiiGpuVisibilityManager::IsValid(m_hGpuVisibilityContext) &&
       geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid())
   {
+    const xiiUInt32 uiRenderWidth  = GetRenderResolutionWidth();
+    const xiiUInt32 uiRenderHeight = GetRenderResolutionHeight();
+    const auto&     depthHistory   = m_ViewPassResources->m_DepthPasses;
+    if (xiiGpuVisibilityManager::PrepareHiZHistory(m_hGpuVisibilityContext, uiRenderWidth, uiRenderHeight).Succeeded())
+    {
+      if (depthHistory.m_bMotionHistoryValid)
+        hPreviousGpuHiZ = xiiGpuVisibilityManager::ImportPreviousHiZ(m_hGpuVisibilityContext, graph, uiFrameIndex);
+      else
+        xiiGpuVisibilityManager::InvalidateHiZHistory(m_hGpuVisibilityContext);
+    }
+
     const xiiMat4   viewProjection = GetViewProjectionMatrix(xiiCameraEye::Left);
     const xiiFrustum viewFrustum   = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
     xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
-      viewProjection, viewFrustum, m_pCamera->GetPosition(), GetRenderResolutionWidth(), GetRenderResolutionHeight(), 0U,
+      viewProjection, viewFrustum, m_pCamera->GetPosition(), uiRenderWidth, uiRenderHeight,
+      xiiGpuVisibilityManager::GetHiZMipLevelCount(m_hGpuVisibilityContext),
       m_GpuSceneContext.GetDatabase().GetObjectCount());
+    visibilityView.m_OcclusionViewProjectionMatrix = depthHistory.m_bMotionHistoryValid ? depthHistory.m_PreviousViewProjectionMatrix : viewProjection;
     visibilityView.m_uiRequiredFlags = xiiSceneObjectFlags::Enabled;
     visibilityView.m_uiExcludedFlags = xiiSceneObjectFlags::Transparent;
 
@@ -6666,7 +6681,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     visibilityDescription.m_Purpose       = xiiGpuVisibilityPurpose::MainView;
     visibilityDescription.m_bAsyncCompute = true;
     mainVisibility = xiiGpuVisibilityManager::AddPasses(
-      m_hGpuVisibilityContext, graph, uiFrameIndex, m_GpuSceneContext.GetHandle(), visibilityView, geometry, visibilityDescription);
+      m_hGpuVisibilityContext, graph, uiFrameIndex, m_GpuSceneContext.GetHandle(), visibilityView, geometry, visibilityDescription, hPreviousGpuHiZ);
   }
 
   const xiiRayTracingSceneManager::BuildHandles rayTracingScene      = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
@@ -6851,6 +6866,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     auto depthPrepass = graph.AddPass<xiiDepthPrepassData>("DepthPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDepthPrepass, this), xiiMakeDelegate(&xiiView::ExecuteDepthPrepass, this));
     hSceneDepth       = depthPrepass.first->m_hSceneDepth;
   }
+  xiiGpuVisibilityManager::AddHiZBuildPass(m_hGpuVisibilityContext, graph, uiFrameIndex, hSceneDepth, true);
   if (m_pExtractedData != nullptr)
   {
     const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(m_pExtractedData->GetAllRenderData());

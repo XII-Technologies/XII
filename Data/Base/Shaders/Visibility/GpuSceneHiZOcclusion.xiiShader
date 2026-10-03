@@ -32,7 +32,7 @@ bool ProjectBounds(GpuSceneInstance instance, GpuVisibilityView view, out float4
                                      (cornerIndex & 2u) != 0u ? 1.0f : -1.0f,
                                      (cornerIndex & 4u) != 0u ? 1.0f : -1.0f);
     const float3 corner = instance.BoundsCenterRadius.xyz + instance.BoundsExtents.xyz * cornerSign;
-    const float4 clip = mul(view.ViewProjectionMatrix, float4(corner, 1.0f));
+    const float4 clip = mul(view.OcclusionViewProjectionMatrix, float4(corner, 1.0f));
     if (clip.w <= 0.0001f)
     {
       screenRect = float4(0.0f, 0.0f, 1.0f, 1.0f);
@@ -108,6 +108,21 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
   const GpuSceneInstance instance = g_SceneInstances[instanceIndex];
   const GpuVisibilityView view = g_VisibilityView[0];
+
+  // The temporal pyramid contains the previous frame. A moved instance cannot be tested
+  // against that image conservatively without a swept bound, so leave it visible this frame.
+  const float transformDelta =
+    dot(abs(instance.GlobalTransform[0] - instance.PreviousGlobalTransform[0]), 1.0f.xxxx) +
+    dot(abs(instance.GlobalTransform[1] - instance.PreviousGlobalTransform[1]), 1.0f.xxxx) +
+    dot(abs(instance.GlobalTransform[2] - instance.PreviousGlobalTransform[2]), 1.0f.xxxx) +
+    dot(abs(instance.GlobalTransform[3] - instance.PreviousGlobalTransform[3]), 1.0f.xxxx);
+  if (transformDelta > 1.0e-5f)
+  {
+    uint movedDestination;
+    if (ReserveVisibleInstance(movedDestination))
+      g_VisibleInstances[movedDestination] = instanceIndex;
+    return;
+  }
 
   float4 rect;
   float nearestDepth;

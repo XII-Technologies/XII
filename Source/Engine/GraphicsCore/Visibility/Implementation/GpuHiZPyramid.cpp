@@ -174,7 +174,7 @@ void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameInde
   auto                                       build  = graph.AddPass<BuildPassData>(
     "Build GPU Hi-Z History", queue,
     [this, uiSlot, hSceneDepth](BuildPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hSceneDepth = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::DepthRead);
+      data.m_hSceneDepth = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::ShaderResource);
       xiiStringBuilder name;
       name.SetFormat("GPU Hi-Z History {}", uiSlot);
       const xiiRenderGraphTextureHandle hImported = builder.ImportTexture(name, m_Frames[uiSlot].m_pTexture, m_Frames[uiSlot].m_pTexture->GetResourceState());

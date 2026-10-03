@@ -14,11 +14,12 @@
 #include <Shaders/Visibility/GpuMeshletDispatchConstants.h>
 #include <Shaders/Visibility/GpuSceneCommandBuildConstants.h>
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuVisibilityView>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiGpuVisibilityView>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("ViewProjectionMatrix", m_ViewProjectionMatrix),
+      XII_MEMBER_PROPERTY("OcclusionViewProjectionMatrix", m_OcclusionViewProjectionMatrix),
       XII_ARRAY_ACCESSOR_PROPERTY_READ_ONLY("FrustumPlanes", GetFrustumPlaneCount, GetFrustumPlane),
       XII_MEMBER_PROPERTY("CameraPosition", m_CameraPosition),
       XII_MEMBER_PROPERTY("ViewportAndHiZ", m_ViewportAndHiZ),
@@ -228,11 +229,15 @@ xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpu
   m_pMeshletDispatchBuildPipeline = LoadComputePipeline("Shaders/Visibility/GpuSceneMeshletDispatchBuild.xiiShader");
   m_pMeshletCullPipeline          = LoadComputePipeline("Shaders/Visibility/GpuSceneMeshletCull.xiiShader");
   m_pCommandBuildPipeline         = LoadComputePipeline("Shaders/Visibility/GpuSceneCommandBuild.xiiShader");
-  return m_pInstanceCullPipeline != nullptr && m_pHiZOcclusionPipeline != nullptr && m_pMeshletDispatchBuildPipeline != nullptr && m_pMeshletCullPipeline != nullptr && m_pCommandBuildPipeline != nullptr ? XII_SUCCESS : XII_FAILURE;
+  xiiGpuHiZPyramidDescription hiZDescription;
+  hiZDescription.m_uiFramesInFlight = description.m_uiFramesInFlight;
+  const bool bHiZInitialized = m_HiZHistory.Initialize(pDevice, hiZDescription).Succeeded();
+  return m_pInstanceCullPipeline != nullptr && m_pHiZOcclusionPipeline != nullptr && m_pMeshletDispatchBuildPipeline != nullptr && m_pMeshletCullPipeline != nullptr && m_pCommandBuildPipeline != nullptr && bHiZInitialized ? XII_SUCCESS : XII_FAILURE;
 }
 
 void xiiGpuVisibilitySystem::Shutdown()
 {
+  m_HiZHistory.Shutdown();
   m_pInstanceCullPipeline.Clear();
   m_pHiZOcclusionPipeline.Clear();
   m_pMeshletDispatchBuildPipeline.Clear();
@@ -305,6 +310,7 @@ xiiGpuVisibilityView xiiGpuVisibilitySystem::BuildView(const xiiMat4& viewProjec
 {
   xiiGpuVisibilityView result;
   result.m_ViewProjectionMatrix = viewProjectionMatrix;
+  result.m_OcclusionViewProjectionMatrix = viewProjectionMatrix;
   for (xiiUInt32 i = 0; i < 6U; ++i) result.m_FrustumPlanes[i] = frustum.GetPlane(static_cast<xiiUInt8>(i)).GetAsVec4();
   result.m_CameraPosition   = xiiVec4(vCameraPosition.x, vCameraPosition.y, vCameraPosition.z, 1.0f);
   result.m_ViewportAndHiZ   = xiiVec4(static_cast<float>(uiWidth), static_cast<float>(uiHeight), static_cast<float>(uiHiZMipCount), 0.0005f);

@@ -138,6 +138,37 @@ xiiGpuVisibilityOutputs xiiGpuVisibilityManager::AddPasses(xiiGpuVisibilityConte
   return pSystem != nullptr && pScene != nullptr ? pSystem->AddPasses(graph, uiFrameIndex, *pScene, view, geometry, description, hHiZ) : xiiGpuVisibilityOutputs{};
 }
 
+xiiResult xiiGpuVisibilityManager::PrepareHiZHistory(xiiGpuVisibilityContextHandle handle, xiiUInt32 uiWidth, xiiUInt32 uiHeight)
+{
+  xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  return pSystem != nullptr ? pSystem->m_HiZHistory.Resize(uiWidth, uiHeight) : XII_FAILURE;
+}
+
+void xiiGpuVisibilityManager::InvalidateHiZHistory(xiiGpuVisibilityContextHandle handle)
+{
+  if (xiiGpuVisibilitySystem* pSystem = GetSystem(handle))
+    pSystem->m_HiZHistory.Invalidate();
+}
+
+xiiRenderGraphTextureHandle xiiGpuVisibilityManager::ImportPreviousHiZ(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
+{
+  xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  return pSystem != nullptr ? pSystem->m_HiZHistory.ImportPrevious(graph, uiFrameIndex) : xiiRenderGraphTextureHandle{};
+}
+
+void xiiGpuVisibilityManager::AddHiZBuildPass(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex,
+                                               xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute)
+{
+  if (xiiGpuVisibilitySystem* pSystem = GetSystem(handle))
+    pSystem->m_HiZHistory.AddBuildPass(graph, uiFrameIndex, hSceneDepth, bAsyncCompute);
+}
+
+xiiUInt32 xiiGpuVisibilityManager::GetHiZMipLevelCount(xiiGpuVisibilityContextHandle handle)
+{
+  const xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  return pSystem != nullptr ? pSystem->m_HiZHistory.GetMipLevelCount() : 0U;
+}
+
 xiiUInt32 xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle)
 {
   const xiiGpuVisibilitySystem* pSystem = GetSystem(handle);

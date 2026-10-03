@@ -24,6 +24,7 @@ struct GpuSceneInstance
 struct GpuVisibilityView
 {
   float4x4 ViewProjectionMatrix;
+  float4x4 OcclusionViewProjectionMatrix;
   float4   FrustumPlanes[6];
   float4   CameraPosition;
   float4   ViewportAndHiZ;
