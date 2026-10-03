@@ -45,6 +45,7 @@ private:
   void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
 
   [[nodiscard]] xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance);
+  [[nodiscard]] bool                 ReplaceMaterial(xiiMaterialGpuHandle handle, xiiSharedPtr<xiiMaterialInstance> pInstance);
   void                               UnregisterMaterial(xiiMaterialGpuHandle handle);
 
   [[nodiscard]] xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph);

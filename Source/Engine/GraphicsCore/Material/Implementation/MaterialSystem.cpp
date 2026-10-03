@@ -48,6 +48,12 @@ xiiMaterialGpuHandle xiiMaterialSystem::RegisterMaterial(xiiSharedPtr<xiiMateria
   return m_GpuStorage.RegisterMaterial(std::move(pInstance));
 }
 
+bool xiiMaterialSystem::ReplaceMaterial(xiiMaterialGpuHandle handle, xiiSharedPtr<xiiMaterialInstance> pInstance)
+{
+  XII_ASSERT_DEV(m_bInitialized, "Material system must be initialized before replacing instances.");
+  return m_GpuStorage.ReplaceMaterial(handle, std::move(pInstance));
+}
+
 void xiiMaterialSystem::UnregisterMaterial(xiiMaterialGpuHandle handle)
 {
   m_GpuStorage.UnregisterMaterial(handle, m_uiFrameIndex);

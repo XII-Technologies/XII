@@ -5,8 +5,9 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Scene/SceneDatabaseManager.h>
 
@@ -15,18 +16,20 @@ class xiiSceneDatabaseManagerState
 public:
   struct ExtractedMeshEntry
   {
-    xiiSceneObjectHandle  m_hSceneObject;
-    xiiMeshResourceHandle m_hMesh;
-    xiiGeometryHandle     m_hGeometry;
-    xiiUInt64             m_uiLastSeenFrame = 0U;
+    xiiSceneObjectHandle      m_hSceneObject;
+    xiiMeshResourceHandle     m_hMesh;
+    xiiGeometryHandle         m_hGeometry;
+    xiiMaterialResourceHandle m_hMaterial;
+    xiiMaterialGpuHandle      m_hGpuMaterial;
+    xiiUInt64                 m_uiLastSeenFrame = 0U;
   };
 
   struct Slot
   {
-    xiiUniquePtr<xiiSceneDatabase>                m_pDatabase;
-    xiiHashTable<xiiUInt32, ExtractedMeshEntry>   m_ExtractedMeshes;
-    xiiUInt64                                      m_uiLastSynchronizedFrame = 0U;
-    xiiUInt32                                      m_uiGeneration            = 1U;
+    xiiUniquePtr<xiiSceneDatabase>              m_pDatabase;
+    xiiHashTable<xiiUInt32, ExtractedMeshEntry> m_ExtractedMeshes;
+    xiiUInt64                                   m_uiLastSynchronizedFrame = 0U;
+    xiiUInt32                                   m_uiGeneration            = 1U;
   };
 
   xiiDynamicArray<Slot>      m_Slots;
@@ -42,7 +45,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, SceneDatabaseManager)
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
     "Core",
-    "GeometryResidencyManager"
+    "GeometryResidencyManager",
+    "MaterialManager"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
@@ -92,7 +96,10 @@ namespace
   void ReleaseExtractedMeshes(xiiSceneDatabaseManagerState::Slot& slot)
   {
     for (auto it = slot.m_ExtractedMeshes.GetIterator(); it.IsValid(); ++it)
+    {
       xiiGeometryResidencyManager::ReleaseMeshGeometry(it.Value().m_hMesh, slot.m_uiLastSynchronizedFrame);
+      xiiMaterialManager::ReleaseMaterialResource(it.Value().m_hMaterial);
+    }
 
     slot.m_ExtractedMeshes.Clear();
     slot.m_uiLastSynchronizedFrame = 0U;
@@ -104,6 +111,26 @@ namespace
     flags.AddOrRemove(xiiSceneObjectFlags::Static, renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::StaticObject));
     flags.Add(xiiSceneObjectFlags::SensorVisible);
     return flags;
+  }
+
+  xiiMaterialResourceHandle SelectMaterial(const xiiMeshRenderData& renderData)
+  {
+    if (renderData.m_hMaterials.IsEmpty())
+      return {};
+
+    xiiUInt32 uiMaterialIndex = 0U;
+    if (renderData.m_uiSectionIndex != xiiInvalidIndex && renderData.m_hMesh.IsValid())
+    {
+      xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
+      if (mesh.GetAcquireResult() == xiiResourceAcquireResult::Final)
+      {
+        const xiiArrayPtr<const xiiMeshSection> sections = mesh->GetSections();
+        if (renderData.m_uiSectionIndex < sections.GetCount())
+          uiMaterialIndex = sections[renderData.m_uiSectionIndex].m_uiMaterialIndex;
+      }
+    }
+
+    return uiMaterialIndex < renderData.m_hMaterials.GetCount() ? renderData.m_hMaterials[uiMaterialIndex] : xiiMaterialResourceHandle{};
   }
 } // namespace
 
@@ -179,7 +206,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
   if (pSlot == nullptr || !s_pState->m_bEngineStarted || !xiiGeometryResidencyManager::IsInitialized())
     return XII_FAILURE;
 
-  xiiSceneDatabase& scene = *pSlot->m_pDatabase;
+  xiiSceneDatabase&                                     scene = *pSlot->m_pDatabase;
   const xiiRenderDataBatch::Iterator<xiiMeshRenderData> meshes(extractedData.GetAllRenderData(), 0U, xiiMath::MaxValue<xiiUInt32>());
   for (auto it = meshes; it.IsValid(); ++it)
   {
@@ -187,17 +214,21 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     if (!renderData.m_hMesh.IsValid())
       continue;
 
+    const xiiMaterialResourceHandle hMaterial = SelectMaterial(renderData);
+
     xiiSceneDatabaseManagerState::ExtractedMeshEntry* pEntry = nullptr;
     if (!pSlot->m_ExtractedMeshes.TryGetValue(renderData.m_uiUniqueID, pEntry))
     {
       const xiiGeometryHandle hGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(renderData.m_hMesh);
       if (!hGeometry.IsValid())
         continue;
+      const xiiMaterialGpuHandle hGpuMaterial = xiiMaterialManager::AcquireMaterialResource(hMaterial);
 
       xiiSceneObjectDesc desc;
       desc.m_LocalTransform  = renderData.m_GlobalTransform.GetAsMat4();
       desc.m_Flags           = GetSceneFlags(renderData);
       desc.m_uiGeometryIndex = hGeometry.m_uiIndex;
+      desc.m_uiMaterialIndex = hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex;
       desc.m_uiUserData      = renderData.m_uiUniqueID;
 
       xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
@@ -208,10 +239,13 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       entry.m_hSceneObject    = scene.CreateObject(desc);
       entry.m_hMesh           = renderData.m_hMesh;
       entry.m_hGeometry       = hGeometry;
+      entry.m_hMaterial       = hMaterial;
+      entry.m_hGpuMaterial    = hGpuMaterial;
       entry.m_uiLastSeenFrame = uiFrameIndex;
       if (!entry.m_hSceneObject.IsValid())
       {
         xiiGeometryResidencyManager::ReleaseMeshGeometry(renderData.m_hMesh, uiFrameIndex);
+        xiiMaterialManager::ReleaseMaterialResource(hMaterial);
         continue;
       }
 
@@ -234,6 +268,15 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
         scene.SetLocalBounds(pEntry->m_hSceneObject, mesh->GetBounds());
     }
 
+    if (pEntry != nullptr && pEntry->m_hMaterial != hMaterial)
+    {
+      const xiiMaterialGpuHandle hGpuMaterial = xiiMaterialManager::AcquireMaterialResource(hMaterial);
+      xiiMaterialManager::ReleaseMaterialResource(pEntry->m_hMaterial);
+      pEntry->m_hMaterial    = hMaterial;
+      pEntry->m_hGpuMaterial = hGpuMaterial;
+      scene.SetMaterial(pEntry->m_hSceneObject, hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex);
+    }
+
     if (pEntry == nullptr)
       continue;
 
@@ -254,6 +297,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
 
     scene.DestroyObject(it.Value().m_hSceneObject);
     xiiGeometryResidencyManager::ReleaseMeshGeometry(it.Value().m_hMesh, uiFrameIndex);
+    xiiMaterialManager::ReleaseMaterialResource(it.Value().m_hMaterial);
     it = pSlot->m_ExtractedMeshes.Remove(it);
   }
 

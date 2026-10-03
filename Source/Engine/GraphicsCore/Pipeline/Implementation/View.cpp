@@ -23,6 +23,7 @@
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Lighting/VolumetricMedium.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -6636,6 +6637,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // checked context handles, so their allocator-backed state is guaranteed to be constructed and
   // destroyed by the GraphicsCore subsystem while the Foundation allocator and GAL device exist.
   const xiiGeometryResidencyManager::UploadHandles geometry = xiiGeometryResidencyManager::AddUploadPass(graph, uiFrameIndex);
+  XII_IGNORE_UNUSED(xiiMaterialManager::AddUploadPass(graph));
 
   const xiiRayTracingSceneManager::BuildHandles rayTracingScene      = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
   m_ViewPassResources->m_LightingPasses.m_pRayTracingScene           = rayTracingScene.m_pTopLevelAS;

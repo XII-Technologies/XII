@@ -120,6 +120,25 @@ xiiMaterialGpuHandle xiiMaterialGpuStorage::RegisterMaterial(xiiSharedPtr<xiiMat
   return handle;
 }
 
+bool xiiMaterialGpuStorage::ReplaceMaterial(xiiMaterialGpuHandle handle, xiiSharedPtr<xiiMaterialInstance> pInstance)
+{
+  if (pInstance == nullptr)
+    return false;
+
+  const xiiSharedPtr<const xiiMaterialSchema> pSchema = pInstance->GetSchema();
+  XII_LOCK(m_Mutex);
+  if (!IsValidHandleLocked(handle) || pSchema == nullptr || pSchema->GetParameterBlockSize() > m_Description.m_uiMaxParameterBytes)
+    return false;
+
+  Slot& slot = m_Slots[handle.m_uiSlot];
+  if (slot.m_pInstance == pInstance)
+    return true;
+
+  slot.m_pInstance = std::move(pInstance);
+  xiiMemoryUtils::ZeroFill(slot.m_LastUploadedRevision.GetData(), slot.m_LastUploadedRevision.GetCount());
+  return true;
+}
+
 void xiiMaterialGpuStorage::UnregisterMaterial(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex)
 {
   XII_LOCK(m_Mutex);

@@ -594,6 +594,11 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       XII_IGNORE_UNUSED(viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex));
   }
 
+  // Scene synchronization can acquire resource-backed materials that did not exist at the start
+  // of the frame. Resolve their bindless textures before any view captures its material upload.
+  if (xiiMaterialManager::IsInitialized())
+    xiiMaterialManager::PrepareGpuResources();
+
   if (xiiGeometryResidencyManager::IsInitialized())
   {
     const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();

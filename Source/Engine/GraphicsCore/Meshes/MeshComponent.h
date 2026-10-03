@@ -9,6 +9,7 @@
 class xiiGALBuffer;
 class xiiMeshResource;
 class xiiMaterialResource;
+using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 
 struct xiiMsgExtractRenderData;
 

@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashTable.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -23,10 +24,18 @@ namespace
 class xiiMaterialManagerState
 {
 public:
+  struct ResourceMaterialEntry
+  {
+    xiiMaterialGpuHandle              m_hGpuMaterial;
+    xiiSharedPtr<xiiMaterialInstance> m_pInstance;
+    xiiUInt32                         m_uiReferenceCount = 0U;
+  };
+
   xiiUniquePtr<xiiMaterialSystem>                                                                            m_pSystem;
   xiiMaterialGpuStorageDescription                                                                           m_Description;
   xiiHashTable<xiiTexture2DResourceHandle, MaterialTextureBindingCacheEntry<xiiTexture2DResourceHandle>>     m_Texture2DCache;
   xiiHashTable<xiiTextureCubeResourceHandle, MaterialTextureBindingCacheEntry<xiiTextureCubeResourceHandle>> m_TextureCubeCache;
+  xiiHashTable<xiiMaterialResourceHandle, ResourceMaterialEntry>                                             m_ResourceMaterials;
   xiiUInt64                                                                                                  m_uiFrameIndex   = 0ULL;
   bool                                                                                                       m_bEngineStarted = false;
   bool                                                                                                       m_bInitialized   = false;
@@ -34,6 +43,14 @@ public:
 
 namespace
 {
+  xiiSharedPtr<xiiMaterialInstance> ResolveResourceMaterial(const xiiMaterialResourceHandle& hMaterial, xiiResourceAcquireMode acquireMode)
+  {
+    xiiResourceLock<xiiMaterialResource> material(hMaterial, acquireMode);
+    if (!material.IsValid())
+      return nullptr;
+    return material->GetDefaultInstance();
+  }
+
   template <typename ResourceType, typename ResourceHandle>
   xiiUInt32 ResolveBindlessTexture(
     xiiHashTable<ResourceHandle, MaterialTextureBindingCacheEntry<ResourceHandle>>& cache,
@@ -187,6 +204,24 @@ void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
     return;
 
   s_pState->m_uiFrameIndex = uiFrameIndex;
+  s_pState->m_pSystem->BeginFrame(uiFrameIndex, uiCompletedFrame);
+  PrepareGpuResources();
+}
+
+void xiiMaterialManager::PrepareGpuResources()
+{
+  XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before preparing GPU resources.");
+  if (!IsInitialized())
+    return;
+
+  // Resource reloads rebuild their immutable default instance. Preserve the stable GPU slot used
+  // by scene records and replace only the instance behind it before gathering this frame's upload.
+  for (auto it = s_pState->m_ResourceMaterials.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiSharedPtr<xiiMaterialInstance> pInstance = ResolveResourceMaterial(it.Key(), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+    if (pInstance != nullptr && pInstance != it.Value().m_pInstance && s_pState->m_pSystem->ReplaceMaterial(it.Value().m_hGpuMaterial, pInstance))
+      it.Value().m_pInstance = std::move(pInstance);
+  }
 
   if (xiiGALBindlessResourceTable::IsInitialized())
   {
@@ -214,24 +249,22 @@ void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
         {
           if (!binding.m_hTexture2D.IsValid())
             continue; // No resource handle means an explicitly assigned descriptor is caller-owned.
-          uiBindlessIndex = ResolveBindlessTexture<xiiTexture2DResource>(s_pState->m_Texture2DCache, binding.m_hTexture2D, uiFrameIndex);
+          uiBindlessIndex = ResolveBindlessTexture<xiiTexture2DResource>(s_pState->m_Texture2DCache, binding.m_hTexture2D, s_pState->m_uiFrameIndex);
         }
         else if (definition.m_TextureType == xiiGALShaderTextureType::TextureCube || definition.m_TextureType == xiiGALShaderTextureType::TextureCubeArray)
         {
           if (!binding.m_hTextureCube.IsValid())
             continue;
-          uiBindlessIndex = ResolveBindlessTexture<xiiTextureCubeResource>(s_pState->m_TextureCubeCache, binding.m_hTextureCube, uiFrameIndex);
+          uiBindlessIndex = ResolveBindlessTexture<xiiTextureCubeResource>(s_pState->m_TextureCubeCache, binding.m_hTextureCube, s_pState->m_uiFrameIndex);
         }
 
         pMaterial->SetBindlessIndex(binding.m_Id, uiBindlessIndex).IgnoreResult();
       }
     }
 
-    RetireUnreferencedTextures(s_pState->m_Texture2DCache, uiFrameIndex);
-    RetireUnreferencedTextures(s_pState->m_TextureCubeCache, uiFrameIndex);
+    RetireUnreferencedTextures(s_pState->m_Texture2DCache, s_pState->m_uiFrameIndex);
+    RetireUnreferencedTextures(s_pState->m_TextureCubeCache, s_pState->m_uiFrameIndex);
   }
-
-  s_pState->m_pSystem->BeginFrame(uiFrameIndex, uiCompletedFrame);
 }
 
 xiiMaterialGpuHandle xiiMaterialManager::RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance)
@@ -244,6 +277,58 @@ void xiiMaterialManager::UnregisterMaterial(xiiMaterialGpuHandle handle)
 {
   if (IsInitialized())
     s_pState->m_pSystem->UnregisterMaterial(handle);
+}
+
+xiiMaterialGpuHandle xiiMaterialManager::AcquireMaterialResource(const xiiMaterialResourceHandle& hMaterial)
+{
+  XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before acquiring material resources.");
+  if (!IsInitialized() || !hMaterial.IsValid())
+    return {};
+
+  xiiMaterialManagerState::ResourceMaterialEntry* pEntry = nullptr;
+  if (s_pState->m_ResourceMaterials.TryGetValue(hMaterial, pEntry))
+  {
+    ++pEntry->m_uiReferenceCount;
+    xiiSharedPtr<xiiMaterialInstance> pInstance = ResolveResourceMaterial(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+    if (pInstance != nullptr && pInstance != pEntry->m_pInstance && s_pState->m_pSystem->ReplaceMaterial(pEntry->m_hGpuMaterial, pInstance))
+      pEntry->m_pInstance = std::move(pInstance);
+    return pEntry->m_hGpuMaterial;
+  }
+
+  xiiSharedPtr<xiiMaterialInstance> pInstance = ResolveResourceMaterial(hMaterial, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (pInstance == nullptr)
+    return {};
+
+  xiiMaterialManagerState::ResourceMaterialEntry entry;
+  entry.m_hGpuMaterial     = s_pState->m_pSystem->RegisterMaterial(pInstance);
+  entry.m_pInstance        = std::move(pInstance);
+  entry.m_uiReferenceCount = 1U;
+  if (!entry.m_hGpuMaterial.IsValid())
+    return {};
+
+  const xiiMaterialGpuHandle hGpuMaterial = entry.m_hGpuMaterial;
+  s_pState->m_ResourceMaterials.Insert(hMaterial, std::move(entry));
+  return hGpuMaterial;
+}
+
+void xiiMaterialManager::ReleaseMaterialResource(const xiiMaterialResourceHandle& hMaterial)
+{
+  if (!IsInitialized() || !hMaterial.IsValid())
+    return;
+
+  xiiMaterialManagerState::ResourceMaterialEntry* pEntry = nullptr;
+  if (!s_pState->m_ResourceMaterials.TryGetValue(hMaterial, pEntry))
+    return;
+
+  XII_ASSERT_DEV(pEntry->m_uiReferenceCount > 0U, "Material resource reference count underflow.");
+  if (pEntry->m_uiReferenceCount > 1U)
+  {
+    --pEntry->m_uiReferenceCount;
+    return;
+  }
+
+  s_pState->m_pSystem->UnregisterMaterial(pEntry->m_hGpuMaterial);
+  s_pState->m_ResourceMaterials.Remove(hMaterial);
 }
 
 xiiRenderGraphBufferHandle xiiMaterialManager::AddUploadPass(xiiRenderGraph& graph)
@@ -289,6 +374,10 @@ void xiiMaterialManager::EngineShutdown()
 {
   if (s_pState == nullptr)
     return;
+
+  // Drop resource handles and immutable instances while ResourceManager and the material storage
+  // still exist. The storage itself can then release all frame slices without late allocator use.
+  s_pState->m_ResourceMaterials.Clear();
 
   if (xiiGALBindlessResourceTable::IsInitialized())
   {

@@ -65,8 +65,11 @@ public:
   void      Shutdown();
 
   [[nodiscard]] xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance);
-  void                               UnregisterMaterial(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex);
-  void                               CollectGarbage(xiiUInt64 uiCompletedFrame);
+  /// Rebinds a live slot to a rebuilt resource instance without changing the GPU-visible index.
+  /// Every frame slice is marked dirty so hot reloads cannot leave stale material bytes in flight.
+  [[nodiscard]] bool ReplaceMaterial(xiiMaterialGpuHandle handle, xiiSharedPtr<xiiMaterialInstance> pInstance);
+  void               UnregisterMaterial(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex);
+  void               CollectGarbage(xiiUInt64 uiCompletedFrame);
 
   [[nodiscard]] bool                              IsValidHandle(xiiMaterialGpuHandle handle) const;
   [[nodiscard]] xiiSharedPtr<xiiMaterialInstance> GetMaterial(xiiMaterialGpuHandle handle) const;

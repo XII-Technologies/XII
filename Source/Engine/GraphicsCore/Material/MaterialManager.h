@@ -28,9 +28,18 @@ public:
   [[nodiscard]] static bool      IsInitialized();
 
   static void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
+  /// Refreshes resource-backed instances and bindless texture indices after extraction has
+  /// acquired new materials for the current frame. Safe to call more than once per frame.
+  static void PrepareGpuResources();
 
   [[nodiscard]] static xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance);
   static void                               UnregisterMaterial(xiiMaterialGpuHandle handle);
+
+  /// Acquires the resource's immutable default instance in the global GPU table. Repeated
+  /// acquisitions share one stable slot; hot reloads replace its contents without changing the
+  /// slot index stored in GPU scene instances.
+  [[nodiscard]] static xiiMaterialGpuHandle AcquireMaterialResource(const xiiMaterialResourceHandle& hMaterial);
+  static void                               ReleaseMaterialResource(const xiiMaterialResourceHandle& hMaterial);
 
   [[nodiscard]] static xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph);
   [[nodiscard]] static xiiResult                  ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData);
