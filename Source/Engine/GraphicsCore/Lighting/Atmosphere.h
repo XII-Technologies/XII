@@ -43,6 +43,8 @@ struct XII_GRAPHICSCORE_DLL xiiAtmosphereSettings
   float     m_fMiePhaseG                      = 0.8f;
   xiiUInt32 m_uiTransmittanceIntegrationSteps = 40U;
   xiiUInt32 m_uiMultiScatterSqrtSamples       = 8U;
+  xiiUInt32 m_uiSkyViewIntegrationSteps       = 16U;
+  xiiUInt32 m_uiAerialPerspectiveSteps        = 8U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAtmosphereSettings);

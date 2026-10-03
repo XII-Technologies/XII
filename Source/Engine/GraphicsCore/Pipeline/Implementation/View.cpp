@@ -2823,7 +2823,8 @@ namespace
     constants.MieAbsorption                     = xiiVec4(settings.m_vMieAbsorption, 0.0f);
     constants.OzoneAbsorption                   = xiiVec4(settings.m_vOzoneAbsorption, 0.0f);
     constants.PlanetUpAndGroundAltitudeMeters   = xiiVec4(settings.m_vPlanetUpDirection.GetNormalized(), settings.m_fGroundAltitudeMeters);
-    constants.SampleCounts                      = xiiVec4U32(settings.m_uiTransmittanceIntegrationSteps, settings.m_uiMultiScatterSqrtSamples, 0U, 0U);
+    constants.SampleCounts                      = xiiVec4U32(settings.m_uiTransmittanceIntegrationSteps, settings.m_uiMultiScatterSqrtSamples,
+                                                            settings.m_uiSkyViewIntegrationSteps, settings.m_uiAerialPerspectiveSteps);
     return constants;
   }
 

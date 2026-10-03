@@ -14,7 +14,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiAtmosphereConstants)
   FLOAT4(MieAbsorption);                     ///< xyz = aerosol absorption coefficient in km^-1.
   FLOAT4(OzoneAbsorption);                   ///< xyz = ozone absorption coefficient in km^-1.
   FLOAT4(PlanetUpAndGroundAltitudeMeters);   ///< xyz = normalized world-space planet up, w = sea-level world altitude along up.
-  UINT4(SampleCounts);                       ///< x = transmittance integration steps, y = sqrt multi-scatter samples.
+  UINT4(SampleCounts);                       ///< x = transmittance steps, y = sqrt multi-scatter samples, z = sky-view steps, w = aerial-perspective steps.
 };
 
 #if XII_DISABLED(XII_SHADER_PLATFORM)
