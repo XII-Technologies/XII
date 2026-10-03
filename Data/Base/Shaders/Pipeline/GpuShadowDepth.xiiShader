@@ -8,24 +8,21 @@ ALL
 DepthEnable = true
 DepthWriteEnable = true
 ComparisonDepthFunction = ComparisonFunction_GreaterEqual
-CullMode = CullMode_Back
+CullMode = CullMode_None
 ScissorEnable = true
 
-[MESH_SHADER]
+[SHADER]
 
+#include <Shaders/Materials/GpuSurfaceMaterial.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/LocalShadow/GpuShadowRasterConstants.h>
 #include <Shaders/Visibility/GpuSceneCommon.h>
-
-StructuredBuffer<GpuSceneInstance> g_SceneInstances;
-StructuredBuffer<GpuGeometryRecord> g_Geometry;
-StructuredBuffer<GpuMeshlet> g_Meshlets;
-StructuredBuffer<uint2> g_VisibleMeshlets;
-StructuredBuffer<uint> g_VisibleMeshletCount;
-ByteAddressBuffer g_Buffers[];
 
 struct ShadowVertex
 {
   float4 Position : SV_Position;
+  float2 TexCoord : TEXCOORD0;
+  nointerpolation uint MaterialIndex : TEXCOORD1;
 };
 
 uint LoadByte(ByteAddressBuffer source, uint byteOffset)
@@ -33,6 +30,15 @@ uint LoadByte(ByteAddressBuffer source, uint byteOffset)
   const uint word = source.Load(byteOffset & ~3u);
   return (word >> ((byteOffset & 3u) * 8u)) & 0xFFu;
 }
+
+[MESH_SHADER]
+
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuGeometryRecord> g_Geometry;
+StructuredBuffer<GpuMeshlet> g_Meshlets;
+StructuredBuffer<uint2> g_VisibleMeshlets;
+StructuredBuffer<uint> g_VisibleMeshletCount;
+ByteAddressBuffer g_Buffers[];
 
 [outputtopology("triangle")]
 [numthreads(64, 1, 1)]
@@ -110,7 +116,8 @@ void main(uint threadIndex : SV_GroupThreadID,
   g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
   g_Buffers[lod.MeshletRemapBufferIndex].GetDimensions(remapBufferBytes);
   g_Buffers[lod.MeshletPrimitiveBufferIndex].GetDimensions(primitiveBufferBytes);
-  if (VertexStride < 12u || meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
+  const uint lastAttributeEnd = max(12u, TexCoordOffset + 8u);
+  if (VertexStride < lastAttributeEnd || meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
       meshlet.Header.z > primitiveBufferBytes || primitiveCount * 3u > primitiveBufferBytes - meshlet.Header.z)
   {
     SetMeshOutputCounts(0u, 0u);
@@ -122,11 +129,14 @@ void main(uint threadIndex : SV_GroupThreadID,
   if (threadIndex < vertexCount)
   {
     const uint sourceVertex = g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + threadIndex) * 4u);
-    const bool vertexIsValid = vertexBufferBytes >= 12u && sourceVertex <= (vertexBufferBytes - 12u) / VertexStride;
-    const float3 localPosition = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(sourceVertex * VertexStride)) : 0.0f;
+    const uint vertexOffset = sourceVertex * VertexStride;
+    const bool vertexIsValid = vertexOffset <= vertexBufferBytes && lastAttributeEnd <= vertexBufferBytes - vertexOffset;
+    const float3 localPosition = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset)) : 0.0f;
     const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
     ShadowVertex output;
     output.Position = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
+    output.TexCoord = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset)) : 0.0f;
+    output.MaterialIndex = instance.MaterialIndex;
     vertices[threadIndex] = output;
   }
 
@@ -146,6 +156,30 @@ void main(uint threadIndex : SV_GroupThreadID,
 
 [PIXEL_SHADER]
 
-void main()
+StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
+Texture2D<float4> g_Textures[];
+
+void main(ShadowVertex input, bool isFrontFace : SV_IsFrontFace)
 {
+  uint materialCount, materialStride;
+  g_SurfaceMaterials.GetDimensions(materialCount, materialStride);
+  const bool materialIsValid = input.MaterialIndex != 0xFFFFFFFFu && MaterialBaseIndex < materialCount && input.MaterialIndex < materialCount - MaterialBaseIndex;
+  if (!materialIsValid)
+  {
+    if (!isFrontFace)
+      clip(-1.0f);
+    return;
+  }
+
+  const xiiGpuSurfaceMaterial material = g_SurfaceMaterials[MaterialBaseIndex + input.MaterialIndex];
+  const bool isTwoSided = (material.Metadata.y & (1u << 10u)) != 0u;
+  if (!isFrontFace && !isTwoSided)
+    clip(-1.0f);
+  if (material.Metadata.z != 1u)
+    return;
+
+  float opacity = material.BaseColorOpacity.w;
+  if (material.TextureIndices0.x != 0xFFFFFFFFu)
+    opacity *= g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)].Sample(g_sAnisotropicWrap, input.TexCoord).a;
+  clip(opacity - material.LayerParameters.x);
 }

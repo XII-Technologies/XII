@@ -61,13 +61,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, GpuShadowRasterManager)
 
 XII_END_SUBSYSTEM_DECLARATION;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuShadowRasterDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuShadowRasterDescription>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuShadowRasterDescription, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiGpuShadowRasterDescription>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("ViewProjectionMatrix", m_ViewProjectionMatrix),
     XII_MEMBER_PROPERTY("Viewport", m_Viewport),
     XII_MEMBER_PROPERTY("VertexStride", m_uiVertexStride),
+    XII_MEMBER_PROPERTY("TexCoordOffset", m_uiTexCoordOffset),
     XII_MEMBER_PROPERTY("MeshDispatchGroupCountX", m_uiMeshDispatchGroupCountX),
     XII_MEMBER_PROPERTY("MeshDispatchGroupCountY", m_uiMeshDispatchGroupCountY),
     XII_MEMBER_PROPERTY("ClearViewport", m_bClearViewport),
@@ -84,6 +85,7 @@ namespace
     xiiRenderGraphBufferHandle    m_hConstants;
     xiiGpuShadowRasterDescription m_Description;
     xiiUInt32                     m_uiGeometryBaseIndex = 0U;
+    xiiUInt32                     m_uiMaterialBaseIndex = 0U;
   };
 
   struct ShadowRasterPassData
@@ -97,6 +99,7 @@ namespace
     xiiRenderGraphBufferHandle         m_hVisibleMeshletCount;
     xiiRenderGraphBufferHandle         m_hIndirectCommands;
     xiiRenderGraphBufferHandle         m_hIndirectCommandCount;
+    xiiRenderGraphBufferHandle         m_hSurfaceMaterials;
     xiiGpuShadowRasterDescription      m_Description;
     xiiShaderPermutationResourceHandle m_hShaderPermutation;
     xiiShaderPermutationResourceHandle m_hClearShaderPermutation;
@@ -120,12 +123,14 @@ bool xiiGpuShadowRasterManager::IsInitialized()
 
 xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& graph, xiiStringView sName,
                                                                xiiRenderGraphTextureHandle hDepthAtlas, const xiiGpuVisibilityOutputs& visibility,
-                                                               const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuShadowRasterDescription& description)
+                                                               const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                               const xiiMaterialGpuStorage::UploadHandles& materials,
+                                                               const xiiGpuShadowRasterDescription& description)
 {
   if (!IsSupported() || !hDepthAtlas.IsValid() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() ||
       !visibility.m_hVisibleMeshletCount.IsValid() || !visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() ||
       !geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || description.m_Viewport.z == 0U ||
-      description.m_Viewport.w == 0U || description.m_uiVertexStride == 0U)
+      !materials.m_hSurfaceData.IsValid() || description.m_Viewport.w == 0U || description.m_uiVertexStride == 0U)
     return hDepthAtlas;
 
   xiiStringBuilder constantsPassName(sName, " Constants");
@@ -145,16 +150,19 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
       xiiGALMapHelper<xiiGpuShadowRasterConstants> constants(context.GetCommandList(), context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       constants->ViewProjectionMatrix    = data.m_Description.m_ViewProjectionMatrix;
       constants->GeometryBaseIndex       = data.m_uiGeometryBaseIndex;
+      constants->MaterialBaseIndex       = data.m_uiMaterialBaseIndex;
       constants->VertexStride            = data.m_Description.m_uiVertexStride;
+      constants->TexCoordOffset          = data.m_Description.m_uiTexCoordOffset;
       constants->MeshDispatchGroupCountX = data.m_Description.m_uiMeshDispatchGroupCountX;
       constants->MeshDispatchGroupCountY = data.m_Description.m_uiMeshDispatchGroupCountY;
     });
   constantsPass.first->m_Description         = description;
   constantsPass.first->m_uiGeometryBaseIndex = geometry.m_uiGeometryBaseIndex;
+  constantsPass.first->m_uiMaterialBaseIndex = materials.m_uiSurfaceBaseIndex;
 
   auto pass = graph.AddPass<ShadowRasterPassData>(
     sName, xiiGALCommandQueueFlags::Graphics,
-    [hDepthAtlas, visibility, geometry, hConstants = constantsPass.first->m_hConstants](ShadowRasterPassData& data, xiiRenderGraphBuilder& builder) {
+    [hDepthAtlas, visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants](ShadowRasterPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hDepthAtlas           = builder.WriteTexture(hDepthAtlas, xiiGALResourceStateFlags::DepthWrite);
       data.m_hConstants            = builder.ReadBuffer(hConstants, xiiGALResourceStateFlags::ConstantBuffer);
       data.m_hSceneInstances       = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
@@ -164,6 +172,7 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
       data.m_hVisibleMeshletCount  = builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
       data.m_hIndirectCommands     = builder.ReadBuffer(visibility.m_hIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
       data.m_hIndirectCommandCount = builder.ReadBuffer(visibility.m_hIndirectCommandCount, xiiGALResourceStateFlags::IndirectArgument);
+      data.m_hSurfaceMaterials     = builder.ReadBuffer(materials.m_hSurfaceData, xiiGALResourceStateFlags::ShaderResource);
 
       builder.SetPassAllowMerge(false);
       builder.SetPassRenderPassManaged(true);
@@ -218,14 +227,18 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
       }
 
       cmd.SetPipelineState(pPipeline.Borrow());
-      cmd.ResolveAndSetConstantBuffer("xiiGpuShadowRasterConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Mesh);
+      cmd.ResolveAndSetConstantBuffer("xiiGpuShadowRasterConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Mesh | xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
       cmd.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
       cmd.ResolveAndSetShaderResourceBufferView("g_Meshlets", context.GetBuffer(data.m_hMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
       cmd.ResolveAndSetShaderResourceBufferView("g_VisibleMeshlets", context.GetBuffer(data.m_hVisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
       cmd.ResolveAndSetShaderResourceBufferView("g_VisibleMeshletCount", context.GetBuffer(data.m_hVisibleMeshletCount)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
+      cmd.ResolveAndSetShaderResourceBufferView("g_SurfaceMaterials", context.GetBuffer(data.m_hSurfaceMaterials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
       if (xiiGALBindlessResourceTable::IsInitialized())
+      {
         xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_Buffers", xiiGALShaderType::Mesh);
+        xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_Textures", xiiGALShaderType::Pixel);
+      }
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess();
       cmd.DrawMeshIndirect({context.GetBuffer(data.m_hIndirectCommands), 1U, 0U, xiiGALStateTransitionMode::None, context.GetBuffer(data.m_hIndirectCommandCount)});
     });

@@ -805,15 +805,16 @@ bool xiiVirtualShadowMapManager::BuildPageViewProjection(const xiiMat4& cascadeV
 xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterPasses(xiiRenderGraph& graph, const UploadHandles& upload,
                                                                                       const xiiGpuVisibilityOutputs&                    visibility,
                                                                                       const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                                                      const xiiMaterialGpuStorage::UploadHandles&       materials,
                                                                                       xiiArrayPtr<const xiiMat4>                        cascadeViewProjections,
-                                                                                      xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride,
+                                                                                      xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset,
                                                                                       xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY)
 {
   UploadHandles result = upload;
   if (!IsInitialized() || !xiiGpuShadowRasterManager::IsSupported() || !result.m_hPhysicalAtlas.IsValid() || !result.m_hVirtualPageTable.IsValid() || cascadeViewProjections.IsEmpty() ||
       !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() || !visibility.m_hVisibleMeshletCount.IsValid() ||
       !visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || !geometry.m_hGeometryMetadata.IsValid() ||
-      !geometry.m_hMeshletMetadata.IsValid() || uiVertexStride == 0U || uiMeshDispatchGroupCountX == 0U || uiMeshDispatchGroupCountY == 0U)
+      !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || uiVertexStride == 0U || uiMeshDispatchGroupCountX == 0U || uiMeshDispatchGroupCountY == 0U)
     return result;
 
   struct RenderedPage
@@ -883,13 +884,14 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterP
     rasterDescription.m_ViewProjectionMatrix      = pageViewProjection;
     rasterDescription.m_Viewport                  = xiiVec4U32(viewport.x, viewport.y, viewport.width, viewport.height);
     rasterDescription.m_uiVertexStride            = uiVertexStride;
+    rasterDescription.m_uiTexCoordOffset          = uiTexCoordOffset;
     rasterDescription.m_uiMeshDispatchGroupCountX = uiMeshDispatchGroupCountX;
     rasterDescription.m_uiMeshDispatchGroupCountY = uiMeshDispatchGroupCountY;
     rasterDescription.m_bClearViewport            = true;
 
     xiiStringBuilder passName;
     passName.SetFormat("Virtual Shadow Page L{} ({}, {})", mapping.m_Page.m_uiMipLevel, mapping.m_Page.m_uiPageX, mapping.m_Page.m_uiPageY);
-    result.m_hPhysicalAtlas = xiiGpuShadowRasterManager::AddPass(graph, passName, result.m_hPhysicalAtlas, visibility, geometry, rasterDescription);
+    result.m_hPhysicalAtlas = xiiGpuShadowRasterManager::AddPass(graph, passName, result.m_hPhysicalAtlas, visibility, geometry, materials, rasterDescription);
 
     RenderedPage& renderedPage                    = renderedPages.ExpandAndGetRef();
     renderedPage.m_Page                           = mapping.m_Page;

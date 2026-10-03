@@ -8,6 +8,7 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
@@ -226,8 +227,9 @@ public:
   [[nodiscard]] static UploadHandles AddRasterPasses(xiiRenderGraph& graph, const UploadHandles& upload,
                                                      const xiiGpuVisibilityOutputs&                    visibility,
                                                      const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                     const xiiMaterialGpuStorage::UploadHandles&       materials,
                                                      xiiArrayPtr<const xiiMat4>                        cascadeViewProjections,
-                                                     xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride,
+                                                     xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset,
                                                      xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY);
 
   /// Appends screen-derived directional shadow requests and copies the cumulative

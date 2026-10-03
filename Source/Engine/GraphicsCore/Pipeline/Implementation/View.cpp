@@ -6761,9 +6761,10 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
       const xiiUInt32 uiDirectionalLightId = static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey) & 0x00FFFFFFU;
       XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::AddRasterPasses(
-        graph, virtualShadowUpload, shadowVisibility, geometry,
+        graph, virtualShadowUpload, shadowVisibility, geometry, materials,
         xiiArrayPtr<const xiiMat4>(shadowCascadePass.first->m_CascadeViewProjection, shadowCascadePass.first->m_uiActiveCascades),
-        uiDirectionalLightId, sizeof(xiiMeshPackedVertex), xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext),
+        uiDirectionalLightId, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)),
+        xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext),
         xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hGpuVisibilityContext)));
     }
   }
