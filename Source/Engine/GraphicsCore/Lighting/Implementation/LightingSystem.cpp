@@ -65,7 +65,7 @@ namespace
 } // namespace
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 5, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -87,6 +87,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 4, xiiRTTI
     XII_MEMBER_PROPERTY("SSRefractionChromatic", m_fSSRefractionChromatic)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.1f)),
     XII_MEMBER_PROPERTY("LocalShadowAtlasSize", m_uiLocalShadowAtlasSize)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
     XII_MEMBER_PROPERTY("LocalShadowTileSize", m_uiLocalShadowTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U)),
+    XII_MEMBER_PROPERTY("MaxLocalShadowFacesPerFrame", m_uiMaxLocalShadowFacesPerFrame)->AddAttributes(new xiiClampValueAttribute(1U, 1024U), new xiiDefaultValueAttribute(64U)),
     XII_MEMBER_PROPERTY("VolumetricFogDensity", m_fVolumetricFogDensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("VolumetricHeightFalloff", m_fVolumetricHeightFalloff)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("VolumetricBaseHeight", m_fVolumetricBaseHeight)->AddAttributes(new xiiSuffixAttribute(" m")),
@@ -438,10 +439,12 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   m_LightConstants.m_uiActiveLightCount = m_Stats.m_uiActiveLightCount;
 
   xiiLocalShadowAtlasSettings localShadowSettings;
-  localShadowSettings.m_uiAtlasSize = m_Settings.m_uiLocalShadowAtlasSize;
-  localShadowSettings.m_uiTileSize  = m_Settings.m_uiLocalShadowTileSize;
+  localShadowSettings.m_uiAtlasSize        = m_Settings.m_uiLocalShadowAtlasSize;
+  localShadowSettings.m_uiTileSize         = m_Settings.m_uiLocalShadowTileSize;
+  localShadowSettings.m_uiMaxFacesPerFrame = m_Settings.m_uiMaxLocalShadowFacesPerFrame;
   xiiLocalShadowAtlasBuilder::Build(localShadowSettings,
-                                    xiiArrayPtr<const xiiGpuLightData>(m_LightData.GetData(), m_LightData.GetCount()), m_LocalShadowData, m_LocalShadowStatistics);
+                                    xiiArrayPtr<const xiiGpuLightData>(m_LightData.GetData(), m_LightData.GetCount()),
+                                    m_CameraConstants.m_CameraPositionAndNearPlane.GetAsVec3(), m_LocalShadowData, m_LocalShadowStatistics);
 }
 
 void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)

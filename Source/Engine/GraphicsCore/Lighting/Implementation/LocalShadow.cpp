@@ -20,19 +20,20 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLocalShadowAtlasData, xiiNoBase, 1, xiiRTTINo
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLocalShadowAtlasSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiLocalShadowAtlasSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLocalShadowAtlasSettings, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiLocalShadowAtlasSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("AtlasSize", m_uiAtlasSize)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
     XII_MEMBER_PROPERTY("TileSize", m_uiTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U), new xiiDefaultValueAttribute(256U)),
+    XII_MEMBER_PROPERTY("MaxFacesPerFrame", m_uiMaxFacesPerFrame)->AddAttributes(new xiiClampValueAttribute(1U, 1024U), new xiiDefaultValueAttribute(64U)),
     XII_MEMBER_PROPERTY("MinimumNearPlane", m_fMinimumNearPlane)->AddAttributes(new xiiClampValueAttribute(0.001f, 10.0f), new xiiDefaultValueAttribute(0.01f), new xiiSuffixAttribute(" m")),
   }
   XII_END_PROPERTIES;
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLocalShadowAtlasStatistics, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiLocalShadowAtlasStatistics>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLocalShadowAtlasStatistics, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiLocalShadowAtlasStatistics>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -41,6 +42,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLocalShadowAtlasStatistics, xiiNoBase, 1, xii
     XII_MEMBER_PROPERTY("DroppedLights", m_uiDroppedLights)->AddAttributes(new xiiReadOnlyAttribute()),
     XII_MEMBER_PROPERTY("AllocatedFaces", m_uiAllocatedFaces)->AddAttributes(new xiiReadOnlyAttribute()),
     XII_MEMBER_PROPERTY("TileCapacity", m_uiTileCapacity)->AddAttributes(new xiiReadOnlyAttribute()),
+    XII_MEMBER_PROPERTY("FaceBudget", m_uiFaceBudget)->AddAttributes(new xiiReadOnlyAttribute()),
   }
   XII_END_PROPERTIES;
 }
@@ -99,6 +101,13 @@ namespace
 void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
                                        xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics)
 {
+  Build(settings, lights, xiiVec3::MakeZero(), out_shadowData, out_statistics);
+}
+
+void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
+                                       const xiiVec3& vObserverPosition, xiiLocalShadowAtlasDataArray& out_shadowData,
+                                       xiiLocalShadowAtlasStatistics& out_statistics)
+{
   out_statistics = {};
   out_shadowData.SetCount(lights.GetCount());
   xiiMemoryUtils::ZeroFill(out_shadowData.GetData(), out_shadowData.GetCount());
@@ -107,23 +116,62 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
   const xiiUInt32 uiTileSize      = xiiMath::Clamp(xiiMath::PowerOfTwo_Floor(xiiMath::Max(settings.m_uiTileSize, 1U)), 1U, uiAtlasSize);
   const xiiUInt32 uiTilesPerAxis  = xiiMath::Max(uiAtlasSize / uiTileSize, 1U);
   const xiiUInt32 uiTileCapacity  = uiTilesPerAxis * uiTilesPerAxis;
+  const xiiUInt32 uiFaceBudget    = xiiMath::Min(uiTileCapacity, xiiMath::Max(settings.m_uiMaxFacesPerFrame, 1U));
   const float     fTileScale      = static_cast<float>(uiTileSize) / static_cast<float>(uiAtlasSize);
   out_statistics.m_uiTileCapacity = uiTileCapacity;
+  out_statistics.m_uiFaceBudget   = uiFaceBudget;
 
-  xiiUInt32 uiNextTile = 0U;
+  struct Candidate
+  {
+    xiiUInt32 m_uiLightIndex = 0U;
+    xiiUInt32 m_uiFaceCount  = 0U;
+    xiiUInt32 m_uiStableId   = 0U;
+    float     m_fPriority    = 0.0f;
+  };
+
+  xiiDynamicArray<Candidate> candidates;
+  candidates.Reserve(lights.GetCount());
   for (xiiUInt32 uiLight = 0U; uiLight < lights.GetCount(); ++uiLight)
   {
     const xiiGpuLightData& light = lights[uiLight];
     if (light.m_ShadowData.x <= 0.5f)
       continue;
 
-    const auto      type        = static_cast<xiiLightingSystem::LightType>(light.m_Metadata.z);
-    const xiiUInt32 uiFaceCount = GetFaceCount(type);
+    const xiiUInt32 uiFaceCount = GetFaceCount(static_cast<xiiLightingSystem::LightType>(light.m_Metadata.z));
     if (uiFaceCount == 0U)
       continue;
 
+    Candidate& candidate     = candidates.ExpandAndGetRef();
+    candidate.m_uiLightIndex = uiLight;
+    candidate.m_uiFaceCount  = uiFaceCount;
+    candidate.m_uiStableId   = light.m_Metadata.x;
+
+    const float fInfluenceRadius   = xiiMath::Max(xiiMath::Max(light.m_BoundsCenterAndRadius.w, light.m_AttenuationAndSize.x), 0.001f);
+    const float fDistanceSquared   = (light.m_BoundsCenterAndRadius.GetAsVec3() - vObserverPosition).GetLengthSquared();
+    const float fProjectedInfluence = xiiMath::Square(fInfluenceRadius) / xiiMath::Max(fDistanceSquared, xiiMath::Square(fInfluenceRadius) * 0.25f + 1.0e-4f);
+    const float fPhotometricWeight  = xiiMath::Log2(1.0f + xiiMath::Max(light.m_ColorAndIntensity.w, 0.0f));
+    const float fPriority           = fProjectedInfluence * xiiMath::Max(fPhotometricWeight, 1.0f);
+    candidate.m_fPriority           = xiiMath::IsFinite(fPriority) ? fPriority : 0.0f;
     ++out_statistics.m_uiRequestedLights;
-    if (uiFaceCount > uiTileCapacity - xiiMath::Min(uiNextTile, uiTileCapacity))
+  }
+
+  candidates.Sort([](const Candidate& lhs, const Candidate& rhs) {
+    if (lhs.m_fPriority != rhs.m_fPriority)
+      return lhs.m_fPriority > rhs.m_fPriority;
+    if (lhs.m_uiStableId != rhs.m_uiStableId)
+      return lhs.m_uiStableId < rhs.m_uiStableId;
+    return lhs.m_uiLightIndex < rhs.m_uiLightIndex;
+  });
+
+  xiiUInt32 uiNextTile = 0U;
+  for (const Candidate& candidate : candidates)
+  {
+    const xiiUInt32        uiLight = candidate.m_uiLightIndex;
+    const xiiGpuLightData& light = lights[uiLight];
+    const auto             type        = static_cast<xiiLightingSystem::LightType>(light.m_Metadata.z);
+    const xiiUInt32        uiFaceCount = candidate.m_uiFaceCount;
+
+    if (uiFaceCount > uiFaceBudget - xiiMath::Min(uiNextTile, uiFaceBudget))
     {
       ++out_statistics.m_uiDroppedLights;
       continue;

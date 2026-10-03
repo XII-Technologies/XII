@@ -40,9 +40,10 @@ struct XII_GRAPHICSCORE_DLL xiiLocalShadowAtlasSettings
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiAtlasSize       = 4096U;
-  xiiUInt32 m_uiTileSize        = 256U;
-  float     m_fMinimumNearPlane = 0.01f;
+  xiiUInt32 m_uiAtlasSize        = 4096U;
+  xiiUInt32 m_uiTileSize         = 256U;
+  xiiUInt32 m_uiMaxFacesPerFrame = 64U; ///< Bounds visibility/raster graph expansion independently of atlas capacity.
+  float     m_fMinimumNearPlane  = 0.01f;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLocalShadowAtlasSettings);
@@ -57,6 +58,7 @@ struct XII_GRAPHICSCORE_DLL xiiLocalShadowAtlasStatistics
   xiiUInt32 m_uiDroppedLights   = 0U;
   xiiUInt32 m_uiAllocatedFaces  = 0U;
   xiiUInt32 m_uiTileCapacity    = 0U;
+  xiiUInt32 m_uiFaceBudget      = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLocalShadowAtlasStatistics);
@@ -69,4 +71,10 @@ public:
 
   static void Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
                     xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics);
+
+  /// Camera-aware overload used by runtime lighting. Candidates are ranked by projected influence
+  /// and physical intensity, with stable light IDs resolving ties deterministically.
+  static void Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
+                    const xiiVec3& vObserverPosition, xiiLocalShadowAtlasDataArray& out_shadowData,
+                    xiiLocalShadowAtlasStatistics& out_statistics);
 };
