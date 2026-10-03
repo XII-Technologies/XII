@@ -17,6 +17,7 @@
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
+#include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
@@ -1739,6 +1740,11 @@ struct xiiLocalShadowAtlasAllocationData
 {
   xiiRenderGraphBufferHandle   m_hLocalShadowAtlasDescriptors;
   xiiLocalShadowAtlasDataArray m_ShadowData;
+};
+
+struct xiiLocalShadowAtlasClearData
+{
+  xiiRenderGraphTextureHandle m_hLocalShadowAtlas;
 };
 
 void xiiView::SetupLocalShadowAtlasAllocation(xiiLocalShadowAtlasAllocationData& data, xiiRenderGraphBuilder& builder)
@@ -6772,8 +6778,56 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiShadowCasterBuildData>("ShadowCasterListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCasterBuild, this), xiiMakeDelegate(&xiiView::ExecuteShadowCasterBuild, this));
   graph.AddPass<xiiLocalShadowAtlasAllocationData>("LocalShadowAtlasUpload", xiiGALCommandQueueFlags::Transfer, xiiMakeDelegate(&xiiView::SetupLocalShadowAtlasAllocation, this), xiiMakeDelegate(&xiiView::ExecuteLocalShadowAtlasAllocation, this));
   graph.AddPass<xiiDirectionalShadowData>("DirectionalShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDirectionalShadowData, this), xiiMakeDelegate(&xiiView::ExecuteDirectionalShadowData, this));
-  graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupSpotShadowData, this), xiiMakeDelegate(&xiiView::ExecuteSpotShadowData, this));
-  graph.AddPass<xiiPointShadowData>("PointShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPointShadowData, this), xiiMakeDelegate(&xiiView::ExecutePointShadowData, this));
+
+  // Local-light faces share one bounded visibility scratch set. Each face produces a new graph
+  // version before rasterizing its atlas tile, so async culling can overlap unrelated graphics
+  // while scratch reuse and partial atlas writes remain deterministically ordered.
+  bool bGpuLocalShadows = false;
+  if (xiiGpuShadowRasterManager::IsSupported() && m_GpuSceneContext.IsInitialized() && xiiGpuVisibilityManager::IsValid(m_hGpuVisibilityContext) &&
+      geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid() && materials.m_hSurfaceData.IsValid())
+  {
+    const xiiUInt32 uiAtlasSize = m_ViewPassResources->m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
+    if (!m_ViewPassResources->m_ShadowPasses.m_pLocalShadowAtlas)
+    {
+      xiiGALTextureCreationDescription description;
+      description.m_Type                                      = xiiGALResourceDimension::Texture2D;
+      description.m_Format                                    = xiiGALResourceFormat::D32Float;
+      description.m_Size.width                                = uiAtlasSize;
+      description.m_Size.height                               = uiAtlasSize;
+      description.m_uiMipLevels                               = 1U;
+      description.m_BindFlags                                 = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+      description.m_Usage                                     = xiiGALResourceUsage::Default;
+      m_ViewPassResources->m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    }
+
+    if (m_ViewPassResources->m_ShadowPasses.m_pLocalShadowAtlas != nullptr)
+    {
+      auto atlasClear = graph.AddPass<xiiLocalShadowAtlasClearData>(
+        "GPU Local Shadow Atlas Clear", xiiGALCommandQueueFlags::Graphics,
+        [pAtlas = m_ViewPassResources->m_ShadowPasses.m_pLocalShadowAtlas](xiiLocalShadowAtlasClearData& data, xiiRenderGraphBuilder& builder) {
+          data.m_hLocalShadowAtlas = builder.WriteTexture(
+            builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, pAtlas, xiiGALResourceStateFlags::DepthWrite),
+            xiiGALResourceStateFlags::DepthWrite);
+          builder.SetPassAllowMerge(false);
+        },
+        [](const xiiLocalShadowAtlasClearData& data, xiiRenderGraphPassContext& context) {
+          context.GetCommandList().ClearDepthStencilView(
+            context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
+        });
+
+      XII_IGNORE_UNUSED(xiiGpuShadowRasterManager::AddLocalLightPasses(
+        graph, uiFrameIndex, m_hGpuVisibilityContext, m_GpuSceneContext.GetHandle(), atlasClear.first->m_hLocalShadowAtlas,
+        m_ViewPassResources->m_LightingSystem.GetLocalShadowData(), uiAtlasSize, geometry, materials,
+        sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0))));
+      bGpuLocalShadows = true;
+    }
+  }
+
+  if (!bGpuLocalShadows)
+  {
+    graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupSpotShadowData, this), xiiMakeDelegate(&xiiView::ExecuteSpotShadowData, this));
+    graph.AddPass<xiiPointShadowData>("PointShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPointShadowData, this), xiiMakeDelegate(&xiiView::ExecutePointShadowData, this));
+  }
   graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupContactShadowData, this), xiiMakeDelegate(&xiiView::ExecuteContactShadowData, this));
 
   // Depth and motion prepasses, which produce depth and motion data consumed by later passes.

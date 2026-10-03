@@ -55,6 +55,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPurpose);
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPassDescription
 {
   xiiString                        m_sName                = "Main View";
+  xiiString                        m_sResourceSetName; ///< Optional scratch-allocation identity. Empty uses m_sName.
   xiiEnum<xiiGpuVisibilityPurpose> m_Purpose              = xiiGpuVisibilityPurpose::MainView;
   float                            m_fLodScreenScale      = 1.0f; ///< Scales projected coverage for purpose-specific LOD selection.
   xiiUInt32                        m_uiMaxVisibleMeshlets = 0U;   ///< Zero uses the visibility context capacity.
