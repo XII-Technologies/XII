@@ -144,6 +144,15 @@ public:
 
   [[nodiscard]] static xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
   static void                            UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
+
+  /// Acquires a shared residency record for an engine mesh resource. Multiple scene objects using
+  /// the same resource receive the same generation-checked geometry handle. Mesh LODs packed into
+  /// one buffer are translated into reflected meshlet ranges by the subsystem.
+  [[nodiscard]] static xiiGeometryHandle AcquireMeshGeometry(const xiiMeshResourceHandle& hMesh);
+  /// Releases one reference acquired through AcquireMeshGeometry(). The residency record remains
+  /// valid until uiFrameIndex has completed on the GPU.
+  static void ReleaseMeshGeometry(const xiiMeshResourceHandle& hMesh, xiiUInt64 uiFrameIndex);
+
   static void                            RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex);
   static void                            Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
   static void                            ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);

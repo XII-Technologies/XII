@@ -5,11 +5,18 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 class xiiGeometryResidencyManager::State
 {
 public:
+  struct MeshGeometryEntry
+  {
+    xiiGeometryHandle m_hGeometry;
+    xiiUInt32         m_uiReferenceCount = 0U;
+  };
+
   void ClearGpuState()
   {
     for (Slot& slot : m_Slots)
@@ -21,6 +28,7 @@ public:
     m_FreeSlots.Clear();
     m_FreeMeshletRanges.Clear();
     m_PendingMeshletUploads.Clear();
+    m_MeshGeometries.Clear();
     m_uiFramesInFlight      = 0U;
     m_uiAllFrameMask        = 0U;
     m_uiBudgetBytes         = 0U;
@@ -30,24 +38,75 @@ public:
     m_bInitialized          = false;
   }
 
-  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper> m_Slots;
-  xiiDynamicArray<xiiUInt32>                        m_FreeSlots;
-  xiiSharedPtr<xiiGALBuffer>                        m_pMetadataBuffer;
-  xiiSharedPtr<xiiGALBuffer>                        m_pMeshletMetadataBuffer;
-  xiiDynamicArray<FreeRange>                        m_FreeMeshletRanges;
-  xiiDynamicArray<UploadPassData::MeshletUpload>    m_PendingMeshletUploads;
-  xiiUInt32                                         m_uiFramesInFlight      = 0U;
-  xiiUInt64                                         m_uiAllFrameMask        = 0U;
-  xiiUInt64                                         m_uiBudgetBytes         = 0U;
-  xiiUInt64                                         m_uiResidentBytes       = 0U;
-  xiiUInt64                                         m_uiLastUploadedBytes   = 0U;
-  xiiUInt64                                         m_uiNextMeshletUploadId = 1U;
-  xiiGeometryResidencyDescription                   m_Configuration;
-  bool                                              m_bEngineStarted = false;
-  bool                                              m_bInitialized   = false;
+  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper>       m_Slots;
+  xiiDynamicArray<xiiUInt32>                              m_FreeSlots;
+  xiiSharedPtr<xiiGALBuffer>                              m_pMetadataBuffer;
+  xiiSharedPtr<xiiGALBuffer>                              m_pMeshletMetadataBuffer;
+  xiiDynamicArray<FreeRange>                              m_FreeMeshletRanges;
+  xiiDynamicArray<UploadPassData::MeshletUpload>          m_PendingMeshletUploads;
+  xiiHashTable<xiiMeshResourceHandle, MeshGeometryEntry> m_MeshGeometries;
+  xiiUInt32                                               m_uiFramesInFlight      = 0U;
+  xiiUInt64                                               m_uiAllFrameMask        = 0U;
+  xiiUInt64                                               m_uiBudgetBytes         = 0U;
+  xiiUInt64                                               m_uiResidentBytes       = 0U;
+  xiiUInt64                                               m_uiLastUploadedBytes   = 0U;
+  xiiUInt64                                               m_uiNextMeshletUploadId = 1U;
+  xiiGeometryResidencyDescription                         m_Configuration;
+  bool                                                    m_bEngineStarted = false;
+  bool                                                    m_bInitialized   = false;
 };
 
 xiiUniquePtr<xiiGeometryResidencyManager::State> xiiGeometryResidencyManager::s_pState;
+
+namespace
+{
+  constexpr float s_fLodReferenceViewportHeight = 1080.0f;
+
+  [[nodiscard]] xiiResult BuildMeshGeometryDescription(const xiiMeshResource& mesh, xiiGeometryDescription& out_description)
+  {
+    const xiiMeshBufferResourceHandle& hMeshBuffer = mesh.GetMeshBuffer();
+    if (!hMeshBuffer.IsValid())
+      return XII_FAILURE;
+
+    const xiiArrayPtr<const xiiMeshLOD> lods = mesh.GetLODs();
+    if (lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
+      return XII_FAILURE;
+
+    out_description                        = {};
+    out_description.m_uiStreamingPriority = mesh.GetDescriptor().m_uiStreamingGroup;
+    out_description.m_bPinned             = !mesh.GetUsageFlags().IsSet(xiiMeshResourceUsageFlags::Streaming);
+
+    if (lods.IsEmpty())
+    {
+      xiiGeometryLodSource& source = out_description.m_Lods.ExpandAndGetRef();
+      source.m_hMeshBuffer         = hMeshBuffer;
+      return XII_SUCCESS;
+    }
+
+    const xiiBoundingBoxSphere& bounds = mesh.GetBounds();
+    for (const xiiMeshLOD& meshLod : lods)
+    {
+      xiiGeometryLodSource& source = out_description.m_Lods.ExpandAndGetRef();
+      source.m_hMeshBuffer         = hMeshBuffer;
+      source.m_uiFirstMeshlet      = meshLod.m_uiFirstMeshlet;
+      source.m_uiMeshletCount      = meshLod.m_uiMeshletCount;
+
+      if (mesh.GetLodMode() == xiiMeshLodSelectionMode::Distance && meshLod.m_fMaxDistance > 0.0f && bounds.IsValid())
+      {
+        source.m_fMinimumScreenCoverage = bounds.m_fSphereRadius * s_fLodReferenceViewportHeight / meshLod.m_fMaxDistance;
+      }
+      else
+      {
+        // xiiMeshLOD stores normalized screen coverage. GPU visibility works in projected pixels,
+        // so normalize authored thresholds against a stable reference height. Actual viewport
+        // height remains part of the GPU coverage calculation and preserves resolution scaling.
+        source.m_fMinimumScreenCoverage = meshLod.m_fScreenSize * s_fLodReferenceViewportHeight;
+      }
+    }
+
+    return XII_SUCCESS;
+  }
+} // namespace
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, GeometryResidencyManager)
@@ -352,6 +411,67 @@ void xiiGeometryResidencyManager::UnregisterGeometry(xiiGeometryHandle handle, x
   Slot& slot           = s_pState->m_Slots[handle.m_uiIndex];
   slot.m_State         = xiiGeometryResidencyState::EvictPending;
   slot.m_uiRetireFrame = uiFrameIndex;
+}
+
+xiiGeometryHandle xiiGeometryResidencyManager::AcquireMeshGeometry(const xiiMeshResourceHandle& hMesh)
+{
+  if (!IsInitialized() || !hMesh.IsValid())
+    return {};
+
+  State::MeshGeometryEntry* pCachedEntry = nullptr;
+  if (s_pState->m_MeshGeometries.TryGetValue(hMesh, pCachedEntry))
+  {
+    if (IsValid(pCachedEntry->m_hGeometry))
+    {
+      XII_ASSERT_DEV(pCachedEntry->m_uiReferenceCount < xiiMath::MaxValue<xiiUInt32>(), "Mesh geometry reference count overflow.");
+      if (pCachedEntry->m_uiReferenceCount == xiiMath::MaxValue<xiiUInt32>())
+        return {};
+
+      ++pCachedEntry->m_uiReferenceCount;
+      return pCachedEntry->m_hGeometry;
+    }
+
+    s_pState->m_MeshGeometries.Remove(hMesh);
+  }
+
+  xiiResourceLock<xiiMeshResource> mesh(hMesh, xiiResourceAcquireMode::PointerOnly);
+  if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    return {};
+
+  xiiGeometryDescription description;
+  if (BuildMeshGeometryDescription(*mesh.GetPointer(), description).Failed())
+    return {};
+
+  const xiiGeometryHandle hGeometry = RegisterGeometry(description);
+  if (!hGeometry.IsValid())
+    return {};
+
+  State::MeshGeometryEntry entry;
+  entry.m_hGeometry        = hGeometry;
+  entry.m_uiReferenceCount = 1U;
+  s_pState->m_MeshGeometries.Insert(hMesh, entry);
+
+  // Start with the coarsest authored LOD. Fine LODs are requested on demand by visibility users.
+  RequestResidency(hGeometry, description.m_Lods.GetCount() - 1U, 0U);
+  return hGeometry;
+}
+
+void xiiGeometryResidencyManager::ReleaseMeshGeometry(const xiiMeshResourceHandle& hMesh, xiiUInt64 uiFrameIndex)
+{
+  if (s_pState == nullptr || !hMesh.IsValid())
+    return;
+
+  State::MeshGeometryEntry* pEntry = nullptr;
+  if (!s_pState->m_MeshGeometries.TryGetValue(hMesh, pEntry) || pEntry->m_uiReferenceCount == 0U)
+    return;
+
+  --pEntry->m_uiReferenceCount;
+  if (pEntry->m_uiReferenceCount != 0U)
+    return;
+
+  const xiiGeometryHandle hGeometry = pEntry->m_hGeometry;
+  s_pState->m_MeshGeometries.Remove(hMesh);
+  UnregisterGeometry(hGeometry, uiFrameIndex);
 }
 
 void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex)
