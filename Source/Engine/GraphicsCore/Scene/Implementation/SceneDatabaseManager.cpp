@@ -105,11 +105,34 @@ namespace
     slot.m_uiLastSynchronizedFrame = 0U;
   }
 
-  xiiBitflags<xiiSceneObjectFlags> GetSceneFlags(const xiiMeshRenderData& renderData)
+  xiiBitflags<xiiSceneObjectFlags> GetSceneFlags(const xiiMeshRenderData& renderData, const xiiMaterialResourceHandle& hMaterial)
   {
     xiiBitflags<xiiSceneObjectFlags> flags = xiiSceneObjectFlags::Default;
     flags.AddOrRemove(xiiSceneObjectFlags::Static, renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::StaticObject));
     flags.Add(xiiSceneObjectFlags::SensorVisible);
+
+    if (hMaterial.IsValid())
+    {
+      xiiResourceLock<xiiMaterialResource> material(hMaterial, xiiResourceAcquireMode::PointerOnly);
+      if (material.GetAcquireResult() == xiiResourceAcquireResult::Final)
+      {
+        const xiiMaterialRuntimeState& runtimeState = material->GetRuntimeState();
+        const bool                     bTranslucent = runtimeState.IsTranslucent();
+        flags.AddOrRemove(xiiSceneObjectFlags::Transparent, bTranslucent);
+        flags.AddOrRemove(xiiSceneObjectFlags::Occluder, !bTranslucent);
+
+        // Assets authored before explicit routing flags existed used an empty feature mask. Keep
+        // their legacy shadow behavior while new materials can opt individual paths out.
+        const xiiBitflags<xiiMaterialFeatureFlags> routingFlags = xiiMaterialFeatureFlags::ReceivesLighting |
+                                                                    xiiMaterialFeatureFlags::CastsShadows |
+                                                                    xiiMaterialFeatureFlags::WritesVelocity;
+        if (runtimeState.m_FeatureFlags.IsAnySet(routingFlags))
+        {
+          flags.AddOrRemove(xiiSceneObjectFlags::CastShadows, runtimeState.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::CastsShadows));
+          flags.AddOrRemove(xiiSceneObjectFlags::ReceiveShadows, runtimeState.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::ReceivesLighting));
+        }
+      }
+    }
     return flags;
   }
 
@@ -226,7 +249,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
 
       xiiSceneObjectDesc desc;
       desc.m_LocalTransform  = renderData.m_GlobalTransform.GetAsMat4();
-      desc.m_Flags           = GetSceneFlags(renderData);
+      desc.m_Flags           = GetSceneFlags(renderData, hMaterial);
       desc.m_uiGeometryIndex = hGeometry.m_uiIndex;
       desc.m_uiMaterialIndex = hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex;
       desc.m_uiUserData      = renderData.m_uiUniqueID;
@@ -282,7 +305,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
 
     pEntry->m_uiLastSeenFrame = uiFrameIndex;
     scene.SetLocalTransform(pEntry->m_hSceneObject, renderData.m_GlobalTransform.GetAsMat4());
-    scene.SetFlags(pEntry->m_hSceneObject, GetSceneFlags(renderData));
+    scene.SetFlags(pEntry->m_hSceneObject, GetSceneFlags(renderData, hMaterial));
     xiiGeometryResidencyManager::RequestResidency(pEntry->m_hGeometry, renderData.m_uiLODIndex, uiFrameIndex);
     xiiGeometryResidencyManager::Touch(pEntry->m_hGeometry, uiFrameIndex);
   }

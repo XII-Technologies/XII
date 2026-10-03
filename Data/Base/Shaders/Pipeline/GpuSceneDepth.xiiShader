@@ -8,7 +8,7 @@ ALL
 DepthEnable = true
 DepthWriteEnable = true
 ComparisonDepthFunction = ComparisonFunction_GreaterEqual
-CullMode = CullMode_Back
+CullMode = CullMode_None
 
 [SHADER]
 
@@ -145,15 +145,23 @@ void main(uint threadIndex : SV_GroupThreadID,
 StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
 Texture2D<float4> g_Textures[];
 
-void main(DepthVertex input)
+void main(DepthVertex input, bool isFrontFace : SV_IsFrontFace)
 {
   uint materialCount, materialStride;
   g_SurfaceMaterials.GetDimensions(materialCount, materialStride);
-  const uint materialIndex = MaterialBaseIndex + input.MaterialIndex;
-  if (materialIndex >= materialCount)
+  const bool materialIsValid = input.MaterialIndex != 0xFFFFFFFFu && MaterialBaseIndex < materialCount && input.MaterialIndex < materialCount - MaterialBaseIndex;
+  if (!materialIsValid)
+  {
+    if (!isFrontFace)
+      clip(-1.0f);
     return;
+  }
 
+  const uint materialIndex = MaterialBaseIndex + input.MaterialIndex;
   const xiiGpuSurfaceMaterial material = g_SurfaceMaterials[materialIndex];
+  const bool isTwoSided = (material.Metadata.y & (1u << 10u)) != 0u;
+  if (!isFrontFace && !isTwoSided)
+    clip(-1.0f);
   if (material.Metadata.z != 1u)
     return;
 

@@ -8,7 +8,7 @@ ALL
 DepthEnable = true
 DepthWriteEnable = false
 ComparisonDepthFunction = ComparisonFunction_GreaterEqual
-CullMode = CullMode_Back
+CullMode = CullMode_None
 
 [SHADER]
 
@@ -172,11 +172,11 @@ struct GBufferOutput
   float2 Velocity : SV_Target5;
 };
 
-GBufferOutput main(GBufferVertex input)
+GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
 {
   uint materialCount, materialStride;
   g_SurfaceMaterials.GetDimensions(materialCount, materialStride);
-  const uint materialIndex = MaterialBaseIndex + input.MaterialIndex;
+  const bool materialIsValid = input.MaterialIndex != 0xFFFFFFFFu && MaterialBaseIndex < materialCount && input.MaterialIndex < materialCount - MaterialBaseIndex;
 
   xiiGpuSurfaceMaterial material = (xiiGpuSurfaceMaterial)0;
   material.BaseColorOpacity = 1.0f;
@@ -185,8 +185,13 @@ GBufferOutput main(GBufferVertex input)
   material.LayerParameters = float4(0.5f, 1.0f, 0.0f, 0.1f);
   material.TextureIndices0 = 0xFFFFFFFFu;
   material.TextureIndices1 = 0xFFFFFFFFu;
-  if (materialIndex < materialCount)
-    material = g_SurfaceMaterials[materialIndex];
+  material.Metadata.y = 0xF000u;
+  if (materialIsValid)
+    material = g_SurfaceMaterials[MaterialBaseIndex + input.MaterialIndex];
+
+  const bool isTwoSided = (material.Metadata.y & (1u << 10u)) != 0u;
+  if (!isFrontFace && !isTwoSided)
+    clip(-1.0f);
 
   float4 baseColor = max(material.BaseColorOpacity, 0.0f);
   float3 emissive = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
@@ -215,7 +220,7 @@ GBufferOutput main(GBufferVertex input)
   if (material.Metadata.z == 1u)
     clip(baseColor.a - material.LayerParameters.x);
 
-  float3 worldNormal = normalize(input.WorldNormal);
+  float3 worldNormal = normalize(input.WorldNormal) * (isFrontFace ? 1.0f : -1.0f);
   if (material.TextureIndices0.y != 0xFFFFFFFFu)
   {
     float3 tangentNormal = g_Textures[NonUniformResourceIndex(material.TextureIndices0.y)].Sample(g_sAnisotropicWrap, input.TexCoord).xyz * 2.0f - 1.0f;
