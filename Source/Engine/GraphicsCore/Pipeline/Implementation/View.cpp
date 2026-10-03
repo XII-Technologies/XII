@@ -33,6 +33,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
@@ -6639,6 +6640,29 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   const xiiGeometryResidencyManager::UploadHandles geometry = xiiGeometryResidencyManager::AddUploadPass(graph, uiFrameIndex);
   XII_IGNORE_UNUSED(xiiMaterialManager::AddUploadPass(graph));
 
+  // Build the primary view's compact meshlet stream from the subsystem-owned scene. The first
+  // depth pass deliberately performs frustum/LOD culling without Hi-Z; the generated depth then
+  // seeds the existing hierarchical occlusion path for later passes and the following frame.
+  xiiGpuVisibilityOutputs mainVisibility;
+  if (m_pCamera != nullptr && m_GpuSceneContext.IsInitialized() && xiiGpuVisibilityManager::IsValid(m_hGpuVisibilityContext) &&
+      geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid())
+  {
+    const xiiMat4   viewProjection = GetViewProjectionMatrix(xiiCameraEye::Left);
+    const xiiFrustum viewFrustum   = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+    xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
+      viewProjection, viewFrustum, m_pCamera->GetPosition(), GetRenderResolutionWidth(), GetRenderResolutionHeight(), 0U,
+      m_GpuSceneContext.GetDatabase().GetObjectCount());
+    visibilityView.m_uiRequiredFlags = xiiSceneObjectFlags::Enabled;
+    visibilityView.m_uiExcludedFlags = xiiSceneObjectFlags::Transparent;
+
+    xiiGpuVisibilityPassDescription visibilityDescription;
+    visibilityDescription.m_sName         = "Default View Primary";
+    visibilityDescription.m_Purpose       = xiiGpuVisibilityPurpose::MainView;
+    visibilityDescription.m_bAsyncCompute = true;
+    mainVisibility = xiiGpuVisibilityManager::AddPasses(
+      m_hGpuVisibilityContext, graph, uiFrameIndex, m_GpuSceneContext.GetHandle(), visibilityView, geometry, visibilityDescription);
+  }
+
   const xiiRayTracingSceneManager::BuildHandles rayTracingScene      = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
   m_ViewPassResources->m_LightingPasses.m_pRayTracingScene           = rayTracingScene.m_pTopLevelAS;
   m_ViewPassResources->m_LightingPasses.m_hRayTracingSceneDependency = rayTracingScene.m_hSceneDependency;
@@ -6752,13 +6776,31 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupContactShadowData, this), xiiMakeDelegate(&xiiView::ExecuteContactShadowData, this));
 
   // Depth and motion prepasses, which produce depth and motion data consumed by later passes.
-  auto depthPrepass = graph.AddPass<xiiDepthPrepassData>("DepthPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDepthPrepass, this), xiiMakeDelegate(&xiiView::ExecuteDepthPrepass, this));
+  // Mesh-shader capable devices rasterize the exact compact visibility stream. The existing
+  // indexed pass remains the compatibility path for devices without mesh shader support.
+  xiiRenderGraphTextureHandle hSceneDepth;
+  if (xiiGpuSceneRasterManager::IsSupported() && mainVisibility.m_hIndirectCommands.IsValid())
+  {
+    xiiGpuSceneDepthRasterDescription depthDescription;
+    depthDescription.m_ViewProjectionMatrix      = GetViewProjectionMatrix(xiiCameraEye::Left);
+    depthDescription.m_uiWidth                   = GetRenderResolutionWidth();
+    depthDescription.m_uiHeight                  = GetRenderResolutionHeight();
+    depthDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
+    depthDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext);
+    depthDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hGpuVisibilityContext);
+    hSceneDepth = xiiGpuSceneRasterManager::AddDepthPrepass(graph, "GPU Scene Depth Prepass", mainVisibility, geometry, depthDescription);
+  }
+  if (!hSceneDepth.IsValid())
+  {
+    auto depthPrepass = graph.AddPass<xiiDepthPrepassData>("DepthPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDepthPrepass, this), xiiMakeDelegate(&xiiView::ExecuteDepthPrepass, this));
+    hSceneDepth       = depthPrepass.first->m_hSceneDepth;
+  }
   if (m_pExtractedData != nullptr)
   {
     const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(m_pExtractedData->GetAllRenderData());
-    if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows)
+    if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows && hSceneDepth.IsValid())
     {
-      xiiVirtualShadowMapManager::AddFeedbackPasses(graph, depthPrepass.first->m_hSceneDepth, shadowCascadePass.first->m_hCascadeMatrices,
+      xiiVirtualShadowMapManager::AddFeedbackPasses(graph, hSceneDepth, shadowCascadePass.first->m_hCascadeMatrices,
                                                     GetRenderResolutionWidth(), GetRenderResolutionHeight(), GetInverseViewProjectionMatrix(xiiCameraEye::Left),
                                                     m_pCamera != nullptr ? m_pCamera->GetNearPlane() : 0.1f,
                                                     static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey), uiFrameIndex);
