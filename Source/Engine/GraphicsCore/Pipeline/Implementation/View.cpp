@@ -6810,16 +6810,19 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiHiZPyramidData>("HiZPyramid", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZPyramid, this), xiiMakeDelegate(&xiiView::ExecuteHiZPyramid, this));
   graph.AddPass<xiiHiZOcclusionCullData>("HiZOcclusionCull", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZOcclusionCull, this), xiiMakeDelegate(&xiiView::ExecuteHiZOcclusionCull, this));
   graph.AddPass<xiiDrawBuildData>("DrawCommandBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDrawBuild, this), xiiMakeDelegate(&xiiView::ExecuteDrawBuild, this));
-  graph.AddPass<xiiMotionVectorsData>("MotionVectors", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupMotionVectors, this), xiiMakeDelegate(&xiiView::ExecuteMotionVectors, this));
-  graph.AddPass<xiiVelocityDilationData>("VelocityDilation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVelocityDilation, this), xiiMakeDelegate(&xiiView::ExecuteVelocityDilation, this));
+  auto motionVectors = graph.AddPass<xiiMotionVectorsData>("MotionVectors", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupMotionVectors, this), xiiMakeDelegate(&xiiView::ExecuteMotionVectors, this));
 
   // Mesh-shader capable devices shade the compact visibility stream directly from canonical
-  // surface records. The fifth MRT replaces the duplicate normal/roughness geometry submission.
+  // surface records. Extra MRTs replace duplicate normal/roughness and object-velocity draws.
   xiiGpuSceneGBufferOutputs gpuGBuffer;
-  if (xiiGpuSceneRasterManager::IsSupported() && hSceneDepth.IsValid() && mainVisibility.m_hIndirectCommands.IsValid() && materials.m_hSurfaceData.IsValid())
+  if (xiiGpuSceneRasterManager::IsSupported() && hSceneDepth.IsValid() && motionVectors.first->m_hVelocityBuffer.IsValid() && mainVisibility.m_hIndirectCommands.IsValid() && materials.m_hSurfaceData.IsValid())
   {
+    const auto& motionHistory = m_ViewPassResources->m_DepthPasses;
     xiiGpuSceneGBufferRasterDescription gBufferDescription;
-    gBufferDescription.m_ViewProjectionMatrix      = GetViewProjectionMatrix(xiiCameraEye::Left);
+    gBufferDescription.m_ViewProjectionMatrix         = GetViewProjectionMatrix(xiiCameraEye::Left);
+    gBufferDescription.m_PreviousViewProjectionMatrix = motionHistory.m_bMotionHistoryValid ? motionHistory.m_PreviousViewProjectionMatrix : gBufferDescription.m_ViewProjectionMatrix;
+    gBufferDescription.m_vCurrentJitter               = motionVectors.first->m_vCurrentJitter;
+    gBufferDescription.m_vPreviousJitter              = motionHistory.m_bMotionHistoryValid ? motionHistory.m_vPreviousJitter : gBufferDescription.m_vCurrentJitter;
     gBufferDescription.m_uiWidth                   = GetRenderResolutionWidth();
     gBufferDescription.m_uiHeight                  = GetRenderResolutionHeight();
     gBufferDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
@@ -6828,13 +6831,14 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     gBufferDescription.m_uiTexCoordOffset          = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0));
     gBufferDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext);
     gBufferDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hGpuVisibilityContext);
-    gpuGBuffer = xiiGpuSceneRasterManager::AddGBufferPass(graph, "GPU Scene GBuffer", hSceneDepth, mainVisibility, geometry, materials, gBufferDescription);
+    gpuGBuffer = xiiGpuSceneRasterManager::AddGBufferPass(graph, "GPU Scene GBuffer", hSceneDepth, motionVectors.first->m_hVelocityBuffer, mainVisibility, geometry, materials, gBufferDescription);
   }
   if (!gpuGBuffer.IsValid())
   {
     graph.AddPass<xiiGBufferBaseData>("GBufferBase", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupGBufferBase, this), xiiMakeDelegate(&xiiView::ExecuteGBufferBase, this));
     graph.AddPass<xiiNormalRoughnessPrepassData>("NormalRoughnessPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupNormalRoughnessPrepass, this), xiiMakeDelegate(&xiiView::ExecuteNormalRoughnessPrepass, this));
   }
+  graph.AddPass<xiiVelocityDilationData>("VelocityDilation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVelocityDilation, this), xiiMakeDelegate(&xiiView::ExecuteVelocityDilation, this));
 
   // Decals update the G-Buffer before any lighting or screen-space shading consumes it.
   graph.AddPass<xiiDecalUploadData>("DecalUpload", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDecalUpload, this), xiiMakeDelegate(&xiiView::ExecuteDecalUpload, this));

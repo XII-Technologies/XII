@@ -9,6 +9,10 @@
 DECLARE_CONSTANT_BUFFER_AUTO(xiiGpuSceneGBufferConstants)
 {
   MAT4(ViewProjectionMatrix);
+  MAT4(PreviousViewProjectionMatrix);
+  FLOAT2(InvRenderSize);
+  FLOAT2(CurrentJitter);
+  FLOAT2(PreviousJitter);
   UINT1(GeometryBaseIndex);
   UINT1(MaterialBaseIndex);
   UINT1(VertexStride);

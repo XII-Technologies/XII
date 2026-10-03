@@ -85,6 +85,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneGBufferRasterDescription, xiiNoBase, 
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("ViewProjectionMatrix", m_ViewProjectionMatrix),
+    XII_MEMBER_PROPERTY("PreviousViewProjectionMatrix", m_PreviousViewProjectionMatrix),
+    XII_MEMBER_PROPERTY("CurrentJitter", m_vCurrentJitter),
+    XII_MEMBER_PROPERTY("PreviousJitter", m_vPreviousJitter),
     XII_MEMBER_PROPERTY("Width", m_uiWidth),
     XII_MEMBER_PROPERTY("Height", m_uiHeight),
     XII_MEMBER_PROPERTY("VertexStride", m_uiVertexStride),
@@ -141,6 +144,7 @@ namespace
     xiiRenderGraphTextureHandle          m_hMaterial;
     xiiRenderGraphTextureHandle          m_hEmissive;
     xiiRenderGraphTextureHandle          m_hNormalRoughness;
+    xiiRenderGraphTextureHandle          m_hVelocity;
     xiiRenderGraphBufferHandle           m_hConstants;
     xiiRenderGraphBufferHandle           m_hSceneInstances;
     xiiRenderGraphBufferHandle           m_hGeometry;
@@ -284,12 +288,13 @@ xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddDepthPrepass(xiiRenderG
 
 xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGraph& graph, xiiStringView sName,
                                                                    xiiRenderGraphTextureHandle hSceneDepth,
+                                                                   xiiRenderGraphTextureHandle hVelocity,
                                                                    const xiiGpuVisibilityOutputs& visibility,
                                                                    const xiiGeometryResidencyManager::UploadHandles& geometry,
                                                                    const xiiMaterialGpuStorage::UploadHandles& materials,
                                                                    const xiiGpuSceneGBufferRasterDescription& description)
 {
-  if (!IsSupported() || !hSceneDepth.IsValid() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() ||
+  if (!IsSupported() || !hSceneDepth.IsValid() || !hVelocity.IsValid() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() ||
       !visibility.m_hVisibleMeshletCount.IsValid() || !visibility.m_hIndirectCommands.IsValid() ||
       !visibility.m_hIndirectCommandCount.IsValid() || !geometry.m_hGeometryMetadata.IsValid() ||
       !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || description.m_uiWidth == 0U ||
@@ -311,15 +316,19 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
     },
     [](const GBufferConstantsPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALMapHelper<xiiGpuSceneGBufferConstants> constants(context.GetCommandList(), context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      constants->ViewProjectionMatrix      = data.m_Description.m_ViewProjectionMatrix;
-      constants->GeometryBaseIndex         = data.m_uiGeometryBaseIndex;
-      constants->MaterialBaseIndex         = data.m_uiMaterialBaseIndex;
-      constants->VertexStride              = data.m_Description.m_uiVertexStride;
-      constants->NormalOffset              = data.m_Description.m_uiNormalOffset;
-      constants->TangentOffset             = data.m_Description.m_uiTangentOffset;
-      constants->TexCoordOffset            = data.m_Description.m_uiTexCoordOffset;
-      constants->MeshDispatchGroupCountX   = data.m_Description.m_uiMeshDispatchGroupCountX;
-      constants->MeshDispatchGroupCountY   = data.m_Description.m_uiMeshDispatchGroupCountY;
+      constants->ViewProjectionMatrix         = data.m_Description.m_ViewProjectionMatrix;
+      constants->PreviousViewProjectionMatrix = data.m_Description.m_PreviousViewProjectionMatrix;
+      constants->InvRenderSize                = xiiVec2(1.0f / static_cast<float>(data.m_Description.m_uiWidth), 1.0f / static_cast<float>(data.m_Description.m_uiHeight));
+      constants->CurrentJitter                 = data.m_Description.m_vCurrentJitter;
+      constants->PreviousJitter                = data.m_Description.m_vPreviousJitter;
+      constants->GeometryBaseIndex            = data.m_uiGeometryBaseIndex;
+      constants->MaterialBaseIndex            = data.m_uiMaterialBaseIndex;
+      constants->VertexStride                 = data.m_Description.m_uiVertexStride;
+      constants->NormalOffset                 = data.m_Description.m_uiNormalOffset;
+      constants->TangentOffset                = data.m_Description.m_uiTangentOffset;
+      constants->TexCoordOffset               = data.m_Description.m_uiTexCoordOffset;
+      constants->MeshDispatchGroupCountX      = data.m_Description.m_uiMeshDispatchGroupCountX;
+      constants->MeshDispatchGroupCountY      = data.m_Description.m_uiMeshDispatchGroupCountY;
     });
   constantsPass.first->m_Description         = description;
   constantsPass.first->m_uiGeometryBaseIndex = geometry.m_uiGeometryBaseIndex;
@@ -327,8 +336,9 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
 
   auto pass = graph.AddPass<GBufferRasterPassData>(
     sName, xiiGALCommandQueueFlags::Graphics,
-    [hSceneDepth, visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, description](GBufferRasterPassData& data, xiiRenderGraphBuilder& builder) {
+    [hSceneDepth, hVelocity, visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, description](GBufferRasterPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hDepth                = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::DepthRead);
+      data.m_hVelocity             = builder.WriteTexture(builder.ReadTexture(hVelocity, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
       data.m_hConstants            = builder.ReadBuffer(hConstants, xiiGALResourceStateFlags::ConstantBuffer);
       data.m_hSceneInstances       = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometry             = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
@@ -407,7 +417,7 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
 
   pass.first->m_Description        = description;
   pass.first->m_hShaderPermutation = s_pState->m_hGBufferShaderPermutation;
-  return {pass.first->m_hAlbedo, pass.first->m_hNormal, pass.first->m_hMaterial, pass.first->m_hEmissive, pass.first->m_hNormalRoughness};
+  return {pass.first->m_hAlbedo, pass.first->m_hNormal, pass.first->m_hMaterial, pass.first->m_hEmissive, pass.first->m_hNormalRoughness, pass.first->m_hVelocity};
 }
 
 void xiiGpuSceneRasterManager::Startup()

@@ -25,6 +25,7 @@ struct GBufferVertex
   float TangentSign : TEXCOORD2;
   float2 TexCoord : TEXCOORD3;
   nointerpolation uint MaterialIndex : TEXCOORD4;
+  float4 PreviousClipPosition : TEXCOORD5;
 };
 
 uint LoadByte(ByteAddressBuffer source, uint byteOffset)
@@ -129,6 +130,7 @@ void main(uint threadIndex : SV_GroupThreadID,
     const float2 texCoord = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset)) : 0.0f;
 
     const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
+    const float3 previousWorldPosition = mul(instance.PreviousGlobalTransform, float4(localPosition, 1.0f)).xyz;
     float3 worldNormal = normalize(float3(dot(instance.NormalTransformRow0.xyz, localNormal), dot(instance.NormalTransformRow1.xyz, localNormal), dot(instance.NormalTransformRow2.xyz, localNormal)));
     float3 worldTangent = normalize(mul((float3x3)instance.GlobalTransform, localTangent.xyz));
     worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
@@ -140,6 +142,7 @@ void main(uint threadIndex : SV_GroupThreadID,
     output.TangentSign = localTangent.w;
     output.TexCoord = texCoord;
     output.MaterialIndex = instance.MaterialIndex;
+    output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));
     vertices[threadIndex] = output;
   }
 
@@ -166,6 +169,7 @@ struct GBufferOutput
   float4 Material : SV_Target2;
   float4 Emissive : SV_Target3;
   float4 NormalRoughness : SV_Target4;
+  float2 Velocity : SV_Target5;
 };
 
 GBufferOutput main(GBufferVertex input)
@@ -231,5 +235,9 @@ GBufferOutput main(GBufferVertex input)
   output.Material = float4(max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y), featureByte);
   output.Emissive = float4(emissive, float(material.Metadata.x));
   output.NormalRoughness = float4(octNormal, max(roughness, 0.01f), saturate(material.SurfaceParameters.y));
+  float2 currentNDC = input.Position.xy * InvRenderSize * 2.0f - 1.0f;
+  currentNDC.y = -currentNDC.y;
+  const float2 previousNDC = input.PreviousClipPosition.xy / max(input.PreviousClipPosition.w, 1e-7f);
+  output.Velocity = (currentNDC - CurrentJitter) - (previousNDC - PreviousJitter);
   return output;
 }
