@@ -9,7 +9,9 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiGpuSceneRasterConstants)
 {
   MAT4(ViewProjectionMatrix);
   UINT1(GeometryBaseIndex);
+  UINT1(MaterialBaseIndex);
   UINT1(VertexStride);
+  UINT1(TexCoordOffset);
   UINT1(MeshDispatchGroupCountX);
   UINT1(MeshDispatchGroupCountY);
 };

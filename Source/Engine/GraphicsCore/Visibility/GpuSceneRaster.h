@@ -18,6 +18,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneDepthRasterDescription
   xiiUInt32  m_uiWidth                   = 0U;
   xiiUInt32  m_uiHeight                  = 0U;
   xiiUInt32  m_uiVertexStride            = 0U;
+  xiiUInt32  m_uiTexCoordOffset          = 0U;
   xiiUInt32  m_uiMeshDispatchGroupCountX = 1U;
   xiiUInt32  m_uiMeshDispatchGroupCountY = 1U;
 };
@@ -76,6 +77,7 @@ public:
   [[nodiscard]] static xiiRenderGraphTextureHandle AddDepthPrepass(xiiRenderGraph& graph, xiiStringView sName,
                                                                    const xiiGpuVisibilityOutputs& visibility,
                                                                    const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                                   const xiiMaterialGpuStorage::UploadHandles& materials,
                                                                    const xiiGpuSceneDepthRasterDescription& description);
 
   /// Rasterizes canonical surface materials into the deferred targets while depth testing against

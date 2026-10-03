@@ -6786,9 +6786,10 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     depthDescription.m_uiWidth                   = GetRenderResolutionWidth();
     depthDescription.m_uiHeight                  = GetRenderResolutionHeight();
     depthDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
+    depthDescription.m_uiTexCoordOffset          = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0));
     depthDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext);
     depthDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hGpuVisibilityContext);
-    hSceneDepth = xiiGpuSceneRasterManager::AddDepthPrepass(graph, "GPU Scene Depth Prepass", mainVisibility, geometry, depthDescription);
+    hSceneDepth = xiiGpuSceneRasterManager::AddDepthPrepass(graph, "GPU Scene Depth Prepass", mainVisibility, geometry, materials, depthDescription);
   }
   if (!hSceneDepth.IsValid())
   {
