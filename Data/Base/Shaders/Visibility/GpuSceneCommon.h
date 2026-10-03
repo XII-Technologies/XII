@@ -17,8 +17,8 @@ struct GpuSceneInstance
   uint     Flags;
   uint     VisibilityMask;
   uint     UserData;
-  uint     Padding0;
-  uint     Padding1;
+  uint     FirstPrimitive;
+  uint     PrimitiveCount;
 };
 
 struct GpuVisibilityView

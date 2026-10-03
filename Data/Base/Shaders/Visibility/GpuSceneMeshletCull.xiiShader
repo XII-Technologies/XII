@@ -109,6 +109,14 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
 
   const uint meshletIndex = lod.MeshletMetadataOffset + localMeshlet;
   const GpuMeshlet meshlet = g_Meshlets[meshletIndex];
+  const uint meshletPrimitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  if (instance.PrimitiveCount != 0u)
+  {
+    const uint selectedEnd = instance.FirstPrimitive + instance.PrimitiveCount;
+    const uint meshletEnd = meshlet.Header.x + meshletPrimitiveCount;
+    if (meshlet.Header.x >= selectedEnd || meshletEnd <= instance.FirstPrimitive)
+      return;
+  }
   const float3 center = mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
   const float radius = meshlet.Bounds.w * maxScale;
   if (!SphereInsideFrustum(center, radius, view))

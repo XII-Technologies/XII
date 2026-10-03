@@ -96,6 +96,16 @@ void main(uint threadIndex : SV_GroupThreadID,
   const GpuGeometryLod lod = geometry.Lods[lodIndex];
   const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
   const uint vertexCount = meshlet.PackedPrimitiveVertexCount >> 16u;
+  if (instance.PrimitiveCount != 0u)
+  {
+    const uint selectedEnd = instance.FirstPrimitive + instance.PrimitiveCount;
+    const uint meshletEnd = meshlet.Header.x + primitiveCount;
+    if (meshlet.Header.x >= selectedEnd || meshletEnd <= instance.FirstPrimitive)
+    {
+      SetMeshOutputCounts(0u, 0u);
+      return;
+    }
+  }
   if (vertexCount > 64u || primitiveCount > 126u || (primitiveCount > 0u && vertexCount == 0u) ||
       lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletRemapBufferIndex == 0xFFFFFFFFu || lod.MeshletPrimitiveBufferIndex == 0xFFFFFFFFu)
   {
@@ -148,12 +158,15 @@ void main(uint threadIndex : SV_GroupThreadID,
 
   if (threadIndex < primitiveCount)
   {
+    const uint sourcePrimitive = meshlet.Header.x + threadIndex;
     const uint primitiveOffset = meshlet.Header.z + threadIndex * 3u;
     const uint3 primitiveIndices = uint3(
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 0u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
-    triangles[threadIndex] = all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);
+    const bool primitiveSelected = instance.PrimitiveCount == 0u ||
+      (sourcePrimitive >= instance.FirstPrimitive && sourcePrimitive - instance.FirstPrimitive < instance.PrimitiveCount);
+    triangles[threadIndex] = primitiveSelected && all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);
   }
 }
 

@@ -250,9 +250,11 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       xiiSceneObjectDesc desc;
       desc.m_LocalTransform  = renderData.m_GlobalTransform.GetAsMat4();
       desc.m_Flags           = GetSceneFlags(renderData, hMaterial);
-      desc.m_uiGeometryIndex = hGeometry.m_uiIndex;
-      desc.m_uiMaterialIndex = hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex;
-      desc.m_uiUserData      = renderData.m_uiUniqueID;
+      desc.m_uiGeometryIndex  = hGeometry.m_uiIndex;
+      desc.m_uiMaterialIndex  = hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex;
+      desc.m_uiUserData       = renderData.m_uiUniqueID;
+      desc.m_uiFirstPrimitive = renderData.m_uiFirstPrimitive;
+      desc.m_uiPrimitiveCount = renderData.m_uiPrimitiveCount;
 
       xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
       if (mesh.GetAcquireResult() == xiiResourceAcquireResult::Final)
@@ -306,6 +308,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     pEntry->m_uiLastSeenFrame = uiFrameIndex;
     scene.SetLocalTransform(pEntry->m_hSceneObject, renderData.m_GlobalTransform.GetAsMat4());
     scene.SetFlags(pEntry->m_hSceneObject, GetSceneFlags(renderData, hMaterial));
+    scene.SetPrimitiveRange(pEntry->m_hSceneObject, renderData.m_uiFirstPrimitive, renderData.m_uiPrimitiveCount);
     xiiGeometryResidencyManager::RequestResidency(pEntry->m_hGeometry, renderData.m_uiLODIndex, uiFrameIndex);
     xiiGeometryResidencyManager::Touch(pEntry->m_hGeometry, uiFrameIndex);
   }

@@ -37,6 +37,7 @@ public:
   bool SetLocalBounds(xiiSceneObjectHandle hObject, const xiiBoundingBoxSphere& localBounds);
   bool SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeometryIndex);
   bool SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMaterialIndex);
+  bool SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount);
   bool SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags);
   bool SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask);
 
@@ -82,6 +83,8 @@ private:
   xiiDynamicArray<xiiBoundingBoxSphere>             m_GlobalBounds;
   xiiDynamicArray<xiiUInt32>                        m_GeometryIndices;
   xiiDynamicArray<xiiUInt32>                        m_MaterialIndices;
+  xiiDynamicArray<xiiUInt32>                        m_FirstPrimitives;
+  xiiDynamicArray<xiiUInt32>                        m_PrimitiveCounts;
   xiiDynamicArray<xiiUInt32>                        m_VisibilityMasks;
   xiiDynamicArray<xiiUInt32>                        m_UserData;
   xiiDynamicArray<xiiBitflags<xiiSceneObjectFlags>> m_Flags;
