@@ -337,6 +337,12 @@ xiiRenderGraphBufferHandle xiiMaterialManager::AddUploadPass(xiiRenderGraph& gra
   return IsInitialized() ? s_pState->m_pSystem->AddUploadPass(graph) : xiiRenderGraphBufferHandle{};
 }
 
+xiiMaterialGpuStorage::UploadHandles xiiMaterialManager::AddUploadPasses(xiiRenderGraph& graph)
+{
+  XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before adding upload passes.");
+  return IsInitialized() ? s_pState->m_pSystem->AddUploadPasses(graph) : xiiMaterialGpuStorage::UploadHandles{};
+}
+
 xiiResult xiiMaterialManager::ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData)
 {
   return IsInitialized() ? s_pState->m_pSystem->ExtractRenderData(handle, out_renderData) : XII_FAILURE;

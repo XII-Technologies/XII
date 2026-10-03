@@ -48,7 +48,8 @@ private:
   [[nodiscard]] bool                 ReplaceMaterial(xiiMaterialGpuHandle handle, xiiSharedPtr<xiiMaterialInstance> pInstance);
   void                               UnregisterMaterial(xiiMaterialGpuHandle handle);
 
-  [[nodiscard]] xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph);
+  [[nodiscard]] xiiMaterialGpuStorage::UploadHandles AddUploadPasses(xiiRenderGraph& graph);
+  [[nodiscard]] xiiRenderGraphBufferHandle           AddUploadPass(xiiRenderGraph& graph);
   [[nodiscard]] xiiResult                  ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData) const;
 
   [[nodiscard]] xiiMaterialGpuStorage&       GetGpuStorage() { return m_GpuStorage; }

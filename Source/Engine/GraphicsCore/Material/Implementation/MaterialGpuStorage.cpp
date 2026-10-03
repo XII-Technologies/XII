@@ -6,7 +6,118 @@
 #include <Foundation/Threading/Lock.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 
+namespace
+{
+  template <typename T>
+  bool TryGetMaterialParameter(const xiiMaterialInstance& material, xiiStringView sName, T& out_value)
+  {
+    const xiiVariant value = material.GetParameter(xiiMaterialParameterId::Make(sName));
+    if (!value.IsValid() || !value.CanConvertTo<T>())
+      return false;
+
+    out_value = value.ConvertTo<T>();
+    return true;
+  }
+
+  void ResolveMaterialColor(const xiiMaterialInstance& material, xiiStringView sName, xiiVec4& inout_value, bool bPreserveAlpha)
+  {
+    const float fPreviousAlpha = inout_value.w;
+    xiiColor    color;
+    if (TryGetMaterialParameter(material, sName, color))
+    {
+      inout_value = xiiVec4(color.r, color.g, color.b, color.a);
+      if (bPreserveAlpha)
+        inout_value.w = fPreviousAlpha;
+      return;
+    }
+
+    xiiVec4 vector4;
+    if (TryGetMaterialParameter(material, sName, vector4))
+    {
+      inout_value = vector4;
+      if (bPreserveAlpha)
+        inout_value.w = fPreviousAlpha;
+      return;
+    }
+
+    xiiVec3 vector3;
+    if (TryGetMaterialParameter(material, sName, vector3))
+      inout_value = xiiVec4(vector3.x, vector3.y, vector3.z, inout_value.w);
+  }
+
+  xiiUInt32 ResolveMaterialTexture(const xiiMaterialInstanceSnapshot& snapshot, xiiStringView sName)
+  {
+    if (snapshot.m_pSchema == nullptr)
+      return xiiInvalidIndex;
+
+    const xiiUInt32 uiTextureIndex = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(sName));
+    return uiTextureIndex != xiiInvalidIndex && uiTextureIndex < snapshot.m_ResourceBindings.GetCount()
+             ? snapshot.m_ResourceBindings[uiTextureIndex].m_uiBindlessIndex
+             : xiiInvalidIndex;
+  }
+
+  xiiGpuSurfaceMaterial ResolveSurfaceMaterial(const xiiMaterialInstance& material, const xiiMaterialInstanceSnapshot& snapshot)
+  {
+    xiiGpuSurfaceMaterial result;
+    result.BaseColorOpacity          = xiiVec4(1.0f);
+    result.EmissiveColorAndRoughness = xiiVec4(0.0f, 0.0f, 0.0f, 0.5f);
+    result.SurfaceParameters         = xiiVec4(0.0f, 0.5f, 0.0f, 1.0f);
+    result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
+    result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
+    result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
+    result.Metadata                  = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U,
+                                                 static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque));
+    result.AdvancedParameters        = xiiVec4(0.0f, 1.5f, 0.0f, 0.5f);
+
+    ResolveMaterialColor(material, "BaseColor", result.BaseColorOpacity, false);
+    ResolveMaterialColor(material, "EmissiveColor", result.EmissiveColorAndRoughness, true);
+    TryGetMaterialParameter(material, "Roughness", result.EmissiveColorAndRoughness.w);
+    TryGetMaterialParameter(material, "Metallic", result.SurfaceParameters.x);
+    TryGetMaterialParameter(material, "Specular", result.SurfaceParameters.y);
+    TryGetMaterialParameter(material, "Transmission", result.SurfaceParameters.z);
+    TryGetMaterialParameter(material, "OcclusionStrength", result.SurfaceParameters.w);
+    TryGetMaterialParameter(material, "AlphaCutoff", result.LayerParameters.x);
+    TryGetMaterialParameter(material, "NormalScale", result.LayerParameters.y);
+    TryGetMaterialParameter(material, "ClearCoat", result.LayerParameters.z);
+    TryGetMaterialParameter(material, "ClearCoatRoughness", result.LayerParameters.w);
+    TryGetMaterialParameter(material, "Thickness", result.AdvancedParameters.x);
+    TryGetMaterialParameter(material, "IndexOfRefraction", result.AdvancedParameters.y);
+    TryGetMaterialParameter(material, "Anisotropy", result.AdvancedParameters.z);
+    TryGetMaterialParameter(material, "SheenRoughness", result.AdvancedParameters.w);
+
+    const xiiMaterialRuntimeState& runtimeState = snapshot.m_RuntimeState;
+    result.Metadata = xiiVec4U32(
+      runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(),
+      static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()),
+      runtimeState.m_BlendMode.GetValue());
+    result.TextureIndices0 = xiiVec4U32(
+      ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"),
+      ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
+    result.TextureIndices1 = xiiVec4U32(
+      ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"),
+      ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
+    return result;
+  }
+} // namespace
+
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSurfaceMaterial, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuSurfaceMaterial>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("BaseColorOpacity", BaseColorOpacity),
+    XII_MEMBER_PROPERTY("EmissiveColorAndRoughness", EmissiveColorAndRoughness),
+    XII_MEMBER_PROPERTY("SurfaceParameters", SurfaceParameters),
+    XII_MEMBER_PROPERTY("LayerParameters", LayerParameters),
+    XII_MEMBER_PROPERTY("TextureIndices0", TextureIndices0),
+    XII_MEMBER_PROPERTY("TextureIndices1", TextureIndices1),
+    XII_MEMBER_PROPERTY("Metadata", Metadata),
+    XII_MEMBER_PROPERTY("AdvancedParameters", AdvancedParameters),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialGpuStorageDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMaterialGpuStorageDescription>)
 {
   XII_BEGIN_PROPERTIES
@@ -70,6 +181,17 @@ xiiResult xiiMaterialGpuStorage::Initialize(xiiGALDevice* pDevice, const xiiMate
   }
 
   m_pBuffer->SetDebugName("Material GPU Storage");
+
+  bufferDescription.m_uiSize              = static_cast<xiiUInt64>(sizeof(xiiGpuSurfaceMaterial)) * description.m_uiMaxMaterials * description.m_uiFramesInFlight;
+  bufferDescription.m_uiElementByteStride = sizeof(xiiGpuSurfaceMaterial);
+  m_pSurfaceBuffer                        = pDevice->CreateBuffer(bufferDescription);
+  if (m_pSurfaceBuffer == nullptr)
+  {
+    Shutdown();
+    return XII_FAILURE;
+  }
+  m_pSurfaceBuffer->SetDebugName("Surface Material GPU Storage");
+
   m_Slots.SetCount(description.m_uiMaxMaterials);
   m_FreeSlots.Reserve(description.m_uiMaxMaterials);
   for (xiiUInt32 i = description.m_uiMaxMaterials; i > 0U; --i)
@@ -87,6 +209,7 @@ void xiiMaterialGpuStorage::Shutdown()
 {
   XII_LOCK(m_Mutex);
   m_pBuffer.Clear();
+  m_pSurfaceBuffer.Clear();
   m_Slots.Clear();
   m_FreeSlots.Clear();
   m_RetiredSlots.Clear();
@@ -192,6 +315,12 @@ xiiUInt32 xiiMaterialGpuStorage::GetGpuOffset(xiiMaterialGpuHandle handle, xiiUI
   return static_cast<xiiUInt32>((uiFrameSlice * m_Description.m_uiMaxMaterials + handle.m_uiSlot) * m_uiMaterialStride);
 }
 
+xiiUInt32 xiiMaterialGpuStorage::GetSurfaceBaseIndex(xiiUInt64 uiFrameIndex) const
+{
+  XII_LOCK(m_Mutex);
+  return m_Description.m_uiFramesInFlight > 0U ? static_cast<xiiUInt32>(uiFrameIndex % m_Description.m_uiFramesInFlight) * m_Description.m_uiMaxMaterials : 0U;
+}
+
 xiiMaterialGpuStorageStatistics xiiMaterialGpuStorage::GetStatistics() const
 {
   XII_LOCK(m_Mutex);
@@ -242,13 +371,15 @@ void xiiMaterialGpuStorage::GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpu
     upload.m_Handle.m_uiGeneration = slot.m_uiGeneration;
     upload.m_uiRevision            = snapshot.m_uiRevision;
     upload.m_uiDestinationOffset   = static_cast<xiiUInt32>((static_cast<xiiUInt64>(uiFrameSlice) * m_Description.m_uiMaxMaterials + i) * m_uiMaterialStride);
+    upload.m_uiSurfaceDestinationOffset = static_cast<xiiUInt32>((static_cast<xiiUInt64>(uiFrameSlice) * m_Description.m_uiMaxMaterials + i) * sizeof(xiiGpuSurfaceMaterial));
     upload.m_Data.SetCount(m_uiMaterialStride);
     xiiMemoryUtils::ZeroFill(upload.m_Data.GetData(), upload.m_Data.GetCount());
     xiiMemoryUtils::Copy(upload.m_Data.GetData(), snapshot.m_ParameterData.GetData(), snapshot.m_ParameterData.GetCount());
+    upload.m_SurfaceData = ResolveSurfaceMaterial(*slot.m_pInstance, snapshot);
   }
 }
 
-xiiRenderGraphBufferHandle xiiMaterialGpuStorage::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
+xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
 {
   xiiMaterialGpuUploadBatch batch;
   GatherUploads(uiFrameIndex, batch);
@@ -259,14 +390,23 @@ xiiRenderGraphBufferHandle xiiMaterialGpuStorage::AddUploadPass(xiiRenderGraph& 
     [this](UploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hBuffer = builder.ImportBuffer("Material GPU Storage", m_pBuffer, xiiGALResourceStateFlags::ShaderResource);
       data.m_hBuffer = builder.WriteBuffer(data.m_hBuffer, xiiGALResourceStateFlags::CopyDestination);
+      data.m_hSurfaceBuffer = builder.ImportBuffer("Surface Material GPU Storage", m_pSurfaceBuffer, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hSurfaceBuffer = builder.WriteBuffer(data.m_hSurfaceBuffer, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);
+      builder.ExportBuffer(data.m_hSurfaceBuffer, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(true);
       builder.SetPassAllowMerge(false);
     },
     [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALBuffer* pBuffer = context.GetBuffer(data.m_hBuffer);
+      xiiGALBuffer* pSurfaceBuffer = context.GetBuffer(data.m_hSurfaceBuffer);
       for (const xiiMaterialGpuUpload& upload : data.m_Batch.m_Uploads)
+      {
         context.GetCommandList().UpdateBuffer(pBuffer, upload.m_uiDestinationOffset, upload.m_Data);
+        context.GetCommandList().UpdateBuffer(
+          pSurfaceBuffer, upload.m_uiSurfaceDestinationOffset,
+          xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_SurfaceData), sizeof(upload.m_SurfaceData)));
+      }
 
       data.m_pStorage->MarkUploadsRecorded(data.m_Batch);
     },
@@ -274,7 +414,16 @@ xiiRenderGraphBufferHandle xiiMaterialGpuStorage::AddUploadPass(xiiRenderGraph& 
 
   pass.first->m_Batch    = std::move(batch);
   pass.first->m_pStorage = this;
-  return pass.first->m_hBuffer;
+  UploadHandles result;
+  result.m_hParameterData      = pass.first->m_hBuffer;
+  result.m_hSurfaceData        = pass.first->m_hSurfaceBuffer;
+  result.m_uiSurfaceBaseIndex  = GetSurfaceBaseIndex(uiFrameIndex);
+  return result;
+}
+
+xiiRenderGraphBufferHandle xiiMaterialGpuStorage::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
+{
+  return AddUploadPasses(graph, uiFrameIndex).m_hParameterData;
 }
 
 void xiiMaterialGpuStorage::MarkUploadsRecorded(const xiiMaterialGpuUploadBatch& batch)
@@ -292,7 +441,7 @@ void xiiMaterialGpuStorage::MarkUploadsRecorded(const xiiMaterialGpuUploadBatch&
       continue;
 
     m_Slots[upload.m_Handle.m_uiSlot].m_LastUploadedRevision[uiFrameSlice] = upload.m_uiRevision;
-    m_uiLastUploadBytes += upload.m_Data.GetCount();
+    m_uiLastUploadBytes += upload.m_Data.GetCount() + sizeof(xiiGpuSurfaceMaterial);
   }
 }
 

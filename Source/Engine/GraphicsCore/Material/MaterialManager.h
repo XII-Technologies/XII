@@ -41,7 +41,8 @@ public:
   [[nodiscard]] static xiiMaterialGpuHandle AcquireMaterialResource(const xiiMaterialResourceHandle& hMaterial);
   static void                               ReleaseMaterialResource(const xiiMaterialResourceHandle& hMaterial);
 
-  [[nodiscard]] static xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph);
+  [[nodiscard]] static xiiMaterialGpuStorage::UploadHandles AddUploadPasses(xiiRenderGraph& graph);
+  [[nodiscard]] static xiiRenderGraphBufferHandle           AddUploadPass(xiiRenderGraph& graph);
   [[nodiscard]] static xiiResult                  ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData);
 
   [[nodiscard]] static xiiMaterialGpuStorage& GetGpuStorage();

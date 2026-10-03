@@ -65,6 +65,12 @@ xiiRenderGraphBufferHandle xiiMaterialSystem::AddUploadPass(xiiRenderGraph& grap
   return m_GpuStorage.AddUploadPass(graph, m_uiFrameIndex);
 }
 
+xiiMaterialGpuStorage::UploadHandles xiiMaterialSystem::AddUploadPasses(xiiRenderGraph& graph)
+{
+  XII_ASSERT_DEV(m_bInitialized, "Material system must be initialized before adding graph passes.");
+  return m_GpuStorage.AddUploadPasses(graph, m_uiFrameIndex);
+}
+
 xiiResult xiiMaterialSystem::ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData) const
 {
   xiiSharedPtr<xiiMaterialInstance> pInstance = m_GpuStorage.GetMaterial(handle);
