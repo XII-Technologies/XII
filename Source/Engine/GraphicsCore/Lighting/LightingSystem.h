@@ -157,7 +157,7 @@ private:
     XII_DECLARE_POD_TYPE();
 
     xiiVec4   m_MainLightDirectionAndIntensity    = xiiVec4(0.0f, 0.0f, -1.0f, 0.0f);
-    xiiVec4   m_MainLightColor                    = xiiVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    xiiVec4   m_MainLightColor                    = xiiVec4(1.0f, 1.0f, 1.0f, 0.0f); ///< rgb = primary color, w = directional-light prefix count.
     xiiVec4   m_AmbientLightColor                 = xiiVec4(0.03f, 0.035f, 0.04f, 1.0f);
     xiiUInt32 m_uiActiveLightCount                = 0U;
     xiiUInt32 m_uiClusterCountX                   = 1U;

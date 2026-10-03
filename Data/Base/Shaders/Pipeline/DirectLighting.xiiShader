@@ -408,6 +408,22 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float globalShadow = cascadeShadow * cloudShadow * saturate(1.0f - max(rtShadow, contactShadow));
     float3 direct = BRDF(albedo, roughness, metallic, dielectricSpecular, N, mainL, V) * g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * globalShadow;
 
+    // Directional lights occupy a deterministic prefix of the GPU light
+    // stream. Only entry zero owns the shared sun shadow resources; secondary
+    // infinite sources remain physically meaningful, unshadowed contributors.
+    const uint directionalLightCount = min((uint)(g_MainLightColor.w + 0.5f), g_ActiveLightCount);
+    [loop]
+    for (uint directionalIndex = 1u; directionalIndex < directionalLightCount; ++directionalIndex)
+    {
+        const xiiGpuLightData directionalLight = g_Lights[directionalIndex];
+        if (GetLightType(directionalLight) != XII_LIGHT_TYPE_DIRECTIONAL)
+            break;
+
+        const float3 directionToLight = normalize(-directionalLight.DirectionAndType.xyz);
+        const float3 radiance = directionalLight.ColorAndIntensity.rgb * directionalLight.ColorAndIntensity.w;
+        direct += BRDF(albedo, roughness, metallic, dielectricSpecular, N, directionToLight, V) * radiance;
+    }
+
     const xiiReSTIRDIReservoir reservoir = ReSTIRUnpackReservoir(g_DirectLightReservoir.Load(int3(tid.xy, 0)));
     if (ReSTIRValidateReservoir(reservoir))
     {

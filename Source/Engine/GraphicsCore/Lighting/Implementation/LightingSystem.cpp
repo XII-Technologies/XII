@@ -436,7 +436,25 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
     }
   }
 
+  // Keep infinite lights in a small deterministic prefix. Surface and
+  // volumetric shaders can then evaluate every directional source without
+  // scanning a potentially very large local-light stream. The brightest
+  // directional is first and remains the sole owner of cascaded/VSM and cloud
+  // shadows; stable IDs make ties and local-light ordering reproducible.
+  m_LightData.Sort([](const xiiGpuLightData& lhs, const xiiGpuLightData& rhs) {
+    const bool bLeftDirectional  = lhs.m_Metadata.z == static_cast<xiiUInt32>(LightType::Directional);
+    const bool bRightDirectional = rhs.m_Metadata.z == static_cast<xiiUInt32>(LightType::Directional);
+    if (bLeftDirectional != bRightDirectional)
+      return bLeftDirectional;
+    if (bLeftDirectional && lhs.m_ColorAndIntensity.w != rhs.m_ColorAndIntensity.w)
+      return lhs.m_ColorAndIntensity.w > rhs.m_ColorAndIntensity.w;
+    return lhs.m_Metadata.x < rhs.m_Metadata.x;
+  });
+  for (xiiUInt32 uiLightIndex = 0U; uiLightIndex < m_LightData.GetCount(); ++uiLightIndex)
+    m_LightData[uiLightIndex].m_Metadata.y = uiLightIndex;
+
   m_LightConstants.m_uiActiveLightCount = m_Stats.m_uiActiveLightCount;
+  m_LightConstants.m_MainLightColor.w    = static_cast<float>(m_Stats.m_uiDirectionalLightCount);
 
   xiiLocalShadowAtlasSettings localShadowSettings;
   localShadowSettings.m_uiAtlasSize        = m_Settings.m_uiLocalShadowAtlasSize;

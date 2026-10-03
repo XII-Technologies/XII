@@ -17,7 +17,7 @@ cbuffer PerFrameCamera : register(b0)
 cbuffer PerFrameLight : register(b1)
 {
     float4   g_MainLightDirectionAndIntensity; // xyz=dir (world), w=intensity
-    float4   g_MainLightColor;                 // xyz=rgb, w=unused
+    float4   g_MainLightColor;                 // xyz=primary rgb, w=directional-light prefix count
     float4   g_AmbientLightColor;              // xyz=rgb, w=unused
     uint     g_ActiveLightCount;
     uint     g_ClusterCountX;

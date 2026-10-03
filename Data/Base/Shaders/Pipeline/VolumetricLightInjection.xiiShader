@@ -102,7 +102,19 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const float3 directionToMainLight = normalize(-g_MainLightDirectionAndIntensity.xyz);
   const float directionalVisibility = EvaluateVolumetricDirectionalShadow(worldPosition, directionToMainLight, linearDepth) * EvaluateCloudShadow(worldPosition, directionToMainLight);
   const float directionalPhase = PhaseHG(dot(viewRay, directionToMainLight), anisotropy);
-  const float3 directionalRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * directionalPhase * directionalVisibility;
+  float3 directionalRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * directionalPhase * directionalVisibility;
+  const uint directionalLightCount = min((uint)(g_MainLightColor.w + 0.5f), g_ActiveLightCount);
+  [loop]
+  for (uint directionalIndex = 1u; directionalIndex < directionalLightCount; ++directionalIndex)
+  {
+    const xiiGpuLightData directionalLight = g_Lights[directionalIndex];
+    if (GetLightType(directionalLight) != XII_LIGHT_TYPE_DIRECTIONAL)
+      break;
+
+    const float3 directionToLight = normalize(-directionalLight.DirectionAndType.xyz);
+    const float phase = PhaseHG(dot(viewRay, directionToLight), anisotropy);
+    directionalRadiance += directionalLight.ColorAndIntensity.rgb * directionalLight.ColorAndIntensity.w * phase;
+  }
   const float3 localRadiance = EvaluateLocalLighting(uv, zFraction, worldPosition, viewRay, anisotropy);
 
   const float4 initializedScattering = g_FroxelScattering[dispatchThreadId];
