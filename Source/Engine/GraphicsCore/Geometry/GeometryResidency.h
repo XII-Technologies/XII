@@ -42,6 +42,11 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryLodSource
 
   xiiMeshBufferResourceHandle m_hMeshBuffer;
   float                       m_fMinimumScreenCoverage = 0.0f;
+  /// First meshlet in the source buffer that belongs to this LOD. This allows several LODs
+  /// authored in one xiiMeshBufferResource to share their immutable vertex/remap buffers.
+  xiiUInt32 m_uiFirstMeshlet = 0U;
+  /// Number of source meshlets in this LOD. Zero consumes every meshlet after m_uiFirstMeshlet.
+  xiiUInt32 m_uiMeshletCount = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryLodSource);

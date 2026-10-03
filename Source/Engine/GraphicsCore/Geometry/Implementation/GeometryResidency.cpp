@@ -104,6 +104,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryLodSource, xiiNoBase, 1, xiiRTTIDefau
     {
       XII_ACCESSOR_PROPERTY("MeshBuffer", GetMeshBufferResourceId, SetMeshBufferResourceId),
       XII_MEMBER_PROPERTY("MinimumScreenCoverage", m_fMinimumScreenCoverage),
+      XII_MEMBER_PROPERTY("FirstMeshlet", m_uiFirstMeshlet),
+      XII_MEMBER_PROPERTY("MeshletCount", m_uiMeshletCount),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -414,15 +416,32 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
       return false;
     }
 
+    const xiiArrayPtr<const xiiMeshlet> sourceMeshlets = mesh->GetMeshlets();
+    if (source.m_uiFirstMeshlet > sourceMeshlets.GetCount())
+    {
+      rollback();
+      slot.m_State = xiiGeometryResidencyState::Failed;
+      return false;
+    }
+
+    const xiiUInt32 uiAvailableMeshlets = sourceMeshlets.GetCount() - source.m_uiFirstMeshlet;
+    const xiiUInt32 uiMeshletCount      = source.m_uiMeshletCount == 0U ? uiAvailableMeshlets : source.m_uiMeshletCount;
+    if (uiMeshletCount > uiAvailableMeshlets)
+    {
+      rollback();
+      slot.m_State = xiiGeometryResidencyState::Failed;
+      return false;
+    }
+
     xiiGpuGeometryLod& lod       = record.m_Lods[i];
     lod.m_uiVertexCount          = mesh->GetVertexCount();
     lod.m_uiIndexCount           = mesh->GetIndexCount();
-    lod.m_uiMeshletCount         = mesh->GetMeshletCount();
+    lod.m_uiMeshletCount         = uiMeshletCount;
     lod.m_fMinimumScreenCoverage = source.m_fMinimumScreenCoverage;
     lod.m_uiIndexType            = mesh->GetIndexType().GetValue();
     uiNewBytes += static_cast<xiiUInt64>(mesh->GetVertexCount()) * mesh->GetVertexStride();
     uiNewBytes += static_cast<xiiUInt64>(mesh->GetIndexCount()) * (mesh->GetIndexType() == xiiGALValueType::UInt16 ? 2U : 4U);
-    uiNewBytes += static_cast<xiiUInt64>(mesh->GetMeshletCount()) * sizeof(xiiMeshlet);
+    uiNewBytes += static_cast<xiiUInt64>(uiMeshletCount) * sizeof(xiiMeshlet);
     record.m_uiResidentLodMask |= XII_BIT(i);
     newLods.PushBack(i);
 
@@ -442,7 +461,7 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
       if (s_pState->m_uiNextMeshletUploadId == 0U)
         s_pState->m_uiNextMeshletUploadId = 1U;
       upload.m_uiOffset = uiArenaOffset * sizeof(xiiMeshlet);
-      upload.m_Meshlets = mesh->GetMeshlets();
+      upload.m_Meshlets = sourceMeshlets.GetSubArray(source.m_uiFirstMeshlet, uiMeshletCount);
       for (xiiMeshlet& meshlet : upload.m_Meshlets)
         meshlet.m_uiLodIndex = static_cast<xiiUInt16>(i);
     }

@@ -3,12 +3,25 @@
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 #include <Core/Graphics/Geometry.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(Meshes);
 
 XII_CREATE_SIMPLE_TEST(Meshes, MeshletConstruction)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Residency LOD ranges are reflected and default to the complete buffer")
+  {
+    xiiGeometryLodSource source;
+    XII_TEST_INT(source.m_uiFirstMeshlet, 0U);
+    XII_TEST_INT(source.m_uiMeshletCount, 0U);
+
+    const xiiRTTI* pType = xiiGetStaticRTTI<xiiGeometryLodSource>();
+    XII_TEST_BOOL(pType != nullptr);
+    XII_TEST_BOOL(pType->FindPropertyByName("FirstMeshlet") != nullptr);
+    XII_TEST_BOOL(pType->FindPropertyByName("MeshletCount") != nullptr);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Optimized cluster stream invariants")
   {
     xiiGeometry geometry;
