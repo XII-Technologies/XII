@@ -13,8 +13,17 @@ ALL
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
+StructuredBuffer<xiiClusterDescriptor> g_Clusters;
 RWStructuredBuffer<uint>          g_LightIndex;
 RWStructuredBuffer<uint2>         g_LightGrid;
+
+bool SphereIntersectsCluster(float3 center, float radius, uint clusterIndex)
+{
+    const xiiClusterDescriptor cluster = g_Clusters[clusterIndex];
+    const float3 closestPoint = clamp(center, cluster.MinBounds.xyz, cluster.MaxBounds.xyz);
+    const float3 separation = center - closestPoint;
+    return dot(separation, separation) <= radius * radius;
+}
 
 uint LinearDepthToSlice(float linearDepth)
 {
@@ -92,6 +101,13 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
             for (uint x = minTile.x; x <= maxTile.x; ++x)
             {
                 const uint clusterIndex = (z * ClusterCountY + y) * ClusterCountX + x;
+                // Screen-space bounds deliberately overestimate the affected
+                // tile range. Reject clusters that do not intersect the
+                // light's conservative world-space influence sphere before
+                // consuming one of their bounded light-list entries.
+                if (!SphereIntersectsCluster(center, radius, clusterIndex))
+                    continue;
+
                 const uint listSlot = ReserveClusterLight(clusterIndex);
                 if (listSlot < MaxLightsPerCluster)
                 {

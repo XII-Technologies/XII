@@ -1348,6 +1348,7 @@ struct xiiLightListData
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphBufferHandle m_hClusterConstants;      ///< Constant buffer in (cluster dimensions and active light count).
+  xiiRenderGraphBufferHandle m_hClusterDescriptors;    ///< SRV in (world-space cluster AABBs used for exact conservative rejection).
   xiiRenderGraphBufferHandle m_hLightIndexBuffer;      ///< SRV in (structured buffer of uint, one per light, containing light type and other metadata, from extraction).
   xiiRenderGraphBufferHandle m_hLightGridBuffer;       ///< UAV out (structured buffer of uint, containing compact light lists per cluster, consumed by main lighting pass).
   xiiUInt32                  m_uiActiveLightCount = 0; ///< Number of active lights to process (from extraction). This is used to avoid processing the entire buffer when only a subset is populated.
@@ -1358,6 +1359,7 @@ void xiiView::SetupLightListBuild(xiiLightListData& data, xiiRenderGraphBuilder&
   builder.SetPassAllowMerge(false);
 
   data.m_hClusterConstants = builder.ReadBuffer("xiiLightClusteringConstants", xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hClusterDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, xiiGALResourceStateFlags::ShaderResource);
 
   const xiiUInt32 uiMaxClusters    = xiiMath::Max(m_ViewPassResources->m_LightingSystem.GetTotalClusterCount(), 1U);
   const xiiUInt32 uiMaxLightsPerCl = xiiMath::Max(m_ViewPassResources->m_LightingSystem.GetSettings().m_uiMaxLightsPerCluster, 1U);
@@ -1386,6 +1388,7 @@ void xiiView::ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraph
     m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     m_ViewPassResources->m_LightingSystem.BindLightData(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
