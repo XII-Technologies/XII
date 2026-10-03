@@ -19,7 +19,7 @@ struct xiiGpuLightData
   float4 ColorAndIntensity;     // rgb = normalized color, w = cd (local), lx (directional), or nt (area)
   float4 AttenuationAndSize;    // x = range, y = source radius, z = tube length
   float4 SpotAnglesAndRectSize; // x = cos inner, y = cos outer, zw = rectangle extents
-  float4 ShadowData;            // x = casts shadow, y = shadow fade, z = angular/source size
+  float4 ShadowData;            // x = casts shadow, y = camera fade-out distance in metres (0 = automatic/full), z = angular/source size
   float4 BoundsCenterAndRadius; // xyz = culling sphere center, w = radius
   float4 OrientationRightAndIES; // xyz = local right axis, w = compact IES profile index + 1
   uint4  Metadata;               // x = stable light ID, y = compact frame index, z = light type, w = flags
@@ -42,6 +42,20 @@ struct xiiLocalShadowAtlasData
 uint GetLightType(xiiGpuLightData lightData)
 {
   return (uint)(lightData.DirectionAndType.w + 0.5f);
+}
+
+/// Returns the stable per-light shadow contribution for this camera. An authored zero keeps full
+/// shadow coverage (the component's "Auto" setting); positive values fade over the final 20% of
+/// the camera-to-light distance budget instead of being misinterpreted as a unitless strength.
+float GetLocalShadowFadeStrength(xiiGpuLightData lightData)
+{
+  const float fadeEnd = lightData.ShadowData.y;
+  if (fadeEnd <= 0.0f)
+    return 1.0f;
+
+  const float cameraDistance = length(g_CameraPositionAndNearPlane.xyz - lightData.PositionAndInvRange.xyz);
+  const float fadeWidth = max(fadeEnd * 0.2f, 0.01f);
+  return 1.0f - smoothstep(max(fadeEnd - fadeWidth, 0.0f), fadeEnd, cameraDistance);
 }
 
 float3 GetRepresentativeLightPosition(xiiGpuLightData lightData, float3 worldPosition)

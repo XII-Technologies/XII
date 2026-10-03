@@ -71,7 +71,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuLightData
   xiiVec4    m_ColorAndIntensity;      ///< rgb = normalized linear color; w = cd (local), lx (directional), or nt (area).
   xiiVec4    m_AttenuationAndSize;     ///< x = range, y = source radius, z = tube length, w = reserved.
   xiiVec4    m_SpotAnglesAndRectSize;  ///< x = cos(inner half angle), y = cos(outer half angle), zw = rect extents.
-  xiiVec4    m_ShadowData;             ///< x = casts shadow, y = shadow fade range, z = angular/source size, w = reserved.
+  xiiVec4    m_ShadowData;             ///< x = casts shadow, y = camera fade-out distance in metres (zero is automatic/full), z = angular/source size, w = reserved.
   xiiVec4    m_BoundsCenterAndRadius;  ///< xyz = culling sphere center, w = culling sphere radius.
   xiiVec4    m_OrientationRightAndIES; ///< xyz = local right axis, w = compact IES profile index plus one (zero means none).
   xiiVec4U32 m_Metadata;               ///< x = stable light ID, y = compact frame index, z = LightType, w = reserved flags.

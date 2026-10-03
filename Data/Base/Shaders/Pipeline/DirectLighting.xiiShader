@@ -288,7 +288,7 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
             const float mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
             visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
         }
-        return lerp(1.0f, visibility / 9.0f, saturate(lightData.ShadowData.y));
+        return lerp(1.0f, visibility / 9.0f, GetLocalShadowFadeStrength(lightData));
     }
 
     // PCSS search radius is derived from the emitter's physical radius and
@@ -326,7 +326,7 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
         const float mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
         visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
     }
-    return lerp(1.0f, visibility / float(filterSampleCount), saturate(lightData.ShadowData.y));
+    return lerp(1.0f, visibility / float(filterSampleCount), GetLocalShadowFadeStrength(lightData));
 }
 
 #include <Shaders/Pipeline/FiniteAreaLight.h>
