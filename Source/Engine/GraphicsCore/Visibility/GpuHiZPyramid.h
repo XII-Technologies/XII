@@ -14,11 +14,12 @@ struct XII_GRAPHICSCORE_DLL xiiGpuHiZPyramidDescription
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuHiZPyramidDescription);
 
-/// Persistent, frame-ringed hierarchical depth history.
+/// Persistent, frame-ringed reversed-Z hierarchical depth history.
 ///
 /// The pyramid built from frame N is sampled by frame N+1. This deliberately avoids the
 /// current-frame dependency cycle (visibility -> depth -> Hi-Z -> visibility), while camera
 /// cuts and resizes conservatively disable occlusion until a new history image is available.
+/// Every reduced texel stores the minimum (farthest) depth in its footprint.
 class XII_GRAPHICSCORE_DLL xiiGpuHiZPyramid
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGpuHiZPyramid);
