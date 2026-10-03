@@ -1475,8 +1475,8 @@ void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xii
     const xiiVec3 vAbsoluteScale   = pProbe->m_GlobalTransform.m_vScale.Abs();
     const float   fMaximumScale    = xiiMath::Max(vAbsoluteScale.x, xiiMath::Max(vAbsoluteScale.y, vAbsoluteScale.z));
     const float   fInfluenceRadius = pProbe->m_InfluenceShape == xiiReflectionProbeInfluenceShape::Sphere ?
-        pProbe->m_fSphereRadius * fMaximumScale :
-        pProbe->m_vHalfExtents.CompMul(vAbsoluteScale).GetLength();
+      pProbe->m_fSphereRadius * fMaximumScale :
+      pProbe->m_vHalfExtents.CompMul(vAbsoluteScale).GetLength();
 
     xiiGPUReflectionProbe& gpuProbe = data.m_Probes.ExpandAndGetRef();
     gpuProbe.WorldToProbe           = pProbe->m_GlobalTransform.GetInverse().GetAsMat4();
@@ -6632,6 +6632,11 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   bool      bResult      = blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
   XII_IGNORE_UNUSED(bResult);
 
+  // Geometry residency and visibility are process services. The view keeps only generation-
+  // checked context handles, so their allocator-backed state is guaranteed to be constructed and
+  // destroyed by the GraphicsCore subsystem while the Foundation allocator and GAL device exist.
+  const xiiGeometryResidencyManager::UploadHandles geometry = xiiGeometryResidencyManager::AddUploadPass(graph, uiFrameIndex);
+
   const xiiRayTracingSceneManager::BuildHandles rayTracingScene      = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
   m_ViewPassResources->m_LightingPasses.m_pRayTracingScene           = rayTracingScene.m_pTopLevelAS;
   m_ViewPassResources->m_LightingPasses.m_hRayTracingSceneDependency = rayTracingScene.m_hSceneDependency;
@@ -6692,6 +6697,51 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
   auto shadowCascadePass = graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiView::ExecuteShadowCascadeSetup, this));
+
+  // Feed the subsystem-owned GPU scene through the same meshlet visibility path used by samples.
+  // The farthest directional cascade encloses the useful caster range for every nearer virtual
+  // cascade and therefore supplies one conservative caster stream for all dirty VSM pages.
+  if (m_pCamera != nullptr && shadowCascadePass.first->m_uiActiveCascades > 0U && m_GpuSceneContext.IsInitialized() &&
+      xiiGpuVisibilityManager::IsValid(m_hGpuVisibilityContext) && geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid())
+  {
+    const xiiDirectionalLightRenderData* pMainDirectional =
+      m_pExtractedData != nullptr ? SelectMainDirectionalLight(m_pExtractedData->GetAllRenderData()) : nullptr;
+    if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows)
+    {
+      const xiiUInt32  uiLastCascade        = shadowCascadePass.first->m_uiActiveCascades - 1U;
+      const xiiMat4&   shadowViewProjection = shadowCascadePass.first->m_CascadeViewProjection[uiLastCascade];
+      const xiiFrustum shadowFrustum        = xiiFrustum::MakeFromMVP(shadowViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+
+      xiiGpuVisibilityView shadowView = xiiGpuVisibilitySystem::BuildView(
+        shadowViewProjection, shadowFrustum, m_pCamera->GetPosition(), k_uiDirectionalShadowAtlasWidth, k_uiDirectionalShadowAtlasHeight, 0U,
+        m_GpuSceneContext.GetDatabase().GetObjectCount());
+      shadowView.m_uiRequiredFlags = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows).GetValue();
+
+      xiiGpuVisibilityPassDescription visibilityDescription;
+      visibilityDescription.m_sName                  = "Default View Directional Shadow";
+      visibilityDescription.m_Purpose                = xiiGpuVisibilityPurpose::Shadow;
+      visibilityDescription.m_bAsyncCompute          = true;
+      const xiiGpuVisibilityOutputs shadowVisibility = xiiGpuVisibilityManager::AddPasses(
+        m_hGpuVisibilityContext, graph, uiFrameIndex, m_GpuSceneContext.GetHandle(), shadowView, geometry, visibilityDescription);
+
+      xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload;
+      virtualShadowUpload.m_hPhysicalPageTable = graph.GetCurrentBufferHandle(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageTable);
+      virtualShadowUpload.m_hVirtualPageTable  = graph.GetCurrentBufferHandle(xiiRGBlackboardKeys::k_VirtualShadowPageTable);
+      virtualShadowUpload.m_hPhysicalAtlas     = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_VirtualShadowAtlas);
+      XII_IGNORE_UNUSED(blackboard.TryGet(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowUpload.m_uiFrameBaseIndex));
+      XII_IGNORE_UNUSED(blackboard.TryGet(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowUpload.m_uiPhysicalPageCount));
+      XII_IGNORE_UNUSED(blackboard.TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowUpload.m_uiVirtualTableBaseIndex));
+      XII_IGNORE_UNUSED(blackboard.TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, virtualShadowUpload.m_uiVirtualTableCapacity));
+
+      const xiiUInt32 uiDirectionalLightId = static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey) & 0x00FFFFFFU;
+      XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::AddRasterPasses(
+        graph, virtualShadowUpload, shadowVisibility, geometry,
+        xiiArrayPtr<const xiiMat4>(shadowCascadePass.first->m_CascadeViewProjection, shadowCascadePass.first->m_uiActiveCascades),
+        uiDirectionalLightId, sizeof(xiiMeshPackedVertex), xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext),
+        xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hGpuVisibilityContext)));
+    }
+  }
+
   graph.AddPass<xiiShadowCasterBuildData>("ShadowCasterListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCasterBuild, this), xiiMakeDelegate(&xiiView::ExecuteShadowCasterBuild, this));
   graph.AddPass<xiiLocalShadowAtlasAllocationData>("LocalShadowAtlasUpload", xiiGALCommandQueueFlags::Transfer, xiiMakeDelegate(&xiiView::SetupLocalShadowAtlasAllocation, this), xiiMakeDelegate(&xiiView::ExecuteLocalShadowAtlasAllocation, this));
   graph.AddPass<xiiDirectionalShadowData>("DirectionalShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDirectionalShadowData, this), xiiMakeDelegate(&xiiView::ExecuteDirectionalShadowData, this));

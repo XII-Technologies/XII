@@ -548,6 +548,13 @@ public:
   [[nodiscard]] xiiRenderGraphGraphId GetId() const;
   [[nodiscard]] xiiStringView         GetName() const;
 
+  /// Returns the latest version of a named resource declared during the current setup phase.
+  /// Invalid handles are returned when the name is unknown or denotes the other resource type.
+  /// This lets subsystem pass factories extend resources published by an earlier subsystem
+  /// without storing allocator-backed manager objects on a view or application owner.
+  [[nodiscard]] xiiRenderGraphTextureHandle GetCurrentTextureHandle(xiiStringView sName) const;
+  [[nodiscard]] xiiRenderGraphBufferHandle  GetCurrentBufferHandle(xiiStringView sName) const;
+
   /// Reflection/editor-friendly compiler records.
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphResourceDescription>        GetResourceDescriptions() const;
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphResourceVersionDescription> GetResourceVersions() const;

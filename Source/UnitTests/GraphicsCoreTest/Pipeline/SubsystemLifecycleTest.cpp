@@ -108,4 +108,44 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     xiiSceneDatabaseManager::DestroyContext(handle);
     XII_TEST_BOOL(!xiiSceneDatabaseManager::IsValid(handle));
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Render graph resolves subsystem-published resources")
+  {
+    struct PublishData
+    {
+      xiiRenderGraphTextureHandle m_hTexture;
+      xiiRenderGraphBufferHandle  m_hBuffer;
+    };
+
+    xiiRenderGraph graph("Subsystem Resource Publication");
+    graph.BeginSetup(1U);
+    auto publishPass = graph.AddPass<PublishData>(
+      "Publish Resources", xiiGALCommandQueueFlags::Transfer,
+      [](PublishData& data, xiiRenderGraphBuilder& builder) {
+        xiiGALTextureCreationDescription textureDescription;
+        textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
+        textureDescription.m_Size.width  = 16U;
+        textureDescription.m_Size.height = 16U;
+        textureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
+        textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource;
+        data.m_hTexture                  = builder.WriteTexture("Published Texture", textureDescription, xiiGALResourceStateFlags::CopyDestination);
+
+        xiiGALBufferCreationDescription bufferDescription;
+        bufferDescription.m_uiSize    = 64U;
+        bufferDescription.m_BindFlags = xiiGALBindFlags::ShaderResource;
+        data.m_hBuffer                = builder.WriteBuffer("Published Buffer", bufferDescription, xiiGALResourceStateFlags::CopyDestination);
+      },
+      [](const PublishData&, xiiRenderGraphPassContext&) {});
+
+    const xiiRenderGraphTextureHandle hTexture = graph.GetCurrentTextureHandle("Published Texture");
+    const xiiRenderGraphBufferHandle  hBuffer  = graph.GetCurrentBufferHandle("Published Buffer");
+    XII_TEST_BOOL(hTexture.IsValid());
+    XII_TEST_BOOL(hBuffer.IsValid());
+    XII_TEST_INT(hTexture.m_uiVersion, publishPass.first->m_hTexture.m_uiVersion);
+    XII_TEST_INT(hBuffer.m_uiVersion, publishPass.first->m_hBuffer.m_uiVersion);
+    XII_TEST_BOOL(!graph.GetCurrentTextureHandle("Published Buffer").IsValid());
+    XII_TEST_BOOL(!graph.GetCurrentBufferHandle("Published Texture").IsValid());
+    XII_TEST_BOOL(!graph.GetCurrentBufferHandle("Unknown Resource").IsValid());
+    graph.EndSetup();
+  }
 }

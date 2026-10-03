@@ -150,6 +150,40 @@ XII_ALWAYS_INLINE xiiStringView xiiRenderGraph::GetName() const
   return m_sName.GetView();
 }
 
+XII_ALWAYS_INLINE xiiRenderGraphTextureHandle xiiRenderGraph::GetCurrentTextureHandle(xiiStringView sName) const
+{
+  xiiUInt32 uiResourceIndex = xiiInvalidIndex;
+  if (!m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiResourceIndex) || uiResourceIndex >= m_Resources.GetCount())
+    return {};
+
+  const ResourceEntry& resource = m_Resources[uiResourceIndex];
+  if (!resource.m_bIsTexture)
+    return {};
+
+  xiiRenderGraphTextureHandle handle;
+  handle.m_uiIndex   = uiResourceIndex;
+  handle.m_uiVersion = resource.m_uiCurrentVersion;
+  handle.m_Id        = resource.m_Id;
+  return handle;
+}
+
+XII_ALWAYS_INLINE xiiRenderGraphBufferHandle xiiRenderGraph::GetCurrentBufferHandle(xiiStringView sName) const
+{
+  xiiUInt32 uiResourceIndex = xiiInvalidIndex;
+  if (!m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiResourceIndex) || uiResourceIndex >= m_Resources.GetCount())
+    return {};
+
+  const ResourceEntry& resource = m_Resources[uiResourceIndex];
+  if (resource.m_bIsTexture)
+    return {};
+
+  xiiRenderGraphBufferHandle handle;
+  handle.m_uiIndex   = uiResourceIndex;
+  handle.m_uiVersion = resource.m_uiCurrentVersion;
+  handle.m_Id        = resource.m_Id;
+  return handle;
+}
+
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphResourceDescription> xiiRenderGraph::GetResourceDescriptions() const
 {
   return m_ResourceDescriptions;
