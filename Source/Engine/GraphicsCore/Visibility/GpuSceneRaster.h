@@ -7,6 +7,7 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
@@ -22,6 +23,34 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneDepthRasterDescription
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSceneDepthRasterDescription);
+
+/// Describes canonical material G-buffer generation from a compact GPU visibility stream.
+struct XII_GRAPHICSCORE_DLL xiiGpuSceneGBufferRasterDescription
+{
+  xiiMat4   m_ViewProjectionMatrix      = xiiMat4::MakeIdentity();
+  xiiUInt32 m_uiWidth                   = 0U;
+  xiiUInt32 m_uiHeight                  = 0U;
+  xiiUInt32 m_uiVertexStride            = 0U;
+  xiiUInt32 m_uiNormalOffset            = 0U;
+  xiiUInt32 m_uiTangentOffset           = 0U;
+  xiiUInt32 m_uiTexCoordOffset          = 0U;
+  xiiUInt32 m_uiMeshDispatchGroupCountX = 1U;
+  xiiUInt32 m_uiMeshDispatchGroupCountY = 1U;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSceneGBufferRasterDescription);
+
+/// Versions produced by one GPU-scene G-buffer raster pass.
+struct XII_GRAPHICSCORE_DLL xiiGpuSceneGBufferOutputs
+{
+  xiiRenderGraphTextureHandle m_hAlbedo;
+  xiiRenderGraphTextureHandle m_hNormal;
+  xiiRenderGraphTextureHandle m_hMaterial;
+  xiiRenderGraphTextureHandle m_hEmissive;
+  xiiRenderGraphTextureHandle m_hNormalRoughness;
+
+  [[nodiscard]] bool IsValid() const { return m_hAlbedo.IsValid() && m_hNormal.IsValid() && m_hMaterial.IsValid() && m_hEmissive.IsValid() && m_hNormalRoughness.IsValid(); }
+};
 
 class xiiGpuSceneRasterManagerState;
 
@@ -48,6 +77,16 @@ public:
                                                                    const xiiGpuVisibilityOutputs& visibility,
                                                                    const xiiGeometryResidencyManager::UploadHandles& geometry,
                                                                    const xiiGpuSceneDepthRasterDescription& description);
+
+  /// Rasterizes canonical surface materials into the deferred targets while depth testing against
+  /// the scene prepass. The compact normal/roughness target is emitted as a fifth MRT so AO and
+  /// lighting preparation do not need a second geometry submission.
+  [[nodiscard]] static xiiGpuSceneGBufferOutputs AddGBufferPass(xiiRenderGraph& graph, xiiStringView sName,
+                                                                xiiRenderGraphTextureHandle hSceneDepth,
+                                                                const xiiGpuVisibilityOutputs& visibility,
+                                                                const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                                const xiiMaterialGpuStorage::UploadHandles& materials,
+                                                                const xiiGpuSceneGBufferRasterDescription& description);
 
 private:
   static void Startup();

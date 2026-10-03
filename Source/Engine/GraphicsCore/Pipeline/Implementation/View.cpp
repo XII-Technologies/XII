@@ -6638,7 +6638,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // checked context handles, so their allocator-backed state is guaranteed to be constructed and
   // destroyed by the GraphicsCore subsystem while the Foundation allocator and GAL device exist.
   const xiiGeometryResidencyManager::UploadHandles geometry = xiiGeometryResidencyManager::AddUploadPass(graph, uiFrameIndex);
-  XII_IGNORE_UNUSED(xiiMaterialManager::AddUploadPass(graph));
+  const xiiMaterialGpuStorage::UploadHandles       materials = xiiMaterialManager::AddUploadPasses(graph);
 
   // Build the primary view's compact meshlet stream from the subsystem-owned scene. The first
   // depth pass deliberately performs frustum/LOD culling without Hi-Z; the generated depth then
@@ -6812,9 +6812,28 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiMotionVectorsData>("MotionVectors", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupMotionVectors, this), xiiMakeDelegate(&xiiView::ExecuteMotionVectors, this));
   graph.AddPass<xiiVelocityDilationData>("VelocityDilation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVelocityDilation, this), xiiMakeDelegate(&xiiView::ExecuteVelocityDilation, this));
 
-  // G-Buffer generation passes, which produce material surfaces consumed by lighting stages.
-  graph.AddPass<xiiGBufferBaseData>("GBufferBase", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupGBufferBase, this), xiiMakeDelegate(&xiiView::ExecuteGBufferBase, this));
-  graph.AddPass<xiiNormalRoughnessPrepassData>("NormalRoughnessPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupNormalRoughnessPrepass, this), xiiMakeDelegate(&xiiView::ExecuteNormalRoughnessPrepass, this));
+  // Mesh-shader capable devices shade the compact visibility stream directly from canonical
+  // surface records. The fifth MRT replaces the duplicate normal/roughness geometry submission.
+  xiiGpuSceneGBufferOutputs gpuGBuffer;
+  if (xiiGpuSceneRasterManager::IsSupported() && hSceneDepth.IsValid() && mainVisibility.m_hIndirectCommands.IsValid() && materials.m_hSurfaceData.IsValid())
+  {
+    xiiGpuSceneGBufferRasterDescription gBufferDescription;
+    gBufferDescription.m_ViewProjectionMatrix      = GetViewProjectionMatrix(xiiCameraEye::Left);
+    gBufferDescription.m_uiWidth                   = GetRenderResolutionWidth();
+    gBufferDescription.m_uiHeight                  = GetRenderResolutionHeight();
+    gBufferDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
+    gBufferDescription.m_uiNormalOffset            = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vNormal));
+    gBufferDescription.m_uiTangentOffset           = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTangent));
+    gBufferDescription.m_uiTexCoordOffset          = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0));
+    gBufferDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext);
+    gBufferDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hGpuVisibilityContext);
+    gpuGBuffer = xiiGpuSceneRasterManager::AddGBufferPass(graph, "GPU Scene GBuffer", hSceneDepth, mainVisibility, geometry, materials, gBufferDescription);
+  }
+  if (!gpuGBuffer.IsValid())
+  {
+    graph.AddPass<xiiGBufferBaseData>("GBufferBase", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupGBufferBase, this), xiiMakeDelegate(&xiiView::ExecuteGBufferBase, this));
+    graph.AddPass<xiiNormalRoughnessPrepassData>("NormalRoughnessPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupNormalRoughnessPrepass, this), xiiMakeDelegate(&xiiView::ExecuteNormalRoughnessPrepass, this));
+  }
 
   // Decals update the G-Buffer before any lighting or screen-space shading consumes it.
   graph.AddPass<xiiDecalUploadData>("DecalUpload", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDecalUpload, this), xiiMakeDelegate(&xiiView::ExecuteDecalUpload, this));
