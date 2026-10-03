@@ -122,6 +122,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0.0f);
     const float roughness = clamp(material.r, 0.02f, 1.0f);
     const float metallic = saturate(material.g);
+    const float dielectricSpecular = saturate(material.b);
     const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0.0f);
     const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler, uv, 0.0f));
     const float3 worldPosition = ReconstructWorldPos(uv, depth);
@@ -138,7 +139,7 @@ void main(uint3 tid : SV_DispatchThreadID)
 
     // Local captures form reflection Tier 2. Their influence fades into the
     // atmosphere fallback; SSR and traced reflections are composited later.
-    const float3 f0 = lerp(0.04f.xxx, albedo, metallic);
+    const float3 f0 = lerp((0.08f * dielectricSpecular).xxx, albedo, metallic);
     const float3 fresnel = FresnelSchlickRoughness(NoV, f0, roughness);
     const float2 brdf = g_BRDFLut.SampleLevel(LinearClampSampler, float2(NoV, roughness), 0.0f);
     const float3 skyRadiance = max(g_SkyRadiance.SampleLevel(LinearClampSampler, uv, 0.0f).rgb, 0.0f);

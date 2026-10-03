@@ -96,9 +96,9 @@ PS_Out main(VS_Out In)
         normalTs.x * In.WorldTan + normalTs.y * bitangent + normalTs.z * In.WorldNorm);
 
     PS_Out o;
-    o.Albedo   = float4(albedo.rgb, albedo.a);
+    o.Albedo   = float4(albedo.rgb, material.b);
     o.Normal   = EncodeOctNormal(worldNorm);
-    o.Material = float4(material.r, material.g, material.b, 0.0f); // roughness/metallic/AO
+    o.Material = float4(material.r, material.g, 0.5f, 0.0f); // roughness/metallic/dielectric specular/features
     o.Emissive = float4(emissive.rgb * emissive.a, 1.0f); // emissive intensity packed in alpha
     return o;
 }

@@ -117,9 +117,11 @@ void main(uint3 tid : SV_DispatchThreadID)
         // ray tracing and local/sky probes without interpreting packed UVs.
         float3 hitRadiance = max(g_HDRScene.SampleLevel(LinearClampSampler, hitUV, roughness * 4.0f).rgb, 0.0f);
         float3 albedo = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0.0f).rgb;
-        float metallic = saturate(g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0.0f).g);
+        const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0.0f);
+        float metallic = saturate(material.g);
+        float dielectricSpecular = saturate(material.b);
         float NoV = saturate(dot(N, V));
-        float3 f0 = lerp(0.04f.xxx, albedo, metallic);
+        float3 f0 = lerp((0.08f * dielectricSpecular).xxx, albedo, metallic);
         float3 grazing = max(1.0f - roughness, f0);
         float3 fresnel = f0 + (grazing - f0) * pow(1.0f - NoV, 5.0f);
         float2 brdf = g_BRDFLut.SampleLevel(LinearClampSampler, float2(NoV, roughness), 0.0f);

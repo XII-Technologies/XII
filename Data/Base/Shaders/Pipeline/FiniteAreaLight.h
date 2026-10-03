@@ -42,7 +42,7 @@ float2 GetAreaDiskSample(uint sampleIndex)
 }
 
 float3 EvaluateAreaLightSample(xiiGpuLightData lightData, float3 samplePosition, float projectedSampleArea,
-                               float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic)
+                               float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic, float dielectricSpecular)
 {
   const float3 toLight                  = samplePosition - worldPosition;
   const float  unboundedDistanceSquared = dot(toLight, toLight);
@@ -53,10 +53,10 @@ float3 EvaluateAreaLightSample(xiiGpuLightData lightData, float3 samplePosition,
   const float  iesScale                 = SampleIESProfile(lightData, L);
   const float3 emittedLuminance         = lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w;
   const float3 incidentRadiance         = emittedLuminance * (projectedSampleArea * rangeWindow * iesScale / distanceSquared);
-  return BRDF(albedo, roughness, metallic, N, L, V) * incidentRadiance;
+  return BRDF(albedo, roughness, metallic, dielectricSpecular, N, L, V) * incidentRadiance;
 }
 
-float3 EvaluateRectangleAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic)
+float3 EvaluateRectangleAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic, float dielectricSpecular)
 {
   const float3 center        = lightData.PositionAndInvRange.xyz;
   const float3 emitterNormal = normalize(lightData.DirectionAndType.xyz);
@@ -74,12 +74,12 @@ float3 EvaluateRectangleAreaLight(xiiGpuLightData lightData, float3 worldPositio
     const float3 samplePosition = center + right * (cell.x * width) + up * (cell.y * height);
     const float3 sampleToPoint  = normalize(worldPosition - samplePosition);
     const float  projectedArea  = sampleArea * saturate(dot(emitterNormal, sampleToPoint));
-    result += EvaluateAreaLightSample(lightData, samplePosition, projectedArea, worldPosition, N, V, albedo, roughness, metallic);
+    result += EvaluateAreaLightSample(lightData, samplePosition, projectedArea, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
   }
   return result;
 }
 
-float3 EvaluateDiscAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic)
+float3 EvaluateDiscAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic, float dielectricSpecular)
 {
   const float3 center        = lightData.PositionAndInvRange.xyz;
   const float3 emitterNormal = normalize(lightData.DirectionAndType.xyz);
@@ -95,12 +95,12 @@ float3 EvaluateDiscAreaLight(xiiGpuLightData lightData, float3 worldPosition, fl
     const float3 samplePosition = center + right * diskSample.x + up * diskSample.y;
     const float3 sampleToPoint  = normalize(worldPosition - samplePosition);
     const float  projectedArea  = sampleArea * saturate(dot(emitterNormal, sampleToPoint));
-    result += EvaluateAreaLightSample(lightData, samplePosition, projectedArea, worldPosition, N, V, albedo, roughness, metallic);
+    result += EvaluateAreaLightSample(lightData, samplePosition, projectedArea, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
   }
   return result;
 }
 
-float3 EvaluateSphereAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic)
+float3 EvaluateSphereAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic, float dielectricSpecular)
 {
   const float3 center        = lightData.PositionAndInvRange.xyz;
   const float  radius        = max(lightData.AttenuationAndSize.y, 1e-4f);
@@ -116,12 +116,12 @@ float3 EvaluateSphereAreaLight(xiiGpuLightData lightData, float3 worldPosition, 
     const float2 diskSample     = GetAreaDiskSample(sampleIndex) * radius;
     const float  surfaceHeight  = sqrt(max(radius * radius - dot(diskSample, diskSample), 0.0f));
     const float3 samplePosition = center + tangent * diskSample.x + bitangent * diskSample.y + centerToPoint * surfaceHeight;
-    result += EvaluateAreaLightSample(lightData, samplePosition, projectedSampleArea, worldPosition, N, V, albedo, roughness, metallic);
+    result += EvaluateAreaLightSample(lightData, samplePosition, projectedSampleArea, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
   }
   return result;
 }
 
-float3 EvaluateTubeAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic)
+float3 EvaluateTubeAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic, float dielectricSpecular)
 {
   const float3 center        = lightData.PositionAndInvRange.xyz;
   const float3 axis          = normalize(lightData.DirectionAndType.xyz);
@@ -147,7 +147,7 @@ float3 EvaluateTubeAreaLight(xiiGpuLightData lightData, float3 worldPosition, fl
   {
     const float  axialOffset    = (float(sampleIndex) + 0.5f) * (length * 0.25f) - length * 0.5f;
     const float3 samplePosition = center + axis * axialOffset + radialToPoint * radius;
-    result += EvaluateAreaLightSample(lightData, samplePosition, projectedSegmentArea, worldPosition, N, V, albedo, roughness, metallic);
+    result += EvaluateAreaLightSample(lightData, samplePosition, projectedSegmentArea, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
   }
 
   // A capsule's two hemispherical end caps form one projected disk from any
@@ -155,18 +155,18 @@ float3 EvaluateTubeAreaLight(xiiGpuLightData lightData, float3 worldPosition, fl
   const float  endSign           = axisCosine >= 0.0f ? 1.0f : -1.0f;
   const float3 capCenter         = center + axis * (endSign * length * 0.5f);
   const float3 capSamplePosition = capCenter + centerToPoint * radius;
-  result += EvaluateAreaLightSample(lightData, capSamplePosition, 3.14159265f * radius * radius, worldPosition, N, V, albedo, roughness, metallic);
+  result += EvaluateAreaLightSample(lightData, capSamplePosition, 3.14159265f * radius * radius, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
   return result;
 }
 
-float3 EvaluateFiniteAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic)
+float3 EvaluateFiniteAreaLight(xiiGpuLightData lightData, float3 worldPosition, float3 N, float3 V, float3 albedo, float roughness, float metallic, float dielectricSpecular)
 {
   const uint lightType = GetLightType(lightData);
   if (lightType == XII_LIGHT_TYPE_RECTANGLE)
-    return EvaluateRectangleAreaLight(lightData, worldPosition, N, V, albedo, roughness, metallic);
+    return EvaluateRectangleAreaLight(lightData, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
   if (lightType == XII_LIGHT_TYPE_DISC)
-    return EvaluateDiscAreaLight(lightData, worldPosition, N, V, albedo, roughness, metallic);
+    return EvaluateDiscAreaLight(lightData, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
   if (lightType == XII_LIGHT_TYPE_SPHERE || lightType == XII_LIGHT_TYPE_EMISSIVE_MESH)
-    return EvaluateSphereAreaLight(lightData, worldPosition, N, V, albedo, roughness, metallic);
-  return EvaluateTubeAreaLight(lightData, worldPosition, N, V, albedo, roughness, metallic);
+    return EvaluateSphereAreaLight(lightData, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
+  return EvaluateTubeAreaLight(lightData, worldPosition, N, V, albedo, roughness, metallic, dielectricSpecular);
 }
