@@ -269,6 +269,14 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::WriteTexture(xiiRenderGraphTe
   return hNewTexture;
 }
 
+xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadWriteTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState)
+{
+  // Atlas tiles, mip-chain updates and similar partial writes preserve texels from the parent
+  // version. The explicit read keeps that producer live while WriteTexture creates the new version.
+  static_cast<void>(ReadTexture(hTexture, requiredState));
+  return WriteTexture(hTexture, requiredState);
+}
+
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::WriteTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
   return WriteTexture(DeclareTexture(sName, description), requiredState);

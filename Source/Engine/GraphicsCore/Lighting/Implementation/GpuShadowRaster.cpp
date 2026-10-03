@@ -163,7 +163,7 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
   auto pass = graph.AddPass<ShadowRasterPassData>(
     sName, xiiGALCommandQueueFlags::Graphics,
     [hDepthAtlas, visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants](ShadowRasterPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hDepthAtlas           = builder.WriteTexture(hDepthAtlas, xiiGALResourceStateFlags::DepthWrite);
+      data.m_hDepthAtlas           = builder.ReadWriteTexture(hDepthAtlas, xiiGALResourceStateFlags::DepthWrite);
       data.m_hConstants            = builder.ReadBuffer(hConstants, xiiGALResourceStateFlags::ConstantBuffer);
       data.m_hSceneInstances       = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometry             = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);

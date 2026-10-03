@@ -359,6 +359,10 @@ public:
   ///        Returns the new versioned handle - store this, not the input handle.
   [[nodiscard]] xiiRenderGraphTextureHandle WriteTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
+  /// Declares a partial or read-modify-write texture update. Unlike WriteTexture(), this retains
+  /// the producer of the parent version and orders the update after every parent-version reader.
+  [[nodiscard]] xiiRenderGraphTextureHandle ReadWriteTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState);
+
   /// Declares a new transient texture resource owned by the graph and registers the first write in one call.
   [[nodiscard]] xiiRenderGraphTextureHandle WriteTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
