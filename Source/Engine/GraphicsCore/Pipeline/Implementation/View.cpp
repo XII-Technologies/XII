@@ -248,6 +248,9 @@ xiiView::xiiView(xiiWorld* pWorld) :
   m_ViewPassResources.m_Handle = xiiViewRenderResourceManager::CreateContext();
   XII_ASSERT_DEV(m_ViewPassResources.m_Handle.IsValid(), "Failed to create the view render-resource context.");
   XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
+  XII_VERIFY(m_GpuSceneContext.Initialize().Succeeded(), "Failed to create the view GPU scene context.");
+  m_hGpuVisibilityContext = xiiGpuVisibilityManager::CreateContext();
+  XII_ASSERT_DEV(m_hGpuVisibilityContext.IsValid(), "Failed to create the view GPU visibility context.");
   XII_VERIFY(m_ViewPassResources->m_LightingSystem.Initialize().Succeeded(), "Failed to create the view lighting context.");
 
   UpdateRenderResolutionState();
@@ -293,9 +296,20 @@ xiiView::~xiiView()
   {
     pResources->m_LightingSystem.Shutdown();
   }
+  xiiGpuVisibilityManager::DestroyContext(m_hGpuVisibilityContext);
+  m_hGpuVisibilityContext = {};
+  m_GpuSceneContext.Shutdown();
   m_RenderGraphContext.Shutdown();
   xiiViewRenderResourceManager::DestroyContext(m_ViewPassResources.m_Handle);
   m_ViewPassResources.m_Handle = {};
+}
+
+bool xiiView::SynchronizeGpuScene(xiiUInt64 uiFrameIndex)
+{
+  if (m_pExtractedData == nullptr || !m_GpuSceneContext.IsInitialized() || !xiiGpuVisibilityManager::IsValid(m_hGpuVisibilityContext))
+    return false;
+
+  return m_GpuSceneContext.SynchronizeExtractedMeshes(*m_pExtractedData, uiFrameIndex).Succeeded();
 }
 
 xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)

@@ -584,6 +584,16 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   if (xiiMaterialManager::IsInitialized())
     xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+
+  // Convert extracted engine meshes into persistent, subsystem-owned GPU scene records before
+  // residency streaming runs. Stable render IDs retain previous transforms across frames.
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+  {
+    ViewDetail& viewDetail = it.Value();
+    if (viewDetail.m_pView->IsValid())
+      XII_IGNORE_UNUSED(viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex));
+  }
+
   if (xiiGeometryResidencyManager::IsInitialized())
   {
     const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();

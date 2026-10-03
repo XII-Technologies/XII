@@ -24,7 +24,9 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
+#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 class xiiFrustum;
 class xiiWorld;
@@ -276,6 +278,7 @@ private:
 
   void UpdateCachedMatrices() const;
   void UpdateRenderResolutionState() const;
+  [[nodiscard]] bool SynchronizeGpuScene(xiiUInt64 uiFrameIndex);
 
   /// Populates the render graph for default (non-custom) views.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
@@ -561,7 +564,9 @@ private:
 
   mutable xiiViewData m_Data;
 
-  xiiRenderGraphContext m_RenderGraphContext;
+  xiiRenderGraphContext               m_RenderGraphContext;
+  xiiSceneDatabaseContext             m_GpuSceneContext;
+  xiiGpuVisibilityContextHandle       m_hGpuVisibilityContext;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.
   xiiExtractedRenderData* m_pExtractedData = nullptr;

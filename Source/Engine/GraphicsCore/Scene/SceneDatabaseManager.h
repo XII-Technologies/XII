@@ -7,6 +7,7 @@
 #include <GraphicsCore/Scene/SceneDatabase.h>
 
 class xiiSceneDatabaseManagerState;
+class xiiExtractedRenderData;
 
 /// Generation-checked reference to one subsystem-owned render scene.
 struct XII_GRAPHICSCORE_DLL xiiSceneDatabaseContextHandle
@@ -45,8 +46,15 @@ public:
   /// or the GraphicsCore subsystem begins shutdown.
   [[nodiscard]] static xiiSceneDatabase* GetDatabase(xiiSceneDatabaseContextHandle handle);
 
+  /// Synchronizes ordinary xiiMeshRenderData packets into the subsystem-owned GPU scene. Stable
+  /// render IDs preserve previous transforms, shared mesh resources reuse residency handles, and
+  /// objects absent from the current extraction are retired after their last submitted frame.
+  [[nodiscard]] static xiiResult SynchronizeExtractedMeshes(xiiSceneDatabaseContextHandle handle, const xiiExtractedRenderData& extractedData, xiiUInt64 uiFrameIndex);
+
 private:
   static void Startup();
+  static void EngineStartup();
+  static void EngineShutdown();
   static void Shutdown();
 
   static xiiUniquePtr<xiiSceneDatabaseManagerState> s_pState;
@@ -68,6 +76,8 @@ public:
   [[nodiscard]] xiiSceneDatabase&             GetDatabase();
   [[nodiscard]] const xiiSceneDatabase&       GetDatabase() const;
   [[nodiscard]] xiiSceneDatabaseContextHandle GetHandle() const { return m_Handle; }
+
+  [[nodiscard]] xiiResult SynchronizeExtractedMeshes(const xiiExtractedRenderData& extractedData, xiiUInt64 uiFrameIndex);
 
 private:
   xiiSceneDatabaseContextHandle m_Handle;
