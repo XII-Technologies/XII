@@ -76,7 +76,8 @@ namespace xiiRGBlackboardKeys
 
   constexpr xiiStringView k_OccluderDepthTexture  = "OccluderDepth"_xiisv;         ///< xiiRenderGraphTextureHandle - occluder-only depth prepass output (D32F).
   constexpr xiiStringView k_SceneDepthTexture     = "SceneDepth"_xiisv;            ///< xiiRenderGraphTextureHandle - full-resolution scene depth buffer (D32F reversed-Z).
-  constexpr xiiStringView k_HiZPyramid            = "HiZPyramid"_xiisv;            ///< xiiRenderGraphTextureHandle - R32F max-depth pyramid covering all mip levels.
+  constexpr xiiStringView k_HiZPyramid            = "HiZPyramid"_xiisv;            ///< xiiRenderGraphTextureHandle - R32F reversed-Z farthest-depth hierarchy for conservative occlusion.
+  constexpr xiiStringView k_HiZClosestPyramid     = "HiZClosestPyramid"_xiisv;     ///< xiiRenderGraphTextureHandle - R32F reversed-Z closest-depth hierarchy for screen-space rays.
   constexpr xiiStringView k_VelocityBuffer        = "VelocityBuffer"_xiisv;        ///< xiiRenderGraphTextureHandle - raw screen-space velocity (R16G16F).
   constexpr xiiStringView k_DilatedVelocityBuffer = "DilatedVelocityBuffer"_xiisv; ///< xiiRenderGraphTextureHandle - depth-aware velocity used by temporal passes (R16G16F).
   constexpr xiiStringView k_NormalRoughnessBuffer = "NormalRoughness"_xiisv;       ///< xiiRenderGraphTextureHandle - compact R8G8B8A8 oct-encoded normal + roughness.

@@ -2293,8 +2293,9 @@ void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRenderGrap
 
 struct xiiHiZPyramidData
 {
-  xiiRenderGraphTextureHandle m_hSceneDepth; ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
-  xiiRenderGraphTextureHandle m_hHiZPyramid; ///< UnorderedAccess out (R32F reversed-Z minimum hierarchy consumed by occlusion and depth-aware effects).
+  xiiRenderGraphTextureHandle m_hSceneDepth;        ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
+  xiiRenderGraphTextureHandle m_hHiZPyramid;        ///< UnorderedAccess out (R32F reversed-Z minimum hierarchy consumed by conservative occlusion).
+  xiiRenderGraphTextureHandle m_hHiZClosestPyramid; ///< UnorderedAccess out (R32F reversed-Z maximum hierarchy consumed by screen-space ray traversal).
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiUInt32                   m_uiMipLevels = 1U; ///< Number of mips in the Hi-Z pyramid, derived from the current viewport size.
 };
@@ -2324,6 +2325,7 @@ void xiiView::SetupHiZPyramid(xiiHiZPyramidData& data, xiiRenderGraphBuilder& bu
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hHiZPyramid        = builder.WriteTexture(xiiRGBlackboardKeys::k_HiZPyramid, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hHiZClosestPyramid = builder.WriteTexture(xiiRGBlackboardKeys::k_HiZClosestPyramid, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALBufferCreationDescription constantsDescription;
   constantsDescription.m_uiSize         = sizeof(xiiHiZBuildConstants);
@@ -2346,80 +2348,85 @@ void xiiView::ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRenderGraphPas
     {
       cmd.SetPipelineState(m_ViewPassResources->m_DepthPasses.m_pHiZBuildPipeline);
 
-      xiiGALTexture* pDepth     = context.GetTexture(data.m_hSceneDepth);
-      xiiGALTexture* pHiZ       = context.GetTexture(data.m_hHiZPyramid);
-      xiiGALBuffer*  pConstants = context.GetBuffer(data.m_hConstants);
+      xiiGALTexture* pDepth       = context.GetTexture(data.m_hSceneDepth);
+      xiiGALTexture* pFarthestHiZ = context.GetTexture(data.m_hHiZPyramid);
+      xiiGALTexture* pClosestHiZ  = context.GetTexture(data.m_hHiZClosestPyramid);
+      xiiGALBuffer*  pConstants   = context.GetBuffer(data.m_hConstants);
 
-      xiiDynamicArray<xiiSharedPtr<xiiGALTextureView>> sourceViews;
-      xiiDynamicArray<xiiSharedPtr<xiiGALTextureView>> destinationViews;
-      sourceViews.SetCount(data.m_uiMipLevels);
-      destinationViews.SetCount(data.m_uiMipLevels);
-      for (xiiUInt32 uiMip = 0U; uiMip < data.m_uiMipLevels; ++uiMip)
-      {
-        xiiGALTextureViewCreationDescription viewDescription;
-        viewDescription.m_ViewType          = xiiGALTextureViewType::ShaderResource;
-        viewDescription.m_uiMostDetailedMip = uiMip;
-        viewDescription.m_uiMipLevelCount   = 1U;
-        sourceViews[uiMip]                  = pHiZ->CreateView(viewDescription);
+      auto buildPyramid = [&](xiiGALTexture* pHiZ, xiiUInt32 uiReductionMode) {
+        xiiDynamicArray<xiiSharedPtr<xiiGALTextureView>> sourceViews;
+        xiiDynamicArray<xiiSharedPtr<xiiGALTextureView>> destinationViews;
+        sourceViews.SetCount(data.m_uiMipLevels);
+        destinationViews.SetCount(data.m_uiMipLevels);
+        for (xiiUInt32 uiMip = 0U; uiMip < data.m_uiMipLevels; ++uiMip)
+        {
+          xiiGALTextureViewCreationDescription viewDescription;
+          viewDescription.m_ViewType          = xiiGALTextureViewType::ShaderResource;
+          viewDescription.m_uiMostDetailedMip = uiMip;
+          viewDescription.m_uiMipLevelCount   = 1U;
+          sourceViews[uiMip]                  = pHiZ->CreateView(viewDescription);
 
-        viewDescription.m_ViewType = xiiGALTextureViewType::UnorderedAccess;
-        destinationViews[uiMip]    = pHiZ->CreateView(viewDescription);
-        XII_ASSERT_DEV(sourceViews[uiMip] != nullptr && destinationViews[uiMip] != nullptr, "Failed to create Hi-Z mip views.");
-      }
+          viewDescription.m_ViewType = xiiGALTextureViewType::UnorderedAccess;
+          destinationViews[uiMip]    = pHiZ->CreateView(viewDescription);
+          XII_ASSERT_DEV(sourceViews[uiMip] != nullptr && destinationViews[uiMip] != nullptr, "Failed to create Hi-Z mip views.");
+        }
 
-      auto transitionMip = [&cmd, pHiZ](xiiUInt32 uiMip, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState) {
-        xiiGALStateTransitionDescription transition;
-        transition.m_pResource       = pHiZ;
-        transition.m_uiFirstMipLevel = uiMip;
-        transition.m_uiMipLevelCount = 1U;
-        transition.m_OldState        = oldState;
-        transition.m_NewState        = newState;
-        cmd.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1U));
+        auto transitionMip = [&cmd, pHiZ](xiiUInt32 uiMip, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState) {
+          xiiGALStateTransitionDescription transition;
+          transition.m_pResource       = pHiZ;
+          transition.m_uiFirstMipLevel = uiMip;
+          transition.m_uiMipLevelCount = 1U;
+          transition.m_OldState        = oldState;
+          transition.m_NewState        = newState;
+          cmd.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1U));
+        };
+
+        // Completed mips become shader resources while the destination mip
+        // remains writable. Whole-resource tracking resumes after the loop.
+        pHiZ->SetResourceState(xiiGALResourceStateFlags::Unknown);
+        cmd.ResolveAndSetConstantBuffer("xiiHiZBuildConstants", pConstants, xiiGALShaderType::Compute);
+
+        xiiUInt32 uiSrcWidth  = GetRenderResolutionWidth();
+        xiiUInt32 uiSrcHeight = GetRenderResolutionHeight();
+        for (xiiUInt32 uiMip = 0U; uiMip < data.m_uiMipLevels; ++uiMip)
+        {
+          const bool      bCopyDepth          = uiMip == 0U;
+          const xiiUInt32 uiDestinationWidth  = bCopyDepth ? uiSrcWidth : xiiMath::Max(uiSrcWidth >> 1U, 1U);
+          const xiiUInt32 uiDestinationHeight = bCopyDepth ? uiSrcHeight : xiiMath::Max(uiSrcHeight >> 1U, 1U);
+
+          {
+            xiiGALMapHelper<xiiHiZBuildConstants> constants(cmd, pConstants, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+            constants->SrcSize = xiiVec2U32(uiSrcWidth, uiSrcHeight);
+            constants->DstSize = xiiVec2U32(uiDestinationWidth, uiDestinationHeight);
+            constants->Reduce  = bCopyDepth ? 0U : uiReductionMode;
+          }
+          xiiGALStateTransitionDescription constantsTransition;
+          constantsTransition.m_pResource       = pConstants;
+          constantsTransition.m_OldState        = xiiGALResourceStateFlags::CopyDestination;
+          constantsTransition.m_NewState        = xiiGALResourceStateFlags::ConstantBuffer;
+          constantsTransition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+          cmd.TransitionResourceStates(xiiMakeArrayPtr(&constantsTransition, 1U));
+
+          xiiGALTextureView* pSourceView = bCopyDepth ? pDepth->GetDefaultView(xiiGALTextureViewType::ShaderResource).Borrow() : sourceViews[uiMip - 1U].Borrow();
+          cmd.ResolveAndSetShaderResourceTextureView("g_DepthSrc", pSourceView, xiiGALShaderType::Compute);
+          cmd.ResolveAndSetUnorderedAccessTextureView("g_HiZOut", destinationViews[uiMip].Borrow(), xiiGALShaderType::Compute);
+          cmd.CommitShaderResources(xiiGALStateTransitionMode::None).AssertSuccess();
+          cmd.DispatchCompute({(uiDestinationWidth + 7U) / 8U, (uiDestinationHeight + 7U) / 8U, 1U});
+
+          if (uiMip + 1U < data.m_uiMipLevels)
+            transitionMip(uiMip, xiiGALResourceStateFlags::UnorderedAccess, xiiGALResourceStateFlags::ShaderResource);
+
+          uiSrcWidth  = uiDestinationWidth;
+          uiSrcHeight = uiDestinationHeight;
+        }
+
+        for (xiiUInt32 uiMip = 0U; uiMip + 1U < data.m_uiMipLevels; ++uiMip)
+          transitionMip(uiMip, xiiGALResourceStateFlags::ShaderResource, xiiGALResourceStateFlags::UnorderedAccess);
+        pHiZ->SetResourceState(xiiGALResourceStateFlags::UnorderedAccess);
       };
 
-      // The reduction intentionally keeps completed mips in ShaderResource while the next mip
-      // remains UnorderedAccess. Whole-resource tracking resumes after the loop.
-      pHiZ->SetResourceState(xiiGALResourceStateFlags::Unknown);
-      cmd.ResolveAndSetConstantBuffer("xiiHiZBuildConstants", pConstants, xiiGALShaderType::Compute);
-
-      xiiUInt32 uiSrcWidth  = GetRenderResolutionWidth();
-      xiiUInt32 uiSrcHeight = GetRenderResolutionHeight();
-
-      for (xiiUInt32 uiMip = 0U; uiMip < data.m_uiMipLevels; ++uiMip)
-      {
-        const bool      bCopyDepth          = uiMip == 0U;
-        const xiiUInt32 uiDestinationWidth  = bCopyDepth ? uiSrcWidth : xiiMath::Max(uiSrcWidth >> 1U, 1U);
-        const xiiUInt32 uiDestinationHeight = bCopyDepth ? uiSrcHeight : xiiMath::Max(uiSrcHeight >> 1U, 1U);
-
-        {
-          xiiGALMapHelper<xiiHiZBuildConstants> constants(cmd, pConstants, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-          constants->SrcSize = xiiVec2U32(uiSrcWidth, uiSrcHeight);
-          constants->DstSize = xiiVec2U32(uiDestinationWidth, uiDestinationHeight);
-          constants->Reduce  = bCopyDepth ? 0U : 1U;
-        }
-        xiiGALStateTransitionDescription constantsTransition;
-        constantsTransition.m_pResource       = pConstants;
-        constantsTransition.m_OldState        = xiiGALResourceStateFlags::CopyDestination;
-        constantsTransition.m_NewState        = xiiGALResourceStateFlags::ConstantBuffer;
-        constantsTransition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
-        cmd.TransitionResourceStates(xiiMakeArrayPtr(&constantsTransition, 1U));
-
-        xiiGALTextureView* pSourceView = bCopyDepth ? pDepth->GetDefaultView(xiiGALTextureViewType::ShaderResource).Borrow() : sourceViews[uiMip - 1U].Borrow();
-        cmd.ResolveAndSetShaderResourceTextureView("g_DepthSrc", pSourceView, xiiGALShaderType::Compute);
-        cmd.ResolveAndSetUnorderedAccessTextureView("g_HiZOut", destinationViews[uiMip].Borrow(), xiiGALShaderType::Compute);
-        cmd.CommitShaderResources(xiiGALStateTransitionMode::None).AssertSuccess();
-        cmd.DispatchCompute({(uiDestinationWidth + 7U) / 8U, (uiDestinationHeight + 7U) / 8U, 1U});
-
-        if (uiMip + 1U < data.m_uiMipLevels)
-          transitionMip(uiMip, xiiGALResourceStateFlags::UnorderedAccess, xiiGALResourceStateFlags::ShaderResource);
-
-        uiSrcWidth  = uiDestinationWidth;
-        uiSrcHeight = uiDestinationHeight;
-      }
-
-      for (xiiUInt32 uiMip = 0U; uiMip + 1U < data.m_uiMipLevels; ++uiMip)
-        transitionMip(uiMip, xiiGALResourceStateFlags::ShaderResource, xiiGALResourceStateFlags::UnorderedAccess);
-      pHiZ->SetResourceState(xiiGALResourceStateFlags::UnorderedAccess);
+      buildPyramid(pFarthestHiZ, 1U);
+      buildPyramid(pClosestHiZ, 2U);
     }
   }
   cmd.EndDebugGroup();
@@ -4401,7 +4408,7 @@ void xiiView::SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, x
   data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferAlbedo   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
   data.m_hBRDFLut         = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hHiZPyramid      = builder.ReadTexture(xiiRGBlackboardKeys::k_HiZPyramid, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHiZPyramid      = builder.ReadTexture(xiiRGBlackboardKeys::k_HiZClosestPyramid, xiiGALResourceStateFlags::ShaderResource);
   data.m_hHDRSceneColor   = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;

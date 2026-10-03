@@ -39,27 +39,28 @@ bool TraceHiZ(float3 rayOriginNDC, float3 rayDirNDC, float thickness,
         float2 uv = pos.xy * float2(0.5f, -0.5f) + 0.5f;
         if (any(uv < 0.0f) || any(uv > 1.0f)) return false;
 
-        // Sample Hi-Z at current mip - reversed-Z min-depth pyramid.
+        // Sample the reversed-Z closest-depth (maximum) hierarchy.
         float pyramidDepth = g_HiZPyramid.SampleLevel(PointClampSampler, uv, float(mip));
 
-        // In reversed-Z: larger = closer. Ray hit if ray's depth <= pyramid depth AND within thickness.
-        if (pos.z <= pyramidDepth && pyramidDepth - pos.z < thickness)
+        // A ray depth smaller than the closest depth is behind a potential
+        // surface. Descend and backtrack until mip zero confirms the hit;
+        // while the ray is closer than the closest surface, the entire cell is
+        // safe to skip and traversal can become coarser.
+        if (pos.z <= pyramidDepth)
         {
-            hitUV    = uv;
-            hitDepth = pyramidDepth;
-            return true;
-        }
+            if (mip == 0u && pyramidDepth - pos.z < thickness)
+            {
+                hitUV    = uv;
+                hitDepth = pyramidDepth;
+                return true;
+            }
 
-        // Advance mip step size: step at coarser mip if no intersection.
-        if (pos.z > pyramidDepth)
-        {
-            // Behind surface - shrink step, drop mip.
-            step *= 0.5f;
+            pos -= rayDirNDC * step;
+            step = max(step * 0.5f, 1e-5f);
             if (mip > 0u) mip--;
         }
         else
         {
-            // No intersection - advance and try coarser.
             step *= 1.5f;
             mip = min(mip + 1u, mipCount - 1u);
         }

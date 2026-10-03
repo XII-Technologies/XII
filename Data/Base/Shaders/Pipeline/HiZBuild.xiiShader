@@ -29,8 +29,15 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const uint2 p01 = min(sourceBase + uint2(0u, 1u), maximumSource);
   const uint2 p11 = min(sourceBase + uint2(1u, 1u), maximumSource);
 
-  // Scene depth is reversed-Z and clears to zero. The minimum is the farthest
-  // occluder in the footprint, so rejection is conservative for every texel.
-  g_HiZOut[dispatchThreadId.xy] = min(min(g_DepthSrc.Load(int3(p00, 0)), g_DepthSrc.Load(int3(p10, 0))),
-                                      min(g_DepthSrc.Load(int3(p01, 0)), g_DepthSrc.Load(int3(p11, 0))));
+  const float depth00 = g_DepthSrc.Load(int3(p00, 0));
+  const float depth10 = g_DepthSrc.Load(int3(p10, 0));
+  const float depth01 = g_DepthSrc.Load(int3(p01, 0));
+  const float depth11 = g_DepthSrc.Load(int3(p11, 0));
+
+  // Scene depth is reversed-Z and clears to zero. Occlusion rejection needs
+  // the farthest value in a footprint (min), while screen-space ray traversal
+  // needs the closest surface (max). Both products share this kernel.
+  g_HiZOut[dispatchThreadId.xy] = Reduce == 1u ?
+    min(min(depth00, depth10), min(depth01, depth11)) :
+    max(max(depth00, depth10), max(depth01, depth11));
 }
