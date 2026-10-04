@@ -163,7 +163,6 @@ namespace
   struct ForwardPlusRasterPassData
   {
     xiiRenderGraphTextureHandle          m_hDepth;
-    xiiRenderGraphTextureHandle          m_hAmbientOcclusion;
     xiiRenderGraphTextureHandle          m_hRayTracedShadow;
     xiiRenderGraphTextureHandle          m_hContactShadow;
     xiiRenderGraphTextureHandle          m_hDirectLightReservoir;
@@ -462,7 +461,7 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
 
 xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddForwardPlusPass(xiiRenderGraph& graph, xiiStringView sName,
                                                                           xiiRenderGraphTextureHandle hSceneDepth,
-                                                                          xiiRenderGraphTextureHandle hAmbientOcclusion,
+                                                                          xiiRenderGraphTextureHandle,
                                                                           xiiRenderGraphTextureHandle hRayTracedShadow,
                                                                           xiiRenderGraphTextureHandle hContactShadow,
                                                                           xiiRenderGraphTextureHandle hDirectLightReservoir,
@@ -474,7 +473,7 @@ xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddForwardPlusPass(xiiRend
                                                                           const xiiLightingSystem& lightingSystem,
                                                                           const xiiGpuSceneGBufferRasterDescription& description)
 {
-  if (!IsForwardPlusSupported() || !hSceneDepth.IsValid() || !hAmbientOcclusion.IsValid() || !hRayTracedShadow.IsValid() ||
+  if (!IsForwardPlusSupported() || !hSceneDepth.IsValid() || !hRayTracedShadow.IsValid() ||
       !hContactShadow.IsValid() || !hDirectLightReservoir.IsValid() || !hLightGrid.IsValid() || !hLightIndices.IsValid() ||
       !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() || !visibility.m_hVisibleMeshletCount.IsValid() ||
       !visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || !geometry.m_hGeometryMetadata.IsValid() ||
@@ -517,10 +516,9 @@ xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddForwardPlusPass(xiiRend
 
   auto pass = graph.AddPass<ForwardPlusRasterPassData>(
     sName, xiiGALCommandQueueFlags::Graphics,
-    [hSceneDepth, hAmbientOcclusion, hRayTracedShadow, hContactShadow, hDirectLightReservoir, hLightGrid, hLightIndices,
+    [hSceneDepth, hRayTracedShadow, hContactShadow, hDirectLightReservoir, hLightGrid, hLightIndices,
      visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, description](ForwardPlusRasterPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hDepth                 = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::DepthRead);
-      data.m_hAmbientOcclusion      = builder.ReadTexture(hAmbientOcclusion, xiiGALResourceStateFlags::ShaderResource);
       data.m_hRayTracedShadow       = builder.ReadTexture(hRayTracedShadow, xiiGALResourceStateFlags::ShaderResource);
       data.m_hContactShadow         = builder.ReadTexture(hContactShadow, xiiGALResourceStateFlags::ShaderResource);
       data.m_hDirectLightReservoir  = builder.ReadTexture(hDirectLightReservoir, xiiGALResourceStateFlags::ShaderResource);
@@ -601,7 +599,6 @@ xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddForwardPlusPass(xiiRend
       cmd.ResolveAndSetShaderResourceBufferView("g_VirtualShadowPageTable", context.GetBuffer(data.m_hVirtualShadowPageTable)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceTextureView("g_LocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceBufferView("g_LocalShadowAtlasDescs", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Pixel);
-      cmd.ResolveAndSetShaderResourceTextureView("g_AOTerm", context.GetTexture(data.m_hAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceTextureView("g_RTShadow", context.GetTexture(data.m_hRayTracedShadow)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceTextureView("g_ContactShadow", context.GetTexture(data.m_hContactShadow)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceTextureView("g_DirectLightReservoir", context.GetTexture(data.m_hDirectLightReservoir)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);

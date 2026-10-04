@@ -193,7 +193,6 @@ StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
 StructuredBuffer<uint2> g_LightGrid;
 StructuredBuffer<uint> g_LightIndex;
 Texture2D<float4> g_Textures[];
-Texture2D<float> g_AOTerm;
 Texture2D<uint4> g_DirectLightReservoir;
 
 float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
@@ -293,6 +292,7 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
     }
   }
 
-  const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0);
-  return float4(direct * ao, 1.0f);
+  // Material and screen-space AO belong to the indirect-lighting path. Keeping
+  // them out of this result preserves photometric direct-light energy.
+  return float4(direct, 1.0f);
 }

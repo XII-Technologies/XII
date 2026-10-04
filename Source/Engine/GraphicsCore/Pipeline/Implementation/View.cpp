@@ -3569,7 +3569,6 @@ struct xiiDeferredDirectLightingData
   xiiRenderGraphTextureHandle       m_hGBufferNormal;            ///< ShaderResource in (G-Buffer normal).
   xiiRenderGraphTextureHandle       m_hGBufferMaterial;          ///< ShaderResource in (G-Buffer material).
   xiiRenderGraphTextureHandle       m_hSceneDepth;               ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle       m_hStableAmbientOcclusion;   ///< ShaderResource in (stable ambient occlusion).
   xiiRenderGraphTextureHandle       m_hRayTracedFinalShadowMask; ///< ShaderResource in (denoised ray traced shadows).
   xiiRenderGraphTextureHandle       m_hContactShadowTerm;        ///< ShaderResource in (contact shadow mask).
   xiiRenderGraphBufferHandle        m_hShadowCascadeConstants;   ///< ConstantBuffer in (directional cascade matrices, split depths, and active count).
@@ -3666,7 +3665,6 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   data.m_hGBufferNormal               = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferMaterial             = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneDepth                  = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hStableAmbientOcclusion      = builder.ReadTexture(xiiRGBlackboardKeys::k_StableAOTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hRayTracedFinalShadowMask    = builder.ReadTexture(xiiRGBlackboardKeys::k_RTFinalShadowMask, xiiGALResourceStateFlags::ShaderResource);
   data.m_hContactShadowTerm           = builder.ReadTexture(xiiRGBlackboardKeys::k_ContactShadowTerm, xiiGALResourceStateFlags::ShaderResource);
   data.m_hShadowCascadeConstants      = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
@@ -3709,7 +3707,6 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_AOTerm", context.GetTexture(data.m_hStableAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_RTShadow", context.GetTexture(data.m_hRayTracedFinalShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ContactShadow", context.GetTexture(data.m_hContactShadowTerm)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hShadowCascadeConstants), xiiGALShaderType::Compute);

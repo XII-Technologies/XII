@@ -103,7 +103,7 @@ public:
   /// deferred direct-lighting result when the caller's selected Forward+ feature set is supported.
   [[nodiscard]] static xiiRenderGraphTextureHandle AddForwardPlusPass(xiiRenderGraph& graph, xiiStringView sName,
                                                                        xiiRenderGraphTextureHandle hSceneDepth,
-                                                                       xiiRenderGraphTextureHandle hAmbientOcclusion,
+                                                                       xiiRenderGraphTextureHandle hAmbientOcclusion, ///< Retained for source compatibility; AO is consumed by indirect lighting.
                                                                        xiiRenderGraphTextureHandle hRayTracedShadow,
                                                                        xiiRenderGraphTextureHandle hContactShadow,
                                                                        xiiRenderGraphTextureHandle hDirectLightReservoir,

@@ -118,12 +118,15 @@ void main(uint3 tid : SV_DispatchThreadID)
         return;
     }
 
-    const float3 albedo = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0.0f).rgb;
+    const float4 albedoAndMaterialOcclusion = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0.0f);
+    const float3 albedo = albedoAndMaterialOcclusion.rgb;
     const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0.0f);
     const float roughness = clamp(material.r, 0.02f, 1.0f);
     const float metallic = saturate(material.g);
     const float dielectricSpecular = saturate(material.b);
-    const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0.0f);
+    // Authored occlusion and the dynamic screen-space term describe independent
+    // visibility losses, so combine them for diffuse and specular environment light.
+    const float ao = saturate(g_AOTerm.SampleLevel(PointClampSampler, uv, 0.0f) * albedoAndMaterialOcclusion.a);
     const float3 normal = DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler, uv, 0.0f));
     const float3 worldPosition = ReconstructWorldPos(uv, depth);
     const float3 viewDirection = normalize(g_CameraPositionAndNearPlane.xyz - worldPosition);

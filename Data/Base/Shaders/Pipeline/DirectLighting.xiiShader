@@ -24,7 +24,6 @@ Texture2D<float4>      g_GBufAlbedo;
 Texture2D<float2>      g_GBufNormal;
 Texture2D<float4>      g_GBufMaterial;
 Texture2D<float>       g_SceneDepth;
-Texture2D<float>       g_AOTerm;
 Texture2DArray<float>  g_ShadowAtlas;
 Texture2D<float>       g_ContactShadow;
 Texture2D<float>       g_RTShadow;
@@ -57,7 +56,6 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float4 albedoA = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0);
     const float2 octNorm = g_GBufNormal.SampleLevel(PointClampSampler, uv, 0);
     const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0);
-    const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0);
     const float rtShadow = g_RTShadow.SampleLevel(PointClampSampler, uv, 0);
     const float contactShadow = g_ContactShadow.SampleLevel(PointClampSampler, uv, 0);
 
@@ -121,5 +119,7 @@ void main(uint3 tid : SV_DispatchThreadID)
         }
     }
 
-    g_DirectOut[tid.xy] = float4(direct * ao, 1.0f);
+    // Ambient occlusion describes missing indirect visibility. Direct emitters
+    // are attenuated only by their explicit shadow terms above.
+    g_DirectOut[tid.xy] = float4(direct, 1.0f);
 }
