@@ -4858,6 +4858,7 @@ struct xiiSensorOutputData
   xiiRenderGraphTextureHandle m_hSceneDepth;
   xiiRenderGraphTextureHandle m_hSceneNormal;
   xiiRenderGraphTextureHandle m_hBaseColor;
+  xiiRenderGraphTextureHandle m_hVelocity;
   xiiRenderGraphTextureHandle m_hSensorOutput;
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiSensorProfile            m_Profile;
@@ -4903,6 +4904,7 @@ void xiiView::SetupSensorOutput(xiiSensorOutputData& data, xiiRenderGraphBuilder
   data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hBaseColor     = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocity      = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSensorOutput  = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_SensorOutput, resources.m_pSensorOutputTexture, resources.m_pSensorOutputTexture->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALBufferCreationDescription constantsDescription;
@@ -4922,7 +4924,7 @@ void xiiView::SetupSensorOutput(xiiSensorOutputData& data, xiiRenderGraphBuilder
 void xiiView::ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGraphPassContext& context)
 {
   if (!data.m_hSceneRadiance.IsValid() || !data.m_hSceneDepth.IsValid() || !data.m_hSceneNormal.IsValid() ||
-      !data.m_hBaseColor.IsValid() || !data.m_hSensorOutput.IsValid() || !data.m_hConstants.IsValid())
+      !data.m_hBaseColor.IsValid() || !data.m_hVelocity.IsValid() || !data.m_hSensorOutput.IsValid() || !data.m_hConstants.IsValid())
     return;
 
   xiiGALCommandList& cmd = context.GetCommandList();
@@ -4946,6 +4948,7 @@ void xiiView::ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGrap
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneNormal", context.GetTexture(data.m_hSceneNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_BaseColor", context.GetTexture(data.m_hBaseColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SensorOutput", context.GetTexture(data.m_hSensorOutput)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(data.m_Profile.m_uiResolutionX + 7U) / 8U, (data.m_Profile.m_uiResolutionY + 7U) / 8U, 1U});

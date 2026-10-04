@@ -17,7 +17,8 @@ Texture2D<float4>   g_SceneRadiance : register(t4);
 Texture2D<float>    g_SceneDepth    : register(t5);
 Texture2D<float2>   g_SceneNormal   : register(t6);
 Texture2D<float4>   g_BaseColor     : register(t7);
-RWTexture2D<float4> g_SensorOutput  : register(u8);
+Texture2D<float2>   g_Velocity      : register(t8);
+RWTexture2D<float4> g_SensorOutput  : register(u9);
 
 static const uint SENSOR_RGB = 0U;
 static const uint SENSOR_INFRARED = 1U;
@@ -26,6 +27,7 @@ static const uint SENSOR_LIDAR = 3U;
 static const uint NOISE_NONE = 0U;
 static const uint NOISE_GAUSSIAN = 1U;
 static const uint NOISE_PHOTON_SHOT_READ = 2U;
+static const uint SHUTTER_ROLLING = 1U;
 
 float HashToUnitFloat(uint value)
 {
@@ -92,7 +94,29 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
   const uint2 pixel = dispatchThreadId.xy;
   const float2 uv = (float2(pixel) + 0.5f) / float2(outputDimensions);
-  const uint2 sourcePixel = min((uint2)(uv * float2(sourceDimensions)), sourceDimensions - 1U);
+  float2 sourceUV = uv;
+
+  // The rendered scene represents the end of the sensor readout. Approximate a
+  // top-to-bottom rolling shutter by moving earlier scanlines toward their
+  // previous-frame positions. Motion vectors only span one frame, so longer
+  // readouts are intentionally clamped instead of extrapolating unstable data.
+  if (FrameAndResolution.w == SHUTTER_ROLLING && RangeAndExposure.w > 0.0f)
+  {
+    const uint2 velocityPixel = min((uint2)(sourceUV * float2(sourceDimensions)), sourceDimensions - 1U);
+    const float2 velocity = g_Velocity.Load(int3(velocityPixel, 0));
+    const float frameDurationSeconds = max(g_DeltaTimeMs * 0.001f, 1e-6f);
+    const float readoutFrameFraction = saturate(RangeAndExposure.w / frameDurationSeconds);
+    const float scanlineHistory = 1.0f - (float(pixel.y) + 0.5f) / float(outputDimensions.y);
+    sourceUV -= velocity * float2(0.5f, -0.5f) * (readoutFrameFraction * scanlineHistory);
+  }
+
+  if (any(sourceUV <= 0.0f) || any(sourceUV >= 1.0f))
+  {
+    g_SensorOutput[pixel] = 0.0f;
+    return;
+  }
+
+  const uint2 sourcePixel = min((uint2)(sourceUV * float2(sourceDimensions)), sourceDimensions - 1U);
   const float depth = g_SceneDepth.Load(int3(sourcePixel, 0));
 
   if (depth <= 0.0f)
@@ -136,7 +160,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     return;
   }
 
-  const float3 worldPosition = ReconstructWorldPos(uv, depth);
+  const float3 worldPosition = ReconstructWorldPos(sourceUV, depth);
   const float3 toSensor = normalize(g_CameraPositionAndNearPlane.xyz - worldPosition);
   const float3 normal = DecodeOctNormal(g_SceneNormal.Load(int3(sourcePixel, 0)));
   const float incidence = saturate(dot(normal, toSensor));
@@ -147,4 +171,3 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const float returnSignal = ConvertRadianceToDigital(returnRadiance.xxx, pixel).x;
   g_SensorOutput[pixel] = float4(AddRangeNoise(radialRange, pixel), returnSignal, incidence, 1.0f);
 }
-
