@@ -85,6 +85,7 @@ struct xiiGroundTruthAmbientOcclusionDenoiseData;
 
 struct xiiReSTIRDITemporalData;
 struct xiiReSTIRDISpatialData;
+struct xiiShadowSamplingConstantsData;
 struct xiiDeferredDirectLightingData;
 struct xiiDeferredIndirectLightingData;
 struct xiiRayTracedGlobalIlluminationData;
@@ -180,6 +181,11 @@ public:
 
   void                       SetViewRenderMode(xiiEnum<xiiViewRenderMode> value);
   xiiEnum<xiiViewRenderMode> GetViewRenderMode() const;
+
+  /// Selects Forward+ or deferred opaque direct lighting for this view. Forward+ automatically
+  /// falls back to deferred when the active device cannot execute the GPU-scene mesh path.
+  void                   SetRenderPath(xiiEnum<xiiRenderPath> value);
+  xiiEnum<xiiRenderPath> GetRenderPath() const;
 
   /// Enables calibrated sensor output for this view. Passing an invalid handle disables it.
   [[nodiscard]] xiiResult                   SetSensorProfile(xiiSensorProfileHandle hProfile);
@@ -408,6 +414,9 @@ private:
 
   void SetupReSTIRDISpatial(xiiReSTIRDISpatialData& data, xiiRenderGraphBuilder& builder);
   void ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRenderGraphPassContext& context);
+
+  void SetupShadowSamplingConstants(xiiShadowSamplingConstantsData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteShadowSamplingConstants(const xiiShadowSamplingConstantsData& data, xiiRenderGraphPassContext& context);
 
   void SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRenderGraphBuilder& builder);
   void ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, xiiRenderGraphPassContext& context);

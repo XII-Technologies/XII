@@ -124,6 +124,19 @@ XII_ALWAYS_INLINE void xiiView::SetViewRenderMode(xiiEnum<xiiViewRenderMode> val
   m_Data.m_ViewRenderMode = value;
 }
 
+XII_ALWAYS_INLINE xiiEnum<xiiRenderPath> xiiView::GetRenderPath() const
+{
+  return m_Data.m_RenderPath;
+}
+
+XII_ALWAYS_INLINE void xiiView::SetRenderPath(xiiEnum<xiiRenderPath> value)
+{
+  if (m_Data.m_RenderPath != value)
+    InvalidateTemporalHistory();
+
+  m_Data.m_RenderPath = value;
+}
+
 XII_ALWAYS_INLINE const xiiRectFloat& xiiView::GetViewport() const
 {
   return m_Data.m_ViewPortRect;

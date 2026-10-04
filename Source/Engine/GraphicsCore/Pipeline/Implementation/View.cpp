@@ -230,7 +230,14 @@ namespace
   }
 } // namespace
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 2, xiiRTTINoAllocator)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ENUM_ACCESSOR_PROPERTY("RenderPath", xiiRenderPath, GetRenderPath, SetRenderPath),
+  }
+  XII_END_PROPERTIES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiView::ViewPassResources* xiiView::ResolveViewPassResources(xiiViewRenderResourceContextHandle handle)
@@ -3578,9 +3585,78 @@ struct xiiDeferredDirectLightingData
   xiiRenderGraphTextureHandle       m_hVirtualShadowAtlas;
   xiiRenderGraphBufferHandle        m_hVirtualShadowSamplingConstants;
   xiiRenderGraphTextureHandle       m_hDirectLightingBuffer; ///< UnorderedAccess out (direct lighting HDR buffer).
+};
+
+/// Publishes shadow-sampling constants independently of a particular opaque lighting path.
+/// Forward+, deferred lighting, and volumetrics can therefore share one authoritative frame setup.
+struct xiiShadowSamplingConstantsData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphBufferHandle         m_hCloudShadowConstants;
+  xiiRenderGraphBufferHandle         m_hVirtualShadowSamplingConstants;
   xiiCloudShadowConstants           m_CloudShadowConstants;
   xiiVirtualShadowSamplingConstants m_VirtualShadowConstants;
 };
+
+void xiiView::SetupShadowSamplingConstants(xiiShadowSamplingConstantsData& data, xiiRenderGraphBuilder& builder)
+{
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiCloudShadowConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Mode           = xiiGALBufferMode::Undefined;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  data.m_hCloudShadowConstants          = builder.WriteBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  constantsDescription.m_uiSize                  = sizeof(xiiVirtualShadowSamplingConstants);
+  data.m_hVirtualShadowSamplingConstants         = builder.WriteBuffer(xiiRGBlackboardKeys::k_VirtualShadowSamplingConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+  const xiiVirtualShadowMapSettings& settings    = xiiVirtualShadowMapManager::GetConfiguration();
+  const xiiVirtualShadowMapStats     statistics  = xiiVirtualShadowMapManager::GetStats();
+  data.m_VirtualShadowConstants.VirtualShadowPageTableBaseIndex = 0U;
+  data.m_VirtualShadowConstants.VirtualShadowPageTableCapacity  = 0U;
+  XII_IGNORE_UNUSED(GetBlackboard().TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, data.m_VirtualShadowConstants.VirtualShadowPageTableBaseIndex));
+  XII_IGNORE_UNUSED(GetBlackboard().TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, data.m_VirtualShadowConstants.VirtualShadowPageTableCapacity));
+  data.m_VirtualShadowConstants.VirtualShadowResolution          = settings.m_uiVirtualResolution;
+  data.m_VirtualShadowConstants.VirtualShadowPageSize            = settings.m_uiPageSize;
+  data.m_VirtualShadowConstants.VirtualShadowPhysicalAtlasWidth  = statistics.m_uiPhysicalAtlasWidth;
+  data.m_VirtualShadowConstants.VirtualShadowPhysicalAtlasHeight = statistics.m_uiPhysicalAtlasHeight;
+  data.m_VirtualShadowConstants.VirtualShadowDirectionalLightId  = 0U;
+  data.m_VirtualShadowConstants.VirtualShadowEnabled             = 0U;
+  if (m_pExtractedData != nullptr)
+  {
+    const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(m_pExtractedData->GetAllRenderData());
+    if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows)
+    {
+      data.m_VirtualShadowConstants.VirtualShadowDirectionalLightId = static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey) & 0x00FFFFFFU;
+      data.m_VirtualShadowConstants.VirtualShadowEnabled            = 1U;
+    }
+  }
+
+  const auto& cloudState                                 = m_ViewPassResources->m_LightingPasses.m_CloudShadowState;
+  data.m_CloudShadowConstants.LayerOriginAndInvScale     = cloudState.m_vLayerOriginAndInvScale;
+  data.m_CloudShadowConstants.ProjectionAxisUAndDetail   = cloudState.m_vProjectionAxisUAndDetail;
+  data.m_CloudShadowConstants.ProjectionAxisVAndCoverage = cloudState.m_vProjectionAxisVAndCoverage;
+  data.m_CloudShadowConstants.LayerNormalAndOpticalDepth = cloudState.m_vLayerNormalAndOpticalDepth;
+  data.m_CloudShadowConstants.WindStrengthAndEnabled     = cloudState.m_vWindStrengthAndEnabled;
+
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteShadowSamplingConstants(const xiiShadowSamplingConstantsData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+  cmd.BeginDebugGroup("ShadowSamplingConstants");
+  {
+    xiiGALMapHelper<xiiCloudShadowConstants> cloudConstants(cmd, context.GetBuffer(data.m_hCloudShadowConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+    *cloudConstants = data.m_CloudShadowConstants;
+  }
+  {
+    xiiGALMapHelper<xiiVirtualShadowSamplingConstants> virtualConstants(cmd, context.GetBuffer(data.m_hVirtualShadowSamplingConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+    *virtualConstants = data.m_VirtualShadowConstants;
+  }
+  cmd.EndDebugGroup();
+}
 
 void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRenderGraphBuilder& builder)
 {
@@ -3601,48 +3677,10 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   data.m_hLightIndexBuffer            = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDirectLightReservoir        = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, xiiGALResourceStateFlags::ShaderResource);
   data.m_hReservoirSurface            = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoirSurface, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hCloudShadowConstants        = builder.ReadBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, xiiGALResourceStateFlags::ConstantBuffer);
   data.m_hVirtualShadowPageTable      = builder.ReadBuffer(xiiRGBlackboardKeys::k_VirtualShadowPageTable, xiiGALResourceStateFlags::ShaderResource);
-
-  data.m_hVirtualShadowAtlas = builder.ReadTexture(xiiRGBlackboardKeys::k_VirtualShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiGALBufferCreationDescription constantsDescription;
-  constantsDescription.m_uiSize         = sizeof(xiiCloudShadowConstants);
-  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
-  constantsDescription.m_Mode           = xiiGALBufferMode::Undefined;
-  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
-  data.m_hCloudShadowConstants          = builder.WriteBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
-
-  constantsDescription.m_uiSize                                 = sizeof(xiiVirtualShadowSamplingConstants);
-  data.m_hVirtualShadowSamplingConstants                        = builder.WriteBuffer(xiiRGBlackboardKeys::k_VirtualShadowSamplingConstants, constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
-  const xiiVirtualShadowMapSettings& virtualShadowSettings      = xiiVirtualShadowMapManager::GetConfiguration();
-  const xiiVirtualShadowMapStats     virtualShadowStats         = xiiVirtualShadowMapManager::GetStats();
-  data.m_VirtualShadowConstants.VirtualShadowPageTableBaseIndex = 0U;
-  data.m_VirtualShadowConstants.VirtualShadowPageTableCapacity  = 0U;
-  XII_IGNORE_UNUSED(GetBlackboard().TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, data.m_VirtualShadowConstants.VirtualShadowPageTableBaseIndex));
-  XII_IGNORE_UNUSED(GetBlackboard().TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, data.m_VirtualShadowConstants.VirtualShadowPageTableCapacity));
-  data.m_VirtualShadowConstants.VirtualShadowResolution          = virtualShadowSettings.m_uiVirtualResolution;
-  data.m_VirtualShadowConstants.VirtualShadowPageSize            = virtualShadowSettings.m_uiPageSize;
-  data.m_VirtualShadowConstants.VirtualShadowPhysicalAtlasWidth  = virtualShadowStats.m_uiPhysicalAtlasWidth;
-  data.m_VirtualShadowConstants.VirtualShadowPhysicalAtlasHeight = virtualShadowStats.m_uiPhysicalAtlasHeight;
-  data.m_VirtualShadowConstants.VirtualShadowDirectionalLightId  = 0U;
-  data.m_VirtualShadowConstants.VirtualShadowEnabled             = 0U;
-  if (m_pExtractedData != nullptr)
-  {
-    const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(m_pExtractedData->GetAllRenderData());
-    if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows)
-    {
-      data.m_VirtualShadowConstants.VirtualShadowDirectionalLightId = static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey) & 0x00FFFFFFU;
-      data.m_VirtualShadowConstants.VirtualShadowEnabled            = 1U;
-    }
-  }
-
-  const auto& cloudState                                 = m_ViewPassResources->m_LightingPasses.m_CloudShadowState;
-  data.m_CloudShadowConstants.LayerOriginAndInvScale     = cloudState.m_vLayerOriginAndInvScale;
-  data.m_CloudShadowConstants.ProjectionAxisUAndDetail   = cloudState.m_vProjectionAxisUAndDetail;
-  data.m_CloudShadowConstants.ProjectionAxisVAndCoverage = cloudState.m_vProjectionAxisVAndCoverage;
-  data.m_CloudShadowConstants.LayerNormalAndOpticalDepth = cloudState.m_vLayerNormalAndOpticalDepth;
-  data.m_CloudShadowConstants.WindStrengthAndEnabled     = cloudState.m_vWindStrengthAndEnabled;
+  data.m_hVirtualShadowAtlas          = builder.ReadTexture(xiiRGBlackboardKeys::k_VirtualShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVirtualShadowSamplingConstants = builder.ReadBuffer(xiiRGBlackboardKeys::k_VirtualShadowSamplingConstants, xiiGALResourceStateFlags::ConstantBuffer);
 
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
@@ -3663,15 +3701,6 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
 
   cmd.BeginDebugGroup("DeferredDirectLighting");
   {
-    {
-      xiiGALMapHelper<xiiCloudShadowConstants> pConstants(cmd, context.GetBuffer(data.m_hCloudShadowConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      *pConstants = data.m_CloudShadowConstants;
-    }
-    {
-      xiiGALMapHelper<xiiVirtualShadowSamplingConstants> pConstants(cmd, context.GetBuffer(data.m_hVirtualShadowSamplingConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      *pConstants = data.m_VirtualShadowConstants;
-    }
-
     cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pDirectLightingPipeline);
     m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
     m_ViewPassResources->m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
@@ -6896,24 +6925,25 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Mesh-shader capable devices shade the compact visibility stream directly from canonical
   // surface records. Extra MRTs replace duplicate normal/roughness and object-velocity draws.
+  const auto& motionHistory = m_ViewPassResources->m_DepthPasses;
+  xiiGpuSceneGBufferRasterDescription gpuRasterDescription;
+  gpuRasterDescription.m_ViewProjectionMatrix         = GetViewProjectionMatrix(xiiCameraEye::Left);
+  gpuRasterDescription.m_PreviousViewProjectionMatrix = motionHistory.m_bMotionHistoryValid ? motionHistory.m_PreviousViewProjectionMatrix : gpuRasterDescription.m_ViewProjectionMatrix;
+  gpuRasterDescription.m_uiWidth                      = GetRenderResolutionWidth();
+  gpuRasterDescription.m_uiHeight                     = GetRenderResolutionHeight();
+  gpuRasterDescription.m_uiVertexStride               = sizeof(xiiMeshPackedVertex);
+  gpuRasterDescription.m_uiNormalOffset               = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vNormal));
+  gpuRasterDescription.m_uiTangentOffset              = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTangent));
+  gpuRasterDescription.m_uiTexCoordOffset             = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0));
+  gpuRasterDescription.m_uiMeshDispatchGroupCountX    = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext);
+  gpuRasterDescription.m_uiMeshDispatchGroupCountY    = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hGpuVisibilityContext);
+
   xiiGpuSceneGBufferOutputs gpuGBuffer;
   if (xiiGpuSceneRasterManager::IsSupported() && hSceneDepth.IsValid() && motionVectors.first->m_hVelocityBuffer.IsValid() && mainVisibility.m_hIndirectCommands.IsValid() && materials.m_hSurfaceData.IsValid())
   {
-    const auto& motionHistory = m_ViewPassResources->m_DepthPasses;
-    xiiGpuSceneGBufferRasterDescription gBufferDescription;
-    gBufferDescription.m_ViewProjectionMatrix         = GetViewProjectionMatrix(xiiCameraEye::Left);
-    gBufferDescription.m_PreviousViewProjectionMatrix = motionHistory.m_bMotionHistoryValid ? motionHistory.m_PreviousViewProjectionMatrix : gBufferDescription.m_ViewProjectionMatrix;
-    gBufferDescription.m_vCurrentJitter               = motionVectors.first->m_vCurrentJitter;
-    gBufferDescription.m_vPreviousJitter              = motionHistory.m_bMotionHistoryValid ? motionHistory.m_vPreviousJitter : gBufferDescription.m_vCurrentJitter;
-    gBufferDescription.m_uiWidth                   = GetRenderResolutionWidth();
-    gBufferDescription.m_uiHeight                  = GetRenderResolutionHeight();
-    gBufferDescription.m_uiVertexStride            = sizeof(xiiMeshPackedVertex);
-    gBufferDescription.m_uiNormalOffset            = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vNormal));
-    gBufferDescription.m_uiTangentOffset           = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTangent));
-    gBufferDescription.m_uiTexCoordOffset          = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0));
-    gBufferDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext);
-    gBufferDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hGpuVisibilityContext);
-    gpuGBuffer = xiiGpuSceneRasterManager::AddGBufferPass(graph, "GPU Scene GBuffer", hSceneDepth, motionVectors.first->m_hVelocityBuffer, mainVisibility, geometry, materials, gBufferDescription);
+    gpuRasterDescription.m_vCurrentJitter  = motionVectors.first->m_vCurrentJitter;
+    gpuRasterDescription.m_vPreviousJitter = motionHistory.m_bMotionHistoryValid ? motionHistory.m_vPreviousJitter : gpuRasterDescription.m_vCurrentJitter;
+    gpuGBuffer = xiiGpuSceneRasterManager::AddGBufferPass(graph, "GPU Scene GBuffer", hSceneDepth, motionVectors.first->m_hVelocityBuffer, mainVisibility, geometry, materials, gpuRasterDescription);
   }
   if (!gpuGBuffer.IsValid())
   {
@@ -6941,12 +6971,30 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiGroundTruthAmbientOcclusionData>("GroundTruthAmbientOcclusion", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusion, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusion, this));
 
   // Main lighting passes, which produce direct and indirect lighting results.
+  graph.AddPass<xiiShadowSamplingConstantsData>("ShadowSamplingConstants", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupShadowSamplingConstants, this), xiiMakeDelegate(&xiiView::ExecuteShadowSamplingConstants, this));
   graph.AddPass<xiiReSTIRDITemporalData>("ReSTIRDITemporal", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDITemporal, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDITemporal, this));
   graph.AddPass<xiiReSTIRDISpatialData>("ReSTIRDISpatial", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDISpatial, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDISpatial, this));
   graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedShadowData, this));
   graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
   graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));
-  graph.AddPass<xiiDeferredDirectLightingData>("DeferredDirectLighting", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDirectLighting, this), xiiMakeDelegate(&xiiView::ExecuteDirectLighting, this));
+  bool bForwardPlusDirectLighting = false;
+  if (m_Data.m_RenderPath == xiiRenderPath::ForwardPlus && xiiGpuSceneRasterManager::IsForwardPlusSupported())
+  {
+    const xiiRenderGraphTextureHandle hAmbientOcclusion = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_StableAOTexture);
+    const xiiRenderGraphTextureHandle hRayTracedShadow  = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_RTFinalShadowMask);
+    const xiiRenderGraphTextureHandle hContactShadow    = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_ContactShadowTerm);
+    const xiiRenderGraphTextureHandle hDirectReservoir  = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_DirectLightReservoir);
+    const xiiRenderGraphBufferHandle  hLightGrid        = graph.GetCurrentBufferHandle(xiiRGBlackboardKeys::k_LightGridBuffer);
+    const xiiRenderGraphBufferHandle  hLightIndices     = graph.GetCurrentBufferHandle(xiiRGBlackboardKeys::k_LightIndexBuffer);
+
+    bForwardPlusDirectLighting = xiiGpuSceneRasterManager::AddForwardPlusPass(
+      graph, "GPU Scene Forward Plus", hSceneDepth, hAmbientOcclusion, hRayTracedShadow, hContactShadow, hDirectReservoir,
+      hLightGrid, hLightIndices, mainVisibility, geometry, materials, *m_ViewPassResources->m_LightingSystem.BorrowSystem(), gpuRasterDescription).IsValid();
+  }
+  if (!bForwardPlusDirectLighting)
+  {
+    graph.AddPass<xiiDeferredDirectLightingData>("DeferredDirectLighting", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDirectLighting, this), xiiMakeDelegate(&xiiView::ExecuteDirectLighting, this));
+  }
   graph.AddPass<xiiDeferredIndirectLightingData>("DeferredIndirectLighting", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupIndirectLighting, this), xiiMakeDelegate(&xiiView::ExecuteIndirectLighting, this));
   graph.AddPass<xiiRayTracedGlobalIlluminationData>("RTGIFinalGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedGlobalIllumination, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedGlobalIllumination, this));
   graph.AddPass<xiiReSTIRGITemporalData>("ReSTIRGITemporal", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRGITemporal, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRGITemporal, this));

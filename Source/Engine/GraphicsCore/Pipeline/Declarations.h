@@ -35,6 +35,28 @@ struct XII_GRAPHICSCORE_DLL xiiShadingQualityLevel
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiShadingQualityLevel);
 
+/// Selects the opaque lighting architecture used by a view.
+///
+/// ForwardPlus shades the GPU-scene visibility stream in a mesh-shader graphics pass and consumes
+/// the clustered light lists directly. Deferred retains the G-buffer compute-lighting path for
+/// scenes that favor very high light counts or hardware without mesh-shader support.
+struct XII_GRAPHICSCORE_DLL xiiRenderPath
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    ForwardPlus = 0U,
+    Deferred,
+
+    ENUM_COUNT,
+
+    Default = Deferred
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPath);
+
 /// Usage hint of a camera/view.
 ///
 /// This enumeration provides context about how a camera or view is intended to be used by the rendering system.

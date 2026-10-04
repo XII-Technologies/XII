@@ -15,6 +15,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
   {
     m_ViewPortRect             = xiiRectFloat(0.0f, 0.0f);
     m_ViewRenderMode           = xiiViewRenderMode::None;
+    m_RenderPath               = xiiRenderPath::Default;
     m_fRenderResolutionScale   = 1.0f;
     m_uiRenderResolutionWidth  = 1U;
     m_uiRenderResolutionHeight = 1U;
@@ -32,6 +33,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
 
   xiiRectFloat                m_ViewPortRect;
   xiiEnum<xiiViewRenderMode>  m_ViewRenderMode;
+  xiiEnum<xiiRenderPath>      m_RenderPath;
   xiiEnum<xiiCameraUsageHint> m_CameraUsageHint;
 
   /// Dynamic internal render scale applied to this view (1.0 = native viewport resolution).

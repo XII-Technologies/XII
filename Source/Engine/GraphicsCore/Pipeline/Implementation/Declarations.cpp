@@ -12,6 +12,11 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1U)
   XII_ENUM_CONSTANT(xiiShadingQualityLevel::Ultra),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderPath, 1U)
+  XII_ENUM_CONSTANT(xiiRenderPath::ForwardPlus),
+  XII_ENUM_CONSTANT(xiiRenderPath::Deferred),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCameraUsageHint, 1U)
   XII_ENUM_CONSTANT(xiiCameraUsageHint::None),
   XII_ENUM_CONSTANT(xiiCameraUsageHint::MainView),
