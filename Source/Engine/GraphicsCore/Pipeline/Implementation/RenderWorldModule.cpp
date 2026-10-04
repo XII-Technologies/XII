@@ -652,7 +652,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     else
     {
       // Standard full-featured pipeline.
-      viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard);
+      viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard, virtualShadowHandles);
     }
 
     pGraph->EndSetup();

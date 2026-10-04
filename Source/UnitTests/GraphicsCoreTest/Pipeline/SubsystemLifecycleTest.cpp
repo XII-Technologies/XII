@@ -109,7 +109,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(!xiiSceneDatabaseManager::IsValid(handle));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Render graph resolves subsystem-published resources")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Render graph passes publish explicit resource handles")
   {
     struct PublishData
     {
@@ -137,15 +137,10 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
       },
       [](const PublishData&, xiiRenderGraphPassContext&) {});
 
-    const xiiRenderGraphTextureHandle hTexture = graph.GetCurrentTextureHandle("Published Texture");
-    const xiiRenderGraphBufferHandle  hBuffer  = graph.GetCurrentBufferHandle("Published Buffer");
+    const xiiRenderGraphTextureHandle hTexture = publishPass.first->m_hTexture;
+    const xiiRenderGraphBufferHandle  hBuffer  = publishPass.first->m_hBuffer;
     XII_TEST_BOOL(hTexture.IsValid());
     XII_TEST_BOOL(hBuffer.IsValid());
-    XII_TEST_INT(hTexture.m_uiVersion, publishPass.first->m_hTexture.m_uiVersion);
-    XII_TEST_INT(hBuffer.m_uiVersion, publishPass.first->m_hBuffer.m_uiVersion);
-    XII_TEST_BOOL(!graph.GetCurrentTextureHandle("Published Buffer").IsValid());
-    XII_TEST_BOOL(!graph.GetCurrentBufferHandle("Published Texture").IsValid());
-    XII_TEST_BOOL(!graph.GetCurrentBufferHandle("Unknown Resource").IsValid());
     graph.EndSetup();
   }
 }

@@ -6641,7 +6641,7 @@ void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRenderGraphPassC
   cmd.EndDebugGroup();
 }
 
-void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles& virtualShadowHandles)
 {
   // CPU dynamic resolution PID (pre-graph). View owns scale/resolution state.
   RunDynamicResolutionPID();
@@ -6747,7 +6747,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiDrawBuildData>("CoarseDrawCommandBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupCoarseDrawBuild, this), xiiMakeDelegate(&xiiView::ExecuteDrawBuild, this));
   graph.AddPass<xiiClusterBuildData>("ClusterGridBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupClusterBuild, this), xiiMakeDelegate(&xiiView::ExecuteClusterBuild, this));
   graph.AddPass<xiiLightListClearData>("LightListClear", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListClear, this), xiiMakeDelegate(&xiiView::ExecuteLightListClear, this));
-  graph.AddPass<xiiLightListData>("LightListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListBuild, this), xiiMakeDelegate(&xiiView::ExecuteLightListBuild, this));
+  auto lightListPass = graph.AddPass<xiiLightListData>("LightListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListBuild, this), xiiMakeDelegate(&xiiView::ExecuteLightListBuild, this));
   graph.AddPass<xiiReflectionProbeSelectData>("ReflectionProbeSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeSelect, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeSelect, this));
   graph.AddPass<xiiFroxelAllocationData>("VolumetricGridAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFroxelAllocation, this), xiiMakeDelegate(&xiiView::ExecuteFroxelAllocation, this));
 
@@ -6780,18 +6780,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
       const xiiGpuVisibilityOutputs shadowVisibility = xiiGpuVisibilityManager::AddPasses(
         m_hGpuVisibilityContext, graph, uiFrameIndex, m_GpuSceneContext.GetHandle(), shadowView, geometry, visibilityDescription);
 
-      xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload;
-      virtualShadowUpload.m_hPhysicalPageTable = graph.GetCurrentBufferHandle(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageTable);
-      virtualShadowUpload.m_hVirtualPageTable  = graph.GetCurrentBufferHandle(xiiRGBlackboardKeys::k_VirtualShadowPageTable);
-      virtualShadowUpload.m_hPhysicalAtlas     = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_VirtualShadowAtlas);
-      XII_IGNORE_UNUSED(blackboard.TryGet(xiiRGBlackboardKeys::k_VirtualShadowPhysicalBaseIndex, virtualShadowUpload.m_uiFrameBaseIndex));
-      XII_IGNORE_UNUSED(blackboard.TryGet(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageCount, virtualShadowUpload.m_uiPhysicalPageCount));
-      XII_IGNORE_UNUSED(blackboard.TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableBaseIndex, virtualShadowUpload.m_uiVirtualTableBaseIndex));
-      XII_IGNORE_UNUSED(blackboard.TryGet(xiiRGBlackboardKeys::k_VirtualShadowTableCapacity, virtualShadowUpload.m_uiVirtualTableCapacity));
-
       const xiiUInt32 uiDirectionalLightId = static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey) & 0x00FFFFFFU;
       XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::AddRasterPasses(
-        graph, virtualShadowUpload, shadowVisibility, geometry, materials,
+        graph, virtualShadowHandles, shadowVisibility, geometry, materials,
         xiiArrayPtr<const xiiMat4>(shadowCascadePass.first->m_CascadeViewProjection, shadowCascadePass.first->m_uiActiveCascades),
         uiDirectionalLightId, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)),
         xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hGpuVisibilityContext),
@@ -6852,7 +6843,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupSpotShadowData, this), xiiMakeDelegate(&xiiView::ExecuteSpotShadowData, this));
     graph.AddPass<xiiPointShadowData>("PointShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPointShadowData, this), xiiMakeDelegate(&xiiView::ExecutePointShadowData, this));
   }
-  graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupContactShadowData, this), xiiMakeDelegate(&xiiView::ExecuteContactShadowData, this));
+  auto contactShadowPass = graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupContactShadowData, this), xiiMakeDelegate(&xiiView::ExecuteContactShadowData, this));
 
   // Depth and motion prepasses, which produce depth and motion data consumed by later passes.
   // Mesh-shader capable devices rasterize the exact compact visibility stream. The existing
@@ -6942,19 +6933,19 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // Main lighting passes, which produce direct and indirect lighting results.
   graph.AddPass<xiiShadowSamplingConstantsData>("ShadowSamplingConstants", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupShadowSamplingConstants, this), xiiMakeDelegate(&xiiView::ExecuteShadowSamplingConstants, this));
   graph.AddPass<xiiReSTIRDITemporalData>("ReSTIRDITemporal", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDITemporal, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDITemporal, this));
-  graph.AddPass<xiiReSTIRDISpatialData>("ReSTIRDISpatial", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDISpatial, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDISpatial, this));
+  auto restirDISpatialPass = graph.AddPass<xiiReSTIRDISpatialData>("ReSTIRDISpatial", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDISpatial, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDISpatial, this));
   graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedShadowData, this));
-  graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
-  graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));
+  auto shadowDenoisePass = graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
+  auto ambientOcclusionDenoisePass = graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));
   bool bForwardPlusDirectLighting = false;
   if (m_Data.m_RenderPath == xiiRenderPath::ForwardPlus && xiiGpuSceneRasterManager::IsForwardPlusSupported())
   {
-    const xiiRenderGraphTextureHandle hAmbientOcclusion = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_StableAOTexture);
-    const xiiRenderGraphTextureHandle hRayTracedShadow  = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_RTFinalShadowMask);
-    const xiiRenderGraphTextureHandle hContactShadow    = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_ContactShadowTerm);
-    const xiiRenderGraphTextureHandle hDirectReservoir  = graph.GetCurrentTextureHandle(xiiRGBlackboardKeys::k_DirectLightReservoir);
-    const xiiRenderGraphBufferHandle  hLightGrid        = graph.GetCurrentBufferHandle(xiiRGBlackboardKeys::k_LightGridBuffer);
-    const xiiRenderGraphBufferHandle  hLightIndices     = graph.GetCurrentBufferHandle(xiiRGBlackboardKeys::k_LightIndexBuffer);
+    const xiiRenderGraphTextureHandle hAmbientOcclusion = ambientOcclusionDenoisePass.first->m_hStableAmbientOcclusion;
+    const xiiRenderGraphTextureHandle hRayTracedShadow  = shadowDenoisePass.first->m_hRTFinalShadowMask;
+    const xiiRenderGraphTextureHandle hContactShadow    = contactShadowPass.first->m_hContactShadow;
+    const xiiRenderGraphTextureHandle hDirectReservoir  = restirDISpatialPass.first->m_hReservoir;
+    const xiiRenderGraphBufferHandle  hLightGrid        = lightListPass.first->m_hLightGridBuffer;
+    const xiiRenderGraphBufferHandle  hLightIndices     = lightListPass.first->m_hLightIndexBuffer;
 
     bForwardPlusDirectLighting = xiiGpuSceneRasterManager::AddForwardPlusPass(
       graph, "GPU Scene Forward Plus", hSceneDepth, hAmbientOcclusion, hRayTracedShadow, hContactShadow, hDirectReservoir,
