@@ -8,6 +8,8 @@
 DECLARE_CONSTANT_BUFFER_AUTO(xiiSensorOutputConstants)
 {
   FLOAT4(Intrinsics);               // fx, fy, cx, cy in sensor pixels.
+  FLOAT4(RadialDistortion);          // Brown-Conrady k1, k2, k3, unused.
+  FLOAT4(TangentialDistortion);      // Brown-Conrady p1, p2, unused, unused.
   FLOAT4(RangeAndExposure);         // near metres, far metres, exposure seconds, rolling-shutter seconds.
   FLOAT4(SpectralSensitivityAndQE); // RGB spectral weights, quantum efficiency.
   FLOAT4(SignalConversion);         // radiance-to-electrons, analog gain, saturation electrons, wavelength nm.

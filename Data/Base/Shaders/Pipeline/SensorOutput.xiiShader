@@ -81,6 +81,31 @@ float3 ConvertRadianceToDigital(float3 radiance, uint2 pixel)
   return float3(QuantizeNormalized(normalized.x), QuantizeNormalized(normalized.y), QuantizeNormalized(normalized.z));
 }
 
+float2 UndistortSensorRay(float2 distortedRay)
+{
+  float2 ray = distortedRay;
+
+  // Invert the Brown-Conrady model because output pixels are measured sensor
+  // coordinates while the source render is an ideal pinhole image.
+  [unroll]
+  for (uint iteration = 0U; iteration < 5U; ++iteration)
+  {
+    const float r2 = dot(ray, ray);
+    const float r4 = r2 * r2;
+    const float r6 = r4 * r2;
+    const float radial = 1.0f + RadialDistortion.x * r2 + RadialDistortion.y * r4 + RadialDistortion.z * r6;
+    if (abs(radial) < 1e-5f)
+      break;
+
+    const float2 tangential = float2(
+      2.0f * TangentialDistortion.x * ray.x * ray.y + TangentialDistortion.y * (r2 + 2.0f * ray.x * ray.x),
+      TangentialDistortion.x * (r2 + 2.0f * ray.y * ray.y) + 2.0f * TangentialDistortion.y * ray.x * ray.y);
+    ray = (distortedRay - tangential) / radial;
+  }
+
+  return ray;
+}
+
 [numthreads(8, 8, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
@@ -94,7 +119,9 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
   const uint2 pixel = dispatchThreadId.xy;
   const float2 uv = (float2(pixel) + 0.5f) / float2(outputDimensions);
-  float2 sourceUV = uv;
+  const float2 distortedRay = (float2(pixel) + 0.5f - Intrinsics.zw) / max(Intrinsics.xy, 1e-5f);
+  const float2 calibratedRay = UndistortSensorRay(distortedRay);
+  float2 sourceUV = (calibratedRay * Intrinsics.xy + Intrinsics.zw) / float2(outputDimensions);
 
   // The rendered scene represents the end of the sensor readout. Approximate a
   // top-to-bottom rolling shutter by moving earlier scanlines toward their
@@ -126,7 +153,6 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   }
 
   const float axialDepth = LinearizeDepth(depth);
-  const float2 calibratedRay = (float2(pixel) + 0.5f - Intrinsics.zw) / max(Intrinsics.xy, 1e-5f);
   const float radialRange = axialDepth * length(float3(calibratedRay, 1.0f));
   const bool inRange = radialRange >= RangeAndExposure.x && radialRange <= RangeAndExposure.y;
   if (!inRange)

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Math/Vec2.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Enum.h>
@@ -85,6 +86,11 @@ struct XII_GRAPHICSCORE_DLL xiiSensorProfile
   float m_fFocalLengthYPixels    = 640.0f;
   float m_fPrincipalPointXPixels = 639.5f;
   float m_fPrincipalPointYPixels = 359.5f;
+
+  /// Brown-Conrady coefficients in normalized sensor coordinates.
+  /// Radial stores k1, k2, k3; tangential stores p1, p2.
+  xiiVec3 m_vRadialDistortion     = xiiVec3::MakeZero();
+  xiiVec2 m_vTangentialDistortion = xiiVec2::MakeZero();
 
   float m_fNearPlaneMeters       = 0.05f;
   float m_fFarPlaneMeters        = 1000.0f;

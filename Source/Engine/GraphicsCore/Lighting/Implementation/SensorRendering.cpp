@@ -16,6 +16,7 @@ namespace
       lhs.m_uiResolutionX == rhs.m_uiResolutionX && lhs.m_uiResolutionY == rhs.m_uiResolutionY &&
       lhs.m_fFocalLengthXPixels == rhs.m_fFocalLengthXPixels && lhs.m_fFocalLengthYPixels == rhs.m_fFocalLengthYPixels &&
       lhs.m_fPrincipalPointXPixels == rhs.m_fPrincipalPointXPixels && lhs.m_fPrincipalPointYPixels == rhs.m_fPrincipalPointYPixels &&
+      lhs.m_vRadialDistortion == rhs.m_vRadialDistortion && lhs.m_vTangentialDistortion == rhs.m_vTangentialDistortion &&
       lhs.m_fNearPlaneMeters == rhs.m_fNearPlaneMeters && lhs.m_fFarPlaneMeters == rhs.m_fFarPlaneMeters &&
       lhs.m_fExposureSeconds == rhs.m_fExposureSeconds && lhs.m_fRollingShutterSeconds == rhs.m_fRollingShutterSeconds &&
       lhs.m_fWavelengthNanometers == rhs.m_fWavelengthNanometers && lhs.m_vSpectralSensitivity == rhs.m_vSpectralSensitivity &&
@@ -53,6 +54,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, SensorRenderingManager)
   {
     xiiSensorRenderingManager::Shutdown();
   }
+  // Keep this terminator on a unique source line because subsystem symbols use __LINE__ in unity builds.
 XII_END_SUBSYSTEM_DECLARATION;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSensorType, 1)
@@ -67,7 +69,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSensorNoiseModel, 1)
   XII_ENUM_CONSTANTS(xiiSensorNoiseModel::None, xiiSensorNoiseModel::Gaussian, xiiSensorNoiseModel::PhotonShotAndRead)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfile, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSensorProfile>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfile, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiSensorProfile>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -80,6 +82,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfile, xiiNoBase, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("FocalLengthYPixels", m_fFocalLengthYPixels)->AddAttributes(new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" px")),
     XII_MEMBER_PROPERTY("PrincipalPointXPixels", m_fPrincipalPointXPixels)->AddAttributes(new xiiSuffixAttribute(" px")),
     XII_MEMBER_PROPERTY("PrincipalPointYPixels", m_fPrincipalPointYPixels)->AddAttributes(new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("RadialDistortion", m_vRadialDistortion),
+    XII_MEMBER_PROPERTY("TangentialDistortion", m_vTangentialDistortion),
     XII_MEMBER_PROPERTY("NearPlaneMeters", m_fNearPlaneMeters)->AddAttributes(new xiiClampValueAttribute(0.0001f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("FarPlaneMeters", m_fFarPlaneMeters)->AddAttributes(new xiiClampValueAttribute(0.0001f, xiiVariant()), new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("ExposureSeconds", m_fExposureSeconds)->AddAttributes(new xiiClampValueAttribute(0.000001f, xiiVariant()), new xiiSuffixAttribute(" s")),
@@ -146,6 +150,7 @@ bool xiiSensorRenderingManager::IsValidProfile(const xiiSensorProfile& profile)
     xiiMath::IsFinite(profile.m_fFocalLengthXPixels) && profile.m_fFocalLengthXPixels > 0.0f &&
     xiiMath::IsFinite(profile.m_fFocalLengthYPixels) && profile.m_fFocalLengthYPixels > 0.0f &&
     xiiMath::IsFinite(profile.m_fPrincipalPointXPixels) && xiiMath::IsFinite(profile.m_fPrincipalPointYPixels) &&
+    profile.m_vRadialDistortion.IsValid() && profile.m_vTangentialDistortion.IsValid() &&
     xiiMath::IsFinite(profile.m_fNearPlaneMeters) && profile.m_fNearPlaneMeters > 0.0f &&
     xiiMath::IsFinite(profile.m_fFarPlaneMeters) && profile.m_fFarPlaneMeters > profile.m_fNearPlaneMeters &&
     xiiMath::IsFinite(profile.m_fExposureSeconds) && profile.m_fExposureSeconds > 0.0f &&

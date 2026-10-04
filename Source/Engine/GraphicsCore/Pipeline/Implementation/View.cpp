@@ -4933,6 +4933,8 @@ void xiiView::ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGrap
     {
       xiiGALMapHelper<xiiSensorOutputConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       pConstants->Intrinsics               = xiiVec4(data.m_Profile.m_fFocalLengthXPixels, data.m_Profile.m_fFocalLengthYPixels, data.m_Profile.m_fPrincipalPointXPixels, data.m_Profile.m_fPrincipalPointYPixels);
+      pConstants->RadialDistortion          = xiiVec4(data.m_Profile.m_vRadialDistortion.x, data.m_Profile.m_vRadialDistortion.y, data.m_Profile.m_vRadialDistortion.z, 0.0f);
+      pConstants->TangentialDistortion      = xiiVec4(data.m_Profile.m_vTangentialDistortion.x, data.m_Profile.m_vTangentialDistortion.y, 0.0f, 0.0f);
       pConstants->RangeAndExposure         = xiiVec4(data.m_Profile.m_fNearPlaneMeters, data.m_Profile.m_fFarPlaneMeters, data.m_Profile.m_fExposureSeconds, data.m_Profile.m_fRollingShutterSeconds);
       pConstants->SpectralSensitivityAndQE = xiiVec4(data.m_Profile.m_vSpectralSensitivity.x, data.m_Profile.m_vSpectralSensitivity.y, data.m_Profile.m_vSpectralSensitivity.z, data.m_Profile.m_fQuantumEfficiency);
       pConstants->SignalConversion         = xiiVec4(data.m_Profile.m_fRadianceToElectrons, data.m_Profile.m_fAnalogGain, data.m_Profile.m_fSaturationElectrons, data.m_Profile.m_fWavelengthNanometers);
