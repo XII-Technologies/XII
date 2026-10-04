@@ -57,8 +57,8 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     // Keep part of the bounded reservoir budget available for neighbours even
     // after temporal history has reached its maximum effective age.
     const uint sourceM = min(source.M, 16u);
-    const float target = ReSTIREstimateTarget(g_Lights[source.LightIndex], worldPosition, normal);
-    ReSTIRUpdateReservoir(reservoir, source.LightIndex, source.StableLightId, target * source.WeightSum * (float)sourceM, sourceM, randomState);
+    const float target = ReSTIREstimateSampleTarget(source.SampleIndex, worldPosition, normal);
+    ReSTIRUpdateReservoir(reservoir, source.SampleIndex, source.StableLightId, target * source.WeightSum * (float)sourceM, sourceM, randomState);
   }
 
   const uint rotation = ReSTIRHash(randomState) & 7u;
@@ -83,13 +83,12 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
       continue;
 
     const uint neighborM = min(neighbor.M, 8u);
-    const float target = ReSTIREstimateTarget(g_Lights[neighbor.LightIndex], worldPosition, normal);
-    ReSTIRUpdateReservoir(reservoir, neighbor.LightIndex, neighbor.StableLightId,
+    const float target = ReSTIREstimateSampleTarget(neighbor.SampleIndex, worldPosition, normal);
+    ReSTIRUpdateReservoir(reservoir, neighbor.SampleIndex, neighbor.StableLightId,
       target * neighbor.WeightSum * (float)neighborM, neighborM, randomState);
   }
 
-  const float selectedTarget = reservoir.LightIndex < g_ActiveLightCount ?
-    ReSTIREstimateTarget(g_Lights[reservoir.LightIndex], worldPosition, normal) : 0.0f;
+  const float selectedTarget = ReSTIREstimateSampleTarget(reservoir.SampleIndex, worldPosition, normal);
   ReSTIRFinalizeReservoir(reservoir, selectedTarget);
   g_ReservoirOut[pixel] = ReSTIRPackReservoir(reservoir);
   g_SurfaceOut[pixel] = float4(encodedNormal, linearDepth, 1.0f);

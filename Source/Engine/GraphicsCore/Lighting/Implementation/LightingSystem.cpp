@@ -16,8 +16,6 @@
 #include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <GraphicsCore/Components/Lights/TubeAreaLightComponent.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
-#include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
@@ -381,59 +379,6 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       continue;
     }
 
-    if (const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData))
-    {
-      const xiiVec3 vPosition          = pMesh->m_GlobalBounds.m_vCenter;
-      const float   fMaterialAreaScale = 1.0f / xiiMath::Sqrt(static_cast<float>(xiiMath::Max(pMesh->m_hMaterials.GetCount(), 1U)));
-      const float   fSourceRadius      = xiiMath::Max(pMesh->m_GlobalBounds.m_fSphereRadius * fMaterialAreaScale, 0.001f);
-
-      for (xiiUInt32 uiMaterialIndex = 0U; uiMaterialIndex < pMesh->m_hMaterials.GetCount(); ++uiMaterialIndex)
-      {
-        const xiiMaterialResourceHandle& hMaterial = pMesh->m_hMaterials[uiMaterialIndex];
-        if (!hMaterial.IsValid())
-          continue;
-
-        xiiResourceLock<xiiMaterialResource> material(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
-        if (!material.IsValid() || material.GetAcquireResult() != xiiResourceAcquireResult::Final)
-          continue;
-
-        const xiiMaterialResourceDescriptor& descriptor = material->GetCurrentDescription();
-        if (descriptor.m_Domain != xiiMaterialDomain::Surface)
-          continue;
-
-        xiiColor         emissiveLuminance = descriptor.m_EmissiveColor;
-        const xiiVariant resolvedEmissive  = material->GetParameter(xiiTempHashedString("EmissiveColor"));
-        if (resolvedEmissive.IsA<xiiColor>())
-          emissiveLuminance = resolvedEmissive.Get<xiiColor>();
-
-        const float fPeakLuminance = xiiMath::Max(emissiveLuminance.r, emissiveLuminance.g, emissiveLuminance.b);
-        if (!xiiMath::IsFinite(fPeakLuminance) || fPeakLuminance <= 0.0f)
-          continue;
-
-        const float fProjectedArea = xiiMath::Pi<float>() * fSourceRadius * fSourceRadius;
-        const float fPeakCandela   = fPeakLuminance * fProjectedArea;
-        const float fRange         = xiiMath::Max(xiiLightComponent::CalculateEffectiveRange(0.0f, fPeakCandela), fSourceRadius);
-
-        xiiGpuLightData lightData;
-        xiiMemoryUtils::ZeroFill(&lightData, 1);
-        const xiiColor normalizedColor(
-          emissiveLuminance.r / fPeakLuminance,
-          emissiveLuminance.g / fPeakLuminance,
-          emissiveLuminance.b / fPeakLuminance,
-          1.0f);
-        lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
-        lightData.m_DirectionAndType      = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(LightType::EmissiveMesh));
-        lightData.m_ColorAndIntensity     = MakeVec4(normalizedColor, fPeakLuminance);
-        lightData.m_AttenuationAndSize    = xiiVec4(fRange, fSourceRadius, 0.0f, 0.0f);
-        lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
-        lightData.m_ShadowData            = xiiVec4::MakeZero();
-        lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + fSourceRadius);
-
-        const xiiUInt32 uiStableLightId = xiiHashingUtils::CombineHashValues32(pMesh->m_uiUniqueID, uiMaterialIndex);
-        if (AppendLight(lightData, LightType::EmissiveMesh, uiStableLightId))
-          ++m_Stats.m_uiEmissiveMeshLightCount;
-      }
-    }
   }
 
   // Keep infinite lights in a small deterministic prefix. Surface and

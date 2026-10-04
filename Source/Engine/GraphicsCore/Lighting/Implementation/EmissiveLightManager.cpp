@@ -13,6 +13,7 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightBuildConstants.h>
 
 namespace
 {
@@ -30,6 +31,7 @@ namespace
     xiiUInt32                               m_uiTriangleCapacity = 0U;
     xiiUInt32                               m_uiDispatchY        = 0U;
     xiiUInt32                               m_uiDispatchZ        = 0U;
+    bool                                    m_bExtract           = false;
   };
 
   bool IsConfigurationValid(const xiiEmissiveLightSettings& settings)
@@ -212,20 +214,22 @@ bool xiiEmissiveLightManager::IsInitialized()
 xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const BuildDescription& description)
 {
   BuildOutputs outputs;
-  if (!IsInitialized() || !description.m_Visibility.m_hSceneInstances.IsValid() ||
-      !description.m_Geometry.m_hGeometryMetadata.IsValid() || !description.m_Geometry.m_hMeshletMetadata.IsValid() ||
-      !description.m_Materials.m_hSurfaceData.IsValid() || description.m_uiInstanceCount == 0U ||
-      description.m_Geometry.m_uiMaximumResidentMeshletCount == 0U || description.m_uiVertexStride < 12U)
+  if (!IsInitialized())
     return outputs;
 
-  if (s_pState->m_pBuildPipeline == nullptr)
+  const bool bExtract = description.m_Visibility.m_hSceneInstances.IsValid() &&
+    description.m_Geometry.m_hGeometryMetadata.IsValid() && description.m_Geometry.m_hMeshletMetadata.IsValid() &&
+    description.m_Materials.m_hSurfaceData.IsValid() && description.m_uiInstanceCount > 0U &&
+    description.m_Geometry.m_uiMaximumResidentMeshletCount > 0U && description.m_uiVertexStride >= 12U;
+
+  if (bExtract && s_pState->m_pBuildPipeline == nullptr)
     s_pState->m_pBuildPipeline = LoadBuildPipeline();
-  if (s_pState->m_pBuildPipeline == nullptr)
+  if (bExtract && s_pState->m_pBuildPipeline == nullptr)
     return outputs;
 
   const xiiUInt32 uiMaxGroupCountY = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties.m_uiMaxThreadGroupCountY;
-  const xiiUInt32 uiDispatchY      = xiiMath::Min(description.m_uiInstanceCount, uiMaxGroupCountY);
-  const xiiUInt32 uiDispatchZ      = (description.m_uiInstanceCount + uiDispatchY - 1U) / uiDispatchY;
+  const xiiUInt32 uiDispatchY      = bExtract ? xiiMath::Min(description.m_uiInstanceCount, uiMaxGroupCountY) : 0U;
+  const xiiUInt32 uiDispatchZ      = bExtract ? (description.m_uiInstanceCount + uiDispatchY - 1U) / uiDispatchY : 0U;
   const xiiUInt32 uiMaxGroupCountZ = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties.m_uiMaxThreadGroupCountZ;
   if (uiDispatchZ > uiMaxGroupCountZ)
   {
@@ -237,10 +241,13 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
   auto buildPass = graph.AddPass<EmissiveLightBuildPassData>(
     "GPU Emissive Triangle Build", xiiGALCommandQueueFlags::Compute,
     [&](EmissiveLightBuildPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hSceneInstances   = builder.ReadBuffer(description.m_Visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hGeometry         = builder.ReadBuffer(description.m_Geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hMeshlets         = builder.ReadBuffer(description.m_Geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hSurfaceMaterials = builder.ReadBuffer(description.m_Materials.m_hSurfaceData, xiiGALResourceStateFlags::ShaderResource);
+      if (bExtract)
+      {
+        data.m_hSceneInstances   = builder.ReadBuffer(description.m_Visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hGeometry         = builder.ReadBuffer(description.m_Geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hMeshlets         = builder.ReadBuffer(description.m_Geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hSurfaceMaterials = builder.ReadBuffer(description.m_Materials.m_hSurfaceData, xiiGALResourceStateFlags::ShaderResource);
+      }
 
       xiiGALBufferCreationDescription bufferDescription;
       bufferDescription.m_uiSize              = static_cast<xiiUInt64>(uiTriangleCapacity) * sizeof(xiiGpuEmissiveTriangle);
@@ -268,6 +275,8 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       header.FrameIndex = static_cast<xiiUInt32>(data.m_uiFrameIndex);
       cmd.UpdateBuffer(context.GetBuffer(data.m_hHeader), 0U,
                        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&header), sizeof(header)));
+      if (!data.m_bExtract)
+        return;
 
       {
         xiiGALMapHelper<xiiEmissiveLightBuildConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -300,14 +309,15 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
   buildPass.first->m_uiTriangleCapacity = uiTriangleCapacity;
   buildPass.first->m_uiDispatchY        = uiDispatchY;
   buildPass.first->m_uiDispatchZ        = uiDispatchZ;
+  buildPass.first->m_bExtract           = bExtract;
 
   outputs.m_hTriangles        = buildPass.first->m_hTriangles;
   outputs.m_hHeader           = buildPass.first->m_hHeader;
   outputs.m_uiTriangleCapacity = uiTriangleCapacity;
 
   s_pState->m_Stats.m_uiTriangleCapacity              = uiTriangleCapacity;
-  s_pState->m_Stats.m_uiScheduledInstanceCount        = description.m_uiInstanceCount;
-  s_pState->m_Stats.m_uiScheduledMeshletsPerInstance  = description.m_Geometry.m_uiMaximumResidentMeshletCount;
+  s_pState->m_Stats.m_uiScheduledInstanceCount        = bExtract ? description.m_uiInstanceCount : 0U;
+  s_pState->m_Stats.m_uiScheduledMeshletsPerInstance  = bExtract ? description.m_Geometry.m_uiMaximumResidentMeshletCount : 0U;
   s_pState->m_Stats.m_uiLastScheduledFrame            = uiFrameIndex;
   return outputs;
 }

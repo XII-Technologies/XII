@@ -10,6 +10,7 @@ ALL
 #include <Shaders/Common/Common.h>
 #include <Shaders/Materials/GpuSurfaceMaterial.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightBuildConstants.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
 #include <Shaders/Visibility/GpuSceneCommon.h>
 
@@ -28,9 +29,10 @@ uint LoadByte(ByteAddressBuffer source, uint byteOffset)
   return (word >> ((byteOffset & 3u) * 8u)) & 0xFFu;
 }
 
-uint HashEmissiveId(uint objectId, uint geometryGeneration, uint sourcePrimitive, uint materialIndex)
+uint HashEmissiveId(uint objectId, uint geometryGeneration, uint lodIndex, uint sourcePrimitive, uint materialIndex)
 {
   uint value = objectId ^ (geometryGeneration * 0x9E3779B9u);
+  value ^= lodIndex + 0x27D4EB2Fu + (value << 6u) + (value >> 2u);
   value ^= sourcePrimitive + 0x85EBCA6Bu + (value << 6u) + (value >> 2u);
   value ^= materialIndex + 0xC2B2AE35u + (value << 6u) + (value >> 2u);
   value ^= value >> 16u;
@@ -99,6 +101,10 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
       instance.MaterialIndex == 0xFFFFFFFFu || MaterialBaseIndex >= materialCount || instance.MaterialIndex >= materialCount - MaterialBaseIndex)
     return;
 
+  const xiiGpuSurfaceMaterial material = g_SurfaceMaterials[MaterialBaseIndex + instance.MaterialIndex];
+  if (max(material.EmissiveColorAndRoughness.r, max(material.EmissiveColorAndRoughness.g, material.EmissiveColorAndRoughness.b)) <= 0.0f)
+    return;
+
   const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
   uint lodIndex = 0xFFFFFFFFu;
   [unroll] for (uint lod = 0u; lod < min(geometry.LodCount, 8u); ++lod)
@@ -164,7 +170,6 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   if (!isfinite(area) || area <= 1e-10f)
     return;
 
-  const xiiGpuSurfaceMaterial material = g_SurfaceMaterials[MaterialBaseIndex + instance.MaterialIndex];
   float3 radiance = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
   if (material.TextureIndices1.x != 0xFFFFFFFFu)
   {
@@ -189,7 +194,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   emissiveTriangle.Position2AndInvArea = float4(p2, rcp(area));
   emissiveTriangle.NormalAndTwoSided = float4(areaVector / doubleArea, (material.Metadata.y & (1u << 10u)) != 0u ? 1.0f : 0.0f);
   emissiveTriangle.RadianceAndLuminance = float4(radiance, luminance);
-  emissiveTriangle.Metadata = uint4(HashEmissiveId(instance.UserData, geometry.Generation, sourcePrimitive, instance.MaterialIndex),
+  emissiveTriangle.Metadata = uint4(HashEmissiveId(instance.UserData, geometry.Generation, lodIndex, sourcePrimitive, instance.MaterialIndex),
                                     instanceIndex, sourcePrimitive, instance.MaterialIndex);
   g_EmissiveTriangles[destination] = emissiveTriangle;
 }

@@ -17,6 +17,7 @@
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
+#include <GraphicsCore/Lighting/EmissiveLightManager.h>
 #include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
@@ -3391,6 +3392,8 @@ struct xiiReSTIRDITemporalData
   xiiRenderGraphTextureHandle m_hVelocity;
   xiiRenderGraphBufferHandle  m_hLightGridBuffer;
   xiiRenderGraphBufferHandle  m_hLightIndexBuffer;
+  xiiRenderGraphBufferHandle  m_hEmissiveTriangles;
+  xiiRenderGraphBufferHandle  m_hEmissiveLightHeader;
   xiiRenderGraphTextureHandle m_hPreviousReservoir;
   xiiRenderGraphTextureHandle m_hPreviousSurface;
   xiiRenderGraphBufferHandle  m_hConstants;
@@ -3459,6 +3462,8 @@ void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGrap
   data.m_hVelocity          = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightGridBuffer   = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightIndexBuffer  = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveTriangles = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangles, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveLightHeader = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousReservoir = builder.ReadTexture(builder.ImportTexture("ReSTIRDIReservoirPrevious", lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot], lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousSurface   = builder.ReadTexture(builder.ImportTexture("ReSTIRDISurfacePrevious", lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot], lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
 
@@ -3505,6 +3510,8 @@ void xiiView::ExecuteReSTIRDITemporal(const xiiReSTIRDITemporalData& data, xiiRe
     cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hEmissiveTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hEmissiveLightHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_PreviousReservoir", context.GetTexture(data.m_hPreviousReservoir)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSurface", context.GetTexture(data.m_hPreviousSurface)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_TemporalReservoir", context.GetTexture(data.m_hTemporalReservoir)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -3521,6 +3528,8 @@ struct xiiReSTIRDISpatialData
   xiiRenderGraphTextureHandle m_hSceneDepth;
   xiiRenderGraphTextureHandle m_hGBufferNormal;
   xiiRenderGraphTextureHandle m_hTemporalReservoir;
+  xiiRenderGraphBufferHandle  m_hEmissiveTriangles;
+  xiiRenderGraphBufferHandle  m_hEmissiveLightHeader;
   xiiRenderGraphTextureHandle m_hReservoir;
   xiiRenderGraphTextureHandle m_hReservoirSurface;
 };
@@ -3533,6 +3542,8 @@ void xiiView::SetupReSTIRDISpatial(xiiReSTIRDISpatialData& data, xiiRenderGraphB
   data.m_hSceneDepth        = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal     = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hTemporalReservoir = builder.ReadTexture("ReSTIRDITemporalReservoir", xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveTriangles = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangles, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveLightHeader = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
   data.m_hReservoir         = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, lightingPasses.m_pDirectReservoirHistory[uiCurrentSlot], lightingPasses.m_pDirectReservoirHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hReservoirSurface  = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DirectLightReservoirSurface, lightingPasses.m_pDirectSurfaceHistory[uiCurrentSlot], lightingPasses.m_pDirectSurfaceHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
 
@@ -3552,6 +3563,8 @@ void xiiView::ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRend
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_TemporalReservoir", context.GetTexture(data.m_hTemporalReservoir)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hEmissiveTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hEmissiveLightHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_ReservoirOut", context.GetTexture(data.m_hReservoir)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SurfaceOut", context.GetTexture(data.m_hReservoirSurface)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -3578,6 +3591,8 @@ struct xiiDeferredDirectLightingData
   xiiRenderGraphBufferHandle        m_hLocalShadowAtlasDescriptors;
   xiiRenderGraphBufferHandle        m_hLightGridBuffer;      ///< ShaderResource in (cluster light grid).
   xiiRenderGraphBufferHandle        m_hLightIndexBuffer;     ///< ShaderResource in (cluster light indices).
+  xiiRenderGraphBufferHandle        m_hEmissiveTriangles;    ///< ShaderResource in (GPU-extracted world-space emissive triangles).
+  xiiRenderGraphBufferHandle        m_hEmissiveLightHeader;  ///< ShaderResource in (bounded triangle count and overflow state).
   xiiRenderGraphTextureHandle       m_hDirectLightReservoir; ///< ShaderResource in (spatially reused ReSTIR DI sample).
   xiiRenderGraphTextureHandle       m_hReservoirSurface;     ///< ShaderResource in (history state transition and dependency).
   xiiRenderGraphBufferHandle        m_hCloudShadowConstants; ///< ConstantBuffer in (world-space cloud shadow projection).
@@ -3675,6 +3690,8 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRender
   data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightGridBuffer             = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightIndexBuffer            = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveTriangles           = builder.ReadBuffer(m_ViewPassResources->m_LightingPasses.m_hEmissiveTriangles, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveLightHeader         = builder.ReadBuffer(m_ViewPassResources->m_LightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDirectLightReservoir        = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, xiiGALResourceStateFlags::ShaderResource);
   data.m_hReservoirSurface            = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoirSurface, xiiGALResourceStateFlags::ShaderResource);
   data.m_hCloudShadowConstants        = builder.ReadBuffer(xiiRGBlackboardKeys::k_CloudShadowConstants, xiiGALResourceStateFlags::ConstantBuffer);
@@ -3721,6 +3738,8 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
     cmd.ResolveAndSetShaderResourceTextureView("g_LocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hEmissiveTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hEmissiveLightHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LocalShadowAtlasDescs", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_DirectLightReservoir", context.GetTexture(data.m_hDirectLightReservoir)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DirectOut", context.GetTexture(data.m_hDirectLightingBuffer)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -6706,6 +6725,17 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     m_ViewPassResources->m_LightingSystem.BuildFrameData(*this, *m_pExtractedData, uiFrameIndex);
   }
 
+  xiiEmissiveLightManager::BuildDescription emissiveBuildDescription;
+  emissiveBuildDescription.m_Visibility       = mainVisibility;
+  emissiveBuildDescription.m_Geometry         = geometry;
+  emissiveBuildDescription.m_Materials        = materials;
+  emissiveBuildDescription.m_uiInstanceCount  = m_GpuSceneContext.IsInitialized() ? m_GpuSceneContext.GetDatabase().GetObjectCount() : 0U;
+  emissiveBuildDescription.m_uiVertexStride   = sizeof(xiiMeshPackedVertex);
+  emissiveBuildDescription.m_uiTexCoordOffset = static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0));
+  const xiiEmissiveLightManager::BuildOutputs emissiveLights = xiiEmissiveLightManager::AddBuildPass(graph, uiFrameIndex, emissiveBuildDescription);
+  m_ViewPassResources->m_LightingPasses.m_hEmissiveTriangles  = emissiveLights.m_hTriangles;
+  m_ViewPassResources->m_LightingPasses.m_hEmissiveLightHeader = emissiveLights.m_hHeader;
+
   xiiAtmosphereLUTHandle& hAtmosphereLUT = m_ViewPassResources->m_LightingPrepPasses.m_hAtmosphereLUT;
   hAtmosphereLUT                         = xiiAtmosphereManager::GetDefaultLUTHandle();
   if (m_pExtractedData != nullptr)
@@ -6951,7 +6981,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
     bForwardPlusDirectLighting = xiiGpuSceneRasterManager::AddForwardPlusPass(
       graph, "GPU Scene Forward Plus", hSceneDepth, hAmbientOcclusion, hRayTracedShadow, hContactShadow, hDirectReservoir,
-      hLightGrid, hLightIndices, mainVisibility, geometry, materials, *m_ViewPassResources->m_LightingSystem.BorrowSystem(), gpuRasterDescription).IsValid();
+      hLightGrid, hLightIndices, m_ViewPassResources->m_LightingPasses.m_hEmissiveTriangles,
+      m_ViewPassResources->m_LightingPasses.m_hEmissiveLightHeader, mainVisibility, geometry, materials,
+      *m_ViewPassResources->m_LightingSystem.BorrowSystem(), gpuRasterDescription).IsValid();
   }
   if (!bForwardPlusDirectLighting)
   {

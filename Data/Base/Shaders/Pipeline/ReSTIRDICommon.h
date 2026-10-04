@@ -5,15 +5,21 @@
 
 #include "LightingData.h"
 #include "PhotometricLightSampling.h"
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+
+StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles;
+StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
 
 static const uint XII_RESTIR_INVALID_LIGHT = 0xFFFFFFFFu;
+static const uint XII_RESTIR_EMISSIVE_BIT  = 0x80000000u;
+static const uint XII_RESTIR_SAMPLE_MASK   = 0x7FFFFFFFu;
 static const uint XII_RESTIR_CANDIDATES    = 8u;
 static const uint XII_RESTIR_MAX_HISTORY_M = 20u;
 static const uint XII_RESTIR_MAX_M         = 32u;
 
 struct xiiReSTIRDIReservoir
 {
-  uint  LightIndex;
+  uint  SampleIndex;
   uint  StableLightId;
   float WeightSum;
   uint  M;
@@ -38,7 +44,7 @@ float ReSTIRRandom01(inout uint state)
 xiiReSTIRDIReservoir ReSTIREmptyReservoir()
 {
   xiiReSTIRDIReservoir reservoir;
-  reservoir.LightIndex    = XII_RESTIR_INVALID_LIGHT;
+  reservoir.SampleIndex   = XII_RESTIR_INVALID_LIGHT;
   reservoir.StableLightId = 0u;
   reservoir.WeightSum     = 0.0f;
   reservoir.M             = 0u;
@@ -52,16 +58,27 @@ bool ReSTIRIsFinitePositive(float value)
 
 bool ReSTIRValidateReservoir(xiiReSTIRDIReservoir reservoir)
 {
-  if (reservoir.LightIndex >= g_ActiveLightCount || reservoir.M == 0u || reservoir.M > XII_RESTIR_MAX_M || !ReSTIRIsFinitePositive(reservoir.WeightSum))
+  if (reservoir.M == 0u || reservoir.M > XII_RESTIR_MAX_M || !ReSTIRIsFinitePositive(reservoir.WeightSum))
     return false;
 
-  return g_Lights[reservoir.LightIndex].Metadata.x == reservoir.StableLightId;
+  if ((reservoir.SampleIndex & XII_RESTIR_EMISSIVE_BIT) != 0u)
+  {
+    uint triangleCapacity, triangleStride;
+    uint headerCapacity, headerStride;
+    g_EmissiveTriangles.GetDimensions(triangleCapacity, triangleStride);
+    g_EmissiveHeader.GetDimensions(headerCapacity, headerStride);
+    const uint triangleIndex = reservoir.SampleIndex & XII_RESTIR_SAMPLE_MASK;
+    const uint triangleCount = headerCapacity > 0u ? min(g_EmissiveHeader[0].TriangleCount, triangleCapacity) : 0u;
+    return triangleIndex < triangleCount && g_EmissiveTriangles[triangleIndex].Metadata.x == reservoir.StableLightId;
+  }
+
+  return reservoir.SampleIndex < g_ActiveLightCount && g_Lights[reservoir.SampleIndex].Metadata.x == reservoir.StableLightId;
 }
 
 xiiReSTIRDIReservoir ReSTIRUnpackReservoir(uint4 packedReservoir)
 {
   xiiReSTIRDIReservoir reservoir;
-  reservoir.LightIndex    = packedReservoir.x;
+  reservoir.SampleIndex   = packedReservoir.x;
   reservoir.StableLightId = packedReservoir.y;
   reservoir.WeightSum     = asfloat(packedReservoir.z);
   reservoir.M             = packedReservoir.w;
@@ -70,10 +87,10 @@ xiiReSTIRDIReservoir ReSTIRUnpackReservoir(uint4 packedReservoir)
 
 uint4 ReSTIRPackReservoir(xiiReSTIRDIReservoir reservoir)
 {
-  return uint4(reservoir.LightIndex, reservoir.StableLightId, asuint(reservoir.WeightSum), reservoir.M);
+  return uint4(reservoir.SampleIndex, reservoir.StableLightId, asuint(reservoir.WeightSum), reservoir.M);
 }
 
-void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint lightIndex, uint stableLightId, float candidateWeight, uint candidateM, inout uint randomState)
+void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleIndex, uint stableLightId, float candidateWeight, uint candidateM, inout uint randomState)
 {
   candidateM = min(candidateM, XII_RESTIR_MAX_M - reservoir.M);
   if (candidateM == 0u)
@@ -86,7 +103,7 @@ void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint lightIndex
   reservoir.WeightSum += candidateWeight;
   if (ReSTIRRandom01(randomState) * reservoir.WeightSum <= candidateWeight)
   {
-    reservoir.LightIndex    = lightIndex;
+    reservoir.SampleIndex   = sampleIndex;
     reservoir.StableLightId = stableLightId;
   }
 }
@@ -111,9 +128,61 @@ float ReSTIREstimateTarget(xiiGpuLightData lightData, float3 worldPosition, floa
   return max(luminance * lightData.ColorAndIntensity.w * attenuation * saturate(dot(normal, pointToLight)), 0.0f);
 }
 
+uint ReSTIRGetEmissiveTriangleCount()
+{
+  uint triangleCapacity, triangleStride;
+  uint headerCapacity, headerStride;
+  g_EmissiveTriangles.GetDimensions(triangleCapacity, triangleStride);
+  g_EmissiveHeader.GetDimensions(headerCapacity, headerStride);
+  return headerCapacity > 0u ? min(g_EmissiveHeader[0].TriangleCount, triangleCapacity) : 0u;
+}
+
+float ReSTIREmissiveSolidAngle(xiiGpuEmissiveTriangle emissiveTriangle, float3 worldPosition, out float3 directionToLight)
+{
+  const float3 d0 = emissiveTriangle.Position0AndArea.xyz - worldPosition;
+  const float3 d1 = emissiveTriangle.Position1AndPowerWeight.xyz - worldPosition;
+  const float3 d2 = emissiveTriangle.Position2AndInvArea.xyz - worldPosition;
+  const float l0 = length(d0);
+  const float l1 = length(d1);
+  const float l2 = length(d2);
+  const float3 centroidDirection = (emissiveTriangle.Position0AndArea.xyz + emissiveTriangle.Position1AndPowerWeight.xyz + emissiveTriangle.Position2AndInvArea.xyz) / 3.0f - worldPosition;
+  const float centroidDistance = length(centroidDirection);
+  directionToLight = centroidDistance > 1e-5f ? centroidDirection / centroidDistance : emissiveTriangle.NormalAndTwoSided.xyz;
+  if (min(l0, min(l1, l2)) <= 1e-5f)
+    return 0.0f;
+
+  const float emitterCosine = dot(emissiveTriangle.NormalAndTwoSided.xyz, -directionToLight);
+  if (emissiveTriangle.NormalAndTwoSided.w < 0.5f && emitterCosine <= 0.0f)
+    return 0.0f;
+
+  const float3 a = d0 / l0;
+  const float3 b = d1 / l1;
+  const float3 c = d2 / l2;
+  const float numerator = abs(dot(a, cross(b, c)));
+  const float denominator = 1.0f + dot(a, b) + dot(b, c) + dot(c, a);
+  return 2.0f * atan2(numerator, denominator);
+}
+
+float ReSTIREstimateEmissiveTarget(xiiGpuEmissiveTriangle emissiveTriangle, float3 worldPosition, float3 normal)
+{
+  float3 directionToLight;
+  const float solidAngle = ReSTIREmissiveSolidAngle(emissiveTriangle, worldPosition, directionToLight);
+  return max(emissiveTriangle.RadianceAndLuminance.w * solidAngle * saturate(dot(normal, directionToLight)), 0.0f);
+}
+
+float ReSTIREstimateSampleTarget(uint sampleIndex, float3 worldPosition, float3 normal)
+{
+  if ((sampleIndex & XII_RESTIR_EMISSIVE_BIT) != 0u)
+  {
+    const uint triangleIndex = sampleIndex & XII_RESTIR_SAMPLE_MASK;
+    return triangleIndex < ReSTIRGetEmissiveTriangleCount() ? ReSTIREstimateEmissiveTarget(g_EmissiveTriangles[triangleIndex], worldPosition, normal) : 0.0f;
+  }
+  return sampleIndex < g_ActiveLightCount ? ReSTIREstimateTarget(g_Lights[sampleIndex], worldPosition, normal) : 0.0f;
+}
+
 void ReSTIRFinalizeReservoir(inout xiiReSTIRDIReservoir reservoir, float selectedTarget)
 {
-  if (reservoir.LightIndex == XII_RESTIR_INVALID_LIGHT || reservoir.M == 0u || !ReSTIRIsFinitePositive(selectedTarget))
+  if (reservoir.SampleIndex == XII_RESTIR_INVALID_LIGHT || reservoir.M == 0u || !ReSTIRIsFinitePositive(selectedTarget))
   {
     reservoir = ReSTIREmptyReservoir();
     return;

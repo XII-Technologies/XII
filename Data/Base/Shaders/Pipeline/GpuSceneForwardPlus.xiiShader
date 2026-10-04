@@ -282,11 +282,23 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   const xiiReSTIRDIReservoir reservoir = ReSTIRUnpackReservoir(g_DirectLightReservoir.Load(int3(pixel, 0)));
   if (ReSTIRValidateReservoir(reservoir))
   {
-    const xiiGpuLightData lightData = g_Lights[reservoir.LightIndex];
-    const float localShadow = EvaluateLocalShadow(reservoir.LightIndex, lightData, input.WorldPosition, N);
-    direct += EvaluateLocalLightLayered(lightData, input.WorldPosition, N, V, baseColor.rgb,
-                                        max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
-                                        transmission, clearCoat, clearCoatRoughness) * localShadow * reservoir.WeightSum;
+    if ((reservoir.SampleIndex & XII_RESTIR_EMISSIVE_BIT) != 0u)
+    {
+      const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[reservoir.SampleIndex & XII_RESTIR_SAMPLE_MASK];
+      float3 directionToLight;
+      const float solidAngle = ReSTIREmissiveSolidAngle(emissiveTriangle, input.WorldPosition, directionToLight);
+      direct += BRDFLayered(baseColor.rgb, max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
+                            transmission, clearCoat, clearCoatRoughness, N, directionToLight, V) *
+                emissiveTriangle.RadianceAndLuminance.rgb * solidAngle * reservoir.WeightSum;
+    }
+    else
+    {
+      const xiiGpuLightData lightData = g_Lights[reservoir.SampleIndex];
+      const float localShadow = EvaluateLocalShadow(reservoir.SampleIndex, lightData, input.WorldPosition, N);
+      direct += EvaluateLocalLightLayered(lightData, input.WorldPosition, N, V, baseColor.rgb,
+                                          max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
+                                          transmission, clearCoat, clearCoatRoughness) * localShadow * reservoir.WeightSum;
+    }
   }
   else
   {

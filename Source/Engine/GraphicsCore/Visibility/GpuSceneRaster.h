@@ -109,6 +109,8 @@ public:
                                                                        xiiRenderGraphTextureHandle hDirectLightReservoir,
                                                                        xiiRenderGraphBufferHandle hLightGrid,
                                                                        xiiRenderGraphBufferHandle hLightIndices,
+                                                                       xiiRenderGraphBufferHandle hEmissiveTriangles,
+                                                                       xiiRenderGraphBufferHandle hEmissiveLightHeader,
                                                                        const xiiGpuVisibilityOutputs& visibility,
                                                                        const xiiGeometryResidencyManager::UploadHandles& geometry,
                                                                        const xiiMaterialGpuStorage::UploadHandles& materials,

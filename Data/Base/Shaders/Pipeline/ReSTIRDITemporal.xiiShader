@@ -60,21 +60,36 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const uint clusterIndex = ComputeReSTIRClusterIndex(uv, depth);
   const uint2 lightRange = g_LightGrid[clusterIndex];
   const uint lightCount = min(lightRange.y, g_MaxLightsPerCluster);
+  const uint emissiveCount = ReSTIRGetEmissiveTriangleCount();
   uint randomState = ReSTIRHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x9E3779B9u);
   xiiReSTIRDIReservoir reservoir = ReSTIREmptyReservoir();
 
-  const uint candidateCount = min(lightCount, XII_RESTIR_CANDIDATES);
+  const uint candidateCount = (lightCount + emissiveCount) > 0u ? XII_RESTIR_CANDIDATES : 0u;
   [loop]
   for (uint candidate = 0u; candidate < candidateCount; ++candidate)
   {
-    const uint listIndex = min((uint)(ReSTIRRandom01(randomState) * (float)lightCount), lightCount - 1u);
-    const uint lightIndex = g_LightIndex[lightRange.x + listIndex];
-    if (lightIndex >= g_ActiveLightCount)
-      continue;
+    const bool sampleEmissive = emissiveCount > 0u && (lightCount == 0u || ReSTIRRandom01(randomState) < 0.5f);
+    if (sampleEmissive)
+    {
+      const uint triangleIndex = min((uint)(ReSTIRRandom01(randomState) * (float)emissiveCount), emissiveCount - 1u);
+      const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[triangleIndex];
+      const float target = ReSTIREstimateEmissiveTarget(emissiveTriangle, worldPosition, normal);
+      const float proposalProbability = (lightCount > 0u ? 0.5f : 1.0f) / (float)emissiveCount;
+      ReSTIRUpdateReservoir(reservoir, XII_RESTIR_EMISSIVE_BIT | triangleIndex, emissiveTriangle.Metadata.x,
+                            target / proposalProbability, 1u, randomState);
+    }
+    else if (lightCount > 0u)
+    {
+      const uint listIndex = min((uint)(ReSTIRRandom01(randomState) * (float)lightCount), lightCount - 1u);
+      const uint lightIndex = g_LightIndex[lightRange.x + listIndex];
+      if (lightIndex >= g_ActiveLightCount)
+        continue;
 
-    const xiiGpuLightData lightData = g_Lights[lightIndex];
-    const float target = ReSTIREstimateTarget(lightData, worldPosition, normal);
-    ReSTIRUpdateReservoir(reservoir, lightIndex, lightData.Metadata.x, target * (float)lightCount, 1u, randomState);
+      const xiiGpuLightData lightData = g_Lights[lightIndex];
+      const float target = ReSTIREstimateTarget(lightData, worldPosition, normal);
+      const float proposalProbability = (emissiveCount > 0u ? 0.5f : 1.0f) / (float)lightCount;
+      ReSTIRUpdateReservoir(reservoir, lightIndex, lightData.Metadata.x, target / proposalProbability, 1u, randomState);
+    }
   }
 
   // Reproject and merge the previous aggregate. Stable IDs make the history
@@ -96,15 +111,13 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     if (surfaceMatches && ReSTIRValidateReservoir(previous))
     {
       previous.M = min(previous.M, XII_RESTIR_MAX_HISTORY_M);
-      const float target = ReSTIREstimateTarget(g_Lights[previous.LightIndex], worldPosition, normal);
+      const float target = ReSTIREstimateSampleTarget(previous.SampleIndex, worldPosition, normal);
       const float aggregateWeight = target * previous.WeightSum * (float)previous.M;
-      ReSTIRUpdateReservoir(reservoir, previous.LightIndex, previous.StableLightId, aggregateWeight, previous.M, randomState);
+      ReSTIRUpdateReservoir(reservoir, previous.SampleIndex, previous.StableLightId, aggregateWeight, previous.M, randomState);
     }
   }
 
-  const float selectedTarget = reservoir.LightIndex < g_ActiveLightCount ?
-    ReSTIREstimateTarget(g_Lights[reservoir.LightIndex], worldPosition, normal) : 0.0f;
+  const float selectedTarget = ReSTIREstimateSampleTarget(reservoir.SampleIndex, worldPosition, normal);
   ReSTIRFinalizeReservoir(reservoir, selectedTarget);
   g_TemporalReservoir[pixel] = ReSTIRPackReservoir(reservoir);
 }
-
