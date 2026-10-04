@@ -1305,19 +1305,35 @@ void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
     xiiRenderGraphMergeGroup group;
     const PassEntry&         passEntry = m_Passes[compiledPass.m_uiPassIndex];
     bool                     bHasDepth = false;
-    for (const ResourceUsage& write : passEntry.m_Writes)
-    {
-      if (!write.m_bIsTexture || !IsRTOrDepth(write.m_RequiredState))
-        continue;
+    auto AddAttachment = [&](const ResourceUsage& usage) {
+      if (!usage.m_bIsTexture || !IsRTOrDepth(usage.m_RequiredState))
+        return;
 
-      const bool bDepth = write.m_RequiredState.IsAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead);
+      for (xiiUInt32 uiResourceIndex : group.m_AttachmentResourceIndices)
+      {
+        if (uiResourceIndex == usage.m_uiResourceIndex)
+          return;
+      }
+
+      const bool bDepth = usage.m_RequiredState.IsAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead);
       XII_ASSERT_DEV(!bDepth || !bHasDepth, "Graph-managed render pass '{}' declares more than one depth attachment.", compiledPass.m_sName);
       if (bDepth && bHasDepth)
-        continue;
+        return;
 
       bHasDepth |= bDepth;
-      group.m_AttachmentResourceIndices.PushBack(write.m_uiResourceIndex);
-      group.m_AttachmentStates.PushBack(write.m_RequiredState);
+      group.m_AttachmentResourceIndices.PushBack(usage.m_uiResourceIndex);
+      group.m_AttachmentStates.PushBack(usage.m_RequiredState);
+    };
+
+    // Color and writable depth attachments are graph writes. Read-only depth is a graph read but
+    // remains a native framebuffer attachment; omitting it silently disables depth testing for
+    // depth-equal G-buffer, Forward+, and transparency passes.
+    for (const ResourceUsage& write : passEntry.m_Writes)
+      AddAttachment(write);
+    for (const ResourceUsage& read : passEntry.m_Reads)
+    {
+      if (read.m_RequiredState.IsSet(xiiGALResourceStateFlags::DepthRead))
+        AddAttachment(read);
     }
 
     XII_ASSERT_DEV(!group.m_AttachmentResourceIndices.IsEmpty(), "Graph-managed render pass '{}' must declare at least one render-target or depth texture write.", compiledPass.m_sName);
