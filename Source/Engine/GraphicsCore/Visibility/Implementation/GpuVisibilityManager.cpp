@@ -17,6 +17,7 @@ public:
 
   xiiDynamicArray<Slot>      m_Slots;
   xiiDynamicArray<xiiUInt32> m_FreeSlots;
+  xiiUInt64                  m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
   bool                       m_bEngineStarted = false;
 };
 
@@ -75,6 +76,19 @@ bool xiiGpuVisibilityManager::IsSubsystemInitialized()
 bool xiiGpuVisibilityManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();
+}
+
+void xiiGpuVisibilityManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame)
+{
+  if (!IsInitialized() || s_pState->m_uiLastBeginFrame == uiFrameIndex)
+    return;
+
+  s_pState->m_uiLastBeginFrame = uiFrameIndex;
+  for (xiiGpuVisibilityManagerState::Slot& slot : s_pState->m_Slots)
+  {
+    if (slot.m_pSystem != nullptr)
+      slot.m_pSystem->BeginFrame(uiFrameIndex, uiCompletedFrame);
+  }
 }
 
 xiiGpuVisibilityContextHandle xiiGpuVisibilityManager::CreateContext(const xiiGpuVisibilityDescription& description)
@@ -181,6 +195,12 @@ xiiUInt32 xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(xiiGpuVisibilityCo
   return pSystem != nullptr ? pSystem->GetMeshDispatchGroupCountY() : 0U;
 }
 
+xiiGpuVisibilityStreamingStats xiiGpuVisibilityManager::GetStreamingStats(xiiGpuVisibilityContextHandle handle)
+{
+  const xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  return pSystem != nullptr ? pSystem->m_StreamingStats : xiiGpuVisibilityStreamingStats{};
+}
+
 void xiiGpuVisibilityManager::Startup()
 {
   XII_ASSERT_DEV(s_pState == nullptr, "GPU visibility manager started twice.");
@@ -212,6 +232,7 @@ void xiiGpuVisibilityManager::EngineShutdown()
       slot.m_uiGeneration = 1U;
     s_pState->m_FreeSlots.PushBack(uiIndex);
   }
+  s_pState->m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
   s_pState->m_bEngineStarted = false;
 }
 

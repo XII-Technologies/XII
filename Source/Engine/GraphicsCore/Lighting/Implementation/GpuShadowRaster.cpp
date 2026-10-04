@@ -296,6 +296,7 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddLocalLightPasses(
       visibilityDescription.m_sName            = visibilityName;
       visibilityDescription.m_sResourceSetName = "Local Shadow Scratch";
       visibilityDescription.m_Purpose           = xiiGpuVisibilityPurpose::Shadow;
+      visibilityDescription.m_bEnableLodFeedback = false;
       visibilityDescription.m_bAsyncCompute     = true;
       const xiiGpuVisibilityOutputs visibility = xiiGpuVisibilityManager::AddPasses(
         hVisibilityContext, graph, uiFrameIndex, hSceneContext, view, geometry, visibilityDescription);

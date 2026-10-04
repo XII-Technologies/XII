@@ -42,6 +42,10 @@ public:
   [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
 
+  /// Consumes completed asynchronous LOD readbacks for every live context before geometry
+  /// streaming is scheduled for the new frame.
+  static void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
+
   /// Creates an isolated visibility context on the current default GAL device.
   [[nodiscard]] static xiiGpuVisibilityContextHandle CreateContext(const xiiGpuVisibilityDescription& description = {});
   static void                                        DestroyContext(xiiGpuVisibilityContextHandle handle);
@@ -60,6 +64,7 @@ public:
 
   [[nodiscard]] static xiiUInt32 GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle);
   [[nodiscard]] static xiiUInt32 GetMeshDispatchGroupCountY(xiiGpuVisibilityContextHandle handle);
+  [[nodiscard]] static xiiGpuVisibilityStreamingStats GetStreamingStats(xiiGpuVisibilityContextHandle handle);
 
 private:
   static void Startup();

@@ -74,6 +74,33 @@ struct GpuMeshlet
   float4 Cone;
 };
 
+struct GpuLodFeedback
+{
+  uint Key;
+  uint GeometryGeneration;
+  uint DesiredLod;
+  uint SelectedLod;
+  uint PurposeMask;
+  uint ObjectUserData;
+  uint Priority;
+  uint Padding;
+};
+
+uint SelectDesiredLod(GpuGeometryRecord geometry, float worldSpaceRadius, float distanceToCamera, float viewportHeight)
+{
+  if (geometry.LodCount == 0u)
+    return 0xFFFFFFFFu;
+
+  const float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);
+  const uint lodCount = min(geometry.LodCount, 8u);
+  [unroll] for (uint lod = 0u; lod < lodCount; ++lod)
+  {
+    if (projectedCoverage >= geometry.Lods[lod].MinimumScreenCoverage)
+      return lod;
+  }
+  return lodCount - 1u;
+}
+
 uint SelectResidentLod(GpuGeometryRecord geometry, float worldSpaceRadius, float distanceToCamera, float viewportHeight)
 {
   float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);

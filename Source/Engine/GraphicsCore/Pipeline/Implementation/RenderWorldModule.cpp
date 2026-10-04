@@ -20,6 +20,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
@@ -584,6 +585,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   if (xiiMaterialManager::IsInitialized())
     xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  if (xiiGpuVisibilityManager::IsInitialized())
+    xiiGpuVisibilityManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
 
   // Convert extracted engine meshes into persistent, subsystem-owned GPU scene records before
   // residency streaming runs. Stable render IDs retain previous transforms across frames.

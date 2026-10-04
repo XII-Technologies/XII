@@ -1,0 +1,24 @@
+// Clears one persistent GPU LOD-feedback hash table before the first contributing view.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include "GpuSceneCommon.h"
+
+RWStructuredBuffer<GpuLodFeedback> g_LodFeedback;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint entryCount, entryStride;
+  g_LodFeedback.GetDimensions(entryCount, entryStride);
+  if (dispatchThreadId.x >= entryCount)
+    return;
+
+  GpuLodFeedback emptyEntry = (GpuLodFeedback)0;
+  g_LodFeedback[dispatchThreadId.x] = emptyEntry;
+}
