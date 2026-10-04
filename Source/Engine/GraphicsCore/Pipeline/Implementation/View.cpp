@@ -5947,6 +5947,7 @@ struct xiiScreenSpaceRefractionData
   xiiRenderGraphTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
   xiiRenderGraphTextureHandle m_hGBufferNormal;   ///< ShaderResource in (G-Buffer normal texture).
   xiiRenderGraphTextureHandle m_hGBufferMaterial; ///< ShaderResource in (material feature flags).
+  xiiRenderGraphTextureHandle m_hGBufferEmissive; ///< ShaderResource in (RGB emissive, A transmission factor).
   xiiRenderGraphTextureHandle m_hHDRIn;           ///< ShaderResource in (immutable pre-refraction HDR snapshot).
   xiiRenderGraphTextureHandle m_hHDROut;          ///< UnorderedAccess out (authoritative HDR scene color target).
   xiiRenderGraphBufferHandle  m_hConstants;       ///< ConstantBuffer in (refraction tuning parameters).
@@ -5958,6 +5959,7 @@ void xiiView::SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xii
   data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferEmissive = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferEmissive, xiiGALResourceStateFlags::ShaderResource);
   data.m_hHDRIn           = builder.ReadTexture(xiiRGBlackboardKeys::k_RefractionSceneColorInput, xiiGALResourceStateFlags::ShaderResource);
   data.m_hHDROut          = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
 
@@ -5998,6 +6000,7 @@ void xiiView::ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& d
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufEmissive", context.GetTexture(data.m_hGBufferEmissive)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_HDROut", context.GetTexture(data.m_hHDROut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();

@@ -211,6 +211,7 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   float roughness = saturate(material.EmissiveColorAndRoughness.w);
   float metallic = saturate(material.SurfaceParameters.x);
   float occlusion = 1.0f;
+  float transmission = saturate(material.SurfaceParameters.z);
 
   if (material.TextureIndices0.x != 0xFFFFFFFFu)
     baseColor *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)].Sample(g_sAnisotropicWrap, input.TexCoord), 0.0f);
@@ -227,6 +228,8 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   }
   if (material.TextureIndices1.x != 0xFFFFFFFFu)
     emissive *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)].Sample(g_sLinearWrap, input.TexCoord).rgb, 0.0f);
+  if (material.TextureIndices1.w != 0xFFFFFFFFu)
+    transmission *= saturate(g_Textures[NonUniformResourceIndex(material.TextureIndices1.w)].Sample(g_sLinearWrap, input.TexCoord).r);
 
   // xiiMaterialAlphaMode::Mask is the only deferred alpha mode. Translucent surfaces are excluded
   // by the visibility stream and rendered by their forward path.
@@ -251,7 +254,9 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   output.Albedo = float4(baseColor.rgb, occlusion);
   output.Normal = octNormal;
   output.Material = float4(max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y), featureByte);
-  output.Emissive = float4(emissive, float(material.Metadata.x));
+  // Emissive alpha carries the scalar transmission factor. Emissive composition
+  // consumes RGB only, leaving one full-precision channel for screen refraction.
+  output.Emissive = float4(emissive, transmission);
   output.NormalRoughness = float4(octNormal, max(roughness, 0.01f), saturate(material.SurfaceParameters.y));
   float2 currentNDC = input.Position.xy * InvRenderSize * 2.0f - 1.0f;
   currentNDC.y = -currentNDC.y;
