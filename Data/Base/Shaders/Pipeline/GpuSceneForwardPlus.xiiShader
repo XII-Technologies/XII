@@ -13,6 +13,7 @@ CullMode = CullMode_None
 [SHADER]
 
 #include <Shaders/Materials/GpuSurfaceMaterial.h>
+#include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 #include <Shaders/Pipeline/SurfaceLighting.h>
@@ -20,7 +21,19 @@ CullMode = CullMode_None
 StructuredBuffer<xiiGpuLightData> g_Lights;
 
 #include <Shaders/Pipeline/ReSTIRDICommon.h>
+#include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowConstants.h>
+#include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowSampling.h>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowSampling.h>
 #include <Shaders/Visibility/GpuSceneCommon.h>
+
+Texture2DArray<float> g_ShadowAtlas;
+Texture2D<float> g_ContactShadow;
+Texture2D<float> g_RTShadow;
+Texture2D<float> g_LocalShadowAtlas;
+StructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs;
+
+#include <Shaders/Pipeline/SurfaceShadowLighting.h>
 
 struct ForwardVertex
 {
@@ -181,8 +194,6 @@ StructuredBuffer<uint2> g_LightGrid;
 StructuredBuffer<uint> g_LightIndex;
 Texture2D<float4> g_Textures[];
 Texture2D<float> g_AOTerm;
-Texture2D<float> g_RTShadow;
-Texture2D<float> g_ContactShadow;
 Texture2D<uint4> g_DirectLightReservoir;
 
 float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
@@ -212,16 +223,16 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   float materialOcclusion = 1.0f;
 
   if (material.TextureIndices0.x != 0xFFFFFFFFu)
-    baseColor *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)].Sample(g_sAnisotropicWrap, input.TexCoord), 0.0f);
+    baseColor *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)].Sample(LinearSampler, input.TexCoord), 0.0f);
   if (material.TextureIndices0.z != 0xFFFFFFFFu)
   {
-    const float4 metallicRoughness = g_Textures[NonUniformResourceIndex(material.TextureIndices0.z)].Sample(g_sLinearWrap, input.TexCoord);
+    const float4 metallicRoughness = g_Textures[NonUniformResourceIndex(material.TextureIndices0.z)].Sample(LinearSampler, input.TexCoord);
     roughness *= metallicRoughness.g;
     metallic *= metallicRoughness.b;
   }
   if (material.TextureIndices0.w != 0xFFFFFFFFu)
   {
-    const float sampledOcclusion = g_Textures[NonUniformResourceIndex(material.TextureIndices0.w)].Sample(g_sLinearWrap, input.TexCoord).r;
+    const float sampledOcclusion = g_Textures[NonUniformResourceIndex(material.TextureIndices0.w)].Sample(LinearSampler, input.TexCoord).r;
     materialOcclusion = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
   if (material.Metadata.z == 1u)
@@ -230,7 +241,7 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   float3 N = normalize(input.WorldNormal) * (isFrontFace ? 1.0f : -1.0f);
   if (material.TextureIndices0.y != 0xFFFFFFFFu)
   {
-    float3 tangentNormal = g_Textures[NonUniformResourceIndex(material.TextureIndices0.y)].Sample(g_sAnisotropicWrap, input.TexCoord).xyz * 2.0f - 1.0f;
+    float3 tangentNormal = g_Textures[NonUniformResourceIndex(material.TextureIndices0.y)].Sample(LinearSampler, input.TexCoord).xyz * 2.0f - 1.0f;
     tangentNormal.xy *= material.LayerParameters.y;
     tangentNormal.z = sqrt(saturate(1.0f - dot(tangentNormal.xy, tangentNormal.xy)));
     const float3 T = normalize(input.WorldTangent);
@@ -242,9 +253,12 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   const uint2 pixel = uint2(input.Position.xy);
   const float3 V = normalize(g_CameraPositionAndNearPlane.xyz - input.WorldPosition);
   const float3 mainL = normalize(-g_MainLightDirectionAndIntensity.xyz);
-  const float screenShadow = saturate(1.0f - max(g_RTShadow.SampleLevel(g_sPointClamp, uv, 0), g_ContactShadow.SampleLevel(g_sPointClamp, uv, 0)));
+  const float cascadeShadow = EvaluateDirectionalShadow(input.WorldPosition, N, mainL, LinearizeDepth(input.Position.z));
+  const float cloudShadow = EvaluateCloudShadow(input.WorldPosition, mainL);
+  const float screenShadow = saturate(1.0f - max(g_RTShadow.SampleLevel(PointClampSampler, uv, 0), g_ContactShadow.SampleLevel(PointClampSampler, uv, 0)));
+  const float primaryShadow = cascadeShadow * cloudShadow * screenShadow;
   float3 direct = BRDF(baseColor.rgb, max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y), N, mainL, V) *
-                  g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * screenShadow;
+                  g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * primaryShadow;
 
   const uint directionalLightCount = min((uint)(g_MainLightColor.w + 0.5f), g_ActiveLightCount);
   [loop] for (uint directionalIndex = 1u; directionalIndex < directionalLightCount; ++directionalIndex)
@@ -260,8 +274,10 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   const xiiReSTIRDIReservoir reservoir = ReSTIRUnpackReservoir(g_DirectLightReservoir.Load(int3(pixel, 0)));
   if (ReSTIRValidateReservoir(reservoir))
   {
-    direct += EvaluateLocalLight(g_Lights[reservoir.LightIndex], input.WorldPosition, N, V, baseColor.rgb,
-                                 max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y)) * reservoir.WeightSum;
+    const xiiGpuLightData lightData = g_Lights[reservoir.LightIndex];
+    const float localShadow = EvaluateLocalShadow(reservoir.LightIndex, lightData, input.WorldPosition, N);
+    direct += EvaluateLocalLight(lightData, input.WorldPosition, N, V, baseColor.rgb,
+                                 max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y)) * localShadow * reservoir.WeightSum;
   }
   else
   {
@@ -275,11 +291,14 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
         continue;
       const xiiGpuLightData lightData = g_Lights[lightIndex];
       if (GetLightType(lightData) != XII_LIGHT_TYPE_DIRECTIONAL)
+      {
+        const float localShadow = EvaluateLocalShadow(lightIndex, lightData, input.WorldPosition, N);
         direct += EvaluateLocalLight(lightData, input.WorldPosition, N, V, baseColor.rgb,
-                                     max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y));
+                                     max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y)) * localShadow;
+      }
     }
   }
 
-  const float ao = g_AOTerm.SampleLevel(g_sPointClamp, uv, 0) * materialOcclusion;
+  const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0) * materialOcclusion;
   return float4(direct * ao, 1.0f);
 }
