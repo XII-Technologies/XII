@@ -22,6 +22,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiVec4   m_FrustumPlanes[6];
   xiiVec4   m_CameraPosition;
   xiiVec4   m_ViewportAndHiZ; // width, height, Hi-Z mip count, occlusion bias
+  xiiVec4   m_LodParameters;  // hysteresis, current history token, previous history token, reserved
   xiiUInt32 m_uiInstanceCount      = 0U;
   xiiUInt32 m_uiVisibilityMask     = 0xFFFFFFFFU;
   xiiUInt32 m_uiRequiredFlags      = xiiSceneObjectFlags::Enabled;
@@ -62,6 +63,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPassDescription
   xiiString                        m_sResourceSetName; ///< Optional scratch-allocation identity. Empty uses m_sName.
   xiiEnum<xiiGpuVisibilityPurpose> m_Purpose              = xiiGpuVisibilityPurpose::MainView;
   float                            m_fLodScreenScale      = 1.0f; ///< Scales projected coverage for purpose-specific LOD selection.
+  float                            m_fLodHysteresis       = 0.10f; ///< Relative dead band around LOD coverage thresholds.
   xiiUInt32                        m_uiMaxVisibleMeshlets = 0U;   ///< Zero uses the visibility context capacity.
   bool                             m_bAsyncCompute        = true;
 };
@@ -138,6 +140,10 @@ private:
   /// independently frame-sliced because masks, frusta, and Hi-Z inputs differ per pass.
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pSceneBuffers;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pViewBuffers;
+  /// One generation-validated LOD history per visibility set and frame slot. Meshlet culling
+  /// reads the preceding slot and writes the current slot, preserving queue overlap without
+  /// reading and writing the same allocation in one frame.
+  xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pLodHistoryBuffers;
   /// Last contents uploaded to each frame-in-flight scene buffer. A mirror per slot is
   /// required because consecutive CPU frames rotate across different GPU allocations.
   xiiDynamicArray<xiiDynamicArray<xiiGpuSceneInstance>> m_SceneBufferMirrors;

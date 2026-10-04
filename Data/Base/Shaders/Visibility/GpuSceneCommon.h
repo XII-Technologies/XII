@@ -28,6 +28,7 @@ struct GpuVisibilityView
   float4   FrustumPlanes[6];
   float4   CameraPosition;
   float4   ViewportAndHiZ;
+  float4   LodParameters;
   uint     InstanceCount;
   uint     VisibilityMask;
   uint     RequiredFlags;
@@ -86,6 +87,36 @@ uint SelectResidentLod(GpuGeometryRecord geometry, float worldSpaceRadius, float
       return lod;
   }
   return fallback;
+}
+
+uint SelectResidentLodWithHistory(GpuGeometryRecord geometry, float worldSpaceRadius, float distanceToCamera, float viewportHeight,
+                                  uint instanceUserData, uint4 previousHistory, uint previousHistoryToken, float hysteresis)
+{
+  const uint desiredLod = SelectResidentLod(geometry, worldSpaceRadius, distanceToCamera, viewportHeight);
+  if (desiredLod == 0xFFFFFFFFu)
+    return desiredLod;
+
+  const uint previousLod = previousHistory.x;
+  const bool historyMatches = previousHistory.w == previousHistoryToken &&
+                              previousHistory.y == geometry.Generation &&
+                              previousHistory.z == instanceUserData &&
+                              previousLod < min(geometry.LodCount, 8u) &&
+                              (geometry.ResidentLodMask & (1u << previousLod)) != 0u;
+  if (!historyMatches || previousLod == desiredLod)
+    return desiredLod;
+
+  const float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);
+  const float deadBand = clamp(hysteresis, 0.0f, 0.49f);
+  if (desiredLod < previousLod)
+  {
+    // Promote only after crossing above the finer LOD threshold plus a dead band.
+    const float promotionThreshold = geometry.Lods[desiredLod].MinimumScreenCoverage * (1.0f + deadBand);
+    return projectedCoverage >= promotionThreshold ? desiredLod : previousLod;
+  }
+
+  // Demote only after crossing below the current LOD threshold minus a dead band.
+  const float demotionThreshold = geometry.Lods[previousLod].MinimumScreenCoverage * (1.0f - deadBand);
+  return projectedCoverage < demotionThreshold ? desiredLod : previousLod;
 }
 
 bool SphereInsideFrustum(float3 center, float radius, GpuVisibilityView view)

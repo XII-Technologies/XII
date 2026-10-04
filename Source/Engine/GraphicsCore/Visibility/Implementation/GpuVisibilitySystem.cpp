@@ -9,12 +9,13 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 #include <Shaders/Visibility/GpuMeshletDispatchConstants.h>
 #include <Shaders/Visibility/GpuSceneCommandBuildConstants.h>
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiGpuVisibilityView>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiGpuVisibilityView>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -23,6 +24,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 2, xiiRTTIDefau
       XII_ARRAY_ACCESSOR_PROPERTY_READ_ONLY("FrustumPlanes", GetFrustumPlaneCount, GetFrustumPlane),
       XII_MEMBER_PROPERTY("CameraPosition", m_CameraPosition),
       XII_MEMBER_PROPERTY("ViewportAndHiZ", m_ViewportAndHiZ),
+      XII_MEMBER_PROPERTY("LodParameters", m_LodParameters),
       XII_MEMBER_PROPERTY("InstanceCount", m_uiInstanceCount),
       XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
       XII_MEMBER_PROPERTY("RequiredFlags", m_uiRequiredFlags),
@@ -41,7 +43,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGpuVisibilityPurpose, 1)
     XII_ENUM_CONSTANT(xiiGpuVisibilityPurpose::Editor),
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityPassDescription, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiGpuVisibilityPassDescription>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityPassDescription, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiGpuVisibilityPassDescription>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -49,6 +51,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityPassDescription, xiiNoBase, 3, x
       XII_MEMBER_PROPERTY("ResourceSetName", m_sResourceSetName),
       XII_ENUM_MEMBER_PROPERTY("Purpose", xiiGpuVisibilityPurpose, m_Purpose),
       XII_MEMBER_PROPERTY("LodScreenScale", m_fLodScreenScale),
+      XII_MEMBER_PROPERTY("LodHysteresis", m_fLodHysteresis)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.49f)),
       XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets),
       XII_MEMBER_PROPERTY("AsyncCompute", m_bAsyncCompute),
     } XII_END_PROPERTIES;
@@ -112,6 +115,8 @@ namespace
     xiiRenderGraphBufferHandle               m_hVisibleInstances;
     xiiRenderGraphBufferHandle               m_hVisibleInstanceCount;
     xiiRenderGraphBufferHandle               m_hDispatchArguments;
+    xiiRenderGraphBufferHandle               m_hPreviousLodHistory;
+    xiiRenderGraphBufferHandle               m_hCurrentLodHistory;
     xiiRenderGraphTextureHandle              m_hHiZ;
     xiiRenderGraphBufferHandle               m_hVisibleMeshlets;
     xiiRenderGraphBufferHandle               m_hVisibleMeshletCount;
@@ -170,7 +175,7 @@ xiiGpuVisibilitySystem::~xiiGpuVisibilitySystem() { Shutdown(); }
 xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpuVisibilityDescription& description)
 {
   Shutdown();
-  if (pDevice == nullptr || description.m_uiMaxInstances == 0U || description.m_uiMaxVisibleMeshlets == 0U || description.m_uiMaxMeshletsPerGeometry == 0U || description.m_uiMaxDrawCommands == 0U || description.m_uiFramesInFlight == 0U || description.m_uiMaxVisibilitySets == 0U)
+  if (pDevice == nullptr || description.m_uiMaxInstances == 0U || description.m_uiMaxVisibleMeshlets == 0U || description.m_uiMaxMeshletsPerGeometry == 0U || description.m_uiMaxDrawCommands == 0U || description.m_uiFramesInFlight < 2U || description.m_uiMaxVisibilitySets == 0U)
     return XII_FAILURE;
   m_Description                                    = description;
   m_pDevice                                        = pDevice;
@@ -209,6 +214,7 @@ xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpu
   const xiiUInt32 uiResourceSlotCount = description.m_uiFramesInFlight * description.m_uiMaxVisibilitySets;
   m_pSceneBuffers.SetCount(description.m_uiFramesInFlight);
   m_pViewBuffers.SetCount(uiResourceSlotCount);
+  m_pLodHistoryBuffers.SetCount(uiResourceSlotCount);
   m_SceneBufferMirrors.SetCount(description.m_uiFramesInFlight);
 
   const auto sceneDescription = MakeBuffer(description.m_uiMaxInstances * sizeof(xiiGpuSceneInstance), sizeof(xiiGpuSceneInstance), xiiGALBindFlags::ShaderResource);
@@ -248,6 +254,7 @@ void xiiGpuVisibilitySystem::Shutdown()
   m_pCommandBuildPipeline.Clear();
   m_pSceneBuffers.Clear();
   m_pViewBuffers.Clear();
+  m_pLodHistoryBuffers.Clear();
   m_SceneBufferMirrors.Clear();
   m_VisibilitySetIndices.Clear();
   m_pPreparedGraph                 = nullptr;
@@ -279,7 +286,11 @@ xiiUInt32 xiiGpuVisibilitySystem::GetOrCreateVisibilitySetIndex(xiiStringView sN
     return xiiInvalidIndex;
   }
 
-  const auto viewDescription = MakeBuffer(sizeof(xiiGpuVisibilityView), sizeof(xiiGpuVisibilityView), xiiGALBindFlags::ShaderResource);
+  const auto viewDescription       = MakeBuffer(sizeof(xiiGpuVisibilityView), sizeof(xiiGpuVisibilityView), xiiGALBindFlags::ShaderResource);
+  const auto lodHistoryDescription = MakeBuffer(m_Description.m_uiMaxInstances * sizeof(xiiVec4U32), sizeof(xiiVec4U32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
+  xiiDynamicArray<xiiVec4U32> invalidLodHistory;
+  invalidLodHistory.SetCount(m_Description.m_uiMaxInstances, xiiVec4U32(xiiInvalidIndex));
+  xiiGALBufferData lodHistoryInitialData(invalidLodHistory.GetData(), invalidLodHistory.GetCount() * sizeof(xiiVec4U32));
   for (xiiUInt32 uiFrameSlot = 0U; uiFrameSlot < m_Description.m_uiFramesInFlight; ++uiFrameSlot)
   {
     const xiiUInt32 uiResourceSlot = uiSetIndex * m_Description.m_uiFramesInFlight + uiFrameSlot;
@@ -290,6 +301,13 @@ xiiUInt32 xiiGpuVisibilitySystem::GetOrCreateVisibilitySetIndex(xiiStringView sN
     xiiStringBuilder debugName;
     debugName.SetFormat("{} GPU Visibility View [{}]", sName, uiFrameSlot);
     m_pViewBuffers[uiResourceSlot]->SetDebugName(debugName);
+
+    m_pLodHistoryBuffers[uiResourceSlot] = m_pDevice->CreateBuffer(lodHistoryDescription, &lodHistoryInitialData);
+    if (m_pLodHistoryBuffers[uiResourceSlot] == nullptr)
+      return xiiInvalidIndex;
+
+    debugName.SetFormat("{} GPU LOD History [{}]", sName, uiFrameSlot);
+    m_pLodHistoryBuffers[uiResourceSlot]->SetDebugName(debugName);
   }
 
   m_VisibilitySetIndices.Insert(name, uiSetIndex);
@@ -348,8 +366,10 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
   const xiiUInt32     uiFrameSlot          = static_cast<xiiUInt32>(uiFrameIndex % m_Description.m_uiFramesInFlight);
   const xiiUInt32     uiVisibilitySetIndex = GetOrCreateVisibilitySetIndex(sResourceSetName);
   XII_ASSERT_ALWAYS(uiVisibilitySetIndex != xiiInvalidIndex, "Failed to allocate GPU visibility resources for '{}'.", sResourceSetName);
-  const xiiUInt32                            uiResourceSlot = uiVisibilitySetIndex * m_Description.m_uiFramesInFlight + uiFrameSlot;
-  const xiiBitflags<xiiGALCommandQueueFlags> computeQueue   = description.m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
+  const xiiUInt32 uiResourceSlot         = uiVisibilitySetIndex * m_Description.m_uiFramesInFlight + uiFrameSlot;
+  const xiiUInt32 uiPreviousFrameSlot    = (uiFrameSlot + m_Description.m_uiFramesInFlight - 1U) % m_Description.m_uiFramesInFlight;
+  const xiiUInt32 uiPreviousResourceSlot = uiVisibilitySetIndex * m_Description.m_uiFramesInFlight + uiPreviousFrameSlot;
+  const xiiBitflags<xiiGALCommandQueueFlags> computeQueue = description.m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
   auto                                       makePassName       = [&description](xiiStringView sSuffix) {
     xiiStringBuilder name(description.m_sName);
     name.Append(sSuffix);
@@ -438,6 +458,14 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
   viewUpload.first->m_View.m_uiGeometryBaseIndex  = geometry.m_uiGeometryBaseIndex;
   viewUpload.first->m_View.m_uiMaxVisibleMeshlets = description.m_uiMaxVisibleMeshlets == 0U ? m_Description.m_uiMaxVisibleMeshlets : xiiMath::Min(description.m_uiMaxVisibleMeshlets, m_Description.m_uiMaxVisibleMeshlets);
   viewUpload.first->m_View.m_ViewportAndHiZ.y *= xiiMath::Max(description.m_fLodScreenScale, 0.001f);
+  constexpr xiiUInt32 uiLodHistoryTokenPeriod  = 65535U;
+  const xiiUInt32     uiCurrentLodHistoryToken  = static_cast<xiiUInt32>(uiFrameIndex % uiLodHistoryTokenPeriod);
+  const xiiUInt32     uiPreviousLodHistoryToken = (uiCurrentLodHistoryToken + uiLodHistoryTokenPeriod - 1U) % uiLodHistoryTokenPeriod;
+  viewUpload.first->m_View.m_LodParameters = xiiVec4(
+    xiiMath::Clamp(description.m_fLodHysteresis, 0.0f, 0.49f),
+    static_cast<float>(uiCurrentLodHistoryToken),
+    static_cast<float>(uiPreviousLodHistoryToken),
+    0.0f);
 
   const auto visibleDesc         = MakeBuffer(m_Description.m_uiMaxInstances * sizeof(xiiUInt32), sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
   const auto countDesc           = MakeBuffer(sizeof(xiiUInt32), sizeof(xiiUInt32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
@@ -561,6 +589,8 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       data.m_hVisibleInstances     = builder.ReadBuffer(hVisibleInstances, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVisibleInstanceCount = builder.ReadBuffer(hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
       data.m_hDispatchArguments    = builder.ReadBuffer(meshletDispatchBuild.first->m_hDispatchArguments, xiiGALResourceStateFlags::IndirectArgument);
+      data.m_hPreviousLodHistory   = builder.ReadBuffer(builder.ImportBuffer(makeResourceName(" GPU Previous LOD History"), m_pLodHistoryBuffers[uiPreviousResourceSlot], m_pLodHistoryBuffers[uiPreviousResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+      data.m_hCurrentLodHistory    = builder.WriteBuffer(builder.ImportBuffer(makeResourceName(" GPU Current LOD History"), m_pLodHistoryBuffers[uiResourceSlot], m_pLodHistoryBuffers[uiResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
       if (bUseMeshletHiZ)
         data.m_hHiZ = builder.ReadTexture(hHiZ, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVisibleMeshlets      = builder.WriteBuffer(makeResourceName(" GPU Visible Meshlets"), meshletDesc, xiiGALResourceStateFlags::UnorderedAccess);
@@ -575,10 +605,12 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       cmd.ResolveAndSetShaderResourceBufferView("g_Meshlets", context.GetBuffer(data.m_hMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_VisibleInstances", context.GetBuffer(data.m_hVisibleInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_VisibleInstanceCount", context.GetBuffer(data.m_hVisibleInstanceCount)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceBufferView("g_PreviousLodHistory", context.GetBuffer(data.m_hPreviousLodHistory)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       if (data.m_hHiZ.IsValid())
         cmd.ResolveAndSetShaderResourceTextureView("g_HiZ", context.GetTexture(data.m_hHiZ)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshlets", context.GetBuffer(data.m_hVisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_VisibleMeshletCount", context.GetBuffer(data.m_hVisibleMeshletCount)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_CurrentLodHistory", context.GetBuffer(data.m_hCurrentLodHistory)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
       cmd.DispatchComputeIndirect({context.GetBuffer(data.m_hDispatchArguments), xiiGALStateTransitionMode::None});
     });
