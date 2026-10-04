@@ -393,9 +393,14 @@ xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometr
   slot.m_GpuRecord                = {};
   slot.m_GpuRecord.m_uiGeneration = slot.m_uiGeneration;
   slot.m_GpuRecord.m_uiLodCount   = description.m_Lods.GetCount();
+  for (xiiUInt32 uiLod = 0U; uiLod < description.m_Lods.GetCount(); ++uiLod)
+    slot.m_GpuRecord.m_Lods[uiLod].m_fMinimumScreenCoverage = description.m_Lods[uiLod].m_fMinimumScreenCoverage;
   slot.m_State                    = xiiGeometryResidencyState::Unloaded;
   slot.m_bAllocated               = true;
   slot.m_uiDirtyFrameMask         = s_pState->m_uiAllFrameMask;
+  slot.m_uiRequestedLod           = description.m_Lods.GetCount() - 1U;
+  slot.m_uiVisibilityPriority     = 0U;
+  slot.m_uiFirstRequestFrame      = xiiMath::MaxValue<xiiUInt64>();
   xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaOffset, XII_ARRAY_SIZE(slot.m_uiMeshletArenaOffset));
   xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaCount, XII_ARRAY_SIZE(slot.m_uiMeshletArenaCount));
 
@@ -474,12 +479,19 @@ void xiiGeometryResidencyManager::ReleaseMeshGeometry(const xiiMeshResourceHandl
   UnregisterGeometry(hGeometry, uiFrameIndex);
 }
 
-void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex)
+void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority)
 {
   if (!IsValid(handle)) return;
-  Slot& slot             = s_pState->m_Slots[handle.m_uiIndex];
-  slot.m_uiLastUsedFrame = uiFrameIndex;
-  slot.m_uiRequestedLod  = xiiMath::Min(uiMinimumLod, slot.m_Description.m_Lods.GetCount() - 1U);
+  Slot&           slot           = s_pState->m_Slots[handle.m_uiIndex];
+  const xiiUInt32 uiRequestedLod = xiiMath::Min(uiMinimumLod, slot.m_Description.m_Lods.GetCount() - 1U);
+  slot.m_uiLastUsedFrame         = xiiMath::Max(slot.m_uiLastUsedFrame, uiFrameIndex);
+
+  // Once streaming has started, later shadow or reflection requests must not replace a finer
+  // main/sensor request. A fresh unloaded slot still accepts its initial coarse request.
+  if (slot.m_State == xiiGeometryResidencyState::Unloaded || slot.m_State == xiiGeometryResidencyState::Failed)
+    slot.m_uiRequestedLod = uiRequestedLod;
+  else
+    slot.m_uiRequestedLod = xiiMath::Min(slot.m_uiRequestedLod, uiRequestedLod);
 
   bool bRequiresStreaming = false;
   for (xiiUInt32 i = slot.m_uiRequestedLod; i < slot.m_Description.m_Lods.GetCount(); ++i)
@@ -494,7 +506,12 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
   // A resident geometry may receive a finer request later. Keep the existing LODs live while
   // loading the missing range; BuildResidentRecord commits the additions transactionally.
   if (bRequiresStreaming && slot.m_State != xiiGeometryResidencyState::EvictPending)
+  {
+    if (slot.m_State != xiiGeometryResidencyState::Requested && slot.m_State != xiiGeometryResidencyState::Loading)
+      slot.m_uiFirstRequestFrame = uiFrameIndex;
+    slot.m_uiVisibilityPriority = xiiMath::Max(slot.m_uiVisibilityPriority, uiVisibilityPriority);
     slot.m_State = xiiGeometryResidencyState::Requested;
+  }
 }
 
 void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex)
@@ -635,6 +652,8 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
   slot.m_GpuRecord        = record;
   slot.m_State            = xiiGeometryResidencyState::Resident;
   slot.m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
+  slot.m_uiVisibilityPriority = 0U;
+  slot.m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
   return true;
 }
 
@@ -758,14 +777,20 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
     }
   }
 
-  // Streaming priority is the primary authoring control. Recency breaks equal-priority ties so
-  // actively visible content wins a constrained upload budget, while the slot index keeps the
-  // schedule deterministic for captures and simulation replay.
-  streamingQueue.Sort([](xiiUInt32 lhsIndex, xiiUInt32 rhsIndex) {
+  // Authoring priority remains the primary control. Within that tier, visibility priority favors
+  // main/sensor demand and bounded request aging prevents lower-priority views from starving.
+  // Recency and slot index retain deterministic tie-breaking for captures and simulation replay.
+  streamingQueue.Sort([uiFrameIndex](xiiUInt32 lhsIndex, xiiUInt32 rhsIndex) {
     const Slot& lhs = s_pState->m_Slots[lhsIndex];
     const Slot& rhs = s_pState->m_Slots[rhsIndex];
     if (lhs.m_Description.m_uiStreamingPriority != rhs.m_Description.m_uiStreamingPriority)
       return lhs.m_Description.m_uiStreamingPriority > rhs.m_Description.m_uiStreamingPriority;
+    const xiiUInt64 lhsAge = lhs.m_uiFirstRequestFrame == xiiMath::MaxValue<xiiUInt64>() ? 0U : uiFrameIndex - xiiMath::Min(uiFrameIndex, lhs.m_uiFirstRequestFrame);
+    const xiiUInt64 rhsAge = rhs.m_uiFirstRequestFrame == xiiMath::MaxValue<xiiUInt64>() ? 0U : uiFrameIndex - xiiMath::Min(uiFrameIndex, rhs.m_uiFirstRequestFrame);
+    const xiiUInt64 lhsVisibilityScore = static_cast<xiiUInt64>(lhs.m_uiVisibilityPriority) + xiiMath::Min<xiiUInt64>(lhsAge, 0xFFFFU);
+    const xiiUInt64 rhsVisibilityScore = static_cast<xiiUInt64>(rhs.m_uiVisibilityPriority) + xiiMath::Min<xiiUInt64>(rhsAge, 0xFFFFU);
+    if (lhsVisibilityScore != rhsVisibilityScore)
+      return lhsVisibilityScore > rhsVisibilityScore;
     if (lhs.m_uiLastUsedFrame != rhs.m_uiLastUsedFrame)
       return lhs.m_uiLastUsedFrame > rhs.m_uiLastUsedFrame;
     return lhsIndex < rhsIndex;
