@@ -4950,11 +4950,11 @@ void xiiView::ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGrap
   cmd.EndDebugGroup();
 }
 
-////////// GPU Forward Opaque Data //////////
+////////// GPU Opaque Lighting Composite Data //////////
 //
 // Collects all GPU resources related to the forward opaque pass.
 
-struct xiiForwardOpaqueData
+struct xiiOpaqueLightingCompositeData
 {
   XII_DECLARE_POD_TYPE();
 
@@ -4966,7 +4966,7 @@ struct xiiForwardOpaqueData
   xiiRenderGraphTextureHandle m_hHDRSceneColor;        ///< UnorderedAccess out (base scene radiance before reflection tier replacement).
 };
 
-void xiiView::SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRenderGraphBuilder& builder)
+void xiiView::SetupOpaqueLightingComposite(xiiOpaqueLightingCompositeData& data, xiiRenderGraphBuilder& builder)
 {
   data.m_hDirectLighting       = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hIndirectLighting     = builder.ReadTexture(xiiRGBlackboardKeys::k_IndirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
@@ -4985,16 +4985,16 @@ void xiiView::SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRenderGraphBuild
   data.m_hHDRSceneColor     = builder.WriteTexture(xiiRGBlackboardKeys::k_HDRSceneColor, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   builder.SetPassAllowMerge(false);
-  xiiView::EnsureComputePipeline(m_ViewPassResources->m_ForwardPasses.m_pForwardOpaquePipeline, "Shaders/Pipeline/OpaqueComposite.xiiShader");
+  xiiView::EnsureComputePipeline(m_ViewPassResources->m_ForwardPasses.m_pOpaqueLightingCompositePipeline, "Shaders/Pipeline/OpaqueComposite.xiiShader");
 }
 
-void xiiView::ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRenderGraphPassContext& context)
+void xiiView::ExecuteOpaqueLightingComposite(const xiiOpaqueLightingCompositeData& data, xiiRenderGraphPassContext& context)
 {
   xiiGALCommandList& cmd = context.GetCommandList();
 
-  cmd.BeginDebugGroup("ForwardOpaque");
+  cmd.BeginDebugGroup("OpaqueLightingComposite");
   {
-    cmd.SetPipelineState(m_ViewPassResources->m_ForwardPasses.m_pForwardOpaquePipeline);
+    cmd.SetPipelineState(m_ViewPassResources->m_ForwardPasses.m_pOpaqueLightingCompositePipeline);
     cmd.ResolveAndSetShaderResourceTextureView("g_DirectLight", context.GetTexture(data.m_hDirectLighting)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_IndirectLight", context.GetTexture(data.m_hIndirectLighting)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_Emissive", context.GetTexture(data.m_hGBufferEmissive)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -5003,46 +5003,6 @@ void xiiView::ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRenderGr
     cmd.ResolveAndSetUnorderedAccessTextureView("g_HDROut", context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
-  }
-  cmd.EndDebugGroup();
-}
-
-////////// GPU Forward Masked Data //////////
-//
-// Collects all GPU resources related to the forward masked pass.
-
-struct xiiForwardMaskedData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiRenderGraphTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
-  xiiRenderGraphTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
-  xiiRenderGraphBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
-};
-
-void xiiView::SetupForwardMasked(xiiForwardMaskedData& data, xiiRenderGraphBuilder& builder)
-{
-  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
-  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
-
-  builder.SetPassAllowMerge(true);
-}
-
-void xiiView::ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRenderGraphPassContext& context)
-{
-  xiiGALCommandList& cmd = context.GetCommandList();
-
-  cmd.BeginDebugGroup("ForwardMasked");
-  {
-    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(GetRenderResolutionWidth()), static_cast<float>(GetRenderResolutionHeight()), 0.0f, 1.0f});
-
-    if (m_ViewPassResources->m_ForwardPasses.m_pForwardMaskedPipeline && data.m_hDrawIndirectCommands.IsValid())
-    {
-      cmd.SetPipelineState(m_ViewPassResources->m_ForwardPasses.m_pForwardMaskedPipeline);
-      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(GetBlackboard())});
-    }
   }
   cmd.EndDebugGroup();
 }
@@ -7007,9 +6967,8 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiVolumetricFogResolveData>("VolumetricFogResolve", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogResolve, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogResolve, this));
   graph.AddPass<xiiVolumetricFogTemporalReprojectionData>("VolumetricFogTemporalRep", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogTemporalReprojection, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogTemporalReprojection, this));
 
-  // Forward rendering passes, which composite main scene color from lighting buffers and forward geometry.
-  graph.AddPass<xiiForwardOpaqueData>("ForwardOpaque", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupForwardOpaque, this), xiiMakeDelegate(&xiiView::ExecuteForwardOpaque, this));
-  graph.AddPass<xiiForwardMaskedData>("ForwardMasked", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupForwardMasked, this), xiiMakeDelegate(&xiiView::ExecuteForwardMasked, this));
+  // Composite the selected opaque lighting path with indirect, emissive, near-field GI, and volumetrics.
+  graph.AddPass<xiiOpaqueLightingCompositeData>("OpaqueLightingComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOpaqueLightingComposite, this), xiiMakeDelegate(&xiiView::ExecuteOpaqueLightingComposite, this));
   graph.AddPass<xiiHairRenderingData>("HairRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupHairRendering, this), xiiMakeDelegate(&xiiView::ExecuteHairRendering, this));
   graph.AddPass<xiiWaterRenderingData>("WaterRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupWaterRendering, this), xiiMakeDelegate(&xiiView::ExecuteWaterRendering, this));
   graph.AddPass<xiiSubsurfaceScatteringData>("SubsurfaceScattering", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSubsurfaceScattering, this), xiiMakeDelegate(&xiiView::ExecuteSubsurfaceScattering, this));

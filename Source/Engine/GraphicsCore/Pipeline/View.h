@@ -103,8 +103,7 @@ struct xiiVolumetricFogTemporalReprojectionData;
 struct xiiAtmosphereCompositeData;
 struct xiiSensorOutputData;
 
-struct xiiForwardOpaqueData;
-struct xiiForwardMaskedData;
+struct xiiOpaqueLightingCompositeData;
 struct xiiHairRenderingData;
 struct xiiWaterRenderingData;
 struct xiiSubsurfaceScatteringData;
@@ -467,11 +466,8 @@ private:
   void ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRenderGraphPassContext& context);
-
-  void SetupForwardMasked(xiiForwardMaskedData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRenderGraphPassContext& context);
+  void SetupOpaqueLightingComposite(xiiOpaqueLightingCompositeData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteOpaqueLightingComposite(const xiiOpaqueLightingCompositeData& data, xiiRenderGraphPassContext& context);
 
   void SetupHairRendering(xiiHairRenderingData& data, xiiRenderGraphBuilder& builder);
   void ExecuteHairRendering(const xiiHairRenderingData& data, xiiRenderGraphPassContext& context);
@@ -743,8 +739,7 @@ private:
     //  Stage 7 - Forward Passes
     struct ForwardPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pForwardOpaquePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pForwardMaskedPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pOpaqueLightingCompositePipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pHairPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pWaterPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pSSSComputePipeline; // screen-space SSS blur

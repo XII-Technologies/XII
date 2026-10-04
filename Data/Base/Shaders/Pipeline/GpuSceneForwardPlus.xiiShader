@@ -220,7 +220,6 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   float4 baseColor = max(material.BaseColorOpacity, 0.0f);
   float roughness = saturate(material.EmissiveColorAndRoughness.w);
   float metallic = saturate(material.SurfaceParameters.x);
-  float materialOcclusion = 1.0f;
 
   if (material.TextureIndices0.x != 0xFFFFFFFFu)
     baseColor *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)].Sample(LinearSampler, input.TexCoord), 0.0f);
@@ -229,11 +228,6 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
     const float4 metallicRoughness = g_Textures[NonUniformResourceIndex(material.TextureIndices0.z)].Sample(LinearSampler, input.TexCoord);
     roughness *= metallicRoughness.g;
     metallic *= metallicRoughness.b;
-  }
-  if (material.TextureIndices0.w != 0xFFFFFFFFu)
-  {
-    const float sampledOcclusion = g_Textures[NonUniformResourceIndex(material.TextureIndices0.w)].Sample(LinearSampler, input.TexCoord).r;
-    materialOcclusion = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
   if (material.Metadata.z == 1u)
     clip(baseColor.a - material.LayerParameters.x);
@@ -299,6 +293,6 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
     }
   }
 
-  const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0) * materialOcclusion;
+  const float ao = g_AOTerm.SampleLevel(PointClampSampler, uv, 0);
   return float4(direct * ao, 1.0f);
 }

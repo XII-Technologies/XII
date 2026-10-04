@@ -51,7 +51,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPath
 
     ENUM_COUNT,
 
-    Default = Deferred
+    Default = ForwardPlus
   };
 };
 
