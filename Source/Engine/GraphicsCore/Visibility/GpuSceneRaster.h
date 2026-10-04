@@ -11,6 +11,8 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
 
+class xiiLightingSystem;
+
 /// Describes one GPU-scene mesh-shader depth rasterization.
 struct XII_GRAPHICSCORE_DLL xiiGpuSceneDepthRasterDescription
 {
@@ -75,6 +77,7 @@ public:
   [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
   [[nodiscard]] static bool IsSupported();
+  [[nodiscard]] static bool IsForwardPlusSupported();
 
   /// Adds a reversed-Z depth prepass and returns the produced depth version. Invalid input or a
   /// device without mesh shaders returns an invalid handle so callers can select an indexed fallback.
@@ -94,6 +97,23 @@ public:
                                                                 const xiiGeometryResidencyManager::UploadHandles& geometry,
                                                                 const xiiMaterialGpuStorage::UploadHandles& materials,
                                                                 const xiiGpuSceneGBufferRasterDescription& description);
+
+  /// Shades the compact visibility stream directly with the clustered light lists and canonical
+  /// surface records. The returned texture contains direct HDR radiance and can replace the
+  /// deferred direct-lighting result when the caller's selected Forward+ feature set is supported.
+  [[nodiscard]] static xiiRenderGraphTextureHandle AddForwardPlusPass(xiiRenderGraph& graph, xiiStringView sName,
+                                                                       xiiRenderGraphTextureHandle hSceneDepth,
+                                                                       xiiRenderGraphTextureHandle hAmbientOcclusion,
+                                                                       xiiRenderGraphTextureHandle hRayTracedShadow,
+                                                                       xiiRenderGraphTextureHandle hContactShadow,
+                                                                       xiiRenderGraphTextureHandle hDirectLightReservoir,
+                                                                       xiiRenderGraphBufferHandle hLightGrid,
+                                                                       xiiRenderGraphBufferHandle hLightIndices,
+                                                                       const xiiGpuVisibilityOutputs& visibility,
+                                                                       const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                                       const xiiMaterialGpuStorage::UploadHandles& materials,
+                                                                       const xiiLightingSystem& lightingSystem,
+                                                                       const xiiGpuSceneGBufferRasterDescription& description);
 
 private:
   static void Startup();
