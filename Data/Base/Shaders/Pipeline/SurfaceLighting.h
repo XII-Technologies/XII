@@ -31,7 +31,7 @@ float3 F_Schlick(float3 f0, float VoH)
 }
 
 float3 BRDFLayered(float3 albedo, float roughness, float metallic, float dielectricSpecular,
-                   float clearCoat, float clearCoatRoughness, float3 N, float3 L, float3 V)
+                   float transmission, float clearCoat, float clearCoatRoughness, float3 N, float3 L, float3 V)
 {
   const float3 f0   = lerp((0.08f * saturate(dielectricSpecular)).xxx, albedo, metallic);
   const float3 H    = normalize(V + L);
@@ -43,7 +43,7 @@ float3 BRDFLayered(float3 albedo, float roughness, float metallic, float dielect
   const float D     = D_GGX(NoH, roughness);
   const float G     = G_SmithGGX(NoV, NoL, roughness);
   const float3 spec = (D * G * F) / max(4.0f * NoV * NoL, 1e-7f);
-  const float3 diff = (1.0f - F) * (1.0f - metallic) * albedo / 3.14159265f;
+  const float3 diff = (1.0f - F) * (1.0f - metallic) * (1.0f - saturate(transmission)) * albedo / 3.14159265f;
   const float3 baseLayer = (diff + spec) * NoL;
 
   // A dielectric coat sits above the base layer. Its Fresnel both contributes a
@@ -62,7 +62,7 @@ float3 BRDFLayered(float3 albedo, float roughness, float metallic, float dielect
 
 float3 BRDF(float3 albedo, float roughness, float metallic, float dielectricSpecular, float3 N, float3 L, float3 V)
 {
-  return BRDFLayered(albedo, roughness, metallic, dielectricSpecular, 0.0f, 0.1f, N, L, V);
+  return BRDFLayered(albedo, roughness, metallic, dielectricSpecular, 0.0f, 0.0f, 0.1f, N, L, V);
 }
 
 // FiniteAreaLight.h intentionally consumes the canonical BRDF and photometric
@@ -71,12 +71,12 @@ float3 BRDF(float3 albedo, float roughness, float metallic, float dielectricSpec
 
 float3 EvaluateLocalLightLayered(xiiGpuLightData lightData, float3 worldPos, float3 N, float3 V,
                                  float3 albedo, float roughness, float metallic, float dielectricSpecular,
-                                 float clearCoat, float clearCoatRoughness)
+                                 float transmission, float clearCoat, float clearCoatRoughness)
 {
   const uint lightType = GetLightType(lightData);
 
   if (lightType >= XII_LIGHT_TYPE_RECTANGLE)
-    return EvaluateFiniteAreaLight(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, clearCoat, clearCoatRoughness);
+    return EvaluateFiniteAreaLight(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness);
 
   const float3 representativePosition = GetRepresentativeLightPosition(lightData, worldPos);
   const float3 toLight                 = representativePosition - worldPos;
@@ -91,13 +91,13 @@ float3 EvaluateLocalLightLayered(xiiGpuLightData lightData, float3 worldPos, flo
   attenuation *= GetPhotometricEmitterScale(lightData, L);
 
   const float3 radiance = lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation;
-  return BRDFLayered(albedo, roughness, metallic, dielectricSpecular, clearCoat, clearCoatRoughness, N, L, V) * radiance;
+  return BRDFLayered(albedo, roughness, metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness, N, L, V) * radiance;
 }
 
 float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, float3 V,
                           float3 albedo, float roughness, float metallic, float dielectricSpecular)
 {
-  return EvaluateLocalLightLayered(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, 0.0f, 0.1f);
+  return EvaluateLocalLightLayered(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, 0.0f, 0.0f, 0.1f);
 }
 
 uint ComputeClusterIndex(float2 uv, float depth)

@@ -89,9 +89,9 @@ void main(uint3 tid : SV_DispatchThreadID)
     refractColor.g = g_HDRIn.SampleLevel(g_sLinearClamp, gUV, 0).g;
     refractColor.b = g_HDRIn.SampleLevel(g_sLinearClamp, bUV, 0).b;
 
-    // Preserve the opaque surface response for partial transmission. The direct
-    // specular lobe remains in the foreground while transmitted radiance replaces
-    // only the material's authored transmissive fraction.
+    // Direct and indirect lighting already remove the authored transmissive
+    // fraction from their diffuse lobes. Add the corresponding background
+    // radiance here while retaining foreground specular reflection.
     const float3 surfaceColor = g_HDRIn.Load(int3(tid.xy, 0)).rgb;
-    g_HDROut[tid.xy] = float4(lerp(surfaceColor, refractColor, transmission), 1.0f);
+    g_HDROut[tid.xy] = float4(surfaceColor + refractColor * transmission, 1.0f);
 }

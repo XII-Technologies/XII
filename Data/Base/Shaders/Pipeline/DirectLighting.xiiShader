@@ -23,6 +23,7 @@ StructuredBuffer<xiiGpuLightData> g_Lights;
 Texture2D<float4>      g_GBufAlbedo;
 Texture2D<float2>      g_GBufNormal;
 Texture2D<float4>      g_GBufMaterial;
+Texture2D<float4>      g_GBufEmissive;
 Texture2D<float>       g_SceneDepth;
 Texture2DArray<float>  g_ShadowAtlas;
 Texture2D<float>       g_ContactShadow;
@@ -56,6 +57,8 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float4 albedoA = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0);
     const float2 octNorm = g_GBufNormal.SampleLevel(PointClampSampler, uv, 0);
     const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0);
+    const uint materialFlags = (uint)round(saturate(material.a) * 255.0f);
+    const float transmission = (materialFlags & (1u << 6u)) != 0u ? saturate(g_GBufEmissive.SampleLevel(PointClampSampler, uv, 0).a) : 0.0f;
     const float rtShadow = g_RTShadow.SampleLevel(PointClampSampler, uv, 0);
     const float contactShadow = g_ContactShadow.SampleLevel(PointClampSampler, uv, 0);
 
@@ -71,7 +74,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float cascadeShadow = EvaluateDirectionalShadow(worldPos, N, mainL, LinearizeDepth(depth));
     const float cloudShadow = EvaluateCloudShadow(worldPos, mainL);
     const float globalShadow = cascadeShadow * cloudShadow * saturate(1.0f - max(rtShadow, contactShadow));
-    float3 direct = BRDF(albedo, roughness, metallic, dielectricSpecular, N, mainL, V) * g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * globalShadow;
+    float3 direct = BRDFLayered(albedo, roughness, metallic, dielectricSpecular, transmission, 0.0f, 0.1f, N, mainL, V) * g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * globalShadow;
 
     // Directional lights occupy a deterministic prefix of the GPU light
     // stream. Only entry zero owns the shared sun shadow resources; secondary
@@ -86,7 +89,7 @@ void main(uint3 tid : SV_DispatchThreadID)
 
         const float3 directionToLight = normalize(-directionalLight.DirectionAndType.xyz);
         const float3 radiance = directionalLight.ColorAndIntensity.rgb * directionalLight.ColorAndIntensity.w;
-        direct += BRDF(albedo, roughness, metallic, dielectricSpecular, N, directionToLight, V) * radiance;
+        direct += BRDFLayered(albedo, roughness, metallic, dielectricSpecular, transmission, 0.0f, 0.1f, N, directionToLight, V) * radiance;
     }
 
     const xiiReSTIRDIReservoir reservoir = ReSTIRUnpackReservoir(g_DirectLightReservoir.Load(int3(tid.xy, 0)));
@@ -94,7 +97,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     {
         const xiiGpuLightData lightData = g_Lights[reservoir.LightIndex];
         const float localShadow = EvaluateLocalShadow(reservoir.LightIndex, lightData, worldPos, N);
-        direct += EvaluateLocalLight(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular) * localShadow * reservoir.WeightSum;
+        direct += EvaluateLocalLightLayered(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, transmission, 0.0f, 0.1f) * localShadow * reservoir.WeightSum;
     }
     else
     {
@@ -114,7 +117,7 @@ void main(uint3 tid : SV_DispatchThreadID)
             if (GetLightType(lightData) != XII_LIGHT_TYPE_DIRECTIONAL)
             {
                 const float localShadow = EvaluateLocalShadow(lightIndex, lightData, worldPos, N);
-                direct += EvaluateLocalLight(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular) * localShadow;
+                direct += EvaluateLocalLightLayered(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, transmission, 0.0f, 0.1f) * localShadow;
             }
         }
     }

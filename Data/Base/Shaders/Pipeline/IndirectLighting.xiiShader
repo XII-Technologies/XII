@@ -14,6 +14,7 @@ ALL
 Texture2D<float2> g_GBufNormal;
 Texture2D<float4> g_GBufMaterial;
 Texture2D<float4> g_GBufAlbedo;
+Texture2D<float4> g_GBufEmissive;
 Texture2D<float>  g_SceneDepth;
 Texture2D<float>  g_AOTerm;
 Texture2D<float2> g_BRDFLut;
@@ -124,6 +125,8 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float roughness = clamp(material.r, 0.02f, 1.0f);
     const float metallic = saturate(material.g);
     const float dielectricSpecular = saturate(material.b);
+    const uint materialFlags = (uint)round(saturate(material.a) * 255.0f);
+    const float transmission = (materialFlags & (1u << 6u)) != 0u ? saturate(g_GBufEmissive.SampleLevel(PointClampSampler, uv, 0.0f).a) : 0.0f;
     // Authored occlusion and the dynamic screen-space term describe independent
     // visibility losses, so combine them for diffuse and specular environment light.
     const float ao = saturate(g_AOTerm.SampleLevel(PointClampSampler, uv, 0.0f) * albedoAndMaterialOcclusion.a);
@@ -138,7 +141,7 @@ void main(uint3 tid : SV_DispatchThreadID)
     const float4 sparseVoxelSample = g_SparseVoxelIrradiance.SampleLevel(LinearClampSampler, uv, 0.0f);
     const float3 farFieldIrradiance = lerp(max(g_AmbientLightColor.rgb, 0.0f), max(sparseVoxelSample.rgb, 0.0f), saturate(sparseVoxelSample.a));
     const float3 probeIrradiance = lerp(farFieldIrradiance, max(ddgiSample.rgb, 0.0f), saturate(ddgiSample.a));
-    const float3 diffuse = probeIrradiance * albedo * (1.0f - metallic) * (1.0f / 3.14159265f);
+    const float3 diffuse = probeIrradiance * albedo * (1.0f - metallic) * (1.0f - transmission) * (1.0f / 3.14159265f);
 
     // Local captures form reflection Tier 2. Their influence fades into the
     // atmosphere fallback; SSR and traced reflections are composited later.
