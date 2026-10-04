@@ -219,6 +219,8 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   float4 baseColor = max(material.BaseColorOpacity, 0.0f);
   float roughness = saturate(material.EmissiveColorAndRoughness.w);
   float metallic = saturate(material.SurfaceParameters.x);
+  float clearCoat = saturate(material.LayerParameters.z);
+  float clearCoatRoughness = saturate(material.LayerParameters.w);
 
   if (material.TextureIndices0.x != 0xFFFFFFFFu)
     baseColor *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)].Sample(LinearSampler, input.TexCoord), 0.0f);
@@ -227,6 +229,14 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
     const float4 metallicRoughness = g_Textures[NonUniformResourceIndex(material.TextureIndices0.z)].Sample(LinearSampler, input.TexCoord);
     roughness *= metallicRoughness.g;
     metallic *= metallicRoughness.b;
+  }
+  if (material.TextureIndices1.z != 0xFFFFFFFFu)
+  {
+    // The clear-coat texture stores coat weight in R and an optional roughness
+    // modulation in G, keeping the canonical material record bindless.
+    const float2 coatSample = g_Textures[NonUniformResourceIndex(material.TextureIndices1.z)].Sample(LinearSampler, input.TexCoord).rg;
+    clearCoat *= coatSample.r;
+    clearCoatRoughness *= coatSample.g;
   }
   if (material.Metadata.z == 1u)
     clip(baseColor.a - material.LayerParameters.x);
@@ -250,7 +260,8 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   const float cloudShadow = EvaluateCloudShadow(input.WorldPosition, mainL);
   const float screenShadow = saturate(1.0f - max(g_RTShadow.SampleLevel(PointClampSampler, uv, 0), g_ContactShadow.SampleLevel(PointClampSampler, uv, 0)));
   const float primaryShadow = cascadeShadow * cloudShadow * screenShadow;
-  float3 direct = BRDF(baseColor.rgb, max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y), N, mainL, V) *
+  float3 direct = BRDFLayered(baseColor.rgb, max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
+                              clearCoat, clearCoatRoughness, N, mainL, V) *
                   g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * primaryShadow;
 
   const uint directionalLightCount = min((uint)(g_MainLightColor.w + 0.5f), g_ActiveLightCount);
@@ -260,7 +271,8 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
     if (GetLightType(lightData) != XII_LIGHT_TYPE_DIRECTIONAL)
       break;
     const float3 L = normalize(-lightData.DirectionAndType.xyz);
-    direct += BRDF(baseColor.rgb, max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y), N, L, V) *
+    direct += BRDFLayered(baseColor.rgb, max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
+                          clearCoat, clearCoatRoughness, N, L, V) *
               lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w;
   }
 
@@ -269,8 +281,9 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
   {
     const xiiGpuLightData lightData = g_Lights[reservoir.LightIndex];
     const float localShadow = EvaluateLocalShadow(reservoir.LightIndex, lightData, input.WorldPosition, N);
-    direct += EvaluateLocalLight(lightData, input.WorldPosition, N, V, baseColor.rgb,
-                                 max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y)) * localShadow * reservoir.WeightSum;
+    direct += EvaluateLocalLightLayered(lightData, input.WorldPosition, N, V, baseColor.rgb,
+                                        max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
+                                        clearCoat, clearCoatRoughness) * localShadow * reservoir.WeightSum;
   }
   else
   {
@@ -286,8 +299,9 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
       if (GetLightType(lightData) != XII_LIGHT_TYPE_DIRECTIONAL)
       {
         const float localShadow = EvaluateLocalShadow(lightIndex, lightData, input.WorldPosition, N);
-        direct += EvaluateLocalLight(lightData, input.WorldPosition, N, V, baseColor.rgb,
-                                     max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y)) * localShadow;
+        direct += EvaluateLocalLightLayered(lightData, input.WorldPosition, N, V, baseColor.rgb,
+                                            max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
+                                            clearCoat, clearCoatRoughness) * localShadow;
       }
     }
   }
