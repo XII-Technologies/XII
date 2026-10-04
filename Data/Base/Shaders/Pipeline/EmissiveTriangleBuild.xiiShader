@@ -1,0 +1,195 @@
+// XII Engine - GPU emissive triangle extraction from canonical scene data.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Materials/GpuSurfaceMaterial.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+#include <Shaders/Visibility/GpuSceneCommon.h>
+
+StructuredBuffer<GpuSceneInstance>      g_SceneInstances;
+StructuredBuffer<GpuGeometryRecord>     g_Geometry;
+StructuredBuffer<GpuMeshlet>            g_Meshlets;
+StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
+ByteAddressBuffer                       g_Buffers[];
+Texture2D<float4>                       g_Textures[];
+RWStructuredBuffer<xiiGpuEmissiveTriangle> g_EmissiveTriangles;
+RWStructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
+
+uint LoadByte(ByteAddressBuffer source, uint byteOffset)
+{
+  const uint word = source.Load(byteOffset & ~3u);
+  return (word >> ((byteOffset & 3u) * 8u)) & 0xFFu;
+}
+
+uint HashEmissiveId(uint objectId, uint geometryGeneration, uint sourcePrimitive, uint materialIndex)
+{
+  uint value = objectId ^ (geometryGeneration * 0x9E3779B9u);
+  value ^= sourcePrimitive + 0x85EBCA6Bu + (value << 6u) + (value >> 2u);
+  value ^= materialIndex + 0xC2B2AE35u + (value << 6u) + (value >> 2u);
+  value ^= value >> 16u;
+  value *= 0x7FEB352Du;
+  value ^= value >> 15u;
+  value *= 0x846CA68Bu;
+  return value ^ (value >> 16u);
+}
+
+bool ReserveTriangle(out uint destination)
+{
+  uint triangleCapacity, triangleStride;
+  uint headerCapacity, headerStride;
+  g_EmissiveTriangles.GetDimensions(triangleCapacity, triangleStride);
+  g_EmissiveHeader.GetDimensions(headerCapacity, headerStride);
+  triangleCapacity = min(triangleCapacity, MaxTriangleCount);
+  if (triangleCapacity == 0u || headerCapacity == 0u)
+  {
+    destination = 0u;
+    return false;
+  }
+
+  for (;;)
+  {
+    const uint currentCount = g_EmissiveHeader[0].TriangleCount;
+    if (currentCount >= triangleCapacity)
+    {
+      uint ignored;
+      InterlockedAdd(g_EmissiveHeader[0].OverflowCount, 1u, ignored);
+      destination = 0u;
+      return false;
+    }
+
+    uint observedCount;
+    InterlockedCompareExchange(g_EmissiveHeader[0].TriangleCount, currentCount, currentCount + 1u, observedCount);
+    if (observedCount == currentCount)
+    {
+      destination = currentCount;
+      return true;
+    }
+  }
+}
+
+[numthreads(128, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_GroupID)
+{
+  uint sceneCount, sceneStride;
+  uint geometryCount, geometryStride;
+  uint meshletCount, meshletStride;
+  uint materialCount, materialStride;
+  uint headerCount, headerStride;
+  g_SceneInstances.GetDimensions(sceneCount, sceneStride);
+  g_Geometry.GetDimensions(geometryCount, geometryStride);
+  g_Meshlets.GetDimensions(meshletCount, meshletStride);
+  g_SurfaceMaterials.GetDimensions(materialCount, materialStride);
+  g_EmissiveHeader.GetDimensions(headerCount, headerStride);
+  if (headerCount == 0u)
+    return;
+
+  const uint instanceIndex = groupId.y + groupId.z * 65535u;
+  if (instanceIndex >= min(InstanceCount, sceneCount))
+    return;
+
+  const GpuSceneInstance instance = g_SceneInstances[instanceIndex];
+  if (GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - GeometryBaseIndex ||
+      instance.MaterialIndex == 0xFFFFFFFFu || MaterialBaseIndex >= materialCount || instance.MaterialIndex >= materialCount - MaterialBaseIndex)
+    return;
+
+  const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
+  uint lodIndex = 0xFFFFFFFFu;
+  [unroll] for (uint lod = 0u; lod < min(geometry.LodCount, 8u); ++lod)
+  {
+    if ((geometry.ResidentLodMask & (1u << lod)) != 0u)
+    {
+      lodIndex = lod;
+      break;
+    }
+  }
+  if (lodIndex == 0xFFFFFFFFu)
+    return;
+
+  const GpuGeometryLod lod = geometry.Lods[lodIndex];
+  const uint localMeshlet = groupId.x;
+  if (localMeshlet >= min(lod.MeshletCount, MaxMeshletCount) || lod.MeshletMetadataOffset >= meshletCount || localMeshlet >= meshletCount - lod.MeshletMetadataOffset)
+    return;
+
+  const GpuMeshlet meshlet = g_Meshlets[lod.MeshletMetadataOffset + localMeshlet];
+  const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  const uint vertexCount = meshlet.PackedPrimitiveVertexCount >> 16u;
+  const uint localPrimitive = dispatchThreadId.x - groupId.x * 128u;
+  if (localPrimitive >= primitiveCount || localPrimitive >= 128u || vertexCount == 0u ||
+      lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletRemapBufferIndex == 0xFFFFFFFFu || lod.MeshletPrimitiveBufferIndex == 0xFFFFFFFFu)
+    return;
+
+  const uint sourcePrimitive = meshlet.Header.x + localPrimitive;
+  if (instance.PrimitiveCount != 0u && (sourcePrimitive < instance.FirstPrimitive || sourcePrimitive - instance.FirstPrimitive >= instance.PrimitiveCount))
+    return;
+
+  uint vertexBufferBytes, remapBufferBytes, primitiveBufferBytes;
+  g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
+  g_Buffers[lod.MeshletRemapBufferIndex].GetDimensions(remapBufferBytes);
+  g_Buffers[lod.MeshletPrimitiveBufferIndex].GetDimensions(primitiveBufferBytes);
+  const uint primitiveOffset = meshlet.Header.z + localPrimitive * 3u;
+  if (primitiveOffset > primitiveBufferBytes || 3u > primitiveBufferBytes - primitiveOffset ||
+      meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y)
+    return;
+
+  const uint3 localIndices = uint3(
+    LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset),
+    LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
+    LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
+  if (any(localIndices >= vertexCount))
+    return;
+
+  const uint3 sourceVertices = uint3(
+    g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + localIndices.x) * 4u),
+    g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + localIndices.y) * 4u),
+    g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + localIndices.z) * 4u));
+  const uint3 vertexOffsets = sourceVertices * VertexStride;
+  const uint lastAttributeEnd = max(12u, TexCoordOffset + 8u);
+  if (VertexStride < lastAttributeEnd || any(vertexOffsets > vertexBufferBytes) ||
+      any(lastAttributeEnd > vertexBufferBytes - vertexOffsets))
+    return;
+
+  const float3 p0 = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.x)), 1.0f)).xyz;
+  const float3 p1 = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.y)), 1.0f)).xyz;
+  const float3 p2 = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.z)), 1.0f)).xyz;
+  const float3 areaVector = cross(p1 - p0, p2 - p0);
+  const float doubleArea = length(areaVector);
+  const float area = 0.5f * doubleArea;
+  if (!isfinite(area) || area <= 1e-10f)
+    return;
+
+  const xiiGpuSurfaceMaterial material = g_SurfaceMaterials[MaterialBaseIndex + instance.MaterialIndex];
+  float3 radiance = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
+  if (material.TextureIndices1.x != 0xFFFFFFFFu)
+  {
+    const float2 uv0 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.x + TexCoordOffset));
+    const float2 uv1 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.y + TexCoordOffset));
+    const float2 uv2 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.z + TexCoordOffset));
+    radiance *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)].SampleLevel(g_sLinearWrap, (uv0 + uv1 + uv2) / 3.0f, 0.0f).rgb, 0.0f);
+  }
+  const float luminance = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
+  if (!isfinite(luminance) || luminance <= 0.0f)
+    return;
+
+  uint ignored;
+  InterlockedAdd(g_EmissiveHeader[0].CandidateCount, 1u, ignored);
+  uint destination;
+  if (!ReserveTriangle(destination))
+    return;
+
+  xiiGpuEmissiveTriangle emissiveTriangle;
+  emissiveTriangle.Position0AndArea = float4(p0, area);
+  emissiveTriangle.Position1AndPowerWeight = float4(p1, area * luminance);
+  emissiveTriangle.Position2AndInvArea = float4(p2, rcp(area));
+  emissiveTriangle.NormalAndTwoSided = float4(areaVector / doubleArea, (material.Metadata.y & (1u << 10u)) != 0u ? 1.0f : 0.0f);
+  emissiveTriangle.RadianceAndLuminance = float4(radiance, luminance);
+  emissiveTriangle.Metadata = uint4(HashEmissiveId(instance.UserData, geometry.Generation, sourcePrimitive, instance.MaterialIndex),
+                                    instanceIndex, sourcePrimitive, instance.MaterialIndex);
+  g_EmissiveTriangles[destination] = emissiveTriangle;
+}
