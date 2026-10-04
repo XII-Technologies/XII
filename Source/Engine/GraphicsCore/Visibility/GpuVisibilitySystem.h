@@ -150,6 +150,7 @@ private:
   xiiSharedPtr<xiiGALComputePipelineState>              m_pHiZOcclusionPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletDispatchBuildPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletCullPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletHiZCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pCommandBuildPipeline;
   xiiGpuHiZPyramid                                      m_HiZHistory;
   xiiUInt32                                             m_uiLargestReportedInstanceCount = 0U;

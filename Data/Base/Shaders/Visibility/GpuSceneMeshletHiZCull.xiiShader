@@ -1,0 +1,10 @@
+// Stage three with temporal Hi-Z rejection for static meshlets.
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#define XII_GPU_SCENE_MESHLET_HIZ 1
+#include "GpuSceneMeshletCull.h"
