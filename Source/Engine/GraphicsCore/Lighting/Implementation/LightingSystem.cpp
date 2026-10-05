@@ -69,7 +69,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiReSTIRDIQualityPreset, 1)
     xiiReSTIRDIQualityPreset::Ultra, xiiReSTIRDIQualityPreset::Custom)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 8, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 9, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -102,6 +102,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 8, xiiRTTI
     XII_ENUM_MEMBER_PROPERTY("ReSTIRDIQualityPreset", xiiReSTIRDIQualityPreset, m_ReSTIRDIQualityPreset),
     XII_MEMBER_PROPERTY("ReSTIRDIEmissiveVisibilitySamples", m_uiReSTIRDIEmissiveVisibilitySamples)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(4U)),
     XII_MEMBER_PROPERTY("ReSTIRDIEmissiveBinaryRefreshPeriod", m_uiReSTIRDIEmissiveBinaryRefreshPeriod)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(2U)),
+    XII_MEMBER_PROPERTY("ReSTIRDIEmissiveVisibilityHistoryWeight", m_fReSTIRDIEmissiveVisibilityHistoryWeight)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.99f), new xiiDefaultValueAttribute(0.75f)),
+    XII_MEMBER_PROPERTY("ReSTIRDIEmissiveVisibilityReactiveThreshold", m_fReSTIRDIEmissiveVisibilityReactiveThreshold)->AddAttributes(new xiiClampValueAttribute(0.05f, 1.0f), new xiiDefaultValueAttribute(0.35f)),
     XII_MEMBER_PROPERTY("ReSTIRDIFreshCandidateCount", m_uiReSTIRDIFreshCandidateCount)->AddAttributes(new xiiClampValueAttribute(1U, 32U), new xiiDefaultValueAttribute(8U)),
     XII_MEMBER_PROPERTY("ReSTIRDITemporalHistoryM", m_uiReSTIRDITemporalHistoryM)->AddAttributes(new xiiClampValueAttribute(1U, 32U), new xiiDefaultValueAttribute(20U)),
     XII_MEMBER_PROPERTY("ReSTIRDISpatialNeighborCount", m_uiReSTIRDISpatialNeighborCount)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(4U)),
@@ -146,6 +148,8 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
     case xiiReSTIRDIQualityPreset::Integrated:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 1U;
       m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 4U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.90f;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.50f;
       m_Settings.m_uiReSTIRDIFreshCandidateCount          = 4U;
       m_Settings.m_uiReSTIRDITemporalHistoryM             = 8U;
       m_Settings.m_uiReSTIRDISpatialNeighborCount         = 2U;
@@ -154,6 +158,8 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
     case xiiReSTIRDIQualityPreset::Balanced:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 2U;
       m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 3U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.85f;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.40f;
       m_Settings.m_uiReSTIRDIFreshCandidateCount          = 6U;
       m_Settings.m_uiReSTIRDITemporalHistoryM             = 12U;
       m_Settings.m_uiReSTIRDISpatialNeighborCount         = 3U;
@@ -162,6 +168,8 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
     case xiiReSTIRDIQualityPreset::High:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 4U;
       m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 2U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.75f;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.35f;
       m_Settings.m_uiReSTIRDIFreshCandidateCount          = 8U;
       m_Settings.m_uiReSTIRDITemporalHistoryM             = 20U;
       m_Settings.m_uiReSTIRDISpatialNeighborCount         = 4U;
@@ -170,6 +178,8 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
     case xiiReSTIRDIQualityPreset::Ultra:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 8U;
       m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 1U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.60f;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.25f;
       m_Settings.m_uiReSTIRDIFreshCandidateCount          = 16U;
       m_Settings.m_uiReSTIRDITemporalHistoryM             = 32U;
       m_Settings.m_uiReSTIRDISpatialNeighborCount         = 8U;
@@ -259,6 +269,9 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
     xiiMath::Clamp(m_Settings.m_uiReSTIRDITemporalHistoryM, 1U, 32U),
     xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialNeighborCount, 1U, 8U),
     xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialRadius, 1U, 8U));
+  m_GlobalConstants.m_ReSTIRDIStabilitySettings = xiiVec4(
+    xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight, 0.0f, 0.99f),
+    xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold, 0.05f, 1.0f), 0.0f, 0.0f);
 
   float     fBestDirectionalIntensity = -1.0f;
   xiiUInt32 uiBestDirectionalLightId  = xiiInvalidIndex;

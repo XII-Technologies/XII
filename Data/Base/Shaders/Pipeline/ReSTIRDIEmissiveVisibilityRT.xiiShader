@@ -50,7 +50,7 @@ float ReSTIREmissiveVisibilityRandom01(uint value)
 float3 ReSTIRSampleEmissiveTriangle(uint sampleIndex, uint sampleCount, float2 rotation)
 {
   // A Cranley-Patterson rotated low-discrepancy sequence avoids coherent
-  // penumbra bands while remaining stable for a receiver and emitter revision.
+  // penumbra bands. The per-frame rotation converges under temporal reuse.
   const float2 xi = frac(float2(((float)sampleIndex + 0.5f) / (float)sampleCount,
                                 ((float)sampleIndex + 0.5f) * 0.61803398875f) + rotation);
   const float sqrtU = sqrt(xi.x);
@@ -128,7 +128,8 @@ void main()
     const float3 normal = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
     const float3 origin = worldPosition + normal * 0.002f;
     const uint sampleSeed = ReSTIREmissiveVisibilityHash(packedReservoir.y ^ (packedRevision * 0x9E3779B9u) ^
-                                                         (pixel.x * 0x85EBCA6Bu) ^ (pixel.y * 0xC2B2AE35u));
+                                                         (pixel.x * 0x85EBCA6Bu) ^ (pixel.y * 0xC2B2AE35u) ^
+                                                         (g_FrameIndex * 0x27D4EB2Du));
     const float2 rotation = float2(ReSTIREmissiveVisibilityRandom01(sampleSeed),
                                    ReSTIREmissiveVisibilityRandom01(sampleSeed ^ 0x68BC21EBu));
     float visibleSolidAngleWeight = 0.0f;
@@ -148,6 +149,15 @@ void main()
       totalSolidAngleWeight += sampleWeight;
     }
     visibility = totalSolidAngleWeight > 0.0f ? visibleSolidAngleWeight / totalSolidAngleWeight : 0.0f;
+    if (visibilityValid)
+    {
+      const float historyVisibility = (float)previousVisibility * (1.0f / 255.0f);
+      const float visibilityDelta = abs(visibility - historyVisibility);
+      const float reactiveThreshold = clamp(g_ReSTIRDIStabilitySettings.y, 0.05f, 1.0f);
+      const float historyWeight = visibilityDelta >= reactiveThreshold ? 0.0f :
+        clamp(g_ReSTIRDIStabilitySettings.x, 0.0f, 0.99f);
+      visibility = lerp(visibility, historyVisibility, historyWeight);
+    }
   }
 
   const uint quantizedVisibility = (uint)round(saturate(visibility) * 255.0f);

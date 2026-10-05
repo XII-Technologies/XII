@@ -77,6 +77,8 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   xiiEnum<xiiReSTIRDIQualityPreset> m_ReSTIRDIQualityPreset;
   xiiUInt32 m_uiReSTIRDIEmissiveVisibilitySamples = 4U; ///< Rays per selected emissive triangle when visibility is refreshed.
   xiiUInt32 m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 2U; ///< Frames between interleaved refreshes of fully lit/occluded samples.
+  float     m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.75f;
+  float     m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.35f;
   xiiUInt32 m_uiReSTIRDIFreshCandidateCount        = 8U;
   xiiUInt32 m_uiReSTIRDITemporalHistoryM           = 20U;
   xiiUInt32 m_uiReSTIRDISpatialNeighborCount       = 4U;
@@ -220,6 +222,7 @@ private:
     xiiVec4   m_RenderScaleJitter = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
     xiiVec4U32 m_ReSTIRDISettings = xiiVec4U32(4U, 2U, 0U, 0U);
     xiiVec4U32 m_ReSTIRDIReuseSettings = xiiVec4U32(8U, 20U, 4U, 2U);
+    xiiVec4   m_ReSTIRDIStabilitySettings = xiiVec4(0.75f, 0.35f, 0.0f, 0.0f);
   };
 
   void EnsureGpuResources();
