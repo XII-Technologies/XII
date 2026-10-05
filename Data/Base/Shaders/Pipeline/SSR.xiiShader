@@ -16,52 +16,87 @@ ALL
 Texture2D<float>    g_SceneDepth;
 Texture2D<float2>   g_GBufNormal;
 Texture2D<float4>   g_GBufMaterial; // r=roughness
-Texture2D<float>    g_HiZPyramid;
+Texture2D<float>    g_HiZClosest;
+Texture2D<float>    g_HiZFarthest;
 Texture2D<float4>   g_HDRScene;
 Texture2D<float4>   g_GBufAlbedo;
 Texture2D<float2>   g_BRDFLut;
 RWTexture2D<float4> g_SSROut;
 
-// Intersect ray with screen using a Hi-Z accelerated DDA.
-bool TraceHiZ(float3 rayOriginNDC, float3 rayDirNDC, float thickness,
-              uint maxSteps, uint mipCount, out float2 hitUV, out float hitDepth)
+// Intersect a projected ray segment against the conservative closest/farthest
+// scene-depth interval stored by each Hi-Z cell. All comparisons happen in
+// linear view depth; reversed-Z values are used only for hierarchy storage.
+bool TraceHiZ(float3 rayOriginNDC, float3 rayDirNDC, float thickness, float roughness,
+              uint maxSteps, uint mipCount, float3 worldRayOrigin,
+              out float2 hitUV, out float hitDepth, out float hitTravel, out float hitQuality)
 {
     hitUV    = float2(0,0);
     hitDepth = 0.0f;
+    hitTravel = 0.0f;
+    hitQuality = 0.0f;
 
     float3 pos = rayOriginNDC;
-    float step = 0.005f;
+    float step = 0.0025f;
     uint mip   = 0u;
 
     for (uint i = 0u; i < maxSteps; ++i)
     {
-        pos += rayDirNDC * step;
-        float2 uv = pos.xy * float2(0.5f, -0.5f) + 0.5f;
-        if (any(uv < 0.0f) || any(uv > 1.0f)) return false;
+        // Bound each projected step to one cell at the selected mip. Sampling
+        // only the endpoint of a segment that spans several cells can skip a
+        // thin foreground interval even when the depth bounds are conservative.
+        const float cellSpanNDC = 2.0f * exp2((float)mip) * min(InvResolution.x, InvResolution.y);
+        const float projectedRate = max(max(abs(rayDirNDC.x), abs(rayDirNDC.y)), 1e-4f);
+        const float traceStep = min(step, max(cellSpanNDC / projectedRate, 1e-5f));
+        const float3 candidate = pos + rayDirNDC * traceStep;
+        const float2 uv = candidate.xy * float2(0.5f, -0.5f) + 0.5f;
+        if (any(uv <= 0.0f) || any(uv >= 1.0f) || candidate.z <= 0.0f || candidate.z > 1.0f)
+            return false;
 
-        // Sample the reversed-Z closest-depth (maximum) hierarchy.
-        float pyramidDepth = g_HiZPyramid.SampleLevel(PointClampSampler, uv, float(mip));
-
-        // A ray depth smaller than the closest depth is behind a potential
-        // surface. Descend and backtrack until mip zero confirms the hit;
-        // while the ray is closer than the closest surface, the entire cell is
-        // safe to skip and traversal can become coarser.
-        if (pos.z <= pyramidDepth)
+        const float closestDepth = g_HiZClosest.SampleLevel(PointClampSampler, uv, float(mip));
+        if (closestDepth <= 0.0f)
         {
-            if (mip == 0u && pyramidDepth - pos.z < thickness)
+            pos = candidate;
+            step = min(traceStep * 1.5f, max(StrideZCutoff, 0.01f));
+            mip = min(mip + 1u, mipCount - 1u);
+            continue;
+        }
+
+        const float farthestDepth = g_HiZFarthest.SampleLevel(PointClampSampler, uv, float(mip));
+        const float sceneNear = LinearizeDepth(closestDepth);
+        const float sceneFar = farthestDepth > 0.0f ? LinearizeDepth(farthestDepth) : g_CameraForwardAndFarPlane.w;
+        const float rayDepth0 = LinearizeDepth(max(pos.z, 1e-7f));
+        const float rayDepth1 = LinearizeDepth(candidate.z);
+        const float segmentNear = min(rayDepth0, rayDepth1);
+        const float segmentFar = max(rayDepth0, rayDepth1);
+        const float3 candidateWorld = ReconstructWorldPos(uv, candidate.z);
+        const float candidateTravel = length(candidateWorld - worldRayOrigin);
+
+        // Convert the authored relative thickness into metres and expand it by
+        // the rough reflection cone. This avoids a fixed NDC tolerance that
+        // becomes either too thin at distance or excessively thick nearby.
+        const float linearThickness = max(thickness * max(sceneNear, 1.0f), 0.002f) +
+                                      roughness * roughness * candidateTravel * 0.02f;
+        const bool overlapsDepthInterval = segmentFar >= sceneNear - linearThickness &&
+                                           segmentNear <= sceneFar + linearThickness;
+        if (overlapsDepthInterval)
+        {
+            const float depthError = abs(rayDepth1 - sceneNear);
+            if (mip == 0u && depthError <= linearThickness)
             {
                 hitUV    = uv;
-                hitDepth = pyramidDepth;
+                hitDepth = closestDepth;
+                hitTravel = candidateTravel;
+                hitQuality = saturate(1.0f - depthError / max(linearThickness, 1e-5f));
                 return true;
             }
 
-            pos -= rayDirNDC * step;
-            step = max(step * 0.5f, 1e-5f);
+            step = max(traceStep * 0.5f, 1e-5f);
             if (mip > 0u) mip--;
         }
         else
         {
-            step *= 1.5f;
+            pos = candidate;
+            step = min(traceStep * 1.5f, max(StrideZCutoff, 0.01f));
             mip = min(mip + 1u, mipCount - 1u);
         }
     }
@@ -104,19 +139,29 @@ void main(uint3 tid : SV_DispatchThreadID)
     float3 ndcEnd   = clipEnd.xyz / clipEnd.w;
     float3 rayDir   = normalize(ndcEnd - ndcOrg);
 
-    float2 hitUV; float hitDepth;
-    bool hit = TraceHiZ(ndcOrg, rayDir, Thickness, MaxSteps, HiZMipCount, hitUV, hitDepth);
+    float2 hitUV;
+    float hitDepth;
+    float hitTravel;
+    float hitQuality;
+    bool hit = TraceHiZ(ndcOrg, rayDir, Thickness, roughness, MaxSteps, HiZMipCount,
+                        worldPos, hitUV, hitDepth, hitTravel, hitQuality);
 
     if (hit)
     {
-        // Fade at screen edges and by roughness.
+        // Confidence combines independent failure modes so the hybrid
+        // composite can hand uncertain pixels to hardware RT or probes.
         float2 edgeFade = saturate(float2(8,8) * min(hitUV, 1.0f - hitUV));
-        float  conf     = edgeFade.x * edgeFade.y * (1.0f - roughness / max(MaxRoughness, 1e-4f));
+        const float3 hitNormal = DecodeOctNormal(g_GBufNormal.SampleLevel(PointClampSampler, hitUV, 0.0f));
+        const float facingConfidence = saturate(dot(hitNormal, -R) * 4.0f);
+        const float travelConfidence = saturate(1.0f - hitTravel / 50.0f);
+        const float roughnessConfidence = saturate(1.0f - roughness / max(MaxRoughness, 1e-4f));
+        const float conf = edgeFade.x * edgeFade.y * facingConfidence * travelConfidence * roughnessConfidence * hitQuality;
 
         // Resolve the hit immediately. RGB is scene-referred radiance and alpha
         // is confidence, which lets the hybrid reflection composite blend into
         // ray tracing and local/sky probes without interpreting packed UVs.
-        float3 hitRadiance = max(g_HDRScene.SampleLevel(LinearClampSampler, hitUV, roughness * 4.0f).rgb, 0.0f);
+        const float radianceMip = roughness * 4.0f + 0.25f * log2(1.0f + hitTravel);
+        float3 hitRadiance = max(g_HDRScene.SampleLevel(LinearClampSampler, hitUV, radianceMip).rgb, 0.0f);
         float3 albedo = g_GBufAlbedo.SampleLevel(PointClampSampler, uv, 0.0f).rgb;
         const float4 material = g_GBufMaterial.SampleLevel(PointClampSampler, uv, 0.0f);
         float metallic = saturate(material.g);
