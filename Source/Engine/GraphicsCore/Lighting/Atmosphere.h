@@ -41,6 +41,7 @@ struct XII_GRAPHICSCORE_DLL xiiAtmosphereSettings
   xiiVec3   m_vPlanetUpDirection              = xiiVec3(0.0f, 0.0f, 1.0f);
   float     m_fGroundAltitudeMeters           = 0.0f;
   float     m_fMiePhaseG                      = 0.8f;
+  float     m_fSunLimbDarkening               = 0.6f;
   xiiUInt32 m_uiTransmittanceIntegrationSteps = 40U;
   xiiUInt32 m_uiMultiScatterSqrtSamples       = 8U;
   xiiUInt32 m_uiSkyViewIntegrationSteps       = 16U;

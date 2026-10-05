@@ -11,6 +11,8 @@
   #define XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER LinearClampSampler
 #endif
 
+#include <Shaders/Pipeline/Passes/Atmosphere/SunDisk.h>
+
 float xiiAtmosphereRayleighPhase(float cosine)
 {
   return (3.0f / (16.0f * 3.14159265359f)) * (1.0f + cosine * cosine);
@@ -67,11 +69,8 @@ float3 xiiEvaluateAtmosphereRadiance(float3 worldPosition, float3 rayDirection)
              max(PlanetAtmosphereRadiiScaleHeights.y - PlanetAtmosphereRadiiScaleHeights.x, 1e-4f)));
   radiance += g_MultiScatter.SampleLevel(XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER, multiScatterUV, 0.0f).rgb * solarIlluminance * pathLength * viewTransmittance;
 
-  const float sourceRadius = saturate(g_DirectionalShadowSourceRadius);
-  if (sourceRadius > 1e-5f && scatteringCosine > sqrt(max(1.0f - sourceRadius * sourceRadius, 0.0f)))
-  {
-    radiance += solarIlluminance * viewTransmittance / max(3.14159265359f * sourceRadius * sourceRadius, 1e-6f);
-  }
+  radiance += xiiEvaluateSunDiskRadiance(rayDirection, sunDirection, g_DirectionalShadowSourceRadius,
+                                        SunDiskParameters.x, solarIlluminance, viewTransmittance);
 
   return max(radiance, 0.0f);
 }

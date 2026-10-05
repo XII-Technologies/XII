@@ -12,6 +12,7 @@ ALL
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
+#include <Shaders/Pipeline/Passes/Atmosphere/SunDisk.h>
 
 Texture2D<float>    g_SceneDepth;
 Texture2D<float4>   g_Transmittance; // precomputed LUT
@@ -137,13 +138,11 @@ void main(uint3 tid : SV_DispatchThreadID)
     IntegrateAtmosphereSegment(atmosphereRayOrigin, V, pathLengthKm, sunDirection, cosTheta, solarIlluminance,
                                isSky ? clamp(SampleCounts.z, 1u, 64u) : clamp(SampleCounts.w, 1u, 64u), viewTransmittance, sky);
 
-    // A uniform emitter disc converts authored illuminance (lux) to radiance.
-    float sourceRadius = saturate(g_DirectionalShadowSourceRadius);
-    if (isSky && sourceRadius > 1e-5f && cosTheta > sqrt(max(1.0f - sourceRadius * sourceRadius, 0.0f)))
+    if (isSky)
     {
-        float projectedSolidAngle = 3.14159265f * sourceRadius * sourceRadius;
         const float3 sunTransmittance = SampleTransmittance(cameraHeightKm, cosSunZenith);
-        sky += solarIlluminance * sunTransmittance / max(projectedSolidAngle, 1e-6f);
+        sky += xiiEvaluateSunDiskRadiance(V, sunDirection, g_DirectionalShadowSourceRadius,
+                                         SunDiskParameters.x, solarIlluminance, sunTransmittance);
     }
 
     float4 existing = g_HDRScene[tid.xy];
