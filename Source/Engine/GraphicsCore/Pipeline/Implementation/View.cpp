@@ -7599,7 +7599,7 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
   const xiiUInt32 uiDeviceRecursionDepth = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth);
   pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = xiiMath::Clamp(
     xiiMath::Min(m_ViewPassResources->m_LightingSystem.GetSettings().m_uiRTGIMaxPathHits, 2U) + 1U, 1U, xiiMath::Min(3U, uiDeviceRecursionDepth));
-  pipelineDescription.m_uiMaximumPayloadSize                     = 32U;
+  pipelineDescription.m_uiMaximumPayloadSize                     = 40U;
   pipelineDescription.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
 
   auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();

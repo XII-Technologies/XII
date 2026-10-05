@@ -17,6 +17,8 @@ struct xiiGlobalIlluminationPayload
   uint   BounceDepth;
   uint   RayType;
   uint   PathFlags;
+  float  RayConeWidth;
+  float  RayConeSpread;
 };
 
 static const uint XII_RTGI_RAY_TYPE_PATH       = 0u;
@@ -72,6 +74,12 @@ void main()
     const float3 worldPos = ReconstructWorldPos(uv, depth);
     const float3 normal   = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
     const float3 albedo   = max(g_GBufferAlbedo.Load(int3(pixel, 0)).rgb, 0.0f);
+    const float2 pixelSize = rcp(float2(dimensions));
+    const float2 adjacentXUV = uv + float2(pixel.x + 1u < dimensions.x ? pixelSize.x : -pixelSize.x, 0.0f);
+    const float2 adjacentYUV = uv + float2(0.0f, pixel.y + 1u < dimensions.y ? pixelSize.y : -pixelSize.y);
+    const float primaryFootprint = max(length(ReconstructWorldPos(adjacentXUV, depth) - worldPos),
+                                       length(ReconstructWorldPos(adjacentYUV, depth) - worldPos));
+    const float cameraDistance = max(length(worldPos - g_CameraPositionAndNearPlane.xyz), 1e-3f);
     uint randomState = RTGIHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x9E3779B9u);
     const float2 randomSample = float2(RTGIRandom01(randomState), RTGIRandom01(randomState));
 
@@ -88,6 +96,8 @@ void main()
     payload.BounceDepth = 0u;
     payload.RayType = XII_RTGI_RAY_TYPE_PATH;
     payload.PathFlags = 0u;
+    payload.RayConeWidth = primaryFootprint;
+    payload.RayConeSpread = primaryFootprint / cameraDistance;
     TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
     result = float4(albedo * max(payload.Radiance, 0.0f), payload.Confidence);
   }
@@ -122,6 +132,25 @@ StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
 
+float4 SampleRTGIMaterialTexture(uint textureIndex, float2 texCoord, float worldTriangleArea,
+                                 float uvTriangleArea, float rayConeWidth)
+{
+  const uint resourceIndex = NonUniformResourceIndex(textureIndex);
+  uint textureWidth;
+  uint textureHeight;
+  uint mipCount;
+  g_RayTracingTextures[resourceIndex].GetDimensions(0u, textureWidth, textureHeight, mipCount);
+
+  // Ratios of doubled triangle areas preserve UV-to-world texel density while
+  // avoiding two unnecessary 0.5 factors.
+  const float texelsPerWorldUnit = sqrt(max(uvTriangleArea * (float)(textureWidth * textureHeight) /
+                                                max(worldTriangleArea, 1e-12f),
+                                              1e-12f));
+  const float mipLevel = clamp(log2(max(rayConeWidth * texelsPerWorldUnit, 1.0f)),
+                               0.0f, (float)max(mipCount, 1u) - 1.0f);
+  return g_RayTracingTextures[resourceIndex].SampleLevel(g_sAnisotropicWrap, texCoord, mipLevel);
+}
+
 float TraceRTGIVisibility(float3 worldPosition, float3 worldNormal, float3 direction, float maximumDistance, uint bounceDepth)
 {
   if (g_RTGISettings.z == 0u || maximumDistance <= 0.002f)
@@ -140,6 +169,8 @@ float TraceRTGIVisibility(float3 worldPosition, float3 worldNormal, float3 direc
   visibilityPayload.BounceDepth = bounceDepth;
   visibilityPayload.RayType = XII_RTGI_RAY_TYPE_VISIBILITY;
   visibilityPayload.PathFlags = 0u;
+  visibilityPayload.RayConeWidth = 0.0f;
+  visibilityPayload.RayConeSpread = 0.0f;
   TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
            0xFFU, 0U, 1U, 0U, visibilityRay, visibilityPayload);
   return visibilityPayload.Confidence;
@@ -285,14 +316,25 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
   float3 worldNormal = normalize(mul(objectNormal, (float3x3)WorldToObject3x4()));
 
   const bool hasTexCoord = geometry.VertexLayout.w != 0xFFFFFFFFU && geometry.VertexAttributes.z != 0U;
+  float2 texCoord0 = 0.0f;
+  float2 texCoord1 = 0.0f;
+  float2 texCoord2 = 0.0f;
   float2 texCoord = 0.0f;
   if (hasTexCoord)
   {
-    texCoord =
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x) * barycentrics.x +
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y) * barycentrics.y +
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z) * barycentrics.z;
+    texCoord0 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
+    texCoord1 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
+    texCoord2 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
+    texCoord = texCoord0 * barycentrics.x + texCoord1 * barycentrics.y + texCoord2 * barycentrics.z;
   }
+
+  const float3 worldEdge0 = mul((float3x3)ObjectToWorld3x4(), position1 - position0);
+  const float3 worldEdge1 = mul((float3x3)ObjectToWorld3x4(), position2 - position0);
+  const float worldTriangleArea = length(cross(worldEdge0, worldEdge1));
+  const float2 uvEdge0 = texCoord1 - texCoord0;
+  const float2 uvEdge1 = texCoord2 - texCoord0;
+  const float uvTriangleArea = hasTexCoord ? abs(uvEdge0.x * uvEdge1.y - uvEdge0.y * uvEdge1.x) : 0.0f;
+  const float rayConeWidth = max(payload.RayConeWidth + RayTCurrent() * payload.RayConeSpread, 1e-6f);
 
   if (hasTexCoord && geometry.VertexAttributes.x != 0xFFFFFFFFU && geometry.VertexAttributes.y != 0U && material.TextureIndices0.y != 0xFFFFFFFFU)
   {
@@ -303,8 +345,9 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
     float3 worldTangent = normalize(mul((float3x3)ObjectToWorld3x4(), objectTangent.xyz));
     worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
     const float3 worldBitangent = cross(worldNormal, worldTangent) * (objectTangent.w < 0.0f ? -1.0f : 1.0f);
-    const uint normalTextureIndex = NonUniformResourceIndex(material.TextureIndices0.y);
-    const float3 tangentNormal = xiiDecodeRayTracingNormal(g_RayTracingTextures[normalTextureIndex].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f), material.LayerParameters.y);
+    const float3 tangentNormal = xiiDecodeRayTracingNormal(
+      SampleRTGIMaterialTexture(material.TextureIndices0.y, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth),
+      material.LayerParameters.y);
     worldNormal = normalize(worldTangent * tangentNormal.x + worldBitangent * tangentNormal.y + worldNormal * tangentNormal.z);
   }
   if (dot(worldNormal, WorldRayDirection()) > 0.0f)
@@ -319,30 +362,30 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
   float  clearCoatRoughness = saturate(material.LayerParameters.w);
   float  occlusion = 1.0f;
   if (hasTexCoord && material.TextureIndices0.x != 0xFFFFFFFFU)
-    baseColor *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+    baseColor *= max(SampleRTGIMaterialTexture(material.TextureIndices0.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
   if (hasTexCoord && material.TextureIndices0.z != 0xFFFFFFFFU)
   {
-    const float4 metallicRoughness = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.z)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f);
+    const float4 metallicRoughness = SampleRTGIMaterialTexture(material.TextureIndices0.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth);
     roughness *= metallicRoughness.g;
     metallic *= metallicRoughness.b;
   }
   if (hasTexCoord && material.TextureIndices0.w != 0xFFFFFFFFU)
   {
-    const float sampledOcclusion = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.w)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).r;
+    const float sampledOcclusion = SampleRTGIMaterialTexture(material.TextureIndices0.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r;
     occlusion = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
   if (hasTexCoord && material.TextureIndices1.x != 0xFFFFFFFFU)
-    emissive *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices1.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+    emissive *= max(SampleRTGIMaterialTexture(material.TextureIndices1.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
   if ((payload.PathFlags & XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE) != 0u)
     emissive = 0.0f;
   if (hasTexCoord && material.TextureIndices1.z != 0xFFFFFFFFU)
   {
-    const float2 coatSample = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices1.z)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rg;
+    const float2 coatSample = SampleRTGIMaterialTexture(material.TextureIndices1.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rg;
     clearCoat *= coatSample.r;
     clearCoatRoughness *= coatSample.g;
   }
   if (hasTexCoord && material.TextureIndices1.w != 0xFFFFFFFFU)
-    transmission *= saturate(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices1.w)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).r);
+    transmission *= saturate(SampleRTGIMaterialTexture(material.TextureIndices1.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r);
 
   roughness = max(roughness, 0.01f);
   clearCoatRoughness = max(clearCoatRoughness, 0.01f);
@@ -484,6 +527,8 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
     childPayload.BounceDepth = payload.BounceDepth + 1u;
     childPayload.RayType = XII_RTGI_RAY_TYPE_PATH;
     childPayload.PathFlags = emissiveNEESampled ? XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE : 0u;
+    childPayload.RayConeWidth = rayConeWidth;
+    childPayload.RayConeSpread = max(payload.RayConeSpread, 0.25f);
     TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, childRay, childPayload);
 
     // Cosine-weighted sampling cancels the Lambertian cosine/PDF terms, so
