@@ -83,9 +83,10 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   xiiUInt32 m_uiReSTIRDITemporalHistoryM           = 20U;
   xiiUInt32 m_uiReSTIRDISpatialNeighborCount       = 4U;
   xiiUInt32 m_uiReSTIRDISpatialRadius              = 2U; ///< Maximum spatial reuse radius in pixels.
-  xiiUInt32 m_uiRTGIMaxPathHits              = 2U; ///< Maximum diffuse surface hits in a near-field path.
-  xiiUInt32 m_uiRTGILocalLightSamples        = 2U; ///< Stratified analytical local-light samples evaluated at each hit.
-  xiiUInt32 m_uiMaxIESProfiles               = 256U;
+  xiiUInt32 m_uiRTGIMaxPathHits          = 2U; ///< Maximum diffuse surface hits in a near-field path.
+  xiiUInt32 m_uiRTGILocalLightSamples    = 2U; ///< Stratified analytical local-light samples evaluated at each hit.
+  xiiUInt32 m_uiRTGIEmissiveLightSamples = 1U; ///< Power-weighted emissive-triangle next-event samples evaluated at each hit.
+  xiiUInt32 m_uiMaxIESProfiles           = 256U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightingSystemSettings);

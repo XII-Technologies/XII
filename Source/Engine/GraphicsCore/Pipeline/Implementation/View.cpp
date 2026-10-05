@@ -4103,6 +4103,11 @@ struct xiiRayTracedGlobalIlluminationData
   xiiRenderGraphTextureHandle                 m_hGBufferAlbedo;                  ///< ShaderResource in (surface albedo for diffuse bounce response).
   xiiRenderGraphTextureHandle                 m_hRayTracedRawGlobalIllumination; ///< UnorderedAccess out (raw RT GI texture).
   xiiRenderGraphBufferHandle                  m_hLightingDataReady;
+  xiiRenderGraphBufferHandle                  m_hEmissiveTriangles;
+  xiiRenderGraphBufferHandle                  m_hEmissiveLightHeader;
+  xiiRenderGraphBufferHandle                  m_hEmissiveTriangleAliases;
+  xiiRenderGraphBufferHandle                  m_hEmissiveBlockAliases;
+  xiiRenderGraphBufferHandle                  m_hEmissiveAliasHeader;
   xiiRenderGraphBufferHandle                  m_hSceneDependency;
   xiiRenderGraphBufferHandle                  m_hMaterialData;
   xiiRenderGraphBufferHandle                  m_hGeometryData;
@@ -4138,6 +4143,11 @@ void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationDat
     data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
     data.m_pRayTracingPipeline  = lightingPasses.m_pRTGIPipeline;
     data.m_uiShaderRecordStride = lightingPasses.m_uiRTGIShaderRecordStride;
+    data.m_hEmissiveTriangles       = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangles, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hEmissiveLightHeader     = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hEmissiveTriangleAliases = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangleAliases, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hEmissiveBlockAliases    = builder.ReadBuffer(lightingPasses.m_hEmissiveBlockAliases, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hEmissiveAliasHeader     = builder.ReadBuffer(lightingPasses.m_hEmissiveAliasHeader, xiiGALResourceStateFlags::ShaderResource);
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
     if (lightingPasses.m_hRayTracingMaterialData.IsValid())
@@ -4174,6 +4184,11 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
       const xiiBitflags<xiiGALShaderType> hitStages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
+      cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hEmissiveTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hEmissiveLightHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangleAliases", context.GetBuffer(data.m_hEmissiveTriangleAliases)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveBlockAliases", context.GetBuffer(data.m_hEmissiveBlockAliases)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
+      cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveAliasHeader", context.GetBuffer(data.m_hEmissiveAliasHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
       if (xiiGALBindlessResourceTable::IsInitialized())
       {
         xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_RayTracingBuffers", hitStages);
@@ -7584,7 +7599,7 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
   const xiiUInt32 uiDeviceRecursionDepth = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth);
   pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = xiiMath::Clamp(
     xiiMath::Min(m_ViewPassResources->m_LightingSystem.GetSettings().m_uiRTGIMaxPathHits, 2U) + 1U, 1U, xiiMath::Min(3U, uiDeviceRecursionDepth));
-  pipelineDescription.m_uiMaximumPayloadSize                     = 28U;
+  pipelineDescription.m_uiMaximumPayloadSize                     = 32U;
   pipelineDescription.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
 
   auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();

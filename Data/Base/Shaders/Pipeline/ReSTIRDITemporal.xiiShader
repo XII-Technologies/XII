@@ -13,6 +13,7 @@ ALL
 StructuredBuffer<xiiGpuLightData> g_Lights;
 
 #include <Shaders/Pipeline/ReSTIRDICommon.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightSampling.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 
 Texture2D<float>        g_SceneDepth;
@@ -24,53 +25,9 @@ Texture2D<float2>       g_Velocity;
 StructuredBuffer<uint2> g_LightGrid;
 StructuredBuffer<uint>  g_LightIndex;
 StructuredBuffer<float> g_LightSamplingTotals;
-StructuredBuffer<xiiGpuEmissiveAliasEntry>  g_EmissiveTriangleAliases;
-StructuredBuffer<xiiGpuEmissiveAliasEntry>  g_EmissiveBlockAliases;
-StructuredBuffer<xiiGpuEmissiveAliasHeader> g_EmissiveAliasHeader;
 Texture2D<uint4>        g_PreviousReservoir;
 Texture2D<float4>       g_PreviousSurface;
 RWTexture2D<uint4>      g_TemporalReservoir;
-
-bool SampleEmissiveTriangle(inout uint randomState, out uint triangleIndex, out float proposalProbability)
-{
-  triangleIndex = 0u;
-  proposalProbability = 0.0f;
-
-  uint triangleAliasCount, triangleAliasStride;
-  uint blockAliasCount, blockAliasStride;
-  uint aliasHeaderCount, aliasHeaderStride;
-  g_EmissiveTriangleAliases.GetDimensions(triangleAliasCount, triangleAliasStride);
-  g_EmissiveBlockAliases.GetDimensions(blockAliasCount, blockAliasStride);
-  g_EmissiveAliasHeader.GetDimensions(aliasHeaderCount, aliasHeaderStride);
-  if (aliasHeaderCount == 0u)
-    return false;
-
-  const xiiGpuEmissiveAliasHeader aliasHeader = g_EmissiveAliasHeader[0];
-  const uint triangleCount = ReSTIRGetEmissiveTriangleCount();
-  if (aliasHeader.BlockCount == 0u || aliasHeader.BlockCount > blockAliasCount || aliasHeader.TrianglesPerBlock == 0u ||
-      !ReSTIRIsFinitePositive(aliasHeader.TotalPower) || aliasHeader.FrameIndex != g_EmissiveHeader[0].FrameIndex)
-    return false;
-
-  const uint blockColumn = min((uint)(ReSTIRRandom01(randomState) * (float)aliasHeader.BlockCount), aliasHeader.BlockCount - 1u);
-  const xiiGpuEmissiveAliasEntry blockEntry = g_EmissiveBlockAliases[blockColumn];
-  const uint blockIndex = ReSTIRRandom01(randomState) < blockEntry.Probability ? blockColumn : blockEntry.AliasIndex;
-  if (blockIndex >= aliasHeader.BlockCount)
-    return false;
-
-  const uint firstTriangle = blockIndex * aliasHeader.TrianglesPerBlock;
-  const uint localCount = firstTriangle < triangleCount ? min(aliasHeader.TrianglesPerBlock, triangleCount - firstTriangle) : 0u;
-  if (localCount == 0u || firstTriangle + localCount > triangleAliasCount)
-    return false;
-
-  const uint triangleColumn = firstTriangle + min((uint)(ReSTIRRandom01(randomState) * (float)localCount), localCount - 1u);
-  const xiiGpuEmissiveAliasEntry triangleEntry = g_EmissiveTriangleAliases[triangleColumn];
-  triangleIndex = ReSTIRRandom01(randomState) < triangleEntry.Probability ? triangleColumn : triangleEntry.AliasIndex;
-  if (triangleIndex >= triangleCount)
-    return false;
-
-  proposalProbability = max(g_EmissiveTriangles[triangleIndex].Position1AndPowerWeight.w, 0.0f) / aliasHeader.TotalPower;
-  return ReSTIRIsFinitePositive(proposalProbability);
-}
 
 bool SampleAnalyticalLight(uint clusterIndex, uint2 lightRange, uint lightCount, inout uint randomState,
                            out uint lightIndex, out float proposalProbability)
@@ -172,7 +129,9 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     {
       uint triangleIndex;
       float emissiveProposalProbability;
-      if (!SampleEmissiveTriangle(randomState, triangleIndex, emissiveProposalProbability))
+      const float4 emissiveRandomSample = float4(ReSTIRRandom01(randomState), ReSTIRRandom01(randomState),
+                                                 ReSTIRRandom01(randomState), ReSTIRRandom01(randomState));
+      if (!xiiSampleEmissiveTriangleAlias(emissiveRandomSample, triangleIndex, emissiveProposalProbability))
         continue;
       const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[triangleIndex];
       const float target = ReSTIREstimateEmissiveTarget(emissiveTriangle, worldPosition, normal, surface);

@@ -16,10 +16,12 @@ struct xiiGlobalIlluminationPayload
   uint   RandomState;
   uint   BounceDepth;
   uint   RayType;
+  uint   PathFlags;
 };
 
 static const uint XII_RTGI_RAY_TYPE_PATH       = 0u;
 static const uint XII_RTGI_RAY_TYPE_VISIBILITY = 1u;
+static const uint XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE = 1u << 0u;
 
 uint RTGIHash(uint value)
 {
@@ -85,6 +87,7 @@ void main()
     payload.RandomState = randomState;
     payload.BounceDepth = 0u;
     payload.RayType = XII_RTGI_RAY_TYPE_PATH;
+    payload.PathFlags = 0u;
     TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
     result = float4(albedo * max(payload.Radiance, 0.0f), payload.Confidence);
   }
@@ -110,6 +113,12 @@ ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
 Texture2D<float4> g_RayTracingTextures[] : register(t12);
 
 #include <Shaders/Pipeline/SurfaceLighting.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+
+StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles;
+StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
+
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightSampling.h>
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
 
@@ -130,6 +139,7 @@ float TraceRTGIVisibility(float3 worldPosition, float3 worldNormal, float3 direc
   visibilityPayload.RandomState = 0u;
   visibilityPayload.BounceDepth = bounceDepth;
   visibilityPayload.RayType = XII_RTGI_RAY_TYPE_VISIBILITY;
+  visibilityPayload.PathFlags = 0u;
   TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
            0xFFU, 0U, 1U, 0U, visibilityRay, visibilityPayload);
   return visibilityPayload.Confidence;
@@ -323,6 +333,8 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
   }
   if (hasTexCoord && material.TextureIndices1.x != 0xFFFFFFFFU)
     emissive *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices1.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+  if ((payload.PathFlags & XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE) != 0u)
+    emissive = 0.0f;
   if (hasTexCoord && material.TextureIndices1.z != 0xFFFFFFFFU)
   {
     const float2 coatSample = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices1.z)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rg;
@@ -399,6 +411,58 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
     }
   }
 
+  // The shared alias hierarchy samples emissive meshes by emitted power. A
+  // uniform point on the selected triangle then converts area measure to
+  // incident solid angle. Overflow disables NEE so BSDF-hit emission remains
+  // the unbiased fallback for emitters omitted from the bounded database.
+  const bool useEmissiveNEE = g_RTGISettings.w > 0u && xiiHasEmissiveAliasDistribution();
+  bool emissiveNEESampled = false;
+  if (useEmissiveNEE)
+  {
+    const uint emissiveSampleCount = clamp(g_RTGISettings.w, 1u, 4u);
+    [loop]
+    for (uint emissiveSampleIndex = 0u; emissiveSampleIndex < emissiveSampleCount; ++emissiveSampleIndex)
+    {
+      const float4 aliasRandomSample = float4(RTGIRandom01(payload.RandomState), RTGIRandom01(payload.RandomState),
+                                              RTGIRandom01(payload.RandomState), RTGIRandom01(payload.RandomState));
+      uint triangleIndex;
+      float triangleProposalProbability;
+      if (!xiiSampleEmissiveTriangleAlias(aliasRandomSample, triangleIndex, triangleProposalProbability))
+        continue;
+      emissiveNEESampled = true;
+
+      const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[triangleIndex];
+      const float sqrtBarycentric = sqrt(RTGIRandom01(payload.RandomState));
+      const float barycentricV = RTGIRandom01(payload.RandomState);
+      const float3 barycentrics = float3(1.0f - sqrtBarycentric,
+                                         sqrtBarycentric * (1.0f - barycentricV),
+                                         sqrtBarycentric * barycentricV);
+      const float3 emitterPosition = emissiveTriangle.Position0AndArea.xyz * barycentrics.x +
+                                     emissiveTriangle.Position1AndPowerWeight.xyz * barycentrics.y +
+                                     emissiveTriangle.Position2AndInvArea.xyz * barycentrics.z;
+      const float3 toEmitter = emitterPosition - hitPosition;
+      const float distanceSquared = dot(toEmitter, toEmitter);
+      if (distanceSquared <= 1e-8f)
+        continue;
+
+      const float distanceToEmitter = sqrt(distanceSquared);
+      const float3 directionToEmitter = toEmitter / distanceToEmitter;
+      const float receiverCosine = dot(worldNormal, directionToEmitter);
+      float emitterCosine = dot(normalize(emissiveTriangle.NormalAndTwoSided.xyz), -directionToEmitter);
+      emitterCosine = emissiveTriangle.NormalAndTwoSided.w >= 0.5f ? abs(emitterCosine) : max(emitterCosine, 0.0f);
+      if (receiverCosine <= 0.0f || emitterCosine <= 0.0f)
+        continue;
+
+      const float visibility = TraceRTGIVisibility(hitPosition, worldNormal, directionToEmitter,
+        max(distanceToEmitter - 0.004f, 0.001f), payload.BounceDepth);
+      const float areaToSolidAngle = max(emissiveTriangle.Position0AndArea.w, 0.0f) * emitterCosine / distanceSquared;
+      const float sampleNormalization = rcp(max((float)emissiveSampleCount * triangleProposalProbability, 1e-8f));
+      surfaceRadiance += BRDFLayered(baseColor, roughness, metallic, dielectricSpecular, transmission, clearCoat,
+                                     clearCoatRoughness, worldNormal, directionToEmitter, viewDirection) *
+                         max(emissiveTriangle.RadianceAndLuminance.rgb, 0.0f) * areaToSolidAngle * visibility * sampleNormalization;
+    }
+  }
+
   float3 continuedBounce = 0.0f;
   const uint maxPathHits = clamp(g_RTGISettings.x, 1u, 2u);
   if (payload.BounceDepth + 1u < maxPathHits && metallic < 0.999f)
@@ -419,6 +483,7 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
     childPayload.RandomState = childRandomState;
     childPayload.BounceDepth = payload.BounceDepth + 1u;
     childPayload.RayType = XII_RTGI_RAY_TYPE_PATH;
+    childPayload.PathFlags = emissiveNEESampled ? XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE : 0u;
     TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, childRay, childPayload);
 
     // Cosine-weighted sampling cancels the Lambertian cosine/PDF terms, so
