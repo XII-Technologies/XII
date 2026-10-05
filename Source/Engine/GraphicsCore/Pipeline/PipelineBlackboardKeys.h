@@ -122,6 +122,7 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_RTResampledGI               = "RTResampledGI"_xiisv;               ///< xiiRenderGraphTextureHandle - spatiotemporally resampled RT indirect diffuse.
   constexpr xiiStringView k_RTFinalGI                   = "RTFinalGI"_xiisv;                   ///< xiiRenderGraphTextureHandle - denoised RT GI.
   constexpr xiiStringView k_RTRawReflections            = "RTRawReflections"_xiisv;            ///< xiiRenderGraphTextureHandle - raw RT reflection radiance.
+  constexpr xiiStringView k_RTRawReflectionHitDistance  = "RTRawReflectionHitDistance"_xiisv;  ///< xiiRenderGraphTextureHandle - primary RT reflection hit distance (R16_FLOAT, zero for misses).
   constexpr xiiStringView k_RTFinalReflections          = "RTFinalReflections"_xiisv;          ///< xiiRenderGraphTextureHandle - denoised RT reflections.
   constexpr xiiStringView k_VolumetricScatteringRaw     = "VolumetricScatteringRaw"_xiisv;     ///< xiiRenderGraphTextureHandle - current-frame integrated volumetric light before temporal filtering.
   constexpr xiiStringView k_VolumetricScattering        = "VolumetricScattering"_xiisv;        ///< xiiRenderGraphTextureHandle - integrated volumetric light contribution.

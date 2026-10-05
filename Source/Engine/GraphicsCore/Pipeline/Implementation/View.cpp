@@ -4552,6 +4552,7 @@ struct xiiRayTracedReflectionsData
   xiiRenderGraphTextureHandle                                            m_hFallbackReflectionProbe;    ///< ShaderResource fallback for unused probe descriptors.
   xiiHybridArray<xiiRenderGraphTextureHandle, XII_MAX_REFLECTION_PROBES> m_hReflectionProbeTextures;   ///< ShaderResource in (active local probe cubemaps).
   xiiRenderGraphTextureHandle                                            m_hRayTracedRawReflections;    ///< UnorderedAccess out (raw RT reflections texture).
+  xiiRenderGraphTextureHandle                                            m_hRayTracedHitDistance;       ///< UnorderedAccess out (primary hit distance; zero denotes an environment miss).
   xiiRenderGraphBufferHandle                                             m_hLightingDataReady;          ///< ShaderResource dependency on persistent light upload.
   xiiRenderGraphBufferHandle                                             m_hReflectionProbeData;        ///< ShaderResource active local reflection probes.
   xiiRenderGraphBufferHandle                                             m_hReflectionProbeConstants;   ///< ConstantBuffer active reflection probe count.
@@ -4592,6 +4593,9 @@ void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRe
   description.m_BindFlags         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage             = xiiGALResourceUsage::Default;
   data.m_hRayTracedRawReflections = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawReflections, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  description.m_Format          = xiiGALResourceFormat::R16Float;
+  data.m_hRayTracedHitDistance  = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawReflectionHitDistance, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   auto& lightingPasses                             = m_ViewPassResources->m_LightingPasses;
   data.m_bUseHardwareRayTracing                    = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingReflectionResources();
@@ -4678,6 +4682,7 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
       }
       cmd.ResolveAndSetShaderResourceTextureViews("g_ReflectionProbeTextures", 0U, reflectionProbeViews, xiiGALShaderType::RayMiss);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflHitDistance", context.GetTexture(data.m_hRayTracedHitDistance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
       const xiiBitflags<xiiGALShaderType> hitStages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);
@@ -4712,6 +4717,7 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
     {
       cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pRTReflectionFallbackPipeline);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflHitDistance", context.GetTexture(data.m_hRayTracedHitDistance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
       cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
     }

@@ -85,6 +85,7 @@ Texture2D<float4>                g_GBufMaterial    : register(t7);
 Texture2D<float4>                g_GBufAlbedo      : register(t20);
 Texture2D<float2>                g_BRDFLut         : register(t21);
 RWTexture2D<float4>              g_RTReflRaw       : register(u8);
+RWTexture2D<float>               g_RTReflHitDistance : register(u9);
 
 [shader("raygeneration")]
 void main()
@@ -95,7 +96,8 @@ void main()
   const float4 primaryMaterial = g_GBufMaterial.Load(int3(pixel, 0));
   const float  roughness = saturate(primaryMaterial.r);
 
-  float4 reflection = 0.0f;
+  float4 reflection  = 0.0f;
+  float  hitDistance = 0.0f;
   if (depth > 0.0f && roughness <= 0.65f)
   {
     const float2 uv       = (float2(pixel) + 0.5f) / float2(dimensions);
@@ -145,9 +147,11 @@ void main()
     // Rough surfaces smoothly hand back to probes/SSR rather than terminating abruptly.
     payload.Confidence *= saturate(1.0f - roughness / 0.65f);
     reflection = float4(max(payload.Radiance, 0.0f), payload.Confidence);
+    hitDistance = max(payload.RayConeWidth, 0.0f);
   }
 
-  g_RTReflRaw[pixel] = reflection;
+  g_RTReflRaw[pixel]         = reflection;
+  g_RTReflHitDistance[pixel] = hitDistance;
 }
 
 [RAY_MISS_SHADER]
@@ -186,6 +190,7 @@ void main(inout xiiReflectionPayload payload)
 
   payload.Radiance = lerp(atmosphereRadiance, probeRadiance, probeCoverage) * g_IBLIntensity;
   payload.Confidence = 1.0f;
+  payload.RayConeWidth = 0.0f;
 }
 
 [RAY_CLOSEST_HIT_SHADER]
@@ -485,6 +490,13 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
 
   payload.Radiance   = emissive + surfaceRadiance + continuedBounce;
   payload.Confidence = 1.0f;
+  if (payload.BounceDepth == 0u)
+  {
+    // The primary ray no longer needs its cone width after shading. Returning
+    // the geometric hit distance through the existing payload field avoids
+    // increasing the pipeline payload while preserving child-ray cone state.
+    payload.RayConeWidth = RayTCurrent();
+  }
 }
 
 [RAY_ANY_HIT_SHADER]
