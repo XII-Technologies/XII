@@ -45,7 +45,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkyAtmosphereRenderData, 1, xiiRTTIDefaultAllocator<xiiSkyAtmosphereRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_COMPONENT_TYPE(xiiSkyAtmosphereComponent, 1, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiSkyAtmosphereComponent, 3, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -86,8 +86,11 @@ void xiiSkyAtmosphereComponent::SerializeComponent(xiiWorldWriter& inout_stream)
   stream << m_AtmosphereSettings.m_vPlanetUpDirection;
   stream << m_AtmosphereSettings.m_fGroundAltitudeMeters;
   stream << m_AtmosphereSettings.m_fMiePhaseG;
+  stream << m_AtmosphereSettings.m_fSunLimbDarkening;
   stream << m_AtmosphereSettings.m_uiTransmittanceIntegrationSteps;
   stream << m_AtmosphereSettings.m_uiMultiScatterSqrtSamples;
+  stream << m_AtmosphereSettings.m_uiSkyViewIntegrationSteps;
+  stream << m_AtmosphereSettings.m_uiAerialPerspectiveSteps;
   stream << m_iPriority;
 }
 
@@ -107,8 +110,17 @@ void xiiSkyAtmosphereComponent::DeserializeComponent(xiiWorldReader& inout_strea
   stream >> m_AtmosphereSettings.m_vPlanetUpDirection;
   stream >> m_AtmosphereSettings.m_fGroundAltitudeMeters;
   stream >> m_AtmosphereSettings.m_fMiePhaseG;
+  if (inout_stream.GetComponentTypeVersion(GetStaticRTTI()) >= 3U)
+  {
+    stream >> m_AtmosphereSettings.m_fSunLimbDarkening;
+  }
   stream >> m_AtmosphereSettings.m_uiTransmittanceIntegrationSteps;
   stream >> m_AtmosphereSettings.m_uiMultiScatterSqrtSamples;
+  if (inout_stream.GetComponentTypeVersion(GetStaticRTTI()) >= 2U)
+  {
+    stream >> m_AtmosphereSettings.m_uiSkyViewIntegrationSteps;
+    stream >> m_AtmosphereSettings.m_uiAerialPerspectiveSteps;
+  }
   stream >> m_iPriority;
 }
 

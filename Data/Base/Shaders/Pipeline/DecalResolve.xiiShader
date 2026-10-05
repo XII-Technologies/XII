@@ -119,7 +119,8 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
       {
           material.r = lerp(material.r, saturate(decalMaterial.r * decal.SurfaceParams.y), opacity);
           material.g = lerp(material.g, saturate(decalMaterial.g * decal.SurfaceParams.z), opacity);
-          material.b = lerp(material.b, decalMaterial.b, opacity);
+          // Decal resources currently author roughness and metallic only. Preserve the surface's
+          // canonical dielectric-specular channel until decals expose an explicit control.
       }
 
       if ((decal.Meta.x & DECAL_CHANNEL_EMISSIVE) != 0u)

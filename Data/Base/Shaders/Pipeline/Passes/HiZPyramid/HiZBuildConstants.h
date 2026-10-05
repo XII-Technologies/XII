@@ -12,7 +12,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiHiZBuildConstants)
 {
   UINT2(SrcSize); ///< Width x Height of the source mip level (mip N).
   UINT2(DstSize); ///< Width x Height of the destination mip level (mip N+1).
-  UINT1(Reduce);  ///< Zero copies scene depth into mip zero; one reduces a 2x2 source footprint.
+  UINT1(Reduce);  ///< Zero copies mip zero, one selects reversed-Z farthest depth (min), two selects closest depth (max).
   FLOAT1(_Pad0);
   FLOAT2(_Pad1);
 };

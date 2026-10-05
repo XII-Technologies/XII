@@ -8,6 +8,9 @@
 #include <GraphicsCore/Material/MaterialInstance.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <Shaders/Materials/GpuSurfaceMaterial.h>
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSurfaceMaterial);
 
 /// Configuration for the global GPU material table. Each frame in flight receives a disjoint
 /// slice, so frequent CPU edits never overwrite bytes still consumed by an earlier GPU frame.
@@ -35,9 +38,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialGpuStorageStatisti
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuUpload
 {
   xiiMaterialGpuHandle      m_Handle;
-  xiiUInt32                 m_uiRevision          = 0U;
-  xiiUInt32                 m_uiDestinationOffset = 0U;
+  xiiUInt32                 m_uiRevision                 = 0U;
+  xiiUInt32                 m_uiDestinationOffset        = 0U;
+  xiiUInt32                 m_uiSurfaceDestinationOffset = 0U;
   xiiDynamicArray<xiiUInt8> m_Data;
+  xiiGpuSurfaceMaterial     m_SurfaceData;
 };
 
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuUploadBatch
@@ -65,14 +70,19 @@ public:
   void      Shutdown();
 
   [[nodiscard]] xiiMaterialGpuHandle RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance);
-  void                               UnregisterMaterial(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex);
-  void                               CollectGarbage(xiiUInt64 uiCompletedFrame);
+  /// Rebinds a live slot to a rebuilt resource instance without changing the GPU-visible index.
+  /// Every frame slice is marked dirty so hot reloads cannot leave stale material bytes in flight.
+  [[nodiscard]] bool ReplaceMaterial(xiiMaterialGpuHandle handle, xiiSharedPtr<xiiMaterialInstance> pInstance);
+  void               UnregisterMaterial(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex);
+  void               CollectGarbage(xiiUInt64 uiCompletedFrame);
 
   [[nodiscard]] bool                              IsValidHandle(xiiMaterialGpuHandle handle) const;
   [[nodiscard]] xiiSharedPtr<xiiMaterialInstance> GetMaterial(xiiMaterialGpuHandle handle) const;
   [[nodiscard]] xiiUInt32                         GetGpuOffset(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex) const;
   [[nodiscard]] xiiUInt32                         GetMaterialStride() const { return m_uiMaterialStride; }
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer>        GetBuffer() const { return m_pBuffer; }
+  [[nodiscard]] xiiSharedPtr<xiiGALBuffer>        GetSurfaceBuffer() const { return m_pSurfaceBuffer; }
+  [[nodiscard]] xiiUInt32                         GetSurfaceBaseIndex(xiiUInt64 uiFrameIndex) const;
   [[nodiscard]] xiiMaterialGpuStorageStatistics   GetStatistics() const;
 
   /// Copies strong references to every currently registered instance. The copy deliberately
@@ -85,6 +95,14 @@ public:
 
   /// Registers a transfer-queue pass and returns the shader-readable buffer version. The returned
   /// handle should be declared as a read by passes that consume material data.
+  struct UploadHandles
+  {
+    xiiRenderGraphBufferHandle m_hParameterData;
+    xiiRenderGraphBufferHandle m_hSurfaceData;
+    xiiUInt32                  m_uiSurfaceBaseIndex = 0U;
+  };
+
+  [[nodiscard]] UploadHandles              AddUploadPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
   [[nodiscard]] xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
 
 private:
@@ -104,6 +122,7 @@ private:
   struct UploadPassData
   {
     xiiRenderGraphBufferHandle m_hBuffer;
+    xiiRenderGraphBufferHandle m_hSurfaceBuffer;
     xiiMaterialGpuUploadBatch  m_Batch;
     xiiMaterialGpuStorage*     m_pStorage = nullptr;
   };
@@ -117,6 +136,7 @@ private:
   xiiDynamicArray<xiiUInt32>       m_FreeSlots;
   xiiDynamicArray<RetiredSlot>     m_RetiredSlots;
   xiiSharedPtr<xiiGALBuffer>       m_pBuffer;
+  xiiSharedPtr<xiiGALBuffer>       m_pSurfaceBuffer;
   xiiUInt32                        m_uiMaterialStride  = 0U;
   xiiUInt32                        m_uiActiveCount     = 0U;
   xiiUInt32                        m_uiLastUploadCount = 0U;

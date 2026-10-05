@@ -2208,8 +2208,6 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
   xiiArrayPtr<const xiiUInt8> shaderGroupHandles = pRayTracingPipelineStateVulkan->GetShaderGroupHandles();
   XII_ASSERT_DEV(!shaderGroupHandles.IsEmpty(), "UpdateSBT failed: pipeline does not have cached shader group handles.");
 
-  const xiiUInt32 uiGroupCount = static_cast<xiiUInt32>(shaderGroupHandles.GetCount() / uiHandleSize);
-
   struct RecordWrite
   {
     XII_DECLARE_POD_TYPE();
@@ -2220,7 +2218,7 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
 
   xiiTemporaryHybridArray<RecordWrite, 4U> recordWrites;
 
-  auto CollectRecordWrites = [&](const xiiGALRayTracingSBTRegionDescription& region, xiiArrayPtr<const xiiUInt32> groupIndices, xiiUInt32 uiStartIndex, const char* szRegionName) {
+  auto CollectRecordWrites = [&](const xiiGALRayTracingSBTRegionDescription& region, xiiArrayPtr<const xiiUInt32> groupIndices, xiiUInt32 uiStartIndex, [[maybe_unused]] const char* szRegionName) {
     if (region.m_uiSize == 0U)
       return;
 
@@ -2233,7 +2231,11 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
     for (xiiUInt32 i = 0U; i < uiRecordCount; ++i)
     {
       const xiiUInt32 uiGroupIndex = groupIndices[uiStartIndex + i];
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+      const xiiUInt32 uiGroupCount = static_cast<xiiUInt32>(shaderGroupHandles.GetCount() / uiHandleSize);
       XII_ASSERT_DEV(uiGroupIndex < uiGroupCount, "UpdateSBT {} region resolved an invalid shader group index {} (group count {}).", szRegionName, uiGroupIndex, uiGroupCount);
+#endif
 
       RecordWrite& write          = recordWrites.ExpandAndGetRef();
       write.m_uiDestinationOffset = region.m_uiOffset + static_cast<xiiUInt64>(i) * region.m_uiStride;

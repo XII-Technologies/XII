@@ -1,0 +1,118 @@
+// XII Engine - motion-compensated SSR temporal reuse with surface and material validation.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Reflections/SSRTemporalConstants.h>
+
+Texture2D<float4>   g_CurrentReflection;
+Texture2D<float4>   g_PreviousReflection;
+Texture2D<float>    g_SceneDepth;
+Texture2D<float2>   g_GBufferNormal;
+Texture2D<float4>   g_GBufferMaterial;
+Texture2D<uint>     g_GBufferObjectId;
+Texture2D<float2>   g_Velocity;
+Texture2D<float4>   g_PreviousSurface;
+Texture2D<uint2>    g_PreviousIdentitySignature;
+RWTexture2D<float4> g_ResolvedReflection;
+RWTexture2D<uint2>  g_CurrentIdentitySignature;
+
+uint PackSSRMaterialSignature(float4 material)
+{
+  const uint4 quantized = (uint4)round(saturate(material) * 255.0f);
+  return quantized.x | (quantized.y << 8u) | (quantized.z << 16u) | (quantized.w << 24u);
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_ResolvedReflection.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const uint2 pixel = dispatchThreadId.xy;
+  const float4 material = g_GBufferMaterial.Load(int3(pixel, 0));
+  const uint materialSignature = PackSSRMaterialSignature(material);
+  const uint objectId = g_GBufferObjectId.Load(int3(pixel, 0));
+  g_CurrentIdentitySignature[pixel] = uint2(materialSignature, objectId);
+
+  const float4 current = g_CurrentReflection.Load(int3(pixel, 0));
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  if (HistoryValid == 0u || depth <= 0.0f)
+  {
+    g_ResolvedReflection[pixel] = current;
+    return;
+  }
+
+  const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+  const float2 velocity = g_Velocity.Load(int3(pixel, 0));
+  const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
+  if (any(previousUV <= 0.0f) || any(previousUV >= 1.0f))
+  {
+    g_ResolvedReflection[pixel] = current;
+    return;
+  }
+
+  const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1u);
+  const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
+  const float currentLinearDepth = LinearizeDepth(depth);
+  const float3 currentNormal = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
+  const float3 previousNormal = DecodeOctNormal(previousSurface.xy);
+  const bool surfaceMatches = previousSurface.z > 0.0f &&
+    abs(previousSurface.z - currentLinearDepth) <= max(currentLinearDepth * DepthThreshold, 0.005f) &&
+    dot(previousNormal, currentNormal) >= NormalThreshold;
+  const bool identityMatches = all(g_PreviousIdentitySignature.Load(int3(previousPixel, 0)) == uint2(materialSignature, objectId));
+  if (!surfaceMatches || !identityMatches)
+  {
+    g_ResolvedReflection[pixel] = current;
+    return;
+  }
+
+  float4 history = g_PreviousReflection.Load(int3(previousPixel, 0));
+  history.a *= saturate(ConfidenceDecay);
+
+  // Clamp valid history to the current reflected-radiance neighbourhood. A
+  // completely missing current neighbourhood intentionally keeps decaying
+  // history, covering stochastic traversal holes without inventing new energy.
+  float3 localMinimum = 3.402823e+38f;
+  float3 localMaximum = 0.0f;
+  uint validNeighbourCount = 0u;
+  [unroll]
+  for (int y = -1; y <= 1; ++y)
+  {
+    [unroll]
+    for (int x = -1; x <= 1; ++x)
+    {
+      const int2 samplePixel = clamp(int2(pixel) + int2(x, y), int2(0, 0), int2(dimensions) - 1);
+      const float4 sampleValue = g_CurrentReflection.Load(int3(samplePixel, 0));
+      if (sampleValue.a <= 1e-4f)
+        continue;
+
+      localMinimum = min(localMinimum, sampleValue.rgb);
+      localMaximum = max(localMaximum, sampleValue.rgb);
+      validNeighbourCount++;
+    }
+  }
+  if (validNeighbourCount > 0u)
+    history.rgb = clamp(history.rgb, localMinimum, localMaximum);
+
+  const float currentWeight = saturate(current.a);
+  const float historyWeight = saturate(history.a) * saturate(HistoryWeight);
+  const float totalWeight = currentWeight + historyWeight;
+  if (totalWeight <= 1e-5f)
+  {
+    g_ResolvedReflection[pixel] = 0.0f;
+    return;
+  }
+
+  const float3 resolvedRadiance = (max(current.rgb, 0.0f) * currentWeight + max(history.rgb, 0.0f) * historyWeight) / totalWeight;
+  const float resolvedConfidence = saturate(currentWeight + historyWeight * (1.0f - currentWeight));
+  g_ResolvedReflection[pixel] = float4(resolvedRadiance, resolvedConfidence);
+}

@@ -14,8 +14,58 @@ StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<GpuMeshlet> g_Meshlets;
 StructuredBuffer<uint> g_VisibleInstances;
 StructuredBuffer<uint> g_VisibleInstanceCount;
+StructuredBuffer<uint4> g_PreviousLodHistory;
+RWStructuredBuffer<uint4> g_CurrentLodHistory;
+RWStructuredBuffer<GpuLodFeedback> g_LodFeedback;
 RWStructuredBuffer<uint2> g_VisibleMeshlets;
 RWStructuredBuffer<uint> g_VisibleMeshletCount;
+
+uint HashLodFeedbackKey(uint key)
+{
+  key ^= key >> 16u;
+  key *= 0x7FEB352Du;
+  key ^= key >> 15u;
+  key *= 0x846CA68Bu;
+  return key ^ (key >> 16u);
+}
+
+void SubmitLodFeedback(uint geometryIndex, GpuGeometryRecord geometry, uint desiredLod, uint selectedLod,
+                       uint purposeMask, uint objectUserData, float projectedCoverage)
+{
+  uint entryCount, entryStride;
+  g_LodFeedback.GetDimensions(entryCount, entryStride);
+  if (entryCount <= 1u || purposeMask == 0u || desiredLod >= min(geometry.LodCount, 8u))
+    return;
+  if ((geometry.ResidentLodMask & (1u << desiredLod)) != 0u)
+    return;
+
+  uint ignored;
+  InterlockedAdd(g_LodFeedback[0].Key, 1u, ignored);
+
+  const uint capacity = entryCount - 1u;
+  const uint requestKey = (((desiredLod & 7u) << 20u) | (geometryIndex & 0xFFFFFu)) + 1u;
+  const uint baseSlot = HashLodFeedbackKey(requestKey) & (capacity - 1u);
+  [loop] for (uint probe = 0u; probe < min(capacity, 32u); ++probe)
+  {
+    const uint entryIndex = 1u + ((baseSlot + probe) & (capacity - 1u));
+    uint observedKey;
+    InterlockedCompareExchange(g_LodFeedback[entryIndex].Key, 0u, requestKey, observedKey);
+    if (observedKey != 0u && observedKey != requestKey)
+      continue;
+
+    if (observedKey == 0u)
+      InterlockedAdd(g_LodFeedback[0].GeometryGeneration, 1u, ignored);
+    InterlockedMax(g_LodFeedback[entryIndex].GeometryGeneration, geometry.Generation);
+    InterlockedMax(g_LodFeedback[entryIndex].DesiredLod, desiredLod);
+    InterlockedMax(g_LodFeedback[entryIndex].SelectedLod, selectedLod);
+    InterlockedOr(g_LodFeedback[entryIndex].PurposeMask, purposeMask);
+    InterlockedMax(g_LodFeedback[entryIndex].ObjectUserData, objectUserData);
+    InterlockedMax(g_LodFeedback[entryIndex].Priority, min((uint)(max(projectedCoverage, 0.0f) * 1024.0f), 0x3FFFFFFFu));
+    return;
+  }
+
+  InterlockedAdd(g_LodFeedback[0].DesiredLod, 1u, ignored);
+}
 
 bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
 {
@@ -61,12 +111,16 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   uint meshletCount, meshletStride;
   uint visibleInstanceCapacity, visibleInstanceStride;
   uint visibleCountCapacity, visibleCountStride;
+  uint previousHistoryCapacity, previousHistoryStride;
+  uint currentHistoryCapacity, currentHistoryStride;
   g_VisibilityView.GetDimensions(viewCount, viewStride);
   g_SceneInstances.GetDimensions(sceneCount, sceneStride);
   g_Geometry.GetDimensions(geometryCount, geometryStride);
   g_Meshlets.GetDimensions(meshletCount, meshletStride);
   g_VisibleInstances.GetDimensions(visibleInstanceCapacity, visibleInstanceStride);
   g_VisibleInstanceCount.GetDimensions(visibleCountCapacity, visibleCountStride);
+  g_PreviousLodHistory.GetDimensions(previousHistoryCapacity, previousHistoryStride);
+  g_CurrentLodHistory.GetDimensions(currentHistoryCapacity, currentHistoryStride);
   if (viewCount == 0u || visibleCountCapacity == 0u)
     return;
 
@@ -86,7 +140,17 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
 
   const GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
   const float distanceToCamera = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
-  const uint lodIndex = SelectResidentLod(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y);
+  const float projectedCoverage = instance.BoundsCenterRadius.w * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
+  const uint desiredLod = SelectDesiredLod(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y);
+  const uint4 previousHistory = instanceIndex < previousHistoryCapacity ? g_PreviousLodHistory[instanceIndex] : uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
+  const uint lodIndex = SelectResidentLodWithHistory(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y,
+                                                     instance.UserData, previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
+  if (dispatchThreadId.x == 0u)
+  {
+    if (instanceIndex < currentHistoryCapacity)
+      g_CurrentLodHistory[instanceIndex] = uint4(lodIndex, geometry.Generation, instance.UserData, (uint)view.LodParameters.y);
+    SubmitLodFeedback(instance.GeometryIndex, geometry, desiredLod, lodIndex, (uint)view.LodParameters.w, instance.UserData, projectedCoverage);
+  }
   if (lodIndex == 0xFFFFFFFFu)
     return;
 
@@ -109,6 +173,14 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
 
   const uint meshletIndex = lod.MeshletMetadataOffset + localMeshlet;
   const GpuMeshlet meshlet = g_Meshlets[meshletIndex];
+  const uint meshletPrimitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  if (instance.PrimitiveCount != 0u)
+  {
+    const uint selectedEnd = instance.FirstPrimitive + instance.PrimitiveCount;
+    const uint meshletEnd = meshlet.Header.x + meshletPrimitiveCount;
+    if (meshlet.Header.x >= selectedEnd || meshletEnd <= instance.FirstPrimitive)
+      return;
+  }
   const float3 center = mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
   const float radius = meshlet.Bounds.w * maxScale;
   if (!SphereInsideFrustum(center, radius, view))

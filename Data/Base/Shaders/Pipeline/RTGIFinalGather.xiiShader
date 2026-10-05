@@ -3,7 +3,7 @@ ALL
 
 [SHADER]
 
-// One-sample cosine-weighted near-field diffuse gather. Mid/far-field DDGI and sparse-voxel
+// Cosine-weighted near-field diffuse path gather. Mid/far-field DDGI and sparse-voxel
 // radiance remain active independently; alpha marks pixels with a valid traced near-field hit.
 
 #include "PipelineCommon.xiiShader"
@@ -13,7 +13,33 @@ struct xiiGlobalIlluminationPayload
 {
   float3 Radiance;
   float  Confidence;
+  uint   RandomState;
+  uint   BounceDepth;
+  uint   RayType;
+  uint   PathFlags;
+  float  RayConeWidth;
+  float  RayConeSpread;
 };
+
+static const uint XII_RTGI_RAY_TYPE_PATH       = 0u;
+static const uint XII_RTGI_RAY_TYPE_VISIBILITY = 1u;
+static const uint XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE = 1u << 0u;
+
+uint RTGIHash(uint value)
+{
+  value ^= value >> 16u;
+  value *= 0x7FEB352Du;
+  value ^= value >> 15u;
+  value *= 0x846CA68Bu;
+  value ^= value >> 16u;
+  return value;
+}
+
+float RTGIRandom01(inout uint state)
+{
+  state = RTGIHash(state);
+  return (float)(state & 0x00FFFFFFu) * (1.0f / 16777216.0f);
+}
 
 float3 CosineSampleHemisphere(float3 normal, float2 randomSample)
 {
@@ -48,9 +74,14 @@ void main()
     const float3 worldPos = ReconstructWorldPos(uv, depth);
     const float3 normal   = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
     const float3 albedo   = max(g_GBufferAlbedo.Load(int3(pixel, 0)).rgb, 0.0f);
-    const float2 randomSample = float2(
-      InterleavedGradientNoise(float2(pixel), g_FrameIndex),
-      InterleavedGradientNoise(float2(pixel.yx) + 19.19f, g_FrameIndex + 37U));
+    const float2 pixelSize = rcp(float2(dimensions));
+    const float2 adjacentXUV = uv + float2(pixel.x + 1u < dimensions.x ? pixelSize.x : -pixelSize.x, 0.0f);
+    const float2 adjacentYUV = uv + float2(0.0f, pixel.y + 1u < dimensions.y ? pixelSize.y : -pixelSize.y);
+    const float primaryFootprint = max(length(ReconstructWorldPos(adjacentXUV, depth) - worldPos),
+                                       length(ReconstructWorldPos(adjacentYUV, depth) - worldPos));
+    const float cameraDistance = max(length(worldPos - g_CameraPositionAndNearPlane.xyz), 1e-3f);
+    uint randomState = RTGIHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x9E3779B9u);
+    const float2 randomSample = float2(RTGIRandom01(randomState), RTGIRandom01(randomState));
 
     RayDesc ray;
     ray.Origin    = worldPos + normal * 0.01f;
@@ -61,7 +92,13 @@ void main()
     xiiGlobalIlluminationPayload payload;
     payload.Radiance   = 0.0f;
     payload.Confidence = 0.0f;
-    TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFU, 0U, 1U, 0U, ray, payload);
+    payload.RandomState = randomState;
+    payload.BounceDepth = 0u;
+    payload.RayType = XII_RTGI_RAY_TYPE_PATH;
+    payload.PathFlags = 0u;
+    payload.RayConeWidth = primaryFootprint;
+    payload.RayConeSpread = primaryFootprint / cameraDistance;
+    TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
     result = float4(albedo * max(payload.Radiance, 0.0f), payload.Confidence);
   }
 
@@ -70,19 +107,94 @@ void main()
 
 [RAY_MISS_SHADER]
 
+#include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
+#include <Shaders/Pipeline/ReflectionProbeData.h>
+
+Texture2D<float4>                       g_Transmittance;
+Texture2D<float4>                       g_MultiScatter;
+StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData;
+TextureCube<float4>                     g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES];
+
+#define XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER g_sLinearClamp
+#include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereRadiance.h>
+#include <Shaders/Pipeline/Passes/Reflection/ReflectionProbeSampling.h>
+#undef XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER
+
 [shader("miss")]
 void main(inout xiiGlobalIlluminationPayload payload)
 {
-  payload.Radiance   = 0.0f;
-  payload.Confidence = 0.0f;
+  if (payload.RayType == XII_RTGI_RAY_TYPE_VISIBILITY)
+  {
+    payload.Radiance = 0.0f;
+    payload.Confidence = 1.0f;
+    return;
+  }
+
+  // A primary miss leaves near-field GI invalid so the composite retains the
+  // DDGI/sparse-voxel result instead of counting environment light twice.
+  if (payload.BounceDepth == 0u)
+  {
+    payload.Radiance = 0.0f;
+    payload.Confidence = 0.0f;
+    return;
+  }
+
+  // Secondary diffuse rays need an incident-radiance boundary condition.
+  // Resolve local captures at the actual secondary origin and fade them into
+  // the physical atmosphere for open directions.
+  const float environmentRoughness = saturate(sqrt(max(payload.RayConeSpread, 0.0f)));
+  const float3 atmosphereRadiance = xiiEvaluateAtmosphereRadiance(WorldRayOrigin(), WorldRayDirection());
+  float probeCoverage;
+  const float3 probeRadiance = xiiSampleLocalReflectionEnvironment(
+    WorldRayOrigin(), WorldRayDirection(), environmentRoughness, probeCoverage);
+  payload.Radiance = lerp(atmosphereRadiance, probeRadiance, probeCoverage) * g_IBLIntensity;
+  payload.Confidence = 1.0f;
 }
 
 [RAY_CLOSEST_HIT_SHADER]
 
+RaytracingAccelerationStructure g_RayTracingScene : register(t4);
 StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
 StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
 ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
 Texture2D<float4> g_RayTracingTextures[] : register(t12);
+
+#include "Passes/RayTracing/RayTracingTextureSampling.h"
+#include <Shaders/Pipeline/SurfaceLighting.h>
+#include "Passes/RayTracing/RayTracingEmitterSampling.h"
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+
+StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles;
+StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
+
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightSampling.h>
+
+StructuredBuffer<xiiGpuLightData> g_Lights;
+
+float TraceRTGIVisibility(float3 worldPosition, float3 worldNormal, float3 direction, float maximumDistance, uint bounceDepth)
+{
+  if (g_RTGISettings.z == 0u || maximumDistance <= 0.002f)
+    return 1.0f;
+
+  RayDesc visibilityRay;
+  visibilityRay.Origin = worldPosition + worldNormal * 0.002f;
+  visibilityRay.Direction = direction;
+  visibilityRay.TMin = 0.001f;
+  visibilityRay.TMax = maximumDistance;
+
+  xiiGlobalIlluminationPayload visibilityPayload;
+  visibilityPayload.Radiance = 0.0f;
+  visibilityPayload.Confidence = 0.0f;
+  visibilityPayload.RandomState = 0u;
+  visibilityPayload.BounceDepth = bounceDepth;
+  visibilityPayload.RayType = XII_RTGI_RAY_TYPE_VISIBILITY;
+  visibilityPayload.PathFlags = 0u;
+  visibilityPayload.RayConeWidth = 0.0f;
+  visibilityPayload.RayConeSpread = 0.0f;
+  TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+           0xFFU, 0U, 1U, 0U, visibilityRay, visibilityPayload);
+  return visibilityPayload.Confidence;
+}
 
 [shader("closesthit")]
 void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
@@ -114,14 +226,25 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
   float3 worldNormal = normalize(mul(objectNormal, (float3x3)WorldToObject3x4()));
 
   const bool hasTexCoord = geometry.VertexLayout.w != 0xFFFFFFFFU && geometry.VertexAttributes.z != 0U;
+  float2 texCoord0 = 0.0f;
+  float2 texCoord1 = 0.0f;
+  float2 texCoord2 = 0.0f;
   float2 texCoord = 0.0f;
   if (hasTexCoord)
   {
-    texCoord =
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x) * barycentrics.x +
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y) * barycentrics.y +
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z) * barycentrics.z;
+    texCoord0 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
+    texCoord1 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
+    texCoord2 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
+    texCoord = texCoord0 * barycentrics.x + texCoord1 * barycentrics.y + texCoord2 * barycentrics.z;
   }
+
+  const float3 worldEdge0 = mul((float3x3)ObjectToWorld3x4(), position1 - position0);
+  const float3 worldEdge1 = mul((float3x3)ObjectToWorld3x4(), position2 - position0);
+  const float worldTriangleArea = length(cross(worldEdge0, worldEdge1));
+  const float2 uvEdge0 = texCoord1 - texCoord0;
+  const float2 uvEdge1 = texCoord2 - texCoord0;
+  const float uvTriangleArea = hasTexCoord ? abs(uvEdge0.x * uvEdge1.y - uvEdge0.y * uvEdge1.x) : 0.0f;
+  const float rayConeWidth = max(payload.RayConeWidth + RayTCurrent() * payload.RayConeSpread, 1e-6f);
 
   if (hasTexCoord && geometry.VertexAttributes.x != 0xFFFFFFFFU && geometry.VertexAttributes.y != 0U && material.TextureIndices0.y != 0xFFFFFFFFU)
   {
@@ -132,8 +255,9 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
     float3 worldTangent = normalize(mul((float3x3)ObjectToWorld3x4(), objectTangent.xyz));
     worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
     const float3 worldBitangent = cross(worldNormal, worldTangent) * (objectTangent.w < 0.0f ? -1.0f : 1.0f);
-    const uint normalTextureIndex = NonUniformResourceIndex(material.TextureIndices0.y);
-    const float3 tangentNormal = xiiDecodeRayTracingNormal(g_RayTracingTextures[normalTextureIndex].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f), material.LayerParameters.y);
+    const float3 tangentNormal = xiiDecodeRayTracingNormal(
+      xiiSampleRayTracingMaterialTexture(material.TextureIndices0.y, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth),
+      material.LayerParameters.y);
     worldNormal = normalize(worldTangent * tangentNormal.x + worldBitangent * tangentNormal.y + worldNormal * tangentNormal.z);
   }
   if (dot(worldNormal, WorldRayDirection()) > 0.0f)
@@ -143,29 +267,188 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
   float3 emissive  = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
   float  roughness = saturate(material.EmissiveColorAndRoughness.w);
   float  metallic  = saturate(material.SurfaceParameters.x);
+  float  transmission = saturate(material.SurfaceParameters.z);
+  float  clearCoat = saturate(material.LayerParameters.z);
+  float  clearCoatRoughness = saturate(material.LayerParameters.w);
   float  occlusion = 1.0f;
   if (hasTexCoord && material.TextureIndices0.x != 0xFFFFFFFFU)
-    baseColor *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+    baseColor *= max(xiiSampleRayTracingMaterialTexture(material.TextureIndices0.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
   if (hasTexCoord && material.TextureIndices0.z != 0xFFFFFFFFU)
   {
-    const float4 metallicRoughness = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.z)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f);
+    const float4 metallicRoughness = xiiSampleRayTracingMaterialTexture(material.TextureIndices0.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth);
     roughness *= metallicRoughness.g;
     metallic *= metallicRoughness.b;
   }
   if (hasTexCoord && material.TextureIndices0.w != 0xFFFFFFFFU)
   {
-    const float sampledOcclusion = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.w)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).r;
+    const float sampledOcclusion = xiiSampleRayTracingMaterialTexture(material.TextureIndices0.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r;
     occlusion = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
   if (hasTexCoord && material.TextureIndices1.x != 0xFFFFFFFFU)
-    emissive *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices1.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+    emissive *= max(xiiSampleRayTracingMaterialTexture(material.TextureIndices1.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
+  if ((payload.PathFlags & XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE) != 0u)
+    emissive = 0.0f;
+  if (hasTexCoord && material.TextureIndices1.z != 0xFFFFFFFFU)
+  {
+    const float2 coatSample = xiiSampleRayTracingMaterialTexture(material.TextureIndices1.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rg;
+    clearCoat *= coatSample.r;
+    clearCoatRoughness *= coatSample.g;
+  }
+  if (hasTexCoord && material.TextureIndices1.w != 0xFFFFFFFFU)
+    transmission *= saturate(xiiSampleRayTracingMaterialTexture(material.TextureIndices1.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r);
 
-  const float3 lightDirection = normalize(-g_MainLightDirectionAndIntensity.xyz);
-  const float  nDotL          = saturate(dot(worldNormal, lightDirection));
-  const float3 irradiance     = max(g_AmbientLightColor.rgb, 0.0f) +
-                                max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * nDotL;
-  const float3 diffuseBounce = baseColor * (1.0f - metallic) * irradiance * occlusion * 0.31830989f;
-  payload.Radiance   = emissive + diffuseBounce;
+  roughness = max(roughness, 0.01f);
+  clearCoatRoughness = max(clearCoatRoughness, 0.01f);
+  const float dielectricSpecular = saturate(material.SurfaceParameters.y);
+  const float3 viewDirection = normalize(-WorldRayDirection());
+  const float3 hitPosition = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
+  const float3 diffuseReflectance = baseColor * (1.0f - metallic) * (1.0f - transmission);
+  float3 surfaceRadiance = max(g_AmbientLightColor.rgb, 0.0f) * diffuseReflectance * occlusion * 0.31830989f;
+
+  // Infinite emitters form a deterministic prefix and are inexpensive enough
+  // to evaluate exactly at every off-screen secondary hit.
+  const uint directionalLightCount = min((uint)(g_MainLightColor.w + 0.5f), g_ActiveLightCount);
+  [loop]
+  for (uint directionalIndex = 0u; directionalIndex < directionalLightCount; ++directionalIndex)
+  {
+    const xiiGpuLightData lightData = g_Lights[directionalIndex];
+    if (GetLightType(lightData) != XII_LIGHT_TYPE_DIRECTIONAL)
+      break;
+
+    const float3 directionToLight = normalize(-lightData.DirectionAndType.xyz);
+    const float3 radiance = max(lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w, 0.0f);
+    const float visibility = lightData.ShadowData.x > 0.5f ?
+      TraceRTGIVisibility(hitPosition, worldNormal, directionToLight, max(g_CameraForwardAndFarPlane.w, 10.0f), payload.BounceDepth) : 1.0f;
+    surfaceRadiance += BRDFLayered(baseColor, roughness, metallic, dielectricSpecular, transmission, clearCoat,
+                                   clearCoatRoughness, worldNormal, directionToLight, viewDirection) * radiance * visibility;
+  }
+
+  // Secondary hits have no screen cluster. Stratifying the complete local-light
+  // index domain produces an unbiased bounded-cost estimator that covers point,
+  // spot, rectangle, disc, sphere, and tube emitters without an O(light count) loop.
+  const uint localLightCount = g_ActiveLightCount - directionalLightCount;
+  const uint localSampleCount = min(max(g_RTGISettings.y, 1u), localLightCount);
+  if (localSampleCount > 0u)
+  {
+    const float sampleWeight = (float)localLightCount / (float)localSampleCount;
+    [loop]
+    for (uint sampleIndex = 0u; sampleIndex < localSampleCount; ++sampleIndex)
+    {
+      const float stratifiedSample = ((float)sampleIndex + RTGIRandom01(payload.RandomState)) / (float)localSampleCount;
+      const uint lightIndex = directionalLightCount + min((uint)(stratifiedSample * (float)localLightCount), localLightCount - 1u);
+      const xiiGpuLightData lightData = g_Lights[lightIndex];
+      const uint lightType = GetLightType(lightData);
+      if (lightType >= XII_LIGHT_TYPE_POINT && lightType <= XII_LIGHT_TYPE_TUBE)
+      {
+        float3 emitterPosition;
+        float projectedArea;
+        const float2 emitterSample = float2(RTGIRandom01(payload.RandomState), RTGIRandom01(payload.RandomState));
+        xiiSampleRayTracingLocalEmitter(lightData, hitPosition, emitterSample, emitterPosition, projectedArea);
+        const float3 toEmitter = emitterPosition - hitPosition;
+        const float distanceToEmitter = length(toEmitter);
+        const float3 directionToEmitter = distanceToEmitter > 1e-4f ? toEmitter / distanceToEmitter : worldNormal;
+        const float visibility = dot(worldNormal, directionToEmitter) <= 0.0f ? 0.0f :
+          (lightData.ShadowData.x > 0.5f ?
+             TraceRTGIVisibility(hitPosition, worldNormal, directionToEmitter, max(distanceToEmitter - 0.004f, 0.001f), payload.BounceDepth) : 1.0f);
+
+        xiiGpuLightData sampledLightData = lightData;
+        if (lightType == XII_LIGHT_TYPE_POINT || lightType == XII_LIGHT_TYPE_SPOT)
+          sampledLightData.PositionAndInvRange.xyz = emitterPosition;
+
+        const float3 contribution = lightType >= XII_LIGHT_TYPE_RECTANGLE ?
+          EvaluateAreaLightSample(lightData, emitterPosition, projectedArea, hitPosition, worldNormal, viewDirection, baseColor,
+                                  roughness, metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness) :
+          EvaluateLocalLightLayered(sampledLightData, hitPosition, worldNormal, viewDirection, baseColor, roughness, metallic,
+                                    dielectricSpecular, transmission, clearCoat, clearCoatRoughness);
+        surfaceRadiance += contribution * visibility * sampleWeight;
+      }
+    }
+  }
+
+  // The shared alias hierarchy samples emissive meshes by emitted power. A
+  // uniform point on the selected triangle then converts area measure to
+  // incident solid angle. Overflow disables NEE so BSDF-hit emission remains
+  // the unbiased fallback for emitters omitted from the bounded database.
+  const bool useEmissiveNEE = g_RTGISettings.w > 0u && xiiHasEmissiveAliasDistribution();
+  bool emissiveNEESampled = false;
+  if (useEmissiveNEE)
+  {
+    const uint emissiveSampleCount = clamp(g_RTGISettings.w, 1u, 4u);
+    [loop]
+    for (uint emissiveSampleIndex = 0u; emissiveSampleIndex < emissiveSampleCount; ++emissiveSampleIndex)
+    {
+      const float4 aliasRandomSample = float4(RTGIRandom01(payload.RandomState), RTGIRandom01(payload.RandomState),
+                                              RTGIRandom01(payload.RandomState), RTGIRandom01(payload.RandomState));
+      uint triangleIndex;
+      float triangleProposalProbability;
+      if (!xiiSampleEmissiveTriangleAlias(aliasRandomSample, triangleIndex, triangleProposalProbability))
+        continue;
+      emissiveNEESampled = true;
+
+      const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[triangleIndex];
+      const float sqrtBarycentric = sqrt(RTGIRandom01(payload.RandomState));
+      const float barycentricV = RTGIRandom01(payload.RandomState);
+      const float3 barycentrics = float3(1.0f - sqrtBarycentric,
+                                         sqrtBarycentric * (1.0f - barycentricV),
+                                         sqrtBarycentric * barycentricV);
+      const float3 emitterPosition = emissiveTriangle.Position0AndArea.xyz * barycentrics.x +
+                                     emissiveTriangle.Position1AndPowerWeight.xyz * barycentrics.y +
+                                     emissiveTriangle.Position2AndInvArea.xyz * barycentrics.z;
+      const float3 toEmitter = emitterPosition - hitPosition;
+      const float distanceSquared = dot(toEmitter, toEmitter);
+      if (distanceSquared <= 1e-8f)
+        continue;
+
+      const float distanceToEmitter = sqrt(distanceSquared);
+      const float3 directionToEmitter = toEmitter / distanceToEmitter;
+      const float receiverCosine = dot(worldNormal, directionToEmitter);
+      float emitterCosine = dot(normalize(emissiveTriangle.NormalAndTwoSided.xyz), -directionToEmitter);
+      emitterCosine = emissiveTriangle.NormalAndTwoSided.w >= 0.5f ? abs(emitterCosine) : max(emitterCosine, 0.0f);
+      if (receiverCosine <= 0.0f || emitterCosine <= 0.0f)
+        continue;
+
+      const float visibility = TraceRTGIVisibility(hitPosition, worldNormal, directionToEmitter,
+        max(distanceToEmitter - 0.004f, 0.001f), payload.BounceDepth);
+      const float areaToSolidAngle = max(emissiveTriangle.Position0AndArea.w, 0.0f) * emitterCosine / distanceSquared;
+      const float sampleNormalization = rcp(max((float)emissiveSampleCount * triangleProposalProbability, 1e-8f));
+      surfaceRadiance += BRDFLayered(baseColor, roughness, metallic, dielectricSpecular, transmission, clearCoat,
+                                     clearCoatRoughness, worldNormal, directionToEmitter, viewDirection) *
+                         max(emissiveTriangle.RadianceAndLuminance.rgb, 0.0f) * areaToSolidAngle * visibility * sampleNormalization;
+    }
+  }
+
+  float3 continuedBounce = 0.0f;
+  const uint maxPathHits = clamp(g_RTGISettings.x, 1u, 2u);
+  if (payload.BounceDepth + 1u < maxPathHits && metallic < 0.999f)
+  {
+    uint childRandomState = payload.RandomState;
+    const float2 childRandomSample = float2(RTGIRandom01(childRandomState), RTGIRandom01(childRandomState));
+    const float3 childDirection = CosineSampleHemisphere(worldNormal, childRandomSample);
+
+    RayDesc childRay;
+    childRay.Origin = hitPosition + worldNormal * 0.002f;
+    childRay.Direction = childDirection;
+    childRay.TMin = 0.001f;
+    childRay.TMax = min(max(g_CameraForwardAndFarPlane.w, 10.0f), 100.0f);
+
+    xiiGlobalIlluminationPayload childPayload;
+    childPayload.Radiance = 0.0f;
+    childPayload.Confidence = 0.0f;
+    childPayload.RandomState = childRandomState;
+    childPayload.BounceDepth = payload.BounceDepth + 1u;
+    childPayload.RayType = XII_RTGI_RAY_TYPE_PATH;
+    childPayload.PathFlags = emissiveNEESampled ? XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE : 0u;
+    childPayload.RayConeWidth = rayConeWidth;
+    childPayload.RayConeSpread = max(payload.RayConeSpread, 0.25f);
+    TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, childRay, childPayload);
+
+    // Cosine-weighted sampling cancels the Lambertian cosine/PDF terms, so
+    // only diffuse reflectance and material occlusion scale incoming radiance.
+    continuedBounce = diffuseReflectance * occlusion * max(childPayload.Radiance, 0.0f);
+    payload.RandomState = childPayload.RandomState;
+  }
+
+  payload.Radiance   = emissive + surfaceRadiance + continuedBounce;
   payload.Confidence = 1.0f;
 }
 
@@ -181,6 +464,7 @@ Texture2D<float4> g_RayTracingTextures[] : register(t12);
 [shader("anyhit")]
 void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
-  if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics))
+  const float rayConeWidth = payload.RayConeWidth + RayTCurrent() * payload.RayConeSpread;
+  if (xiiShouldIgnoreRayTracingHitWithRayCone(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics, rayConeWidth))
     IgnoreHit();
 }

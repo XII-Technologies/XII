@@ -10,6 +10,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 class xiiRenderGraphManagerState
@@ -342,6 +343,8 @@ xiiUInt64 xiiRenderGraphManager::PrepareFrame(xiiUInt64 uiFrameIndex, xiiUInt32 
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   if (xiiMaterialManager::IsInitialized())
     xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  if (xiiGpuVisibilityManager::IsInitialized())
+    xiiGpuVisibilityManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   if (xiiVirtualShadowMapManager::IsInitialized())
     xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   return uiCompletedFrame;

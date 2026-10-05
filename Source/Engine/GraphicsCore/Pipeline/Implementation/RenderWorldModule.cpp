@@ -20,6 +20,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
@@ -584,6 +585,23 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   if (xiiMaterialManager::IsInitialized())
     xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  if (xiiGpuVisibilityManager::IsInitialized())
+    xiiGpuVisibilityManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+
+  // Convert extracted engine meshes into persistent, subsystem-owned GPU scene records before
+  // residency streaming runs. Stable render IDs retain previous transforms across frames.
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+  {
+    ViewDetail& viewDetail = it.Value();
+    if (viewDetail.m_pView->IsValid())
+      XII_IGNORE_UNUSED(viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex));
+  }
+
+  // Scene synchronization can acquire resource-backed materials that did not exist at the start
+  // of the frame. Resolve their bindless textures before any view captures its material upload.
+  if (xiiMaterialManager::IsInitialized())
+    xiiMaterialManager::PrepareGpuResources();
+
   if (xiiGeometryResidencyManager::IsInitialized())
   {
     const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
@@ -637,7 +655,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     else
     {
       // Standard full-featured pipeline.
-      viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard);
+      viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard, virtualShadowHandles);
     }
 
     pGraph->EndSetup();

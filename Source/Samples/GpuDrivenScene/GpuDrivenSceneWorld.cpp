@@ -108,15 +108,12 @@ void xiiGpuDrivenSceneWorld::Shutdown(xiiUInt64 uiLastSubmittedFrame)
     xiiRayTracingSceneManager::DestroyInstance(handle);
   for (GeometryAsset& asset : m_GeometryAssets)
   {
-    for (xiiGALBindlessResourceHandle handle : asset.m_BindlessBuffers)
-      xiiGALBindlessResourceTable::RetireBufferSRV(handle, uiLastSubmittedFrame);
     xiiGeometryResidencyManager::UnregisterGeometry(asset.m_hGeometry, uiLastSubmittedFrame);
     xiiRayTracingSceneManager::UnregisterGeometry(asset.m_hRayTracingGeometry);
   }
   for (xiiMaterialGpuHandle handle : m_Materials)
     xiiMaterialManager::UnregisterMaterial(handle);
 
-  xiiGALBindlessResourceTable::Collect(uiLastSubmittedFrame);
   m_SpatialHierarchy.Clear();
   m_GeometryAssets.Clear();
   m_Materials.Clear();
@@ -231,35 +228,6 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
   for (GeometryAsset& asset : m_GeometryAssets)
   {
     if (xiiGeometryResidencyManager::GetState(asset.m_hGeometry) != xiiGeometryResidencyState::Resident)
-      return XII_FAILURE;
-    XII_SUCCEED_OR_RETURN(RegisterGeometryBuffers(asset));
-  }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGpuDrivenSceneWorld::RegisterGeometryBuffers(GeometryAsset& asset)
-{
-  for (xiiUInt32 lod = 0U; lod < asset.m_Lods.GetCount(); ++lod)
-  {
-    xiiResourceLock<xiiMeshBufferResource> mesh(asset.m_Lods[lod], xiiResourceAcquireMode::BlockTillLoaded);
-    if (!mesh.IsValid())
-      return XII_FAILURE;
-
-    xiiGALBindlessResourceHandle handles[5] = {
-      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetVertexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletVertexRemapBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-      xiiGALBindlessResourceTable::RegisterBufferSRV(mesh->GetMeshletPrimitiveIndexBuffer()->GetDefaultView(xiiGALBufferViewType::ShaderResource)),
-    };
-    for (const xiiGALBindlessResourceHandle handle : handles)
-    {
-      if (!handle.IsValid())
-        return XII_FAILURE;
-      asset.m_BindlessBuffers.PushBack(handle);
-    }
-
-    if (!xiiGeometryResidencyManager::SetBindlessIndices(asset.m_hGeometry, lod, handles[0].m_uiIndex, handles[1].m_uiIndex, handles[2].m_uiIndex, handles[3].m_uiIndex, handles[4].m_uiIndex))
       return XII_FAILURE;
   }
   return XII_SUCCESS;

@@ -1,0 +1,199 @@
+[PLATFORMS]
+ALL
+
+[SHADER]
+
+// Traces the selected ReSTIR emissive triangle against the canonical frame TLAS.
+// Analytical-light visibility has already been resolved against the local shadow atlas.
+
+#include "PipelineCommon.xiiShader"
+#include "Passes/RayTracing/RayTracingMaterialData.h"
+#include "Passes/ReSTIR/EmissiveLightData.h"
+
+static const uint XII_RESTIR_EMISSIVE_BIT             = 0x80000000u;
+static const uint XII_RESTIR_SAMPLE_MASK              = 0x7FFFFFFFu;
+static const uint XII_RESTIR_VISIBILITY_SHIFT         = 22u;
+static const uint XII_RESTIR_VISIBILITY_MASK          = 0xFFu;
+static const uint XII_RESTIR_VISIBILITY_VALID_BIT     = 1u << 30u;
+static const uint XII_RESTIR_PACKED_VISIBILITY_MASK   = (XII_RESTIR_VISIBILITY_MASK << XII_RESTIR_VISIBILITY_SHIFT) | XII_RESTIR_VISIBILITY_VALID_BIT;
+static const uint XII_RESTIR_MAX_EMISSIVE_VISIBILITY_SAMPLES = 8u;
+
+struct xiiReSTIREmissiveVisibilityPayload
+{
+  uint Occluded;
+};
+
+[RAY_GENERATION_SHADER]
+
+RaytracingAccelerationStructure             g_RayTracingScene   : register(t4);
+Texture2D<float>                             g_SceneDepth        : register(t5);
+Texture2D<float2>                            g_GBufferNormal     : register(t6);
+StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles : register(t7);
+StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader    : register(t8);
+RWTexture2D<uint4>                           g_Reservoir         : register(u13);
+
+uint ReSTIREmissiveVisibilityHash(uint value)
+{
+  value ^= value >> 16u;
+  value *= 0x7FEB352Du;
+  value ^= value >> 15u;
+  value *= 0x846CA68Bu;
+  value ^= value >> 16u;
+  return value;
+}
+
+float ReSTIREmissiveVisibilityRandom01(uint value)
+{
+  return (float)(ReSTIREmissiveVisibilityHash(value) & 0x00FFFFFFu) * (1.0f / 16777216.0f);
+}
+
+float3 ReSTIRSampleEmissiveTriangle(uint sampleIndex, uint sampleCount, float2 rotation)
+{
+  // A Cranley-Patterson rotated low-discrepancy sequence avoids coherent
+  // penumbra bands. The per-frame rotation converges under temporal reuse.
+  const float2 xi = frac(float2(((float)sampleIndex + 0.5f) / (float)sampleCount,
+                                ((float)sampleIndex + 0.5f) * 0.61803398875f) + rotation);
+  const float sqrtU = sqrt(xi.x);
+  return float3(1.0f - sqrtU, sqrtU * (1.0f - xi.y), sqrtU * xi.y);
+}
+
+float ReSTIRTraceEmissiveVisibility(float3 origin, float3 target, float3 emitterNormal, bool twoSided, out float solidAngleWeight)
+{
+  const float3 toTarget = target - origin;
+  const float targetDistance = length(toTarget);
+  if (targetDistance <= 0.004f)
+  {
+    solidAngleWeight = 0.0f;
+    return 1.0f;
+  }
+
+  const float3 direction = toTarget / targetDistance;
+  const float emitterCosine = dot(emitterNormal, -direction);
+  solidAngleWeight = (twoSided ? abs(emitterCosine) : max(emitterCosine, 0.0f)) /
+                     max(targetDistance * targetDistance, 1e-6f);
+  if (solidAngleWeight <= 0.0f)
+    return 0.0f;
+
+  RayDesc ray;
+  ray.Origin = origin;
+  ray.Direction = direction;
+  ray.TMin = 0.001f;
+  ray.TMax = max(targetDistance - 0.002f, ray.TMin);
+
+  xiiReSTIREmissiveVisibilityPayload payload;
+  payload.Occluded = 0u;
+  TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFu, 0u, 1u, 0u, ray, payload);
+  return payload.Occluded != 0u ? 0.0f : 1.0f;
+}
+
+[shader("raygeneration")]
+void main()
+{
+  const uint2 pixel = DispatchRaysIndex().xy;
+  uint4 packedReservoir = g_Reservoir[pixel];
+  if ((packedReservoir.x & XII_RESTIR_EMISSIVE_BIT) == 0u)
+    return;
+
+  uint triangleCapacity, triangleStride;
+  uint headerCapacity, headerStride;
+  g_EmissiveTriangles.GetDimensions(triangleCapacity, triangleStride);
+  g_EmissiveHeader.GetDimensions(headerCapacity, headerStride);
+  const uint triangleIndex = packedReservoir.x & XII_RESTIR_SAMPLE_MASK;
+  const uint triangleCount = headerCapacity > 0u ? min(g_EmissiveHeader[0].TriangleCount, triangleCapacity) : 0u;
+  if (triangleIndex >= triangleCount)
+    return;
+
+  const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[triangleIndex];
+  const uint packedRevision = (packedReservoir.w >> 6u) & 0xFFFFu;
+  if (emissiveTriangle.Metadata.x != packedReservoir.y || (emissiveTriangle.Metadata.w >> 16u) != packedRevision)
+    return;
+
+  const bool visibilityValid = (packedReservoir.w & XII_RESTIR_VISIBILITY_VALID_BIT) != 0u;
+  const uint previousVisibility = (packedReservoir.w >> XII_RESTIR_VISIBILITY_SHIFT) & XII_RESTIR_VISIBILITY_MASK;
+  const bool isPenumbra = previousVisibility > 0u && previousVisibility < XII_RESTIR_VISIBILITY_MASK;
+  const uint binaryRefreshPeriod = clamp(g_ReSTIRDISettings.y, 1u, 8u);
+  // There is no global occluder revision in the compact reservoir, so even a
+  // valid binary result must be refreshed on a bounded cadence. Penumbrae are
+  // always retraced; broad fully-lit/occluded regions alternate every frame.
+  if (visibilityValid && !isPenumbra && ((pixel.x + pixel.y + g_FrameIndex) % binaryRefreshPeriod) != 0u)
+    return;
+
+  float visibility = 1.0f;
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  if (depth > 0.0f)
+  {
+    const uint2 dimensions = DispatchRaysDimensions().xy;
+    const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+    const float3 worldPosition = ReconstructWorldPos(uv, depth);
+    const float3 normal = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
+    const float3 origin = worldPosition + normal * 0.002f;
+    const uint sampleSeed = ReSTIREmissiveVisibilityHash(packedReservoir.y ^ (packedRevision * 0x9E3779B9u) ^
+                                                         (pixel.x * 0x85EBCA6Bu) ^ (pixel.y * 0xC2B2AE35u) ^
+                                                         (g_FrameIndex * 0x27D4EB2Du));
+    const float2 rotation = float2(ReSTIREmissiveVisibilityRandom01(sampleSeed),
+                                   ReSTIREmissiveVisibilityRandom01(sampleSeed ^ 0x68BC21EBu));
+    float visibleSolidAngleWeight = 0.0f;
+    float totalSolidAngleWeight = 0.0f;
+    const uint visibilitySampleCount = clamp(g_ReSTIRDISettings.x, 1u, XII_RESTIR_MAX_EMISSIVE_VISIBILITY_SAMPLES);
+    [loop]
+    for (uint sampleIndex = 0u; sampleIndex < visibilitySampleCount; ++sampleIndex)
+    {
+      const float3 barycentrics = ReSTIRSampleEmissiveTriangle(sampleIndex, visibilitySampleCount, rotation);
+      const float3 target = emissiveTriangle.Position0AndArea.xyz * barycentrics.x +
+                            emissiveTriangle.Position1AndPowerWeight.xyz * barycentrics.y +
+                            emissiveTriangle.Position2AndInvArea.xyz * barycentrics.z;
+      float sampleWeight;
+      const float sampleVisibility = ReSTIRTraceEmissiveVisibility(
+        origin, target, emissiveTriangle.NormalAndTwoSided.xyz, emissiveTriangle.NormalAndTwoSided.w >= 0.5f, sampleWeight);
+      visibleSolidAngleWeight += sampleVisibility * sampleWeight;
+      totalSolidAngleWeight += sampleWeight;
+    }
+    visibility = totalSolidAngleWeight > 0.0f ? visibleSolidAngleWeight / totalSolidAngleWeight : 0.0f;
+    if (visibilityValid)
+    {
+      const float historyVisibility = (float)previousVisibility * (1.0f / 255.0f);
+      const float visibilityDelta = abs(visibility - historyVisibility);
+      const float reactiveThreshold = clamp(g_ReSTIRDIStabilitySettings.y, 0.05f, 1.0f);
+      const float historyWeight = visibilityDelta >= reactiveThreshold ? 0.0f :
+        clamp(g_ReSTIRDIStabilitySettings.x, 0.0f, 0.99f);
+      visibility = lerp(visibility, historyVisibility, historyWeight);
+    }
+  }
+
+  const uint quantizedVisibility = (uint)round(saturate(visibility) * 255.0f);
+  packedReservoir.w = (packedReservoir.w & ~XII_RESTIR_PACKED_VISIBILITY_MASK) |
+    (quantizedVisibility << XII_RESTIR_VISIBILITY_SHIFT) | XII_RESTIR_VISIBILITY_VALID_BIT;
+  g_Reservoir[pixel] = packedReservoir;
+}
+
+[RAY_MISS_SHADER]
+
+[shader("miss")]
+void main(inout xiiReSTIREmissiveVisibilityPayload payload)
+{
+  payload.Occluded = 0u;
+}
+
+[RAY_CLOSEST_HIT_SHADER]
+
+[shader("closesthit")]
+void main(inout xiiReSTIREmissiveVisibilityPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  payload.Occluded = 1u;
+}
+
+[RAY_ANY_HIT_SHADER]
+
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry  : register(t10);
+ByteAddressBuffer                            g_RayTracingBuffers[] : register(t11);
+Texture2D<float4>                            g_RayTracingTextures[] : register(t12);
+
+#include "Passes/RayTracing/RayTracingAlphaTest.h"
+
+[shader("anyhit")]
+void main(inout xiiReSTIREmissiveVisibilityPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics))
+    IgnoreHit();
+}

@@ -17,6 +17,7 @@ ALL
 Texture2D<float>    g_SceneDepth;   // reversed-Z surface depth
 Texture2D<float2>   g_GBufNormal;   // oct-encoded world normals
 Texture2D<float4>   g_GBufMaterial; // alpha stores the normalized material-feature byte
+Texture2D<float4>   g_GBufEmissive; // alpha stores the authored transmission factor
 Texture2D<float4>   g_HDRIn;        // immutable scene snapshot sampled behind the surface
 RWTexture2D<float4> g_HDROut;       // authoritative scene output
 
@@ -35,7 +36,8 @@ void main(uint3 tid : SV_DispatchThreadID)
     // The material target is RGBA8 UNORM. Alpha contains the material-feature
     // byte normalized to [0, 1], matching xiiMaterialFeatureFlags.
     const uint materialFlags = (uint)round(saturate(g_GBufMaterial.Load(int3(tid.xy, 0)).a) * 255.0f);
-    if (depth <= 0.0f || (materialFlags & MATERIAL_FEATURE_TRANSMISSION) == 0u)
+    const float transmission = saturate(g_GBufEmissive.Load(int3(tid.xy, 0)).a);
+    if (depth <= 0.0f || (materialFlags & MATERIAL_FEATURE_TRANSMISSION) == 0u || transmission <= 0.0f)
     {
         g_HDROut[tid.xy] = g_HDRIn.Load(int3(tid.xy, 0));
         return;
@@ -57,7 +59,7 @@ void main(uint3 tid : SV_DispatchThreadID)
 
     // Scale offset by depth so deeper water refracts less (underwater bending).
     float linearDepth = LinearizeDepth(depth);
-    float strength    = PerturbScale / (1.0f + linearDepth * 0.5f);
+    float strength    = transmission * PerturbScale / (1.0f + linearDepth * 0.5f);
 
     float2 offset = perturbDir * strength;
     offset = clamp(offset, float2(-MaxDistance, -MaxDistance),
@@ -87,6 +89,9 @@ void main(uint3 tid : SV_DispatchThreadID)
     refractColor.g = g_HDRIn.SampleLevel(g_sLinearClamp, gUV, 0).g;
     refractColor.b = g_HDRIn.SampleLevel(g_sLinearClamp, bUV, 0).b;
 
-    // Write refracted colour back (the surface's forward pass will blend specular on top).
-    g_HDROut[tid.xy] = float4(refractColor, 1.0f);
+    // Direct and indirect lighting already remove the authored transmissive
+    // fraction from their diffuse lobes. Add the corresponding background
+    // radiance here while retaining foreground specular reflection.
+    const float3 surfaceColor = g_HDRIn.Load(int3(tid.xy, 0)).rgb;
+    g_HDROut[tid.xy] = float4(surfaceColor + refractColor * transmission, 1.0f);
 }

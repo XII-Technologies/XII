@@ -1,0 +1,104 @@
+// XII Engine - Builds emitted-power CDFs for each clustered analytical-light list.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/LightingData.h>
+#include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+
+StructuredBuffer<xiiGpuLightData> g_Lights;
+StructuredBuffer<uint2>           g_LightGrid;
+RWStructuredBuffer<uint>          g_LightIndex;
+RWStructuredBuffer<float>         g_LightSamplingTotals;
+
+float GetLightPowerWeight(xiiGpuLightData lightData)
+{
+  const float luminance = dot(max(lightData.ColorAndIntensity.rgb, 0.0f), float3(0.2126f, 0.7152f, 0.0722f));
+  const float intensity = max(lightData.ColorAndIntensity.w, 0.0f);
+  const uint lightType = GetLightType(lightData);
+  const float pi = 3.14159265359f;
+  float emitterMeasure = 0.0f;
+
+  if (lightType == XII_LIGHT_TYPE_POINT)
+  {
+    emitterMeasure = 4.0f * pi;
+  }
+  else if (lightType == XII_LIGHT_TYPE_SPOT)
+  {
+    emitterMeasure = 2.0f * pi * max(1.0f - lightData.SpotAnglesAndRectSize.y, 0.0f);
+  }
+  else if (lightType == XII_LIGHT_TYPE_RECTANGLE)
+  {
+    emitterMeasure = pi * max(lightData.SpotAnglesAndRectSize.z * lightData.SpotAnglesAndRectSize.w, 0.0f);
+  }
+  else if (lightType == XII_LIGHT_TYPE_DISC)
+  {
+    const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
+    emitterMeasure = pi * pi * radius * radius;
+  }
+  else if (lightType == XII_LIGHT_TYPE_SPHERE)
+  {
+    const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
+    emitterMeasure = 4.0f * pi * pi * radius * radius;
+  }
+  else if (lightType == XII_LIGHT_TYPE_TUBE)
+  {
+    const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
+    const float length = max(lightData.AttenuationAndSize.z, 0.0f);
+    emitterMeasure = pi * (2.0f * pi * radius * length + 4.0f * pi * radius * radius);
+  }
+
+  const float power = luminance * intensity * emitterMeasure;
+  return isfinite(power) ? max(power, 0.0f) : 0.0f;
+}
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint clusterIndex = dispatchThreadId.x;
+  if (clusterIndex >= TotalClusters)
+    return;
+
+  uint lightGridCount, lightGridStride;
+  uint lightIndexCount, lightIndexStride;
+  uint lightCount, lightStride;
+  g_LightGrid.GetDimensions(lightGridCount, lightGridStride);
+  g_LightIndex.GetDimensions(lightIndexCount, lightIndexStride);
+  g_Lights.GetDimensions(lightCount, lightStride);
+  if (clusterIndex >= lightGridCount)
+    return;
+
+  const uint2 range = g_LightGrid[clusterIndex];
+  const uint count = min(range.y, MaxLightsPerCluster);
+  float totalPower = 0.0f;
+  [loop]
+  for (uint listIndex = 0u; listIndex < count; ++listIndex)
+  {
+    const uint address = range.x + listIndex;
+    const uint analyticalLightIndex = address < lightIndexCount ? g_LightIndex[address] : 0xFFFFFFFFu;
+    if (analyticalLightIndex < min(lightCount, ActiveLightCount))
+      totalPower += GetLightPowerWeight(g_Lights[analyticalLightIndex]);
+  }
+
+  if (!isfinite(totalPower))
+    totalPower = 0.0f;
+  g_LightSamplingTotals[clusterIndex] = totalPower;
+
+  float cumulativePower = 0.0f;
+  [loop]
+  for (uint listIndex = 0u; listIndex < count; ++listIndex)
+  {
+    const uint address = range.x + listIndex;
+    const uint analyticalLightIndex = address < lightIndexCount ? g_LightIndex[address] : 0xFFFFFFFFu;
+    if (analyticalLightIndex < min(lightCount, ActiveLightCount))
+      cumulativePower += GetLightPowerWeight(g_Lights[analyticalLightIndex]);
+
+    const uint normalizedCDF = totalPower > 0.0f ? (uint)round(saturate(cumulativePower / totalPower) * (float)XII_CLUSTER_LIGHT_CDF_MAX) : 0u;
+    g_LightIndex[address] = PackClusterLightEntry(analyticalLightIndex, normalizedCDF);
+  }
+}

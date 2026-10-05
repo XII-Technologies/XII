@@ -41,9 +41,10 @@ namespace xiiRGBlackboardKeys
 
   // Stage 1 - Clustering.
 
-  constexpr xiiStringView k_ClusterDescriptors = "ClusterDescriptors"_xiisv; ///< xiiRenderGraphBufferHandle - frustum cluster AABB descriptors (float4 per cluster).
-  constexpr xiiStringView k_LightIndexBuffer   = "LightIndexBuffer"_xiisv;   ///< xiiRenderGraphBufferHandle - per-cluster compact light index list.
-  constexpr xiiStringView k_LightGridBuffer    = "LightGrid"_xiisv;          ///< xiiRenderGraphBufferHandle - cluster -> (offset, count) pairs (uint2 per cluster).
+  constexpr xiiStringView k_ClusterDescriptors  = "ClusterDescriptors"_xiisv;  ///< xiiRenderGraphBufferHandle - frustum cluster AABB descriptors (float4 per cluster).
+  constexpr xiiStringView k_LightIndexBuffer    = "LightIndexBuffer"_xiisv;    ///< xiiRenderGraphBufferHandle - packed 20-bit light index + 12-bit sampling CDF per cluster.
+  constexpr xiiStringView k_LightGridBuffer     = "LightGrid"_xiisv;           ///< xiiRenderGraphBufferHandle - cluster -> (offset, count) pairs (uint2 per cluster).
+  constexpr xiiStringView k_LightSamplingTotals = "LightSamplingTotals"_xiisv; ///< xiiRenderGraphBufferHandle - emitted-power total per cluster.
 
   // Stage 1 - Froxel / Volumetric
 
@@ -76,7 +77,8 @@ namespace xiiRGBlackboardKeys
 
   constexpr xiiStringView k_OccluderDepthTexture  = "OccluderDepth"_xiisv;         ///< xiiRenderGraphTextureHandle - occluder-only depth prepass output (D32F).
   constexpr xiiStringView k_SceneDepthTexture     = "SceneDepth"_xiisv;            ///< xiiRenderGraphTextureHandle - full-resolution scene depth buffer (D32F reversed-Z).
-  constexpr xiiStringView k_HiZPyramid            = "HiZPyramid"_xiisv;            ///< xiiRenderGraphTextureHandle - R32F max-depth pyramid covering all mip levels.
+  constexpr xiiStringView k_HiZPyramid            = "HiZPyramid"_xiisv;            ///< xiiRenderGraphTextureHandle - R32F reversed-Z farthest-depth hierarchy for conservative occlusion.
+  constexpr xiiStringView k_HiZClosestPyramid     = "HiZClosestPyramid"_xiisv;     ///< xiiRenderGraphTextureHandle - R32F reversed-Z closest-depth hierarchy for screen-space rays.
   constexpr xiiStringView k_VelocityBuffer        = "VelocityBuffer"_xiisv;        ///< xiiRenderGraphTextureHandle - raw screen-space velocity (R16G16F).
   constexpr xiiStringView k_DilatedVelocityBuffer = "DilatedVelocityBuffer"_xiisv; ///< xiiRenderGraphTextureHandle - depth-aware velocity used by temporal passes (R16G16F).
   constexpr xiiStringView k_NormalRoughnessBuffer = "NormalRoughness"_xiisv;       ///< xiiRenderGraphTextureHandle - compact R8G8B8A8 oct-encoded normal + roughness.
@@ -85,8 +87,9 @@ namespace xiiRGBlackboardKeys
 
   constexpr xiiStringView k_GBufferAlbedo   = "GBufferAlbedo"_xiisv;   ///< xiiRenderGraphTextureHandle - R8G8B8A8_UNORM albedo (rgb) + AO (a).
   constexpr xiiStringView k_GBufferNormal   = "GBufferNormal"_xiisv;   ///< xiiRenderGraphTextureHandle - R16G16_SNORM oct-encoded world-space normals.
-  constexpr xiiStringView k_GBufferMaterial = "GBufferMaterial"_xiisv; ///< xiiRenderGraphTextureHandle - R8G8B8A8: r=roughness, g=metallic, b=specular, a=matID.
+  constexpr xiiStringView k_GBufferMaterial = "GBufferMaterial"_xiisv; ///< xiiRenderGraphTextureHandle - R8G8B8A8: r=roughness, g=metallic, b=specular, a=feature byte.
   constexpr xiiStringView k_GBufferEmissive = "GBufferEmissive"_xiisv; ///< xiiRenderGraphTextureHandle - R16G16B16A16F emissive + special-purpose channel.
+  constexpr xiiStringView k_GBufferObjectId = "GBufferObjectId"_xiisv; ///< xiiRenderGraphTextureHandle - R32_UINT stable object identity used by temporal effects and tools.
 
   // Stage 5 - Lighting Preparation.
 
@@ -114,11 +117,13 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_IndirectLightingBuffer      = "IndirectLighting"_xiisv;            ///< xiiRenderGraphTextureHandle - indirect lighting HDR (R16G16B16A16F).
   constexpr xiiStringView k_SSGITexture                 = "SSGITerm"_xiisv;                    ///< xiiRenderGraphTextureHandle - non-RT near-field diffuse GI contribution.
   constexpr xiiStringView k_EnvironmentSpecular         = "EnvironmentSpecular"_xiisv;         ///< xiiRenderGraphTextureHandle - Tier 2 probe/sky specular contribution already evaluated through the material BRDF.
-  constexpr xiiStringView k_SSRTexture                  = "SSRTerm"_xiisv;                     ///< xiiRenderGraphTextureHandle - screen-space reflection radiance (R16G16B16A16F).
+  constexpr xiiStringView k_SSRRawTexture               = "SSRRawTerm"_xiisv;                  ///< xiiRenderGraphTextureHandle - current-frame screen-space reflection radiance and confidence.
+  constexpr xiiStringView k_SSRTexture                  = "SSRTerm"_xiisv;                     ///< xiiRenderGraphTextureHandle - temporally resolved screen-space reflection radiance and confidence.
   constexpr xiiStringView k_RTRawGI                     = "RTRawGI"_xiisv;                     ///< xiiRenderGraphTextureHandle - raw RT indirect diffuse before denoising.
   constexpr xiiStringView k_RTResampledGI               = "RTResampledGI"_xiisv;               ///< xiiRenderGraphTextureHandle - spatiotemporally resampled RT indirect diffuse.
   constexpr xiiStringView k_RTFinalGI                   = "RTFinalGI"_xiisv;                   ///< xiiRenderGraphTextureHandle - denoised RT GI.
   constexpr xiiStringView k_RTRawReflections            = "RTRawReflections"_xiisv;            ///< xiiRenderGraphTextureHandle - raw RT reflection radiance.
+  constexpr xiiStringView k_RTRawReflectionHitDistance  = "RTRawReflectionHitDistance"_xiisv;  ///< xiiRenderGraphTextureHandle - primary RT reflection hit distance (R16_FLOAT, zero for misses).
   constexpr xiiStringView k_RTFinalReflections          = "RTFinalReflections"_xiisv;          ///< xiiRenderGraphTextureHandle - denoised RT reflections.
   constexpr xiiStringView k_VolumetricScatteringRaw     = "VolumetricScatteringRaw"_xiisv;     ///< xiiRenderGraphTextureHandle - current-frame integrated volumetric light before temporal filtering.
   constexpr xiiStringView k_VolumetricScattering        = "VolumetricScattering"_xiisv;        ///< xiiRenderGraphTextureHandle - integrated volumetric light contribution.

@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/Graphics/Camera.h>
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Reflection/Implementation/Casts.h>
@@ -16,8 +17,6 @@
 #include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <GraphicsCore/Components/Lights/TubeAreaLightComponent.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
-#include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
@@ -65,7 +64,12 @@ namespace
 } // namespace
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiReSTIRDIQualityPreset, 1)
+  XII_ENUM_CONSTANTS(xiiReSTIRDIQualityPreset::Integrated, xiiReSTIRDIQualityPreset::Balanced, xiiReSTIRDIQualityPreset::High,
+    xiiReSTIRDIQualityPreset::Ultra, xiiReSTIRDIQualityPreset::Custom)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 13, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -87,6 +91,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 4, xiiRTTI
     XII_MEMBER_PROPERTY("SSRefractionChromatic", m_fSSRefractionChromatic)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.1f)),
     XII_MEMBER_PROPERTY("LocalShadowAtlasSize", m_uiLocalShadowAtlasSize)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
     XII_MEMBER_PROPERTY("LocalShadowTileSize", m_uiLocalShadowTileSize)->AddAttributes(new xiiClampValueAttribute(64U, 4096U)),
+    XII_MEMBER_PROPERTY("MaxLocalShadowFacesPerFrame", m_uiMaxLocalShadowFacesPerFrame)->AddAttributes(new xiiClampValueAttribute(1U, 1024U), new xiiDefaultValueAttribute(64U)),
     XII_MEMBER_PROPERTY("VolumetricFogDensity", m_fVolumetricFogDensity)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("VolumetricHeightFalloff", m_fVolumetricHeightFalloff)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("VolumetricBaseHeight", m_fVolumetricBaseHeight)->AddAttributes(new xiiSuffixAttribute(" m")),
@@ -94,6 +99,28 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 4, xiiRTTI
     XII_MEMBER_PROPERTY("DirectionalShadowMaxPenumbra", m_fDirectionalShadowMaxPenumbra)->AddAttributes(new xiiClampValueAttribute(1.0f, 128.0f), new xiiSuffixAttribute(" px")),
     XII_MEMBER_PROPERTY("DirectionalShadowBlockerSamples", m_uiDirectionalShadowBlockerSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("DirectionalShadowFilterSamples", m_uiDirectionalShadowFilterSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+    XII_ENUM_MEMBER_PROPERTY("ReSTIRDIQualityPreset", xiiReSTIRDIQualityPreset, m_ReSTIRDIQualityPreset),
+    XII_MEMBER_PROPERTY("ReSTIRDIEmissiveVisibilitySamples", m_uiReSTIRDIEmissiveVisibilitySamples)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(4U)),
+    XII_MEMBER_PROPERTY("ReSTIRDIEmissiveBinaryRefreshPeriod", m_uiReSTIRDIEmissiveBinaryRefreshPeriod)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(2U)),
+    XII_MEMBER_PROPERTY("ReSTIRDIEmissiveVisibilityHistoryWeight", m_fReSTIRDIEmissiveVisibilityHistoryWeight)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.99f), new xiiDefaultValueAttribute(0.75f)),
+    XII_MEMBER_PROPERTY("ReSTIRDIEmissiveVisibilityReactiveThreshold", m_fReSTIRDIEmissiveVisibilityReactiveThreshold)->AddAttributes(new xiiClampValueAttribute(0.05f, 1.0f), new xiiDefaultValueAttribute(0.35f)),
+    XII_MEMBER_PROPERTY("ReSTIRDIFreshCandidateCount", m_uiReSTIRDIFreshCandidateCount)->AddAttributes(new xiiClampValueAttribute(1U, 32U), new xiiDefaultValueAttribute(8U)),
+    XII_MEMBER_PROPERTY("ReSTIRDITemporalHistoryM", m_uiReSTIRDITemporalHistoryM)->AddAttributes(new xiiClampValueAttribute(1U, 32U), new xiiDefaultValueAttribute(20U)),
+    XII_MEMBER_PROPERTY("ReSTIRDISpatialNeighborCount", m_uiReSTIRDISpatialNeighborCount)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(4U)),
+    XII_MEMBER_PROPERTY("ReSTIRDISpatialRadius", m_uiReSTIRDISpatialRadius)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(2U), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("RTGIMaxPathHits", m_uiRTGIMaxPathHits)->AddAttributes(new xiiClampValueAttribute(1U, 2U), new xiiDefaultValueAttribute(2U)),
+    XII_MEMBER_PROPERTY("RTGILocalLightSamples", m_uiRTGILocalLightSamples)->AddAttributes(new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(2U)),
+    XII_MEMBER_PROPERTY("RTGIEmissiveLightSamples", m_uiRTGIEmissiveLightSamples)->AddAttributes(new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(1U)),
+    XII_MEMBER_PROPERTY("RTReflectionMaxPathHits", m_uiRTReflectionMaxPathHits)->AddAttributes(new xiiClampValueAttribute(1U, 2U), new xiiDefaultValueAttribute(2U)),
+    XII_MEMBER_PROPERTY("RTReflectionHistoryWeight", m_fRTReflectionHistoryWeight)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.99f), new xiiDefaultValueAttribute(0.90f)),
+    XII_MEMBER_PROPERTY("RTReflectionMomentsHistoryWeight", m_fRTReflectionMomentsHistoryWeight)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.99f), new xiiDefaultValueAttribute(0.94f)),
+    XII_MEMBER_PROPERTY("RTReflectionConfidenceDecay", m_fRTReflectionConfidenceDecay)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.97f)),
+    XII_MEMBER_PROPERTY("RTReflectionSpatialWeight", m_fRTReflectionSpatialWeight)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.35f)),
+    XII_MEMBER_PROPERTY("RTReflectionDepthThreshold", m_fRTReflectionDepthThreshold)->AddAttributes(new xiiClampValueAttribute(0.001f, 0.25f), new xiiDefaultValueAttribute(0.02f)),
+    XII_MEMBER_PROPERTY("RTReflectionNormalThreshold", m_fRTReflectionNormalThreshold)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.95f)),
+    XII_MEMBER_PROPERTY("RTReflectionHitDistanceRelativeThreshold", m_fRTReflectionHitDistanceRelativeThreshold)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.08f)),
+    XII_MEMBER_PROPERTY("RTReflectionHitDistanceAbsoluteThreshold", m_fRTReflectionHitDistanceAbsoluteThreshold)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(0.05f), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("RTReflectionVarianceGamma", m_fRTReflectionVarianceGamma)->AddAttributes(new xiiClampValueAttribute(0.5f, 8.0f), new xiiDefaultValueAttribute(2.5f)),
     XII_MEMBER_PROPERTY("MaxIESProfiles", m_uiMaxIESProfiles)->AddAttributes(new xiiClampValueAttribute(1U, 4096U)),
   }
   XII_END_PROPERTIES;
@@ -129,7 +156,104 @@ xiiLightingSystem::~xiiLightingSystem()
 void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings)
 {
   m_Settings = settings;
-  m_pDevice  = std::move(pDevice);
+  switch (m_Settings.m_ReSTIRDIQualityPreset.GetValue())
+  {
+    case xiiReSTIRDIQualityPreset::Integrated:
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples          = 1U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 4U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.90f;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.50f;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount                = 4U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM                   = 8U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount               = 2U;
+      m_Settings.m_uiReSTIRDISpatialRadius                      = 1U;
+      m_Settings.m_uiRTGIMaxPathHits                            = 1U;
+      m_Settings.m_uiRTGILocalLightSamples                      = 1U;
+      m_Settings.m_uiRTGIEmissiveLightSamples                   = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits                    = 1U;
+      m_Settings.m_fRTReflectionHistoryWeight                   = 0.96f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight            = 0.97f;
+      m_Settings.m_fRTReflectionConfidenceDecay                 = 0.95f;
+      m_Settings.m_fRTReflectionSpatialWeight                   = 0.55f;
+      m_Settings.m_fRTReflectionDepthThreshold                  = 0.025f;
+      m_Settings.m_fRTReflectionNormalThreshold                 = 0.92f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold    = 0.12f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.10f;
+      m_Settings.m_fRTReflectionVarianceGamma                   = 3.0f;
+      break;
+    case xiiReSTIRDIQualityPreset::Balanced:
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples          = 2U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 3U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.85f;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.40f;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount                = 6U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM                   = 12U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount               = 3U;
+      m_Settings.m_uiReSTIRDISpatialRadius                      = 2U;
+      m_Settings.m_uiRTGIMaxPathHits                            = 1U;
+      m_Settings.m_uiRTGILocalLightSamples                      = 1U;
+      m_Settings.m_uiRTGIEmissiveLightSamples                   = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits                    = 1U;
+      m_Settings.m_fRTReflectionHistoryWeight                   = 0.94f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight            = 0.96f;
+      m_Settings.m_fRTReflectionConfidenceDecay                 = 0.96f;
+      m_Settings.m_fRTReflectionSpatialWeight                   = 0.45f;
+      m_Settings.m_fRTReflectionDepthThreshold                  = 0.022f;
+      m_Settings.m_fRTReflectionNormalThreshold                 = 0.94f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold    = 0.10f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.075f;
+      m_Settings.m_fRTReflectionVarianceGamma                   = 2.75f;
+      break;
+    case xiiReSTIRDIQualityPreset::High:
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples          = 4U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 2U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.75f;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.35f;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount                = 8U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM                   = 20U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount               = 4U;
+      m_Settings.m_uiReSTIRDISpatialRadius                      = 2U;
+      m_Settings.m_uiRTGIMaxPathHits                            = 2U;
+      m_Settings.m_uiRTGILocalLightSamples                      = 2U;
+      m_Settings.m_uiRTGIEmissiveLightSamples                   = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits                    = 2U;
+      m_Settings.m_fRTReflectionHistoryWeight                   = 0.90f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight            = 0.94f;
+      m_Settings.m_fRTReflectionConfidenceDecay                 = 0.97f;
+      m_Settings.m_fRTReflectionSpatialWeight                   = 0.35f;
+      m_Settings.m_fRTReflectionDepthThreshold                  = 0.020f;
+      m_Settings.m_fRTReflectionNormalThreshold                 = 0.95f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold    = 0.08f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.05f;
+      m_Settings.m_fRTReflectionVarianceGamma                   = 2.5f;
+      break;
+    case xiiReSTIRDIQualityPreset::Ultra:
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples          = 8U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 1U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.60f;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.25f;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount                = 16U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM                   = 32U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount               = 8U;
+      m_Settings.m_uiReSTIRDISpatialRadius                      = 4U;
+      m_Settings.m_uiRTGIMaxPathHits                            = 2U;
+      m_Settings.m_uiRTGILocalLightSamples                      = 4U;
+      m_Settings.m_uiRTGIEmissiveLightSamples                   = 2U;
+      m_Settings.m_uiRTReflectionMaxPathHits                    = 2U;
+      m_Settings.m_fRTReflectionHistoryWeight                   = 0.88f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight            = 0.92f;
+      m_Settings.m_fRTReflectionConfidenceDecay                 = 0.98f;
+      m_Settings.m_fRTReflectionSpatialWeight                   = 0.25f;
+      m_Settings.m_fRTReflectionDepthThreshold                  = 0.015f;
+      m_Settings.m_fRTReflectionNormalThreshold                 = 0.97f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold    = 0.06f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.025f;
+      m_Settings.m_fRTReflectionVarianceGamma                   = 2.0f;
+      break;
+    case xiiReSTIRDIQualityPreset::Custom:
+      break;
+  }
+  m_pDevice = std::move(pDevice);
   m_LightData.Reserve(m_Settings.m_uiMaxActiveLights);
   m_LocalShadowData.Reserve(m_Settings.m_uiMaxActiveLights);
 
@@ -202,6 +326,26 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
     m_GlobalConstants.m_fWorldTime   = m_GlobalConstants.m_fGlobalTime;
   }
   m_GlobalConstants.m_RenderScaleJitter = xiiVec4(view.GetRenderResolutionScale(), 0.0f, 0.0f, 0.0f);
+  m_GlobalConstants.m_ReSTIRDISettings  = xiiVec4U32(
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples, 1U, 8U),
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod, 1U, 8U), 0U, 0U);
+  m_GlobalConstants.m_ReSTIRDIReuseSettings = xiiVec4U32(
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDIFreshCandidateCount, 1U, 32U),
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDITemporalHistoryM, 1U, 32U),
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialNeighborCount, 1U, 8U),
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialRadius, 1U, 8U));
+  m_GlobalConstants.m_ReSTIRDIStabilitySettings = xiiVec4(
+    xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight, 0.0f, 0.99f),
+    xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold, 0.05f, 1.0f), 0.0f, 0.0f);
+  const xiiUInt32 uiDeviceRayRecursion  = m_pDevice != nullptr ? m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth : 1U;
+  const bool      bTraceHitVisibility   = uiDeviceRayRecursion >= 2U;
+  const xiiUInt32 uiPathRecursionBudget = bTraceHitVisibility ? uiDeviceRayRecursion - 1U : uiDeviceRayRecursion;
+  m_GlobalConstants.m_RTGISettings      = xiiVec4U32(
+    xiiMath::Clamp(m_Settings.m_uiRTGIMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))),
+    xiiMath::Clamp(m_Settings.m_uiRTGILocalLightSamples, 1U, 4U), bTraceHitVisibility ? 1U : 0U,
+    xiiMath::Clamp(m_Settings.m_uiRTGIEmissiveLightSamples, 1U, 4U));
+  m_GlobalConstants.m_RTReflectionSettings = xiiVec4U32(
+    xiiMath::Clamp(m_Settings.m_uiRTReflectionMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))), 0U, 0U, 0U);
 
   float     fBestDirectionalIntensity = -1.0f;
   xiiUInt32 uiBestDirectionalLightId  = xiiInvalidIndex;
@@ -379,69 +523,35 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       AppendLight(lightData, LightType::Tube, static_cast<xiiUInt32>(pTubeLight->m_uiSortingKey));
       continue;
     }
-
-    if (const xiiMeshRenderData* pMesh = xiiDynamicCast<const xiiMeshRenderData*>(pRenderData))
-    {
-      const xiiVec3 vPosition          = pMesh->m_GlobalBounds.m_vCenter;
-      const float   fMaterialAreaScale = 1.0f / xiiMath::Sqrt(static_cast<float>(xiiMath::Max(pMesh->m_hMaterials.GetCount(), 1U)));
-      const float   fSourceRadius      = xiiMath::Max(pMesh->m_GlobalBounds.m_fSphereRadius * fMaterialAreaScale, 0.001f);
-
-      for (xiiUInt32 uiMaterialIndex = 0U; uiMaterialIndex < pMesh->m_hMaterials.GetCount(); ++uiMaterialIndex)
-      {
-        const xiiMaterialResourceHandle& hMaterial = pMesh->m_hMaterials[uiMaterialIndex];
-        if (!hMaterial.IsValid())
-          continue;
-
-        xiiResourceLock<xiiMaterialResource> material(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
-        if (!material.IsValid() || material.GetAcquireResult() != xiiResourceAcquireResult::Final)
-          continue;
-
-        const xiiMaterialResourceDescriptor& descriptor = material->GetCurrentDescription();
-        if (descriptor.m_Domain != xiiMaterialDomain::Surface)
-          continue;
-
-        xiiColor         emissiveLuminance = descriptor.m_EmissiveColor;
-        const xiiVariant resolvedEmissive  = material->GetParameter(xiiTempHashedString("EmissiveColor"));
-        if (resolvedEmissive.IsA<xiiColor>())
-          emissiveLuminance = resolvedEmissive.Get<xiiColor>();
-
-        const float fPeakLuminance = xiiMath::Max(emissiveLuminance.r, emissiveLuminance.g, emissiveLuminance.b);
-        if (!xiiMath::IsFinite(fPeakLuminance) || fPeakLuminance <= 0.0f)
-          continue;
-
-        const float fProjectedArea = xiiMath::Pi<float>() * fSourceRadius * fSourceRadius;
-        const float fPeakCandela   = fPeakLuminance * fProjectedArea;
-        const float fRange         = xiiMath::Max(xiiLightComponent::CalculateEffectiveRange(0.0f, fPeakCandela), fSourceRadius);
-
-        xiiGpuLightData lightData;
-        xiiMemoryUtils::ZeroFill(&lightData, 1);
-        const xiiColor normalizedColor(
-          emissiveLuminance.r / fPeakLuminance,
-          emissiveLuminance.g / fPeakLuminance,
-          emissiveLuminance.b / fPeakLuminance,
-          1.0f);
-        lightData.m_PositionAndInvRange   = MakeVec4(vPosition, 1.0f / fRange);
-        lightData.m_DirectionAndType      = MakeVec4(xiiVec3::MakeZero(), static_cast<float>(LightType::EmissiveMesh));
-        lightData.m_ColorAndIntensity     = MakeVec4(normalizedColor, fPeakLuminance);
-        lightData.m_AttenuationAndSize    = xiiVec4(fRange, fSourceRadius, 0.0f, 0.0f);
-        lightData.m_SpotAnglesAndRectSize = xiiVec4(1.0f, -1.0f, 0.0f, 0.0f);
-        lightData.m_ShadowData            = xiiVec4::MakeZero();
-        lightData.m_BoundsCenterAndRadius = MakeVec4(vPosition, fRange + fSourceRadius);
-
-        const xiiUInt32 uiStableLightId = xiiHashingUtils::CombineHashValues32(pMesh->m_uiUniqueID, uiMaterialIndex);
-        if (AppendLight(lightData, LightType::EmissiveMesh, uiStableLightId))
-          ++m_Stats.m_uiEmissiveMeshLightCount;
-      }
-    }
   }
 
+  // Keep infinite lights in a small deterministic prefix. Surface and
+  // volumetric shaders can then evaluate every directional source without
+  // scanning a potentially very large local-light stream. The brightest
+  // directional is first and remains the sole owner of cascaded/VSM and cloud
+  // shadows; stable IDs make ties and local-light ordering reproducible.
+  m_LightData.Sort([](const xiiGpuLightData& lhs, const xiiGpuLightData& rhs) {
+    const bool bLeftDirectional  = lhs.m_Metadata.z == static_cast<xiiUInt32>(LightType::Directional);
+    const bool bRightDirectional = rhs.m_Metadata.z == static_cast<xiiUInt32>(LightType::Directional);
+    if (bLeftDirectional != bRightDirectional)
+      return bLeftDirectional;
+    if (bLeftDirectional && lhs.m_ColorAndIntensity.w != rhs.m_ColorAndIntensity.w)
+      return lhs.m_ColorAndIntensity.w > rhs.m_ColorAndIntensity.w;
+    return lhs.m_Metadata.x < rhs.m_Metadata.x;
+  });
+  for (xiiUInt32 uiLightIndex = 0U; uiLightIndex < m_LightData.GetCount(); ++uiLightIndex)
+    m_LightData[uiLightIndex].m_Metadata.y = uiLightIndex;
+
   m_LightConstants.m_uiActiveLightCount = m_Stats.m_uiActiveLightCount;
+  m_LightConstants.m_MainLightColor.w   = static_cast<float>(m_Stats.m_uiDirectionalLightCount);
 
   xiiLocalShadowAtlasSettings localShadowSettings;
-  localShadowSettings.m_uiAtlasSize = m_Settings.m_uiLocalShadowAtlasSize;
-  localShadowSettings.m_uiTileSize  = m_Settings.m_uiLocalShadowTileSize;
+  localShadowSettings.m_uiAtlasSize        = m_Settings.m_uiLocalShadowAtlasSize;
+  localShadowSettings.m_uiTileSize         = m_Settings.m_uiLocalShadowTileSize;
+  localShadowSettings.m_uiMaxFacesPerFrame = m_Settings.m_uiMaxLocalShadowFacesPerFrame;
   xiiLocalShadowAtlasBuilder::Build(localShadowSettings,
-                                    xiiArrayPtr<const xiiGpuLightData>(m_LightData.GetData(), m_LightData.GetCount()), m_LocalShadowData, m_LocalShadowStatistics);
+                                    xiiArrayPtr<const xiiGpuLightData>(m_LightData.GetData(), m_LightData.GetCount()),
+                                    m_CameraConstants.m_CameraPositionAndNearPlane.GetAsVec3(), m_LocalShadowData, m_LocalShadowStatistics);
 }
 
 void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)
@@ -612,7 +722,10 @@ bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type, x
   lightData.m_Metadata.x = uiStableLightId;
   lightData.m_Metadata.y = m_LightData.GetCount();
   lightData.m_Metadata.z = static_cast<xiiUInt32>(type);
-  lightData.m_Metadata.w = 0U;
+  // ReSTIR uses this compact content revision in addition to the stable ID.
+  // Moving or editing a light therefore invalidates stale samples without
+  // increasing the 128-bit reservoir history footprint.
+  lightData.m_Metadata.w = xiiHashingUtils::xxHash32(&lightData, offsetof(xiiGpuLightData, m_Metadata)) & 0xFFFFU;
 
   m_LightData.PushBack(lightData);
   ++m_Stats.m_uiActiveLightCount;

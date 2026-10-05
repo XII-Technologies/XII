@@ -23,9 +23,9 @@ void TexelToHeightCos(uint2 tid, uint2 dims, out float heightKm, out float cosZe
 }
 
 // Density of each atmosphere layer at height h above planet surface.
-float RayleighDensity(float h) { return exp(-h / PlanetAtmosphereRadiiScaleHeights.z); }
-float MieDensity(float h)      { return exp(-h / PlanetAtmosphereRadiiScaleHeights.w); }
-float OzoneDensity(float h)    { return max(0.0f, 1.0f - abs(h - 25.0f) / 15.0f); }
+float RayleighDensity(float h) { return exp(-max(h, 0.0f) / PlanetAtmosphereRadiiScaleHeights.z); }
+float MieDensity(float h)      { return exp(-max(h, 0.0f) / PlanetAtmosphereRadiiScaleHeights.w); }
+float OzoneDensity(float h)    { return max(0.0f, 1.0f - abs(max(h, 0.0f) - 25.0f) / 15.0f); }
 
 float3 IntegrateOpticalDepth(float3 rayStart, float3 rayDir, float rayLen)
 {
@@ -44,14 +44,33 @@ float3 IntegrateOpticalDepth(float3 rayStart, float3 rayDir, float rayLen)
     return optical;
 }
 
-// Ray-sphere intersection: returns parametric t for the atmosphere exit.
-float RaySphereIntersect(float3 origin, float3 dir, float radius)
+// Returns the forward exit from a sphere containing the ray origin.
+float DistanceToSphereExit(float3 origin, float3 dir, float radius)
 {
     float b = dot(origin, dir);
     float c = dot(origin, origin) - radius * radius;
     float d = b*b - c;
     if (d < 0.0f) return -1.0f;
     return -b + sqrt(d);
+}
+
+// Returns the first ground intersection. At sea level, only inward rays hit
+// the ground; treating the zero root of an outward ray as a hit would erase
+// the entire upper hemisphere of the transmittance LUT.
+float DistanceToGround(float3 origin, float3 dir, float groundRadius)
+{
+    const float radialDistance = length(origin);
+    if (radialDistance <= groundRadius + 1e-4f)
+        return dot(origin, dir) < 0.0f ? 0.0f : -1.0f;
+
+    const float b = dot(origin, dir);
+    const float c = dot(origin, origin) - groundRadius * groundRadius;
+    const float d = b * b - c;
+    if (d < 0.0f)
+        return -1.0f;
+
+    const float nearDistance = -b - sqrt(d);
+    return nearDistance >= 0.0f ? nearDistance : -1.0f;
 }
 
 [numthreads(8, 8, 1)]
@@ -65,8 +84,18 @@ void main(uint3 tid : SV_DispatchThreadID)
 
     float3 origin  = float3(0.0f, heightKm, 0.0f);
     float3 rayDir  = float3(sqrt(max(0.0f, 1.0f - cosZenith * cosZenith)), cosZenith, 0.0f);
-    float  rayLen  = RaySphereIntersect(origin, rayDir, PlanetAtmosphereRadiiScaleHeights.y);
+    const float atmosphereDistance = DistanceToSphereExit(origin, rayDir, PlanetAtmosphereRadiiScaleHeights.y);
+    const float groundDistance = DistanceToGround(origin, rayDir, PlanetAtmosphereRadiiScaleHeights.x);
 
-    float3 T = exp(-IntegrateOpticalDepth(origin, rayDir, max(rayLen, 0.0f)));
+    // Direct irradiance is fully occluded when the ray reaches the planet
+    // before it leaves the atmosphere. This also prevents density evaluation
+    // below sea level and makes the LUT well behaved below the horizon.
+    if (groundDistance >= 0.0f && groundDistance < atmosphereDistance)
+    {
+        g_TransmittanceLUT[tid.xy] = float4(0.0f, 0.0f, 0.0f, 1.0f);
+        return;
+    }
+
+    float3 T = exp(-IntegrateOpticalDepth(origin, rayDir, max(atmosphereDistance, 0.0f)));
     g_TransmittanceLUT[tid.xy] = float4(T, 1.0f);
 }

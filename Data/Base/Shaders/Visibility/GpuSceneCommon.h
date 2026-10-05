@@ -17,16 +17,18 @@ struct GpuSceneInstance
   uint     Flags;
   uint     VisibilityMask;
   uint     UserData;
-  uint     Padding0;
-  uint     Padding1;
+  uint     FirstPrimitive;
+  uint     PrimitiveCount;
 };
 
 struct GpuVisibilityView
 {
   float4x4 ViewProjectionMatrix;
+  float4x4 OcclusionViewProjectionMatrix;
   float4   FrustumPlanes[6];
   float4   CameraPosition;
   float4   ViewportAndHiZ;
+  float4   LodParameters;
   uint     InstanceCount;
   uint     VisibilityMask;
   uint     RequiredFlags;
@@ -72,6 +74,33 @@ struct GpuMeshlet
   float4 Cone;
 };
 
+struct GpuLodFeedback
+{
+  uint Key;
+  uint GeometryGeneration;
+  uint DesiredLod;
+  uint SelectedLod;
+  uint PurposeMask;
+  uint ObjectUserData;
+  uint Priority;
+  uint Padding;
+};
+
+uint SelectDesiredLod(GpuGeometryRecord geometry, float worldSpaceRadius, float distanceToCamera, float viewportHeight)
+{
+  if (geometry.LodCount == 0u)
+    return 0xFFFFFFFFu;
+
+  const float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);
+  const uint  lodCount          = min(geometry.LodCount, 8u);
+  [unroll] for (uint lod = 0u; lod < lodCount; ++lod)
+  {
+    if (projectedCoverage >= geometry.Lods[lod].MinimumScreenCoverage)
+      return lod;
+  }
+  return lodCount - 1u;
+}
+
 uint SelectResidentLod(GpuGeometryRecord geometry, float worldSpaceRadius, float distanceToCamera, float viewportHeight)
 {
   float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);
@@ -85,6 +114,36 @@ uint SelectResidentLod(GpuGeometryRecord geometry, float worldSpaceRadius, float
       return lod;
   }
   return fallback;
+}
+
+uint SelectResidentLodWithHistory(GpuGeometryRecord geometry, float worldSpaceRadius, float distanceToCamera, float viewportHeight,
+                                  uint instanceUserData, uint4 previousHistory, uint previousHistoryToken, float hysteresis)
+{
+  const uint desiredLod = SelectResidentLod(geometry, worldSpaceRadius, distanceToCamera, viewportHeight);
+  if (desiredLod == 0xFFFFFFFFu)
+    return desiredLod;
+
+  const uint previousLod    = previousHistory.x;
+  const bool historyMatches = previousHistory.w == previousHistoryToken &&
+    previousHistory.y == geometry.Generation &&
+    previousHistory.z == instanceUserData &&
+    previousLod < min(geometry.LodCount, 8u) &&
+    (geometry.ResidentLodMask & (1u << previousLod)) != 0u;
+  if (!historyMatches || previousLod == desiredLod)
+    return desiredLod;
+
+  const float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);
+  const float deadBand          = clamp(hysteresis, 0.0f, 0.49f);
+  if (desiredLod < previousLod)
+  {
+    // Promote only after crossing above the finer LOD threshold plus a dead band.
+    const float promotionThreshold = geometry.Lods[desiredLod].MinimumScreenCoverage * (1.0f + deadBand);
+    return projectedCoverage >= promotionThreshold ? desiredLod : previousLod;
+  }
+
+  // Demote only after crossing below the current LOD threshold minus a dead band.
+  const float demotionThreshold = geometry.Lods[previousLod].MinimumScreenCoverage * (1.0f - deadBand);
+  return projectedCoverage < demotionThreshold ? desiredLod : previousLod;
 }
 
 bool SphereInsideFrustum(float3 center, float radius, GpuVisibilityView view)

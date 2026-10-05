@@ -6,6 +6,7 @@
 #include <Foundation/Containers/HybridArray.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsFoundation/Resources/BindlessResource.h>
 
 struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyState
 {
@@ -41,6 +42,11 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryLodSource
 
   xiiMeshBufferResourceHandle m_hMeshBuffer;
   float                       m_fMinimumScreenCoverage = 0.0f;
+  /// First meshlet in the source buffer that belongs to this LOD. This allows several LODs
+  /// authored in one xiiMeshBufferResource to share their immutable vertex/remap buffers.
+  xiiUInt32 m_uiFirstMeshlet = 0U;
+  /// Number of source meshlets in this LOD. Zero consumes every meshlet after m_uiFirstMeshlet.
+  xiiUInt32 m_uiMeshletCount = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryLodSource);
@@ -138,12 +144,20 @@ public:
 
   [[nodiscard]] static xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
   static void                            UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
-  static void                            RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex);
-  static void                            Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
-  static void                            ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
 
-  /// Supplies indices allocated by the backend bindless resource table.
-  static bool SetBindlessIndices(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt32 uiVertex, xiiUInt32 uiIndex, xiiUInt32 uiMeshlet, xiiUInt32 uiRemap, xiiUInt32 uiPrimitive);
+  /// Acquires a shared residency record for an engine mesh resource. Multiple scene objects using
+  /// the same resource receive the same generation-checked geometry handle. Mesh LODs packed into
+  /// one buffer are translated into reflected meshlet ranges by the subsystem.
+  [[nodiscard]] static xiiGeometryHandle AcquireMeshGeometry(const xiiMeshResourceHandle& hMesh);
+  /// Releases one reference acquired through AcquireMeshGeometry(). The residency record remains
+  /// valid until uiFrameIndex has completed on the GPU.
+  static void ReleaseMeshGeometry(const xiiMeshResourceHandle& hMesh, xiiUInt64 uiFrameIndex);
+
+  /// Requests the finest required LOD. Concurrent view requests are merged toward the lowest
+  /// LOD index and retain the strongest visibility priority until the missing range is resident.
+  static void RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority = 0U);
+  static void Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
+  static void ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
 
   [[nodiscard]] static bool                               IsValid(xiiGeometryHandle handle);
   [[nodiscard]] static xiiEnum<xiiGeometryResidencyState> GetState(xiiGeometryHandle handle);
@@ -174,20 +188,28 @@ private:
 
   struct Slot
   {
+    static constexpr xiiUInt32 s_uiBindlessResourcesPerLod = 5U;
+
     xiiGeometryDescription             m_Description;
     xiiGpuGeometryRecord               m_GpuRecord;
-    xiiEnum<xiiGeometryResidencyState> m_State           = xiiGeometryResidencyState::Unloaded;
-    xiiUInt64                          m_uiLastUsedFrame = 0U;
-    xiiUInt64                          m_uiRetireFrame   = 0U;
-    xiiUInt64                          m_uiResidentBytes = 0U;
-    xiiUInt32                          m_uiGeneration    = 1U;
-    xiiUInt32                          m_uiRequestedLod  = 0U;
-    bool                               m_bAllocated      = false;
+    xiiEnum<xiiGeometryResidencyState> m_State                = xiiGeometryResidencyState::Unloaded;
+    xiiUInt64                          m_uiLastUsedFrame      = 0U;
+    xiiUInt64                          m_uiRetireFrame        = 0U;
+    xiiUInt64                          m_uiResidentBytes      = 0U;
+    xiiUInt32                          m_uiGeneration         = 1U;
+    xiiUInt32                          m_uiRequestedLod       = 0U;
+    xiiUInt32                          m_uiVisibilityPriority = 0U;
+    xiiUInt64                          m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
+    bool                               m_bAllocated           = false;
     /// One bit per frame-in-flight metadata slice. A record change must reach every slice
     /// before it is considered clean; a single boolean would leave rotating slices stale.
     xiiUInt64 m_uiDirtyFrameMask                                        = 0U;
     xiiUInt32 m_uiMeshletArenaOffset[xiiGpuGeometryRecord::s_uiMaxLods] = {};
     xiiUInt32 m_uiMeshletArenaCount[xiiGpuGeometryRecord::s_uiMaxLods]  = {};
+    /// Vertex, index, meshlet, remap and primitive SRVs owned by the residency service.
+    /// Keeping the generation-bearing handles beside the LOD prevents callers from leaking
+    /// descriptors or retiring them while an older frame still references the geometry record.
+    xiiGALBindlessResourceHandle m_BindlessResources[xiiGpuGeometryRecord::s_uiMaxLods][s_uiBindlessResourcesPerLod] = {};
   };
 
   struct Upload
@@ -219,6 +241,8 @@ private:
   };
 
   static bool BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget);
+  static bool RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, xiiMeshBufferResource& mesh);
+  static void ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
   static void EnforceBudget(xiiUInt64 uiCompletedFrame);
   static bool AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
   static void FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);

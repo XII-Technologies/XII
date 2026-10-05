@@ -24,8 +24,11 @@ namespace
       settings.m_vMieAbsorption.x >= 0.0f && settings.m_vMieAbsorption.y >= 0.0f && settings.m_vMieAbsorption.z >= 0.0f &&
       settings.m_vOzoneAbsorption.x >= 0.0f && settings.m_vOzoneAbsorption.y >= 0.0f && settings.m_vOzoneAbsorption.z >= 0.0f &&
       xiiMath::IsFinite(settings.m_fMiePhaseG) && settings.m_fMiePhaseG > -1.0f && settings.m_fMiePhaseG < 1.0f &&
+      xiiMath::IsFinite(settings.m_fSunLimbDarkening) && settings.m_fSunLimbDarkening >= 0.0f && settings.m_fSunLimbDarkening <= 1.0f &&
       settings.m_uiTransmittanceIntegrationSteps > 0U && settings.m_uiTransmittanceIntegrationSteps <= 1024U &&
-      settings.m_uiMultiScatterSqrtSamples > 0U && settings.m_uiMultiScatterSqrtSamples <= 64U;
+      settings.m_uiMultiScatterSqrtSamples > 0U && settings.m_uiMultiScatterSqrtSamples <= 64U &&
+      settings.m_uiSkyViewIntegrationSteps > 0U && settings.m_uiSkyViewIntegrationSteps <= 64U &&
+      settings.m_uiAerialPerspectiveSteps > 0U && settings.m_uiAerialPerspectiveSteps <= 64U;
   }
 
   bool IsEqual(const xiiAtmosphereSettings& lhs, const xiiAtmosphereSettings& rhs)
@@ -35,9 +38,11 @@ namespace
       lhs.m_vRayleighScattering == rhs.m_vRayleighScattering && lhs.m_vMieScattering == rhs.m_vMieScattering &&
       lhs.m_vMieAbsorption == rhs.m_vMieAbsorption && lhs.m_vOzoneAbsorption == rhs.m_vOzoneAbsorption &&
       lhs.m_vPlanetUpDirection == rhs.m_vPlanetUpDirection && lhs.m_fGroundAltitudeMeters == rhs.m_fGroundAltitudeMeters &&
-      lhs.m_fMiePhaseG == rhs.m_fMiePhaseG &&
+      lhs.m_fMiePhaseG == rhs.m_fMiePhaseG && lhs.m_fSunLimbDarkening == rhs.m_fSunLimbDarkening &&
       lhs.m_uiTransmittanceIntegrationSteps == rhs.m_uiTransmittanceIntegrationSteps &&
-      lhs.m_uiMultiScatterSqrtSamples == rhs.m_uiMultiScatterSqrtSamples;
+      lhs.m_uiMultiScatterSqrtSamples == rhs.m_uiMultiScatterSqrtSamples &&
+      lhs.m_uiSkyViewIntegrationSteps == rhs.m_uiSkyViewIntegrationSteps &&
+      lhs.m_uiAerialPerspectiveSteps == rhs.m_uiAerialPerspectiveSteps;
   }
 } // namespace
 
@@ -99,7 +104,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, AtmosphereManager)
   }
 XII_END_SUBSYSTEM_DECLARATION;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiAtmosphereSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiAtmosphereSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -114,8 +119,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 1, xiiRTTIDefa
     XII_MEMBER_PROPERTY("PlanetUpDirection", m_vPlanetUpDirection),
     XII_MEMBER_PROPERTY("GroundAltitudeMeters", m_fGroundAltitudeMeters)->AddAttributes(new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("MiePhaseG", m_fMiePhaseG)->AddAttributes(new xiiClampValueAttribute(-0.999f, 0.999f)),
+    XII_MEMBER_PROPERTY("SunLimbDarkening", m_fSunLimbDarkening)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("TransmittanceIntegrationSteps", m_uiTransmittanceIntegrationSteps)->AddAttributes(new xiiClampValueAttribute(1U, 1024U)),
     XII_MEMBER_PROPERTY("MultiScatterSqrtSamples", m_uiMultiScatterSqrtSamples)->AddAttributes(new xiiClampValueAttribute(1U, 64U)),
+    XII_MEMBER_PROPERTY("SkyViewIntegrationSteps", m_uiSkyViewIntegrationSteps)->AddAttributes(new xiiClampValueAttribute(1U, 64U)),
+    XII_MEMBER_PROPERTY("AerialPerspectiveSteps", m_uiAerialPerspectiveSteps)->AddAttributes(new xiiClampValueAttribute(1U, 64U)),
   }
   XII_END_PROPERTIES;
 }

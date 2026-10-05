@@ -83,6 +83,8 @@ struct XII_GRAPHICSCORE_DLL xiiSceneObjectDesc
   xiiUInt32                        m_uiMaterialIndex  = xiiInvalidIndex;
   xiiUInt32                        m_uiVisibilityMask = 0xFFFFFFFFU;
   xiiUInt32                        m_uiUserData       = 0U;
+  xiiUInt32                        m_uiFirstPrimitive = 0U;
+  xiiUInt32                        m_uiPrimitiveCount = 0U; ///< Zero means the complete selected LOD.
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneObjectDesc);
@@ -108,8 +110,8 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
   xiiUInt32 m_uiFlags             = 0U;
   xiiUInt32 m_uiVisibilityMask    = 0xFFFFFFFFU;
   xiiUInt32 m_uiUserData          = 0U;
-  xiiUInt32 m_uiPadding0          = 0U;
-  xiiUInt32 m_uiPadding1          = 0U;
+  xiiUInt32 m_uiFirstPrimitive    = 0U;
+  xiiUInt32 m_uiPrimitiveCount    = 0U; ///< Zero means the complete selected LOD.
 };
 
 static_assert(sizeof(xiiGpuSceneInstance) % 16U == 0U, "GPU scene records must preserve structured-buffer alignment.");

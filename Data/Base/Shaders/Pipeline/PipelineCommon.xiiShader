@@ -17,7 +17,7 @@ cbuffer PerFrameCamera : register(b0)
 cbuffer PerFrameLight : register(b1)
 {
     float4   g_MainLightDirectionAndIntensity; // xyz=dir (world), w=intensity
-    float4   g_MainLightColor;                 // xyz=rgb, w=unused
+    float4   g_MainLightColor;                 // xyz=primary rgb, w=directional-light prefix count
     float4   g_AmbientLightColor;              // xyz=rgb, w=unused
     uint     g_ActiveLightCount;
     uint     g_ClusterCountX;
@@ -48,6 +48,11 @@ cbuffer PerFrameGlobal : register(b2)
     float    g_GlobalTime;
     float    g_WorldTime;
     float4   g_RenderScaleJitter; // x=scale, yzw=halton jitter (normalized [-0.5,0.5])
+    uint4    g_ReSTIRDISettings;  // x=emissive visibility rays, y=binary visibility refresh period
+    uint4    g_ReSTIRDIReuseSettings; // x=fresh candidates, y=history M, z=spatial neighbours, w=radius pixels
+    float4   g_ReSTIRDIStabilitySettings; // x=emissive visibility history weight, y=reactive threshold
+    uint4    g_RTGISettings; // x=maximum path hits, y=local samples, z=hit-light visibility enabled, w=emissive samples
+    uint4    g_RTReflectionSettings; // x=maximum glossy path hits, yzw=reserved
 };
 
 // 

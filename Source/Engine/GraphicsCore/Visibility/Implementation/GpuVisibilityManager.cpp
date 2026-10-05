@@ -17,7 +17,8 @@ public:
 
   xiiDynamicArray<Slot>      m_Slots;
   xiiDynamicArray<xiiUInt32> m_FreeSlots;
-  bool                       m_bEngineStarted = false;
+  xiiUInt64                  m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
+  bool                       m_bEngineStarted   = false;
 };
 
 xiiUniquePtr<xiiGpuVisibilityManagerState> xiiGpuVisibilityManager::s_pState;
@@ -75,6 +76,19 @@ bool xiiGpuVisibilityManager::IsSubsystemInitialized()
 bool xiiGpuVisibilityManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();
+}
+
+void xiiGpuVisibilityManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame)
+{
+  if (!IsInitialized() || s_pState->m_uiLastBeginFrame == uiFrameIndex)
+    return;
+
+  s_pState->m_uiLastBeginFrame = uiFrameIndex;
+  for (xiiGpuVisibilityManagerState::Slot& slot : s_pState->m_Slots)
+  {
+    if (slot.m_pSystem != nullptr)
+      slot.m_pSystem->BeginFrame(uiFrameIndex, uiCompletedFrame);
+  }
 }
 
 xiiGpuVisibilityContextHandle xiiGpuVisibilityManager::CreateContext(const xiiGpuVisibilityDescription& description)
@@ -138,6 +152,37 @@ xiiGpuVisibilityOutputs xiiGpuVisibilityManager::AddPasses(xiiGpuVisibilityConte
   return pSystem != nullptr && pScene != nullptr ? pSystem->AddPasses(graph, uiFrameIndex, *pScene, view, geometry, description, hHiZ) : xiiGpuVisibilityOutputs{};
 }
 
+xiiResult xiiGpuVisibilityManager::PrepareHiZHistory(xiiGpuVisibilityContextHandle handle, xiiUInt32 uiWidth, xiiUInt32 uiHeight)
+{
+  xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  return pSystem != nullptr ? pSystem->m_HiZHistory.Resize(uiWidth, uiHeight) : XII_FAILURE;
+}
+
+void xiiGpuVisibilityManager::InvalidateHiZHistory(xiiGpuVisibilityContextHandle handle)
+{
+  if (xiiGpuVisibilitySystem* pSystem = GetSystem(handle))
+    pSystem->m_HiZHistory.Invalidate();
+}
+
+xiiRenderGraphTextureHandle xiiGpuVisibilityManager::ImportPreviousHiZ(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
+{
+  xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  return pSystem != nullptr ? pSystem->m_HiZHistory.ImportPrevious(graph, uiFrameIndex) : xiiRenderGraphTextureHandle{};
+}
+
+void xiiGpuVisibilityManager::AddHiZBuildPass(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex,
+                                              xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute)
+{
+  if (xiiGpuVisibilitySystem* pSystem = GetSystem(handle))
+    pSystem->m_HiZHistory.AddBuildPass(graph, uiFrameIndex, hSceneDepth, bAsyncCompute);
+}
+
+xiiUInt32 xiiGpuVisibilityManager::GetHiZMipLevelCount(xiiGpuVisibilityContextHandle handle)
+{
+  const xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  return pSystem != nullptr ? pSystem->m_HiZHistory.GetMipLevelCount() : 0U;
+}
+
 xiiUInt32 xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle)
 {
   const xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
@@ -148,6 +193,12 @@ xiiUInt32 xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(xiiGpuVisibilityCo
 {
   const xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
   return pSystem != nullptr ? pSystem->GetMeshDispatchGroupCountY() : 0U;
+}
+
+xiiGpuVisibilityStreamingStats xiiGpuVisibilityManager::GetStreamingStats(xiiGpuVisibilityContextHandle handle)
+{
+  const xiiGpuVisibilitySystem* pSystem = GetSystem(handle);
+  return pSystem != nullptr ? pSystem->m_StreamingStats : xiiGpuVisibilityStreamingStats{};
 }
 
 void xiiGpuVisibilityManager::Startup()
@@ -181,7 +232,8 @@ void xiiGpuVisibilityManager::EngineShutdown()
       slot.m_uiGeneration = 1U;
     s_pState->m_FreeSlots.PushBack(uiIndex);
   }
-  s_pState->m_bEngineStarted = false;
+  s_pState->m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
+  s_pState->m_bEngineStarted   = false;
 }
 
 void xiiGpuVisibilityManager::Shutdown()

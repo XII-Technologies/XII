@@ -119,7 +119,9 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialFeatureFlags
     WritesVelocity           = XII_BIT(14),
     UsesBindlessResources    = XII_BIT(15),
 
-    Default = None
+    /// Physically lit surfaces participate in shadows, temporal reconstruction and bindless
+    /// rendering unless an authored material explicitly opts out.
+    Default = ReceivesLighting | CastsShadows | WritesVelocity | UsesBindlessResources
   };
 
   struct Bits

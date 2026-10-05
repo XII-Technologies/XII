@@ -8,8 +8,10 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/LocalShadow.h>
+#include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 /// Describes one independently culled shadow view rasterized into a depth atlas region.
 struct XII_GRAPHICSCORE_DLL xiiGpuShadowRasterDescription
@@ -17,6 +19,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuShadowRasterDescription
   xiiMat4    m_ViewProjectionMatrix      = xiiMat4::MakeIdentity();
   xiiVec4U32 m_Viewport                  = xiiVec4U32::MakeZero(); ///< x, y, width, height in atlas texels.
   xiiUInt32  m_uiVertexStride            = 0U;
+  xiiUInt32  m_uiTexCoordOffset          = 0U;
   xiiUInt32  m_uiMeshDispatchGroupCountX = 1U;
   xiiUInt32  m_uiMeshDispatchGroupCountY = 1U;
   bool       m_bClearViewport            = true; ///< Clear only this viewport to reversed-Z far depth before rasterization.
@@ -45,7 +48,19 @@ public:
   /// Adds one graph-managed depth-only mesh dispatch. The returned handle is the new atlas version.
   [[nodiscard]] static xiiRenderGraphTextureHandle AddPass(xiiRenderGraph& graph, xiiStringView sName,
                                                            xiiRenderGraphTextureHandle hDepthAtlas, const xiiGpuVisibilityOutputs& visibility,
-                                                           const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiGpuShadowRasterDescription& description);
+                                                           const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                           const xiiMaterialGpuStorage::UploadHandles&       materials,
+                                                           const xiiGpuShadowRasterDescription&              description);
+
+  /// Culls and rasterizes every allocated local-light face into its atlas tile. All faces reuse a
+  /// single frame-sliced visibility scratch set; graph versions serialize reuse without allocating
+  /// one maximum-capacity visibility buffer set per light.
+  [[nodiscard]] static xiiRenderGraphTextureHandle AddLocalLightPasses(
+    xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiGpuVisibilityContextHandle hVisibilityContext,
+    xiiSceneDatabaseContextHandle hSceneContext, xiiRenderGraphTextureHandle hDepthAtlas,
+    xiiArrayPtr<const xiiLocalShadowAtlasData> shadowData, xiiUInt32 uiAtlasSize,
+    const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials,
+    xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset);
 
 private:
   static void Startup();

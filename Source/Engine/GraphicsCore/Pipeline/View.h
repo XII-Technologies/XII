@@ -17,6 +17,7 @@
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
+#include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
@@ -24,7 +25,9 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
+#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 class xiiFrustum;
 class xiiWorld;
@@ -50,6 +53,7 @@ struct xiiLightingDataUploadData;
 struct xiiClusterBuildData;
 struct xiiLightListClearData;
 struct xiiLightListData;
+struct xiiLightSamplingData;
 struct xiiReflectionProbeSelectData;
 struct xiiFroxelAllocationData;
 
@@ -83,6 +87,9 @@ struct xiiGroundTruthAmbientOcclusionDenoiseData;
 
 struct xiiReSTIRDITemporalData;
 struct xiiReSTIRDISpatialData;
+struct xiiReSTIRDIVisibilityData;
+struct xiiReSTIRDIEmissiveVisibilityData;
+struct xiiShadowSamplingConstantsData;
 struct xiiDeferredDirectLightingData;
 struct xiiDeferredIndirectLightingData;
 struct xiiRayTracedGlobalIlluminationData;
@@ -92,6 +99,7 @@ struct xiiRayTracedGlobalIlluminationDenoiseData;
 struct xiiRayTracedReflectionsData;
 struct xiiRayTracedReflectionsDenoiseData;
 struct xiiScreenSpaceReflectionsData;
+struct xiiScreenSpaceReflectionsTemporalData;
 struct xiiHybridReflectionCompositeData;
 struct xiiVolumetricLightInjectionData;
 struct xiiVolumetricFogIntegrationData;
@@ -100,8 +108,7 @@ struct xiiVolumetricFogTemporalReprojectionData;
 struct xiiAtmosphereCompositeData;
 struct xiiSensorOutputData;
 
-struct xiiForwardOpaqueData;
-struct xiiForwardMaskedData;
+struct xiiOpaqueLightingCompositeData;
 struct xiiHairRenderingData;
 struct xiiWaterRenderingData;
 struct xiiSubsurfaceScatteringData;
@@ -178,6 +185,11 @@ public:
 
   void                       SetViewRenderMode(xiiEnum<xiiViewRenderMode> value);
   xiiEnum<xiiViewRenderMode> GetViewRenderMode() const;
+
+  /// Selects Forward+ or deferred opaque direct lighting for this view. Forward+ automatically
+  /// falls back to deferred when the active device cannot execute the GPU-scene mesh path.
+  void                   SetRenderPath(xiiEnum<xiiRenderPath> value);
+  xiiEnum<xiiRenderPath> GetRenderPath() const;
 
   /// Enables calibrated sensor output for this view. Passing an invalid handle disables it.
   [[nodiscard]] xiiResult                   SetSensorProfile(xiiSensorProfileHandle hProfile);
@@ -274,12 +286,13 @@ private:
 
   void SetExtractedRenderData(xiiExtractedRenderData* pExtractedData) { m_pExtractedData = pExtractedData; }
 
-  void UpdateCachedMatrices() const;
-  void UpdateRenderResolutionState() const;
+  void               UpdateCachedMatrices() const;
+  void               UpdateRenderResolutionState() const;
+  [[nodiscard]] bool SynchronizeGpuScene(xiiUInt64 uiFrameIndex);
 
   /// Populates the render graph for default (non-custom) views.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
-  void BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVirtualShadowMapManager::UploadHandles& virtualShadowHandles);
 
   // CPU PID dynamic resolution (runs before BeginSetup)
   void RunDynamicResolutionPID();
@@ -316,6 +329,9 @@ private:
 
   void SetupLightListBuild(xiiLightListData& data, xiiRenderGraphBuilder& builder);
   void ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraphPassContext& context);
+
+  void SetupLightSampling(xiiLightSamplingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteLightSampling(const xiiLightSamplingData& data, xiiRenderGraphPassContext& context);
 
   void SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRenderGraphBuilder& builder);
   void ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& data, xiiRenderGraphPassContext& context);
@@ -406,6 +422,15 @@ private:
   void SetupReSTIRDISpatial(xiiReSTIRDISpatialData& data, xiiRenderGraphBuilder& builder);
   void ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRenderGraphPassContext& context);
 
+  void SetupReSTIRDIVisibility(xiiReSTIRDIVisibilityData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReSTIRDIVisibility(const xiiReSTIRDIVisibilityData& data, xiiRenderGraphPassContext& context);
+
+  void SetupReSTIRDIEmissiveVisibility(xiiReSTIRDIEmissiveVisibilityData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReSTIRDIEmissiveVisibility(const xiiReSTIRDIEmissiveVisibilityData& data, xiiRenderGraphPassContext& context);
+
+  void SetupShadowSamplingConstants(xiiShadowSamplingConstantsData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteShadowSamplingConstants(const xiiShadowSamplingConstantsData& data, xiiRenderGraphPassContext& context);
+
   void SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRenderGraphBuilder& builder);
   void ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, xiiRenderGraphPassContext& context);
 
@@ -433,6 +458,9 @@ private:
   void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRenderGraphBuilder& builder);
   void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRenderGraphPassContext& context);
 
+  void SetupScreenSpaceReflectionsTemporal(xiiScreenSpaceReflectionsTemporalData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteScreenSpaceReflectionsTemporal(const xiiScreenSpaceReflectionsTemporalData& data, xiiRenderGraphPassContext& context);
+
   void SetupHybridReflectionComposite(xiiHybridReflectionCompositeData& data, xiiRenderGraphBuilder& builder);
   void ExecuteHybridReflectionComposite(const xiiHybridReflectionCompositeData& data, xiiRenderGraphPassContext& context);
 
@@ -455,11 +483,8 @@ private:
   void ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGraphPassContext& context);
 
 
-  void SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRenderGraphPassContext& context);
-
-  void SetupForwardMasked(xiiForwardMaskedData& data, xiiRenderGraphBuilder& builder);
-  void ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRenderGraphPassContext& context);
+  void SetupOpaqueLightingComposite(xiiOpaqueLightingCompositeData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteOpaqueLightingComposite(const xiiOpaqueLightingCompositeData& data, xiiRenderGraphPassContext& context);
 
   void SetupHairRendering(xiiHairRenderingData& data, xiiRenderGraphBuilder& builder);
   void ExecuteHairRendering(const xiiHairRenderingData& data, xiiRenderGraphPassContext& context);
@@ -535,6 +560,7 @@ private:
   ///        If the pipeline already exists this is a no-op.
   static xiiSharedPtr<xiiGALComputePipelineState>  EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
   static xiiSharedPtr<xiiGALGraphicsPipelineState> EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex);
+  bool                                             EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
   bool                                             EnsureRayTracingShadowResources();
   bool                                             EnsureRayTracingAmbientOcclusionResources();
   bool                                             EnsureRayTracingGlobalIlluminationResources();
@@ -561,7 +587,9 @@ private:
 
   mutable xiiViewData m_Data;
 
-  xiiRenderGraphContext m_RenderGraphContext;
+  xiiRenderGraphContext         m_RenderGraphContext;
+  xiiSceneDatabaseContext       m_GpuSceneContext;
+  xiiGpuVisibilityContextHandle m_hGpuVisibilityContext;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.
   xiiExtractedRenderData* m_pExtractedData = nullptr;
@@ -602,6 +630,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pClusterBuildPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pLightListClearPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pLightListPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pLightSamplingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pProbeSelectPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelSetupPipeline;
     } m_VisibilityPasses;
@@ -683,9 +712,13 @@ private:
 
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDITemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDISpatialPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDIVisibilityPipeline;
+      xiiSharedPtr<xiiGALRayTracingPipelineState> m_pReSTIRDIEmissiveVisibilityPipeline;
+      xiiSharedPtr<xiiGALBuffer>                  m_pReSTIRDIEmissiveVisibilityShaderBindingTable;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pDirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pIndirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRTemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReflectionCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricLightInjectionPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricIntegratePipeline;
@@ -706,8 +739,14 @@ private:
       xiiRenderGraphBufferHandle                  m_hRayTracingSceneDependency;
       xiiRenderGraphBufferHandle                  m_hRayTracingMaterialData;
       xiiRenderGraphBufferHandle                  m_hRayTracingGeometryData;
-      xiiUInt32                                   m_uiRTGIShaderRecordStride         = 0U;
-      xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
+      xiiRenderGraphBufferHandle                  m_hEmissiveTriangles;
+      xiiRenderGraphBufferHandle                  m_hEmissiveLightHeader;
+      xiiRenderGraphBufferHandle                  m_hEmissiveTriangleAliases;
+      xiiRenderGraphBufferHandle                  m_hEmissiveBlockAliases;
+      xiiRenderGraphBufferHandle                  m_hEmissiveAliasHeader;
+      xiiUInt32                                   m_uiRTGIShaderRecordStride                       = 0U;
+      xiiUInt32                                   m_uiRTReflectionShaderRecordStride               = 0U;
+      xiiUInt32                                   m_uiReSTIRDIEmissiveVisibilityShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIHistory[2];
       bool                                        m_bRTGIHistoryValid       = false;
       bool                                        m_bRTGIAvailableThisFrame = false;
@@ -716,10 +755,16 @@ private:
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirSurfaceHistory[2];
       bool                                        m_bRTGIReservoirHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHistory[2];
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHitDistanceHistory[2]; ///< R16_FLOAT primary hit distance; zero denotes environment termination.
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionMomentsHistory[2];     ///< RG16_FLOAT log-luminance first and second moments.
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionIdentityHistory[2];    ///< RG32_UINT exact packed material signature and stable object identity.
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
-      xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
-      xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
+      xiiSharedPtr<xiiGALTexture>                 m_pSSRHistory[2];         ///< RGBA16_FLOAT temporally resolved radiance and confidence.
+      xiiSharedPtr<xiiGALTexture>                 m_pSSRIdentityHistory[2]; ///< RG32_UINT packed material signature and stable object identity.
+      bool                                        m_bSSRHistoryValid = false;
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: sample identity, weight, M, content revision, and quantized visibility.
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.
       bool                                        m_bDirectReservoirHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pVolumetricHistory[2]; ///< Ping-pong integrated scattering history at render resolution.
       bool                                        m_bVolumetricHistoryValid = false;
@@ -729,8 +774,7 @@ private:
     //  Stage 7 - Forward Passes
     struct ForwardPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pForwardOpaquePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pForwardMaskedPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pOpaqueLightingCompositePipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pHairPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pWaterPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pSSSComputePipeline; // screen-space SSS blur
