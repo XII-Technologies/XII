@@ -70,6 +70,8 @@ RaytracingAccelerationStructure g_RayTracingScene : register(t4);
 Texture2D<float>                 g_SceneDepth      : register(t5);
 Texture2D<float2>                g_GBufNormal      : register(t6);
 Texture2D<float4>                g_GBufMaterial    : register(t7);
+Texture2D<float4>                g_GBufAlbedo      : register(t20);
+Texture2D<float2>                g_BRDFLut         : register(t21);
 RWTexture2D<float4>              g_RTReflRaw       : register(u8);
 
 [shader("raygeneration")]
@@ -78,7 +80,8 @@ void main()
   const uint2 pixel      = DispatchRaysIndex().xy;
   const uint2 dimensions = DispatchRaysDimensions().xy;
   const float  depth     = g_SceneDepth.Load(int3(pixel, 0));
-  const float  roughness = saturate(g_GBufMaterial.Load(int3(pixel, 0)).r);
+  const float4 primaryMaterial = g_GBufMaterial.Load(int3(pixel, 0));
+  const float  roughness = saturate(primaryMaterial.r);
 
   float4 reflection = 0.0f;
   if (depth > 0.0f && roughness <= 0.65f)
@@ -111,6 +114,19 @@ void main()
     payload.RandomState = randomState;
     payload.RayType = XII_RT_REFLECTION_RAY_TYPE_PATH;
     TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
+
+    // RT, SSR, and probe tiers all produce the complete primary-surface
+    // specular response. This lets the hybrid composite replace tiers without
+    // double-applying or omitting the material BRDF.
+    const float3 primaryAlbedo = max(g_GBufAlbedo.Load(int3(pixel, 0)).rgb, 0.0f);
+    const float primaryMetallic = saturate(primaryMaterial.g);
+    const float primaryDielectricSpecular = saturate(primaryMaterial.b);
+    const float primaryNoV = saturate(dot(normal, view));
+    const float3 primaryF0 = lerp((0.08f * primaryDielectricSpecular).xxx, primaryAlbedo, primaryMetallic);
+    const float3 primaryGrazing = max(1.0f - roughness, primaryF0);
+    const float3 primaryFresnel = primaryF0 + (primaryGrazing - primaryF0) * pow(1.0f - primaryNoV, 5.0f);
+    const float2 primaryBRDF = g_BRDFLut.SampleLevel(g_sLinearClamp, float2(primaryNoV, max(roughness, 0.02f)), 0.0f);
+    payload.Radiance *= primaryFresnel * primaryBRDF.x + primaryBRDF.y;
 
     // Rough surfaces smoothly hand back to probes/SSR rather than terminating abruptly.
     payload.Confidence *= saturate(1.0f - roughness / 0.65f);
