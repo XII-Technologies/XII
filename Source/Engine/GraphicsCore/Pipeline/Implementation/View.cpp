@@ -4500,6 +4500,7 @@ struct xiiRayTracedReflectionsData
   xiiRenderGraphTextureHandle                 m_hGBufferMaterial;         ///< ShaderResource in (G-Buffer material).
   xiiRenderGraphTextureHandle                 m_hBRDFLut;                 ///< ShaderResource in (BRDF lookup texture).
   xiiRenderGraphTextureHandle                 m_hRayTracedRawReflections; ///< UnorderedAccess out (raw RT reflections texture).
+  xiiRenderGraphBufferHandle                  m_hLightingDataReady;       ///< ShaderResource dependency on persistent light upload.
   xiiRenderGraphBufferHandle                  m_hSceneDependency;         ///< BuildASRead dependency on this frame's TLAS build.
   xiiRenderGraphBufferHandle                  m_hMaterialData;            ///< ShaderResource canonical material records indexed by TLAS instance.
   xiiRenderGraphBufferHandle                  m_hGeometryData;            ///< ShaderResource geometry records indexed by TLAS instance.
@@ -4518,6 +4519,7 @@ void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRe
   data.m_hGBufferNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
   data.m_hBRDFLut         = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightingDataReady = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightingDataReady, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type              = xiiGALResourceDimension::Texture2D;
@@ -4563,7 +4565,9 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
     {
       cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
       m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
-      cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
+      m_ViewPassResources->m_LightingSystem.BindLightData(cmd, xiiGALShaderType::RayClosestHit);
+      m_ViewPassResources->m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::RayClosestHit);
+      cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration | xiiGALShaderType::RayClosestHit);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
@@ -7681,8 +7685,9 @@ bool xiiView::EnsureRayTracingReflectionResources()
 
   xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
   pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
-  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
-  pipelineDescription.m_uiMaximumPayloadSize                     = 24U;
+  const xiiUInt32 uiDeviceRecursionDepth = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth);
+  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = xiiMath::Min(2U, uiDeviceRecursionDepth);
+  pipelineDescription.m_uiMaximumPayloadSize                     = 32U;
   pipelineDescription.m_uiMaximumAttributeSize                   = 8U;
 
   xiiGALRayTracingGeneralShaderGroupDescription& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
