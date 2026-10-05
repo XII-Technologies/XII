@@ -108,6 +108,15 @@ void main()
   if (emissiveTriangle.Metadata.x != packedReservoir.y || (emissiveTriangle.Metadata.w >> 16u) != packedRevision)
     return;
 
+  const bool visibilityValid = (packedReservoir.w & XII_RESTIR_VISIBILITY_VALID_BIT) != 0u;
+  const uint previousVisibility = (packedReservoir.w >> XII_RESTIR_VISIBILITY_SHIFT) & XII_RESTIR_VISIBILITY_MASK;
+  const bool isPenumbra = previousVisibility > 0u && previousVisibility < XII_RESTIR_VISIBILITY_MASK;
+  // There is no global occluder revision in the compact reservoir, so even a
+  // valid binary result must be refreshed on a bounded cadence. Penumbrae are
+  // always retraced; broad fully-lit/occluded regions alternate every frame.
+  if (visibilityValid && !isPenumbra && ((pixel.x + pixel.y + g_FrameIndex) & 1u) != 0u)
+    return;
+
   float visibility = 1.0f;
   const float depth = g_SceneDepth.Load(int3(pixel, 0));
   if (depth > 0.0f)

@@ -45,10 +45,11 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
   if ((reservoir.SampleIndex & XII_RESTIR_EMISSIVE_BIT) != 0u)
   {
-    // Emissive-triangle occlusion requires the ray-tracing visibility path.
-    // Preserve existing raster behavior until that path is connected.
-    reservoir.Visibility = 1.0f;
-    reservoir.VisibilityValid = 1u;
+    // Preserve visibility only when temporal reprojection has already proven
+    // that the receiver and selected emitter still match. The following RT
+    // pass refreshes invalid samples and periodically revalidates stable ones.
+    if (reservoir.VisibilityValid == 0u)
+      reservoir.Visibility = 1.0f;
   }
   else
   {
