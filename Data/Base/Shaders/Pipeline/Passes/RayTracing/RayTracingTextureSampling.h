@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 // Shared explicit-LOD material sampling for ray-tracing stages. Derivatives are

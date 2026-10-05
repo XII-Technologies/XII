@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 // Samples a physical point on every finite analytical emitter. The including

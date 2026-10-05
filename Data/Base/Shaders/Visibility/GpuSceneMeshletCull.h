@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // Shared implementation for meshlet frustum, cone, and optional temporal Hi-Z culling.
 
 #include "GpuSceneCommon.h"
