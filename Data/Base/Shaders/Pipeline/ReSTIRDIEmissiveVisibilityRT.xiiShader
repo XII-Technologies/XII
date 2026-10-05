@@ -16,7 +16,7 @@ static const uint XII_RESTIR_VISIBILITY_SHIFT         = 22u;
 static const uint XII_RESTIR_VISIBILITY_MASK          = 0xFFu;
 static const uint XII_RESTIR_VISIBILITY_VALID_BIT     = 1u << 30u;
 static const uint XII_RESTIR_PACKED_VISIBILITY_MASK   = (XII_RESTIR_VISIBILITY_MASK << XII_RESTIR_VISIBILITY_SHIFT) | XII_RESTIR_VISIBILITY_VALID_BIT;
-static const uint XII_RESTIR_EMISSIVE_VISIBILITY_SAMPLES = 4u;
+static const uint XII_RESTIR_MAX_EMISSIVE_VISIBILITY_SAMPLES = 8u;
 
 struct xiiReSTIREmissiveVisibilityPayload
 {
@@ -47,11 +47,11 @@ float ReSTIREmissiveVisibilityRandom01(uint value)
   return (float)(ReSTIREmissiveVisibilityHash(value) & 0x00FFFFFFu) * (1.0f / 16777216.0f);
 }
 
-float3 ReSTIRSampleEmissiveTriangle(uint sampleIndex, float2 rotation)
+float3 ReSTIRSampleEmissiveTriangle(uint sampleIndex, uint sampleCount, float2 rotation)
 {
   // A Cranley-Patterson rotated low-discrepancy sequence avoids coherent
   // penumbra bands while remaining stable for a receiver and emitter revision.
-  const float2 xi = frac(float2(((float)sampleIndex + 0.5f) / (float)XII_RESTIR_EMISSIVE_VISIBILITY_SAMPLES,
+  const float2 xi = frac(float2(((float)sampleIndex + 0.5f) / (float)sampleCount,
                                 ((float)sampleIndex + 0.5f) * 0.61803398875f) + rotation);
   const float sqrtU = sqrt(xi.x);
   return float3(1.0f - sqrtU, sqrtU * (1.0f - xi.y), sqrtU * xi.y);
@@ -111,10 +111,11 @@ void main()
   const bool visibilityValid = (packedReservoir.w & XII_RESTIR_VISIBILITY_VALID_BIT) != 0u;
   const uint previousVisibility = (packedReservoir.w >> XII_RESTIR_VISIBILITY_SHIFT) & XII_RESTIR_VISIBILITY_MASK;
   const bool isPenumbra = previousVisibility > 0u && previousVisibility < XII_RESTIR_VISIBILITY_MASK;
+  const uint binaryRefreshPeriod = clamp(g_ReSTIRDISettings.y, 1u, 8u);
   // There is no global occluder revision in the compact reservoir, so even a
   // valid binary result must be refreshed on a bounded cadence. Penumbrae are
   // always retraced; broad fully-lit/occluded regions alternate every frame.
-  if (visibilityValid && !isPenumbra && ((pixel.x + pixel.y + g_FrameIndex) & 1u) != 0u)
+  if (visibilityValid && !isPenumbra && ((pixel.x + pixel.y + g_FrameIndex) % binaryRefreshPeriod) != 0u)
     return;
 
   float visibility = 1.0f;
@@ -132,10 +133,11 @@ void main()
                                    ReSTIREmissiveVisibilityRandom01(sampleSeed ^ 0x68BC21EBu));
     float visibleSolidAngleWeight = 0.0f;
     float totalSolidAngleWeight = 0.0f;
-    [unroll]
-    for (uint sampleIndex = 0u; sampleIndex < XII_RESTIR_EMISSIVE_VISIBILITY_SAMPLES; ++sampleIndex)
+    const uint visibilitySampleCount = clamp(g_ReSTIRDISettings.x, 1u, XII_RESTIR_MAX_EMISSIVE_VISIBILITY_SAMPLES);
+    [loop]
+    for (uint sampleIndex = 0u; sampleIndex < visibilitySampleCount; ++sampleIndex)
     {
-      const float3 barycentrics = ReSTIRSampleEmissiveTriangle(sampleIndex, rotation);
+      const float3 barycentrics = ReSTIRSampleEmissiveTriangle(sampleIndex, visibilitySampleCount, rotation);
       const float3 target = emissiveTriangle.Position0AndArea.xyz * barycentrics.x +
                             emissiveTriangle.Position1AndPowerWeight.xyz * barycentrics.y +
                             emissiveTriangle.Position2AndInvArea.xyz * barycentrics.z;

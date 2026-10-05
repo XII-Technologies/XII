@@ -48,6 +48,7 @@ cbuffer PerFrameGlobal : register(b2)
     float    g_GlobalTime;
     float    g_WorldTime;
     float4   g_RenderScaleJitter; // x=scale, yzw=halton jitter (normalized [-0.5,0.5])
+    uint4    g_ReSTIRDISettings;  // x=emissive visibility rays, y=binary visibility refresh period
 };
 
 // 
