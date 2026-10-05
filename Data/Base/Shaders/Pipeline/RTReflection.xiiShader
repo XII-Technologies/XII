@@ -140,6 +140,7 @@ Texture2D<float4> g_RayTracingTextures[] : register(t12);
 
 #include "Passes/RayTracing/RayTracingTextureSampling.h"
 #include <Shaders/Pipeline/SurfaceLighting.h>
+#include "Passes/RayTracing/RayTracingEmitterSampling.h"
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
 
 StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles;
@@ -313,15 +314,27 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
       const uint lightType = GetLightType(lightData);
       if (lightType >= XII_LIGHT_TYPE_POINT && lightType <= XII_LIGHT_TYPE_TUBE)
       {
-        const float3 representativePosition = GetRepresentativeLightPosition(lightData, hitPosition);
-        const float3 toLight = representativePosition - hitPosition;
+        float3 emitterPosition;
+        float projectedArea;
+        const float2 emitterSample = float2(RTReflectionRandom01(payload.RandomState), RTReflectionRandom01(payload.RandomState));
+        xiiSampleRayTracingLocalEmitter(lightData, hitPosition, emitterSample, emitterPosition, projectedArea);
+        const float3 toLight = emitterPosition - hitPosition;
         const float distanceToLight = length(toLight);
         const float3 directionToLight = distanceToLight > 1e-4f ? toLight / distanceToLight : worldNormal;
         const float visibility = dot(worldNormal, directionToLight) <= 0.0f ? 0.0f :
           (lightData.ShadowData.x > 0.5f ?
              TraceRTReflectionVisibility(hitPosition, worldNormal, directionToLight, max(distanceToLight - 0.004f, 0.001f)) : 1.0f);
-        surfaceRadiance += EvaluateLocalLightLayered(lightData, hitPosition, worldNormal, viewDirection, baseColor, roughness,
-          metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness) * visibility * sampleWeight;
+
+        xiiGpuLightData sampledLightData = lightData;
+        if (lightType == XII_LIGHT_TYPE_POINT || lightType == XII_LIGHT_TYPE_SPOT)
+          sampledLightData.PositionAndInvRange.xyz = emitterPosition;
+
+        const float3 contribution = lightType >= XII_LIGHT_TYPE_RECTANGLE ?
+          EvaluateAreaLightSample(lightData, emitterPosition, projectedArea, hitPosition, worldNormal, viewDirection, baseColor,
+                                  roughness, metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness) :
+          EvaluateLocalLightLayered(sampledLightData, hitPosition, worldNormal, viewDirection, baseColor, roughness, metallic,
+                                    dielectricSpecular, transmission, clearCoat, clearCoatRoughness);
+        surfaceRadiance += contribution * visibility * sampleWeight;
       }
     }
   }
