@@ -16,6 +16,7 @@ static const uint XII_RESTIR_VISIBILITY_SHIFT         = 22u;
 static const uint XII_RESTIR_VISIBILITY_MASK          = 0xFFu;
 static const uint XII_RESTIR_VISIBILITY_VALID_BIT     = 1u << 30u;
 static const uint XII_RESTIR_PACKED_VISIBILITY_MASK   = (XII_RESTIR_VISIBILITY_MASK << XII_RESTIR_VISIBILITY_SHIFT) | XII_RESTIR_VISIBILITY_VALID_BIT;
+static const uint XII_RESTIR_EMISSIVE_VISIBILITY_SAMPLES = 4u;
 
 struct xiiReSTIREmissiveVisibilityPayload
 {
@@ -30,6 +31,60 @@ Texture2D<float2>                            g_GBufferNormal     : register(t6);
 StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles : register(t7);
 StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader    : register(t8);
 RWTexture2D<uint4>                           g_Reservoir         : register(u13);
+
+uint ReSTIREmissiveVisibilityHash(uint value)
+{
+  value ^= value >> 16u;
+  value *= 0x7FEB352Du;
+  value ^= value >> 15u;
+  value *= 0x846CA68Bu;
+  value ^= value >> 16u;
+  return value;
+}
+
+float ReSTIREmissiveVisibilityRandom01(uint value)
+{
+  return (float)(ReSTIREmissiveVisibilityHash(value) & 0x00FFFFFFu) * (1.0f / 16777216.0f);
+}
+
+float3 ReSTIRSampleEmissiveTriangle(uint sampleIndex, float2 rotation)
+{
+  // A Cranley-Patterson rotated low-discrepancy sequence avoids coherent
+  // penumbra bands while remaining stable for a receiver and emitter revision.
+  const float2 xi = frac(float2(((float)sampleIndex + 0.5f) / (float)XII_RESTIR_EMISSIVE_VISIBILITY_SAMPLES,
+                                ((float)sampleIndex + 0.5f) * 0.61803398875f) + rotation);
+  const float sqrtU = sqrt(xi.x);
+  return float3(1.0f - sqrtU, sqrtU * (1.0f - xi.y), sqrtU * xi.y);
+}
+
+float ReSTIRTraceEmissiveVisibility(float3 origin, float3 target, float3 emitterNormal, bool twoSided, out float solidAngleWeight)
+{
+  const float3 toTarget = target - origin;
+  const float targetDistance = length(toTarget);
+  if (targetDistance <= 0.004f)
+  {
+    solidAngleWeight = 0.0f;
+    return 1.0f;
+  }
+
+  const float3 direction = toTarget / targetDistance;
+  const float emitterCosine = dot(emitterNormal, -direction);
+  solidAngleWeight = (twoSided ? abs(emitterCosine) : max(emitterCosine, 0.0f)) /
+                     max(targetDistance * targetDistance, 1e-6f);
+  if (solidAngleWeight <= 0.0f)
+    return 0.0f;
+
+  RayDesc ray;
+  ray.Origin = origin;
+  ray.Direction = direction;
+  ray.TMin = 0.001f;
+  ray.TMax = max(targetDistance - 0.002f, ray.TMin);
+
+  xiiReSTIREmissiveVisibilityPayload payload;
+  payload.Occluded = 0u;
+  TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFu, 0u, 1u, 0u, ray, payload);
+  return payload.Occluded != 0u ? 0.0f : 1.0f;
+}
 
 [shader("raygeneration")]
 void main()
@@ -61,23 +116,27 @@ void main()
     const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
     const float3 worldPosition = ReconstructWorldPos(uv, depth);
     const float3 normal = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
-    const float3 target = (emissiveTriangle.Position0AndArea.xyz + emissiveTriangle.Position1AndPowerWeight.xyz + emissiveTriangle.Position2AndInvArea.xyz) / 3.0f;
     const float3 origin = worldPosition + normal * 0.002f;
-    const float3 toTarget = target - origin;
-    const float targetDistance = length(toTarget);
-    if (targetDistance > 0.004f)
+    const uint sampleSeed = ReSTIREmissiveVisibilityHash(packedReservoir.y ^ (packedRevision * 0x9E3779B9u) ^
+                                                         (pixel.x * 0x85EBCA6Bu) ^ (pixel.y * 0xC2B2AE35u));
+    const float2 rotation = float2(ReSTIREmissiveVisibilityRandom01(sampleSeed),
+                                   ReSTIREmissiveVisibilityRandom01(sampleSeed ^ 0x68BC21EBu));
+    float visibleSolidAngleWeight = 0.0f;
+    float totalSolidAngleWeight = 0.0f;
+    [unroll]
+    for (uint sampleIndex = 0u; sampleIndex < XII_RESTIR_EMISSIVE_VISIBILITY_SAMPLES; ++sampleIndex)
     {
-      RayDesc ray;
-      ray.Origin = origin;
-      ray.Direction = toTarget / targetDistance;
-      ray.TMin = 0.001f;
-      ray.TMax = max(targetDistance - 0.002f, ray.TMin);
-
-      xiiReSTIREmissiveVisibilityPayload payload;
-      payload.Occluded = 0u;
-      TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFu, 0u, 1u, 0u, ray, payload);
-      visibility = payload.Occluded != 0u ? 0.0f : 1.0f;
+      const float3 barycentrics = ReSTIRSampleEmissiveTriangle(sampleIndex, rotation);
+      const float3 target = emissiveTriangle.Position0AndArea.xyz * barycentrics.x +
+                            emissiveTriangle.Position1AndPowerWeight.xyz * barycentrics.y +
+                            emissiveTriangle.Position2AndInvArea.xyz * barycentrics.z;
+      float sampleWeight;
+      const float sampleVisibility = ReSTIRTraceEmissiveVisibility(
+        origin, target, emissiveTriangle.NormalAndTwoSided.xyz, emissiveTriangle.NormalAndTwoSided.w >= 0.5f, sampleWeight);
+      visibleSolidAngleWeight += sampleVisibility * sampleWeight;
+      totalSolidAngleWeight += sampleWeight;
     }
+    visibility = totalSolidAngleWeight > 0.0f ? visibleSolidAngleWeight / totalSolidAngleWeight : 0.0f;
   }
 
   const uint quantizedVisibility = (uint)round(saturate(visibility) * 255.0f);
