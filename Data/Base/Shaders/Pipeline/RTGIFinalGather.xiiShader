@@ -3,7 +3,7 @@ ALL
 
 [SHADER]
 
-// One-sample cosine-weighted near-field diffuse gather. Mid/far-field DDGI and sparse-voxel
+// Cosine-weighted near-field diffuse path gather. Mid/far-field DDGI and sparse-voxel
 // radiance remain active independently; alpha marks pixels with a valid traced near-field hit.
 
 #include "PipelineCommon.xiiShader"
@@ -13,7 +13,25 @@ struct xiiGlobalIlluminationPayload
 {
   float3 Radiance;
   float  Confidence;
+  uint   RandomState;
+  uint   BounceDepth;
 };
+
+uint RTGIHash(uint value)
+{
+  value ^= value >> 16u;
+  value *= 0x7FEB352Du;
+  value ^= value >> 15u;
+  value *= 0x846CA68Bu;
+  value ^= value >> 16u;
+  return value;
+}
+
+float RTGIRandom01(inout uint state)
+{
+  state = RTGIHash(state);
+  return (float)(state & 0x00FFFFFFu) * (1.0f / 16777216.0f);
+}
 
 float3 CosineSampleHemisphere(float3 normal, float2 randomSample)
 {
@@ -48,9 +66,8 @@ void main()
     const float3 worldPos = ReconstructWorldPos(uv, depth);
     const float3 normal   = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
     const float3 albedo   = max(g_GBufferAlbedo.Load(int3(pixel, 0)).rgb, 0.0f);
-    const float2 randomSample = float2(
-      InterleavedGradientNoise(float2(pixel), g_FrameIndex),
-      InterleavedGradientNoise(float2(pixel.yx) + 19.19f, g_FrameIndex + 37U));
+    uint randomState = RTGIHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x9E3779B9u);
+    const float2 randomSample = float2(RTGIRandom01(randomState), RTGIRandom01(randomState));
 
     RayDesc ray;
     ray.Origin    = worldPos + normal * 0.01f;
@@ -61,6 +78,8 @@ void main()
     xiiGlobalIlluminationPayload payload;
     payload.Radiance   = 0.0f;
     payload.Confidence = 0.0f;
+    payload.RandomState = randomState;
+    payload.BounceDepth = 0u;
     TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFU, 0U, 1U, 0U, ray, payload);
     result = float4(albedo * max(payload.Radiance, 0.0f), payload.Confidence);
   }
@@ -79,6 +98,7 @@ void main(inout xiiGlobalIlluminationPayload payload)
 
 [RAY_CLOSEST_HIT_SHADER]
 
+RaytracingAccelerationStructure g_RayTracingScene : register(t4);
 StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9);
 StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
 ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
@@ -165,7 +185,35 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
   const float3 irradiance     = max(g_AmbientLightColor.rgb, 0.0f) +
                                 max(g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w, 0.0f) * nDotL;
   const float3 diffuseBounce = baseColor * (1.0f - metallic) * irradiance * occlusion * 0.31830989f;
-  payload.Radiance   = emissive + diffuseBounce;
+  float3 continuedBounce = 0.0f;
+  const uint maxPathHits = clamp(g_RTGISettings.x, 1u, 2u);
+  if (payload.BounceDepth + 1u < maxPathHits && metallic < 0.999f)
+  {
+    uint childRandomState = payload.RandomState;
+    const float2 childRandomSample = float2(RTGIRandom01(childRandomState), RTGIRandom01(childRandomState));
+    const float3 childDirection = CosineSampleHemisphere(worldNormal, childRandomSample);
+    const float3 hitPosition = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
+
+    RayDesc childRay;
+    childRay.Origin = hitPosition + worldNormal * 0.002f;
+    childRay.Direction = childDirection;
+    childRay.TMin = 0.001f;
+    childRay.TMax = min(max(g_CameraForwardAndFarPlane.w, 10.0f), 100.0f);
+
+    xiiGlobalIlluminationPayload childPayload;
+    childPayload.Radiance = 0.0f;
+    childPayload.Confidence = 0.0f;
+    childPayload.RandomState = childRandomState;
+    childPayload.BounceDepth = payload.BounceDepth + 1u;
+    TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFU, 0U, 1U, 0U, childRay, childPayload);
+
+    // Cosine-weighted sampling cancels the Lambertian cosine/PDF terms, so
+    // only diffuse reflectance and material occlusion scale incoming radiance.
+    continuedBounce = baseColor * (1.0f - metallic) * occlusion * max(childPayload.Radiance, 0.0f);
+    payload.RandomState = childPayload.RandomState;
+  }
+
+  payload.Radiance   = emissive + diffuseBounce + continuedBounce;
   payload.Confidence = 1.0f;
 }
 

@@ -83,7 +83,8 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   xiiUInt32 m_uiReSTIRDITemporalHistoryM           = 20U;
   xiiUInt32 m_uiReSTIRDISpatialNeighborCount       = 4U;
   xiiUInt32 m_uiReSTIRDISpatialRadius              = 2U; ///< Maximum spatial reuse radius in pixels.
-  xiiUInt32 m_uiMaxIESProfiles                  = 256U;
+  xiiUInt32 m_uiRTGIMaxPathHits               = 2U; ///< Maximum diffuse surface hits in a near-field path.
+  xiiUInt32 m_uiMaxIESProfiles                 = 256U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightingSystemSettings);
@@ -220,9 +221,10 @@ private:
     float     m_fGlobalTime       = 0.0f;
     float     m_fWorldTime        = 0.0f;
     xiiVec4   m_RenderScaleJitter = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
-    xiiVec4U32 m_ReSTIRDISettings = xiiVec4U32(4U, 2U, 0U, 0U);
-    xiiVec4U32 m_ReSTIRDIReuseSettings = xiiVec4U32(8U, 20U, 4U, 2U);
-    xiiVec4   m_ReSTIRDIStabilitySettings = xiiVec4(0.75f, 0.35f, 0.0f, 0.0f);
+    xiiVec4U32 m_ReSTIRDISettings          = xiiVec4U32(4U, 2U, 0U, 0U);
+    xiiVec4U32 m_ReSTIRDIReuseSettings     = xiiVec4U32(8U, 20U, 4U, 2U);
+    xiiVec4    m_ReSTIRDIStabilitySettings = xiiVec4(0.75f, 0.35f, 0.0f, 0.0f);
+    xiiVec4U32 m_RTGISettings              = xiiVec4U32(2U, 0U, 0U, 0U);
   };
 
   void EnsureGpuResources();

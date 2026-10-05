@@ -4162,7 +4162,7 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
     {
       cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
       m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
-      cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration | xiiGALShaderType::RayClosestHit);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
@@ -7577,8 +7577,10 @@ bool xiiView::EnsureRayTracingGlobalIlluminationResources()
 
   xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
   pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
-  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
-  pipelineDescription.m_uiMaximumPayloadSize                     = 16U;
+  const xiiUInt32 uiDeviceRecursionDepth = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth);
+  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = xiiMath::Clamp(
+    m_ViewPassResources->m_LightingSystem.GetSettings().m_uiRTGIMaxPathHits, 1U, xiiMath::Min(2U, uiDeviceRecursionDepth));
+  pipelineDescription.m_uiMaximumPayloadSize                     = 24U;
   pipelineDescription.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
 
   auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
