@@ -3655,6 +3655,56 @@ void xiiView::ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRend
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SurfaceOut", context.GetTexture(data.m_hReservoirSurface)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+struct xiiReSTIRDIVisibilityData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphTextureHandle m_hSceneDepth;
+  xiiRenderGraphTextureHandle m_hGBufferNormal;
+  xiiRenderGraphTextureHandle m_hLocalShadowAtlas;
+  xiiRenderGraphBufferHandle  m_hLocalShadowAtlasDescriptors;
+  xiiRenderGraphBufferHandle  m_hEmissiveTriangles;
+  xiiRenderGraphBufferHandle  m_hEmissiveLightHeader;
+  xiiRenderGraphTextureHandle m_hReservoir;
+};
+
+void xiiView::SetupReSTIRDIVisibility(xiiReSTIRDIVisibilityData& data, xiiRenderGraphBuilder& builder)
+{
+  auto& lightingPasses = m_ViewPassResources->m_LightingPasses;
+
+  data.m_hSceneDepth                  = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal               = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlas            = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveTriangles           = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangles, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveLightHeader         = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hReservoir                   = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(lightingPasses.m_pReSTIRDIVisibilityPipeline, "Shaders/Pipeline/ReSTIRDIVisibility.xiiShader");
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteReSTIRDIVisibility(const xiiReSTIRDIVisibilityData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ReSTIRDIVisibility");
+  {
+    cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pReSTIRDIVisibilityPipeline);
+    m_ViewPassResources->m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_LocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_LocalShadowAtlasDescs", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hEmissiveTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hEmissiveLightHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_Reservoir", context.GetTexture(data.m_hReservoir)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
     m_ViewPassResources->m_LightingPasses.m_bDirectReservoirHistoryValid = true;
   }
   cmd.EndDebugGroup();
@@ -7055,7 +7105,8 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // Main lighting passes, which produce direct and indirect lighting results.
   graph.AddPass<xiiShadowSamplingConstantsData>("ShadowSamplingConstants", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupShadowSamplingConstants, this), xiiMakeDelegate(&xiiView::ExecuteShadowSamplingConstants, this));
   graph.AddPass<xiiReSTIRDITemporalData>("ReSTIRDITemporal", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDITemporal, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDITemporal, this));
-  auto restirDISpatialPass = graph.AddPass<xiiReSTIRDISpatialData>("ReSTIRDISpatial", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDISpatial, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDISpatial, this));
+  graph.AddPass<xiiReSTIRDISpatialData>("ReSTIRDISpatial", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDISpatial, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDISpatial, this));
+  auto restirDIVisibilityPass = graph.AddPass<xiiReSTIRDIVisibilityData>("ReSTIRDIVisibility", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDIVisibility, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDIVisibility, this));
   graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedShadowData, this));
   auto shadowDenoisePass = graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
   auto ambientOcclusionDenoisePass = graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));
@@ -7065,7 +7116,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     const xiiRenderGraphTextureHandle hAmbientOcclusion = ambientOcclusionDenoisePass.first->m_hStableAmbientOcclusion;
     const xiiRenderGraphTextureHandle hRayTracedShadow  = shadowDenoisePass.first->m_hRTFinalShadowMask;
     const xiiRenderGraphTextureHandle hContactShadow    = contactShadowPass.first->m_hContactShadow;
-    const xiiRenderGraphTextureHandle hDirectReservoir  = restirDISpatialPass.first->m_hReservoir;
+    const xiiRenderGraphTextureHandle hDirectReservoir  = restirDIVisibilityPass.first->m_hReservoir;
     const xiiRenderGraphBufferHandle  hLightGrid        = lightListPass.first->m_hLightGridBuffer;
     const xiiRenderGraphBufferHandle  hLightIndices     = lightSamplingPass.first->m_hLightIndexBuffer;
 

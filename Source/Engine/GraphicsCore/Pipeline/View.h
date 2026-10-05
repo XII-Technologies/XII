@@ -87,6 +87,7 @@ struct xiiGroundTruthAmbientOcclusionDenoiseData;
 
 struct xiiReSTIRDITemporalData;
 struct xiiReSTIRDISpatialData;
+struct xiiReSTIRDIVisibilityData;
 struct xiiShadowSamplingConstantsData;
 struct xiiDeferredDirectLightingData;
 struct xiiDeferredIndirectLightingData;
@@ -419,6 +420,9 @@ private:
   void SetupReSTIRDISpatial(xiiReSTIRDISpatialData& data, xiiRenderGraphBuilder& builder);
   void ExecuteReSTIRDISpatial(const xiiReSTIRDISpatialData& data, xiiRenderGraphPassContext& context);
 
+  void SetupReSTIRDIVisibility(xiiReSTIRDIVisibilityData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReSTIRDIVisibility(const xiiReSTIRDIVisibilityData& data, xiiRenderGraphPassContext& context);
+
   void SetupShadowSamplingConstants(xiiShadowSamplingConstantsData& data, xiiRenderGraphBuilder& builder);
   void ExecuteShadowSamplingConstants(const xiiShadowSamplingConstantsData& data, xiiRenderGraphPassContext& context);
 
@@ -699,6 +703,7 @@ private:
 
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDITemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDISpatialPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDIVisibilityPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pDirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pIndirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRPipeline;
@@ -739,7 +744,7 @@ private:
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHistory[2];
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
-      xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: sample identity, weight, M, content revision, and quantized visibility.
       xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.
       bool                                        m_bDirectReservoirHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pVolumetricHistory[2]; ///< Ping-pong integrated scattering history at render resolution.

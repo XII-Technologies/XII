@@ -294,7 +294,8 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
     else
     {
       const xiiGpuLightData lightData = g_Lights[reservoir.SampleIndex];
-      const float localShadow = EvaluateLocalShadow(reservoir.SampleIndex, lightData, input.WorldPosition, N);
+      const float localShadow = reservoir.VisibilityValid != 0u ? reservoir.Visibility :
+                                EvaluateLocalShadow(reservoir.SampleIndex, lightData, input.WorldPosition, N);
       direct += EvaluateLocalLightLayered(lightData, input.WorldPosition, N, V, baseColor.rgb,
                                           max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
                                           transmission, clearCoat, clearCoatRoughness) * localShadow * reservoir.WeightSum;

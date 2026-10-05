@@ -1,0 +1,67 @@
+// XII Engine - conservative local-light visibility resolve for ReSTIR DI.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/SurfaceLighting.h>
+
+StructuredBuffer<xiiGpuLightData> g_Lights;
+
+#include <Shaders/Pipeline/ReSTIRDICommon.h>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowSampling.h>
+
+Texture2D<float>       g_SceneDepth;
+Texture2D<float2>      g_GBufferNormal;
+Texture2DArray<float>  g_ShadowAtlas;
+Texture2D<float>       g_LocalShadowAtlas;
+StructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs;
+RWTexture2D<uint4>     g_Reservoir;
+
+#include <Shaders/Pipeline/SurfaceShadowLighting.h>
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_Reservoir.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const uint2 pixel = dispatchThreadId.xy;
+  xiiReSTIRDIReservoir reservoir = ReSTIRUnpackReservoir(g_Reservoir[pixel]);
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  if (depth <= 0.0f || !ReSTIRValidateReservoir(reservoir))
+  {
+    g_Reservoir[pixel] = ReSTIRPackReservoir(ReSTIREmptyReservoir());
+    return;
+  }
+
+  if ((reservoir.SampleIndex & XII_RESTIR_EMISSIVE_BIT) != 0u)
+  {
+    // Emissive-triangle occlusion requires the ray-tracing visibility path.
+    // Preserve existing raster behavior until that path is connected.
+    reservoir.Visibility = 1.0f;
+    reservoir.VisibilityValid = 1u;
+  }
+  else
+  {
+    const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+    const float3 worldPosition = ReconstructWorldPos(uv, depth);
+    const float3 normal = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
+    const xiiGpuLightData lightData = g_Lights[reservoir.SampleIndex];
+    const bool canReuse = reservoir.VisibilityValid != 0u &&
+      ValidateLocalShadowReuse(reservoir.SampleIndex, lightData, worldPosition, normal, reservoir.Visibility);
+    if (!canReuse)
+      reservoir.Visibility = EvaluateLocalShadow(reservoir.SampleIndex, lightData, worldPosition, normal);
+    reservoir.VisibilityValid = 1u;
+  }
+
+  g_Reservoir[pixel] = ReSTIRPackReservoir(reservoir);
+}

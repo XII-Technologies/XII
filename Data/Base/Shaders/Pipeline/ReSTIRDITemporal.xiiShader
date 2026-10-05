@@ -177,7 +177,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
       const float target = ReSTIREstimateEmissiveTarget(emissiveTriangle, worldPosition, normal, surface);
       const float proposalProbability = (hasAnalyticalDistribution ? 0.5f : 1.0f) * emissiveProposalProbability;
       ReSTIRUpdateReservoir(reservoir, XII_RESTIR_EMISSIVE_BIT | triangleIndex, emissiveTriangle.Metadata.x, emissiveTriangle.Metadata.w >> 16u,
-                            target / proposalProbability, 1u, randomState);
+                            1.0f, 0u, target / proposalProbability, 1u, randomState);
     }
     else if (hasAnalyticalDistribution)
     {
@@ -190,7 +190,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
       const float target = ReSTIREstimateTarget(lightData, worldPosition, normal, surface);
       const float proposalProbability = (hasEmissiveDistribution ? 0.5f : 1.0f) * analyticalProposalProbability;
       ReSTIRUpdateReservoir(reservoir, lightIndex, lightData.Metadata.x, lightData.Metadata.w & XII_RESTIR_REVISION_MASK,
-                            target / proposalProbability, 1u, randomState);
+                            1.0f, 0u, target / proposalProbability, 1u, randomState);
     }
   }
 
@@ -212,10 +212,15 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
     if (surfaceMatches && ReSTIRValidateReservoir(previous))
     {
+      const float2 motionInPixels = (previousUV - uv) * float2(dimensions);
+      const bool visibilityReceiverMatches = length(motionInPixels) <= 0.75f &&
+        abs(previousDepth - currentLinearDepth) <= max(currentLinearDepth * 0.002f, 0.002f) &&
+        dot(previousNormal, normal) >= 0.995f;
       previous.M = min(previous.M, XII_RESTIR_MAX_HISTORY_M);
       const float target = ReSTIREstimateSampleTarget(previous.SampleIndex, worldPosition, normal, surface);
       const float aggregateWeight = target * previous.WeightSum * (float)previous.M;
       ReSTIRUpdateReservoir(reservoir, previous.SampleIndex, previous.StableLightId, previous.SampleRevision,
+                            previous.Visibility, previous.VisibilityValid != 0u && visibilityReceiverMatches ? 1u : 0u,
                             aggregateWeight, previous.M, randomState);
     }
   }

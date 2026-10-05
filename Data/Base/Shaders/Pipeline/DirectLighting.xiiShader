@@ -106,7 +106,8 @@ void main(uint3 tid : SV_DispatchThreadID)
         else
         {
             const xiiGpuLightData lightData = g_Lights[reservoir.SampleIndex];
-            const float localShadow = EvaluateLocalShadow(reservoir.SampleIndex, lightData, worldPos, N);
+            const float localShadow = reservoir.VisibilityValid != 0u ? reservoir.Visibility :
+                                      EvaluateLocalShadow(reservoir.SampleIndex, lightData, worldPos, N);
             direct += EvaluateLocalLightLayered(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, transmission, 0.0f, 0.1f) * localShadow * reservoir.WeightSum;
         }
     }

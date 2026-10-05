@@ -222,3 +222,73 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
   }
   return lerp(1.0f, visibility / float(filterSampleCount), GetLocalShadowFadeStrength(lightData));
 }
+
+// A cheap current-frame atlas probe used before accepting cached ReSTIR visibility.
+// Only fully lit or fully occluded history is eligible. Penumbrae and any changed
+// classification fall back to EvaluateLocalShadow so soft-shadow quality is preserved.
+bool ValidateLocalShadowReuse(uint lightIndex, xiiGpuLightData lightData, float3 worldPos, float3 N, float cachedVisibility)
+{
+  const bool cachedLit = cachedVisibility >= (254.0f / 255.0f);
+  const bool cachedOccluded = cachedVisibility <= (1.0f / 255.0f);
+  if (!cachedLit && !cachedOccluded)
+    return false;
+
+  if (lightData.ShadowData.x <= 0.5f)
+    return cachedLit;
+
+  const xiiLocalShadowAtlasData shadowData = g_LocalShadowAtlasDescs[lightIndex];
+  if (shadowData.Metadata.z == 0u || shadowData.Metadata.x == 0u)
+    return cachedLit;
+
+  const float fadeStrength = GetLocalShadowFadeStrength(lightData);
+  if (fadeStrength <= (1.0f / 255.0f))
+    return cachedLit;
+  if (cachedOccluded && fadeStrength < (254.0f / 255.0f))
+    return false;
+
+  const uint faceIndex = SelectLocalShadowFace(shadowData, worldPos);
+  const float3 toLight = shadowData.LightPositionAndInvRange.xyz - worldPos;
+  const float distanceToLight = length(toLight);
+  const float3 L = distanceToLight > 1e-4f ? toLight / distanceToLight : -normalize(lightData.DirectionAndType.xyz);
+  const float NoL = saturate(dot(N, L));
+  const float lightRange = rcp(max(shadowData.LightPositionAndInvRange.w, 1e-6f));
+  const float worldUnitsPerTexel = lightRange / max(float(shadowData.Metadata.y), 1.0f);
+  const float normalBias = worldUnitsPerTexel * lerp(0.35f, 1.5f, 1.0f - NoL);
+  const float4 shadowClip = mul(shadowData.ViewProjection[faceIndex], float4(worldPos + N * normalBias, 1.0f));
+  if (shadowClip.w <= 0.0f)
+    return cachedLit;
+
+  const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
+  const float2 localUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+  if (any(localUV <= 0.0f) || any(localUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
+    return cachedLit;
+
+  uint atlasWidth;
+  uint atlasHeight;
+  g_LocalShadowAtlas.GetDimensions(atlasWidth, atlasHeight);
+  const float2 atlasTexel = rcp(float2(atlasWidth, atlasHeight));
+  const float4 scaleBias = shadowData.AtlasScaleBias[faceIndex];
+  const float2 atlasUV = localUV * scaleBias.xy + scaleBias.zw;
+  const float2 tileMinimum = scaleBias.zw + atlasTexel * 1.5f;
+  const float2 tileMaximum = scaleBias.zw + scaleBias.xy - atlasTexel * 1.5f;
+  const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.0008f, 1.0f - NoL);
+  const float centerDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, atlasUV, 0.0f);
+  const bool centerLit = receiverDepth >= centerDepth;
+  if (cachedOccluded)
+    return !centerLit;
+  if (!centerLit)
+    return false;
+
+  const float sourceRadius = max(lightData.AttenuationAndSize.y, 0.0f);
+  const float validationRadius = sourceRadius <= 1e-5f ? 1.5f :
+    clamp(sourceRadius / max(distanceToLight, sourceRadius) * float(shadowData.Metadata.y), 1.0f, 24.0f);
+  const float rotation = StableShadowRotation(atlasUV, atlasWidth);
+  [unroll] for (uint sampleIndex = 0u; sampleIndex < 4u; ++sampleIndex)
+  {
+    const float2 offset = VogelDiskSample(sampleIndex, 4u, rotation) * validationRadius * atlasTexel;
+    const float mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
+    if (receiverDepth < mapDepth)
+      return false;
+  }
+  return true;
+}

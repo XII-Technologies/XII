@@ -20,6 +20,10 @@ static const uint XII_RESTIR_MAX_M         = 32u;
 static const uint XII_RESTIR_M_BITS        = 6u;
 static const uint XII_RESTIR_M_MASK        = (1u << XII_RESTIR_M_BITS) - 1u;
 static const uint XII_RESTIR_REVISION_MASK = 0xFFFFu;
+static const uint XII_RESTIR_REVISION_SHIFT = XII_RESTIR_M_BITS;
+static const uint XII_RESTIR_VISIBILITY_SHIFT = XII_RESTIR_REVISION_SHIFT + 16u;
+static const uint XII_RESTIR_VISIBILITY_MASK = 0xFFu;
+static const uint XII_RESTIR_VISIBILITY_VALID_BIT = 1u << 30u;
 
 struct xiiReSTIRDIReservoir
 {
@@ -28,6 +32,8 @@ struct xiiReSTIRDIReservoir
   float WeightSum;
   uint  M;
   uint  SampleRevision;
+  float Visibility;
+  uint  VisibilityValid;
 };
 
 struct xiiReSTIRDISurface
@@ -74,6 +80,8 @@ xiiReSTIRDIReservoir ReSTIREmptyReservoir()
   reservoir.WeightSum     = 0.0f;
   reservoir.M             = 0u;
   reservoir.SampleRevision = 0u;
+  reservoir.Visibility     = 1.0f;
+  reservoir.VisibilityValid = 0u;
   return reservoir;
 }
 
@@ -112,19 +120,24 @@ xiiReSTIRDIReservoir ReSTIRUnpackReservoir(uint4 packedReservoir)
   reservoir.StableLightId = packedReservoir.y;
   reservoir.WeightSum     = asfloat(packedReservoir.z);
   reservoir.M             = packedReservoir.w & XII_RESTIR_M_MASK;
-  reservoir.SampleRevision = (packedReservoir.w >> XII_RESTIR_M_BITS) & XII_RESTIR_REVISION_MASK;
+  reservoir.SampleRevision = (packedReservoir.w >> XII_RESTIR_REVISION_SHIFT) & XII_RESTIR_REVISION_MASK;
+  reservoir.Visibility     = (float)((packedReservoir.w >> XII_RESTIR_VISIBILITY_SHIFT) & XII_RESTIR_VISIBILITY_MASK) * (1.0f / 255.0f);
+  reservoir.VisibilityValid = (packedReservoir.w & XII_RESTIR_VISIBILITY_VALID_BIT) != 0u ? 1u : 0u;
   return reservoir;
 }
 
 uint4 ReSTIRPackReservoir(xiiReSTIRDIReservoir reservoir)
 {
+  const uint quantizedVisibility = (uint)round(saturate(reservoir.Visibility) * 255.0f);
   const uint packedMetadata = (reservoir.M & XII_RESTIR_M_MASK) |
-    ((reservoir.SampleRevision & XII_RESTIR_REVISION_MASK) << XII_RESTIR_M_BITS);
+    ((reservoir.SampleRevision & XII_RESTIR_REVISION_MASK) << XII_RESTIR_REVISION_SHIFT) |
+    ((quantizedVisibility & XII_RESTIR_VISIBILITY_MASK) << XII_RESTIR_VISIBILITY_SHIFT) |
+    (reservoir.VisibilityValid != 0u ? XII_RESTIR_VISIBILITY_VALID_BIT : 0u);
   return uint4(reservoir.SampleIndex, reservoir.StableLightId, asuint(reservoir.WeightSum), packedMetadata);
 }
 
 void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleIndex, uint stableLightId, uint sampleRevision,
-                           float candidateWeight, uint candidateM, inout uint randomState)
+                           float candidateVisibility, uint candidateVisibilityValid, float candidateWeight, uint candidateM, inout uint randomState)
 {
   candidateM = min(candidateM, XII_RESTIR_MAX_M - reservoir.M);
   if (candidateM == 0u)
@@ -140,6 +153,8 @@ void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleInde
     reservoir.SampleIndex   = sampleIndex;
     reservoir.StableLightId = stableLightId;
     reservoir.SampleRevision = sampleRevision & XII_RESTIR_REVISION_MASK;
+    reservoir.Visibility     = saturate(candidateVisibility);
+    reservoir.VisibilityValid = candidateVisibilityValid != 0u ? 1u : 0u;
   }
 }
 

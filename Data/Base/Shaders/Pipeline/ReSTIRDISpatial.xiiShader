@@ -67,6 +67,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     const uint sourceM = min(source.M, 16u);
     const float target = ReSTIREstimateSampleTarget(source.SampleIndex, worldPosition, normal, surface);
     ReSTIRUpdateReservoir(reservoir, source.SampleIndex, source.StableLightId, source.SampleRevision,
+                          source.Visibility, source.VisibilityValid,
                           target * source.WeightSum * (float)sourceM, sourceM, randomState);
   }
 
@@ -96,7 +97,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     const uint neighborM = min(neighbor.M, 8u);
     const float target = ReSTIREstimateSampleTarget(neighbor.SampleIndex, worldPosition, normal, surface);
     ReSTIRUpdateReservoir(reservoir, neighbor.SampleIndex, neighbor.StableLightId, neighbor.SampleRevision,
-      target * neighbor.WeightSum * (float)neighborM, neighborM, randomState);
+      1.0f, 0u, target * neighbor.WeightSum * (float)neighborM, neighborM, randomState);
   }
 
   const float selectedTarget = ReSTIREstimateSampleTarget(reservoir.SampleIndex, worldPosition, normal, surface);
