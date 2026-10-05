@@ -17,10 +17,13 @@ struct xiiReflectionPayload
   float  RayConeSpread;
   uint   RandomState;
   uint   RayType;
+  uint   BounceDepth;
+  uint   PathFlags;
 };
 
 static const uint XII_RT_REFLECTION_RAY_TYPE_PATH       = 0u;
 static const uint XII_RT_REFLECTION_RAY_TYPE_VISIBILITY = 1u;
+static const uint XII_RT_REFLECTION_PATH_FLAG_PREVIOUS_EMISSIVE_NEE = 1u << 0u;
 
 uint RTReflectionHash(uint value)
 {
@@ -62,6 +65,15 @@ float3 SampleRTReflectionGGXVNDF(float3 normal, float3 viewDirection, float roug
   const float3 halfVector = normalize(tangent * localHalf.x + bitangent * localHalf.y + normal * localHalf.z);
   const float3 reflected = normalize(reflect(-viewDirection, halfVector));
   return dot(reflected, normal) > 1e-4f ? reflected : normalize(reflect(-viewDirection, normal));
+}
+
+float RTReflectionSmithG1(float normalCosine, float roughness)
+{
+  const float alpha = max(roughness * roughness, 0.001f);
+  const float alphaSquared = alpha * alpha;
+  const float cosineSquared = normalCosine * normalCosine;
+  return (2.0f * normalCosine) /
+         max(normalCosine + sqrt(alphaSquared + (1.0f - alphaSquared) * cosineSquared), 1e-6f);
 }
 
 [RAY_GENERATION_SHADER]
@@ -113,6 +125,8 @@ void main()
     payload.RayConeSpread = max(primaryFootprint / cameraDistance, roughness * roughness);
     payload.RandomState = randomState;
     payload.RayType = XII_RT_REFLECTION_RAY_TYPE_PATH;
+    payload.BounceDepth = 0u;
+    payload.PathFlags = 0u;
     TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
 
     // RT, SSR, and probe tiers all produce the complete primary-surface
@@ -184,6 +198,8 @@ float TraceRTReflectionVisibility(float3 worldPosition, float3 worldNormal, floa
   visibilityPayload.RayConeSpread = 0.0f;
   visibilityPayload.RandomState = 0u;
   visibilityPayload.RayType = XII_RT_REFLECTION_RAY_TYPE_VISIBILITY;
+  visibilityPayload.BounceDepth = 0u;
+  visibilityPayload.PathFlags = 0u;
   TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
            0xFFU, 0U, 1U, 0U, visibilityRay, visibilityPayload);
   return visibilityPayload.Confidence;
@@ -279,6 +295,8 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
   }
   if (hasTexCoord && material.TextureIndices1.x != 0xFFFFFFFFU)
     emissive *= max(xiiSampleRayTracingMaterialTexture(material.TextureIndices1.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
+  if ((payload.PathFlags & XII_RT_REFLECTION_PATH_FLAG_PREVIOUS_EMISSIVE_NEE) != 0u)
+    emissive = 0.0f;
   if (hasTexCoord && material.TextureIndices1.z != 0xFFFFFFFFU)
   {
     const float2 coatSample = xiiSampleRayTracingMaterialTexture(material.TextureIndices1.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rg;
@@ -358,6 +376,7 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
   // The shared two-level alias hierarchy samples emissive geometry by emitted
   // power. Converting uniformly sampled triangle area to incident solid angle
   // keeps the estimator unbiased and bounded by the reflected quality budget.
+  bool emissiveNEESampled = false;
   if (g_RTGISettings.w > 0u && xiiHasEmissiveAliasDistribution())
   {
     const uint emissiveSampleCount = clamp(g_RTGISettings.w, 1u, 4u);
@@ -370,6 +389,7 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
       float triangleProposalProbability;
       if (!xiiSampleEmissiveTriangleAlias(aliasRandomSample, triangleIndex, triangleProposalProbability))
         continue;
+      emissiveNEESampled = true;
 
       const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[triangleIndex];
       const float sqrtBarycentric = sqrt(RTReflectionRandom01(payload.RandomState));
@@ -403,7 +423,39 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
     }
   }
 
-  payload.Radiance   = emissive + surfaceRadiance;
+  float3 continuedBounce = 0.0f;
+  const uint maxPathHits = clamp(g_RTReflectionSettings.x, 1u, 2u);
+  const float3 specularF0 = lerp((0.08f * dielectricSpecular).xxx, baseColor, metallic);
+  if (payload.BounceDepth + 1u < maxPathHits && max(max(specularF0.x, specularF0.y), specularF0.z) > 1e-4f)
+  {
+    const float2 childRandomSample = float2(RTReflectionRandom01(payload.RandomState), RTReflectionRandom01(payload.RandomState));
+    const float3 childDirection = SampleRTReflectionGGXVNDF(worldNormal, viewDirection, roughness, childRandomSample);
+
+    RayDesc childRay;
+    childRay.Origin = hitPosition + worldNormal * 0.002f;
+    childRay.Direction = childDirection;
+    childRay.TMin = 0.001f;
+    childRay.TMax = 500.0f;
+
+    xiiReflectionPayload childPayload;
+    childPayload.Radiance = 0.0f;
+    childPayload.Confidence = 0.0f;
+    childPayload.RayConeWidth = rayConeWidth;
+    childPayload.RayConeSpread = max(payload.RayConeSpread, roughness * roughness);
+    childPayload.RandomState = payload.RandomState;
+    childPayload.RayType = XII_RT_REFLECTION_RAY_TYPE_PATH;
+    childPayload.BounceDepth = payload.BounceDepth + 1u;
+    childPayload.PathFlags = emissiveNEESampled ? XII_RT_REFLECTION_PATH_FLAG_PREVIOUS_EMISSIVE_NEE : 0u;
+    TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, childRay, childPayload);
+
+    const float3 halfVector = NormalizeAreaLightDirection(viewDirection + childDirection, worldNormal);
+    const float3 fresnel = F_Schlick(specularF0, saturate(dot(viewDirection, halfVector)));
+    const float smithMasking = RTReflectionSmithG1(saturate(dot(worldNormal, childDirection)), roughness);
+    continuedBounce = fresnel * smithMasking * max(childPayload.Radiance, 0.0f);
+    payload.RandomState = childPayload.RandomState;
+  }
+
+  payload.Radiance   = emissive + surfaceRadiance + continuedBounce;
   payload.Confidence = 1.0f;
 }
 

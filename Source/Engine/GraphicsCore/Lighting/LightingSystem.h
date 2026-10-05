@@ -86,6 +86,7 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   xiiUInt32 m_uiRTGIMaxPathHits          = 2U; ///< Maximum diffuse surface hits in a near-field path.
   xiiUInt32 m_uiRTGILocalLightSamples    = 2U; ///< Stratified analytical local-light samples evaluated at each hit.
   xiiUInt32 m_uiRTGIEmissiveLightSamples = 1U; ///< Power-weighted emissive-triangle next-event samples evaluated at each hit.
+  xiiUInt32 m_uiRTReflectionMaxPathHits  = 2U; ///< Maximum glossy surface hits in a ray-traced reflection path.
   xiiUInt32 m_uiMaxIESProfiles           = 256U;
 };
 
@@ -227,6 +228,7 @@ private:
     xiiVec4U32 m_ReSTIRDIReuseSettings     = xiiVec4U32(8U, 20U, 4U, 2U);
     xiiVec4    m_ReSTIRDIStabilitySettings = xiiVec4(0.75f, 0.35f, 0.0f, 0.0f);
     xiiVec4U32 m_RTGISettings              = xiiVec4U32(2U, 0U, 0U, 0U);
+    xiiVec4U32 m_RTReflectionSettings      = xiiVec4U32(2U, 0U, 0U, 0U);
   };
 
   void EnsureGpuResources();

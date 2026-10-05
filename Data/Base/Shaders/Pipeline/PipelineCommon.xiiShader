@@ -52,6 +52,7 @@ cbuffer PerFrameGlobal : register(b2)
     uint4    g_ReSTIRDIReuseSettings; // x=fresh candidates, y=history M, z=spatial neighbours, w=radius pixels
     float4   g_ReSTIRDIStabilitySettings; // x=emissive visibility history weight, y=reactive threshold
     uint4    g_RTGISettings; // x=maximum path hits, y=local samples, z=hit-light visibility enabled, w=emissive samples
+    uint4    g_RTReflectionSettings; // x=maximum glossy path hits, yzw=reserved
 };
 
 // 

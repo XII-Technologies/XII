@@ -111,6 +111,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 12, xiiRTT
     XII_MEMBER_PROPERTY("RTGIMaxPathHits", m_uiRTGIMaxPathHits)->AddAttributes(new xiiClampValueAttribute(1U, 2U), new xiiDefaultValueAttribute(2U)),
     XII_MEMBER_PROPERTY("RTGILocalLightSamples", m_uiRTGILocalLightSamples)->AddAttributes(new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(2U)),
     XII_MEMBER_PROPERTY("RTGIEmissiveLightSamples", m_uiRTGIEmissiveLightSamples)->AddAttributes(new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(1U)),
+    XII_MEMBER_PROPERTY("RTReflectionMaxPathHits", m_uiRTReflectionMaxPathHits)->AddAttributes(new xiiClampValueAttribute(1U, 2U), new xiiDefaultValueAttribute(2U)),
     XII_MEMBER_PROPERTY("MaxIESProfiles", m_uiMaxIESProfiles)->AddAttributes(new xiiClampValueAttribute(1U, 4096U)),
   }
   XII_END_PROPERTIES;
@@ -160,6 +161,7 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
       m_Settings.m_uiRTGIMaxPathHits                      = 1U;
       m_Settings.m_uiRTGILocalLightSamples                = 1U;
       m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits              = 1U;
       break;
     case xiiReSTIRDIQualityPreset::Balanced:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 2U;
@@ -173,6 +175,7 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
       m_Settings.m_uiRTGIMaxPathHits                      = 1U;
       m_Settings.m_uiRTGILocalLightSamples                = 1U;
       m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits              = 1U;
       break;
     case xiiReSTIRDIQualityPreset::High:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 4U;
@@ -186,6 +189,7 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
       m_Settings.m_uiRTGIMaxPathHits                      = 2U;
       m_Settings.m_uiRTGILocalLightSamples                = 2U;
       m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits              = 2U;
       break;
     case xiiReSTIRDIQualityPreset::Ultra:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 8U;
@@ -199,6 +203,7 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
       m_Settings.m_uiRTGIMaxPathHits                      = 2U;
       m_Settings.m_uiRTGILocalLightSamples                = 4U;
       m_Settings.m_uiRTGIEmissiveLightSamples             = 2U;
+      m_Settings.m_uiRTReflectionMaxPathHits              = 2U;
       break;
     case xiiReSTIRDIQualityPreset::Custom:
       break;
@@ -294,6 +299,8 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
     xiiMath::Clamp(m_Settings.m_uiRTGIMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))),
     xiiMath::Clamp(m_Settings.m_uiRTGILocalLightSamples, 1U, 4U), bTraceHitVisibility ? 1U : 0U,
     xiiMath::Clamp(m_Settings.m_uiRTGIEmissiveLightSamples, 1U, 4U));
+  m_GlobalConstants.m_RTReflectionSettings = xiiVec4U32(
+    xiiMath::Clamp(m_Settings.m_uiRTReflectionMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))), 0U, 0U, 0U);
 
   float     fBestDirectionalIntensity = -1.0f;
   xiiUInt32 uiBestDirectionalLightId  = xiiInvalidIndex;
