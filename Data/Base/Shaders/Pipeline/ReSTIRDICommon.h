@@ -17,6 +17,9 @@ static const uint XII_RESTIR_SAMPLE_MASK   = 0x7FFFFFFFu;
 static const uint XII_RESTIR_CANDIDATES    = 8u;
 static const uint XII_RESTIR_MAX_HISTORY_M = 20u;
 static const uint XII_RESTIR_MAX_M         = 32u;
+static const uint XII_RESTIR_M_BITS        = 6u;
+static const uint XII_RESTIR_M_MASK        = (1u << XII_RESTIR_M_BITS) - 1u;
+static const uint XII_RESTIR_REVISION_MASK = 0xFFFFu;
 
 struct xiiReSTIRDIReservoir
 {
@@ -24,6 +27,7 @@ struct xiiReSTIRDIReservoir
   uint  StableLightId;
   float WeightSum;
   uint  M;
+  uint  SampleRevision;
 };
 
 struct xiiReSTIRDISurface
@@ -69,6 +73,7 @@ xiiReSTIRDIReservoir ReSTIREmptyReservoir()
   reservoir.StableLightId = 0u;
   reservoir.WeightSum     = 0.0f;
   reservoir.M             = 0u;
+  reservoir.SampleRevision = 0u;
   return reservoir;
 }
 
@@ -90,10 +95,14 @@ bool ReSTIRValidateReservoir(xiiReSTIRDIReservoir reservoir)
     g_EmissiveHeader.GetDimensions(headerCapacity, headerStride);
     const uint triangleIndex = reservoir.SampleIndex & XII_RESTIR_SAMPLE_MASK;
     const uint triangleCount = headerCapacity > 0u ? min(g_EmissiveHeader[0].TriangleCount, triangleCapacity) : 0u;
-    return triangleIndex < triangleCount && g_EmissiveTriangles[triangleIndex].Metadata.x == reservoir.StableLightId;
+    return triangleIndex < triangleCount &&
+      g_EmissiveTriangles[triangleIndex].Metadata.x == reservoir.StableLightId &&
+      (g_EmissiveTriangles[triangleIndex].Metadata.w >> 16u) == reservoir.SampleRevision;
   }
 
-  return reservoir.SampleIndex < g_ActiveLightCount && g_Lights[reservoir.SampleIndex].Metadata.x == reservoir.StableLightId;
+  return reservoir.SampleIndex < g_ActiveLightCount &&
+    g_Lights[reservoir.SampleIndex].Metadata.x == reservoir.StableLightId &&
+    (g_Lights[reservoir.SampleIndex].Metadata.w & XII_RESTIR_REVISION_MASK) == reservoir.SampleRevision;
 }
 
 xiiReSTIRDIReservoir ReSTIRUnpackReservoir(uint4 packedReservoir)
@@ -102,16 +111,20 @@ xiiReSTIRDIReservoir ReSTIRUnpackReservoir(uint4 packedReservoir)
   reservoir.SampleIndex   = packedReservoir.x;
   reservoir.StableLightId = packedReservoir.y;
   reservoir.WeightSum     = asfloat(packedReservoir.z);
-  reservoir.M             = packedReservoir.w;
+  reservoir.M             = packedReservoir.w & XII_RESTIR_M_MASK;
+  reservoir.SampleRevision = (packedReservoir.w >> XII_RESTIR_M_BITS) & XII_RESTIR_REVISION_MASK;
   return reservoir;
 }
 
 uint4 ReSTIRPackReservoir(xiiReSTIRDIReservoir reservoir)
 {
-  return uint4(reservoir.SampleIndex, reservoir.StableLightId, asuint(reservoir.WeightSum), reservoir.M);
+  const uint packedMetadata = (reservoir.M & XII_RESTIR_M_MASK) |
+    ((reservoir.SampleRevision & XII_RESTIR_REVISION_MASK) << XII_RESTIR_M_BITS);
+  return uint4(reservoir.SampleIndex, reservoir.StableLightId, asuint(reservoir.WeightSum), packedMetadata);
 }
 
-void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleIndex, uint stableLightId, float candidateWeight, uint candidateM, inout uint randomState)
+void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleIndex, uint stableLightId, uint sampleRevision,
+                           float candidateWeight, uint candidateM, inout uint randomState)
 {
   candidateM = min(candidateM, XII_RESTIR_MAX_M - reservoir.M);
   if (candidateM == 0u)
@@ -126,6 +139,7 @@ void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleInde
   {
     reservoir.SampleIndex   = sampleIndex;
     reservoir.StableLightId = stableLightId;
+    reservoir.SampleRevision = sampleRevision & XII_RESTIR_REVISION_MASK;
   }
 }
 

@@ -74,7 +74,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuLightData
   xiiVec4    m_ShadowData;             ///< x = casts shadow, y = camera fade-out distance in metres (zero is automatic/full), z = angular/source size, w = reserved.
   xiiVec4    m_BoundsCenterAndRadius;  ///< xyz = culling sphere center, w = culling sphere radius.
   xiiVec4    m_OrientationRightAndIES; ///< xyz = local right axis, w = compact IES profile index plus one (zero means none).
-  xiiVec4U32 m_Metadata;               ///< x = stable light ID, y = compact frame index, z = LightType, w = reserved flags.
+  xiiVec4U32 m_Metadata;               ///< x = stable light ID, y = compact frame index, z = LightType, w = 16-bit content revision.
 };
 
 static_assert(sizeof(xiiGpuLightData) == 144);

@@ -42,6 +42,15 @@ uint HashEmissiveId(uint objectId, uint geometryGeneration, uint lodIndex, uint 
   return value ^ (value >> 16u);
 }
 
+uint HashEmissiveRevision(float3 p0, float3 p1, float3 p2, float3 radiance, uint materialFlags)
+{
+  uint value = 0xA511E9B3u;
+  value = HashEmissiveId(value, asuint(p0.x), asuint(p0.y), asuint(p0.z), asuint(p1.x));
+  value = HashEmissiveId(value, asuint(p1.y), asuint(p1.z), asuint(p2.x), asuint(p2.y));
+  value = HashEmissiveId(value, asuint(p2.z), asuint(radiance.x), asuint(radiance.y), asuint(radiance.z));
+  return HashEmissiveId(value, materialFlags, 0u, 0u, 0u) & 0xFFFFu;
+}
+
 bool ReserveTriangle(out uint destination)
 {
   uint triangleCapacity, triangleStride;
@@ -197,7 +206,8 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   emissiveTriangle.Position2AndInvArea = float4(p2, rcp(area));
   emissiveTriangle.NormalAndTwoSided = float4(areaVector / doubleArea, (material.Metadata.y & (1u << 10u)) != 0u ? 1.0f : 0.0f);
   emissiveTriangle.RadianceAndLuminance = float4(radiance, luminance);
+  const uint revision = HashEmissiveRevision(p0, p1, p2, radiance, material.Metadata.y);
   emissiveTriangle.Metadata = uint4(HashEmissiveId(instance.UserData, geometry.Generation, lodIndex, sourcePrimitive, instance.MaterialIndex),
-                                    instanceIndex, sourcePrimitive, instance.MaterialIndex);
+                                    instanceIndex, sourcePrimitive, (revision << 16u) | (instance.MaterialIndex & 0xFFFFu));
   g_EmissiveTriangles[destination] = emissiveTriangle;
 }

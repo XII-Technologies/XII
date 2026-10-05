@@ -66,7 +66,8 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     // after temporal history has reached its maximum effective age.
     const uint sourceM = min(source.M, 16u);
     const float target = ReSTIREstimateSampleTarget(source.SampleIndex, worldPosition, normal, surface);
-    ReSTIRUpdateReservoir(reservoir, source.SampleIndex, source.StableLightId, target * source.WeightSum * (float)sourceM, sourceM, randomState);
+    ReSTIRUpdateReservoir(reservoir, source.SampleIndex, source.StableLightId, source.SampleRevision,
+                          target * source.WeightSum * (float)sourceM, sourceM, randomState);
   }
 
   const uint rotation = ReSTIRHash(randomState) & 7u;
@@ -94,7 +95,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
     const uint neighborM = min(neighbor.M, 8u);
     const float target = ReSTIREstimateSampleTarget(neighbor.SampleIndex, worldPosition, normal, surface);
-    ReSTIRUpdateReservoir(reservoir, neighbor.SampleIndex, neighbor.StableLightId,
+    ReSTIRUpdateReservoir(reservoir, neighbor.SampleIndex, neighbor.StableLightId, neighbor.SampleRevision,
       target * neighbor.WeightSum * (float)neighborM, neighborM, randomState);
   }
 

@@ -18,7 +18,7 @@ struct XII_SHADER_STRUCT xiiGpuEmissiveTriangle
   FLOAT4(Position2AndInvArea);
   FLOAT4(NormalAndTwoSided);
   FLOAT4(RadianceAndLuminance);
-  UINT4(Metadata); ///< x = stable ID, y = scene instance, z = source primitive, w = material index.
+  UINT4(Metadata); ///< x = stable ID, y = scene instance, z = source primitive, w = 16-bit revision | 16-bit material index.
 };
 
 /// Counters written by emissive extraction. The saturating triangle count is safe to consume as a

@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/Graphics/Camera.h>
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Reflection/Implementation/Casts.h>
@@ -578,7 +579,10 @@ bool xiiLightingSystem::AppendLight(xiiGpuLightData lightData, LightType type, x
   lightData.m_Metadata.x = uiStableLightId;
   lightData.m_Metadata.y = m_LightData.GetCount();
   lightData.m_Metadata.z = static_cast<xiiUInt32>(type);
-  lightData.m_Metadata.w = 0U;
+  // ReSTIR uses this compact content revision in addition to the stable ID.
+  // Moving or editing a light therefore invalidates stale samples without
+  // increasing the 128-bit reservoir history footprint.
+  lightData.m_Metadata.w = xiiHashingUtils::xxHash32(&lightData, offsetof(xiiGpuLightData, m_Metadata)) & 0xFFFFU;
 
   m_LightData.PushBack(lightData);
   ++m_Stats.m_uiActiveLightCount;

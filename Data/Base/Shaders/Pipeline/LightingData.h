@@ -28,7 +28,7 @@ struct xiiGpuLightData
   float4 ShadowData;            // x = casts shadow, y = camera fade-out distance in metres (0 = automatic/full), z = angular/source size
   float4 BoundsCenterAndRadius; // xyz = culling sphere center, w = radius
   float4 OrientationRightAndIES; // xyz = local right axis, w = compact IES profile index + 1
-  uint4  Metadata;               // x = stable light ID, y = compact frame index, z = light type, w = flags
+  uint4  Metadata;               // x = stable light ID, y = compact frame index, z = light type, w = 16-bit content revision
 };
 
 struct xiiClusterDescriptor
