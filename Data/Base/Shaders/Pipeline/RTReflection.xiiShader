@@ -140,6 +140,12 @@ Texture2D<float4> g_RayTracingTextures[] : register(t12);
 
 #include "Passes/RayTracing/RayTracingTextureSampling.h"
 #include <Shaders/Pipeline/SurfaceLighting.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+
+StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles;
+StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
+
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightSampling.h>
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
 
@@ -317,6 +323,54 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
         surfaceRadiance += EvaluateLocalLightLayered(lightData, hitPosition, worldNormal, viewDirection, baseColor, roughness,
           metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness) * visibility * sampleWeight;
       }
+    }
+  }
+
+  // The shared two-level alias hierarchy samples emissive geometry by emitted
+  // power. Converting uniformly sampled triangle area to incident solid angle
+  // keeps the estimator unbiased and bounded by the reflected quality budget.
+  if (g_RTGISettings.w > 0u && xiiHasEmissiveAliasDistribution())
+  {
+    const uint emissiveSampleCount = clamp(g_RTGISettings.w, 1u, 4u);
+    [loop]
+    for (uint emissiveSampleIndex = 0u; emissiveSampleIndex < emissiveSampleCount; ++emissiveSampleIndex)
+    {
+      const float4 aliasRandomSample = float4(RTReflectionRandom01(payload.RandomState), RTReflectionRandom01(payload.RandomState),
+                                              RTReflectionRandom01(payload.RandomState), RTReflectionRandom01(payload.RandomState));
+      uint triangleIndex;
+      float triangleProposalProbability;
+      if (!xiiSampleEmissiveTriangleAlias(aliasRandomSample, triangleIndex, triangleProposalProbability))
+        continue;
+
+      const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[triangleIndex];
+      const float sqrtBarycentric = sqrt(RTReflectionRandom01(payload.RandomState));
+      const float barycentricV = RTReflectionRandom01(payload.RandomState);
+      const float3 barycentrics = float3(1.0f - sqrtBarycentric,
+                                         sqrtBarycentric * (1.0f - barycentricV),
+                                         sqrtBarycentric * barycentricV);
+      const float3 emitterPosition = emissiveTriangle.Position0AndArea.xyz * barycentrics.x +
+                                     emissiveTriangle.Position1AndPowerWeight.xyz * barycentrics.y +
+                                     emissiveTriangle.Position2AndInvArea.xyz * barycentrics.z;
+      const float3 toEmitter = emitterPosition - hitPosition;
+      const float distanceSquared = dot(toEmitter, toEmitter);
+      if (distanceSquared <= 1e-8f)
+        continue;
+
+      const float distanceToEmitter = sqrt(distanceSquared);
+      const float3 directionToEmitter = toEmitter / distanceToEmitter;
+      const float receiverCosine = dot(worldNormal, directionToEmitter);
+      float emitterCosine = dot(normalize(emissiveTriangle.NormalAndTwoSided.xyz), -directionToEmitter);
+      emitterCosine = emissiveTriangle.NormalAndTwoSided.w >= 0.5f ? abs(emitterCosine) : max(emitterCosine, 0.0f);
+      if (receiverCosine <= 0.0f || emitterCosine <= 0.0f)
+        continue;
+
+      const float visibility = TraceRTReflectionVisibility(hitPosition, worldNormal, directionToEmitter,
+        max(distanceToEmitter - 0.004f, 0.001f));
+      const float areaToSolidAngle = max(emissiveTriangle.Position0AndArea.w, 0.0f) * emitterCosine / distanceSquared;
+      const float sampleNormalization = rcp(max((float)emissiveSampleCount * triangleProposalProbability, 1e-8f));
+      surfaceRadiance += BRDFLayered(baseColor, roughness, metallic, dielectricSpecular, transmission, clearCoat,
+                                     clearCoatRoughness, worldNormal, directionToEmitter, viewDirection) *
+                         max(emissiveTriangle.RadianceAndLuminance.rgb, 0.0f) * areaToSolidAngle * visibility * sampleNormalization;
     }
   }
 
