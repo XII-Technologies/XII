@@ -15,7 +15,11 @@ struct xiiGlobalIlluminationPayload
   float  Confidence;
   uint   RandomState;
   uint   BounceDepth;
+  uint   RayType;
 };
+
+static const uint XII_RTGI_RAY_TYPE_PATH       = 0u;
+static const uint XII_RTGI_RAY_TYPE_VISIBILITY = 1u;
 
 uint RTGIHash(uint value)
 {
@@ -80,7 +84,8 @@ void main()
     payload.Confidence = 0.0f;
     payload.RandomState = randomState;
     payload.BounceDepth = 0u;
-    TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFU, 0U, 1U, 0U, ray, payload);
+    payload.RayType = XII_RTGI_RAY_TYPE_PATH;
+    TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
     result = float4(albedo * max(payload.Radiance, 0.0f), payload.Confidence);
   }
 
@@ -93,7 +98,7 @@ void main()
 void main(inout xiiGlobalIlluminationPayload payload)
 {
   payload.Radiance   = 0.0f;
-  payload.Confidence = 0.0f;
+  payload.Confidence = payload.RayType == XII_RTGI_RAY_TYPE_VISIBILITY ? 1.0f : 0.0f;
 }
 
 [RAY_CLOSEST_HIT_SHADER]
@@ -107,6 +112,108 @@ Texture2D<float4> g_RayTracingTextures[] : register(t12);
 #include <Shaders/Pipeline/SurfaceLighting.h>
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
+
+float TraceRTGIVisibility(float3 worldPosition, float3 worldNormal, float3 direction, float maximumDistance, uint bounceDepth)
+{
+  if (g_RTGISettings.z == 0u || maximumDistance <= 0.002f)
+    return 1.0f;
+
+  RayDesc visibilityRay;
+  visibilityRay.Origin = worldPosition + worldNormal * 0.002f;
+  visibilityRay.Direction = direction;
+  visibilityRay.TMin = 0.001f;
+  visibilityRay.TMax = maximumDistance;
+
+  xiiGlobalIlluminationPayload visibilityPayload;
+  visibilityPayload.Radiance = 0.0f;
+  visibilityPayload.Confidence = 0.0f;
+  visibilityPayload.RandomState = 0u;
+  visibilityPayload.BounceDepth = bounceDepth;
+  visibilityPayload.RayType = XII_RTGI_RAY_TYPE_VISIBILITY;
+  TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+           0xFFU, 0U, 1U, 0U, visibilityRay, visibilityPayload);
+  return visibilityPayload.Confidence;
+}
+
+void SampleRTGILocalEmitter(xiiGpuLightData lightData, float3 worldPosition, inout uint randomState,
+                            out float3 samplePosition, out float projectedArea)
+{
+  const uint lightType = GetLightType(lightData);
+  samplePosition = GetRepresentativeLightPosition(lightData, worldPosition);
+  projectedArea = 0.0f;
+
+  if (lightType == XII_LIGHT_TYPE_RECTANGLE)
+  {
+    const float3 emitterNormal = normalize(lightData.DirectionAndType.xyz);
+    const float3 right = normalize(lightData.OrientationRightAndIES.xyz);
+    const float3 up = normalize(cross(right, emitterNormal));
+    const float width = max(lightData.SpotAnglesAndRectSize.z, 1e-4f);
+    const float height = max(lightData.SpotAnglesAndRectSize.w, 1e-4f);
+    const float2 sampleUV = float2(RTGIRandom01(randomState), RTGIRandom01(randomState)) - 0.5f;
+    samplePosition = lightData.PositionAndInvRange.xyz + right * (sampleUV.x * width) + up * (sampleUV.y * height);
+    projectedArea = width * height * saturate(dot(emitterNormal, normalize(worldPosition - samplePosition)));
+  }
+  else if (lightType == XII_LIGHT_TYPE_DISC)
+  {
+    const float3 emitterNormal = normalize(lightData.DirectionAndType.xyz);
+    const float3 right = normalize(lightData.OrientationRightAndIES.xyz);
+    const float3 up = normalize(cross(right, emitterNormal));
+    const float radius = max(lightData.AttenuationAndSize.y, 1e-4f);
+    const float diskRadius = sqrt(RTGIRandom01(randomState)) * radius;
+    const float diskAngle = RTGIRandom01(randomState) * 6.28318530718f;
+    samplePosition = lightData.PositionAndInvRange.xyz + right * (diskRadius * cos(diskAngle)) + up * (diskRadius * sin(diskAngle));
+    projectedArea = 3.14159265f * radius * radius * saturate(dot(emitterNormal, normalize(worldPosition - samplePosition)));
+  }
+  else if (lightType == XII_LIGHT_TYPE_SPHERE)
+  {
+    const float3 center = lightData.PositionAndInvRange.xyz;
+    const float radius = max(lightData.AttenuationAndSize.y, 1e-4f);
+    const float3 centerToPoint = NormalizeAreaLightDirection(worldPosition - center, float3(0.0f, 0.0f, 1.0f));
+    float3 tangent;
+    float3 bitangent;
+    BuildAreaLightBasis(centerToPoint, tangent, bitangent);
+    const float diskRadius = sqrt(RTGIRandom01(randomState)) * radius;
+    const float diskAngle = RTGIRandom01(randomState) * 6.28318530718f;
+    const float2 diskSample = float2(cos(diskAngle), sin(diskAngle)) * diskRadius;
+    const float surfaceHeight = sqrt(max(radius * radius - dot(diskSample, diskSample), 0.0f));
+    samplePosition = center + tangent * diskSample.x + bitangent * diskSample.y + centerToPoint * surfaceHeight;
+    projectedArea = 3.14159265f * radius * radius;
+  }
+  else if (lightType == XII_LIGHT_TYPE_TUBE)
+  {
+    const float3 center = lightData.PositionAndInvRange.xyz;
+    const float3 axis = normalize(lightData.DirectionAndType.xyz);
+    const float radius = max(lightData.AttenuationAndSize.y, 1e-4f);
+    const float length = max(lightData.AttenuationAndSize.z, 1e-4f);
+    const float3 centerToPoint = NormalizeAreaLightDirection(worldPosition - center, float3(0.0f, 0.0f, 1.0f));
+    const float axisCosine = dot(centerToPoint, axis);
+    const float sideOn = sqrt(saturate(1.0f - axisCosine * axisCosine));
+    float3 radialToPoint = centerToPoint - axis * axisCosine;
+    if (dot(radialToPoint, radialToPoint) < 1e-6f)
+    {
+      float3 unused;
+      BuildAreaLightBasis(axis, radialToPoint, unused);
+    }
+    else
+    {
+      radialToPoint = normalize(radialToPoint);
+    }
+
+    const float sideArea = 2.0f * radius * length * sideOn;
+    const float capArea = 3.14159265f * radius * radius;
+    projectedArea = sideArea + capArea;
+    if (RTGIRandom01(randomState) * projectedArea < sideArea)
+    {
+      const float axialOffset = (RTGIRandom01(randomState) - 0.5f) * length;
+      samplePosition = center + axis * axialOffset + radialToPoint * radius;
+    }
+    else
+    {
+      const float endSign = axisCosine >= 0.0f ? 1.0f : -1.0f;
+      samplePosition = center + axis * (endSign * length * 0.5f) + centerToPoint * radius;
+    }
+  }
+}
 
 [shader("closesthit")]
 void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
@@ -215,8 +322,10 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
 
     const float3 directionToLight = normalize(-lightData.DirectionAndType.xyz);
     const float3 radiance = max(lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w, 0.0f);
+    const float visibility = TraceRTGIVisibility(hitPosition, worldNormal, directionToLight,
+      max(g_CameraForwardAndFarPlane.w, 10.0f), payload.BounceDepth);
     surfaceRadiance += BRDFLayered(baseColor, roughness, metallic, dielectricSpecular, transmission, clearCoat,
-                                   clearCoatRoughness, worldNormal, directionToLight, viewDirection) * radiance;
+                                   clearCoatRoughness, worldNormal, directionToLight, viewDirection) * radiance * visibility;
   }
 
   // Secondary hits have no screen cluster. Stratifying the complete local-light
@@ -236,8 +345,21 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
       const uint lightType = GetLightType(lightData);
       if (lightType >= XII_LIGHT_TYPE_POINT && lightType <= XII_LIGHT_TYPE_TUBE)
       {
-        surfaceRadiance += EvaluateLocalLightLayered(lightData, hitPosition, worldNormal, viewDirection, baseColor, roughness,
-                                                     metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness) * sampleWeight;
+        float3 emitterPosition;
+        float projectedArea;
+        SampleRTGILocalEmitter(lightData, hitPosition, payload.RandomState, emitterPosition, projectedArea);
+        const float3 toEmitter = emitterPosition - hitPosition;
+        const float distanceToEmitter = length(toEmitter);
+        const float3 directionToEmitter = distanceToEmitter > 1e-4f ? toEmitter / distanceToEmitter : worldNormal;
+        const float visibility = dot(worldNormal, directionToEmitter) > 0.0f ?
+          TraceRTGIVisibility(hitPosition, worldNormal, directionToEmitter, max(distanceToEmitter - 0.004f, 0.001f), payload.BounceDepth) : 0.0f;
+
+        const float3 contribution = lightType >= XII_LIGHT_TYPE_RECTANGLE ?
+          EvaluateAreaLightSample(lightData, emitterPosition, projectedArea, hitPosition, worldNormal, viewDirection, baseColor,
+                                  roughness, metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness) :
+          EvaluateLocalLightLayered(lightData, hitPosition, worldNormal, viewDirection, baseColor, roughness, metallic,
+                                    dielectricSpecular, transmission, clearCoat, clearCoatRoughness);
+        surfaceRadiance += contribution * visibility * sampleWeight;
       }
     }
   }
@@ -261,7 +383,8 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
     childPayload.Confidence = 0.0f;
     childPayload.RandomState = childRandomState;
     childPayload.BounceDepth = payload.BounceDepth + 1u;
-    TraceRay(g_RayTracingScene, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, 0xFFU, 0U, 1U, 0U, childRay, childPayload);
+    childPayload.RayType = XII_RTGI_RAY_TYPE_PATH;
+    TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, childRay, childPayload);
 
     // Cosine-weighted sampling cancels the Lambertian cosine/PDF terms, so
     // only diffuse reflectance and material occlusion scale incoming radiance.

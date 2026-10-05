@@ -14,7 +14,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiGlobalConstants)
   UINT4(ReSTIRDISettings);   ///< x = emissive visibility ray count, y = binary visibility refresh period, zw = reserved.
   UINT4(ReSTIRDIReuseSettings); ///< x = fresh candidates, y = temporal history M, z = spatial neighbours, w = radius in pixels.
   FLOAT4(ReSTIRDIStabilitySettings); ///< x = emissive visibility history weight, y = reactive threshold, zw = reserved.
-  UINT4(RTGISettings); ///< x = maximum near-field path surface hits, y = local-light samples per hit, zw = reserved.
+  UINT4(RTGISettings); ///< x = maximum path surface hits, y = local-light samples per hit, z = hit-light visibility enabled, w = reserved.
 };
 
 DECLARE_CONSTANT_BUFFER_AUTO(xiiCameraConstants)

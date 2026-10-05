@@ -282,10 +282,12 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   m_GlobalConstants.m_ReSTIRDIStabilitySettings = xiiVec4(
     xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight, 0.0f, 0.99f),
     xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold, 0.05f, 1.0f), 0.0f, 0.0f);
-  const xiiUInt32 uiDeviceRayRecursion = m_pDevice != nullptr ? m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth : 1U;
+  const xiiUInt32 uiDeviceRayRecursion  = m_pDevice != nullptr ? m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth : 1U;
+  const bool      bTraceHitVisibility   = uiDeviceRayRecursion >= 2U;
+  const xiiUInt32 uiPathRecursionBudget = bTraceHitVisibility ? uiDeviceRayRecursion - 1U : uiDeviceRayRecursion;
   m_GlobalConstants.m_RTGISettings = xiiVec4U32(
-    xiiMath::Clamp(m_Settings.m_uiRTGIMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiDeviceRayRecursion))),
-    xiiMath::Clamp(m_Settings.m_uiRTGILocalLightSamples, 1U, 4U), 0U, 0U);
+    xiiMath::Clamp(m_Settings.m_uiRTGIMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))),
+    xiiMath::Clamp(m_Settings.m_uiRTGILocalLightSamples, 1U, 4U), bTraceHitVisibility ? 1U : 0U, 0U);
 
   float     fBestDirectionalIntensity = -1.0f;
   xiiUInt32 uiBestDirectionalLightId  = xiiInvalidIndex;
