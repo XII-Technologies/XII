@@ -12,6 +12,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiGlobalConstants)
   FLOAT1(WorldTime);         ///< The world simulation time, in seconds. This can be used for world-specific animations or effects.
   FLOAT4(RenderScaleJitter); ///< The current frame's render scale and jitter values, where x = render scale (dynamic resolution), y/z = jitter offsets for temporal anti-aliasing, and w is unused.
   UINT4(ReSTIRDISettings);   ///< x = emissive visibility ray count, y = binary visibility refresh period, zw = reserved.
+  UINT4(ReSTIRDIReuseSettings); ///< x = fresh candidates, y = temporal history M, z = spatial neighbours, w = radius in pixels.
 };
 
 DECLARE_CONSTANT_BUFFER_AUTO(xiiCameraConstants)

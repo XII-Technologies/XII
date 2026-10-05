@@ -64,7 +64,7 @@ namespace
 } // namespace
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 6, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 7, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -96,6 +96,10 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 6, xiiRTTI
     XII_MEMBER_PROPERTY("DirectionalShadowFilterSamples", m_uiDirectionalShadowFilterSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("ReSTIRDIEmissiveVisibilitySamples", m_uiReSTIRDIEmissiveVisibilitySamples)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(4U)),
     XII_MEMBER_PROPERTY("ReSTIRDIEmissiveBinaryRefreshPeriod", m_uiReSTIRDIEmissiveBinaryRefreshPeriod)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(2U)),
+    XII_MEMBER_PROPERTY("ReSTIRDIFreshCandidateCount", m_uiReSTIRDIFreshCandidateCount)->AddAttributes(new xiiClampValueAttribute(1U, 32U), new xiiDefaultValueAttribute(8U)),
+    XII_MEMBER_PROPERTY("ReSTIRDITemporalHistoryM", m_uiReSTIRDITemporalHistoryM)->AddAttributes(new xiiClampValueAttribute(1U, 32U), new xiiDefaultValueAttribute(20U)),
+    XII_MEMBER_PROPERTY("ReSTIRDISpatialNeighborCount", m_uiReSTIRDISpatialNeighborCount)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(4U)),
+    XII_MEMBER_PROPERTY("ReSTIRDISpatialRadius", m_uiReSTIRDISpatialRadius)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(2U), new xiiSuffixAttribute(" px")),
     XII_MEMBER_PROPERTY("MaxIESProfiles", m_uiMaxIESProfiles)->AddAttributes(new xiiClampValueAttribute(1U, 4096U)),
   }
   XII_END_PROPERTIES;
@@ -207,6 +211,11 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   m_GlobalConstants.m_ReSTIRDISettings = xiiVec4U32(
     xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples, 1U, 8U),
     xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod, 1U, 8U), 0U, 0U);
+  m_GlobalConstants.m_ReSTIRDIReuseSettings = xiiVec4U32(
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDIFreshCandidateCount, 1U, 32U),
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDITemporalHistoryM, 1U, 32U),
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialNeighborCount, 1U, 8U),
+    xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialRadius, 1U, 8U));
 
   float     fBestDirectionalIntensity = -1.0f;
   xiiUInt32 uiBestDirectionalLightId  = xiiInvalidIndex;

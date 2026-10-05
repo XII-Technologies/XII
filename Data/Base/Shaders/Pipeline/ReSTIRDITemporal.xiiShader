@@ -162,7 +162,8 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   uint randomState = ReSTIRHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x9E3779B9u);
   xiiReSTIRDIReservoir reservoir = ReSTIREmptyReservoir();
 
-  const uint candidateCount = (hasAnalyticalDistribution || hasEmissiveDistribution) ? XII_RESTIR_CANDIDATES : 0u;
+  const uint candidateCount = (hasAnalyticalDistribution || hasEmissiveDistribution) ?
+    clamp(g_ReSTIRDIReuseSettings.x, 1u, XII_RESTIR_MAX_M) : 0u;
   [loop]
   for (uint candidate = 0u; candidate < candidateCount; ++candidate)
   {
@@ -216,7 +217,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
       const bool visibilityReceiverMatches = length(motionInPixels) <= 0.75f &&
         abs(previousDepth - currentLinearDepth) <= max(currentLinearDepth * 0.002f, 0.002f) &&
         dot(previousNormal, normal) >= 0.995f;
-      previous.M = min(previous.M, XII_RESTIR_MAX_HISTORY_M);
+      previous.M = min(previous.M, clamp(g_ReSTIRDIReuseSettings.y, 1u, XII_RESTIR_MAX_M));
       const float target = ReSTIREstimateSampleTarget(previous.SampleIndex, worldPosition, normal, surface);
       const float aggregateWeight = target * previous.WeightSum * (float)previous.M;
       ReSTIRUpdateReservoir(reservoir, previous.SampleIndex, previous.StableLightId, previous.SampleRevision,

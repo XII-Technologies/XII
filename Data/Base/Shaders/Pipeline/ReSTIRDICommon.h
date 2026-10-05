@@ -14,8 +14,6 @@ StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
 static const uint XII_RESTIR_INVALID_LIGHT = 0xFFFFFFFFu;
 static const uint XII_RESTIR_EMISSIVE_BIT  = 0x80000000u;
 static const uint XII_RESTIR_SAMPLE_MASK   = 0x7FFFFFFFu;
-static const uint XII_RESTIR_CANDIDATES    = 8u;
-static const uint XII_RESTIR_MAX_HISTORY_M = 20u;
 static const uint XII_RESTIR_MAX_M         = 32u;
 static const uint XII_RESTIR_M_BITS        = 6u;
 static const uint XII_RESTIR_M_MASK        = (1u << XII_RESTIR_M_BITS) - 1u;

@@ -26,7 +26,7 @@ RWTexture2D<float4>    g_SurfaceOut;
 static const int2 XII_RESTIR_NEIGHBOR_OFFSETS[8] =
 {
   int2(-1, 0), int2(1, 0), int2(0, -1), int2(0, 1),
-  int2(-2, -1), int2(2, 1), int2(-1, 2), int2(1, -2)
+  int2(-1, -1), int2(1, 1), int2(-1, 1), int2(1, -1)
 };
 
 [numthreads(8, 8, 1)]
@@ -72,10 +72,13 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   }
 
   const uint rotation = ReSTIRHash(randomState) & 7u;
-  [unroll]
-  for (uint tap = 0u; tap < 4u; ++tap)
+  const uint neighborCount = clamp(g_ReSTIRDIReuseSettings.z, 1u, 8u);
+  const uint spatialRadius = clamp(g_ReSTIRDIReuseSettings.w, 1u, 8u);
+  [loop]
+  for (uint tap = 0u; tap < neighborCount; ++tap)
   {
-    const int2 neighborPixel = int2(pixel) + XII_RESTIR_NEIGHBOR_OFFSETS[(rotation + tap) & 7u];
+    const uint tapRadius = 1u + (ReSTIRHash(randomState ^ (tap * 0x9E3779B9u)) % spatialRadius);
+    const int2 neighborPixel = int2(pixel) + XII_RESTIR_NEIGHBOR_OFFSETS[(rotation + tap) & 7u] * (int)tapRadius;
     if (any(neighborPixel < 0) || any(neighborPixel >= int2(dimensions)))
       continue;
 

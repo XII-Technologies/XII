@@ -56,6 +56,10 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   xiiUInt32 m_uiDirectionalShadowFilterSamples  = 16U;
   xiiUInt32 m_uiReSTIRDIEmissiveVisibilitySamples = 4U; ///< Rays per selected emissive triangle when visibility is refreshed.
   xiiUInt32 m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 2U; ///< Frames between interleaved refreshes of fully lit/occluded samples.
+  xiiUInt32 m_uiReSTIRDIFreshCandidateCount        = 8U;
+  xiiUInt32 m_uiReSTIRDITemporalHistoryM           = 20U;
+  xiiUInt32 m_uiReSTIRDISpatialNeighborCount       = 4U;
+  xiiUInt32 m_uiReSTIRDISpatialRadius              = 2U; ///< Maximum spatial reuse radius in pixels.
   xiiUInt32 m_uiMaxIESProfiles                  = 256U;
 };
 
@@ -194,6 +198,7 @@ private:
     float     m_fWorldTime        = 0.0f;
     xiiVec4   m_RenderScaleJitter = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
     xiiVec4U32 m_ReSTIRDISettings = xiiVec4U32(4U, 2U, 0U, 0U);
+    xiiVec4U32 m_ReSTIRDIReuseSettings = xiiVec4U32(8U, 20U, 4U, 2U);
   };
 
   void EnsureGpuResources();
