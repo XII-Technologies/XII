@@ -43,7 +43,7 @@ public:
 
   [[nodiscard]] static xiiMaterialGpuStorage::UploadHandles AddUploadPasses(xiiRenderGraph& graph);
   [[nodiscard]] static xiiRenderGraphBufferHandle           AddUploadPass(xiiRenderGraph& graph);
-  [[nodiscard]] static xiiResult                  ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData);
+  [[nodiscard]] static xiiResult                            ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData);
 
   [[nodiscard]] static xiiMaterialGpuStorage& GetGpuStorage();
 

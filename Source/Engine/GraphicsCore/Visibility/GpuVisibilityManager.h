@@ -62,8 +62,8 @@ public:
                                                                    xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute = true);
   [[nodiscard]] static xiiUInt32                   GetHiZMipLevelCount(xiiGpuVisibilityContextHandle handle);
 
-  [[nodiscard]] static xiiUInt32 GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle);
-  [[nodiscard]] static xiiUInt32 GetMeshDispatchGroupCountY(xiiGpuVisibilityContextHandle handle);
+  [[nodiscard]] static xiiUInt32                      GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle);
+  [[nodiscard]] static xiiUInt32                      GetMeshDispatchGroupCountY(xiiGpuVisibilityContextHandle handle);
   [[nodiscard]] static xiiGpuVisibilityStreamingStats GetStreamingStats(xiiGpuVisibilityContextHandle handle);
 
 private:

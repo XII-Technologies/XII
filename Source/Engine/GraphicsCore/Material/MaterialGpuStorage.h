@@ -38,8 +38,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialGpuStorageStatisti
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuUpload
 {
   xiiMaterialGpuHandle      m_Handle;
-  xiiUInt32                 m_uiRevision          = 0U;
-  xiiUInt32                 m_uiDestinationOffset = 0U;
+  xiiUInt32                 m_uiRevision                 = 0U;
+  xiiUInt32                 m_uiDestinationOffset        = 0U;
   xiiUInt32                 m_uiSurfaceDestinationOffset = 0U;
   xiiDynamicArray<xiiUInt8> m_Data;
   xiiGpuSurfaceMaterial     m_SurfaceData;

@@ -471,7 +471,7 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGpuVisibilitySystem::LoadComputePipe
 xiiGpuVisibilityView xiiGpuVisibilitySystem::BuildView(const xiiMat4& viewProjectionMatrix, const xiiFrustum& frustum, const xiiVec3& vCameraPosition, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiHiZMipCount, xiiUInt32 uiInstanceCount, xiiUInt32 uiVisibilityMask)
 {
   xiiGpuVisibilityView result;
-  result.m_ViewProjectionMatrix = viewProjectionMatrix;
+  result.m_ViewProjectionMatrix          = viewProjectionMatrix;
   result.m_OcclusionViewProjectionMatrix = viewProjectionMatrix;
   for (xiiUInt32 i = 0; i < 6U; ++i) result.m_FrustumPlanes[i] = frustum.GetPlane(static_cast<xiiUInt8>(i)).GetAsVec4();
   result.m_CameraPosition   = xiiVec4(vCameraPosition.x, vCameraPosition.y, vCameraPosition.z, 1.0f);
@@ -745,21 +745,21 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
   auto       meshletCull    = graph.AddPass<MeshletCullPassData>(
     makePassName(bUseMeshletHiZ ? " GPU Meshlet Hi-Z Culling" : " GPU Meshlet Culling"), computeQueue,
     [&, hLodFeedback](MeshletCullPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hScene                = builder.ReadBuffer(instanceCull.first->m_hScene, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hView                 = builder.ReadBuffer(instanceCull.first->m_hView, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hGeometry             = builder.ReadBuffer(instanceCull.first->m_hGeometry, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hMeshlets             = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hVisibleInstances     = builder.ReadBuffer(hVisibleInstances, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hVisibleInstanceCount = builder.ReadBuffer(hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hDispatchArguments    = builder.ReadBuffer(meshletDispatchBuild.first->m_hDispatchArguments, xiiGALResourceStateFlags::IndirectArgument);
+      data.m_hScene                              = builder.ReadBuffer(instanceCull.first->m_hScene, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hView                               = builder.ReadBuffer(instanceCull.first->m_hView, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hGeometry                           = builder.ReadBuffer(instanceCull.first->m_hGeometry, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hMeshlets                           = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hVisibleInstances                   = builder.ReadBuffer(hVisibleInstances, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hVisibleInstanceCount               = builder.ReadBuffer(hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hDispatchArguments                  = builder.ReadBuffer(meshletDispatchBuild.first->m_hDispatchArguments, xiiGALResourceStateFlags::IndirectArgument);
       data.m_hPreviousLodHistory                 = builder.ReadBuffer(builder.ImportBuffer(makeResourceName(" GPU Previous LOD History"), m_pLodHistoryBuffers[uiPreviousResourceSlot], m_pLodHistoryBuffers[uiPreviousResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
       data.m_hCurrentLodHistory                  = builder.WriteBuffer(builder.ImportBuffer(makeResourceName(" GPU Current LOD History"), m_pLodHistoryBuffers[uiResourceSlot], m_pLodHistoryBuffers[uiResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
       const xiiRenderGraphBufferHandle hFeedback = hLodFeedback.IsValid() ? hLodFeedback : builder.ImportBuffer(makeResourceName(" GPU LOD Feedback"), m_pLodFeedbackBuffers[uiResourceSlot], m_pLodFeedbackBuffers[uiResourceSlot]->GetResourceState());
       data.m_hLodFeedback                        = builder.ReadWriteBuffer(hFeedback, xiiGALResourceStateFlags::UnorderedAccess);
       if (bUseMeshletHiZ)
         data.m_hHiZ = builder.ReadTexture(hHiZ, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hVisibleMeshlets      = builder.WriteBuffer(makeResourceName(" GPU Visible Meshlets"), meshletDesc, xiiGALResourceStateFlags::UnorderedAccess);
-      data.m_hVisibleMeshletCount  = builder.ReadWriteBuffer(reset.first->m_hVisibleMeshletCount, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hVisibleMeshlets     = builder.WriteBuffer(makeResourceName(" GPU Visible Meshlets"), meshletDesc, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hVisibleMeshletCount = builder.ReadWriteBuffer(reset.first->m_hVisibleMeshletCount, xiiGALResourceStateFlags::UnorderedAccess);
     },
     [](const MeshletCullPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd = context.GetCommandList();

@@ -155,9 +155,9 @@ public:
 
   /// Requests the finest required LOD. Concurrent view requests are merged toward the lowest
   /// LOD index and retain the strongest visibility priority until the missing range is resident.
-  static void                            RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority = 0U);
-  static void                            Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
-  static void                            ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
+  static void RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority = 0U);
+  static void Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
+  static void ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
 
   [[nodiscard]] static bool                               IsValid(xiiGeometryHandle handle);
   [[nodiscard]] static xiiEnum<xiiGeometryResidencyState> GetState(xiiGeometryHandle handle);
@@ -192,15 +192,15 @@ private:
 
     xiiGeometryDescription             m_Description;
     xiiGpuGeometryRecord               m_GpuRecord;
-    xiiEnum<xiiGeometryResidencyState> m_State           = xiiGeometryResidencyState::Unloaded;
-    xiiUInt64                          m_uiLastUsedFrame = 0U;
-    xiiUInt64                          m_uiRetireFrame   = 0U;
-    xiiUInt64                          m_uiResidentBytes = 0U;
-    xiiUInt32                          m_uiGeneration    = 1U;
-    xiiUInt32                          m_uiRequestedLod  = 0U;
+    xiiEnum<xiiGeometryResidencyState> m_State                = xiiGeometryResidencyState::Unloaded;
+    xiiUInt64                          m_uiLastUsedFrame      = 0U;
+    xiiUInt64                          m_uiRetireFrame        = 0U;
+    xiiUInt64                          m_uiResidentBytes      = 0U;
+    xiiUInt32                          m_uiGeneration         = 1U;
+    xiiUInt32                          m_uiRequestedLod       = 0U;
     xiiUInt32                          m_uiVisibilityPriority = 0U;
     xiiUInt64                          m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
-    bool                               m_bAllocated      = false;
+    bool                               m_bAllocated           = false;
     /// One bit per frame-in-flight metadata slice. A record change must reach every slice
     /// before it is considered clean; a single boolean would leave rotating slices stale.
     xiiUInt64 m_uiDirtyFrameMask                                        = 0U;

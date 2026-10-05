@@ -253,7 +253,7 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
     case xiiReSTIRDIQualityPreset::Custom:
       break;
   }
-  m_pDevice  = std::move(pDevice);
+  m_pDevice = std::move(pDevice);
   m_LightData.Reserve(m_Settings.m_uiMaxActiveLights);
   m_LocalShadowData.Reserve(m_Settings.m_uiMaxActiveLights);
 
@@ -523,7 +523,6 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
       AppendLight(lightData, LightType::Tube, static_cast<xiiUInt32>(pTubeLight->m_uiSortingKey));
       continue;
     }
-
   }
 
   // Keep infinite lights in a small deterministic prefix. Surface and

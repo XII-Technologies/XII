@@ -364,11 +364,11 @@ void xiiMaterialGpuStorage::GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpu
     if (slot.m_LastUploadedRevision[uiFrameSlice] == snapshot.m_uiRevision)
       continue;
 
-    xiiMaterialGpuUpload& upload   = out_batch.m_Uploads.ExpandAndGetRef();
-    upload.m_Handle.m_uiSlot       = i;
-    upload.m_Handle.m_uiGeneration = slot.m_uiGeneration;
-    upload.m_uiRevision            = snapshot.m_uiRevision;
-    upload.m_uiDestinationOffset   = static_cast<xiiUInt32>((static_cast<xiiUInt64>(uiFrameSlice) * m_Description.m_uiMaxMaterials + i) * m_uiMaterialStride);
+    xiiMaterialGpuUpload& upload        = out_batch.m_Uploads.ExpandAndGetRef();
+    upload.m_Handle.m_uiSlot            = i;
+    upload.m_Handle.m_uiGeneration      = slot.m_uiGeneration;
+    upload.m_uiRevision                 = snapshot.m_uiRevision;
+    upload.m_uiDestinationOffset        = static_cast<xiiUInt32>((static_cast<xiiUInt64>(uiFrameSlice) * m_Description.m_uiMaxMaterials + i) * m_uiMaterialStride);
     upload.m_uiSurfaceDestinationOffset = static_cast<xiiUInt32>((static_cast<xiiUInt64>(uiFrameSlice) * m_Description.m_uiMaxMaterials + i) * sizeof(xiiGpuSurfaceMaterial));
     upload.m_Data.SetCount(m_uiMaterialStride);
     xiiMemoryUtils::ZeroFill(upload.m_Data.GetData(), upload.m_Data.GetCount());
@@ -386,8 +386,8 @@ xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiR
     "Material Upload",
     xiiGALCommandQueueFlags::Transfer,
     [this](UploadPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hBuffer = builder.ImportBuffer("Material GPU Storage", m_pBuffer, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hBuffer = builder.WriteBuffer(data.m_hBuffer, xiiGALResourceStateFlags::CopyDestination);
+      data.m_hBuffer        = builder.ImportBuffer("Material GPU Storage", m_pBuffer, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hBuffer        = builder.WriteBuffer(data.m_hBuffer, xiiGALResourceStateFlags::CopyDestination);
       data.m_hSurfaceBuffer = builder.ImportBuffer("Surface Material GPU Storage", m_pSurfaceBuffer, xiiGALResourceStateFlags::ShaderResource);
       data.m_hSurfaceBuffer = builder.WriteBuffer(data.m_hSurfaceBuffer, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);
@@ -396,7 +396,7 @@ xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiR
       builder.SetPassAllowMerge(false);
     },
     [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
-      xiiGALBuffer* pBuffer = context.GetBuffer(data.m_hBuffer);
+      xiiGALBuffer* pBuffer        = context.GetBuffer(data.m_hBuffer);
       xiiGALBuffer* pSurfaceBuffer = context.GetBuffer(data.m_hSurfaceBuffer);
       for (const xiiMaterialGpuUpload& upload : data.m_Batch.m_Uploads)
       {

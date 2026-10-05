@@ -48,32 +48,32 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiMaxActiveLights                 = 65536U;
-  xiiUInt32 m_uiMaxLightsPerCluster             = 128U;
-  xiiUInt32 m_uiClusterTileSize                 = 16U;
-  xiiUInt32 m_uiClusterDepthSlices              = 24U;
-  xiiColor  m_AmbientLightColor                 = xiiColor(0.03f, 0.035f, 0.04f, 1.0f);
-  float     m_fIndirectLightIntensity           = 1.0f;
-  float     m_fContactShadowLength              = 0.35f;
-  float     m_fContactShadowThickness           = 0.02f;
-  xiiUInt32 m_uiContactShadowSteps              = 16U;
-  float     m_fSSGIRayLength                    = 2.0f;
-  xiiUInt32 m_uiSSGISampleCount                 = 8U;
-  float     m_fSSGIThickness                    = 0.15f;
-  float     m_fSSGIIntensity                    = 1.0f;
-  float     m_fSSRefractionScale                = 0.05f;
-  float     m_fSSRefractionMaxDistance          = 0.1f;
-  float     m_fSSRefractionChromatic            = 0.002f;
-  xiiUInt32 m_uiLocalShadowAtlasSize            = 4096U;
-  xiiUInt32 m_uiLocalShadowTileSize             = 256U;
+  xiiUInt32                         m_uiMaxActiveLights                 = 65536U;
+  xiiUInt32                         m_uiMaxLightsPerCluster             = 128U;
+  xiiUInt32                         m_uiClusterTileSize                 = 16U;
+  xiiUInt32                         m_uiClusterDepthSlices              = 24U;
+  xiiColor                          m_AmbientLightColor                 = xiiColor(0.03f, 0.035f, 0.04f, 1.0f);
+  float                             m_fIndirectLightIntensity           = 1.0f;
+  float                             m_fContactShadowLength              = 0.35f;
+  float                             m_fContactShadowThickness           = 0.02f;
+  xiiUInt32                         m_uiContactShadowSteps              = 16U;
+  float                             m_fSSGIRayLength                    = 2.0f;
+  xiiUInt32                         m_uiSSGISampleCount                 = 8U;
+  float                             m_fSSGIThickness                    = 0.15f;
+  float                             m_fSSGIIntensity                    = 1.0f;
+  float                             m_fSSRefractionScale                = 0.05f;
+  float                             m_fSSRefractionMaxDistance          = 0.1f;
+  float                             m_fSSRefractionChromatic            = 0.002f;
+  xiiUInt32                         m_uiLocalShadowAtlasSize            = 4096U;
+  xiiUInt32                         m_uiLocalShadowTileSize             = 256U;
   xiiUInt32                         m_uiMaxLocalShadowFacesPerFrame     = 64U;
-  float     m_fVolumetricFogDensity             = 0.015f;
-  float     m_fVolumetricHeightFalloff          = 0.08f;
-  float     m_fVolumetricBaseHeight             = 0.0f;
-  float     m_fVolumetricAnisotropy             = 0.45f;
-  float     m_fDirectionalShadowMaxPenumbra     = 24.0f; ///< Maximum PCSS filter radius in shadow texels.
-  xiiUInt32 m_uiDirectionalShadowBlockerSamples = 12U;
-  xiiUInt32 m_uiDirectionalShadowFilterSamples  = 16U;
+  float                             m_fVolumetricFogDensity             = 0.015f;
+  float                             m_fVolumetricHeightFalloff          = 0.08f;
+  float                             m_fVolumetricBaseHeight             = 0.0f;
+  float                             m_fVolumetricAnisotropy             = 0.45f;
+  float                             m_fDirectionalShadowMaxPenumbra     = 24.0f; ///< Maximum PCSS filter radius in shadow texels.
+  xiiUInt32                         m_uiDirectionalShadowBlockerSamples = 12U;
+  xiiUInt32                         m_uiDirectionalShadowFilterSamples  = 16U;
   xiiEnum<xiiReSTIRDIQualityPreset> m_ReSTIRDIQualityPreset;
   xiiUInt32                         m_uiReSTIRDIEmissiveVisibilitySamples          = 4U; ///< Rays per selected emissive triangle when visibility is refreshed.
   xiiUInt32                         m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 2U; ///< Frames between interleaved refreshes of fully lit/occluded samples.
@@ -228,11 +228,11 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiUInt32 m_uiFrameIndex      = 0U;
-    float     m_fDeltaTimeMs      = 0.0f;
-    float     m_fGlobalTime       = 0.0f;
-    float     m_fWorldTime        = 0.0f;
-    xiiVec4   m_RenderScaleJitter = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
+    xiiUInt32  m_uiFrameIndex              = 0U;
+    float      m_fDeltaTimeMs              = 0.0f;
+    float      m_fGlobalTime               = 0.0f;
+    float      m_fWorldTime                = 0.0f;
+    xiiVec4    m_RenderScaleJitter         = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
     xiiVec4U32 m_ReSTIRDISettings          = xiiVec4U32(4U, 2U, 0U, 0U);
     xiiVec4U32 m_ReSTIRDIReuseSettings     = xiiVec4U32(8U, 20U, 4U, 2U);
     xiiVec4    m_ReSTIRDIStabilitySettings = xiiVec4(0.75f, 0.35f, 0.0f, 0.0f);

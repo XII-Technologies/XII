@@ -18,7 +18,7 @@ public:
   xiiDynamicArray<Slot>      m_Slots;
   xiiDynamicArray<xiiUInt32> m_FreeSlots;
   xiiUInt64                  m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
-  bool                       m_bEngineStarted = false;
+  bool                       m_bEngineStarted   = false;
 };
 
 xiiUniquePtr<xiiGpuVisibilityManagerState> xiiGpuVisibilityManager::s_pState;
@@ -233,7 +233,7 @@ void xiiGpuVisibilityManager::EngineShutdown()
     s_pState->m_FreeSlots.PushBack(uiIndex);
   }
   s_pState->m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
-  s_pState->m_bEngineStarted = false;
+  s_pState->m_bEngineStarted   = false;
 }
 
 void xiiGpuVisibilityManager::Shutdown()

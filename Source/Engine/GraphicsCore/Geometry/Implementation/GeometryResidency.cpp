@@ -395,12 +395,12 @@ xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometr
   slot.m_GpuRecord.m_uiLodCount   = description.m_Lods.GetCount();
   for (xiiUInt32 uiLod = 0U; uiLod < description.m_Lods.GetCount(); ++uiLod)
     slot.m_GpuRecord.m_Lods[uiLod].m_fMinimumScreenCoverage = description.m_Lods[uiLod].m_fMinimumScreenCoverage;
-  slot.m_State                    = xiiGeometryResidencyState::Unloaded;
-  slot.m_bAllocated               = true;
-  slot.m_uiDirtyFrameMask         = s_pState->m_uiAllFrameMask;
-  slot.m_uiRequestedLod           = description.m_Lods.GetCount() - 1U;
-  slot.m_uiVisibilityPriority     = 0U;
-  slot.m_uiFirstRequestFrame      = xiiMath::MaxValue<xiiUInt64>();
+  slot.m_State                = xiiGeometryResidencyState::Unloaded;
+  slot.m_bAllocated           = true;
+  slot.m_uiDirtyFrameMask     = s_pState->m_uiAllFrameMask;
+  slot.m_uiRequestedLod       = description.m_Lods.GetCount() - 1U;
+  slot.m_uiVisibilityPriority = 0U;
+  slot.m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
   xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaOffset, XII_ARRAY_SIZE(slot.m_uiMeshletArenaOffset));
   xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaCount, XII_ARRAY_SIZE(slot.m_uiMeshletArenaCount));
 
@@ -510,7 +510,7 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
     if (slot.m_State != xiiGeometryResidencyState::Requested && slot.m_State != xiiGeometryResidencyState::Loading)
       slot.m_uiFirstRequestFrame = uiFrameIndex;
     slot.m_uiVisibilityPriority = xiiMath::Max(slot.m_uiVisibilityPriority, uiVisibilityPriority);
-    slot.m_State = xiiGeometryResidencyState::Requested;
+    slot.m_State                = xiiGeometryResidencyState::Requested;
   }
 }
 
@@ -649,9 +649,9 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
   inout_uiUploadBudget -= uiNewBytes;
   slot.m_uiResidentBytes += uiNewBytes;
   s_pState->m_uiResidentBytes += uiNewBytes;
-  slot.m_GpuRecord        = record;
-  slot.m_State            = xiiGeometryResidencyState::Resident;
-  slot.m_uiDirtyFrameMask = s_pState->m_uiAllFrameMask;
+  slot.m_GpuRecord            = record;
+  slot.m_State                = xiiGeometryResidencyState::Resident;
+  slot.m_uiDirtyFrameMask     = s_pState->m_uiAllFrameMask;
   slot.m_uiVisibilityPriority = 0U;
   slot.m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
   return true;

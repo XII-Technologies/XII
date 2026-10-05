@@ -15,7 +15,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiMat4   m_ViewProjectionMatrix;
+  xiiMat4 m_ViewProjectionMatrix;
   /// Matrix that produced the supplied Hi-Z image. This is normally the previous frame's
   /// view projection while m_ViewProjectionMatrix remains the current culling matrix.
   xiiMat4   m_OcclusionViewProjectionMatrix;
@@ -59,12 +59,12 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityPurpose);
 /// same graph without resource-name collisions.
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityPassDescription
 {
-  xiiString                        m_sName                = "Main View";
+  xiiString                        m_sName = "Main View";
   xiiString                        m_sResourceSetName; ///< Optional scratch-allocation identity. Empty uses m_sName.
   xiiEnum<xiiGpuVisibilityPurpose> m_Purpose              = xiiGpuVisibilityPurpose::MainView;
-  float                            m_fLodScreenScale      = 1.0f; ///< Scales projected coverage for purpose-specific LOD selection.
+  float                            m_fLodScreenScale      = 1.0f;  ///< Scales projected coverage for purpose-specific LOD selection.
   float                            m_fLodHysteresis       = 0.10f; ///< Relative dead band around LOD coverage thresholds.
-  xiiUInt32                        m_uiMaxVisibleMeshlets = 0U;   ///< Zero uses the visibility context capacity.
+  xiiUInt32                        m_uiMaxVisibleMeshlets = 0U;    ///< Zero uses the visibility context capacity.
   bool                             m_bEnableLodFeedback   = true;
   bool                             m_bAsyncCompute        = true;
 };

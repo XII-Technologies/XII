@@ -286,8 +286,8 @@ private:
 
   void SetExtractedRenderData(xiiExtractedRenderData* pExtractedData) { m_pExtractedData = pExtractedData; }
 
-  void UpdateCachedMatrices() const;
-  void UpdateRenderResolutionState() const;
+  void               UpdateCachedMatrices() const;
+  void               UpdateRenderResolutionState() const;
   [[nodiscard]] bool SynchronizeGpuScene(xiiUInt64 uiFrameIndex);
 
   /// Populates the render graph for default (non-custom) views.
@@ -744,8 +744,8 @@ private:
       xiiRenderGraphBufferHandle                  m_hEmissiveTriangleAliases;
       xiiRenderGraphBufferHandle                  m_hEmissiveBlockAliases;
       xiiRenderGraphBufferHandle                  m_hEmissiveAliasHeader;
-      xiiUInt32                                   m_uiRTGIShaderRecordStride         = 0U;
-      xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
+      xiiUInt32                                   m_uiRTGIShaderRecordStride                       = 0U;
+      xiiUInt32                                   m_uiRTReflectionShaderRecordStride               = 0U;
       xiiUInt32                                   m_uiReSTIRDIEmissiveVisibilityShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIHistory[2];
       bool                                        m_bRTGIHistoryValid       = false;
