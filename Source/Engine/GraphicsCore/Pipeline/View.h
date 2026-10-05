@@ -88,6 +88,7 @@ struct xiiGroundTruthAmbientOcclusionDenoiseData;
 struct xiiReSTIRDITemporalData;
 struct xiiReSTIRDISpatialData;
 struct xiiReSTIRDIVisibilityData;
+struct xiiReSTIRDIEmissiveVisibilityData;
 struct xiiShadowSamplingConstantsData;
 struct xiiDeferredDirectLightingData;
 struct xiiDeferredIndirectLightingData;
@@ -423,6 +424,9 @@ private:
   void SetupReSTIRDIVisibility(xiiReSTIRDIVisibilityData& data, xiiRenderGraphBuilder& builder);
   void ExecuteReSTIRDIVisibility(const xiiReSTIRDIVisibilityData& data, xiiRenderGraphPassContext& context);
 
+  void SetupReSTIRDIEmissiveVisibility(xiiReSTIRDIEmissiveVisibilityData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteReSTIRDIEmissiveVisibility(const xiiReSTIRDIEmissiveVisibilityData& data, xiiRenderGraphPassContext& context);
+
   void SetupShadowSamplingConstants(xiiShadowSamplingConstantsData& data, xiiRenderGraphBuilder& builder);
   void ExecuteShadowSamplingConstants(const xiiShadowSamplingConstantsData& data, xiiRenderGraphPassContext& context);
 
@@ -552,6 +556,7 @@ private:
   ///        If the pipeline already exists this is a no-op.
   static xiiSharedPtr<xiiGALComputePipelineState>  EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
   static xiiSharedPtr<xiiGALGraphicsPipelineState> EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex);
+  bool                                             EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
   bool                                             EnsureRayTracingShadowResources();
   bool                                             EnsureRayTracingAmbientOcclusionResources();
   bool                                             EnsureRayTracingGlobalIlluminationResources();
@@ -704,6 +709,8 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDITemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDISpatialPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReSTIRDIVisibilityPipeline;
+      xiiSharedPtr<xiiGALRayTracingPipelineState> m_pReSTIRDIEmissiveVisibilityPipeline;
+      xiiSharedPtr<xiiGALBuffer>                  m_pReSTIRDIEmissiveVisibilityShaderBindingTable;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pDirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pIndirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRPipeline;
@@ -734,6 +741,7 @@ private:
       xiiRenderGraphBufferHandle                  m_hEmissiveAliasHeader;
       xiiUInt32                                   m_uiRTGIShaderRecordStride         = 0U;
       xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
+      xiiUInt32                                   m_uiReSTIRDIEmissiveVisibilityShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIHistory[2];
       bool                                        m_bRTGIHistoryValid       = false;
       bool                                        m_bRTGIAvailableThisFrame = false;

@@ -3705,8 +3705,104 @@ void xiiView::ExecuteReSTIRDIVisibility(const xiiReSTIRDIVisibilityData& data, x
     cmd.ResolveAndSetUnorderedAccessTextureView("g_Reservoir", context.GetTexture(data.m_hReservoir)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
-    m_ViewPassResources->m_LightingPasses.m_bDirectReservoirHistoryValid = true;
   }
+  cmd.EndDebugGroup();
+}
+
+struct xiiReSTIRDIEmissiveVisibilityData
+{
+  xiiRenderGraphTextureHandle                 m_hSceneDepth;
+  xiiRenderGraphTextureHandle                 m_hGBufferNormal;
+  xiiRenderGraphBufferHandle                  m_hEmissiveTriangles;
+  xiiRenderGraphBufferHandle                  m_hEmissiveLightHeader;
+  xiiRenderGraphTextureHandle                 m_hReservoir;
+  xiiRenderGraphBufferHandle                  m_hSceneDependency;
+  xiiRenderGraphBufferHandle                  m_hMaterialData;
+  xiiRenderGraphBufferHandle                  m_hGeometryData;
+  xiiRenderGraphBufferHandle                  m_hShaderBindingTable;
+  xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
+  xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
+  xiiUInt32                                   m_uiShaderRecordStride    = 0U;
+  bool                                        m_bUseHardwareRayTracing = false;
+};
+
+void xiiView::SetupReSTIRDIEmissiveVisibility(xiiReSTIRDIEmissiveVisibilityData& data, xiiRenderGraphBuilder& builder)
+{
+  auto& lightingPasses = m_ViewPassResources->m_LightingPasses;
+
+  data.m_hSceneDepth          = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal       = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveTriangles   = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangles, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveLightHeader = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
+
+  data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
+  data.m_hReservoir              = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir,
+                                         data.m_bUseHardwareRayTracing ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+
+  if (data.m_bUseHardwareRayTracing)
+  {
+    data.m_hReservoir           = builder.WriteTexture(data.m_hReservoir, xiiGALResourceStateFlags::UnorderedAccess);
+    data.m_pTopLevelAS          = lightingPasses.m_pRayTracingScene;
+    data.m_pRayTracingPipeline  = lightingPasses.m_pReSTIRDIEmissiveVisibilityPipeline;
+    data.m_uiShaderRecordStride = lightingPasses.m_uiReSTIRDIEmissiveVisibilityShaderRecordStride;
+    if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
+      data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
+    if (lightingPasses.m_hRayTracingMaterialData.IsValid())
+      data.m_hMaterialData = builder.ReadBuffer(lightingPasses.m_hRayTracingMaterialData, xiiGALResourceStateFlags::ShaderResource);
+    if (lightingPasses.m_hRayTracingGeometryData.IsValid())
+      data.m_hGeometryData = builder.ReadBuffer(lightingPasses.m_hRayTracingGeometryData, xiiGALResourceStateFlags::ShaderResource);
+
+    data.m_hShaderBindingTable = builder.ImportBuffer("ReSTIR DI Emissive Visibility Shader Binding Table", lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable,
+      lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable->GetResourceState());
+    data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
+  }
+
+  // The pass completes the CPU-visible reservoir history state even when the deterministic
+  // non-RT fallback keeps the analytical pass' unoccluded emissive result unchanged.
+  builder.SetPassSideEffects(true);
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteReSTIRDIEmissiveVisibility(const xiiReSTIRDIEmissiveVisibilityData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ReSTIRDIEmissiveVisibility");
+  if (data.m_bUseHardwareRayTracing)
+  {
+    cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
+    m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
+    cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hEmissiveTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hEmissiveLightHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_Reservoir", context.GetTexture(data.m_hReservoir)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+    cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
+    cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", context.GetBuffer(data.m_hGeometryData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayAnyHit);
+    if (xiiGALBindlessResourceTable::IsInitialized())
+    {
+      xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_RayTracingBuffers", xiiGALShaderType::RayAnyHit);
+      xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_RayTracingTextures", xiiGALShaderType::RayAnyHit);
+    }
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+
+    const xiiUInt64            uiStride = data.m_uiShaderRecordStride;
+    xiiGALUpdateSBTDescription sbtUpdate;
+    sbtUpdate.m_pPipelineState      = data.m_pRayTracingPipeline.Borrow();
+    sbtUpdate.m_pShaderBindingTable = context.GetBuffer(data.m_hShaderBindingTable);
+    sbtUpdate.m_RayGenerationTable  = {0U, uiStride, uiStride};
+    sbtUpdate.m_MissTable           = {uiStride, uiStride, uiStride};
+    sbtUpdate.m_HitTable            = {uiStride * 2U, uiStride, uiStride};
+    cmd.UpdateSBT(sbtUpdate);
+
+    xiiGALTraceRaysDescription trace(sbtUpdate.m_pShaderBindingTable, GetRenderResolutionWidth(), GetRenderResolutionHeight());
+    trace.m_RayGenerationTable = sbtUpdate.m_RayGenerationTable;
+    trace.m_MissTable          = sbtUpdate.m_MissTable;
+    trace.m_HitTable           = sbtUpdate.m_HitTable;
+    cmd.TraceRays(trace);
+  }
+  m_ViewPassResources->m_LightingPasses.m_bDirectReservoirHistoryValid = true;
   cmd.EndDebugGroup();
 }
 
@@ -7106,7 +7202,8 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiShadowSamplingConstantsData>("ShadowSamplingConstants", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupShadowSamplingConstants, this), xiiMakeDelegate(&xiiView::ExecuteShadowSamplingConstants, this));
   graph.AddPass<xiiReSTIRDITemporalData>("ReSTIRDITemporal", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDITemporal, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDITemporal, this));
   graph.AddPass<xiiReSTIRDISpatialData>("ReSTIRDISpatial", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDISpatial, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDISpatial, this));
-  auto restirDIVisibilityPass = graph.AddPass<xiiReSTIRDIVisibilityData>("ReSTIRDIVisibility", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDIVisibility, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDIVisibility, this));
+  graph.AddPass<xiiReSTIRDIVisibilityData>("ReSTIRDIVisibility", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDIVisibility, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDIVisibility, this));
+  auto restirDIEmissiveVisibilityPass = graph.AddPass<xiiReSTIRDIEmissiveVisibilityData>("ReSTIRDIEmissiveVisibility", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReSTIRDIEmissiveVisibility, this), xiiMakeDelegate(&xiiView::ExecuteReSTIRDIEmissiveVisibility, this));
   graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedShadowData, this));
   auto shadowDenoisePass = graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
   auto ambientOcclusionDenoisePass = graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));
@@ -7116,7 +7213,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     const xiiRenderGraphTextureHandle hAmbientOcclusion = ambientOcclusionDenoisePass.first->m_hStableAmbientOcclusion;
     const xiiRenderGraphTextureHandle hRayTracedShadow  = shadowDenoisePass.first->m_hRTFinalShadowMask;
     const xiiRenderGraphTextureHandle hContactShadow    = contactShadowPass.first->m_hContactShadow;
-    const xiiRenderGraphTextureHandle hDirectReservoir  = restirDIVisibilityPass.first->m_hReservoir;
+    const xiiRenderGraphTextureHandle hDirectReservoir  = restirDIEmissiveVisibilityPass.first->m_hReservoir;
     const xiiRenderGraphBufferHandle  hLightGrid        = lightListPass.first->m_hLightGridBuffer;
     const xiiRenderGraphBufferHandle  hLightIndices     = lightSamplingPass.first->m_hLightIndexBuffer;
 
@@ -7197,6 +7294,89 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Final output pass.
   graph.AddPass<xiiFinalBlitData>("BackbufferPresent", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupFinalBlit, this), xiiMakeDelegate(&xiiView::ExecuteFinalBlit, this));
+}
+
+bool xiiView::EnsureRayTracingReSTIRDIEmissiveVisibilityResources()
+{
+  auto& lightingPasses = m_ViewPassResources->m_LightingPasses;
+  if (lightingPasses.m_pReSTIRDIEmissiveVisibilityPipeline != nullptr && lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable != nullptr)
+    return true;
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice == nullptr || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled)
+    return false;
+
+  xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ReSTIRDIEmissiveVisibilityRT.xiiShader");
+  xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  if (!permutation.IsValid() || !permutation->IsShaderValid())
+  {
+    xiiLog::Error("Failed to load the ReSTIR DI emissive visibility ray-tracing shader permutation.");
+    return false;
+  }
+
+  xiiSharedPtr<xiiGALShader> pRayGeneration = permutation->GetGALShader(xiiGALShaderType::RayGeneration);
+  xiiSharedPtr<xiiGALShader> pRayMiss       = permutation->GetGALShader(xiiGALShaderType::RayMiss);
+  xiiSharedPtr<xiiGALShader> pClosestHit    = permutation->GetGALShader(xiiGALShaderType::RayClosestHit);
+  xiiSharedPtr<xiiGALShader> pAnyHit        = permutation->GetGALShader(xiiGALShaderType::RayAnyHit);
+  if (pRayGeneration == nullptr || pRayMiss == nullptr || pClosestHit == nullptr || pAnyHit == nullptr)
+  {
+    xiiLog::Error("The ReSTIR DI emissive visibility permutation does not contain ray-generation, miss, closest-hit, and any-hit stages.");
+    return false;
+  }
+
+  xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
+  pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
+  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
+  pipelineDescription.m_uiMaximumPayloadSize                     = sizeof(xiiUInt32);
+  pipelineDescription.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
+
+  auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  rayGeneration.m_sName.Assign("ReSTIREmissiveVisibilityRayGeneration");
+  rayGeneration.m_pShader = pRayGeneration;
+  auto& miss              = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
+  miss.m_sName.Assign("ReSTIREmissiveVisibilityMiss");
+  miss.m_pShader = pRayMiss;
+  auto& hit      = pipelineDescription.m_TriangleHitShaders.ExpandAndGetRef();
+  hit.m_sName.Assign("ReSTIREmissiveVisibilityTriangleHit");
+  hit.m_pClosestHitShader = pClosestHit;
+  hit.m_pAnyHitShader     = pAnyHit;
+
+  lightingPasses.m_pReSTIRDIEmissiveVisibilityPipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  if (lightingPasses.m_pReSTIRDIEmissiveVisibilityPipeline == nullptr)
+  {
+    xiiLog::Error("Failed to create the ReSTIR DI emissive visibility ray-tracing pipeline.");
+    return false;
+  }
+  lightingPasses.m_pReSTIRDIEmissiveVisibilityPipeline->SetDebugName("ReSTIR DI Emissive Visibility Pipeline");
+
+  const xiiGALRayTracingProperties& properties      = pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiUInt64                   uiBaseAlignment = xiiMath::Max(1U, properties.m_uiShaderGroupBaseAlignment);
+  const xiiUInt64                   uiRecordStride  = xiiMemoryUtils::AlignSize(static_cast<xiiUInt64>(properties.m_uiShaderGroupHandleSize), uiBaseAlignment);
+  if (uiRecordStride == 0U || (properties.m_uiMaxShaderRecordStride != 0U && uiRecordStride > properties.m_uiMaxShaderRecordStride))
+  {
+    xiiLog::Error("The device reported invalid ReSTIR DI emissive visibility shader binding table alignment properties.");
+    lightingPasses.m_pReSTIRDIEmissiveVisibilityPipeline.Clear();
+    return false;
+  }
+
+  xiiGALBufferCreationDescription sbtDescription;
+  sbtDescription.m_uiSize                                            = uiRecordStride * 3U;
+  sbtDescription.m_BindFlags                                         = xiiGALBindFlags::RayTracing;
+  sbtDescription.m_Usage                                             = xiiGALResourceUsage::Mutable;
+  sbtDescription.m_Mode                                              = xiiGALBufferMode::Raw;
+  lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable     = pDevice->CreateBuffer(sbtDescription);
+  if (lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable == nullptr)
+  {
+    xiiLog::Error("Failed to create the ReSTIR DI emissive visibility shader binding table.");
+    lightingPasses.m_pReSTIRDIEmissiveVisibilityPipeline.Clear();
+    return false;
+  }
+
+  lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable->SetDebugName("ReSTIR DI Emissive Visibility Shader Binding Table");
+  lightingPasses.m_uiReSTIRDIEmissiveVisibilityShaderRecordStride = static_cast<xiiUInt32>(uiRecordStride);
+  return true;
 }
 
 bool xiiView::EnsureRayTracingShadowResources()
