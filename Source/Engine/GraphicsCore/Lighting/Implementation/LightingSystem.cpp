@@ -64,7 +64,12 @@ namespace
 } // namespace
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 7, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiReSTIRDIQualityPreset, 1)
+  XII_ENUM_CONSTANTS(xiiReSTIRDIQualityPreset::Integrated, xiiReSTIRDIQualityPreset::Balanced, xiiReSTIRDIQualityPreset::High,
+    xiiReSTIRDIQualityPreset::Ultra, xiiReSTIRDIQualityPreset::Custom)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 8, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -94,6 +99,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 7, xiiRTTI
     XII_MEMBER_PROPERTY("DirectionalShadowMaxPenumbra", m_fDirectionalShadowMaxPenumbra)->AddAttributes(new xiiClampValueAttribute(1.0f, 128.0f), new xiiSuffixAttribute(" px")),
     XII_MEMBER_PROPERTY("DirectionalShadowBlockerSamples", m_uiDirectionalShadowBlockerSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
     XII_MEMBER_PROPERTY("DirectionalShadowFilterSamples", m_uiDirectionalShadowFilterSamples)->AddAttributes(new xiiClampValueAttribute(1U, 32U)),
+    XII_ENUM_MEMBER_PROPERTY("ReSTIRDIQualityPreset", xiiReSTIRDIQualityPreset, m_ReSTIRDIQualityPreset),
     XII_MEMBER_PROPERTY("ReSTIRDIEmissiveVisibilitySamples", m_uiReSTIRDIEmissiveVisibilitySamples)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(4U)),
     XII_MEMBER_PROPERTY("ReSTIRDIEmissiveBinaryRefreshPeriod", m_uiReSTIRDIEmissiveBinaryRefreshPeriod)->AddAttributes(new xiiClampValueAttribute(1U, 8U), new xiiDefaultValueAttribute(2U)),
     XII_MEMBER_PROPERTY("ReSTIRDIFreshCandidateCount", m_uiReSTIRDIFreshCandidateCount)->AddAttributes(new xiiClampValueAttribute(1U, 32U), new xiiDefaultValueAttribute(8U)),
@@ -135,6 +141,43 @@ xiiLightingSystem::~xiiLightingSystem()
 void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings)
 {
   m_Settings = settings;
+  switch (m_Settings.m_ReSTIRDIQualityPreset.GetValue())
+  {
+    case xiiReSTIRDIQualityPreset::Integrated:
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 1U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 4U;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount          = 4U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM             = 8U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount         = 2U;
+      m_Settings.m_uiReSTIRDISpatialRadius                = 1U;
+      break;
+    case xiiReSTIRDIQualityPreset::Balanced:
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 2U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 3U;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount          = 6U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM             = 12U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount         = 3U;
+      m_Settings.m_uiReSTIRDISpatialRadius                = 2U;
+      break;
+    case xiiReSTIRDIQualityPreset::High:
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 4U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 2U;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount          = 8U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM             = 20U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount         = 4U;
+      m_Settings.m_uiReSTIRDISpatialRadius                = 2U;
+      break;
+    case xiiReSTIRDIQualityPreset::Ultra:
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 8U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 1U;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount          = 16U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM             = 32U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount         = 8U;
+      m_Settings.m_uiReSTIRDISpatialRadius                = 4U;
+      break;
+    case xiiReSTIRDIQualityPreset::Custom:
+      break;
+  }
   m_pDevice  = std::move(pDevice);
   m_LightData.Reserve(m_Settings.m_uiMaxActiveLights);
   m_LocalShadowData.Reserve(m_Settings.m_uiMaxActiveLights);

@@ -10,6 +10,7 @@
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Vec4.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/Enum.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Lighting/IESProfileResource.h>
 #include <GraphicsCore/Lighting/LocalShadow.h>
@@ -22,6 +23,25 @@ class xiiGALDevice;
 class xiiRenderGraphBlackboard;
 class xiiView;
 class xiiLightingManager;
+
+/// Coherent ReSTIR DI cost/quality presets. Custom preserves the individually authored controls.
+struct XII_GRAPHICSCORE_DLL xiiReSTIRDIQualityPreset
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Integrated,
+    Balanced,
+    High,
+    Ultra,
+    Custom,
+
+    Default = High
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiReSTIRDIQualityPreset);
 
 /// CPU-side settings for the clustered lighting data path.
 struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
@@ -54,6 +74,7 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   float     m_fDirectionalShadowMaxPenumbra     = 24.0f; ///< Maximum PCSS filter radius in shadow texels.
   xiiUInt32 m_uiDirectionalShadowBlockerSamples = 12U;
   xiiUInt32 m_uiDirectionalShadowFilterSamples  = 16U;
+  xiiEnum<xiiReSTIRDIQualityPreset> m_ReSTIRDIQualityPreset;
   xiiUInt32 m_uiReSTIRDIEmissiveVisibilitySamples = 4U; ///< Rays per selected emissive triangle when visibility is refreshed.
   xiiUInt32 m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 2U; ///< Frames between interleaved refreshes of fully lit/occluded samples.
   xiiUInt32 m_uiReSTIRDIFreshCandidateCount        = 8U;
