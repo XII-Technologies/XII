@@ -58,6 +58,7 @@
 #include <Shaders/Pipeline/Passes/Output/FinalBlitConstants.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
+#include <Shaders/Pipeline/Passes/Reflections/RTReflectionDenoiseConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
 #include <Shaders/Pipeline/Passes/Reflections/SSRTemporalConstants.h>
 #include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
@@ -4730,12 +4731,20 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
 struct xiiRayTracedReflectionsDenoiseData
 {
   xiiRenderGraphTextureHandle m_hRawReflections;
+  xiiRenderGraphTextureHandle m_hRawHitDistance;
   xiiRenderGraphTextureHandle m_hPreviousReflections;
+  xiiRenderGraphTextureHandle m_hPreviousHitDistance;
+  xiiRenderGraphTextureHandle m_hPreviousMoments;
+  xiiRenderGraphTextureHandle m_hPreviousMaterialSignature;
   xiiRenderGraphTextureHandle m_hSceneDepth;
   xiiRenderGraphTextureHandle m_hGBufferNormal;
+  xiiRenderGraphTextureHandle m_hGBufferMaterial;
   xiiRenderGraphTextureHandle m_hVelocity;
   xiiRenderGraphTextureHandle m_hPreviousSurface;
   xiiRenderGraphTextureHandle m_hFinalReflections;
+  xiiRenderGraphTextureHandle m_hCurrentHitDistance;
+  xiiRenderGraphTextureHandle m_hCurrentMoments;
+  xiiRenderGraphTextureHandle m_hCurrentMaterialSignature;
   xiiRenderGraphBufferHandle  m_hConstants;
   bool                        m_bHistoryValid = false;
   bool                        m_bSignalValid  = false;
@@ -4749,23 +4758,40 @@ void xiiView::SetupRayTracedReflectionsDenoise(xiiRayTracedReflectionsDenoiseDat
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_ViewPassResources->m_LightingPasses;
 
-  if (EnsureTemporalHistoryTextures(resources.m_pRTReflectionHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight))
-  {
+  const bool bReflectionHistoryRecreated = EnsureTemporalHistoryTextures(resources.m_pRTReflectionHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight);
+  const bool bHitDistanceHistoryRecreated = EnsureTemporalHistoryTextures(resources.m_pRTReflectionHitDistanceHistory, xiiGALResourceFormat::R16Float, uiWidth, uiHeight);
+  const bool bMomentsHistoryRecreated = EnsureTemporalHistoryTextures(resources.m_pRTReflectionMomentsHistory, xiiGALResourceFormat::RG16Float, uiWidth, uiHeight);
+  const bool bMaterialHistoryRecreated = EnsureTemporalHistoryTextures(resources.m_pRTReflectionMaterialHistory, xiiGALResourceFormat::R32UInt, uiWidth, uiHeight);
+  if (bReflectionHistoryRecreated || bHitDistanceHistoryRecreated || bMomentsHistoryRecreated || bMaterialHistoryRecreated)
     resources.m_bRTReflectionHistoryValid = false;
-  }
 
   data.m_bSignalValid         = resources.m_bRTReflectionAvailableThisFrame;
   data.m_bHistoryValid        = resources.m_bRTReflectionHistoryValid && data.m_bSignalValid;
   data.m_hRawReflections      = builder.ReadTexture(xiiRGBlackboardKeys::k_RTRawReflections, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hRawHitDistance      = builder.ReadTexture(xiiRGBlackboardKeys::k_RTRawReflectionHitDistance, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneDepth          = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal       = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial     = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
   data.m_hVelocity            = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousSurface     = builder.ReadTexture("ReSTIRDISurfacePrevious", xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousReflections = builder.ReadTexture(builder.ImportTexture("RT Reflection Previous History", resources.m_pRTReflectionHistory[uiPreviousSlot], resources.m_pRTReflectionHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousHitDistance = builder.ReadTexture(builder.ImportTexture("RT Reflection Previous Hit Distance", resources.m_pRTReflectionHitDistanceHistory[uiPreviousSlot], resources.m_pRTReflectionHitDistanceHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousMoments = builder.ReadTexture(builder.ImportTexture("RT Reflection Previous Moments", resources.m_pRTReflectionMomentsHistory[uiPreviousSlot], resources.m_pRTReflectionMomentsHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hPreviousMaterialSignature = builder.ReadTexture(builder.ImportTexture("RT Reflection Previous Material Signature", resources.m_pRTReflectionMaterialHistory[uiPreviousSlot], resources.m_pRTReflectionMaterialHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
   data.m_hFinalReflections    = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_RTFinalReflections, resources.m_pRTReflectionHistory[uiCurrentSlot], resources.m_pRTReflectionHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hConstants           = CreateTemporalDenoiseConstants(builder, "RT Reflection Temporal Denoise Constants");
+  data.m_hCurrentHitDistance = builder.WriteTexture(builder.ImportTexture("RT Reflection Current Hit Distance", resources.m_pRTReflectionHitDistanceHistory[uiCurrentSlot], resources.m_pRTReflectionHitDistanceHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hCurrentMoments = builder.WriteTexture(builder.ImportTexture("RT Reflection Current Moments", resources.m_pRTReflectionMomentsHistory[uiCurrentSlot], resources.m_pRTReflectionMomentsHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hCurrentMaterialSignature = builder.WriteTexture(builder.ImportTexture("RT Reflection Current Material Signature", resources.m_pRTReflectionMaterialHistory[uiCurrentSlot], resources.m_pRTReflectionMaterialHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
 
-  xiiView::EnsureComputePipeline(resources.m_pRTReflectionTemporalDenoisePipeline, "Shaders/Pipeline/TemporalDenoise.xiiShader");
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiRTReflectionDenoiseConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  data.m_hConstants                     = builder.WriteBuffer("xiiRTReflectionDenoiseConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
+  xiiView::EnsureComputePipeline(resources.m_pRTReflectionTemporalDenoisePipeline, "Shaders/Pipeline/RTReflectionDenoise.xiiShader");
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteRayTracedReflectionsDenoise(const xiiRayTracedReflectionsDenoiseData& data, xiiRenderGraphPassContext& context)
@@ -4775,26 +4801,38 @@ void xiiView::ExecuteRayTracedReflectionsDenoise(const xiiRayTracedReflectionsDe
   cmd.BeginDebugGroup("RTReflectionTemporalDenoise");
   {
     {
-      xiiGALMapHelper<xiiTemporalDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->HistoryWeight   = 0.90f;
-      pConstants->DepthThreshold  = 0.04f;
-      pConstants->NormalThreshold = 0.92f;
-      pConstants->SpatialWeight   = 0.12f;
-      pConstants->HistoryValid    = data.m_bHistoryValid ? 1U : 0U;
-      pConstants->SignalMode      = 1U;
-      pConstants->_Padding        = xiiVec2::MakeZero();
+      xiiGALMapHelper<xiiRTReflectionDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->HistoryWeight               = 0.90f;
+      pConstants->MomentsHistoryWeight        = 0.94f;
+      pConstants->ConfidenceDecay             = 0.97f;
+      pConstants->SpatialWeight               = 0.35f;
+      pConstants->DepthThreshold              = 0.02f;
+      pConstants->NormalThreshold             = 0.95f;
+      pConstants->HitDistanceRelativeThreshold = 0.08f;
+      pConstants->HitDistanceAbsoluteThreshold = 0.05f;
+      pConstants->VarianceGamma               = 2.5f;
+      pConstants->HistoryValid                = data.m_bHistoryValid ? 1U : 0U;
+      pConstants->_Padding                    = xiiVec2U32::MakeZero();
     }
 
     cmd.SetPipelineState(m_ViewPassResources->m_LightingPasses.m_pRTReflectionTemporalDenoisePipeline);
     m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
-    cmd.ResolveAndSetConstantBuffer("xiiTemporalDenoiseConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_CurrentSignal", context.GetTexture(data.m_hRawReflections)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSignal", context.GetTexture(data.m_hPreviousReflections)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiRTReflectionDenoiseConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_CurrentReflection", context.GetTexture(data.m_hRawReflections)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_CurrentHitDistance", context.GetTexture(data.m_hRawHitDistance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousReflection", context.GetTexture(data.m_hPreviousReflections)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousHitDistance", context.GetTexture(data.m_hPreviousHitDistance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousMoments", context.GetTexture(data.m_hPreviousMoments)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_PreviousMaterialSignature", context.GetTexture(data.m_hPreviousMaterialSignature)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufferMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSurface", context.GetTexture(data.m_hPreviousSurface)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_DenoisedOutput", context.GetTexture(data.m_hFinalReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_ResolvedReflection", context.GetTexture(data.m_hFinalReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_ResolvedHitDistance", context.GetTexture(data.m_hCurrentHitDistance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_ResolvedMoments", context.GetTexture(data.m_hCurrentMoments)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_CurrentMaterialSignature", context.GetTexture(data.m_hCurrentMaterialSignature)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
     m_ViewPassResources->m_LightingPasses.m_bRTReflectionHistoryValid = data.m_bSignalValid;

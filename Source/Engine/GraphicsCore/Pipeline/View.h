@@ -755,6 +755,9 @@ private:
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirSurfaceHistory[2];
       bool                                        m_bRTGIReservoirHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHistory[2];
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHitDistanceHistory[2]; ///< R16_FLOAT primary hit distance; zero denotes environment termination.
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionMomentsHistory[2];     ///< RG16_FLOAT log-luminance first and second moments.
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionMaterialHistory[2];    ///< R32_UINT exact packed primary material signature.
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
       xiiSharedPtr<xiiGALTexture>                 m_pSSRHistory[2];         ///< RGBA16_FLOAT temporally resolved radiance and confidence.

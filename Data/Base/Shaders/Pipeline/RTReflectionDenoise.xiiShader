@@ -1,0 +1,212 @@
+// XII Engine - signal-specific spatiotemporal denoising for ray-traced reflections.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Reflections/RTReflectionDenoiseConstants.h>
+
+Texture2D<float4>   g_CurrentReflection;
+Texture2D<float>    g_CurrentHitDistance;
+Texture2D<float4>   g_PreviousReflection;
+Texture2D<float>    g_PreviousHitDistance;
+Texture2D<float2>   g_PreviousMoments;
+Texture2D<uint>     g_PreviousMaterialSignature;
+Texture2D<float>    g_SceneDepth;
+Texture2D<float2>   g_GBufferNormal;
+Texture2D<float4>   g_GBufferMaterial;
+Texture2D<float2>   g_Velocity;
+Texture2D<float4>   g_PreviousSurface;
+
+RWTexture2D<float4> g_ResolvedReflection;
+RWTexture2D<float>  g_ResolvedHitDistance;
+RWTexture2D<float2> g_ResolvedMoments;
+RWTexture2D<uint>   g_CurrentMaterialSignature;
+
+uint PackRTReflectionMaterialSignature(float4 material)
+{
+  const uint4 quantized = (uint4)round(saturate(material) * 255.0f);
+  return quantized.x | (quantized.y << 8u) | (quantized.z << 16u) | (quantized.w << 24u);
+}
+
+float ReflectionLuminance(float3 radiance)
+{
+  return dot(max(radiance, 0.0f), float3(0.2126f, 0.7152f, 0.0722f));
+}
+
+float ReflectionLogLuminance(float3 radiance)
+{
+  // Log moments retain useful precision for dim reflections without
+  // overflowing half-precision history under physically bright emitters.
+  return log2(1.0f + ReflectionLuminance(radiance));
+}
+
+bool HitDistanceMatches(float currentDistance, float historyDistance)
+{
+  const bool currentMiss = currentDistance <= 0.0f;
+  const bool historyMiss = historyDistance <= 0.0f;
+  if (currentMiss || historyMiss)
+    return currentMiss == historyMiss;
+
+  const float tolerance = max(HitDistanceAbsoluteThreshold,
+                              max(currentDistance, historyDistance) * HitDistanceRelativeThreshold);
+  return abs(currentDistance - historyDistance) <= tolerance;
+}
+
+float3 ClampHistoryRadiance(float3 historyRadiance, float localMean, float localVariance,
+                            float historyVariance, float localMinimum, float localMaximum)
+{
+  const float sigma = sqrt(max(localVariance + historyVariance, 1e-5f));
+  const float lower = min(localMinimum, localMean - VarianceGamma * sigma);
+  const float upper = max(localMaximum, localMean + VarianceGamma * sigma);
+  const float historyLogLuminance = ReflectionLogLuminance(historyRadiance);
+  const float clampedLogLuminance = clamp(historyLogLuminance, lower, upper);
+  const float historyLuminance = ReflectionLuminance(historyRadiance);
+  const float clampedLuminance = max(exp2(clampedLogLuminance) - 1.0f, 0.0f);
+  return historyLuminance > 1e-5f ? historyRadiance * (clampedLuminance / historyLuminance) : historyRadiance;
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint2 dimensions;
+  g_ResolvedReflection.GetDimensions(dimensions.x, dimensions.y);
+  if (any(dispatchThreadId.xy >= dimensions))
+    return;
+
+  const uint2 pixel = dispatchThreadId.xy;
+  const float depth = g_SceneDepth.Load(int3(pixel, 0));
+  const float4 material = g_GBufferMaterial.Load(int3(pixel, 0));
+  const uint materialSignature = PackRTReflectionMaterialSignature(material);
+  const float hitDistance = max(g_CurrentHitDistance.Load(int3(pixel, 0)), 0.0f);
+  const float4 rawCurrent = g_CurrentReflection.Load(int3(pixel, 0));
+
+  g_ResolvedHitDistance[pixel] = hitDistance;
+  g_CurrentMaterialSignature[pixel] = materialSignature;
+
+  if (depth <= 0.0f || rawCurrent.a <= 1e-5f)
+  {
+    g_ResolvedReflection[pixel] = rawCurrent;
+    g_ResolvedMoments[pixel] = 0.0f;
+    return;
+  }
+
+  const float linearDepth = LinearizeDepth(depth);
+  const float3 normal = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
+  const float roughness = saturate(material.r);
+
+  float3 spatialRadiance = 0.0f;
+  float spatialWeightSum = 0.0f;
+  float localLogSum = 0.0f;
+  float localLogSquaredSum = 0.0f;
+  float localMinimum = 3.402823e+38f;
+  float localMaximum = -3.402823e+38f;
+
+  [unroll]
+  for (int y = -1; y <= 1; ++y)
+  {
+    [unroll]
+    for (int x = -1; x <= 1; ++x)
+    {
+      const int2 samplePixel = clamp(int2(pixel) + int2(x, y), int2(0, 0), int2(dimensions) - 1);
+      const float4 sampleSignal = g_CurrentReflection.Load(int3(samplePixel, 0));
+      if (sampleSignal.a <= 1e-5f)
+        continue;
+
+      const float sampleDepth = g_SceneDepth.Load(int3(samplePixel, 0));
+      if (sampleDepth <= 0.0f)
+        continue;
+
+      const float sampleLinearDepth = LinearizeDepth(sampleDepth);
+      const float3 sampleNormal = DecodeOctNormal(g_GBufferNormal.Load(int3(samplePixel, 0)));
+      const uint sampleMaterialSignature = PackRTReflectionMaterialSignature(g_GBufferMaterial.Load(int3(samplePixel, 0)));
+      const float sampleHitDistance = max(g_CurrentHitDistance.Load(int3(samplePixel, 0)), 0.0f);
+      if (sampleMaterialSignature != materialSignature ||
+          abs(sampleLinearDepth - linearDepth) > max(linearDepth * DepthThreshold, 0.005f) ||
+          dot(sampleNormal, normal) < NormalThreshold ||
+          !HitDistanceMatches(hitDistance, sampleHitDistance))
+        continue;
+
+      const float weight = sampleSignal.a * (x == 0 && y == 0 ? 1.0f : 0.75f);
+      const float logLuminance = ReflectionLogLuminance(sampleSignal.rgb);
+      spatialRadiance += max(sampleSignal.rgb, 0.0f) * weight;
+      spatialWeightSum += weight;
+      localLogSum += logLuminance * weight;
+      localLogSquaredSum += logLuminance * logLuminance * weight;
+      localMinimum = min(localMinimum, logLuminance);
+      localMaximum = max(localMaximum, logLuminance);
+    }
+  }
+
+  const float inverseSpatialWeight = rcp(max(spatialWeightSum, 1e-5f));
+  const float3 neighbourhoodRadiance = spatialRadiance * inverseSpatialWeight;
+  const float spatialBlend = saturate(SpatialWeight * smoothstep(0.05f, 0.65f, roughness));
+  float4 current = float4(lerp(max(rawCurrent.rgb, 0.0f), neighbourhoodRadiance, spatialBlend), rawCurrent.a);
+  const float localMean = localLogSum * inverseSpatialWeight;
+  const float localVariance = max(localLogSquaredSum * inverseSpatialWeight - localMean * localMean, 0.0f);
+  const float currentLogLuminance = ReflectionLogLuminance(current.rgb);
+  const float2 currentMoments = float2(currentLogLuminance, currentLogLuminance * currentLogLuminance);
+
+  if (HistoryValid == 0u)
+  {
+    g_ResolvedReflection[pixel] = current;
+    g_ResolvedMoments[pixel] = currentMoments;
+    return;
+  }
+
+  const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+  const float2 velocity = g_Velocity.Load(int3(pixel, 0));
+  const float2 previousUV = uv - velocity * float2(0.5f, -0.5f);
+  if (any(previousUV <= 0.0f) || any(previousUV >= 1.0f))
+  {
+    g_ResolvedReflection[pixel] = current;
+    g_ResolvedMoments[pixel] = currentMoments;
+    return;
+  }
+
+  const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1u);
+  const float4 previousSurface = g_PreviousSurface.Load(int3(previousPixel, 0));
+  const float3 previousNormal = DecodeOctNormal(previousSurface.xy);
+  const bool surfaceMatches = previousSurface.z > 0.0f &&
+    abs(previousSurface.z - linearDepth) <= max(linearDepth * DepthThreshold, 0.005f) &&
+    dot(previousNormal, normal) >= NormalThreshold &&
+    abs(previousSurface.w - roughness) <= 0.04f;
+  const bool materialMatches = g_PreviousMaterialSignature.Load(int3(previousPixel, 0)) == materialSignature;
+  const float previousHitDistance = max(g_PreviousHitDistance.Load(int3(previousPixel, 0)), 0.0f);
+  if (!surfaceMatches || !materialMatches || !HitDistanceMatches(hitDistance, previousHitDistance))
+  {
+    g_ResolvedReflection[pixel] = current;
+    g_ResolvedMoments[pixel] = currentMoments;
+    return;
+  }
+
+  float4 history = g_PreviousReflection.Load(int3(previousPixel, 0));
+  const float2 historyMoments = g_PreviousMoments.Load(int3(previousPixel, 0));
+  if (history.a <= 1e-5f)
+  {
+    g_ResolvedReflection[pixel] = current;
+    g_ResolvedMoments[pixel] = currentMoments;
+    return;
+  }
+
+  const float historyVariance = max(historyMoments.y - historyMoments.x * historyMoments.x, 0.0f);
+  history.rgb = ClampHistoryRadiance(max(history.rgb, 0.0f), localMean, localVariance,
+                                     historyVariance, localMinimum, localMaximum);
+  history.a *= saturate(ConfidenceDecay);
+
+  const float roughnessHistoryBoost = smoothstep(0.05f, 0.65f, roughness) * 0.05f;
+  const float historyWeight = saturate(min(HistoryWeight + roughnessHistoryBoost, 0.98f) * history.a);
+  const float3 resolvedRadiance = lerp(current.rgb, history.rgb, historyWeight);
+  const float resolvedConfidence = max(current.a, history.a * (1.0f - current.a));
+  const float resolvedLogLuminance = ReflectionLogLuminance(resolvedRadiance);
+  const float2 resolvedSampleMoments = float2(resolvedLogLuminance, resolvedLogLuminance * resolvedLogLuminance);
+  const float momentsWeight = saturate(MomentsHistoryWeight * history.a);
+
+  g_ResolvedReflection[pixel] = float4(resolvedRadiance, saturate(resolvedConfidence));
+  g_ResolvedMoments[pixel] = lerp(resolvedSampleMoments, historyMoments, momentsWeight);
+}
