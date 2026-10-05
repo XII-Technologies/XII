@@ -4495,26 +4495,34 @@ void xiiView::ExecuteRayTracedGlobalIlluminationDenoise(const xiiRayTracedGlobal
 
 struct xiiRayTracedReflectionsData
 {
-  xiiRenderGraphTextureHandle                 m_hSceneDepth;              ///< ShaderResource in (scene depth texture).
-  xiiRenderGraphTextureHandle                 m_hGBufferNormal;           ///< ShaderResource in (G-Buffer normal).
-  xiiRenderGraphTextureHandle                 m_hGBufferMaterial;         ///< ShaderResource in (G-Buffer material).
-  xiiRenderGraphTextureHandle                 m_hGBufferAlbedo;           ///< ShaderResource in (primary base color and metallic F0 source).
-  xiiRenderGraphTextureHandle                 m_hBRDFLut;                 ///< ShaderResource in (BRDF lookup texture).
-  xiiRenderGraphTextureHandle                 m_hRayTracedRawReflections; ///< UnorderedAccess out (raw RT reflections texture).
-  xiiRenderGraphBufferHandle                  m_hLightingDataReady;       ///< ShaderResource dependency on persistent light upload.
-  xiiRenderGraphBufferHandle                  m_hEmissiveTriangles;       ///< ShaderResource GPU-extracted emissive triangles.
-  xiiRenderGraphBufferHandle                  m_hEmissiveLightHeader;     ///< ShaderResource emitted-count and overflow state.
-  xiiRenderGraphBufferHandle                  m_hEmissiveTriangleAliases; ///< ShaderResource per-triangle alias entries.
-  xiiRenderGraphBufferHandle                  m_hEmissiveBlockAliases;    ///< ShaderResource power-weighted block aliases.
-  xiiRenderGraphBufferHandle                  m_hEmissiveAliasHeader;     ///< ShaderResource alias hierarchy metadata.
-  xiiRenderGraphBufferHandle                  m_hSceneDependency;         ///< BuildASRead dependency on this frame's TLAS build.
-  xiiRenderGraphBufferHandle                  m_hMaterialData;            ///< ShaderResource canonical material records indexed by TLAS instance.
-  xiiRenderGraphBufferHandle                  m_hGeometryData;            ///< ShaderResource geometry records indexed by TLAS instance.
-  xiiRenderGraphBufferHandle                  m_hShaderBindingTable;      ///< RayTracing in (shader group records).
-  xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;
-  xiiSharedPtr<xiiGALRayTracingPipelineState> m_pRayTracingPipeline;
-  xiiUInt32                                   m_uiShaderRecordStride   = 0U;
-  bool                                        m_bUseHardwareRayTracing = false;
+  xiiRenderGraphTextureHandle                                            m_hSceneDepth;                 ///< ShaderResource in (scene depth texture).
+  xiiRenderGraphTextureHandle                                            m_hGBufferNormal;              ///< ShaderResource in (G-Buffer normal).
+  xiiRenderGraphTextureHandle                                            m_hGBufferMaterial;            ///< ShaderResource in (G-Buffer material).
+  xiiRenderGraphTextureHandle                                            m_hGBufferAlbedo;              ///< ShaderResource in (primary base color and metallic F0 source).
+  xiiRenderGraphTextureHandle                                            m_hBRDFLut;                    ///< ShaderResource in (BRDF lookup texture).
+  xiiRenderGraphTextureHandle                                            m_hAtmosphereTransmittanceLUT; ///< ShaderResource in (physical atmosphere transmittance).
+  xiiRenderGraphTextureHandle                                            m_hAtmosphereMultiScatterLUT;  ///< ShaderResource in (physical atmosphere multi-scattering).
+  xiiRenderGraphTextureHandle                                            m_hFallbackReflectionProbe;    ///< ShaderResource fallback for unused probe descriptors.
+  xiiHybridArray<xiiRenderGraphTextureHandle, XII_MAX_REFLECTION_PROBES> m_hReflectionProbeTextures;   ///< ShaderResource in (active local probe cubemaps).
+  xiiRenderGraphTextureHandle                                            m_hRayTracedRawReflections;    ///< UnorderedAccess out (raw RT reflections texture).
+  xiiRenderGraphBufferHandle                                             m_hLightingDataReady;          ///< ShaderResource dependency on persistent light upload.
+  xiiRenderGraphBufferHandle                                             m_hReflectionProbeData;        ///< ShaderResource active local reflection probes.
+  xiiRenderGraphBufferHandle                                             m_hReflectionProbeConstants;   ///< ConstantBuffer active reflection probe count.
+  xiiRenderGraphBufferHandle                                             m_hAtmosphereConstants;        ///< ConstantBuffer physical atmosphere parameters.
+  xiiRenderGraphBufferHandle                                             m_hEmissiveTriangles;          ///< ShaderResource GPU-extracted emissive triangles.
+  xiiRenderGraphBufferHandle                                             m_hEmissiveLightHeader;        ///< ShaderResource emitted-count and overflow state.
+  xiiRenderGraphBufferHandle                                             m_hEmissiveTriangleAliases;    ///< ShaderResource per-triangle alias entries.
+  xiiRenderGraphBufferHandle                                             m_hEmissiveBlockAliases;       ///< ShaderResource power-weighted block aliases.
+  xiiRenderGraphBufferHandle                                             m_hEmissiveAliasHeader;        ///< ShaderResource alias hierarchy metadata.
+  xiiRenderGraphBufferHandle                                             m_hSceneDependency;            ///< BuildASRead dependency on this frame's TLAS build.
+  xiiRenderGraphBufferHandle                                             m_hMaterialData;               ///< ShaderResource canonical material records indexed by TLAS instance.
+  xiiRenderGraphBufferHandle                                             m_hGeometryData;               ///< ShaderResource geometry records indexed by TLAS instance.
+  xiiRenderGraphBufferHandle                                             m_hShaderBindingTable;         ///< RayTracing in (shader group records).
+  xiiSharedPtr<xiiGALTopLevelAS>                                         m_pTopLevelAS;
+  xiiSharedPtr<xiiGALRayTracingPipelineState>                            m_pRayTracingPipeline;
+  xiiAtmosphereConstants                                                 m_AtmosphereConstants;
+  xiiUInt32                                                              m_uiShaderRecordStride   = 0U;
+  bool                                                                   m_bUseHardwareRayTracing = false;
 };
 
 void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRenderGraphBuilder& builder)
@@ -4551,6 +4559,27 @@ void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRe
     data.m_hEmissiveTriangleAliases = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangleAliases, xiiGALResourceStateFlags::ShaderResource);
     data.m_hEmissiveBlockAliases    = builder.ReadBuffer(lightingPasses.m_hEmissiveBlockAliases, xiiGALResourceStateFlags::ShaderResource);
     data.m_hEmissiveAliasHeader     = builder.ReadBuffer(lightingPasses.m_hEmissiveAliasHeader, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hReflectionProbeData      = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeData, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hReflectionProbeConstants = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeConstants, xiiGALResourceStateFlags::ConstantBuffer);
+    data.m_hAtmosphereTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hAtmosphereMultiScatterLUT  = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hAtmosphereConstants        = CreateAtmosphereConstantsBuffer(builder, "RTReflectionAtmosphereConstants");
+    data.m_AtmosphereConstants         = MakeAtmosphereConstants(m_ViewPassResources->m_LightingPrepPasses.m_hAtmosphereLUT);
+
+    auto& reflectionResources = m_ViewPassResources->m_LightingPrepPasses;
+    XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before RT reflection setup.");
+    data.m_hFallbackReflectionProbe = builder.ReadTexture(
+      builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()),
+      xiiGALResourceStateFlags::ShaderResource);
+    data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
+    for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < reflectionResources.m_ReflectionProbeTextures.GetCount(); ++uiProbeIndex)
+    {
+      xiiStringBuilder sResourceName;
+      sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
+      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
+        builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()),
+        xiiGALResourceStateFlags::ShaderResource));
+    }
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
     if (lightingPasses.m_hRayTracingMaterialData.IsValid())
@@ -4575,6 +4604,7 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
   {
     if (data.m_bUseHardwareRayTracing)
     {
+      UploadAtmosphereConstants(cmd, context.GetBuffer(data.m_hAtmosphereConstants), data.m_AtmosphereConstants);
       cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
       m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
       m_ViewPassResources->m_LightingSystem.BindLightData(cmd, xiiGALShaderType::RayClosestHit);
@@ -4585,6 +4615,21 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_BRDFLut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
+      cmd.ResolveAndSetConstantBuffer("xiiAtmosphereConstants", context.GetBuffer(data.m_hAtmosphereConstants), xiiGALShaderType::RayMiss);
+      cmd.ResolveAndSetConstantBuffer("xiiReflectionProbeConstants", context.GetBuffer(data.m_hReflectionProbeConstants), xiiGALShaderType::RayMiss);
+      cmd.ResolveAndSetShaderResourceTextureView("g_Transmittance", context.GetTexture(data.m_hAtmosphereTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayMiss);
+      cmd.ResolveAndSetShaderResourceTextureView("g_MultiScatter", context.GetTexture(data.m_hAtmosphereMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayMiss);
+      cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", context.GetBuffer(data.m_hReflectionProbeData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayMiss);
+      xiiHybridArray<xiiGALTextureView*, XII_MAX_REFLECTION_PROBES> reflectionProbeViews;
+      reflectionProbeViews.SetCount(XII_MAX_REFLECTION_PROBES);
+      xiiGALTextureView* pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+      for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < XII_MAX_REFLECTION_PROBES; ++uiProbeIndex)
+      {
+        reflectionProbeViews[uiProbeIndex] = uiProbeIndex < data.m_hReflectionProbeTextures.GetCount() ?
+          context.GetTexture(data.m_hReflectionProbeTextures[uiProbeIndex])->GetDefaultView(xiiGALTextureViewType::ShaderResource) :
+          pFallbackProbeView;
+      }
+      cmd.ResolveAndSetShaderResourceTextureViews("g_ReflectionProbeTextures", 0U, reflectionProbeViews, xiiGALShaderType::RayMiss);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
       const xiiBitflags<xiiGALShaderType> hitStages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
       cmd.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", context.GetBuffer(data.m_hMaterialData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), hitStages);

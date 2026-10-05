@@ -6,6 +6,10 @@
 // g_ReflectionProbeData and g_ReflectionProbeTextures. The exhaustive selector
 // is intended for off-screen ray hits, which cannot use the camera cluster map.
 
+#ifndef XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER
+  #define XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER LinearClampSampler
+#endif
+
 float3 xiiReflectionProbeCubeDirection(float3 direction)
 {
   return float3(direction.x, direction.z, -direction.y);
@@ -57,7 +61,7 @@ float3 xiiSampleReflectionProbe(uint probeIndexPlusOne, float3 worldPosition, fl
   }
 
   const uint textureIndex = NonUniformResourceIndex(probe.Metadata.y);
-  float3 radiance = max(g_ReflectionProbeTextures[textureIndex].SampleLevel(LinearClampSampler,
+  float3 radiance = max(g_ReflectionProbeTextures[textureIndex].SampleLevel(XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER,
     xiiReflectionProbeCubeDirection(localDirection), saturate(roughness) * 8.0f).rgb, 0.0f);
   const float luminance = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
   return lerp(luminance.xxx, radiance, probe.ProbeParameters.z) * probe.ProbeParameters.y;

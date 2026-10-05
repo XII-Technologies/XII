@@ -7,16 +7,20 @@
 // constant buffers. Keeping the ray direction explicit allows raster, compute,
 // and ray-tracing stages to evaluate the same physical sky model.
 
+#ifndef XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER
+  #define XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER LinearClampSampler
+#endif
+
 float xiiAtmosphereRayleighPhase(float cosine)
 {
-  return (3.0f / (16.0f * PI)) * (1.0f + cosine * cosine);
+  return (3.0f / (16.0f * 3.14159265359f)) * (1.0f + cosine * cosine);
 }
 
 float xiiAtmosphereMiePhase(float cosine, float anisotropy)
 {
   const float g2 = anisotropy * anisotropy;
   const float denominator = max((2.0f + g2) * pow(max(1.0f + g2 - 2.0f * anisotropy * cosine, 1e-4f), 1.5f), 1e-4f);
-  return (3.0f / (8.0f * PI)) * (1.0f - g2) * (1.0f + cosine * cosine) / denominator;
+  return (3.0f / (8.0f * 3.14159265359f)) * (1.0f - g2) * (1.0f + cosine * cosine) / denominator;
 }
 
 float xiiAtmosphereDistanceToExit(float radius, float cosine)
@@ -33,7 +37,7 @@ float3 xiiSampleAtmosphereTransmittance(float radius, float cosine)
     saturate((radius - PlanetAtmosphereRadiiScaleHeights.x) /
              max(PlanetAtmosphereRadiiScaleHeights.y - PlanetAtmosphereRadiiScaleHeights.x, 1e-4f)),
     saturate(cosine * 0.5f + 0.5f));
-  return g_Transmittance.SampleLevel(LinearClampSampler, uv, 0.0f).rgb;
+  return g_Transmittance.SampleLevel(XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER, uv, 0.0f).rgb;
 }
 
 float3 xiiEvaluateAtmosphereRadiance(float3 worldPosition, float3 rayDirection)
@@ -61,12 +65,12 @@ float3 xiiEvaluateAtmosphereRadiance(float3 worldPosition, float3 rayDirection)
   const float2 multiScatterUV = float2(saturate(sunZenithCosine * 0.5f + 0.5f),
     saturate((radius - PlanetAtmosphereRadiiScaleHeights.x) /
              max(PlanetAtmosphereRadiiScaleHeights.y - PlanetAtmosphereRadiiScaleHeights.x, 1e-4f)));
-  radiance += g_MultiScatter.SampleLevel(LinearClampSampler, multiScatterUV, 0.0f).rgb * solarIlluminance * pathLength * viewTransmittance;
+  radiance += g_MultiScatter.SampleLevel(XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER, multiScatterUV, 0.0f).rgb * solarIlluminance * pathLength * viewTransmittance;
 
   const float sourceRadius = saturate(g_DirectionalShadowSourceRadius);
   if (sourceRadius > 1e-5f && scatteringCosine > sqrt(max(1.0f - sourceRadius * sourceRadius, 0.0f)))
   {
-    radiance += solarIlluminance * viewTransmittance / max(PI * sourceRadius * sourceRadius, 1e-6f);
+    radiance += solarIlluminance * viewTransmittance / max(3.14159265359f * sourceRadius * sourceRadius, 1e-6f);
   }
 
   return max(radiance, 0.0f);

@@ -3,8 +3,8 @@ ALL
 
 [SHADER]
 
-// Hardware ray-traced reflections with material-aware hit shading and geometry-derived normals.
-// Misses remain invalid so the hybrid composite can resolve from SSR and reflection probes.
+// Hardware ray-traced reflections with material-aware hit shading, geometry-derived normals,
+// and probe/atmosphere termination for rays that leave the traced scene.
 
 #include "PipelineCommon.xiiShader"
 #include "Passes/RayTracing/RayTracingMaterialData.h"
@@ -152,12 +152,40 @@ void main()
 
 [RAY_MISS_SHADER]
 
+#include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
+#include <Shaders/Pipeline/ReflectionProbeData.h>
+
+Texture2D<float4>                     g_Transmittance;
+Texture2D<float4>                     g_MultiScatter;
+StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData;
+TextureCube<float4>                   g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES];
+
+#define XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER g_sLinearClamp
+#include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereRadiance.h>
+#include <Shaders/Pipeline/Passes/Reflection/ReflectionProbeSampling.h>
+#undef XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER
+
 [shader("miss")]
 void main(inout xiiReflectionPayload payload)
 {
-  // A miss remains invalid so the hybrid composite resolves from SSR or the local/sky probe.
-  payload.Radiance   = 0.0f;
-  payload.Confidence = payload.RayType == XII_RT_REFLECTION_RAY_TYPE_VISIBILITY ? 1.0f : 0.0f;
+  if (payload.RayType == XII_RT_REFLECTION_RAY_TYPE_VISIBILITY)
+  {
+    payload.Radiance = 0.0f;
+    payload.Confidence = 1.0f;
+    return;
+  }
+
+  // The stochastic GGX direction already represents the material lobe. The
+  // accumulated cone spread selects a conservative cubemap footprint while
+  // the atmosphere remains directionally evaluated along the actual ray.
+  const float environmentRoughness = saturate(sqrt(max(payload.RayConeSpread, 0.0f)));
+  const float3 atmosphereRadiance = xiiEvaluateAtmosphereRadiance(WorldRayOrigin(), WorldRayDirection());
+  float probeCoverage;
+  const float3 probeRadiance = xiiSampleLocalReflectionEnvironment(
+    WorldRayOrigin(), WorldRayDirection(), environmentRoughness, probeCoverage);
+
+  payload.Radiance = lerp(atmosphereRadiance, probeRadiance, probeCoverage) * g_IBLIntensity;
+  payload.Confidence = 1.0f;
 }
 
 [RAY_CLOSEST_HIT_SHADER]
