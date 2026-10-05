@@ -69,7 +69,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiReSTIRDIQualityPreset, 1)
     xiiReSTIRDIQualityPreset::Ultra, xiiReSTIRDIQualityPreset::Custom)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 12, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 13, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -112,6 +112,15 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 12, xiiRTT
     XII_MEMBER_PROPERTY("RTGILocalLightSamples", m_uiRTGILocalLightSamples)->AddAttributes(new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(2U)),
     XII_MEMBER_PROPERTY("RTGIEmissiveLightSamples", m_uiRTGIEmissiveLightSamples)->AddAttributes(new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(1U)),
     XII_MEMBER_PROPERTY("RTReflectionMaxPathHits", m_uiRTReflectionMaxPathHits)->AddAttributes(new xiiClampValueAttribute(1U, 2U), new xiiDefaultValueAttribute(2U)),
+    XII_MEMBER_PROPERTY("RTReflectionHistoryWeight", m_fRTReflectionHistoryWeight)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.99f), new xiiDefaultValueAttribute(0.90f)),
+    XII_MEMBER_PROPERTY("RTReflectionMomentsHistoryWeight", m_fRTReflectionMomentsHistoryWeight)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.99f), new xiiDefaultValueAttribute(0.94f)),
+    XII_MEMBER_PROPERTY("RTReflectionConfidenceDecay", m_fRTReflectionConfidenceDecay)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.97f)),
+    XII_MEMBER_PROPERTY("RTReflectionSpatialWeight", m_fRTReflectionSpatialWeight)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.35f)),
+    XII_MEMBER_PROPERTY("RTReflectionDepthThreshold", m_fRTReflectionDepthThreshold)->AddAttributes(new xiiClampValueAttribute(0.001f, 0.25f), new xiiDefaultValueAttribute(0.02f)),
+    XII_MEMBER_PROPERTY("RTReflectionNormalThreshold", m_fRTReflectionNormalThreshold)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.95f)),
+    XII_MEMBER_PROPERTY("RTReflectionHitDistanceRelativeThreshold", m_fRTReflectionHitDistanceRelativeThreshold)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.08f)),
+    XII_MEMBER_PROPERTY("RTReflectionHitDistanceAbsoluteThreshold", m_fRTReflectionHitDistanceAbsoluteThreshold)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(0.05f), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("RTReflectionVarianceGamma", m_fRTReflectionVarianceGamma)->AddAttributes(new xiiClampValueAttribute(0.5f, 8.0f), new xiiDefaultValueAttribute(2.5f)),
     XII_MEMBER_PROPERTY("MaxIESProfiles", m_uiMaxIESProfiles)->AddAttributes(new xiiClampValueAttribute(1U, 4096U)),
   }
   XII_END_PROPERTIES;
@@ -162,6 +171,15 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
       m_Settings.m_uiRTGILocalLightSamples                = 1U;
       m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
       m_Settings.m_uiRTReflectionMaxPathHits              = 1U;
+      m_Settings.m_fRTReflectionHistoryWeight             = 0.96f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight      = 0.97f;
+      m_Settings.m_fRTReflectionConfidenceDecay           = 0.95f;
+      m_Settings.m_fRTReflectionSpatialWeight             = 0.55f;
+      m_Settings.m_fRTReflectionDepthThreshold            = 0.025f;
+      m_Settings.m_fRTReflectionNormalThreshold           = 0.92f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold = 0.12f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold = 0.10f;
+      m_Settings.m_fRTReflectionVarianceGamma             = 3.0f;
       break;
     case xiiReSTIRDIQualityPreset::Balanced:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 2U;
@@ -176,6 +194,15 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
       m_Settings.m_uiRTGILocalLightSamples                = 1U;
       m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
       m_Settings.m_uiRTReflectionMaxPathHits              = 1U;
+      m_Settings.m_fRTReflectionHistoryWeight             = 0.94f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight      = 0.96f;
+      m_Settings.m_fRTReflectionConfidenceDecay           = 0.96f;
+      m_Settings.m_fRTReflectionSpatialWeight             = 0.45f;
+      m_Settings.m_fRTReflectionDepthThreshold            = 0.022f;
+      m_Settings.m_fRTReflectionNormalThreshold           = 0.94f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold = 0.10f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold = 0.075f;
+      m_Settings.m_fRTReflectionVarianceGamma             = 2.75f;
       break;
     case xiiReSTIRDIQualityPreset::High:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 4U;
@@ -190,6 +217,15 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
       m_Settings.m_uiRTGILocalLightSamples                = 2U;
       m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
       m_Settings.m_uiRTReflectionMaxPathHits              = 2U;
+      m_Settings.m_fRTReflectionHistoryWeight             = 0.90f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight      = 0.94f;
+      m_Settings.m_fRTReflectionConfidenceDecay           = 0.97f;
+      m_Settings.m_fRTReflectionSpatialWeight             = 0.35f;
+      m_Settings.m_fRTReflectionDepthThreshold            = 0.020f;
+      m_Settings.m_fRTReflectionNormalThreshold           = 0.95f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold = 0.08f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold = 0.05f;
+      m_Settings.m_fRTReflectionVarianceGamma             = 2.5f;
       break;
     case xiiReSTIRDIQualityPreset::Ultra:
       m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 8U;
@@ -204,6 +240,15 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
       m_Settings.m_uiRTGILocalLightSamples                = 4U;
       m_Settings.m_uiRTGIEmissiveLightSamples             = 2U;
       m_Settings.m_uiRTReflectionMaxPathHits              = 2U;
+      m_Settings.m_fRTReflectionHistoryWeight             = 0.88f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight      = 0.92f;
+      m_Settings.m_fRTReflectionConfidenceDecay           = 0.98f;
+      m_Settings.m_fRTReflectionSpatialWeight             = 0.25f;
+      m_Settings.m_fRTReflectionDepthThreshold            = 0.015f;
+      m_Settings.m_fRTReflectionNormalThreshold           = 0.97f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold = 0.06f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold = 0.025f;
+      m_Settings.m_fRTReflectionVarianceGamma             = 2.0f;
       break;
     case xiiReSTIRDIQualityPreset::Custom:
       break;

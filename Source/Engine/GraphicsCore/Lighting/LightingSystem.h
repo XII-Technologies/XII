@@ -87,6 +87,15 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   xiiUInt32 m_uiRTGILocalLightSamples    = 2U; ///< Stratified analytical local-light samples evaluated at each hit.
   xiiUInt32 m_uiRTGIEmissiveLightSamples = 1U; ///< Power-weighted emissive-triangle next-event samples evaluated at each hit.
   xiiUInt32 m_uiRTReflectionMaxPathHits  = 2U; ///< Maximum glossy surface hits in a ray-traced reflection path.
+  float     m_fRTReflectionHistoryWeight = 0.90f;
+  float     m_fRTReflectionMomentsHistoryWeight = 0.94f;
+  float     m_fRTReflectionConfidenceDecay = 0.97f;
+  float     m_fRTReflectionSpatialWeight = 0.35f;
+  float     m_fRTReflectionDepthThreshold = 0.02f;
+  float     m_fRTReflectionNormalThreshold = 0.95f;
+  float     m_fRTReflectionHitDistanceRelativeThreshold = 0.08f;
+  float     m_fRTReflectionHitDistanceAbsoluteThreshold = 0.05f; ///< Minimum hit-distance tolerance in metres.
+  float     m_fRTReflectionVarianceGamma = 2.5f;
   xiiUInt32 m_uiMaxIESProfiles           = 256U;
 };
 

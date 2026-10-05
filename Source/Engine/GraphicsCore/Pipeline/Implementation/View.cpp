@@ -4809,15 +4809,16 @@ void xiiView::ExecuteRayTracedReflectionsDenoise(const xiiRayTracedReflectionsDe
   {
     {
       xiiGALMapHelper<xiiRTReflectionDenoiseConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pConstants->HistoryWeight               = 0.90f;
-      pConstants->MomentsHistoryWeight        = 0.94f;
-      pConstants->ConfidenceDecay             = 0.97f;
-      pConstants->SpatialWeight               = 0.35f;
-      pConstants->DepthThreshold              = 0.02f;
-      pConstants->NormalThreshold             = 0.95f;
-      pConstants->HitDistanceRelativeThreshold = 0.08f;
-      pConstants->HitDistanceAbsoluteThreshold = 0.05f;
-      pConstants->VarianceGamma               = 2.5f;
+      const xiiLightingSystemSettings& settings = m_ViewPassResources->m_LightingSystem.GetSettings();
+      pConstants->HistoryWeight                 = xiiMath::Clamp(settings.m_fRTReflectionHistoryWeight, 0.0f, 0.99f);
+      pConstants->MomentsHistoryWeight          = xiiMath::Clamp(settings.m_fRTReflectionMomentsHistoryWeight, 0.0f, 0.99f);
+      pConstants->ConfidenceDecay               = xiiMath::Clamp(settings.m_fRTReflectionConfidenceDecay, 0.0f, 1.0f);
+      pConstants->SpatialWeight                 = xiiMath::Clamp(settings.m_fRTReflectionSpatialWeight, 0.0f, 1.0f);
+      pConstants->DepthThreshold                = xiiMath::Clamp(settings.m_fRTReflectionDepthThreshold, 0.001f, 0.25f);
+      pConstants->NormalThreshold               = xiiMath::Clamp(settings.m_fRTReflectionNormalThreshold, 0.0f, 1.0f);
+      pConstants->HitDistanceRelativeThreshold = xiiMath::Clamp(settings.m_fRTReflectionHitDistanceRelativeThreshold, 0.0f, 1.0f);
+      pConstants->HitDistanceAbsoluteThreshold = xiiMath::Max(settings.m_fRTReflectionHitDistanceAbsoluteThreshold, 0.0f);
+      pConstants->VarianceGamma                 = xiiMath::Clamp(settings.m_fRTReflectionVarianceGamma, 0.5f, 8.0f);
       pConstants->HistoryValid                = data.m_bHistoryValid ? 1U : 0U;
       pConstants->_Padding                    = xiiVec2U32::MakeZero();
     }
