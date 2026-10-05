@@ -100,8 +100,9 @@ void main(uint3 tid : SV_DispatchThreadID)
             const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[reservoir.SampleIndex & XII_RESTIR_SAMPLE_MASK];
             float3 directionToLight;
             const float solidAngle = ReSTIREmissiveSolidAngle(emissiveTriangle, worldPos, directionToLight);
+            const float emissiveVisibility = reservoir.VisibilityValid != 0u ? reservoir.Visibility : 1.0f;
             direct += BRDFLayered(albedo, roughness, metallic, dielectricSpecular, transmission, 0.0f, 0.1f, N, directionToLight, V) *
-                      emissiveTriangle.RadianceAndLuminance.rgb * solidAngle * reservoir.WeightSum;
+                      emissiveTriangle.RadianceAndLuminance.rgb * solidAngle * emissiveVisibility * reservoir.WeightSum;
         }
         else
         {

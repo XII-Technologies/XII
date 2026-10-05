@@ -287,9 +287,10 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
       const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[reservoir.SampleIndex & XII_RESTIR_SAMPLE_MASK];
       float3 directionToLight;
       const float solidAngle = ReSTIREmissiveSolidAngle(emissiveTriangle, input.WorldPosition, directionToLight);
+      const float emissiveVisibility = reservoir.VisibilityValid != 0u ? reservoir.Visibility : 1.0f;
       direct += BRDFLayered(baseColor.rgb, max(roughness, 0.01f), metallic, saturate(material.SurfaceParameters.y),
                             transmission, clearCoat, clearCoatRoughness, N, directionToLight, V) *
-                emissiveTriangle.RadianceAndLuminance.rgb * solidAngle * reservoir.WeightSum;
+                emissiveTriangle.RadianceAndLuminance.rgb * solidAngle * emissiveVisibility * reservoir.WeightSum;
     }
     else
     {
