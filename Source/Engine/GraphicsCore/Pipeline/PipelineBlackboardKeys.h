@@ -116,7 +116,8 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_IndirectLightingBuffer      = "IndirectLighting"_xiisv;            ///< xiiRenderGraphTextureHandle - indirect lighting HDR (R16G16B16A16F).
   constexpr xiiStringView k_SSGITexture                 = "SSGITerm"_xiisv;                    ///< xiiRenderGraphTextureHandle - non-RT near-field diffuse GI contribution.
   constexpr xiiStringView k_EnvironmentSpecular         = "EnvironmentSpecular"_xiisv;         ///< xiiRenderGraphTextureHandle - Tier 2 probe/sky specular contribution already evaluated through the material BRDF.
-  constexpr xiiStringView k_SSRTexture                  = "SSRTerm"_xiisv;                     ///< xiiRenderGraphTextureHandle - screen-space reflection radiance (R16G16B16A16F).
+  constexpr xiiStringView k_SSRRawTexture               = "SSRRawTerm"_xiisv;                  ///< xiiRenderGraphTextureHandle - current-frame screen-space reflection radiance and confidence.
+  constexpr xiiStringView k_SSRTexture                  = "SSRTerm"_xiisv;                     ///< xiiRenderGraphTextureHandle - temporally resolved screen-space reflection radiance and confidence.
   constexpr xiiStringView k_RTRawGI                     = "RTRawGI"_xiisv;                     ///< xiiRenderGraphTextureHandle - raw RT indirect diffuse before denoising.
   constexpr xiiStringView k_RTResampledGI               = "RTResampledGI"_xiisv;               ///< xiiRenderGraphTextureHandle - spatiotemporally resampled RT indirect diffuse.
   constexpr xiiStringView k_RTFinalGI                   = "RTFinalGI"_xiisv;                   ///< xiiRenderGraphTextureHandle - denoised RT GI.

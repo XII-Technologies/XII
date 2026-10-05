@@ -99,6 +99,7 @@ struct xiiRayTracedGlobalIlluminationDenoiseData;
 struct xiiRayTracedReflectionsData;
 struct xiiRayTracedReflectionsDenoiseData;
 struct xiiScreenSpaceReflectionsData;
+struct xiiScreenSpaceReflectionsTemporalData;
 struct xiiHybridReflectionCompositeData;
 struct xiiVolumetricLightInjectionData;
 struct xiiVolumetricFogIntegrationData;
@@ -457,6 +458,9 @@ private:
   void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRenderGraphBuilder& builder);
   void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRenderGraphPassContext& context);
 
+  void SetupScreenSpaceReflectionsTemporal(xiiScreenSpaceReflectionsTemporalData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteScreenSpaceReflectionsTemporal(const xiiScreenSpaceReflectionsTemporalData& data, xiiRenderGraphPassContext& context);
+
   void SetupHybridReflectionComposite(xiiHybridReflectionCompositeData& data, xiiRenderGraphBuilder& builder);
   void ExecuteHybridReflectionComposite(const xiiHybridReflectionCompositeData& data, xiiRenderGraphPassContext& context);
 
@@ -714,6 +718,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>    m_pDirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pIndirectLightingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>    m_pSSRTemporalPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pReflectionCompositePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricLightInjectionPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>    m_pVolumetricIntegratePipeline;
@@ -752,6 +757,9 @@ private:
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHistory[2];
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
+      xiiSharedPtr<xiiGALTexture>                 m_pSSRHistory[2];         ///< RGBA16_FLOAT temporally resolved radiance and confidence.
+      xiiSharedPtr<xiiGALTexture>                 m_pSSRMaterialHistory[2]; ///< R32_UINT packed roughness, metallic, specular, and material identity.
+      bool                                        m_bSSRHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: sample identity, weight, M, content revision, and quantized visibility.
       xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.
       bool                                        m_bDirectReservoirHistoryValid = false;
