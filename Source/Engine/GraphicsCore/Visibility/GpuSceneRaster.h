@@ -53,10 +53,11 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneGBufferOutputs
   xiiRenderGraphTextureHandle m_hNormal;
   xiiRenderGraphTextureHandle m_hMaterial;
   xiiRenderGraphTextureHandle m_hEmissive;
+  xiiRenderGraphTextureHandle m_hObjectId;
   xiiRenderGraphTextureHandle m_hNormalRoughness;
   xiiRenderGraphTextureHandle m_hVelocity;
 
-  [[nodiscard]] bool IsValid() const { return m_hAlbedo.IsValid() && m_hNormal.IsValid() && m_hMaterial.IsValid() && m_hEmissive.IsValid() && m_hNormalRoughness.IsValid() && m_hVelocity.IsValid(); }
+  [[nodiscard]] bool IsValid() const { return m_hAlbedo.IsValid() && m_hNormal.IsValid() && m_hMaterial.IsValid() && m_hEmissive.IsValid() && m_hObjectId.IsValid() && m_hNormalRoughness.IsValid() && m_hVelocity.IsValid(); }
 };
 
 class xiiGpuSceneRasterManagerState;
@@ -89,7 +90,7 @@ public:
 
   /// Rasterizes canonical surface materials into the deferred targets while depth testing against
   /// the scene prepass. Compact normal/roughness and object-aware velocity are emitted as extra
-  /// MRTs so AO, temporal effects and lighting do not need additional geometry submissions.
+  /// MRTs so AO, identity-aware temporal effects and lighting do not need additional geometry submissions.
   [[nodiscard]] static xiiGpuSceneGBufferOutputs AddGBufferPass(xiiRenderGraph& graph, xiiStringView sName,
                                                                 xiiRenderGraphTextureHandle hSceneDepth,
                                                                 xiiRenderGraphTextureHandle hVelocity,

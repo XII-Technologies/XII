@@ -38,7 +38,8 @@ struct VS_Out
     float3 WorldTan  : TEXCOORD2;
     float  BitangSign: TEXCOORD3;
     float2 UV0       : TEXCOORD4;
-    uint   MatIndex  : TEXCOORD5;
+    nointerpolation uint MatIndex : TEXCOORD5;
+    nointerpolation uint ObjectId : TEXCOORD6;
 };
 
 [VERTEX_SHADER]
@@ -61,6 +62,7 @@ VS_Out main(VS_In In)
     o.BitangSign = In.Tangent.w;
     o.UV0        = In.UV0;
     o.MatIndex   = 0u; // material index resolved via indirect instance ID offset table
+    o.ObjectId   = In.InstanceID;
     return o;
 }
 
@@ -72,6 +74,7 @@ struct PS_Out
     float2 Normal   : SV_Target1; // oct-packed world normal (RG16_SNORM)
     float4 Material : SV_Target2; // r=roughness, g=metallic, b=AO, a=flags
     float4 Emissive : SV_Target3; // rgb=emissive HDR
+    uint ObjectId    : SV_Target4; // deterministic instance identity for temporal validation
 };
 
 Texture2D<float4> g_AlbedoMap;
@@ -100,5 +103,6 @@ PS_Out main(VS_Out In)
     o.Normal   = EncodeOctNormal(worldNorm);
     o.Material = float4(material.r, material.g, 0.5f, 0.0f); // roughness/metallic/dielectric specular/features
     o.Emissive = float4(emissive.rgb * emissive.a, 1.0f); // emissive intensity packed in alpha
+    o.ObjectId = In.ObjectId;
     return o;
 }

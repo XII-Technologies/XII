@@ -757,11 +757,11 @@ private:
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHistory[2];
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHitDistanceHistory[2]; ///< R16_FLOAT primary hit distance; zero denotes environment termination.
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionMomentsHistory[2];     ///< RG16_FLOAT log-luminance first and second moments.
-      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionMaterialHistory[2];    ///< R32_UINT exact packed primary material signature.
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionIdentityHistory[2];    ///< RG32_UINT exact packed material signature and stable object identity.
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
       xiiSharedPtr<xiiGALTexture>                 m_pSSRHistory[2];         ///< RGBA16_FLOAT temporally resolved radiance and confidence.
-      xiiSharedPtr<xiiGALTexture>                 m_pSSRMaterialHistory[2]; ///< R32_UINT packed roughness, metallic, specular, and material identity.
+      xiiSharedPtr<xiiGALTexture>                 m_pSSRIdentityHistory[2]; ///< RG32_UINT packed material signature and stable object identity.
       bool                                        m_bSSRHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: sample identity, weight, M, content revision, and quantized visibility.
       xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.

@@ -16,17 +16,18 @@ Texture2D<float>    g_CurrentHitDistance;
 Texture2D<float4>   g_PreviousReflection;
 Texture2D<float>    g_PreviousHitDistance;
 Texture2D<float2>   g_PreviousMoments;
-Texture2D<uint>     g_PreviousMaterialSignature;
+Texture2D<uint2>    g_PreviousIdentitySignature;
 Texture2D<float>    g_SceneDepth;
 Texture2D<float2>   g_GBufferNormal;
 Texture2D<float4>   g_GBufferMaterial;
+Texture2D<uint>     g_GBufferObjectId;
 Texture2D<float2>   g_Velocity;
 Texture2D<float4>   g_PreviousSurface;
 
 RWTexture2D<float4> g_ResolvedReflection;
 RWTexture2D<float>  g_ResolvedHitDistance;
 RWTexture2D<float2> g_ResolvedMoments;
-RWTexture2D<uint>   g_CurrentMaterialSignature;
+RWTexture2D<uint2>  g_CurrentIdentitySignature;
 
 uint PackRTReflectionMaterialSignature(float4 material)
 {
@@ -83,11 +84,12 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const float depth = g_SceneDepth.Load(int3(pixel, 0));
   const float4 material = g_GBufferMaterial.Load(int3(pixel, 0));
   const uint materialSignature = PackRTReflectionMaterialSignature(material);
+  const uint objectId = g_GBufferObjectId.Load(int3(pixel, 0));
   const float hitDistance = max(g_CurrentHitDistance.Load(int3(pixel, 0)), 0.0f);
   const float4 rawCurrent = g_CurrentReflection.Load(int3(pixel, 0));
 
   g_ResolvedHitDistance[pixel] = hitDistance;
-  g_CurrentMaterialSignature[pixel] = materialSignature;
+  g_CurrentIdentitySignature[pixel] = uint2(materialSignature, objectId);
 
   if (depth <= 0.0f || rawCurrent.a <= 1e-5f)
   {
@@ -176,9 +178,9 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     abs(previousSurface.z - linearDepth) <= max(linearDepth * DepthThreshold, 0.005f) &&
     dot(previousNormal, normal) >= NormalThreshold &&
     abs(previousSurface.w - roughness) <= 0.04f;
-  const bool materialMatches = g_PreviousMaterialSignature.Load(int3(previousPixel, 0)) == materialSignature;
+  const bool identityMatches = all(g_PreviousIdentitySignature.Load(int3(previousPixel, 0)) == uint2(materialSignature, objectId));
   const float previousHitDistance = max(g_PreviousHitDistance.Load(int3(previousPixel, 0)), 0.0f);
-  if (!surfaceMatches || !materialMatches || !HitDistanceMatches(hitDistance, previousHitDistance))
+  if (!surfaceMatches || !identityMatches || !HitDistanceMatches(hitDistance, previousHitDistance))
   {
     g_ResolvedReflection[pixel] = current;
     g_ResolvedMoments[pixel] = currentMoments;

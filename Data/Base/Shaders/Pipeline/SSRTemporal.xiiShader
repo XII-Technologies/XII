@@ -16,11 +16,12 @@ Texture2D<float4>   g_PreviousReflection;
 Texture2D<float>    g_SceneDepth;
 Texture2D<float2>   g_GBufferNormal;
 Texture2D<float4>   g_GBufferMaterial;
+Texture2D<uint>     g_GBufferObjectId;
 Texture2D<float2>   g_Velocity;
 Texture2D<float4>   g_PreviousSurface;
-Texture2D<uint>     g_PreviousMaterialSignature;
+Texture2D<uint2>    g_PreviousIdentitySignature;
 RWTexture2D<float4> g_ResolvedReflection;
-RWTexture2D<uint>   g_CurrentMaterialSignature;
+RWTexture2D<uint2>  g_CurrentIdentitySignature;
 
 uint PackSSRMaterialSignature(float4 material)
 {
@@ -39,7 +40,8 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const uint2 pixel = dispatchThreadId.xy;
   const float4 material = g_GBufferMaterial.Load(int3(pixel, 0));
   const uint materialSignature = PackSSRMaterialSignature(material);
-  g_CurrentMaterialSignature[pixel] = materialSignature;
+  const uint objectId = g_GBufferObjectId.Load(int3(pixel, 0));
+  g_CurrentIdentitySignature[pixel] = uint2(materialSignature, objectId);
 
   const float4 current = g_CurrentReflection.Load(int3(pixel, 0));
   const float depth = g_SceneDepth.Load(int3(pixel, 0));
@@ -66,8 +68,8 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   const bool surfaceMatches = previousSurface.z > 0.0f &&
     abs(previousSurface.z - currentLinearDepth) <= max(currentLinearDepth * DepthThreshold, 0.005f) &&
     dot(previousNormal, currentNormal) >= NormalThreshold;
-  const bool materialMatches = g_PreviousMaterialSignature.Load(int3(previousPixel, 0)) == materialSignature;
-  if (!surfaceMatches || !materialMatches)
+  const bool identityMatches = all(g_PreviousIdentitySignature.Load(int3(previousPixel, 0)) == uint2(materialSignature, objectId));
+  if (!surfaceMatches || !identityMatches)
   {
     g_ResolvedReflection[pixel] = current;
     return;

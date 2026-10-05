@@ -87,8 +87,9 @@ namespace xiiRGBlackboardKeys
 
   constexpr xiiStringView k_GBufferAlbedo   = "GBufferAlbedo"_xiisv;   ///< xiiRenderGraphTextureHandle - R8G8B8A8_UNORM albedo (rgb) + AO (a).
   constexpr xiiStringView k_GBufferNormal   = "GBufferNormal"_xiisv;   ///< xiiRenderGraphTextureHandle - R16G16_SNORM oct-encoded world-space normals.
-  constexpr xiiStringView k_GBufferMaterial = "GBufferMaterial"_xiisv; ///< xiiRenderGraphTextureHandle - R8G8B8A8: r=roughness, g=metallic, b=specular, a=matID.
+  constexpr xiiStringView k_GBufferMaterial = "GBufferMaterial"_xiisv; ///< xiiRenderGraphTextureHandle - R8G8B8A8: r=roughness, g=metallic, b=specular, a=feature byte.
   constexpr xiiStringView k_GBufferEmissive = "GBufferEmissive"_xiisv; ///< xiiRenderGraphTextureHandle - R16G16B16A16F emissive + special-purpose channel.
+  constexpr xiiStringView k_GBufferObjectId = "GBufferObjectId"_xiisv; ///< xiiRenderGraphTextureHandle - R32_UINT stable object identity used by temporal effects and tools.
 
   // Stage 5 - Lighting Preparation.
 

@@ -145,6 +145,7 @@ namespace
     xiiRenderGraphTextureHandle          m_hNormal;
     xiiRenderGraphTextureHandle          m_hMaterial;
     xiiRenderGraphTextureHandle          m_hEmissive;
+    xiiRenderGraphTextureHandle          m_hObjectId;
     xiiRenderGraphTextureHandle          m_hNormalRoughness;
     xiiRenderGraphTextureHandle          m_hVelocity;
     xiiRenderGraphBufferHandle           m_hConstants;
@@ -379,7 +380,6 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
     sName, xiiGALCommandQueueFlags::Graphics,
     [hSceneDepth, hVelocity, visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, description](GBufferRasterPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hDepth                = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::DepthRead);
-      data.m_hVelocity             = builder.WriteTexture(builder.ReadTexture(hVelocity, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
       data.m_hConstants            = builder.ReadBuffer(hConstants, xiiGALResourceStateFlags::ConstantBuffer);
       data.m_hSceneInstances       = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometry             = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
@@ -408,6 +408,9 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
       data.m_hEmissive           = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferEmissive, targetDescription, xiiGALResourceStateFlags::RenderTarget);
       targetDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
       data.m_hNormalRoughness    = builder.WriteTexture(xiiRGBlackboardKeys::k_NormalRoughnessBuffer, targetDescription, xiiGALResourceStateFlags::RenderTarget);
+      data.m_hVelocity           = builder.WriteTexture(builder.ReadTexture(hVelocity, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+      targetDescription.m_Format = xiiGALResourceFormat::R32UInt;
+      data.m_hObjectId           = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferObjectId, targetDescription, xiiGALResourceStateFlags::RenderTarget);
 
       builder.SetPassAllowMerge(false);
       builder.SetPassRenderPassManaged(true);
@@ -437,6 +440,7 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hNormal)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.5f, 0.0f, 0.0f));
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hMaterial)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.0f, 1.0f, 0.0f));
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hEmissive)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+      cmd.ClearRenderTargetView(context.GetTexture(data.m_hObjectId)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.5f, 0.5f, 1.0f));
       cmd.SetViewport({0.0f, 0.0f, static_cast<float>(data.m_Description.m_uiWidth), static_cast<float>(data.m_Description.m_uiHeight), 0.0f, 1.0f});
       cmd.SetPipelineState(pPipeline.Borrow());
@@ -458,7 +462,7 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
 
   pass.first->m_Description        = description;
   pass.first->m_hShaderPermutation = s_pState->m_hGBufferShaderPermutation;
-  return {pass.first->m_hAlbedo, pass.first->m_hNormal, pass.first->m_hMaterial, pass.first->m_hEmissive, pass.first->m_hNormalRoughness, pass.first->m_hVelocity};
+  return {pass.first->m_hAlbedo, pass.first->m_hNormal, pass.first->m_hMaterial, pass.first->m_hEmissive, pass.first->m_hObjectId, pass.first->m_hNormalRoughness, pass.first->m_hVelocity};
 }
 
 xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddForwardPlusPass(xiiRenderGraph& graph, xiiStringView sName,

@@ -26,6 +26,7 @@ struct GBufferVertex
   float2 TexCoord : TEXCOORD3;
   nointerpolation uint MaterialIndex : TEXCOORD4;
   float4 PreviousClipPosition : TEXCOORD5;
+  nointerpolation uint ObjectId : TEXCOORD6;
 };
 
 uint LoadByte(ByteAddressBuffer source, uint byteOffset)
@@ -153,6 +154,7 @@ void main(uint threadIndex : SV_GroupThreadID,
     output.TexCoord = texCoord;
     output.MaterialIndex = instance.MaterialIndex;
     output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));
+    output.ObjectId = instance.UserData;
     vertices[threadIndex] = output;
   }
 
@@ -183,6 +185,7 @@ struct GBufferOutput
   float4 Emissive : SV_Target3;
   float4 NormalRoughness : SV_Target4;
   float2 Velocity : SV_Target5;
+  uint ObjectId : SV_Target6;
 };
 
 GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
@@ -262,5 +265,6 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
   currentNDC.y = -currentNDC.y;
   const float2 previousNDC = input.PreviousClipPosition.xy / max(input.PreviousClipPosition.w, 1e-7f);
   output.Velocity = (currentNDC - CurrentJitter) - (previousNDC - PreviousJitter);
+  output.ObjectId = input.ObjectId;
   return output;
 }
