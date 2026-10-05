@@ -53,6 +53,7 @@ struct xiiLightingDataUploadData;
 struct xiiClusterBuildData;
 struct xiiLightListClearData;
 struct xiiLightListData;
+struct xiiLightSamplingData;
 struct xiiReflectionProbeSelectData;
 struct xiiFroxelAllocationData;
 
@@ -325,6 +326,9 @@ private:
 
   void SetupLightListBuild(xiiLightListData& data, xiiRenderGraphBuilder& builder);
   void ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraphPassContext& context);
+
+  void SetupLightSampling(xiiLightSamplingData& data, xiiRenderGraphBuilder& builder);
+  void ExecuteLightSampling(const xiiLightSamplingData& data, xiiRenderGraphPassContext& context);
 
   void SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRenderGraphBuilder& builder);
   void ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& data, xiiRenderGraphPassContext& context);
@@ -613,6 +617,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pClusterBuildPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pLightListClearPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pLightListPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pLightSamplingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pProbeSelectPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelSetupPipeline;
     } m_VisibilityPasses;

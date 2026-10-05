@@ -1357,7 +1357,7 @@ struct xiiLightListData
 
   xiiRenderGraphBufferHandle m_hClusterConstants;      ///< Constant buffer in (cluster dimensions and active light count).
   xiiRenderGraphBufferHandle m_hClusterDescriptors;    ///< SRV in (world-space cluster AABBs used for exact conservative rejection).
-  xiiRenderGraphBufferHandle m_hLightIndexBuffer;      ///< SRV in (structured buffer of uint, one per light, containing light type and other metadata, from extraction).
+  xiiRenderGraphBufferHandle m_hLightIndexBuffer;      ///< UAV out (20-bit light index; the sampling pass later fills the upper 12-bit CDF).
   xiiRenderGraphBufferHandle m_hLightGridBuffer;       ///< UAV out (structured buffer of uint, containing compact light lists per cluster, consumed by main lighting pass).
   xiiUInt32                  m_uiActiveLightCount = 0; ///< Number of active lights to process (from extraction). This is used to avoid processing the entire buffer when only a subset is populated.
 };
@@ -1401,6 +1401,62 @@ void xiiView::ExecuteLightListBuild(const xiiLightListData& data, xiiRenderGraph
     cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(xiiMath::Max(data.m_uiActiveLightCount, 1U) + 63U) / 64U, 1U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Analytical Light Sampling Data //////////
+//
+// Converts each bounded cluster light list into a quantized emitted-power CDF. ReSTIR samples this
+// distribution with a logarithmic lookup and uses the exact quantized interval as its proposal PDF.
+
+struct xiiLightSamplingData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRenderGraphBufferHandle m_hClusterConstants;
+  xiiRenderGraphBufferHandle m_hLightGridBuffer;
+  xiiRenderGraphBufferHandle m_hLightIndexBuffer;
+  xiiRenderGraphBufferHandle m_hLightSamplingTotals;
+  xiiUInt32                  m_uiTotalClusters = 0U;
+};
+
+void xiiView::SetupLightSampling(xiiLightSamplingData& data, xiiRenderGraphBuilder& builder)
+{
+  builder.SetPassAllowMerge(false);
+
+  data.m_hClusterConstants = builder.ReadBuffer("xiiLightClusteringConstants", xiiGALResourceStateFlags::ConstantBuffer);
+  data.m_hLightGridBuffer  = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightIndexBuffer = builder.WriteBuffer(builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+
+  const xiiUInt32 uiTotalClusters = xiiMath::Max(m_ViewPassResources->m_LightingSystem.GetTotalClusterCount(), 1U);
+
+  xiiGALBufferCreationDescription description;
+  description.m_uiElementByteStride = sizeof(float);
+  description.m_uiSize              = static_cast<xiiUInt64>(sizeof(float)) * uiTotalClusters;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  data.m_hLightSamplingTotals       = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightSamplingTotals, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_uiTotalClusters            = uiTotalClusters;
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources->m_VisibilityPasses.m_pLightSamplingPipeline, "Shaders/Pipeline/LightSamplingBuild.xiiShader");
+}
+
+void xiiView::ExecuteLightSampling(const xiiLightSamplingData& data, xiiRenderGraphPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("LightSamplingBuild");
+  {
+    cmd.SetPipelineState(m_ViewPassResources->m_VisibilityPasses.m_pLightSamplingPipeline);
+    m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    m_ViewPassResources->m_LightingSystem.BindLightData(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_LightSamplingTotals", context.GetBuffer(data.m_hLightSamplingTotals)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(data.m_uiTotalClusters + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -3392,6 +3448,7 @@ struct xiiReSTIRDITemporalData
   xiiRenderGraphTextureHandle m_hVelocity;
   xiiRenderGraphBufferHandle  m_hLightGridBuffer;
   xiiRenderGraphBufferHandle  m_hLightIndexBuffer;
+  xiiRenderGraphBufferHandle  m_hLightSamplingTotals;
   xiiRenderGraphBufferHandle  m_hEmissiveTriangles;
   xiiRenderGraphBufferHandle  m_hEmissiveLightHeader;
   xiiRenderGraphBufferHandle  m_hEmissiveTriangleAliases;
@@ -3465,6 +3522,7 @@ void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGrap
   data.m_hVelocity          = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightGridBuffer   = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightIndexBuffer  = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightSamplingTotals = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightSamplingTotals, xiiGALResourceStateFlags::ShaderResource);
   data.m_hEmissiveTriangles = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangles, xiiGALResourceStateFlags::ShaderResource);
   data.m_hEmissiveLightHeader = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
   data.m_hEmissiveTriangleAliases = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangleAliases, xiiGALResourceStateFlags::ShaderResource);
@@ -3516,6 +3574,7 @@ void xiiView::ExecuteReSTIRDITemporal(const xiiReSTIRDITemporalData& data, xiiRe
     cmd.ResolveAndSetShaderResourceTextureView("g_Velocity", context.GetTexture(data.m_hVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_LightSamplingTotals", context.GetBuffer(data.m_hLightSamplingTotals)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hEmissiveTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hEmissiveLightHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangleAliases", context.GetBuffer(data.m_hEmissiveTriangleAliases)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -6792,6 +6851,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiClusterBuildData>("ClusterGridBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupClusterBuild, this), xiiMakeDelegate(&xiiView::ExecuteClusterBuild, this));
   graph.AddPass<xiiLightListClearData>("LightListClear", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListClear, this), xiiMakeDelegate(&xiiView::ExecuteLightListClear, this));
   auto lightListPass = graph.AddPass<xiiLightListData>("LightListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListBuild, this), xiiMakeDelegate(&xiiView::ExecuteLightListBuild, this));
+  auto lightSamplingPass = graph.AddPass<xiiLightSamplingData>("LightSamplingBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightSampling, this), xiiMakeDelegate(&xiiView::ExecuteLightSampling, this));
   graph.AddPass<xiiReflectionProbeSelectData>("ReflectionProbeSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeSelect, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeSelect, this));
   graph.AddPass<xiiFroxelAllocationData>("VolumetricGridAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFroxelAllocation, this), xiiMakeDelegate(&xiiView::ExecuteFroxelAllocation, this));
 
@@ -6989,7 +7049,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
     const xiiRenderGraphTextureHandle hContactShadow    = contactShadowPass.first->m_hContactShadow;
     const xiiRenderGraphTextureHandle hDirectReservoir  = restirDISpatialPass.first->m_hReservoir;
     const xiiRenderGraphBufferHandle  hLightGrid        = lightListPass.first->m_hLightGridBuffer;
-    const xiiRenderGraphBufferHandle  hLightIndices     = lightListPass.first->m_hLightIndexBuffer;
+    const xiiRenderGraphBufferHandle  hLightIndices     = lightSamplingPass.first->m_hLightIndexBuffer;
 
     bForwardPlusDirectLighting = xiiGpuSceneRasterManager::AddForwardPlusPass(
       graph, "GPU Scene Forward Plus", hSceneDepth, hAmbientOcclusion, hRayTracedShadow, hContactShadow, hDirectReservoir,

@@ -12,6 +12,12 @@ static const uint XII_LIGHT_TYPE_SPHERE        = 5u;
 static const uint XII_LIGHT_TYPE_TUBE          = 6u;
 static const uint XII_LIGHT_TYPE_EMISSIVE_MESH = 7u;
 
+// Cluster entries retain the one-uint-per-light footprint while carrying the normalized
+// emitted-power CDF used by ReSTIR. Twenty index bits match the reflected one-million-light cap.
+static const uint XII_CLUSTER_LIGHT_INDEX_MASK = 0x000FFFFFu;
+static const uint XII_CLUSTER_LIGHT_CDF_SHIFT  = 20u;
+static const uint XII_CLUSTER_LIGHT_CDF_MAX    = 0x00000FFFu;
+
 struct xiiGpuLightData
 {
   float4 PositionAndInvRange;   // xyz = position, w = 1 / range
@@ -42,6 +48,21 @@ struct xiiLocalShadowAtlasData
 uint GetLightType(xiiGpuLightData lightData)
 {
   return (uint)(lightData.DirectionAndType.w + 0.5f);
+}
+
+uint PackClusterLightEntry(uint lightIndex, uint normalizedCDF)
+{
+  return (lightIndex & XII_CLUSTER_LIGHT_INDEX_MASK) | (min(normalizedCDF, XII_CLUSTER_LIGHT_CDF_MAX) << XII_CLUSTER_LIGHT_CDF_SHIFT);
+}
+
+uint GetClusterLightIndex(uint packedEntry)
+{
+  return packedEntry & XII_CLUSTER_LIGHT_INDEX_MASK;
+}
+
+uint GetClusterLightCDF(uint packedEntry)
+{
+  return packedEntry >> XII_CLUSTER_LIGHT_CDF_SHIFT;
 }
 
 /// Returns the stable per-light shadow contribution for this camera. An authored zero keeps full

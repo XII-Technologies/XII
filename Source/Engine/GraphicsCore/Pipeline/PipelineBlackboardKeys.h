@@ -41,9 +41,10 @@ namespace xiiRGBlackboardKeys
 
   // Stage 1 - Clustering.
 
-  constexpr xiiStringView k_ClusterDescriptors = "ClusterDescriptors"_xiisv; ///< xiiRenderGraphBufferHandle - frustum cluster AABB descriptors (float4 per cluster).
-  constexpr xiiStringView k_LightIndexBuffer   = "LightIndexBuffer"_xiisv;   ///< xiiRenderGraphBufferHandle - per-cluster compact light index list.
-  constexpr xiiStringView k_LightGridBuffer    = "LightGrid"_xiisv;          ///< xiiRenderGraphBufferHandle - cluster -> (offset, count) pairs (uint2 per cluster).
+  constexpr xiiStringView k_ClusterDescriptors  = "ClusterDescriptors"_xiisv;  ///< xiiRenderGraphBufferHandle - frustum cluster AABB descriptors (float4 per cluster).
+  constexpr xiiStringView k_LightIndexBuffer    = "LightIndexBuffer"_xiisv;    ///< xiiRenderGraphBufferHandle - packed 20-bit light index + 12-bit sampling CDF per cluster.
+  constexpr xiiStringView k_LightGridBuffer     = "LightGrid"_xiisv;           ///< xiiRenderGraphBufferHandle - cluster -> (offset, count) pairs (uint2 per cluster).
+  constexpr xiiStringView k_LightSamplingTotals = "LightSamplingTotals"_xiisv; ///< xiiRenderGraphBufferHandle - emitted-power total per cluster.
 
   // Stage 1 - Froxel / Volumetric
 

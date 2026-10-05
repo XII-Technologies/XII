@@ -55,7 +55,7 @@ float3 EvaluateLocalLighting(float2 uv, float zFraction, float3 worldPosition, f
   [loop]
   for (uint listIndex = 0u; listIndex < lightCount; ++listIndex)
   {
-    const uint lightIndex = g_LightIndex[lightRange.x + listIndex];
+    const uint lightIndex = GetClusterLightIndex(g_LightIndex[lightRange.x + listIndex]);
     if (lightIndex >= g_ActiveLightCount)
       continue;
 

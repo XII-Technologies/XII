@@ -307,7 +307,7 @@ float4 main(ForwardVertex input, bool isFrontFace : SV_IsFrontFace) : SV_Target0
     const uint lightCount = min(lightRange.y, g_MaxLightsPerCluster);
     [loop] for (uint listIndex = 0u; listIndex < lightCount; ++listIndex)
     {
-      const uint lightIndex = g_LightIndex[lightRange.x + listIndex];
+      const uint lightIndex = GetClusterLightIndex(g_LightIndex[lightRange.x + listIndex]);
       if (lightIndex >= g_ActiveLightCount)
         continue;
       const xiiGpuLightData lightData = g_Lights[lightIndex];

@@ -120,7 +120,7 @@ void main(uint3 tid : SV_DispatchThreadID)
         [loop]
         for (uint i = 0u; i < lightCount; ++i)
         {
-            const uint lightIndex = g_LightIndex[lightRange.x + i];
+            const uint lightIndex = GetClusterLightIndex(g_LightIndex[lightRange.x + i]);
             if (lightIndex >= g_ActiveLightCount)
                 continue;
 
