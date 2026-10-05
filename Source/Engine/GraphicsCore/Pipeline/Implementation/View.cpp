@@ -7682,7 +7682,7 @@ bool xiiView::EnsureRayTracingReflectionResources()
   xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
   pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
   pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = 1U;
-  pipelineDescription.m_uiMaximumPayloadSize                     = 16U;
+  pipelineDescription.m_uiMaximumPayloadSize                     = 24U;
   pipelineDescription.m_uiMaximumAttributeSize                   = 8U;
 
   xiiGALRayTracingGeneralShaderGroupDescription& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();

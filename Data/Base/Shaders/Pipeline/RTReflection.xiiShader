@@ -13,7 +13,54 @@ struct xiiReflectionPayload
 {
   float3 Radiance;
   float  Confidence;
+  float  RayConeWidth;
+  float  RayConeSpread;
 };
+
+uint RTReflectionHash(uint value)
+{
+  value ^= value >> 16u;
+  value *= 0x7FEB352Du;
+  value ^= value >> 15u;
+  value *= 0x846CA68Bu;
+  value ^= value >> 16u;
+  return value;
+}
+
+float2 RTReflectionRandom2(uint2 pixel, uint2 dimensions)
+{
+  uint state = RTReflectionHash(pixel.x + pixel.y * dimensions.x + g_FrameIndex * 0x9E3779B9u);
+  const float x = (float)(state & 0x00FFFFFFu) * (1.0f / 16777216.0f);
+  state = RTReflectionHash(state);
+  const float y = (float)(state & 0x00FFFFFFu) * (1.0f / 16777216.0f);
+  return float2(x, y);
+}
+
+float3 SampleRTReflectionGGXVNDF(float3 normal, float3 viewDirection, float roughness, float2 randomSample)
+{
+  const float alpha = max(roughness * roughness, 0.001f);
+  const float3 helper = abs(normal.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+  const float3 tangent = normalize(cross(helper, normal));
+  const float3 bitangent = cross(normal, tangent);
+  const float3 localView = float3(dot(viewDirection, tangent), dot(viewDirection, bitangent), dot(viewDirection, normal));
+  const float3 stretchedView = normalize(float3(alpha * localView.x, alpha * localView.y, max(localView.z, 1e-4f)));
+
+  const float lensq = dot(stretchedView.xy, stretchedView.xy);
+  const float3 basisX = lensq > 1e-7f ? float3(-stretchedView.y, stretchedView.x, 0.0f) * rsqrt(lensq) : float3(1.0f, 0.0f, 0.0f);
+  const float3 basisY = cross(stretchedView, basisX);
+  const float radius = sqrt(randomSample.x);
+  const float phi = 6.28318530718f * randomSample.y;
+  const float sampleX = radius * cos(phi);
+  float sampleY = radius * sin(phi);
+  const float blend = 0.5f * (1.0f + stretchedView.z);
+  sampleY = lerp(sqrt(max(0.0f, 1.0f - sampleX * sampleX)), sampleY, blend);
+  const float3 sampledNormal = sampleX * basisX + sampleY * basisY +
+                               sqrt(max(0.0f, 1.0f - sampleX * sampleX - sampleY * sampleY)) * stretchedView;
+  const float3 localHalf = normalize(float3(alpha * sampledNormal.x, alpha * sampledNormal.y, max(sampledNormal.z, 0.0f)));
+  const float3 halfVector = normalize(tangent * localHalf.x + bitangent * localHalf.y + normal * localHalf.z);
+  const float3 reflected = normalize(reflect(-viewDirection, halfVector));
+  return dot(reflected, normal) > 1e-4f ? reflected : normalize(reflect(-viewDirection, normal));
+}
 
 [RAY_GENERATION_SHADER]
 
@@ -38,7 +85,13 @@ void main()
     const float3 worldPos = ReconstructWorldPos(uv, depth);
     const float3 normal   = DecodeOctNormal(g_GBufNormal.Load(int3(pixel, 0)));
     const float3 view     = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
-    const float3 rayDir   = normalize(reflect(-view, normal));
+    const float3 rayDir   = SampleRTReflectionGGXVNDF(normal, view, roughness, RTReflectionRandom2(pixel, dimensions));
+    const float2 pixelSize = rcp(float2(dimensions));
+    const float2 adjacentXUV = uv + float2(pixel.x + 1u < dimensions.x ? pixelSize.x : -pixelSize.x, 0.0f);
+    const float2 adjacentYUV = uv + float2(0.0f, pixel.y + 1u < dimensions.y ? pixelSize.y : -pixelSize.y);
+    const float primaryFootprint = max(length(ReconstructWorldPos(adjacentXUV, depth) - worldPos),
+                                       length(ReconstructWorldPos(adjacentYUV, depth) - worldPos));
+    const float cameraDistance = max(length(worldPos - g_CameraPositionAndNearPlane.xyz), 1e-3f);
 
     RayDesc ray;
     ray.Origin    = worldPos + normal * 0.01f;
@@ -49,6 +102,8 @@ void main()
     xiiReflectionPayload payload;
     payload.Radiance   = 0.0f;
     payload.Confidence = 0.0f;
+    payload.RayConeWidth = primaryFootprint;
+    payload.RayConeSpread = max(primaryFootprint / cameraDistance, roughness * roughness);
     TraceRay(g_RayTracingScene, 0U, 0xFFU, 0U, 1U, 0U, ray, payload);
 
     // Rough surfaces smoothly hand back to probes/SSR rather than terminating abruptly.
@@ -75,6 +130,8 @@ StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials : register(t9)
 StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10);
 ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
 Texture2D<float4> g_RayTracingTextures[] : register(t12);
+
+#include "Passes/RayTracing/RayTracingTextureSampling.h"
 
 [shader("closesthit")]
 void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
@@ -106,14 +163,25 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
   float3 worldNormal = normalize(mul(objectNormal, (float3x3)WorldToObject3x4()));
 
   const bool hasTexCoord = geometry.VertexLayout.w != 0xFFFFFFFFU && geometry.VertexAttributes.z != 0U;
+  float2 texCoord0 = 0.0f;
+  float2 texCoord1 = 0.0f;
+  float2 texCoord2 = 0.0f;
   float2 texCoord = 0.0f;
   if (hasTexCoord)
   {
-    texCoord =
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x) * barycentrics.x +
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y) * barycentrics.y +
-      xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z) * barycentrics.z;
+    texCoord0 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
+    texCoord1 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
+    texCoord2 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
+    texCoord = texCoord0 * barycentrics.x + texCoord1 * barycentrics.y + texCoord2 * barycentrics.z;
   }
+
+  const float3 worldEdge0 = mul((float3x3)ObjectToWorld3x4(), position1 - position0);
+  const float3 worldEdge1 = mul((float3x3)ObjectToWorld3x4(), position2 - position0);
+  const float worldTriangleArea = length(cross(worldEdge0, worldEdge1));
+  const float2 uvEdge0 = texCoord1 - texCoord0;
+  const float2 uvEdge1 = texCoord2 - texCoord0;
+  const float uvTriangleArea = hasTexCoord ? abs(uvEdge0.x * uvEdge1.y - uvEdge0.y * uvEdge1.x) : 0.0f;
+  const float rayConeWidth = max(payload.RayConeWidth + RayTCurrent() * payload.RayConeSpread, 1e-6f);
 
   if (hasTexCoord && geometry.VertexAttributes.x != 0xFFFFFFFFU && geometry.VertexAttributes.y != 0U && material.TextureIndices0.y != 0xFFFFFFFFU)
   {
@@ -124,8 +192,9 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
     float3 worldTangent = normalize(mul((float3x3)ObjectToWorld3x4(), objectTangent.xyz));
     worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
     const float3 worldBitangent = cross(worldNormal, worldTangent) * (objectTangent.w < 0.0f ? -1.0f : 1.0f);
-    const uint normalTextureIndex = NonUniformResourceIndex(material.TextureIndices0.y);
-    const float3 tangentNormal = xiiDecodeRayTracingNormal(g_RayTracingTextures[normalTextureIndex].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f), material.LayerParameters.y);
+    const float3 tangentNormal = xiiDecodeRayTracingNormal(
+      xiiSampleRayTracingMaterialTexture(material.TextureIndices0.y, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth),
+      material.LayerParameters.y);
     worldNormal = normalize(worldTangent * tangentNormal.x + worldBitangent * tangentNormal.y + worldNormal * tangentNormal.z);
   }
   if (dot(worldNormal, WorldRayDirection()) > 0.0f)
@@ -137,20 +206,20 @@ void main(inout xiiReflectionPayload payload, in BuiltInTriangleIntersectionAttr
   float  metallic  = saturate(material.SurfaceParameters.x);
   float  occlusion = 1.0f;
   if (hasTexCoord && material.TextureIndices0.x != 0xFFFFFFFFU)
-    baseColor *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+    baseColor *= max(xiiSampleRayTracingMaterialTexture(material.TextureIndices0.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
   if (hasTexCoord && material.TextureIndices0.z != 0xFFFFFFFFU)
   {
-    const float4 metallicRoughness = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.z)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f);
+    const float4 metallicRoughness = xiiSampleRayTracingMaterialTexture(material.TextureIndices0.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth);
     roughness *= metallicRoughness.g;
     metallic *= metallicRoughness.b;
   }
   if (hasTexCoord && material.TextureIndices0.w != 0xFFFFFFFFU)
   {
-    const float sampledOcclusion = g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.w)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).r;
+    const float sampledOcclusion = xiiSampleRayTracingMaterialTexture(material.TextureIndices0.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r;
     occlusion = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
   if (hasTexCoord && material.TextureIndices1.x != 0xFFFFFFFFU)
-    emissive *= max(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices1.x)].SampleLevel(g_sAnisotropicWrap, texCoord, 0.0f).rgb, 0.0f);
+    emissive *= max(xiiSampleRayTracingMaterialTexture(material.TextureIndices1.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
 
   const float  specular     = saturate(material.SurfaceParameters.y);
   const float3 dielectricF0 = (0.08f * specular).xxx;

@@ -122,6 +122,7 @@ StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry : register(t10)
 ByteAddressBuffer g_RayTracingBuffers[] : register(t11);
 Texture2D<float4> g_RayTracingTextures[] : register(t12);
 
+#include "Passes/RayTracing/RayTracingTextureSampling.h"
 #include <Shaders/Pipeline/SurfaceLighting.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
 
@@ -131,25 +132,6 @@ StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightSampling.h>
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
-
-float4 SampleRTGIMaterialTexture(uint textureIndex, float2 texCoord, float worldTriangleArea,
-                                 float uvTriangleArea, float rayConeWidth)
-{
-  const uint resourceIndex = NonUniformResourceIndex(textureIndex);
-  uint textureWidth;
-  uint textureHeight;
-  uint mipCount;
-  g_RayTracingTextures[resourceIndex].GetDimensions(0u, textureWidth, textureHeight, mipCount);
-
-  // Ratios of doubled triangle areas preserve UV-to-world texel density while
-  // avoiding two unnecessary 0.5 factors.
-  const float texelsPerWorldUnit = sqrt(max(uvTriangleArea * (float)(textureWidth * textureHeight) /
-                                                max(worldTriangleArea, 1e-12f),
-                                              1e-12f));
-  const float mipLevel = clamp(log2(max(rayConeWidth * texelsPerWorldUnit, 1.0f)),
-                               0.0f, (float)max(mipCount, 1u) - 1.0f);
-  return g_RayTracingTextures[resourceIndex].SampleLevel(g_sAnisotropicWrap, texCoord, mipLevel);
-}
 
 float TraceRTGIVisibility(float3 worldPosition, float3 worldNormal, float3 direction, float maximumDistance, uint bounceDepth)
 {
@@ -346,7 +328,7 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
     worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
     const float3 worldBitangent = cross(worldNormal, worldTangent) * (objectTangent.w < 0.0f ? -1.0f : 1.0f);
     const float3 tangentNormal = xiiDecodeRayTracingNormal(
-      SampleRTGIMaterialTexture(material.TextureIndices0.y, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth),
+      xiiSampleRayTracingMaterialTexture(material.TextureIndices0.y, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth),
       material.LayerParameters.y);
     worldNormal = normalize(worldTangent * tangentNormal.x + worldBitangent * tangentNormal.y + worldNormal * tangentNormal.z);
   }
@@ -362,30 +344,30 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
   float  clearCoatRoughness = saturate(material.LayerParameters.w);
   float  occlusion = 1.0f;
   if (hasTexCoord && material.TextureIndices0.x != 0xFFFFFFFFU)
-    baseColor *= max(SampleRTGIMaterialTexture(material.TextureIndices0.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
+    baseColor *= max(xiiSampleRayTracingMaterialTexture(material.TextureIndices0.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
   if (hasTexCoord && material.TextureIndices0.z != 0xFFFFFFFFU)
   {
-    const float4 metallicRoughness = SampleRTGIMaterialTexture(material.TextureIndices0.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth);
+    const float4 metallicRoughness = xiiSampleRayTracingMaterialTexture(material.TextureIndices0.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth);
     roughness *= metallicRoughness.g;
     metallic *= metallicRoughness.b;
   }
   if (hasTexCoord && material.TextureIndices0.w != 0xFFFFFFFFU)
   {
-    const float sampledOcclusion = SampleRTGIMaterialTexture(material.TextureIndices0.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r;
+    const float sampledOcclusion = xiiSampleRayTracingMaterialTexture(material.TextureIndices0.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r;
     occlusion = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
   if (hasTexCoord && material.TextureIndices1.x != 0xFFFFFFFFU)
-    emissive *= max(SampleRTGIMaterialTexture(material.TextureIndices1.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
+    emissive *= max(xiiSampleRayTracingMaterialTexture(material.TextureIndices1.x, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rgb, 0.0f);
   if ((payload.PathFlags & XII_RTGI_PATH_FLAG_PREVIOUS_EMISSIVE_NEE) != 0u)
     emissive = 0.0f;
   if (hasTexCoord && material.TextureIndices1.z != 0xFFFFFFFFU)
   {
-    const float2 coatSample = SampleRTGIMaterialTexture(material.TextureIndices1.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rg;
+    const float2 coatSample = xiiSampleRayTracingMaterialTexture(material.TextureIndices1.z, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).rg;
     clearCoat *= coatSample.r;
     clearCoatRoughness *= coatSample.g;
   }
   if (hasTexCoord && material.TextureIndices1.w != 0xFFFFFFFFU)
-    transmission *= saturate(SampleRTGIMaterialTexture(material.TextureIndices1.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r);
+    transmission *= saturate(xiiSampleRayTracingMaterialTexture(material.TextureIndices1.w, texCoord, worldTriangleArea, uvTriangleArea, rayConeWidth).r);
 
   roughness = max(roughness, 0.01f);
   clearCoatRoughness = max(clearCoatRoughness, 0.01f);
