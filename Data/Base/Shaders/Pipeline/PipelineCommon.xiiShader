@@ -51,7 +51,7 @@ cbuffer PerFrameGlobal : register(b2)
     uint4    g_ReSTIRDISettings;  // x=emissive visibility rays, y=binary visibility refresh period
     uint4    g_ReSTIRDIReuseSettings; // x=fresh candidates, y=history M, z=spatial neighbours, w=radius pixels
     float4   g_ReSTIRDIStabilitySettings; // x=emissive visibility history weight, y=reactive threshold
-    uint4    g_RTGISettings; // x=maximum near-field path surface hits
+    uint4    g_RTGISettings; // x=maximum near-field path surface hits, y=local-light samples per hit
 };
 
 // 

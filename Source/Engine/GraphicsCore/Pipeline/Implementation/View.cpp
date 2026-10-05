@@ -4102,6 +4102,7 @@ struct xiiRayTracedGlobalIlluminationData
   xiiRenderGraphTextureHandle                 m_hGBufferNormal;                  ///< ShaderResource in (G-Buffer normal).
   xiiRenderGraphTextureHandle                 m_hGBufferAlbedo;                  ///< ShaderResource in (surface albedo for diffuse bounce response).
   xiiRenderGraphTextureHandle                 m_hRayTracedRawGlobalIllumination; ///< UnorderedAccess out (raw RT GI texture).
+  xiiRenderGraphBufferHandle                  m_hLightingDataReady;
   xiiRenderGraphBufferHandle                  m_hSceneDependency;
   xiiRenderGraphBufferHandle                  m_hMaterialData;
   xiiRenderGraphBufferHandle                  m_hGeometryData;
@@ -4117,6 +4118,7 @@ void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationDat
   data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferAlbedo = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightingDataReady = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightingDataReady, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type                     = xiiGALResourceDimension::Texture2D;
@@ -4162,6 +4164,8 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
     {
       cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
       m_ViewPassResources->m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
+      m_ViewPassResources->m_LightingSystem.BindLightData(cmd, xiiGALShaderType::RayClosestHit);
+      m_ViewPassResources->m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::RayClosestHit);
       cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration | xiiGALShaderType::RayClosestHit);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
