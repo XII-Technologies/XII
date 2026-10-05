@@ -142,7 +142,37 @@ void SampleRTGILocalEmitter(xiiGpuLightData lightData, float3 worldPosition, ino
   samplePosition = GetRepresentativeLightPosition(lightData, worldPosition);
   projectedArea = 0.0f;
 
-  if (lightType == XII_LIGHT_TYPE_RECTANGLE)
+  if (lightType == XII_LIGHT_TYPE_POINT)
+  {
+    const float3 center = lightData.PositionAndInvRange.xyz;
+    const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
+    if (radius > 1e-4f)
+    {
+      const float3 centerToPoint = NormalizeAreaLightDirection(worldPosition - center, float3(0.0f, 0.0f, 1.0f));
+      float3 tangent;
+      float3 bitangent;
+      BuildAreaLightBasis(centerToPoint, tangent, bitangent);
+      const float diskRadius = sqrt(RTGIRandom01(randomState)) * radius;
+      const float diskAngle = RTGIRandom01(randomState) * 6.28318530718f;
+      const float2 diskSample = float2(cos(diskAngle), sin(diskAngle)) * diskRadius;
+      const float surfaceHeight = sqrt(max(radius * radius - dot(diskSample, diskSample), 0.0f));
+      samplePosition = center + tangent * diskSample.x + bitangent * diskSample.y + centerToPoint * surfaceHeight;
+    }
+  }
+  else if (lightType == XII_LIGHT_TYPE_SPOT)
+  {
+    const float radius = max(lightData.AttenuationAndSize.y, 0.0f);
+    if (radius > 1e-4f)
+    {
+      const float3 emitterNormal = normalize(lightData.DirectionAndType.xyz);
+      const float3 right = normalize(lightData.OrientationRightAndIES.xyz);
+      const float3 up = normalize(cross(right, emitterNormal));
+      const float diskRadius = sqrt(RTGIRandom01(randomState)) * radius;
+      const float diskAngle = RTGIRandom01(randomState) * 6.28318530718f;
+      samplePosition = lightData.PositionAndInvRange.xyz + right * (diskRadius * cos(diskAngle)) + up * (diskRadius * sin(diskAngle));
+    }
+  }
+  else if (lightType == XII_LIGHT_TYPE_RECTANGLE)
   {
     const float3 emitterNormal = normalize(lightData.DirectionAndType.xyz);
     const float3 right = normalize(lightData.OrientationRightAndIES.xyz);
@@ -322,8 +352,8 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
 
     const float3 directionToLight = normalize(-lightData.DirectionAndType.xyz);
     const float3 radiance = max(lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w, 0.0f);
-    const float visibility = TraceRTGIVisibility(hitPosition, worldNormal, directionToLight,
-      max(g_CameraForwardAndFarPlane.w, 10.0f), payload.BounceDepth);
+    const float visibility = lightData.ShadowData.x > 0.5f ?
+      TraceRTGIVisibility(hitPosition, worldNormal, directionToLight, max(g_CameraForwardAndFarPlane.w, 10.0f), payload.BounceDepth) : 1.0f;
     surfaceRadiance += BRDFLayered(baseColor, roughness, metallic, dielectricSpecular, transmission, clearCoat,
                                    clearCoatRoughness, worldNormal, directionToLight, viewDirection) * radiance * visibility;
   }
@@ -351,13 +381,18 @@ void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersec
         const float3 toEmitter = emitterPosition - hitPosition;
         const float distanceToEmitter = length(toEmitter);
         const float3 directionToEmitter = distanceToEmitter > 1e-4f ? toEmitter / distanceToEmitter : worldNormal;
-        const float visibility = dot(worldNormal, directionToEmitter) > 0.0f ?
-          TraceRTGIVisibility(hitPosition, worldNormal, directionToEmitter, max(distanceToEmitter - 0.004f, 0.001f), payload.BounceDepth) : 0.0f;
+        const float visibility = dot(worldNormal, directionToEmitter) <= 0.0f ? 0.0f :
+          (lightData.ShadowData.x > 0.5f ?
+             TraceRTGIVisibility(hitPosition, worldNormal, directionToEmitter, max(distanceToEmitter - 0.004f, 0.001f), payload.BounceDepth) : 1.0f);
+
+        xiiGpuLightData sampledLightData = lightData;
+        if (lightType == XII_LIGHT_TYPE_POINT || lightType == XII_LIGHT_TYPE_SPOT)
+          sampledLightData.PositionAndInvRange.xyz = emitterPosition;
 
         const float3 contribution = lightType >= XII_LIGHT_TYPE_RECTANGLE ?
           EvaluateAreaLightSample(lightData, emitterPosition, projectedArea, hitPosition, worldNormal, viewDirection, baseColor,
                                   roughness, metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness) :
-          EvaluateLocalLightLayered(lightData, hitPosition, worldNormal, viewDirection, baseColor, roughness, metallic,
+          EvaluateLocalLightLayered(sampledLightData, hitPosition, worldNormal, viewDirection, baseColor, roughness, metallic,
                                     dielectricSpecular, transmission, clearCoat, clearCoatRoughness);
         surfaceRadiance += contribution * visibility * sampleWeight;
       }
