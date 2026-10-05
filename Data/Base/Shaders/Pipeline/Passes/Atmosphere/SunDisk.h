@@ -20,19 +20,19 @@ float3 xiiEvaluateSunDiskRadiance(float3 viewDirection, float3 sunDirection, flo
   if (sourceRadius <= 1e-5f)
     return 0.0f;
 
-  const float cosTheta = dot(normalize(viewDirection), normalize(sunDirection));
+  const float cosTheta     = dot(normalize(viewDirection), normalize(sunDirection));
   const float cosHalfAngle = sqrt(max(1.0f - sourceRadius * sourceRadius, 0.0f));
   if (cosTheta <= cosHalfAngle)
     return 0.0f;
 
-  const float sinThetaSquared = max(1.0f - cosTheta * cosTheta, 0.0f);
+  const float sinThetaSquared        = max(1.0f - cosTheta * cosTheta, 0.0f);
   const float projectedRadiusSquared = saturate(sinThetaSquared / max(sourceRadius * sourceRadius, 1e-8f));
-  const float surfaceCosine = sqrt(max(1.0f - projectedRadiusSquared, 0.0f));
+  const float surfaceCosine          = sqrt(max(1.0f - projectedRadiusSquared, 0.0f));
 
-  const float u = saturate(limbDarkening);
-  const float limbProfile = (1.0f - u * (1.0f - surfaceCosine)) / max(1.0f - u / 3.0f, 1e-4f);
+  const float u                   = saturate(limbDarkening);
+  const float limbProfile         = (1.0f - u * (1.0f - surfaceCosine)) / max(1.0f - u / 3.0f, 1e-4f);
   const float projectedSolidAngle = 3.14159265359f * sourceRadius * sourceRadius;
 
   return max(solarIlluminance, 0.0f) * max(transmittance, 0.0f) * limbProfile /
-         max(projectedSolidAngle, 1e-6f);
+    max(projectedSolidAngle, 1e-6f);
 }

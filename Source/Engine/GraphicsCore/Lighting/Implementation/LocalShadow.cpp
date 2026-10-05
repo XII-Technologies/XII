@@ -146,8 +146,8 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
     candidate.m_uiFaceCount  = uiFaceCount;
     candidate.m_uiStableId   = light.m_Metadata.x;
 
-    const float fInfluenceRadius   = xiiMath::Max(xiiMath::Max(light.m_BoundsCenterAndRadius.w, light.m_AttenuationAndSize.x), 0.001f);
-    const float fDistanceSquared   = (light.m_BoundsCenterAndRadius.GetAsVec3() - vObserverPosition).GetLengthSquared();
+    const float fInfluenceRadius    = xiiMath::Max(xiiMath::Max(light.m_BoundsCenterAndRadius.w, light.m_AttenuationAndSize.x), 0.001f);
+    const float fDistanceSquared    = (light.m_BoundsCenterAndRadius.GetAsVec3() - vObserverPosition).GetLengthSquared();
     const float fProjectedInfluence = xiiMath::Square(fInfluenceRadius) / xiiMath::Max(fDistanceSquared, xiiMath::Square(fInfluenceRadius) * 0.25f + 1.0e-4f);
     const float fPhotometricWeight  = xiiMath::Log2(1.0f + xiiMath::Max(light.m_ColorAndIntensity.w, 0.0f));
     const float fPriority           = fProjectedInfluence * xiiMath::Max(fPhotometricWeight, 1.0f);
@@ -166,8 +166,8 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
   xiiUInt32 uiNextTile = 0U;
   for (const Candidate& candidate : candidates)
   {
-    const xiiUInt32        uiLight = candidate.m_uiLightIndex;
-    const xiiGpuLightData& light = lights[uiLight];
+    const xiiUInt32        uiLight     = candidate.m_uiLightIndex;
+    const xiiGpuLightData& light       = lights[uiLight];
     const auto             type        = static_cast<xiiLightingSystem::LightType>(light.m_Metadata.z);
     const xiiUInt32        uiFaceCount = candidate.m_uiFaceCount;
 

@@ -99,10 +99,10 @@ public:
   {
     xiiRenderGraphBufferHandle m_hParameterData;
     xiiRenderGraphBufferHandle m_hSurfaceData;
-    xiiUInt32                   m_uiSurfaceBaseIndex = 0U;
+    xiiUInt32                  m_uiSurfaceBaseIndex = 0U;
   };
 
-  [[nodiscard]] UploadHandles               AddUploadPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] UploadHandles              AddUploadPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
   [[nodiscard]] xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
 
 private:

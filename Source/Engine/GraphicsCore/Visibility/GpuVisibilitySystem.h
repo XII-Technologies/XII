@@ -114,11 +114,11 @@ struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityStreamingStats
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiRawRequestCount      = 0U;
-  xiiUInt32 m_uiUniqueRequestCount   = 0U;
-  xiiUInt32 m_uiOverflowRequestCount = 0U;
-  xiiUInt32 m_uiAcceptedRequestCount = 0U;
-  xiiUInt32 m_uiStaleRequestCount    = 0U;
+  xiiUInt32 m_uiRawRequestCount       = 0U;
+  xiiUInt32 m_uiUniqueRequestCount    = 0U;
+  xiiUInt32 m_uiOverflowRequestCount  = 0U;
+  xiiUInt32 m_uiAcceptedRequestCount  = 0U;
+  xiiUInt32 m_uiStaleRequestCount     = 0U;
   xiiUInt32 m_uiReadbackLatencyFrames = 0U;
 };
 

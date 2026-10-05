@@ -29,24 +29,25 @@ bool xiiShouldIgnoreRayTracingHitInternal(uint instanceIndex, uint primitiveInde
     }
 
     const float3 barycentrics = float3(1.0f - hitBarycentrics.x - hitBarycentrics.y, hitBarycentrics.x, hitBarycentrics.y);
-    const float2 texCoord0 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
-    const float2 texCoord1 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
-    const float2 texCoord2 = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
-    const float2 texCoord = texCoord0 * barycentrics.x + texCoord1 * barycentrics.y + texCoord2 * barycentrics.z;
+    const float2 texCoord0    = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
+    const float2 texCoord1    = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
+    const float2 texCoord2    = xiiLoadRayTracingTexCoord(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
+    const float2 texCoord     = texCoord0 * barycentrics.x + texCoord1 * barycentrics.y + texCoord2 * barycentrics.z;
 
     if (useRayCone)
     {
-      const float3 position0 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
-      const float3 position1 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
-      const float3 position2 = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
-      const float3 worldEdge0 = mul((float3x3)ObjectToWorld3x4(), position1 - position0);
-      const float3 worldEdge1 = mul((float3x3)ObjectToWorld3x4(), position2 - position0);
-      const float worldTriangleArea = length(cross(worldEdge0, worldEdge1));
-      const float2 uvEdge0 = texCoord1 - texCoord0;
-      const float2 uvEdge1 = texCoord2 - texCoord0;
-      const float uvTriangleArea = abs(uvEdge0.x * uvEdge1.y - uvEdge0.y * uvEdge1.x);
+      const float3 position0         = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.x);
+      const float3 position1         = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.y);
+      const float3 position2         = xiiLoadRayTracingPosition(g_RayTracingBuffers[vertexBufferIndex], geometry, indices.z);
+      const float3 worldEdge0        = mul((float3x3)ObjectToWorld3x4(), position1 - position0);
+      const float3 worldEdge1        = mul((float3x3)ObjectToWorld3x4(), position2 - position0);
+      const float  worldTriangleArea = length(cross(worldEdge0, worldEdge1));
+      const float2 uvEdge0           = texCoord1 - texCoord0;
+      const float2 uvEdge1           = texCoord2 - texCoord0;
+      const float  uvTriangleArea    = abs(uvEdge0.x * uvEdge1.y - uvEdge0.y * uvEdge1.x);
       alpha *= xiiSampleRayTracingMaterialTexture(material.TextureIndices0.x, texCoord, worldTriangleArea,
-                                                  uvTriangleArea, max(rayConeWidth, 1e-6f)).a;
+                                                  uvTriangleArea, max(rayConeWidth, 1e-6f))
+                 .a;
     }
     else
     {

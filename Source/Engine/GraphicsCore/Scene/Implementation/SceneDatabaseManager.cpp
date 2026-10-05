@@ -124,8 +124,8 @@ namespace
         // Assets authored before explicit routing flags existed used an empty feature mask. Keep
         // their legacy shadow behavior while new materials can opt individual paths out.
         const xiiBitflags<xiiMaterialFeatureFlags> routingFlags = xiiMaterialFeatureFlags::ReceivesLighting |
-                                                                    xiiMaterialFeatureFlags::CastsShadows |
-                                                                    xiiMaterialFeatureFlags::WritesVelocity;
+          xiiMaterialFeatureFlags::CastsShadows |
+          xiiMaterialFeatureFlags::WritesVelocity;
         if (runtimeState.m_FeatureFlags.IsAnySet(routingFlags))
         {
           flags.AddOrRemove(xiiSceneObjectFlags::CastShadows, runtimeState.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::CastsShadows));
@@ -248,8 +248,8 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       const xiiMaterialGpuHandle hGpuMaterial = xiiMaterialManager::AcquireMaterialResource(hMaterial);
 
       xiiSceneObjectDesc desc;
-      desc.m_LocalTransform  = renderData.m_GlobalTransform.GetAsMat4();
-      desc.m_Flags           = GetSceneFlags(renderData, hMaterial);
+      desc.m_LocalTransform   = renderData.m_GlobalTransform.GetAsMat4();
+      desc.m_Flags            = GetSceneFlags(renderData, hMaterial);
       desc.m_uiGeometryIndex  = hGeometry.m_uiIndex;
       desc.m_uiMaterialIndex  = hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex;
       desc.m_uiUserData       = renderData.m_uiUniqueID;

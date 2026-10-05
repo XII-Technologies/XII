@@ -1305,7 +1305,7 @@ void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
     xiiRenderGraphMergeGroup group;
     const PassEntry&         passEntry = m_Passes[compiledPass.m_uiPassIndex];
     bool                     bHasDepth = false;
-    auto AddAttachment = [&](const ResourceUsage& usage) {
+    auto                     AddAttachment = [&](const ResourceUsage& usage) {
       if (!usage.m_bIsTexture || !IsRTOrDepth(usage.m_RequiredState))
         return;
 

@@ -75,7 +75,7 @@ float GetLocalShadowFadeStrength(xiiGpuLightData lightData)
     return 1.0f;
 
   const float cameraDistance = length(g_CameraPositionAndNearPlane.xyz - lightData.PositionAndInvRange.xyz);
-  const float fadeWidth = max(fadeEnd * 0.2f, 0.01f);
+  const float fadeWidth      = max(fadeEnd * 0.2f, 0.01f);
   return 1.0f - smoothstep(max(fadeEnd - fadeWidth, 0.0f), fadeEnd, cameraDistance);
 }
 

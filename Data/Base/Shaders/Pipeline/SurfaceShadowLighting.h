@@ -19,8 +19,8 @@ uint SelectDirectionalShadowCascade(float linearDepth)
 float2 VogelDiskSample(uint sampleIndex, uint sampleCount, float rotation)
 {
   const float goldenAngle = 2.39996323f;
-  const float radius = sqrt((float(sampleIndex) + 0.5f) / max(float(sampleCount), 1.0f));
-  const float angle = float(sampleIndex) * goldenAngle + rotation;
+  const float radius      = sqrt((float(sampleIndex) + 0.5f) / max(float(sampleCount), 1.0f));
+  const float angle       = float(sampleIndex) * goldenAngle + rotation;
   return float2(cos(angle), sin(angle)) * radius;
 }
 
@@ -32,15 +32,15 @@ float StableShadowRotation(float2 shadowUV, uint atlasWidth)
 
 float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 N, float3 L)
 {
-  const float splitFar = max(CascadeSplitDepths[cascadeIndex], g_CameraPositionAndNearPlane.w);
-  const float NoL = saturate(dot(N, L));
-  const float normalBias = splitFar * lerp(0.00012f, 0.00045f, 1.0f - NoL);
+  const float  splitFar   = max(CascadeSplitDepths[cascadeIndex], g_CameraPositionAndNearPlane.w);
+  const float  NoL        = saturate(dot(N, L));
+  const float  normalBias = splitFar * lerp(0.00012f, 0.00045f, 1.0f - NoL);
   const float4 shadowClip = mul(CascadeViewProjection[cascadeIndex], float4(worldPos + N * normalBias, 1.0f));
   if (shadowClip.w <= 0.0f)
     return 1.0f;
 
   const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
-  const float2 shadowUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+  const float2 shadowUV  = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
   if (any(shadowUV <= 0.0f) || any(shadowUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
     return 1.0f;
 
@@ -48,9 +48,9 @@ float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 
   uint atlasHeight;
   uint atlasLayers;
   g_ShadowAtlas.GetDimensions(atlasWidth, atlasHeight, atlasLayers);
-  const float2 texelSize = rcp(float2(atlasWidth, atlasHeight));
-  const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.00065f, 1.0f - NoL);
-  float virtualVisibility;
+  const float2 texelSize     = rcp(float2(atlasWidth, atlasHeight));
+  const float  receiverDepth = shadowNdc.z + lerp(0.00008f, 0.00065f, 1.0f - NoL);
+  float        virtualVisibility;
   if (TrySampleVirtualDirectionalShadow(cascadeIndex, shadowUV, receiverDepth, virtualVisibility))
     return virtualVisibility;
 
@@ -69,19 +69,19 @@ float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 
     return visibility * (1.0f / 9.0f);
   }
 
-  const float worldUnitsPerTexel = max((2.0f * CascadeWorldRadii[cascadeIndex]) / float(atlasWidth), 1e-5f);
-  const float maxPenumbra = max(g_DirectionalShadowMaxPenumbra, 1.0f);
+  const float worldUnitsPerTexel  = max((2.0f * CascadeWorldRadii[cascadeIndex]) / float(atlasWidth), 1e-5f);
+  const float maxPenumbra         = max(g_DirectionalShadowMaxPenumbra, 1.0f);
   const float blockerSearchRadius = clamp(sourceRadius * splitFar / worldUnitsPerTexel, 1.0f, maxPenumbra);
-  const uint blockerSampleCount = clamp(g_DirectionalShadowBlockerSamples, 1u, 32u);
-  const uint filterSampleCount = clamp(g_DirectionalShadowFilterSamples, 1u, 32u);
-  const float rotation = StableShadowRotation(shadowUV, atlasWidth);
+  const uint  blockerSampleCount  = clamp(g_DirectionalShadowBlockerSamples, 1u, 32u);
+  const uint  filterSampleCount   = clamp(g_DirectionalShadowFilterSamples, 1u, 32u);
+  const float rotation            = StableShadowRotation(shadowUV, atlasWidth);
 
   float blockerDepthSum = 0.0f;
-  uint blockerCount = 0u;
+  uint  blockerCount    = 0u;
   [loop] for (uint sampleIndex = 0u; sampleIndex < blockerSampleCount; ++sampleIndex)
   {
-    const float2 offset = VogelDiskSample(sampleIndex, blockerSampleCount, rotation) * blockerSearchRadius * texelSize;
-    const float mapDepth = g_ShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + offset, cascadeIndex), 0.0f);
+    const float2 offset   = VogelDiskSample(sampleIndex, blockerSampleCount, rotation) * blockerSearchRadius * texelSize;
+    const float  mapDepth = g_ShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + offset, cascadeIndex), 0.0f);
     if (mapDepth > receiverDepth)
     {
       blockerDepthSum += mapDepth;
@@ -91,14 +91,14 @@ float SampleDirectionalShadowCascade(uint cascadeIndex, float3 worldPos, float3 
   if (blockerCount == 0u)
     return 1.0f;
 
-  const float averageBlockerDepth = blockerDepthSum / float(blockerCount);
+  const float averageBlockerDepth  = blockerDepthSum / float(blockerCount);
   const float normalizedSeparation = max(averageBlockerDepth - receiverDepth, 0.0f);
-  const float penumbraRadius = clamp(sourceRadius * normalizedSeparation * splitFar / worldUnitsPerTexel, 1.0f, maxPenumbra);
-  float visibility = 0.0f;
+  const float penumbraRadius       = clamp(sourceRadius * normalizedSeparation * splitFar / worldUnitsPerTexel, 1.0f, maxPenumbra);
+  float       visibility           = 0.0f;
   [loop] for (uint sampleIndex = 0u; sampleIndex < filterSampleCount; ++sampleIndex)
   {
-    const float2 offset = VogelDiskSample(sampleIndex, filterSampleCount, rotation) * penumbraRadius * texelSize;
-    const float mapDepth = g_ShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + offset, cascadeIndex), 0.0f);
+    const float2 offset   = VogelDiskSample(sampleIndex, filterSampleCount, rotation) * penumbraRadius * texelSize;
+    const float  mapDepth = g_ShadowAtlas.SampleLevel(PointClampSampler, float3(shadowUV + offset, cascadeIndex), 0.0f);
     visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
   }
   return visibility / float(filterSampleCount);
@@ -117,9 +117,9 @@ float EvaluateDirectionalShadow(float3 worldPos, float3 N, float3 L, float linea
   float visibility = SampleDirectionalShadowCascade(cascadeIndex, worldPos, N, L);
   if (cascadeIndex + 1u < cascadeCount)
   {
-    const float splitNear = cascadeIndex == 0u ? g_CameraPositionAndNearPlane.w : CascadeSplitDepths[cascadeIndex - 1u];
-    const float splitFar = CascadeSplitDepths[cascadeIndex];
-    const float blendStart = lerp(splitNear, splitFar, 0.9f);
+    const float splitNear   = cascadeIndex == 0u ? g_CameraPositionAndNearPlane.w : CascadeSplitDepths[cascadeIndex - 1u];
+    const float splitFar    = CascadeSplitDepths[cascadeIndex];
+    const float blendStart  = lerp(splitNear, splitFar, 0.9f);
     const float blendWeight = saturate((linearDepth - blendStart) / max(splitFar - blendStart, 1e-4f));
     if (blendWeight > 0.0f)
       visibility = lerp(visibility, SampleDirectionalShadowCascade(cascadeIndex + 1u, worldPos, N, L), blendWeight);
@@ -150,33 +150,33 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
   if (shadowData.Metadata.z == 0u || shadowData.Metadata.x == 0u)
     return 1.0f;
 
-  const uint faceIndex = SelectLocalShadowFace(shadowData, worldPos);
-  const float3 toLight = shadowData.LightPositionAndInvRange.xyz - worldPos;
-  const float distanceToLight = length(toLight);
-  const float3 L = distanceToLight > 1e-4f ? toLight / distanceToLight : -normalize(lightData.DirectionAndType.xyz);
-  const float NoL = saturate(dot(N, L));
-  const float lightRange = rcp(max(shadowData.LightPositionAndInvRange.w, 1e-6f));
-  const float worldUnitsPerTexel = lightRange / max(float(shadowData.Metadata.y), 1.0f);
-  const float normalBias = worldUnitsPerTexel * lerp(0.35f, 1.5f, 1.0f - NoL);
-  const float4 shadowClip = mul(shadowData.ViewProjection[faceIndex], float4(worldPos + N * normalBias, 1.0f));
+  const uint   faceIndex          = SelectLocalShadowFace(shadowData, worldPos);
+  const float3 toLight            = shadowData.LightPositionAndInvRange.xyz - worldPos;
+  const float  distanceToLight    = length(toLight);
+  const float3 L                  = distanceToLight > 1e-4f ? toLight / distanceToLight : -normalize(lightData.DirectionAndType.xyz);
+  const float  NoL                = saturate(dot(N, L));
+  const float  lightRange         = rcp(max(shadowData.LightPositionAndInvRange.w, 1e-6f));
+  const float  worldUnitsPerTexel = lightRange / max(float(shadowData.Metadata.y), 1.0f);
+  const float  normalBias         = worldUnitsPerTexel * lerp(0.35f, 1.5f, 1.0f - NoL);
+  const float4 shadowClip         = mul(shadowData.ViewProjection[faceIndex], float4(worldPos + N * normalBias, 1.0f));
   if (shadowClip.w <= 0.0f)
     return 1.0f;
 
   const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
-  const float2 localUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+  const float2 localUV   = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
   if (any(localUV <= 0.0f) || any(localUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
     return 1.0f;
 
   uint atlasWidth;
   uint atlasHeight;
   g_LocalShadowAtlas.GetDimensions(atlasWidth, atlasHeight);
-  const float2 atlasTexel = rcp(float2(atlasWidth, atlasHeight));
-  const float4 scaleBias = shadowData.AtlasScaleBias[faceIndex];
-  const float2 atlasUV = localUV * scaleBias.xy + scaleBias.zw;
-  const float2 tileMinimum = scaleBias.zw + atlasTexel * 1.5f;
-  const float2 tileMaximum = scaleBias.zw + scaleBias.xy - atlasTexel * 1.5f;
-  const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.0008f, 1.0f - NoL);
-  const float rotation = StableShadowRotation(atlasUV, atlasWidth);
+  const float2 atlasTexel    = rcp(float2(atlasWidth, atlasHeight));
+  const float4 scaleBias     = shadowData.AtlasScaleBias[faceIndex];
+  const float2 atlasUV       = localUV * scaleBias.xy + scaleBias.zw;
+  const float2 tileMinimum   = scaleBias.zw + atlasTexel * 1.5f;
+  const float2 tileMaximum   = scaleBias.zw + scaleBias.xy - atlasTexel * 1.5f;
+  const float  receiverDepth = shadowNdc.z + lerp(0.00008f, 0.0008f, 1.0f - NoL);
+  const float  rotation      = StableShadowRotation(atlasUV, atlasWidth);
 
   const float sourceRadius = max(lightData.AttenuationAndSize.y, 0.0f);
   if (sourceRadius <= 1e-5f)
@@ -184,22 +184,22 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
     float visibility = 0.0f;
     [unroll] for (uint sampleIndex = 0u; sampleIndex < 9u; ++sampleIndex)
     {
-      const float2 offset = VogelDiskSample(sampleIndex, 9u, rotation) * 1.5f * atlasTexel;
-      const float mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
+      const float2 offset   = VogelDiskSample(sampleIndex, 9u, rotation) * 1.5f * atlasTexel;
+      const float  mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
       visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
     }
     return lerp(1.0f, visibility / 9.0f, GetLocalShadowFadeStrength(lightData));
   }
 
   const float projectedSourceRadius = sourceRadius / max(distanceToLight, sourceRadius);
-  const float blockerSearchRadius = clamp(projectedSourceRadius * float(shadowData.Metadata.y), 1.0f, 24.0f);
-  const uint blockerSampleCount = clamp(g_DirectionalShadowBlockerSamples, 1u, 32u);
-  float blockerDepthSum = 0.0f;
-  uint blockerCount = 0u;
+  const float blockerSearchRadius   = clamp(projectedSourceRadius * float(shadowData.Metadata.y), 1.0f, 24.0f);
+  const uint  blockerSampleCount    = clamp(g_DirectionalShadowBlockerSamples, 1u, 32u);
+  float       blockerDepthSum       = 0.0f;
+  uint        blockerCount          = 0u;
   [loop] for (uint sampleIndex = 0u; sampleIndex < blockerSampleCount; ++sampleIndex)
   {
-    const float2 offset = VogelDiskSample(sampleIndex, blockerSampleCount, rotation) * blockerSearchRadius * atlasTexel;
-    const float mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
+    const float2 offset   = VogelDiskSample(sampleIndex, blockerSampleCount, rotation) * blockerSearchRadius * atlasTexel;
+    const float  mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
     if (mapDepth > receiverDepth)
     {
       blockerDepthSum += mapDepth;
@@ -210,14 +210,14 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
     return 1.0f;
 
   const float averageBlockerDepth = blockerDepthSum / float(blockerCount);
-  const float blockerSeparation = max(averageBlockerDepth - receiverDepth, 0.0f);
-  const float penumbraRadius = clamp(blockerSearchRadius * blockerSeparation / max(averageBlockerDepth, 1e-4f), 1.0f, 32.0f);
-  const uint filterSampleCount = clamp(g_DirectionalShadowFilterSamples, 1u, 32u);
-  float visibility = 0.0f;
+  const float blockerSeparation   = max(averageBlockerDepth - receiverDepth, 0.0f);
+  const float penumbraRadius      = clamp(blockerSearchRadius * blockerSeparation / max(averageBlockerDepth, 1e-4f), 1.0f, 32.0f);
+  const uint  filterSampleCount   = clamp(g_DirectionalShadowFilterSamples, 1u, 32u);
+  float       visibility          = 0.0f;
   [loop] for (uint sampleIndex = 0u; sampleIndex < filterSampleCount; ++sampleIndex)
   {
-    const float2 offset = VogelDiskSample(sampleIndex, filterSampleCount, rotation) * penumbraRadius * atlasTexel;
-    const float mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
+    const float2 offset   = VogelDiskSample(sampleIndex, filterSampleCount, rotation) * penumbraRadius * atlasTexel;
+    const float  mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
     visibility += receiverDepth >= mapDepth ? 1.0f : 0.0f;
   }
   return lerp(1.0f, visibility / float(filterSampleCount), GetLocalShadowFadeStrength(lightData));
@@ -228,7 +228,7 @@ float EvaluateLocalShadow(uint lightIndex, xiiGpuLightData lightData, float3 wor
 // classification fall back to EvaluateLocalShadow so soft-shadow quality is preserved.
 bool ValidateLocalShadowReuse(uint lightIndex, xiiGpuLightData lightData, float3 worldPos, float3 N, float cachedVisibility)
 {
-  const bool cachedLit = cachedVisibility >= (254.0f / 255.0f);
+  const bool cachedLit      = cachedVisibility >= (254.0f / 255.0f);
   const bool cachedOccluded = cachedVisibility <= (1.0f / 255.0f);
   if (!cachedLit && !cachedOccluded)
     return false;
@@ -246,47 +246,47 @@ bool ValidateLocalShadowReuse(uint lightIndex, xiiGpuLightData lightData, float3
   if (cachedOccluded && fadeStrength < (254.0f / 255.0f))
     return false;
 
-  const uint faceIndex = SelectLocalShadowFace(shadowData, worldPos);
-  const float3 toLight = shadowData.LightPositionAndInvRange.xyz - worldPos;
-  const float distanceToLight = length(toLight);
-  const float3 L = distanceToLight > 1e-4f ? toLight / distanceToLight : -normalize(lightData.DirectionAndType.xyz);
-  const float NoL = saturate(dot(N, L));
-  const float lightRange = rcp(max(shadowData.LightPositionAndInvRange.w, 1e-6f));
-  const float worldUnitsPerTexel = lightRange / max(float(shadowData.Metadata.y), 1.0f);
-  const float normalBias = worldUnitsPerTexel * lerp(0.35f, 1.5f, 1.0f - NoL);
-  const float4 shadowClip = mul(shadowData.ViewProjection[faceIndex], float4(worldPos + N * normalBias, 1.0f));
+  const uint   faceIndex          = SelectLocalShadowFace(shadowData, worldPos);
+  const float3 toLight            = shadowData.LightPositionAndInvRange.xyz - worldPos;
+  const float  distanceToLight    = length(toLight);
+  const float3 L                  = distanceToLight > 1e-4f ? toLight / distanceToLight : -normalize(lightData.DirectionAndType.xyz);
+  const float  NoL                = saturate(dot(N, L));
+  const float  lightRange         = rcp(max(shadowData.LightPositionAndInvRange.w, 1e-6f));
+  const float  worldUnitsPerTexel = lightRange / max(float(shadowData.Metadata.y), 1.0f);
+  const float  normalBias         = worldUnitsPerTexel * lerp(0.35f, 1.5f, 1.0f - NoL);
+  const float4 shadowClip         = mul(shadowData.ViewProjection[faceIndex], float4(worldPos + N * normalBias, 1.0f));
   if (shadowClip.w <= 0.0f)
     return cachedLit;
 
   const float3 shadowNdc = shadowClip.xyz / shadowClip.w;
-  const float2 localUV = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
+  const float2 localUV   = float2(shadowNdc.x * 0.5f + 0.5f, -shadowNdc.y * 0.5f + 0.5f);
   if (any(localUV <= 0.0f) || any(localUV >= 1.0f) || shadowNdc.z < 0.0f || shadowNdc.z > 1.0f)
     return cachedLit;
 
   uint atlasWidth;
   uint atlasHeight;
   g_LocalShadowAtlas.GetDimensions(atlasWidth, atlasHeight);
-  const float2 atlasTexel = rcp(float2(atlasWidth, atlasHeight));
-  const float4 scaleBias = shadowData.AtlasScaleBias[faceIndex];
-  const float2 atlasUV = localUV * scaleBias.xy + scaleBias.zw;
-  const float2 tileMinimum = scaleBias.zw + atlasTexel * 1.5f;
-  const float2 tileMaximum = scaleBias.zw + scaleBias.xy - atlasTexel * 1.5f;
-  const float receiverDepth = shadowNdc.z + lerp(0.00008f, 0.0008f, 1.0f - NoL);
-  const float centerDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, atlasUV, 0.0f);
-  const bool centerLit = receiverDepth >= centerDepth;
+  const float2 atlasTexel    = rcp(float2(atlasWidth, atlasHeight));
+  const float4 scaleBias     = shadowData.AtlasScaleBias[faceIndex];
+  const float2 atlasUV       = localUV * scaleBias.xy + scaleBias.zw;
+  const float2 tileMinimum   = scaleBias.zw + atlasTexel * 1.5f;
+  const float2 tileMaximum   = scaleBias.zw + scaleBias.xy - atlasTexel * 1.5f;
+  const float  receiverDepth = shadowNdc.z + lerp(0.00008f, 0.0008f, 1.0f - NoL);
+  const float  centerDepth   = g_LocalShadowAtlas.SampleLevel(PointClampSampler, atlasUV, 0.0f);
+  const bool   centerLit     = receiverDepth >= centerDepth;
   if (cachedOccluded)
     return !centerLit;
   if (!centerLit)
     return false;
 
-  const float sourceRadius = max(lightData.AttenuationAndSize.y, 0.0f);
+  const float sourceRadius     = max(lightData.AttenuationAndSize.y, 0.0f);
   const float validationRadius = sourceRadius <= 1e-5f ? 1.5f :
-    clamp(sourceRadius / max(distanceToLight, sourceRadius) * float(shadowData.Metadata.y), 1.0f, 24.0f);
-  const float rotation = StableShadowRotation(atlasUV, atlasWidth);
+                                                         clamp(sourceRadius / max(distanceToLight, sourceRadius) * float(shadowData.Metadata.y), 1.0f, 24.0f);
+  const float rotation         = StableShadowRotation(atlasUV, atlasWidth);
   [unroll] for (uint sampleIndex = 0u; sampleIndex < 4u; ++sampleIndex)
   {
-    const float2 offset = VogelDiskSample(sampleIndex, 4u, rotation) * validationRadius * atlasTexel;
-    const float mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
+    const float2 offset   = VogelDiskSample(sampleIndex, 4u, rotation) * validationRadius * atlasTexel;
+    const float  mapDepth = g_LocalShadowAtlas.SampleLevel(PointClampSampler, clamp(atlasUV + offset, tileMinimum, tileMaximum), 0.0f);
     if (receiverDepth < mapDepth)
       return false;
   }

@@ -51,9 +51,7 @@ namespace
       return xiiInvalidIndex;
 
     const xiiUInt32 uiTextureIndex = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(sName));
-    return uiTextureIndex != xiiInvalidIndex && uiTextureIndex < snapshot.m_ResourceBindings.GetCount()
-             ? snapshot.m_ResourceBindings[uiTextureIndex].m_uiBindlessIndex
-             : xiiInvalidIndex;
+    return uiTextureIndex != xiiInvalidIndex && uiTextureIndex < snapshot.m_ResourceBindings.GetCount() ? snapshot.m_ResourceBindings[uiTextureIndex].m_uiBindlessIndex : xiiInvalidIndex;
   }
 
   xiiGpuSurfaceMaterial ResolveSurfaceMaterial(const xiiMaterialInstance& material, const xiiMaterialInstanceSnapshot& snapshot)
@@ -66,7 +64,7 @@ namespace
     result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
     result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
     result.Metadata                  = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U,
-                                                 static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque));
+                                                  static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque));
     result.AdvancedParameters        = xiiVec4(0.0f, 1.5f, 0.0f, 0.5f);
 
     ResolveMaterialColor(material, "BaseColor", result.BaseColorOpacity, false);
@@ -86,7 +84,7 @@ namespace
     TryGetMaterialParameter(material, "SheenRoughness", result.AdvancedParameters.w);
 
     const xiiMaterialRuntimeState& runtimeState = snapshot.m_RuntimeState;
-    result.Metadata = xiiVec4U32(
+    result.Metadata                             = xiiVec4U32(
       runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(),
       static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()),
       runtimeState.m_BlendMode.GetValue());
@@ -415,9 +413,9 @@ xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiR
   pass.first->m_Batch    = std::move(batch);
   pass.first->m_pStorage = this;
   UploadHandles result;
-  result.m_hParameterData      = pass.first->m_hBuffer;
-  result.m_hSurfaceData        = pass.first->m_hSurfaceBuffer;
-  result.m_uiSurfaceBaseIndex  = GetSurfaceBaseIndex(uiFrameIndex);
+  result.m_hParameterData     = pass.first->m_hBuffer;
+  result.m_hSurfaceData       = pass.first->m_hSurfaceBuffer;
+  result.m_uiSurfaceBaseIndex = GetSurfaceBaseIndex(uiFrameIndex);
   return result;
 }
 

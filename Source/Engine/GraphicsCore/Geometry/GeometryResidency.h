@@ -155,7 +155,7 @@ public:
 
   /// Requests the finest required LOD. Concurrent view requests are merged toward the lowest
   /// LOD index and retain the strongest visibility priority until the missing range is resident.
-  static void RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority = 0U);
+  static void                            RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority = 0U);
   static void                            Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
   static void                            ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, xiiUInt64 uiUploadBudgetBytes);
 

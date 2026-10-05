@@ -49,8 +49,8 @@ public:
   [[nodiscard]] static xiiRenderGraphTextureHandle AddPass(xiiRenderGraph& graph, xiiStringView sName,
                                                            xiiRenderGraphTextureHandle hDepthAtlas, const xiiGpuVisibilityOutputs& visibility,
                                                            const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                           const xiiMaterialGpuStorage::UploadHandles& materials,
-                                                           const xiiGpuShadowRasterDescription& description);
+                                                           const xiiMaterialGpuStorage::UploadHandles&       materials,
+                                                           const xiiGpuShadowRasterDescription&              description);
 
   /// Culls and rasterizes every allocated local-light face into its atlas tile. All faces reuse a
   /// single frame-sliced visibility scratch set; graph versions serialize reuse without allocating

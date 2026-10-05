@@ -291,7 +291,7 @@ xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpu
   m_pCommandBuildPipeline         = LoadComputePipeline("Shaders/Visibility/GpuSceneCommandBuild.xiiShader");
   xiiGpuHiZPyramidDescription hiZDescription;
   hiZDescription.m_uiFramesInFlight = description.m_uiFramesInFlight;
-  const bool bHiZInitialized = m_HiZHistory.Initialize(pDevice, hiZDescription).Succeeded();
+  const bool bHiZInitialized        = m_HiZHistory.Initialize(pDevice, hiZDescription).Succeeded();
   return m_pInstanceCullPipeline != nullptr && m_pHiZOcclusionPipeline != nullptr && m_pMeshletDispatchBuildPipeline != nullptr && m_pMeshletCullPipeline != nullptr && m_pMeshletHiZCullPipeline != nullptr && m_pLodFeedbackClearPipeline != nullptr && m_pCommandBuildPipeline != nullptr && bHiZInitialized ? XII_SUCCESS : XII_FAILURE;
 }
 
@@ -344,10 +344,10 @@ xiiUInt32 xiiGpuVisibilitySystem::GetOrCreateVisibilitySetIndex(xiiStringView sN
     return xiiInvalidIndex;
   }
 
-  const auto viewDescription       = MakeBuffer(sizeof(xiiGpuVisibilityView), sizeof(xiiGpuVisibilityView), xiiGALBindFlags::ShaderResource);
-  const auto lodHistoryDescription = MakeBuffer(m_Description.m_uiMaxInstances * sizeof(xiiVec4U32), sizeof(xiiVec4U32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
-  const xiiUInt32 uiLodFeedbackBufferSize = (m_Description.m_uiLodFeedbackCapacity + 1U) * sizeof(xiiGpuLodFeedback);
-  const auto lodFeedbackDescription = MakeBuffer(uiLodFeedbackBufferSize, sizeof(xiiGpuLodFeedback), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
+  const auto                      viewDescription         = MakeBuffer(sizeof(xiiGpuVisibilityView), sizeof(xiiGpuVisibilityView), xiiGALBindFlags::ShaderResource);
+  const auto                      lodHistoryDescription   = MakeBuffer(m_Description.m_uiMaxInstances * sizeof(xiiVec4U32), sizeof(xiiVec4U32), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
+  const xiiUInt32                 uiLodFeedbackBufferSize = (m_Description.m_uiLodFeedbackCapacity + 1U) * sizeof(xiiGpuLodFeedback);
+  const auto                      lodFeedbackDescription  = MakeBuffer(uiLodFeedbackBufferSize, sizeof(xiiGpuLodFeedback), xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
   xiiGALBufferCreationDescription lodFeedbackReadbackDescription;
   lodFeedbackReadbackDescription.m_uiSize         = uiLodFeedbackBufferSize;
   lodFeedbackReadbackDescription.m_Usage          = xiiGALResourceUsage::Staging;
@@ -373,7 +373,7 @@ xiiUInt32 xiiGpuVisibilitySystem::GetOrCreateVisibilitySetIndex(xiiStringView sN
     debugName.SetFormat("{} GPU LOD History [{}]", sName, uiFrameSlot);
     m_pLodHistoryBuffers[uiResourceSlot]->SetDebugName(debugName);
 
-    m_pLodFeedbackBuffers[uiResourceSlot] = m_pDevice->CreateBuffer(lodFeedbackDescription);
+    m_pLodFeedbackBuffers[uiResourceSlot]         = m_pDevice->CreateBuffer(lodFeedbackDescription);
     m_pLodFeedbackReadbackBuffers[uiResourceSlot] = m_pDevice->CreateBuffer(lodFeedbackReadbackDescription);
     if (m_pLodFeedbackBuffers[uiResourceSlot] == nullptr || m_pLodFeedbackReadbackBuffers[uiResourceSlot] == nullptr)
       return xiiInvalidIndex;
@@ -395,7 +395,7 @@ void xiiGpuVisibilitySystem::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComp
     return;
 
   xiiGALCommandListCreationDescription commandListDescription;
-  commandListDescription.m_QueueFlags = xiiGALCommandQueueFlags::Transfer;
+  commandListDescription.m_QueueFlags          = xiiGALCommandQueueFlags::Transfer;
   xiiSharedPtr<xiiGALCommandList> pCommandList = m_pDevice->CreateCommandList(commandListDescription);
   if (pCommandList == nullptr)
     return;
@@ -427,9 +427,9 @@ void xiiGpuVisibilitySystem::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComp
       if (feedback.m_uiKey == 0U)
         continue;
 
-      const xiiUInt32 uiPackedKey     = feedback.m_uiKey - 1U;
-      const xiiUInt32 uiGeometryIndex = uiPackedKey & 0xFFFFFU;
-      const xiiUInt32 uiDesiredLod    = (uiPackedKey >> 20U) & 7U;
+      const xiiUInt32   uiPackedKey     = feedback.m_uiKey - 1U;
+      const xiiUInt32   uiGeometryIndex = uiPackedKey & 0xFFFFFU;
+      const xiiUInt32   uiDesiredLod    = (uiPackedKey >> 20U) & 7U;
       xiiGeometryHandle hGeometry;
       hGeometry.m_uiIndex      = uiGeometryIndex;
       hGeometry.m_uiGeneration = feedback.m_uiGeometryGeneration;
@@ -439,11 +439,12 @@ void xiiGpuVisibilitySystem::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComp
         continue;
       }
 
-      const xiiUInt32 uiMainOrSensorMask = XII_BIT(xiiGpuVisibilityPurpose::MainView) | XII_BIT(xiiGpuVisibilityPurpose::Sensor);
+      const xiiUInt32 uiMainOrSensorMask       = XII_BIT(xiiGpuVisibilityPurpose::MainView) | XII_BIT(xiiGpuVisibilityPurpose::Sensor);
       const xiiUInt32 uiReflectionOrEditorMask = XII_BIT(xiiGpuVisibilityPurpose::Reflection) | XII_BIT(xiiGpuVisibilityPurpose::Editor);
-      const xiiUInt32 uiPurposeTier = (feedback.m_uiPurposeMask & uiMainOrSensorMask) != 0U ? 3U :
-                                      (feedback.m_uiPurposeMask & uiReflectionOrEditorMask) != 0U ? 2U : 1U;
-      const xiiUInt32 uiPriority = (uiPurposeTier << 30U) | xiiMath::Min(feedback.m_uiPriority, 0x3FFFFFFFU);
+      const xiiUInt32 uiPurposeTier            = (feedback.m_uiPurposeMask & uiMainOrSensorMask) != 0U ? 3U :
+                   (feedback.m_uiPurposeMask & uiReflectionOrEditorMask) != 0U                         ? 2U :
+                                                                                                         1U;
+      const xiiUInt32 uiPriority               = (uiPurposeTier << 30U) | xiiMath::Min(feedback.m_uiPriority, 0x3FFFFFFFU);
       xiiGeometryResidencyManager::RequestResidency(hGeometry, uiDesiredLod, uiFeedbackFrame, uiPriority);
       ++m_StreamingStats.m_uiAcceptedRequestCount;
     }
@@ -502,15 +503,15 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
                     geometry.m_uiMaximumResidentMeshletCount, m_Description.m_uiMaxMeshletsPerGeometry);
     m_uiLargestReportedMeshletCount = geometry.m_uiMaximumResidentMeshletCount;
   }
-  const xiiStringView sResourceSetName    = description.m_sResourceSetName.IsEmpty() ? description.m_sName.GetView() : description.m_sResourceSetName.GetView();
+  const xiiStringView sResourceSetName     = description.m_sResourceSetName.IsEmpty() ? description.m_sName.GetView() : description.m_sResourceSetName.GetView();
   const xiiUInt32     uiFrameSlot          = static_cast<xiiUInt32>(uiFrameIndex % m_Description.m_uiFramesInFlight);
   const xiiUInt32     uiVisibilitySetIndex = GetOrCreateVisibilitySetIndex(sResourceSetName);
   XII_ASSERT_ALWAYS(uiVisibilitySetIndex != xiiInvalidIndex, "Failed to allocate GPU visibility resources for '{}'.", sResourceSetName);
-  const xiiUInt32 uiResourceSlot         = uiVisibilitySetIndex * m_Description.m_uiFramesInFlight + uiFrameSlot;
-  const xiiUInt32 uiPreviousFrameSlot    = (uiFrameSlot + m_Description.m_uiFramesInFlight - 1U) % m_Description.m_uiFramesInFlight;
-  const xiiUInt32 uiPreviousResourceSlot = uiVisibilitySetIndex * m_Description.m_uiFramesInFlight + uiPreviousFrameSlot;
-  const xiiBitflags<xiiGALCommandQueueFlags> computeQueue = description.m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
-  auto                                       makePassName       = [&description](xiiStringView sSuffix) {
+  const xiiUInt32                            uiResourceSlot         = uiVisibilitySetIndex * m_Description.m_uiFramesInFlight + uiFrameSlot;
+  const xiiUInt32                            uiPreviousFrameSlot    = (uiFrameSlot + m_Description.m_uiFramesInFlight - 1U) % m_Description.m_uiFramesInFlight;
+  const xiiUInt32                            uiPreviousResourceSlot = uiVisibilitySetIndex * m_Description.m_uiFramesInFlight + uiPreviousFrameSlot;
+  const xiiBitflags<xiiGALCommandQueueFlags> computeQueue           = description.m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
+  auto                                       makePassName           = [&description](xiiStringView sSuffix) {
     xiiStringBuilder name(description.m_sName);
     name.Append(sSuffix);
     return name;
@@ -598,10 +599,10 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
   viewUpload.first->m_View.m_uiGeometryBaseIndex  = geometry.m_uiGeometryBaseIndex;
   viewUpload.first->m_View.m_uiMaxVisibleMeshlets = description.m_uiMaxVisibleMeshlets == 0U ? m_Description.m_uiMaxVisibleMeshlets : xiiMath::Min(description.m_uiMaxVisibleMeshlets, m_Description.m_uiMaxVisibleMeshlets);
   viewUpload.first->m_View.m_ViewportAndHiZ.y *= xiiMath::Max(description.m_fLodScreenScale, 0.001f);
-  constexpr xiiUInt32 uiLodHistoryTokenPeriod  = 65535U;
+  constexpr xiiUInt32 uiLodHistoryTokenPeriod   = 65535U;
   const xiiUInt32     uiCurrentLodHistoryToken  = static_cast<xiiUInt32>(uiFrameIndex % uiLodHistoryTokenPeriod);
   const xiiUInt32     uiPreviousLodHistoryToken = (uiCurrentLodHistoryToken + uiLodHistoryTokenPeriod - 1U) % uiLodHistoryTokenPeriod;
-  viewUpload.first->m_View.m_LodParameters = xiiVec4(
+  viewUpload.first->m_View.m_LodParameters      = xiiVec4(
     xiiMath::Clamp(description.m_fLodHysteresis, 0.0f, 0.49f),
     static_cast<float>(uiCurrentLodHistoryToken),
     static_cast<float>(uiPreviousLodHistoryToken),
@@ -719,7 +720,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
   meshletDispatchBuild.first->m_uiMaxMeshletGroups = uiMeshletGroupCount;
 
   xiiRenderGraphBufferHandle hLodFeedback;
-  const bool bClearLodFeedback = description.m_bEnableLodFeedback && m_LodFeedbackClearFrames[uiResourceSlot] != uiFrameIndex;
+  const bool                 bClearLodFeedback = description.m_bEnableLodFeedback && m_LodFeedbackClearFrames[uiResourceSlot] != uiFrameIndex;
   if (bClearLodFeedback)
   {
     auto clearLodFeedback = graph.AddPass<LodFeedbackClearPassData>(
@@ -734,14 +735,14 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
         cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
         cmd.DispatchCompute({(data.m_uiEntryCount + 63U) / 64U, 1U, 1U});
       });
-    clearLodFeedback.first->m_pPipeline   = m_pLodFeedbackClearPipeline;
-    clearLodFeedback.first->m_uiEntryCount = m_Description.m_uiLodFeedbackCapacity + 1U;
-    hLodFeedback = clearLodFeedback.first->m_hFeedback;
+    clearLodFeedback.first->m_pPipeline      = m_pLodFeedbackClearPipeline;
+    clearLodFeedback.first->m_uiEntryCount   = m_Description.m_uiLodFeedbackCapacity + 1U;
+    hLodFeedback                             = clearLodFeedback.first->m_hFeedback;
     m_LodFeedbackClearFrames[uiResourceSlot] = uiFrameIndex;
   }
 
   const bool bUseMeshletHiZ = hHiZ.IsValid();
-  auto meshletCull = graph.AddPass<MeshletCullPassData>(
+  auto       meshletCull    = graph.AddPass<MeshletCullPassData>(
     makePassName(bUseMeshletHiZ ? " GPU Meshlet Hi-Z Culling" : " GPU Meshlet Culling"), computeQueue,
     [&, hLodFeedback](MeshletCullPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hScene                = builder.ReadBuffer(instanceCull.first->m_hScene, xiiGALResourceStateFlags::ShaderResource);
@@ -751,10 +752,10 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
       data.m_hVisibleInstances     = builder.ReadBuffer(hVisibleInstances, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVisibleInstanceCount = builder.ReadBuffer(hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
       data.m_hDispatchArguments    = builder.ReadBuffer(meshletDispatchBuild.first->m_hDispatchArguments, xiiGALResourceStateFlags::IndirectArgument);
-      data.m_hPreviousLodHistory   = builder.ReadBuffer(builder.ImportBuffer(makeResourceName(" GPU Previous LOD History"), m_pLodHistoryBuffers[uiPreviousResourceSlot], m_pLodHistoryBuffers[uiPreviousResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
-      data.m_hCurrentLodHistory    = builder.WriteBuffer(builder.ImportBuffer(makeResourceName(" GPU Current LOD History"), m_pLodHistoryBuffers[uiResourceSlot], m_pLodHistoryBuffers[uiResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hPreviousLodHistory                 = builder.ReadBuffer(builder.ImportBuffer(makeResourceName(" GPU Previous LOD History"), m_pLodHistoryBuffers[uiPreviousResourceSlot], m_pLodHistoryBuffers[uiPreviousResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+      data.m_hCurrentLodHistory                  = builder.WriteBuffer(builder.ImportBuffer(makeResourceName(" GPU Current LOD History"), m_pLodHistoryBuffers[uiResourceSlot], m_pLodHistoryBuffers[uiResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
       const xiiRenderGraphBufferHandle hFeedback = hLodFeedback.IsValid() ? hLodFeedback : builder.ImportBuffer(makeResourceName(" GPU LOD Feedback"), m_pLodFeedbackBuffers[uiResourceSlot], m_pLodFeedbackBuffers[uiResourceSlot]->GetResourceState());
-      data.m_hLodFeedback          = builder.ReadWriteBuffer(hFeedback, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hLodFeedback                        = builder.ReadWriteBuffer(hFeedback, xiiGALResourceStateFlags::UnorderedAccess);
       if (bUseMeshletHiZ)
         data.m_hHiZ = builder.ReadTexture(hHiZ, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVisibleMeshlets      = builder.WriteBuffer(makeResourceName(" GPU Visible Meshlets"), meshletDesc, xiiGALResourceStateFlags::UnorderedAccess);

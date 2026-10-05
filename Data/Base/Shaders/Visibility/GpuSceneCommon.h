@@ -92,7 +92,7 @@ uint SelectDesiredLod(GpuGeometryRecord geometry, float worldSpaceRadius, float 
     return 0xFFFFFFFFu;
 
   const float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);
-  const uint lodCount = min(geometry.LodCount, 8u);
+  const uint  lodCount          = min(geometry.LodCount, 8u);
   [unroll] for (uint lod = 0u; lod < lodCount; ++lod)
   {
     if (projectedCoverage >= geometry.Lods[lod].MinimumScreenCoverage)
@@ -123,17 +123,17 @@ uint SelectResidentLodWithHistory(GpuGeometryRecord geometry, float worldSpaceRa
   if (desiredLod == 0xFFFFFFFFu)
     return desiredLod;
 
-  const uint previousLod = previousHistory.x;
+  const uint previousLod    = previousHistory.x;
   const bool historyMatches = previousHistory.w == previousHistoryToken &&
-                              previousHistory.y == geometry.Generation &&
-                              previousHistory.z == instanceUserData &&
-                              previousLod < min(geometry.LodCount, 8u) &&
-                              (geometry.ResidentLodMask & (1u << previousLod)) != 0u;
+    previousHistory.y == geometry.Generation &&
+    previousHistory.z == instanceUserData &&
+    previousLod < min(geometry.LodCount, 8u) &&
+    (geometry.ResidentLodMask & (1u << previousLod)) != 0u;
   if (!historyMatches || previousLod == desiredLod)
     return desiredLod;
 
   const float projectedCoverage = worldSpaceRadius * viewportHeight / max(distanceToCamera, 0.001f);
-  const float deadBand = clamp(hysteresis, 0.0f, 0.49f);
+  const float deadBand          = clamp(hysteresis, 0.0f, 0.49f);
   if (desiredLod < previousLod)
   {
     // Promote only after crossing above the finer LOD threshold plus a dead band.

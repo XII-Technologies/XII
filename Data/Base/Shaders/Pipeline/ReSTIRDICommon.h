@@ -5,22 +5,22 @@
 
 #include "LightingData.h"
 #include "PhotometricLightSampling.h"
-#include <Shaders/Pipeline/SurfaceLighting.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+#include <Shaders/Pipeline/SurfaceLighting.h>
 
 StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles;
 StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
 
 static const uint XII_RESTIR_INVALID_LIGHT = 0xFFFFFFFFu;
-static const uint XII_RESTIR_EMISSIVE_BIT  = 0x80000000u;
-static const uint XII_RESTIR_SAMPLE_MASK   = 0x7FFFFFFFu;
+static const uint XII_RESTIR_EMISSIVE_BIT         = 0x80000000u;
+static const uint XII_RESTIR_SAMPLE_MASK          = 0x7FFFFFFFu;
 static const uint XII_RESTIR_MAX_M         = 32u;
-static const uint XII_RESTIR_M_BITS        = 6u;
-static const uint XII_RESTIR_M_MASK        = (1u << XII_RESTIR_M_BITS) - 1u;
-static const uint XII_RESTIR_REVISION_MASK = 0xFFFFu;
-static const uint XII_RESTIR_REVISION_SHIFT = XII_RESTIR_M_BITS;
-static const uint XII_RESTIR_VISIBILITY_SHIFT = XII_RESTIR_REVISION_SHIFT + 16u;
-static const uint XII_RESTIR_VISIBILITY_MASK = 0xFFu;
+static const uint XII_RESTIR_M_BITS               = 6u;
+static const uint XII_RESTIR_M_MASK               = (1u << XII_RESTIR_M_BITS) - 1u;
+static const uint XII_RESTIR_REVISION_MASK        = 0xFFFFu;
+static const uint XII_RESTIR_REVISION_SHIFT       = XII_RESTIR_M_BITS;
+static const uint XII_RESTIR_VISIBILITY_SHIFT     = XII_RESTIR_REVISION_SHIFT + 16u;
+static const uint XII_RESTIR_VISIBILITY_MASK      = 0xFFu;
 static const uint XII_RESTIR_VISIBILITY_VALID_BIT = 1u << 30u;
 
 struct xiiReSTIRDIReservoir
@@ -46,11 +46,11 @@ struct xiiReSTIRDISurface
 xiiReSTIRDISurface ReSTIRMakeSurface(float3 albedo, float roughness, float metallic, float dielectricSpecular, float transmission)
 {
   xiiReSTIRDISurface surface;
-  surface.Albedo = max(albedo, 0.0f);
-  surface.Roughness = clamp(roughness, 0.01f, 1.0f);
-  surface.Metallic = saturate(metallic);
+  surface.Albedo             = max(albedo, 0.0f);
+  surface.Roughness          = clamp(roughness, 0.01f, 1.0f);
+  surface.Metallic           = saturate(metallic);
   surface.DielectricSpecular = saturate(dielectricSpecular);
-  surface.Transmission = saturate(transmission);
+  surface.Transmission       = saturate(transmission);
   return surface;
 }
 
@@ -73,12 +73,12 @@ float ReSTIRRandom01(inout uint state)
 xiiReSTIRDIReservoir ReSTIREmptyReservoir()
 {
   xiiReSTIRDIReservoir reservoir;
-  reservoir.SampleIndex   = XII_RESTIR_INVALID_LIGHT;
+  reservoir.SampleIndex     = XII_RESTIR_INVALID_LIGHT;
   reservoir.StableLightId = 0u;
   reservoir.WeightSum     = 0.0f;
   reservoir.M             = 0u;
-  reservoir.SampleRevision = 0u;
-  reservoir.Visibility     = 1.0f;
+  reservoir.SampleRevision  = 0u;
+  reservoir.Visibility      = 1.0f;
   reservoir.VisibilityValid = 0u;
   return reservoir;
 }
@@ -114,12 +114,12 @@ bool ReSTIRValidateReservoir(xiiReSTIRDIReservoir reservoir)
 xiiReSTIRDIReservoir ReSTIRUnpackReservoir(uint4 packedReservoir)
 {
   xiiReSTIRDIReservoir reservoir;
-  reservoir.SampleIndex   = packedReservoir.x;
+  reservoir.SampleIndex     = packedReservoir.x;
   reservoir.StableLightId = packedReservoir.y;
   reservoir.WeightSum     = asfloat(packedReservoir.z);
-  reservoir.M             = packedReservoir.w & XII_RESTIR_M_MASK;
-  reservoir.SampleRevision = (packedReservoir.w >> XII_RESTIR_REVISION_SHIFT) & XII_RESTIR_REVISION_MASK;
-  reservoir.Visibility     = (float)((packedReservoir.w >> XII_RESTIR_VISIBILITY_SHIFT) & XII_RESTIR_VISIBILITY_MASK) * (1.0f / 255.0f);
+  reservoir.M               = packedReservoir.w & XII_RESTIR_M_MASK;
+  reservoir.SampleRevision  = (packedReservoir.w >> XII_RESTIR_REVISION_SHIFT) & XII_RESTIR_REVISION_MASK;
+  reservoir.Visibility      = (float)((packedReservoir.w >> XII_RESTIR_VISIBILITY_SHIFT) & XII_RESTIR_VISIBILITY_MASK) * (1.0f / 255.0f);
   reservoir.VisibilityValid = (packedReservoir.w & XII_RESTIR_VISIBILITY_VALID_BIT) != 0u ? 1u : 0u;
   return reservoir;
 }
@@ -127,7 +127,7 @@ xiiReSTIRDIReservoir ReSTIRUnpackReservoir(uint4 packedReservoir)
 uint4 ReSTIRPackReservoir(xiiReSTIRDIReservoir reservoir)
 {
   const uint quantizedVisibility = (uint)round(saturate(reservoir.Visibility) * 255.0f);
-  const uint packedMetadata = (reservoir.M & XII_RESTIR_M_MASK) |
+  const uint packedMetadata      = (reservoir.M & XII_RESTIR_M_MASK) |
     ((reservoir.SampleRevision & XII_RESTIR_REVISION_MASK) << XII_RESTIR_REVISION_SHIFT) |
     ((quantizedVisibility & XII_RESTIR_VISIBILITY_MASK) << XII_RESTIR_VISIBILITY_SHIFT) |
     (reservoir.VisibilityValid != 0u ? XII_RESTIR_VISIBILITY_VALID_BIT : 0u);
@@ -148,10 +148,10 @@ void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleInde
   reservoir.WeightSum += candidateWeight;
   if (ReSTIRRandom01(randomState) * reservoir.WeightSum <= candidateWeight)
   {
-    reservoir.SampleIndex   = sampleIndex;
+    reservoir.SampleIndex     = sampleIndex;
     reservoir.StableLightId = stableLightId;
-    reservoir.SampleRevision = sampleRevision & XII_RESTIR_REVISION_MASK;
-    reservoir.Visibility     = saturate(candidateVisibility);
+    reservoir.SampleRevision  = sampleRevision & XII_RESTIR_REVISION_MASK;
+    reservoir.Visibility      = saturate(candidateVisibility);
     reservoir.VisibilityValid = candidateVisibilityValid != 0u ? 1u : 0u;
   }
 }
@@ -164,8 +164,8 @@ float ReSTIRContributionLuminance(float3 contribution)
 
 float3 ReSTIRGetViewDirection(float3 worldPosition, float3 normal)
 {
-  const float3 toCamera = g_CameraPositionAndNearPlane.xyz - worldPosition;
-  const float distanceToCamera = length(toCamera);
+  const float3 toCamera         = g_CameraPositionAndNearPlane.xyz - worldPosition;
+  const float  distanceToCamera = length(toCamera);
   return distanceToCamera > 1e-5f ? toCamera / distanceToCamera : normal;
 }
 
@@ -175,7 +175,7 @@ float3 ReSTIRGetViewDirection(float3 worldPosition, float3 normal)
 float ReSTIREstimateTarget(xiiGpuLightData lightData, float3 worldPosition, float3 normal, xiiReSTIRDISurface surface)
 {
   const float3 viewDirection = ReSTIRGetViewDirection(worldPosition, normal);
-  const float3 contribution = EvaluateLocalLightLayered(
+  const float3 contribution  = EvaluateLocalLightLayered(
     lightData, worldPosition, normal, viewDirection, surface.Albedo, surface.Roughness, surface.Metallic,
     surface.DielectricSpecular, surface.Transmission, 0.0f, 0.1f);
   return ReSTIRContributionLuminance(contribution);
@@ -192,15 +192,15 @@ uint ReSTIRGetEmissiveTriangleCount()
 
 float ReSTIREmissiveSolidAngle(xiiGpuEmissiveTriangle emissiveTriangle, float3 worldPosition, out float3 directionToLight)
 {
-  const float3 d0 = emissiveTriangle.Position0AndArea.xyz - worldPosition;
-  const float3 d1 = emissiveTriangle.Position1AndPowerWeight.xyz - worldPosition;
-  const float3 d2 = emissiveTriangle.Position2AndInvArea.xyz - worldPosition;
-  const float l0 = length(d0);
-  const float l1 = length(d1);
-  const float l2 = length(d2);
+  const float3 d0                = emissiveTriangle.Position0AndArea.xyz - worldPosition;
+  const float3 d1                = emissiveTriangle.Position1AndPowerWeight.xyz - worldPosition;
+  const float3 d2                = emissiveTriangle.Position2AndInvArea.xyz - worldPosition;
+  const float  l0                = length(d0);
+  const float  l1                = length(d1);
+  const float  l2                = length(d2);
   const float3 centroidDirection = (emissiveTriangle.Position0AndArea.xyz + emissiveTriangle.Position1AndPowerWeight.xyz + emissiveTriangle.Position2AndInvArea.xyz) / 3.0f - worldPosition;
-  const float centroidDistance = length(centroidDirection);
-  directionToLight = centroidDistance > 1e-5f ? centroidDirection / centroidDistance : emissiveTriangle.NormalAndTwoSided.xyz;
+  const float  centroidDistance  = length(centroidDirection);
+  directionToLight               = centroidDistance > 1e-5f ? centroidDirection / centroidDistance : emissiveTriangle.NormalAndTwoSided.xyz;
   if (min(l0, min(l1, l2)) <= 1e-5f)
     return 0.0f;
 
@@ -208,22 +208,23 @@ float ReSTIREmissiveSolidAngle(xiiGpuEmissiveTriangle emissiveTriangle, float3 w
   if (emissiveTriangle.NormalAndTwoSided.w < 0.5f && emitterCosine <= 0.0f)
     return 0.0f;
 
-  const float3 a = d0 / l0;
-  const float3 b = d1 / l1;
-  const float3 c = d2 / l2;
-  const float numerator = abs(dot(a, cross(b, c)));
-  const float denominator = 1.0f + dot(a, b) + dot(b, c) + dot(c, a);
+  const float3 a           = d0 / l0;
+  const float3 b           = d1 / l1;
+  const float3 c           = d2 / l2;
+  const float  numerator   = abs(dot(a, cross(b, c)));
+  const float  denominator = 1.0f + dot(a, b) + dot(b, c) + dot(c, a);
   return 2.0f * atan2(numerator, denominator);
 }
 
 float ReSTIREstimateEmissiveTarget(xiiGpuEmissiveTriangle emissiveTriangle, float3 worldPosition, float3 normal, xiiReSTIRDISurface surface)
 {
-  float3 directionToLight;
-  const float solidAngle = ReSTIREmissiveSolidAngle(emissiveTriangle, worldPosition, directionToLight);
+  float3       directionToLight;
+  const float  solidAngle    = ReSTIREmissiveSolidAngle(emissiveTriangle, worldPosition, directionToLight);
   const float3 viewDirection = ReSTIRGetViewDirection(worldPosition, normal);
-  const float3 contribution = BRDFLayered(
-    surface.Albedo, surface.Roughness, surface.Metallic, surface.DielectricSpecular, surface.Transmission,
-    0.0f, 0.1f, normal, directionToLight, viewDirection) * emissiveTriangle.RadianceAndLuminance.rgb * solidAngle;
+  const float3 contribution  = BRDFLayered(
+                                surface.Albedo, surface.Roughness, surface.Metallic, surface.DielectricSpecular, surface.Transmission,
+                                0.0f, 0.1f, normal, directionToLight, viewDirection) *
+    emissiveTriangle.RadianceAndLuminance.rgb * solidAngle;
   return ReSTIRContributionLuminance(contribution);
 }
 

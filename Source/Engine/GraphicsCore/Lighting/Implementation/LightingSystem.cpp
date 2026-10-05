@@ -159,96 +159,96 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
   switch (m_Settings.m_ReSTIRDIQualityPreset.GetValue())
   {
     case xiiReSTIRDIQualityPreset::Integrated:
-      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 1U;
-      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 4U;
-      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.90f;
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples          = 1U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 4U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.90f;
       m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.50f;
-      m_Settings.m_uiReSTIRDIFreshCandidateCount          = 4U;
-      m_Settings.m_uiReSTIRDITemporalHistoryM             = 8U;
-      m_Settings.m_uiReSTIRDISpatialNeighborCount         = 2U;
-      m_Settings.m_uiReSTIRDISpatialRadius                = 1U;
-      m_Settings.m_uiRTGIMaxPathHits                      = 1U;
-      m_Settings.m_uiRTGILocalLightSamples                = 1U;
-      m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
-      m_Settings.m_uiRTReflectionMaxPathHits              = 1U;
-      m_Settings.m_fRTReflectionHistoryWeight             = 0.96f;
-      m_Settings.m_fRTReflectionMomentsHistoryWeight      = 0.97f;
-      m_Settings.m_fRTReflectionConfidenceDecay           = 0.95f;
-      m_Settings.m_fRTReflectionSpatialWeight             = 0.55f;
-      m_Settings.m_fRTReflectionDepthThreshold            = 0.025f;
-      m_Settings.m_fRTReflectionNormalThreshold           = 0.92f;
-      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold = 0.12f;
-      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold = 0.10f;
-      m_Settings.m_fRTReflectionVarianceGamma             = 3.0f;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount                = 4U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM                   = 8U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount               = 2U;
+      m_Settings.m_uiReSTIRDISpatialRadius                      = 1U;
+      m_Settings.m_uiRTGIMaxPathHits                            = 1U;
+      m_Settings.m_uiRTGILocalLightSamples                      = 1U;
+      m_Settings.m_uiRTGIEmissiveLightSamples                   = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits                    = 1U;
+      m_Settings.m_fRTReflectionHistoryWeight                   = 0.96f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight            = 0.97f;
+      m_Settings.m_fRTReflectionConfidenceDecay                 = 0.95f;
+      m_Settings.m_fRTReflectionSpatialWeight                   = 0.55f;
+      m_Settings.m_fRTReflectionDepthThreshold                  = 0.025f;
+      m_Settings.m_fRTReflectionNormalThreshold                 = 0.92f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold    = 0.12f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.10f;
+      m_Settings.m_fRTReflectionVarianceGamma                   = 3.0f;
       break;
     case xiiReSTIRDIQualityPreset::Balanced:
-      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 2U;
-      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 3U;
-      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.85f;
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples          = 2U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 3U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.85f;
       m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.40f;
-      m_Settings.m_uiReSTIRDIFreshCandidateCount          = 6U;
-      m_Settings.m_uiReSTIRDITemporalHistoryM             = 12U;
-      m_Settings.m_uiReSTIRDISpatialNeighborCount         = 3U;
-      m_Settings.m_uiReSTIRDISpatialRadius                = 2U;
-      m_Settings.m_uiRTGIMaxPathHits                      = 1U;
-      m_Settings.m_uiRTGILocalLightSamples                = 1U;
-      m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
-      m_Settings.m_uiRTReflectionMaxPathHits              = 1U;
-      m_Settings.m_fRTReflectionHistoryWeight             = 0.94f;
-      m_Settings.m_fRTReflectionMomentsHistoryWeight      = 0.96f;
-      m_Settings.m_fRTReflectionConfidenceDecay           = 0.96f;
-      m_Settings.m_fRTReflectionSpatialWeight             = 0.45f;
-      m_Settings.m_fRTReflectionDepthThreshold            = 0.022f;
-      m_Settings.m_fRTReflectionNormalThreshold           = 0.94f;
-      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold = 0.10f;
-      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold = 0.075f;
-      m_Settings.m_fRTReflectionVarianceGamma             = 2.75f;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount                = 6U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM                   = 12U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount               = 3U;
+      m_Settings.m_uiReSTIRDISpatialRadius                      = 2U;
+      m_Settings.m_uiRTGIMaxPathHits                            = 1U;
+      m_Settings.m_uiRTGILocalLightSamples                      = 1U;
+      m_Settings.m_uiRTGIEmissiveLightSamples                   = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits                    = 1U;
+      m_Settings.m_fRTReflectionHistoryWeight                   = 0.94f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight            = 0.96f;
+      m_Settings.m_fRTReflectionConfidenceDecay                 = 0.96f;
+      m_Settings.m_fRTReflectionSpatialWeight                   = 0.45f;
+      m_Settings.m_fRTReflectionDepthThreshold                  = 0.022f;
+      m_Settings.m_fRTReflectionNormalThreshold                 = 0.94f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold    = 0.10f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.075f;
+      m_Settings.m_fRTReflectionVarianceGamma                   = 2.75f;
       break;
     case xiiReSTIRDIQualityPreset::High:
-      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 4U;
-      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 2U;
-      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.75f;
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples          = 4U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 2U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.75f;
       m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.35f;
-      m_Settings.m_uiReSTIRDIFreshCandidateCount          = 8U;
-      m_Settings.m_uiReSTIRDITemporalHistoryM             = 20U;
-      m_Settings.m_uiReSTIRDISpatialNeighborCount         = 4U;
-      m_Settings.m_uiReSTIRDISpatialRadius                = 2U;
-      m_Settings.m_uiRTGIMaxPathHits                      = 2U;
-      m_Settings.m_uiRTGILocalLightSamples                = 2U;
-      m_Settings.m_uiRTGIEmissiveLightSamples             = 1U;
-      m_Settings.m_uiRTReflectionMaxPathHits              = 2U;
-      m_Settings.m_fRTReflectionHistoryWeight             = 0.90f;
-      m_Settings.m_fRTReflectionMomentsHistoryWeight      = 0.94f;
-      m_Settings.m_fRTReflectionConfidenceDecay           = 0.97f;
-      m_Settings.m_fRTReflectionSpatialWeight             = 0.35f;
-      m_Settings.m_fRTReflectionDepthThreshold            = 0.020f;
-      m_Settings.m_fRTReflectionNormalThreshold           = 0.95f;
-      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold = 0.08f;
-      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold = 0.05f;
-      m_Settings.m_fRTReflectionVarianceGamma             = 2.5f;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount                = 8U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM                   = 20U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount               = 4U;
+      m_Settings.m_uiReSTIRDISpatialRadius                      = 2U;
+      m_Settings.m_uiRTGIMaxPathHits                            = 2U;
+      m_Settings.m_uiRTGILocalLightSamples                      = 2U;
+      m_Settings.m_uiRTGIEmissiveLightSamples                   = 1U;
+      m_Settings.m_uiRTReflectionMaxPathHits                    = 2U;
+      m_Settings.m_fRTReflectionHistoryWeight                   = 0.90f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight            = 0.94f;
+      m_Settings.m_fRTReflectionConfidenceDecay                 = 0.97f;
+      m_Settings.m_fRTReflectionSpatialWeight                   = 0.35f;
+      m_Settings.m_fRTReflectionDepthThreshold                  = 0.020f;
+      m_Settings.m_fRTReflectionNormalThreshold                 = 0.95f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold    = 0.08f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.05f;
+      m_Settings.m_fRTReflectionVarianceGamma                   = 2.5f;
       break;
     case xiiReSTIRDIQualityPreset::Ultra:
-      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples    = 8U;
-      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 1U;
-      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.60f;
+      m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples          = 8U;
+      m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 1U;
+      m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.60f;
       m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.25f;
-      m_Settings.m_uiReSTIRDIFreshCandidateCount          = 16U;
-      m_Settings.m_uiReSTIRDITemporalHistoryM             = 32U;
-      m_Settings.m_uiReSTIRDISpatialNeighborCount         = 8U;
-      m_Settings.m_uiReSTIRDISpatialRadius                = 4U;
-      m_Settings.m_uiRTGIMaxPathHits                      = 2U;
-      m_Settings.m_uiRTGILocalLightSamples                = 4U;
-      m_Settings.m_uiRTGIEmissiveLightSamples             = 2U;
-      m_Settings.m_uiRTReflectionMaxPathHits              = 2U;
-      m_Settings.m_fRTReflectionHistoryWeight             = 0.88f;
-      m_Settings.m_fRTReflectionMomentsHistoryWeight      = 0.92f;
-      m_Settings.m_fRTReflectionConfidenceDecay           = 0.98f;
-      m_Settings.m_fRTReflectionSpatialWeight             = 0.25f;
-      m_Settings.m_fRTReflectionDepthThreshold            = 0.015f;
-      m_Settings.m_fRTReflectionNormalThreshold           = 0.97f;
-      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold = 0.06f;
-      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold = 0.025f;
-      m_Settings.m_fRTReflectionVarianceGamma             = 2.0f;
+      m_Settings.m_uiReSTIRDIFreshCandidateCount                = 16U;
+      m_Settings.m_uiReSTIRDITemporalHistoryM                   = 32U;
+      m_Settings.m_uiReSTIRDISpatialNeighborCount               = 8U;
+      m_Settings.m_uiReSTIRDISpatialRadius                      = 4U;
+      m_Settings.m_uiRTGIMaxPathHits                            = 2U;
+      m_Settings.m_uiRTGILocalLightSamples                      = 4U;
+      m_Settings.m_uiRTGIEmissiveLightSamples                   = 2U;
+      m_Settings.m_uiRTReflectionMaxPathHits                    = 2U;
+      m_Settings.m_fRTReflectionHistoryWeight                   = 0.88f;
+      m_Settings.m_fRTReflectionMomentsHistoryWeight            = 0.92f;
+      m_Settings.m_fRTReflectionConfidenceDecay                 = 0.98f;
+      m_Settings.m_fRTReflectionSpatialWeight                   = 0.25f;
+      m_Settings.m_fRTReflectionDepthThreshold                  = 0.015f;
+      m_Settings.m_fRTReflectionNormalThreshold                 = 0.97f;
+      m_Settings.m_fRTReflectionHitDistanceRelativeThreshold    = 0.06f;
+      m_Settings.m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.025f;
+      m_Settings.m_fRTReflectionVarianceGamma                   = 2.0f;
       break;
     case xiiReSTIRDIQualityPreset::Custom:
       break;
@@ -326,7 +326,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
     m_GlobalConstants.m_fWorldTime   = m_GlobalConstants.m_fGlobalTime;
   }
   m_GlobalConstants.m_RenderScaleJitter = xiiVec4(view.GetRenderResolutionScale(), 0.0f, 0.0f, 0.0f);
-  m_GlobalConstants.m_ReSTIRDISettings = xiiVec4U32(
+  m_GlobalConstants.m_ReSTIRDISettings  = xiiVec4U32(
     xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples, 1U, 8U),
     xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod, 1U, 8U), 0U, 0U);
   m_GlobalConstants.m_ReSTIRDIReuseSettings = xiiVec4U32(
@@ -340,7 +340,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   const xiiUInt32 uiDeviceRayRecursion  = m_pDevice != nullptr ? m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth : 1U;
   const bool      bTraceHitVisibility   = uiDeviceRayRecursion >= 2U;
   const xiiUInt32 uiPathRecursionBudget = bTraceHitVisibility ? uiDeviceRayRecursion - 1U : uiDeviceRayRecursion;
-  m_GlobalConstants.m_RTGISettings = xiiVec4U32(
+  m_GlobalConstants.m_RTGISettings      = xiiVec4U32(
     xiiMath::Clamp(m_Settings.m_uiRTGIMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))),
     xiiMath::Clamp(m_Settings.m_uiRTGILocalLightSamples, 1U, 4U), bTraceHitVisibility ? 1U : 0U,
     xiiMath::Clamp(m_Settings.m_uiRTGIEmissiveLightSamples, 1U, 4U));
@@ -544,7 +544,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
     m_LightData[uiLightIndex].m_Metadata.y = uiLightIndex;
 
   m_LightConstants.m_uiActiveLightCount = m_Stats.m_uiActiveLightCount;
-  m_LightConstants.m_MainLightColor.w    = static_cast<float>(m_Stats.m_uiDirectionalLightCount);
+  m_LightConstants.m_MainLightColor.w   = static_cast<float>(m_Stats.m_uiDirectionalLightCount);
 
   xiiLocalShadowAtlasSettings localShadowSettings;
   localShadowSettings.m_uiAtlasSize        = m_Settings.m_uiLocalShadowAtlasSize;

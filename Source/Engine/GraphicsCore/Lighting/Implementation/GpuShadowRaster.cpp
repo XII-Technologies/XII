@@ -124,8 +124,8 @@ bool xiiGpuShadowRasterManager::IsInitialized()
 xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& graph, xiiStringView sName,
                                                                xiiRenderGraphTextureHandle hDepthAtlas, const xiiGpuVisibilityOutputs& visibility,
                                                                const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                               const xiiMaterialGpuStorage::UploadHandles& materials,
-                                                               const xiiGpuShadowRasterDescription& description)
+                                                               const xiiMaterialGpuStorage::UploadHandles&       materials,
+                                                               const xiiGpuShadowRasterDescription&              description)
 {
   if (!IsSupported() || !hDepthAtlas.IsValid() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() ||
       !visibility.m_hVisibleMeshletCount.IsValid() || !visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() ||
@@ -284,27 +284,27 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddLocalLightPasses(
       if (!viewProjection.IsValid())
         continue;
 
-      const xiiFrustum frustum = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
-      xiiGpuVisibilityView view = xiiGpuVisibilitySystem::BuildView(
+      const xiiFrustum     frustum = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+      xiiGpuVisibilityView view    = xiiGpuVisibilitySystem::BuildView(
         viewProjection, frustum, shadow.m_LightPositionAndInvRange.GetAsVec3(), uiTileSize, uiTileSize, 0U,
         pSceneDatabase->GetObjectCount());
       view.m_uiRequiredFlags = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows).GetValue();
 
       xiiGpuVisibilityPassDescription visibilityDescription;
-      xiiStringBuilder visibilityName;
+      xiiStringBuilder                visibilityName;
       visibilityName.SetFormat("Local Shadow L{} F{}", uiLightIndex, uiFaceIndex);
-      visibilityDescription.m_sName            = visibilityName;
-      visibilityDescription.m_sResourceSetName = "Local Shadow Scratch";
-      visibilityDescription.m_Purpose           = xiiGpuVisibilityPurpose::Shadow;
+      visibilityDescription.m_sName              = visibilityName;
+      visibilityDescription.m_sResourceSetName   = "Local Shadow Scratch";
+      visibilityDescription.m_Purpose            = xiiGpuVisibilityPurpose::Shadow;
       visibilityDescription.m_bEnableLodFeedback = false;
-      visibilityDescription.m_bAsyncCompute     = true;
-      const xiiGpuVisibilityOutputs visibility = xiiGpuVisibilityManager::AddPasses(
+      visibilityDescription.m_bAsyncCompute      = true;
+      const xiiGpuVisibilityOutputs visibility   = xiiGpuVisibilityManager::AddPasses(
         hVisibilityContext, graph, uiFrameIndex, hSceneContext, view, geometry, visibilityDescription);
 
-      const xiiVec4& atlasScaleBias = shadow.m_AtlasScaleBias[uiFaceIndex];
-      const xiiInt32 iMaximumOrigin = static_cast<xiiInt32>(uiAtlasSize - uiTileSize);
-      const xiiUInt32 uiViewportX = static_cast<xiiUInt32>(xiiMath::Clamp(xiiMath::RoundToInt(atlasScaleBias.z * static_cast<float>(uiAtlasSize)), 0, iMaximumOrigin));
-      const xiiUInt32 uiViewportY = static_cast<xiiUInt32>(xiiMath::Clamp(xiiMath::RoundToInt(atlasScaleBias.w * static_cast<float>(uiAtlasSize)), 0, iMaximumOrigin));
+      const xiiVec4&  atlasScaleBias = shadow.m_AtlasScaleBias[uiFaceIndex];
+      const xiiInt32  iMaximumOrigin = static_cast<xiiInt32>(uiAtlasSize - uiTileSize);
+      const xiiUInt32 uiViewportX    = static_cast<xiiUInt32>(xiiMath::Clamp(xiiMath::RoundToInt(atlasScaleBias.z * static_cast<float>(uiAtlasSize)), 0, iMaximumOrigin));
+      const xiiUInt32 uiViewportY    = static_cast<xiiUInt32>(xiiMath::Clamp(xiiMath::RoundToInt(atlasScaleBias.w * static_cast<float>(uiAtlasSize)), 0, iMaximumOrigin));
 
       xiiGpuShadowRasterDescription rasterDescription;
       rasterDescription.m_ViewProjectionMatrix      = viewProjection;

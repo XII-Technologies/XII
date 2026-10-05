@@ -587,9 +587,9 @@ private:
 
   mutable xiiViewData m_Data;
 
-  xiiRenderGraphContext               m_RenderGraphContext;
-  xiiSceneDatabaseContext             m_GpuSceneContext;
-  xiiGpuVisibilityContextHandle       m_hGpuVisibilityContext;
+  xiiRenderGraphContext         m_RenderGraphContext;
+  xiiSceneDatabaseContext       m_GpuSceneContext;
+  xiiGpuVisibilityContextHandle m_hGpuVisibilityContext;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.
   xiiExtractedRenderData* m_pExtractedData = nullptr;

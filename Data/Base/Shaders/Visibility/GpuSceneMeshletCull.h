@@ -2,17 +2,17 @@
 
 #include "GpuSceneCommon.h"
 
-StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuSceneInstance>  g_SceneInstances;
 StructuredBuffer<GpuVisibilityView> g_VisibilityView;
 StructuredBuffer<GpuGeometryRecord> g_Geometry;
-StructuredBuffer<GpuMeshlet> g_Meshlets;
-StructuredBuffer<uint> g_VisibleInstances;
-StructuredBuffer<uint> g_VisibleInstanceCount;
-StructuredBuffer<uint4> g_PreviousLodHistory;
-RWStructuredBuffer<uint4> g_CurrentLodHistory;
-RWStructuredBuffer<GpuLodFeedback> g_LodFeedback;
-RWStructuredBuffer<uint2> g_VisibleMeshlets;
-RWStructuredBuffer<uint> g_VisibleMeshletCount;
+StructuredBuffer<GpuMeshlet>        g_Meshlets;
+StructuredBuffer<uint>              g_VisibleInstances;
+StructuredBuffer<uint>              g_VisibleInstanceCount;
+StructuredBuffer<uint4>             g_PreviousLodHistory;
+RWStructuredBuffer<uint4>           g_CurrentLodHistory;
+RWStructuredBuffer<GpuLodFeedback>  g_LodFeedback;
+RWStructuredBuffer<uint2>           g_VisibleMeshlets;
+RWStructuredBuffer<uint>            g_VisibleMeshletCount;
 
 uint HashLodFeedbackKey(uint key)
 {
@@ -36,13 +36,13 @@ void SubmitLodFeedback(uint geometryIndex, GpuGeometryRecord geometry, uint desi
   uint ignored;
   InterlockedAdd(g_LodFeedback[0].Key, 1u, ignored);
 
-  const uint capacity = entryCount - 1u;
+  const uint capacity   = entryCount - 1u;
   const uint requestKey = (((desiredLod & 7u) << 20u) | (geometryIndex & 0xFFFFFu)) + 1u;
-  const uint baseSlot = HashLodFeedbackKey(requestKey) & (capacity - 1u);
+  const uint baseSlot   = HashLodFeedbackKey(requestKey) & (capacity - 1u);
   [loop] for (uint probe = 0u; probe < min(capacity, 32u); ++probe)
   {
     const uint entryIndex = 1u + ((baseSlot + probe) & (capacity - 1u));
-    uint observedKey;
+    uint       observedKey;
     InterlockedCompareExchange(g_LodFeedback[entryIndex].Key, 0u, requestKey, observedKey);
     if (observedKey != 0u && observedKey != requestKey)
       continue;
@@ -70,10 +70,9 @@ bool ProjectMeshletBounds(float3 center, float radius, GpuVisibilityView view, o
 {
   float2 minimumUV = float2(1.0f, 1.0f);
   float2 maximumUV = float2(0.0f, 0.0f);
-  nearestDepth = 0.0f;
+  nearestDepth     = 0.0f;
 
-  [unroll]
-  for (uint cornerIndex = 0u; cornerIndex < 8u; ++cornerIndex)
+  [unroll] for (uint cornerIndex = 0u; cornerIndex < 8u; ++cornerIndex)
   {
     const float3 cornerSign = float3((cornerIndex & 1u) != 0u ? 1.0f : -1.0f,
                                      (cornerIndex & 2u) != 0u ? 1.0f : -1.0f,
@@ -86,10 +85,10 @@ bool ProjectMeshletBounds(float3 center, float radius, GpuVisibilityView view, o
     }
 
     const float3 ndc = clip.xyz / clip.w;
-    const float2 uv = ndc.xy * float2(0.5f, -0.5f) + 0.5f;
-    minimumUV = min(minimumUV, uv);
-    maximumUV = max(maximumUV, uv);
-    nearestDepth = max(nearestDepth, saturate(ndc.z));
+    const float2 uv  = ndc.xy * float2(0.5f, -0.5f) + 0.5f;
+    minimumUV        = min(minimumUV, uv);
+    maximumUV        = max(maximumUV, uv);
+    nearestDepth     = max(nearestDepth, saturate(ndc.z));
   }
 
   screenRect = saturate(float4(minimumUV, maximumUV));
@@ -99,20 +98,20 @@ bool ProjectMeshletBounds(float3 center, float radius, GpuVisibilityView view, o
 bool MeshletVisibleInHiZ(float3 center, float radius, GpuVisibilityView view)
 {
   float4 rect;
-  float nearestDepth;
+  float  nearestDepth;
   if (!ProjectMeshletBounds(center, radius, view, rect, nearestDepth))
     return true;
 
   uint width, height, levels;
   g_HiZ.GetDimensions(0, width, height, levels);
   const float2 footprint = (rect.zw - rect.xy) * float2(width, height);
-  const uint mip = min((uint)max(0.0f, floor(log2(max(max(footprint.x, footprint.y), 1.0f)))), max(levels, 1u) - 1u);
+  const uint   mip       = min((uint)max(0.0f, floor(log2(max(max(footprint.x, footprint.y), 1.0f)))), max(levels, 1u) - 1u);
 
   uint mipWidth, mipHeight, ignoredLevels;
   g_HiZ.GetDimensions(mip, mipWidth, mipHeight, ignoredLevels);
-  const int2 maximumPixel = int2(max(mipWidth, 1u) - 1u, max(mipHeight, 1u) - 1u);
-  const int2 p0 = clamp(int2(rect.xy * float2(mipWidth, mipHeight)), int2(0, 0), maximumPixel);
-  const int2 p1 = clamp(int2(rect.zw * float2(mipWidth, mipHeight)), int2(0, 0), maximumPixel);
+  const int2  maximumPixel  = int2(max(mipWidth, 1u) - 1u, max(mipHeight, 1u) - 1u);
+  const int2  p0            = clamp(int2(rect.xy * float2(mipWidth, mipHeight)), int2(0, 0), maximumPixel);
+  const int2  p1            = clamp(int2(rect.zw * float2(mipWidth, mipHeight)), int2(0, 0), maximumPixel);
   const float occluderDepth = min(min(g_HiZ.Load(int3(p0, mip)), g_HiZ.Load(int3(p1.x, p0.y, mip))),
                                   min(g_HiZ.Load(int3(p0.x, p1.y, mip)), g_HiZ.Load(int3(p1, mip))));
   return nearestDepth >= occluderDepth - view.ViewportAndHiZ.w;
@@ -154,9 +153,7 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   }
 }
 
-[numthreads(64, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_GroupID)
-{
+[numthreads(64, 1, 1)] void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_GroupID) {
   uint viewCount, viewStride;
   uint sceneCount, sceneStride;
   uint geometryCount, geometryStride;
@@ -176,7 +173,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   if (viewCount == 0u || visibleCountCapacity == 0u)
     return;
 
-  const uint visibleCount = min(g_VisibleInstanceCount[0], visibleInstanceCapacity);
+  const uint visibleCount         = min(g_VisibleInstanceCount[0], visibleInstanceCapacity);
   const uint visibleInstanceIndex = groupId.y + groupId.z * 65535u;
   if (visibleInstanceIndex >= visibleCount)
     return;
@@ -185,18 +182,18 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   if (instanceIndex >= sceneCount)
     return;
 
-  const GpuSceneInstance instance = g_SceneInstances[instanceIndex];
-  const GpuVisibilityView view = g_VisibilityView[0];
+  const GpuSceneInstance  instance = g_SceneInstances[instanceIndex];
+  const GpuVisibilityView view     = g_VisibilityView[0];
   if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex)
     return;
 
-  const GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
-  const float distanceToCamera = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
-  const float projectedCoverage = instance.BoundsCenterRadius.w * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
-  const uint desiredLod = SelectDesiredLod(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y);
-  const uint4 previousHistory = instanceIndex < previousHistoryCapacity ? g_PreviousLodHistory[instanceIndex] : uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
-  const uint lodIndex = SelectResidentLodWithHistory(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y,
-                                                     instance.UserData, previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
+  const GpuGeometryRecord geometry          = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
+  const float             distanceToCamera  = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
+  const float             projectedCoverage = instance.BoundsCenterRadius.w * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
+  const uint              desiredLod        = SelectDesiredLod(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y);
+  const uint4             previousHistory   = instanceIndex < previousHistoryCapacity ? g_PreviousLodHistory[instanceIndex] : uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
+  const uint              lodIndex          = SelectResidentLodWithHistory(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y,
+                                                                           instance.UserData, previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
   if (dispatchThreadId.x == 0u)
   {
     if (instanceIndex < currentHistoryCapacity)
@@ -207,10 +204,10 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
     return;
 
   const GpuGeometryLod lod = geometry.Lods[lodIndex];
-  float3 scale;
-  scale.x = length(instance.GlobalTransform[0].xyz);
-  scale.y = length(instance.GlobalTransform[1].xyz);
-  scale.z = length(instance.GlobalTransform[2].xyz);
+  float3               scale;
+  scale.x              = length(instance.GlobalTransform[0].xyz);
+  scale.y              = length(instance.GlobalTransform[1].xyz);
+  scale.z              = length(instance.GlobalTransform[2].xyz);
   const float maxScale = max(scale.x, max(scale.y, scale.z));
 
   const uint localMeshlet = dispatchThreadId.x;
@@ -219,32 +216,32 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   if (lod.MeshletMetadataOffset >= meshletCount || localMeshlet >= meshletCount - lod.MeshletMetadataOffset)
     return;
 
-  const uint meshletIndex = lod.MeshletMetadataOffset + localMeshlet;
-  const GpuMeshlet meshlet = g_Meshlets[meshletIndex];
-  const uint meshletPrimitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  const uint       meshletIndex          = lod.MeshletMetadataOffset + localMeshlet;
+  const GpuMeshlet meshlet               = g_Meshlets[meshletIndex];
+  const uint       meshletPrimitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
   if (instance.PrimitiveCount != 0u)
   {
     const uint selectedEnd = instance.FirstPrimitive + instance.PrimitiveCount;
-    const uint meshletEnd = meshlet.Header.x + meshletPrimitiveCount;
+    const uint meshletEnd  = meshlet.Header.x + meshletPrimitiveCount;
     if (meshlet.Header.x >= selectedEnd || meshletEnd <= instance.FirstPrimitive)
       return;
   }
 
   const float3 center = mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
-  const float radius = meshlet.Bounds.w * maxScale;
+  const float  radius = meshlet.Bounds.w * maxScale;
   if (!SphereInsideFrustum(center, radius, view))
     return;
 
   // The stored cutoff is the cosine of the largest deviation from the cone axis.
   // Reject only when the complete normal cone faces away from the camera. Non-uniform
   // transforms distort the cone, so conservatively disable this test for those instances.
-  const float minScale = min(scale.x, min(scale.y, scale.z));
-  const bool isUniformScale = maxScale - minScale <= max(maxScale, 0.0001f) * 0.001f;
+  const float minScale       = min(scale.x, min(scale.y, scale.z));
+  const bool  isUniformScale = maxScale - minScale <= max(maxScale, 0.0001f) * 0.001f;
   if (meshlet.Cone.w >= 0.0f && isUniformScale)
   {
-    const float3 coneAxis = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
-    const float3 toCamera = normalize(view.CameraPosition.xyz - center);
-    const float sinHalfAngle = sqrt(saturate(1.0f - meshlet.Cone.w * meshlet.Cone.w));
+    const float3 coneAxis     = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
+    const float3 toCamera     = normalize(view.CameraPosition.xyz - center);
+    const float  sinHalfAngle = sqrt(saturate(1.0f - meshlet.Cone.w * meshlet.Cone.w));
     if (dot(coneAxis, toCamera) <= -sinHalfAngle)
       return;
   }

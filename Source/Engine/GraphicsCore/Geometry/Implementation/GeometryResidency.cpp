@@ -38,22 +38,22 @@ public:
     m_bInitialized          = false;
   }
 
-  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper>       m_Slots;
-  xiiDynamicArray<xiiUInt32>                              m_FreeSlots;
-  xiiSharedPtr<xiiGALBuffer>                              m_pMetadataBuffer;
-  xiiSharedPtr<xiiGALBuffer>                              m_pMeshletMetadataBuffer;
-  xiiDynamicArray<FreeRange>                              m_FreeMeshletRanges;
-  xiiDynamicArray<UploadPassData::MeshletUpload>          m_PendingMeshletUploads;
+  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper>      m_Slots;
+  xiiDynamicArray<xiiUInt32>                             m_FreeSlots;
+  xiiSharedPtr<xiiGALBuffer>                             m_pMetadataBuffer;
+  xiiSharedPtr<xiiGALBuffer>                             m_pMeshletMetadataBuffer;
+  xiiDynamicArray<FreeRange>                             m_FreeMeshletRanges;
+  xiiDynamicArray<UploadPassData::MeshletUpload>         m_PendingMeshletUploads;
   xiiHashTable<xiiMeshResourceHandle, MeshGeometryEntry> m_MeshGeometries;
-  xiiUInt32                                               m_uiFramesInFlight      = 0U;
-  xiiUInt64                                               m_uiAllFrameMask        = 0U;
-  xiiUInt64                                               m_uiBudgetBytes         = 0U;
-  xiiUInt64                                               m_uiResidentBytes       = 0U;
-  xiiUInt64                                               m_uiLastUploadedBytes   = 0U;
-  xiiUInt64                                               m_uiNextMeshletUploadId = 1U;
-  xiiGeometryResidencyDescription                         m_Configuration;
-  bool                                                    m_bEngineStarted = false;
-  bool                                                    m_bInitialized   = false;
+  xiiUInt32                                              m_uiFramesInFlight      = 0U;
+  xiiUInt64                                              m_uiAllFrameMask        = 0U;
+  xiiUInt64                                              m_uiBudgetBytes         = 0U;
+  xiiUInt64                                              m_uiResidentBytes       = 0U;
+  xiiUInt64                                              m_uiLastUploadedBytes   = 0U;
+  xiiUInt64                                              m_uiNextMeshletUploadId = 1U;
+  xiiGeometryResidencyDescription                        m_Configuration;
+  bool                                                   m_bEngineStarted = false;
+  bool                                                   m_bInitialized   = false;
 };
 
 xiiUniquePtr<xiiGeometryResidencyManager::State> xiiGeometryResidencyManager::s_pState;
@@ -72,7 +72,7 @@ namespace
     if (lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
       return XII_FAILURE;
 
-    out_description                        = {};
+    out_description                       = {};
     out_description.m_uiStreamingPriority = mesh.GetDescriptor().m_uiStreamingGroup;
     out_description.m_bPinned             = !mesh.GetUsageFlags().IsSet(xiiMeshResourceUsageFlags::Streaming);
 
@@ -694,7 +694,7 @@ bool xiiGeometryResidencyManager::RegisterBindlessResources(Slot& slot, xiiGpuGe
   for (xiiUInt32 uiResource = 0U; uiResource < Slot::s_uiBindlessResourcesPerLod; ++uiResource)
     slot.m_BindlessResources[uiLod][uiResource] = handles[uiResource];
 
-  xiiGpuGeometryLod& lod               = record.m_Lods[uiLod];
+  xiiGpuGeometryLod& lod              = record.m_Lods[uiLod];
   lod.m_uiVertexBufferIndex           = handles[0].m_uiIndex;
   lod.m_uiIndexBufferIndex            = handles[1].m_uiIndex;
   lod.m_uiMeshletBufferIndex          = handles[2].m_uiIndex;
@@ -715,7 +715,7 @@ void xiiGeometryResidencyManager::ReleaseBindlessResources(Slot& slot, xiiUInt64
       handle = {};
     }
 
-    xiiGpuGeometryLod& lod               = slot.m_GpuRecord.m_Lods[uiLod];
+    xiiGpuGeometryLod& lod              = slot.m_GpuRecord.m_Lods[uiLod];
     lod.m_uiVertexBufferIndex           = xiiInvalidIndex;
     lod.m_uiIndexBufferIndex            = xiiInvalidIndex;
     lod.m_uiMeshletBufferIndex          = xiiInvalidIndex;
@@ -785,8 +785,8 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
     const Slot& rhs = s_pState->m_Slots[rhsIndex];
     if (lhs.m_Description.m_uiStreamingPriority != rhs.m_Description.m_uiStreamingPriority)
       return lhs.m_Description.m_uiStreamingPriority > rhs.m_Description.m_uiStreamingPriority;
-    const xiiUInt64 lhsAge = lhs.m_uiFirstRequestFrame == xiiMath::MaxValue<xiiUInt64>() ? 0U : uiFrameIndex - xiiMath::Min(uiFrameIndex, lhs.m_uiFirstRequestFrame);
-    const xiiUInt64 rhsAge = rhs.m_uiFirstRequestFrame == xiiMath::MaxValue<xiiUInt64>() ? 0U : uiFrameIndex - xiiMath::Min(uiFrameIndex, rhs.m_uiFirstRequestFrame);
+    const xiiUInt64 lhsAge             = lhs.m_uiFirstRequestFrame == xiiMath::MaxValue<xiiUInt64>() ? 0U : uiFrameIndex - xiiMath::Min(uiFrameIndex, lhs.m_uiFirstRequestFrame);
+    const xiiUInt64 rhsAge             = rhs.m_uiFirstRequestFrame == xiiMath::MaxValue<xiiUInt64>() ? 0U : uiFrameIndex - xiiMath::Min(uiFrameIndex, rhs.m_uiFirstRequestFrame);
     const xiiUInt64 lhsVisibilityScore = static_cast<xiiUInt64>(lhs.m_uiVisibilityPriority) + xiiMath::Min<xiiUInt64>(lhsAge, 0xFFFFU);
     const xiiUInt64 rhsVisibilityScore = static_cast<xiiUInt64>(rhs.m_uiVisibilityPriority) + xiiMath::Min<xiiUInt64>(rhsAge, 0xFFFFU);
     if (lhsVisibilityScore != rhsVisibilityScore)

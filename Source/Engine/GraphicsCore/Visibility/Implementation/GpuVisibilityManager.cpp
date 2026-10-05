@@ -171,7 +171,7 @@ xiiRenderGraphTextureHandle xiiGpuVisibilityManager::ImportPreviousHiZ(xiiGpuVis
 }
 
 void xiiGpuVisibilityManager::AddHiZBuildPass(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex,
-                                               xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute)
+                                              xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute)
 {
   if (xiiGpuVisibilitySystem* pSystem = GetSystem(handle))
     pSystem->m_HiZHistory.AddBuildPass(graph, uiFrameIndex, hSceneDepth, bAsyncCompute);

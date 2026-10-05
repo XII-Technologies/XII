@@ -66,7 +66,7 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   float     m_fSSRefractionChromatic            = 0.002f;
   xiiUInt32 m_uiLocalShadowAtlasSize            = 4096U;
   xiiUInt32 m_uiLocalShadowTileSize             = 256U;
-  xiiUInt32 m_uiMaxLocalShadowFacesPerFrame     = 64U;
+  xiiUInt32                         m_uiMaxLocalShadowFacesPerFrame     = 64U;
   float     m_fVolumetricFogDensity             = 0.015f;
   float     m_fVolumetricHeightFalloff          = 0.08f;
   float     m_fVolumetricBaseHeight             = 0.0f;
@@ -75,28 +75,28 @@ struct XII_GRAPHICSCORE_DLL xiiLightingSystemSettings
   xiiUInt32 m_uiDirectionalShadowBlockerSamples = 12U;
   xiiUInt32 m_uiDirectionalShadowFilterSamples  = 16U;
   xiiEnum<xiiReSTIRDIQualityPreset> m_ReSTIRDIQualityPreset;
-  xiiUInt32 m_uiReSTIRDIEmissiveVisibilitySamples = 4U; ///< Rays per selected emissive triangle when visibility is refreshed.
-  xiiUInt32 m_uiReSTIRDIEmissiveBinaryRefreshPeriod = 2U; ///< Frames between interleaved refreshes of fully lit/occluded samples.
-  float     m_fReSTIRDIEmissiveVisibilityHistoryWeight = 0.75f;
-  float     m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.35f;
-  xiiUInt32 m_uiReSTIRDIFreshCandidateCount        = 8U;
-  xiiUInt32 m_uiReSTIRDITemporalHistoryM           = 20U;
-  xiiUInt32 m_uiReSTIRDISpatialNeighborCount       = 4U;
-  xiiUInt32 m_uiReSTIRDISpatialRadius              = 2U; ///< Maximum spatial reuse radius in pixels.
-  xiiUInt32 m_uiRTGIMaxPathHits          = 2U; ///< Maximum diffuse surface hits in a near-field path.
-  xiiUInt32 m_uiRTGILocalLightSamples    = 2U; ///< Stratified analytical local-light samples evaluated at each hit.
-  xiiUInt32 m_uiRTGIEmissiveLightSamples = 1U; ///< Power-weighted emissive-triangle next-event samples evaluated at each hit.
-  xiiUInt32 m_uiRTReflectionMaxPathHits  = 2U; ///< Maximum glossy surface hits in a ray-traced reflection path.
-  float     m_fRTReflectionHistoryWeight = 0.90f;
-  float     m_fRTReflectionMomentsHistoryWeight = 0.94f;
-  float     m_fRTReflectionConfidenceDecay = 0.97f;
-  float     m_fRTReflectionSpatialWeight = 0.35f;
-  float     m_fRTReflectionDepthThreshold = 0.02f;
-  float     m_fRTReflectionNormalThreshold = 0.95f;
-  float     m_fRTReflectionHitDistanceRelativeThreshold = 0.08f;
-  float     m_fRTReflectionHitDistanceAbsoluteThreshold = 0.05f; ///< Minimum hit-distance tolerance in metres.
-  float     m_fRTReflectionVarianceGamma = 2.5f;
-  xiiUInt32 m_uiMaxIESProfiles           = 256U;
+  xiiUInt32                         m_uiReSTIRDIEmissiveVisibilitySamples          = 4U; ///< Rays per selected emissive triangle when visibility is refreshed.
+  xiiUInt32                         m_uiReSTIRDIEmissiveBinaryRefreshPeriod        = 2U; ///< Frames between interleaved refreshes of fully lit/occluded samples.
+  float                             m_fReSTIRDIEmissiveVisibilityHistoryWeight     = 0.75f;
+  float                             m_fReSTIRDIEmissiveVisibilityReactiveThreshold = 0.35f;
+  xiiUInt32                         m_uiReSTIRDIFreshCandidateCount                = 8U;
+  xiiUInt32                         m_uiReSTIRDITemporalHistoryM                   = 20U;
+  xiiUInt32                         m_uiReSTIRDISpatialNeighborCount               = 4U;
+  xiiUInt32                         m_uiReSTIRDISpatialRadius                      = 2U; ///< Maximum spatial reuse radius in pixels.
+  xiiUInt32                         m_uiRTGIMaxPathHits                            = 2U; ///< Maximum diffuse surface hits in a near-field path.
+  xiiUInt32                         m_uiRTGILocalLightSamples                      = 2U; ///< Stratified analytical local-light samples evaluated at each hit.
+  xiiUInt32                         m_uiRTGIEmissiveLightSamples                   = 1U; ///< Power-weighted emissive-triangle next-event samples evaluated at each hit.
+  xiiUInt32                         m_uiRTReflectionMaxPathHits                    = 2U; ///< Maximum glossy surface hits in a ray-traced reflection path.
+  float                             m_fRTReflectionHistoryWeight                   = 0.90f;
+  float                             m_fRTReflectionMomentsHistoryWeight            = 0.94f;
+  float                             m_fRTReflectionConfidenceDecay                 = 0.97f;
+  float                             m_fRTReflectionSpatialWeight                   = 0.35f;
+  float                             m_fRTReflectionDepthThreshold                  = 0.02f;
+  float                             m_fRTReflectionNormalThreshold                 = 0.95f;
+  float                             m_fRTReflectionHitDistanceRelativeThreshold    = 0.08f;
+  float                             m_fRTReflectionHitDistanceAbsoluteThreshold    = 0.05f; ///< Minimum hit-distance tolerance in metres.
+  float                             m_fRTReflectionVarianceGamma                   = 2.5f;
+  xiiUInt32                         m_uiMaxIESProfiles                             = 256U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightingSystemSettings);

@@ -16,13 +16,13 @@ class xiiLightingSystem;
 /// Describes one GPU-scene mesh-shader depth rasterization.
 struct XII_GRAPHICSCORE_DLL xiiGpuSceneDepthRasterDescription
 {
-  xiiMat4    m_ViewProjectionMatrix      = xiiMat4::MakeIdentity();
-  xiiUInt32  m_uiWidth                   = 0U;
-  xiiUInt32  m_uiHeight                  = 0U;
-  xiiUInt32  m_uiVertexStride            = 0U;
-  xiiUInt32  m_uiTexCoordOffset          = 0U;
-  xiiUInt32  m_uiMeshDispatchGroupCountX = 1U;
-  xiiUInt32  m_uiMeshDispatchGroupCountY = 1U;
+  xiiMat4   m_ViewProjectionMatrix      = xiiMat4::MakeIdentity();
+  xiiUInt32 m_uiWidth                   = 0U;
+  xiiUInt32 m_uiHeight                  = 0U;
+  xiiUInt32 m_uiVertexStride            = 0U;
+  xiiUInt32 m_uiTexCoordOffset          = 0U;
+  xiiUInt32 m_uiMeshDispatchGroupCountX = 1U;
+  xiiUInt32 m_uiMeshDispatchGroupCountY = 1U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSceneDepthRasterDescription);
@@ -83,40 +83,40 @@ public:
   /// Adds a reversed-Z depth prepass and returns the produced depth version. Invalid input or a
   /// device without mesh shaders returns an invalid handle so callers can select an indexed fallback.
   [[nodiscard]] static xiiRenderGraphTextureHandle AddDepthPrepass(xiiRenderGraph& graph, xiiStringView sName,
-                                                                   const xiiGpuVisibilityOutputs& visibility,
+                                                                   const xiiGpuVisibilityOutputs&                    visibility,
                                                                    const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                                   const xiiMaterialGpuStorage::UploadHandles& materials,
-                                                                   const xiiGpuSceneDepthRasterDescription& description);
+                                                                   const xiiMaterialGpuStorage::UploadHandles&       materials,
+                                                                   const xiiGpuSceneDepthRasterDescription&          description);
 
   /// Rasterizes canonical surface materials into the deferred targets while depth testing against
   /// the scene prepass. Compact normal/roughness and object-aware velocity are emitted as extra
   /// MRTs so AO, identity-aware temporal effects and lighting do not need additional geometry submissions.
   [[nodiscard]] static xiiGpuSceneGBufferOutputs AddGBufferPass(xiiRenderGraph& graph, xiiStringView sName,
-                                                                xiiRenderGraphTextureHandle hSceneDepth,
-                                                                xiiRenderGraphTextureHandle hVelocity,
-                                                                const xiiGpuVisibilityOutputs& visibility,
+                                                                xiiRenderGraphTextureHandle                       hSceneDepth,
+                                                                xiiRenderGraphTextureHandle                       hVelocity,
+                                                                const xiiGpuVisibilityOutputs&                    visibility,
                                                                 const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                                const xiiMaterialGpuStorage::UploadHandles& materials,
-                                                                const xiiGpuSceneGBufferRasterDescription& description);
+                                                                const xiiMaterialGpuStorage::UploadHandles&       materials,
+                                                                const xiiGpuSceneGBufferRasterDescription&        description);
 
   /// Shades the compact visibility stream directly with the clustered light lists and canonical
   /// surface records. The returned texture contains direct HDR radiance and can replace the
   /// deferred direct-lighting result when the caller's selected Forward+ feature set is supported.
   [[nodiscard]] static xiiRenderGraphTextureHandle AddForwardPlusPass(xiiRenderGraph& graph, xiiStringView sName,
-                                                                       xiiRenderGraphTextureHandle hSceneDepth,
-                                                                       xiiRenderGraphTextureHandle hAmbientOcclusion, ///< Retained for source compatibility; AO is consumed by indirect lighting.
-                                                                       xiiRenderGraphTextureHandle hRayTracedShadow,
-                                                                       xiiRenderGraphTextureHandle hContactShadow,
-                                                                       xiiRenderGraphTextureHandle hDirectLightReservoir,
-                                                                       xiiRenderGraphBufferHandle hLightGrid,
-                                                                       xiiRenderGraphBufferHandle hLightIndices,
-                                                                       xiiRenderGraphBufferHandle hEmissiveTriangles,
-                                                                       xiiRenderGraphBufferHandle hEmissiveLightHeader,
-                                                                       const xiiGpuVisibilityOutputs& visibility,
-                                                                       const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                                       const xiiMaterialGpuStorage::UploadHandles& materials,
-                                                                       const xiiLightingSystem& lightingSystem,
-                                                                       const xiiGpuSceneGBufferRasterDescription& description);
+                                                                      xiiRenderGraphTextureHandle                       hSceneDepth,
+                                                                      xiiRenderGraphTextureHandle                       hAmbientOcclusion, ///< Retained for source compatibility; AO is consumed by indirect lighting.
+                                                                      xiiRenderGraphTextureHandle                       hRayTracedShadow,
+                                                                      xiiRenderGraphTextureHandle                       hContactShadow,
+                                                                      xiiRenderGraphTextureHandle                       hDirectLightReservoir,
+                                                                      xiiRenderGraphBufferHandle                        hLightGrid,
+                                                                      xiiRenderGraphBufferHandle                        hLightIndices,
+                                                                      xiiRenderGraphBufferHandle                        hEmissiveTriangles,
+                                                                      xiiRenderGraphBufferHandle                        hEmissiveLightHeader,
+                                                                      const xiiGpuVisibilityOutputs&                    visibility,
+                                                                      const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                                      const xiiMaterialGpuStorage::UploadHandles&       materials,
+                                                                      const xiiLightingSystem&                          lightingSystem,
+                                                                      const xiiGpuSceneGBufferRasterDescription&        description);
 
 private:
   static void Startup();

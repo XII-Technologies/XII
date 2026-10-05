@@ -33,17 +33,17 @@ float3 F_Schlick(float3 f0, float VoH)
 float3 BRDFLayered(float3 albedo, float roughness, float metallic, float dielectricSpecular,
                    float transmission, float clearCoat, float clearCoatRoughness, float3 N, float3 L, float3 V)
 {
-  const float3 f0   = lerp((0.08f * saturate(dielectricSpecular)).xxx, albedo, metallic);
-  const float3 H    = normalize(V + L);
-  const float NoH   = saturate(dot(N, H));
-  const float NoV   = max(dot(N, V), 1e-4f);
-  const float NoL   = saturate(dot(N, L));
-  const float VoH   = saturate(dot(V, H));
-  const float3 F    = F_Schlick(f0, VoH);
-  const float D     = D_GGX(NoH, roughness);
-  const float G     = G_SmithGGX(NoV, NoL, roughness);
-  const float3 spec = (D * G * F) / max(4.0f * NoV * NoL, 1e-7f);
-  const float3 diff = (1.0f - F) * (1.0f - metallic) * (1.0f - saturate(transmission)) * albedo / 3.14159265f;
+  const float3 f0        = lerp((0.08f * saturate(dielectricSpecular)).xxx, albedo, metallic);
+  const float3 H         = normalize(V + L);
+  const float  NoH       = saturate(dot(N, H));
+  const float  NoV       = max(dot(N, V), 1e-4f);
+  const float  NoL       = saturate(dot(N, L));
+  const float  VoH       = saturate(dot(V, H));
+  const float3 F         = F_Schlick(f0, VoH);
+  const float  D         = D_GGX(NoH, roughness);
+  const float  G         = G_SmithGGX(NoV, NoL, roughness);
+  const float3 spec      = (D * G * F) / max(4.0f * NoV * NoL, 1e-7f);
+  const float3 diff      = (1.0f - F) * (1.0f - metallic) * (1.0f - saturate(transmission)) * albedo / 3.14159265f;
   const float3 baseLayer = (diff + spec) * NoL;
 
   // A dielectric coat sits above the base layer. Its Fresnel both contributes a
@@ -52,11 +52,11 @@ float3 BRDFLayered(float3 albedo, float roughness, float metallic, float dielect
   if (coatWeight <= 0.0f)
     return baseLayer;
 
-  const float coatRoughness = clamp(clearCoatRoughness, 0.02f, 1.0f);
-  const float3 coatF = F_Schlick(0.04f.xxx, VoH);
-  const float coatD = D_GGX(NoH, coatRoughness);
-  const float coatG = G_SmithGGX(NoV, NoL, coatRoughness);
-  const float3 coatSpecular = (coatD * coatG * coatF) / max(4.0f * NoV * NoL, 1e-7f) * NoL;
+  const float  coatRoughness = clamp(clearCoatRoughness, 0.02f, 1.0f);
+  const float3 coatF         = F_Schlick(0.04f.xxx, VoH);
+  const float  coatD         = D_GGX(NoH, coatRoughness);
+  const float  coatG         = G_SmithGGX(NoV, NoL, coatRoughness);
+  const float3 coatSpecular  = (coatD * coatG * coatF) / max(4.0f * NoV * NoL, 1e-7f) * NoL;
   return baseLayer * (1.0f - coatF * coatWeight) + coatSpecular * coatWeight;
 }
 
@@ -79,9 +79,9 @@ float3 EvaluateLocalLightLayered(xiiGpuLightData lightData, float3 worldPos, flo
     return EvaluateFiniteAreaLight(lightData, worldPos, N, V, albedo, roughness, metallic, dielectricSpecular, transmission, clearCoat, clearCoatRoughness);
 
   const float3 representativePosition = GetRepresentativeLightPosition(lightData, worldPos);
-  const float3 toLight                 = representativePosition - worldPos;
-  const float distanceToLight          = length(toLight);
-  const float3 L                       = distanceToLight > 1e-4f ? toLight / distanceToLight : normalize(-lightData.DirectionAndType.xyz);
+  const float3 toLight                = representativePosition - worldPos;
+  const float  distanceToLight        = length(toLight);
+  const float3 L                      = distanceToLight > 1e-4f ? toLight / distanceToLight : normalize(-lightData.DirectionAndType.xyz);
 
   float attenuation = EvaluateFiniteEmitterAttenuation(distanceToLight, lightData.AttenuationAndSize.x, lightData.AttenuationAndSize.y);
   if (lightType == XII_LIGHT_TYPE_SPOT)
@@ -106,8 +106,7 @@ uint ComputeClusterIndex(float2 uv, float depth)
     return 0u;
 
   const float linearDepth = LinearizeDepth(depth);
-  const float zSlice      = max(0.0f, log2(max(linearDepth, g_ClusterNearPlane) / max(g_ClusterNearPlane, 1e-4f)) /
-                                         max(g_ClusterLogFarOverNear, 1e-4f) * (float)g_ClusterCountZ);
+  const float zSlice      = max(0.0f, log2(max(linearDepth, g_ClusterNearPlane) / max(g_ClusterNearPlane, 1e-4f)) / max(g_ClusterLogFarOverNear, 1e-4f) * (float)g_ClusterCountZ);
 
   const uint cX = min((uint)(uv.x * (float)g_ClusterCountX), g_ClusterCountX - 1u);
   const uint cY = min((uint)(uv.y * (float)g_ClusterCountY), g_ClusterCountY - 1u);
