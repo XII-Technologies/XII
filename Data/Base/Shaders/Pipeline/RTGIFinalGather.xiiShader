@@ -427,6 +427,7 @@ Texture2D<float4> g_RayTracingTextures[] : register(t12);
 [shader("anyhit")]
 void main(inout xiiGlobalIlluminationPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
-  if (xiiShouldIgnoreRayTracingHit(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics))
+  const float rayConeWidth = payload.RayConeWidth + RayTCurrent() * payload.RayConeSpread;
+  if (xiiShouldIgnoreRayTracingHitWithRayCone(InstanceIndex(), PrimitiveIndex(), attributes.barycentrics, rayConeWidth))
     IgnoreHit();
 }
