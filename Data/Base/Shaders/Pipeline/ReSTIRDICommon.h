@@ -5,6 +5,7 @@
 
 #include "LightingData.h"
 #include "PhotometricLightSampling.h"
+#include <Shaders/Pipeline/SurfaceLighting.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
 
 StructuredBuffer<xiiGpuEmissiveTriangle>    g_EmissiveTriangles;
@@ -24,6 +25,26 @@ struct xiiReSTIRDIReservoir
   float WeightSum;
   uint  M;
 };
+
+struct xiiReSTIRDISurface
+{
+  float3 Albedo;
+  float  Roughness;
+  float  Metallic;
+  float  DielectricSpecular;
+  float  Transmission;
+};
+
+xiiReSTIRDISurface ReSTIRMakeSurface(float3 albedo, float roughness, float metallic, float dielectricSpecular, float transmission)
+{
+  xiiReSTIRDISurface surface;
+  surface.Albedo = max(albedo, 0.0f);
+  surface.Roughness = clamp(roughness, 0.01f, 1.0f);
+  surface.Metallic = saturate(metallic);
+  surface.DielectricSpecular = saturate(dielectricSpecular);
+  surface.Transmission = saturate(transmission);
+  return surface;
+}
 
 uint ReSTIRHash(uint value)
 {
@@ -108,24 +129,29 @@ void ReSTIRUpdateReservoir(inout xiiReSTIRDIReservoir reservoir, uint sampleInde
   }
 }
 
-// Scalar importance target used by candidate generation and final normalization.
-// Visibility is deliberately excluded: the selected sample is shadow-tested by the
-// direct-lighting pass while the inexpensive target remains suitable for reuse.
-float ReSTIREstimateTarget(xiiGpuLightData lightData, float3 worldPosition, float3 normal)
+float ReSTIRContributionLuminance(float3 contribution)
 {
-  const float3 representativePosition = GetRepresentativeLightPosition(lightData, worldPosition);
-  const float3 toLight                = representativePosition - worldPosition;
-  const float  distanceToLight        = length(toLight);
-  const float3 pointToLight           = distanceToLight > 1e-4f ? toLight / distanceToLight : normalize(-lightData.DirectionAndType.xyz);
+  const float luminance = dot(max(contribution, 0.0f), float3(0.2126f, 0.7152f, 0.0722f));
+  return isfinite(luminance) ? max(luminance, 0.0f) : 0.0f;
+}
 
-  float attenuation = EvaluateFiniteEmitterAttenuation(distanceToLight, lightData.AttenuationAndSize.x, lightData.AttenuationAndSize.y);
-  if (GetLightType(lightData) == XII_LIGHT_TYPE_SPOT)
-    attenuation *= EvaluateSpotCone(lightData, pointToLight);
+float3 ReSTIRGetViewDirection(float3 worldPosition, float3 normal)
+{
+  const float3 toCamera = g_CameraPositionAndNearPlane.xyz - worldPosition;
+  const float distanceToCamera = length(toCamera);
+  return distanceToCamera > 1e-5f ? toCamera / distanceToCamera : normal;
+}
 
-  attenuation *= SampleIESProfile(lightData, pointToLight);
-  attenuation *= GetPhotometricEmitterScale(lightData, pointToLight);
-  const float luminance = dot(lightData.ColorAndIntensity.rgb, float3(0.2126f, 0.7152f, 0.0722f));
-  return max(luminance * lightData.ColorAndIntensity.w * attenuation * saturate(dot(normal, pointToLight)), 0.0f);
+// Scalar importance target used by candidate generation and final normalization. It evaluates
+// the same unshadowed layered material response as final shading. Visibility remains excluded so
+// reused samples can be re-evaluated at a new receiver before one final shadow test.
+float ReSTIREstimateTarget(xiiGpuLightData lightData, float3 worldPosition, float3 normal, xiiReSTIRDISurface surface)
+{
+  const float3 viewDirection = ReSTIRGetViewDirection(worldPosition, normal);
+  const float3 contribution = EvaluateLocalLightLayered(
+    lightData, worldPosition, normal, viewDirection, surface.Albedo, surface.Roughness, surface.Metallic,
+    surface.DielectricSpecular, surface.Transmission, 0.0f, 0.1f);
+  return ReSTIRContributionLuminance(contribution);
 }
 
 uint ReSTIRGetEmissiveTriangleCount()
@@ -163,21 +189,25 @@ float ReSTIREmissiveSolidAngle(xiiGpuEmissiveTriangle emissiveTriangle, float3 w
   return 2.0f * atan2(numerator, denominator);
 }
 
-float ReSTIREstimateEmissiveTarget(xiiGpuEmissiveTriangle emissiveTriangle, float3 worldPosition, float3 normal)
+float ReSTIREstimateEmissiveTarget(xiiGpuEmissiveTriangle emissiveTriangle, float3 worldPosition, float3 normal, xiiReSTIRDISurface surface)
 {
   float3 directionToLight;
   const float solidAngle = ReSTIREmissiveSolidAngle(emissiveTriangle, worldPosition, directionToLight);
-  return max(emissiveTriangle.RadianceAndLuminance.w * solidAngle * saturate(dot(normal, directionToLight)), 0.0f);
+  const float3 viewDirection = ReSTIRGetViewDirection(worldPosition, normal);
+  const float3 contribution = BRDFLayered(
+    surface.Albedo, surface.Roughness, surface.Metallic, surface.DielectricSpecular, surface.Transmission,
+    0.0f, 0.1f, normal, directionToLight, viewDirection) * emissiveTriangle.RadianceAndLuminance.rgb * solidAngle;
+  return ReSTIRContributionLuminance(contribution);
 }
 
-float ReSTIREstimateSampleTarget(uint sampleIndex, float3 worldPosition, float3 normal)
+float ReSTIREstimateSampleTarget(uint sampleIndex, float3 worldPosition, float3 normal, xiiReSTIRDISurface surface)
 {
   if ((sampleIndex & XII_RESTIR_EMISSIVE_BIT) != 0u)
   {
     const uint triangleIndex = sampleIndex & XII_RESTIR_SAMPLE_MASK;
-    return triangleIndex < ReSTIRGetEmissiveTriangleCount() ? ReSTIREstimateEmissiveTarget(g_EmissiveTriangles[triangleIndex], worldPosition, normal) : 0.0f;
+    return triangleIndex < ReSTIRGetEmissiveTriangleCount() ? ReSTIREstimateEmissiveTarget(g_EmissiveTriangles[triangleIndex], worldPosition, normal, surface) : 0.0f;
   }
-  return sampleIndex < g_ActiveLightCount ? ReSTIREstimateTarget(g_Lights[sampleIndex], worldPosition, normal) : 0.0f;
+  return sampleIndex < g_ActiveLightCount ? ReSTIREstimateTarget(g_Lights[sampleIndex], worldPosition, normal, surface) : 0.0f;
 }
 
 void ReSTIRFinalizeReservoir(inout xiiReSTIRDIReservoir reservoir, float selectedTarget)

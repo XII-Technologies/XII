@@ -740,7 +740,7 @@ private:
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
       xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: compact index, stable ID, weight sum, sample count.
-      xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding and depth.
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.
       bool                                        m_bDirectReservoirHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pVolumetricHistory[2]; ///< Ping-pong integrated scattering history at render resolution.
       bool                                        m_bVolumetricHistoryValid = false;

@@ -16,7 +16,10 @@ StructuredBuffer<xiiGpuLightData> g_Lights;
 #include <Shaders/Pipeline/Passes/ReSTIR/ReSTIRDIConstants.h>
 
 Texture2D<float>        g_SceneDepth;
+Texture2D<float4>       g_GBufferAlbedo;
 Texture2D<float2>       g_GBufferNormal;
+Texture2D<float4>       g_GBufferMaterial;
+Texture2D<float4>       g_GBufferEmissive;
 Texture2D<float2>       g_Velocity;
 StructuredBuffer<uint2> g_LightGrid;
 StructuredBuffer<uint>  g_LightIndex;
@@ -139,6 +142,11 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
   }
 
   const float3 normal = DecodeOctNormal(g_GBufferNormal.Load(int3(pixel, 0)));
+  const float4 albedo = g_GBufferAlbedo.Load(int3(pixel, 0));
+  const float4 material = g_GBufferMaterial.Load(int3(pixel, 0));
+  const uint materialFlags = (uint)round(saturate(material.a) * 255.0f);
+  const float transmission = (materialFlags & (1u << 6u)) != 0u ? saturate(g_GBufferEmissive.Load(int3(pixel, 0)).a) : 0.0f;
+  const xiiReSTIRDISurface surface = ReSTIRMakeSurface(albedo.rgb, material.r, material.g, material.b, transmission);
   const float3 worldPosition = ReconstructWorldPos(uv, depth);
   const uint clusterIndex = ComputeReSTIRClusterIndex(uv, depth);
   const uint2 lightRange = g_LightGrid[clusterIndex];
@@ -166,7 +174,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
       if (!SampleEmissiveTriangle(randomState, triangleIndex, emissiveProposalProbability))
         continue;
       const xiiGpuEmissiveTriangle emissiveTriangle = g_EmissiveTriangles[triangleIndex];
-      const float target = ReSTIREstimateEmissiveTarget(emissiveTriangle, worldPosition, normal);
+      const float target = ReSTIREstimateEmissiveTarget(emissiveTriangle, worldPosition, normal, surface);
       const float proposalProbability = (hasAnalyticalDistribution ? 0.5f : 1.0f) * emissiveProposalProbability;
       ReSTIRUpdateReservoir(reservoir, XII_RESTIR_EMISSIVE_BIT | triangleIndex, emissiveTriangle.Metadata.x,
                             target / proposalProbability, 1u, randomState);
@@ -179,7 +187,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
         continue;
 
       const xiiGpuLightData lightData = g_Lights[lightIndex];
-      const float target = ReSTIREstimateTarget(lightData, worldPosition, normal);
+      const float target = ReSTIREstimateTarget(lightData, worldPosition, normal, surface);
       const float proposalProbability = (hasEmissiveDistribution ? 0.5f : 1.0f) * analyticalProposalProbability;
       ReSTIRUpdateReservoir(reservoir, lightIndex, lightData.Metadata.x, target / proposalProbability, 1u, randomState);
     }
@@ -199,18 +207,18 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     const float3 previousNormal = DecodeOctNormal(previousSurface.xy);
     const bool surfaceMatches = previousDepth > 0.0f &&
       abs(previousDepth - currentLinearDepth) <= max(currentLinearDepth * 0.10f, 0.02f) &&
-      dot(previousNormal, normal) >= 0.8f;
+      dot(previousNormal, normal) >= 0.8f && abs(previousSurface.w - surface.Roughness) <= 0.2f;
 
     if (surfaceMatches && ReSTIRValidateReservoir(previous))
     {
       previous.M = min(previous.M, XII_RESTIR_MAX_HISTORY_M);
-      const float target = ReSTIREstimateSampleTarget(previous.SampleIndex, worldPosition, normal);
+      const float target = ReSTIREstimateSampleTarget(previous.SampleIndex, worldPosition, normal, surface);
       const float aggregateWeight = target * previous.WeightSum * (float)previous.M;
       ReSTIRUpdateReservoir(reservoir, previous.SampleIndex, previous.StableLightId, aggregateWeight, previous.M, randomState);
     }
   }
 
-  const float selectedTarget = ReSTIREstimateSampleTarget(reservoir.SampleIndex, worldPosition, normal);
+  const float selectedTarget = ReSTIREstimateSampleTarget(reservoir.SampleIndex, worldPosition, normal, surface);
   ReSTIRFinalizeReservoir(reservoir, selectedTarget);
   g_TemporalReservoir[pixel] = ReSTIRPackReservoir(reservoir);
 }
