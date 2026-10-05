@@ -1,0 +1,94 @@
+// XII Engine - Builds the top level of the hierarchical emissive-light alias distribution.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveAliasBuildConstants.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+
+StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
+StructuredBuffer<float>                     g_BlockPowers;
+RWStructuredBuffer<xiiGpuEmissiveAliasEntry> g_BlockAliases;
+RWStructuredBuffer<xiiGpuEmissiveAliasHeader> g_EmissiveAliasHeader;
+RWStructuredBuffer<float>                    g_AliasProbabilities;
+RWStructuredBuffer<uint>                     g_AliasSmall;
+RWStructuredBuffer<uint>                     g_AliasLarge;
+
+xiiGpuEmissiveAliasEntry MakeAliasEntry(float probability, uint aliasIndex)
+{
+  xiiGpuEmissiveAliasEntry entry;
+  entry.Probability = probability;
+  entry.AliasIndex = aliasIndex;
+  entry._Padding = uint2(0u, 0u);
+  return entry;
+}
+
+[numthreads(1, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint headerBufferCount, headerStride;
+  g_EmissiveHeader.GetDimensions(headerBufferCount, headerStride);
+  const uint triangleCount = headerBufferCount > 0u ? min(g_EmissiveHeader[0].TriangleCount, TriangleCapacity) : 0u;
+  const uint blockCount = min((triangleCount + TrianglesPerBlock - 1u) / TrianglesPerBlock, BlockCapacity);
+
+  float totalPower = 0.0f;
+  [loop]
+  for (uint blockIndex = 0u; blockIndex < blockCount; ++blockIndex)
+    totalPower += max(g_BlockPowers[blockIndex], 0.0f);
+  if (!isfinite(totalPower))
+    totalPower = 0.0f;
+
+  xiiGpuEmissiveAliasHeader header;
+  header.BlockCount = totalPower > 0.0f ? blockCount : 0u;
+  header.TrianglesPerBlock = TrianglesPerBlock;
+  header.TotalPower = totalPower;
+  header.FrameIndex = FrameIndex;
+  g_EmissiveAliasHeader[0] = header;
+  if (blockCount == 0u || !(totalPower > 0.0f))
+    return;
+
+  uint smallCount = 0u;
+  uint largeCount = 0u;
+  [loop]
+  for (uint blockIndex = 0u; blockIndex < blockCount; ++blockIndex)
+  {
+    const float scaledProbability = max(g_BlockPowers[blockIndex], 0.0f) * (float)blockCount / totalPower;
+    g_AliasProbabilities[blockIndex] = scaledProbability;
+    if (scaledProbability < 1.0f)
+      g_AliasSmall[smallCount++] = blockIndex;
+    else
+      g_AliasLarge[largeCount++] = blockIndex;
+  }
+
+  [loop]
+  while (smallCount > 0u && largeCount > 0u)
+  {
+    const uint smallIndex = g_AliasSmall[--smallCount];
+    const uint largeIndex = g_AliasLarge[--largeCount];
+    const float probability = saturate(g_AliasProbabilities[smallIndex]);
+    g_BlockAliases[smallIndex] = MakeAliasEntry(probability, largeIndex);
+    const float remaining = g_AliasProbabilities[largeIndex] + probability - 1.0f;
+    g_AliasProbabilities[largeIndex] = remaining;
+    if (remaining < 1.0f)
+      g_AliasSmall[smallCount++] = largeIndex;
+    else
+      g_AliasLarge[largeCount++] = largeIndex;
+  }
+
+  [loop]
+  while (largeCount > 0u)
+  {
+    const uint blockIndex = g_AliasLarge[--largeCount];
+    g_BlockAliases[blockIndex] = MakeAliasEntry(1.0f, blockIndex);
+  }
+  [loop]
+  while (smallCount > 0u)
+  {
+    const uint blockIndex = g_AliasSmall[--smallCount];
+    g_BlockAliases[blockIndex] = MakeAliasEntry(1.0f, blockIndex);
+  }
+}

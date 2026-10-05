@@ -181,6 +181,9 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   const float luminance = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
   if (!isfinite(luminance) || luminance <= 0.0f)
     return;
+  const float powerWeight = area * luminance;
+  if (!isfinite(powerWeight) || powerWeight <= 0.0f)
+    return;
 
   uint ignored;
   InterlockedAdd(g_EmissiveHeader[0].CandidateCount, 1u, ignored);
@@ -190,7 +193,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
 
   xiiGpuEmissiveTriangle emissiveTriangle;
   emissiveTriangle.Position0AndArea = float4(p0, area);
-  emissiveTriangle.Position1AndPowerWeight = float4(p1, area * luminance);
+  emissiveTriangle.Position1AndPowerWeight = float4(p1, powerWeight);
   emissiveTriangle.Position2AndInvArea = float4(p2, rcp(area));
   emissiveTriangle.NormalAndTwoSided = float4(areaVector / doubleArea, (material.Metadata.y & (1u << 10u)) != 0u ? 1.0f : 0.0f);
   emissiveTriangle.RadianceAndLuminance = float4(radiance, luminance);

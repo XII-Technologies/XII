@@ -719,6 +719,9 @@ private:
       xiiRenderGraphBufferHandle                  m_hRayTracingGeometryData;
       xiiRenderGraphBufferHandle                  m_hEmissiveTriangles;
       xiiRenderGraphBufferHandle                  m_hEmissiveLightHeader;
+      xiiRenderGraphBufferHandle                  m_hEmissiveTriangleAliases;
+      xiiRenderGraphBufferHandle                  m_hEmissiveBlockAliases;
+      xiiRenderGraphBufferHandle                  m_hEmissiveAliasHeader;
       xiiUInt32                                   m_uiRTGIShaderRecordStride         = 0U;
       xiiUInt32                                   m_uiRTReflectionShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIHistory[2];

@@ -13,38 +13,74 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveAliasBuildConstants.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightBuildConstants.h>
 
 namespace
 {
   struct EmissiveLightBuildPassData
   {
-    xiiRenderGraphBufferHandle              m_hSceneInstances;
-    xiiRenderGraphBufferHandle              m_hGeometry;
-    xiiRenderGraphBufferHandle              m_hMeshlets;
-    xiiRenderGraphBufferHandle              m_hSurfaceMaterials;
-    xiiRenderGraphBufferHandle              m_hTriangles;
-    xiiRenderGraphBufferHandle              m_hHeader;
-    xiiRenderGraphBufferHandle              m_hConstants;
+    xiiRenderGraphBufferHandle                m_hSceneInstances;
+    xiiRenderGraphBufferHandle                m_hGeometry;
+    xiiRenderGraphBufferHandle                m_hMeshlets;
+    xiiRenderGraphBufferHandle                m_hSurfaceMaterials;
+    xiiRenderGraphBufferHandle                m_hTriangles;
+    xiiRenderGraphBufferHandle                m_hHeader;
+    xiiRenderGraphBufferHandle                m_hConstants;
     xiiEmissiveLightManager::BuildDescription m_Description;
-    xiiUInt64                               m_uiFrameIndex       = 0U;
-    xiiUInt32                               m_uiTriangleCapacity = 0U;
-    xiiUInt32                               m_uiDispatchY        = 0U;
-    xiiUInt32                               m_uiDispatchZ        = 0U;
-    bool                                    m_bExtract           = false;
+    xiiUInt64                                 m_uiFrameIndex       = 0U;
+    xiiUInt32                                 m_uiTriangleCapacity = 0U;
+    xiiUInt32                                 m_uiDispatchY        = 0U;
+    xiiUInt32                                 m_uiDispatchZ        = 0U;
+    bool                                      m_bExtract           = false;
   };
+
+  struct EmissiveAliasBlockBuildPassData
+  {
+    xiiRenderGraphBufferHandle m_hTriangles;
+    xiiRenderGraphBufferHandle m_hHeader;
+    xiiRenderGraphBufferHandle m_hTriangleAliases;
+    xiiRenderGraphBufferHandle m_hBlockPowers;
+    xiiRenderGraphBufferHandle m_hProbabilities;
+    xiiRenderGraphBufferHandle m_hSmall;
+    xiiRenderGraphBufferHandle m_hLarge;
+    xiiRenderGraphBufferHandle m_hConstants;
+    xiiUInt32                  m_uiTriangleCapacity = 0U;
+    xiiUInt32                  m_uiBlockCapacity    = 0U;
+    xiiUInt32                  m_uiDispatchWidth    = 0U;
+    xiiUInt32                  m_uiDispatchHeight   = 0U;
+    xiiUInt32                  m_uiFrameIndex       = 0U;
+  };
+
+  struct EmissiveAliasGlobalBuildPassData
+  {
+    xiiRenderGraphBufferHandle m_hHeader;
+    xiiRenderGraphBufferHandle m_hBlockPowers;
+    xiiRenderGraphBufferHandle m_hProbabilities;
+    xiiRenderGraphBufferHandle m_hSmall;
+    xiiRenderGraphBufferHandle m_hLarge;
+    xiiRenderGraphBufferHandle m_hBlockAliases;
+    xiiRenderGraphBufferHandle m_hAliasHeader;
+    xiiRenderGraphBufferHandle m_hConstants;
+    xiiUInt32                  m_uiTriangleCapacity = 0U;
+    xiiUInt32                  m_uiBlockCapacity    = 0U;
+    xiiUInt32                  m_uiDispatchWidth    = 0U;
+    xiiUInt32                  m_uiFrameIndex       = 0U;
+  };
+
+  static constexpr xiiUInt32 s_uiTrianglesPerAliasBlock = 256U;
 
   bool IsConfigurationValid(const xiiEmissiveLightSettings& settings)
   {
     return settings.m_uiMaxTriangles > 0U && settings.m_uiMaxTriangles <= 16U * 1024U * 1024U;
   }
 
-  xiiSharedPtr<xiiGALComputePipelineState> LoadBuildPipeline()
+  xiiSharedPtr<xiiGALComputePipelineState> LoadComputePipeline(xiiStringView sShaderPath)
   {
-    const xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/EmissiveTriangleBuild.xiiShader");
+    const xiiShaderResourceHandle                  hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
     xiiHashTable<xiiHashedString, xiiHashedString> variables(xiiTemporaryAllocator::Get());
-    const xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, variables, true);
-    xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+    const xiiShaderPermutationResourceHandle       hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, variables, true);
+    xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
     if (!permutation.IsValid())
       return nullptr;
 
@@ -58,10 +94,12 @@ namespace
 class xiiEmissiveLightManager::State
 {
 public:
-  xiiEmissiveLightSettings                   m_Settings;
-  xiiEmissiveLightStats                      m_Stats;
-  xiiSharedPtr<xiiGALComputePipelineState>   m_pBuildPipeline;
-  bool                                       m_bEngineStarted = false;
+  xiiEmissiveLightSettings                 m_Settings;
+  xiiEmissiveLightStats                    m_Stats;
+  xiiSharedPtr<xiiGALComputePipelineState> m_pBuildPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_pAliasBlockBuildPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState> m_pAliasGlobalBuildPipeline;
+  bool                                     m_bEngineStarted = false;
 };
 
 xiiUniquePtr<xiiEmissiveLightManager::State> xiiEmissiveLightManager::s_pState;
@@ -114,6 +152,30 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuEmissiveTriangle, xiiNoBase, 1, xiiRTTIDef
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuEmissiveAliasEntry, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuEmissiveAliasEntry>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Probability", Probability),
+    XII_MEMBER_PROPERTY("AliasIndex", AliasIndex),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuEmissiveAliasHeader, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuEmissiveAliasHeader>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("BlockCount", BlockCount),
+    XII_MEMBER_PROPERTY("TrianglesPerBlock", TrianglesPerBlock),
+    XII_MEMBER_PROPERTY("TotalPower", TotalPower),
+    XII_MEMBER_PROPERTY("FrameIndex", FrameIndex),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuEmissiveLightHeader, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuEmissiveLightHeader>)
 {
   XII_BEGIN_PROPERTIES
@@ -154,8 +216,8 @@ XII_END_STATIC_REFLECTED_TYPE;
 void xiiEmissiveLightManager::Startup()
 {
   XII_ASSERT_DEV(s_pState == nullptr, "Emissive light manager started twice.");
-  s_pState = XII_DEFAULT_NEW(State);
-  s_pState->m_Settings = {};
+  s_pState                               = XII_DEFAULT_NEW(State);
+  s_pState->m_Settings                   = {};
   s_pState->m_Stats.m_uiTriangleCapacity = s_pState->m_Settings.m_uiMaxTriangles;
 }
 
@@ -170,6 +232,8 @@ void xiiEmissiveLightManager::EngineShutdown()
   if (s_pState != nullptr)
   {
     s_pState->m_pBuildPipeline.Clear();
+    s_pState->m_pAliasBlockBuildPipeline.Clear();
+    s_pState->m_pAliasGlobalBuildPipeline.Clear();
     s_pState->m_bEngineStarted = false;
   }
 }
@@ -185,7 +249,7 @@ xiiResult xiiEmissiveLightManager::Configure(const xiiEmissiveLightSettings& set
   if (s_pState == nullptr || !IsConfigurationValid(settings))
     return XII_FAILURE;
 
-  s_pState->m_Settings = settings;
+  s_pState->m_Settings                   = settings;
   s_pState->m_Stats.m_uiTriangleCapacity = settings.m_uiMaxTriangles;
   return XII_SUCCESS;
 }
@@ -223,8 +287,12 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
     description.m_Geometry.m_uiMaximumResidentMeshletCount > 0U && description.m_uiVertexStride >= 12U;
 
   if (bExtract && s_pState->m_pBuildPipeline == nullptr)
-    s_pState->m_pBuildPipeline = LoadBuildPipeline();
-  if (bExtract && s_pState->m_pBuildPipeline == nullptr)
+    s_pState->m_pBuildPipeline = LoadComputePipeline("Shaders/Pipeline/EmissiveTriangleBuild.xiiShader");
+  if (s_pState->m_pAliasBlockBuildPipeline == nullptr)
+    s_pState->m_pAliasBlockBuildPipeline = LoadComputePipeline("Shaders/Pipeline/EmissiveAliasBlockBuild.xiiShader");
+  if (s_pState->m_pAliasGlobalBuildPipeline == nullptr)
+    s_pState->m_pAliasGlobalBuildPipeline = LoadComputePipeline("Shaders/Pipeline/EmissiveAliasGlobalBuild.xiiShader");
+  if ((bExtract && s_pState->m_pBuildPipeline == nullptr) || s_pState->m_pAliasBlockBuildPipeline == nullptr || s_pState->m_pAliasGlobalBuildPipeline == nullptr)
     return outputs;
 
   const xiiUInt32 uiMaxGroupCountY = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties.m_uiMaxThreadGroupCountY;
@@ -238,7 +306,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
   }
 
   const xiiUInt32 uiTriangleCapacity = s_pState->m_Settings.m_uiMaxTriangles;
-  auto buildPass = graph.AddPass<EmissiveLightBuildPassData>(
+  auto            buildPass          = graph.AddPass<EmissiveLightBuildPassData>(
     "GPU Emissive Triangle Build", xiiGALCommandQueueFlags::Compute,
     [&](EmissiveLightBuildPassData& data, xiiRenderGraphBuilder& builder) {
       if (bExtract)
@@ -261,18 +329,18 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       bufferDescription.m_uiElementByteStride = sizeof(xiiGpuEmissiveLightHeader);
       data.m_hHeader                          = builder.WriteBuffer("GPU Emissive Light Header", bufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
-      bufferDescription                       = {};
-      bufferDescription.m_uiSize              = sizeof(xiiEmissiveLightBuildConstants);
-      bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
-      bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
-      bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-      data.m_hConstants                       = builder.WriteBuffer("xiiEmissiveLightBuildConstants", bufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
+      bufferDescription                  = {};
+      bufferDescription.m_uiSize         = sizeof(xiiEmissiveLightBuildConstants);
+      bufferDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+      bufferDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+      bufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      data.m_hConstants                  = builder.WriteBuffer("xiiEmissiveLightBuildConstants", bufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
       builder.SetPassAllowMerge(false);
     },
     [](const EmissiveLightBuildPassData& data, xiiRenderGraphPassContext& context) {
-      xiiGALCommandList& cmd = context.GetCommandList();
+      xiiGALCommandList&        cmd    = context.GetCommandList();
       xiiGpuEmissiveLightHeader header = {};
-      header.FrameIndex = static_cast<xiiUInt32>(data.m_uiFrameIndex);
+      header.FrameIndex                = static_cast<xiiUInt32>(data.m_uiFrameIndex);
       cmd.UpdateBuffer(context.GetBuffer(data.m_hHeader), 0U,
                        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&header), sizeof(header)));
       if (!data.m_bExtract)
@@ -311,14 +379,148 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
   buildPass.first->m_uiDispatchZ        = uiDispatchZ;
   buildPass.first->m_bExtract           = bExtract;
 
-  outputs.m_hTriangles        = buildPass.first->m_hTriangles;
-  outputs.m_hHeader           = buildPass.first->m_hHeader;
+  const xiiUInt32 uiBlockCapacity       = (uiTriangleCapacity + s_uiTrianglesPerAliasBlock - 1U) / s_uiTrianglesPerAliasBlock;
+  const xiiUInt32 uiMaxGroupCountX      = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties.m_uiMaxThreadGroupCountX;
+  const xiiUInt32 uiAliasDispatchWidth  = xiiMath::Min(uiBlockCapacity, uiMaxGroupCountX);
+  const xiiUInt32 uiAliasDispatchHeight = (uiBlockCapacity + uiAliasDispatchWidth - 1U) / uiAliasDispatchWidth;
+  if (uiAliasDispatchHeight > uiMaxGroupCountY)
+  {
+    xiiLog::Error("Emissive alias construction requires a {} by {} dispatch, exceeding the device limits of {} by {}.",
+                  uiAliasDispatchWidth, uiAliasDispatchHeight, uiMaxGroupCountX, uiMaxGroupCountY);
+    return outputs;
+  }
+
+  auto aliasBlockPass = graph.AddPass<EmissiveAliasBlockBuildPassData>(
+    "GPU Emissive Alias Block Build", xiiGALCommandQueueFlags::Compute,
+    [&](EmissiveAliasBlockBuildPassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_hTriangles = builder.ReadBuffer(buildPass.first->m_hTriangles, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hHeader    = builder.ReadBuffer(buildPass.first->m_hHeader, xiiGALResourceStateFlags::ShaderResource);
+
+      xiiGALBufferCreationDescription bufferDescription;
+      bufferDescription.m_uiSize              = static_cast<xiiUInt64>(uiTriangleCapacity) * sizeof(xiiGpuEmissiveAliasEntry);
+      bufferDescription.m_uiElementByteStride = sizeof(xiiGpuEmissiveAliasEntry);
+      bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+      bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+      bufferDescription.m_Usage               = xiiGALResourceUsage::Default;
+      data.m_hTriangleAliases                 = builder.WriteBuffer("GPU Emissive Triangle Aliases", bufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+      bufferDescription.m_uiSize              = static_cast<xiiUInt64>(uiBlockCapacity) * sizeof(float);
+      bufferDescription.m_uiElementByteStride = sizeof(float);
+      data.m_hBlockPowers                     = builder.WriteBuffer("GPU Emissive Alias Block Powers", bufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+      bufferDescription.m_uiSize              = static_cast<xiiUInt64>(uiTriangleCapacity) * sizeof(float);
+      bufferDescription.m_uiElementByteStride = sizeof(float);
+      data.m_hProbabilities                   = builder.WriteBuffer("GPU Emissive Alias Probabilities", bufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hSmall                           = builder.WriteBuffer("GPU Emissive Alias Small Stack", bufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hLarge                           = builder.WriteBuffer("GPU Emissive Alias Large Stack", bufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+      bufferDescription                  = {};
+      bufferDescription.m_uiSize         = sizeof(xiiEmissiveAliasBuildConstants);
+      bufferDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+      bufferDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+      bufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      data.m_hConstants                  = builder.WriteBuffer("xiiEmissiveAliasBlockBuildConstants", bufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
+      builder.SetPassAllowMerge(false);
+    },
+    [](const EmissiveAliasBlockBuildPassData& data, xiiRenderGraphPassContext& context) {
+      xiiGALCommandList& cmd = context.GetCommandList();
+      {
+        xiiGALMapHelper<xiiEmissiveAliasBuildConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        constants->TriangleCapacity   = data.m_uiTriangleCapacity;
+        constants->BlockCapacity      = data.m_uiBlockCapacity;
+        constants->TrianglesPerBlock  = s_uiTrianglesPerAliasBlock;
+        constants->BlockDispatchWidth = data.m_uiDispatchWidth;
+        constants->FrameIndex         = data.m_uiFrameIndex;
+        constants->_Padding           = xiiVec3U32::MakeZero();
+      }
+
+      cmd.SetPipelineState(xiiEmissiveLightManager::s_pState->m_pAliasBlockBuildPipeline);
+      cmd.ResolveAndSetConstantBuffer("xiiEmissiveAliasBuildConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_TriangleAliases", context.GetBuffer(data.m_hTriangleAliases)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_BlockPowers", context.GetBuffer(data.m_hBlockPowers)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasProbabilities", context.GetBuffer(data.m_hProbabilities)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasSmall", context.GetBuffer(data.m_hSmall)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasLarge", context.GetBuffer(data.m_hLarge)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DispatchCompute({data.m_uiDispatchWidth, data.m_uiDispatchHeight, 1U});
+    });
+  aliasBlockPass.first->m_uiTriangleCapacity = uiTriangleCapacity;
+  aliasBlockPass.first->m_uiBlockCapacity    = uiBlockCapacity;
+  aliasBlockPass.first->m_uiDispatchWidth    = uiAliasDispatchWidth;
+  aliasBlockPass.first->m_uiDispatchHeight   = uiAliasDispatchHeight;
+  aliasBlockPass.first->m_uiFrameIndex       = static_cast<xiiUInt32>(uiFrameIndex);
+
+  auto aliasGlobalPass = graph.AddPass<EmissiveAliasGlobalBuildPassData>(
+    "GPU Emissive Alias Global Build", xiiGALCommandQueueFlags::Compute,
+    [&](EmissiveAliasGlobalBuildPassData& data, xiiRenderGraphBuilder& builder) {
+      data.m_hHeader        = builder.ReadBuffer(buildPass.first->m_hHeader, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hBlockPowers   = builder.ReadBuffer(aliasBlockPass.first->m_hBlockPowers, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hProbabilities = builder.ReadWriteBuffer(aliasBlockPass.first->m_hProbabilities, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hSmall         = builder.ReadWriteBuffer(aliasBlockPass.first->m_hSmall, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_hLarge         = builder.ReadWriteBuffer(aliasBlockPass.first->m_hLarge, xiiGALResourceStateFlags::UnorderedAccess);
+
+      xiiGALBufferCreationDescription bufferDescription;
+      bufferDescription.m_uiSize              = static_cast<xiiUInt64>(uiBlockCapacity) * sizeof(xiiGpuEmissiveAliasEntry);
+      bufferDescription.m_uiElementByteStride = sizeof(xiiGpuEmissiveAliasEntry);
+      bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+      bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+      bufferDescription.m_Usage               = xiiGALResourceUsage::Default;
+      data.m_hBlockAliases                    = builder.WriteBuffer("GPU Emissive Block Aliases", bufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+      bufferDescription.m_uiSize              = sizeof(xiiGpuEmissiveAliasHeader);
+      bufferDescription.m_uiElementByteStride = sizeof(xiiGpuEmissiveAliasHeader);
+      data.m_hAliasHeader                     = builder.WriteBuffer("GPU Emissive Alias Header", bufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+      bufferDescription                  = {};
+      bufferDescription.m_uiSize         = sizeof(xiiEmissiveAliasBuildConstants);
+      bufferDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+      bufferDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+      bufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      data.m_hConstants                  = builder.WriteBuffer("xiiEmissiveAliasGlobalBuildConstants", bufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
+      builder.SetPassAllowMerge(false);
+    },
+    [](const EmissiveAliasGlobalBuildPassData& data, xiiRenderGraphPassContext& context) {
+      xiiGALCommandList& cmd = context.GetCommandList();
+      {
+        xiiGALMapHelper<xiiEmissiveAliasBuildConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        constants->TriangleCapacity   = data.m_uiTriangleCapacity;
+        constants->BlockCapacity      = data.m_uiBlockCapacity;
+        constants->TrianglesPerBlock  = s_uiTrianglesPerAliasBlock;
+        constants->BlockDispatchWidth = data.m_uiDispatchWidth;
+        constants->FrameIndex         = data.m_uiFrameIndex;
+        constants->_Padding           = xiiVec3U32::MakeZero();
+      }
+
+      cmd.SetPipelineState(xiiEmissiveLightManager::s_pState->m_pAliasGlobalBuildPipeline);
+      cmd.ResolveAndSetConstantBuffer("xiiEmissiveAliasBuildConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceBufferView("g_BlockPowers", context.GetBuffer(data.m_hBlockPowers)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_BlockAliases", context.GetBuffer(data.m_hBlockAliases)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_EmissiveAliasHeader", context.GetBuffer(data.m_hAliasHeader)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasProbabilities", context.GetBuffer(data.m_hProbabilities)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasSmall", context.GetBuffer(data.m_hSmall)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasLarge", context.GetBuffer(data.m_hLarge)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DispatchCompute({1U, 1U, 1U});
+    });
+  aliasGlobalPass.first->m_uiTriangleCapacity = uiTriangleCapacity;
+  aliasGlobalPass.first->m_uiBlockCapacity    = uiBlockCapacity;
+  aliasGlobalPass.first->m_uiDispatchWidth    = uiAliasDispatchWidth;
+  aliasGlobalPass.first->m_uiFrameIndex       = static_cast<xiiUInt32>(uiFrameIndex);
+
+  outputs.m_hTriangles         = buildPass.first->m_hTriangles;
+  outputs.m_hHeader            = buildPass.first->m_hHeader;
+  outputs.m_hTriangleAliases   = aliasBlockPass.first->m_hTriangleAliases;
+  outputs.m_hBlockAliases      = aliasGlobalPass.first->m_hBlockAliases;
+  outputs.m_hAliasHeader       = aliasGlobalPass.first->m_hAliasHeader;
   outputs.m_uiTriangleCapacity = uiTriangleCapacity;
 
-  s_pState->m_Stats.m_uiTriangleCapacity              = uiTriangleCapacity;
-  s_pState->m_Stats.m_uiScheduledInstanceCount        = bExtract ? description.m_uiInstanceCount : 0U;
-  s_pState->m_Stats.m_uiScheduledMeshletsPerInstance  = bExtract ? description.m_Geometry.m_uiMaximumResidentMeshletCount : 0U;
-  s_pState->m_Stats.m_uiLastScheduledFrame            = uiFrameIndex;
+  s_pState->m_Stats.m_uiTriangleCapacity             = uiTriangleCapacity;
+  s_pState->m_Stats.m_uiScheduledInstanceCount       = bExtract ? description.m_uiInstanceCount : 0U;
+  s_pState->m_Stats.m_uiScheduledMeshletsPerInstance = bExtract ? description.m_Geometry.m_uiMaximumResidentMeshletCount : 0U;
+  s_pState->m_Stats.m_uiLastScheduledFrame           = uiFrameIndex;
   return outputs;
 }
 

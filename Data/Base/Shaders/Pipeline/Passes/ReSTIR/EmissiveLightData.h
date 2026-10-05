@@ -34,7 +34,33 @@ struct XII_SHADER_STRUCT xiiGpuEmissiveLightHeader
   UINT1(FrameIndex);
 };
 
+/// One entry in an emissive-light Vose alias table. Probability is the acceptance
+/// threshold for the entry's own column; AliasIndex is selected otherwise.
+struct XII_SHADER_STRUCT xiiGpuEmissiveAliasEntry
+{
+#if XII_DISABLED(XII_SHADER_PLATFORM)
+  XII_DECLARE_POD_TYPE();
+#endif
+  FLOAT1(Probability);
+  UINT1(AliasIndex);
+  UINT2(_Padding);
+};
+
+/// Describes the two-level power-weighted emissive-light distribution.
+struct XII_SHADER_STRUCT xiiGpuEmissiveAliasHeader
+{
+#if XII_DISABLED(XII_SHADER_PLATFORM)
+  XII_DECLARE_POD_TYPE();
+#endif
+  UINT1(BlockCount);
+  UINT1(TrianglesPerBlock);
+  FLOAT1(TotalPower);
+  UINT1(FrameIndex);
+};
+
 #if XII_DISABLED(XII_SHADER_PLATFORM)
 static_assert(sizeof(xiiGpuEmissiveTriangle) == 96U, "Emissive triangle records must match the HLSL structured-buffer stride.");
 static_assert(sizeof(xiiGpuEmissiveLightHeader) == 16U, "Emissive light headers must match the HLSL structured-buffer stride.");
+static_assert(sizeof(xiiGpuEmissiveAliasEntry) == 16U, "Emissive alias entries must match the HLSL structured-buffer stride.");
+static_assert(sizeof(xiiGpuEmissiveAliasHeader) == 16U, "Emissive alias headers must match the HLSL structured-buffer stride.");
 #endif

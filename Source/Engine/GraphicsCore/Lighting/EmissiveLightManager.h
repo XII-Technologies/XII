@@ -13,6 +13,8 @@
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuEmissiveTriangle);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuEmissiveLightHeader);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuEmissiveAliasEntry);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuEmissiveAliasHeader);
 
 /// Capacity and quality controls for GPU emissive-triangle extraction.
 struct XII_GRAPHICSCORE_DLL xiiEmissiveLightSettings
@@ -28,10 +30,10 @@ struct XII_GRAPHICSCORE_DLL xiiEmissiveLightStats
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiTriangleCapacity          = 0U;
-  xiiUInt32 m_uiScheduledInstanceCount    = 0U;
+  xiiUInt32 m_uiTriangleCapacity             = 0U;
+  xiiUInt32 m_uiScheduledInstanceCount       = 0U;
   xiiUInt32 m_uiScheduledMeshletsPerInstance = 0U;
-  xiiUInt64 m_uiLastScheduledFrame        = 0U;
+  xiiUInt64 m_uiLastScheduledFrame           = 0U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiEmissiveLightStats);
@@ -58,25 +60,32 @@ public:
 
   struct BuildDescription
   {
-    xiiGpuVisibilityOutputs                       m_Visibility;
-    xiiGeometryResidencyManager::UploadHandles    m_Geometry;
-    xiiMaterialGpuStorage::UploadHandles          m_Materials;
-    xiiUInt32                                     m_uiInstanceCount = 0U;
-    xiiUInt32                                     m_uiVertexStride  = 0U;
-    xiiUInt32                                     m_uiTexCoordOffset = 0U;
+    xiiGpuVisibilityOutputs                    m_Visibility;
+    xiiGeometryResidencyManager::UploadHandles m_Geometry;
+    xiiMaterialGpuStorage::UploadHandles       m_Materials;
+    xiiUInt32                                  m_uiInstanceCount  = 0U;
+    xiiUInt32                                  m_uiVertexStride   = 0U;
+    xiiUInt32                                  m_uiTexCoordOffset = 0U;
   };
 
   struct BuildOutputs
   {
     xiiRenderGraphBufferHandle m_hTriangles;
     xiiRenderGraphBufferHandle m_hHeader;
+    xiiRenderGraphBufferHandle m_hTriangleAliases;
+    xiiRenderGraphBufferHandle m_hBlockAliases;
+    xiiRenderGraphBufferHandle m_hAliasHeader;
     xiiUInt32                  m_uiTriangleCapacity = 0U;
 
-    [[nodiscard]] bool IsValid() const { return m_hTriangles.IsValid() && m_hHeader.IsValid(); }
+    [[nodiscard]] bool IsValid() const
+    {
+      return m_hTriangles.IsValid() && m_hHeader.IsValid() && m_hTriangleAliases.IsValid() && m_hBlockAliases.IsValid() && m_hAliasHeader.IsValid();
+    }
   };
 
-  /// Adds an async-compute extraction pass. Outputs are explicit render-graph versions and must be
-  /// passed directly to every consumer; there is intentionally no mutable "current buffer" API.
+  /// Adds async-compute extraction and power-weighted distribution passes. Outputs are explicit
+  /// render-graph versions and must be passed directly to every consumer; there is intentionally
+  /// no mutable "current buffer" API.
   [[nodiscard]] static BuildOutputs AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, const BuildDescription& description);
 
 private:

@@ -3394,6 +3394,9 @@ struct xiiReSTIRDITemporalData
   xiiRenderGraphBufferHandle  m_hLightIndexBuffer;
   xiiRenderGraphBufferHandle  m_hEmissiveTriangles;
   xiiRenderGraphBufferHandle  m_hEmissiveLightHeader;
+  xiiRenderGraphBufferHandle  m_hEmissiveTriangleAliases;
+  xiiRenderGraphBufferHandle  m_hEmissiveBlockAliases;
+  xiiRenderGraphBufferHandle  m_hEmissiveAliasHeader;
   xiiRenderGraphTextureHandle m_hPreviousReservoir;
   xiiRenderGraphTextureHandle m_hPreviousSurface;
   xiiRenderGraphBufferHandle  m_hConstants;
@@ -3464,6 +3467,9 @@ void xiiView::SetupReSTIRDITemporal(xiiReSTIRDITemporalData& data, xiiRenderGrap
   data.m_hLightIndexBuffer  = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hEmissiveTriangles = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangles, xiiGALResourceStateFlags::ShaderResource);
   data.m_hEmissiveLightHeader = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveTriangleAliases = builder.ReadBuffer(lightingPasses.m_hEmissiveTriangleAliases, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveBlockAliases = builder.ReadBuffer(lightingPasses.m_hEmissiveBlockAliases, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hEmissiveAliasHeader = builder.ReadBuffer(lightingPasses.m_hEmissiveAliasHeader, xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousReservoir = builder.ReadTexture(builder.ImportTexture("ReSTIRDIReservoirPrevious", lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot], lightingPasses.m_pDirectReservoirHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
   data.m_hPreviousSurface   = builder.ReadTexture(builder.ImportTexture("ReSTIRDISurfacePrevious", lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot], lightingPasses.m_pDirectSurfaceHistory[uiPreviousSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
 
@@ -3512,6 +3518,9 @@ void xiiView::ExecuteReSTIRDITemporal(const xiiReSTIRDITemporalData& data, xiiRe
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangles", context.GetBuffer(data.m_hEmissiveTriangles)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hEmissiveLightHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveTriangleAliases", context.GetBuffer(data.m_hEmissiveTriangleAliases)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveBlockAliases", context.GetBuffer(data.m_hEmissiveBlockAliases)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_EmissiveAliasHeader", context.GetBuffer(data.m_hEmissiveAliasHeader)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_PreviousReservoir", context.GetTexture(data.m_hPreviousReservoir)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_PreviousSurface", context.GetTexture(data.m_hPreviousSurface)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_TemporalReservoir", context.GetTexture(data.m_hTemporalReservoir)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -6735,6 +6744,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   const xiiEmissiveLightManager::BuildOutputs emissiveLights = xiiEmissiveLightManager::AddBuildPass(graph, uiFrameIndex, emissiveBuildDescription);
   m_ViewPassResources->m_LightingPasses.m_hEmissiveTriangles  = emissiveLights.m_hTriangles;
   m_ViewPassResources->m_LightingPasses.m_hEmissiveLightHeader = emissiveLights.m_hHeader;
+  m_ViewPassResources->m_LightingPasses.m_hEmissiveTriangleAliases = emissiveLights.m_hTriangleAliases;
+  m_ViewPassResources->m_LightingPasses.m_hEmissiveBlockAliases = emissiveLights.m_hBlockAliases;
+  m_ViewPassResources->m_LightingPasses.m_hEmissiveAliasHeader = emissiveLights.m_hAliasHeader;
 
   xiiAtmosphereLUTHandle& hAtmosphereLUT = m_ViewPassResources->m_LightingPrepPasses.m_hAtmosphereLUT;
   hAtmosphereLUT                         = xiiAtmosphereManager::GetDefaultLUTHandle();

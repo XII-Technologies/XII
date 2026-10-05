@@ -1,0 +1,109 @@
+// XII Engine - Builds exact power-weighted alias tables independently for fixed-size triangle blocks.
+
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveAliasBuildConstants.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+
+StructuredBuffer<xiiGpuEmissiveTriangle>     g_EmissiveTriangles;
+StructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
+RWStructuredBuffer<xiiGpuEmissiveAliasEntry> g_TriangleAliases;
+RWStructuredBuffer<float>                    g_BlockPowers;
+RWStructuredBuffer<float>                    g_AliasProbabilities;
+RWStructuredBuffer<uint>                     g_AliasSmall;
+RWStructuredBuffer<uint>                     g_AliasLarge;
+
+xiiGpuEmissiveAliasEntry MakeAliasEntry(float probability, uint aliasIndex)
+{
+  xiiGpuEmissiveAliasEntry entry;
+  entry.Probability = probability;
+  entry.AliasIndex = aliasIndex;
+  entry._Padding = uint2(0u, 0u);
+  return entry;
+}
+
+[numthreads(1, 1, 1)]
+void main(uint3 groupId : SV_GroupID)
+{
+  const uint blockIndex = groupId.x + groupId.y * BlockDispatchWidth;
+  if (blockIndex >= BlockCapacity)
+    return;
+
+  uint triangleBufferCount, triangleStride;
+  uint headerBufferCount, headerStride;
+  g_EmissiveTriangles.GetDimensions(triangleBufferCount, triangleStride);
+  g_EmissiveHeader.GetDimensions(headerBufferCount, headerStride);
+  const uint triangleCount = headerBufferCount > 0u ? min(g_EmissiveHeader[0].TriangleCount, min(triangleBufferCount, TriangleCapacity)) : 0u;
+  const uint firstTriangle = blockIndex * TrianglesPerBlock;
+  const uint localCount = firstTriangle < triangleCount ? min(TrianglesPerBlock, triangleCount - firstTriangle) : 0u;
+  if (localCount == 0u)
+  {
+    g_BlockPowers[blockIndex] = 0.0f;
+    return;
+  }
+
+  float blockPower = 0.0f;
+  [loop]
+  for (uint localIndex = 0u; localIndex < localCount; ++localIndex)
+    blockPower += max(g_EmissiveTriangles[firstTriangle + localIndex].Position1AndPowerWeight.w, 0.0f);
+  if (!isfinite(blockPower))
+    blockPower = 0.0f;
+  g_BlockPowers[blockIndex] = blockPower;
+
+  if (!(blockPower > 0.0f))
+  {
+    [loop]
+    for (uint localIndex = 0u; localIndex < localCount; ++localIndex)
+      g_TriangleAliases[firstTriangle + localIndex] = MakeAliasEntry(1.0f, firstTriangle + localIndex);
+    return;
+  }
+
+  uint smallCount = 0u;
+  uint largeCount = 0u;
+  [loop]
+  for (uint localIndex = 0u; localIndex < localCount; ++localIndex)
+  {
+    const uint absoluteIndex = firstTriangle + localIndex;
+    const float scaledProbability = max(g_EmissiveTriangles[absoluteIndex].Position1AndPowerWeight.w, 0.0f) * (float)localCount / blockPower;
+    g_AliasProbabilities[absoluteIndex] = scaledProbability;
+    if (scaledProbability < 1.0f)
+      g_AliasSmall[firstTriangle + smallCount++] = localIndex;
+    else
+      g_AliasLarge[firstTriangle + largeCount++] = localIndex;
+  }
+
+  [loop]
+  while (smallCount > 0u && largeCount > 0u)
+  {
+    const uint smallLocal = g_AliasSmall[firstTriangle + --smallCount];
+    const uint largeLocal = g_AliasLarge[firstTriangle + --largeCount];
+    const uint smallIndex = firstTriangle + smallLocal;
+    const uint largeIndex = firstTriangle + largeLocal;
+    const float probability = saturate(g_AliasProbabilities[smallIndex]);
+    g_TriangleAliases[smallIndex] = MakeAliasEntry(probability, largeIndex);
+    const float remaining = g_AliasProbabilities[largeIndex] + probability - 1.0f;
+    g_AliasProbabilities[largeIndex] = remaining;
+    if (remaining < 1.0f)
+      g_AliasSmall[firstTriangle + smallCount++] = largeLocal;
+    else
+      g_AliasLarge[firstTriangle + largeCount++] = largeLocal;
+  }
+
+  [loop]
+  while (largeCount > 0u)
+  {
+    const uint localIndex = g_AliasLarge[firstTriangle + --largeCount];
+    g_TriangleAliases[firstTriangle + localIndex] = MakeAliasEntry(1.0f, firstTriangle + localIndex);
+  }
+  [loop]
+  while (smallCount > 0u)
+  {
+    const uint localIndex = g_AliasSmall[firstTriangle + --smallCount];
+    g_TriangleAliases[firstTriangle + localIndex] = MakeAliasEntry(1.0f, firstTriangle + localIndex);
+  }
+}
