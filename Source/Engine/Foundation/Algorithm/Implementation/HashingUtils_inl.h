@@ -202,3 +202,8 @@ constexpr XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::CombineHashValues32(xiiUI
   // See boost::hash_combine
   return ui0 ^ (ui1 + 0x9E3779B9U + (ui0 << 6) + (ui1 >> 2));
 }
+
+constexpr XII_ALWAYS_INLINE xiiUInt64 xiiHashingUtils::CombineHashValues64(xiiUInt64 ui0, xiiUInt64 ui1)
+{
+  return xxHash64(&ui1, sizeof(ui1), ui0);
+}

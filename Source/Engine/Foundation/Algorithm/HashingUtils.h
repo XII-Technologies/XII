@@ -66,6 +66,9 @@ public:
 
   /// Combines two 32 bit hash values into one.
   constexpr static xiiUInt32 CombineHashValues32(xiiUInt32 ui0, xiiUInt32 ui1);
+
+  /// Combines two 64 bit hash values into one.
+  constexpr static xiiUInt64 CombineHashValues64(xiiUInt64 ui0, xiiUInt64 ui1);
 };
 
 /// Helper struct to calculate the Hash of different types.
