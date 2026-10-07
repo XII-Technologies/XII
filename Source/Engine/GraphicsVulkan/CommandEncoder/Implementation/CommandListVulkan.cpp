@@ -80,6 +80,22 @@ namespace
     return vkQueryPool;
   }
 
+  [[nodiscard]] XII_FORCE_INLINE vk::AccessFlags GetAccelerationStructureAccessFlags(xiiBitflags<xiiGALResourceStateFlags> state)
+  {
+    if (state.IsSet(xiiGALResourceStateFlags::RayTracing))
+      return vk::AccessFlagBits::eAccelerationStructureReadKHR;
+
+    return xiiVulkanTypeConversions::GetAccessFlags(state);
+  }
+
+  [[nodiscard]] XII_FORCE_INLINE vk::PipelineStageFlags GetAccelerationStructurePipelineStageFlags(xiiBitflags<xiiGALResourceStateFlags> state)
+  {
+    if (state.IsSet(xiiGALResourceStateFlags::RayTracing))
+      return VulkanUtilities::VK_PIPELINE_STAGE_ALL_SHADERS;
+
+    return xiiVulkanTypeConversions::GetPipelineStageFlags(state);
+  }
+
   [[nodiscard]] XII_FORCE_INLINE vk::ClearColorValue ClearValueToVulkanClearValue(const void* pClearValues, xiiGALResourceFormat::Enum textureFormat)
   {
     vk::ClearColorValue                    vkClearValue     = {};
@@ -3497,7 +3513,7 @@ void xiiGALCommandListVulkan::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGA
           continue;
         }
 
-        MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(barrier.m_NewState), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(barrier.m_NewState));
+        MemoryBarrier(GetAccelerationStructureAccessFlags(oldState), GetAccelerationStructureAccessFlags(barrier.m_NewState), GetAccelerationStructurePipelineStageFlags(oldState), GetAccelerationStructurePipelineStageFlags(barrier.m_NewState));
 
         if (barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
         {
@@ -3518,7 +3534,7 @@ void xiiGALCommandListVulkan::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGA
           continue;
         }
 
-        MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(barrier.m_NewState), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(barrier.m_NewState));
+        MemoryBarrier(GetAccelerationStructureAccessFlags(oldState), GetAccelerationStructureAccessFlags(barrier.m_NewState), GetAccelerationStructurePipelineStageFlags(oldState), GetAccelerationStructurePipelineStageFlags(barrier.m_NewState));
 
         if (barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
         {
@@ -3916,7 +3932,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyAccelerationStructureState(xiiGA
     if (pAccelerationStructure->IsInKnownState())
     {
       const xiiBitflags<xiiGALResourceStateFlags> oldState = pAccelerationStructure->GetResourceState();
-      MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(requiredState), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(requiredState));
+      MemoryBarrier(GetAccelerationStructureAccessFlags(oldState), GetAccelerationStructureAccessFlags(requiredState), GetAccelerationStructurePipelineStageFlags(oldState), GetAccelerationStructurePipelineStageFlags(requiredState));
       pAccelerationStructure->SetResourceState(requiredState);
     }
   }
