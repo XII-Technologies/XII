@@ -1633,8 +1633,10 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
   }
 
   XII_GAL_DEVICE_CHECK(description.m_RayTracingPipeline.m_uiMaxRecursionDepth <= m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth, "Max recursion depth ({}) exceeds device limit ({}).", description.m_RayTracingPipeline.m_uiMaxRecursionDepth, m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth);
+  XII_GAL_DEVICE_CHECK(!description.m_GeneralShaders.IsEmpty(), "A ray tracing pipeline must define at least one general shader group.");
 
   xiiSet<xiiStringView> groupNames(m_Allocator.GetParent());
+  bool                  bHasRayGenerationShader = false;
   for (xiiUInt32 i = 0; i < description.m_GeneralShaders.GetCount(); ++i)
   {
     const xiiGALRayTracingGeneralShaderGroupDescription& group = description.m_GeneralShaders[i];
@@ -1642,10 +1644,13 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
     XII_GAL_DEVICE_CHECK(!group.m_sName.IsEmpty(), "GeneralShaders[{}].sName must have a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!groupNames.Contains(group.m_sName.GetView()), "GeneralShaders[{}].sName has group name ('{}') that has already been assigned to another group. All group names must be unique.", i, group.m_sName);
     XII_GAL_DEVICE_CHECK(group.m_pShader != nullptr, "GeneralShaders[{}].pShader must not be null.", i);
-    XII_GAL_DEVICE_CHECK(group.m_pShader->GetDescription().m_ShaderType.IsStrictlyAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::Callable), "Shader type {} is not a valid type for ray tracing general shader.", xiiArgEnum(group.m_pShader->GetDescription().m_ShaderType));
+    const xiiBitflags<xiiGALShaderType> shaderType = group.m_pShader->GetDescription().m_ShaderType;
+    XII_GAL_DEVICE_CHECK(shaderType == xiiGALShaderType::RayGeneration || shaderType == xiiGALShaderType::RayMiss || shaderType == xiiGALShaderType::Callable, "Shader type {} is not a valid type for ray tracing general shader.", xiiArgEnum(shaderType));
 
+    bHasRayGenerationShader |= shaderType == xiiGALShaderType::RayGeneration;
     groupNames.Insert(group.m_sName);
   }
+  XII_GAL_DEVICE_CHECK(bHasRayGenerationShader, "A ray tracing pipeline must define at least one ray-generation shader group.");
 
   for (xiiUInt32 i = 0; i < description.m_TriangleHitShaders.GetCount(); ++i)
   {
@@ -1667,7 +1672,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
     XII_GAL_DEVICE_CHECK(!group.m_sName.IsEmpty(), "ProceduralHitShaders[{}].sName must have a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!groupNames.Contains(group.m_sName.GetView()), "ProceduralHitShaders[{}].sName has group name ('{}') that has already been assigned to another group. All group names must be unique.", i, group.m_sName);
     XII_GAL_DEVICE_CHECK(group.m_pIntersectionShader != nullptr, "ProceduralHitShaders[{}].pIntersectionShader must not be null.", i);
-    XII_GAL_DEVICE_CHECK(group.m_pIntersectionShader->GetDescription().m_ShaderType == xiiGALShaderType::RayClosestHit, "ProceduralHitShaders[{}].pIntersectionShader must be of type xiiGALShaderType::RayClosestHit.", i);
+    XII_GAL_DEVICE_CHECK(group.m_pIntersectionShader->GetDescription().m_ShaderType == xiiGALShaderType::RayIntersection, "ProceduralHitShaders[{}].pIntersectionShader must be of type xiiGALShaderType::RayIntersection.", i);
     XII_GAL_DEVICE_CHECK(group.m_pClosestHitShader == nullptr || group.m_pClosestHitShader->GetDescription().m_ShaderType == xiiGALShaderType::RayClosestHit, "ProceduralHitShaders[{}].pClosestHitShader must be of type xiiGALShaderType::RayClosestHit.", i);
     XII_GAL_DEVICE_CHECK(group.m_pAnyHitShader == nullptr || group.m_pAnyHitShader->GetDescription().m_ShaderType == xiiGALShaderType::RayAnyHit, "ProceduralHitShaders[{}].pAnyHitShader must be of type xiiGALShaderType::RayAnyHit.", i);
 

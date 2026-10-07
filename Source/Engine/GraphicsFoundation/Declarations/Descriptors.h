@@ -167,9 +167,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProperties : public xiiHashabl
   xiiUInt32                                    m_uiInstanceBufferAlignment  = 0U;                                    ///< The minimum alignment for the BLAS instance buffer offset.
   xiiBitflags<xiiGALRayTracingCapabilityFlags> m_CapabilityFlags            = xiiGALRayTracingCapabilityFlags::None; ///< Ray tracing capability flags. See xiiGALRayTracingCapabilityFlags;
 
-  xiiUInt32 m_uiShaderGroupHandleSize    = 0U; ///< Internal usage.
-  xiiUInt32 m_uiMaxShaderRecordStride    = 0U; ///< Internal usage.
-  xiiUInt32 m_uiShaderGroupBaseAlignment = 0U; ///< Internal usage.
+  xiiUInt32 m_uiShaderGroupHandleSize      = 0U; ///< Internal usage.
+  xiiUInt32 m_uiShaderGroupHandleAlignment = 0U; ///< Required alignment of individual shader group records.
+  xiiUInt32 m_uiMaxShaderRecordStride      = 0U; ///< Internal usage.
+  xiiUInt32 m_uiShaderGroupBaseAlignment   = 0U; ///< Internal usage.
 };
 
 /// This describes the mesh shader properties.

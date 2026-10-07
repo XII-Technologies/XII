@@ -2118,20 +2118,21 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
   // Ray Tracing Properties
   if (m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Disabled)
   {
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth        = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayRecursionDepth;
-    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize    = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupHandleSize;
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride    = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxShaderGroupStride;
-    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupBaseAlignment;
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads         = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayDispatchInvocationCount;
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS      = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxInstanceCount);
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS     = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxPrimitiveCount);
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS     = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxGeometryCount);
-    m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment    = 1U;
-    m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
-    m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = 16; // From the specification.
-    m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = 8;  // From the specification.
-    m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.minAccelerationStructureScratchOffsetAlignment;
-    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth          = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayRecursionDepth;
+    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize      = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupHandleSize;
+    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleAlignment = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupHandleAlignment;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride      = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxShaderGroupStride;
+    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment   = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupBaseAlignment;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads           = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayDispatchInvocationCount;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS        = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxInstanceCount);
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS       = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxPrimitiveCount);
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS       = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxGeometryCount);
+    m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment      = 1U;
+    m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment       = 1U;
+    m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment   = 16; // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment         = 8;  // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment     = m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.minAccelerationStructureScratchOffsetAlignment;
+    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment    = 16; // From the specification.
 
     if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline)
       m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::StandaloneShaders;
@@ -2142,7 +2143,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipelineTraceRaysIndirect)
       m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::IndirectRayTracing;
 
-    static_assert(sizeof(m_AdapterDescription.m_RayTracingProperties) == 60, "There may be uninitialized ray tracing properties.");
+    static_assert(sizeof(m_AdapterDescription.m_RayTracingProperties) == 64, "There may be uninitialized ray tracing properties.");
   }
 
   // Wave Operation Properties

@@ -1532,22 +1532,8 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
 
                   vkWriteDescriptorSet.pNext = &vkDescriptorAccelStructInfo;
 
-                  if (mode == xiiGALStateTransitionMode::Transition)
-                  {
-                    xiiBitflags<xiiGALResourceStateFlags>       oldState = pTopLevelASVulkan->GetResourceState();
-                    const xiiBitflags<xiiGALResourceStateFlags> newState = xiiGALResourceStateFlags::RayTracing;
-
-                    if (oldState == xiiGALResourceStateFlags::Unknown)
-                    {
-                      oldState = xiiGALResourceStateFlags::BuildASWrite;
-                    }
-
-                    MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(newState), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(newState));
-
-                    pTopLevelASVulkan->SetResourceState(newState);
-
-                    FlushBarriers();
-                  }
+                  TransitionOrVerifyAccelerationStructureState(pTopLevelASVulkan, mode, xiiGALResourceStateFlags::RayTracing, "Binding TLAS as a shader resource");
+                  FlushBarriers();
                 }
                 else
                 {
@@ -2114,6 +2100,7 @@ void xiiGALCommandListVulkan::TraceRaysPlatform(const xiiGALTraceRaysDescription
     vkRegion.deviceAddress = pSBTBufferVulkan->GetVulkanBufferDeviceAddress() + region.m_uiOffset;
     vkRegion.size          = region.m_uiSize;
     vkRegion.stride        = region.m_uiStride;
+    XII_ASSERT_DEV((vkRegion.deviceAddress % pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiShaderGroupBaseAlignment) == 0U, "Shader binding table region device address does not satisfy shader-group base alignment.");
     return vkRegion;
   };
 
@@ -2153,6 +2140,7 @@ void xiiGALCommandListVulkan::TraceRaysIndirectPlatform(const xiiGALTraceRaysInd
     vkRegion.deviceAddress = pSBTBufferVulkan->GetVulkanBufferDeviceAddress() + region.m_uiOffset;
     vkRegion.size          = region.m_uiSize;
     vkRegion.stride        = region.m_uiStride;
+    XII_ASSERT_DEV((vkRegion.deviceAddress % pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiShaderGroupBaseAlignment) == 0U, "Shader binding table region device address does not satisfy shader-group base alignment.");
     return vkRegion;
   };
 
@@ -2164,6 +2152,7 @@ void xiiGALCommandListVulkan::TraceRaysIndirectPlatform(const xiiGALTraceRaysInd
   FlushBarriers();
 
   const vk::DeviceAddress vkIndirectAddress = pArgumentBufferVulkan->GetVulkanBufferDeviceAddress() + description.m_uiArgumentOffset;
+  XII_ASSERT_DEV((vkIndirectAddress % sizeof(xiiUInt32)) == 0U, "Indirect ray tracing argument device address must be 4-byte aligned.");
   m_vkCommandBuffer.traceRaysIndirectKHR(&vkRayGenerationRegion, &vkMissRegion, &vkHitRegion, &vkCallableRegion, vkIndirectAddress, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
@@ -2207,8 +2196,10 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
     XII_ASSERT_DEV(region.m_uiStride >= uiHandleSize, "UpdateSBT {} region stride ({}) must be at least shader group handle size ({}).", szRegionName, region.m_uiStride, uiHandleSize);
     XII_ASSERT_DEV(region.m_uiStride > 0U, "UpdateSBT {} region stride must be non-zero.", szRegionName);
 
-    const xiiUInt32 uiRecordCount = static_cast<xiiUInt32>(region.m_uiSize / region.m_uiStride);
-    XII_ASSERT_DEV((uiStartIndex + uiRecordCount) <= groupIndices.GetCount(), "UpdateSBT {} region requested {} records starting at {}, but only {} shader groups are available.", szRegionName, uiRecordCount, uiStartIndex, groupIndices.GetCount());
+    const xiiUInt64 uiRecordCount64 = region.m_uiSize / region.m_uiStride;
+    XII_ASSERT_DEV(uiRecordCount64 <= xiiMath::MaxValue<xiiUInt32>(), "UpdateSBT {} region contains too many records.", szRegionName);
+    const xiiUInt32 uiRecordCount = static_cast<xiiUInt32>(uiRecordCount64);
+    XII_ASSERT_DEV(uiStartIndex <= groupIndices.GetCount() && uiRecordCount <= (groupIndices.GetCount() - uiStartIndex), "UpdateSBT {} region requested {} records starting at {}, but only {} shader groups are available.", szRegionName, uiRecordCount, uiStartIndex, groupIndices.GetCount());
 
     for (xiiUInt32 i = 0U; i < uiRecordCount; ++i)
     {

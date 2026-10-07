@@ -161,7 +161,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public x
   XII_DECLARE_POD_TYPE();
 
   xiiUInt16 m_uiShaderRecordSize  = 0U; ///< Size of the additional data passed to the shader. Shader record size plus shader group size (32 bytes) must be aligned to 32 bytes. Shader record size plus shader group size (32 bytes) must not exceed 4096 bytes
-  xiiUInt8  m_uiMaxRecursionDepth = 0U; ///< Number of recursive calls of TraceRay() in HLSL. Zero means no tracing of rays at all, only ray-gen shader will be executed. See Device MaxRayTracingRecursionDepth.
+  xiiUInt8  m_uiMaxRecursionDepth = 0U; ///< Maximum ray traversal recursion depth. Zero selects the backend minimum of one. See Device MaxRayTracingRecursionDepth.
 };
 
 /// This describes the tile pipeline information.

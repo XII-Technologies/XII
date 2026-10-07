@@ -1113,9 +1113,9 @@ XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineSt
   if (e.IsSet(xiiGALPipelineStageFlags::ShadingRateTexture))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eShadingRateImageNV;
   if (e.IsSet(xiiGALPipelineStageFlags::RayTracingShader))
-    pipelineStageFlags |= vk::PipelineStageFlagBits::eRayTracingShaderNV;
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eRayTracingShaderKHR;
   if (e.IsSet(xiiGALPipelineStageFlags::AccelerationStructureBuild))
-    pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildNV;
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
   if (e.IsSet(xiiGALPipelineStageFlags::TaskShader))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eTaskShaderEXT;
   if (e.IsSet(xiiGALPipelineStageFlags::MeshShader))
@@ -1223,9 +1223,9 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
   if (e.IsSet(xiiGALAccessFlags::ShadingRateTextureRead))
     vkAccessFlags |= vk::AccessFlagBits::eShadingRateImageReadNV;
   if (e.IsSet(xiiGALAccessFlags::AccelerationStructureRead))
-    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadNV;
+    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR;
   if (e.IsSet(xiiGALAccessFlags::AccelerationStructureWrite))
-    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureWriteNV;
+    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureWriteKHR;
   if (e.IsSet(xiiGALAccessFlags::FragmentDensityMapRead))
     vkAccessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT;
 

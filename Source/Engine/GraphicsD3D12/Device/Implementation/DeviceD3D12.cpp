@@ -1241,20 +1241,21 @@ xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
         {
           deviceFeatures.m_RayTracing = xiiGALDeviceFeatureState::Enabled;
 
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth        = D3D12_RAYTRACING_MAX_DECLARABLE_TRACE_RECURSION_DEPTH;
-          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize    = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride    = D3D12_RAYTRACING_MAX_SHADER_RECORD_STRIDE;
-          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads         = D3D12_RAYTRACING_MAX_RAY_GENERATION_SHADER_THREADS;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS      = D3D12_RAYTRACING_MAX_INSTANCES_PER_TOP_LEVEL_ACCELERATION_STRUCTURE;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS     = D3D12_RAYTRACING_MAX_PRIMITIVES_PER_BOTTOM_LEVEL_ACCELERATION_STRUCTURE;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS     = D3D12_RAYTRACING_MAX_GEOMETRIES_PER_BOTTOM_LEVEL_ACCELERATION_STRUCTURE;
-          m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment    = 1U;
-          m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
-          m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = D3D12_RAYTRACING_TRANSFORM3X4_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = D3D12_RAYTRACING_AABB_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth          = D3D12_RAYTRACING_MAX_DECLARABLE_TRACE_RECURSION_DEPTH;
+          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize      = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
+          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleAlignment = D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride      = D3D12_RAYTRACING_MAX_SHADER_RECORD_STRIDE;
+          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment   = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads           = D3D12_RAYTRACING_MAX_RAY_GENERATION_SHADER_THREADS;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS        = D3D12_RAYTRACING_MAX_INSTANCES_PER_TOP_LEVEL_ACCELERATION_STRUCTURE;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS       = D3D12_RAYTRACING_MAX_PRIMITIVES_PER_BOTTOM_LEVEL_ACCELERATION_STRUCTURE;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS       = D3D12_RAYTRACING_MAX_GEOMETRIES_PER_BOTTOM_LEVEL_ACCELERATION_STRUCTURE;
+          m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment      = 1U;
+          m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment       = 1U;
+          m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment   = D3D12_RAYTRACING_TRANSFORM3X4_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment         = D3D12_RAYTRACING_AABB_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment     = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment    = D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT;
           m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::StandaloneShaders;
         }
         if (featureDataOptions5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1)

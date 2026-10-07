@@ -1375,20 +1375,37 @@ void xiiGALCommandList::TraceRays(const xiiGALTraceRaysDescription& description)
   XII_ASSERT_DEV(description.m_pShaderBindingTable != nullptr, "TraceRays command arguments are invalid. Shader binding table buffer must not be null.");
 
   const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  const xiiGALRayTracingProperties&      rayTracingProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
   XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRays command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+  XII_ASSERT_DEV(description.m_RayGenerationTable.m_uiSize > 0U, "TraceRays command arguments are invalid. Ray-generation SBT region must contain exactly one record.");
 
-  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName, bool bRayGeneration) {
     if (region.m_uiSize == 0U)
       return;
+    if (region.m_uiStride == 0U)
+    {
+      XII_ASSERT_DEV(false, "TraceRays command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+      return;
+    }
 
-    XII_ASSERT_DEV(region.m_uiStride > 0U, "TraceRays command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
-    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "TraceRays command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+    XII_ASSERT_DEV(rayTracingProperties.m_uiShaderGroupHandleAlignment > 0U && (region.m_uiStride % rayTracingProperties.m_uiShaderGroupHandleAlignment) == 0U, "TraceRays command arguments are invalid. {} region stride ({}) does not satisfy shader-group handle alignment ({}).", szRegionName, region.m_uiStride, rayTracingProperties.m_uiShaderGroupHandleAlignment);
+    XII_ASSERT_DEV(region.m_uiStride >= rayTracingProperties.m_uiShaderGroupHandleSize && region.m_uiStride <= rayTracingProperties.m_uiMaxShaderRecordStride, "TraceRays command arguments are invalid. {} region stride ({}) is outside the supported range [{}, {}].", szRegionName, region.m_uiStride, rayTracingProperties.m_uiShaderGroupHandleSize, rayTracingProperties.m_uiMaxShaderRecordStride);
+    XII_ASSERT_DEV(rayTracingProperties.m_uiShaderGroupBaseAlignment > 0U && (region.m_uiOffset % rayTracingProperties.m_uiShaderGroupBaseAlignment) == 0U, "TraceRays command arguments are invalid. {} region offset ({}) does not satisfy shader-group base alignment ({}).", szRegionName, region.m_uiOffset, rayTracingProperties.m_uiShaderGroupBaseAlignment);
+    XII_ASSERT_DEV(region.m_uiOffset <= sbtBufferDescription.m_uiSize && region.m_uiSize <= (sbtBufferDescription.m_uiSize - region.m_uiOffset), "TraceRays command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+    XII_ASSERT_DEV(bRayGeneration ? region.m_uiSize == region.m_uiStride : (region.m_uiSize % region.m_uiStride) == 0U, "TraceRays command arguments are invalid. {} region size ({}) is invalid for stride ({}).", szRegionName, region.m_uiSize, region.m_uiStride);
   };
 
-  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
-  VerifyRegion(description.m_MissTable, "Miss");
-  VerifyRegion(description.m_HitTable, "Hit");
-  VerifyRegion(description.m_CallableTable, "Callable");
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration", true);
+  VerifyRegion(description.m_MissTable, "Miss", false);
+  VerifyRegion(description.m_HitTable, "Hit", false);
+  VerifyRegion(description.m_CallableTable, "Callable", false);
+
+  if (description.m_uiWidth > 0U && description.m_uiHeight > 0U && description.m_uiDepth > 0U)
+  {
+    const xiiUInt64 uiMaxThreadCount = rayTracingProperties.m_uiMaxRayGenThreads;
+    const bool      bWithinLimit     = description.m_uiWidth <= uiMaxThreadCount && description.m_uiHeight <= (uiMaxThreadCount / description.m_uiWidth) && description.m_uiDepth <= (uiMaxThreadCount / (static_cast<xiiUInt64>(description.m_uiWidth) * description.m_uiHeight));
+    XII_ASSERT_DEV(bWithinLimit, "TraceRays dispatch dimensions ({}, {}, {}) exceed the device thread limit ({}).", description.m_uiWidth, description.m_uiHeight, description.m_uiDepth, uiMaxThreadCount);
+  }
 
   if (description.m_uiWidth == 0U || description.m_uiHeight == 0U || description.m_uiDepth == 0U)
   {
@@ -1414,26 +1431,38 @@ void xiiGALCommandList::TraceRaysIndirect(const xiiGALTraceRaysIndirectDescripti
   XII_ASSERT_DEV(description.m_pArgumentBuffer != nullptr, "TraceRaysIndirect command arguments are invalid. Indirect argument buffer must not be null.");
 
   const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  const xiiGALRayTracingProperties&      rayTracingProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
   XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRaysIndirect command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+  XII_ASSERT_DEV(description.m_RayGenerationTable.m_uiSize > 0U, "TraceRaysIndirect command arguments are invalid. Ray-generation SBT region must contain exactly one record.");
+  XII_ASSERT_DEV(rayTracingProperties.m_CapabilityFlags.IsSet(xiiGALRayTracingCapabilityFlags::IndirectRayTracing), "TraceRaysIndirect is not supported by this device.");
 
   const xiiGALBufferCreationDescription& argumentBufferDescription = description.m_pArgumentBuffer->GetDescription();
-  XII_ASSERT_DEV(argumentBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRaysIndirect command arguments are invalid. Argument buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pArgumentBuffer->GetDebugName());
+  XII_ASSERT_DEV(argumentBufferDescription.m_BindFlags.AreAllSet(xiiGALBindFlags::RayTracing | xiiGALBindFlags::IndirectDrawArguments), "TraceRaysIndirect command arguments are invalid. Argument buffer ({}) must be created with xiiGALBindFlags::RayTracing and xiiGALBindFlags::IndirectDrawArguments.", description.m_pArgumentBuffer->GetDebugName());
+  XII_ASSERT_DEV((description.m_uiArgumentOffset % sizeof(xiiUInt32)) == 0U, "TraceRaysIndirect command arguments are invalid. Argument offset must be 4-byte aligned.");
 
-  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName, bool bRayGeneration) {
     if (region.m_uiSize == 0U)
       return;
+    if (region.m_uiStride == 0U)
+    {
+      XII_ASSERT_DEV(false, "TraceRaysIndirect command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+      return;
+    }
 
-    XII_ASSERT_DEV(region.m_uiStride > 0U, "TraceRaysIndirect command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
-    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "TraceRaysIndirect command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+    XII_ASSERT_DEV(rayTracingProperties.m_uiShaderGroupHandleAlignment > 0U && (region.m_uiStride % rayTracingProperties.m_uiShaderGroupHandleAlignment) == 0U, "TraceRaysIndirect command arguments are invalid. {} region stride ({}) does not satisfy shader-group handle alignment ({}).", szRegionName, region.m_uiStride, rayTracingProperties.m_uiShaderGroupHandleAlignment);
+    XII_ASSERT_DEV(region.m_uiStride >= rayTracingProperties.m_uiShaderGroupHandleSize && region.m_uiStride <= rayTracingProperties.m_uiMaxShaderRecordStride, "TraceRaysIndirect command arguments are invalid. {} region stride ({}) is outside the supported range [{}, {}].", szRegionName, region.m_uiStride, rayTracingProperties.m_uiShaderGroupHandleSize, rayTracingProperties.m_uiMaxShaderRecordStride);
+    XII_ASSERT_DEV(rayTracingProperties.m_uiShaderGroupBaseAlignment > 0U && (region.m_uiOffset % rayTracingProperties.m_uiShaderGroupBaseAlignment) == 0U, "TraceRaysIndirect command arguments are invalid. {} region offset ({}) does not satisfy shader-group base alignment ({}).", szRegionName, region.m_uiOffset, rayTracingProperties.m_uiShaderGroupBaseAlignment);
+    XII_ASSERT_DEV(region.m_uiOffset <= sbtBufferDescription.m_uiSize && region.m_uiSize <= (sbtBufferDescription.m_uiSize - region.m_uiOffset), "TraceRaysIndirect command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+    XII_ASSERT_DEV(bRayGeneration ? region.m_uiSize == region.m_uiStride : (region.m_uiSize % region.m_uiStride) == 0U, "TraceRaysIndirect command arguments are invalid. {} region size ({}) is invalid for stride ({}).", szRegionName, region.m_uiSize, region.m_uiStride);
   };
 
-  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
-  VerifyRegion(description.m_MissTable, "Miss");
-  VerifyRegion(description.m_HitTable, "Hit");
-  VerifyRegion(description.m_CallableTable, "Callable");
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration", true);
+  VerifyRegion(description.m_MissTable, "Miss", false);
+  VerifyRegion(description.m_HitTable, "Hit", false);
+  VerifyRegion(description.m_CallableTable, "Callable", false);
 
   constexpr xiiUInt64 uiIndirectArgumentSize = sizeof(xiiUInt32) * 3U;
-  XII_ASSERT_DEV((description.m_uiArgumentOffset + uiIndirectArgumentSize) <= argumentBufferDescription.m_uiSize, "TraceRaysIndirect command arguments are invalid. Argument buffer offset and size exceed the indirect argument buffer bounds.");
+  XII_ASSERT_DEV(description.m_uiArgumentOffset <= argumentBufferDescription.m_uiSize && uiIndirectArgumentSize <= (argumentBufferDescription.m_uiSize - description.m_uiArgumentOffset), "TraceRaysIndirect command arguments are invalid. Argument buffer offset and size exceed the indirect argument buffer bounds.");
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiTraceRaysIndirect;
@@ -1460,20 +1489,30 @@ void xiiGALCommandList::UpdateSBT(const xiiGALUpdateSBTDescription& description)
   XII_ASSERT_DEV(pPipelineState->GetDescription().IsRayTracingPipeline(), "UpdateSBT command arguments are invalid. Provided pipeline must be a ray tracing pipeline.");
 
   const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  const xiiGALRayTracingProperties&      rayTracingProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
   XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "UpdateSBT command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+  XII_ASSERT_DEV(sbtBufferDescription.m_Usage == xiiGALResourceUsage::Mutable || sbtBufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "UpdateSBT requires a mutable or sparse shader binding table buffer.");
 
-  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName, bool bRayGeneration) {
     if (region.m_uiSize == 0U)
       return;
+    if (region.m_uiStride == 0U)
+    {
+      XII_ASSERT_DEV(false, "UpdateSBT command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+      return;
+    }
 
-    XII_ASSERT_DEV(region.m_uiStride > 0U, "UpdateSBT command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
-    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "UpdateSBT command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+    XII_ASSERT_DEV(rayTracingProperties.m_uiShaderGroupHandleAlignment > 0U && (region.m_uiStride % rayTracingProperties.m_uiShaderGroupHandleAlignment) == 0U, "UpdateSBT command arguments are invalid. {} region stride ({}) does not satisfy shader-group handle alignment ({}).", szRegionName, region.m_uiStride, rayTracingProperties.m_uiShaderGroupHandleAlignment);
+    XII_ASSERT_DEV(region.m_uiStride >= rayTracingProperties.m_uiShaderGroupHandleSize && region.m_uiStride <= rayTracingProperties.m_uiMaxShaderRecordStride, "UpdateSBT command arguments are invalid. {} region stride ({}) is outside the supported range [{}, {}].", szRegionName, region.m_uiStride, rayTracingProperties.m_uiShaderGroupHandleSize, rayTracingProperties.m_uiMaxShaderRecordStride);
+    XII_ASSERT_DEV(rayTracingProperties.m_uiShaderGroupBaseAlignment > 0U && (region.m_uiOffset % rayTracingProperties.m_uiShaderGroupBaseAlignment) == 0U, "UpdateSBT command arguments are invalid. {} region offset ({}) does not satisfy shader-group base alignment ({}).", szRegionName, region.m_uiOffset, rayTracingProperties.m_uiShaderGroupBaseAlignment);
+    XII_ASSERT_DEV(region.m_uiOffset <= sbtBufferDescription.m_uiSize && region.m_uiSize <= (sbtBufferDescription.m_uiSize - region.m_uiOffset), "UpdateSBT command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+    XII_ASSERT_DEV(bRayGeneration ? region.m_uiSize == region.m_uiStride : (region.m_uiSize % region.m_uiStride) == 0U, "UpdateSBT command arguments are invalid. {} region size ({}) is invalid for stride ({}).", szRegionName, region.m_uiSize, region.m_uiStride);
   };
 
-  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
-  VerifyRegion(description.m_MissTable, "Miss");
-  VerifyRegion(description.m_HitTable, "Hit");
-  VerifyRegion(description.m_CallableTable, "Callable");
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration", true);
+  VerifyRegion(description.m_MissTable, "Miss", false);
+  VerifyRegion(description.m_HitTable, "Hit", false);
+  VerifyRegion(description.m_CallableTable, "Callable", false);
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiUpdateSBT;
