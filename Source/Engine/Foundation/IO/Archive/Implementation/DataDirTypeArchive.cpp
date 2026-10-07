@@ -13,12 +13,13 @@
 XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, ArchiveDataDirectory)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "FileSystem", "FolderDataDirectory"
+    "FileSystem",
+    "FolderDataDirectory"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
   {
-  xiiFileSystem::RegisterDataDirectoryFactory(xiiDataDirectory::ArchiveType::Factory);
+    xiiFileSystem::RegisterDataDirectoryFactory(xiiDataDirectory::ArchiveType::Factory);
   }
 
 XII_END_SUBSYSTEM_DECLARATION;

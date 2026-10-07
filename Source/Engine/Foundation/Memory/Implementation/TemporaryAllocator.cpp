@@ -8,7 +8,7 @@
 #include <Foundation/Memory/TemporaryAllocator.h>
 
 // clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, TempAllocator)
+XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, TemporaryAllocator)
 
   ON_CORESYSTEMS_STARTUP
   {
@@ -43,6 +43,5 @@ void xiiTemporaryAllocator::Shutdown()
 {
   XII_DEFAULT_DELETE(s_pAllocator);
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_TempAllocator);

@@ -32,8 +32,6 @@ public:
 
   using CreatorFunc = xiiDelegate<xiiInternal::NewInstance<xiiGALDevice>(xiiAllocator*, const xiiGALDeviceCreationDescription&)>;
 
-  [[nodiscard]] static bool IsInitialized();
-
   static xiiSharedPtr<xiiGALDevice> CreateDevice(xiiStringView sImplementationName, xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description);
 
   static void RegisterImplementation(xiiStringView sImplementationName, const CreatorFunc& func, const xiiGALDeviceImplementationDescription& description);

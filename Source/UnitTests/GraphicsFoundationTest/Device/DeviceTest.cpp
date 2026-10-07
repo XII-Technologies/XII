@@ -25,7 +25,6 @@ XII_CREATE_SIMPLE_TEST(DeviceFactoryLifecycle, Startup)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subsystem owns graphics backend registration")
   {
-    XII_TEST_BOOL(xiiGALDeviceFactory::IsInitialized());
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiGALDeviceImplementationDescription>() != nullptr);
   }
 }

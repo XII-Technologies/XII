@@ -13,7 +13,7 @@ public:
   XII_ALWAYS_INLINE static xiiAllocator* Get() { return s_pAllocator; }
 
 private:
-  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, TempAllocator);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, TemporaryAllocator);
 
   static void Startup();
   static void Shutdown();

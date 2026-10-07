@@ -23,6 +23,19 @@ public:
 xiiUniquePtr<xiiGALDeviceFactory::State> xiiGALDeviceFactory::s_pState;
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALDeviceImplementationDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGALDeviceImplementationDescription>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ENUM_MEMBER_PROPERTY("APIType", xiiGALGraphicsDeviceType, m_APIType),
+    XII_MEMBER_PROPERTY("Name", m_sName),
+    XII_MEMBER_PROPERTY("ShaderModel", m_sShaderModel),
+    XII_MEMBER_PROPERTY("ShaderCompiler", m_sShaderCompiler),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, DeviceFactoryRegistry)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
@@ -43,29 +56,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, DeviceFactoryRegistry)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALDeviceImplementationDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGALDeviceImplementationDescription>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_ENUM_MEMBER_PROPERTY("APIType", xiiGALGraphicsDeviceType, m_APIType),
-      XII_MEMBER_PROPERTY("Name", m_sName),
-      XII_MEMBER_PROPERTY("ShaderModel", m_sShaderModel),
-      XII_MEMBER_PROPERTY("ShaderCompiler", m_sShaderCompiler),
-    } XII_END_PROPERTIES;
-  }
-XII_END_STATIC_REFLECTED_TYPE;
-
-bool xiiGALDeviceFactory::IsInitialized()
-{
-  return s_pState != nullptr;
-}
-
 bool xiiGALDeviceFactory::GetCreatorFuncInfo(xiiStringView sImplementationName, CreatorFuncInfo& out_info)
 {
-  XII_ASSERT_DEV(s_pState != nullptr, "The graphics device factory subsystem is not started.");
-  if (s_pState == nullptr)
-    return false;
-
   {
     XII_LOCK(s_pState->m_Mutex);
     if (s_pState->m_CreatorFunctions.TryGetValue(sImplementationName, out_info))
@@ -101,10 +93,6 @@ xiiSharedPtr<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStringView sImpl
 
 void xiiGALDeviceFactory::RegisterImplementation(xiiStringView sImplementationName, const CreatorFunc& func, const xiiGALDeviceImplementationDescription& description)
 {
-  XII_ASSERT_DEV(s_pState != nullptr, "The graphics device factory subsystem is not started.");
-  if (s_pState == nullptr)
-    return;
-
   CreatorFuncInfo info;
   info.m_Func            = func;
   info.m_APIType         = description.m_APIType;
@@ -117,9 +105,6 @@ void xiiGALDeviceFactory::RegisterImplementation(xiiStringView sImplementationNa
 
 void xiiGALDeviceFactory::UnregisterImplementation(xiiStringView sImplementationName)
 {
-  if (s_pState == nullptr)
-    return;
-
   XII_LOCK(s_pState->m_Mutex);
   XII_VERIFY(s_pState->m_CreatorFunctions.Remove(sImplementationName), "Graphics API implementation is not registered.");
 }
@@ -142,7 +127,8 @@ void xiiGALDeviceFactory::GetShaderModelAndCompiler(xiiStringView sRendererName,
 
 void xiiGALDeviceFactory::Startup()
 {
-  XII_ASSERT_DEV(s_pState == nullptr, "Graphics device factory started twice.");
+  XII_ASSERT_DEV(s_pState == nullptr, "Invalid state: the graphics device factory is already started.");
+
   s_pState = XII_DEFAULT_NEW(State);
 }
 
