@@ -1395,7 +1395,8 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
 
       if (triangle.m_IndexType == xiiGALValueType::Undefined)
       {
-        XII_GAL_DEVICE_CHECK(triangle.m_uiMaxVertexCount == (triangle.m_uiMaxPrimitiveCount * 3U), "The Max Vertex Count ({0}) specified in triangle {1} must be equal to the Max Vertex Count multiplied by 3 ({2}).", triangle.m_uiMaxVertexCount, i, (triangle.m_uiMaxPrimitiveCount * 3U));
+        const xiiUInt64 uiRequiredVertexCount = static_cast<xiiUInt64>(triangle.m_uiMaxPrimitiveCount) * 3U;
+        XII_GAL_DEVICE_CHECK(static_cast<xiiUInt64>(triangle.m_uiMaxVertexCount) == uiRequiredVertexCount, "The Max Vertex Count ({0}) specified in triangle {1} must be equal to the Max Primitive Count multiplied by 3 ({2}).", triangle.m_uiMaxVertexCount, i, uiRequiredVertexCount);
       }
       else
       {

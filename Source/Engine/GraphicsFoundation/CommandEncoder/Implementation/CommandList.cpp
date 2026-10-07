@@ -1567,6 +1567,7 @@ void xiiGALCommandList::BuildBLAS(const xiiGALBuildBLASDescription& description)
 
     VerifyRayTracingBuffer(triangleBuild.m_pVertexBuffer, "BLAS vertex");
     XII_ASSERT_DEV(rayTracingProperties.m_uiVertexBufferAlignment > 0U && (triangleBuild.m_uiVertexBufferOffset % rayTracingProperties.m_uiVertexBufferAlignment) == 0U, "BLAS triangle {} vertex buffer offset does not satisfy the required alignment.", i);
+    XII_ASSERT_DEV((triangleBuild.m_uiVertexBufferOffset % uiComponentSize) == 0U, "BLAS triangle {} vertex buffer offset ({}) must be aligned to its {}-byte vertex component size.", i, triangleBuild.m_uiVertexBufferOffset, uiComponentSize);
     XII_ASSERT_DEV(triangleBuild.m_uiVertexStride >= uiVertexElementSize && (triangleBuild.m_uiVertexStride % uiComponentSize) == 0U, "BLAS triangle {} vertex stride ({}) is invalid for its vertex format.", i, triangleBuild.m_uiVertexStride);
     XII_ASSERT_DEV(triangleBuild.m_uiVertexStride <= xiiMath::MaxValue<xiiUInt32>(), "BLAS triangle {} vertex stride exceeds the Vulkan limit.", i);
     XII_ASSERT_DEV(uiPrimitiveCount <= triangleDescription.m_uiMaxPrimitiveCount, "BLAS triangle {} primitive count ({}) exceeds its declared maximum ({}).", i, uiPrimitiveCount, triangleDescription.m_uiMaxPrimitiveCount);
@@ -1584,6 +1585,7 @@ void xiiGALCommandList::BuildBLAS(const xiiGALBuildBLASDescription& description)
       VerifyRayTracingBuffer(triangleBuild.m_pIndexBuffer, "BLAS index");
       const xiiUInt32 uiIndexSize = triangleDescription.m_IndexType == xiiGALValueType::UInt16 ? sizeof(xiiUInt16) : sizeof(xiiUInt32);
       XII_ASSERT_DEV(rayTracingProperties.m_uiIndexBufferAlignment > 0U && (triangleBuild.m_uiIndexBufferOffset % rayTracingProperties.m_uiIndexBufferAlignment) == 0U, "BLAS triangle {} index buffer offset does not satisfy the required alignment.", i);
+      XII_ASSERT_DEV((triangleBuild.m_uiIndexBufferOffset % uiIndexSize) == 0U, "BLAS triangle {} index buffer offset ({}) must be aligned to its {}-byte index size.", i, triangleBuild.m_uiIndexBufferOffset, uiIndexSize);
       XII_ASSERT_DEV(IsValidBufferRange(triangleBuild.m_uiIndexBufferOffset, static_cast<xiiUInt64>(uiPrimitiveCount) * 3U * uiIndexSize, triangleBuild.m_pIndexBuffer->GetSize()), "BLAS triangle {} index range exceeds its buffer.", i);
     }
 
