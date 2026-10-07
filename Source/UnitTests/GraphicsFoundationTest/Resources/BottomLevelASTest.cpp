@@ -53,6 +53,8 @@ XII_CREATE_SIMPLE_TEST(Resources, BottomLevelAS)
       XII_TEST_INT(retained.m_Triangles[0].m_uiMaxVertexCount, 3U);
       XII_TEST_BOOL(retained.m_Triangles[0].m_Flags == xiiGALRayTracingGeometryFlags::NoDuplicateAnyHitInvocation);
       XII_TEST_BOOL(retained.m_BuildASFlags == triangleDescription.m_BuildASFlags);
+      XII_TEST_BOOL(!pTriangles->IsBuilt());
+      XII_TEST_INT(pTriangles->GetLastBuildPrimitiveCount(0U), 0U);
       XII_TEST_INT(pTriangles->GetActualGeometryCount(), 1U);
       XII_TEST_INT(pTriangles->GetGeometryDescriptionIndex("TriangleGeometry"), 0U);
       XII_TEST_INT(pTriangles->GetGeometryIndex("TriangleGeometry"), 0U);

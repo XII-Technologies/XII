@@ -86,6 +86,12 @@ xiiUInt32 xiiGALBottomLevelAS::GetActualGeometryCount() const
   return m_Description.m_Triangles.GetCount() + m_Description.m_BoundingBoxes.GetCount();
 }
 
+void xiiGALBottomLevelAS::SetLastBuildPrimitiveCounts(xiiArrayPtr<const xiiUInt32> primitiveCounts)
+{
+  m_LastBuildPrimitiveCounts.SetCountUninitialized(primitiveCounts.GetCount());
+  xiiMemoryUtils::Copy(m_LastBuildPrimitiveCounts.GetData(), primitiveCounts.GetPtr(), primitiveCounts.GetCount());
+}
+
 const xiiGALScratchBufferSizeDescription& xiiGALBottomLevelAS::GetScratchBufferSizeDescription() const
 {
   return m_ScratchBufferSizeDescription;

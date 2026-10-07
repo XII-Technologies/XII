@@ -150,6 +150,12 @@ public:
   /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTopLevelASCreationDescription& GetDescription() const { return m_Description; };
 
+  /// Returns whether a build or copy command has initialized this acceleration structure.
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsBuilt() const { return m_bBuilt; }
+
+  /// Returns the instance count used by the most recent build or copied from the source TLAS.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetLastBuildInstanceCount() const { return m_uiLastBuildInstanceCount; }
+
   /// This returns the instance description that can be used in the shader binding table.
   ///
   /// \param sName - The instance name that is specified in the xiiGALTLASBuildInstanceData.
@@ -172,6 +178,7 @@ public:
   [[nodiscard]] virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
 
 protected:
+  friend class xiiGALCommandList;
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
@@ -183,4 +190,6 @@ protected:
 
 protected:
   xiiGALTopLevelASCreationDescription m_Description;
+  xiiUInt32                           m_uiLastBuildInstanceCount = 0U;
+  bool                                m_bBuilt                   = false;
 };

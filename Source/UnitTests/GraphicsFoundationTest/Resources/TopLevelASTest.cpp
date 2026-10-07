@@ -60,6 +60,8 @@ XII_CREATE_SIMPLE_TEST(Resources, TopLevelAS)
 
     XII_TEST_BOOL(pAccelerationStructure->GetDescription() == description);
     XII_TEST_BOOL(pAccelerationStructure->GetScratchBufferSizeDescription().m_uiBuild > 0U);
+    XII_TEST_BOOL(!pAccelerationStructure->IsBuilt());
+    XII_TEST_INT(pAccelerationStructure->GetLastBuildInstanceCount(), 0U);
     XII_TEST_INT(pAccelerationStructure->GetBuildDescription().m_uiInstanceCount, 0U);
 
     const xiiGALTopLevelASInstanceDescription missing = pAccelerationStructure->GetInstanceDescription("MissingInstance");

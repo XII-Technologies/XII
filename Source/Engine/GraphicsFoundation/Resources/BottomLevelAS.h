@@ -117,6 +117,15 @@ public:
   /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBottomLevelASCreationDescription& GetDescription() const { return m_Description; }
 
+  /// Returns whether a build or copy command has initialized this acceleration structure.
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsBuilt() const { return !m_LastBuildPrimitiveCounts.IsEmpty(); }
+
+  /// Returns the primitive count used by the most recent build for a geometry.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetLastBuildPrimitiveCount(xiiUInt32 uiGeometryIndex) const
+  {
+    return uiGeometryIndex < m_LastBuildPrimitiveCounts.GetCount() ? m_LastBuildPrimitiveCounts[uiGeometryIndex] : 0U;
+  }
+
   /// This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
   /// \param sName - The geometry name that is specified in the BLAS triangle or axis-aligned bounding box descriptions.
@@ -151,6 +160,7 @@ public:
   [[nodiscard]] virtual xiiUInt64 GetDeviceAddress() const = 0;
 
 protected:
+  friend class xiiGALCommandList;
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
@@ -161,7 +171,10 @@ protected:
   virtual xiiResult InitPlatform() = 0;
 
 protected:
+  void SetLastBuildPrimitiveCounts(xiiArrayPtr<const xiiUInt32> primitiveCounts);
+
   xiiGALBottomLevelASCreationDescription m_Description;
   xiiGALScratchBufferSizeDescription     m_ScratchBufferSizeDescription;
   xiiHashTable<xiiStringView, xiiUInt32> m_NameToIndex;
+  xiiDynamicArray<xiiUInt32>             m_LastBuildPrimitiveCounts;
 };
