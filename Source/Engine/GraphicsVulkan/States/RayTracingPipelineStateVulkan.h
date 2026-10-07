@@ -40,10 +40,10 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  vk::Pipeline          m_vkPipeline;
-  vk::PipelineCache     m_vkPipelineCache;
-  vk::PipelineLayout    m_vkPipelineLayout;
-  vk::PipelineBindPoint m_vkPipelineBindPoint;
+  vk::Pipeline          m_vkPipeline          = VK_NULL_HANDLE;
+  vk::PipelineCache     m_vkPipelineCache     = VK_NULL_HANDLE;
+  vk::PipelineLayout    m_vkPipelineLayout    = VK_NULL_HANDLE;
+  vk::PipelineBindPoint m_vkPipelineBindPoint = vk::PipelineBindPoint::eRayTracingKHR;
 
   xiiDynamicArray<xiiUInt8>  m_ShaderGroupHandles;
   xiiDynamicArray<xiiUInt32> m_RayGenerationGroupIndices;
