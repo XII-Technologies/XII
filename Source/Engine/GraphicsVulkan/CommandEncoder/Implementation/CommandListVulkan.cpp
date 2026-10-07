@@ -2403,6 +2403,28 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdBuildAccelerationStructuresKHR() must be called outside of render pass.");
 
+  [[maybe_unused]] const auto ConvertInstanceFlags = [](xiiBitflags<xiiGALRayTracingInstanceFlags> flags) -> vk::GeometryInstanceFlagsKHR {
+    vk::GeometryInstanceFlagsKHR vkFlags = {};
+
+    if (flags.IsSet(xiiGALRayTracingInstanceFlags::TriangleCullDisable))
+      vkFlags |= vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable;
+    if (flags.IsSet(xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise))
+      vkFlags |= vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise;
+    if (flags.IsSet(xiiGALRayTracingInstanceFlags::ForceOpaque))
+      vkFlags |= vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
+    if (flags.IsSet(xiiGALRayTracingInstanceFlags::ForceNonOpaque))
+      vkFlags |= vk::GeometryInstanceFlagBitsKHR::eForceNoOpaque;
+
+    return vkFlags;
+  };
+
+  XII_ASSERT_DEV(
+    static_cast<VkGeometryInstanceFlagsKHR>(ConvertInstanceFlags(xiiGALRayTracingInstanceFlags::TriangleCullDisable)) == static_cast<xiiUInt8>(xiiGALRayTracingInstanceFlags::TriangleCullDisable) &&
+      static_cast<VkGeometryInstanceFlagsKHR>(ConvertInstanceFlags(xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise)) == static_cast<xiiUInt8>(xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise) &&
+      static_cast<VkGeometryInstanceFlagsKHR>(ConvertInstanceFlags(xiiGALRayTracingInstanceFlags::ForceOpaque)) == static_cast<xiiUInt8>(xiiGALRayTracingInstanceFlags::ForceOpaque) &&
+      static_cast<VkGeometryInstanceFlagsKHR>(ConvertInstanceFlags(xiiGALRayTracingInstanceFlags::ForceNonOpaque)) == static_cast<xiiUInt8>(xiiGALRayTracingInstanceFlags::ForceNonOpaque),
+    "xiiGALRayTracingInstanceFlags must match Vulkan geometry instance flag values because TLAS instance data is consumed directly by Vulkan.");
+
   xiiSharedPtr<xiiGALDeviceVulkan>           pDeviceVulkan         = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALTopLevelASVulkan*                    pTopLevelASVulkan     = xiiDynamicCast<xiiGALTopLevelASVulkan*>(description.m_pTopLevelAS);
   xiiGALBufferVulkan*                        pInstanceBufferVulkan = xiiDynamicCast<xiiGALBufferVulkan*>(description.m_pInstanceBuffer);
