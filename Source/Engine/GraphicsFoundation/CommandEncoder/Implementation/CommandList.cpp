@@ -1847,6 +1847,39 @@ void xiiGALCommandList::UpdateBuffer(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinat
   UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData);
 }
 
+void xiiGALCommandList::UpdateTLASInstanceBuffer(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiGALTLASInstanceData> pInstances)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "UpdateTLASInstanceBuffer must be called while recording.");
+
+  if (pInstances.IsEmpty())
+    return;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Transfer), "The command list does not have the xiiGALCommandQueueFlags::Transfer flag.");
+  XII_ASSERT_DEV(pBuffer != nullptr, "UpdateTLASInstanceBuffer arguments are invalid. The buffer handle has been invalidated.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "UpdateTLASInstanceBuffer command must be used outside of render pass.");
+
+  const xiiGALBufferCreationDescription& bufferDescription    = pBuffer->GetDescription();
+  const xiiGALRayTracingProperties&      rayTracingProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiUInt64                        uiUploadSize         = static_cast<xiiUInt64>(pInstances.GetCount()) * xiiGALTLASInstanceData::s_uiEncodedSize;
+
+  XII_ASSERT_DEV(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "UpdateTLASInstanceBuffer requires a buffer created with xiiGALBindFlags::RayTracing.");
+  XII_ASSERT_DEV(bufferDescription.m_Usage == xiiGALResourceUsage::Mutable || bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "UpdateTLASInstanceBuffer requires a mutable or sparse destination buffer.");
+  XII_ASSERT_DEV(rayTracingProperties.m_uiInstanceBufferAlignment > 0U && (uiDestinationOffset % rayTracingProperties.m_uiInstanceBufferAlignment) == 0U, "TLAS instance buffer offset ({}) does not satisfy the required alignment ({}).", uiDestinationOffset, rayTracingProperties.m_uiInstanceBufferAlignment);
+  XII_ASSERT_DEV((static_cast<xiiUInt64>(uiDestinationOffset) + uiUploadSize) <= bufferDescription.m_uiSize, "TLAS instance upload range exceeds the destination buffer size.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiUpdateBuffer;
+
+  UpdateTLASInstanceBufferPlatform(pBuffer, uiDestinationOffset, pInstances);
+}
+
+void xiiGALCommandList::UpdateTLASInstanceBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiGALTLASInstanceData> pInstances)
+{
+  const xiiArrayPtr<const xiiUInt8> sourceData(reinterpret_cast<const xiiUInt8*>(pInstances.GetPtr()), pInstances.GetCount() * sizeof(xiiGALTLASInstanceData));
+  UpdateBufferPlatform(pBuffer, uiDestinationOffset, sourceData);
+}
+
 void xiiGALCommandList::CopyBuffer(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyBuffer must be called while recording.");

@@ -75,7 +75,10 @@ void xiiGALTLASInstanceData::SetHitGroupContribution(xiiUInt32 uiContribution)
 
 void xiiGALTLASInstanceData::SetFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags)
 {
-  m_uiHitGroupContributionAndFlags = (m_uiHitGroupContributionAndFlags & 0x00FFFFFFU) | (static_cast<xiiUInt32>(flags.GetValue()) << 24U);
+  XII_ASSERT_DEV((flags.GetValue() & ~xiiGALRayTracingInstanceFlags::All) == 0U, "Ray tracing instance flags contain unsupported bits.");
+
+  const xiiUInt32 uiFlags          = static_cast<xiiUInt32>(flags.GetValue() & xiiGALRayTracingInstanceFlags::All);
+  m_uiHitGroupContributionAndFlags = (m_uiHitGroupContributionAndFlags & 0x00FFFFFFU) | (uiFlags << 24U);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

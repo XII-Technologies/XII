@@ -903,7 +903,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
       },
       [pState](const RayTracingSceneBuildPassData& data, xiiRenderGraphPassContext& context) {
         xiiGALCommandList& commandList = context.GetCommandList();
-        commandList.UpdateBuffer(context.GetBuffer(data.m_hInstanceBuffer), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Instances.GetData()), data.m_Instances.GetCount() * sizeof(xiiGALTLASInstanceData)));
+        commandList.UpdateTLASInstanceBuffer(context.GetBuffer(data.m_hInstanceBuffer), 0U, data.m_Instances.GetArrayPtr());
 
         for (const RayTracingBLASBuild& build : data.m_BLASBuilds)
         {

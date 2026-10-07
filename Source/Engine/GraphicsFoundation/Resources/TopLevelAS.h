@@ -39,6 +39,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingInstanceFlags
     ForceOpaque                   = XII_BIT(2), ///< Forces all geometries in this instance to be treated as opaque, overriding their per-geometry opaque state unless overridden by a ray flag.
     ForceNonOpaque                = XII_BIT(3), ///< Forces all geometries in this instance to be treated as non-opaque, overriding their per-geometry opaque state unless overridden by a ray flag.
 
+    All = TriangleCullDisable | TriangleFrontCounterClockwise | ForceOpaque | ForceNonOpaque,
+
     Default = None
   };
 
@@ -55,12 +57,14 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingInstanceFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingInstanceFlags);
 
-/// Backend-independent 64-byte TLAS instance record.
+/// Backend-independent TLAS instance source record.
 ///
-/// Its binary layout matches VkAccelerationStructureInstanceKHR and D3D12_RAYTRACING_INSTANCE_DESC: row-major float3x4 transform, two packed 24:8 words, and the BLAS device address.
+/// Upload these records with xiiGALCommandList::UpdateTLASInstanceBuffer(). The command list converts the portable fields to the native backend representation before a TLAS build consumes them.
 struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
 {
   XII_DECLARE_POD_TYPE();
+
+  static constexpr xiiUInt32 s_uiEncodedSize = 64U;
 
   [[nodiscard]] xiiMat4 GetTransform() const;
   void                  SetTransform(xiiMat4 transform);
@@ -97,7 +101,7 @@ struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
   xiiUInt64 m_uiBottomLevelASDeviceAddress   = 0U;
 };
 
-static_assert(sizeof(xiiGALTLASInstanceData) == 64U, "TLAS instance records must match the native Vulkan and D3D12 ABI.");
+static_assert(sizeof(xiiGALTLASInstanceData) == xiiGALTLASInstanceData::s_uiEncodedSize, "TLAS instance source records must retain their stable encoded size.");
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTLASInstanceData);
 
