@@ -117,9 +117,6 @@ public:
   [[nodiscard]] const xiiGALScratchBufferSizeDescription& GetScratchBufferSizeDescription() const;
 
   /// Returns the backend GPU virtual/device address used by TLAS instance records.
-  ///
-  /// Keeping this on the GAL interface prevents higher-level scene builders from
-  /// depending on VkAccelerationStructureInstanceKHR or D3D12 instance layouts.
   [[nodiscard]] virtual xiiUInt64 GetDeviceAddress() const = 0;
 
 protected:

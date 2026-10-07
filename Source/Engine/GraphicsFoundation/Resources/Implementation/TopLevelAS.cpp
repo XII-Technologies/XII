@@ -13,8 +13,10 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALHitGroupBindingMode, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingInstanceFlags, 1)
-  XII_BITFLAGS_CONSTANTS(xiiGALRayTracingInstanceFlags::TriangleCullDisable, xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise)
-  XII_BITFLAGS_CONSTANTS(xiiGALRayTracingInstanceFlags::ForceOpaque, xiiGALRayTracingInstanceFlags::ForceNonOpaque)
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingInstanceFlags::TriangleCullDisable),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingInstanceFlags::ForceOpaque),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingInstanceFlags::ForceNonOpaque),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTLASInstanceData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGALTLASInstanceData>)
@@ -35,6 +37,8 @@ XII_END_STATIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelAS, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+///////////////////////////////////////////////////////////////////////////////////
 
 xiiMat4 xiiGALTLASInstanceData::GetTransform() const
 {
@@ -73,6 +77,8 @@ void xiiGALTLASInstanceData::SetFlags(xiiBitflags<xiiGALRayTracingInstanceFlags>
 {
   m_uiHitGroupContributionAndFlags = (m_uiHitGroupContributionAndFlags & 0x00FFFFFFU) | (static_cast<xiiUInt32>(flags.GetValue()) << 24U);
 }
+
+///////////////////////////////////////////////////////////////////////////////////
 
 xiiGALTopLevelAS::xiiGALTopLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTopLevelASCreationDescription& creationDescription) :
   xiiGALResource(std::move(pDevice)), m_Description(creationDescription)

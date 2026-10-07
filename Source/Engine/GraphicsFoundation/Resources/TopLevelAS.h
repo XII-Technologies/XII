@@ -26,19 +26,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALHitGroupBindingMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALHitGroupBindingMode);
 
-/// Portable ray tracing instance flags. Vulkan and D3D12 intentionally assign
-/// identical bit values to these four semantics.
+/// This describes the ray tracing instance flags used by the top level acceleration structure.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingInstanceFlags
 {
   using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    None                          = 0U,
-    TriangleCullDisable           = XII_BIT(0),
-    TriangleFrontCounterClockwise = XII_BIT(1),
-    ForceOpaque                   = XII_BIT(2),
-    ForceNonOpaque                = XII_BIT(3),
+    None                          = 0U,         ///< No instance flags are set. Triangles use clockwise winding for front-facing determination, and ray-specified front/back-face culling is permitted.
+    TriangleCullDisable           = XII_BIT(0), ///< Disables front- and back-face culling for triangles in this instance. Ray flags requesting front- or back-facing triangle culling have no effect.
+    TriangleFrontCounterClockwise = XII_BIT(1), ///< Treats counter-clockwise triangles as front-facing. By default, clockwise triangles are considered front-facing.
+    ForceOpaque                   = XII_BIT(2), ///< Forces all geometries in this instance to be treated as opaque, overriding their per-geometry opaque state unless overridden by a ray flag.
+    ForceNonOpaque                = XII_BIT(3), ///< Forces all geometries in this instance to be treated as non-opaque, overriding their per-geometry opaque state unless overridden by a ray flag.
 
     Default = None
   };
@@ -53,14 +52,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingInstanceFlags
 };
 
 XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingInstanceFlags);
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingInstanceFlags);
 
 /// Backend-independent 64-byte TLAS instance record.
 ///
-/// Its binary layout matches VkAccelerationStructureInstanceKHR and
-/// D3D12_RAYTRACING_INSTANCE_DESC: row-major float3x4 transform, two packed
-/// 24:8 words, and the BLAS device address. This lets GraphicsCore stream one
-/// instance buffer on both backends without including native API headers.
+/// Its binary layout matches VkAccelerationStructureInstanceKHR and D3D12_RAYTRACING_INSTANCE_DESC: row-major float3x4 transform, two packed 24:8 words, and the BLAS device address.
 struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
 {
   XII_DECLARE_POD_TYPE();
