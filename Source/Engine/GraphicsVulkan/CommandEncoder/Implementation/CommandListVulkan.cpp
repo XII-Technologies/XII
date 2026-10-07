@@ -2445,8 +2445,6 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
   FlushBarriers();
 
   m_vkCommandBuffer.buildAccelerationStructuresKHR(1U, &vkBuildInfo, &pRangeInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-
-  pTopLevelASVulkan->SetBuildInstanceCount(description.m_uiInstanceCount);
 }
 
 void xiiGALCommandListVulkan::CopyBLASPlatform(const xiiGALCopyBLASDescription& description)
@@ -2489,8 +2487,6 @@ void xiiGALCommandListVulkan::CopyTLASPlatform(const xiiGALCopyTLASDescription& 
   FlushBarriers();
 
   m_vkCommandBuffer.copyAccelerationStructureKHR(&vkCopyInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-
-  pDestinationTopLevelASVulkan->CopyBuildDescription(*pSourceTopLevelASVulkan);
 }
 
 void xiiGALCommandListVulkan::WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description)

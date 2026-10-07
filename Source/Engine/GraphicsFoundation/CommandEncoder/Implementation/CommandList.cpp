@@ -1672,8 +1672,8 @@ void xiiGALCommandList::BuildTLAS(const xiiGALBuildTLASDescription& description)
   ++m_CommandListStatistics.m_CommandListCounters.m_uiBuildTLAS;
 
   BuildTLASPlatform(description);
-  description.m_pTopLevelAS->m_uiLastBuildInstanceCount = description.m_uiInstanceCount;
-  description.m_pTopLevelAS->m_bBuilt                   = true;
+  description.m_pTopLevelAS->m_BuildDescription.m_uiInstanceCount = description.m_uiInstanceCount;
+  description.m_pTopLevelAS->m_bBuilt                             = true;
 }
 
 void xiiGALCommandList::CopyBLAS(const xiiGALCopyBLASDescription& description)
@@ -1751,8 +1751,8 @@ void xiiGALCommandList::CopyTLAS(const xiiGALCopyTLASDescription& description)
   ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyTLAS;
 
   CopyTLASPlatform(description);
-  description.m_pDestinationTopLevelAS->m_uiLastBuildInstanceCount = description.m_pSourceTopLevelAS->m_uiLastBuildInstanceCount;
-  description.m_pDestinationTopLevelAS->m_bBuilt                   = true;
+  description.m_pDestinationTopLevelAS->m_BuildDescription = description.m_pSourceTopLevelAS->m_BuildDescription;
+  description.m_pDestinationTopLevelAS->m_bBuilt           = true;
 }
 
 void xiiGALCommandList::WriteBLASCompactedSize(const xiiGALWriteBLASCompactedSizeDescription& description)

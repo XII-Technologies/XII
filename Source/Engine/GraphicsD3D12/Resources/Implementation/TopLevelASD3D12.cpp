@@ -157,24 +157,6 @@ void xiiGALTopLevelASD3D12::SetDebugNamePlatform(xiiStringView sName) const
   }
 }
 
-xiiGALTopLevelASInstanceDescription xiiGALTopLevelASD3D12::GetInstanceDescription(xiiStringView sName) const
-{
-  xiiGALTopLevelASInstanceDescription instanceDescription;
-  instanceDescription.m_uiContributionToHitGroupIndex = xiiInvalidIndex;
-  instanceDescription.m_uiInstanceIndex               = xiiInvalidIndex;
-
-  if (sName.IsEmpty())
-    return instanceDescription;
-
-  m_NameToInstance.TryGetValue(sName, instanceDescription);
-  return instanceDescription;
-}
-
-xiiGALTopLevelASBuildDescription xiiGALTopLevelASD3D12::GetBuildDescription() const
-{
-  return m_BuildDescription;
-}
-
 xiiGALScratchBufferSizeDescription xiiGALTopLevelASD3D12::GetScratchBufferSizeDescription() const
 {
   return m_ScratchBufferSizeDescription;

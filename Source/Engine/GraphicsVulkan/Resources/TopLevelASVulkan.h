@@ -15,10 +15,6 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer GetVulkanBuffer() const { return m_vkBuffer; }
   [[nodiscard]] vk::DeviceAddress            GetVulkanDeviceAddress() const;
 
-  virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const override final;
-
-  virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const override final;
-
   virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
 
 protected:
@@ -35,13 +31,8 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  XII_ALWAYS_INLINE void SetBuildInstanceCount(xiiUInt32 uiInstanceCount) { m_BuildDescription.m_uiInstanceCount = uiInstanceCount; }
-  XII_ALWAYS_INLINE void CopyBuildDescription(const xiiGALTopLevelASVulkan& source) { m_BuildDescription = source.m_BuildDescription; }
-
-  vk::AccelerationStructureKHR                                     m_vkAccelerationStructure = VK_NULL_HANDLE;
-  vk::Buffer                                                       m_vkBuffer                = VK_NULL_HANDLE;
-  xiiVulkanAllocation                                              m_BufferMemoryAllocation  = {};
-  xiiGALTopLevelASBuildDescription                                 m_BuildDescription;
-  xiiGALScratchBufferSizeDescription                               m_ScratchBufferSizeDescription;
-  xiiHashTable<xiiStringView, xiiGALTopLevelASInstanceDescription> m_NameToInstance;
+  vk::AccelerationStructureKHR       m_vkAccelerationStructure = VK_NULL_HANDLE;
+  vk::Buffer                         m_vkBuffer                = VK_NULL_HANDLE;
+  xiiVulkanAllocation                m_BufferMemoryAllocation  = {};
+  xiiGALScratchBufferSizeDescription m_ScratchBufferSizeDescription;
 };

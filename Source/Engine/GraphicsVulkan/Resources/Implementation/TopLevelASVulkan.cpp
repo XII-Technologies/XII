@@ -119,24 +119,6 @@ void xiiGALTopLevelASVulkan::SetDebugNamePlatform(xiiStringView sName) const
   }
 }
 
-xiiGALTopLevelASInstanceDescription xiiGALTopLevelASVulkan::GetInstanceDescription(xiiStringView sName) const
-{
-  xiiGALTopLevelASInstanceDescription instanceDescription;
-  instanceDescription.m_uiContributionToHitGroupIndex = xiiInvalidIndex;
-  instanceDescription.m_uiInstanceIndex               = xiiInvalidIndex;
-
-  if (sName.IsEmpty())
-    return instanceDescription;
-
-  m_NameToInstance.TryGetValue(sName, instanceDescription);
-  return instanceDescription;
-}
-
-xiiGALTopLevelASBuildDescription xiiGALTopLevelASVulkan::GetBuildDescription() const
-{
-  return m_BuildDescription;
-}
-
 xiiGALScratchBufferSizeDescription xiiGALTopLevelASVulkan::GetScratchBufferSizeDescription() const
 {
   return m_ScratchBufferSizeDescription;

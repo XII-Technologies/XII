@@ -19,7 +19,6 @@ XII_CREATE_SIMPLE_TEST(Resources, TopLevelAS)
 
     xiiGALTopLevelASBuildDescription buildDescription;
     XII_TEST_INT(buildDescription.m_uiInstanceCount, 0U);
-    XII_TEST_BOOL(buildDescription.m_BindingMode == xiiGALHitGroupBindingMode::PerGeometry);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Portable instance data")
@@ -63,11 +62,6 @@ XII_CREATE_SIMPLE_TEST(Resources, TopLevelAS)
     XII_TEST_BOOL(!pAccelerationStructure->IsBuilt());
     XII_TEST_INT(pAccelerationStructure->GetLastBuildInstanceCount(), 0U);
     XII_TEST_INT(pAccelerationStructure->GetBuildDescription().m_uiInstanceCount, 0U);
-
-    const xiiGALTopLevelASInstanceDescription missing = pAccelerationStructure->GetInstanceDescription("MissingInstance");
-    XII_TEST_BOOL(missing.m_pBottomLevelAS == nullptr);
-    XII_TEST_INT(missing.m_uiContributionToHitGroupIndex, xiiInvalidIndex);
-    XII_TEST_INT(missing.m_uiInstanceIndex, xiiInvalidIndex);
 
     pAccelerationStructure->SetDebugName("Unit Test TLAS");
     XII_TEST_STRING(pAccelerationStructure->GetDebugName(), "Unit Test TLAS");
