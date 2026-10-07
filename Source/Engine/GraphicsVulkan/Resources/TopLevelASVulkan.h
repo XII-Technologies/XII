@@ -22,6 +22,7 @@ public:
   virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
 
 protected:
+  friend class xiiGALCommandListVulkan;
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
@@ -34,6 +35,9 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
+  XII_ALWAYS_INLINE void SetBuildInstanceCount(xiiUInt32 uiInstanceCount) { m_BuildDescription.m_uiInstanceCount = uiInstanceCount; }
+  XII_ALWAYS_INLINE void CopyBuildDescription(const xiiGALTopLevelASVulkan& source) { m_BuildDescription = source.m_BuildDescription; }
+
   vk::AccelerationStructureKHR                                     m_vkAccelerationStructure = VK_NULL_HANDLE;
   vk::Buffer                                                       m_vkBuffer                = VK_NULL_HANDLE;
   xiiVulkanAllocation                                              m_BufferMemoryAllocation  = {};

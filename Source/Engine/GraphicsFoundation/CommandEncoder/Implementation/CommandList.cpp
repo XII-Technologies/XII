@@ -1491,9 +1491,80 @@ void xiiGALCommandList::BuildBLAS(const xiiGALBuildBLASDescription& description)
   XII_ASSERT_DEV(description.m_pBottomLevelAS != nullptr, "BuildBLAS command arguments are invalid. BLAS handle is invalid.");
   XII_ASSERT_DEV(description.m_pScratchBuffer != nullptr, "BuildBLAS command arguments are invalid. Scratch buffer handle is invalid.");
 
-  const xiiGALBottomLevelASCreationDescription& blasDescription = description.m_pBottomLevelAS->GetDescription();
+  const xiiGALBottomLevelASCreationDescription& blasDescription          = description.m_pBottomLevelAS->GetDescription();
+  const xiiGALRayTracingProperties&             rayTracingProperties     = m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiGALBufferCreationDescription&        scratchBufferDescription = description.m_pScratchBuffer->GetDescription();
+  const xiiGALScratchBufferSizeDescription&     scratchSizeDescription   = description.m_pBottomLevelAS->GetScratchBufferSizeDescription();
+  const xiiUInt64                               uiRequiredScratchSize    = description.m_bUpdate ? scratchSizeDescription.m_uiUpdate : scratchSizeDescription.m_uiBuild;
+
+  auto IsValidBufferRange = [](xiiUInt64 uiOffset, xiiUInt64 uiRangeSize, xiiUInt64 uiBufferSize) {
+    return uiOffset <= uiBufferSize && uiRangeSize <= (uiBufferSize - uiOffset);
+  };
+
+  XII_ASSERT_DEV(blasDescription.m_uiCompactedSize == 0U, "BuildBLAS cannot build into an acceleration structure created as a compacted-copy destination.");
   XII_ASSERT_DEV(description.m_Triangles.GetCount() == blasDescription.m_Triangles.GetCount(), "BuildBLAS command arguments are invalid. Triangle build input count ({}) must match BLAS triangle geometry count ({}).", description.m_Triangles.GetCount(), blasDescription.m_Triangles.GetCount());
   XII_ASSERT_DEV(description.m_BoundingBoxes.GetCount() == blasDescription.m_BoundingBoxes.GetCount(), "BuildBLAS command arguments are invalid. Bounding box build input count ({}) must match BLAS AABB geometry count ({}).", description.m_BoundingBoxes.GetCount(), blasDescription.m_BoundingBoxes.GetCount());
+  XII_ASSERT_DEV(description.m_BuildFlags.IsNoFlagSet() || description.m_BuildFlags == blasDescription.m_BuildASFlags, "Runtime BLAS build flags must be empty or match the flags used to size the acceleration structure.");
+  XII_ASSERT_DEV(!description.m_bUpdate || blasDescription.m_BuildASFlags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate), "BLAS update requires xiiGALRayTracingBuildASFlags::AllowUpdate at creation time.");
+  XII_ASSERT_DEV(scratchBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "BLAS scratch buffer must be created with xiiGALBindFlags::RayTracing.");
+  XII_ASSERT_DEV(rayTracingProperties.m_uiScratchBufferAlignment > 0U && (description.m_uiScratchBufferOffset % rayTracingProperties.m_uiScratchBufferAlignment) == 0U, "BLAS scratch buffer offset ({}) does not satisfy the required alignment ({}).", description.m_uiScratchBufferOffset, rayTracingProperties.m_uiScratchBufferAlignment);
+  XII_ASSERT_DEV(IsValidBufferRange(description.m_uiScratchBufferOffset, uiRequiredScratchSize, scratchBufferDescription.m_uiSize), "BLAS scratch buffer range exceeds the buffer size.");
+
+  auto VerifyRayTracingBuffer = [](const xiiGALBuffer* pBuffer, const char* szUsage) {
+    XII_ASSERT_DEV(pBuffer != nullptr, "{} buffer is invalid.", szUsage);
+    XII_ASSERT_DEV(pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "{} buffer must be created with xiiGALBindFlags::RayTracing.", szUsage);
+  };
+
+  for (xiiUInt32 i = 0U; i < description.m_Triangles.GetCount(); ++i)
+  {
+    const xiiGALBLASTriangleDescription&      triangleDescription = blasDescription.m_Triangles[i];
+    const xiiGALBLASTriangleBuildDescription& triangleBuild       = description.m_Triangles[i];
+    const xiiUInt32                           uiPrimitiveCount    = triangleBuild.m_uiPrimitiveCount != 0U ? triangleBuild.m_uiPrimitiveCount : triangleDescription.m_uiMaxPrimitiveCount;
+    const xiiUInt32                           uiComponentSize     = triangleDescription.m_VertexValueType == xiiGALValueType::Float32 ? sizeof(float) : sizeof(xiiUInt16);
+    const xiiUInt64                           uiVertexElementSize = static_cast<xiiUInt64>(uiComponentSize) * triangleDescription.m_uiVertexComponentCount;
+
+    VerifyRayTracingBuffer(triangleBuild.m_pVertexBuffer, "BLAS vertex");
+    XII_ASSERT_DEV(rayTracingProperties.m_uiVertexBufferAlignment > 0U && (triangleBuild.m_uiVertexBufferOffset % rayTracingProperties.m_uiVertexBufferAlignment) == 0U, "BLAS triangle {} vertex buffer offset does not satisfy the required alignment.", i);
+    XII_ASSERT_DEV(triangleBuild.m_uiVertexStride >= uiVertexElementSize && (triangleBuild.m_uiVertexStride % uiComponentSize) == 0U, "BLAS triangle {} vertex stride ({}) is invalid for its vertex format.", i, triangleBuild.m_uiVertexStride);
+    XII_ASSERT_DEV(triangleBuild.m_uiVertexStride <= xiiMath::MaxValue<xiiUInt32>(), "BLAS triangle {} vertex stride exceeds the Vulkan limit.", i);
+    XII_ASSERT_DEV(uiPrimitiveCount <= triangleDescription.m_uiMaxPrimitiveCount, "BLAS triangle {} primitive count ({}) exceeds its declared maximum ({}).", i, uiPrimitiveCount, triangleDescription.m_uiMaxPrimitiveCount);
+    const xiiUInt64 uiVertexBufferSize = triangleBuild.m_pVertexBuffer->GetSize();
+    XII_ASSERT_DEV(triangleBuild.m_uiVertexBufferOffset <= uiVertexBufferSize && uiVertexElementSize <= (uiVertexBufferSize - triangleBuild.m_uiVertexBufferOffset) && static_cast<xiiUInt64>(triangleDescription.m_uiMaxVertexCount - 1U) <= ((uiVertexBufferSize - triangleBuild.m_uiVertexBufferOffset - uiVertexElementSize) / triangleBuild.m_uiVertexStride), "BLAS triangle {} vertex range exceeds its buffer.", i);
+
+    if (triangleDescription.m_IndexType == xiiGALValueType::Undefined)
+    {
+      XII_ASSERT_DEV(triangleBuild.m_pIndexBuffer == nullptr, "Non-indexed BLAS triangle {} must not provide an index buffer.", i);
+      XII_ASSERT_DEV(static_cast<xiiUInt64>(uiPrimitiveCount) * 3U <= triangleDescription.m_uiMaxVertexCount, "Non-indexed BLAS triangle {} does not declare enough vertices for {} primitives.", i, uiPrimitiveCount);
+    }
+    else
+    {
+      VerifyRayTracingBuffer(triangleBuild.m_pIndexBuffer, "BLAS index");
+      const xiiUInt32 uiIndexSize = triangleDescription.m_IndexType == xiiGALValueType::UInt16 ? sizeof(xiiUInt16) : sizeof(xiiUInt32);
+      XII_ASSERT_DEV(rayTracingProperties.m_uiIndexBufferAlignment > 0U && (triangleBuild.m_uiIndexBufferOffset % rayTracingProperties.m_uiIndexBufferAlignment) == 0U, "BLAS triangle {} index buffer offset does not satisfy the required alignment.", i);
+      XII_ASSERT_DEV(IsValidBufferRange(triangleBuild.m_uiIndexBufferOffset, static_cast<xiiUInt64>(uiPrimitiveCount) * 3U * uiIndexSize, triangleBuild.m_pIndexBuffer->GetSize()), "BLAS triangle {} index range exceeds its buffer.", i);
+    }
+
+    if (triangleBuild.m_pTransformBuffer != nullptr)
+    {
+      VerifyRayTracingBuffer(triangleBuild.m_pTransformBuffer, "BLAS transform");
+      XII_ASSERT_DEV(rayTracingProperties.m_uiTransformBufferAlignment > 0U && (triangleBuild.m_uiTransformOffset % rayTracingProperties.m_uiTransformBufferAlignment) == 0U, "BLAS triangle {} transform offset does not satisfy the required alignment.", i);
+      XII_ASSERT_DEV(IsValidBufferRange(triangleBuild.m_uiTransformOffset, sizeof(float) * 12U, triangleBuild.m_pTransformBuffer->GetSize()), "BLAS triangle {} transform range exceeds its buffer.", i);
+    }
+  }
+
+  for (xiiUInt32 i = 0U; i < description.m_BoundingBoxes.GetCount(); ++i)
+  {
+    const xiiGALBLASBoundingBoxDescription&      boxDescription = blasDescription.m_BoundingBoxes[i];
+    const xiiGALBLASBoundingBoxBuildDescription& boxBuild       = description.m_BoundingBoxes[i];
+    const xiiUInt32                              uiBoxCount     = boxBuild.m_uiBoxCount != 0U ? boxBuild.m_uiBoxCount : boxDescription.m_uiMaxBoxCount;
+
+    VerifyRayTracingBuffer(boxBuild.m_pBoundingBoxBuffer, "BLAS bounding-box");
+    XII_ASSERT_DEV(rayTracingProperties.m_uiBoxBufferAlignment > 0U && (boxBuild.m_uiBoundingBoxOffset % rayTracingProperties.m_uiBoxBufferAlignment) == 0U, "BLAS bounding-box geometry {} buffer offset does not satisfy the required alignment.", i);
+    XII_ASSERT_DEV(uiBoxCount <= boxDescription.m_uiMaxBoxCount, "BLAS bounding-box geometry {} count ({}) exceeds its declared maximum ({}).", i, uiBoxCount, boxDescription.m_uiMaxBoxCount);
+    XII_ASSERT_DEV(boxBuild.m_uiBoundingBoxStride >= sizeof(float) * 6U && (boxBuild.m_uiBoundingBoxStride % 8U) == 0U, "BLAS bounding-box geometry {} stride ({}) must be at least 24 bytes and a multiple of 8.", i, boxBuild.m_uiBoundingBoxStride);
+    const xiiUInt64 uiBoxBufferSize = boxBuild.m_pBoundingBoxBuffer->GetSize();
+    XII_ASSERT_DEV(boxBuild.m_uiBoundingBoxOffset <= uiBoxBufferSize && sizeof(float) * 6U <= (uiBoxBufferSize - boxBuild.m_uiBoundingBoxOffset) && static_cast<xiiUInt64>(uiBoxCount - 1U) <= ((uiBoxBufferSize - boxBuild.m_uiBoundingBoxOffset - sizeof(float) * 6U) / boxBuild.m_uiBoundingBoxStride), "BLAS bounding-box geometry {} range exceeds its buffer.", i);
+  }
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiBuildBLAS;
@@ -1512,6 +1583,28 @@ void xiiGALCommandList::BuildTLAS(const xiiGALBuildTLASDescription& description)
   XII_ASSERT_DEV(description.m_pInstanceBuffer != nullptr, "BuildTLAS command arguments are invalid. Instance buffer handle is invalid.");
   XII_ASSERT_DEV(description.m_pScratchBuffer != nullptr, "BuildTLAS command arguments are invalid. Scratch buffer handle is invalid.");
   XII_ASSERT_DEV(description.m_uiInstanceCount > 0U, "BuildTLAS command arguments are invalid. InstanceCount must be non-zero.");
+
+  const xiiGALTopLevelASCreationDescription& tlasDescription           = description.m_pTopLevelAS->GetDescription();
+  const xiiGALRayTracingProperties&          rayTracingProperties      = m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiGALBufferCreationDescription&     instanceBufferDescription = description.m_pInstanceBuffer->GetDescription();
+  const xiiGALBufferCreationDescription&     scratchBufferDescription  = description.m_pScratchBuffer->GetDescription();
+  const xiiGALScratchBufferSizeDescription   scratchSizeDescription    = description.m_pTopLevelAS->GetScratchBufferSizeDescription();
+  const xiiUInt64                            uiRequiredScratchSize     = description.m_bUpdate ? scratchSizeDescription.m_uiUpdate : scratchSizeDescription.m_uiBuild;
+
+  auto IsValidBufferRange = [](xiiUInt64 uiOffset, xiiUInt64 uiRangeSize, xiiUInt64 uiBufferSize) {
+    return uiOffset <= uiBufferSize && uiRangeSize <= (uiBufferSize - uiOffset);
+  };
+
+  XII_ASSERT_DEV(tlasDescription.m_uiCompactedSize == 0U, "BuildTLAS cannot build into an acceleration structure created as a compacted-copy destination.");
+  XII_ASSERT_DEV(description.m_uiInstanceCount <= tlasDescription.m_uiMaxInstanceCount, "TLAS instance count ({}) exceeds its declared maximum ({}).", description.m_uiInstanceCount, tlasDescription.m_uiMaxInstanceCount);
+  XII_ASSERT_DEV(description.m_BuildFlags.IsNoFlagSet() || description.m_BuildFlags == tlasDescription.m_Flags, "Runtime TLAS build flags must be empty or match the flags used to size the acceleration structure.");
+  XII_ASSERT_DEV(!description.m_bUpdate || tlasDescription.m_Flags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate), "TLAS update requires xiiGALRayTracingBuildASFlags::AllowUpdate at creation time.");
+  XII_ASSERT_DEV(instanceBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TLAS instance buffer must be created with xiiGALBindFlags::RayTracing.");
+  XII_ASSERT_DEV(rayTracingProperties.m_uiInstanceBufferAlignment > 0U && (description.m_uiInstanceBufferOffset % rayTracingProperties.m_uiInstanceBufferAlignment) == 0U, "TLAS instance buffer offset ({}) does not satisfy the required alignment ({}).", description.m_uiInstanceBufferOffset, rayTracingProperties.m_uiInstanceBufferAlignment);
+  XII_ASSERT_DEV(IsValidBufferRange(description.m_uiInstanceBufferOffset, static_cast<xiiUInt64>(description.m_uiInstanceCount) * xiiGALTLASInstanceData::s_uiEncodedSize, instanceBufferDescription.m_uiSize), "TLAS instance range exceeds the instance buffer size.");
+  XII_ASSERT_DEV(scratchBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TLAS scratch buffer must be created with xiiGALBindFlags::RayTracing.");
+  XII_ASSERT_DEV(rayTracingProperties.m_uiScratchBufferAlignment > 0U && (description.m_uiScratchBufferOffset % rayTracingProperties.m_uiScratchBufferAlignment) == 0U, "TLAS scratch buffer offset ({}) does not satisfy the required alignment ({}).", description.m_uiScratchBufferOffset, rayTracingProperties.m_uiScratchBufferAlignment);
+  XII_ASSERT_DEV(IsValidBufferRange(description.m_uiScratchBufferOffset, uiRequiredScratchSize, scratchBufferDescription.m_uiSize), "TLAS scratch buffer range exceeds the buffer size.");
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiBuildTLAS;
@@ -1528,6 +1621,19 @@ void xiiGALCommandList::CopyBLAS(const xiiGALCopyBLASDescription& description)
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "CopyBLAS command arguments are invalid. CopyBLAS must be performed outside of render pass.");
   XII_ASSERT_DEV(description.m_pSourceBottomLevelAS != nullptr, "CopyBLAS command arguments are invalid. Source BLAS is invalid.");
   XII_ASSERT_DEV(description.m_pDestinationBottomLevelAS != nullptr, "CopyBLAS command arguments are invalid. Destination BLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pSourceBottomLevelAS != description.m_pDestinationBottomLevelAS, "CopyBLAS source and destination must be different acceleration structures.");
+
+  const xiiGALBottomLevelASCreationDescription& sourceDescription      = description.m_pSourceBottomLevelAS->GetDescription();
+  const xiiGALBottomLevelASCreationDescription& destinationDescription = description.m_pDestinationBottomLevelAS->GetDescription();
+  if (description.m_Mode == xiiGALASCopyMode::Compact)
+  {
+    XII_ASSERT_DEV(sourceDescription.m_BuildASFlags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction), "Compact BLAS copy requires the source BLAS to be created with xiiGALRayTracingBuildASFlags::AllowCompaction.");
+    XII_ASSERT_DEV(destinationDescription.m_uiCompactedSize > 0U, "Compact BLAS copy requires a destination BLAS created with the queried compacted size.");
+  }
+  else
+  {
+    XII_ASSERT_DEV(destinationDescription.m_uiCompactedSize == 0U, "Clone BLAS copy requires a regular destination BLAS rather than a compacted-size destination.");
+  }
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyBLAS;
@@ -1544,6 +1650,19 @@ void xiiGALCommandList::CopyTLAS(const xiiGALCopyTLASDescription& description)
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "CopyTLAS command arguments are invalid. CopyTLAS must be performed outside of render pass.");
   XII_ASSERT_DEV(description.m_pSourceTopLevelAS != nullptr, "CopyTLAS command arguments are invalid. Source TLAS is invalid.");
   XII_ASSERT_DEV(description.m_pDestinationTopLevelAS != nullptr, "CopyTLAS command arguments are invalid. Destination TLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pSourceTopLevelAS != description.m_pDestinationTopLevelAS, "CopyTLAS source and destination must be different acceleration structures.");
+
+  const xiiGALTopLevelASCreationDescription& sourceDescription      = description.m_pSourceTopLevelAS->GetDescription();
+  const xiiGALTopLevelASCreationDescription& destinationDescription = description.m_pDestinationTopLevelAS->GetDescription();
+  if (description.m_Mode == xiiGALASCopyMode::Compact)
+  {
+    XII_ASSERT_DEV(sourceDescription.m_Flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction), "Compact TLAS copy requires the source TLAS to be created with xiiGALRayTracingBuildASFlags::AllowCompaction.");
+    XII_ASSERT_DEV(destinationDescription.m_uiCompactedSize > 0U, "Compact TLAS copy requires a destination TLAS created with the queried compacted size.");
+  }
+  else
+  {
+    XII_ASSERT_DEV(destinationDescription.m_uiCompactedSize == 0U, "Clone TLAS copy requires a regular destination TLAS rather than a compacted-size destination.");
+  }
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyTLAS;
@@ -1560,9 +1679,10 @@ void xiiGALCommandList::WriteBLASCompactedSize(const xiiGALWriteBLASCompactedSiz
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "WriteBLASCompactedSize command arguments are invalid. The operation must be performed outside of render pass.");
   XII_ASSERT_DEV(description.m_pBottomLevelAS != nullptr, "WriteBLASCompactedSize command arguments are invalid. Source BLAS is invalid.");
   XII_ASSERT_DEV(description.m_pDestinationBuffer != nullptr, "WriteBLASCompactedSize command arguments are invalid. Destination buffer is invalid.");
+  XII_ASSERT_DEV(description.m_pBottomLevelAS->GetDescription().m_BuildASFlags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction), "WriteBLASCompactedSize requires a BLAS created with xiiGALRayTracingBuildASFlags::AllowCompaction.");
 
   const xiiGALBufferCreationDescription& destinationBufferDescription = description.m_pDestinationBuffer->GetDescription();
-  XII_ASSERT_DEV((description.m_uiDestinationBufferOffset + sizeof(xiiUInt64)) <= destinationBufferDescription.m_uiSize, "WriteBLASCompactedSize command arguments are invalid. Destination offset ({}) exceeds destination buffer size ({}).", description.m_uiDestinationBufferOffset, destinationBufferDescription.m_uiSize);
+  XII_ASSERT_DEV(description.m_uiDestinationBufferOffset <= destinationBufferDescription.m_uiSize && sizeof(xiiUInt64) <= (destinationBufferDescription.m_uiSize - description.m_uiDestinationBufferOffset), "WriteBLASCompactedSize command arguments are invalid. Destination offset ({}) exceeds destination buffer size ({}).", description.m_uiDestinationBufferOffset, destinationBufferDescription.m_uiSize);
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiWriteBLASCompactedSize;
@@ -1579,9 +1699,10 @@ void xiiGALCommandList::WriteTLASCompactedSize(const xiiGALWriteTLASCompactedSiz
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "WriteTLASCompactedSize command arguments are invalid. The operation must be performed outside of render pass.");
   XII_ASSERT_DEV(description.m_pTopLevelAS != nullptr, "WriteTLASCompactedSize command arguments are invalid. Source TLAS is invalid.");
   XII_ASSERT_DEV(description.m_pDestinationBuffer != nullptr, "WriteTLASCompactedSize command arguments are invalid. Destination buffer is invalid.");
+  XII_ASSERT_DEV(description.m_pTopLevelAS->GetDescription().m_Flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction), "WriteTLASCompactedSize requires a TLAS created with xiiGALRayTracingBuildASFlags::AllowCompaction.");
 
   const xiiGALBufferCreationDescription& destinationBufferDescription = description.m_pDestinationBuffer->GetDescription();
-  XII_ASSERT_DEV((description.m_uiDestinationBufferOffset + sizeof(xiiUInt64)) <= destinationBufferDescription.m_uiSize, "WriteTLASCompactedSize command arguments are invalid. Destination offset ({}) exceeds destination buffer size ({}).", description.m_uiDestinationBufferOffset, destinationBufferDescription.m_uiSize);
+  XII_ASSERT_DEV(description.m_uiDestinationBufferOffset <= destinationBufferDescription.m_uiSize && sizeof(xiiUInt64) <= (destinationBufferDescription.m_uiSize - description.m_uiDestinationBufferOffset), "WriteTLASCompactedSize command arguments are invalid. Destination offset ({}) exceeds destination buffer size ({}).", description.m_uiDestinationBufferOffset, destinationBufferDescription.m_uiSize);
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiWriteTLASCompactedSize;

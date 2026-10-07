@@ -910,7 +910,6 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
           xiiGALBuildBLASDescription description;
           description.m_pBottomLevelAS                 = build.m_pBottomLevelAS.Borrow();
           description.m_pScratchBuffer                 = context.GetBuffer(build.m_hScratchBuffer);
-          description.m_BuildFlags                     = xiiGALRayTracingBuildASFlags::PreferFastTrace;
           xiiGALBLASTriangleBuildDescription& triangle = description.m_Triangles.ExpandAndGetRef();
           triangle.m_pVertexBuffer                     = context.GetBuffer(build.m_hVertexBuffer);
           triangle.m_uiVertexBufferOffset              = build.m_uiVertexBufferOffset;
@@ -925,7 +924,6 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
         tlasDescription.m_pInstanceBuffer = context.GetBuffer(data.m_hInstanceBuffer);
         tlasDescription.m_uiInstanceCount = data.m_Instances.GetCount();
         tlasDescription.m_pScratchBuffer  = context.GetBuffer(data.m_hTLASScratchBuffer);
-        tlasDescription.m_BuildFlags      = xiiGALRayTracingBuildASFlags::AllowUpdate | xiiGALRayTracingBuildASFlags::PreferFastTrace;
         tlasDescription.m_bUpdate         = data.m_bUpdateTLAS;
         commandList.BuildTLAS(tlasDescription);
 

@@ -44,6 +44,7 @@ public:
 
   void TransitionOrVerifyBufferState(xiiGALBufferVulkan* pBufferVulkan, xiiEnum<xiiGALStateTransitionMode> transitionMode, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::AccessFlagBits expectedAccessFlags, const char* szOperationName);
   void TransitionOrVerifyTextureState(xiiGALTextureVulkan* pTextureVulkan, xiiEnum<xiiGALStateTransitionMode> transitionMode, xiiBitflags<xiiGALResourceStateFlags> requiredState, vk::ImageLayout expectedLayout, const char* szOperationName);
+  void TransitionOrVerifyAccelerationStructureState(xiiGALResource* pAccelerationStructure, xiiEnum<xiiGALStateTransitionMode> transitionMode, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
 
   void FlushBarriers();
 

@@ -728,7 +728,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildBLASDescription
   xiiUInt64                                              m_uiScratchBufferOffset = 0U;                                          ///< Byte offset into scratch buffer.
   xiiDynamicArray<xiiGALBLASTriangleBuildDescription>    m_Triangles;                                                           ///< Build data for triangle geometries.
   xiiDynamicArray<xiiGALBLASBoundingBoxBuildDescription> m_BoundingBoxes;                                                       ///< Build data for AABB geometries.
-  xiiBitflags<xiiGALRayTracingBuildASFlags>              m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Runtime build flags.
+  xiiBitflags<xiiGALRayTracingBuildASFlags>              m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Optional validation copy of the creation flags. If specified, it must exactly match the BLAS creation flags.
   bool                                                   m_bUpdate                     = false;                                 ///< Update existing AS instead of full rebuild.
   xiiEnum<xiiGALStateTransitionMode>                     m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
 };
@@ -744,7 +744,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildTLASDescription
   xiiUInt32                                 m_uiInstanceCount             = 0U;                                    ///< Number of instances.
   xiiGALBuffer*                             m_pScratchBuffer              = nullptr;                               ///< Scratch buffer used during build.
   xiiUInt64                                 m_uiScratchBufferOffset       = 0U;                                    ///< Byte offset into scratch buffer.
-  xiiBitflags<xiiGALRayTracingBuildASFlags> m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Runtime build flags.
+  xiiBitflags<xiiGALRayTracingBuildASFlags> m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Optional validation copy of the creation flags. If specified, it must exactly match the TLAS creation flags.
   bool                                      m_bUpdate                     = false;                                 ///< Update existing AS instead of full rebuild.
   xiiEnum<xiiGALStateTransitionMode>        m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
 };

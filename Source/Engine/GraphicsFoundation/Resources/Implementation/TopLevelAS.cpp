@@ -76,6 +76,7 @@ void xiiGALTLASInstanceData::SetHitGroupContribution(xiiUInt32 uiContribution)
 void xiiGALTLASInstanceData::SetFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags)
 {
   XII_ASSERT_DEV((flags.GetValue() & ~xiiGALRayTracingInstanceFlags::All) == 0U, "Ray tracing instance flags contain unsupported bits.");
+  XII_ASSERT_DEV(!flags.AreAllSet(xiiGALRayTracingInstanceFlags::ForceOpaque | xiiGALRayTracingInstanceFlags::ForceNonOpaque), "ForceOpaque and ForceNonOpaque ray tracing instance flags are mutually exclusive.");
 
   const xiiUInt32 uiFlags          = static_cast<xiiUInt32>(flags.GetValue() & xiiGALRayTracingInstanceFlags::All);
   m_uiHitGroupContributionAndFlags = (m_uiHitGroupContributionAndFlags & 0x00FFFFFFU) | (uiFlags << 24U);
