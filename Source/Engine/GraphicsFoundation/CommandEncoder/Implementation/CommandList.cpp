@@ -1698,6 +1698,21 @@ void xiiGALCommandList::CopyBLAS(const xiiGALCopyBLASDescription& description)
   else
   {
     XII_ASSERT_DEV(destinationDescription.m_uiCompactedSize == 0U, "Clone BLAS copy requires a regular destination BLAS rather than a compacted-size destination.");
+
+    bool bMatchingDescriptions = destinationDescription.m_BuildASFlags == sourceDescription.m_BuildASFlags && destinationDescription.m_Triangles.GetCount() == sourceDescription.m_Triangles.GetCount() && destinationDescription.m_BoundingBoxes.GetCount() == sourceDescription.m_BoundingBoxes.GetCount();
+    for (xiiUInt32 i = 0U; bMatchingDescriptions && i < sourceDescription.m_Triangles.GetCount(); ++i)
+    {
+      const xiiGALBLASTriangleDescription& sourceTriangle      = sourceDescription.m_Triangles[i];
+      const xiiGALBLASTriangleDescription& destinationTriangle = destinationDescription.m_Triangles[i];
+      bMatchingDescriptions &= destinationTriangle.m_uiMaxVertexCount == sourceTriangle.m_uiMaxVertexCount && destinationTriangle.m_VertexValueType == sourceTriangle.m_VertexValueType && destinationTriangle.m_uiVertexComponentCount == sourceTriangle.m_uiVertexComponentCount && destinationTriangle.m_uiMaxPrimitiveCount == sourceTriangle.m_uiMaxPrimitiveCount && destinationTriangle.m_IndexType == sourceTriangle.m_IndexType && destinationTriangle.m_Flags == sourceTriangle.m_Flags;
+    }
+    for (xiiUInt32 i = 0U; bMatchingDescriptions && i < sourceDescription.m_BoundingBoxes.GetCount(); ++i)
+    {
+      const xiiGALBLASBoundingBoxDescription& sourceBox      = sourceDescription.m_BoundingBoxes[i];
+      const xiiGALBLASBoundingBoxDescription& destinationBox = destinationDescription.m_BoundingBoxes[i];
+      bMatchingDescriptions &= destinationBox.m_uiMaxBoxCount == sourceBox.m_uiMaxBoxCount && destinationBox.m_Flags == sourceBox.m_Flags;
+    }
+    XII_ASSERT_DEV(bMatchingDescriptions, "Clone BLAS copy requires matching source and destination sizing descriptions.");
   }
 #endif
 
@@ -1729,6 +1744,7 @@ void xiiGALCommandList::CopyTLAS(const xiiGALCopyTLASDescription& description)
   else
   {
     XII_ASSERT_DEV(destinationDescription.m_uiCompactedSize == 0U, "Clone TLAS copy requires a regular destination TLAS rather than a compacted-size destination.");
+    XII_ASSERT_DEV(destinationDescription.m_uiMaxInstanceCount == sourceDescription.m_uiMaxInstanceCount && destinationDescription.m_Flags == sourceDescription.m_Flags, "Clone TLAS copy requires matching source and destination sizing descriptions.");
   }
 #endif
 
@@ -2059,6 +2075,15 @@ void xiiGALCommandList::UpdateTLASInstanceBuffer(xiiGALBuffer* pBuffer, xiiUInt3
   XII_ASSERT_DEV(bufferDescription.m_Usage == xiiGALResourceUsage::Mutable || bufferDescription.m_Usage == xiiGALResourceUsage::Sparse, "UpdateTLASInstanceBuffer requires a mutable or sparse destination buffer.");
   XII_ASSERT_DEV(rayTracingProperties.m_uiInstanceBufferAlignment > 0U && (uiDestinationOffset % rayTracingProperties.m_uiInstanceBufferAlignment) == 0U, "TLAS instance buffer offset ({}) does not satisfy the required alignment ({}).", uiDestinationOffset, rayTracingProperties.m_uiInstanceBufferAlignment);
   XII_ASSERT_DEV((static_cast<xiiUInt64>(uiDestinationOffset) + uiUploadSize) <= bufferDescription.m_uiSize, "TLAS instance upload range exceeds the destination buffer size.");
+
+  for (xiiUInt32 i = 0U; i < pInstances.GetCount(); ++i)
+  {
+    const xiiGALTLASInstanceData&                    instance = pInstances[i];
+    const xiiBitflags<xiiGALRayTracingInstanceFlags> flags    = instance.GetFlags();
+    XII_ASSERT_DEV(instance.GetBottomLevelASDeviceAddress() != 0U, "TLAS instance {} references an invalid bottom-level acceleration-structure address.", i);
+    XII_ASSERT_DEV((flags.GetValue() & ~xiiGALRayTracingInstanceFlags::All) == 0U, "TLAS instance {} contains unsupported ray tracing instance flags.", i);
+    XII_ASSERT_DEV(!flags.AreAllSet(xiiGALRayTracingInstanceFlags::ForceOpaque | xiiGALRayTracingInstanceFlags::ForceNonOpaque), "TLAS instance {} sets mutually exclusive ForceOpaque and ForceNonOpaque flags.", i);
+  }
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiUpdateBuffer;
