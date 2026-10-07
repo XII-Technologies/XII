@@ -1514,6 +1514,11 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               {
                 if (xiiGALTopLevelASVulkan* pTopLevelASVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundAccelerationStructures.GetCount() ? resources.m_pBoundAccelerationStructures[resourceLayout.m_uiBindingIndex] : nullptr))
                 {
+                  if (!pTopLevelASVulkan->IsBuilt())
+                  {
+                    xiiLog::Error("Acceleration structure '{}' must be built before it is bound for shader access.", pTopLevelASVulkan->GetDebugName());
+                    return XII_FAILURE;
+                  }
                   vk::AccelerationStructureKHR vkAccelerationStructure = pTopLevelASVulkan->GetVulkanAccelerationStructure();
                   if (vkAccelerationStructure == VK_NULL_HANDLE)
                   {

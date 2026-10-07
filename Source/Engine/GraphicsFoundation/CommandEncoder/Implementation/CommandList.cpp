@@ -717,6 +717,8 @@ void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDes
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetAccelerationStructure arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetAccelerationStructure requires a pipeline state to be set.");
+  XII_ASSERT_DEV(bindingInformation.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure, "SetAccelerationStructure requires an acceleration-structure pipeline resource binding.");
+  XII_ASSERT_DEV(bindingInformation.m_uiArraySize == 1U, "Acceleration-structure descriptor arrays are not supported.");
 
   bool bResourceFound = false;
   {

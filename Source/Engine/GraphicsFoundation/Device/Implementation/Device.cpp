@@ -1482,6 +1482,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
     if (resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure)
     {
       XII_GAL_DEVICE_CHECK(resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
+      XII_GAL_DEVICE_CHECK(resource.m_uiArraySize == 1U, "The acceleration structure resource at index '{}' must have an array size of one because acceleration-structure descriptor arrays are not supported.", i);
     }
     if (resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment)
     {
