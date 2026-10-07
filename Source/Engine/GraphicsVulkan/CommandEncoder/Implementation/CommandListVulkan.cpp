@@ -80,26 +80,6 @@ namespace
     return vkQueryPool;
   }
 
-  [[nodiscard]] XII_FORCE_INLINE vk::Format ConvertTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
-  {
-    if (triangle.m_VertexValueType == xiiGALValueType::Float32)
-    {
-      return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sfloat : vk::Format::eR32G32B32Sfloat;
-    }
-
-    if (triangle.m_VertexValueType == xiiGALValueType::Float16)
-    {
-      return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR16G16Sfloat : vk::Format::eR16G16B16Sfloat;
-    }
-
-    if (triangle.m_VertexValueType == xiiGALValueType::Int32)
-    {
-      return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sint : vk::Format::eR32G32B32Sint;
-    }
-
-    return vk::Format::eUndefined;
-  }
-
   [[nodiscard]] XII_FORCE_INLINE vk::ClearColorValue ClearValueToVulkanClearValue(const void* pClearValues, xiiGALResourceFormat::Enum textureFormat)
   {
     vk::ClearColorValue                    vkClearValue     = {};
@@ -2310,7 +2290,7 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     }
 
     vk::AccelerationStructureGeometryTrianglesDataKHR vkTriangleData = {};
-    vkTriangleData.vertexFormat                                      = ConvertTriangleVertexFormat(triangleDescription);
+    vkTriangleData.vertexFormat                                      = xiiVulkanTypeConversions::GetTriangleVertexFormat(triangleDescription);
     vkTriangleData.vertexData.deviceAddress                          = pVertexBufferVulkan->GetVulkanBufferDeviceAddress() + triangleBuildData.m_uiVertexBufferOffset;
     vkTriangleData.vertexStride                                      = triangleBuildData.m_uiVertexStride;
     vkTriangleData.maxVertex                                         = triangleDescription.m_uiMaxVertexCount - 1U;
