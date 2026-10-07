@@ -1237,11 +1237,16 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
     if (m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray != xiiGALDeviceFeatureState::Disabled || m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Disabled)
     {
-      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_KHR_maintenance3 extension must be supported");
-      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME), "VK_EXT_descriptor_indexing extension must be supported");
-
-      deviceExtensions.PushBack(VK_KHR_MAINTENANCE3_EXTENSION_NAME); // Required for VK_EXT_descriptor_indexing
-      deviceExtensions.PushBack(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+      if (m_uiVulkanVersion < VK_API_VERSION_1_1)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_KHR_maintenance3 extension must be supported");
+        deviceExtensions.PushBack(VK_KHR_MAINTENANCE3_EXTENSION_NAME); // Required for VK_EXT_descriptor_indexing.
+      }
+      if (m_uiVulkanVersion < VK_API_VERSION_1_2)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME), "VK_EXT_descriptor_indexing extension must be supported");
+        deviceExtensions.PushBack(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+      }
 
       enabledExtensionFeatures.m_DescriptorIndexing = m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing;
 
@@ -1271,11 +1276,14 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       // SPIRV 1.5 is in Vulkan 1.2 core
       enabledExtensionFeatures.m_bSpirv15 = m_PhysicalDeviceExtensionFeatures.m_bSpirv15;
 
-      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME), "VK_KHR_buffer_device_address extension must be supported");
       XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME), "VK_KHR_deferred_host_operations extension must be supported");
       XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME), "VK_KHR_acceleration_structure extension must be supported");
 
-      deviceExtensions.PushBack(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);    // Required for VK_KHR_acceleration_structure
+      if (m_uiVulkanVersion < VK_API_VERSION_1_2)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME), "VK_KHR_buffer_device_address extension must be supported");
+        deviceExtensions.PushBack(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME); // Required for VK_KHR_acceleration_structure before Vulkan 1.2.
+      }
       deviceExtensions.PushBack(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME); // Required for VK_KHR_acceleration_structure
       deviceExtensions.PushBack(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);   // Required for ray tracing
 
@@ -2737,14 +2745,14 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 
   // Additional extension that is required for ray tracing.
-  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+  if (m_uiVulkanVersion >= VK_API_VERSION_1_2 || IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress.pNext;
   }
 
   // Additional extension that is required for ray tracing.
-  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+  if (m_uiVulkanVersion >= VK_API_VERSION_1_2 || IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing.pNext;
@@ -3144,7 +3152,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
   INITIALIZE_DEVICE_FEATURE(UniformBuffer8BitAccess, extensionFeatures.m_Storage8Bit.uniformAndStorageBuffer8BitAccess != vk::False);
 
   INITIALIZE_DEVICE_FEATURE(ShaderResourceRuntimeArray, extensionFeatures.m_DescriptorIndexing.runtimeDescriptorArray != vk::False);
-  INITIALIZE_DEVICE_FEATURE(RayTracing, uiVulkanVersion >= VK_API_VERSION_1_1 && extensionFeatures.m_AccelerationStructure.accelerationStructure != vk::False && (extensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False || extensionFeatures.m_RayQuery.rayQuery != vk::False));
+  INITIALIZE_DEVICE_FEATURE(RayTracing, uiVulkanVersion >= VK_API_VERSION_1_1 && extensionFeatures.m_AccelerationStructure.accelerationStructure != vk::False && extensionFeatures.m_BufferDeviceAddress.bufferDeviceAddress != vk::False && extensionFeatures.m_DescriptorIndexing.runtimeDescriptorArray != vk::False && (extensionFeatures.m_bSpirv14 || extensionFeatures.m_bSpirv15) && (extensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False || extensionFeatures.m_RayQuery.rayQuery != vk::False));
 
   const vk::ShaderStageFlags     requiredSubgroupStages   = vk::ShaderStageFlagBits::eCompute;
   const vk::SubgroupFeatureFlags requiredSubgroupFeatures = vk::SubgroupFeatureFlagBits::eBasic;
