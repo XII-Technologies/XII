@@ -1315,9 +1315,9 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions
     resourceStateFlags |= xiiGALResourceStateFlags::ShaderResource;
   if ((e & vk::AccessFlagBits::eShaderWrite) != vk::AccessFlags{})
     resourceStateFlags |= xiiGALResourceStateFlags::UnorderedAccess;
-  if ((e & (vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureReadNV)) != vk::AccessFlags{})
+  if ((e & vk::AccessFlagBits::eAccelerationStructureReadKHR) != vk::AccessFlags{})
     resourceStateFlags |= xiiGALResourceStateFlags::BuildASRead;
-  if ((e & (vk::AccessFlagBits::eAccelerationStructureWriteKHR | vk::AccessFlagBits::eAccelerationStructureWriteNV)) != vk::AccessFlags{})
+  if ((e & vk::AccessFlagBits::eAccelerationStructureWriteKHR) != vk::AccessFlags{})
     resourceStateFlags |= xiiGALResourceStateFlags::BuildASWrite;
   if ((e & (vk::AccessFlagBits::eFragmentDensityMapReadEXT | vk::AccessFlagBits::eFragmentShadingRateAttachmentReadKHR)) != vk::AccessFlags{})
     resourceStateFlags |= xiiGALResourceStateFlags::ShadingRate;
