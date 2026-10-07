@@ -80,24 +80,6 @@ namespace
     return vkQueryPool;
   }
 
-  [[nodiscard]] XII_ALWAYS_INLINE vk::BuildAccelerationStructureFlagsKHR ConvertBuildASFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)
-  {
-    vk::BuildAccelerationStructureFlagsKHR vkFlags = {};
-
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowCompaction;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastTrace))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastBuild))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastBuild;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::LowMemory))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eLowMemory;
-
-    return vkFlags;
-  }
-
   [[nodiscard]] XII_FORCE_INLINE vk::Format ConvertTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
   {
     if (triangle.m_VertexValueType == xiiGALValueType::Float32)
@@ -2391,7 +2373,7 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
 
   vk::AccelerationStructureBuildGeometryInfoKHR vkBuildInfo = {};
   vkBuildInfo.type                                          = vk::AccelerationStructureTypeKHR::eBottomLevel;
-  vkBuildInfo.flags                                         = ConvertBuildASFlags(description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : blasDescription.m_BuildASFlags);
+  vkBuildInfo.flags                                         = xiiVulkanTypeConversions::GetAccelerationStructureFlags(description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : blasDescription.m_BuildASFlags);
   vkBuildInfo.mode                                          = description.m_bUpdate ? vk::BuildAccelerationStructureModeKHR::eUpdate : vk::BuildAccelerationStructureModeKHR::eBuild;
   vkBuildInfo.srcAccelerationStructure                      = description.m_bUpdate ? pBottomLevelASVulkan->GetVulkanAccelerationStructure() : VK_NULL_HANDLE;
   vkBuildInfo.dstAccelerationStructure                      = pBottomLevelASVulkan->GetVulkanAccelerationStructure();
@@ -2450,7 +2432,7 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
 
   vk::AccelerationStructureBuildGeometryInfoKHR vkBuildInfo = {};
   vkBuildInfo.type                                          = vk::AccelerationStructureTypeKHR::eTopLevel;
-  vkBuildInfo.flags                                         = ConvertBuildASFlags(description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : tlasDescription.m_Flags);
+  vkBuildInfo.flags                                         = xiiVulkanTypeConversions::GetAccelerationStructureFlags(description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : tlasDescription.m_Flags);
   vkBuildInfo.mode                                          = description.m_bUpdate ? vk::BuildAccelerationStructureModeKHR::eUpdate : vk::BuildAccelerationStructureModeKHR::eBuild;
   vkBuildInfo.srcAccelerationStructure                      = description.m_bUpdate ? pTopLevelASVulkan->GetVulkanAccelerationStructure() : VK_NULL_HANDLE;
   vkBuildInfo.dstAccelerationStructure                      = pTopLevelASVulkan->GetVulkanAccelerationStructure();
