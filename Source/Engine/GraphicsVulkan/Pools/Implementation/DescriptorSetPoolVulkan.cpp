@@ -114,7 +114,7 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
 
       if (uiDescriptorCount > 0)
       {
-        if (vkDescriptorType == vk::DescriptorType::eAccelerationStructureKHR && extensionFeatures.m_RayTracingPipeline.rayTracingPipeline == vk::False)
+        if (vkDescriptorType == vk::DescriptorType::eAccelerationStructureKHR && extensionFeatures.m_AccelerationStructure.accelerationStructure == vk::False)
           continue;
 
         descriptorPoolSizes.PushBack({vkDescriptorType, uiDescriptorCount});
