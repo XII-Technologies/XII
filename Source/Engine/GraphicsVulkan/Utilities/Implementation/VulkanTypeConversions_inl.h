@@ -1756,6 +1756,18 @@ XII_ALWAYS_INLINE vk::BuildAccelerationStructureFlagsKHR xiiVulkanTypeConversion
   return vkFlags;
 }
 
+XII_ALWAYS_INLINE vk::GeometryFlagsKHR xiiVulkanTypeConversions::GetGeometryFlags(xiiBitflags<xiiGALRayTracingGeometryFlags> flags)
+{
+  vk::GeometryFlagsKHR vkFlags = {};
+
+  if (flags.IsSet(xiiGALRayTracingGeometryFlags::Opaque))
+    vkFlags |= vk::GeometryFlagBitsKHR::eOpaque;
+  if (flags.IsSet(xiiGALRayTracingGeometryFlags::NoDuplicateAnyHitInvocation))
+    vkFlags |= vk::GeometryFlagBitsKHR::eNoDuplicateAnyHitInvocation;
+
+  return vkFlags;
+}
+
 XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
 {
   if (triangle.m_VertexValueType == xiiGALValueType::Float32)
@@ -1766,9 +1778,9 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetTriangleVertexFormat(c
   {
     return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR16G16Sfloat : vk::Format::eR16G16B16Sfloat;
   }
-  if (triangle.m_VertexValueType == xiiGALValueType::Int32)
+  if (triangle.m_VertexValueType == xiiGALValueType::Int16)
   {
-    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sint : vk::Format::eR32G32B32Sint;
+    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR16G16Snorm : vk::Format::eR16G16B16Snorm;
   }
   return vk::Format::eUndefined;
 }

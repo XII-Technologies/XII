@@ -2316,7 +2316,7 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     vkTriangleData.vertexFormat                                      = ConvertTriangleVertexFormat(triangleDescription);
     vkTriangleData.vertexData.deviceAddress                          = pVertexBufferVulkan->GetVulkanBufferDeviceAddress() + triangleBuildData.m_uiVertexBufferOffset;
     vkTriangleData.vertexStride                                      = triangleBuildData.m_uiVertexStride;
-    vkTriangleData.maxVertex                                         = triangleDescription.m_uiMaxVertexCount;
+    vkTriangleData.maxVertex                                         = triangleDescription.m_uiMaxVertexCount - 1U;
     vkTriangleData.indexType                                         = triangleDescription.m_IndexType == xiiGALValueType::UInt16 ? vk::IndexType::eUint16 : (triangleDescription.m_IndexType == xiiGALValueType::UInt32 ? vk::IndexType::eUint32 : vk::IndexType::eNoneKHR);
     vkTriangleData.indexData.deviceAddress                           = pIndexBufferVulkan != nullptr ? (pIndexBufferVulkan->GetVulkanBufferDeviceAddress() + triangleBuildData.m_uiIndexBufferOffset) : 0U;
     vkTriangleData.transformData.deviceAddress                       = pTransformBufferVulkan != nullptr ? (pTransformBufferVulkan->GetVulkanBufferDeviceAddress() + triangleBuildData.m_uiTransformOffset) : 0U;
@@ -2327,7 +2327,7 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     vk::AccelerationStructureGeometryKHR vkGeometry = {};
     vkGeometry.geometryType                         = vk::GeometryTypeKHR::eTriangles;
     vkGeometry.geometry                             = vkGeometryData;
-    vkGeometry.flags                                = vk::GeometryFlagBitsKHR::eOpaque;
+    vkGeometry.flags                                = xiiVulkanTypeConversions::GetGeometryFlags(triangleDescription.m_Flags);
 
     vkGeometries.PushBack(vkGeometry);
 
@@ -2358,7 +2358,7 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     vk::AccelerationStructureGeometryKHR vkGeometry = {};
     vkGeometry.geometryType                         = vk::GeometryTypeKHR::eAabbs;
     vkGeometry.geometry                             = vkGeometryData;
-    vkGeometry.flags                                = vk::GeometryFlagBitsKHR::eOpaque;
+    vkGeometry.flags                                = xiiVulkanTypeConversions::GetGeometryFlags(boxDescription.m_Flags);
 
     vkGeometries.PushBack(vkGeometry);
 

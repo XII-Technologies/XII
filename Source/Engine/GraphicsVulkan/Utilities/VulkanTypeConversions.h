@@ -123,6 +123,8 @@ public:
 
   static vk::BuildAccelerationStructureFlagsKHR GetAccelerationStructureFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags);
 
+  static vk::GeometryFlagsKHR GetGeometryFlags(xiiBitflags<xiiGALRayTracingGeometryFlags> flags);
+
   static vk::Format GetTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle);
 };
 
