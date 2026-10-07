@@ -2430,12 +2430,9 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
   TransitionOrVerifyBufferState(pInstanceBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eAccelerationStructureReadKHR, "Using instance buffer for TLAS build");
   TransitionOrVerifyBufferState(pScratchBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, vk::AccessFlagBits::eAccelerationStructureWriteKHR, "Using scratch buffer for TLAS build");
 
-  // TLAS instances may reference BLAS objects built immediately before this command. Those
-  // acceleration structures are not ordinary buffer arguments, so their dependency cannot be
-  // inferred by TransitionOrVerifyBufferState(). Make all preceding BLAS writes visible to the
-  // TLAS build before vkCmdBuildAccelerationStructuresKHR consumes their device addresses.
-  MemoryBarrier(vk::AccessFlagBits::eAccelerationStructureWriteKHR, vk::AccessFlagBits::eAccelerationStructureReadKHR,
-                vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR, vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR);
+  // TLAS instances may reference BLAS objects built immediately before this command. Those acceleration structures are not ordinary buffer arguments, so their dependency cannot be inferred by TransitionOrVerifyBufferState().
+  // Make all preceding BLAS writes visible to the TLAS build before vkCmdBuildAccelerationStructuresKHR consumes their device addresses.
+  MemoryBarrier(vk::AccessFlagBits::eAccelerationStructureWriteKHR, vk::AccessFlagBits::eAccelerationStructureReadKHR, vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR, vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR);
 
   vk::AccelerationStructureGeometryInstancesDataKHR vkInstancesData = {};
   vkInstancesData.arrayOfPointers                                   = vk::False;
