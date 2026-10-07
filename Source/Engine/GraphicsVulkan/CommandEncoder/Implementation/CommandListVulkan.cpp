@@ -2722,7 +2722,7 @@ void xiiGALCommandListVulkan::UpdateTLASInstanceBufferPlatform(xiiGALBuffer* pBu
     vkTransform.matrix[2][2]           = instance.m_TransformRow2.z;
     vkTransform.matrix[2][3]           = instance.m_TransformRow2.w;
 
-    vkInstances[i] = vk::AccelerationStructureInstanceKHR(vkTransform, instance.GetInstanceID(), instance.GetMask(), instance.GetHitGroupContribution(), ConvertInstanceFlags(instance.GetFlags()), instance.m_uiBottomLevelASDeviceAddress);
+    vkInstances[i] = vk::AccelerationStructureInstanceKHR(vkTransform, instance.GetInstanceID(), instance.GetMask(), instance.GetHitGroupContribution(), ConvertInstanceFlags(instance.GetFlags()), instance.GetBottomLevelASDeviceAddress());
   }
 
   const xiiArrayPtr<const xiiUInt8> sourceData(reinterpret_cast<const xiiUInt8*>(vkInstances.GetData()), vkInstances.GetCount() * sizeof(vk::AccelerationStructureInstanceKHR));

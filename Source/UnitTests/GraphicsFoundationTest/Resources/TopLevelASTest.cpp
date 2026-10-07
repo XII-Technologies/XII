@@ -34,14 +34,14 @@ XII_CREATE_SIMPLE_TEST(Resources, TopLevelAS)
     instance.SetMask(0x5AU);
     instance.SetHitGroupContribution(0x00123456U);
     instance.SetFlags(xiiGALRayTracingInstanceFlags::TriangleCullDisable | xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise | xiiGALRayTracingInstanceFlags::ForceOpaque);
-    instance.m_uiBottomLevelASDeviceAddress = 0x123456789ABCDEF0ULL;
+    instance.SetBottomLevelASDeviceAddress(0x123456789ABCDEF0ULL);
 
     XII_TEST_BOOL(instance.GetTransform().IsEqual(transform, 0.0f));
     XII_TEST_INT(instance.GetInstanceID(), 0x00ABCDEFU);
     XII_TEST_INT(instance.GetMask(), 0x5AU);
     XII_TEST_INT(instance.GetHitGroupContribution(), 0x00123456U);
     XII_TEST_BOOL(instance.GetFlags().AreAllSet(xiiGALRayTracingInstanceFlags::TriangleCullDisable | xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise | xiiGALRayTracingInstanceFlags::ForceOpaque));
-    XII_TEST_INT(instance.m_uiBottomLevelASDeviceAddress, 0x123456789ABCDEF0ULL);
+    XII_TEST_INT(instance.GetBottomLevelASDeviceAddress(), 0x123456789ABCDEF0ULL);
 
     const xiiRTTI* pType = xiiGetStaticRTTI<xiiGALTLASInstanceData>();
     XII_TEST_BOOL(pType->FindPropertyByName("Transform") != nullptr);

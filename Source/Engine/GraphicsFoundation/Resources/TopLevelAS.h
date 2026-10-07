@@ -78,6 +78,10 @@ struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
   [[nodiscard]] xiiUInt32 GetHitGroupContribution() const { return m_uiHitGroupContributionAndFlags & 0x00FFFFFFU; }
   void                    SetHitGroupContribution(xiiUInt32 uiContribution);
 
+  [[nodiscard]] xiiUInt64 GetBottomLevelASDeviceAddress() const { return m_uiBottomLevelASDeviceAddress; }
+  void                    SetBottomLevelASDeviceAddress(xiiUInt64 uiDeviceAddress) { m_uiBottomLevelASDeviceAddress = uiDeviceAddress; }
+  void                    SetBottomLevelAS(const xiiGALBottomLevelAS* pBottomLevelAS);
+
   [[nodiscard]] xiiBitflags<xiiGALRayTracingInstanceFlags> GetFlags() const
   {
     xiiBitflags<xiiGALRayTracingInstanceFlags> flags;

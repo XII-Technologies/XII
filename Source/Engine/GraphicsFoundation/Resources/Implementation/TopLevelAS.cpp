@@ -28,7 +28,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTLASInstanceData, xiiNoBase, 1, xiiRTTIDef
     XII_ACCESSOR_PROPERTY("Mask", GetMask, SetMask),
     XII_ACCESSOR_PROPERTY("HitGroupContribution", GetHitGroupContribution, SetHitGroupContribution),
     XII_ACCESSOR_PROPERTY("Flags", GetFlagsValue, SetFlagsValue),
-    XII_MEMBER_PROPERTY("BottomLevelASDeviceAddress", m_uiBottomLevelASDeviceAddress),
+    XII_ACCESSOR_PROPERTY("BottomLevelASDeviceAddress", GetBottomLevelASDeviceAddress, SetBottomLevelASDeviceAddress),
   }
   XII_END_PROPERTIES;
 }
@@ -71,6 +71,12 @@ void xiiGALTLASInstanceData::SetHitGroupContribution(xiiUInt32 uiContribution)
 {
   XII_ASSERT_DEV(uiContribution <= 0x00FFFFFFU, "Ray tracing hit-group contributions are limited to 24 bits.");
   m_uiHitGroupContributionAndFlags = (m_uiHitGroupContributionAndFlags & 0xFF000000U) | (uiContribution & 0x00FFFFFFU);
+}
+
+void xiiGALTLASInstanceData::SetBottomLevelAS(const xiiGALBottomLevelAS* pBottomLevelAS)
+{
+  XII_ASSERT_DEV(pBottomLevelAS != nullptr, "The bottom-level acceleration structure must not be null.");
+  m_uiBottomLevelASDeviceAddress = pBottomLevelAS != nullptr ? pBottomLevelAS->GetDeviceAddress() : 0U;
 }
 
 void xiiGALTLASInstanceData::SetFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags)

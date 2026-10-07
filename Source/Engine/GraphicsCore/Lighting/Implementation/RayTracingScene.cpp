@@ -828,7 +828,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
       flags.Add(xiiGALRayTracingInstanceFlags::ForceNonOpaque);
     }
     gpuInstance.SetFlags(flags);
-    gpuInstance.m_uiBottomLevelASDeviceAddress = geometry.m_pBottomLevelAS->GetDeviceAddress();
+    gpuInstance.SetBottomLevelAS(geometry.m_pBottomLevelAS.Borrow());
     materialData.PushBack(ResolveRayTracingMaterial(instance.m_Description));
 
     xiiRayTracingGeometryData& gpuGeometry = geometryData.ExpandAndGetRef();
