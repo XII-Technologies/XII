@@ -2736,24 +2736,10 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
 
 void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
-  if (pBuffer == nullptr || pSourceData.IsEmpty())
-    return;
-
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
   xiiGALBufferVulkan*              pBufferVulkan          = xiiDynamicCast<xiiGALBufferVulkan*>(pBuffer);
   const xiiUInt64                  uiUploadSize           = pSourceData.GetCount();
-
-  if (pBufferVulkan == nullptr)
-  {
-    xiiLog::Error("Failed to update Vulkan buffer on command list '{}': incompatible backend buffer type.", GetDebugName());
-    return;
-  }
-  if (static_cast<xiiUInt64>(uiDestinationOffset) + uiUploadSize > pBufferVulkan->GetSize())
-  {
-    xiiLog::Error("Failed to update Vulkan buffer '{}': destination range [{}..{}) exceeds buffer size {}.", pBufferVulkan->GetDebugName(), uiDestinationOffset, static_cast<xiiUInt64>(uiDestinationOffset) + uiUploadSize, pBufferVulkan->GetSize());
-    return;
-  }
 
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
