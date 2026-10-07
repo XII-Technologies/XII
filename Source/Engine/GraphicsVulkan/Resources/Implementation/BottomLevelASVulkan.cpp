@@ -57,8 +57,17 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
 
     for (const xiiGALBLASTriangleDescription& triangle : m_Description.m_Triangles)
     {
+      const vk::Format     vkVertexFormat = xiiVulkanTypeConversions::GetTriangleVertexFormat(triangle);
+      vk::FormatProperties vkFormatProperties;
+      pDeviceVulkan->GetVulkanPhysicalDevice().getFormatProperties(vkVertexFormat, &vkFormatProperties, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      if ((vkFormatProperties.bufferFeatures & vk::FormatFeatureFlagBits::eAccelerationStructureVertexBufferKHR) == vk::FormatFeatureFlags{})
+      {
+        xiiLog::Error("Failed to create BLAS: vertex format {} is not supported for acceleration-structure builds.", vk::to_string(vkVertexFormat).data());
+        return XII_FAILURE;
+      }
+
       vk::AccelerationStructureGeometryTrianglesDataKHR triangleData = {};
-      triangleData.vertexFormat                                      = xiiVulkanTypeConversions::GetTriangleVertexFormat(triangle);
+      triangleData.vertexFormat                                      = vkVertexFormat;
       triangleData.vertexData.deviceAddress                          = 0U;
       triangleData.vertexStride                                      = 0U;
       triangleData.maxVertex                                         = triangle.m_uiMaxVertexCount - 1U;

@@ -1569,10 +1569,14 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       graphicsStages |= vk::PipelineStageFlagBits::eTaskShaderEXT | vk::PipelineStageFlagBits::eMeshShaderEXT;
     }
+    if (m_LogicalDeviceExtensionFeatures.m_AccelerationStructure.accelerationStructure != vk::False)
+    {
+      computeStages |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
+      computeAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR;
+    }
     if (m_LogicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False)
     {
-      computeStages |= vk::PipelineStageFlagBits::eRayTracingShaderKHR | vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
-      computeAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR;
+      computeStages |= vk::PipelineStageFlagBits::eRayTracingShaderKHR;
     }
     if (m_LogicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
     {
@@ -2124,9 +2128,9 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride      = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxShaderGroupStride;
     m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment   = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupBaseAlignment;
     m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads           = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayDispatchInvocationCount;
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS        = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxInstanceCount);
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS       = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxPrimitiveCount);
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS       = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxGeometryCount);
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS        = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxInstanceCount, xiiMath::MaxValue<xiiUInt32>()));
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS       = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxPrimitiveCount, xiiMath::MaxValue<xiiUInt32>()));
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS       = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxGeometryCount, xiiMath::MaxValue<xiiUInt32>()));
     m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment      = 1U;
     m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment       = 1U;
     m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment   = 16; // From the specification.
