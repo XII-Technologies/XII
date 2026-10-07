@@ -417,8 +417,8 @@ void xiiGALCommandListVulkan::FlushBarriers()
   vkMemoryBarrier.srcAccessMask     = m_PipelineBarrier.m_vkMemorySourceAccess & m_PipelineBarrier.m_vkSupportedAccessFlags;
   vkMemoryBarrier.dstAccessMask     = m_PipelineBarrier.m_vkMemoryDestinationAccess & m_PipelineBarrier.m_vkSupportedAccessFlags;
 
-  const bool bHasMemoryBarrier = m_PipelineBarrier.m_vkMemorySourceStages != vk::PipelineStageFlagBits::eNone && m_PipelineBarrier.m_vkMemoryDestinationStages == vk::PipelineStageFlagBits::eNone &&
-    m_PipelineBarrier.m_vkMemorySourceAccess == vk::AccessFlagBits::eNone && m_PipelineBarrier.m_vkMemoryDestinationAccess == vk::AccessFlagBits::eNone;
+  const bool bHasMemoryBarrier = m_PipelineBarrier.m_vkMemorySourceStages != vk::PipelineStageFlagBits::eNone && m_PipelineBarrier.m_vkMemoryDestinationStages != vk::PipelineStageFlagBits::eNone &&
+    (vkMemoryBarrier.srcAccessMask != vk::AccessFlagBits::eNone || vkMemoryBarrier.dstAccessMask != vk::AccessFlagBits::eNone);
 
   const vk::PipelineStageFlags vkSourceStages      = (m_PipelineBarrier.m_vkImageSourceStages | m_PipelineBarrier.m_vkMemorySourceStages) & m_PipelineBarrier.m_vkSupportedStageFlags;
   const vk::PipelineStageFlags vkDestinationStages = (m_PipelineBarrier.m_vkImageDestinationStages | m_PipelineBarrier.m_vkMemoryDestinationStages) & m_PipelineBarrier.m_vkSupportedStageFlags;
