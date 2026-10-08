@@ -162,7 +162,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
 
     instance->SetParameter("BaseColor", xiiVec4(colors[i].r, colors[i].g, colors[i].b, colors[i].a)).AssertSuccess();
     const xiiMaterialGpuHandle handle = xiiMaterialManager::RegisterMaterial(instance);
-    if (!handle.IsValid())
+    if (handle.IsInvalidated())
       return XII_FAILURE;
 
     m_MaterialSchemas.PushBack(std::move(schema));
@@ -211,7 +211,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
         return XII_FAILURE;
     }
     asset.m_hGeometry = xiiGeometryResidencyManager::RegisterGeometry(description);
-    if (!asset.m_hGeometry.IsValid())
+    if (asset.m_hGeometry.IsInvalidated())
       return XII_FAILURE;
     // Start from the coarsest LOD. Update() requests the fine range later, exercising
     // incremental residency without invalidating metadata used by frames already in flight.
@@ -220,7 +220,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     xiiRayTracingGeometryDescription rayTracingDescription;
     rayTracingDescription.m_hMeshBuffer = asset.m_Lods[0U];
     asset.m_hRayTracingGeometry         = xiiRayTracingSceneManager::RegisterGeometry(rayTracingDescription);
-    if (!asset.m_hRayTracingGeometry.IsValid())
+    if (asset.m_hRayTracingGeometry.IsInvalidated())
       return XII_FAILURE;
   }
 
@@ -245,7 +245,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   xiiSceneObjectDesc rootDescription;
   rootDescription.m_Flags = xiiSceneObjectFlags::None;
   m_hAssemblyRoot         = GetScene().CreateObject(rootDescription);
-  if (!m_hAssemblyRoot.IsValid())
+  if (m_hAssemblyRoot.IsInvalidated())
     return XII_FAILURE;
 
   for (xiiUInt32 y = 0U; y < m_Configuration.m_uiGridHeight; ++y)
@@ -269,15 +269,15 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
         geometry->m_BoundsCenterRadius.GetAsVec3(),
         geometry->m_BoundsExtents.GetAsVec3(),
         geometry->m_BoundsCenterRadius.w);
-      description.m_uiGeometryIndex = m_GeometryAssets[geometryIndex].m_hGeometry.m_uiIndex;
-      description.m_uiMaterialIndex = m_Materials[objectIndex % m_Materials.GetCount()].m_uiSlot;
+      description.m_uiGeometryIndex = m_GeometryAssets[geometryIndex].m_hGeometry.GetInternalID().m_InstanceIndex;
+      description.m_uiMaterialIndex = m_Materials[objectIndex % m_Materials.GetCount()].GetInternalID().m_InstanceIndex;
       description.m_uiUserData      = objectIndex;
       description.m_Flags           = xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows | xiiSceneObjectFlags::ReceiveShadows | xiiSceneObjectFlags::SensorVisible | (geometryIndex == 1U ? xiiSceneObjectFlags::Occluder : xiiSceneObjectFlags::None);
       if (objectIndex < 64U)
         description.m_hParent = m_hAssemblyRoot;
 
       const xiiSceneObjectHandle object = GetScene().CreateObject(description);
-      if (!object.IsValid())
+      if (object.IsInvalidated())
         return XII_FAILURE;
       m_Objects.PushBack(object);
       m_BasePositions.PushBack(position);
@@ -297,7 +297,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
     rayTracingInstance.m_Transform           = GetScene().GetGlobalTransform(object);
     rayTracingInstance.m_uiStableObjectId    = i;
     const xiiRayTracingInstanceHandle handle = xiiRayTracingSceneManager::CreateInstance(rayTracingInstance);
-    if (!handle.IsValid())
+    if (handle.IsInvalidated())
       return XII_FAILURE;
     m_RayTracingInstances.PushBack(handle);
   }
@@ -324,7 +324,7 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
     GetScene().SetLocalTransform(m_Objects[i], transform);
   }
 
-  if (m_hAssemblyRoot.IsValid())
+  if (!m_hAssemblyRoot.IsInvalidated())
   {
     const float fRootAngle  = 0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f));
     const float fRootHeight = 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f));
@@ -367,5 +367,5 @@ xiiUInt32 xiiGpuDrivenSceneWorld::GetMaterialFrameBase(xiiUInt64 uiFrameIndex) c
   if (m_Materials.IsEmpty())
     return 0U;
   const xiiUInt32 stride = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
-  return xiiMaterialManager::GetGpuStorage().GetGpuOffset(m_Materials[0], uiFrameIndex) - m_Materials[0].m_uiSlot * stride;
+  return xiiMaterialManager::GetGpuStorage().GetGpuOffset(m_Materials[0], uiFrameIndex) - m_Materials[0].GetInternalID().m_InstanceIndex * stride;
 }

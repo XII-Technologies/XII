@@ -82,12 +82,12 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     const xiiParticleSystemRuntimeHandle     particleHandle;
     const xiiViewRenderResourceContextHandle viewResourceHandle;
 
-    XII_TEST_BOOL(!lightingHandle.IsValid());
-    XII_TEST_BOOL(!renderGraphHandle.IsValid());
-    XII_TEST_BOOL(!visibilityHandle.IsValid());
-    XII_TEST_BOOL(!sceneHandle.IsValid());
-    XII_TEST_BOOL(!particleHandle.IsValid());
-    XII_TEST_BOOL(!viewResourceHandle.IsValid());
+    XII_TEST_BOOL(lightingHandle.IsInvalidated());
+    XII_TEST_BOOL(renderGraphHandle.IsInvalidated());
+    XII_TEST_BOOL(visibilityHandle.IsInvalidated());
+    XII_TEST_BOOL(sceneHandle.IsInvalidated());
+    XII_TEST_BOOL(particleHandle.IsInvalidated());
+    XII_TEST_BOOL(viewResourceHandle.IsInvalidated());
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiLightingContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiRenderGraphContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuVisibilityContextHandle>() != nullptr);
@@ -101,7 +101,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
   {
     XII_TEST_BOOL(xiiSceneDatabaseManager::IsInitialized());
     const xiiSceneDatabaseContextHandle handle = xiiSceneDatabaseManager::CreateContext(16U);
-    XII_TEST_BOOL(handle.IsValid());
+    XII_TEST_BOOL(!handle.IsInvalidated());
     XII_TEST_BOOL(xiiSceneDatabaseManager::IsValid(handle));
     XII_TEST_BOOL(xiiSceneDatabaseManager::GetDatabase(handle) != nullptr);
 

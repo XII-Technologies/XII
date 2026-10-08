@@ -28,7 +28,7 @@ XII_CREATE_SIMPLE_TEST(Lighting, SensorRendering)
     xiiSensorProfileHandle hSecond;
     XII_TEST_BOOL(xiiSensorRenderingManager::AcquireProfile(profile, hFirst).Succeeded());
     XII_TEST_BOOL(xiiSensorRenderingManager::AcquireProfile(profile, hSecond).Succeeded());
-    XII_TEST_BOOL(hFirst.IsValid());
+    XII_TEST_BOOL(!hFirst.IsInvalidated());
     XII_TEST_BOOL(hFirst == hSecond);
 
     xiiSensorProfile resolved;
@@ -54,7 +54,7 @@ XII_CREATE_SIMPLE_TEST(Lighting, SensorRendering)
 
     xiiSensorProfileHandle hInvalid;
     XII_TEST_BOOL(xiiSensorRenderingManager::AcquireProfile(invalid, hInvalid).Failed());
-    XII_TEST_BOOL(!hInvalid.IsValid());
+    XII_TEST_BOOL(hInvalid.IsInvalidated());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Registry statistics")
@@ -65,6 +65,6 @@ XII_CREATE_SIMPLE_TEST(Lighting, SensorRendering)
     XII_TEST_BOOL(stats.m_uiInfraredProfileCount >= 1U);
     XII_TEST_BOOL(stats.m_uiDepthProfileCount >= 1U);
     XII_TEST_BOOL(stats.m_uiLiDARProfileCount >= 1U);
-    XII_TEST_BOOL(xiiSensorRenderingManager::GetDefaultProfileHandle(xiiSensorType::LiDAR).IsValid());
+    XII_TEST_BOOL(!xiiSensorRenderingManager::GetDefaultProfileHandle(xiiSensorType::LiDAR).IsInvalidated());
   }
 }
