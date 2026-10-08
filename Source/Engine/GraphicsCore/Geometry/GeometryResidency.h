@@ -4,6 +4,7 @@
 
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Types/Id.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsFoundation/Resources/BindlessResource.h>
@@ -25,12 +26,12 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyState
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyState);
 
-struct XII_GRAPHICSCORE_DLL xiiGeometryHandle
+/// Generation-checked reference to one subsystem-owned geometry record.
+using xiiGeometryId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiGeometryHandle
 {
-  XII_DECLARE_POD_TYPE();
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-  xiiUInt32                            m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32                            m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiGeometryHandle, xiiGeometryId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryHandle);
@@ -196,7 +197,6 @@ private:
     xiiUInt64                          m_uiLastUsedFrame      = 0U;
     xiiUInt64                          m_uiRetireFrame        = 0U;
     xiiUInt64                          m_uiResidentBytes      = 0U;
-    xiiUInt32                          m_uiGeneration         = 1U;
     xiiUInt32                          m_uiRequestedLod       = 0U;
     xiiUInt32                          m_uiVisibilityPriority = 0U;
     xiiUInt64                          m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();

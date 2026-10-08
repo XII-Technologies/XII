@@ -215,14 +215,14 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     if (!pSlot->m_ExtractedMeshes.TryGetValue(renderData.m_uiUniqueID, pEntry))
     {
       const xiiGeometryHandle hGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(renderData.m_hMesh);
-      if (!hGeometry.IsValid())
+      if (hGeometry.IsInvalidated())
         continue;
       const xiiMaterialGpuHandle hGpuMaterial = xiiMaterialManager::AcquireMaterialResource(hMaterial);
 
       xiiSceneObjectDesc desc;
       desc.m_LocalTransform   = renderData.m_GlobalTransform.GetAsMat4();
       desc.m_Flags            = GetSceneFlags(renderData, hMaterial);
-      desc.m_uiGeometryIndex  = hGeometry.m_uiIndex;
+      desc.m_uiGeometryIndex  = hGeometry.GetInternalID().m_InstanceIndex;
       desc.m_uiMaterialIndex  = hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex;
       desc.m_uiUserData       = renderData.m_uiUniqueID;
       desc.m_uiFirstPrimitive = renderData.m_uiFirstPrimitive;
@@ -252,13 +252,13 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     else if (pEntry->m_hMesh != renderData.m_hMesh)
     {
       const xiiGeometryHandle hGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(renderData.m_hMesh);
-      if (!hGeometry.IsValid())
+      if (hGeometry.IsInvalidated())
         continue;
 
       xiiGeometryResidencyManager::ReleaseMeshGeometry(pEntry->m_hMesh, uiFrameIndex);
       pEntry->m_hMesh     = renderData.m_hMesh;
       pEntry->m_hGeometry = hGeometry;
-      scene.SetGeometry(pEntry->m_hSceneObject, hGeometry.m_uiIndex);
+      scene.SetGeometry(pEntry->m_hSceneObject, hGeometry.GetInternalID().m_InstanceIndex);
 
       xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
       if (mesh.GetAcquireResult() == xiiResourceAcquireResult::Final)
