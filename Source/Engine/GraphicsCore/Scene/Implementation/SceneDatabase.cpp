@@ -21,8 +21,7 @@ xiiSceneDatabase::~xiiSceneDatabase() = default;
 
 void xiiSceneDatabase::Clear()
 {
-  m_Generations.Clear();
-  m_FreeIndices.Clear();
+  m_Objects.Clear();
   m_Alive.Clear();
   m_TransformDirty.Clear();
   m_GpuDirty.Clear();
@@ -47,15 +46,13 @@ void xiiSceneDatabase::Clear()
   m_UploadRanges.Clear();
   m_WorkStack.Clear();
   m_Stats                = {};
-  m_uiObjectCount        = 0U;
   m_uiRevision           = 0U;
   m_uiLastCommittedFrame = xiiMath::MaxValue<xiiUInt64>();
 }
 
 void xiiSceneDatabase::Reserve(xiiUInt32 uiObjectCapacity)
 {
-  m_Generations.Reserve(uiObjectCapacity);
-  m_FreeIndices.Reserve(uiObjectCapacity);
+  m_Objects.Reserve(uiObjectCapacity);
   m_Alive.Reserve(uiObjectCapacity);
   m_TransformDirty.Reserve(uiObjectCapacity);
   m_GpuDirty.Reserve(uiObjectCapacity);
@@ -82,17 +79,12 @@ void xiiSceneDatabase::Reserve(xiiUInt32 uiObjectCapacity)
 
 xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& desc)
 {
-  xiiUInt32 uiIndex;
-  if (!m_FreeIndices.IsEmpty())
+  const xiiSceneObjectId id      = m_Objects.Insert(0U);
+  const xiiUInt32        uiIndex = id.m_InstanceIndex;
+  m_Objects[id]                  = uiIndex;
+  if (uiIndex >= m_Alive.GetCount())
   {
-    uiIndex = m_FreeIndices.PeekBack();
-    m_FreeIndices.PopBack();
-  }
-  else
-  {
-    uiIndex                 = m_Generations.GetCount();
     const xiiUInt32 uiCount = uiIndex + 1U;
-    EnsureCount(m_Generations, uiCount, 1U);
     EnsureCount(m_Alive, uiCount, static_cast<xiiUInt8>(0U));
     EnsureCount(m_TransformDirty, uiCount, static_cast<xiiUInt8>(0U));
     EnsureCount(m_GpuDirty, uiCount, static_cast<xiiUInt8>(0U));
@@ -133,13 +125,10 @@ xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& de
   m_UserData[uiIndex]                 = desc.m_uiUserData;
   m_Flags[uiIndex]                    = desc.m_Flags;
 
-  ++m_uiObjectCount;
   ++m_uiRevision;
 
-  xiiSceneObjectHandle hObject;
-  hObject.m_uiIndex      = uiIndex;
-  hObject.m_uiGeneration = m_Generations[uiIndex];
-  if (desc.m_hParent.IsValid())
+  xiiSceneObjectHandle hObject(id);
+  if (!desc.m_hParent.IsInvalidated())
     SetParent(hObject, desc.m_hParent);
 
   return hObject;
@@ -150,7 +139,7 @@ bool xiiSceneDatabase::DestroyObject(xiiSceneObjectHandle hObject)
   if (!IsAlive(hObject))
     return false;
 
-  const xiiUInt32 uiIndex = hObject.m_uiIndex;
+  const xiiUInt32 uiIndex = hObject.GetInternalID().m_InstanceIndex;
   DetachFromParent(uiIndex);
 
   // Orphans retain their world transform, preventing destruction from moving an entire assembly.
@@ -170,19 +159,15 @@ bool xiiSceneDatabase::DestroyObject(xiiSceneObjectHandle hObject)
   m_TransformDirty[uiIndex]   = 0U;
   m_GpuDirty[uiIndex]         = 1U;
   m_ObjectToGpuIndex[uiIndex] = s_uiInvalidIndex;
-  ++m_Generations[uiIndex];
-  if (m_Generations[uiIndex] == 0U)
-    m_Generations[uiIndex] = 1U;
-  m_FreeIndices.PushBack(uiIndex);
+  XII_VERIFY(m_Objects.Remove(hObject.GetInternalID()), "The scene object was validated before removal.");
 
-  --m_uiObjectCount;
   ++m_uiRevision;
   return true;
 }
 
 bool xiiSceneDatabase::IsAlive(xiiSceneObjectHandle hObject) const
 {
-  return hObject.IsValid() && hObject.m_uiIndex < m_Generations.GetCount() && m_Alive[hObject.m_uiIndex] != 0U && m_Generations[hObject.m_uiIndex] == hObject.m_uiGeneration;
+  return m_Objects.Contains(hObject.GetInternalID());
 }
 
 bool xiiSceneDatabase::WouldCreateCycle(xiiUInt32 uiObject, xiiUInt32 uiParent) const
@@ -220,19 +205,20 @@ void xiiSceneDatabase::AttachToParent(xiiUInt32 uiObject, xiiUInt32 uiParent)
 
 bool xiiSceneDatabase::SetParent(xiiSceneObjectHandle hObject, xiiSceneObjectHandle hParent)
 {
-  if (!IsAlive(hObject) || (hParent.IsValid() && !IsAlive(hParent)))
+  if (!IsAlive(hObject) || (!hParent.IsInvalidated() && !IsAlive(hParent)))
     return false;
 
-  const xiiUInt32 uiParent = hParent.IsValid() ? hParent.m_uiIndex : s_uiInvalidIndex;
-  if (uiParent == hObject.m_uiIndex || (uiParent != s_uiInvalidIndex && WouldCreateCycle(hObject.m_uiIndex, uiParent)))
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiParent = !hParent.IsInvalidated() ? hParent.GetInternalID().m_InstanceIndex : s_uiInvalidIndex;
+  if (uiParent == uiObject || (uiParent != s_uiInvalidIndex && WouldCreateCycle(uiObject, uiParent)))
     return false;
-  if (m_Parent[hObject.m_uiIndex] == uiParent)
+  if (m_Parent[uiObject] == uiParent)
     return true;
 
-  DetachFromParent(hObject.m_uiIndex);
+  DetachFromParent(uiObject);
   if (uiParent != s_uiInvalidIndex)
-    AttachToParent(hObject.m_uiIndex, uiParent);
-  MarkSubtreeDirty(hObject.m_uiIndex);
+    AttachToParent(uiObject, uiParent);
+  MarkSubtreeDirty(uiObject);
   ++m_uiRevision;
   return true;
 }
@@ -256,8 +242,9 @@ bool xiiSceneDatabase::SetLocalTransform(xiiSceneObjectHandle hObject, const xii
 {
   if (!IsAlive(hObject) || !localTransform.IsValid())
     return false;
-  m_LocalTransforms[hObject.m_uiIndex] = localTransform;
-  MarkSubtreeDirty(hObject.m_uiIndex);
+  const xiiUInt32 uiObject     = hObject.GetInternalID().m_InstanceIndex;
+  m_LocalTransforms[uiObject] = localTransform;
+  MarkSubtreeDirty(uiObject);
   ++m_uiRevision;
   return true;
 }
@@ -266,8 +253,9 @@ bool xiiSceneDatabase::SetLocalBounds(xiiSceneObjectHandle hObject, const xiiBou
 {
   if (!IsAlive(hObject) || !localBounds.IsValid())
     return false;
-  m_LocalBounds[hObject.m_uiIndex] = localBounds;
-  MarkSubtreeDirty(hObject.m_uiIndex);
+  const xiiUInt32 uiObject  = hObject.GetInternalID().m_InstanceIndex;
+  m_LocalBounds[uiObject] = localBounds;
+  MarkSubtreeDirty(uiObject);
   ++m_uiRevision;
   return true;
 }
@@ -275,8 +263,9 @@ bool xiiSceneDatabase::SetLocalBounds(xiiSceneObjectHandle hObject, const xiiBou
 bool xiiSceneDatabase::SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeometryIndex)
 {
   if (!IsAlive(hObject)) return false;
-  m_GeometryIndices[hObject.m_uiIndex] = uiGeometryIndex;
-  m_GpuDirty[hObject.m_uiIndex]        = 1U;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  m_GeometryIndices[uiObject] = uiGeometryIndex;
+  m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -284,8 +273,9 @@ bool xiiSceneDatabase::SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeo
 bool xiiSceneDatabase::SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMaterialIndex)
 {
   if (!IsAlive(hObject)) return false;
-  m_MaterialIndices[hObject.m_uiIndex] = uiMaterialIndex;
-  m_GpuDirty[hObject.m_uiIndex]        = 1U;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  m_MaterialIndices[uiObject] = uiMaterialIndex;
+  m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -293,11 +283,12 @@ bool xiiSceneDatabase::SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMat
 bool xiiSceneDatabase::SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount)
 {
   if (!IsAlive(hObject)) return false;
-  if (m_FirstPrimitives[hObject.m_uiIndex] == uiFirstPrimitive && m_PrimitiveCounts[hObject.m_uiIndex] == uiPrimitiveCount)
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (m_FirstPrimitives[uiObject] == uiFirstPrimitive && m_PrimitiveCounts[uiObject] == uiPrimitiveCount)
     return true;
-  m_FirstPrimitives[hObject.m_uiIndex] = uiFirstPrimitive;
-  m_PrimitiveCounts[hObject.m_uiIndex] = uiPrimitiveCount;
-  m_GpuDirty[hObject.m_uiIndex]        = 1U;
+  m_FirstPrimitives[uiObject] = uiFirstPrimitive;
+  m_PrimitiveCounts[uiObject] = uiPrimitiveCount;
+  m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -305,8 +296,9 @@ bool xiiSceneDatabase::SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32
 bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags)
 {
   if (!IsAlive(hObject)) return false;
-  m_Flags[hObject.m_uiIndex]    = flags;
-  m_GpuDirty[hObject.m_uiIndex] = 1U;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  m_Flags[uiObject]    = flags;
+  m_GpuDirty[uiObject] = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -314,8 +306,9 @@ bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSce
 bool xiiSceneDatabase::SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask)
 {
   if (!IsAlive(hObject)) return false;
-  m_VisibilityMasks[hObject.m_uiIndex] = uiVisibilityMask;
-  m_GpuDirty[hObject.m_uiIndex]        = 1U;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  m_VisibilityMasks[uiObject] = uiVisibilityMask;
+  m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -323,25 +316,25 @@ bool xiiSceneDatabase::SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32
 const xiiMat4& xiiSceneDatabase::GetGlobalTransform(xiiSceneObjectHandle hObject) const
 {
   XII_ASSERT_DEV(IsAlive(hObject), "Invalid scene object handle.");
-  return m_GlobalTransforms[hObject.m_uiIndex];
+  return m_GlobalTransforms[hObject.GetInternalID().m_InstanceIndex];
 }
 
 const xiiBoundingBoxSphere& xiiSceneDatabase::GetGlobalBounds(xiiSceneObjectHandle hObject) const
 {
   XII_ASSERT_DEV(IsAlive(hObject), "Invalid scene object handle.");
-  return m_GlobalBounds[hObject.m_uiIndex];
+  return m_GlobalBounds[hObject.GetInternalID().m_InstanceIndex];
 }
 
 xiiBitflags<xiiSceneObjectFlags> xiiSceneDatabase::GetFlags(xiiSceneObjectHandle hObject) const
 {
   XII_ASSERT_DEV(IsAlive(hObject), "Invalid scene object handle.");
-  return m_Flags[hObject.m_uiIndex];
+  return m_Flags[hObject.GetInternalID().m_InstanceIndex];
 }
 
 xiiUInt32 xiiSceneDatabase::GetVisibilityMask(xiiSceneObjectHandle hObject) const
 {
   XII_ASSERT_DEV(IsAlive(hObject), "Invalid scene object handle.");
-  return m_VisibilityMasks[hObject.m_uiIndex];
+  return m_VisibilityMasks[hObject.GetInternalID().m_InstanceIndex];
 }
 
 void xiiSceneDatabase::UpdateDirtyTransforms()
@@ -391,8 +384,8 @@ void xiiSceneDatabase::RebuildGpuInstances()
   const xiiUInt32 uiPreviousCount = m_GpuInstances.GetCount();
   m_GpuToObjectIndex.Clear();
   m_GpuInstances.Clear();
-  m_GpuToObjectIndex.Reserve(m_uiObjectCount);
-  m_GpuInstances.Reserve(m_uiObjectCount);
+  m_GpuToObjectIndex.Reserve(m_Objects.GetCount());
+  m_GpuInstances.Reserve(m_Objects.GetCount());
   m_UploadRanges.Clear();
 
   bool      bRangeOpen   = false;
@@ -439,7 +432,7 @@ void xiiSceneDatabase::RebuildGpuInstances()
     instance.m_uiFirstPrimitive        = m_FirstPrimitives[uiObject];
     instance.m_uiPrimitiveCount        = m_PrimitiveCounts[uiObject];
 
-    const bool bDirty = m_GpuDirty[uiObject] != 0U || bMoved || uiPreviousCount != m_uiObjectCount;
+    const bool bDirty = m_GpuDirty[uiObject] != 0U || bMoved || uiPreviousCount != m_Objects.GetCount();
     if (bDirty && !bRangeOpen)
     {
       bRangeOpen   = true;
@@ -475,7 +468,7 @@ void xiiSceneDatabase::CommitFrame(xiiUInt64 uiFrameIndex)
   UpdateDirtyTransforms();
   RebuildGpuInstances();
 
-  m_Stats.m_uiObjectCount      = m_uiObjectCount;
+  m_Stats.m_uiObjectCount      = m_Objects.GetCount();
   m_Stats.m_uiObjectCapacity   = m_Alive.GetCount();
   m_Stats.m_uiDirtyObjectCount = uiDirtyCount;
   m_Stats.m_uiRevision         = m_uiRevision;

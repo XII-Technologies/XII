@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Scene/SceneTypes.h>
 
 class xiiSceneDatabaseManager;
@@ -29,7 +30,7 @@ public:
   bool                               DestroyObject(xiiSceneObjectHandle hObject);
 
   [[nodiscard]] bool      IsAlive(xiiSceneObjectHandle hObject) const;
-  [[nodiscard]] xiiUInt32 GetObjectCount() const { return m_uiObjectCount; }
+  [[nodiscard]] xiiUInt32 GetObjectCount() const { return m_Objects.GetCount(); }
   [[nodiscard]] xiiUInt64 GetRevision() const { return m_uiRevision; }
 
   bool SetParent(xiiSceneObjectHandle hObject, xiiSceneObjectHandle hParent);
@@ -68,8 +69,7 @@ private:
   void               UpdateDirtyTransforms();
   void               RebuildGpuInstances();
 
-  xiiDynamicArray<xiiUInt32>                        m_Generations;
-  xiiDynamicArray<xiiUInt32>                        m_FreeIndices;
+  xiiIdTable<xiiSceneObjectId, xiiUInt32>           m_Objects;
   xiiDynamicArray<xiiUInt8>                         m_Alive;
   xiiDynamicArray<xiiUInt8>                         m_TransformDirty;
   xiiDynamicArray<xiiUInt8>                         m_GpuDirty;
@@ -96,7 +96,6 @@ private:
   xiiDynamicArray<xiiUInt32>           m_WorkStack;
 
   xiiSceneDatabaseStats m_Stats;
-  xiiUInt32             m_uiObjectCount        = 0U;
   xiiUInt64             m_uiRevision           = 0U;
   xiiUInt64             m_uiLastCommittedFrame = static_cast<xiiUInt64>(-1);
 };

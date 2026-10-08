@@ -12,13 +12,6 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSceneObjectHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiSceneObjectDesc>)

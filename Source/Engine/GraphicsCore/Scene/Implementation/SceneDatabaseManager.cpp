@@ -239,7 +239,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       entry.m_hMaterial       = hMaterial;
       entry.m_hGpuMaterial    = hGpuMaterial;
       entry.m_uiLastSeenFrame = uiFrameIndex;
-      if (!entry.m_hSceneObject.IsValid())
+      if (entry.m_hSceneObject.IsInvalidated())
       {
         xiiGeometryResidencyManager::ReleaseMeshGeometry(renderData.m_hMesh, uiFrameIndex);
         xiiMaterialManager::ReleaseMaterialResource(hMaterial);

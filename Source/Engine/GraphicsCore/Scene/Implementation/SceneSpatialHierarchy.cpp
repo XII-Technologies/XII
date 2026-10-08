@@ -100,17 +100,18 @@ xiiBoundingBox xiiSceneSpatialHierarchy::MakeFatBounds(const xiiBoundingBox& bou
 
 bool xiiSceneSpatialHierarchy::Insert(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiSceneObjectFlags> flags)
 {
-  if (!hObject.IsValid() || !bounds.IsValid())
+  if (hObject.IsInvalidated() || !bounds.IsValid())
     return false;
 
-  if (hObject.m_uiIndex >= m_ObjectToNode.GetCount())
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (uiObject >= m_ObjectToNode.GetCount())
   {
     const xiiUInt32 uiOldCount = m_ObjectToNode.GetCount();
-    m_ObjectToNode.SetCount(hObject.m_uiIndex + 1U);
+    m_ObjectToNode.SetCount(uiObject + 1U);
     for (xiiUInt32 i = uiOldCount; i < m_ObjectToNode.GetCount(); ++i)
       m_ObjectToNode[i] = -1;
   }
-  if (m_ObjectToNode[hObject.m_uiIndex] != -1)
+  if (m_ObjectToNode[uiObject] != -1)
     return false;
 
   const xiiInt32 iLeaf              = AllocateNode();
@@ -121,7 +122,7 @@ bool xiiSceneSpatialHierarchy::Insert(xiiSceneObjectHandle hObject, const xiiBou
   leaf.m_uiVisibilityMask           = uiVisibilityMask;
   leaf.m_Flags                      = flags;
   leaf.m_iHeight                    = 0;
-  m_ObjectToNode[hObject.m_uiIndex] = iLeaf;
+  m_ObjectToNode[uiObject] = iLeaf;
   InsertLeaf(iLeaf);
   ++m_uiLeafCount;
   return true;
@@ -129,24 +130,30 @@ bool xiiSceneSpatialHierarchy::Insert(xiiSceneObjectHandle hObject, const xiiBou
 
 bool xiiSceneSpatialHierarchy::Remove(xiiSceneObjectHandle hObject)
 {
-  if (!hObject.IsValid() || hObject.m_uiIndex >= m_ObjectToNode.GetCount())
+  if (hObject.IsInvalidated())
     return false;
-  const xiiInt32 iLeaf = m_ObjectToNode[hObject.m_uiIndex];
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (uiObject >= m_ObjectToNode.GetCount())
+    return false;
+  const xiiInt32 iLeaf = m_ObjectToNode[uiObject];
   if (iLeaf == -1 || m_Nodes[iLeaf].m_hObject != hObject)
     return false;
 
   RemoveLeaf(iLeaf);
   FreeNode(iLeaf);
-  m_ObjectToNode[hObject.m_uiIndex] = -1;
+  m_ObjectToNode[uiObject] = -1;
   --m_uiLeafCount;
   return true;
 }
 
 bool xiiSceneSpatialHierarchy::Update(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, const xiiVec3& vDisplacement, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiSceneObjectFlags> flags)
 {
-  if (!hObject.IsValid() || !bounds.IsValid() || hObject.m_uiIndex >= m_ObjectToNode.GetCount())
+  if (hObject.IsInvalidated() || !bounds.IsValid())
     return false;
-  const xiiInt32 iLeaf = m_ObjectToNode[hObject.m_uiIndex];
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (uiObject >= m_ObjectToNode.GetCount())
+    return false;
+  const xiiInt32 iLeaf = m_ObjectToNode[uiObject];
   if (iLeaf == -1 || m_Nodes[iLeaf].m_hObject != hObject)
     return false;
 
