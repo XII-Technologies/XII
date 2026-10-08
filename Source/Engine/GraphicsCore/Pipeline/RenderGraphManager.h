@@ -3,8 +3,8 @@
 #pragma once
 
 #include <Foundation/Configuration/StaticSubSystem.h>
-#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Types/Delegate.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
@@ -57,15 +57,12 @@ class xiiRenderGraphManagerState;
 class xiiRenderGraphResourceCache;
 class xiiRenderGraphTimestampProfiler;
 
+using xiiRenderGraphContextId = xiiGenericId<24, 8>;
+
 /// Generation-checked reference to an independently owned render-graph runtime context.
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphContextHandle
+class XII_GRAPHICSCORE_DLL xiiRenderGraphContextHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphContextHandle, xiiRenderGraphContextId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphContextHandle);

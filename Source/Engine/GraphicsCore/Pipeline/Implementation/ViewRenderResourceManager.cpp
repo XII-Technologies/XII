@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -10,15 +11,8 @@
 class xiiViewRenderResourceManagerState
 {
 public:
-  struct Slot
-  {
-    xiiUniquePtr<xiiView::ViewPassResources> m_pResources;
-    xiiUInt32                                m_uiGeneration = 1U;
-  };
-
-  xiiDynamicArray<Slot>      m_Slots;
-  xiiDynamicArray<xiiUInt32> m_FreeSlots;
-  bool                       m_bEngineStarted = false;
+  xiiIdTable<xiiViewRenderResourceContextId, xiiUniquePtr<xiiView::ViewPassResources>> m_Contexts;
+  bool                                                                                 m_bEngineStarted = false;
 };
 
 xiiUniquePtr<xiiViewRenderResourceManagerState> xiiViewRenderResourceManager::s_pState;
@@ -57,13 +51,6 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiViewRenderResourceContextHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiViewRenderResourceContextHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 bool xiiViewRenderResourceManager::IsSubsystemInitialized()
@@ -82,25 +69,7 @@ xiiViewRenderResourceContextHandle xiiViewRenderResourceManager::CreateContext()
   if (!IsInitialized())
     return {};
 
-  xiiUInt32 uiIndex = xiiInvalidIndex;
-  if (!s_pState->m_FreeSlots.IsEmpty())
-  {
-    uiIndex = s_pState->m_FreeSlots.PeekBack();
-    s_pState->m_FreeSlots.PopBack();
-  }
-  else
-  {
-    uiIndex = s_pState->m_Slots.GetCount();
-    s_pState->m_Slots.ExpandAndGetRef();
-  }
-
-  xiiViewRenderResourceManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-  slot.m_pResources                             = XII_DEFAULT_NEW(xiiView::ViewPassResources);
-
-  xiiViewRenderResourceContextHandle handle;
-  handle.m_uiIndex      = uiIndex;
-  handle.m_uiGeneration = slot.m_uiGeneration;
-  return handle;
+  return xiiViewRenderResourceContextHandle(s_pState->m_Contexts.Insert(XII_DEFAULT_NEW(xiiView::ViewPassResources)));
 }
 
 void xiiViewRenderResourceManager::DestroyContext(xiiViewRenderResourceContextHandle handle)
@@ -108,12 +77,7 @@ void xiiViewRenderResourceManager::DestroyContext(xiiViewRenderResourceContextHa
   if (!IsValid(handle))
     return;
 
-  xiiViewRenderResourceManagerState::Slot& slot = s_pState->m_Slots[handle.m_uiIndex];
-  slot.m_pResources.Clear();
-  ++slot.m_uiGeneration;
-  if (slot.m_uiGeneration == 0U)
-    slot.m_uiGeneration = 1U;
-  s_pState->m_FreeSlots.PushBack(handle.m_uiIndex);
+  XII_VERIFY(s_pState->m_Contexts.Remove(handle.GetInternalID()), "The view render-resource context was validated before removal.");
 }
 
 bool xiiViewRenderResourceManager::IsValid(xiiViewRenderResourceContextHandle handle)
@@ -123,11 +87,11 @@ bool xiiViewRenderResourceManager::IsValid(xiiViewRenderResourceContextHandle ha
 
 void* xiiViewRenderResourceManager::GetContext(xiiViewRenderResourceContextHandle handle)
 {
-  if (s_pState == nullptr || !handle.IsValid() || handle.m_uiIndex >= s_pState->m_Slots.GetCount())
+  if (s_pState == nullptr)
     return nullptr;
 
-  xiiViewRenderResourceManagerState::Slot& slot = s_pState->m_Slots[handle.m_uiIndex];
-  return slot.m_uiGeneration == handle.m_uiGeneration ? slot.m_pResources.Borrow() : nullptr;
+  xiiUniquePtr<xiiView::ViewPassResources>* pResources = nullptr;
+  return s_pState->m_Contexts.TryGetValue(handle.GetInternalID(), pResources) ? pResources->Borrow() : nullptr;
 }
 
 const void* xiiViewRenderResourceManager::GetContextConst(xiiViewRenderResourceContextHandle handle)
@@ -153,18 +117,7 @@ void xiiViewRenderResourceManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
-  for (xiiUInt32 uiIndex = 0U; uiIndex < s_pState->m_Slots.GetCount(); ++uiIndex)
-  {
-    xiiViewRenderResourceManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-    if (slot.m_pResources == nullptr)
-      continue;
-
-    slot.m_pResources.Clear();
-    ++slot.m_uiGeneration;
-    if (slot.m_uiGeneration == 0U)
-      slot.m_uiGeneration = 1U;
-    s_pState->m_FreeSlots.PushBack(uiIndex);
-  }
+  s_pState->m_Contexts.Clear();
 
   s_pState->m_bEngineStarted = false;
 }

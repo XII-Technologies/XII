@@ -258,7 +258,7 @@ xiiView::xiiView(xiiWorld* pWorld) :
   XII_ASSERT_DEV(pDevice != nullptr, "No default device available. A view requires a device to initialize its resources.");
 
   m_ViewPassResources.m_Handle = xiiViewRenderResourceManager::CreateContext();
-  XII_ASSERT_DEV(m_ViewPassResources.m_Handle.IsValid(), "Failed to create the view render-resource context.");
+  XII_ASSERT_DEV(!m_ViewPassResources.m_Handle.IsInvalidated(), "Failed to create the view render-resource context.");
   XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
   XII_VERIFY(m_GpuSceneContext.Initialize().Succeeded(), "Failed to create the view GPU scene context.");
   m_hGpuVisibilityContext = xiiGpuVisibilityManager::CreateContext();

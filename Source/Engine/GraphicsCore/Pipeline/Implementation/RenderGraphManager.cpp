@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -24,12 +25,6 @@ public:
     xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pProfiler;
   };
 
-  struct ContextSlot
-  {
-    xiiUniquePtr<Context> m_pContext;
-    xiiUInt32             m_uiGeneration = 1U;
-  };
-
   struct Entry
   {
     xiiRenderGraphRegistrationDescription m_Description;
@@ -41,8 +36,7 @@ public:
   };
 
   xiiDynamicArray<xiiUniquePtr<Entry>>          m_Entries;
-  xiiDynamicArray<ContextSlot>                  m_ContextSlots;
-  xiiDynamicArray<xiiUInt32>                    m_FreeContextSlots;
+  xiiIdTable<xiiRenderGraphContextId, xiiUniquePtr<Context>> m_Contexts;
   xiiUniquePtr<xiiRenderGraphResourceCache>     m_pResourceCache;
   xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pProfiler;
   xiiGpuFrameCompletionTracker                  m_FrameCompletionTracker;
@@ -81,11 +75,8 @@ namespace
 
   [[nodiscard]] xiiRenderGraphManagerState::Context* GetContext(xiiRenderGraphManagerState& state, xiiRenderGraphContextHandle handle)
   {
-    if (!handle.IsValid() || handle.m_uiIndex >= state.m_ContextSlots.GetCount())
-      return nullptr;
-
-    xiiRenderGraphManagerState::ContextSlot& slot = state.m_ContextSlots[handle.m_uiIndex];
-    return slot.m_uiGeneration == handle.m_uiGeneration ? slot.m_pContext.Borrow() : nullptr;
+    xiiUniquePtr<xiiRenderGraphManagerState::Context>* pContext = nullptr;
+    return state.m_Contexts.TryGetValue(handle.GetInternalID(), pContext) ? pContext->Borrow() : nullptr;
   }
 } // namespace
 
@@ -154,13 +145,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderGraphRegistrationDescription, xiiNoBase
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderGraphContextHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderGraphContextHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 bool xiiRenderGraphManager::IsSubsystemInitialized()
@@ -187,25 +171,7 @@ xiiRenderGraphContextHandle xiiRenderGraphManager::CreateContext(xiiStringView s
   pContext->m_pResourceCache->Initialize(pDevice);
   pContext->m_pProfiler->Initialize(pDevice);
 
-  xiiUInt32 uiIndex = xiiInvalidIndex;
-  if (!s_pState->m_FreeContextSlots.IsEmpty())
-  {
-    uiIndex = s_pState->m_FreeContextSlots.PeekBack();
-    s_pState->m_FreeContextSlots.PopBack();
-  }
-  else
-  {
-    uiIndex = s_pState->m_ContextSlots.GetCount();
-    s_pState->m_ContextSlots.ExpandAndGetRef();
-  }
-
-  xiiRenderGraphManagerState::ContextSlot& slot = s_pState->m_ContextSlots[uiIndex];
-  slot.m_pContext                               = std::move(pContext);
-
-  xiiRenderGraphContextHandle handle;
-  handle.m_uiIndex      = uiIndex;
-  handle.m_uiGeneration = slot.m_uiGeneration;
-  return handle;
+  return xiiRenderGraphContextHandle(s_pState->m_Contexts.Insert(std::move(pContext)));
 }
 
 void xiiRenderGraphManager::DestroyContext(xiiRenderGraphContextHandle handle)
@@ -213,14 +179,10 @@ void xiiRenderGraphManager::DestroyContext(xiiRenderGraphContextHandle handle)
   if (s_pState == nullptr || GetContext(*s_pState, handle) == nullptr)
     return;
 
-  xiiRenderGraphManagerState::ContextSlot& slot = s_pState->m_ContextSlots[handle.m_uiIndex];
-  slot.m_pContext->m_pProfiler->Shutdown();
-  slot.m_pContext->m_pResourceCache->Shutdown();
-  slot.m_pContext.Clear();
-  ++slot.m_uiGeneration;
-  if (slot.m_uiGeneration == 0U)
-    slot.m_uiGeneration = 1U;
-  s_pState->m_FreeContextSlots.PushBack(handle.m_uiIndex);
+  xiiRenderGraphManagerState::Context* pContext = GetContext(*s_pState, handle);
+  pContext->m_pProfiler->Shutdown();
+  pContext->m_pResourceCache->Shutdown();
+  XII_VERIFY(s_pState->m_Contexts.Remove(handle.GetInternalID()), "The render graph context was validated before removal.");
 }
 
 bool xiiRenderGraphManager::IsValid(xiiRenderGraphContextHandle handle)
@@ -444,20 +406,12 @@ void xiiRenderGraphManager::EngineShutdown()
     return;
 
   s_pState->m_Entries.Clear();
-  for (xiiUInt32 uiIndex = 0U; uiIndex < s_pState->m_ContextSlots.GetCount(); ++uiIndex)
+  for (auto it = s_pState->m_Contexts.GetIterator(); it.IsValid(); ++it)
   {
-    xiiRenderGraphManagerState::ContextSlot& slot = s_pState->m_ContextSlots[uiIndex];
-    if (slot.m_pContext == nullptr)
-      continue;
-
-    slot.m_pContext->m_pProfiler->Shutdown();
-    slot.m_pContext->m_pResourceCache->Shutdown();
-    slot.m_pContext.Clear();
-    ++slot.m_uiGeneration;
-    if (slot.m_uiGeneration == 0U)
-      slot.m_uiGeneration = 1U;
-    s_pState->m_FreeContextSlots.PushBack(uiIndex);
+    it.Value()->m_pProfiler->Shutdown();
+    it.Value()->m_pResourceCache->Shutdown();
   }
+  s_pState->m_Contexts.Clear();
   s_pState->m_FrameCompletionTracker.Reset();
   if (s_pState->m_pProfiler != nullptr)
     s_pState->m_pProfiler->Shutdown();
@@ -483,7 +437,7 @@ xiiResult xiiRenderGraphContext::Initialize(xiiStringView sName)
 {
   Shutdown();
   m_Handle = xiiRenderGraphManager::CreateContext(sName);
-  return m_Handle.IsValid() ? XII_SUCCESS : XII_FAILURE;
+  return m_Handle.IsInvalidated() ? XII_FAILURE : XII_SUCCESS;
 }
 
 void xiiRenderGraphContext::Shutdown()
