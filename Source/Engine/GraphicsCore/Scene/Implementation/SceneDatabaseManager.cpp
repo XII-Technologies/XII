@@ -33,7 +33,7 @@ public:
   };
 
   xiiIdTable<xiiSceneDatabaseContextId, Slot> m_Contexts;
-  bool                                         m_bEngineStarted = false;
+  bool                                        m_bEngineStarted = false;
 };
 
 xiiUniquePtr<xiiSceneDatabaseManagerState> xiiSceneDatabaseManager::s_pState;

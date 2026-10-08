@@ -122,7 +122,7 @@ bool xiiSceneSpatialHierarchy::Insert(xiiSceneObjectHandle hObject, const xiiBou
   leaf.m_uiVisibilityMask           = uiVisibilityMask;
   leaf.m_Flags                      = flags;
   leaf.m_iHeight                    = 0;
-  m_ObjectToNode[uiObject] = iLeaf;
+  m_ObjectToNode[uiObject]          = iLeaf;
   InsertLeaf(iLeaf);
   ++m_uiLeafCount;
   return true;

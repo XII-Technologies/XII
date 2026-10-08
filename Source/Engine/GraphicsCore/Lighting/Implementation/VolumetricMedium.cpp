@@ -271,7 +271,7 @@ xiiResult xiiVolumetricMediumManager::UpdateMedium(xiiVolumetricMediumHandle han
   if (!s_pState->m_Media.TryGetValue(handle.GetInternalID(), pSlot))
     return XII_FAILURE;
 
-  const xiiUInt32                       uiSlot   = handle.GetInternalID().m_InstanceIndex;
+  const xiiUInt32                      uiSlot   = handle.GetInternalID().m_InstanceIndex;
   const xiiVolumetricMediumDescription previous = pSlot->m_Description;
   s_pState->RemoveSlotFromCells(uiSlot);
   pSlot->m_Description = description;

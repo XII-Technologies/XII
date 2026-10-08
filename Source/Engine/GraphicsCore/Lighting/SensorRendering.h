@@ -6,8 +6,8 @@
 #include <Foundation/Math/Vec2.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
-#include <Foundation/Types/Id.h>
 #include <Foundation/Types/Enum.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 

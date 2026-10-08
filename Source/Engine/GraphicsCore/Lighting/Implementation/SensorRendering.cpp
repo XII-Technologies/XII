@@ -32,9 +32,9 @@ namespace
 class xiiSensorRenderingManager::State
 {
 public:
-  mutable xiiMutex                            m_Mutex;
+  mutable xiiMutex                                 m_Mutex;
   xiiIdTable<xiiSensorProfileId, xiiSensorProfile> m_Profiles;
-  xiiSensorProfileHandle                      m_hDefaultProfiles[xiiSensorType::ENUM_COUNT];
+  xiiSensorProfileHandle                           m_hDefaultProfiles[xiiSensorType::ENUM_COUNT];
 };
 
 xiiUniquePtr<xiiSensorRenderingManager::State> xiiSensorRenderingManager::s_pState;

@@ -232,7 +232,7 @@ xiiMaterialGpuHandle xiiMaterialGpuStorage::RegisterMaterial(xiiSharedPtr<xiiMat
   m_MaterialIds[id]             = uiSlot;
   Slot& slot       = m_Slots[uiSlot];
   slot.m_pInstance = std::move(pInstance);
-  slot.m_Id        = id;
+  slot.m_Id                     = id;
   xiiMemoryUtils::ZeroFill(slot.m_LastUploadedRevision.GetData(), slot.m_LastUploadedRevision.GetCount());
   ++m_uiActiveCount;
 

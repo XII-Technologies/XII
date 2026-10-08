@@ -86,9 +86,9 @@ public:
 
   xiiIdTable<xiiRayTracingGeometryId, xiiUInt32> m_GeometryIds;
   xiiIdTable<xiiRayTracingInstanceId, xiiUInt32> m_InstanceIds;
-  xiiDynamicArray<GeometrySlot>                   m_Geometries;
-  xiiDynamicArray<InstanceSlot>                   m_Instances;
-  xiiDynamicArray<FrameResources>                 m_Frames;
+  xiiDynamicArray<GeometrySlot>                  m_Geometries;
+  xiiDynamicArray<InstanceSlot>                  m_Instances;
+  xiiDynamicArray<FrameResources>                m_Frames;
   xiiRayTracingSceneDescription   m_Configuration;
   xiiUInt64                       m_uiSceneRevision    = 0U;
   xiiUInt32                       m_uiGeometryCount    = 0U;
@@ -447,7 +447,7 @@ xiiRayTracingGeometryHandle xiiRayTracingSceneManager::RegisterGeometry(const xi
   s_pState->m_GeometryIds[id]           = uiIndex;
   GeometrySlot& slot = s_pState->m_Geometries[uiIndex];
   slot.m_Description = description;
-  slot.m_Id          = id;
+  slot.m_Id                             = id;
   slot.m_bAllocated  = true;
   slot.m_bBLASDirty  = true;
   ++s_pState->m_uiGeometryCount;
@@ -507,7 +507,7 @@ xiiRayTracingInstanceHandle xiiRayTracingSceneManager::CreateInstance(const xiiR
   s_pState->m_InstanceIds[id]           = uiIndex;
   InstanceSlot& slot     = s_pState->m_Instances[uiIndex];
   slot.m_Description     = description;
-  slot.m_Id              = id;
+  slot.m_Id                             = id;
   slot.m_bRequiresAnyHit = false;
   slot.m_bAllocated      = true;
   ++s_pState->m_uiInstanceCount;

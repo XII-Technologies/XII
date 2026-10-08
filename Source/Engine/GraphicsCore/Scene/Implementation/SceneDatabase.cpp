@@ -242,7 +242,7 @@ bool xiiSceneDatabase::SetLocalTransform(xiiSceneObjectHandle hObject, const xii
 {
   if (!IsAlive(hObject) || !localTransform.IsValid())
     return false;
-  const xiiUInt32 uiObject     = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
   m_LocalTransforms[uiObject] = localTransform;
   MarkSubtreeDirty(uiObject);
   ++m_uiRevision;
@@ -253,8 +253,8 @@ bool xiiSceneDatabase::SetLocalBounds(xiiSceneObjectHandle hObject, const xiiBou
 {
   if (!IsAlive(hObject) || !localBounds.IsValid())
     return false;
-  const xiiUInt32 uiObject  = hObject.GetInternalID().m_InstanceIndex;
-  m_LocalBounds[uiObject] = localBounds;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  m_LocalBounds[uiObject]  = localBounds;
   MarkSubtreeDirty(uiObject);
   ++m_uiRevision;
   return true;
@@ -263,7 +263,7 @@ bool xiiSceneDatabase::SetLocalBounds(xiiSceneObjectHandle hObject, const xiiBou
 bool xiiSceneDatabase::SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeometryIndex)
 {
   if (!IsAlive(hObject)) return false;
-  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
   m_GeometryIndices[uiObject] = uiGeometryIndex;
   m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
@@ -273,7 +273,7 @@ bool xiiSceneDatabase::SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeo
 bool xiiSceneDatabase::SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMaterialIndex)
 {
   if (!IsAlive(hObject)) return false;
-  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
   m_MaterialIndices[uiObject] = uiMaterialIndex;
   m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;
@@ -297,8 +297,8 @@ bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSce
 {
   if (!IsAlive(hObject)) return false;
   const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
-  m_Flags[uiObject]    = flags;
-  m_GpuDirty[uiObject] = 1U;
+  m_Flags[uiObject]        = flags;
+  m_GpuDirty[uiObject]     = 1U;
   ++m_uiRevision;
   return true;
 }
@@ -306,7 +306,7 @@ bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSce
 bool xiiSceneDatabase::SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask)
 {
   if (!IsAlive(hObject)) return false;
-  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
   m_VisibilityMasks[uiObject] = uiVisibilityMask;
   m_GpuDirty[uiObject]        = 1U;
   ++m_uiRevision;

@@ -378,9 +378,9 @@ xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometr
   if (!IsInitialized() || s_pState->m_pMetadataBuffer == nullptr || s_pState->m_GeometryIds.GetCount() >= s_pState->m_Slots.GetCount() || description.m_Lods.IsEmpty() || description.m_Lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
     return {};
 
-  const xiiGeometryId id      = s_pState->m_GeometryIds.Insert(0U);
-  const xiiUInt32     uiIndex = id.m_InstanceIndex;
-  s_pState->m_GeometryIds[id] = uiIndex;
+  const xiiGeometryId id          = s_pState->m_GeometryIds.Insert(0U);
+  const xiiUInt32     uiIndex     = id.m_InstanceIndex;
+  s_pState->m_GeometryIds[id]     = uiIndex;
   Slot& slot                      = s_pState->m_Slots[uiIndex];
   slot.m_Description              = description;
   slot.m_GpuRecord                = {};

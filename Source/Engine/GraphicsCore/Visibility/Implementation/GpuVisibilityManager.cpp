@@ -11,8 +11,8 @@ class xiiGpuVisibilityManagerState
 {
 public:
   xiiIdTable<xiiGpuVisibilityContextId, xiiUniquePtr<xiiGpuVisibilitySystem>> m_Contexts;
-  xiiUInt64                                                                  m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
-  bool                                                                       m_bEngineStarted   = false;
+  xiiUInt64                                                                   m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
+  bool                                                                        m_bEngineStarted   = false;
 };
 
 xiiUniquePtr<xiiGpuVisibilityManagerState> xiiGpuVisibilityManager::s_pState;
