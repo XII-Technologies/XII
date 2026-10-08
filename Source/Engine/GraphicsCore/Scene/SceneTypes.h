@@ -5,6 +5,7 @@
 #include <Foundation/Math/BoundingBoxSphere.h>
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Types/Bitflags.h>
+#include <Foundation/Types/Id.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 /// Runtime classification used by scene queries and GPU visibility passes.
@@ -44,22 +45,11 @@ XII_DECLARE_FLAGS_OPERATORS(xiiSceneObjectFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneObjectFlags);
 
 /// Generation checked identifier for an object in xiiSceneDatabase.
-struct XII_GRAPHICSCORE_DLL xiiSceneObjectHandle
+using xiiSceneObjectId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiSceneObjectHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-  XII_ALWAYS_INLINE void               Invalidate()
-  {
-    m_uiIndex      = xiiInvalidIndex;
-    m_uiGeneration = 0U;
-  }
-
-  XII_ALWAYS_INLINE bool operator==(const xiiSceneObjectHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex && m_uiGeneration == rhs.m_uiGeneration; }
-  XII_ALWAYS_INLINE bool operator!=(const xiiSceneObjectHandle& rhs) const { return !(*this == rhs); }
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiSceneObjectHandle, xiiSceneObjectId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneObjectHandle);

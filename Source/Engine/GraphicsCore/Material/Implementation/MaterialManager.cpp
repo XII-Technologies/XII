@@ -303,7 +303,7 @@ xiiMaterialGpuHandle xiiMaterialManager::AcquireMaterialResource(const xiiMateri
   entry.m_hGpuMaterial     = s_pState->m_pSystem->RegisterMaterial(pInstance);
   entry.m_pInstance        = std::move(pInstance);
   entry.m_uiReferenceCount = 1U;
-  if (!entry.m_hGpuMaterial.IsValid())
+  if (entry.m_hGpuMaterial.IsInvalidated())
     return {};
 
   const xiiMaterialGpuHandle hGpuMaterial = entry.m_hGpuMaterial;

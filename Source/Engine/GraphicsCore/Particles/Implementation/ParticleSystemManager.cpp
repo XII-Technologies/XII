@@ -3,20 +3,14 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Particles/ParticleSystemManager.h>
 
 class xiiParticleSystemManagerState
 {
 public:
-  struct Slot
-  {
-    xiiUniquePtr<xiiParticleSystemRuntime> m_pRuntime;
-    xiiUInt32                              m_uiGeneration = 1U;
-  };
-
-  xiiDynamicArray<Slot>      m_Slots;
-  xiiDynamicArray<xiiUInt32> m_FreeSlots;
-  bool                       m_bEngineStarted = false;
+  xiiIdTable<xiiParticleSystemRuntimeId, xiiUniquePtr<xiiParticleSystemRuntime>> m_Runtimes;
+  bool                                                                           m_bEngineStarted = false;
 };
 
 xiiUniquePtr<xiiParticleSystemManagerState> xiiParticleSystemManager::s_pState;
@@ -53,39 +47,17 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiParticleSystemRuntimeHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiParticleSystemRuntimeHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 namespace
 {
-  xiiParticleSystemManagerState::Slot* GetSlot(xiiParticleSystemManagerState* pState, xiiParticleSystemRuntimeHandle handle)
+  xiiParticleSystemRuntime* ResolveRuntime(xiiParticleSystemManagerState* pState, xiiParticleSystemRuntimeHandle handle)
   {
-    if (pState == nullptr || !handle.IsValid() || handle.m_uiIndex >= pState->m_Slots.GetCount())
+    if (pState == nullptr)
       return nullptr;
 
-    xiiParticleSystemManagerState::Slot& slot = pState->m_Slots[handle.m_uiIndex];
-    return slot.m_uiGeneration == handle.m_uiGeneration && slot.m_pRuntime != nullptr ? &slot : nullptr;
-  }
-
-  void InvalidateSlot(xiiParticleSystemManagerState& state, xiiUInt32 uiIndex)
-  {
-    xiiParticleSystemManagerState::Slot& slot = state.m_Slots[uiIndex];
-    if (slot.m_pRuntime != nullptr)
-    {
-      slot.m_pRuntime->Shutdown();
-      slot.m_pRuntime.Clear();
-    }
-
-    ++slot.m_uiGeneration;
-    if (slot.m_uiGeneration == 0U)
-      slot.m_uiGeneration = 1U;
-    state.m_FreeSlots.PushBack(uiIndex);
+    xiiUniquePtr<xiiParticleSystemRuntime>* pRuntime = nullptr;
+    return pState->m_Runtimes.TryGetValue(handle.GetInternalID(), pRuntime) ? pRuntime->Borrow() : nullptr;
   }
 } // namespace
 
@@ -109,44 +81,27 @@ xiiParticleSystemRuntimeHandle xiiParticleSystemManager::CreateRuntime(xiiShared
   if (pRuntime->Initialize(std::move(pDevice), descriptor).Failed())
     return {};
 
-  xiiUInt32 uiIndex;
-  if (!s_pState->m_FreeSlots.IsEmpty())
-  {
-    uiIndex = s_pState->m_FreeSlots.PeekBack();
-    s_pState->m_FreeSlots.PopBack();
-  }
-  else
-  {
-    uiIndex = s_pState->m_Slots.GetCount();
-    s_pState->m_Slots.ExpandAndGetRef();
-  }
-
-  xiiParticleSystemManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-  slot.m_pRuntime                           = std::move(pRuntime);
-
-  xiiParticleSystemRuntimeHandle handle;
-  handle.m_uiIndex      = uiIndex;
-  handle.m_uiGeneration = slot.m_uiGeneration;
-  return handle;
+  return xiiParticleSystemRuntimeHandle(s_pState->m_Runtimes.Insert(std::move(pRuntime)));
 }
 
 void xiiParticleSystemManager::DestroyRuntime(xiiParticleSystemRuntimeHandle handle)
 {
-  if (GetSlot(s_pState.Borrow(), handle) == nullptr)
+  xiiParticleSystemRuntime* pRuntime = ResolveRuntime(s_pState.Borrow(), handle);
+  if (pRuntime == nullptr)
     return;
 
-  InvalidateSlot(*s_pState, handle.m_uiIndex);
+  pRuntime->Shutdown();
+  XII_VERIFY(s_pState->m_Runtimes.Remove(handle.GetInternalID()), "The particle runtime was validated before removal.");
 }
 
 bool xiiParticleSystemManager::IsValid(xiiParticleSystemRuntimeHandle handle)
 {
-  return GetSlot(s_pState.Borrow(), handle) != nullptr;
+  return ResolveRuntime(s_pState.Borrow(), handle) != nullptr;
 }
 
 xiiParticleSystemRuntime* xiiParticleSystemManager::GetRuntime(xiiParticleSystemRuntimeHandle handle)
 {
-  xiiParticleSystemManagerState::Slot* pSlot = GetSlot(s_pState.Borrow(), handle);
-  return pSlot != nullptr ? pSlot->m_pRuntime.Borrow() : nullptr;
+  return ResolveRuntime(s_pState.Borrow(), handle);
 }
 
 void xiiParticleSystemManager::Startup()
@@ -167,11 +122,9 @@ void xiiParticleSystemManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
-  for (xiiUInt32 uiIndex = 0U; uiIndex < s_pState->m_Slots.GetCount(); ++uiIndex)
-  {
-    if (s_pState->m_Slots[uiIndex].m_pRuntime != nullptr)
-      InvalidateSlot(*s_pState, uiIndex);
-  }
+  for (auto it = s_pState->m_Runtimes.GetIterator(); it.IsValid(); ++it)
+    it.Value()->Shutdown();
+  s_pState->m_Runtimes.Clear();
   s_pState->m_bEngineStarted = false;
 }
 
@@ -180,12 +133,7 @@ void xiiParticleSystemManager::Shutdown()
   if (s_pState == nullptr)
     return;
 
-  for (xiiParticleSystemManagerState::Slot& slot : s_pState->m_Slots)
-  {
-    if (slot.m_pRuntime != nullptr)
-      slot.m_pRuntime->Shutdown();
-    slot.m_pRuntime.Clear();
-  }
+  EngineShutdown();
   s_pState.Clear();
 }
 

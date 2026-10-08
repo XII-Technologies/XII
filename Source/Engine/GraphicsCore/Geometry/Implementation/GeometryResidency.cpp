@@ -4,6 +4,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -24,8 +25,8 @@ public:
 
     m_pMetadataBuffer.Clear();
     m_pMeshletMetadataBuffer.Clear();
+    m_GeometryIds.Clear();
     m_Slots.Clear();
-    m_FreeSlots.Clear();
     m_FreeMeshletRanges.Clear();
     m_PendingMeshletUploads.Clear();
     m_MeshGeometries.Clear();
@@ -38,8 +39,8 @@ public:
     m_bInitialized          = false;
   }
 
+  xiiIdTable<xiiGeometryId, xiiUInt32>                   m_GeometryIds;
   xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper>      m_Slots;
-  xiiDynamicArray<xiiUInt32>                             m_FreeSlots;
   xiiSharedPtr<xiiGALBuffer>                             m_pMetadataBuffer;
   xiiSharedPtr<xiiGALBuffer>                             m_pMeshletMetadataBuffer;
   xiiDynamicArray<FreeRange>                             m_FreeMeshletRanges;
@@ -148,13 +149,6 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGeometryHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryLodSource, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGeometryLodSource>)
@@ -343,10 +337,8 @@ xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, const x
   s_pState->m_pMeshletMetadataBuffer->SetDebugName("GPU Meshlet Metadata Arena");
   s_pState->m_FreeMeshletRanges.PushBack({0U, uiMaxMeshlets});
 
+  s_pState->m_GeometryIds.Reserve(uiMaxGeometries);
   s_pState->m_Slots.SetCount(uiMaxGeometries);
-  s_pState->m_FreeSlots.Reserve(uiMaxGeometries);
-  for (xiiUInt32 i = uiMaxGeometries; i > 0U; --i)
-    s_pState->m_FreeSlots.PushBack(i - 1U);
   s_pState->m_uiFramesInFlight = uiFramesInFlight;
   s_pState->m_uiAllFrameMask   = uiFramesInFlight == 64U ? xiiMath::MaxValue<xiiUInt64>() : (xiiUInt64(1) << uiFramesInFlight) - 1U;
   s_pState->m_uiBudgetBytes    = uiBudgetBytes;
@@ -383,15 +375,16 @@ void xiiGeometryResidencyManager::EngineShutdown()
 
 xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometryDescription& description)
 {
-  if (!IsInitialized() || s_pState->m_pMetadataBuffer == nullptr || s_pState->m_FreeSlots.IsEmpty() || description.m_Lods.IsEmpty() || description.m_Lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
+  if (!IsInitialized() || s_pState->m_pMetadataBuffer == nullptr || s_pState->m_GeometryIds.GetCount() >= s_pState->m_Slots.GetCount() || description.m_Lods.IsEmpty() || description.m_Lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
     return {};
 
-  const xiiUInt32 uiIndex = s_pState->m_FreeSlots.PeekBack();
-  s_pState->m_FreeSlots.PopBack();
+  const xiiGeometryId id          = s_pState->m_GeometryIds.Insert(0U);
+  const xiiUInt32     uiIndex     = id.m_InstanceIndex;
+  s_pState->m_GeometryIds[id]     = uiIndex;
   Slot& slot                      = s_pState->m_Slots[uiIndex];
   slot.m_Description              = description;
   slot.m_GpuRecord                = {};
-  slot.m_GpuRecord.m_uiGeneration = slot.m_uiGeneration;
+  slot.m_GpuRecord.m_uiGeneration = id.m_Generation;
   slot.m_GpuRecord.m_uiLodCount   = description.m_Lods.GetCount();
   for (xiiUInt32 uiLod = 0U; uiLod < description.m_Lods.GetCount(); ++uiLod)
     slot.m_GpuRecord.m_Lods[uiLod].m_fMinimumScreenCoverage = description.m_Lods[uiLod].m_fMinimumScreenCoverage;
@@ -404,16 +397,13 @@ xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometr
   xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaOffset, XII_ARRAY_SIZE(slot.m_uiMeshletArenaOffset));
   xiiMemoryUtils::ZeroFill(slot.m_uiMeshletArenaCount, XII_ARRAY_SIZE(slot.m_uiMeshletArenaCount));
 
-  xiiGeometryHandle handle;
-  handle.m_uiIndex      = uiIndex;
-  handle.m_uiGeneration = slot.m_uiGeneration;
-  return handle;
+  return xiiGeometryHandle(id);
 }
 
 void xiiGeometryResidencyManager::UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex)
 {
   if (!IsValid(handle)) return;
-  Slot& slot           = s_pState->m_Slots[handle.m_uiIndex];
+  Slot& slot           = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
   slot.m_State         = xiiGeometryResidencyState::EvictPending;
   slot.m_uiRetireFrame = uiFrameIndex;
 }
@@ -448,7 +438,7 @@ xiiGeometryHandle xiiGeometryResidencyManager::AcquireMeshGeometry(const xiiMesh
     return {};
 
   const xiiGeometryHandle hGeometry = RegisterGeometry(description);
-  if (!hGeometry.IsValid())
+  if (hGeometry.IsInvalidated())
     return {};
 
   State::MeshGeometryEntry entry;
@@ -482,7 +472,7 @@ void xiiGeometryResidencyManager::ReleaseMeshGeometry(const xiiMeshResourceHandl
 void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority)
 {
   if (!IsValid(handle)) return;
-  Slot&           slot           = s_pState->m_Slots[handle.m_uiIndex];
+  Slot&           slot           = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
   const xiiUInt32 uiRequestedLod = xiiMath::Min(uiMinimumLod, slot.m_Description.m_Lods.GetCount() - 1U);
   slot.m_uiLastUsedFrame         = xiiMath::Max(slot.m_uiLastUsedFrame, uiFrameIndex);
 
@@ -516,7 +506,7 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
 
 void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex)
 {
-  if (IsValid(handle)) s_pState->m_Slots[handle.m_uiIndex].m_uiLastUsedFrame = uiFrameIndex;
+  if (IsValid(handle)) s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex].m_uiLastUsedFrame = uiFrameIndex;
 }
 
 bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget)
@@ -768,12 +758,11 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
       s_pState->m_uiResidentBytes -= slot.m_uiResidentBytes;
       ReleaseBindlessResources(slot, slot.m_uiRetireFrame);
       ReleaseMeshletAllocations(slot);
+      const xiiGeometryId id(i, slot.m_GpuRecord.m_uiGeneration);
       slot.m_bAllocated = false;
       slot.m_Description.m_Lods.Clear();
       slot.m_uiResidentBytes = 0U;
-      ++slot.m_uiGeneration;
-      if (slot.m_uiGeneration == 0U) slot.m_uiGeneration = 1U;
-      s_pState->m_FreeSlots.PushBack(i);
+      s_pState->m_GeometryIds.Remove(id);
     }
   }
 
@@ -809,19 +798,19 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
 
 bool xiiGeometryResidencyManager::IsValid(xiiGeometryHandle handle)
 {
-  return s_pState != nullptr && handle.IsValid() && handle.m_uiIndex < s_pState->m_Slots.GetCount() && s_pState->m_Slots[handle.m_uiIndex].m_bAllocated && s_pState->m_Slots[handle.m_uiIndex].m_uiGeneration == handle.m_uiGeneration;
+  return s_pState != nullptr && s_pState->m_GeometryIds.Contains(handle.GetInternalID());
 }
 
 xiiEnum<xiiGeometryResidencyState> xiiGeometryResidencyManager::GetState(xiiGeometryHandle handle)
 {
   if (IsValid(handle))
-    return s_pState->m_Slots[handle.m_uiIndex].m_State;
+    return s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex].m_State;
   return xiiEnum<xiiGeometryResidencyState>(xiiGeometryResidencyState::Unloaded);
 }
 
 const xiiGpuGeometryRecord* xiiGeometryResidencyManager::GetGpuRecord(xiiGeometryHandle handle)
 {
-  return IsValid(handle) ? &s_pState->m_Slots[handle.m_uiIndex].m_GpuRecord : nullptr;
+  return IsValid(handle) ? &s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex].m_GpuRecord : nullptr;
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiGeometryResidencyManager::GetMetadataBuffer()

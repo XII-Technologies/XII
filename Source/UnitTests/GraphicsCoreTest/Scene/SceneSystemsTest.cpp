@@ -28,8 +28,8 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     childDesc.m_uiMaterialIndex      = 11U;
     const xiiSceneObjectHandle child = scene.CreateObject(childDesc);
 
-    XII_TEST_BOOL(parent.IsValid());
-    XII_TEST_BOOL(child.IsValid());
+    XII_TEST_BOOL(!parent.IsInvalidated());
+    XII_TEST_BOOL(!child.IsInvalidated());
     XII_TEST_BOOL(!scene.SetParent(parent, child));
 
     scene.CommitFrame(1U);
@@ -43,7 +43,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     const xiiGpuSceneInstance* pChildInstance = nullptr;
     for (const xiiGpuSceneInstance& instance : scene.GetGpuInstances())
     {
-      if (instance.m_uiObjectIndex == child.m_uiIndex)
+      if (instance.m_uiObjectIndex == child.GetInternalID().m_InstanceIndex)
       {
         pChildInstance = &instance;
         break;
@@ -74,8 +74,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     handles.SetCount(uiObjectCount);
     for (xiiUInt32 i = 0U; i < uiObjectCount; ++i)
     {
-      handles[i].m_uiIndex        = i;
-      handles[i].m_uiGeneration   = 1U;
+      handles[i]                  = xiiSceneObjectHandle(xiiSceneObjectId(i, 1U));
       const xiiBoundingBox bounds = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3(static_cast<float>(i), 0.0f, 0.0f), xiiVec3(0.25f));
       XII_TEST_BOOL(hierarchy.Insert(handles[i], bounds, 1U, xiiSceneObjectFlags::Enabled));
     }

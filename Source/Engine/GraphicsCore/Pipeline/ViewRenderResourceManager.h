@@ -4,6 +4,7 @@
 
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
@@ -14,14 +15,11 @@ class xiiViewRenderResourceManagerState;
 ///
 /// The handle contains no allocator-backed state and remains safe after GraphicsCore shutdown.
 /// A stale handle never resolves to a newly allocated view-resource context.
-struct XII_GRAPHICSCORE_DLL xiiViewRenderResourceContextHandle
+using xiiViewRenderResourceContextId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiViewRenderResourceContextHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiViewRenderResourceContextHandle, xiiViewRenderResourceContextId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewRenderResourceContextHandle);

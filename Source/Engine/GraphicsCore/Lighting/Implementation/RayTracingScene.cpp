@@ -4,6 +4,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -32,7 +33,7 @@ struct xiiRayTracingSceneManager::GeometrySlot
   xiiUInt32                         m_uiTexCoordOffset     = xiiInvalidIndex;
   xiiUInt32                         m_uiIndexStride        = 0U;
   xiiUInt32                         m_uiPrimitiveCount     = 0U;
-  xiiUInt32                         m_uiGeneration         = 1U;
+  xiiRayTracingGeometryId           m_Id;
   bool                              m_bAllocated           = false;
   bool                              m_bBLASDirty           = true;
 };
@@ -40,7 +41,7 @@ struct xiiRayTracingSceneManager::GeometrySlot
 struct xiiRayTracingSceneManager::InstanceSlot
 {
   xiiRayTracingInstanceDescription m_Description;
-  xiiUInt32                        m_uiGeneration    = 1U;
+  xiiRayTracingInstanceId          m_Id;
   bool                             m_bAllocated      = false;
   bool                             m_bRequiresAnyHit = false;
 };
@@ -72,10 +73,10 @@ public:
           xiiGALBindlessResourceTable::RetireBufferSRV(geometry.m_hIndexBufferSRV, m_uiLastFrameIndex);
       }
     }
+    m_GeometryIds.Clear();
+    m_InstanceIds.Clear();
     m_Geometries.Clear();
     m_Instances.Clear();
-    m_FreeGeometries.Clear();
-    m_FreeInstances.Clear();
     m_Frames.Clear();
     m_uiGeometryCount = 0U;
     m_uiInstanceCount = 0U;
@@ -83,11 +84,11 @@ public:
     m_bInitialized = false;
   }
 
-  xiiDynamicArray<GeometrySlot>   m_Geometries;
-  xiiDynamicArray<InstanceSlot>   m_Instances;
-  xiiDynamicArray<xiiUInt32>      m_FreeGeometries;
-  xiiDynamicArray<xiiUInt32>      m_FreeInstances;
-  xiiDynamicArray<FrameResources> m_Frames;
+  xiiIdTable<xiiRayTracingGeometryId, xiiUInt32> m_GeometryIds;
+  xiiIdTable<xiiRayTracingInstanceId, xiiUInt32> m_InstanceIds;
+  xiiDynamicArray<GeometrySlot>                  m_Geometries;
+  xiiDynamicArray<InstanceSlot>                  m_Instances;
+  xiiDynamicArray<FrameResources>                m_Frames;
   xiiRayTracingSceneDescription   m_Configuration;
   xiiUInt64                       m_uiSceneRevision    = 0U;
   xiiUInt32                       m_uiGeometryCount    = 0U;
@@ -206,13 +207,13 @@ namespace
     result.BaseColorOpacity          = xiiVec4(1.0f);
     result.EmissiveColorAndRoughness = xiiVec4(0.0f, 0.0f, 0.0f, 0.5f);
     result.SurfaceParameters         = xiiVec4(0.0f, 0.5f, 0.0f, 1.0f);
-    result.Metadata                  = xiiVec4U32(instance.m_hMaterial.m_uiSlot, instance.m_uiStableObjectId, static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U);
+    result.Metadata                  = xiiVec4U32(instance.m_hMaterial.GetInternalID().m_InstanceIndex, instance.m_uiStableObjectId, static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U);
     result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
     result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
     result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
     result.Rendering                 = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque), 0U, 0U);
 
-    if (!instance.m_hMaterial.IsValid() || !xiiMaterialManager::IsInitialized())
+    if (instance.m_hMaterial.IsInvalidated() || !xiiMaterialManager::IsInitialized())
       return result;
 
     const xiiSharedPtr<xiiMaterialInstance> material = xiiMaterialManager::GetGpuStorage().GetMaterial(instance.m_hMaterial);
@@ -290,23 +291,9 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingGeometryHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingGeometryHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingInstanceHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingInstanceHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRayTracingGeometryDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRayTracingGeometryDescription>)
@@ -409,15 +396,11 @@ xiiResult xiiRayTracingSceneManager::ApplyConfiguration()
     return XII_FAILURE;
 
   s_pState->ClearScene();
+  s_pState->m_GeometryIds.Reserve(s_pState->m_Configuration.m_uiMaxGeometries);
+  s_pState->m_InstanceIds.Reserve(s_pState->m_Configuration.m_uiMaxInstances);
   s_pState->m_Geometries.SetCount(s_pState->m_Configuration.m_uiMaxGeometries);
   s_pState->m_Instances.SetCount(s_pState->m_Configuration.m_uiMaxInstances);
   s_pState->m_Frames.SetCount(s_pState->m_Configuration.m_uiFramesInFlight);
-  s_pState->m_FreeGeometries.Reserve(s_pState->m_Configuration.m_uiMaxGeometries);
-  s_pState->m_FreeInstances.Reserve(s_pState->m_Configuration.m_uiMaxInstances);
-  for (xiiUInt32 i = s_pState->m_Configuration.m_uiMaxGeometries; i > 0U; --i)
-    s_pState->m_FreeGeometries.PushBack(i - 1U);
-  for (xiiUInt32 i = s_pState->m_Configuration.m_uiMaxInstances; i > 0U; --i)
-    s_pState->m_FreeInstances.PushBack(i - 1U);
   s_pState->m_bInitialized = true;
   return XII_SUCCESS;
 }
@@ -456,18 +439,20 @@ bool xiiRayTracingSceneManager::IsHardwareRayTracingSupported()
 
 xiiRayTracingGeometryHandle xiiRayTracingSceneManager::RegisterGeometry(const xiiRayTracingGeometryDescription& description)
 {
-  if (!IsInitialized() || !description.m_hMeshBuffer.IsValid() || s_pState->m_FreeGeometries.IsEmpty())
+  if (!IsInitialized() || !description.m_hMeshBuffer.IsValid() || s_pState->m_GeometryIds.GetCount() >= s_pState->m_Geometries.GetCount())
     return {};
 
-  const xiiUInt32 uiIndex = s_pState->m_FreeGeometries.PeekBack();
-  s_pState->m_FreeGeometries.PopBack();
+  const xiiRayTracingGeometryId id      = s_pState->m_GeometryIds.Insert(0U);
+  const xiiUInt32               uiIndex = id.m_InstanceIndex;
+  s_pState->m_GeometryIds[id]           = uiIndex;
   GeometrySlot& slot = s_pState->m_Geometries[uiIndex];
   slot.m_Description = description;
+  slot.m_Id                             = id;
   slot.m_bAllocated  = true;
   slot.m_bBLASDirty  = true;
   ++s_pState->m_uiGeometryCount;
   ++s_pState->m_uiSceneRevision;
-  return {uiIndex, slot.m_uiGeneration};
+  return xiiRayTracingGeometryHandle(id);
 }
 
 void xiiRayTracingSceneManager::UnregisterGeometry(xiiRayTracingGeometryHandle handle)
@@ -480,11 +465,11 @@ void xiiRayTracingSceneManager::UnregisterGeometry(xiiRayTracingGeometryHandle h
   for (xiiUInt32 i = 0U; i < s_pState->m_Instances.GetCount(); ++i)
   {
     InstanceSlot& instance = s_pState->m_Instances[i];
-    if (instance.m_bAllocated && instance.m_Description.m_hGeometry.m_uiIndex == handle.m_uiIndex && instance.m_Description.m_hGeometry.m_uiGeneration == handle.m_uiGeneration)
-      DestroyInstance({i, instance.m_uiGeneration});
+    if (instance.m_bAllocated && instance.m_Description.m_hGeometry == handle)
+      DestroyInstance(xiiRayTracingInstanceHandle(instance.m_Id));
   }
 
-  GeometrySlot& slot = s_pState->m_Geometries[handle.m_uiIndex];
+  GeometrySlot& slot = s_pState->m_Geometries[handle.GetInternalID().m_InstanceIndex];
   if (xiiGALBindlessResourceTable::IsInitialized())
   {
     if (slot.m_hVertexBufferSRV.IsValid())
@@ -501,33 +486,33 @@ void xiiRayTracingSceneManager::UnregisterGeometry(xiiRayTracingGeometryHandle h
   slot.m_Description      = {};
   slot.m_bAllocated       = false;
   slot.m_bBLASDirty       = true;
-  ++slot.m_uiGeneration;
-  if (slot.m_uiGeneration == 0U)
-    slot.m_uiGeneration = 1U;
-  s_pState->m_FreeGeometries.PushBack(handle.m_uiIndex);
+  s_pState->m_GeometryIds.Remove(slot.m_Id);
+  slot.m_Id.Invalidate();
   --s_pState->m_uiGeometryCount;
   ++s_pState->m_uiSceneRevision;
 }
 
 bool xiiRayTracingSceneManager::IsValid(xiiRayTracingGeometryHandle handle)
 {
-  return IsInitialized() && handle.IsValid() && handle.m_uiIndex < s_pState->m_Geometries.GetCount() && s_pState->m_Geometries[handle.m_uiIndex].m_bAllocated && s_pState->m_Geometries[handle.m_uiIndex].m_uiGeneration == handle.m_uiGeneration;
+  return IsInitialized() && s_pState->m_GeometryIds.Contains(handle.GetInternalID());
 }
 
 xiiRayTracingInstanceHandle xiiRayTracingSceneManager::CreateInstance(const xiiRayTracingInstanceDescription& description)
 {
-  if (!IsValid(description.m_hGeometry) || s_pState->m_FreeInstances.IsEmpty() || !description.m_Transform.IsValid())
+  if (!IsValid(description.m_hGeometry) || s_pState->m_InstanceIds.GetCount() >= s_pState->m_Instances.GetCount() || !description.m_Transform.IsValid())
     return {};
 
-  const xiiUInt32 uiIndex = s_pState->m_FreeInstances.PeekBack();
-  s_pState->m_FreeInstances.PopBack();
+  const xiiRayTracingInstanceId id      = s_pState->m_InstanceIds.Insert(0U);
+  const xiiUInt32               uiIndex = id.m_InstanceIndex;
+  s_pState->m_InstanceIds[id]           = uiIndex;
   InstanceSlot& slot     = s_pState->m_Instances[uiIndex];
   slot.m_Description     = description;
+  slot.m_Id                             = id;
   slot.m_bRequiresAnyHit = false;
   slot.m_bAllocated      = true;
   ++s_pState->m_uiInstanceCount;
   ++s_pState->m_uiSceneRevision;
-  return {uiIndex, slot.m_uiGeneration};
+  return xiiRayTracingInstanceHandle(id);
 }
 
 void xiiRayTracingSceneManager::DestroyInstance(xiiRayTracingInstanceHandle handle)
@@ -535,14 +520,12 @@ void xiiRayTracingSceneManager::DestroyInstance(xiiRayTracingInstanceHandle hand
   if (!IsValid(handle))
     return;
 
-  InstanceSlot& slot     = s_pState->m_Instances[handle.m_uiIndex];
+  InstanceSlot& slot     = s_pState->m_Instances[handle.GetInternalID().m_InstanceIndex];
   slot.m_Description     = {};
   slot.m_bRequiresAnyHit = false;
   slot.m_bAllocated      = false;
-  ++slot.m_uiGeneration;
-  if (slot.m_uiGeneration == 0U)
-    slot.m_uiGeneration = 1U;
-  s_pState->m_FreeInstances.PushBack(handle.m_uiIndex);
+  s_pState->m_InstanceIds.Remove(slot.m_Id);
+  slot.m_Id.Invalidate();
   --s_pState->m_uiInstanceCount;
   ++s_pState->m_uiSceneRevision;
 }
@@ -552,14 +535,14 @@ bool xiiRayTracingSceneManager::UpdateInstance(xiiRayTracingInstanceHandle handl
   if (!IsValid(handle) || !IsValid(description.m_hGeometry) || !description.m_Transform.IsValid())
     return false;
 
-  s_pState->m_Instances[handle.m_uiIndex].m_Description = description;
+  s_pState->m_Instances[handle.GetInternalID().m_InstanceIndex].m_Description = description;
   ++s_pState->m_uiSceneRevision;
   return true;
 }
 
 bool xiiRayTracingSceneManager::IsValid(xiiRayTracingInstanceHandle handle)
 {
-  return IsInitialized() && handle.IsValid() && handle.m_uiIndex < s_pState->m_Instances.GetCount() && s_pState->m_Instances[handle.m_uiIndex].m_bAllocated && s_pState->m_Instances[handle.m_uiIndex].m_uiGeneration == handle.m_uiGeneration;
+  return IsInitialized() && s_pState->m_InstanceIds.Contains(handle.GetInternalID());
 }
 
 bool xiiRayTracingSceneManager::PrepareGeometry(xiiUInt32 uiGeometryIndex)
@@ -780,7 +763,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
 
     RayTracingBLASBuild& build   = pendingBLASBuilds.ExpandAndGetRef();
     build.m_uiGeometryIndex      = uiGeometryIndex;
-    build.m_uiGeometryGeneration = geometry.m_uiGeneration;
+    build.m_uiGeometryGeneration = geometry.m_Id.m_Generation;
     build.m_pBottomLevelAS       = geometry.m_pBottomLevelAS;
     build.m_pVertexBuffer        = geometry.m_pVertexBuffer;
     build.m_pIndexBuffer         = geometry.m_pIndexBuffer;
@@ -795,7 +778,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     if (!instance.m_bAllocated || !IsValid(instance.m_Description.m_hGeometry))
       continue;
 
-    const GeometrySlot& geometry = s_pState->m_Geometries[instance.m_Description.m_hGeometry.m_uiIndex];
+    const GeometrySlot& geometry = s_pState->m_Geometries[instance.m_Description.m_hGeometry.GetInternalID().m_InstanceIndex];
     if (geometry.m_pBottomLevelAS == nullptr || geometry.m_pBottomLevelAS->GetDeviceAddress() == 0U)
       continue;
 
@@ -806,7 +789,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     gpuInstance.SetHitGroupContribution(0U);
     xiiBitflags<xiiGALRayTracingInstanceFlags> flags           = instance.m_Description.m_Flags;
     bool                                       bRequiresAnyHit = !geometry.m_Description.m_bOpaque;
-    if (instance.m_Description.m_hMaterial.IsValid() && xiiMaterialManager::IsInitialized())
+    if (!instance.m_Description.m_hMaterial.IsInvalidated() && xiiMaterialManager::IsInitialized())
     {
       const xiiSharedPtr<xiiMaterialInstance> pMaterial = xiiMaterialManager::GetGpuStorage().GetMaterial(instance.m_Description.m_hMaterial);
       bRequiresAnyHit                                   = bRequiresAnyHit || (pMaterial != nullptr && pMaterial->GetRuntimeState().IsMasked());
@@ -932,7 +915,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
           if (build.m_uiGeometryIndex < pState->m_Geometries.GetCount())
           {
             GeometrySlot& geometry = pState->m_Geometries[build.m_uiGeometryIndex];
-            if (geometry.m_bAllocated && geometry.m_uiGeneration == build.m_uiGeometryGeneration)
+            if (geometry.m_bAllocated && geometry.m_Id.m_Generation == build.m_uiGeometryGeneration)
               geometry.m_bBLASDirty = false;
           }
         }
@@ -986,8 +969,8 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
         RayTracingHitDataUploadPassData::GeometryDependency& vertex = data.m_GeometryDependencies.ExpandAndGetRef();
         vertex.m_pBuffer                                            = geometry.m_pVertexBuffer;
         vertex.m_uiGeometryIndex                                    = uiGeometryIndex;
-        vertex.m_uiGeneration                                       = geometry.m_uiGeneration;
-        name.SetFormat("Ray Tracing Vertex Data [{}:{}]", uiGeometryIndex, geometry.m_uiGeneration);
+        vertex.m_uiGeneration                                       = geometry.m_Id.m_Generation;
+        name.SetFormat("Ray Tracing Vertex Data [{}:{}]", uiGeometryIndex, geometry.m_Id.m_Generation);
         vertex.m_hBuffer = builder.ImportBuffer(name, vertex.m_pBuffer, vertex.m_pBuffer->GetResourceState());
         vertex.m_hBuffer = builder.ReadBuffer(vertex.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);
 
@@ -996,9 +979,9 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
           RayTracingHitDataUploadPassData::GeometryDependency& index = data.m_GeometryDependencies.ExpandAndGetRef();
           index.m_pBuffer                                            = geometry.m_pIndexBuffer;
           index.m_uiGeometryIndex                                    = uiGeometryIndex;
-          index.m_uiGeneration                                       = geometry.m_uiGeneration;
+          index.m_uiGeneration                                       = geometry.m_Id.m_Generation;
           index.m_bIndexBuffer                                       = true;
-          name.SetFormat("Ray Tracing Index Data [{}:{}]", uiGeometryIndex, geometry.m_uiGeneration);
+          name.SetFormat("Ray Tracing Index Data [{}:{}]", uiGeometryIndex, geometry.m_Id.m_Generation);
           index.m_hBuffer = builder.ImportBuffer(name, index.m_pBuffer, index.m_pBuffer->GetResourceState());
           index.m_hBuffer = builder.ReadBuffer(index.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);
         }

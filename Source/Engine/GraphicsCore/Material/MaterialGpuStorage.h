@@ -4,6 +4,7 @@
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Containers/IdTable.h>
 #include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Material/MaterialInstance.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -110,13 +111,13 @@ private:
   {
     xiiSharedPtr<xiiMaterialInstance> m_pInstance;
     xiiHybridArray<xiiUInt32, 4U>     m_LastUploadedRevision;
-    xiiUInt32                         m_uiGeneration = 1U;
+    xiiMaterialGpuId                  m_Id;
   };
 
   struct RetiredSlot
   {
-    xiiUInt32 m_uiSlot         = xiiInvalidIndex;
-    xiiUInt64 m_uiLastUseFrame = 0ULL;
+    xiiMaterialGpuId m_Id;
+    xiiUInt64        m_uiLastUseFrame = 0ULL;
   };
 
   struct UploadPassData
@@ -132,8 +133,8 @@ private:
 
   mutable xiiMutex                 m_Mutex;
   xiiMaterialGpuStorageDescription m_Description;
+  xiiIdTable<xiiMaterialGpuId, xiiUInt32> m_MaterialIds;
   xiiDynamicArray<Slot>            m_Slots;
-  xiiDynamicArray<xiiUInt32>       m_FreeSlots;
   xiiDynamicArray<RetiredSlot>     m_RetiredSlots;
   xiiSharedPtr<xiiGALBuffer>       m_pBuffer;
   xiiSharedPtr<xiiGALBuffer>       m_pSurfaceBuffer;

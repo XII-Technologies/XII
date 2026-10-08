@@ -17,14 +17,14 @@ XII_CREATE_SIMPLE_TEST(Lighting, RayTracingScene)
   xiiRayTracingGeometryDescription geometryDescription;
   geometryDescription.m_hMeshBuffer           = xiiResourceManager::LoadResource<xiiMeshBufferResource>("UnitTests/RayTracingScene/Mesh");
   const xiiRayTracingGeometryHandle hGeometry = xiiRayTracingSceneManager::RegisterGeometry(geometryDescription);
-  XII_TEST_BOOL(hGeometry.IsValid());
+  XII_TEST_BOOL(!hGeometry.IsInvalidated());
   XII_TEST_BOOL(xiiRayTracingSceneManager::IsValid(hGeometry));
 
   xiiRayTracingInstanceDescription instanceDescription;
   instanceDescription.m_hGeometry             = hGeometry;
   instanceDescription.m_uiStableObjectId      = 42U;
   const xiiRayTracingInstanceHandle hInstance = xiiRayTracingSceneManager::CreateInstance(instanceDescription);
-  XII_TEST_BOOL(hInstance.IsValid());
+  XII_TEST_BOOL(!hInstance.IsInvalidated());
   XII_TEST_BOOL(xiiRayTracingSceneManager::IsValid(hInstance));
 
   xiiRayTracingSceneStats stats = xiiRayTracingSceneManager::GetStats();

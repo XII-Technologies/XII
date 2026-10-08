@@ -11,6 +11,7 @@
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Types/Delegate.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/SharedPtr.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -98,42 +99,55 @@ XII_DECLARE_FLAGS_OPERATORS(xiiRenderGraphResourceFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphResourceFlags);
 
 /// Opaque handle to a virtual texture resource declared in the render graph.
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphTextureHandle : public xiiHashableStruct<xiiRenderGraphTextureHandle>
+using xiiRenderGraphResourceHandleId = xiiGenericId<32, 16>;
+
+class XII_GRAPHICSCORE_DLL xiiRenderGraphTextureHandle : public xiiHashableStruct<xiiRenderGraphTextureHandle>
 {
-  XII_DECLARE_POD_TYPE();
+  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphTextureHandle, xiiRenderGraphResourceHandleId);
 
-  xiiUInt32                m_uiIndex   = xiiInvalidIndex;
-  xiiUInt16                m_uiVersion = 0U;
+public:
+  XII_ALWAYS_INLINE xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphResourceId id) : m_Id(id)
+  {
+    m_InternalId = internalId;
+  }
+
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
+
   xiiRenderGraphResourceId m_Id;
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsInvalidated() const { return !IsValid(); }
-  [[nodiscard]] XII_ALWAYS_INLINE bool operator==(const xiiRenderGraphTextureHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex && m_uiVersion == rhs.m_uiVersion; }
 };
 
 /// Opaque handle to a virtual buffer resource declared in the render graph.
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphBufferHandle : public xiiHashableStruct<xiiRenderGraphBufferHandle>
+class XII_GRAPHICSCORE_DLL xiiRenderGraphBufferHandle : public xiiHashableStruct<xiiRenderGraphBufferHandle>
 {
-  XII_DECLARE_POD_TYPE();
+  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphBufferHandle, xiiRenderGraphResourceHandleId);
 
-  xiiUInt32                m_uiIndex   = xiiInvalidIndex;
-  xiiUInt16                m_uiVersion = 0U;
+public:
+  XII_ALWAYS_INLINE xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphResourceId id) : m_Id(id)
+  {
+    m_InternalId = internalId;
+  }
+
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
+
   xiiRenderGraphResourceId m_Id;
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsInvalidated() const { return !IsValid(); }
-  [[nodiscard]] XII_ALWAYS_INLINE bool operator==(const xiiRenderGraphBufferHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex && m_uiVersion == rhs.m_uiVersion; }
 };
 
 /// Opaque handle to a registered render pass.
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphPassHandle : public xiiHashableStruct<xiiRenderGraphPassHandle>
+using xiiRenderGraphPassHandleId = xiiGenericId<32, 16>;
+
+class XII_GRAPHICSCORE_DLL xiiRenderGraphPassHandle : public xiiHashableStruct<xiiRenderGraphPassHandle>
 {
-  XII_DECLARE_POD_TYPE();
+  XII_DECLARE_HANDLE_TYPE(xiiRenderGraphPassHandle, xiiRenderGraphPassHandleId);
 
-  xiiUInt32            m_uiIndex = xiiInvalidIndex;
+public:
+  XII_ALWAYS_INLINE xiiRenderGraphPassHandle(xiiRenderGraphPassHandleId internalId, xiiRenderGraphPassId id) : m_Id(id)
+  {
+    m_InternalId = internalId;
+  }
+
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
+
   xiiRenderGraphPassId m_Id;
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
 };
 
 /// Describes a resource state barrier synthesized during compilation.

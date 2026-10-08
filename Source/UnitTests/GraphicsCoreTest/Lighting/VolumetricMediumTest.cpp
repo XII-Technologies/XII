@@ -24,7 +24,7 @@ XII_CREATE_SIMPLE_TEST(VolumetricMedium, StreamingHierarchy)
     description.m_iPriority    = 5;
 
     const xiiVolumetricMediumHandle handle = xiiVolumetricMediumManager::RegisterMedium(description);
-    XII_TEST_BOOL(handle.IsValid());
+    XII_TEST_BOOL(!handle.IsInvalidated());
     XII_TEST_BOOL(xiiVolumetricMediumManager::IsValid(handle));
 
     xiiGpuVolumetricMediumArray gpuMedia;
@@ -43,7 +43,7 @@ XII_CREATE_SIMPLE_TEST(VolumetricMedium, StreamingHierarchy)
     description.m_vCenter                  = xiiVec3(8.0f, 8.0f, 8.0f);
     description.m_vHalfExtents             = xiiVec3(1.0f);
     const xiiVolumetricMediumHandle handle = xiiVolumetricMediumManager::RegisterMedium(description);
-    XII_TEST_BOOL(handle.IsValid());
+    XII_TEST_BOOL(!handle.IsInvalidated());
 
     const xiiVec3I32 cell = xiiVec3I32::MakeZero();
     xiiVolumetricMediumManager::SetCellResident(cell, false);

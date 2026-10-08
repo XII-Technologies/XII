@@ -7,6 +7,7 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Math/Vec4.h>
 #include <Foundation/Types/Delegate.h>
+#include <Foundation/Types/Id.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Particles/ParticleGraph.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
@@ -170,14 +171,11 @@ public:
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemDescriptor);
 
 /// Generation-checked reference to one subsystem-owned GPU particle runtime.
-struct XII_GRAPHICSCORE_DLL xiiParticleSystemRuntimeHandle
+using xiiParticleSystemRuntimeId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiParticleSystemRuntimeHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiParticleSystemRuntimeHandle, xiiParticleSystemRuntimeId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleSystemRuntimeHandle);

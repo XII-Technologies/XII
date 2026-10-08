@@ -198,7 +198,7 @@ void xiiVolumetricMediumComponent::SynchronizeMedium()
     return;
 
   const xiiTransform& transform = GetOwner()->GetGlobalTransform();
-  if (m_hMedium.IsValid() && !m_bSynchronizationDirty && transform == m_LastGlobalTransform)
+  if (!m_hMedium.IsInvalidated() && !m_bSynchronizationDirty && transform == m_LastGlobalTransform)
     return;
 
   xiiVolumetricMediumDescription description;
@@ -212,7 +212,7 @@ void xiiVolumetricMediumComponent::SynchronizeMedium()
   description.m_fAnisotropy  = m_fAnisotropy;
   description.m_iPriority    = m_iPriority;
 
-  if (m_hMedium.IsValid() && xiiVolumetricMediumManager::UpdateMedium(m_hMedium, description).Succeeded())
+  if (!m_hMedium.IsInvalidated() && xiiVolumetricMediumManager::UpdateMedium(m_hMedium, description).Succeeded())
   {
     m_LastGlobalTransform   = transform;
     m_bSynchronizationDirty = false;
@@ -221,7 +221,7 @@ void xiiVolumetricMediumComponent::SynchronizeMedium()
 
   ReleaseMedium();
   m_hMedium = xiiVolumetricMediumManager::RegisterMedium(description);
-  if (m_hMedium.IsValid())
+  if (!m_hMedium.IsInvalidated())
   {
     m_LastGlobalTransform   = transform;
     m_bSynchronizationDirty = false;
@@ -230,7 +230,7 @@ void xiiVolumetricMediumComponent::SynchronizeMedium()
 
 void xiiVolumetricMediumComponent::ReleaseMedium()
 {
-  if (!m_hMedium.IsValid())
+  if (m_hMedium.IsInvalidated())
     return;
   xiiVolumetricMediumManager::UnregisterMedium(m_hMedium);
   m_hMedium = {};

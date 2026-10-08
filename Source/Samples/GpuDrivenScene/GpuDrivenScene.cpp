@@ -316,7 +316,7 @@ public:
     visibilityDescription.m_uiFramesInFlight     = m_Configuration.m_uiFramesInFlight;
     visibilityDescription.m_uiMaxVisibilitySets  = 3U;
     m_hVisibility                                = xiiGpuVisibilityManager::CreateContext(visibilityDescription);
-    XII_ASSERT_ALWAYS(m_hVisibility.IsValid(), "Failed to create the GPU visibility context.");
+    XII_ASSERT_ALWAYS(!m_hVisibility.IsInvalidated(), "Failed to create the GPU visibility context.");
     xiiGpuHiZPyramidDescription hiZDescription;
     hiZDescription.m_uiFramesInFlight = visibilityDescription.m_uiFramesInFlight;
     m_HiZPyramid.Initialize(m_pDevice.Borrow(), hiZDescription).AssertSuccess();
@@ -368,7 +368,8 @@ private:
   void BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
   {
     const auto                                geometry            = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
-    const xiiRenderGraphBufferHandle          hMaterials          = xiiMaterialManager::AddUploadPass(graph);
+    const auto                                materials           = xiiMaterialManager::AddUploadPasses(graph);
+    const xiiRenderGraphBufferHandle          hMaterials          = materials.m_hParameterData;
     const auto                                rayTracingScene     = xiiRayTracingSceneManager::AddBuildPass(graph, m_uiFrameIndex);
     const xiiRenderGraphTextureHandle         hPreviousHiZ        = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
     xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
@@ -496,8 +497,8 @@ private:
 
       const xiiMat4 cascadeViewProjection[] = {shadowCascades[0].m_mViewProjection};
       virtualShadowUpload                   = xiiVirtualShadowMapManager::AddRasterPasses(
-        graph, virtualShadowUpload, shadowVisibility, geometry, cascadeViewProjection, g_uiDirectionalLightId,
-        sizeof(xiiMeshPackedVertex), xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility),
+        graph, virtualShadowUpload, shadowVisibility, geometry, materials, cascadeViewProjection, g_uiDirectionalLightId,
+        sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)), xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility),
         xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility));
     }
 
@@ -524,7 +525,7 @@ private:
     shadowRasterDescription.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_hVisibility);
     shadowRasterDescription.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_hVisibility);
     const xiiRenderGraphTextureHandle hShadowMap        = xiiGpuShadowRasterManager::AddPass(
-      graph, "GPU Scene Sun Shadow Raster", shadowTarget.first->m_hDepth, shadowVisibility, geometry, shadowRasterDescription);
+      graph, "GPU Scene Sun Shadow Raster", shadowTarget.first->m_hDepth, shadowVisibility, geometry, materials, shadowRasterDescription);
 
     graph.AddPass<SceneTargetsPassData>(
       "Create Scene Targets", xiiGALCommandQueueFlags::Graphics,

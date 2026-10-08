@@ -6,6 +6,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
@@ -13,14 +14,11 @@
 class xiiGALTexture;
 
 /// Stable process-local handle to one immutable atmosphere LUT cache entry.
-struct XII_GRAPHICSCORE_DLL xiiAtmosphereLUTHandle
+using xiiAtmosphereLUTId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiAtmosphereLUTHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt32 m_uiIndex = xiiInvalidIndex;
-
-  [[nodiscard]] bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
-  [[nodiscard]] bool operator==(const xiiAtmosphereLUTHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex; }
+  XII_DECLARE_HANDLE_TYPE(xiiAtmosphereLUTHandle, xiiAtmosphereLUTId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAtmosphereLUTHandle);

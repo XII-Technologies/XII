@@ -65,13 +65,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialParameterId, xiiNoBase, 1, xiiRTTIDef
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialGpuHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMaterialGpuHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Slot", m_uiSlot),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialRuntimeState, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMaterialRuntimeState>)

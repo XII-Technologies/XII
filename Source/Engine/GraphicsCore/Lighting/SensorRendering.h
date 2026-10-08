@@ -7,6 +7,7 @@
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Enum.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
@@ -114,14 +115,11 @@ struct XII_GRAPHICSCORE_DLL xiiSensorProfile
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSensorProfile);
 
 /// Stable process-local identity of an immutable sensor calibration profile.
-struct XII_GRAPHICSCORE_DLL xiiSensorProfileHandle
+using xiiSensorProfileId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiSensorProfileHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt32 m_uiIndex = xiiInvalidIndex;
-
-  [[nodiscard]] bool IsValid() const { return m_uiIndex != xiiInvalidIndex; }
-  [[nodiscard]] bool operator==(const xiiSensorProfileHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex; }
+  XII_DECLARE_HANDLE_TYPE(xiiSensorProfileHandle, xiiSensorProfileId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSensorProfileHandle);

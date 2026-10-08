@@ -88,7 +88,7 @@ XII_ALWAYS_INLINE void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> h
 {
   m_Data.m_CameraUsageHint = hint;
 
-  if (!m_ViewPassResources->m_OutputPasses.m_hSensorProfile.IsValid())
+  if (m_ViewPassResources->m_OutputPasses.m_hSensorProfile.IsInvalidated())
   {
     xiiSensorType::Enum sensorType = xiiSensorType::ENUM_COUNT;
     switch (hint.GetValue())

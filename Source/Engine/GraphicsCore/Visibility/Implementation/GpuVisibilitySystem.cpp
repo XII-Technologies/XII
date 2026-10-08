@@ -430,9 +430,7 @@ void xiiGpuVisibilitySystem::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComp
       const xiiUInt32   uiPackedKey     = feedback.m_uiKey - 1U;
       const xiiUInt32   uiGeometryIndex = uiPackedKey & 0xFFFFFU;
       const xiiUInt32   uiDesiredLod    = (uiPackedKey >> 20U) & 7U;
-      xiiGeometryHandle hGeometry;
-      hGeometry.m_uiIndex      = uiGeometryIndex;
-      hGeometry.m_uiGeneration = feedback.m_uiGeometryGeneration;
+      const xiiGeometryHandle hGeometry(xiiGeometryId(uiGeometryIndex, feedback.m_uiGeometryGeneration));
       if (feedback.m_uiDesiredLod != uiDesiredLod || !xiiGeometryResidencyManager::IsValid(hGeometry))
       {
         ++m_StreamingStats.m_uiStaleRequestCount;

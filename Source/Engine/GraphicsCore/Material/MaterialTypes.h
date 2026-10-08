@@ -292,19 +292,11 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialParameterId : public xiiHashableStruct<xi
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialParameterId);
 
 /// Generation-checked handle into GPU-visible material storage.
-struct XII_GRAPHICSCORE_DLL xiiMaterialGpuHandle
+using xiiMaterialGpuId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiMaterialGpuHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiSlot != xiiInvalidIndex; }
-  XII_ALWAYS_INLINE void               Invalidate()
-  {
-    m_uiSlot       = xiiInvalidIndex;
-    m_uiGeneration = 0U;
-  }
-
-  xiiUInt32 m_uiSlot       = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiMaterialGpuHandle, xiiMaterialGpuId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialGpuHandle);
