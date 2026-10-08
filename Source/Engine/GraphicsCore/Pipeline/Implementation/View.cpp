@@ -328,7 +328,7 @@ bool xiiView::SynchronizeGpuScene(xiiUInt64 uiFrameIndex)
 
 xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)
 {
-  if (hProfile.IsValid())
+  if (!hProfile.IsInvalidated())
   {
     xiiSensorProfile profile;
     if (xiiSensorRenderingManager::GetProfile(hProfile, profile).Failed())
@@ -2943,7 +2943,7 @@ void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data,
   builder.SetPassAllowMerge(false);
 
   data.m_hCache = m_ViewPassResources->m_LightingPrepPasses.m_hAtmosphereLUT;
-  if (!data.m_hCache.IsValid())
+  if (data.m_hCache.IsInvalidated())
   {
     data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
   }
@@ -3002,7 +3002,7 @@ void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, x
   builder.SetPassAllowMerge(false);
 
   data.m_hCache = m_ViewPassResources->m_LightingPrepPasses.m_hAtmosphereLUT;
-  if (!data.m_hCache.IsValid())
+  if (data.m_hCache.IsInvalidated())
   {
     data.m_hCache = xiiAtmosphereManager::GetDefaultLUTHandle();
   }
@@ -7562,7 +7562,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPlanarReflections, this), xiiMakeDelegate(&xiiView::ExecutePlanarReflections, this));
   graph.AddPass<xiiAtmosphereCompositeData>("AtmosphereComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereComposite, this));
 
-  if (m_ViewPassResources->m_OutputPasses.m_hSensorProfile.IsValid())
+  if (!m_ViewPassResources->m_OutputPasses.m_hSensorProfile.IsInvalidated())
   {
     graph.AddPass<xiiSensorOutputData>("CalibratedSensorOutput", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSensorOutput, this), xiiMakeDelegate(&xiiView::ExecuteSensorOutput, this));
   }

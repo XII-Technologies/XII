@@ -3,7 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/IdTable.h>
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
@@ -32,9 +32,9 @@ namespace
 class xiiSensorRenderingManager::State
 {
 public:
-  mutable xiiMutex                  m_Mutex;
-  xiiDynamicArray<xiiSensorProfile> m_Profiles;
-  xiiSensorProfileHandle            m_hDefaultProfiles[xiiSensorType::ENUM_COUNT];
+  mutable xiiMutex                            m_Mutex;
+  xiiIdTable<xiiSensorProfileId, xiiSensorProfile> m_Profiles;
+  xiiSensorProfileHandle                      m_hDefaultProfiles[xiiSensorType::ENUM_COUNT];
 };
 
 xiiUniquePtr<xiiSensorRenderingManager::State> xiiSensorRenderingManager::s_pState;
@@ -106,13 +106,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfile, xiiNoBase, 2, xiiRTTIDefaultAl
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfileHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSensorProfileHandle>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Index", m_uiIndex),
-  }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSensorProfileRegistryStats, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSensorProfileRegistryStats>)
@@ -178,17 +171,16 @@ xiiResult xiiSensorRenderingManager::AcquireProfile(const xiiSensorProfile& prof
     return XII_FAILURE;
 
   XII_LOCK(s_pState->m_Mutex);
-  for (xiiUInt32 i = 0U; i < s_pState->m_Profiles.GetCount(); ++i)
+  for (auto it = s_pState->m_Profiles.GetIterator(); it.IsValid(); ++it)
   {
-    if (IsEqual(s_pState->m_Profiles[i], profile))
+    if (IsEqual(it.Value(), profile))
     {
-      out_handle.m_uiIndex = i;
+      out_handle = xiiSensorProfileHandle(it.Id());
       return XII_SUCCESS;
     }
   }
 
-  s_pState->m_Profiles.PushBack(profile);
-  out_handle.m_uiIndex = s_pState->m_Profiles.GetCount() - 1U;
+  out_handle = xiiSensorProfileHandle(s_pState->m_Profiles.Insert(profile));
   return XII_SUCCESS;
 }
 
@@ -208,15 +200,11 @@ xiiSensorProfileHandle xiiSensorRenderingManager::GetDefaultProfileHandle(xiiSen
 
 xiiResult xiiSensorRenderingManager::GetProfile(xiiSensorProfileHandle handle, xiiSensorProfile& out_profile)
 {
-  if (s_pState == nullptr || !handle.IsValid())
+  if (s_pState == nullptr)
     return XII_FAILURE;
 
   XII_LOCK(s_pState->m_Mutex);
-  if (handle.m_uiIndex >= s_pState->m_Profiles.GetCount())
-    return XII_FAILURE;
-
-  out_profile = s_pState->m_Profiles[handle.m_uiIndex];
-  return XII_SUCCESS;
+  return s_pState->m_Profiles.TryGetValue(handle.GetInternalID(), out_profile) ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiSensorProfileRegistryStats xiiSensorRenderingManager::GetRegistryStats()
@@ -227,8 +215,9 @@ xiiSensorProfileRegistryStats xiiSensorRenderingManager::GetRegistryStats()
 
   XII_LOCK(s_pState->m_Mutex);
   stats.m_uiProfileCount = s_pState->m_Profiles.GetCount();
-  for (const xiiSensorProfile& profile : s_pState->m_Profiles)
+  for (auto it = s_pState->m_Profiles.GetIterator(); it.IsValid(); ++it)
   {
+    const xiiSensorProfile& profile = it.Value();
     switch (profile.m_Type.GetValue())
     {
       case xiiSensorType::RGBCamera:

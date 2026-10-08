@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -59,15 +60,17 @@ public:
 
   CacheEntry* GetEntry(xiiAtmosphereLUTHandle handle)
   {
-    return handle.IsValid() && handle.m_uiIndex < m_Entries.GetCount() ? &m_Entries[handle.m_uiIndex] : nullptr;
+    CacheEntry* pEntry = nullptr;
+    return m_Entries.TryGetValue(handle.GetInternalID(), pEntry) ? pEntry : nullptr;
   }
 
   const CacheEntry* GetEntry(xiiAtmosphereLUTHandle handle) const
   {
-    return handle.IsValid() && handle.m_uiIndex < m_Entries.GetCount() ? &m_Entries[handle.m_uiIndex] : nullptr;
+    CacheEntry* pEntry = nullptr;
+    return m_Entries.TryGetValue(handle.GetInternalID(), pEntry) ? pEntry : nullptr;
   }
 
-  xiiDynamicArray<CacheEntry> m_Entries;
+  xiiIdTable<xiiAtmosphereLUTId, CacheEntry> m_Entries;
   xiiAtmosphereSettings       m_Settings;
   xiiAtmosphereLUTHandle      m_hDefaultEntry;
   xiiUInt64                   m_uiConfigurationRevision = 1U;
@@ -130,13 +133,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 3, xiiRTTIDefa
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereLUTHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiAtmosphereLUTHandle>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Index", m_uiIndex),
-  }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereCacheStats, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiAtmosphereCacheStats>)
@@ -166,8 +162,8 @@ void xiiAtmosphereManager::EngineStartup()
     return;
 
   s_pState->m_bEngineStarted = true;
-  for (xiiUInt32 i = 0U; i < s_pState->m_Entries.GetCount(); ++i)
-    EnsureGpuResources(xiiAtmosphereLUTHandle{i}).IgnoreResult();
+  for (auto it = s_pState->m_Entries.GetIterator(); it.IsValid(); ++it)
+    EnsureGpuResources(xiiAtmosphereLUTHandle(it.Id())).IgnoreResult();
 }
 
 void xiiAtmosphereManager::EngineShutdown()
@@ -175,8 +171,9 @@ void xiiAtmosphereManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
-  for (State::CacheEntry& entry : s_pState->m_Entries)
+  for (auto it = s_pState->m_Entries.GetIterator(); it.IsValid(); ++it)
   {
+    State::CacheEntry& entry = it.Value();
     entry.m_pMultiScatterLUT.Clear();
     entry.m_pTransmittanceLUT.Clear();
     entry.m_bGenerated = false;
@@ -230,18 +227,18 @@ xiiResult xiiAtmosphereManager::AcquireLUTs(const xiiAtmosphereSettings& setting
   if (!IsInitialized() || !IsValid(settings))
     return XII_FAILURE;
 
-  for (xiiUInt32 i = 0U; i < s_pState->m_Entries.GetCount(); ++i)
+  for (auto it = s_pState->m_Entries.GetIterator(); it.IsValid(); ++it)
   {
-    if (IsEqual(s_pState->m_Entries[i].m_Settings, settings))
+    if (IsEqual(it.Value().m_Settings, settings))
     {
-      out_handle.m_uiIndex = i;
+      out_handle = xiiAtmosphereLUTHandle(it.Id());
       return s_pState->m_bEngineStarted ? EnsureGpuResources(out_handle) : XII_SUCCESS;
     }
   }
 
-  State::CacheEntry& entry = s_pState->m_Entries.ExpandAndGetRef();
-  entry.m_Settings         = settings;
-  out_handle.m_uiIndex     = s_pState->m_Entries.GetCount() - 1U;
+  State::CacheEntry entry;
+  entry.m_Settings = settings;
+  out_handle       = xiiAtmosphereLUTHandle(s_pState->m_Entries.Insert(std::move(entry)));
   return s_pState->m_bEngineStarted ? EnsureGpuResources(out_handle) : XII_SUCCESS;
 }
 
