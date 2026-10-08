@@ -51,10 +51,11 @@ XII_ALWAYS_INLINE xiiHashedString xiiRenderGraphPassContext::GetPassName() const
 XII_ALWAYS_INLINE xiiGALTexture* xiiRenderGraphPassContext::GetTexture(xiiRenderGraphTextureHandle hTexture) const
 {
   XII_ASSERT_DEV(hTexture.IsValid(), "Invalid texture handle passed to GetTexture().");
-  XII_ASSERT_DEV(hTexture.m_uiIndex < static_cast<xiiUInt32>(m_ResolvedTextures.GetCount()), "Texture handle index {} is out of range (max {}).", hTexture.m_uiIndex, m_ResolvedTextures.GetCount());
+  const xiiUInt32 uiResourceIndex = hTexture.GetInternalID().m_InstanceIndex;
+  XII_ASSERT_DEV(uiResourceIndex < static_cast<xiiUInt32>(m_ResolvedTextures.GetCount()), "Texture handle index {} is out of range (max {}).", uiResourceIndex, m_ResolvedTextures.GetCount());
 
-  const xiiSharedPtr<xiiGALTexture>& pTexture = m_ResolvedTextures[hTexture.m_uiIndex];
-  XII_ASSERT_DEV(pTexture != nullptr, "Texture at index {} has not been resolved for this frame.", hTexture.m_uiIndex);
+  const xiiSharedPtr<xiiGALTexture>& pTexture = m_ResolvedTextures[uiResourceIndex];
+  XII_ASSERT_DEV(pTexture != nullptr, "Texture at index {} has not been resolved for this frame.", uiResourceIndex);
 
   return pTexture.Borrow();
 }
@@ -62,10 +63,11 @@ XII_ALWAYS_INLINE xiiGALTexture* xiiRenderGraphPassContext::GetTexture(xiiRender
 XII_ALWAYS_INLINE xiiGALBuffer* xiiRenderGraphPassContext::GetBuffer(xiiRenderGraphBufferHandle hBuffer) const
 {
   XII_ASSERT_DEV(hBuffer.IsValid(), "Invalid buffer handle passed to GetBuffer().");
-  XII_ASSERT_DEV(hBuffer.m_uiIndex < static_cast<xiiUInt32>(m_ResolvedBuffers.GetCount()), "Buffer handle index {} is out of range (max {}).", hBuffer.m_uiIndex, m_ResolvedBuffers.GetCount());
+  const xiiUInt32 uiResourceIndex = hBuffer.GetInternalID().m_InstanceIndex;
+  XII_ASSERT_DEV(uiResourceIndex < static_cast<xiiUInt32>(m_ResolvedBuffers.GetCount()), "Buffer handle index {} is out of range (max {}).", uiResourceIndex, m_ResolvedBuffers.GetCount());
 
-  const xiiSharedPtr<xiiGALBuffer>& pBuffer = m_ResolvedBuffers[hBuffer.m_uiIndex];
-  XII_ASSERT_DEV(pBuffer != nullptr, "Buffer at index {} has not been resolved for this frame.", hBuffer.m_uiIndex);
+  const xiiSharedPtr<xiiGALBuffer>& pBuffer = m_ResolvedBuffers[uiResourceIndex];
+  XII_ASSERT_DEV(pBuffer != nullptr, "Buffer at index {} has not been resolved for this frame.", uiResourceIndex);
 
   return pBuffer.Borrow();
 }
@@ -104,9 +106,7 @@ std::pair<TPassData*, xiiRenderGraphPassHandle> xiiRenderGraph::AddPass(xiiStrin
 
   m_bIsCompiled = false; // Invalidate any previous compile.
 
-  xiiRenderGraphPassHandle hPass;
-  hPass.m_uiIndex = uiPassIndex;
-  hPass.m_Id      = passEntry.m_Id;
+  const xiiRenderGraphPassHandle hPass(xiiRenderGraphPassHandleId(uiPassIndex, 0U), passEntry.m_Id);
   return {pPassData, hPass};
 }
 
