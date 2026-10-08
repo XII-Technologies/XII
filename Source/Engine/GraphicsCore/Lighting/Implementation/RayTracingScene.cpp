@@ -828,7 +828,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
       flags.Add(xiiGALRayTracingInstanceFlags::ForceNonOpaque);
     }
     gpuInstance.SetFlags(flags);
-    gpuInstance.m_uiBottomLevelASDeviceAddress = geometry.m_pBottomLevelAS->GetDeviceAddress();
+    gpuInstance.SetBottomLevelAS(geometry.m_pBottomLevelAS.Borrow());
     materialData.PushBack(ResolveRayTracingMaterial(instance.m_Description));
 
     xiiRayTracingGeometryData& gpuGeometry = geometryData.ExpandAndGetRef();
@@ -903,14 +903,13 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
       },
       [pState](const RayTracingSceneBuildPassData& data, xiiRenderGraphPassContext& context) {
         xiiGALCommandList& commandList = context.GetCommandList();
-        commandList.UpdateBuffer(context.GetBuffer(data.m_hInstanceBuffer), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Instances.GetData()), data.m_Instances.GetCount() * sizeof(xiiGALTLASInstanceData)));
+        commandList.UpdateTLASInstanceBuffer(context.GetBuffer(data.m_hInstanceBuffer), 0U, data.m_Instances.GetArrayPtr());
 
         for (const RayTracingBLASBuild& build : data.m_BLASBuilds)
         {
           xiiGALBuildBLASDescription description;
           description.m_pBottomLevelAS                 = build.m_pBottomLevelAS.Borrow();
           description.m_pScratchBuffer                 = context.GetBuffer(build.m_hScratchBuffer);
-          description.m_BuildFlags                     = xiiGALRayTracingBuildASFlags::PreferFastTrace;
           xiiGALBLASTriangleBuildDescription& triangle = description.m_Triangles.ExpandAndGetRef();
           triangle.m_pVertexBuffer                     = context.GetBuffer(build.m_hVertexBuffer);
           triangle.m_uiVertexBufferOffset              = build.m_uiVertexBufferOffset;
@@ -925,7 +924,6 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
         tlasDescription.m_pInstanceBuffer = context.GetBuffer(data.m_hInstanceBuffer);
         tlasDescription.m_uiInstanceCount = data.m_Instances.GetCount();
         tlasDescription.m_pScratchBuffer  = context.GetBuffer(data.m_hTLASScratchBuffer);
-        tlasDescription.m_BuildFlags      = xiiGALRayTracingBuildASFlags::AllowUpdate | xiiGALRayTracingBuildASFlags::PreferFastTrace;
         tlasDescription.m_bUpdate         = data.m_bUpdateTLAS;
         commandList.BuildTLAS(tlasDescription);
 

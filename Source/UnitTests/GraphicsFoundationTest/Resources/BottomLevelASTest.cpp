@@ -23,6 +23,10 @@ XII_CREATE_SIMPLE_TEST(Resources, BottomLevelAS)
     XII_TEST_BOOL(triangle.m_IndexType == xiiGALValueType::Undefined);
     XII_TEST_INT(triangle.m_uiMaxVertexCount, 0U);
     XII_TEST_INT(triangle.m_uiMaxPrimitiveCount, 0U);
+    XII_TEST_BOOL(triangle.m_Flags == xiiGALRayTracingGeometryFlags::Opaque);
+
+    xiiGALBLASBoundingBoxDescription box;
+    XII_TEST_BOOL(box.m_Flags == xiiGALRayTracingGeometryFlags::Opaque);
   }
 
   const bool bRayTracingEnabled = environment.GetDevice()->GetGraphicsDeviceAdapterProperties().m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled;
@@ -37,6 +41,7 @@ XII_CREATE_SIMPLE_TEST(Resources, BottomLevelAS)
     triangle.m_uiVertexComponentCount  = 3U;
     triangle.m_uiMaxPrimitiveCount     = 1U;
     triangle.m_IndexType               = xiiGALValueType::Undefined;
+    triangle.m_Flags                   = xiiGALRayTracingGeometryFlags::NoDuplicateAnyHitInvocation;
 
     xiiSharedPtr<xiiGALBottomLevelAS> pTriangles = environment.GetDevice()->CreateBottomLevelAS(triangleDescription);
     XII_TEST_BOOL(pTriangles != nullptr);
@@ -46,7 +51,10 @@ XII_CREATE_SIMPLE_TEST(Resources, BottomLevelAS)
       XII_TEST_INT(retained.m_Triangles.GetCount(), 1U);
       XII_TEST_STRING(retained.m_Triangles[0].m_sGeometryName, "TriangleGeometry");
       XII_TEST_INT(retained.m_Triangles[0].m_uiMaxVertexCount, 3U);
+      XII_TEST_BOOL(retained.m_Triangles[0].m_Flags == xiiGALRayTracingGeometryFlags::NoDuplicateAnyHitInvocation);
       XII_TEST_BOOL(retained.m_BuildASFlags == triangleDescription.m_BuildASFlags);
+      XII_TEST_BOOL(!pTriangles->IsBuilt());
+      XII_TEST_INT(pTriangles->GetLastBuildPrimitiveCount(0U), 0U);
       XII_TEST_INT(pTriangles->GetActualGeometryCount(), 1U);
       XII_TEST_INT(pTriangles->GetGeometryDescriptionIndex("TriangleGeometry"), 0U);
       XII_TEST_INT(pTriangles->GetGeometryIndex("TriangleGeometry"), 0U);

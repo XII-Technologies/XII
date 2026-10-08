@@ -1237,11 +1237,16 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
     if (m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray != xiiGALDeviceFeatureState::Disabled || m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Disabled)
     {
-      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_KHR_maintenance3 extension must be supported");
-      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME), "VK_EXT_descriptor_indexing extension must be supported");
-
-      deviceExtensions.PushBack(VK_KHR_MAINTENANCE3_EXTENSION_NAME); // Required for VK_EXT_descriptor_indexing
-      deviceExtensions.PushBack(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+      if (m_uiVulkanVersion < VK_API_VERSION_1_1)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_KHR_maintenance3 extension must be supported");
+        deviceExtensions.PushBack(VK_KHR_MAINTENANCE3_EXTENSION_NAME); // Required for VK_EXT_descriptor_indexing.
+      }
+      if (m_uiVulkanVersion < VK_API_VERSION_1_2)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME), "VK_EXT_descriptor_indexing extension must be supported");
+        deviceExtensions.PushBack(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+      }
 
       enabledExtensionFeatures.m_DescriptorIndexing = m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing;
 
@@ -1271,11 +1276,14 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       // SPIRV 1.5 is in Vulkan 1.2 core
       enabledExtensionFeatures.m_bSpirv15 = m_PhysicalDeviceExtensionFeatures.m_bSpirv15;
 
-      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME), "VK_KHR_buffer_device_address extension must be supported");
       XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME), "VK_KHR_deferred_host_operations extension must be supported");
       XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME), "VK_KHR_acceleration_structure extension must be supported");
 
-      deviceExtensions.PushBack(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);    // Required for VK_KHR_acceleration_structure
+      if (m_uiVulkanVersion < VK_API_VERSION_1_2)
+      {
+        XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME), "VK_KHR_buffer_device_address extension must be supported");
+        deviceExtensions.PushBack(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME); // Required for VK_KHR_acceleration_structure before Vulkan 1.2.
+      }
       deviceExtensions.PushBack(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME); // Required for VK_KHR_acceleration_structure
       deviceExtensions.PushBack(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);   // Required for ray tracing
 
@@ -1569,10 +1577,14 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       graphicsStages |= vk::PipelineStageFlagBits::eTaskShaderEXT | vk::PipelineStageFlagBits::eMeshShaderEXT;
     }
+    if (m_LogicalDeviceExtensionFeatures.m_AccelerationStructure.accelerationStructure != vk::False)
+    {
+      computeStages |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
+      computeAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR;
+    }
     if (m_LogicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False)
     {
-      computeStages |= vk::PipelineStageFlagBits::eRayTracingShaderKHR | vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
-      computeAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR;
+      computeStages |= vk::PipelineStageFlagBits::eRayTracingShaderKHR;
     }
     if (m_LogicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
     {
@@ -2118,20 +2130,21 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
   // Ray Tracing Properties
   if (m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Disabled)
   {
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth        = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayRecursionDepth;
-    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize    = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupHandleSize;
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride    = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxShaderGroupStride;
-    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupBaseAlignment;
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads         = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayDispatchInvocationCount;
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS      = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxInstanceCount);
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS     = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxPrimitiveCount);
-    m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS     = static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxGeometryCount);
-    m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment    = 1U;
-    m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
-    m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = 16; // From the specification.
-    m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = 8;  // From the specification.
-    m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.minAccelerationStructureScratchOffsetAlignment;
-    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth          = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayRecursionDepth;
+    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize      = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupHandleSize;
+    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleAlignment = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupHandleAlignment;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride      = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxShaderGroupStride;
+    m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment   = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.shaderGroupBaseAlignment;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads           = m_PhysicalDeviceExtensionProperties.m_RayTracingPipeline.maxRayDispatchInvocationCount;
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS        = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxInstanceCount, xiiMath::MaxValue<xiiUInt32>()));
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS       = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxPrimitiveCount, xiiMath::MaxValue<xiiUInt32>()));
+    m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS       = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.maxGeometryCount, xiiMath::MaxValue<xiiUInt32>()));
+    m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment      = 1U;
+    m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment       = 1U;
+    m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment   = 16; // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment         = 8;  // From the specification.
+    m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment     = m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.minAccelerationStructureScratchOffsetAlignment;
+    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment    = 16; // From the specification.
 
     if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipeline)
       m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::StandaloneShaders;
@@ -2142,7 +2155,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     if (m_PhysicalDeviceExtensionFeatures.m_RayTracingPipeline.rayTracingPipelineTraceRaysIndirect)
       m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::IndirectRayTracing;
 
-    static_assert(sizeof(m_AdapterDescription.m_RayTracingProperties) == 60, "There may be uninitialized ray tracing properties.");
+    static_assert(sizeof(m_AdapterDescription.m_RayTracingProperties) == 64, "There may be uninitialized ray tracing properties.");
   }
 
   // Wave Operation Properties
@@ -2732,14 +2745,14 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 
   // Additional extension that is required for ray tracing.
-  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+  if (m_uiVulkanVersion >= VK_API_VERSION_1_2 || IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_BufferDeviceAddress.pNext;
   }
 
   // Additional extension that is required for ray tracing.
-  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+  if (m_uiVulkanVersion >= VK_API_VERSION_1_2 || IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
   {
     *pNextFeature = &m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing;
     pNextFeature  = &m_PhysicalDeviceExtensionFeatures.m_DescriptorIndexing.pNext;
@@ -3139,7 +3152,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
   INITIALIZE_DEVICE_FEATURE(UniformBuffer8BitAccess, extensionFeatures.m_Storage8Bit.uniformAndStorageBuffer8BitAccess != vk::False);
 
   INITIALIZE_DEVICE_FEATURE(ShaderResourceRuntimeArray, extensionFeatures.m_DescriptorIndexing.runtimeDescriptorArray != vk::False);
-  INITIALIZE_DEVICE_FEATURE(RayTracing, uiVulkanVersion >= VK_API_VERSION_1_1 && extensionFeatures.m_AccelerationStructure.accelerationStructure != vk::False && (extensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False || extensionFeatures.m_RayQuery.rayQuery != vk::False));
+  INITIALIZE_DEVICE_FEATURE(RayTracing, uiVulkanVersion >= VK_API_VERSION_1_1 && extensionFeatures.m_AccelerationStructure.accelerationStructure != vk::False && extensionFeatures.m_BufferDeviceAddress.bufferDeviceAddress != vk::False && extensionFeatures.m_DescriptorIndexing.runtimeDescriptorArray != vk::False && (extensionFeatures.m_bSpirv14 || extensionFeatures.m_bSpirv15) && (extensionFeatures.m_RayTracingPipeline.rayTracingPipeline != vk::False || extensionFeatures.m_RayQuery.rayQuery != vk::False));
 
   const vk::ShaderStageFlags     requiredSubgroupStages   = vk::ShaderStageFlagBits::eCompute;
   const vk::SubgroupFeatureFlags requiredSubgroupFeatures = vk::SubgroupFeatureFlagBits::eBasic;

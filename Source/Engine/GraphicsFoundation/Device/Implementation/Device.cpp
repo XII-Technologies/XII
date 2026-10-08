@@ -1358,29 +1358,45 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
 {
   VerifyMultithreadedAccess();
 
+  XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "Ray tracing is not enabled on this device.");
+
   if (description.m_uiCompactedSize > 0U)
   {
-    XII_GAL_DEVICE_CHECK(!description.m_Triangles.IsEmpty() && !description.m_BoundingBoxes.IsEmpty(), "If a non-zero compacted size is given, the Triangles and Bounding Boxes must not be empty.");
+    XII_GAL_DEVICE_CHECK(description.m_Triangles.IsEmpty() && description.m_BoundingBoxes.IsEmpty(), "A compacted BLAS destination must not define triangle or bounding-box geometry.");
     XII_GAL_DEVICE_CHECK(description.m_BuildASFlags == xiiGALRayTracingBuildASFlags::None, "If a non-zero compacted size is given, the Flags must be xiiGALRayTracingBuildASFlags::None.");
   }
   else
   {
     XII_GAL_DEVICE_CHECK(((description.m_BoundingBoxes.GetCount() != 0U) ^ (description.m_Triangles.GetCount() != 0U)), "Exactly one of the Bounding Box count {0}, and the Triangles count {1} must be non-zero.", description.m_BoundingBoxes.GetCount(), description.m_Triangles.GetCount());
+    XII_GAL_DEVICE_CHECK((description.m_BuildASFlags.GetValue() & ~xiiGALRayTracingBuildASFlags::All) == 0U, "BLAS creation description contains unsupported ray tracing build flags.");
     XII_GAL_DEVICE_CHECK(!description.m_BuildASFlags.AreAllSet(xiiGALRayTracingBuildASFlags::PreferFastTrace | xiiGALRayTracingBuildASFlags::PreferFastBuild), "xiiGALRayTracingBuildASFlags::PreferFastTrace and xiiGALRayTracingBuildASFlags::PreferFastBuild are mutually exclusive.");
+
+    const xiiGALRayTracingProperties& rayTracingProperties = m_AdapterDescription.m_RayTracingProperties;
+    const xiiUInt32                   uiGeometryCount      = description.m_Triangles.GetCount() + description.m_BoundingBoxes.GetCount();
+    XII_GAL_DEVICE_CHECK(uiGeometryCount <= rayTracingProperties.m_uiMaxGeometriesPerBLAS, "BLAS geometry count ({}) exceeds the device limit ({}).", uiGeometryCount, rayTracingProperties.m_uiMaxGeometriesPerBLAS);
+
+    xiiUInt64         uiPrimitiveCount = 0U;
+    xiiSet<xiiString> geometryNames;
 
     for (xiiUInt32 i = 0U; i < description.m_Triangles.GetCount(); ++i)
     {
       const xiiGALBLASTriangleDescription& triangle = description.m_Triangles[i];
 
       XII_GAL_DEVICE_CHECK(!triangle.m_sGeometryName.IsEmpty(), "The geometry name at triangle {0} must not be empty.", i);
-      XII_GAL_DEVICE_CHECK(triangle.m_VertexValueType == xiiGALValueType::Float32 || triangle.m_VertexValueType == xiiGALValueType::Float16 || triangle.m_VertexValueType == xiiGALValueType::Int32, "The Vertex Value Type specified in triangle {0} is invalid. Allowed types are xiiGALValueType::Float32, xiiGALValueType::Float16 or xiiGALValueType::Int32.", i);
+      XII_GAL_DEVICE_CHECK(!geometryNames.Contains(triangle.m_sGeometryName), "The geometry name '{}' is used more than once in the BLAS.", triangle.m_sGeometryName);
+      geometryNames.Insert(triangle.m_sGeometryName);
+      XII_GAL_DEVICE_CHECK(triangle.m_VertexValueType == xiiGALValueType::Float32 || triangle.m_VertexValueType == xiiGALValueType::Float16 || triangle.m_VertexValueType == xiiGALValueType::Int16, "The Vertex Value Type specified in triangle {0} is invalid. Allowed types are xiiGALValueType::Float32, xiiGALValueType::Float16 or xiiGALValueType::Int16.", i);
       XII_GAL_DEVICE_CHECK(triangle.m_uiVertexComponentCount == 2U || triangle.m_uiVertexComponentCount == 3U, "The Vertex Component Count specified in triangle {0} is invalid. Allowed values are 2 or 3.", i);
       XII_GAL_DEVICE_CHECK(triangle.m_uiMaxVertexCount > 0U, "The Max Vertex Count specified in triangle {0} must be greater than zero.", i);
       XII_GAL_DEVICE_CHECK(triangle.m_uiMaxPrimitiveCount > 0U, "The Max Primitive Count specified in triangle {0} must be greater than zero.", i);
+      XII_GAL_DEVICE_CHECK((triangle.m_Flags.GetValue() & ~xiiGALRayTracingGeometryFlags::All) == 0U, "Triangle geometry {0} contains unsupported ray tracing geometry flags.", i);
+
+      uiPrimitiveCount += triangle.m_uiMaxPrimitiveCount;
 
       if (triangle.m_IndexType == xiiGALValueType::Undefined)
       {
-        XII_GAL_DEVICE_CHECK(triangle.m_uiMaxVertexCount == (triangle.m_uiMaxPrimitiveCount * 3U), "The Max Vertex Count ({0}) specified in triangle {1} must be equal to the Max Vertex Count multiplied by 3 ({2}).", triangle.m_uiMaxVertexCount, i, (triangle.m_uiMaxPrimitiveCount * 3U));
+        const xiiUInt64 uiRequiredVertexCount = static_cast<xiiUInt64>(triangle.m_uiMaxPrimitiveCount) * 3U;
+        XII_GAL_DEVICE_CHECK(static_cast<xiiUInt64>(triangle.m_uiMaxVertexCount) == uiRequiredVertexCount, "The Max Vertex Count ({0}) specified in triangle {1} must be equal to the Max Primitive Count multiplied by 3 ({2}).", triangle.m_uiMaxVertexCount, i, uiRequiredVertexCount);
       }
       else
       {
@@ -1393,8 +1409,15 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
       const xiiGALBLASBoundingBoxDescription& boundingBox = description.m_BoundingBoxes[i];
 
       XII_GAL_DEVICE_CHECK(!boundingBox.m_sGeometryName.IsEmpty(), "The Geometry Name in bounding box {0} must not be empty.", i);
+      XII_GAL_DEVICE_CHECK(!geometryNames.Contains(boundingBox.m_sGeometryName), "The geometry name '{}' is used more than once in the BLAS.", boundingBox.m_sGeometryName);
+      geometryNames.Insert(boundingBox.m_sGeometryName);
       XII_GAL_DEVICE_CHECK(boundingBox.m_uiMaxBoxCount > 0U, "The Max Box Count in bounding box {0} must be greater than zero.", i);
+      XII_GAL_DEVICE_CHECK((boundingBox.m_Flags.GetValue() & ~xiiGALRayTracingGeometryFlags::All) == 0U, "Bounding-box geometry {0} contains unsupported ray tracing geometry flags.", i);
+
+      uiPrimitiveCount += boundingBox.m_uiMaxBoxCount;
     }
+
+    XII_GAL_DEVICE_CHECK(uiPrimitiveCount <= rayTracingProperties.m_uiMaxPrimitivesPerBLAS, "BLAS primitive count ({}) exceeds the device limit ({}).", uiPrimitiveCount, rayTracingProperties.m_uiMaxPrimitivesPerBLAS);
   }
 
   return CreateBottomLevelASPlatform(description);
@@ -1404,6 +1427,8 @@ xiiSharedPtr<xiiGALTopLevelAS> xiiGALDevice::CreateTopLevelAS(const xiiGALTopLev
 {
   VerifyMultithreadedAccess();
 
+  XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "Ray tracing is not enabled on this device.");
+
   if (description.m_uiCompactedSize > 0U)
   {
     XII_GAL_DEVICE_CHECK(description.m_uiMaxInstanceCount == 0U, "If a non-zero compacted size is given, the Max Instance Count must be zero.");
@@ -1412,6 +1437,8 @@ xiiSharedPtr<xiiGALTopLevelAS> xiiGALDevice::CreateTopLevelAS(const xiiGALTopLev
   else
   {
     XII_GAL_DEVICE_CHECK(description.m_uiMaxInstanceCount > 0U, "The max instance count must be greater than zero.");
+    XII_GAL_DEVICE_CHECK(description.m_uiMaxInstanceCount <= m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS, "TLAS max instance count ({}) exceeds the device limit ({}).", description.m_uiMaxInstanceCount, m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS);
+    XII_GAL_DEVICE_CHECK((description.m_Flags.GetValue() & ~xiiGALRayTracingBuildASFlags::All) == 0U, "TLAS creation description contains unsupported ray tracing build flags.");
     XII_GAL_DEVICE_CHECK(!description.m_Flags.AreAllSet(xiiGALRayTracingBuildASFlags::PreferFastTrace | xiiGALRayTracingBuildASFlags::PreferFastBuild), "xiiGALRayTracingBuildASFlags::PreferFastTrace and xiiGALRayTracingBuildASFlags::PreferFastBuild are mutually exclusive.");
   }
 
@@ -1456,6 +1483,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
     if (resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure)
     {
       XII_GAL_DEVICE_CHECK(resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
+      XII_GAL_DEVICE_CHECK(resource.m_uiArraySize == 1U, "The acceleration structure resource at index '{}' must have an array size of one because acceleration-structure descriptor arrays are not supported.", i);
     }
     if (resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment)
     {
@@ -1607,8 +1635,10 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
   }
 
   XII_GAL_DEVICE_CHECK(description.m_RayTracingPipeline.m_uiMaxRecursionDepth <= m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth, "Max recursion depth ({}) exceeds device limit ({}).", description.m_RayTracingPipeline.m_uiMaxRecursionDepth, m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth);
+  XII_GAL_DEVICE_CHECK(!description.m_GeneralShaders.IsEmpty(), "A ray tracing pipeline must define at least one general shader group.");
 
   xiiSet<xiiStringView> groupNames(m_Allocator.GetParent());
+  bool                  bHasRayGenerationShader = false;
   for (xiiUInt32 i = 0; i < description.m_GeneralShaders.GetCount(); ++i)
   {
     const xiiGALRayTracingGeneralShaderGroupDescription& group = description.m_GeneralShaders[i];
@@ -1616,10 +1646,13 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
     XII_GAL_DEVICE_CHECK(!group.m_sName.IsEmpty(), "GeneralShaders[{}].sName must have a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!groupNames.Contains(group.m_sName.GetView()), "GeneralShaders[{}].sName has group name ('{}') that has already been assigned to another group. All group names must be unique.", i, group.m_sName);
     XII_GAL_DEVICE_CHECK(group.m_pShader != nullptr, "GeneralShaders[{}].pShader must not be null.", i);
-    XII_GAL_DEVICE_CHECK(group.m_pShader->GetDescription().m_ShaderType.IsStrictlyAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::Callable), "Shader type {} is not a valid type for ray tracing general shader.", xiiArgEnum(group.m_pShader->GetDescription().m_ShaderType));
+    const xiiBitflags<xiiGALShaderType> shaderType = group.m_pShader->GetDescription().m_ShaderType;
+    XII_GAL_DEVICE_CHECK(shaderType == xiiGALShaderType::RayGeneration || shaderType == xiiGALShaderType::RayMiss || shaderType == xiiGALShaderType::Callable, "Shader type {} is not a valid type for ray tracing general shader.", xiiArgEnum(shaderType));
 
+    bHasRayGenerationShader |= shaderType == xiiGALShaderType::RayGeneration;
     groupNames.Insert(group.m_sName);
   }
+  XII_GAL_DEVICE_CHECK(bHasRayGenerationShader, "A ray tracing pipeline must define at least one ray-generation shader group.");
 
   for (xiiUInt32 i = 0; i < description.m_TriangleHitShaders.GetCount(); ++i)
   {
@@ -1641,7 +1674,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
     XII_GAL_DEVICE_CHECK(!group.m_sName.IsEmpty(), "ProceduralHitShaders[{}].sName must have a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!groupNames.Contains(group.m_sName.GetView()), "ProceduralHitShaders[{}].sName has group name ('{}') that has already been assigned to another group. All group names must be unique.", i, group.m_sName);
     XII_GAL_DEVICE_CHECK(group.m_pIntersectionShader != nullptr, "ProceduralHitShaders[{}].pIntersectionShader must not be null.", i);
-    XII_GAL_DEVICE_CHECK(group.m_pIntersectionShader->GetDescription().m_ShaderType == xiiGALShaderType::RayClosestHit, "ProceduralHitShaders[{}].pIntersectionShader must be of type xiiGALShaderType::RayClosestHit.", i);
+    XII_GAL_DEVICE_CHECK(group.m_pIntersectionShader->GetDescription().m_ShaderType == xiiGALShaderType::RayIntersection, "ProceduralHitShaders[{}].pIntersectionShader must be of type xiiGALShaderType::RayIntersection.", i);
     XII_GAL_DEVICE_CHECK(group.m_pClosestHitShader == nullptr || group.m_pClosestHitShader->GetDescription().m_ShaderType == xiiGALShaderType::RayClosestHit, "ProceduralHitShaders[{}].pClosestHitShader must be of type xiiGALShaderType::RayClosestHit.", i);
     XII_GAL_DEVICE_CHECK(group.m_pAnyHitShader == nullptr || group.m_pAnyHitShader->GetDescription().m_ShaderType == xiiGALShaderType::RayAnyHit, "ProceduralHitShaders[{}].pAnyHitShader must be of type xiiGALShaderType::RayAnyHit.", i);
 

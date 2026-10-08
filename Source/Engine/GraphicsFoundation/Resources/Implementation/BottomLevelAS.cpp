@@ -13,6 +13,11 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingBuildASFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::LowMemory),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingGeometryFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingGeometryFlags::Opaque),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingGeometryFlags::NoDuplicateAnyHitInvocation),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelAS, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
@@ -79,6 +84,12 @@ xiiUInt32 xiiGALBottomLevelAS::GetGeometryIndex(xiiStringView sName) const
 xiiUInt32 xiiGALBottomLevelAS::GetActualGeometryCount() const
 {
   return m_Description.m_Triangles.GetCount() + m_Description.m_BoundingBoxes.GetCount();
+}
+
+void xiiGALBottomLevelAS::SetLastBuildPrimitiveCounts(xiiArrayPtr<const xiiUInt32> primitiveCounts)
+{
+  m_LastBuildPrimitiveCounts.SetCountUninitialized(primitiveCounts.GetCount());
+  xiiMemoryUtils::Copy(m_LastBuildPrimitiveCounts.GetData(), primitiveCounts.GetPtr(), primitiveCounts.GetCount());
 }
 
 const xiiGALScratchBufferSizeDescription& xiiGALBottomLevelAS::GetScratchBufferSizeDescription() const

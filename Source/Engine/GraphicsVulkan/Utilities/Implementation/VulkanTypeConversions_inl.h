@@ -1113,9 +1113,9 @@ XII_ALWAYS_INLINE vk::PipelineStageFlags xiiVulkanTypeConversions::GetPipelineSt
   if (e.IsSet(xiiGALPipelineStageFlags::ShadingRateTexture))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eShadingRateImageNV;
   if (e.IsSet(xiiGALPipelineStageFlags::RayTracingShader))
-    pipelineStageFlags |= vk::PipelineStageFlagBits::eRayTracingShaderNV;
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eRayTracingShaderKHR;
   if (e.IsSet(xiiGALPipelineStageFlags::AccelerationStructureBuild))
-    pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildNV;
+    pipelineStageFlags |= vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR;
   if (e.IsSet(xiiGALPipelineStageFlags::TaskShader))
     pipelineStageFlags |= vk::PipelineStageFlagBits::eTaskShaderEXT;
   if (e.IsSet(xiiGALPipelineStageFlags::MeshShader))
@@ -1223,9 +1223,9 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
   if (e.IsSet(xiiGALAccessFlags::ShadingRateTextureRead))
     vkAccessFlags |= vk::AccessFlagBits::eShadingRateImageReadNV;
   if (e.IsSet(xiiGALAccessFlags::AccelerationStructureRead))
-    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadNV;
+    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR;
   if (e.IsSet(xiiGALAccessFlags::AccelerationStructureWrite))
-    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureWriteNV;
+    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureWriteKHR;
   if (e.IsSet(xiiGALAccessFlags::FragmentDensityMapRead))
     vkAccessFlags |= vk::AccessFlagBits::eFragmentDensityMapReadEXT;
 
@@ -1315,9 +1315,9 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions
     resourceStateFlags |= xiiGALResourceStateFlags::ShaderResource;
   if ((e & vk::AccessFlagBits::eShaderWrite) != vk::AccessFlags{})
     resourceStateFlags |= xiiGALResourceStateFlags::UnorderedAccess;
-  if ((e & (vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureReadNV)) != vk::AccessFlags{})
+  if ((e & vk::AccessFlagBits::eAccelerationStructureReadKHR) != vk::AccessFlags{})
     resourceStateFlags |= xiiGALResourceStateFlags::BuildASRead;
-  if ((e & (vk::AccessFlagBits::eAccelerationStructureWriteKHR | vk::AccessFlagBits::eAccelerationStructureWriteNV)) != vk::AccessFlags{})
+  if ((e & vk::AccessFlagBits::eAccelerationStructureWriteKHR) != vk::AccessFlags{})
     resourceStateFlags |= xiiGALResourceStateFlags::BuildASWrite;
   if ((e & (vk::AccessFlagBits::eFragmentDensityMapReadEXT | vk::AccessFlagBits::eFragmentShadingRateAttachmentReadKHR)) != vk::AccessFlags{})
     resourceStateFlags |= xiiGALResourceStateFlags::ShadingRate;
@@ -1756,6 +1756,34 @@ XII_ALWAYS_INLINE vk::BuildAccelerationStructureFlagsKHR xiiVulkanTypeConversion
   return vkFlags;
 }
 
+XII_ALWAYS_INLINE VkGeometryInstanceFlagsKHR xiiVulkanTypeConversions::GetGeometryInstanceFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags)
+{
+  VkGeometryInstanceFlagsKHR vkFlags = {};
+
+  if (flags.IsSet(xiiGALRayTracingInstanceFlags::TriangleCullDisable))
+    vkFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+  if (flags.IsSet(xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise))
+    vkFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR;
+  if (flags.IsSet(xiiGALRayTracingInstanceFlags::ForceOpaque))
+    vkFlags |= VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR;
+  if (flags.IsSet(xiiGALRayTracingInstanceFlags::ForceNonOpaque))
+    vkFlags |= VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR;
+
+  return vkFlags;
+}
+
+XII_ALWAYS_INLINE vk::GeometryFlagsKHR xiiVulkanTypeConversions::GetGeometryFlags(xiiBitflags<xiiGALRayTracingGeometryFlags> flags)
+{
+  vk::GeometryFlagsKHR vkFlags = {};
+
+  if (flags.IsSet(xiiGALRayTracingGeometryFlags::Opaque))
+    vkFlags |= vk::GeometryFlagBitsKHR::eOpaque;
+  if (flags.IsSet(xiiGALRayTracingGeometryFlags::NoDuplicateAnyHitInvocation))
+    vkFlags |= vk::GeometryFlagBitsKHR::eNoDuplicateAnyHitInvocation;
+
+  return vkFlags;
+}
+
 XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
 {
   if (triangle.m_VertexValueType == xiiGALValueType::Float32)
@@ -1766,9 +1794,9 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetTriangleVertexFormat(c
   {
     return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR16G16Sfloat : vk::Format::eR16G16B16Sfloat;
   }
-  if (triangle.m_VertexValueType == xiiGALValueType::Int32)
+  if (triangle.m_VertexValueType == xiiGALValueType::Int16)
   {
-    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sint : vk::Format::eR32G32B32Sint;
+    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR16G16Snorm : vk::Format::eR16G16B16Snorm;
   }
   return vk::Format::eUndefined;
 }

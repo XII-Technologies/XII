@@ -53,15 +53,24 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
     xiiTemporaryHybridArray<xiiUInt32, 4U>                            primitiveCounts;
 
     vkGeometries.Reserve(m_Description.m_Triangles.GetCount() + m_Description.m_BoundingBoxes.GetCount());
-    primitiveCounts.Reserve(vkGeometries.GetCount());
+    primitiveCounts.Reserve(m_Description.m_Triangles.GetCount() + m_Description.m_BoundingBoxes.GetCount());
 
     for (const xiiGALBLASTriangleDescription& triangle : m_Description.m_Triangles)
     {
+      const vk::Format     vkVertexFormat = xiiVulkanTypeConversions::GetTriangleVertexFormat(triangle);
+      vk::FormatProperties vkFormatProperties;
+      pDeviceVulkan->GetVulkanPhysicalDevice().getFormatProperties(vkVertexFormat, &vkFormatProperties, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      if ((vkFormatProperties.bufferFeatures & vk::FormatFeatureFlagBits::eAccelerationStructureVertexBufferKHR) == vk::FormatFeatureFlags{})
+      {
+        xiiLog::Error("Failed to create BLAS: vertex format {} is not supported for acceleration-structure builds.", vk::to_string(vkVertexFormat).data());
+        return XII_FAILURE;
+      }
+
       vk::AccelerationStructureGeometryTrianglesDataKHR triangleData = {};
-      triangleData.vertexFormat                                      = xiiVulkanTypeConversions::GetTriangleVertexFormat(triangle);
+      triangleData.vertexFormat                                      = vkVertexFormat;
       triangleData.vertexData.deviceAddress                          = 0U;
       triangleData.vertexStride                                      = 0U;
-      triangleData.maxVertex                                         = triangle.m_uiMaxVertexCount;
+      triangleData.maxVertex                                         = triangle.m_uiMaxVertexCount - 1U;
       triangleData.indexType                                         = triangle.m_IndexType == xiiGALValueType::UInt16 ? vk::IndexType::eUint16 : (triangle.m_IndexType == xiiGALValueType::UInt32 ? vk::IndexType::eUint32 : vk::IndexType::eNoneKHR);
       triangleData.indexData.deviceAddress                           = 0U;
       triangleData.transformData.deviceAddress                       = 0U;
@@ -72,7 +81,7 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
       vk::AccelerationStructureGeometryKHR geometry = {};
       geometry.geometryType                         = vk::GeometryTypeKHR::eTriangles;
       geometry.geometry                             = geometryData;
-      geometry.flags                                = vk::GeometryFlagBitsKHR::eOpaque;
+      geometry.flags                                = xiiVulkanTypeConversions::GetGeometryFlags(triangle.m_Flags);
 
       vkGeometries.PushBack(geometry);
       primitiveCounts.PushBack(triangle.m_uiMaxPrimitiveCount);
@@ -90,7 +99,7 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
       vk::AccelerationStructureGeometryKHR geometry = {};
       geometry.geometryType                         = vk::GeometryTypeKHR::eAabbs;
       geometry.geometry                             = geometryData;
-      geometry.flags                                = vk::GeometryFlagBitsKHR::eOpaque;
+      geometry.flags                                = xiiVulkanTypeConversions::GetGeometryFlags(boundingBox.m_Flags);
 
       vkGeometries.PushBack(geometry);
       primitiveCounts.PushBack(boundingBox.m_uiMaxBoxCount);

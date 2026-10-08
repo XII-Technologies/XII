@@ -56,7 +56,6 @@ struct xiiGALSparseTextureProperties;
 struct xiiGALTextureComponentMapping;
 struct xiiGALTextureViewCreationDescription;
 struct xiiGALTopLevelASBuildDescription;
-struct xiiGALTopLevelASInstanceDescription;
 struct xiiGALTopLevelASCreationDescription;
 struct xiiGALLayoutElement;
 struct xiiGALInputLayoutCreationDescription;

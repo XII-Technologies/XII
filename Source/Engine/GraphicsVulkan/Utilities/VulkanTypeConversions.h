@@ -7,6 +7,7 @@
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
@@ -122,6 +123,10 @@ public:
   static vk::FragmentShadingRateCombinerOpKHR GetFragmentShadingRateCombinerOp(xiiBitflags<xiiGALShadingRateCombinerFlags> e);
 
   static vk::BuildAccelerationStructureFlagsKHR GetAccelerationStructureFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags);
+
+  static VkGeometryInstanceFlagsKHR GetGeometryInstanceFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags);
+
+  static vk::GeometryFlagsKHR GetGeometryFlags(xiiBitflags<xiiGALRayTracingGeometryFlags> flags);
 
   static vk::Format GetTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle);
 };

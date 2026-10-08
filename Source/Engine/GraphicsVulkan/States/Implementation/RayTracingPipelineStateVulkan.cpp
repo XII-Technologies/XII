@@ -11,7 +11,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRayTracingPipelineStateVulkan, 1, xiiRTTI
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALRayTracingPipelineStateVulkan::xiiGALRayTracingPipelineStateVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALRayTracingPipelineStateCreationDescription& creationDescription) :
-  xiiGALRayTracingPipelineState(std::move(pDeviceVulkan), creationDescription), m_vkPipelineBindPoint(vk::PipelineBindPoint::eRayTracingKHR)
+  xiiGALRayTracingPipelineState(std::move(pDeviceVulkan), creationDescription)
 {
 }
 
@@ -189,7 +189,7 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
       vkPipelineLayoutCreateInfo.pPushConstantRanges    = nullptr;
     }
 
-    VK_ASSERT_DEV(vkLogicalDevice.createPipelineLayout(&vkPipelineLayoutCreateInfo, nullptr, &m_vkPipelineLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createPipelineLayout(&vkPipelineLayoutCreateInfo, nullptr, &m_vkPipelineLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
 
   vk::RayTracingPipelineCreateInfoKHR vkRayTracingPipelineCreateInfo = {};

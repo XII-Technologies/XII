@@ -20,6 +20,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingBuildASFlags
     PreferFastBuild = XII_BIT(3), ///< Indicates that the given acceleration structure build should prioritize build time over trace performance.
     LowMemory       = XII_BIT(4), ///< Indicates that this acceleration structure should minimize the size of the scratch memory and the final result build, potentially at the expense of build time or trace performance.
 
+    All = AllowUpdate | AllowCompaction | PreferFastTrace | PreferFastBuild | LowMemory,
+
     Default = None
   };
 
@@ -37,26 +39,55 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingBuildASFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingBuildASFlags);
 
+/// Controls how a BLAS geometry participates in any-hit shader invocation.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingGeometryFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None                        = 0U,
+    Opaque                      = XII_BIT(0), ///< Treats the geometry as opaque unless a ray flag overrides it.
+    NoDuplicateAnyHitInvocation = XII_BIT(1), ///< Prevents multiple any-hit invocations for the same primitive.
+
+    All = Opaque | NoDuplicateAnyHitInvocation,
+
+    Default = Opaque
+  };
+
+  struct Bits
+  {
+    StorageType Opaque : 1;
+    StorageType NoDuplicateAnyHitInvocation : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingGeometryFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingGeometryFlags);
+
 /// This describes the bottom level acceleration structure triangles.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleDescription : public xiiHashableStruct<xiiGALBLASTriangleDescription>
 {
-  xiiString                m_sGeometryName;                                    ///< The geometry name used to map triangle data. The default is an empty string view.
-  xiiUInt32                m_uiMaxVertexCount = 0U;                            ///< The maximum vertex count in this geometry. The default is 0.
-  xiiEnum<xiiGALValueType> m_VertexValueType  = xiiGALValueType::Undefined;    ///< The type of vertices in this geometry. The default is Undefined.
-                                                                               ///<
-                                                                               ///< \remarks Only Float32, Float16, and Int16 are valid. Int16 defines 16-bit signed-normalized vertex components.
-  xiiUInt8 m_uiVertexComponentCount = 0U;                                      ///< The number of components in the vertex. The default is 0.
-                                                                               ///<
-                                                                               ///< \remarks Valid values are only 2 or 3. For 2-component formats, the third component is assumed to be 0.
-  xiiUInt32                m_uiMaxPrimitiveCount = 0U;                         ///< The maximum primitive count in this geometry. The default is 0.
-  xiiEnum<xiiGALValueType> m_IndexType           = xiiGALValueType::Undefined; ///< The index type of this geometry. This must be UInt16, UInt32 or Undefined. If Undefined, then the vertex array is used instead of the indexed vertices. The default is Undefined.
+  xiiString                m_sGeometryName;                                                                 ///< The geometry name used to map triangle data. The default is an empty string view.
+  xiiUInt32                m_uiMaxVertexCount = 0U;                                                         ///< The maximum vertex count in this geometry. The default is 0.
+  xiiEnum<xiiGALValueType> m_VertexValueType  = xiiGALValueType::Undefined;                                 ///< The type of vertices in this geometry. The default is Undefined.
+                                                                                                            ///<
+                                                                                                            ///< \remarks Only Float32, Float16, and Int16 are valid. Int16 defines 16-bit signed-normalized vertex components.
+  xiiUInt8 m_uiVertexComponentCount = 0U;                                                                   ///< The number of components in the vertex. The default is 0.
+                                                                                                            ///<
+                                                                                                            ///< \remarks Valid values are only 2 or 3. For 2-component formats, the third component is assumed to be 0.
+  xiiUInt32                                  m_uiMaxPrimitiveCount = 0U;                                    ///< The maximum primitive count in this geometry. The default is 0.
+  xiiEnum<xiiGALValueType>                   m_IndexType           = xiiGALValueType::Undefined;            ///< The index type of this geometry. This must be UInt16, UInt32 or Undefined. If Undefined, then the vertex array is used instead of the indexed vertices. The default is Undefined.
+  xiiBitflags<xiiGALRayTracingGeometryFlags> m_Flags               = xiiGALRayTracingGeometryFlags::Opaque; ///< Geometry behavior flags.
 };
 
 /// This describes the bottom level acceleration structure axis-aligned bounding box.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxDescription : public xiiHashableStruct<xiiGALBLASBoundingBoxDescription>
 {
-  xiiString m_sGeometryName;      ///< The geometry name. This is used to map axis-aligned bounding box data to this geometry. The default is an empty string view.
-  xiiUInt32 m_uiMaxBoxCount = 0U; ///< The maximum axis-aligned bounding box (AABB) count. The default is 0.
+  xiiString                                  m_sGeometryName;                                         ///< The geometry name. This is used to map axis-aligned bounding box data to this geometry. The default is an empty string view.
+  xiiUInt32                                  m_uiMaxBoxCount = 0U;                                    ///< The maximum axis-aligned bounding box (AABB) count. The default is 0.
+  xiiBitflags<xiiGALRayTracingGeometryFlags> m_Flags         = xiiGALRayTracingGeometryFlags::Opaque; ///< Geometry behavior flags.
 };
 
 /// This describes bottom level acceleration structure creation description.
@@ -85,6 +116,15 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALResource
 public:
   /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBottomLevelASCreationDescription& GetDescription() const { return m_Description; }
+
+  /// Returns whether a build or copy command has initialized this acceleration structure.
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsBuilt() const { return !m_LastBuildPrimitiveCounts.IsEmpty(); }
+
+  /// Returns the primitive count used by the most recent build for a geometry.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetLastBuildPrimitiveCount(xiiUInt32 uiGeometryIndex) const
+  {
+    return uiGeometryIndex < m_LastBuildPrimitiveCounts.GetCount() ? m_LastBuildPrimitiveCounts[uiGeometryIndex] : 0U;
+  }
 
   /// This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
@@ -117,12 +157,10 @@ public:
   [[nodiscard]] const xiiGALScratchBufferSizeDescription& GetScratchBufferSizeDescription() const;
 
   /// Returns the backend GPU virtual/device address used by TLAS instance records.
-  ///
-  /// Keeping this on the GAL interface prevents higher-level scene builders from
-  /// depending on VkAccelerationStructureInstanceKHR or D3D12 instance layouts.
   [[nodiscard]] virtual xiiUInt64 GetDeviceAddress() const = 0;
 
 protected:
+  friend class xiiGALCommandList;
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
@@ -133,7 +171,10 @@ protected:
   virtual xiiResult InitPlatform() = 0;
 
 protected:
+  void SetLastBuildPrimitiveCounts(xiiArrayPtr<const xiiUInt32> primitiveCounts);
+
   xiiGALBottomLevelASCreationDescription m_Description;
   xiiGALScratchBufferSizeDescription     m_ScratchBufferSizeDescription;
   xiiHashTable<xiiStringView, xiiUInt32> m_NameToIndex;
+  xiiDynamicArray<xiiUInt32>             m_LastBuildPrimitiveCounts;
 };

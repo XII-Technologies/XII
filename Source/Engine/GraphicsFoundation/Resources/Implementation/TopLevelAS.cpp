@@ -5,16 +5,11 @@
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALHitGroupBindingMode, 1)
-  XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::PerGeometry),
-  XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::PerInstance),
-  XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::PerTopLevelAccelerationStructure),
-  XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::UserDefined),
-XII_END_STATIC_REFLECTED_ENUM;
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingInstanceFlags, 1)
-  XII_BITFLAGS_CONSTANTS(xiiGALRayTracingInstanceFlags::TriangleCullDisable, xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise)
-  XII_BITFLAGS_CONSTANTS(xiiGALRayTracingInstanceFlags::ForceOpaque, xiiGALRayTracingInstanceFlags::ForceNonOpaque)
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingInstanceFlags::TriangleCullDisable),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingInstanceFlags::ForceOpaque),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingInstanceFlags::ForceNonOpaque),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTLASInstanceData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGALTLASInstanceData>)
@@ -26,7 +21,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTLASInstanceData, xiiNoBase, 1, xiiRTTIDef
     XII_ACCESSOR_PROPERTY("Mask", GetMask, SetMask),
     XII_ACCESSOR_PROPERTY("HitGroupContribution", GetHitGroupContribution, SetHitGroupContribution),
     XII_ACCESSOR_PROPERTY("Flags", GetFlagsValue, SetFlagsValue),
-    XII_MEMBER_PROPERTY("BottomLevelASDeviceAddress", m_uiBottomLevelASDeviceAddress),
+    XII_ACCESSOR_PROPERTY("BottomLevelASDeviceAddress", GetBottomLevelASDeviceAddress, SetBottomLevelASDeviceAddress),
   }
   XII_END_PROPERTIES;
 }
@@ -35,6 +30,8 @@ XII_END_STATIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelAS, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+///////////////////////////////////////////////////////////////////////////////////
 
 xiiMat4 xiiGALTLASInstanceData::GetTransform() const
 {
@@ -69,10 +66,22 @@ void xiiGALTLASInstanceData::SetHitGroupContribution(xiiUInt32 uiContribution)
   m_uiHitGroupContributionAndFlags = (m_uiHitGroupContributionAndFlags & 0xFF000000U) | (uiContribution & 0x00FFFFFFU);
 }
 
+void xiiGALTLASInstanceData::SetBottomLevelAS(const xiiGALBottomLevelAS* pBottomLevelAS)
+{
+  XII_ASSERT_DEV(pBottomLevelAS != nullptr, "The bottom-level acceleration structure must not be null.");
+  m_uiBottomLevelASDeviceAddress = pBottomLevelAS != nullptr ? pBottomLevelAS->GetDeviceAddress() : 0U;
+}
+
 void xiiGALTLASInstanceData::SetFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags)
 {
-  m_uiHitGroupContributionAndFlags = (m_uiHitGroupContributionAndFlags & 0x00FFFFFFU) | (static_cast<xiiUInt32>(flags.GetValue()) << 24U);
+  XII_ASSERT_DEV((flags.GetValue() & ~xiiGALRayTracingInstanceFlags::All) == 0U, "Ray tracing instance flags contain unsupported bits.");
+  XII_ASSERT_DEV(!flags.AreAllSet(xiiGALRayTracingInstanceFlags::ForceOpaque | xiiGALRayTracingInstanceFlags::ForceNonOpaque), "ForceOpaque and ForceNonOpaque ray tracing instance flags are mutually exclusive.");
+
+  const xiiUInt32 uiFlags          = static_cast<xiiUInt32>(flags.GetValue() & xiiGALRayTracingInstanceFlags::All);
+  m_uiHitGroupContributionAndFlags = (m_uiHitGroupContributionAndFlags & 0x00FFFFFFU) | (uiFlags << 24U);
 }
+
+///////////////////////////////////////////////////////////////////////////////////
 
 xiiGALTopLevelAS::xiiGALTopLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTopLevelASCreationDescription& creationDescription) :
   xiiGALResource(std::move(pDevice)), m_Description(creationDescription)

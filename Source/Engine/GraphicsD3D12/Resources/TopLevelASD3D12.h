@@ -17,10 +17,6 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiD3D12Allocation GetAllocationDescription() const { return m_ResourceAllocation; }
   [[nodiscard]] xiiUInt64                            GetD3D12GPUVirtualAddress() const;
 
-  virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const override final;
-
-  virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const override final;
-
   virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
 
 protected:
@@ -36,10 +32,8 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  ID3D12Resource*                                                  m_pD3D12Resource              = nullptr;
-  xiiD3D12Allocation                                               m_ResourceAllocation          = nullptr;
-  xiiUInt64                                                        m_uiAccelerationStructureSize = 0U;
-  xiiGALTopLevelASBuildDescription                                 m_BuildDescription;
-  xiiGALScratchBufferSizeDescription                               m_ScratchBufferSizeDescription;
-  xiiHashTable<xiiStringView, xiiGALTopLevelASInstanceDescription> m_NameToInstance;
+  ID3D12Resource*                    m_pD3D12Resource              = nullptr;
+  xiiD3D12Allocation                 m_ResourceAllocation          = nullptr;
+  xiiUInt64                          m_uiAccelerationStructureSize = 0U;
+  xiiGALScratchBufferSizeDescription m_ScratchBufferSizeDescription;
 };

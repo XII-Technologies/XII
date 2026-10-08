@@ -728,7 +728,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildBLASDescription
   xiiUInt64                                              m_uiScratchBufferOffset = 0U;                                          ///< Byte offset into scratch buffer.
   xiiDynamicArray<xiiGALBLASTriangleBuildDescription>    m_Triangles;                                                           ///< Build data for triangle geometries.
   xiiDynamicArray<xiiGALBLASBoundingBoxBuildDescription> m_BoundingBoxes;                                                       ///< Build data for AABB geometries.
-  xiiBitflags<xiiGALRayTracingBuildASFlags>              m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Runtime build flags.
+  xiiBitflags<xiiGALRayTracingBuildASFlags>              m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Optional validation copy of the creation flags. If specified, it must exactly match the BLAS creation flags.
   bool                                                   m_bUpdate                     = false;                                 ///< Update existing AS instead of full rebuild.
   xiiEnum<xiiGALStateTransitionMode>                     m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
 };
@@ -744,7 +744,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildTLASDescription
   xiiUInt32                                 m_uiInstanceCount             = 0U;                                    ///< Number of instances.
   xiiGALBuffer*                             m_pScratchBuffer              = nullptr;                               ///< Scratch buffer used during build.
   xiiUInt64                                 m_uiScratchBufferOffset       = 0U;                                    ///< Byte offset into scratch buffer.
-  xiiBitflags<xiiGALRayTracingBuildASFlags> m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Runtime build flags.
+  xiiBitflags<xiiGALRayTracingBuildASFlags> m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Optional validation copy of the creation flags. If specified, it must exactly match the TLAS creation flags.
   bool                                      m_bUpdate                     = false;                                 ///< Update existing AS instead of full rebuild.
   xiiEnum<xiiGALStateTransitionMode>        m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
 };
@@ -1372,6 +1372,13 @@ public:
   /// \param pSourceData         - Pointer to the source data.
   void UpdateBuffer(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData);
 
+  /// Converts portable TLAS instance records to the native backend representation and uploads them to an instance buffer.
+  ///
+  /// \param pBuffer             - The ray tracing instance buffer to update.
+  /// \param uiDestinationOffset - Byte offset into the instance buffer. Must satisfy the device instance-buffer alignment.
+  /// \param pInstances          - Portable TLAS instance records to encode and upload.
+  void UpdateTLASInstanceBuffer(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiGALTLASInstanceData> pInstances);
+
   /// Copies the entire contents of the source buffer to the destination buffer.
   ///
   /// \param pSourceBuffer      - The handle to the source buffer object.
@@ -1651,7 +1658,8 @@ protected:
   virtual void BeginQueryPlatform(xiiGALQuery* pQuery) = 0;
   virtual void EndQueryPlatform(xiiGALQuery* pQuery)   = 0;
 
-  virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)                                                = 0;
+  virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData) = 0;
+  virtual void      UpdateTLASInstanceBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiGALTLASInstanceData> pInstances);
   virtual void      CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                  = 0;
   virtual void      CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize) = 0;
   virtual xiiResult MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                 = 0;

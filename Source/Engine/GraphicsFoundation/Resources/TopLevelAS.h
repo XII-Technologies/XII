@@ -6,39 +6,20 @@
 
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 
-/// This describes the hit group binding mode used by the top level acceleration structure.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALHitGroupBindingMode
-{
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    PerGeometry = 0U,                 ///< Each geometry in every instance may use a unique hit shader group. In this mode, space is reserved for each geometry in every instance in the top level acceleration structure and uses the most memory.
-    PerInstance,                      ///< Each instance may use a unique hit shader group. In this mode, one slot is reserved for each instance irrespective of how many geometries it contains, so it uses less memory.
-    PerTopLevelAccelerationStructure, ///< All instances in each top level acceleration structure will use the same hit group. In this mode, a single slot is reserved for one hit group for each top level acceleration structure.
-    UserDefined,                      ///< The user must specify the contribution to the hit group index, and only bind hit groups by index.
-
-    ENUM_COUNT,
-
-    Default = PerGeometry
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALHitGroupBindingMode);
-
-/// Portable ray tracing instance flags. Vulkan and D3D12 intentionally assign
-/// identical bit values to these four semantics.
+/// This describes the ray tracing instance flags used by the top level acceleration structure.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingInstanceFlags
 {
   using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    None                          = 0U,
-    TriangleCullDisable           = XII_BIT(0),
-    TriangleFrontCounterClockwise = XII_BIT(1),
-    ForceOpaque                   = XII_BIT(2),
-    ForceNonOpaque                = XII_BIT(3),
+    None                          = 0U,         ///< No instance flags are set. Triangles use clockwise winding for front-facing determination, and ray-specified front/back-face culling is permitted.
+    TriangleCullDisable           = XII_BIT(0), ///< Disables front- and back-face culling for triangles in this instance. Ray flags requesting front- or back-facing triangle culling have no effect.
+    TriangleFrontCounterClockwise = XII_BIT(1), ///< Treats counter-clockwise triangles as front-facing. By default, clockwise triangles are considered front-facing.
+    ForceOpaque                   = XII_BIT(2), ///< Forces all geometries in this instance to be treated as opaque, overriding their per-geometry opaque state unless overridden by a ray flag.
+    ForceNonOpaque                = XII_BIT(3), ///< Forces all geometries in this instance to be treated as non-opaque, overriding their per-geometry opaque state unless overridden by a ray flag.
+
+    All = TriangleCullDisable | TriangleFrontCounterClockwise | ForceOpaque | ForceNonOpaque,
 
     Default = None
   };
@@ -53,17 +34,17 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingInstanceFlags
 };
 
 XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingInstanceFlags);
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingInstanceFlags);
 
-/// Backend-independent 64-byte TLAS instance record.
+/// Backend-independent TLAS instance source record.
 ///
-/// Its binary layout matches VkAccelerationStructureInstanceKHR and
-/// D3D12_RAYTRACING_INSTANCE_DESC: row-major float3x4 transform, two packed
-/// 24:8 words, and the BLAS device address. This lets GraphicsCore stream one
-/// instance buffer on both backends without including native API headers.
+/// Upload these records with xiiGALCommandList::UpdateTLASInstanceBuffer(). The command list converts the portable fields to the native backend representation before a TLAS build consumes them.
 struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
 {
   XII_DECLARE_POD_TYPE();
+
+  static constexpr xiiUInt32 s_uiEncodedSize = 64U;
 
   [[nodiscard]] xiiMat4 GetTransform() const;
   void                  SetTransform(xiiMat4 transform);
@@ -76,6 +57,10 @@ struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
 
   [[nodiscard]] xiiUInt32 GetHitGroupContribution() const { return m_uiHitGroupContributionAndFlags & 0x00FFFFFFU; }
   void                    SetHitGroupContribution(xiiUInt32 uiContribution);
+
+  [[nodiscard]] xiiUInt64 GetBottomLevelASDeviceAddress() const { return m_uiBottomLevelASDeviceAddress; }
+  void                    SetBottomLevelASDeviceAddress(xiiUInt64 uiDeviceAddress) { m_uiBottomLevelASDeviceAddress = uiDeviceAddress; }
+  void                    SetBottomLevelAS(const xiiGALBottomLevelAS* pBottomLevelAS);
 
   [[nodiscard]] xiiBitflags<xiiGALRayTracingInstanceFlags> GetFlags() const
   {
@@ -100,7 +85,7 @@ struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
   xiiUInt64 m_uiBottomLevelASDeviceAddress   = 0U;
 };
 
-static_assert(sizeof(xiiGALTLASInstanceData) == 64U, "TLAS instance records must match the native Vulkan and D3D12 ABI.");
+static_assert(sizeof(xiiGALTLASInstanceData) == xiiGALTLASInstanceData::s_uiEncodedSize, "TLAS instance source records must retain their stable encoded size.");
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTLASInstanceData);
 
@@ -109,19 +94,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelASBuildDescription : public xiiH
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32                          m_uiInstanceCount                    = 0U;                                     ///< The number of instances. The default is 0.
-  xiiUInt32                          m_uiHitGroupStride                   = 0U;                                     ///< The number of hit shader groups. The default is 0.
-  xiiEnum<xiiGALHitGroupBindingMode> m_BindingMode                        = xiiGALHitGroupBindingMode::PerGeometry; ///< The hit group binding mode. The default is xiiGALHitGroupBindingMode::PerGeometry.
-  xiiUInt32                          m_uiFirstContributionToHitGroupIndex = 0U;                                     ///< The first hit group location. The default is 0
-  xiiUInt32                          m_uiLastContributionToHitGroupIndex  = 0U;                                     ///< The last hit group location. The default is 0.
-};
-
-/// This describes the top level acceleration structure instance.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelASInstanceDescription : public xiiHashableStruct<xiiGALTopLevelASInstanceDescription>
-{
-  xiiSharedPtr<xiiGALBottomLevelAS> m_pBottomLevelAS;                     ///< The reference-counted pointer to the bottom-level acceleration structure.
-  xiiUInt32                         m_uiContributionToHitGroupIndex = 0U; ///< The index that corresponds to the one specified in the TLAS build instance contribution to the hit group index.
-  xiiUInt32                         m_uiInstanceIndex               = 0U; ///< The autogenerated index of the instance.
+  xiiUInt32 m_uiInstanceCount = 0U; ///< The number of instances used by the most recent build or copied from the source TLAS.
 };
 
 /// This describes the top level acceleration structure creation description.
@@ -145,21 +118,18 @@ public:
   /// This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTopLevelASCreationDescription& GetDescription() const { return m_Description; };
 
-  /// This returns the instance description that can be used in the shader binding table.
-  ///
-  /// \param sName - The instance name that is specified in the xiiGALTLASBuildInstanceData.
-  ///
-  /// \return The top level acceleration structure instance description, see xiiGALTopLevelASInstanceDescription. If the instance does not exist, then the contribution to hit group index and instance index are set to xiiInvalidIndex.
-  ///
-  /// \note Access to the top level acceleration structure must be externally synchronized.
-  [[nodiscard]] virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const = 0;
+  /// Returns whether a build or copy command has initialized this acceleration structure.
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsBuilt() const { return m_bBuilt; }
+
+  /// Returns the instance count used by the most recent build or copied from the source TLAS.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetLastBuildInstanceCount() const { return m_BuildDescription.m_uiInstanceCount; }
 
   /// This returns the top level acceleration structure state after the last build or update operation.
   ///
   /// \return The top level acceleration structure build description, see xiiGALTopLevelASBuildDescription.
   ///
   /// \note Access to the top level acceleration structure must be externally synchronized.
-  [[nodiscard]] virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const = 0;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALTopLevelASBuildDescription GetBuildDescription() const { return m_BuildDescription; }
 
   /// This returns the scratch buffer information for the current acceleration structure.
   ///
@@ -167,6 +137,7 @@ public:
   [[nodiscard]] virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
 
 protected:
+  friend class xiiGALCommandList;
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
@@ -178,4 +149,6 @@ protected:
 
 protected:
   xiiGALTopLevelASCreationDescription m_Description;
+  xiiGALTopLevelASBuildDescription    m_BuildDescription;
+  bool                                m_bBuilt = false;
 };
