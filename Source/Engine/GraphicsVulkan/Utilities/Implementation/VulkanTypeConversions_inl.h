@@ -1756,6 +1756,22 @@ XII_ALWAYS_INLINE vk::BuildAccelerationStructureFlagsKHR xiiVulkanTypeConversion
   return vkFlags;
 }
 
+XII_ALWAYS_INLINE VkGeometryInstanceFlagsKHR xiiVulkanTypeConversions::GetGeometryInstanceFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags)
+{
+  VkGeometryInstanceFlagsKHR vkFlags = {};
+
+  if (flags.IsSet(xiiGALRayTracingInstanceFlags::TriangleCullDisable))
+    vkFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+  if (flags.IsSet(xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise))
+    vkFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR;
+  if (flags.IsSet(xiiGALRayTracingInstanceFlags::ForceOpaque))
+    vkFlags |= VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR;
+  if (flags.IsSet(xiiGALRayTracingInstanceFlags::ForceNonOpaque))
+    vkFlags |= VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR;
+
+  return vkFlags;
+}
+
 XII_ALWAYS_INLINE vk::GeometryFlagsKHR xiiVulkanTypeConversions::GetGeometryFlags(xiiBitflags<xiiGALRayTracingGeometryFlags> flags)
 {
   vk::GeometryFlagsKHR vkFlags = {};

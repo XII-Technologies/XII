@@ -12,6 +12,7 @@
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
+#include <GraphicsFoundation/Resources/TopLevelAS.h>
 
 enum class xiiGALDescriporTypeVulkan : xiiUInt8
 {
@@ -122,6 +123,8 @@ public:
   static vk::FragmentShadingRateCombinerOpKHR GetFragmentShadingRateCombinerOp(xiiBitflags<xiiGALShadingRateCombinerFlags> e);
 
   static vk::BuildAccelerationStructureFlagsKHR GetAccelerationStructureFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags);
+
+  static VkGeometryInstanceFlagsKHR GetGeometryInstanceFlags(xiiBitflags<xiiGALRayTracingInstanceFlags> flags);
 
   static vk::GeometryFlagsKHR GetGeometryFlags(xiiBitflags<xiiGALRayTracingGeometryFlags> flags);
 

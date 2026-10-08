@@ -2687,21 +2687,6 @@ void xiiGALCommandListVulkan::UpdateTLASInstanceBufferPlatform(xiiGALBuffer* pBu
 {
   static_assert(sizeof(vk::AccelerationStructureInstanceKHR) == xiiGALTLASInstanceData::s_uiEncodedSize);
 
-  const auto ConvertInstanceFlags = [](xiiBitflags<xiiGALRayTracingInstanceFlags> flags) -> vk::GeometryInstanceFlagsKHR {
-    vk::GeometryInstanceFlagsKHR vkFlags = {};
-
-    if (flags.IsSet(xiiGALRayTracingInstanceFlags::TriangleCullDisable))
-      vkFlags |= vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable;
-    if (flags.IsSet(xiiGALRayTracingInstanceFlags::TriangleFrontCounterClockwise))
-      vkFlags |= vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise;
-    if (flags.IsSet(xiiGALRayTracingInstanceFlags::ForceOpaque))
-      vkFlags |= vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
-    if (flags.IsSet(xiiGALRayTracingInstanceFlags::ForceNonOpaque))
-      vkFlags |= vk::GeometryInstanceFlagBitsKHR::eForceNoOpaque;
-
-    return vkFlags;
-  };
-
   xiiTemporaryArray<vk::AccelerationStructureInstanceKHR> vkInstances;
   vkInstances.SetCountUninitialized(pInstances.GetCount());
 
@@ -2723,11 +2708,19 @@ void xiiGALCommandListVulkan::UpdateTLASInstanceBufferPlatform(xiiGALBuffer* pBu
     vkTransform.matrix[2][2]           = instance.m_TransformRow2.z;
     vkTransform.matrix[2][3]           = instance.m_TransformRow2.w;
 
-    vkInstances[i] = vk::AccelerationStructureInstanceKHR(vkTransform, instance.GetInstanceID(), instance.GetMask(), instance.GetHitGroupContribution(), ConvertInstanceFlags(instance.GetFlags()), instance.GetBottomLevelASDeviceAddress());
+    vk::AccelerationStructureInstanceKHR vkAccelerationStructureInstance   = {};
+    vkAccelerationStructureInstance.transform                              = vkTransform;
+    vkAccelerationStructureInstance.instanceCustomIndex                    = instance.GetInstanceID();
+    vkAccelerationStructureInstance.mask                                   = instance.GetMask();
+    vkAccelerationStructureInstance.instanceShaderBindingTableRecordOffset = instance.GetHitGroupContribution();
+    vkAccelerationStructureInstance.flags                                  = xiiVulkanTypeConversions::GetGeometryInstanceFlags(instance.GetFlags());
+    vkAccelerationStructureInstance.accelerationStructureReference         = instance.GetBottomLevelASDeviceAddress();
+
+    vkInstances[i] = vkAccelerationStructureInstance;
   }
 
-  const xiiArrayPtr<const xiiUInt8> sourceData(reinterpret_cast<const xiiUInt8*>(vkInstances.GetData()), vkInstances.GetCount() * sizeof(vk::AccelerationStructureInstanceKHR));
-  UpdateBufferPlatform(pBuffer, uiDestinationOffset, sourceData);
+  const xiiArrayPtr<const xiiUInt8> pSourceData(reinterpret_cast<const xiiUInt8*>(vkInstances.GetData()), vkInstances.GetCount() * sizeof(vk::AccelerationStructureInstanceKHR));
+  UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData);
 }
 
 void xiiGALCommandListVulkan::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
