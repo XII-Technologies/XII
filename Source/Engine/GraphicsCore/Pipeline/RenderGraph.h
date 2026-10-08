@@ -106,9 +106,9 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphTextureHandle : public xiiHashableStruc
   XII_DECLARE_HANDLE_TYPE(xiiRenderGraphTextureHandle, xiiRenderGraphResourceHandleId);
 
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphResourceId id) : m_Id(id)
+  XII_ALWAYS_INLINE xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphResourceId id) :
+    m_Id(id), m_InternalId(internalId)
   {
-    m_InternalId = internalId;
   }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
@@ -122,9 +122,9 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphBufferHandle : public xiiHashableStruct
   XII_DECLARE_HANDLE_TYPE(xiiRenderGraphBufferHandle, xiiRenderGraphResourceHandleId);
 
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphResourceId id) : m_Id(id)
+  XII_ALWAYS_INLINE xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId internalId, xiiRenderGraphResourceId id) :
+    m_Id(id), m_InternalId(internalId)
   {
-    m_InternalId = internalId;
   }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
@@ -140,9 +140,9 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphPassHandle : public xiiHashableStruct<x
   XII_DECLARE_HANDLE_TYPE(xiiRenderGraphPassHandle, xiiRenderGraphPassHandleId);
 
 public:
-  XII_ALWAYS_INLINE xiiRenderGraphPassHandle(xiiRenderGraphPassHandleId internalId, xiiRenderGraphPassId id) : m_Id(id)
+  XII_ALWAYS_INLINE xiiRenderGraphPassHandle(xiiRenderGraphPassHandleId internalId, xiiRenderGraphPassId id) :
+    m_Id(id), m_InternalId(internalId)
   {
-    m_InternalId = internalId;
   }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return !IsInvalidated(); }
