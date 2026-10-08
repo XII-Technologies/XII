@@ -492,7 +492,7 @@ xiiResult xiiParticleSystemComponent::PrepareRuntimeResources(xiiSharedPtr<xiiGA
     return pRuntime->EnsureCapacity(m_Descriptor);
 
   m_hRuntime = xiiParticleSystemManager::CreateRuntime(std::move(pDevice), m_Descriptor);
-  return m_hRuntime.IsValid() ? XII_SUCCESS : XII_FAILURE;
+  return m_hRuntime.IsInvalidated() ? XII_FAILURE : XII_SUCCESS;
 }
 
 xiiParticleSystemRuntime& xiiParticleSystemComponent::GetRuntime() const

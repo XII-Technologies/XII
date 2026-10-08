@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/Containers/IdTable.h>
 #include <Foundation/Threading/Lock.h>
 #include <GraphicsCore/Lighting/VolumetricMedium.h>
 
@@ -43,8 +44,6 @@ public:
   {
     xiiVolumetricMediumDescription m_Description;
     xiiDynamicArray<xiiUInt64>     m_CellKeys;
-    xiiUInt32                      m_uiGeneration = 1U;
-    bool                           m_bAllocated   = false;
   };
 
   struct Cell
@@ -55,8 +54,7 @@ public:
 
   xiiMutex                      m_Mutex;
   xiiVolumetricMediumSettings   m_Settings;
-  xiiDynamicArray<Slot>         m_Slots;
-  xiiDynamicArray<xiiUInt32>    m_FreeSlots;
+  xiiIdTable<xiiVolumetricMediumId, Slot> m_Media;
   xiiHashTable<xiiUInt64, Cell> m_Cells;
 
   void               RemoveSlotFromCells(xiiUInt32 uiSlot);
@@ -87,14 +85,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiVolumetricMediumShape, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVolumetricMediumHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiVolumetricMediumHandle>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Index", m_uiIndex),
-    XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-  }
-  XII_END_PROPERTIES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVolumetricMediumDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiVolumetricMediumDescription>)
@@ -159,7 +149,7 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 void xiiVolumetricMediumManager::State::RemoveSlotFromCells(xiiUInt32 uiSlot)
 {
-  auto& slot = m_Slots[uiSlot];
+  auto& slot = m_Media.GetValueUnchecked(uiSlot);
   for (xiiUInt64 uiKey : slot.m_CellKeys)
   {
     auto it = m_Cells.Find(uiKey);
@@ -175,7 +165,7 @@ void xiiVolumetricMediumManager::State::RemoveSlotFromCells(xiiUInt32 uiSlot)
 
 bool xiiVolumetricMediumManager::State::InsertSlotIntoCells(xiiUInt32 uiSlot)
 {
-  auto&       slot              = m_Slots[uiSlot];
+  auto&       slot              = m_Media.GetValueUnchecked(uiSlot);
   const float fCellSize         = m_Settings.m_fCellSizeMeters;
   xiiVec3     vWorldHalfExtents = xiiVec3::MakeZero();
   for (xiiUInt32 uiCorner = 0U; uiCorner < 8U; ++uiCorner)
@@ -230,7 +220,7 @@ xiiResult xiiVolumetricMediumManager::Configure(const xiiVolumetricMediumSetting
     return XII_FAILURE;
 
   XII_LOCK(s_pState->m_Mutex);
-  if (!s_pState->m_Slots.IsEmpty())
+  if (!s_pState->m_Media.IsEmpty())
     return XII_FAILURE;
   s_pState->m_Settings = settings;
   return XII_SUCCESS;
@@ -248,22 +238,16 @@ xiiVolumetricMediumHandle xiiVolumetricMediumManager::RegisterMedium(const xiiVo
     return {};
 
   XII_LOCK(s_pState->m_Mutex);
-  const xiiUInt32 uiSlot = s_pState->m_FreeSlots.IsEmpty() ? s_pState->m_Slots.GetCount() : s_pState->m_FreeSlots.PeekBack();
-  if (!s_pState->m_FreeSlots.IsEmpty())
-    s_pState->m_FreeSlots.PopBack();
-  else
-    s_pState->m_Slots.ExpandAndGetRef();
-
-  State::Slot& slot  = s_pState->m_Slots[uiSlot];
-  slot.m_Description = description;
-  slot.m_bAllocated  = true;
+  State::Slot slot;
+  slot.m_Description                 = description;
+  const xiiVolumetricMediumId id     = s_pState->m_Media.Insert(std::move(slot));
+  const xiiUInt32             uiSlot = id.m_InstanceIndex;
   if (!s_pState->InsertSlotIntoCells(uiSlot))
   {
-    slot.m_bAllocated = false;
-    s_pState->m_FreeSlots.PushBack(uiSlot);
+    XII_VERIFY(s_pState->m_Media.Remove(id), "The newly inserted volumetric medium must be removable.");
     return {};
   }
-  return {uiSlot, slot.m_uiGeneration};
+  return xiiVolumetricMediumHandle(id);
 }
 
 void xiiVolumetricMediumManager::UnregisterMedium(xiiVolumetricMediumHandle handle)
@@ -271,17 +255,11 @@ void xiiVolumetricMediumManager::UnregisterMedium(xiiVolumetricMediumHandle hand
   if (s_pState == nullptr)
     return;
   XII_LOCK(s_pState->m_Mutex);
-  if (handle.m_uiIndex >= s_pState->m_Slots.GetCount())
+  State::Slot* pSlot = nullptr;
+  if (!s_pState->m_Media.TryGetValue(handle.GetInternalID(), pSlot))
     return;
-  State::Slot& slot = s_pState->m_Slots[handle.m_uiIndex];
-  if (!slot.m_bAllocated || slot.m_uiGeneration != handle.m_uiGeneration)
-    return;
-  s_pState->RemoveSlotFromCells(handle.m_uiIndex);
-  slot.m_bAllocated = false;
-  ++slot.m_uiGeneration;
-  if (slot.m_uiGeneration == 0U)
-    ++slot.m_uiGeneration;
-  s_pState->m_FreeSlots.PushBack(handle.m_uiIndex);
+  s_pState->RemoveSlotFromCells(handle.GetInternalID().m_InstanceIndex);
+  XII_VERIFY(s_pState->m_Media.Remove(handle.GetInternalID()), "The volumetric medium was validated before removal.");
 }
 
 xiiResult xiiVolumetricMediumManager::UpdateMedium(xiiVolumetricMediumHandle handle, const xiiVolumetricMediumDescription& description)
@@ -289,20 +267,19 @@ xiiResult xiiVolumetricMediumManager::UpdateMedium(xiiVolumetricMediumHandle han
   if (s_pState == nullptr || !IsDescriptionValid(description))
     return XII_FAILURE;
   XII_LOCK(s_pState->m_Mutex);
-  if (handle.m_uiIndex >= s_pState->m_Slots.GetCount())
-    return XII_FAILURE;
-  State::Slot& slot = s_pState->m_Slots[handle.m_uiIndex];
-  if (!slot.m_bAllocated || slot.m_uiGeneration != handle.m_uiGeneration)
+  State::Slot* pSlot = nullptr;
+  if (!s_pState->m_Media.TryGetValue(handle.GetInternalID(), pSlot))
     return XII_FAILURE;
 
-  const xiiVolumetricMediumDescription previous = slot.m_Description;
-  s_pState->RemoveSlotFromCells(handle.m_uiIndex);
-  slot.m_Description = description;
-  if (s_pState->InsertSlotIntoCells(handle.m_uiIndex))
+  const xiiUInt32                       uiSlot   = handle.GetInternalID().m_InstanceIndex;
+  const xiiVolumetricMediumDescription previous = pSlot->m_Description;
+  s_pState->RemoveSlotFromCells(uiSlot);
+  pSlot->m_Description = description;
+  if (s_pState->InsertSlotIntoCells(uiSlot))
     return XII_SUCCESS;
 
-  slot.m_Description = previous;
-  XII_VERIFY(s_pState->InsertSlotIntoCells(handle.m_uiIndex), "Failed to restore a previously valid volumetric medium.");
+  pSlot->m_Description = previous;
+  XII_VERIFY(s_pState->InsertSlotIntoCells(uiSlot), "Failed to restore a previously valid volumetric medium.");
   return XII_FAILURE;
 }
 
@@ -311,7 +288,7 @@ bool xiiVolumetricMediumManager::IsValid(xiiVolumetricMediumHandle handle)
   if (s_pState == nullptr)
     return false;
   XII_LOCK(s_pState->m_Mutex);
-  return handle.m_uiIndex < s_pState->m_Slots.GetCount() && s_pState->m_Slots[handle.m_uiIndex].m_bAllocated && s_pState->m_Slots[handle.m_uiIndex].m_uiGeneration == handle.m_uiGeneration;
+  return s_pState->m_Media.Contains(handle.GetInternalID());
 }
 
 void xiiVolumetricMediumManager::SetCellResident(const xiiVec3I32& vCell, bool bResident)
@@ -366,8 +343,8 @@ void xiiVolumetricMediumManager::GatherGpuMedia(const xiiVec3& vViewPosition, xi
           if (visited.Contains(uiSlot))
             continue;
           visited.Insert(uiSlot);
-          const State::Slot& slot = s_pState->m_Slots[uiSlot];
-          if (!slot.m_bAllocated || !slot.m_Description.m_bEnabled)
+          const State::Slot& slot = s_pState->m_Media.GetValueUnchecked(uiSlot);
+          if (!slot.m_Description.m_bEnabled)
             continue;
           const float fDistanceSquared = (slot.m_Description.m_vCenter - vViewPosition).GetLengthSquared();
           if (fDistanceSquared > xiiMath::Square(fRange + slot.m_Description.m_vHalfExtents.GetLength()))
@@ -385,7 +362,7 @@ void xiiVolumetricMediumManager::GatherGpuMedia(const xiiVec3& vViewPosition, xi
   out_media.SetCountUninitialized(uiCount);
   for (xiiUInt32 i = 0U; i < uiCount; ++i)
   {
-    const auto& description         = s_pState->m_Slots[candidates[i].m_uiSlot].m_Description;
+    const auto& description         = s_pState->m_Media.GetValueUnchecked(candidates[i].m_uiSlot).m_Description;
     auto&       gpu                 = out_media[i];
     gpu.m_vCenterAndShape           = xiiVec4(description.m_vCenter, static_cast<float>(description.m_Shape.GetValue()));
     gpu.m_vRotation                 = xiiVec4(description.m_qRotation.GetVectorPart(), description.m_qRotation.w);
@@ -402,7 +379,7 @@ xiiVolumetricMediumStats xiiVolumetricMediumManager::GetStats()
   if (s_pState == nullptr)
     return stats;
   XII_LOCK(s_pState->m_Mutex);
-  stats.m_uiRegisteredMedia = s_pState->m_Slots.GetCount() - s_pState->m_FreeSlots.GetCount();
+  stats.m_uiRegisteredMedia = s_pState->m_Media.GetCount();
   for (auto it = s_pState->m_Cells.GetIterator(); it.IsValid(); ++it)
   {
     if (it.Value().m_bResident)

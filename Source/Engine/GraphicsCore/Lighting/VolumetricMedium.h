@@ -7,6 +7,7 @@
 #include <Foundation/Math/Quat.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
@@ -27,15 +28,11 @@ struct XII_GRAPHICSCORE_DLL xiiVolumetricMediumShape
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVolumetricMediumShape);
 
 /// Generation-checked handle to subsystem-owned volumetric medium state.
-struct XII_GRAPHICSCORE_DLL xiiVolumetricMediumHandle
+using xiiVolumetricMediumId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiVolumetricMediumHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
-
-  [[nodiscard]] bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-  [[nodiscard]] bool operator==(const xiiVolumetricMediumHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex && m_uiGeneration == rhs.m_uiGeneration; }
+  XII_DECLARE_HANDLE_TYPE(xiiVolumetricMediumHandle, xiiVolumetricMediumId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiVolumetricMediumHandle);
