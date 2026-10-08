@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/Id.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Material/MaterialTypes.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -12,27 +13,21 @@
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 
 /// Generation-checked handle for one mesh geometry in the hardware ray-tracing scene.
-struct XII_GRAPHICSCORE_DLL xiiRayTracingGeometryHandle
+using xiiRayTracingGeometryId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiRayTracingGeometryHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiRayTracingGeometryHandle, xiiRayTracingGeometryId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRayTracingGeometryHandle);
 
 /// Generation-checked handle for one transformable TLAS instance.
-struct XII_GRAPHICSCORE_DLL xiiRayTracingInstanceHandle
+using xiiRayTracingInstanceId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiRayTracingInstanceHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiRayTracingInstanceHandle, xiiRayTracingInstanceId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRayTracingInstanceHandle);
