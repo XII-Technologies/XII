@@ -42,20 +42,47 @@
   }
 
 
-/// A generic id class that holds an id combined of an instance index and a generation counter.
+
+/// A compact generational identifier that combines an instance index and a generation counter.
+/// A generational identifier uniquely identifies an instance within an indexed collection while providing a mechanism for detecting stale references when instance indices are reused.
 ///
-/// \todo Document this better.
+/// The identifier consists of two components:
+/// - Instance Index: Identifies the slot occupied by an instance within a collection.
+/// - Generation: Distinguishes successive instances that occupy the same slot.
+///
+/// When an instance is removed, its index may be reused for a new instance.
+/// By incrementing the generation counter associated with that slot, previously issued identifiers can be distinguished from identifiers referring to the newly allocated instance.
+///
+/// Both components are packed into a single integral storage type, allowing the identifier to be stored, copied, and compared efficiently.
+///
+/// \tparam InstanceIndexBits Number of bits reserved for the instance index.
+/// \tparam GenerationBits    Number of bits reserved for the generation counter.
+///
+/// \note The generation counter provides stale-identifier detection only when the owning collection maintains and validates generation values. Generation counter wraparound may eventually cause an old identifier to become valid again.
+///
+/// \note The bit-field layout is implementation-defined. The packed representation should not be assumed to have a portable binary layout across different compilers or platforms.
+///
+/// \see XII_DECLARE_ID_TYPE
 template <xiiUInt32 InstanceIndexBits, xiiUInt32 GenerationBits>
 struct xiiGenericId
 {
+  /// Number of bytes requested for the underlying integral storage type.
   enum
   {
     STORAGE_SIZE = ((InstanceIndexBits + GenerationBits - 1) / 8) + 1
   };
+
+  /// Integral type used to store the packed identifier.
   using StorageType = typename xiiSizeToType<STORAGE_SIZE>::Type;
 
   XII_DECLARE_ID_TYPE(xiiGenericId, InstanceIndexBits, GenerationBits);
 
+  /// Constructs an identifier from an instance index and generation counter.
+  ///
+  /// \param instanceIndex The index of the instance within its owning collection.
+  /// \param generation    The generation associated with the instance.
+  ///
+  /// \note Both values must fit within their respective bit widths. Values exceeding the allocated widths may be truncated when assigned to the bit fields.
   XII_ALWAYS_INLINE xiiGenericId(StorageType instanceIndex, StorageType generation)
   {
     m_Data          = 0;
@@ -65,11 +92,12 @@ struct xiiGenericId
 
   union
   {
-    StorageType m_Data;
+    StorageType m_Data; ///< Packed representation containing both identifier components.
+
     struct
     {
-      StorageType m_InstanceIndex : InstanceIndexBits;
-      StorageType m_Generation : GenerationBits;
+      StorageType m_InstanceIndex : InstanceIndexBits; ///< Index of the referenced instance.
+      StorageType m_Generation : GenerationBits;       ///< Generation associated with the instance.
     };
   };
 };
