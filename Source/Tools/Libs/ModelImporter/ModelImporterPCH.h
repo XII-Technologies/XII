@@ -2,9 +2,5 @@
 
 #pragma once
 
-#include <ModelImporter/ModelImporterDLL.h>
-
 #include <Foundation/Basics.h>
-#include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/Math/Mat4.h>
-#include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/Logging/Log.h>
