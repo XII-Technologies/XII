@@ -41,6 +41,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_SET_ACCESSOR_PROPERTY("Components", Reflection_GetComponents, Reflection_AddComponent, Reflection_RemoveComponent)->AddFlags(xiiPropertyFlags::PointerOwner),
   }
   XII_END_PROPERTIES;
+
   XII_BEGIN_FUNCTIONS
   {
     XII_SCRIPT_FUNCTION_PROPERTY(IsActive),
@@ -78,6 +79,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_SCRIPT_FUNCTION_PROPERTY(GetTeamID),
   }
   XII_END_FUNCTIONS;
+
   XII_BEGIN_MESSAGEHANDLERS
   {
     XII_MESSAGE_HANDLER(xiiMsgDeleteGameObject, OnMsgDeleteGameObject),
@@ -1173,8 +1175,20 @@ void xiiGameObject::TransformationData::UpdateLocalTransform()
 
   m_localPosition = tLocal.m_Position;
   m_localRotation = tLocal.m_Rotation;
-  m_localScaling  = tLocal.m_Scale;
-  m_localScaling.SetW(1.0f);
+
+  // Keep the split between non-uniform and uniform scale. Otherwise a call like SetGlobalPosition() moves the uniform scale into the
+  // non-uniform scale, and a following SetLocalUniformScaling() would multiply with the previous uniform scale instead of replacing it.
+  const xiiSimdFloat fUniformScale = m_localScaling.w();
+  if (fUniformScale != xiiSimdFloat::MakeZero())
+  {
+    m_localScaling = tLocal.m_Scale / fUniformScale;
+    m_localScaling.SetW(fUniformScale);
+  }
+  else
+  {
+    m_localScaling = tLocal.m_Scale;
+    m_localScaling.SetW(1.0f);
+  }
 }
 
 void xiiGameObject::TransformationData::UpdateGlobalTransformNonRecursive(xiiUInt32 uiUpdateCounter)
