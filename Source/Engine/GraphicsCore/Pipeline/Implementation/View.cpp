@@ -262,7 +262,7 @@ xiiView::xiiView(xiiWorld* pWorld) :
   XII_VERIFY(m_RenderGraphContext.Initialize("View Render Graph").Succeeded(), "Failed to create the view render graph context.");
   XII_VERIFY(m_GpuSceneContext.Initialize().Succeeded(), "Failed to create the view GPU scene context.");
   m_hGpuVisibilityContext = xiiGpuVisibilityManager::CreateContext();
-  XII_ASSERT_DEV(m_hGpuVisibilityContext.IsValid(), "Failed to create the view GPU visibility context.");
+  XII_ASSERT_DEV(!m_hGpuVisibilityContext.IsInvalidated(), "Failed to create the view GPU visibility context.");
   XII_VERIFY(m_ViewPassResources->m_LightingSystem.Initialize().Succeeded(), "Failed to create the view lighting context.");
 
   UpdateRenderResolutionState();

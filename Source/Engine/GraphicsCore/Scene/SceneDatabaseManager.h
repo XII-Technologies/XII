@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Configuration/StaticSubSystem.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
 
@@ -10,14 +11,11 @@ class xiiSceneDatabaseManagerState;
 class xiiExtractedRenderData;
 
 /// Generation-checked reference to one subsystem-owned render scene.
-struct XII_GRAPHICSCORE_DLL xiiSceneDatabaseContextHandle
+using xiiSceneDatabaseContextId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiSceneDatabaseContextHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiSceneDatabaseContextHandle, xiiSceneDatabaseContextId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneDatabaseContextHandle);

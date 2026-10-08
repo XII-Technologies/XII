@@ -4,6 +4,7 @@
 
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/Id.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
@@ -15,14 +16,11 @@ class xiiGALTexture;
 ///
 /// The handle is safe to retain after high-level shutdown. It simply becomes invalid when the
 /// subsystem releases its contexts; it never owns allocator-backed or GAL state itself.
-struct XII_GRAPHICSCORE_DLL xiiLightingContextHandle
+using xiiLightingContextId = xiiGenericId<24, 8>;
+
+class XII_GRAPHICSCORE_DLL xiiLightingContextHandle
 {
-  XII_DECLARE_POD_TYPE();
-
-  [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != xiiInvalidIndex && m_uiGeneration != 0U; }
-
-  xiiUInt32 m_uiIndex      = xiiInvalidIndex;
-  xiiUInt32 m_uiGeneration = 0U;
+  XII_DECLARE_HANDLE_TYPE(xiiLightingContextHandle, xiiLightingContextId);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLightingContextHandle);

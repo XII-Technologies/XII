@@ -3,22 +3,16 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 class xiiGpuVisibilityManagerState
 {
 public:
-  struct Slot
-  {
-    xiiUniquePtr<xiiGpuVisibilitySystem> m_pSystem;
-    xiiUInt32                            m_uiGeneration = 1U;
-  };
-
-  xiiDynamicArray<Slot>      m_Slots;
-  xiiDynamicArray<xiiUInt32> m_FreeSlots;
-  xiiUInt64                  m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
-  bool                       m_bEngineStarted   = false;
+  xiiIdTable<xiiGpuVisibilityContextId, xiiUniquePtr<xiiGpuVisibilitySystem>> m_Contexts;
+  xiiUInt64                                                                  m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
+  bool                                                                       m_bEngineStarted   = false;
 };
 
 xiiUniquePtr<xiiGpuVisibilityManagerState> xiiGpuVisibilityManager::s_pState;
@@ -59,13 +53,6 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityContextHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuVisibilityContextHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 bool xiiGpuVisibilityManager::IsSubsystemInitialized()
@@ -84,11 +71,8 @@ void xiiGpuVisibilityManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCom
     return;
 
   s_pState->m_uiLastBeginFrame = uiFrameIndex;
-  for (xiiGpuVisibilityManagerState::Slot& slot : s_pState->m_Slots)
-  {
-    if (slot.m_pSystem != nullptr)
-      slot.m_pSystem->BeginFrame(uiFrameIndex, uiCompletedFrame);
-  }
+  for (auto it = s_pState->m_Contexts.GetIterator(); it.IsValid(); ++it)
+    it.Value()->BeginFrame(uiFrameIndex, uiCompletedFrame);
 }
 
 xiiGpuVisibilityContextHandle xiiGpuVisibilityManager::CreateContext(const xiiGpuVisibilityDescription& description)
@@ -102,25 +86,7 @@ xiiGpuVisibilityContextHandle xiiGpuVisibilityManager::CreateContext(const xiiGp
   if (pSystem->Initialize(pDevice.Borrow(), description).Failed())
     return {};
 
-  xiiUInt32 uiIndex = xiiInvalidIndex;
-  if (!s_pState->m_FreeSlots.IsEmpty())
-  {
-    uiIndex = s_pState->m_FreeSlots.PeekBack();
-    s_pState->m_FreeSlots.PopBack();
-  }
-  else
-  {
-    uiIndex = s_pState->m_Slots.GetCount();
-    s_pState->m_Slots.ExpandAndGetRef();
-  }
-
-  xiiGpuVisibilityManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-  slot.m_pSystem                           = std::move(pSystem);
-
-  xiiGpuVisibilityContextHandle handle;
-  handle.m_uiIndex      = uiIndex;
-  handle.m_uiGeneration = slot.m_uiGeneration;
-  return handle;
+  return xiiGpuVisibilityContextHandle(s_pState->m_Contexts.Insert(std::move(pSystem)));
 }
 
 void xiiGpuVisibilityManager::DestroyContext(xiiGpuVisibilityContextHandle handle)
@@ -129,13 +95,8 @@ void xiiGpuVisibilityManager::DestroyContext(xiiGpuVisibilityContextHandle handl
   if (pSystem == nullptr)
     return;
 
-  xiiGpuVisibilityManagerState::Slot& slot = s_pState->m_Slots[handle.m_uiIndex];
   pSystem->Shutdown();
-  slot.m_pSystem.Clear();
-  ++slot.m_uiGeneration;
-  if (slot.m_uiGeneration == 0U)
-    slot.m_uiGeneration = 1U;
-  s_pState->m_FreeSlots.PushBack(handle.m_uiIndex);
+  XII_VERIFY(s_pState->m_Contexts.Remove(handle.GetInternalID()), "The GPU visibility context was validated before removal.");
 }
 
 bool xiiGpuVisibilityManager::IsValid(xiiGpuVisibilityContextHandle handle)
@@ -219,19 +180,9 @@ void xiiGpuVisibilityManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
-  for (xiiUInt32 uiIndex = 0U; uiIndex < s_pState->m_Slots.GetCount(); ++uiIndex)
-  {
-    xiiGpuVisibilityManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-    if (slot.m_pSystem == nullptr)
-      continue;
-
-    slot.m_pSystem->Shutdown();
-    slot.m_pSystem.Clear();
-    ++slot.m_uiGeneration;
-    if (slot.m_uiGeneration == 0U)
-      slot.m_uiGeneration = 1U;
-    s_pState->m_FreeSlots.PushBack(uiIndex);
-  }
+  for (auto it = s_pState->m_Contexts.GetIterator(); it.IsValid(); ++it)
+    it.Value()->Shutdown();
+  s_pState->m_Contexts.Clear();
   s_pState->m_uiLastBeginFrame = xiiMath::MaxValue<xiiUInt64>();
   s_pState->m_bEngineStarted   = false;
 }
@@ -244,11 +195,11 @@ void xiiGpuVisibilityManager::Shutdown()
 
 xiiGpuVisibilitySystem* xiiGpuVisibilityManager::GetSystem(xiiGpuVisibilityContextHandle handle)
 {
-  if (s_pState == nullptr || !handle.IsValid() || handle.m_uiIndex >= s_pState->m_Slots.GetCount())
+  if (s_pState == nullptr)
     return nullptr;
 
-  xiiGpuVisibilityManagerState::Slot& slot = s_pState->m_Slots[handle.m_uiIndex];
-  return slot.m_uiGeneration == handle.m_uiGeneration ? slot.m_pSystem.Borrow() : nullptr;
+  xiiUniquePtr<xiiGpuVisibilitySystem>* pSystem = nullptr;
+  return s_pState->m_Contexts.TryGetValue(handle.GetInternalID(), pSystem) ? pSystem->Borrow() : nullptr;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Visibility_Implementation_GpuVisibilityManager);

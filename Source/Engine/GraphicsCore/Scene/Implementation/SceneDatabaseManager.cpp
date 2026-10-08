@@ -4,6 +4,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
@@ -29,12 +30,10 @@ public:
     xiiUniquePtr<xiiSceneDatabase>              m_pDatabase;
     xiiHashTable<xiiUInt32, ExtractedMeshEntry> m_ExtractedMeshes;
     xiiUInt64                                   m_uiLastSynchronizedFrame = 0U;
-    xiiUInt32                                   m_uiGeneration            = 1U;
   };
 
-  xiiDynamicArray<Slot>      m_Slots;
-  xiiDynamicArray<xiiUInt32> m_FreeSlots;
-  bool                       m_bEngineStarted = false;
+  xiiIdTable<xiiSceneDatabaseContextId, Slot> m_Contexts;
+  bool                                         m_bEngineStarted = false;
 };
 
 xiiUniquePtr<xiiSceneDatabaseManagerState> xiiSceneDatabaseManager::s_pState;
@@ -73,24 +72,17 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneDatabaseContextHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSceneDatabaseContextHandle>)
-  {
-    XII_BEGIN_PROPERTIES
-    {
-      XII_MEMBER_PROPERTY("Index", m_uiIndex),
-      XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
-    } XII_END_PROPERTIES;
-  }
 XII_END_STATIC_REFLECTED_TYPE;
 
 namespace
 {
   xiiSceneDatabaseManagerState::Slot* GetSlot(xiiSceneDatabaseManagerState* pState, xiiSceneDatabaseContextHandle handle)
   {
-    if (pState == nullptr || !handle.IsValid() || handle.m_uiIndex >= pState->m_Slots.GetCount())
+    if (pState == nullptr)
       return nullptr;
 
-    xiiSceneDatabaseManagerState::Slot& slot = pState->m_Slots[handle.m_uiIndex];
-    return slot.m_uiGeneration == handle.m_uiGeneration && slot.m_pDatabase != nullptr ? &slot : nullptr;
+    xiiSceneDatabaseManagerState::Slot* pSlot = nullptr;
+    return pState->m_Contexts.TryGetValue(handle.GetInternalID(), pSlot) ? pSlot : nullptr;
   }
 
   void ReleaseExtractedMeshes(xiiSceneDatabaseManagerState::Slot& slot)
@@ -177,25 +169,9 @@ xiiSceneDatabaseContextHandle xiiSceneDatabaseManager::CreateContext(xiiUInt32 u
   if (uiInitialCapacity > 0U)
     pDatabase->Reserve(uiInitialCapacity);
 
-  xiiUInt32 uiIndex;
-  if (!s_pState->m_FreeSlots.IsEmpty())
-  {
-    uiIndex = s_pState->m_FreeSlots.PeekBack();
-    s_pState->m_FreeSlots.PopBack();
-  }
-  else
-  {
-    uiIndex = s_pState->m_Slots.GetCount();
-    s_pState->m_Slots.ExpandAndGetRef();
-  }
-
-  xiiSceneDatabaseManagerState::Slot& slot = s_pState->m_Slots[uiIndex];
-  slot.m_pDatabase                         = std::move(pDatabase);
-
-  xiiSceneDatabaseContextHandle handle;
-  handle.m_uiIndex      = uiIndex;
-  handle.m_uiGeneration = slot.m_uiGeneration;
-  return handle;
+  xiiSceneDatabaseManagerState::Slot slot;
+  slot.m_pDatabase = std::move(pDatabase);
+  return xiiSceneDatabaseContextHandle(s_pState->m_Contexts.Insert(std::move(slot)));
 }
 
 void xiiSceneDatabaseManager::DestroyContext(xiiSceneDatabaseContextHandle handle)
@@ -205,11 +181,7 @@ void xiiSceneDatabaseManager::DestroyContext(xiiSceneDatabaseContextHandle handl
     return;
 
   ReleaseExtractedMeshes(*pSlot);
-  pSlot->m_pDatabase.Clear();
-  ++pSlot->m_uiGeneration;
-  if (pSlot->m_uiGeneration == 0U)
-    pSlot->m_uiGeneration = 1U;
-  s_pState->m_FreeSlots.PushBack(handle.m_uiIndex);
+  XII_VERIFY(s_pState->m_Contexts.Remove(handle.GetInternalID()), "The scene database context was validated before removal.");
 }
 
 bool xiiSceneDatabaseManager::IsValid(xiiSceneDatabaseContextHandle handle)
@@ -350,8 +322,8 @@ void xiiSceneDatabaseManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
-  for (xiiSceneDatabaseManagerState::Slot& slot : s_pState->m_Slots)
-    ReleaseExtractedMeshes(slot);
+  for (auto it = s_pState->m_Contexts.GetIterator(); it.IsValid(); ++it)
+    ReleaseExtractedMeshes(it.Value());
   s_pState->m_bEngineStarted = false;
 }
 
@@ -361,11 +333,7 @@ void xiiSceneDatabaseManager::Shutdown()
     return;
 
   EngineShutdown();
-  for (xiiSceneDatabaseManagerState::Slot& slot : s_pState->m_Slots)
-  {
-    slot.m_pDatabase.Clear();
-  }
-
+  s_pState->m_Contexts.Clear();
   s_pState.Clear();
 }
 
@@ -378,12 +346,12 @@ xiiResult xiiSceneDatabaseContext::Initialize(xiiUInt32 uiInitialCapacity)
 {
   Shutdown();
   m_Handle = xiiSceneDatabaseManager::CreateContext(uiInitialCapacity);
-  return m_Handle.IsValid() ? XII_SUCCESS : XII_FAILURE;
+  return m_Handle.IsInvalidated() ? XII_FAILURE : XII_SUCCESS;
 }
 
 void xiiSceneDatabaseContext::Shutdown()
 {
-  if (m_Handle.IsValid())
+  if (!m_Handle.IsInvalidated())
     xiiSceneDatabaseManager::DestroyContext(m_Handle);
   m_Handle = {};
 }

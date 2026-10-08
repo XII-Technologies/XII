@@ -256,7 +256,7 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddLocalLightPasses(
   const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials,
   xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset)
 {
-  if (!IsSupported() || !xiiGpuVisibilityManager::IsValid(hVisibilityContext) || !hSceneContext.IsValid() || !hDepthAtlas.IsValid() ||
+  if (!IsSupported() || !xiiGpuVisibilityManager::IsValid(hVisibilityContext) || hSceneContext.IsInvalidated() || !hDepthAtlas.IsValid() ||
       shadowData.IsEmpty() || uiAtlasSize == 0U || uiVertexStride == 0U || !geometry.m_hGeometryMetadata.IsValid() ||
       !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid())
     return hDepthAtlas;
