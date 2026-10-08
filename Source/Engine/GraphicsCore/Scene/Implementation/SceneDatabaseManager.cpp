@@ -223,7 +223,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       desc.m_LocalTransform   = renderData.m_GlobalTransform.GetAsMat4();
       desc.m_Flags            = GetSceneFlags(renderData, hMaterial);
       desc.m_uiGeometryIndex  = hGeometry.GetInternalID().m_InstanceIndex;
-      desc.m_uiMaterialIndex  = hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex;
+      desc.m_uiMaterialIndex  = !hGpuMaterial.IsInvalidated() ? hGpuMaterial.GetInternalID().m_InstanceIndex : xiiInvalidIndex;
       desc.m_uiUserData       = renderData.m_uiUniqueID;
       desc.m_uiFirstPrimitive = renderData.m_uiFirstPrimitive;
       desc.m_uiPrimitiveCount = renderData.m_uiPrimitiveCount;
@@ -271,7 +271,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       xiiMaterialManager::ReleaseMaterialResource(pEntry->m_hMaterial);
       pEntry->m_hMaterial    = hMaterial;
       pEntry->m_hGpuMaterial = hGpuMaterial;
-      scene.SetMaterial(pEntry->m_hSceneObject, hGpuMaterial.IsValid() ? hGpuMaterial.m_uiSlot : xiiInvalidIndex);
+      scene.SetMaterial(pEntry->m_hSceneObject, !hGpuMaterial.IsInvalidated() ? hGpuMaterial.GetInternalID().m_InstanceIndex : xiiInvalidIndex);
     }
 
     if (pEntry == nullptr)

@@ -190,14 +190,13 @@ xiiResult xiiMaterialGpuStorage::Initialize(xiiGALDevice* pDevice, const xiiMate
   }
   m_pSurfaceBuffer->SetDebugName("Surface Material GPU Storage");
 
+  m_MaterialIds.Reserve(description.m_uiMaxMaterials);
   m_Slots.SetCount(description.m_uiMaxMaterials);
-  m_FreeSlots.Reserve(description.m_uiMaxMaterials);
   for (xiiUInt32 i = description.m_uiMaxMaterials; i > 0U; --i)
   {
     Slot& slot = m_Slots[i - 1U];
     slot.m_LastUploadedRevision.SetCount(description.m_uiFramesInFlight);
     xiiMemoryUtils::ZeroFill(slot.m_LastUploadedRevision.GetData(), slot.m_LastUploadedRevision.GetCount());
-    m_FreeSlots.PushBack(i - 1U);
   }
 
   return XII_SUCCESS;
@@ -208,8 +207,8 @@ void xiiMaterialGpuStorage::Shutdown()
   XII_LOCK(m_Mutex);
   m_pBuffer.Clear();
   m_pSurfaceBuffer.Clear();
+  m_MaterialIds.Clear();
   m_Slots.Clear();
-  m_FreeSlots.Clear();
   m_RetiredSlots.Clear();
   m_Description       = {};
   m_uiMaterialStride  = 0U;
@@ -225,20 +224,19 @@ xiiMaterialGpuHandle xiiMaterialGpuStorage::RegisterMaterial(xiiSharedPtr<xiiMat
 
   const xiiSharedPtr<const xiiMaterialSchema> pSchema = pInstance->GetSchema();
   XII_LOCK(m_Mutex);
-  if (pSchema == nullptr || pSchema->GetParameterBlockSize() > m_Description.m_uiMaxParameterBytes || m_pBuffer == nullptr || m_FreeSlots.IsEmpty())
+  if (pSchema == nullptr || pSchema->GetParameterBlockSize() > m_Description.m_uiMaxParameterBytes || m_pBuffer == nullptr || m_MaterialIds.GetCount() >= m_Slots.GetCount())
     return {};
 
-  const xiiUInt32 uiSlot = m_FreeSlots.PeekBack();
-  m_FreeSlots.PopBack();
+  const xiiMaterialGpuId id     = m_MaterialIds.Insert(0U);
+  const xiiUInt32        uiSlot = id.m_InstanceIndex;
+  m_MaterialIds[id]             = uiSlot;
   Slot& slot       = m_Slots[uiSlot];
   slot.m_pInstance = std::move(pInstance);
+  slot.m_Id        = id;
   xiiMemoryUtils::ZeroFill(slot.m_LastUploadedRevision.GetData(), slot.m_LastUploadedRevision.GetCount());
   ++m_uiActiveCount;
 
-  xiiMaterialGpuHandle handle;
-  handle.m_uiSlot       = uiSlot;
-  handle.m_uiGeneration = slot.m_uiGeneration;
-  return handle;
+  return xiiMaterialGpuHandle(id);
 }
 
 bool xiiMaterialGpuStorage::ReplaceMaterial(xiiMaterialGpuHandle handle, xiiSharedPtr<xiiMaterialInstance> pInstance)
@@ -251,7 +249,7 @@ bool xiiMaterialGpuStorage::ReplaceMaterial(xiiMaterialGpuHandle handle, xiiShar
   if (!IsValidHandleLocked(handle) || pSchema == nullptr || pSchema->GetParameterBlockSize() > m_Description.m_uiMaxParameterBytes)
     return false;
 
-  Slot& slot = m_Slots[handle.m_uiSlot];
+  Slot& slot = m_Slots[handle.GetInternalID().m_InstanceIndex];
   if (slot.m_pInstance == pInstance)
     return true;
 
@@ -266,15 +264,12 @@ void xiiMaterialGpuStorage::UnregisterMaterial(xiiMaterialGpuHandle handle, xiiU
   if (!IsValidHandleLocked(handle))
     return;
 
-  Slot& slot = m_Slots[handle.m_uiSlot];
+  Slot& slot = m_Slots[handle.GetInternalID().m_InstanceIndex];
   slot.m_pInstance.Clear();
-  ++slot.m_uiGeneration;
-  if (slot.m_uiGeneration == 0U)
-    slot.m_uiGeneration = 1U;
   --m_uiActiveCount;
 
   RetiredSlot& retired     = m_RetiredSlots.ExpandAndGetRef();
-  retired.m_uiSlot         = handle.m_uiSlot;
+  retired.m_Id             = handle.GetInternalID();
   retired.m_uiLastUseFrame = uiFrameIndex;
 }
 
@@ -286,7 +281,9 @@ void xiiMaterialGpuStorage::CollectGarbage(xiiUInt64 uiCompletedFrame)
     if (m_RetiredSlots[i - 1U].m_uiLastUseFrame > uiCompletedFrame)
       continue;
 
-    m_FreeSlots.PushBack(m_RetiredSlots[i - 1U].m_uiSlot);
+    const xiiMaterialGpuId id = m_RetiredSlots[i - 1U].m_Id;
+    m_Slots[id.m_InstanceIndex].m_Id.Invalidate();
+    m_MaterialIds.Remove(id);
     m_RetiredSlots.RemoveAtAndSwap(i - 1U);
   }
 }
@@ -300,7 +297,7 @@ bool xiiMaterialGpuStorage::IsValidHandle(xiiMaterialGpuHandle handle) const
 xiiSharedPtr<xiiMaterialInstance> xiiMaterialGpuStorage::GetMaterial(xiiMaterialGpuHandle handle) const
 {
   XII_LOCK(m_Mutex);
-  return IsValidHandleLocked(handle) ? m_Slots[handle.m_uiSlot].m_pInstance : nullptr;
+  return IsValidHandleLocked(handle) ? m_Slots[handle.GetInternalID().m_InstanceIndex].m_pInstance : nullptr;
 }
 
 xiiUInt32 xiiMaterialGpuStorage::GetGpuOffset(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex) const
@@ -310,7 +307,7 @@ xiiUInt32 xiiMaterialGpuStorage::GetGpuOffset(xiiMaterialGpuHandle handle, xiiUI
     return xiiInvalidIndex;
 
   const xiiUInt64 uiFrameSlice = uiFrameIndex % m_Description.m_uiFramesInFlight;
-  return static_cast<xiiUInt32>((uiFrameSlice * m_Description.m_uiMaxMaterials + handle.m_uiSlot) * m_uiMaterialStride);
+  return static_cast<xiiUInt32>((uiFrameSlice * m_Description.m_uiMaxMaterials + handle.GetInternalID().m_InstanceIndex) * m_uiMaterialStride);
 }
 
 xiiUInt32 xiiMaterialGpuStorage::GetSurfaceBaseIndex(xiiUInt64 uiFrameIndex) const
@@ -365,8 +362,7 @@ void xiiMaterialGpuStorage::GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpu
       continue;
 
     xiiMaterialGpuUpload& upload        = out_batch.m_Uploads.ExpandAndGetRef();
-    upload.m_Handle.m_uiSlot            = i;
-    upload.m_Handle.m_uiGeneration      = slot.m_uiGeneration;
+    upload.m_Handle                     = xiiMaterialGpuHandle(slot.m_Id);
     upload.m_uiRevision                 = snapshot.m_uiRevision;
     upload.m_uiDestinationOffset        = static_cast<xiiUInt32>((static_cast<xiiUInt64>(uiFrameSlice) * m_Description.m_uiMaxMaterials + i) * m_uiMaterialStride);
     upload.m_uiSurfaceDestinationOffset = static_cast<xiiUInt32>((static_cast<xiiUInt64>(uiFrameSlice) * m_Description.m_uiMaxMaterials + i) * sizeof(xiiGpuSurfaceMaterial));
@@ -438,12 +434,12 @@ void xiiMaterialGpuStorage::MarkUploadsRecorded(const xiiMaterialGpuUploadBatch&
     if (!IsValidHandleLocked(upload.m_Handle))
       continue;
 
-    m_Slots[upload.m_Handle.m_uiSlot].m_LastUploadedRevision[uiFrameSlice] = upload.m_uiRevision;
+    m_Slots[upload.m_Handle.GetInternalID().m_InstanceIndex].m_LastUploadedRevision[uiFrameSlice] = upload.m_uiRevision;
     m_uiLastUploadBytes += upload.m_Data.GetCount() + sizeof(xiiGpuSurfaceMaterial);
   }
 }
 
 bool xiiMaterialGpuStorage::IsValidHandleLocked(xiiMaterialGpuHandle handle) const
 {
-  return handle.IsValid() && handle.m_uiSlot < m_Slots.GetCount() && m_Slots[handle.m_uiSlot].m_uiGeneration == handle.m_uiGeneration && m_Slots[handle.m_uiSlot].m_pInstance != nullptr;
+  return m_MaterialIds.Contains(handle.GetInternalID()) && m_Slots[handle.GetInternalID().m_InstanceIndex].m_pInstance != nullptr;
 }

@@ -206,13 +206,13 @@ namespace
     result.BaseColorOpacity          = xiiVec4(1.0f);
     result.EmissiveColorAndRoughness = xiiVec4(0.0f, 0.0f, 0.0f, 0.5f);
     result.SurfaceParameters         = xiiVec4(0.0f, 0.5f, 0.0f, 1.0f);
-    result.Metadata                  = xiiVec4U32(instance.m_hMaterial.m_uiSlot, instance.m_uiStableObjectId, static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U);
+    result.Metadata                  = xiiVec4U32(instance.m_hMaterial.GetInternalID().m_InstanceIndex, instance.m_uiStableObjectId, static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U);
     result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
     result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
     result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
     result.Rendering                 = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque), 0U, 0U);
 
-    if (!instance.m_hMaterial.IsValid() || !xiiMaterialManager::IsInitialized())
+    if (instance.m_hMaterial.IsInvalidated() || !xiiMaterialManager::IsInitialized())
       return result;
 
     const xiiSharedPtr<xiiMaterialInstance> material = xiiMaterialManager::GetGpuStorage().GetMaterial(instance.m_hMaterial);
@@ -806,7 +806,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     gpuInstance.SetHitGroupContribution(0U);
     xiiBitflags<xiiGALRayTracingInstanceFlags> flags           = instance.m_Description.m_Flags;
     bool                                       bRequiresAnyHit = !geometry.m_Description.m_bOpaque;
-    if (instance.m_Description.m_hMaterial.IsValid() && xiiMaterialManager::IsInitialized())
+    if (!instance.m_Description.m_hMaterial.IsInvalidated() && xiiMaterialManager::IsInitialized())
     {
       const xiiSharedPtr<xiiMaterialInstance> pMaterial = xiiMaterialManager::GetGpuStorage().GetMaterial(instance.m_Description.m_hMaterial);
       bRequiresAnyHit                                   = bRequiresAnyHit || (pMaterial != nullptr && pMaterial->GetRuntimeState().IsMasked());
