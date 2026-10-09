@@ -48,8 +48,8 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialGpuUpload
 
 struct XII_GRAPHICSCORE_DLL xiiMaterialGpuUploadBatch
 {
-  xiiUInt64                             m_uiFrameIndex = 0ULL;
-  xiiDynamicArray<xiiMaterialGpuUpload> m_Uploads;
+  xiiUInt64                                                         m_uiFrameIndex = 0ULL;
+  xiiDynamicArray<xiiMaterialGpuUpload, xiiAlignedAllocatorWrapper> m_Uploads;
 
   [[nodiscard]] bool IsEmpty() const { return m_Uploads.IsEmpty(); }
 };
@@ -131,15 +131,15 @@ private:
   void MarkUploadsRecorded(const xiiMaterialGpuUploadBatch& batch);
   bool IsValidHandleLocked(xiiMaterialGpuHandle handle) const;
 
-  mutable xiiMutex                 m_Mutex;
-  xiiMaterialGpuStorageDescription m_Description;
+  mutable xiiMutex                        m_Mutex;
+  xiiMaterialGpuStorageDescription        m_Description;
   xiiIdTable<xiiMaterialGpuId, xiiUInt32> m_MaterialIds;
-  xiiDynamicArray<Slot>            m_Slots;
-  xiiDynamicArray<RetiredSlot>     m_RetiredSlots;
-  xiiSharedPtr<xiiGALBuffer>       m_pBuffer;
-  xiiSharedPtr<xiiGALBuffer>       m_pSurfaceBuffer;
-  xiiUInt32                        m_uiMaterialStride  = 0U;
-  xiiUInt32                        m_uiActiveCount     = 0U;
-  xiiUInt32                        m_uiLastUploadCount = 0U;
-  xiiUInt64                        m_uiLastUploadBytes = 0ULL;
+  xiiDynamicArray<Slot>                   m_Slots;
+  xiiDynamicArray<RetiredSlot>            m_RetiredSlots;
+  xiiSharedPtr<xiiGALBuffer>              m_pBuffer;
+  xiiSharedPtr<xiiGALBuffer>              m_pSurfaceBuffer;
+  xiiUInt32                               m_uiMaterialStride  = 0U;
+  xiiUInt32                               m_uiActiveCount     = 0U;
+  xiiUInt32                               m_uiLastUploadCount = 0U;
+  xiiUInt64                               m_uiLastUploadBytes = 0ULL;
 };
