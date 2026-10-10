@@ -25,6 +25,7 @@ public:
   xiiShaderPermutationResourceHandle m_hDepthShaderPermutation;
   xiiShaderPermutationResourceHandle m_hGBufferShaderPermutation;
   xiiShaderPermutationResourceHandle m_hForwardPlusShaderPermutation;
+  xiiSharedPtr<xiiGALSampler>        m_pMaterialSampler;
   bool                               m_bEngineStarted        = false;
   bool                               m_bMeshShadersSupported = false;
 };
@@ -259,12 +260,12 @@ xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddDepthPrepass(xiiRenderG
 
   auto pass = graph.AddPass<DepthRasterPassData>(
     sName, xiiGALCommandQueueFlags::Graphics,
-    [visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, description](DepthRasterPassData& data, xiiRenderGraphBuilder& builder) {
+    [visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, width = description.m_uiWidth, height = description.m_uiHeight](DepthRasterPassData& data, xiiRenderGraphBuilder& builder) {
       xiiGALTextureCreationDescription depthDescription;
       depthDescription.m_Type        = xiiGALResourceDimension::Texture2D;
       depthDescription.m_Format      = xiiGALResourceFormat::D32Float;
-      depthDescription.m_Size.width  = description.m_uiWidth;
-      depthDescription.m_Size.height = description.m_uiHeight;
+      depthDescription.m_Size.width  = width;
+      depthDescription.m_Size.height = height;
       depthDescription.m_uiMipLevels = 1U;
       depthDescription.m_BindFlags   = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
       depthDescription.m_Usage       = xiiGALResourceUsage::Default;
@@ -307,6 +308,8 @@ xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddDepthPrepass(xiiRenderG
       cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
       cmd.SetViewport({0.0f, 0.0f, static_cast<float>(data.m_Description.m_uiWidth), static_cast<float>(data.m_Description.m_uiHeight), 0.0f, 1.0f});
       cmd.SetPipelineState(pPipeline.Borrow());
+      cmd.ResolveAndSetSampler("g_sAnisotropicWrap", s_pState->m_pMaterialSampler.Borrow());
+      cmd.ResolveAndSetSampler("g_sLinearWrap", s_pState->m_pMaterialSampler.Borrow());
       cmd.ResolveAndSetConstantBuffer("xiiGpuSceneRasterConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Mesh | xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
       cmd.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
@@ -378,7 +381,7 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
 
   auto pass = graph.AddPass<GBufferRasterPassData>(
     sName, xiiGALCommandQueueFlags::Graphics,
-    [hSceneDepth, hVelocity, visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, description](GBufferRasterPassData& data, xiiRenderGraphBuilder& builder) {
+    [hSceneDepth, hVelocity, visibility, geometry, materials, hConstants = constantsPass.first->m_hConstants, width = description.m_uiWidth, height = description.m_uiHeight](GBufferRasterPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hDepth                = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::DepthRead);
       data.m_hConstants            = builder.ReadBuffer(hConstants, xiiGALResourceStateFlags::ConstantBuffer);
       data.m_hSceneInstances       = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
@@ -392,8 +395,8 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
 
       xiiGALTextureCreationDescription targetDescription;
       targetDescription.m_Type        = xiiGALResourceDimension::Texture2D;
-      targetDescription.m_Size.width  = description.m_uiWidth;
-      targetDescription.m_Size.height = description.m_uiHeight;
+      targetDescription.m_Size.width  = width;
+      targetDescription.m_Size.height = height;
       targetDescription.m_uiMipLevels = 1U;
       targetDescription.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
       targetDescription.m_Usage       = xiiGALResourceUsage::Default;
@@ -444,6 +447,8 @@ xiiGpuSceneGBufferOutputs xiiGpuSceneRasterManager::AddGBufferPass(xiiRenderGrap
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.5f, 0.5f, 1.0f));
       cmd.SetViewport({0.0f, 0.0f, static_cast<float>(data.m_Description.m_uiWidth), static_cast<float>(data.m_Description.m_uiHeight), 0.0f, 1.0f});
       cmd.SetPipelineState(pPipeline.Borrow());
+      cmd.ResolveAndSetSampler("g_sAnisotropicWrap", s_pState->m_pMaterialSampler.Borrow());
+      cmd.ResolveAndSetSampler("g_sLinearWrap", s_pState->m_pMaterialSampler.Borrow());
       cmd.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Mesh | xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
       cmd.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
@@ -591,6 +596,8 @@ xiiRenderGraphTextureHandle xiiGpuSceneRasterManager::AddForwardPlusPass(xiiRend
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hDirectLighting)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
       cmd.SetViewport({0.0f, 0.0f, static_cast<float>(data.m_Description.m_uiWidth), static_cast<float>(data.m_Description.m_uiHeight), 0.0f, 1.0f});
       cmd.SetPipelineState(pPipeline.Borrow());
+      cmd.ResolveAndSetSampler("g_sAnisotropicWrap", s_pState->m_pMaterialSampler.Borrow());
+      cmd.ResolveAndSetSampler("g_sLinearWrap", s_pState->m_pMaterialSampler.Borrow());
       data.m_pLightingSystem->BindLightingResources(cmd, xiiGALShaderType::Pixel);
       data.m_pLightingSystem->BindIESProfiles(cmd, xiiGALShaderType::Pixel);
       cmd.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Mesh | xiiGALShaderType::Pixel);
@@ -646,6 +653,16 @@ void xiiGpuSceneRasterManager::EngineStartup()
   s_pState->m_bMeshShadersSupported        = pDevice != nullptr && pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled;
   if (!s_pState->m_bMeshShadersSupported)
     return;
+  xiiGALSamplerCreationDescription samplerDescription;
+  samplerDescription.m_MinFilter       = xiiGALFilterType::Anisotropic;
+  samplerDescription.m_MagFilter       = xiiGALFilterType::Anisotropic;
+  samplerDescription.m_MipFilter       = xiiGALFilterType::Anisotropic;
+  samplerDescription.m_AddressU        = xiiGALTextureAddressMode::Wrap;
+  samplerDescription.m_AddressV        = xiiGALTextureAddressMode::Wrap;
+  samplerDescription.m_AddressW        = xiiGALTextureAddressMode::Wrap;
+  samplerDescription.m_uiMaxAnisotropy = 8;
+  s_pState->m_pMaterialSampler         = pDevice->CreateSampler(samplerDescription);
+
 
   const xiiShaderResourceHandle hShader            = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneDepth.xiiShader");
   s_pState->m_hDepthShaderPermutation              = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);
@@ -660,6 +677,7 @@ void xiiGpuSceneRasterManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
+  s_pState->m_pMaterialSampler = nullptr;
   s_pState->m_hDepthShaderPermutation.Invalidate();
   s_pState->m_hGBufferShaderPermutation.Invalidate();
   s_pState->m_hForwardPlusShaderPermutation.Invalidate();

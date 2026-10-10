@@ -427,15 +427,15 @@ xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& grap
 
   struct UpdatePassData
   {
-    xiiRenderGraphTextureHandle            m_hIrradianceAtlas;
-    xiiRenderGraphTextureHandle            m_hDistanceAtlas;
-    xiiRenderGraphBufferHandle             m_hProbeStates;
-    xiiRenderGraphBufferHandle             m_hProbeUpdates;
-    xiiRenderGraphBufferHandle             m_hConstants;
-    xiiDynamicArray<xiiGpuDDGIProbeState>  m_ProbeStates;
-    xiiDynamicArray<xiiGpuDDGIProbeUpdate> m_ProbeUpdates;
-    xiiVec3I32                             m_vMinimumCell;
-    const xiiLightingSystem*               m_pLightingSystem = nullptr;
+    xiiRenderGraphTextureHandle                                        m_hIrradianceAtlas;
+    xiiRenderGraphTextureHandle                                        m_hDistanceAtlas;
+    xiiRenderGraphBufferHandle                                         m_hProbeStates;
+    xiiRenderGraphBufferHandle                                         m_hProbeUpdates;
+    xiiRenderGraphBufferHandle                                         m_hConstants;
+    xiiDynamicArray<xiiGpuDDGIProbeState, xiiAlignedAllocatorWrapper>  m_ProbeStates;
+    xiiDynamicArray<xiiGpuDDGIProbeUpdate, xiiAlignedAllocatorWrapper> m_ProbeUpdates;
+    xiiVec3I32                                                         m_vMinimumCell;
+    const xiiLightingSystem*                                           m_pLightingSystem = nullptr;
   };
 
   const bool bPerformUpdates = s_pState->m_uiLastGpuUpdateFrame != s_pState->m_uiFrameIndex;

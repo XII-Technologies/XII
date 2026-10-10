@@ -342,7 +342,12 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       xiiGpuEmissiveLightHeader header = {};
       header.FrameIndex                = static_cast<xiiUInt32>(data.m_uiFrameIndex);
       cmd.UpdateBuffer(context.GetBuffer(data.m_hHeader), 0U,
-                                           xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&header), sizeof(header)));
+                       xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&header), sizeof(header)));
+      xiiGALStateTransitionDescription headerTransition;
+      headerTransition.m_pResource       = context.GetBuffer(data.m_hHeader);
+      headerTransition.m_NewState        = xiiGALResourceStateFlags::UnorderedAccess;
+      headerTransition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+      cmd.TransitionResourceStates(xiiMakeArrayPtr(&headerTransition, 1));
       if (!data.m_bExtract)
         return;
 
