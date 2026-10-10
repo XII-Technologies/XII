@@ -173,6 +173,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     descriptor = PipelineResourceTest::MakeDefinition();
     descriptor.m_Connections.Clear();
     XII_TEST_BOOL(xiiRenderPipeline::Compile(descriptor, compiled).Failed());
+    descriptor = PipelineResourceTest::MakeDefinition();
+    descriptor.m_Passes[1].m_Properties.Insert("Value", "invalid numeric value");
+    XII_TEST_BOOL(xiiRenderPipeline::Compile(descriptor, compiled).Failed());
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Late format resolution, required output and history invalidation")
   {
@@ -320,8 +323,40 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
       XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), 18);
       auto descriptor = pipeline->GetDescriptor();
       XII_TEST_RESULT(descriptor.RemovePass(15)); // Debug is a removable independent stage.
+      XII_TEST_RESULT(descriptor.Connect(14, "DisplayLinearColor", 15, "DisplayLinearColor"));
       xiiSharedPtr<const xiiRenderPipeline> edited;
       XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
+      XII_TEST_BOOL(edited->GetHeapMemoryUsage() > descriptor.m_Passes.GetHeapMemoryUsage() + descriptor.m_Connections.GetHeapMemoryUsage());
+      auto incomplete = pipeline->GetDescriptor();
+      XII_TEST_RESULT(incomplete.RemovePass(0));
+      xiiStringBuilder error;
+      XII_TEST_BOOL(xiiRenderPipeline::Compile(incomplete, edited, &error).Failed());
+      XII_TEST_BOOL(!error.IsEmpty());
+      auto duplicate = pipeline->GetDescriptor();
+      duplicate.AddPass("Duplicate preparation", "xiiBuiltinRenderPipelinePass", duplicate.m_Passes[0].m_Properties);
+      XII_TEST_BOOL(xiiRenderPipeline::Compile(duplicate, edited).Failed());
+      auto                 configured = pipeline->GetDescriptor();
+      xiiVariantDictionary display;
+      display.Insert("BloomStrength", 0.2f);
+      xiiVariantDictionary exposure;
+      exposure.Insert("ExposureCompensation", 1.25f);
+      display.Insert("Exposure", exposure);
+      configured.m_Parameters.Insert("DisplayOutput", display);
+      XII_TEST_RESULT(xiiRenderPipeline::Compile(configured, edited));
+      xiiDefaultMemoryStreamStorage storage;
+      xiiMemoryStreamWriter         stream(&storage);
+      XII_TEST_RESULT(configured.Serialize(stream));
+      xiiMemoryStreamReader               reader(&storage);
+      xiiRenderPipelineResourceDescriptor restored;
+      XII_TEST_RESULT(restored.Deserialize(reader));
+      XII_TEST_BOOL(restored.m_Parameters == configured.m_Parameters);
+      XII_TEST_RESULT(xiiRenderPipeline::Compile(restored, edited));
+      display.Insert("BloomRadius", "invalid numeric value");
+      configured.m_Parameters.Insert("DisplayOutput", display);
+      XII_TEST_BOOL(xiiRenderPipeline::Compile(configured, edited).Failed());
+      display.Insert("BloomRadius", -1.0f);
+      configured.m_Parameters.Insert("DisplayOutput", display);
+      XII_TEST_BOOL(xiiRenderPipeline::Compile(configured, edited).Failed());
     }
   }
 }

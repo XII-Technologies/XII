@@ -11,6 +11,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 namespace PipelineExecutionTest
@@ -178,12 +179,55 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     view->SetCamera(&camera);
     view->SetViewport(xiiRectFloat(0, 0, 32, 32));
     view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow());
+    const float viewBloomStrength = view->GetDisplayOutputSettings().m_fBloomStrength;
+    xiiRenderPipelineResourceDescriptor definition;
+    xiiRenderPipelineResource::GetDefaultDescriptor(definition);
+    xiiVariantDictionary display;
+    display.Insert("BloomStrength", 0.2f);
+    definition.m_Parameters.Insert("DisplayOutput", display);
+    view->SetRenderPipelineResource(xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("Configured default pipeline", std::move(definition)));
+    xiiGALTextureReadback readback(environment.GetDevice());
     for (xiiUInt32 frame = 0; frame < 2; ++frame)
     {
+      if (frame == 1)
+      {
+        display.Insert("BloomStrength", 0.1f);
+        view->SetPipelineParameter("DisplayOutput", display);
+      }
       world.Update();
+      XII_TEST_FLOAT(view->GetDisplayOutputSettings().m_fBloomStrength, viewBloomStrength, 0.0001f);
       environment.GetDevice()->WaitIdle();
       XII_TEST_BOOL(view->GetRenderGraph()->GetStatistics().m_uiCompiledPassCount > 10);
       XII_TEST_BOOL(view->GetRenderGraph()->GetExportedTexture(view->GetRenderGraph()->FindTexture("ViewOutput")) == target);
+      xiiGALCommandListCreationDescription commands;
+      commands.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+      auto commandList      = environment.GetDevice()->CreateCommandList(commands);
+      commandList->Begin();
+      xiiGALTextureReadback::ReadbackRequest request;
+      request.m_pTexture = target.Borrow();
+      readback.Enqueue(commandList.Borrow(), request);
+      commandList->End();
+      auto* queue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+      queue->WaitForFenceValue(queue->Submit(commandList.Borrow()));
+      readback.WaitForNextCompleted();
+      auto capture = readback.GetCompleted();
+      if (XII_TEST_BOOL(static_cast<bool>(capture)))
+      {
+        commandList->Begin();
+        xiiGALMappedTextureSubresource mapped;
+        xiiGALTextureMipLevelData      mip;
+        if (XII_TEST_RESULT(commandList->MapTextureSubresource(capture.m_pStagingTexture, mip, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped)))
+        {
+          for (xiiUInt32 y = 0; y < 32; ++y)
+          {
+            const auto* row = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride);
+            for (xiiUInt32 x = 0; x < 32; ++x) XII_TEST_INT(row[x * 4 + 3], 255);
+          }
+          XII_TEST_RESULT(commandList->UnmapTextureSubresource(capture.m_pStagingTexture, mip));
+        }
+        commandList->End();
+        readback.RecycleStagingTexture(capture.m_pStagingTexture);
+      }
     }
     module->DestroyView(handle);
   }
