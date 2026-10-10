@@ -1,28 +1,25 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-
 #include <Core/CoreDLL.h>
-#include <Core/Graph/GraphHandles.h>
+#include <Core/Graph/GraphEvents.h>
+#include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/Containers/IdTable.h>
+#include <Foundation/Types/UniquePtr.h>
 
-/// Topology-only directed multigraph. Parallel edges, self-loops, cycles and isolated vertices are permitted.
+struct xiiGraphHandleMap;
+
+/// General directed multigraph, with stable, graph-owned handles and no domain-specific semantics.
+/// Parallel edges, loops, cycles and isolated vertices are supported. Lookup/degree/edge removal are O(1),
+/// insertion amortized O(1), vertex removal O(in + out), enumeration O(V + E). Adjacency allocates nothing.
 ///
-/// Owns structural records only; associate payloads externally using the hashable handles. All handles are
-/// specific to one graph lifetime. Foreign, removed and default handles are rejected, including after Clear().
-/// Slots at their final generation are retired instead of allowing a stale handle to become valid again.
-/// Identity and capacity exhaustion return failure through the Try operations.
+/// Unrelated handles survive mutation and Reserve. Reacquire all views, dense indices and cursors after any
+/// mutation. Adjacency visits newest edges first; dense enumeration uses swap removal. Removed/foreign handles
+/// are rejected. Generations never wrap: exhausted slots retire. Compact explicitly remaps all live handles.
 ///
-/// Lookup, degree queries and edge removal are O(1); insertion is amortized O(1). Vertex removal is O(in + out).
-/// Enumeration is O(V + E), independent of holes in ID storage. FindEdge is O(out-degree).
-/// Clear is O(V + E), retains allocations and invalidates every handle. Reserve may relocate internal storage.
-/// No pointers to structural records are exposed. All views, indices and iterators must be reacquired after
-/// ANY mutation (including Reserve); unrelated element handles remain valid. Enumeration order is unspecified
-/// after removal. Adjacency visits newest edges first. Identical mutation sequences yield identical orders.
-///
-/// Concurrent const access is allowed; mutation requires exclusive external synchronization. Algorithms and
-/// callbacks must not mutate the graph. Reflection, events, payload ownership and serialization belong to consumers.
+/// Concurrent const access is supported; use xiiSynchronizedGraph for synchronized mutation. Validators,
+/// event handlers and algorithm visitors must not mutate the graph. Instance subscriptions/validators remain
+/// with the graph object when topology is moved. CopyFrom provides explicit, recoverable copying and remapping.
 class XII_CORE_DLL xiiGraph
 {
   using LocalId = xiiGraphElementId::LocalId;
@@ -30,10 +27,10 @@ class XII_CORE_DLL xiiGraph
 public:
   explicit xiiGraph(xiiAllocator* pAllocator = xiiDefaultAllocatorWrapper::GetAllocator());
   ~xiiGraph();
+  xiiGraph(xiiGraph&& other);
   xiiGraph(const xiiGraph&)       = delete;
   void operator=(const xiiGraph&) = delete;
 
-  /// Allocation-free, read-only adjacency cursor. Invalid vertices produce an empty cursor.
   class XII_CORE_DLL EdgeIterator
   {
   public:
@@ -53,65 +50,69 @@ public:
   static constexpr xiiUInt32 MaxElementCount = 0xFFFFFFC0U;
   xiiResult                  TryInitialize();
   xiiResult                  Reserve(xiiUInt32 vertexCapacity, xiiUInt32 edgeCapacity);
-  /// Limits provide predictable, recoverable capacity failures. Existing occupied slots must fit.
-  xiiResult            SetLimits(xiiUInt32 vertexLimit, xiiUInt32 edgeLimit);
-  xiiResult            TryAddVertex(xiiGraphVertexHandle& out_hVertex);
-  xiiResult            TryAddEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget, xiiGraphEdgeHandle& out_hEdge);
+  /// Limits bound occupied slots (including retired slots), and fail before mutation when exceeded.
+  xiiResult SetLimits(xiiUInt32 vertexLimit, xiiUInt32 edgeLimit);
+  xiiResult TryAddVertex(xiiGraphVertexHandle& out_hVertex);
+  xiiResult TryAddEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget, xiiGraphEdgeHandle& out_hEdge);
+  xiiResult TryRemoveVertex(xiiGraphVertexHandle hVertex);
+  xiiResult TryRemoveEdge(xiiGraphEdgeHandle hEdge);
+  xiiResult TryClear();
+  /// Convenience forms return invalid handles/false on failure. Prefer Try forms when failure must propagate.
   xiiGraphVertexHandle AddVertex();
-  /// Returns an invalid handle without modifying the graph if either endpoint is invalid or foreign.
-  xiiGraphEdgeHandle AddEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget);
-  /// Invalid, foreign or already removed handles return false without modifying the graph.
-  bool RemoveVertex(xiiGraphVertexHandle hVertex);
-  bool RemoveEdge(xiiGraphEdgeHandle hEdge);
-  void Clear();
+  xiiGraphEdgeHandle   AddEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget);
+  bool                 RemoveVertex(xiiGraphVertexHandle hVertex);
+  bool                 RemoveEdge(xiiGraphEdgeHandle hEdge);
+  void                 Clear();
+
+  /// Reconnect without changing edge identity. Failure leaves the original connectivity unchanged.
+  xiiResult ReconnectEdge(xiiGraphEdgeHandle hEdge, xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget);
+  using ConnectionValidator = xiiDelegate<xiiResult(const xiiGraph&, xiiGraphVertexHandle, xiiGraphVertexHandle, xiiGraphEdgeHandle)>;
+  xiiResult SetConnectionValidator(ConnectionValidator validator);
+  xiiResult ValidateConnection(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget, xiiGraphEdgeHandle hExistingEdge = {}) const;
+  using Event = xiiEvent<const xiiGraphEvent&>;
+  const Event& GetEvents() const { return m_Events; }
+
+  /// Transactional replacement. Copy creates new handles; move transfers source handles and empties source.
+  /// Limits and validation of the destination apply. Subscriptions and validators are never copied/moved.
+  xiiResult CopyFrom(const xiiGraph& source, xiiGraphHandleMap* out_pMapping = nullptr);
+  xiiResult MoveFrom(xiiGraph&& source);
+  /// Rebuild only live storage. Old handles become stale; output maps them to the new handles on success.
+  xiiResult     Compact(xiiGraphHandleMap& out_mapping);
+  xiiAllocator* GetAllocator() const { return m_pAllocator; }
+  xiiUInt32     GetVertexLimit() const { return m_uiVertexLimit; }
+  xiiUInt32     GetEdgeLimit() const { return m_uiEdgeLimit; }
 
   bool                                    IsValid(xiiGraphVertexHandle hVertex) const;
   bool                                    IsValid(xiiGraphEdgeHandle hEdge) const;
-  xiiUInt32                               GetVertexCount() const { return m_VertexHandles.GetCount(); }
-  xiiUInt32                               GetEdgeCount() const { return m_EdgeHandles.GetCount(); }
-  xiiArrayPtr<const xiiGraphVertexHandle> GetVertices() const { return m_VertexHandles; }
-  xiiArrayPtr<const xiiGraphEdgeHandle>   GetEdges() const { return m_EdgeHandles; }
-
-  /// Dense index into GetVertices(), useful for transient algorithm/payload arrays. Invalid returns xiiInvalidIndex.
-  /// This is NOT a stable identity: any mutation may change it.
-  xiiUInt32    GetVertexIndex(xiiGraphVertexHandle hVertex) const;
+  xiiUInt32                               GetVertexCount() const;
+  xiiUInt32                               GetEdgeCount() const;
+  xiiArrayPtr<const xiiGraphVertexHandle> GetVertices() const;
+  xiiArrayPtr<const xiiGraphEdgeHandle>   GetEdges() const;
+  /// Transient indices into GetVertices()/GetEdges(). Invalid handles return xiiInvalidIndex.
+  xiiUInt32 GetVertexIndex(xiiGraphVertexHandle hVertex) const;
+  xiiUInt32 GetEdgeIndex(xiiGraphEdgeHandle hEdge) const;
+  /// Invalid vertices return zero degrees and empty adjacency cursors.
   xiiUInt32    GetInDegree(xiiGraphVertexHandle hVertex) const;
   xiiUInt32    GetOutDegree(xiiGraphVertexHandle hVertex) const;
   EdgeIterator GetIncomingEdges(xiiGraphVertexHandle hVertex) const;
   EdgeIterator GetOutgoingEdges(xiiGraphVertexHandle hVertex) const;
-  /// Endpoint queries return invalid handles for an invalid edge. Use adjacency cursors plus these to visit neighbours.
+  /// Invalid edges return invalid endpoints.
   xiiGraphVertexHandle GetSource(xiiGraphEdgeHandle hEdge) const;
   xiiGraphVertexHandle GetTarget(xiiGraphEdgeHandle hEdge) const;
-  /// Finds the newest surviving source-to-target edge, or returns an invalid handle.
-  xiiGraphEdgeHandle FindEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget) const;
+  xiiGraphEdgeHandle   FindEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget) const;
 
 private:
-  struct Vertex
-  {
-    LocalId   m_FirstIncoming;
-    LocalId   m_FirstOutgoing;
-    xiiUInt32 m_uiInDegree   = 0;
-    xiiUInt32 m_uiOutDegree  = 0;
-    xiiUInt32 m_uiDenseIndex = xiiInvalidIndex;
-  };
-  struct Edge
-  {
-    LocalId   m_Source;
-    LocalId   m_Target;
-    LocalId   m_PreviousIncoming;
-    LocalId   m_NextIncoming;
-    LocalId   m_PreviousOutgoing;
-    LocalId   m_NextOutgoing;
-    xiiUInt32 m_uiDenseIndex = xiiInvalidIndex;
-  };
-
-  xiiGraphVertexHandle                  MakeVertexHandle(LocalId id) const;
-  xiiGraphEdgeHandle                    MakeEdgeHandle(LocalId id) const;
-  xiiIdTable<LocalId, Vertex>           m_Vertices;
-  xiiIdTable<LocalId, Edge>             m_Edges;
-  xiiDynamicArray<xiiGraphVertexHandle> m_VertexHandles;
-  xiiDynamicArray<xiiGraphEdgeHandle>   m_EdgeHandles;
-  xiiUInt64                             m_uiGraphId     = 0;
-  xiiUInt32                             m_uiVertexLimit = MaxElementCount;
-  xiiUInt32                             m_uiEdgeLimit   = MaxElementCount;
+  struct Storage;
+  xiiGraphVertexHandle  MakeVertexHandle(LocalId id) const;
+  xiiGraphEdgeHandle    MakeEdgeHandle(LocalId id) const;
+  void                  Broadcast(xiiGraphEvent event);
+  void                  LinkEdge(LocalId edge);
+  void                  UnlinkEdge(LocalId edge);
+  xiiUniquePtr<Storage> m_pStorage;
+  xiiAllocator*         m_pAllocator;
+  Event                 m_Events;
+  ConnectionValidator   m_Validator;
+  mutable bool          m_bDispatching  = false;
+  xiiUInt32             m_uiVertexLimit = MaxElementCount;
+  xiiUInt32             m_uiEdgeLimit   = MaxElementCount;
 };
