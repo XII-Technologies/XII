@@ -52,10 +52,10 @@ public:
     bool                       m_bResident = true;
   };
 
-  xiiMutex                      m_Mutex;
-  xiiVolumetricMediumSettings   m_Settings;
+  xiiMutex                                m_Mutex;
+  xiiVolumetricMediumSettings             m_Settings;
   xiiIdTable<xiiVolumetricMediumId, Slot> m_Media;
-  xiiHashTable<xiiUInt64, Cell> m_Cells;
+  xiiHashTable<xiiUInt64, Cell>           m_Cells;
 
   void               RemoveSlotFromCells(xiiUInt32 uiSlot);
   [[nodiscard]] bool InsertSlotIntoCells(xiiUInt32 uiSlot);
