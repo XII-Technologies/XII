@@ -9,25 +9,32 @@ namespace
   xiiUInt64 DictionaryMemory(const xiiVariantDictionary& dictionary)
   {
     xiiUInt64 size = dictionary.GetHeapMemoryUsage();
-    for (const auto& entry : dictionary) size += entry.Key().GetHeapMemoryUsage() + VariantMemory(entry.Value());
+    for (const auto& entry : dictionary)
+      size += entry.Key().GetHeapMemoryUsage() + VariantMemory(entry.Value());
     return size;
   }
   xiiUInt64 VariantMemory(const xiiVariant& value)
   {
     switch (value.GetType())
     {
-      case xiiVariantType::String: return sizeof(xiiString) + value.Get<xiiString>().GetHeapMemoryUsage();
-      case xiiVariantType::DataBuffer: return sizeof(xiiDataBuffer) + value.Get<xiiDataBuffer>().GetHeapMemoryUsage();
-      case xiiVariantType::VariantDictionary: return sizeof(xiiVariantDictionary) + DictionaryMemory(value.Get<xiiVariantDictionary>());
+      case xiiVariantType::String:
+        return sizeof(xiiString) + value.Get<xiiString>().GetHeapMemoryUsage();
+      case xiiVariantType::DataBuffer:
+        return sizeof(xiiDataBuffer) + value.Get<xiiDataBuffer>().GetHeapMemoryUsage();
+      case xiiVariantType::VariantDictionary:
+        return sizeof(xiiVariantDictionary) + DictionaryMemory(value.Get<xiiVariantDictionary>());
       case xiiVariantType::VariantArray:
       {
         const auto& array = value.Get<xiiVariantArray>();
         xiiUInt64   size  = sizeof(xiiVariantArray) + array.GetHeapMemoryUsage();
-        for (const auto& element : array) size += VariantMemory(element);
+        for (const auto& element : array)
+          size += VariantMemory(element);
         return size;
       }
-      case xiiVariantType::TypedObject: return value.GetReflectedType() ? value.GetReflectedType()->GetTypeSize() : 0;
-      default: return 0;
+      case xiiVariantType::TypedObject:
+        return value.GetReflectedType() ? value.GetReflectedType()->GetTypeSize() : 0;
+      default:
+        return 0;
     }
   }
 } // namespace
@@ -43,7 +50,8 @@ xiiUInt64 xiiRenderPipeline::GetHeapMemoryUsage() const
   for (const auto& pass : m_Passes)
   {
     size += pass.m_Pins.GetHeapMemoryUsage();
-    for (const auto& pin : pass.m_Pins) size += pin.m_sName.GetHeapMemoryUsage();
+    for (const auto& pin : pass.m_Pins)
+      size += pin.m_sName.GetHeapMemoryUsage();
   }
   return size;
 }

@@ -613,7 +613,7 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
       {
         xiiGALMapHelper<xiiSparseVoxelRadianceConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
         constants->ClipmapAndUpdateCounts = xiiVec4U32(s_pState->m_Settings.m_uiClipmapLevels, s_pState->m_Settings.m_uiClipmapBrickResolution,
-                                                       s_pState->m_Settings.m_uiBrickVoxelResolution, data.m_Updates.GetCount());
+                                                                        s_pState->m_Settings.m_uiBrickVoxelResolution, data.m_Updates.GetCount());
         constants->PoolLayout             = xiiVec4U32(s_pState->m_uiVoxelsPerBrick, s_pState->m_Settings.m_uiMaxResidentBricks, static_cast<xiiUInt32>(s_pState->m_uiFrameIndex), 0U);
         constants->RadianceSettings       = xiiVec4(s_pState->m_Settings.m_fTemporalHysteresis, 0.0f, 0.0f, 0.0f);
       }

@@ -90,7 +90,8 @@ inline xiiUInt32 xiiStringUtils::GetCharacterCount(const char* szUtf8, const cha
   while ((szUtf8 < pStringEnd) && (*szUtf8 != '\0'))
   {
     // skip all the Utf8 continuation bytes
-    if (!xiiUnicodeUtils::IsUtf8ContinuationByte(*szUtf8)) ++uiCharacters;
+    if (!xiiUnicodeUtils::IsUtf8ContinuationByte(*szUtf8))
+      ++uiCharacters;
 
     ++szUtf8;
   }

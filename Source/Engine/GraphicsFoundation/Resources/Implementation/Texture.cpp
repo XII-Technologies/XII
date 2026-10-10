@@ -23,7 +23,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   do                                           \
   {                                            \
     XII_ASSERT_DEV((expression), __VA_ARGS__); \
-    if (!(expression)) { return {}; }          \
+    if (!(expression))                         \
+    {                                          \
+      return {};                               \
+    }                                          \
   } while (false)
 
 xiiGALTexture::xiiGALTexture(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTextureCreationDescription& creationDescription) :

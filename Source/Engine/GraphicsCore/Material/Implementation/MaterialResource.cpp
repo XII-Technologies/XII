@@ -198,25 +198,46 @@ namespace
   {
     switch (value.GetType())
     {
-      case xiiVariantType::Bool: out_type = xiiMaterialParameterType::Bool; return true;
+      case xiiVariantType::Bool:
+        out_type = xiiMaterialParameterType::Bool;
+        return true;
       case xiiVariantType::Int8:
       case xiiVariantType::Int16:
       case xiiVariantType::Int32:
-      case xiiVariantType::Int64: out_type = xiiMaterialParameterType::Int; return true;
+      case xiiVariantType::Int64:
+        out_type = xiiMaterialParameterType::Int;
+        return true;
       case xiiVariantType::UInt8:
       case xiiVariantType::UInt16:
       case xiiVariantType::UInt32:
-      case xiiVariantType::UInt64: out_type = xiiMaterialParameterType::UInt; return true;
+      case xiiVariantType::UInt64:
+        out_type = xiiMaterialParameterType::UInt;
+        return true;
       case xiiVariantType::Float:
-      case xiiVariantType::Double: out_type = xiiMaterialParameterType::Float; return true;
-      case xiiVariantType::Vector2: out_type = xiiMaterialParameterType::Float2; return true;
-      case xiiVariantType::Vector3: out_type = xiiMaterialParameterType::Float3; return true;
-      case xiiVariantType::Vector4: out_type = xiiMaterialParameterType::Float4; return true;
+      case xiiVariantType::Double:
+        out_type = xiiMaterialParameterType::Float;
+        return true;
+      case xiiVariantType::Vector2:
+        out_type = xiiMaterialParameterType::Float2;
+        return true;
+      case xiiVariantType::Vector3:
+        out_type = xiiMaterialParameterType::Float3;
+        return true;
+      case xiiVariantType::Vector4:
+        out_type = xiiMaterialParameterType::Float4;
+        return true;
       case xiiVariantType::Color:
-      case xiiVariantType::ColorGamma: out_type = xiiMaterialParameterType::Color; return true;
-      case xiiVariantType::Matrix3: out_type = xiiMaterialParameterType::Matrix3; return true;
-      case xiiVariantType::Matrix4: out_type = xiiMaterialParameterType::Matrix4; return true;
-      default: return false;
+      case xiiVariantType::ColorGamma:
+        out_type = xiiMaterialParameterType::Color;
+        return true;
+      case xiiVariantType::Matrix3:
+        out_type = xiiMaterialParameterType::Matrix3;
+        return true;
+      case xiiVariantType::Matrix4:
+        out_type = xiiMaterialParameterType::Matrix4;
+        return true;
+      default:
+        return false;
     }
   }
 

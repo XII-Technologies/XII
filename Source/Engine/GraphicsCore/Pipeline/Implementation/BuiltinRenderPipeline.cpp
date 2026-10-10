@@ -26,7 +26,8 @@ xiiResult xiiBuiltinRenderPipelinePass::Configure(const xiiVariantDictionary& pr
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   for (const auto stage : GetStages())
-    if (m_sStage == stage) return XII_SUCCESS;
+    if (m_sStage == stage)
+      return XII_SUCCESS;
   return XII_FAILURE;
 }
 
@@ -37,7 +38,8 @@ xiiResult xiiBuiltinRenderPipelinePass::ValidatePipeline(const xiiRenderPipeline
     xiiDisplayOutputSettings settings;
     if (xiiResolvePipelineDisplaySettings(descriptor.m_Parameters, settings).Failed())
     {
-      if (error) error->Set("Invalid DisplayOutput pipeline parameters.");
+      if (error)
+        error->Set("Invalid DisplayOutput pipeline parameters.");
       return XII_FAILURE;
     }
   }
@@ -46,10 +48,12 @@ xiiResult xiiBuiltinRenderPipelinePass::ValidatePipeline(const xiiRenderPipeline
   for (auto passIndex : order)
   {
     const auto& definition = descriptor.m_Passes[passIndex];
-    if (definition.m_sType != "xiiBuiltinRenderPipelinePass") continue;
+    if (definition.m_sType != "xiiBuiltinRenderPipelinePass")
+      continue;
     xiiString  stage = "Bloom";
     xiiVariant value;
-    if (definition.m_Properties.TryGetValue("Stage", value)) stage = value.ConvertTo<xiiString>();
+    if (definition.m_Properties.TryGetValue("Stage", value))
+      stage = value.ConvertTo<xiiString>();
     if (passIndex == index)
     {
       foundSelf = true;
@@ -57,22 +61,32 @@ xiiResult xiiBuiltinRenderPipelinePass::ValidatePipeline(const xiiRenderPipeline
     }
     if (stage == m_sStage)
     {
-      if (error) error->SetFormat("Built-in stage '{}' occurs more than once; use independent custom pass instances for branched effects.", m_sStage);
+      if (error)
+        error->SetFormat("Built-in stage '{}' occurs more than once; use independent custom pass instances for branched effects.", m_sStage);
       return XII_FAILURE;
     }
-    if (!foundSelf) precedingStages.Insert(stage);
+    if (!foundSelf)
+      precedingStages.Insert(stage);
   }
   const auto require = [&](xiiStringView prerequisite) -> xiiResult {
-    if (precedingStages.Contains(xiiString(prerequisite))) return XII_SUCCESS;
-    if (error) error->SetFormat("Built-in stage '{}' requires an earlier '{}' stage.", m_sStage, prerequisite);
+    if (precedingStages.Contains(xiiString(prerequisite)))
+      return XII_SUCCESS;
+    if (error)
+      error->SetFormat("Built-in stage '{}' requires an earlier '{}' stage.", m_sStage, prerequisite);
     return XII_FAILURE;
   };
-  if (m_sStage != "PrepareFrame") XII_SUCCEED_OR_RETURN(require("PrepareFrame"));
-  if (m_sStage == "Shadows" || m_sStage == "DepthAndGeometry" || m_sStage == "Lighting") XII_SUCCEED_OR_RETURN(require("Visibility"));
-  if (m_sStage == "DepthAndGeometry" || m_sStage == "Lighting") XII_SUCCEED_OR_RETURN(require("Shadows"));
-  if (m_sStage == "LightingPreparation" || m_sStage == "Lighting") XII_SUCCEED_OR_RETURN(require("DepthAndGeometry"));
-  if (m_sStage == "Lighting") XII_SUCCEED_OR_RETURN(require("LightingPreparation"));
-  if (m_sStage == "OpaqueComposition") XII_SUCCEED_OR_RETURN(require("Lighting"));
+  if (m_sStage != "PrepareFrame")
+    XII_SUCCEED_OR_RETURN(require("PrepareFrame"));
+  if (m_sStage == "Shadows" || m_sStage == "DepthAndGeometry" || m_sStage == "Lighting")
+    XII_SUCCEED_OR_RETURN(require("Visibility"));
+  if (m_sStage == "DepthAndGeometry" || m_sStage == "Lighting")
+    XII_SUCCEED_OR_RETURN(require("Shadows"));
+  if (m_sStage == "LightingPreparation" || m_sStage == "Lighting")
+    XII_SUCCEED_OR_RETURN(require("DepthAndGeometry"));
+  if (m_sStage == "Lighting")
+    XII_SUCCEED_OR_RETURN(require("LightingPreparation"));
+  if (m_sStage == "OpaqueComposition")
+    XII_SUCCEED_OR_RETURN(require("Lighting"));
   return XII_SUCCESS;
 }
 void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const
@@ -466,11 +480,13 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
   }
   if (m_sStage == "ColorGrading" || m_sStage == "Present")
     for (auto& pin : pins)
-      if (pin.m_Type == xiiRenderPipelinePin::Texture && pin.m_bInput) pin.m_bOptional = false;
+      if (pin.m_Type == xiiRenderPipelinePin::Texture && pin.m_bInput)
+        pin.m_bOptional = false;
 }
 xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& context)
 {
-  if (!context.m_pView) return XII_FAILURE;
+  if (!context.m_pView)
+    return XII_FAILURE;
   auto* runtime = context.m_pView->GetBuiltinRuntime();
   if (m_sStage == "PrepareFrame")
   {
@@ -482,16 +498,20 @@ xiiResult xiiBuiltinRenderPipelinePass::Build(xiiRenderPipelinePassContext& cont
   {
     const auto& pin     = context.m_Pins[i];
     const auto& binding = context.m_Bindings[i];
-    if (pin.m_bInput && binding.m_hTexture.IsValid()) context.m_Graph.SetSetupBinding(pin.m_sName, binding.m_hTexture);
-    if (pin.m_bInput && binding.m_hBuffer.IsValid()) context.m_Graph.SetSetupBinding(pin.m_sName, binding.m_hBuffer);
+    if (pin.m_bInput && binding.m_hTexture.IsValid())
+      context.m_Graph.SetSetupBinding(pin.m_sName, binding.m_hTexture);
+    if (pin.m_bInput && binding.m_hBuffer.IsValid())
+      context.m_Graph.SetSetupBinding(pin.m_sName, binding.m_hBuffer);
   }
   const auto result = runtime->BuildStage(m_sStage, context.m_Graph, context.m_Blackboard);
   context.m_Graph.ClearSetupBindings();
   for (xiiUInt32 i = 0; i < context.m_Pins.GetCount(); ++i)
   {
     const auto& pin = context.m_Pins[i];
-    if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture) context.m_Bindings[i].m_hTexture = context.m_Graph.FindTexture(pin.m_sName);
-    if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer) context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(pin.m_sName);
+    if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Texture)
+      context.m_Bindings[i].m_hTexture = context.m_Graph.FindTexture(pin.m_sName);
+    if (!pin.m_bInput && pin.m_Type == xiiRenderPipelinePin::Buffer)
+      context.m_Bindings[i].m_hBuffer = context.m_Graph.FindBuffer(pin.m_sName);
   }
   return result;
 }
@@ -506,21 +526,25 @@ void xiiRenderPipelineResource::GetDefaultDescriptor(xiiRenderPipelineResourceDe
     xiiVariantDictionary properties;
     properties.Insert("Stage", stages[index]);
     descriptor.AddPass(stages[index], "xiiBuiltinRenderPipelinePass", properties);
-    if (index > 0) descriptor.Connect(index - 1, "After", index, "Before").IgnoreResult();
+    if (index > 0)
+      descriptor.Connect(index - 1, "After", index, "Before").IgnoreResult();
     xiiBuiltinRenderPipelinePass prototype;
     prototype.m_sStage = stages[index];
     xiiDynamicArray<xiiRenderPipelinePin> pins;
     prototype.GetPins(pins);
     for (const auto& pin : pins)
     {
-      if (!pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order) continue;
+      if (!pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
+        continue;
       const auto& producers = pin.m_Type == xiiRenderPipelinePin::Texture ? textures : buffers;
       xiiUInt32   source;
-      if (producers.TryGetValue(pin.m_sName, source)) descriptor.Connect(source, pin.m_sName, index, pin.m_sName).IgnoreResult();
+      if (producers.TryGetValue(pin.m_sName, source))
+        descriptor.Connect(source, pin.m_sName, index, pin.m_sName).IgnoreResult();
     }
     for (const auto& pin : pins)
     {
-      if (pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order) continue;
+      if (pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
+        continue;
       auto& producers = pin.m_Type == xiiRenderPipelinePin::Texture ? textures : buffers;
       producers.Insert(pin.m_sName, index);
     }
@@ -530,7 +554,8 @@ void xiiRenderPipelineResource::GetDefaultDescriptor(xiiRenderPipelineResourceDe
 xiiRenderPipelineResourceHandle xiiRenderPipelineResource::GetDefaultPipeline()
 {
   auto existing = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>("{ XII Default Render Pipeline }");
-  if (existing.IsValid()) return existing;
+  if (existing.IsValid())
+    return existing;
   xiiRenderPipelineResourceDescriptor descriptor;
   GetDefaultDescriptor(descriptor);
   return xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("{ XII Default Render Pipeline }", std::move(descriptor));

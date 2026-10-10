@@ -343,7 +343,8 @@ void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
 
 void xiiView::SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& pipeline)
 {
-  if (m_hRenderPipeline == pipeline) return;
+  if (m_hRenderPipeline == pipeline)
+    return;
   m_hRenderPipeline = pipeline;
   InvalidateTemporalHistory();
 }
@@ -352,8 +353,10 @@ xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlac
 {
   auto* runtime = GetBuiltinRuntime();
   bool  changed = false;
-  if (runtime->m_Instance.Synchronize(m_hRenderPipeline, &changed).Failed()) return XII_FAILURE;
-  if (changed) InvalidateTemporalHistory();
+  if (runtime->m_Instance.Synchronize(m_hRenderPipeline, &changed).Failed())
+    return XII_FAILURE;
+  if (changed)
+    InvalidateTemporalHistory();
   RunDynamicResolutionPID();
   runtime->BeginFrame(shadows);
   return runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);
@@ -362,11 +365,13 @@ xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlac
 void xiiView::SetPipelineParameter(xiiStringView name, const xiiVariant& value)
 {
   const auto* previous = m_PipelineParameters.GetValue(name);
-  if (previous && *previous == value) return;
+  if (previous && *previous == value)
+    return;
   m_PipelineParameters.Insert(name, value);
   InvalidateTemporalHistory();
 }
 void xiiView::RemovePipelineParameter(xiiStringView name)
 {
-  if (m_PipelineParameters.Remove(name)) InvalidateTemporalHistory();
+  if (m_PipelineParameters.Remove(name))
+    InvalidateTemporalHistory();
 }

@@ -24,10 +24,12 @@ xiiResourceLoadDescription xiiRenderPipelineResource::UnloadData(Unload)
 }
 xiiResourceLoadDescription xiiRenderPipelineResource::UpdateContent(xiiStreamReader* stream)
 {
-  if (!stream) return {xiiResourceState::LoadedResourceMissing, 0, 0};
+  if (!stream)
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
   // The standard file loader prefixes every file stream with its absolute source path.
   xiiString path;
-  if (stream->ReadString(path).Failed()) return {xiiResourceState::LoadedResourceMissing, 0, 0};
+  if (stream->ReadString(path).Failed())
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
   if (path.HasExtension("xiiBinRenderPipeline"))
   {
     xiiAssetFileHeader header;
@@ -41,7 +43,8 @@ xiiResourceLoadDescription xiiRenderPipelineResource::UpdateContent(xiiStreamRea
     }
   }
   xiiRenderPipelineResourceDescriptor descriptor;
-  if (descriptor.Deserialize(*stream).Failed()) return {xiiResourceState::LoadedResourceMissing, 0, 0};
+  if (descriptor.Deserialize(*stream).Failed())
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
   return CreateResource(std::move(descriptor));
 }
 void xiiRenderPipelineResource::UpdateMemoryUsage(MemoryUsage& usage)

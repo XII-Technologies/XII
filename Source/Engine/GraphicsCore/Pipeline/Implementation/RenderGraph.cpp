@@ -260,7 +260,8 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::WriteTexture(xiiRenderGraphTe
 
   const xiiRenderGraphTextureHandle written(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
   for (auto it = m_Graph.m_SetupTextureBindings.GetIterator(); it.IsValid(); ++it)
-    if (it.Value().GetInternalID().m_InstanceIndex == id.m_InstanceIndex) it.Value() = written;
+    if (it.Value().GetInternalID().m_InstanceIndex == id.m_InstanceIndex)
+      it.Value() = written;
   return written;
 }
 
@@ -424,7 +425,8 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::WriteBuffer(xiiRenderGraphBuff
 
   const xiiRenderGraphBufferHandle written(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
   for (auto it = m_Graph.m_SetupBufferBindings.GetIterator(); it.IsValid(); ++it)
-    if (it.Value().GetInternalID().m_InstanceIndex == id.m_InstanceIndex) it.Value() = written;
+    if (it.Value().GetInternalID().m_InstanceIndex == id.m_InstanceIndex)
+      it.Value() = written;
   return written;
 }
 

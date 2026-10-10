@@ -60,7 +60,8 @@ bool xiiGALBindlessResourceAllocator::Retire(xiiGALBindlessResourceHandle handle
     return false;
   m_Allocated[handle.m_uiIndex] = 0U;
   ++m_Generations[handle.m_uiIndex];
-  if (m_Generations[handle.m_uiIndex] == 0U) m_Generations[handle.m_uiIndex] = 1U;
+  if (m_Generations[handle.m_uiIndex] == 0U)
+    m_Generations[handle.m_uiIndex] = 1U;
   m_RetiredIndices.PushBack({handle.m_uiIndex, uiLastUseFenceValue});
   --m_uiAllocatedCount;
   return true;
@@ -71,7 +72,8 @@ void xiiGALBindlessResourceAllocator::Collect(xiiUInt64 uiCompletedFenceValue)
   XII_LOCK(m_Mutex);
   for (xiiUInt32 i = m_RetiredIndices.GetCount(); i > 0U; --i)
   {
-    if (m_RetiredIndices[i - 1U].m_uiFenceValue > uiCompletedFenceValue) continue;
+    if (m_RetiredIndices[i - 1U].m_uiFenceValue > uiCompletedFenceValue)
+      continue;
     m_FreeIndices.PushBack(m_RetiredIndices[i - 1U].m_uiIndex);
     m_RetiredIndices.RemoveAtAndSwap(i - 1U);
   }

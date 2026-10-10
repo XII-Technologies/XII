@@ -19,7 +19,8 @@ namespace xiiBuiltinPipelineUtils
   }
   inline void RestoreTextureState(xiiGALCommandList& commandList, xiiGALTexture* texture, xiiBitflags<xiiGALResourceStateFlags> state)
   {
-    if (texture->GetResourceState() == state) return;
+    if (texture->GetResourceState() == state)
+      return;
     xiiGALStateTransitionDescription transition;
     transition.m_pResource       = texture;
     transition.m_NewState        = state;

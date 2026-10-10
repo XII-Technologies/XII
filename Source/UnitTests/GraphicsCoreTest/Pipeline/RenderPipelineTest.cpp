@@ -53,7 +53,8 @@ public:
           texture.m_BindFlags = xiiGALBindFlags::UnorderedAccess;
           data.m_hTexture = builder.WriteTexture("TestProducedTexture", texture, xiiGALResourceStateFlags::UnorderedAccess);
         } }, [](const PipelineResourceTest::PassData&, xiiRenderGraphPassContext&) {});
-    if (m_bEmitTexture) XII_SUCCEED_OR_RETURN(context.SetOutput("Texture", emitted.first->m_hTexture));
+    if (m_bEmitTexture)
+      XII_SUCCEED_OR_RETURN(context.SetOutput("Texture", emitted.first->m_hTexture));
     return m_bOmitBuffer ? XII_SUCCESS : context.SetOutput("Data", emitted.first->m_hBuffer);
   }
 };
@@ -85,7 +86,8 @@ public:
   {
     ++m_uiBuildCount;
     const auto input = context.GetInputBuffer("Input");
-    if (!input.IsValid()) return XII_FAILURE;
+    if (!input.IsValid())
+      return XII_FAILURE;
     context.m_Graph.AddPass<PipelineResourceTest::PassData>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [input](PipelineResourceTest::PassData& data, xiiRenderGraphBuilder& builder) {
         data.m_hBuffer = builder.ReadBuffer(input, xiiGALResourceStateFlags::UnorderedAccess);
         builder.SetPassSideEffects(true); }, [](const PipelineResourceTest::PassData&, xiiRenderGraphPassContext&) {});

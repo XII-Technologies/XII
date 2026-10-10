@@ -31,7 +31,8 @@ xiiResult xiiRenderPipelinePass::Configure(const xiiVariantDictionary& propertie
 xiiUInt32 xiiRenderPipelinePassContext::FindPin(xiiStringView name, bool input) const
 {
   for (xiiUInt32 i = 0; i < m_Pins.GetCount(); ++i)
-    if (m_Pins[i].m_bInput == input && m_Pins[i].m_sName == name) return i;
+    if (m_Pins[i].m_bInput == input && m_Pins[i].m_sName == name)
+      return i;
   return xiiInvalidIndex;
 }
 xiiRenderGraphTextureHandle xiiRenderPipelinePassContext::GetInputTexture(xiiStringView name) const
@@ -47,17 +48,21 @@ xiiRenderGraphBufferHandle xiiRenderPipelinePassContext::GetInputBuffer(xiiStrin
 xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture)
 {
   const auto i = FindPin(name, false);
-  if (i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Texture) return XII_FAILURE;
+  if (i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Texture)
+    return XII_FAILURE;
   const auto* description = m_Graph.GetTextureDescription(texture);
-  if (!description || (m_Pins[i].m_Format != xiiGALResourceFormat::Unknown && description->m_Format != m_Pins[i].m_Format)) return XII_FAILURE;
+  if (!description || (m_Pins[i].m_Format != xiiGALResourceFormat::Unknown && description->m_Format != m_Pins[i].m_Format))
+    return XII_FAILURE;
   m_Bindings[i].m_hTexture = texture;
   return XII_SUCCESS;
 }
 xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderGraphBufferHandle buffer)
 {
   const auto i = FindPin(name, false);
-  if (i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Buffer) return XII_FAILURE;
-  if (!m_Graph.GetBufferDescription(buffer)) return XII_FAILURE;
+  if (i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Buffer)
+    return XII_FAILURE;
+  if (!m_Graph.GetBufferDescription(buffer))
+    return XII_FAILURE;
   m_Bindings[i].m_hBuffer = buffer;
   return XII_SUCCESS;
 }

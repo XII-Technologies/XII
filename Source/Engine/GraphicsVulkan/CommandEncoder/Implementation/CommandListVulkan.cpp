@@ -3883,8 +3883,10 @@ void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextu
 
   if (pTextureVulkan->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
   {
-    if (oldLayout == vk::ImageLayout::eShaderReadOnlyOptimal) oldLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
-    if (newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) newLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    if (oldLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+      oldLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    if (newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+      newLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
   }
 
   if (((oldState & newState) != newState) || oldLayout != newLayout || bAfterWrite)

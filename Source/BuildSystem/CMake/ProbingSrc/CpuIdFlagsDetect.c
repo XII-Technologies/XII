@@ -117,16 +117,20 @@ static void print_generic_arm_features(void)
 #  endif
 
 #  if defined(HWCAP_AES)
-  if (uiHwCap & HWCAP_AES) printf("AES\n");
+  if (uiHwCap & HWCAP_AES)
+    printf("AES\n");
 #  endif
 #  if defined(HWCAP_SHA1)
-  if (uiHwCap & HWCAP_SHA1) printf("SHA1\n");
+  if (uiHwCap & HWCAP_SHA1)
+    printf("SHA1\n");
 #  endif
 #  if defined(HWCAP_SHA2)
-  if (uiHwCap & HWCAP_SHA2) printf("SHA2\n");
+  if (uiHwCap & HWCAP_SHA2)
+    printf("SHA2\n");
 #  endif
 #  if defined(HWCAP_CRC32)
-  if (uiHwCap & HWCAP_CRC32) printf("CRC32\n");
+  if (uiHwCap & HWCAP_CRC32)
+    printf("CRC32\n");
 #  endif
 
   // Fallback: parse /proc/cpuinfo for features if getauxval didn't provide them
@@ -138,11 +142,16 @@ static void print_generic_arm_features(void)
     {
       if (strstr(line, "Features") || strstr(line, "flags"))
       {
-        if (strstr(line, "asimd") || strstr(line, "neon")) printf("NEON\n");
-        if (strstr(line, "aes")) printf("AES\n");
-        if (strstr(line, "sha1")) printf("SHA1\n");
-        if (strstr(line, "sha2")) printf("SHA2\n");
-        if (strstr(line, "crc32")) printf("CRC32\n");
+        if (strstr(line, "asimd") || strstr(line, "neon"))
+          printf("NEON\n");
+        if (strstr(line, "aes"))
+          printf("AES\n");
+        if (strstr(line, "sha1"))
+          printf("SHA1\n");
+        if (strstr(line, "sha2"))
+          printf("SHA2\n");
+        if (strstr(line, "crc32"))
+          printf("CRC32\n");
         break;
       }
     }
@@ -152,10 +161,12 @@ static void print_generic_arm_features(void)
   // Windows on ARM: attempt to use IsProcessorFeaturePresent if those flags are available at compile time.
   // Only use the API if PF_ARM_NEON_INSTRUCTIONS_AVAILABLE is defined by the platform headers.
 #  ifdef PF_ARM_NEON_INSTRUCTIONS_AVAILABLE
-  if (IsProcessorFeaturePresent(PF_ARM_NEON_INSTRUCTIONS_AVAILABLE)) printf("NEON\n");
+  if (IsProcessorFeaturePresent(PF_ARM_NEON_INSTRUCTIONS_AVAILABLE))
+    printf("NEON\n");
 #  endif
 #  ifdef PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE
-  if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE)) printf("AES\n");
+  if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
+    printf("AES\n");
 #  endif
   // If runtime detection isn't available, we intentionally do not guess.
 #else
@@ -188,15 +199,24 @@ static void print_x86_features(void)
   int bFma3  = (iEcx >> 12) & 1;
   int bAvx   = (iEcx >> 28) & 1;
 
-  if (bMmx) printf("MMX\n");
-  if (bSse) printf("SSE\n");
-  if (bSse2) printf("SSE2\n");
-  if (bSse3) printf("SSE3\n");
-  if (bSsse3) printf("SSSE3\n");
-  if (bSse41) printf("SSE4.1\n");
-  if (bSse42) printf("SSE4.2\n");
-  if (bFma3) printf("FMA3\n");
-  if (bAvx) printf("AVX\n");
+  if (bMmx)
+    printf("MMX\n");
+  if (bSse)
+    printf("SSE\n");
+  if (bSse2)
+    printf("SSE2\n");
+  if (bSse3)
+    printf("SSE3\n");
+  if (bSsse3)
+    printf("SSSE3\n");
+  if (bSse41)
+    printf("SSE4.1\n");
+  if (bSse42)
+    printf("SSE4.2\n");
+  if (bFma3)
+    printf("FMA3\n");
+  if (bAvx)
+    printf("AVX\n");
 
   if (iHighestStandardFunc >= 7)
   {
@@ -204,13 +224,20 @@ static void print_x86_features(void)
     cpuidex(cpuInfo7, 7, 0);
     int iEbx = cpuInfo7[1];
 
-    if ((iEbx >> 5) & 1) printf("AVX2\n");
-    if ((iEbx >> 16) & 1) printf("AVX512F\n");
-    if ((iEbx >> 17) & 1) printf("AVX512DQ\n");
-    if ((iEbx >> 21) & 1) printf("AVX512IFMA\n");
-    if ((iEbx >> 28) & 1) printf("AVX512CD\n");
-    if ((iEbx >> 30) & 1) printf("AVX512BW\n");
-    if ((iEbx >> 31) & 1) printf("AVX512VL\n");
+    if ((iEbx >> 5) & 1)
+      printf("AVX2\n");
+    if ((iEbx >> 16) & 1)
+      printf("AVX512F\n");
+    if ((iEbx >> 17) & 1)
+      printf("AVX512DQ\n");
+    if ((iEbx >> 21) & 1)
+      printf("AVX512IFMA\n");
+    if ((iEbx >> 28) & 1)
+      printf("AVX512CD\n");
+    if ((iEbx >> 30) & 1)
+      printf("AVX512BW\n");
+    if ((iEbx >> 31) & 1)
+      printf("AVX512VL\n");
   }
 }
 #endif

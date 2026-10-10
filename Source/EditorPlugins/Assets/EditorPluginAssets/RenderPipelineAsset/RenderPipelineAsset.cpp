@@ -38,7 +38,8 @@ void xiiRenderPipelineNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiN
   GetCreateableTypes(types);
   for (const auto* type : types)
   {
-    if (type == xiiGetStaticRTTI<xiiBuiltinRenderPipelinePass>()) continue;
+    if (type == xiiGetStaticRTTI<xiiBuiltinRenderPipelinePass>())
+      continue;
     auto& entry       = out_templates.ExpandAndGetRef();
     entry.m_pType     = type;
     entry.m_sTypeName = type->GetTypeName();
@@ -73,7 +74,8 @@ bool xiiRenderPipelineNodeManager::InternalIsDynamicPinProperty(const xiiDocumen
 void xiiRenderPipelineNodeManager::InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node)
 {
   const auto* type = xiiRTTI::FindTypeByName(pObject->GetTypeAccessor().GetType()->GetTypeName());
-  if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate()) return;
+  if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate())
+    return;
   xiiRenderPipelinePass* pass = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
   XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(pass));
   xiiVariantDictionary                           settings;
@@ -82,13 +84,15 @@ void xiiRenderPipelineNodeManager::InternalCreatePins(const xiiDocumentObject* p
   for (const auto* property : properties)
     if (property->GetCategory() == xiiPropertyCategory::Member && !property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
       settings.Insert(property->GetPropertyName(), pObject->GetTypeAccessor().GetValue(property->GetPropertyName()));
-  if (pass->Configure(settings).Failed()) return;
+  if (pass->Configure(settings).Failed())
+    return;
   xiiDynamicArray<xiiRenderPipelinePin> pins;
   pass->GetPins(pins);
   for (const auto& pin : pins)
   {
     auto editorPin = XII_DEFAULT_NEW(xiiPipelineEditorPin, pin, pObject);
-    if (pin.m_bInput) ref_node.m_Inputs.PushBack(std::move(editorPin));
+    if (pin.m_bInput)
+      ref_node.m_Inputs.PushBack(std::move(editorPin));
     else
       ref_node.m_Outputs.PushBack(std::move(editorPin));
   }
@@ -100,7 +104,8 @@ void xiiRenderPipelineNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRT
   xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiRenderPipelinePass>(), types);
   ref_types.Clear();
   for (const auto* type : types)
-    if (!type->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract) && type->GetAllocator()->CanAllocate()) ref_types.PushBack(type);
+    if (!type->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract) && type->GetAllocator()->CanAllocate())
+      ref_types.PushBack(type);
 }
 
 xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const

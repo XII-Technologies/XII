@@ -48,15 +48,19 @@ xiiUInt32 xiiRenderPipelineResourceDescriptor::AddPass(xiiStringView name, xiiSt
 }
 xiiResult xiiRenderPipelineResourceDescriptor::RemovePass(xiiUInt32 index)
 {
-  if (index >= m_Passes.GetCount()) return XII_FAILURE;
+  if (index >= m_Passes.GetCount())
+    return XII_FAILURE;
   for (xiiUInt32 i = m_Connections.GetCount(); i > 0; --i)
   {
     auto& c = m_Connections[i - 1];
-    if (c.m_uiSource == index || c.m_uiTarget == index) m_Connections.RemoveAtAndCopy(i - 1);
+    if (c.m_uiSource == index || c.m_uiTarget == index)
+      m_Connections.RemoveAtAndCopy(i - 1);
     else
     {
-      if (c.m_uiSource > index) --c.m_uiSource;
-      if (c.m_uiTarget > index) --c.m_uiTarget;
+      if (c.m_uiSource > index)
+        --c.m_uiSource;
+      if (c.m_uiTarget > index)
+        --c.m_uiTarget;
     }
   }
   m_Passes.RemoveAtAndCopy(index);
@@ -64,13 +68,15 @@ xiiResult xiiRenderPipelineResourceDescriptor::RemovePass(xiiUInt32 index)
 }
 xiiResult xiiRenderPipelineResourceDescriptor::Connect(xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input)
 {
-  if (source >= m_Passes.GetCount() || target >= m_Passes.GetCount() || source == target || output.IsEmpty() || input.IsEmpty()) return XII_FAILURE;
+  if (source >= m_Passes.GetCount() || target >= m_Passes.GetCount() || source == target || output.IsEmpty() || input.IsEmpty())
+    return XII_FAILURE;
   m_Connections.PushBack({source, target, output, input});
   return XII_SUCCESS;
 }
 xiiResult xiiRenderPipelineResourceDescriptor::Disconnect(xiiUInt32 connection)
 {
-  if (connection >= m_Connections.GetCount()) return XII_FAILURE;
+  if (connection >= m_Connections.GetCount())
+    return XII_FAILURE;
   m_Connections.RemoveAtAndCopy(connection);
   return XII_SUCCESS;
 }
@@ -79,7 +85,8 @@ xiiResult xiiRenderPipelineResourceDescriptor::Serialize(xiiStreamWriter& stream
   xiiMemoryStreamContainerStorage<xiiDynamicArray<xiiUInt8>> storage;
   xiiMemoryStreamWriter                                      writer(&storage);
   xiiReflectionSerializer::WriteObjectToBinary(writer, xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), this);
-  if (storage.GetStorageSize64() > 32 * 1024 * 1024) return XII_FAILURE;
+  if (storage.GetStorageSize64() > 32 * 1024 * 1024)
+    return XII_FAILURE;
   const xiiUInt32 version = 2;
   const xiiUInt32 size    = storage.GetStorageSize32();
   XII_SUCCEED_OR_RETURN(stream.WriteDWordValue(&version));
@@ -93,18 +100,22 @@ xiiResult xiiRenderPipelineResourceDescriptor::Deserialize(xiiStreamReader& stre
   xiiUInt32 version, size;
   XII_SUCCEED_OR_RETURN(stream.ReadDWordValue(&version));
   XII_SUCCEED_OR_RETURN(stream.ReadDWordValue(&size));
-  if (version != 2 || size > 32 * 1024 * 1024 || size == 0) return XII_FAILURE;
+  if (version != 2 || size > 32 * 1024 * 1024 || size == 0)
+    return XII_FAILURE;
   xiiUInt64 checksum;
   XII_SUCCEED_OR_RETURN(stream.ReadQWordValue(&checksum));
   xiiDynamicArray<xiiUInt8> bytes;
   bytes.SetCountUninitialized(size);
-  if (stream.ReadBytes(bytes.GetData(), size) != size) return XII_FAILURE;
-  if (xiiHashingUtils::xxHash64(bytes.GetData(), size) != checksum) return XII_FAILURE;
+  if (stream.ReadBytes(bytes.GetData(), size) != size)
+    return XII_FAILURE;
+  if (xiiHashingUtils::xxHash64(bytes.GetData(), size) != checksum)
+    return XII_FAILURE;
   xiiRawMemoryStreamReader reader(bytes.GetData(), size);
   xiiAbstractObjectGraph   graph;
   xiiAbstractGraphBinarySerializer::Read(reader, &graph);
   const auto* root = graph.GetNodeByName("root");
-  if (!root || root->GetType() != xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>()->GetTypeName() || reader.GetReadPosition() != size) return XII_FAILURE;
+  if (!root || root->GetType() != xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>()->GetTypeName() || reader.GetReadPosition() != size)
+    return XII_FAILURE;
   xiiRenderPipelineResourceDescriptor replacement;
   xiiRttiConverterContext             context;
   context.RegisterObject(root->GetGuid(), xiiGetStaticRTTI<xiiRenderPipelineResourceDescriptor>(), &replacement);

@@ -39,7 +39,8 @@ public:
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
     const xiiVariant* seed = context.m_Parameters.GetValue("Seed");
-    if (!seed) return XII_FAILURE;
+    if (!seed)
+      return XII_FAILURE;
     const xiiUInt32 value   = seed->ConvertTo<xiiUInt32>() + ++m_uiBuildCount;
     auto            emitted = context.m_Graph.AddPass<PipelineExecutionTest::UploadData>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](auto& data, xiiRenderGraphBuilder& builder) {
         xiiGALBufferCreationDescription description;
@@ -70,7 +71,8 @@ public:
       description.m_Usage          = xiiGALResourceUsage::Staging;
       description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
       m_pReadback                  = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
-      if (!m_pReadback) return XII_FAILURE;
+      if (!m_pReadback)
+        return XII_FAILURE;
     }
     const auto input = context.GetInputBuffer("Data");
     context.m_Graph.AddPass<PipelineExecutionTest::CopyData>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](auto& data, xiiRenderGraphBuilder& builder) {
@@ -87,7 +89,8 @@ XII_CREATE_SIMPLE_TEST_GROUP(PipelineResources);
 XII_CREATE_SIMPLE_TEST(PipelineResources, ResourceExecution)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize())) return;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(
@@ -128,7 +131,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ResourceExecution)
       {
         auto* graph    = views[i]->GetRenderGraph();
         auto  readback = graph->GetExportedBuffer(graph->FindBuffer("PipelineReadback"));
-        if (!XII_TEST_BOOL(readback != nullptr)) continue;
+        if (!XII_TEST_BOOL(readback != nullptr))
+          continue;
         xiiGALCommandListCreationDescription commands;
         commands.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
         auto mapping          = environment.GetDevice()->CreateCommandList(commands);
@@ -142,7 +146,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ResourceExecution)
         mapping->End();
       }
     }
-    for (auto handle : handles) module->DestroyView(handle);
+    for (auto handle : handles)
+      module->DestroyView(handle);
   }
 }
 
@@ -150,7 +155,8 @@ XII_CREATE_SIMPLE_TEST_GROUP(PipelineDefault);
 XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize())) return;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(
@@ -167,7 +173,8 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     description.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
     description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
     auto target             = environment.GetDevice()->CreateTexture(description);
-    if (!XII_TEST_BOOL(target != nullptr)) return;
+    if (!XII_TEST_BOOL(target != nullptr))
+      return;
     xiiWorldDescription worldDescription("Default Pipeline Test");
     xiiWorld            world(worldDescription);
     XII_LOCK(world.GetWriteMarker());
@@ -221,7 +228,8 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
           for (xiiUInt32 y = 0; y < 32; ++y)
           {
             const auto* row = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride);
-            for (xiiUInt32 x = 0; x < 32; ++x) XII_TEST_INT(row[x * 4 + 3], 255);
+            for (xiiUInt32 x = 0; x < 32; ++x)
+              XII_TEST_INT(row[x * 4 + 3], 255);
           }
           XII_TEST_RESULT(commandList->UnmapTextureSubresource(capture.m_pStagingTexture, mip));
         }

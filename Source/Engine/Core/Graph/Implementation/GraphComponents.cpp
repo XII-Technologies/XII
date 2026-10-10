@@ -77,9 +77,11 @@ void xiiGraphAlgorithms::WeaklyConnectedComponents(const xiiGraph& graph, xiiGra
         }
       };
       for (auto it = graph.GetOutgoingEdges(vertex); it.IsValid(); ++it)
-        if (!filter.IsValid() || filter(it.GetHandle())) visit(graph.GetTarget(it.GetHandle()));
+        if (!filter.IsValid() || filter(it.GetHandle()))
+          visit(graph.GetTarget(it.GetHandle()));
       for (auto it = graph.GetIncomingEdges(vertex); it.IsValid(); ++it)
-        if (!filter.IsValid() || filter(it.GetHandle())) visit(graph.GetSource(it.GetHandle()));
+        if (!filter.IsValid() || filter(it.GetHandle()))
+          visit(graph.GetSource(it.GetHandle()));
     }
     out_components.m_Offsets.PushBack(out_components.m_Vertices.GetCount());
   }

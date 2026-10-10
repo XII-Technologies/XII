@@ -1706,12 +1706,18 @@ XII_ALWAYS_INLINE xiiUInt32 xiiVulkanTypeConversions::RankDeviceType(vk::Physica
 {
   switch (type)
   {
-    case vk::PhysicalDeviceType::eDiscreteGpu: return 5;
-    case vk::PhysicalDeviceType::eIntegratedGpu: return 4;
-    case vk::PhysicalDeviceType::eVirtualGpu: return 3;
-    case vk::PhysicalDeviceType::eCpu: return 2;
-    case vk::PhysicalDeviceType::eOther: return 1;
-    default: return 0;
+    case vk::PhysicalDeviceType::eDiscreteGpu:
+      return 5;
+    case vk::PhysicalDeviceType::eIntegratedGpu:
+      return 4;
+    case vk::PhysicalDeviceType::eVirtualGpu:
+      return 3;
+    case vk::PhysicalDeviceType::eCpu:
+      return 2;
+    case vk::PhysicalDeviceType::eOther:
+      return 1;
+    default:
+      return 0;
   }
 }
 

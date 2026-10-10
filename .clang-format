@@ -98,13 +98,13 @@ AllowAllParametersOfDeclarationOnNextLine: false
 #                int c);
 
 
-AllowShortBlocksOnASingleLine: Always
+AllowShortBlocksOnASingleLine: Never
 # Always:
 # while (true) {}
 # while (true) {continue;}
 
 
-AllowShortCaseLabelsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: false
 # true:
 # switch (a)
 # {
@@ -113,8 +113,8 @@ AllowShortCaseLabelsOnASingleLine: true
 
 AllowShortFunctionsOnASingleLine: All
 AllowShortLambdasOnASingleLine: Inline
-AllowShortIfStatementsOnASingleLine: Always
-AllowShortLoopsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
 
 # The function definition return type breaking style to use.
 # This option is deprecated and is retained for backwards compatibility.
