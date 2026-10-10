@@ -1374,9 +1374,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
 
                     XII_ASSERT_DEV(vkDescriptorImageInfo.imageLayout == vk::ImageLayout::eDepthStencilReadOnlyOptimal, "");
 
-                    if (mode == xiiGALStateTransitionMode::Transition)
+                    if (mode == xiiGALStateTransitionMode::Transition && !pTextureVulkan->GetResourceState().IsAnySet(xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::ShaderResource))
                     {
-                      TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::DepthRead, xiiGALStateTransitionFlags::UpdateState);
+                      TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::ShaderResource, xiiGALStateTransitionFlags::UpdateState);
 
                       FlushBarriers();
                     }
@@ -1436,9 +1436,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
 
                     XII_ASSERT_DEV(vkDescriptorImageInfo.imageLayout == vk::ImageLayout::eDepthStencilReadOnlyOptimal, "");
 
-                    if (mode == xiiGALStateTransitionMode::Transition)
+                    if (mode == xiiGALStateTransitionMode::Transition && !pTextureVulkan->GetResourceState().IsAnySet(xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::ShaderResource))
                     {
-                      TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::DepthRead, xiiGALStateTransitionFlags::UpdateState);
+                      TransitionTextureState(pTextureVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::ShaderResource, xiiGALStateTransitionFlags::UpdateState);
 
                       FlushBarriers();
                     }
@@ -1599,7 +1599,8 @@ void xiiGALCommandListVulkan::ClearRenderTargetViewPlatform(xiiGALTextureView* p
   xiiUInt32 uiAttachmentIndex = xiiInvalidIndex;
   for (xiiUInt32 i = 0; i < m_CommandListData.m_uiBoundRenderTargetCount; ++i)
   {
-    if (m_CommandListData.m_pBoundRenderTargets[i] == pTextureViewVulkan)
+    const auto& bound = m_CommandListData.m_pBoundRenderTargets[i];
+    if (bound && bound->GetTexture() == pTextureViewVulkan->GetTexture() && bound->GetDescription() == viewDescription)
     {
       uiAttachmentIndex = i;
       break;
@@ -1667,7 +1668,9 @@ void xiiGALCommandListVulkan::ClearDepthStencilViewPlatform(xiiGALTextureView* p
 
   XII_ASSERT_DEV(viewDescription.m_ResourceDimension != xiiGALResourceDimension::Texture3D, "Depth-stencil view of a 3D texture must be created as a 2D texture array view.");
 
-  const bool bClearAsAttachment = m_CommandListData.m_pBoundDepthStencilTarget == pTextureViewVulkan;
+  const auto& boundDepth         = m_CommandListData.m_pBoundDepthStencilTarget;
+  const bool  bClearAsAttachment = boundDepth && boundDepth->GetTexture() == pTextureViewVulkan->GetTexture() && boundDepth->GetDescription() == viewDescription;
+  bClearStencil &= xiiGALTextureUtilities::GetResourceFormatProperties(viewDescription.m_Format).m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil;
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE || bClearAsAttachment, "Depth-stencil view was not found in the frame buffer. This is unexpected because the render pass should either be invalid or the depth stencil view should be part of an active render pass.");
 
   if (bClearAsAttachment)
@@ -1801,7 +1804,21 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderP
     m_CommandListState.m_bIsShadingRateSet        = false;
   }
 
-  // m_bShadingRateIsSet = false;
+  m_CommandListData.m_uiSubpassIndex = 0;
+  UpdateAttachmentBindings();
+}
+
+void xiiGALCommandListVulkan::UpdateAttachmentBindings()
+{
+  const auto& subpass     = m_pRenderPass->GetDescription().m_SubPasses[m_CommandListData.m_uiSubpassIndex];
+  const auto& attachments = m_pFramebuffer->GetDescription().m_Attachments;
+  m_CommandListData.m_pBoundRenderTargets.Clear();
+  for (const auto& reference : subpass.m_RenderTargetAttachments)
+    m_CommandListData.m_pBoundRenderTargets.PushBack(reference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED ? nullptr : attachments[reference.m_uiAttachmentIndex].Downcast<xiiGALTextureViewVulkan>());
+  m_CommandListData.m_uiBoundRenderTargetCount = m_CommandListData.m_pBoundRenderTargets.GetCount();
+  m_CommandListData.m_pBoundDepthStencilTarget = nullptr;
+  if (!subpass.m_DepthStencilAttachment.IsEmpty() && subpass.m_DepthStencilAttachment[0].m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+    m_CommandListData.m_pBoundDepthStencilTarget = attachments[subpass.m_DepthStencilAttachment[0].m_uiAttachmentIndex].Downcast<xiiGALTextureViewVulkan>();
 }
 
 void xiiGALCommandListVulkan::NextSubpassPlatform()
@@ -1811,6 +1828,8 @@ void xiiGALCommandListVulkan::NextSubpassPlatform()
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE, "Render pass has not yet been started.");
 
   m_vkCommandBuffer.nextSubpass(vk::SubpassContents::eInline, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  ++m_CommandListData.m_uiSubpassIndex;
+  UpdateAttachmentBindings();
 }
 
 void xiiGALCommandListVulkan::EndRenderPassPlatform()
@@ -1825,6 +1844,9 @@ void xiiGALCommandListVulkan::EndRenderPassPlatform()
   m_CommandListState.m_vkFramebuffer       = VK_NULL_HANDLE;
   m_CommandListState.m_uiFramebufferWidth  = 0U;
   m_CommandListState.m_uiFramebufferHeight = 0U;
+  m_CommandListData.m_pBoundRenderTargets.Clear();
+  m_CommandListData.m_uiBoundRenderTargetCount = 0;
+  m_CommandListData.m_pBoundDepthStencilTarget = nullptr;
 
   if (m_CommandListState.m_uiInsidePassQueries != 0)
   {
@@ -3854,10 +3876,16 @@ void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextu
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   const auto&                      extensionFeatures   = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
   const bool                       bFragmentDensityMap = extensionFeatures.m_FragmentDensityMap.fragmentDensityMap != vk::False;
-  const vk::ImageLayout            oldLayout           = flags.IsSet(xiiGALStateTransitionFlags::DiscardContent) ? vk::ImageLayout::eUndefined : xiiVulkanTypeConversions::GetImageLayout(oldState, false, bFragmentDensityMap);
-  const vk::ImageLayout            newLayout           = xiiVulkanTypeConversions::GetImageLayout(newState, false, bFragmentDensityMap);
+  vk::ImageLayout                  oldLayout           = flags.IsSet(xiiGALStateTransitionFlags::DiscardContent) ? vk::ImageLayout::eUndefined : xiiVulkanTypeConversions::GetImageLayout(oldState, false, bFragmentDensityMap);
+  vk::ImageLayout                  newLayout           = xiiVulkanTypeConversions::GetImageLayout(newState, false, bFragmentDensityMap);
   const vk::PipelineStageFlags     oldStages           = xiiVulkanTypeConversions::GetPipelineStageFlags(oldState);
   const vk::PipelineStageFlags     newStages           = xiiVulkanTypeConversions::GetPipelineStageFlags(newState);
+
+  if (pTextureVulkan->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+  {
+    if (oldLayout == vk::ImageLayout::eShaderReadOnlyOptimal) oldLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    if (newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) newLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+  }
 
   if (((oldState & newState) != newState) || oldLayout != newLayout || bAfterWrite)
   {

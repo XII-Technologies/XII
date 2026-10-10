@@ -572,7 +572,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     xiiUInt32 uiMaxDimension = 0;
     if (description.Is1D())
       uiMaxDimension = description.m_Size.width;
-    else if (description.Is2D())
+    else if (description.Is2D() || description.IsCube())
       uiMaxDimension = xiiMath::Max(description.m_Size.width, description.m_Size.height);
     else if (description.Is3D())
       uiMaxDimension = xiiMath::Max(xiiMath::Max(description.m_Size.width, description.m_Size.height), description.m_uiArraySizeOrDepth);
