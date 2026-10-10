@@ -3,6 +3,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Temporal anti-aliasing with velocity reprojection and YCoCg neighbourhood clipping.
 
 #include <Shaders/Common/Common.h>
@@ -12,7 +14,7 @@ Texture2D<float4>   g_CurrentFrame;
 Texture2D<float2>   g_VelocityBuffer;
 Texture2D<float>    g_SceneDepth;
 Texture2D<float4>   g_HistoryFrame;
-RWTexture2D<float4> g_Resolved;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Resolved;
 
 float3 RGBToYCoCg(float3 color)
 {

@@ -262,7 +262,8 @@ bool xiiSceneDatabase::SetLocalBounds(xiiSceneObjectHandle hObject, const xiiBou
 
 bool xiiSceneDatabase::SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeometryIndex)
 {
-  if (!IsAlive(hObject)) return false;
+  if (!IsAlive(hObject))
+    return false;
   const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
   m_GeometryIndices[uiObject] = uiGeometryIndex;
   m_GpuDirty[uiObject]        = 1U;
@@ -272,7 +273,8 @@ bool xiiSceneDatabase::SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeo
 
 bool xiiSceneDatabase::SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMaterialIndex)
 {
-  if (!IsAlive(hObject)) return false;
+  if (!IsAlive(hObject))
+    return false;
   const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
   m_MaterialIndices[uiObject] = uiMaterialIndex;
   m_GpuDirty[uiObject]        = 1U;
@@ -282,7 +284,8 @@ bool xiiSceneDatabase::SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMat
 
 bool xiiSceneDatabase::SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount)
 {
-  if (!IsAlive(hObject)) return false;
+  if (!IsAlive(hObject))
+    return false;
   const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
   if (m_FirstPrimitives[uiObject] == uiFirstPrimitive && m_PrimitiveCounts[uiObject] == uiPrimitiveCount)
     return true;
@@ -295,7 +298,8 @@ bool xiiSceneDatabase::SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32
 
 bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags)
 {
-  if (!IsAlive(hObject)) return false;
+  if (!IsAlive(hObject))
+    return false;
   const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
   m_Flags[uiObject]        = flags;
   m_GpuDirty[uiObject]     = 1U;
@@ -305,7 +309,8 @@ bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSce
 
 bool xiiSceneDatabase::SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask)
 {
-  if (!IsAlive(hObject)) return false;
+  if (!IsAlive(hObject))
+    return false;
   const xiiUInt32 uiObject    = hObject.GetInternalID().m_InstanceIndex;
   m_VisibilityMasks[uiObject] = uiVisibilityMask;
   m_GpuDirty[uiObject]        = 1U;

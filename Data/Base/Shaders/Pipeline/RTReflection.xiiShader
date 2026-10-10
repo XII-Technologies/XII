@@ -3,6 +3,8 @@ ALL
 
 [SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Hardware ray-traced reflections with material-aware hit shading, geometry-derived normals,
 // and probe/atmosphere termination for rays that leave the traced scene.
 
@@ -84,8 +86,8 @@ Texture2D<float2>                g_GBufNormal      : register(t6);
 Texture2D<float4>                g_GBufMaterial    : register(t7);
 Texture2D<float4>                g_GBufAlbedo      : register(t20);
 Texture2D<float2>                g_BRDFLut         : register(t21);
-RWTexture2D<float4>              g_RTReflRaw       : register(u8);
-RWTexture2D<float>               g_RTReflHitDistance : register(u9);
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>              g_RTReflRaw       : register(u8);
+XII_STORAGE_IMAGE_FORMAT("r16f") RWTexture2D<float>               g_RTReflHitDistance : register(u9);
 
 [shader("raygeneration")]
 void main()

@@ -3,16 +3,18 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // HDR to display-linear tone mapping with multiple operator support and bloom composite.
 // Dispatch: ceil(W/8) x ceil(H/8) x 1.
 
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 
-Texture2D<float4>          g_HDRInput  : register(t0);
-Texture2D<float4>          g_BloomTex  : register(t1);
-StructuredBuffer<float>    g_Exposure  : register(t2); // [0]=exposure scalar
-RWTexture2D<float4>        g_LDROut    : register(u0);
+Texture2D<float4>          g_HDRInput;
+Texture2D<float4>          g_BloomTex;
+StructuredBuffer<float>    g_Exposure; // [0]=exposure scalar
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>        g_LDROut;
 
 // 
 // ACES fitted (Krzysztof Narkowicz approximation)

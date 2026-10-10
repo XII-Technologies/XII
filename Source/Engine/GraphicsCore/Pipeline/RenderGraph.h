@@ -250,7 +250,8 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
   xiiHybridArray<xiiUInt32, 4>                        m_ReleaseResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime ends at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
   xiiHybridArray<xiiUInt32, 4>                        m_DependencyPassIndices;                ///< Indices of passes that this pass depends on (i.e. there is a path of resource reads/writes from those passes to this pass). This is used for diagnostics and profiling, but not for execution order, which is determined by the queue submission order.
   void*                                               m_pPassData = nullptr;                  ///< The pass data struct is defined by the user in the setup callback and contains all information needed to execute the pass. The execute callback will cast this pointer back to the correct type.
-  xiiDelegate<void(class xiiRenderGraphPassContext&)> m_ExecuteDelegate;                      ///< The execute callback records GPU commands for this pass into the command list provided by the context, using the resolved resources and blackboard data. The callback must not modify the graph or its resources, as it may be executed multiple times during the frame (e.g. for multi-GPU or split-frame rendering).
+  xiiDelegate<void(class xiiRenderGraphPassContext&)> m_ExecuteDelegate;
+  xiiDelegate<void(xiiRenderGraphPassContext&)>       m_PrepareDelegate; ///< The execute callback records GPU commands for this pass into the command list provided by the context, using the resolved resources and blackboard data. The callback must not modify the graph or its resources, as it may be executed multiple times during the frame (e.g. for multi-GPU or split-frame rendering).
 };
 
 /// Controls optional features of the render graph compiler.
@@ -428,6 +429,10 @@ public:
   /// RenderTarget / DepthRead / DepthWrite texture writes. The default is false so existing passes
   /// that call BeginRenderPass themselves remain source compatible.
   void SetPassRenderPassManaged(bool bManaged = true);
+  /// Records resource uploads before a managed native render pass begins. Uses this pass's
+  /// declared resources; must restore their declared states before returning.
+  void SetPassPreparation(xiiDelegate<void(xiiRenderGraphPassContext&)> preparation);
+
 
 private:
   friend class xiiRenderGraph;
@@ -499,6 +504,17 @@ public:
 
   /// Finalizes the setup phase. Must be called after all AddPass calls.
   void EndSetup();
+
+  /// Named-resource bridge for resource-defined pipeline passes. Bindings are scoped to setup;
+  /// handle-based pass code remains the preferred interface. Clear before leaving the scope.
+  void                        SetSetupBinding(xiiStringView name, xiiRenderGraphTextureHandle texture);
+  void                        SetSetupBinding(xiiStringView name, xiiRenderGraphBufferHandle buffer);
+  void                        ClearSetupBindings();
+  xiiRenderGraphTextureHandle FindTexture(xiiStringView name) const;
+  xiiRenderGraphBufferHandle  FindBuffer(xiiStringView name) const;
+  /// Setup-time descriptions. Invalid handles and mismatched resource identities return null.
+  const xiiGALTextureCreationDescription* GetTextureDescription(xiiRenderGraphTextureHandle texture) const;
+  const xiiGALBufferCreationDescription*  GetBufferDescription(xiiRenderGraphBufferHandle buffer) const;
 
   /// Compiles the render graph.
   ///
@@ -648,6 +664,7 @@ private:
     void*                                         m_pPassData = nullptr;
     xiiDelegate<void(void*)>                      m_DestroyPassDataDelegate;
     xiiDelegate<void(xiiRenderGraphPassContext&)> m_ExecuteDelegate;
+    xiiDelegate<void(xiiRenderGraphPassContext&)> m_PrepareDelegate;
   };
 
   void                    PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
@@ -663,12 +680,14 @@ private:
   [[nodiscard]] static xiiUInt64 ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
 
 private:
-  xiiDynamicArray<PassEntry>               m_Passes;
-  xiiDynamicArray<ResourceEntry>           m_Resources;
-  xiiHashTable<xiiHashedString, xiiUInt32> m_ResourceNameIndex;
-  xiiHashedString                          m_sName;
-  xiiRenderGraphGraphId                    m_Id;
-  xiiRenderGraphIdTable                    m_IdTable;
+  xiiDynamicArray<PassEntry>                                 m_Passes;
+  xiiDynamicArray<ResourceEntry>                             m_Resources;
+  xiiHashTable<xiiHashedString, xiiUInt32>                   m_ResourceNameIndex;
+  xiiHashTable<xiiHashedString, xiiRenderGraphTextureHandle> m_SetupTextureBindings;
+  xiiHashTable<xiiHashedString, xiiRenderGraphBufferHandle>  m_SetupBufferBindings;
+  xiiHashedString                                            m_sName;
+  xiiRenderGraphGraphId                                      m_Id;
+  xiiRenderGraphIdTable                                      m_IdTable;
 
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALTexture>> m_PersistentTextures;
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALBuffer>>  m_PersistentBuffers;

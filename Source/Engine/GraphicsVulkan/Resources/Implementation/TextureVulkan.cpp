@@ -47,7 +47,10 @@ vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
   xiiSharedPtr<xiiGALDeviceVulkan>                       pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   const vk::PhysicalDeviceFragmentDensityMapFeaturesEXT& fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
-  return xiiVulkanTypeConversions::GetImageLayout(GetResourceState(), false, fragmentDensityMap.fragmentDensityMap != vk::False);
+  auto                                                   layout             = xiiVulkanTypeConversions::GetImageLayout(GetResourceState(), false, fragmentDensityMap.fragmentDensityMap != vk::False);
+  if (layout == vk::ImageLayout::eShaderReadOnlyOptimal && m_Description.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+    layout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+  return layout;
 }
 
 void xiiGALTextureVulkan::SetVulkanImageLayout(vk::ImageLayout vkImageLayout)
@@ -702,7 +705,7 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDevi
   {
     ref_vkImageCreateInfo.imageType = vk::ImageType::e1D;
   }
-  else if (creationDescription.Is2D())
+  else if (creationDescription.Is2D() || creationDescription.IsCube())
   {
     ref_vkImageCreateInfo.imageType = vk::ImageType::e2D;
   }

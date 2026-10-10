@@ -70,6 +70,7 @@ namespace
     s_pParserTables->m_NameToDescriptorTable.Insert("Buffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
     s_pParserTables->m_NameToDescriptorTable.Insert("StructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
     s_pParserTables->m_NameToDescriptorTable.Insert("ByteAddressBuffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
+    s_pParserTables->m_NameToDescriptorTable.Insert("RaytracingAccelerationStructure"_xiisv, xiiGALShaderResourceType::AccelerationStructure);
     s_pParserTables->m_NameToDescriptorTable.Insert("RWTexture1D"_xiisv, xiiGALShaderResourceType::TextureUAV);
     s_pParserTables->m_NameToDescriptorTable.Insert("RWTexture1DArray"_xiisv, xiiGALShaderResourceType::TextureUAV);
     s_pParserTables->m_NameToDescriptorTable.Insert("RWTexture2D"_xiisv, xiiGALShaderResourceType::TextureUAV);

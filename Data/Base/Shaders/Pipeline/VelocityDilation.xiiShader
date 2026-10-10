@@ -10,9 +10,11 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 Texture2D<float2>   g_VelocityInput;
 Texture2D<float>    g_SceneDepth;
-RWTexture2D<float2> g_VelocityOutput;
+XII_STORAGE_IMAGE_FORMAT("rg16f") RWTexture2D<float2> g_VelocityOutput;
 
 [numthreads(8, 8, 1)]
 void main(uint3 dispatchThreadID : SV_DispatchThreadID)

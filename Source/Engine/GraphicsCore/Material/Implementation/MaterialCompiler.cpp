@@ -104,7 +104,8 @@ namespace
         return shaderType.m_PrimitiveType == xiiGALShaderPrimitiveType::Float32 && shaderType.m_uiRowCount == 3U && shaderType.m_uiColumnCount == 3U;
       case xiiMaterialParameterType::Matrix4:
         return shaderType.m_PrimitiveType == xiiGALShaderPrimitiveType::Float32 && shaderType.m_uiRowCount == 4U && shaderType.m_uiColumnCount == 4U;
-      default: return false;
+      default:
+        return false;
     }
   }
 } // namespace

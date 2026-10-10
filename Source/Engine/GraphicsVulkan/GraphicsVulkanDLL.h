@@ -80,7 +80,10 @@
   do                                                   \
   {                                                    \
     XII_ASSERT_DEV((expression), __VA_ARGS__);         \
-    if (!(expression)) { return XII_FAILURE; }         \
+    if (!(expression))                                 \
+    {                                                  \
+      return XII_FAILURE;                              \
+    }                                                  \
   } while (false)
 
 ////////// Forward Declarations //////////

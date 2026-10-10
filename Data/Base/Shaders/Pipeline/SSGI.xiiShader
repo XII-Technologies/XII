@@ -11,6 +11,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/GlobalIllumination/SSGIConstants.h>
@@ -20,7 +22,7 @@ Texture2D<float2>   g_GBufNormal;  // oct-encoded normals
 Texture2D<float4>   g_GBufAlbedo;  // linear albedo + material AO
 Texture2D<float4>   g_GBufMaterial; // roughness, metallic, specular, material ID
 Texture2D<float4>   g_HDRScene;    // completed opaque scene before SSGI
-RWTexture2D<float4> g_SSGIOut;     // indirect diffuse contribution
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_SSGIOut;     // indirect diffuse contribution
 
 // Build an orthonormal basis around the surface normal.
 void BuildONB(float3 n, out float3 T, out float3 B)

@@ -596,6 +596,16 @@ void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)
     if (!m_IESProfileData.IsEmpty())
       xiiMemoryUtils::Copy(pProfiles.GetMappedData(), m_IESProfileData.GetData(), m_IESProfileData.GetCount());
   }
+
+  xiiGALStateTransitionDescription transitions[5];
+  xiiGALBuffer*                    buffers[] = {m_pCameraConstantsBuffer.Borrow(), m_pLightConstantsBuffer.Borrow(), m_pGlobalConstantsBuffer.Borrow(), m_pLightDataBuffer.Borrow(), m_pIESProfileDataBuffer.Borrow()};
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(transitions); ++i)
+  {
+    transitions[i].m_pResource       = buffers[i];
+    transitions[i].m_NewState        = i < 3 ? xiiGALResourceStateFlags::ConstantBuffer : xiiGALResourceStateFlags::ShaderResource;
+    transitions[i].m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+  }
+  ref_commandList.TransitionResourceStates(xiiMakeArrayPtr(transitions));
 }
 
 void xiiLightingSystem::BindFrameConstants(xiiGALCommandList& ref_commandList, xiiBitflags<xiiGALShaderType> shaderStages) const

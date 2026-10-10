@@ -8,8 +8,8 @@ ALL
 
 #include <Shaders/Pipeline/Passes/Exposure/ExposureAdaptationConstants.h>
 
-StructuredBuffer<uint>     g_Histogram  : register(t0);
-RWStructuredBuffer<float>  g_Exposure   : register(u0); // [0]=exposure, [1]=avgLum
+StructuredBuffer<uint>     g_Histogram;
+RWStructuredBuffer<float>  g_Exposure; // [0]=exposure, [1]=avgLum
 
 [numthreads(1, 1, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

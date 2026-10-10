@@ -3,9 +3,11 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Transparent near-field contribution for devices or frames without a valid scene TLAS.
 
-RWTexture2D<float4> g_RTGIRaw : register(u0);
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_RTGIRaw : register(u0);
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

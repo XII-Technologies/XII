@@ -9,6 +9,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 
 Texture2D<float4>   g_DirectLight;
@@ -16,7 +18,7 @@ Texture2D<float4>   g_IndirectLight;
 Texture2D<float4>   g_Emissive;
 Texture2D<float4>   g_Volumetric;  // rgb=scatter, a=1-transmittance
 Texture2D<float4>   g_RayTracedGI; // rgb=near-field diffuse GI, a=validity
-RWTexture2D<float4> g_HDROut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_HDROut;
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

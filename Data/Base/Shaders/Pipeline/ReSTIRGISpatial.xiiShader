@@ -3,6 +3,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Edge-aware spatial reservoir reuse and final radiance reconstruction for near-field GI.
 
 #include "PipelineCommon.xiiShader"
@@ -14,10 +16,10 @@ Texture2D<float2> g_GBufferNormal : register(t5);
 Texture2D<float4> g_GBufferAlbedo : register(t6);
 Texture2D<float4> g_TemporalSample : register(t7);
 Texture2D<float2> g_TemporalState  : register(t8);
-RWTexture2D<float4> g_ReservoirSampleOut : register(u9);
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_ReservoirSampleOut : register(u9);
 RWTexture2D<float2> g_ReservoirStateOut  : register(u10);
-RWTexture2D<float4> g_ReservoirSurfaceOut : register(u11);
-RWTexture2D<float4> g_ResampledRadianceOut : register(u12);
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_ReservoirSurfaceOut : register(u11);
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_ResampledRadianceOut : register(u12);
 
 static const int2 XII_RESTIR_GI_NEIGHBOR_OFFSETS[8] =
 {

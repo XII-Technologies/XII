@@ -609,6 +609,7 @@ void xiiShaderCompilerDXIL::CreateNewShaderResourceDeclaration(xiiStringView sPl
       break;
     case xiiGALShaderResourceType::TextureSRV:
     case xiiGALShaderResourceType::BufferSRV:
+    case xiiGALShaderResourceType::AccelerationStructure:
       sResourcePrefix = "t"_xiisv;
       break;
     case xiiGALShaderResourceType::TextureUAV:

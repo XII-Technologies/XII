@@ -7,6 +7,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
 
@@ -17,8 +19,8 @@ struct xiiGpuDDGIProbeUpdate
 };
 
 StructuredBuffer<xiiGpuDDGIProbeUpdate> g_DDGIProbeUpdates;
-RWTexture2D<float4>                     g_DDGIIrradianceAtlas;
-RWTexture2D<float2>                     g_DDGIDistanceAtlas;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>                     g_DDGIIrradianceAtlas;
+XII_STORAGE_IMAGE_FORMAT("rg16f") RWTexture2D<float2>                     g_DDGIDistanceAtlas;
 
 [numthreads(64, 1, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

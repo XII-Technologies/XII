@@ -9,6 +9,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Reflections/SSRConstants.h>
@@ -21,7 +23,7 @@ Texture2D<float>    g_HiZFarthest;
 Texture2D<float4>   g_HDRScene;
 Texture2D<float4>   g_GBufAlbedo;
 Texture2D<float2>   g_BRDFLut;
-RWTexture2D<float4> g_SSROut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_SSROut;
 
 // Intersect a projected ray segment against the conservative closest/farthest
 // scene-depth interval stored by each Hi-Z cell. All comparisons happen in

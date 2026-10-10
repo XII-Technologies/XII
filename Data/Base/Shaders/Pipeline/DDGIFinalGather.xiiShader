@@ -7,6 +7,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/DDGI/DDGIConstants.h>
@@ -22,7 +24,7 @@ Texture2D<float2>                      g_GBufNormal;
 Texture2D<float4>                      g_DDGIIrradianceAtlas;
 Texture2D<float2>                      g_DDGIDistanceAtlas;
 StructuredBuffer<xiiGpuDDGIProbeState> g_DDGIProbeStates;
-RWTexture2D<float4>                    g_DDGIOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>                    g_DDGIOut;
 
 int PositiveModulo(int value, uint divisor)
 {

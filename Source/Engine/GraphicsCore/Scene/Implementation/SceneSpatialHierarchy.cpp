@@ -86,13 +86,16 @@ xiiBoundingBox xiiSceneSpatialHierarchy::MakeFatBounds(const xiiBoundingBox& bou
   fat.Grow(xiiVec3(m_fFatBoundsMargin));
 
   // Predictive expansion avoids a remove/insert every frame for coherently moving bodies.
-  if (vDisplacement.x < 0.0f) fat.m_vMin.x += vDisplacement.x * 2.0f;
+  if (vDisplacement.x < 0.0f)
+    fat.m_vMin.x += vDisplacement.x * 2.0f;
   else
     fat.m_vMax.x += vDisplacement.x * 2.0f;
-  if (vDisplacement.y < 0.0f) fat.m_vMin.y += vDisplacement.y * 2.0f;
+  if (vDisplacement.y < 0.0f)
+    fat.m_vMin.y += vDisplacement.y * 2.0f;
   else
     fat.m_vMax.y += vDisplacement.y * 2.0f;
-  if (vDisplacement.z < 0.0f) fat.m_vMin.z += vDisplacement.z * 2.0f;
+  if (vDisplacement.z < 0.0f)
+    fat.m_vMin.z += vDisplacement.z * 2.0f;
   else
     fat.m_vMax.z += vDisplacement.z * 2.0f;
   return fat;

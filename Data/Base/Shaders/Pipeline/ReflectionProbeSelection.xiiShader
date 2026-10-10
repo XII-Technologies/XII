@@ -8,6 +8,7 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/LightingData.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
 

@@ -21,6 +21,7 @@ class xiiGpuShadowRasterManagerState
 public:
   xiiShaderPermutationResourceHandle m_hShaderPermutation;
   xiiShaderPermutationResourceHandle m_hClearShaderPermutation;
+  xiiSharedPtr<xiiGALSampler>        m_pMaterialSampler;
   bool                               m_bEngineStarted        = false;
   bool                               m_bMeshShadersSupported = false;
 };
@@ -227,6 +228,7 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddPass(xiiRenderGraph& g
       }
 
       cmd.SetPipelineState(pPipeline.Borrow());
+      cmd.ResolveAndSetSampler("g_sAnisotropicWrap", s_pState->m_pMaterialSampler.Borrow());
       cmd.ResolveAndSetConstantBuffer("xiiGpuShadowRasterConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Mesh | xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
       cmd.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
@@ -341,6 +343,16 @@ void xiiGpuShadowRasterManager::EngineStartup()
   if (!s_pState->m_bMeshShadersSupported)
     return;
 
+  xiiGALSamplerCreationDescription sampler;
+  sampler.m_MinFilter          = xiiGALFilterType::Anisotropic;
+  sampler.m_MagFilter          = xiiGALFilterType::Anisotropic;
+  sampler.m_MipFilter          = xiiGALFilterType::Anisotropic;
+  sampler.m_AddressU           = xiiGALTextureAddressMode::Wrap;
+  sampler.m_AddressV           = xiiGALTextureAddressMode::Wrap;
+  sampler.m_AddressW           = xiiGALTextureAddressMode::Wrap;
+  sampler.m_uiMaxAnisotropy    = 8;
+  s_pState->m_pMaterialSampler = pDevice->CreateSampler(sampler);
+
   const xiiShaderResourceHandle hShader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowDepth.xiiShader");
   s_pState->m_hShaderPermutation             = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);
   const xiiShaderResourceHandle hClearShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowPageClear.xiiShader");
@@ -352,6 +364,7 @@ void xiiGpuShadowRasterManager::EngineShutdown()
   if (s_pState == nullptr)
     return;
 
+  s_pState->m_pMaterialSampler = nullptr;
   s_pState->m_hShaderPermutation.Invalidate();
   s_pState->m_hClearShaderPermutation.Invalidate();
   s_pState->m_bMeshShadersSupported = false;

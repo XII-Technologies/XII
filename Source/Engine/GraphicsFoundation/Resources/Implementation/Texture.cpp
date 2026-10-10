@@ -23,7 +23,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   do                                           \
   {                                            \
     XII_ASSERT_DEV((expression), __VA_ARGS__); \
-    if (!(expression)) { return {}; }          \
+    if (!(expression))                         \
+    {                                          \
+      return {};                               \
+    }                                          \
   } while (false)
 
 xiiGALTexture::xiiGALTexture(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTextureCreationDescription& creationDescription) :
@@ -183,7 +186,7 @@ xiiSharedPtr<xiiGALTextureView> xiiGALTexture::CreateView(xiiGALTextureViewCreat
     {
       const xiiUInt32 uiMipDepth = xiiMath::Max(m_Description.m_uiArraySizeOrDepth >> description.m_uiMostDetailedMip, 1U);
 
-      XII_GAL_TEXTURE_CHECK((description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount) <= uiMipDepth, "The first depth slice ({0}) and the number of slices in the view description ({1}), specify more slices than the target 3D texture mip level has ({2}).", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, uiMipDepth);
+      XII_GAL_TEXTURE_CHECK(description.m_uiArrayOrDepthSlicesCount == XII_GAL_REMAINING_ARRAY_SLICES || (description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount) <= uiMipDepth, "The first depth slice ({0}) and the number of slices in the view description ({1}), specify more slices than the target 3D texture mip level has ({2}).", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, uiMipDepth);
     }
     break;
 
@@ -245,10 +248,6 @@ void xiiGALTexture::CreateDefaultResourceViews()
 {
   // For texture cubes and texture cube arrays, we only address a single texture view per texture cube.
   xiiUInt32 uiArraySize = XII_GAL_REMAINING_ARRAY_SLICES;
-  if (m_Description.Is3D())
-  {
-    uiArraySize = 1U;
-  }
 
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {

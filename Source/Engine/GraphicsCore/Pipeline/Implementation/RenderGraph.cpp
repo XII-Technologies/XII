@@ -213,6 +213,9 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiRenderGraphTex
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
+  xiiRenderGraphTextureHandle bound;
+  if (m_Graph.m_SetupTextureBindings.TryGetValue(xiiTempHashedString(sName), bound))
+    return ReadTexture(bound, requiredState);
   xiiUInt32  uiTextureResourceIndex = xiiInvalidIndex;
   const bool bFound                 = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read texture '{}' because it was not declared or imported.", sName);
@@ -255,7 +258,11 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::WriteTexture(xiiRenderGraphTe
   resourceUsage.m_bIsWrite        = true;
   m_Graph.m_Passes[m_uiPassIndex].m_Writes.PushBack(resourceUsage);
 
-  return xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
+  const xiiRenderGraphTextureHandle written(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
+  for (auto it = m_Graph.m_SetupTextureBindings.GetIterator(); it.IsValid(); ++it)
+    if (it.Value().GetInternalID().m_InstanceIndex == id.m_InstanceIndex)
+      it.Value() = written;
+  return written;
 }
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadWriteTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState)
@@ -372,6 +379,9 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiRenderGraphBuffe
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
+  xiiRenderGraphBufferHandle bound;
+  if (m_Graph.m_SetupBufferBindings.TryGetValue(xiiTempHashedString(sName), bound))
+    return ReadBuffer(bound, requiredState);
   xiiUInt32  uiBufferResourceIndex = xiiInvalidIndex;
   const bool bFound                = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read buffer '{}' because it was not declared or imported.", sName);
@@ -413,7 +423,11 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::WriteBuffer(xiiRenderGraphBuff
   resourceUsage.m_bIsWrite        = true;
   m_Graph.m_Passes[m_uiPassIndex].m_Writes.PushBack(resourceUsage);
 
-  return xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
+  const xiiRenderGraphBufferHandle written(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
+  for (auto it = m_Graph.m_SetupBufferBindings.GetIterator(); it.IsValid(); ++it)
+    if (it.Value().GetInternalID().m_InstanceIndex == id.m_InstanceIndex)
+      it.Value() = written;
+  return written;
 }
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadWriteBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState)
@@ -454,6 +468,11 @@ void xiiRenderGraphBuilder::SetPassAllowMerge(bool bAllowMerge)
 void xiiRenderGraphBuilder::SetPassRenderPassManaged(bool bManaged)
 {
   m_Graph.m_Passes[m_uiPassIndex].m_bManagedRenderPass = bManaged;
+}
+
+void xiiRenderGraphBuilder::SetPassPreparation(xiiDelegate<void(xiiRenderGraphPassContext&)> preparation)
+{
+  m_Graph.m_Passes[m_uiPassIndex].m_PrepareDelegate = std::move(preparation);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -498,6 +517,7 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
   m_Passes.Clear();
   m_Resources.Clear();
   m_ResourceNameIndex.Clear();
+  ClearSetupBindings();
   m_ExportedTextures.Clear();
   m_ExportedBuffers.Clear();
 
@@ -771,6 +791,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
       compiledPass.m_bIsCulled                 = false;
       compiledPass.m_pPassData                 = m_Passes[uiIndex].m_pPassData;
       compiledPass.m_ExecuteDelegate           = m_Passes[uiIndex].m_ExecuteDelegate;
+      compiledPass.m_PrepareDelegate           = m_Passes[uiIndex].m_PrepareDelegate;
     }
 
     m_Statistics.m_uiCulledPassCount = 0U;
@@ -849,6 +870,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
     compiledPass.m_bIsCulled                 = !isLive[uiIndex];
     compiledPass.m_pPassData                 = m_Passes[uiIndex].m_pPassData;
     compiledPass.m_ExecuteDelegate           = m_Passes[uiIndex].m_ExecuteDelegate;
+    compiledPass.m_PrepareDelegate           = m_Passes[uiIndex].m_PrepareDelegate;
 
     if (compiledPass.m_bIsCulled)
     {
@@ -1683,6 +1705,22 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         }
 
         pCommandList->TransitionResourceStates(transitions);
+      }
+
+      // Preparation is deliberately outside the native render-pass scope: Vulkan buffer
+      // uploads and their transfer barriers cannot be recorded inside a render pass.
+      if (compiledPass.m_PrepareDelegate.IsValid())
+      {
+        xiiRenderGraphPassContext preparationContext;
+        preparationContext.m_pCommandList     = pCommandList.Borrow();
+        preparationContext.m_pBlackboard      = pBlackboard;
+        preparationContext.m_pResourceCache   = pResourceCache;
+        preparationContext.m_pView            = pView;
+        preparationContext.m_uiFrameIndex     = m_uiFrameIndex;
+        preparationContext.m_sPassName        = compiledPass.m_sName;
+        preparationContext.m_ResolvedTextures = resolvedTextures;
+        preparationContext.m_ResolvedBuffers  = resolvedBuffers;
+        compiledPass.m_PrepareDelegate(preparationContext);
       }
 
       // Handle merge group open.

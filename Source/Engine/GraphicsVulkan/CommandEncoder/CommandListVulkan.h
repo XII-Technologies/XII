@@ -163,6 +163,7 @@ protected:
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override final;
 
   virtual void BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues) override final;
+  void         UpdateAttachmentBindings();
   virtual void NextSubpassPlatform() override final;
   virtual void EndRenderPassPlatform() override final;
 

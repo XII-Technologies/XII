@@ -84,7 +84,9 @@ namespace
         case xiiGALPrimitiveTopology::LineStripAdjacent:
           return xiiMath::Max(uiElements, 3U) - 3;
 
-        default: XII_REPORT_FAILURE("Unexpected primitive topology"); return 0;
+        default:
+          XII_REPORT_FAILURE("Unexpected primitive topology");
+          return 0;
       }
     }
   }

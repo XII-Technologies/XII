@@ -562,15 +562,22 @@ xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShade
   // Assign slot to each resource in each set.
   for (xiiUInt32 uiSet = 0; uiSet < slotInUseInSet.GetCount(); ++uiSet)
   {
-    xiiUInt32 uiCurrentSlot = 0;
+    xiiUInt32             uiCurrentSlot = 0;
+    xiiHybridBitfield<64> assignedSlots;
 
     for (const auto& sName : orderInSet[uiSet])
     {
       xiiGALShaderResourceDescription& resource    = inout_resourceBinding[sName];
       xiiUInt32&                       uiBindIndex = resource.m_uiBindIndex;
 
-      if (uiBindIndex != xiiInvalidIndex)
+      // HLSL register classes have independent indices; Vulkan descriptors share one namespace.
+      // Preserve an explicit slot unless another resource in source order already owns it.
+      if (uiBindIndex != xiiInvalidIndex && (uiBindIndex >= assignedSlots.GetCount() || !assignedSlots.IsBitSet(uiBindIndex)))
+      {
+        assignedSlots.SetCount(xiiMath::Max(assignedSlots.GetCount(), uiBindIndex + 1));
+        assignedSlots.SetBit(uiBindIndex);
         continue;
+      }
 
       while (uiCurrentSlot < slotInUseInSet[uiSet].GetCount() && slotInUseInSet[uiSet].IsBitSet(uiCurrentSlot))
       {
@@ -579,6 +586,8 @@ xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShade
       uiBindIndex = uiCurrentSlot;
       slotInUseInSet[uiSet].SetCount(xiiMath::Max(slotInUseInSet[uiSet].GetCount(), uiCurrentSlot + 1));
       slotInUseInSet[uiSet].SetBit(uiCurrentSlot);
+      assignedSlots.SetCount(xiiMath::Max(assignedSlots.GetCount(), uiCurrentSlot + 1));
+      assignedSlots.SetBit(uiCurrentSlot);
     }
   }
 
@@ -613,6 +622,7 @@ void xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration(xiiStringView sP
       break;
     case xiiGALShaderResourceType::TextureSRV:
     case xiiGALShaderResourceType::BufferSRV:
+    case xiiGALShaderResourceType::AccelerationStructure:
       sResourcePrefix = "t"_xiisv;
       break;
     case xiiGALShaderResourceType::TextureUAV:

@@ -7,10 +7,11 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/StringDeduplicationContext.h>
 #include <Foundation/IO/TypeVersionContext.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
-#include <GraphicsCore/Pipeline/Extractor.h>
-#include <GraphicsCore/Pipeline/Implementation/RenderPipelineResourceLoader.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 
 // clang-format off
@@ -52,64 +53,51 @@ void xiiRenderPipelineContext::DestroyViewContext(xiiEngineProcessViewContext* p
 
 xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToEngine* pMsg)
 {
-  xiiDynamicArray<xiiRenderPipelinePassBase*>                passes;
-  xiiDynamicArray<xiiExtractor*>                             extractors;
-  xiiDynamicArray<xiiRenderPipelineResourceLoaderConnection> connections;
-
+  xiiDynamicArray<xiiRenderPipelinePass*>            passes;
   xiiDynamicArray<xiiUuid>                           passUuids;
   xiiDynamicArray<xiiDocumentObject_ConnectionBase*> toolConnections;
-
   m_Context.GetObjectsByType(passes, &passUuids);
-  m_Context.GetObjectsByType(extractors);
   m_Context.GetObjectsByType(toolConnections);
 
-  xiiHashTable<xiiUuid, xiiUInt32> passUuidToIndex;
-  for (xiiUInt32 i = 0; i < passUuids.GetCount(); ++i)
+  xiiRenderPipelineResourceDescriptor descriptor;
+  xiiHashTable<xiiUuid, xiiUInt32>    passUuidToIndex;
+  for (xiiUInt32 i = 0; i < passes.GetCount(); ++i)
   {
-    passUuidToIndex.Insert(passUuids[i], i);
+    xiiStringBuilder name;
+    xiiConversionUtils::ToString(passUuids[i], name);
+    xiiVariantDictionary                           settings;
+    xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+    passes[i]->GetDynamicRTTI()->GetAllProperties(properties);
+    for (const auto* property : properties)
+    {
+      if (property->GetCategory() == xiiPropertyCategory::Member && !property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
+        settings.Insert(property->GetPropertyName(), xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), passes[i]));
+    }
+    passUuidToIndex.Insert(passUuids[i], descriptor.AddPass(name, passes[i]->GetDynamicRTTI()->GetTypeName(), settings));
   }
-  connections.SetCount(toolConnections.GetCount());
-  for (xiiUInt32 i = 0; i < toolConnections.GetCount(); i++)
+  for (const auto* connection : toolConnections)
   {
-    xiiDocumentObject_ConnectionBase*          pConnection      = toolConnections[i];
-    xiiRenderPipelineResourceLoaderConnection& engineConnection = connections[i];
-    XII_VERIFY(passUuidToIndex.TryGetValue(pConnection->m_Source, engineConnection.m_uiSource), "");
-    XII_VERIFY(passUuidToIndex.TryGetValue(pConnection->m_Target, engineConnection.m_uiTarget), "");
-    engineConnection.m_sSourcePin = pConnection->m_SourcePin;
-    engineConnection.m_sTargetPin = pConnection->m_TargetPin;
+    xiiUInt32 source, target;
+    if (!passUuidToIndex.TryGetValue(connection->m_Source, source) || !passUuidToIndex.TryGetValue(connection->m_Target, target))
+      return xiiStatus("Render pipeline connection references a missing pass.");
+    XII_SUCCEED_OR_RETURN(descriptor.Connect(source, connection->m_SourcePin, target, connection->m_TargetPin));
   }
 
-  xiiDefaultMemoryStreamStorage storage;
-  {
-    // Export Resource Data
-    xiiMemoryStreamWriter writer(&storage);
-    XII_SUCCEED_OR_RETURN(xiiRenderPipelineResourceLoader::ExportPipeline(passes.GetArrayPtr(), extractors.GetArrayPtr(), connections.GetArrayPtr(), writer));
-  }
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  xiiStringBuilder                      error;
+  if (xiiRenderPipeline::Compile(descriptor, compiled, &error).Failed())
+    return xiiStatus(error);
 
   xiiDeferredFileWriter file;
   file.SetOutput(pMsg->m_sOutputFile);
-
-  {
-    // File Header
-    xiiAssetFileHeader header;
-    header.SetFileHashAndVersion(pMsg->m_uiAssetHash, pMsg->m_uiVersion);
-    header.Write(file).IgnoreResult();
-
-    xiiUInt8 uiVersion = 2;
-    file << uiVersion;
-  }
-
-  {
-    // Resource Data
-    xiiUInt32 uiSize = storage.GetStorageSize32();
-    file << uiSize;
-    if (storage.CopyToStream(file).Failed())
-      return xiiStatus(xiiFmt("Failed to copy content to file writer for '{}'", pMsg->m_sOutputFile));
-  }
-
-  // do the actual file writing
+  xiiAssetFileHeader header;
+  header.SetFileHashAndVersion(pMsg->m_uiAssetHash, pMsg->m_uiVersion);
+  XII_SUCCEED_OR_RETURN(header.Write(file));
+  // Version 3 replaces the obsolete pass/extractor stream with the reflected resource definition.
+  const xiiUInt8 version = 3;
+  file << version;
+  XII_SUCCEED_OR_RETURN(descriptor.Serialize(file));
   if (file.Close().Failed())
     return xiiStatus(xiiFmt("Writing to '{}' failed.", pMsg->m_sOutputFile));
-
   return xiiStatus(XII_SUCCESS);
 }

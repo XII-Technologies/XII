@@ -44,7 +44,7 @@ public:
 private:
   friend class xiiView;
 
-  [[nodiscard]] static xiiViewRenderResourceContextHandle CreateContext();
+  [[nodiscard]] static xiiViewRenderResourceContextHandle CreateContext(xiiView& view);
   static void                                             DestroyContext(xiiViewRenderResourceContextHandle handle);
   [[nodiscard]] static bool                               IsValid(xiiViewRenderResourceContextHandle handle);
   [[nodiscard]] static void*                              GetContext(xiiViewRenderResourceContextHandle handle);

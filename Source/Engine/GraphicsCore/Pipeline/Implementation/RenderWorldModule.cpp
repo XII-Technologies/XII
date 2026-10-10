@@ -514,9 +514,10 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     {
       XII_LOCK(GetWorld()->GetReadMarker());
 
-      for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
+      const xiiWorld* world = GetWorld();
+      for (auto it = world->GetObjects(); it.IsValid(); ++it)
       {
-        xiiGameObject*            pObject = it;
+        const xiiGameObject*      pObject = it;
         const xiiGameObjectHandle hObject = pObject->GetHandle();
 
         msg.m_hCurrentObject    = hObject;
@@ -531,7 +532,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
         // Dispatch to object-level handlers explicitly, component dispatch is handled below.
         xiiGetStaticRTTI<xiiGameObject>()->DispatchMessage(pObject, msg);
 
-        for (xiiComponent* pComponent : pObject->GetComponents())
+        for (const xiiComponent* pComponent : pObject->GetComponents())
         {
           if (pComponent == nullptr)
             continue;
@@ -630,7 +631,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     resourceCache.BeginFrame(uiFrameIndex, uiCompletedFrame);
 
     // Clear the per-view blackboard at the start of each frame so passes start clean.
-    // History data lives in persistent GPU resources inside ViewPassResources, not here.
+    // History data lives in persistent GPU resources inside the pipeline runtime, not here.
     blackboard.Clear();
     blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(uiFrameIndex));
 
@@ -655,7 +656,13 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     else
     {
       // Standard full-featured pipeline.
-      viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard, virtualShadowHandles);
+      if (viewDetail.m_pView->BuildRenderPipeline(*pGraph, blackboard, virtualShadowHandles).Failed())
+      {
+        pGraph->EndSetup();
+        resourceCache.EndFrame();
+        xiiLog::Error("Failed to build render pipeline for view '{}'.", viewDetail.m_pView->GetName());
+        continue;
+      }
     }
 
     pGraph->EndSetup();

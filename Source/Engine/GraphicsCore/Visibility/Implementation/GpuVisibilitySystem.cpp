@@ -459,7 +459,8 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGpuVisibilitySystem::LoadComputePipe
   xiiHashTable<xiiHashedString, xiiHashedString> variables(xiiTemporaryAllocator::Get());
   xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, variables, true);
   xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-  if (!permutation.IsValid()) return nullptr;
+  if (!permutation.IsValid())
+    return nullptr;
   xiiGALComputePipelineStateCreationDescription desc;
   desc.m_pComputeShader             = permutation->GetGALShader(xiiGALShaderType::Compute);
   desc.m_pPipelineResourceSignature = permutation->GetPipelineResourceSignature();
@@ -471,7 +472,8 @@ xiiGpuVisibilityView xiiGpuVisibilitySystem::BuildView(const xiiMat4& viewProjec
   xiiGpuVisibilityView result;
   result.m_ViewProjectionMatrix          = viewProjectionMatrix;
   result.m_OcclusionViewProjectionMatrix = viewProjectionMatrix;
-  for (xiiUInt32 i = 0; i < 6U; ++i) result.m_FrustumPlanes[i] = frustum.GetPlane(static_cast<xiiUInt8>(i)).GetAsVec4();
+  for (xiiUInt32 i = 0; i < 6U; ++i)
+    result.m_FrustumPlanes[i] = frustum.GetPlane(static_cast<xiiUInt8>(i)).GetAsVec4();
   result.m_CameraPosition   = xiiVec4(vCameraPosition.x, vCameraPosition.y, vCameraPosition.z, 1.0f);
   result.m_ViewportAndHiZ   = xiiVec4(static_cast<float>(uiWidth), static_cast<float>(uiHeight), static_cast<float>(uiHiZMipCount), 0.0005f);
   result.m_uiInstanceCount  = uiInstanceCount;

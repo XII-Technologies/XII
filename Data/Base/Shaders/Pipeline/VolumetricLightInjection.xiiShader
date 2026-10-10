@@ -8,6 +8,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/LightingData.h>
@@ -16,7 +18,7 @@ ALL
 #include <Shaders/Pipeline/Passes/Volumetrics/VolumetricShadowSampling.h>
 #include <Shaders/Pipeline/Passes/Atmosphere/CloudShadowSampling.h>
 
-RWTexture3D<float4>                  g_FroxelScattering;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture3D<float4>                  g_FroxelScattering;
 StructuredBuffer<xiiFroxelMediumData> g_FroxelMeta;
 StructuredBuffer<uint2>             g_LightGrid;
 StructuredBuffer<uint>              g_LightIndex;

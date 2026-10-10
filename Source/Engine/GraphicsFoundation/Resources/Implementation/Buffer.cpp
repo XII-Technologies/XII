@@ -25,7 +25,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   do                                           \
   {                                            \
     XII_ASSERT_DEV((expression), __VA_ARGS__); \
-    if (!(expression)) { return {}; }          \
+    if (!(expression))                         \
+    {                                          \
+      return {};                               \
+    }                                          \
   } while (false)
 
 xiiGALBuffer::xiiGALBuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBufferCreationDescription& creationDescription) :

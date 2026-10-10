@@ -135,10 +135,18 @@ xiiResult xiiMaterialParameterBlock::PackValue(const xiiMaterialParameterDefinit
       StoreValue(destination, uiValue);
       break;
     }
-    case xiiMaterialParameterType::Int: StoreValue(destination, value.ConvertTo<xiiInt32>()); break;
-    case xiiMaterialParameterType::UInt: StoreValue(destination, value.ConvertTo<xiiUInt32>()); break;
-    case xiiMaterialParameterType::Float: StoreValue(destination, value.ConvertTo<float>()); break;
-    case xiiMaterialParameterType::Float2: StoreValue(destination, value.ConvertTo<xiiVec2>()); break;
+    case xiiMaterialParameterType::Int:
+      StoreValue(destination, value.ConvertTo<xiiInt32>());
+      break;
+    case xiiMaterialParameterType::UInt:
+      StoreValue(destination, value.ConvertTo<xiiUInt32>());
+      break;
+    case xiiMaterialParameterType::Float:
+      StoreValue(destination, value.ConvertTo<float>());
+      break;
+    case xiiMaterialParameterType::Float2:
+      StoreValue(destination, value.ConvertTo<xiiVec2>());
+      break;
     case xiiMaterialParameterType::Float3:
     {
       const xiiVec3 source = value.ConvertTo<xiiVec3>();
@@ -146,8 +154,12 @@ xiiResult xiiMaterialParameterBlock::PackValue(const xiiMaterialParameterDefinit
       StoreValue(destination, packed);
       break;
     }
-    case xiiMaterialParameterType::Float4: StoreValue(destination, value.ConvertTo<xiiVec4>()); break;
-    case xiiMaterialParameterType::Color: StoreValue(destination, value.ConvertTo<xiiColor>()); break;
+    case xiiMaterialParameterType::Float4:
+      StoreValue(destination, value.ConvertTo<xiiVec4>());
+      break;
+    case xiiMaterialParameterType::Color:
+      StoreValue(destination, value.ConvertTo<xiiColor>());
+      break;
     case xiiMaterialParameterType::Matrix3:
     {
       const xiiMat3 source = value.ConvertTo<xiiMat3>();
@@ -158,8 +170,11 @@ xiiResult xiiMaterialParameterBlock::PackValue(const xiiMaterialParameterDefinit
       }
       break;
     }
-    case xiiMaterialParameterType::Matrix4: StoreValue(destination, value.ConvertTo<xiiMat4>()); break;
-    default: return XII_FAILURE;
+    case xiiMaterialParameterType::Matrix4:
+      StoreValue(destination, value.ConvertTo<xiiMat4>());
+      break;
+    default:
+      return XII_FAILURE;
   }
 
   return XII_SUCCESS;

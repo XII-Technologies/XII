@@ -548,15 +548,15 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
 
   struct UpdatePassData
   {
-    xiiRenderGraphBufferHandle                    m_hRadiancePool;
-    xiiRenderGraphBufferHandle                    m_hPageTable;
-    xiiRenderGraphBufferHandle                    m_hLevelData;
-    xiiRenderGraphBufferHandle                    m_hUpdates;
-    xiiRenderGraphBufferHandle                    m_hConstants;
-    xiiDynamicArray<xiiUInt32>                    m_PageTable;
-    xiiDynamicArray<xiiGpuSparseVoxelLevel>       m_LevelData;
-    xiiDynamicArray<xiiGpuSparseVoxelBrickUpdate> m_Updates;
-    const xiiLightingSystem*                      m_pLightingSystem = nullptr;
+    xiiRenderGraphBufferHandle                                                m_hRadiancePool;
+    xiiRenderGraphBufferHandle                                                m_hPageTable;
+    xiiRenderGraphBufferHandle                                                m_hLevelData;
+    xiiRenderGraphBufferHandle                                                m_hUpdates;
+    xiiRenderGraphBufferHandle                                                m_hConstants;
+    xiiDynamicArray<xiiUInt32>                                                m_PageTable;
+    xiiDynamicArray<xiiGpuSparseVoxelLevel, xiiAlignedAllocatorWrapper>       m_LevelData;
+    xiiDynamicArray<xiiGpuSparseVoxelBrickUpdate, xiiAlignedAllocatorWrapper> m_Updates;
+    const xiiLightingSystem*                                                  m_pLightingSystem = nullptr;
   };
 
   const bool bPerformUpdates = s_pState->m_uiLastGpuUpdateFrame != s_pState->m_uiFrameIndex;

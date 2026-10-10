@@ -8,11 +8,13 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 Texture2D<float>   g_SceneDepth;
-RWTexture2D<float> g_ContactShadowOut;
+XII_STORAGE_IMAGE_FORMAT("r8") RWTexture2D<float> g_ContactShadowOut;
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

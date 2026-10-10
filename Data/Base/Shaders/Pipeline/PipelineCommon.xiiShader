@@ -6,7 +6,7 @@
 // 
 // Constant Buffer Slots (bound globally by RenderWorldModule pass execution)
 // 
-cbuffer PerFrameCamera : register(b0)
+cbuffer PerFrameCamera
 {
     float4x4 g_ViewProjectionMatrix;
     float4x4 g_InverseViewProjectionMatrix;
@@ -14,7 +14,7 @@ cbuffer PerFrameCamera : register(b0)
     float4   g_CameraForwardAndFarPlane;   // xyz=fwd, w=far
 };
 
-cbuffer PerFrameLight : register(b1)
+cbuffer PerFrameLight
 {
     float4   g_MainLightDirectionAndIntensity; // xyz=dir (world), w=intensity
     float4   g_MainLightColor;                 // xyz=primary rgb, w=directional-light prefix count
@@ -41,7 +41,7 @@ cbuffer PerFrameLight : register(b1)
     uint     g_DirectionalShadowFilterSamples;
 };
 
-cbuffer PerFrameGlobal : register(b2)
+cbuffer PerFrameGlobal
 {
     uint     g_FrameIndex;
     float    g_DeltaTimeMs;
@@ -58,11 +58,11 @@ cbuffer PerFrameGlobal : register(b2)
 // 
 // Common samplers (bound globally)
 // 
-SamplerState g_sPointClamp    : register(s0);
-SamplerState g_sLinearClamp   : register(s1);
-SamplerState g_sLinearWrap    : register(s2);
-SamplerState g_sAnisotropicWrap: register(s3);
-SamplerComparisonState g_sShadowPCF : register(s4);
+SamplerState g_sPointClamp;
+SamplerState g_sLinearClamp;
+SamplerState g_sLinearWrap;
+SamplerState g_sAnisotropicWrap;
+SamplerComparisonState g_sShadowPCF;
 
 // 
 // Math helpers

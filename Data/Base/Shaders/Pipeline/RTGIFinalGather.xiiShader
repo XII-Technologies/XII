@@ -3,6 +3,8 @@ ALL
 
 [SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Cosine-weighted near-field diffuse path gather. Mid/far-field DDGI and sparse-voxel
 // radiance remain active independently; alpha marks pixels with a valid traced near-field hit.
 
@@ -58,7 +60,7 @@ RaytracingAccelerationStructure g_RayTracingScene : register(t4);
 Texture2D<float>                 g_SceneDepth      : register(t5);
 Texture2D<float2>                g_GBufferNormal   : register(t6);
 Texture2D<float4>                g_GBufferAlbedo   : register(t7);
-RWTexture2D<float4>              g_RTGIRaw         : register(u8);
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>              g_RTGIRaw         : register(u8);
 
 [shader("raygeneration")]
 void main()

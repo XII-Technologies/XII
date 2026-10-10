@@ -199,12 +199,22 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
       vk::Format vkReplacementColorFormat = vk::Format::eUndefined;
       switch (m_vkColorFormat)
       {
-        case vk::Format::eR8G8B8A8Unorm: vkReplacementColorFormat = vk::Format::eB8G8R8A8Unorm; break;
-        case vk::Format::eB8G8R8A8Unorm: vkReplacementColorFormat = vk::Format::eR8G8B8A8Unorm; break;
-        case vk::Format::eB8G8R8A8Srgb: vkReplacementColorFormat = vk::Format::eR8G8B8A8Srgb; break;
-        case vk::Format::eR8G8B8A8Srgb: vkReplacementColorFormat = vk::Format::eB8G8R8A8Srgb; break;
+        case vk::Format::eR8G8B8A8Unorm:
+          vkReplacementColorFormat = vk::Format::eB8G8R8A8Unorm;
+          break;
+        case vk::Format::eB8G8R8A8Unorm:
+          vkReplacementColorFormat = vk::Format::eR8G8B8A8Unorm;
+          break;
+        case vk::Format::eB8G8R8A8Srgb:
+          vkReplacementColorFormat = vk::Format::eR8G8B8A8Srgb;
+          break;
+        case vk::Format::eR8G8B8A8Srgb:
+          vkReplacementColorFormat = vk::Format::eB8G8R8A8Srgb;
+          break;
 
-        default: vkReplacementColorFormat = vk::Format::eUndefined; break;
+        default:
+          vkReplacementColorFormat = vk::Format::eUndefined;
+          break;
       }
 
       bool bReplacementFormatFound = false;

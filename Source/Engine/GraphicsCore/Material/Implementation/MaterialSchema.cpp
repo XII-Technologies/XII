@@ -299,17 +299,28 @@ bool xiiMaterialSchema::IsValueCompatible(xiiMaterialParameterType::Enum type, c
 
   switch (type)
   {
-    case xiiMaterialParameterType::Bool: return value.CanConvertTo<bool>();
-    case xiiMaterialParameterType::Int: return value.CanConvertTo<xiiInt32>();
-    case xiiMaterialParameterType::UInt: return value.CanConvertTo<xiiUInt32>();
-    case xiiMaterialParameterType::Float: return value.CanConvertTo<float>();
-    case xiiMaterialParameterType::Float2: return value.CanConvertTo<xiiVec2>();
-    case xiiMaterialParameterType::Float3: return value.CanConvertTo<xiiVec3>();
-    case xiiMaterialParameterType::Float4: return value.CanConvertTo<xiiVec4>();
-    case xiiMaterialParameterType::Color: return value.CanConvertTo<xiiColor>();
-    case xiiMaterialParameterType::Matrix3: return value.CanConvertTo<xiiMat3>();
-    case xiiMaterialParameterType::Matrix4: return value.CanConvertTo<xiiMat4>();
-    default: return false;
+    case xiiMaterialParameterType::Bool:
+      return value.CanConvertTo<bool>();
+    case xiiMaterialParameterType::Int:
+      return value.CanConvertTo<xiiInt32>();
+    case xiiMaterialParameterType::UInt:
+      return value.CanConvertTo<xiiUInt32>();
+    case xiiMaterialParameterType::Float:
+      return value.CanConvertTo<float>();
+    case xiiMaterialParameterType::Float2:
+      return value.CanConvertTo<xiiVec2>();
+    case xiiMaterialParameterType::Float3:
+      return value.CanConvertTo<xiiVec3>();
+    case xiiMaterialParameterType::Float4:
+      return value.CanConvertTo<xiiVec4>();
+    case xiiMaterialParameterType::Color:
+      return value.CanConvertTo<xiiColor>();
+    case xiiMaterialParameterType::Matrix3:
+      return value.CanConvertTo<xiiMat3>();
+    case xiiMaterialParameterType::Matrix4:
+      return value.CanConvertTo<xiiMat4>();
+    default:
+      return false;
   }
 }
 

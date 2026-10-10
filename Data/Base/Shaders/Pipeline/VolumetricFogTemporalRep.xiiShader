@@ -3,6 +3,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Motion-aware temporal accumulation of the integrated volumetric signal. History is kept at
 // render resolution because integration has already collapsed the froxel depth axis.
 
@@ -15,7 +17,7 @@ Texture2D<float>    g_SceneDepth     : register(t6);
 Texture2D<float2>   g_GBufferNormal  : register(t7);
 Texture2D<float2>   g_Velocity       : register(t8);
 Texture2D<float4>   g_PreviousSurface : register(t9);
-RWTexture2D<float4> g_FroxelBlended  : register(u10);
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_FroxelBlended  : register(u10);
 
 float4 LoadCurrent(int2 pixel, uint2 dimensions)
 {
