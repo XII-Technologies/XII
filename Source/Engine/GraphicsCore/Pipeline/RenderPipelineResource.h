@@ -85,6 +85,8 @@ public:
   xiiSharedPtr<const xiiRenderPipeline> GetPipeline() const;
   /// Built-in reusable definition, cached by ResourceManager. Does not hold a static resource handle.
   static xiiRenderPipelineResourceHandle GetDefaultPipeline();
+  /// Creates an editable default definition without loading a resource or accessing GAL.
+  static void GetDefaultDescriptor(xiiRenderPipelineResourceDescriptor& out_descriptor);
 
 private:
   xiiResourceLoadDescription            UnloadData(Unload whatToUnload) override;

@@ -17,6 +17,7 @@ public:
   xiiResult                    Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline);
   xiiResult                    Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides = {});
   void                         Clear();
+  void                         InvalidateTemporalHistory();
   const xiiRenderPipeline*     GetPipeline() const { return m_pPipeline.Borrow(); }
   const xiiRenderPipelinePass* GetPass(xiiUInt32 index) const { return index < m_Passes.GetCount() ? m_Passes[index] : nullptr; }
 

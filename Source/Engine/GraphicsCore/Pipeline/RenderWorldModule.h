@@ -75,7 +75,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderWorldModuleExtractionEvent
 /// Every xiiView owns its own xiiRenderGraphBlackboard and xiiRenderGraphResourceCache.
 /// The blackboard is cleared at the start of each frame and repopulated by the passes in order.
 /// Cross-frame data (TAA history, exposure, particle state, etc.) lives in persistent GPU buffers
-/// inside the view's ViewPassResources struct.
+/// inside its pipeline runtime.
 class XII_GRAPHICSCORE_DLL xiiRenderWorldModule : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();

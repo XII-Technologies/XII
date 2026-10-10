@@ -150,6 +150,7 @@ public:
   void                      BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                      BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                      BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
+  void                      InvalidateTemporalHistory();
   xiiResult                 BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiRenderPipelineInstance m_Instance;
   struct Resources

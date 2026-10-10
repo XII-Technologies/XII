@@ -6,6 +6,7 @@
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/BinarySerializer.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/BuiltinRenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
@@ -29,6 +30,34 @@ namespace
     xiiRenderPipelinePin m_Schema;
   };
 } // namespace
+
+void xiiRenderPipelineNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const
+{
+  out_templates.Clear();
+  xiiHybridArray<const xiiRTTI*, 32> types;
+  GetCreateableTypes(types);
+  for (const auto* type : types)
+  {
+    if (type == xiiGetStaticRTTI<xiiBuiltinRenderPipelinePass>()) continue;
+    auto& entry       = out_templates.ExpandAndGetRef();
+    entry.m_pType     = type;
+    entry.m_sTypeName = type->GetTypeName();
+  }
+  const auto stages = xiiBuiltinRenderPipelinePass::GetStages();
+  m_BuiltinProperties.Clear();
+  m_BuiltinProperties.Reserve(stages.GetCount());
+  for (const auto stage : stages)
+  {
+    auto& setting = m_BuiltinProperties.ExpandAndGetRef();
+    setting.m_sPropertyName.Assign("Stage");
+    setting.m_Value   = stage;
+    auto& entry       = out_templates.ExpandAndGetRef();
+    entry.m_pType     = xiiGetStaticRTTI<xiiBuiltinRenderPipelinePass>();
+    entry.m_sTypeName = stage;
+    entry.m_sCategory.Assign("Built-in Rendering");
+    entry.m_PropertyValues = xiiArrayPtr<const xiiNodePropertyValue>(&setting, 1);
+  }
+}
 
 bool xiiRenderPipelineNodeManager::InternalIsNode(const xiiDocumentObject* pObject) const
 {

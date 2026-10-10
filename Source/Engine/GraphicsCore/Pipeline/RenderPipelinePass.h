@@ -16,7 +16,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
   {
     Texture,
     Buffer,
-    Order
+    Order ///< Orders CPU graph construction. GPU dependencies use render-graph resource reads/writes.
   };
   xiiString m_sName;
   Type      m_Type      = Texture;
@@ -45,6 +45,8 @@ public:
   virtual xiiResult Configure(const xiiVariantDictionary& properties);
   virtual void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
   virtual xiiResult Build(xiiRenderPipelinePassContext& context)                   = 0;
+  /// Clears view-local history after camera cuts and configuration changes.
+  virtual void InvalidateTemporalHistory() {}
 };
 
 /// Bindings use the pass schema's flat pin indices. Input bindings are resolved before Build;

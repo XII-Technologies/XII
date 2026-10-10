@@ -12,7 +12,8 @@ namespace PipelineResourceTest
 {
   struct PassData
   {
-    xiiRenderGraphBufferHandle m_hBuffer;
+    xiiRenderGraphBufferHandle  m_hBuffer;
+    xiiRenderGraphTextureHandle m_hTexture;
   };
 } // namespace PipelineResourceTest
 
@@ -21,12 +22,17 @@ class xiiPipelineTestSource : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiPipelineTestSource, xiiRenderPipelinePass);
 
 public:
-  xiiUInt32 m_uiValue      = 1;
-  xiiUInt32 m_uiBuildCount = 0;
+  xiiUInt32 m_uiValue               = 1;
+  xiiUInt32 m_uiBuildCount          = 0;
+  xiiUInt32 m_uiHistoryResets       = 0;
+  bool      m_bEmitTexture          = false;
+  bool      m_bUnknownTextureFormat = false;
+  bool      m_bOmitBuffer           = false;
+  void      InvalidateTemporalHistory() override { ++m_uiHistoryResets; }
   void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
   {
     pins.PushBack({"Data", xiiRenderPipelinePin::Buffer, false});
-    pins.PushBack({"Texture", xiiRenderPipelinePin::Texture, false, true, xiiGALResourceFormat::RGBA8UNormalized});
+    pins.PushBack({"Texture", xiiRenderPipelinePin::Texture, false, true, m_bUnknownTextureFormat ? xiiGALResourceFormat::Unknown : xiiGALResourceFormat::RGBA8UNormalized});
     pins.PushBack({"Before", xiiRenderPipelinePin::Order, true, true});
     pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
   }
@@ -37,8 +43,18 @@ public:
         xiiGALBufferCreationDescription description;
         description.m_uiSize = m_uiValue * 16;
         description.m_BindFlags = xiiGALBindFlags::UnorderedAccess;
-        data.m_hBuffer = builder.WriteBuffer("TestProducedBuffer", description, xiiGALResourceStateFlags::UnorderedAccess); }, [](const PipelineResourceTest::PassData&, xiiRenderGraphPassContext&) {});
-    return context.SetOutput("Data", emitted.first->m_hBuffer);
+        data.m_hBuffer = builder.WriteBuffer("TestProducedBuffer", description, xiiGALResourceStateFlags::UnorderedAccess);
+        if (m_bEmitTexture)
+        {
+          xiiGALTextureCreationDescription texture;
+          texture.m_Type = xiiGALResourceDimension::Texture2D;
+          texture.m_Size = xiiSizeU32(4, 4);
+          texture.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+          texture.m_BindFlags = xiiGALBindFlags::UnorderedAccess;
+          data.m_hTexture = builder.WriteTexture("TestProducedTexture", texture, xiiGALResourceStateFlags::UnorderedAccess);
+        } }, [](const PipelineResourceTest::PassData&, xiiRenderGraphPassContext&) {});
+    if (m_bEmitTexture) XII_SUCCEED_OR_RETURN(context.SetOutput("Texture", emitted.first->m_hTexture));
+    return m_bOmitBuffer ? XII_SUCCESS : context.SetOutput("Data", emitted.first->m_hBuffer);
   }
 };
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineTestSource, 1, xiiRTTIDefaultAllocator<xiiPipelineTestSource>)
@@ -46,6 +62,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineTestSource, 1, xiiRTTIDefaultAllocat
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("Value", m_uiValue),
+      XII_MEMBER_PROPERTY("EmitTexture", m_bEmitTexture),
+      XII_MEMBER_PROPERTY("UnknownTextureFormat", m_bUnknownTextureFormat),
+      XII_MEMBER_PROPERTY("OmitBuffer", m_bOmitBuffer),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -55,7 +74,8 @@ class xiiPipelineTestSink : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiPipelineTestSink, xiiRenderPipelinePass);
 
 public:
-  void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
+  xiiUInt32 m_uiBuildCount = 0;
+  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
   {
     pins.PushBack({"Input", xiiRenderPipelinePin::Buffer, true});
     pins.PushBack({"Texture", xiiRenderPipelinePin::Texture, true, true, xiiGALResourceFormat::RGBA16Float});
@@ -63,6 +83,7 @@ public:
   }
   xiiResult Build(xiiRenderPipelinePassContext& context) override
   {
+    ++m_uiBuildCount;
     const auto input = context.GetInputBuffer("Input");
     if (!input.IsValid()) return XII_FAILURE;
     context.m_Graph.AddPass<PipelineResourceTest::PassData>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [input](PipelineResourceTest::PassData& data, xiiRenderGraphBuilder& builder) {
@@ -152,6 +173,54 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     descriptor = PipelineResourceTest::MakeDefinition();
     descriptor.m_Connections.Clear();
     XII_TEST_BOOL(xiiRenderPipeline::Compile(descriptor, compiled).Failed());
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Late format resolution, required output and history invalidation")
+  {
+    auto descriptor = PipelineResourceTest::MakeDefinition();
+    descriptor.m_Passes[1].m_Properties.Insert("EmitTexture", true);
+    descriptor.m_Passes[1].m_Properties.Insert("UnknownTextureFormat", true);
+    XII_TEST_RESULT(descriptor.Connect(1, "Texture", 0, "Texture"));
+    xiiSharedPtr<const xiiRenderPipeline> compiled;
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
+    xiiRenderPipelineInstance instance;
+    XII_TEST_RESULT(instance.Initialize(compiled));
+    xiiRenderGraph           graph("Pipeline late format mismatch");
+    xiiRenderGraphBlackboard blackboard;
+    graph.BeginSetup(1);
+    XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard).Failed());
+    XII_TEST_INT(static_cast<const xiiPipelineTestSink*>(instance.GetPass(0))->m_uiBuildCount, 0);
+    graph.EndSetup();
+    instance.InvalidateTemporalHistory();
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(instance.GetPass(1))->m_uiHistoryResets, 1);
+    descriptor = PipelineResourceTest::MakeDefinition();
+    descriptor.m_Passes[1].m_Properties.Insert("OmitBuffer", true);
+    XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
+    XII_TEST_RESULT(instance.Initialize(compiled));
+    graph.BeginSetup(2);
+    XII_TEST_BOOL(instance.Build(nullptr, graph, blackboard).Failed());
+    XII_TEST_INT(static_cast<const xiiPipelineTestSink*>(instance.GetPass(0))->m_uiBuildCount, 0);
+    graph.EndSetup();
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Scoped bindings preserve explicit source versions and validate descriptions")
+  {
+    xiiRenderGraph graph("Pipeline bindings");
+    graph.BeginSetup(1);
+    auto       source   = graph.AddPass<PipelineResourceTest::PassData>("Source", xiiGALCommandQueueFlags::Transfer, [](auto& data, xiiRenderGraphBuilder& builder) {
+        xiiGALBufferCreationDescription description;
+        description.m_uiSize = 16;
+        data.m_hBuffer = builder.WriteBuffer("Physical", description, xiiGALResourceStateFlags::CopyDestination); }, [](const auto&, xiiRenderGraphPassContext&) {});
+    const auto original = source.first->m_hBuffer;
+    auto       newer    = graph.AddPass<PipelineResourceTest::PassData>("Newer version", xiiGALCommandQueueFlags::Transfer, [original](auto& data, xiiRenderGraphBuilder& builder) { data.m_hBuffer = builder.WriteBuffer(original, xiiGALResourceStateFlags::CopyDestination); }, [](const auto&, xiiRenderGraphPassContext&) {});
+    graph.SetSetupBinding("Input", original);
+    auto consumer = graph.AddPass<PipelineResourceTest::PassData>("Consumer", xiiGALCommandQueueFlags::Transfer, [](auto& data, xiiRenderGraphBuilder& builder) { data.m_hBuffer = builder.ReadBuffer("Input", xiiGALResourceStateFlags::CopySource); builder.SetPassSideEffects(true); }, [](const auto&, xiiRenderGraphPassContext&) {});
+    XII_TEST_BOOL(consumer.first->m_hBuffer == original);
+    XII_TEST_BOOL(consumer.first->m_hBuffer != newer.first->m_hBuffer);
+    XII_TEST_BOOL(graph.GetBufferDescription(original) != nullptr);
+    XII_TEST_BOOL(graph.GetBufferDescription({}) == nullptr);
+    XII_TEST_BOOL(graph.GetTextureDescription({}) == nullptr);
+    graph.ClearSetupBindings();
+    graph.EndSetup();
+    XII_TEST_RESULT(graph.Compile());
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Versioned reflected serialization rejects every truncated envelope")
   {
@@ -246,11 +315,11 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_BOOL(pipeline != nullptr);
     if (pipeline)
     {
-      XII_TEST_INT(pipeline->GetTopology().GetVertexCount(), 14);
-      XII_TEST_BOOL(pipeline->GetTopology().GetEdgeCount() > 13);
-      XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), 14);
+      XII_TEST_INT(pipeline->GetTopology().GetVertexCount(), 18);
+      XII_TEST_BOOL(pipeline->GetTopology().GetEdgeCount() > 17);
+      XII_TEST_INT(pipeline->GetExecutionOrder().GetCount(), 18);
       auto descriptor = pipeline->GetDescriptor();
-      XII_TEST_RESULT(descriptor.RemovePass(11)); // Debug is a removable independent stage.
+      XII_TEST_RESULT(descriptor.RemovePass(15)); // Debug is a removable independent stage.
       xiiSharedPtr<const xiiRenderPipeline> edited;
       XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, edited));
     }

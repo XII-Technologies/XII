@@ -36,6 +36,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     {
       const auto& pin = pass.m_Pins[i];
       if (pin.m_sName.IsEmpty()) return fail("Pin names must be nonempty.");
+      if (pin.m_Type > xiiRenderPipelinePin::Order || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown)) return fail("Invalid pin resource schema.");
       for (xiiUInt32 j = 0; j < i; ++j)
         if (pass.m_Pins[j].m_bInput == pin.m_bInput && pass.m_Pins[j].m_sName == pin.m_sName) return fail("Duplicate pin name.");
     }

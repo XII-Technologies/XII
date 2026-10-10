@@ -133,12 +133,12 @@ public:
   /// Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
   ///
   /// fNormalizedScreenPosX and fNormalizedScreenPosY are expected to be in [0; 1] range (normalized screen coordinates).
-  /// If no ray can be computed, EZ_FAILURE is returned.
+  /// If no ray can be computed, XII_FAILURE is returned.
   xiiResult ComputePickingRay(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const;
 
   /// Calculates the normalized screen-space coordinate ([0; 1] range) that the given world-space point projects to.
   ///
-  /// Returns EZ_FAILURE, if the point could not be projected into screen-space.
+  /// Returns XII_FAILURE, if the point could not be projected into screen-space.
   xiiResult ComputeScreenSpacePos(const xiiVec3& vWorldPos, xiiVec3& out_vScreenPosNormalized) const;
 
   /// Calculates the world-space position that the given normalized screen-space coordinate maps to
@@ -161,8 +161,8 @@ public:
 
   void                                   SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& pipeline);
   const xiiRenderPipelineResourceHandle& GetRenderPipelineResource() const { return m_hRenderPipeline; }
-  void                                   SetPipelineParameter(xiiStringView name, const xiiVariant& value) { m_PipelineParameters.Insert(name, value); }
-  void                                   RemovePipelineParameter(xiiStringView name) { m_PipelineParameters.Remove(name); }
+  void                                   SetPipelineParameter(xiiStringView name, const xiiVariant& value);
+  void                                   RemovePipelineParameter(xiiStringView name);
   const xiiVariantDictionary&            GetPipelineParameters() const { return m_PipelineParameters; }
 
   using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
@@ -212,10 +212,6 @@ private:
 
 
 private:
-  friend class xiiRenderWorldModule;
-  friend class xiiBuiltinRenderPipelineRuntime;
-  friend class xiiBuiltinRenderPipelinePass;
-
   xiiWorld* const m_pWorld;
 
   xiiViewId m_InternalId;

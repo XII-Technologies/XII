@@ -89,18 +89,8 @@ const xiiDisplayOutputSettings& xiiView::GetDisplayOutputSettings() const
 void xiiView::InvalidateTemporalHistory()
 {
   xiiGpuVisibilityManager::InvalidateHiZHistory(m_hGpuVisibilityContext);
-  GetBuiltinRuntime()->m_Resources.m_DepthPasses.m_bMotionHistoryValid                  = false;
-  GetBuiltinRuntime()->m_Resources.m_ShadowPasses.m_bRayTracedShadowHistoryValid        = false;
-  GetBuiltinRuntime()->m_Resources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = false;
-  GetBuiltinRuntime()->m_Resources.m_LightingPasses.m_bRTGIReservoirHistoryValid        = false;
-  GetBuiltinRuntime()->m_Resources.m_LightingPasses.m_bRTGIHistoryValid                 = false;
-  GetBuiltinRuntime()->m_Resources.m_LightingPasses.m_bRTReflectionHistoryValid         = false;
-  GetBuiltinRuntime()->m_Resources.m_LightingPasses.m_bSSRHistoryValid                  = false;
-  GetBuiltinRuntime()->m_Resources.m_LightingPasses.m_bDirectReservoirHistoryValid      = false;
-  GetBuiltinRuntime()->m_Resources.m_LightingPasses.m_bVolumetricHistoryValid           = false;
-  GetBuiltinRuntime()->m_Resources.m_TemporalPasses.m_uiTAAHistoryWriteIndex            = 0U;
-  GetBuiltinRuntime()->m_Resources.m_TemporalPasses.m_bTAAHistoryValid                  = false;
-  GetBuiltinRuntime()->m_Resources.m_TemporalPasses.m_bExposureHistoryValid             = false;
+  GetBuiltinRuntime()->InvalidateTemporalHistory();
+  GetBuiltinRuntime()->m_Instance.InvalidateTemporalHistory();
 }
 
 xiiView::~xiiView()
@@ -319,7 +309,6 @@ xiiUInt32 xiiView::GetRenderResolutionHeight() const
 ////////// Lighting Data Upload //////////
 //
 // Uploads per-view camera, frame, and light data into persistent GAL buffers once per frame.
-// A tiny graph token makes the dependency explicit for clustering and all downstream lighting passes.
 
 
 void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
@@ -368,4 +357,16 @@ xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlac
   RunDynamicResolutionPID();
   runtime->BeginFrame(shadows);
   return runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);
+}
+
+void xiiView::SetPipelineParameter(xiiStringView name, const xiiVariant& value)
+{
+  const auto* previous = m_PipelineParameters.GetValue(name);
+  if (previous && *previous == value) return;
+  m_PipelineParameters.Insert(name, value);
+  InvalidateTemporalHistory();
+}
+void xiiView::RemovePipelineParameter(xiiStringView name)
+{
+  if (m_PipelineParameters.Remove(name)) InvalidateTemporalHistory();
 }

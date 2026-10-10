@@ -91,3 +91,8 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
   }
   return XII_SUCCESS;
 }
+
+void xiiRenderPipelineInstance::InvalidateTemporalHistory()
+{
+  for (auto* pass : m_Passes) pass->InvalidateTemporalHistory();
+}
