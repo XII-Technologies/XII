@@ -31,7 +31,8 @@ private:
 struct XII_CORE_DLL xiiGraphComponents
 {
   explicit xiiGraphComponents(xiiAllocator* pAllocator = xiiDefaultAllocatorWrapper::GetAllocator());
-  xiiUInt32                               GetCount() const { return m_Offsets.IsEmpty() ? 0 : m_Offsets.GetCount() - 1; }
+  xiiUInt32 GetCount() const { return m_Offsets.IsEmpty() ? 0 : m_Offsets.GetCount() - 1; }
+  /// Requires index < GetCount(). The returned view is invalidated by changes to this result.
   xiiArrayPtr<const xiiGraphVertexHandle> GetComponent(xiiUInt32 index) const;
 
   xiiDynamicArray<xiiGraphVertexHandle> m_Vertices;

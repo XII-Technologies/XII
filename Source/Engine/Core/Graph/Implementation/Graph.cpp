@@ -4,6 +4,7 @@
 
 #include <Core/Graph/Graph.h>
 #include <Foundation/Threading/AtomicInteger.h>
+#include <exception>
 
 namespace
 {
@@ -12,6 +13,8 @@ namespace
     static xiiAtomicInteger<xiiUInt64> nextId;
     const xiiUInt64                    id = nextId.Increment();
     XII_ASSERT_ALWAYS(id != 0, "Graph identity space exhausted.");
+    if (id == 0)
+      std::terminate();
     return id;
   }
 } // namespace

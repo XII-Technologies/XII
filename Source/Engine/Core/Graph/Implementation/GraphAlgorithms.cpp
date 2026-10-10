@@ -97,15 +97,22 @@ void xiiGraphAlgorithms::WalkDepthFirst(const xiiGraph& graph, xiiGraphVertexHan
       scratch.m_Frames.PushBack({next, graph.GetOutgoingEdges(vertices[next])});
     }
   }
+  // Early visitor termination must not retain cursors referencing the graph in reusable scratch storage.
+  scratch.m_Frames.Clear();
 }
 
 bool xiiGraphAlgorithms::IsReachable(const xiiGraph& graph, xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget, xiiGraphAlgorithmWorkspace* pWorkspace)
 {
   if (!graph.IsValid(hSource) || !graph.IsValid(hTarget))
     return false;
-  bool found = false;
-  BreadthFirstTraversal(graph, hSource, [&](xiiGraphVertexHandle vertex) { found = vertex == hTarget; return !found; }, pWorkspace).IgnoreResult();
-  return found;
+  struct
+  {
+    xiiGraphVertexHandle m_Target;
+    bool                 m_bFound = false;
+  } query{hTarget};
+  // One pointer capture fits Foundation's delegate inline storage, including its lambda wrapper.
+  BreadthFirstTraversal(graph, hSource, [&query](xiiGraphVertexHandle vertex) { query.m_bFound = vertex == query.m_Target; return !query.m_bFound; }, pWorkspace).IgnoreResult();
+  return query.m_bFound;
 }
 
 xiiResult xiiGraphAlgorithms::TopologicalSort(const xiiGraph& graph, xiiDynamicArray<xiiGraphVertexHandle>& out_order, xiiGraphAlgorithmWorkspace* pWorkspace)

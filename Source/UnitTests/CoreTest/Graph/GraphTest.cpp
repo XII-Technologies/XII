@@ -110,4 +110,32 @@ XII_CREATE_SIMPLE_TEST(Graph, Structure)
     edgePayloads.Insert(foreignEdge, 7);
     XII_TEST_INT(edgePayloads[foreignEdge], 7);
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Reused slots have new generations")
+  {
+    xiiGraph   graph;
+    const auto originalVertex = graph.AddVertex();
+    const auto originalEdge   = graph.AddEdge(originalVertex, originalVertex);
+    graph.RemoveVertex(originalVertex);
+    bool vertexSlotReused = false;
+    bool edgeSlotReused   = false;
+    for (xiiUInt32 i = 0; i < 128; ++i)
+    {
+      const auto vertex = graph.AddVertex();
+      const auto edge   = graph.AddEdge(vertex, vertex);
+      if (vertex.GetInternalID().m_LocalId.m_InstanceIndex == originalVertex.GetInternalID().m_LocalId.m_InstanceIndex)
+      {
+        vertexSlotReused = true;
+        XII_TEST_BOOL(vertex.GetInternalID().m_LocalId.m_Generation != originalVertex.GetInternalID().m_LocalId.m_Generation);
+      }
+      if (edge.GetInternalID().m_LocalId.m_InstanceIndex == originalEdge.GetInternalID().m_LocalId.m_InstanceIndex)
+      {
+        edgeSlotReused = true;
+        XII_TEST_BOOL(edge.GetInternalID().m_LocalId.m_Generation != originalEdge.GetInternalID().m_LocalId.m_Generation);
+      }
+      XII_TEST_BOOL(!graph.IsValid(originalVertex) && !graph.IsValid(originalEdge));
+      graph.RemoveVertex(vertex);
+    }
+    XII_TEST_BOOL(vertexSlotReused && edgeSlotReused);
+  }
 }
