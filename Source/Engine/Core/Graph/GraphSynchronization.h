@@ -12,7 +12,7 @@
 /// Both reads and writes are exclusive. Keep views/cursors inside the access scope; handles may escape it.
 /// Operations and algorithms run atomically with respect to other access scopes. Lock ordering across graphs
 /// remains the caller's responsibility. The underlying plain graph carries no synchronization overhead.
-class XII_CORE_DLL xiiSynchronizedGraph
+class xiiSynchronizedGraph
 {
 public:
   explicit xiiSynchronizedGraph(xiiAllocator* pAllocator = xiiDefaultAllocatorWrapper::GetAllocator()) :
