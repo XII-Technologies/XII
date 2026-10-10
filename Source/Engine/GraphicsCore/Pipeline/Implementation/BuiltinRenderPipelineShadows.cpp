@@ -102,8 +102,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLocalShadowAtlasAllocation(const xi
   {
     if (!data.m_ShadowData.IsEmpty())
     {
-      cmd.UpdateBuffer(context.GetBuffer(data.m_hLocalShadowAtlasDescriptors), 0U,
-                       xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_ShadowData.GetData()), data.m_ShadowData.GetCount() * sizeof(xiiLocalShadowAtlasData)));
+      UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hLocalShadowAtlasDescriptors), 0U,
+                                  xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_ShadowData.GetData()), data.m_ShadowData.GetCount() * sizeof(xiiLocalShadowAtlasData)));
     }
   }
   cmd.EndDebugGroup();
@@ -144,7 +144,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupDirectionalShadowData(xiiDirectionalS
 
   data.m_hCascadeMatrices        = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
   data.m_hShadowCasterCommands   = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
-  data.m_hDirectionalShadowAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDirectionalShadowAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas, m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas->GetResourceState());
   data.m_hDirectionalShadowAtlas = builder.WriteTexture(data.m_hDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_uiActiveCascades        = m_Resources.m_ShadowPasses.m_uiActiveCascadeCount;
 
@@ -169,11 +169,12 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDirectionalShadowData(const xiiDire
       // Clear and render only the current array slice. Clearing the default
       // array DSV here would erase every previously rendered cascade.
       cmd.SetViewport({0.0f, 0.0f, static_cast<float>(k_uiDirectionalShadowAtlasWidth), static_cast<float>(k_uiDirectionalShadowAtlasHeight), 0.0f, 1.0f});
-      cmd.ClearDepthStencilView(pCascadeDepthView, true, false, 0.0f, 0U);
+      ClearDepthPreservingState(cmd, pCascadeDepthView, true, false, 0.0f, 0U);
 
       if (m_Resources.m_ShadowPasses.m_pShadowDepthPipeline)
       {
         cmd.SetPipelineState(m_Resources.m_ShadowPasses.m_pShadowDepthPipeline);
+        BindFrameResources(cmd);
 
         xiiGALDrawIndexedIndirectDescription indexedIndirectDrawDescription;
         indexedIndirectDrawDescription.m_IndexType             = xiiGALValueType::UInt32;
@@ -214,7 +215,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupSpotShadowData(xiiSpotShadowData& dat
 
   data.m_hShadowCasterCommands        = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLocalShadowAtlas            = builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, m_Resources.m_ShadowPasses.m_pLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hLocalShadowAtlas            = builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, m_Resources.m_ShadowPasses.m_pLocalShadowAtlas, m_Resources.m_ShadowPasses.m_pLocalShadowAtlas->GetResourceState());
   data.m_hLocalShadowAtlas            = builder.WriteTexture(data.m_hLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
 
   const xiiArrayPtr<xiiRenderData* const> renderData = m_View.m_pExtractedData != nullptr ? m_View.m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
@@ -234,12 +235,13 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteSpotShadowData(const xiiSpotShadowD
     // The atlas is persistent and must be initialized every frame even before
     // a local shadow raster pipeline is available. Reversed-Z far depth is
     // zero, so an unpopulated allocation deterministically evaluates as lit.
-    cmd.ClearDepthStencilView(pAtlas->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
+    ClearDepthPreservingState(cmd, pAtlas->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
 
     if (data.m_uiSpotLightCount > 0U && m_Resources.m_ShadowPasses.m_pShadowDepthPipeline)
     {
       // For each spot light, render into its collision-free atlas tile.
       cmd.SetPipelineState(m_Resources.m_ShadowPasses.m_pShadowDepthPipeline);
+      BindFrameResources(cmd);
       const float fAtlasSize = static_cast<float>(m_Resources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize);
       cmd.SetViewport({0.0f, 0.0f, fAtlasSize, fAtlasSize, 0.0f, 1.0f});
       cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hShadowCasterCommands), GetShadowCommandCapacity(m_View.GetBlackboard())});
@@ -289,6 +291,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecutePointShadowData(const xiiPointShado
   cmd.BeginDebugGroup("PointLightCubeShadows");
   {
     cmd.SetPipelineState(m_Resources.m_ShadowPasses.m_pShadowDepthPipeline);
+    BindFrameResources(cmd);
 
     // Each point light: 6 draw calls placing results into 6 atlas tiles.
     for (xiiUInt32 uiFace = 0; uiFace < data.m_uiPointLightCount * 6U; ++uiFace)
@@ -354,6 +357,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedShadowData(const xiiRayTra
     if (data.m_bUseHardwareRayTracing)
     {
       cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
+      BindFrameResources(cmd);
       m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
       cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
@@ -386,6 +390,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedShadowData(const xiiRayTra
     else
     {
       cmd.SetPipelineState(m_Resources.m_ShadowPasses.m_pRayTracedShadowFallbackPipeline);
+      BindFrameResources(cmd);
       m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_RTShadowOut", context.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -423,7 +428,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupShadowDenoiseData(xiiShadowDenoiseDat
   data.m_hRTFinalShadowMask  = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_RTFinalShadowMask, resources.m_pRayTracedShadowHistory[uiCurrentSlot], resources.m_pRayTracedShadowHistory[uiCurrentSlot]->GetResourceState()), xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hConstants          = CreateTemporalDenoiseConstants(builder, "RT Shadow Temporal Denoise Constants");
 
-  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(resources.m_pShadowDenoisePipeline, "Shaders/Pipeline/TemporalDenoise.xiiShader");
+  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(resources.m_pShadowDenoisePipeline, "Shaders/Pipeline/TemporalDenoiseMask.xiiShader");
 }
 
 void xiiBuiltinRenderPipelineRuntime::ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRenderGraphPassContext& context)
@@ -444,6 +449,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteShadowDenoiseData(const xiiShadowDe
     }
 
     cmd.SetPipelineState(m_Resources.m_ShadowPasses.m_pShadowDenoisePipeline);
+
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiTemporalDenoiseConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_CurrentSignal", context.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -490,6 +497,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteContactShadowData(const xiiContactS
   cmd.BeginDebugGroup("ContactShadows");
   {
     cmd.SetPipelineState(m_Resources.m_ShadowPasses.m_pContactShadowPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_ContactShadowOut", context.GetTexture(data.m_hContactShadow)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);

@@ -29,12 +29,13 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDepthPrepass(const xiiDepthPrepassD
   cmd.BeginDebugGroup("DepthPrepass");
   {
     xiiGALTexture* pDepth = context.GetTexture(data.m_hSceneDepth);
-    cmd.ClearDepthStencilView(pDepth->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
+    ClearDepthPreservingState(cmd, pDepth->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
     cmd.SetViewport({0.0f, 0.0f, static_cast<float>(m_View.GetRenderResolutionWidth()), static_cast<float>(m_View.GetRenderResolutionHeight()), 0.0f, 1.0f});
 
     if (m_Resources.m_DepthPasses.m_pDepthPrepassPipeline)
     {
       cmd.SetPipelineState(m_Resources.m_DepthPasses.m_pDepthPrepassPipeline);
+      BindFrameResources(cmd);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
       cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(m_View.GetBlackboard())});
     }
@@ -93,6 +94,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteHiZPyramid(const xiiHiZPyramidData&
     if (m_Resources.m_DepthPasses.m_pHiZBuildPipeline)
     {
       cmd.SetPipelineState(m_Resources.m_DepthPasses.m_pHiZBuildPipeline);
+      BindFrameResources(cmd);
 
       xiiGALTexture* pDepth       = context.GetTexture(data.m_hSceneDepth);
       xiiGALTexture* pFarthestHiZ = context.GetTexture(data.m_hHiZPyramid);
@@ -228,7 +230,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteHiZOcclusionCull(const xiiHiZOcclus
   cmd.BeginDebugGroup("HiZOcclusionCull");
   {
     const xiiUInt32 uiZero = 0U;
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hSurvivingInstances), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hSurvivingInstances), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
 
     if (data.m_uiInstanceCount > 0U && m_Resources.m_DepthPasses.m_pHiZOcclusionCullPipeline)
     {
@@ -238,6 +240,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteHiZOcclusionCull(const xiiHiZOcclus
       }
 
       cmd.SetPipelineState(m_Resources.m_DepthPasses.m_pHiZOcclusionCullPipeline);
+
+      BindFrameResources(cmd);
       cmd.ResolveAndSetConstantBuffer("xiiHiZOcclusionConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceTextureView("g_HiZPyramid", context.GetTexture(data.m_hHiZPyramid)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_Candidates", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -284,6 +288,18 @@ void xiiBuiltinRenderPipelineRuntime::SetupMotionVectors(xiiMotionVectorsData& d
 
   builder.SetPassAllowMerge(false);
   builder.SetPassRenderPassManaged(true);
+  builder.SetPassPreparation([this, &data](xiiRenderGraphPassContext& context) {
+    auto& cmd = context.GetCommandList();
+    {
+      xiiGALMapHelper<xiiMotionVectorConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      *constants = data.m_Constants;
+    }
+    xiiGALStateTransitionDescription transition;
+    transition.m_pResource       = context.GetBuffer(data.m_hConstants);
+    transition.m_NewState        = xiiGALResourceStateFlags::ConstantBuffer;
+    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+    cmd.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
+  });
 }
 
 void xiiBuiltinRenderPipelineRuntime::ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRenderGraphPassContext& context)
@@ -297,21 +313,20 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteMotionVectors(const xiiMotionVector
 
   cmd.BeginDebugGroup("MotionVectors");
   {
-    cmd.ClearRenderTargetView(context.GetTexture(data.m_hVelocityBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hVelocityBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
     cmd.SetViewport({0.0f, 0.0f, static_cast<float>(m_View.GetRenderResolutionWidth()), static_cast<float>(m_View.GetRenderResolutionHeight()), 0.0f, 1.0f});
 
     if (pPipeline != nullptr)
     {
-      {
-        xiiGALMapHelper<xiiMotionVectorConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-        *constants = data.m_Constants;
-      }
+
 
       cmd.SetPipelineState(pPipeline.Borrow());
+
+      BindFrameResources(cmd);
       m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Pixel);
       cmd.ResolveAndSetConstantBuffer("xiiMotionVectorConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Pixel);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
-      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).IgnoreResult();
       cmd.Draw({3U, 1U, 0U, 0U});
 
       auto& depthPasses                          = m_Resources.m_DepthPasses;
@@ -355,6 +370,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteVelocityDilation(const xiiVelocityD
     if (m_Resources.m_DepthPasses.m_pVelocityDilationPipeline)
     {
       cmd.SetPipelineState(m_Resources.m_DepthPasses.m_pVelocityDilationPipeline);
+      BindFrameResources(cmd);
       cmd.ResolveAndSetShaderResourceTextureView("g_VelocityInput", context.GetTexture(data.m_hVelocityInput)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_VelocityOutput", context.GetTexture(data.m_hVelocityDilated)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -406,17 +422,18 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteGBufferBase(const xiiGBufferBaseDat
 
   cmd.BeginDebugGroup("GBufferBase");
   {
-    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 1.0f));
-    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 0.0f));
-    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.0f, 1.0f, 0.0f));
-    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferEmissive)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
-    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferObjectId)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 1.0f));
+    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 0.0f));
+    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.0f, 1.0f, 0.0f));
+    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hGBufferEmissive)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hGBufferObjectId)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
 
     cmd.SetViewport({0.0f, 0.0f, static_cast<float>(m_View.GetRenderResolutionWidth()), static_cast<float>(m_View.GetRenderResolutionHeight()), 0.0f, 1.0f});
 
     if (m_Resources.m_GBufferPasses.m_pGBufferPipeline)
     {
       cmd.SetPipelineState(m_Resources.m_GBufferPasses.m_pGBufferPipeline);
+      BindFrameResources(cmd);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
       cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(m_View.GetBlackboard())});
     }
@@ -452,12 +469,13 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteNormalRoughnessPrepass(const xiiNor
 
   cmd.BeginDebugGroup("NormalRoughnessPrepass");
   {
-    cmd.ClearRenderTargetView(context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.5f, 1.0f));
+    ClearRenderTargetPreservingState(cmd, context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.5f, 1.0f));
     cmd.SetViewport({0.0f, 0.0f, static_cast<float>(m_View.GetRenderResolutionWidth()), static_cast<float>(m_View.GetRenderResolutionHeight()), 0.0f, 1.0f});
 
     if (m_Resources.m_GBufferPasses.m_pNormalRoughnessPipeline)
     {
       cmd.SetPipelineState(m_Resources.m_GBufferPasses.m_pNormalRoughnessPipeline);
+      BindFrameResources(cmd);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
       cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands), GetDrawCommandCapacity(m_View.GetBlackboard())});
     }

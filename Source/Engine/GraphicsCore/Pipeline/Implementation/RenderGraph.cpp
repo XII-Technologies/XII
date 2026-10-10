@@ -468,6 +468,11 @@ void xiiRenderGraphBuilder::SetPassRenderPassManaged(bool bManaged)
   m_Graph.m_Passes[m_uiPassIndex].m_bManagedRenderPass = bManaged;
 }
 
+void xiiRenderGraphBuilder::SetPassPreparation(xiiDelegate<void(xiiRenderGraphPassContext&)> preparation)
+{
+  m_Graph.m_Passes[m_uiPassIndex].m_PrepareDelegate = std::move(preparation);
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 xiiRenderGraph::xiiRenderGraph(xiiStringView sName)
@@ -784,6 +789,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
       compiledPass.m_bIsCulled                 = false;
       compiledPass.m_pPassData                 = m_Passes[uiIndex].m_pPassData;
       compiledPass.m_ExecuteDelegate           = m_Passes[uiIndex].m_ExecuteDelegate;
+      compiledPass.m_PrepareDelegate           = m_Passes[uiIndex].m_PrepareDelegate;
     }
 
     m_Statistics.m_uiCulledPassCount = 0U;
@@ -862,6 +868,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
     compiledPass.m_bIsCulled                 = !isLive[uiIndex];
     compiledPass.m_pPassData                 = m_Passes[uiIndex].m_pPassData;
     compiledPass.m_ExecuteDelegate           = m_Passes[uiIndex].m_ExecuteDelegate;
+    compiledPass.m_PrepareDelegate           = m_Passes[uiIndex].m_PrepareDelegate;
 
     if (compiledPass.m_bIsCulled)
     {
@@ -1696,6 +1703,22 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         }
 
         pCommandList->TransitionResourceStates(transitions);
+      }
+
+      // Preparation is deliberately outside the native render-pass scope: Vulkan buffer
+      // uploads and their transfer barriers cannot be recorded inside a render pass.
+      if (compiledPass.m_PrepareDelegate.IsValid())
+      {
+        xiiRenderGraphPassContext preparationContext;
+        preparationContext.m_pCommandList     = pCommandList.Borrow();
+        preparationContext.m_pBlackboard      = pBlackboard;
+        preparationContext.m_pResourceCache   = pResourceCache;
+        preparationContext.m_pView            = pView;
+        preparationContext.m_uiFrameIndex     = m_uiFrameIndex;
+        preparationContext.m_sPassName        = compiledPass.m_sName;
+        preparationContext.m_ResolvedTextures = resolvedTextures;
+        preparationContext.m_ResolvedBuffers  = resolvedBuffers;
+        compiledPass.m_PrepareDelegate(preparationContext);
       }
 
       // Handle merge group open.

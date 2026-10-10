@@ -7,6 +7,37 @@ using namespace xiiBuiltinPipelineUtils;
 
 void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
+  if (!m_CommonSamplers[0])
+  {
+    auto                             device = xiiGALDevice::GetDefaultDevice();
+    xiiGALSamplerCreationDescription description;
+    description.m_MinFilter          = xiiGALFilterType::Point;
+    description.m_MagFilter          = xiiGALFilterType::Point;
+    description.m_MipFilter          = xiiGALFilterType::Point;
+    m_CommonSamplers[0]              = device->CreateSampler(description);
+    description.m_MinFilter          = xiiGALFilterType::Linear;
+    description.m_MagFilter          = xiiGALFilterType::Linear;
+    description.m_MipFilter          = xiiGALFilterType::Linear;
+    m_CommonSamplers[1]              = device->CreateSampler(description);
+    description.m_AddressU           = xiiGALTextureAddressMode::Wrap;
+    description.m_AddressV           = xiiGALTextureAddressMode::Wrap;
+    description.m_AddressW           = xiiGALTextureAddressMode::Wrap;
+    m_CommonSamplers[2]              = device->CreateSampler(description);
+    description.m_MinFilter          = xiiGALFilterType::Anisotropic;
+    description.m_MagFilter          = xiiGALFilterType::Anisotropic;
+    description.m_MipFilter          = xiiGALFilterType::Anisotropic;
+    description.m_uiMaxAnisotropy    = 8;
+    m_CommonSamplers[3]              = device->CreateSampler(description);
+    description.m_AddressU           = xiiGALTextureAddressMode::Clamp;
+    description.m_AddressV           = xiiGALTextureAddressMode::Clamp;
+    description.m_AddressW           = xiiGALTextureAddressMode::Clamp;
+    description.m_MinFilter          = xiiGALFilterType::ComparisonLinear;
+    description.m_MagFilter          = xiiGALFilterType::ComparisonLinear;
+    description.m_MipFilter          = xiiGALFilterType::Linear;
+    description.m_ComparisonFunction = xiiGALComparisonFunction::GreaterEqual;
+    m_CommonSamplers[4]              = device->CreateSampler(description);
+  }
+
   auto& uiFrameIndex   = m_Frame.uiFrameIndex;
   auto& geometry       = m_Frame.geometry;
   auto& materials      = m_Frame.materials;
@@ -215,13 +246,13 @@ void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRen
         "GPU Local Shadow Atlas Clear", xiiGALCommandQueueFlags::Graphics,
         [pAtlas = m_Resources.m_ShadowPasses.m_pLocalShadowAtlas](xiiLocalShadowAtlasClearData& data, xiiRenderGraphBuilder& builder) {
           data.m_hLocalShadowAtlas = builder.WriteTexture(
-            builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, pAtlas, xiiGALResourceStateFlags::DepthWrite),
+            builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, pAtlas, pAtlas->GetResourceState()),
             xiiGALResourceStateFlags::DepthWrite);
           builder.SetPassAllowMerge(false);
         },
         [](const xiiLocalShadowAtlasClearData& data, xiiRenderGraphPassContext& context) {
-          context.GetCommandList().ClearDepthStencilView(
-            context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
+          ClearDepthPreservingState(context.GetCommandList(),
+                                    context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
         });
 
       XII_IGNORE_UNUSED(xiiGpuShadowRasterManager::AddLocalLightPasses(
@@ -394,6 +425,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildOpaqueComposition(xiiRenderGraph& gra
   // Composite the selected opaque lighting path with indirect, emissive, near-field GI, and volumetrics.
   graph.AddPass<xiiOpaqueLightingCompositeData>("OpaqueLightingComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupOpaqueLightingComposite, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteOpaqueLightingComposite, this));
   graph.AddPass<xiiHairRenderingData>("HairRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupHairRendering, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteHairRendering, this));
+  graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupPlanarReflections, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecutePlanarReflections, this));
   graph.AddPass<xiiWaterRenderingData>("WaterRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupWaterRendering, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteWaterRendering, this));
   graph.AddPass<xiiSubsurfaceScatteringData>("SubsurfaceScattering", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSubsurfaceScattering, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSubsurfaceScattering, this));
   graph.AddPass<xiiEyeShaderData>("EyeShader", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupEyeShader, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteEyeShader, this));
@@ -427,29 +459,12 @@ void xiiBuiltinRenderPipelineRuntime::BuildScreenEffects(xiiRenderGraph& graph, 
     graph.AddPass<xiiScreenSpaceRefractionSnapshotData>("SSRefractionSnapshot", xiiGALCommandQueueFlags::Transfer, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceRefractionSnapshot, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceRefractionSnapshot, this));
     graph.AddPass<xiiScreenSpaceRefractionData>("SSRefraction", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceRefraction, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceRefraction, this));
   }
-  graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupPlanarReflections, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecutePlanarReflections, this));
   graph.AddPass<xiiAtmosphereCompositeData>("AtmosphereComposite", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteAtmosphereComposite, this));
 
   if (!m_Resources.m_OutputPasses.m_hSensorProfile.IsInvalidated())
   {
     graph.AddPass<xiiSensorOutputData>("CalibratedSensorOutput", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSensorOutput, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSensorOutput, this));
   }
-}
-
-void xiiBuiltinRenderPipelineRuntime::BuildTemporalReconstruction(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
-{
-  // Temporal reconstruction passes.
-  graph.AddPass<xiiLuminanceHistogramData>("LuminanceHistogram", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupLuminanceHistogram, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteLuminanceHistogram, this));
-  graph.AddPass<xiiAutoExposureData>("AutoExposure", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupAutoExposure, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteAutoExposure, this));
-  graph.AddPass<xiiTemporalAntiAliasingData>("TAA", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupTemporalAntiAliasing, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteTemporalAntiAliasing, this));
-  graph.AddPass<xiiUpscaleData>("Upscale", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupUpscale, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteUpscale, this));
-}
-
-void xiiBuiltinRenderPipelineRuntime::BuildPostProcessing(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
-{
-  // Post-processing passes.
-  graph.AddPass<xiiBloomData>("Bloom", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupBloom, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteBloom, this));
-  graph.AddPass<xiiToneMappingData>("ToneMapping", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupToneMapping, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteToneMapping, this));
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
@@ -523,16 +538,6 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
     BuildScreenEffects(graph, blackboard);
     return XII_SUCCESS;
   }
-  if (stage == "TemporalReconstruction")
-  {
-    BuildTemporalReconstruction(graph, blackboard);
-    return XII_SUCCESS;
-  }
-  if (stage == "PostProcessing")
-  {
-    BuildPostProcessing(graph, blackboard);
-    return XII_SUCCESS;
-  }
   if (stage == "Debug")
   {
     BuildDebug(graph, blackboard);
@@ -595,4 +600,12 @@ void xiiBuiltinRenderPipelineRuntime::InvalidateTemporalHistory()
   m_Resources.m_TemporalPasses.m_uiTAAHistoryWriteIndex            = 0U;
   m_Resources.m_TemporalPasses.m_bTAAHistoryValid                  = false;
   m_Resources.m_TemporalPasses.m_bExposureHistoryValid             = false;
+}
+
+void xiiBuiltinRenderPipelineRuntime::BindFrameResources(xiiGALCommandList& commandList) const
+{
+  m_Resources.m_LightingSystem.BindFrameConstants(commandList, xiiGALShaderType::Unknown);
+  static const char* names[] = {"g_sPointClamp", "g_sLinearClamp", "g_sLinearWrap", "g_sAnisotropicWrap", "g_sShadowPCF"};
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(names); ++i)
+    commandList.ResolveAndSetSampler(xiiTempHashedString(xiiStringView(names[i])), m_CommonSamplers[i].Borrow());
 }

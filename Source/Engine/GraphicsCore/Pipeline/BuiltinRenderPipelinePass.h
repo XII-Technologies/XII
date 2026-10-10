@@ -14,4 +14,5 @@ public:
   xiiResult                               Configure(const xiiVariantDictionary& properties) override;
   void                                    GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override;
   xiiResult                               Build(xiiRenderPipelinePassContext& context) override;
+  xiiResult                               ValidatePipeline(const xiiRenderPipelineResourceDescriptor& descriptor, xiiArrayPtr<const xiiUInt32> order, xiiUInt32 index, xiiStringBuilder* error) const override;
 };

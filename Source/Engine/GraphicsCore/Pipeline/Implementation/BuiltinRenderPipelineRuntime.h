@@ -131,28 +131,31 @@ struct xiiFinalBlitData;
 
 /// Built-in rendering implementation and isolated per-view history, owned by the existing
 /// high-level resource manager so GAL state is released before device/allocator shutdown.
+xiiResult xiiResolvePipelineDisplaySettings(const xiiVariantDictionary& parameters, xiiDisplayOutputSettings& inout_settings);
+
 class xiiBuiltinRenderPipelineRuntime
 {
 public:
   explicit xiiBuiltinRenderPipelineRuntime(xiiView& view) : m_View(view) {}
-  void                      BuildPrepareFrame(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildTemporalReconstruction(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildPostProcessing(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                      BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
-  void                      InvalidateTemporalHistory();
-  xiiResult                 BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiRenderPipelineInstance m_Instance;
+  void                        BuildPrepareFrame(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  void                        BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
+  void                        InvalidateTemporalHistory();
+  void                        BindFrameResources(xiiGALCommandList& commandList) const;
+  xiiSharedPtr<xiiGALSampler> m_CommonSamplers[5];
+  xiiResult                   BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiRenderPipelineInstance   m_Instance;
+  xiiDisplayOutputSettings    m_DisplayOutputSettings;
   struct Resources
   {
     //  CPU PID state for dynamic resolution

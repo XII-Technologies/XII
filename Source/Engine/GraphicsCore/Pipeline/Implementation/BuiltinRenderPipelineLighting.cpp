@@ -33,6 +33,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteBRDFLutGeneration(const xiiBRDFLutG
   cmd.BeginDebugGroup("BRDFLUTGenerate");
   {
     cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pBRDFLutPipeline);
+    BindFrameResources(cmd);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_BRDFLutOut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({32U, 32U, 1U});
@@ -80,6 +81,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteAtmosphereTransmittance(const xiiAt
   {
     UploadAtmosphereConstants(cmd, context.GetBuffer(data.m_hConstants), data.m_Constants);
     cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pAtmTransmittancePipeline);
+    BindFrameResources(cmd);
     cmd.ResolveAndSetConstantBuffer("xiiAtmosphereConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_TransmittanceLUT", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -128,6 +130,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteAtmosphereMultiScatter(const xiiAtm
   {
     UploadAtmosphereConstants(cmd, context.GetBuffer(data.m_hConstants), data.m_Constants);
     cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline);
+    BindFrameResources(cmd);
     cmd.ResolveAndSetConstantBuffer("xiiAtmosphereConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_TransmittanceLUT", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_MultiScatterLUT", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -172,6 +175,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteSkyIrradianceConvolution(const xiiS
   {
     UploadAtmosphereConstants(cmd, context.GetBuffer(data.m_hConstants), data.m_Constants);
     cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pSkyIrradiancePipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiAtmosphereConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_Transmittance", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -203,6 +207,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteVolumetricFogInitialization(const x
   cmd.BeginDebugGroup("VolumetricFogInitialization");
   {
     cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pFroxelFogInitPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_FroxelMeta", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelScatterOut", context.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -247,6 +252,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDDGIProbeSampling(const xiiDDGIProb
   cmd.BeginDebugGroup("DDGIProbeSampling");
   {
     cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pDDGIProbePipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiDDGIProbeConstants", context.GetBuffer(data.m_hProbeConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -291,6 +297,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteSparseVoxelRadianceGather(const xii
   cmd.BeginDebugGroup("SparseVoxelRadianceGather");
   {
     cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pSparseVoxelGatherPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiSparseVoxelRadianceConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -357,6 +364,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusion(const x
     if (data.m_bUseHardwareRayTracing)
     {
       cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
+      BindFrameResources(cmd);
       m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
       cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
@@ -389,6 +397,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusion(const x
     else
     {
       cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pGTAOFallbackPipeline);
+      BindFrameResources(cmd);
       m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceTextureView("g_NormalRoughness", context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -428,7 +437,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupGroundTruthAmbientOcclusionDenoise(xi
 
   data.m_hConstants = CreateTemporalDenoiseConstants(builder, "AO Temporal Denoise Constants");
 
-  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(resources.m_pAOTemporalDenoisePipeline, "Shaders/Pipeline/TemporalDenoise.xiiShader");
+  xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(resources.m_pAOTemporalDenoisePipeline, "Shaders/Pipeline/TemporalDenoiseMask.xiiShader");
 }
 
 void xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphPassContext& context)
@@ -449,6 +458,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusionDenoise(
     }
 
     cmd.SetPipelineState(m_Resources.m_LightingPrepPasses.m_pAOTemporalDenoisePipeline);
+
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiTemporalDenoiseConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_CurrentSignal", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -577,6 +588,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRDITemporal(const xiiReSTIRDIT
     }
 
     cmd.SetPipelineState(m_Resources.m_LightingPasses.m_pReSTIRDITemporalPipeline);
+
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
     m_Resources.m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiReSTIRDIConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
@@ -630,6 +643,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRDISpatial(const xiiReSTIRDISp
   cmd.BeginDebugGroup("ReSTIRDISpatial");
   {
     cmd.SetPipelineState(m_Resources.m_LightingPasses.m_pReSTIRDISpatialPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
     m_Resources.m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -671,6 +685,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRDIVisibility(const xiiReSTIRD
   cmd.BeginDebugGroup("ReSTIRDIVisibility");
   {
     cmd.SetPipelineState(m_Resources.m_LightingPasses.m_pReSTIRDIVisibilityPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufferNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -730,6 +745,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRDIEmissiveVisibility(const xi
   if (data.m_bUseHardwareRayTracing)
   {
     cmd.SetPipelineState(data.m_pRayTracingPipeline.Borrow());
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::AllRayTracing);
     cmd.ResolveAndSetAccelerationStructure("g_RayTracingScene", data.m_pTopLevelAS.Borrow(), xiiGALShaderType::RayGeneration);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
@@ -873,6 +889,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDirectLighting(const xiiDeferredDir
   cmd.BeginDebugGroup("DeferredDirectLighting");
   {
     cmd.SetPipelineState(m_Resources.m_LightingPasses.m_pDirectLightingPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
     m_Resources.m_LightingSystem.BindIESProfiles(cmd, xiiGALShaderType::Compute);
 
@@ -961,6 +978,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteIndirectLighting(const xiiDeferredI
   cmd.BeginDebugGroup("DeferredIndirectLighting");
   {
     cmd.SetPipelineState(m_Resources.m_LightingPasses.m_pIndirectLightingPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
 
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);

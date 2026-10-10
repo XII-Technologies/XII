@@ -29,7 +29,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLightingDataUpload(const xiiLightin
     m_Resources.m_LightingSystem.UploadFrameData(cmd);
 
     const xiiUInt32 uiReadyToken = 1U;
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hLightingDataReady), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&uiReadyToken), sizeof(uiReadyToken)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hLightingDataReady), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&uiReadyToken), sizeof(uiReadyToken)));
   }
   cmd.EndDebugGroup();
 }
@@ -167,11 +167,11 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteFrustumCull(const xiiFrustumCullDat
     if (!data.m_InstanceBounds.IsEmpty())
     {
       const xiiUInt8* pBoundsBytes = reinterpret_cast<const xiiUInt8*>(data.m_InstanceBounds.GetData());
-      cmd.UpdateBuffer(context.GetBuffer(data.m_hInstanceBounds), 0U, xiiMakeArrayPtr(pBoundsBytes, data.m_InstanceBounds.GetCount() * sizeof(xiiFrustumCullInstanceBounds)));
+      UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hInstanceBounds), 0U, xiiMakeArrayPtr(pBoundsBytes, data.m_InstanceBounds.GetCount() * sizeof(xiiFrustumCullInstanceBounds)));
     }
 
     const xiiUInt32 uiZero = 0U;
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hVisibleCandidates), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hVisibleCandidates), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
 
     {
       xiiGALMapHelper<xiiFrustumCullingConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -185,6 +185,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteFrustumCull(const xiiFrustumCullDat
     }
 
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pFrustumCullPipeline);
+
+    BindFrameResources(cmd);
     cmd.ResolveAndSetConstantBuffer("xiiFrustumCullingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", context.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_VisibleOut", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -263,14 +265,16 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLODSelect(const xiiLODSelectData& d
       return;
     }
 
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hPreferredLOD), 0U,
-                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_PreferredLOD.GetData()), data.m_PreferredLOD.GetCount() * sizeof(xiiUInt32)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hPreferredLOD), 0U,
+                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_PreferredLOD.GetData()), data.m_PreferredLOD.GetCount() * sizeof(xiiUInt32)));
     {
       xiiGALMapHelper<xiiLODSelectionConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *pConstants = data.m_Constants;
     }
 
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pLODSelectPipeline);
+
+    BindFrameResources(cmd);
     cmd.ResolveAndSetConstantBuffer("xiiLODSelectionConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_PreferredLOD", context.GetBuffer(data.m_hPreferredLOD)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -368,14 +372,16 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteInstanceUpdate(const xiiInstanceUpd
       return;
     }
 
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hInstanceSource), 0U,
-                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_InstanceSource.GetData()), data.m_InstanceSource.GetCount() * sizeof(xiiInstanceUpdateSource)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hInstanceSource), 0U,
+                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_InstanceSource.GetData()), data.m_InstanceSource.GetCount() * sizeof(xiiInstanceUpdateSource)));
     {
       xiiGALMapHelper<xiiInstanceUpdateConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *pConstants = data.m_Constants;
     }
 
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pInstanceUpdatePipeline);
+
+    BindFrameResources(cmd);
     cmd.ResolveAndSetConstantBuffer("xiiInstanceUpdateConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_InstanceSource", context.GetBuffer(data.m_hInstanceSource)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_MatricesOut", context.GetBuffer(data.m_hInstanceMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -493,13 +499,13 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDrawBuild(const xiiDrawBuildData& d
   cmd.BeginDebugGroup("DrawCommandBuild");
   {
     const xiiUInt32 uiZero = 0U;
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hDrawCounts), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hDrawCounts), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&uiZero), sizeof(uiZero)));
 
     xiiDynamicArray<xiiExtractedDrawCommand> zeroCommands;
     zeroCommands.SetCount(xiiMath::Max(1U, data.m_uiInstanceCount));
     xiiMemoryUtils::ZeroFill(zeroCommands.GetData(), zeroCommands.GetCount());
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hDrawCommands), 0U,
-                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hDrawCommands), 0U,
+                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
 
     if (data.m_uiInstanceCount == 0U)
     {
@@ -509,8 +515,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDrawBuild(const xiiDrawBuildData& d
 
     if (data.m_bUploadSource)
     {
-      cmd.UpdateBuffer(context.GetBuffer(data.m_hSourceCommands), 0U,
-                       xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+      UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hSourceCommands), 0U,
+                                  xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
     }
     {
       xiiGALMapHelper<xiiDrawCommandBuildConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -518,6 +524,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDrawBuild(const xiiDrawBuildData& d
     }
 
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pDrawBuildPipeline);
+
+    BindFrameResources(cmd);
     cmd.ResolveAndSetConstantBuffer("xiiDrawCommandBuildConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Survivors", context.GetBuffer(data.m_hSurvivors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_InstanceLOD", context.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -580,12 +588,12 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteShadowCasterBuild(const xiiShadowCa
     xiiDynamicArray<xiiExtractedDrawCommand> zeroCommands;
     zeroCommands.SetCount(xiiMath::Max(1U, data.m_uiInstanceCount) * 5U);
     xiiMemoryUtils::ZeroFill(zeroCommands.GetData(), zeroCommands.GetCount());
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hShadowCasterCommands), 0U,
-                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hShadowCasterCommands), 0U,
+                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
 
     xiiUInt32 zeroCounts[5] = {};
-    cmd.UpdateBuffer(context.GetBuffer(data.m_hShadowCasterCounts), 0U,
-                     xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCounts), sizeof(zeroCounts)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hShadowCasterCounts), 0U,
+                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCounts), sizeof(zeroCounts)));
 
     if (data.m_uiInstanceCount == 0U)
     {
@@ -599,6 +607,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteShadowCasterBuild(const xiiShadowCa
     }
 
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pShadowCasterBuildPipeline);
+
+    BindFrameResources(cmd);
     cmd.ResolveAndSetConstantBuffer("xiiShadowCasterCullingConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiShadowCascadeConstants", context.GetBuffer(data.m_hCascadeConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_SourceCommands", context.GetBuffer(data.m_hSourceCommands)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -671,6 +681,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteClusterBuild(const xiiClusterBuildD
     }
 
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pClusterBuildPipeline);
+
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_ClustersOut", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
@@ -713,6 +725,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLightListClear(const xiiLightListCl
   cmd.BeginDebugGroup("LightListClear");
   {
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pLightListClearPipeline);
+    BindFrameResources(cmd);
     cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -752,6 +765,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLightListBuild(const xiiLightListDa
   cmd.BeginDebugGroup("LightListBuild");
   {
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pLightListPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     m_Resources.m_LightingSystem.BindLightData(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
@@ -797,6 +811,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLightSampling(const xiiLightSamplin
   cmd.BeginDebugGroup("LightSamplingBuild");
   {
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pLightSamplingPipeline);
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     m_Resources.m_LightingSystem.BindLightData(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
@@ -947,6 +962,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReflectionProbeSelect(const xiiRefl
     }
 
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pProbeSelectPipeline);
+
+    BindFrameResources(cmd);
     cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", context.GetBuffer(data.m_hProbeData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiReflectionProbeConstants", context.GetBuffer(data.m_hProbeConstants), xiiGALShaderType::Compute);
@@ -1031,6 +1048,8 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteFroxelAllocation(const xiiFroxelAll
     }
 
     cmd.SetPipelineState(m_Resources.m_VisibilityPasses.m_pFroxelSetupPipeline);
+
+    BindFrameResources(cmd);
     m_Resources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_VolumetricMedia", context.GetBuffer(data.m_hVolumetricMedia)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetConstantBuffer("xiiVolumetricMediumConstants", context.GetBuffer(data.m_hVolumetricConstants), xiiGALShaderType::Compute);
