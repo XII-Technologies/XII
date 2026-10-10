@@ -8,18 +8,22 @@
 /// A failed replacement drops stale executable state. No graph traversal occurs during Build.
 class XII_GRAPHICSCORE_DLL xiiRenderPipelineInstance
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipelineInstance);
+
 public:
+  xiiRenderPipelineInstance() = default;
   ~xiiRenderPipelineInstance();
-  xiiResult Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed = nullptr);
-  xiiResult Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline);
-  xiiResult Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides = {});
-  void Clear();
-  const xiiRenderPipeline* GetPipeline() const { return m_pPipeline.Borrow(); }
+  xiiResult                    Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed = nullptr);
+  xiiResult                    Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline);
+  xiiResult                    Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides = {});
+  void                         Clear();
+  const xiiRenderPipeline*     GetPipeline() const { return m_pPipeline.Borrow(); }
   const xiiRenderPipelinePass* GetPass(xiiUInt32 index) const { return index < m_Passes.GetCount() ? m_Passes[index] : nullptr; }
+
 private:
-  xiiSharedPtr<const xiiRenderPipeline> m_pPipeline;
-  xiiDynamicArray<xiiRenderPipelinePass*> m_Passes;
+  xiiSharedPtr<const xiiRenderPipeline>     m_pPipeline;
+  xiiDynamicArray<xiiRenderPipelinePass*>   m_Passes;
   xiiDynamicArray<xiiRenderPipelineBinding> m_Bindings;
-  xiiVariantDictionary m_Parameters;
-  xiiVariantDictionary m_Overrides;
+  xiiVariantDictionary                      m_Parameters;
+  xiiVariantDictionary                      m_Overrides;
 };

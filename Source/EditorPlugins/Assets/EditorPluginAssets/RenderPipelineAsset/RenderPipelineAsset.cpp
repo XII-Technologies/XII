@@ -3,8 +3,9 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/BinarySerializer.h>
-#include <GraphicsCore/Pipeline/Extractor.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
@@ -13,111 +14,76 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineAssetDocument, 5, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-class xiiRenderPipelinePinColorizer
+namespace
 {
-public:
-  static xiiColor Colorize(const xiiRTTI* pRtti)
+  class xiiPipelineEditorPin : public xiiPin
   {
-    if (pRtti == nullptr)
-      return xiiColorScheme::DarkUI(xiiColorScheme::Gray);
-
-    if (pRtti->IsDerivedFrom<xiiRenderPipelineNodeInputProviderPin>() || pRtti->IsDerivedFrom<xiiRenderPipelineNodeOutputProviderPin>())
-    {
-      if (pRtti->IsDerivedFrom<xiiRenderPipelineNodeInputProviderPin>())
-        return xiiColorScheme::DarkUI(xiiColorScheme::Orange);
-
-      return xiiColorScheme::DarkUI(xiiColorScheme::Violet);
-    }
-
-    if (pRtti->IsDerivedFrom<xiiRenderPipelineNodePassThroughPin>())
-      return xiiColorScheme::DarkUI(xiiColorScheme::Gray);
-
-    if (pRtti->IsDerivedFrom<xiiRenderPipelineNodeInputPin>())
-      return xiiColorScheme::DarkUI(xiiColorScheme::Blue);
-
-    if (pRtti->IsDerivedFrom<xiiRenderPipelineNodeOutputPin>())
-      return xiiColorScheme::DarkUI(xiiColorScheme::Green);
-
-    return xiiColorScheme::DarkUI(xiiColorScheme::Gray);
-  }
-};
+  public:
+    xiiPipelineEditorPin(const xiiRenderPipelinePin& pin, const xiiDocumentObject* object) :
+      xiiPin(pin.m_bInput ? Type::Input : Type::Output, pin.m_sName,
+             xiiColorScheme::DarkUI(pin.m_Type == xiiRenderPipelinePin::Texture  ? xiiColorScheme::Blue :
+                                      pin.m_Type == xiiRenderPipelinePin::Buffer ? xiiColorScheme::Green :
+                                                                                   xiiColorScheme::Gray),
+             object),
+      m_Schema(pin) {}
+    xiiRenderPipelinePin m_Schema;
+  };
+} // namespace
 
 bool xiiRenderPipelineNodeManager::InternalIsNode(const xiiDocumentObject* pObject) const
 {
-  auto pType = pObject->GetTypeAccessor().GetType();
+  return pObject->GetTypeAccessor().GetType()->IsDerivedFrom<xiiRenderPipelinePass>();
+}
 
-  return pType->IsDerivedFrom<xiiRenderPipelinePassBase>() || pType->IsDerivedFrom<xiiExtractor>();
+bool xiiRenderPipelineNodeManager::InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const
+{
+  // A reflected setting may change the native pass schema. The node manager handles pin recreation.
+  return InternalIsNode(pObject) && pProp->GetCategory() == xiiPropertyCategory::Member;
 }
 
 void xiiRenderPipelineNodeManager::InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node)
 {
-  auto pType = pObject->GetTypeAccessor().GetType();
-  if (!pType->IsDerivedFrom<xiiRenderPipelinePassBase>())
-    return;
-
+  const auto* type = xiiRTTI::FindTypeByName(pObject->GetTypeAccessor().GetType()->GetTypeName());
+  if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate()) return;
+  xiiRenderPipelinePass* pass = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
+  XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(pass));
+  xiiVariantDictionary                           settings;
   xiiHybridArray<const xiiAbstractProperty*, 32> properties;
-  pType->GetAllProperties(properties);
-
-  for (auto pProperty : properties)
+  type->GetAllProperties(properties);
+  for (const auto* property : properties)
+    if (property->GetCategory() == xiiPropertyCategory::Member && !property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
+      settings.Insert(property->GetPropertyName(), pObject->GetTypeAccessor().GetValue(property->GetPropertyName()));
+  if (pass->Configure(settings).Failed()) return;
+  xiiDynamicArray<xiiRenderPipelinePin> pins;
+  pass->GetPins(pins);
+  for (const auto& pin : pins)
   {
-    if (pProperty->GetCategory() != xiiPropertyCategory::Member)
-      continue;
-
-    if (!pProperty->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodePin>())
-      continue;
-
-    xiiColor pinColor;
-    if (const xiiColorAttribute* pColorAttribute = pProperty->GetAttributeByType<xiiColorAttribute>())
-    {
-      pinColor = pColorAttribute->GetColor();
-    }
+    auto editorPin = XII_DEFAULT_NEW(xiiPipelineEditorPin, pin, pObject);
+    if (pin.m_bInput) ref_node.m_Inputs.PushBack(std::move(editorPin));
     else
-    {
-      pinColor = xiiRenderPipelinePinColorizer::Colorize(pProperty->GetSpecificType());
-    }
-
-    if (pProperty->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodeInputPin>())
-    {
-      auto pPin = XII_DEFAULT_NEW(xiiPin, xiiPin::Type::Input, pProperty->GetPropertyName(), pinColor, pObject);
-      ref_node.m_Inputs.PushBack(pPin);
-    }
-    else if (pProperty->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodeOutputPin>())
-    {
-      auto pPin = XII_DEFAULT_NEW(xiiPin, xiiPin::Type::Output, pProperty->GetPropertyName(), pinColor, pObject);
-      ref_node.m_Outputs.PushBack(pPin);
-    }
-    else if (pProperty->GetSpecificType()->IsDerivedFrom<xiiRenderPipelineNodePassThroughPin>())
-    {
-      auto pPinIn = XII_DEFAULT_NEW(xiiPin, xiiPin::Type::Input, pProperty->GetPropertyName(), pinColor, pObject);
-      ref_node.m_Inputs.PushBack(pPinIn);
-
-      auto pPinOut = XII_DEFAULT_NEW(xiiPin, xiiPin::Type::Output, pProperty->GetPropertyName(), pinColor, pObject);
-      ref_node.m_Outputs.PushBack(pPinOut);
-    }
+      ref_node.m_Outputs.PushBack(std::move(editorPin));
   }
 }
 
 void xiiRenderPipelineNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const
 {
-  xiiSet<const xiiRTTI*> typeSet;
-  xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiRenderPipelinePassBase>(), typeSet);
-  xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiExtractor>(), typeSet);
-
+  xiiSet<const xiiRTTI*> types;
+  xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiRenderPipelinePass>(), types);
   ref_types.Clear();
-
-  for (auto pType : typeSet)
-  {
-    if (pType->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract))
-      continue;
-
-    ref_types.PushBack(pType);
-  }
+  for (const auto* type : types)
+    if (!type->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract) && type->GetAllocator()->CanAllocate()) ref_types.PushBack(type);
 }
 
 xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const
 {
-  out_result = CanConnectResult::ConnectNto1;
-
+  out_result         = CanConnectResult::ConnectNever;
+  const auto& output = static_cast<const xiiPipelineEditorPin&>(source).m_Schema;
+  const auto& input  = static_cast<const xiiPipelineEditorPin&>(target).m_Schema;
+  if (output.m_Type != input.m_Type || (output.m_Type == xiiRenderPipelinePin::Texture && output.m_Format != xiiGALResourceFormat::Unknown && input.m_Format != xiiGALResourceFormat::Unknown && output.m_Format != input.m_Format))
+    return xiiStatus("Render pipeline pin resource types or formats do not match.");
+  if (WouldConnectionCreateCircle(source, target))
+    return xiiStatus("Render pipeline connections must form a directed acyclic graph.");
+  out_result = input.m_Type == xiiRenderPipelinePin::Order ? CanConnectResult::ConnectNtoN : CanConnectResult::ConnectNto1;
   return XII_SUCCESS;
 }
 

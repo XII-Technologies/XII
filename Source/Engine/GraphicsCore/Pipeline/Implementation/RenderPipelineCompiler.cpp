@@ -1,20 +1,23 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <Core/Graph/GraphAlgorithms.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
-  const auto fail = [&](xiiStringView message) { if (out_error) out_error->Set(message); return XII_FAILURE; };
+  const auto fail = [&](xiiStringView message) {
+    if (out_error) out_error->Set(message);
+    return XII_FAILURE;
+  };
   if (out_error) out_error->Clear();
   if (descriptor.m_Passes.GetCount() > 4096 || descriptor.m_Connections.GetCount() > 65536) return fail("Pipeline exceeds definition limits.");
   xiiSharedPtr<xiiRenderPipeline> result = XII_DEFAULT_NEW(xiiRenderPipeline);
-  result->m_Descriptor = descriptor;
+  result->m_Descriptor                   = descriptor;
   XII_SUCCEED_OR_RETURN(result->m_Topology.Reserve(descriptor.m_Passes.GetCount(), descriptor.m_Connections.GetCount()));
   xiiDynamicArray<xiiGraphVertexHandle> vertices;
-  xiiHashTable<xiiString, bool> names;
+  xiiHashTable<xiiString, bool>         names;
   for (const auto& definition : descriptor.m_Passes)
   {
     if (definition.m_sName.IsEmpty() || names.Contains(definition.m_sName)) return fail("Pass names must be nonempty and unique.");
@@ -24,8 +27,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     xiiRenderPipelinePass* prototype = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(prototype));
     if (prototype->Configure(definition.m_Properties).Failed()) return fail("Invalid pass configuration.");
-    auto& pass = result->m_Passes.ExpandAndGetRef();
-    pass.m_pType = type;
+    auto& pass             = result->m_Passes.ExpandAndGetRef();
+    pass.m_pType           = type;
     pass.m_uiBindingOffset = result->m_uiBindingCount;
     prototype->GetPins(pass.m_Pins);
     if (pass.m_Pins.GetCount() > 256) return fail("Pass exceeds pin limit.");
@@ -48,13 +51,14 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     if (connection.m_uiSource >= vertices.GetCount() || connection.m_uiTarget >= vertices.GetCount()) return fail("Invalid pass endpoint.");
     const auto& source = result->m_Passes[connection.m_uiSource];
     const auto& target = result->m_Passes[connection.m_uiTarget];
-    xiiUInt32 output = xiiInvalidIndex, input = xiiInvalidIndex;
+    xiiUInt32   output = xiiInvalidIndex, input = xiiInvalidIndex;
     for (xiiUInt32 i = 0; i < source.m_Pins.GetCount(); ++i)
       if (!source.m_Pins[i].m_bInput && source.m_Pins[i].m_sName == connection.m_sOutput) output = i;
     for (xiiUInt32 i = 0; i < target.m_Pins.GetCount(); ++i)
       if (target.m_Pins[i].m_bInput && target.m_Pins[i].m_sName == connection.m_sInput) input = i;
     if (input == xiiInvalidIndex || output == xiiInvalidIndex) return fail("Connection references an unknown pin or incorrect direction.");
-    const auto& a = source.m_Pins[output]; const auto& b = target.m_Pins[input];
+    const auto& a = source.m_Pins[output];
+    const auto& b = target.m_Pins[input];
     if (a.m_Type != b.m_Type || (a.m_Format != xiiGALResourceFormat::Unknown && b.m_Format != xiiGALResourceFormat::Unknown && a.m_Format != b.m_Format)) return fail("Incompatible resource pin types or texture formats.");
     const auto targetBinding = target.m_uiBindingOffset + input;
     if (connected[targetBinding] && b.m_Type != xiiRenderPipelinePin::Order) return fail("An input resource pin has multiple producers.");

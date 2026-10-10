@@ -12,11 +12,16 @@ struct xiiRenderPipelinePassContext;
 /// Pin schemas are supplied by the reflected pass type, rather than trusted asset data.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
 {
-  enum Type : xiiUInt8 { Texture, Buffer, Order };
+  enum Type : xiiUInt8
+  {
+    Texture,
+    Buffer,
+    Order
+  };
   xiiString m_sName;
-  Type m_Type = Texture;
-  bool m_bInput = true;
-  bool m_bOptional = false;
+  Type      m_Type      = Texture;
+  bool      m_bInput    = true;
+  bool      m_bOptional = false;
   /// Unknown accepts the producer's format; concrete formats must match.
   xiiGALResourceFormat::Enum m_Format = xiiGALResourceFormat::Unknown;
 };
@@ -24,7 +29,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
 struct xiiRenderPipelineBinding
 {
   xiiRenderGraphTextureHandle m_hTexture;
-  xiiRenderGraphBufferHandle m_hBuffer;
+  xiiRenderGraphBufferHandle  m_hBuffer;
 };
 
 /// One mutable instance per pass per view. Constructors/Configure/GetPins must not access GAL.
@@ -34,28 +39,29 @@ struct xiiRenderPipelineBinding
 class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePass, xiiReflectedClass);
+
 public:
   virtual ~xiiRenderPipelinePass() = default;
   virtual xiiResult Configure(const xiiVariantDictionary& properties);
-  virtual void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
-  virtual xiiResult Build(xiiRenderPipelinePassContext& context) = 0;
+  virtual void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
+  virtual xiiResult Build(xiiRenderPipelinePassContext& context)                   = 0;
 };
 
 /// Bindings use the pass schema's flat pin indices. Input bindings are resolved before Build;
 /// output bindings are written by the pass. Input/output access does not allocate.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
 {
-  xiiView* m_pView;
-  xiiRenderGraph& m_Graph;
-  xiiRenderGraphBlackboard& m_Blackboard;
-  const xiiVariantDictionary& m_Parameters;
+  xiiView*                                m_pView;
+  xiiRenderGraph&                         m_Graph;
+  xiiRenderGraphBlackboard&               m_Blackboard;
+  const xiiVariantDictionary&             m_Parameters;
   xiiArrayPtr<const xiiRenderPipelinePin> m_Pins;
-  xiiArrayPtr<xiiRenderPipelineBinding> m_Bindings;
-  xiiStringView m_sPassName;
+  xiiArrayPtr<xiiRenderPipelineBinding>   m_Bindings;
+  xiiStringView                           m_sPassName;
 
-  xiiUInt32 FindPin(xiiStringView name, bool input) const;
+  xiiUInt32                   FindPin(xiiStringView name, bool input) const;
   xiiRenderGraphTextureHandle GetInputTexture(xiiStringView name) const;
-  xiiRenderGraphBufferHandle GetInputBuffer(xiiStringView name) const;
-  xiiResult SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture);
-  xiiResult SetOutput(xiiStringView name, xiiRenderGraphBufferHandle buffer);
+  xiiRenderGraphBufferHandle  GetInputBuffer(xiiStringView name) const;
+  xiiResult                   SetOutput(xiiStringView name, xiiRenderGraphTextureHandle texture);
+  xiiResult                   SetOutput(xiiStringView name, xiiRenderGraphBufferHandle buffer);
 };

@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
+#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineResource, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineResource>)
@@ -26,6 +27,18 @@ xiiResourceLoadDescription xiiRenderPipelineResource::UpdateContent(xiiStreamRea
   // The standard file loader prefixes every file stream with its absolute source path.
   xiiString path;
   if (stream->ReadString(path).Failed()) return {xiiResourceState::LoadedResourceMissing, 0, 0};
+  if (path.HasExtension("xiiBinRenderPipeline"))
+  {
+    xiiAssetFileHeader header;
+    xiiUInt8           version = 0;
+    if (header.Read(*stream).Failed() || stream->ReadBytes(&version, sizeof(version)) != sizeof(version))
+      return {xiiResourceState::LoadedResourceMissing, 0, 0};
+    if (version != 3)
+    {
+      xiiLog::Error("Render pipeline '{}' uses obsolete compiled format {}. Re-transform its source asset.", path, version);
+      return {xiiResourceState::LoadedResourceMissing, 0, 0};
+    }
+  }
   xiiRenderPipelineResourceDescriptor descriptor;
   if (descriptor.Deserialize(*stream).Failed()) return {xiiResourceState::LoadedResourceMissing, 0, 0};
   return CreateResource(std::move(descriptor));
@@ -44,7 +57,7 @@ void xiiRenderPipelineResource::UpdateMemoryUsage(MemoryUsage& usage)
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineResourceDescriptor)
 {
   xiiSharedPtr<const xiiRenderPipeline> pipeline;
-  xiiStringBuilder error;
+  xiiStringBuilder                      error;
   if (xiiRenderPipeline::Compile(descriptor, pipeline, &error).Failed())
   {
     xiiLog::Error("Render pipeline '{}': {}", GetResourceIdOrDescription(), error);
@@ -54,4 +67,3 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineRe
   m_pPipeline = std::move(pipeline);
   return {xiiResourceState::Loaded, 0, 0};
 }
-

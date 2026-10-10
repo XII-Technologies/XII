@@ -9,6 +9,7 @@ class xiiRenderPipelineNodeManager : public xiiDocumentNodeManager
 {
 public:
   virtual bool InternalIsNode(const xiiDocumentObject* pObject) const override;
+  bool         InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const override;
   virtual void InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node) override;
   virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
 

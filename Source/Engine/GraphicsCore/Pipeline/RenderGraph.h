@@ -507,6 +507,9 @@ public:
   void                        ClearSetupBindings();
   xiiRenderGraphTextureHandle FindTexture(xiiStringView name) const;
   xiiRenderGraphBufferHandle  FindBuffer(xiiStringView name) const;
+  /// Setup-time descriptions. Invalid handles and mismatched resource identities return null.
+  const xiiGALTextureCreationDescription* GetTextureDescription(xiiRenderGraphTextureHandle texture) const;
+  const xiiGALBufferCreationDescription* GetBufferDescription(xiiRenderGraphBufferHandle buffer) const;
 
   /// Compiles the render graph.
   ///

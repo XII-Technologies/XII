@@ -3,8 +3,10 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
+#include <type_traits>
 
 namespace PipelineResourceTest
 {
@@ -87,6 +89,8 @@ namespace PipelineResourceTest
     return descriptor;
   }
 } // namespace PipelineResourceTest
+
+static_assert(!std::is_copy_constructible_v<xiiRenderPipelineInstance>);
 
 XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
 {
@@ -174,12 +178,34 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
       XII_TEST_INT(loaded.m_Passes.GetCount(), 2);
     }
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Checksummed payload rejects complete corrupted definitions")
+  {
+    xiiDefaultMemoryStreamStorage storage;
+    xiiMemoryStreamWriter         writer(&storage);
+    auto                          descriptor = PipelineResourceTest::MakeDefinition();
+    XII_TEST_RESULT(descriptor.Serialize(writer));
+    xiiDynamicArray<xiiUInt8> bytes;
+    bytes.SetCountUninitialized(storage.GetStorageSize32());
+    xiiMemoryStreamReader reader(&storage);
+    reader.ReadBytes(bytes.GetData(), bytes.GetCount());
+    for (xiiUInt32 i = 8; i < bytes.GetCount(); ++i)
+    {
+      bytes[i] ^= 1;
+      xiiRawMemoryStreamReader corrupt(bytes);
+      XII_TEST_BOOL(descriptor.Deserialize(corrupt).Failed());
+      XII_TEST_INT(descriptor.m_Passes.GetCount(), 2);
+      bytes[i] ^= 1;
+    }
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Resource manager sharing, reload and compilation snapshot lifetime")
   {
     auto                                      resource      = xiiResourceManager::LoadResource<xiiRenderPipelineResource>("PipelineTest");
     xiiUniquePtr<xiiResourceLoaderFromMemory> initialLoader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
     xiiMemoryStreamWriter                     initialStream(&initialLoader->m_CustomData);
-    initialStream << "PipelineTest";
+    initialStream << "PipelineTest.xiiBinRenderPipeline";
+    xiiAssetFileHeader header;
+    XII_TEST_RESULT(header.Write(initialStream));
+    initialStream << static_cast<xiiUInt8>(3);
     XII_TEST_RESULT(PipelineResourceTest::MakeDefinition().Serialize(initialStream));
     xiiResourceManager::UpdateResourceWithCustomLoader(resource, std::move(initialLoader));
     xiiRenderPipelineInstance a, b;
@@ -191,7 +217,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     replacement.m_Passes[1].m_Properties.Insert("Value", 9U);
     xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
     xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
-    stream << "PipelineTest";
+    stream << "PipelineTest.xiiBinRenderPipeline";
+    XII_TEST_RESULT(header.Write(stream));
+    stream << static_cast<xiiUInt8>(3);
     XII_TEST_RESULT(replacement.Serialize(stream));
     xiiResourceManager::UpdateResourceWithCustomLoader(resource, std::move(loader));
     bool changed = false;

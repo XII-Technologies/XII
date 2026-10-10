@@ -4,14 +4,14 @@
 
 #include <Core/Graph/Graph.h>
 #include <Core/ResourceManager/Resource.h>
-#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Threading/Mutex.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassDescriptor
 {
-  xiiString m_sName;
-  xiiString m_sType;
+  xiiString            m_sName;
+  xiiString            m_sType;
   xiiVariantDictionary m_Properties;
 };
 
@@ -27,15 +27,15 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineConnection
 /// RemovePass updates indices and removes incident connections. Compilation validates the entire definition.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
 {
-  xiiUInt32 AddPass(xiiStringView name, xiiStringView type, const xiiVariantDictionary& properties = {});
-  xiiResult RemovePass(xiiUInt32 index);
-  xiiResult Connect(xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input);
-  xiiResult Disconnect(xiiUInt32 connection);
-  xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream);
+  xiiUInt32                                        AddPass(xiiStringView name, xiiStringView type, const xiiVariantDictionary& properties = {});
+  xiiResult                                        RemovePass(xiiUInt32 index);
+  xiiResult                                        Connect(xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input);
+  xiiResult                                        Disconnect(xiiUInt32 connection);
+  xiiResult                                        Serialize(xiiStreamWriter& stream) const;
+  xiiResult                                        Deserialize(xiiStreamReader& stream);
   xiiDynamicArray<xiiRenderPipelinePassDescriptor> m_Passes;
-  xiiDynamicArray<xiiRenderPipelineConnection> m_Connections;
-  xiiVariantDictionary m_Parameters;
+  xiiDynamicArray<xiiRenderPipelineConnection>     m_Connections;
+  xiiVariantDictionary                             m_Parameters;
 };
 
 /// Immutable, shared compilation. Core graph owns structural dependencies; execution uses a flat order.
@@ -45,11 +45,11 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
 public:
   struct Pass
   {
-    const xiiRTTI* m_pType = nullptr;
+    const xiiRTTI*                        m_pType = nullptr;
     xiiDynamicArray<xiiRenderPipelinePin> m_Pins;
-    xiiUInt32 m_uiBindingOffset = 0;
-    xiiUInt32 m_uiConnectionOffset = 0;
-    xiiUInt32 m_uiConnectionCount = 0;
+    xiiUInt32                             m_uiBindingOffset    = 0;
+    xiiUInt32                             m_uiConnectionOffset = 0;
+    xiiUInt32                             m_uiConnectionCount  = 0;
   };
   struct Connection
   {
@@ -57,18 +57,19 @@ public:
     xiiUInt32 m_uiSourceBinding;
     xiiUInt32 m_uiTargetBinding;
   };
-  static xiiResult Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
-  const xiiGraph& GetTopology() const { return m_Topology; }
+  static xiiResult                           Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
+  const xiiGraph&                            GetTopology() const { return m_Topology; }
   const xiiRenderPipelineResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
-  xiiArrayPtr<const xiiUInt32> GetExecutionOrder() const { return m_Order; }
+  xiiArrayPtr<const xiiUInt32>               GetExecutionOrder() const { return m_Order; }
+
 private:
   friend class xiiRenderPipelineInstance;
-  xiiGraph m_Topology;
+  xiiGraph                            m_Topology;
   xiiRenderPipelineResourceDescriptor m_Descriptor;
-  xiiDynamicArray<Pass> m_Passes;
-  xiiDynamicArray<Connection> m_Connections;
-  xiiDynamicArray<xiiUInt32> m_Order;
-  xiiUInt32 m_uiBindingCount = 0;
+  xiiDynamicArray<Pass>               m_Passes;
+  xiiDynamicArray<Connection>         m_Connections;
+  xiiDynamicArray<xiiUInt32>          m_Order;
+  xiiUInt32                           m_uiBindingCount = 0;
 };
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
@@ -78,16 +79,18 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineResource final : public xiiResource
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiRenderPipelineResource);
   XII_RESOURCE_DECLARE_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineResourceDescriptor);
+
 public:
   xiiRenderPipelineResource();
   xiiSharedPtr<const xiiRenderPipeline> GetPipeline() const;
   /// Built-in reusable definition, cached by ResourceManager. Does not hold a static resource handle.
   static xiiRenderPipelineResourceHandle GetDefaultPipeline();
+
 private:
-  xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
-  xiiResourceLoadDescription UpdateContent(xiiStreamReader* stream) override;
-  void UpdateMemoryUsage(MemoryUsage& usage) override;
-  mutable xiiMutex m_Mutex;
+  xiiResourceLoadDescription            UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription            UpdateContent(xiiStreamReader* stream) override;
+  void                                  UpdateMemoryUsage(MemoryUsage& usage) override;
+  mutable xiiMutex                      m_Mutex;
   xiiSharedPtr<const xiiRenderPipeline> m_pPipeline;
 };
 

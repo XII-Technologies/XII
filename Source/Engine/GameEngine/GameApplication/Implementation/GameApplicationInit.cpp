@@ -20,6 +20,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Particles/ParticleGraph.h>
+#include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
@@ -62,6 +63,7 @@ void xiiGameApplication::Init_ConfigureAssetManagement()
   xiiResourceManager::RegisterResourceForAssetType("Material", xiiGetStaticRTTI<xiiMaterialResource>());
   xiiResourceManager::RegisterResourceForAssetType("Mesh", xiiGetStaticRTTI<xiiMeshResource>());
   xiiResourceManager::RegisterResourceForAssetType("Prefab", xiiGetStaticRTTI<xiiPrefabResource>());
+  xiiResourceManager::RegisterResourceForAssetType("RenderPipeline", xiiGetStaticRTTI<xiiRenderPipelineResource>());
   xiiResourceManager::RegisterResourceForAssetType("Render Target", xiiGetStaticRTTI<xiiTexture2DResource>());
   xiiResourceManager::RegisterResourceForAssetType("Shader", xiiGetStaticRTTI<xiiShaderResource>());
   xiiResourceManager::RegisterResourceForAssetType("Skeleton", xiiGetStaticRTTI<xiiSkeletonResource>());

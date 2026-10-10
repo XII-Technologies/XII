@@ -1,7 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <GraphicsCore/GraphicsCorePCH.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
+#include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)
@@ -41,6 +41,8 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderG
 {
   const auto i = FindPin(name, false);
   if (i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Texture) return XII_FAILURE;
+  const auto* description = m_Graph.GetTextureDescription(texture);
+  if (!description || (m_Pins[i].m_Format != xiiGALResourceFormat::Unknown && description->m_Format != m_Pins[i].m_Format)) return XII_FAILURE;
   m_Bindings[i].m_hTexture = texture;
   return XII_SUCCESS;
 }
@@ -48,6 +50,7 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderG
 {
   const auto i = FindPin(name, false);
   if (i == xiiInvalidIndex || m_Pins[i].m_Type != xiiRenderPipelinePin::Buffer) return XII_FAILURE;
+  if (!m_Graph.GetBufferDescription(buffer)) return XII_FAILURE;
   m_Bindings[i].m_hBuffer = buffer;
   return XII_SUCCESS;
 }
