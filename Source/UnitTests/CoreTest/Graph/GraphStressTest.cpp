@@ -307,7 +307,7 @@ XII_CREATE_SIMPLE_TEST(Graph, Stress)
       xiiGraphAlgorithmWorkspace            workspace(&allocator);
       xiiGraphComponents                    components(&allocator);
       xiiDynamicArray<xiiGraphVertexHandle> order(&allocator);
-      graph.Reserve(512, 512);
+      XII_TEST_RESULT(graph.Reserve(512, 512));
       const auto allocations = allocator.GetStats().m_uiAllocationCount;
       auto       first       = graph.AddVertex();
       auto       last        = first;

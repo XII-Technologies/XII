@@ -197,7 +197,7 @@ XII_CREATE_SIMPLE_TEST(Graph, Algorithms)
   {
     constexpr xiiUInt32 count = 30000;
     xiiGraph            graph;
-    graph.Reserve(count, count);
+    XII_TEST_RESULT(graph.Reserve(count, count));
     auto first = graph.AddVertex();
     auto last  = first;
     for (xiiUInt32 i = 1; i < count; ++i)

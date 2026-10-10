@@ -3,35 +3,41 @@
 #include <Core/CorePCH.h>
 
 #include <Core/Graph/Graph.h>
-#include <Foundation/Threading/AtomicInteger.h>
-#include <exception>
-
-namespace
-{
-  xiiUInt64 AllocateGraphId()
-  {
-    static xiiAtomicInteger<xiiUInt64> nextId;
-    const xiiUInt64                    id = nextId.Increment();
-    XII_ASSERT_ALWAYS(id != 0, "Graph identity space exhausted.");
-    if (id == 0)
-      std::terminate();
-    return id;
-  }
-} // namespace
+#include <Core/Graph/Implementation/GraphIdentity.h>
 
 xiiGraph::xiiGraph(xiiAllocator* pAllocator) :
-  m_Vertices(pAllocator), m_Edges(pAllocator), m_VertexHandles(pAllocator), m_EdgeHandles(pAllocator), m_uiGraphId(AllocateGraphId())
+  m_Vertices(pAllocator), m_Edges(pAllocator), m_VertexHandles(pAllocator), m_EdgeHandles(pAllocator)
 {
 }
 
 xiiGraph::~xiiGraph() = default;
 
-void xiiGraph::Reserve(xiiUInt32 vertexCapacity, xiiUInt32 edgeCapacity)
+xiiResult xiiGraph::TryInitialize()
 {
+  if (m_uiGraphId != 0)
+    return XII_SUCCESS;
+  static xiiAtomicInteger<xiiUInt64> nextId;
+  return xiiInternal::AllocateGraphIdentity(nextId, m_uiGraphId);
+}
+
+xiiResult xiiGraph::SetLimits(xiiUInt32 vertexLimit, xiiUInt32 edgeLimit)
+{
+  if (vertexLimit > MaxElementCount || edgeLimit > MaxElementCount || vertexLimit < m_Vertices.GetCount() || edgeLimit < m_Edges.GetCount())
+    return XII_FAILURE;
+  m_uiVertexLimit = vertexLimit;
+  m_uiEdgeLimit   = edgeLimit;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGraph::Reserve(xiiUInt32 vertexCapacity, xiiUInt32 edgeCapacity)
+{
+  if (vertexCapacity > m_uiVertexLimit || edgeCapacity > m_uiEdgeLimit)
+    return XII_FAILURE;
   m_Vertices.Reserve(vertexCapacity);
   m_Edges.Reserve(edgeCapacity);
   m_VertexHandles.Reserve(vertexCapacity);
   m_EdgeHandles.Reserve(edgeCapacity);
+  return XII_SUCCESS;
 }
 
 xiiGraphVertexHandle xiiGraph::MakeVertexHandle(LocalId id) const
@@ -47,28 +53,48 @@ xiiGraphEdgeHandle xiiGraph::MakeEdgeHandle(LocalId id) const
 bool xiiGraph::IsValid(xiiGraphVertexHandle hVertex) const
 {
   const auto id = hVertex.GetInternalID();
-  return id.m_uiGraphId == m_uiGraphId && m_Vertices.Contains(id.m_LocalId) && m_Vertices[id.m_LocalId].m_uiDenseIndex != xiiInvalidIndex;
+  return m_uiGraphId != 0 && id.m_uiGraphId == m_uiGraphId && m_Vertices.Contains(id.m_LocalId) && m_Vertices[id.m_LocalId].m_uiDenseIndex != xiiInvalidIndex;
 }
 
 bool xiiGraph::IsValid(xiiGraphEdgeHandle hEdge) const
 {
   const auto id = hEdge.GetInternalID();
-  return id.m_uiGraphId == m_uiGraphId && m_Edges.Contains(id.m_LocalId) && m_Edges[id.m_LocalId].m_uiDenseIndex != xiiInvalidIndex;
+  return m_uiGraphId != 0 && id.m_uiGraphId == m_uiGraphId && m_Edges.Contains(id.m_LocalId) && m_Edges[id.m_LocalId].m_uiDenseIndex != xiiInvalidIndex;
 }
 
 xiiGraphVertexHandle xiiGraph::AddVertex()
 {
+  xiiGraphVertexHandle result;
+  TryAddVertex(result).IgnoreResult();
+  return result;
+}
+
+xiiResult xiiGraph::TryAddVertex(xiiGraphVertexHandle& out_hVertex)
+{
+  out_hVertex.Invalidate();
+  if (m_Vertices.GetCount() >= m_uiVertexLimit)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(TryInitialize());
   Vertex vertex;
   vertex.m_uiDenseIndex = GetVertexCount();
   const auto handle     = MakeVertexHandle(m_Vertices.Insert(vertex));
   m_VertexHandles.PushBack(handle);
-  return handle;
+  out_hVertex = handle;
+  return XII_SUCCESS;
 }
 
 xiiGraphEdgeHandle xiiGraph::AddEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget)
 {
-  if (!IsValid(hSource) || !IsValid(hTarget))
-    return {};
+  xiiGraphEdgeHandle result;
+  TryAddEdge(hSource, hTarget, result).IgnoreResult();
+  return result;
+}
+
+xiiResult xiiGraph::TryAddEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget, xiiGraphEdgeHandle& out_hEdge)
+{
+  out_hEdge.Invalidate();
+  if (!IsValid(hSource) || !IsValid(hTarget) || m_Edges.GetCount() >= m_uiEdgeLimit)
+    return XII_FAILURE;
 
   const auto sourceId = hSource.GetInternalID().m_LocalId;
   const auto targetId = hTarget.GetInternalID().m_LocalId;
@@ -92,7 +118,8 @@ xiiGraphEdgeHandle xiiGraph::AddEdge(xiiGraphVertexHandle hSource, xiiGraphVerte
   ++target.m_uiInDegree;
   const auto handle = MakeEdgeHandle(id);
   m_EdgeHandles.PushBack(handle);
-  return handle;
+  out_hEdge = handle;
+  return XII_SUCCESS;
 }
 
 bool xiiGraph::RemoveEdge(xiiGraphEdgeHandle hEdge)

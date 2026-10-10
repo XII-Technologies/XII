@@ -3,12 +3,40 @@
 #include <CoreTest/CoreTestPCH.h>
 
 #include <Core/Graph/Graph.h>
+#include <Core/Graph/Implementation/GraphIdentity.h>
 #include <Foundation/Containers/HashTable.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(Graph);
 
 XII_CREATE_SIMPLE_TEST(Graph, Structure)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Recoverable identity and capacity failures")
+  {
+    xiiAtomicInteger<xiiUInt64> counter(xiiMath::MaxValue<xiiUInt64>() - 1);
+    xiiUInt64                   identity = 0;
+    XII_TEST_RESULT(xiiInternal::AllocateGraphIdentity(counter, identity));
+    XII_TEST_BOOL(identity == xiiMath::MaxValue<xiiUInt64>());
+    XII_TEST_BOOL(xiiInternal::AllocateGraphIdentity(counter, identity).Failed());
+    XII_TEST_INT(identity, 0);
+    XII_TEST_BOOL(xiiInternal::AllocateGraphIdentity(counter, identity).Failed());
+    XII_TEST_BOOL(static_cast<xiiUInt64>(counter) == xiiMath::MaxValue<xiiUInt64>());
+    xiiGraph graph;
+    XII_TEST_RESULT(graph.SetLimits(1, 1));
+    xiiGraphVertexHandle vertex;
+    xiiGraphEdgeHandle   edge;
+    XII_TEST_RESULT(graph.TryAddVertex(vertex));
+    XII_TEST_RESULT(graph.TryAddEdge(vertex, vertex, edge));
+    xiiGraphVertexHandle failedVertex = vertex;
+    xiiGraphEdgeHandle   failedEdge   = edge;
+    XII_TEST_BOOL(graph.TryAddVertex(failedVertex).Failed());
+    XII_TEST_BOOL(graph.TryAddEdge(vertex, vertex, failedEdge).Failed());
+    XII_TEST_BOOL(failedVertex.IsInvalidated() && failedEdge.IsInvalidated());
+    XII_TEST_BOOL(graph.Reserve(2, 1).Failed());
+    XII_TEST_BOOL(graph.SetLimits(0, 1).Failed());
+    XII_TEST_BOOL(graph.IsValid(vertex) && graph.IsValid(edge));
+    XII_TEST_INT(graph.GetVertexCount(), 1);
+    XII_TEST_INT(graph.GetEdgeCount(), 1);
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Empty and invalid operations")
   {
     xiiGraph graph;
@@ -81,7 +109,7 @@ XII_CREATE_SIMPLE_TEST(Graph, Structure)
       const auto v = graph.AddVertex();
       graph.AddEdge(a, v);
     }
-    graph.Reserve(4096, 4096);
+    XII_TEST_RESULT(graph.Reserve(4096, 4096));
     XII_TEST_BOOL(graph.IsValid(a) && graph.IsValid(edge));
     XII_TEST_BOOL(graph.GetSource(edge) == a && graph.GetTarget(edge) == a);
     XII_TEST_INT(graph.GetOutDegree(a), 2049);
