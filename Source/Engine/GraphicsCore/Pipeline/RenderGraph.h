@@ -500,6 +500,14 @@ public:
   /// Finalizes the setup phase. Must be called after all AddPass calls.
   void EndSetup();
 
+  /// Named-resource bridge for resource-defined pipeline passes. Bindings are scoped to setup;
+  /// handle-based pass code remains the preferred interface. Clear before leaving the scope.
+  void                        SetSetupBinding(xiiStringView name, xiiRenderGraphTextureHandle texture);
+  void                        SetSetupBinding(xiiStringView name, xiiRenderGraphBufferHandle buffer);
+  void                        ClearSetupBindings();
+  xiiRenderGraphTextureHandle FindTexture(xiiStringView name) const;
+  xiiRenderGraphBufferHandle  FindBuffer(xiiStringView name) const;
+
   /// Compiles the render graph.
   ///
   /// Runs all 7 compiler phases:
@@ -663,12 +671,14 @@ private:
   [[nodiscard]] static xiiUInt64 ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
 
 private:
-  xiiDynamicArray<PassEntry>               m_Passes;
-  xiiDynamicArray<ResourceEntry>           m_Resources;
-  xiiHashTable<xiiHashedString, xiiUInt32> m_ResourceNameIndex;
-  xiiHashedString                          m_sName;
-  xiiRenderGraphGraphId                    m_Id;
-  xiiRenderGraphIdTable                    m_IdTable;
+  xiiDynamicArray<PassEntry>                                 m_Passes;
+  xiiDynamicArray<ResourceEntry>                             m_Resources;
+  xiiHashTable<xiiHashedString, xiiUInt32>                   m_ResourceNameIndex;
+  xiiHashTable<xiiHashedString, xiiRenderGraphTextureHandle> m_SetupTextureBindings;
+  xiiHashTable<xiiHashedString, xiiRenderGraphBufferHandle>  m_SetupBufferBindings;
+  xiiHashedString                                            m_sName;
+  xiiRenderGraphGraphId                                      m_Id;
+  xiiRenderGraphIdTable                                      m_IdTable;
 
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALTexture>> m_PersistentTextures;
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALBuffer>>  m_PersistentBuffers;

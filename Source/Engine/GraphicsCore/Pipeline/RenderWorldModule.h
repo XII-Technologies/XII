@@ -61,7 +61,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderWorldModuleExtractionEvent
 ///
 /// ## Render graph construction
 /// Each frame, for views that do not have a custom RenderGraphBuilder set, the module delegates to
-/// xiiView::BuildDefaultRenderGraph() which populates the graph from the view's own pipeline resources.
+/// the view's selected xiiRenderPipelineResource and its isolated runtime instance.
 /// External code may override this by calling xiiView::SetRenderGraphBuilder().
 ///
 /// ## Render data

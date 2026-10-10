@@ -213,6 +213,9 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiRenderGraphTex
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
+  xiiRenderGraphTextureHandle bound;
+  if (m_Graph.m_SetupTextureBindings.TryGetValue(xiiTempHashedString(sName), bound))
+    return ReadTexture(bound, requiredState);
   xiiUInt32  uiTextureResourceIndex = xiiInvalidIndex;
   const bool bFound                 = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read texture '{}' because it was not declared or imported.", sName);
@@ -255,7 +258,10 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::WriteTexture(xiiRenderGraphTe
   resourceUsage.m_bIsWrite        = true;
   m_Graph.m_Passes[m_uiPassIndex].m_Writes.PushBack(resourceUsage);
 
-  return xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
+  const xiiRenderGraphTextureHandle written(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
+  for (auto it = m_Graph.m_SetupTextureBindings.GetIterator(); it.IsValid(); ++it)
+    if (it.Value().GetInternalID().m_InstanceIndex == id.m_InstanceIndex) it.Value() = written;
+  return written;
 }
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadWriteTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState)
@@ -372,6 +378,9 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiRenderGraphBuffe
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
+  xiiRenderGraphBufferHandle bound;
+  if (m_Graph.m_SetupBufferBindings.TryGetValue(xiiTempHashedString(sName), bound))
+    return ReadBuffer(bound, requiredState);
   xiiUInt32  uiBufferResourceIndex = xiiInvalidIndex;
   const bool bFound                = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read buffer '{}' because it was not declared or imported.", sName);
@@ -413,7 +422,10 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::WriteBuffer(xiiRenderGraphBuff
   resourceUsage.m_bIsWrite        = true;
   m_Graph.m_Passes[m_uiPassIndex].m_Writes.PushBack(resourceUsage);
 
-  return xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
+  const xiiRenderGraphBufferHandle written(xiiRenderGraphResourceHandleId(id.m_InstanceIndex, resourceEntry.m_uiCurrentVersion), resourceEntry.m_Id);
+  for (auto it = m_Graph.m_SetupBufferBindings.GetIterator(); it.IsValid(); ++it)
+    if (it.Value().GetInternalID().m_InstanceIndex == id.m_InstanceIndex) it.Value() = written;
+  return written;
 }
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadWriteBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState)
@@ -498,6 +510,7 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
   m_Passes.Clear();
   m_Resources.Clear();
   m_ResourceNameIndex.Clear();
+  ClearSetupBindings();
   m_ExportedTextures.Clear();
   m_ExportedBuffers.Clear();
 

@@ -655,7 +655,13 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     else
     {
       // Standard full-featured pipeline.
-      viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard, virtualShadowHandles);
+      if (viewDetail.m_pView->BuildRenderPipeline(*pGraph, blackboard, virtualShadowHandles).Failed())
+      {
+        pGraph->EndSetup();
+        resourceCache.EndFrame();
+        xiiLog::Error("Failed to build render pipeline for view '{}'.", viewDetail.m_pView->GetName());
+        continue;
+      }
     }
 
     pGraph->EndSetup();

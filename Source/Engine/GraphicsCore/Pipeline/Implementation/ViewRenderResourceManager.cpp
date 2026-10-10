@@ -4,15 +4,15 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/IdTable.h>
-#include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 class xiiViewRenderResourceManagerState
 {
 public:
-  xiiIdTable<xiiViewRenderResourceContextId, xiiUniquePtr<xiiView::ViewPassResources>> m_Contexts;
-  bool                                                                                 m_bEngineStarted = false;
+  xiiIdTable<xiiViewRenderResourceContextId, xiiUniquePtr<xiiBuiltinRenderPipelineRuntime>> m_Contexts;
+  bool                                                                                      m_bEngineStarted = false;
 };
 
 xiiUniquePtr<xiiViewRenderResourceManagerState> xiiViewRenderResourceManager::s_pState;
@@ -63,13 +63,13 @@ bool xiiViewRenderResourceManager::IsInitialized()
   return s_pState != nullptr && s_pState->m_bEngineStarted && xiiGALDevice::HasDefaultDevice();
 }
 
-xiiViewRenderResourceContextHandle xiiViewRenderResourceManager::CreateContext()
+xiiViewRenderResourceContextHandle xiiViewRenderResourceManager::CreateContext(xiiView& view)
 {
   XII_ASSERT_DEV(IsInitialized(), "The view render-resource manager is not initialized.");
   if (!IsInitialized())
     return {};
 
-  return xiiViewRenderResourceContextHandle(s_pState->m_Contexts.Insert(XII_DEFAULT_NEW(xiiView::ViewPassResources)));
+  return xiiViewRenderResourceContextHandle(s_pState->m_Contexts.Insert(XII_DEFAULT_NEW(xiiBuiltinRenderPipelineRuntime, view)));
 }
 
 void xiiViewRenderResourceManager::DestroyContext(xiiViewRenderResourceContextHandle handle)
@@ -90,7 +90,7 @@ void* xiiViewRenderResourceManager::GetContext(xiiViewRenderResourceContextHandl
   if (s_pState == nullptr)
     return nullptr;
 
-  xiiUniquePtr<xiiView::ViewPassResources>* pResources = nullptr;
+  xiiUniquePtr<xiiBuiltinRenderPipelineRuntime>* pResources = nullptr;
   return s_pState->m_Contexts.TryGetValue(handle.GetInternalID(), pResources) ? pResources->Borrow() : nullptr;
 }
 
