@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <Shaders/Common/StorageImageFormat.h>
 // Motion-aware temporal accumulation shared by stochastic AO and near-field GI.
