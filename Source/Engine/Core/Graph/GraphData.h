@@ -2,6 +2,7 @@
 
 #pragma once
 #include <Core/Graph/Graph.h>
+#include <Core/Graph/GraphMappings.h>
 #include <Foundation/Containers/HashTable.h>
 
 /// Typed, owning property maps attached to an existing graph. Payloads may be values, pointers or engine smart pointers.
@@ -79,8 +80,28 @@ private:
       m_EdgeData.Remove(event.m_hEdge);
     else if (event.m_Type == xiiGraphEvent::Type::BeforeReset)
     {
-      m_VertexData.Clear();
-      m_EdgeData.Clear();
+      if (!event.m_pMapping)
+      {
+        m_VertexData.Clear();
+        m_EdgeData.Clear();
+        return;
+      }
+      xiiHashTable<xiiGraphVertexHandle, VertexData> vertices(m_VertexData.GetAllocator());
+      xiiHashTable<xiiGraphEdgeHandle, EdgeData>     edges(m_EdgeData.GetAllocator());
+      for (auto it = m_VertexData.GetIterator(); it.IsValid(); ++it)
+      {
+        xiiGraphVertexHandle remapped;
+        if (event.m_pMapping->m_Vertices.TryGetValue(it.Key(), remapped))
+          vertices.Insert(remapped, std::move(it.Value()));
+      }
+      for (auto it = m_EdgeData.GetIterator(); it.IsValid(); ++it)
+      {
+        xiiGraphEdgeHandle remapped;
+        if (event.m_pMapping->m_Edges.TryGetValue(it.Key(), remapped))
+          edges.Insert(remapped, std::move(it.Value()));
+      }
+      m_VertexData = std::move(vertices);
+      m_EdgeData   = std::move(edges);
     }
   }
   const xiiGraph&                                m_Graph;

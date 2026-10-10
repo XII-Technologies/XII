@@ -89,6 +89,11 @@ xiiResult xiiGraph::ValidateConnection(xiiGraphVertexHandle hSource, xiiGraphVer
 
 xiiResult xiiGraph::MoveFrom(xiiGraph&& source)
 {
+  return MoveFromInternal(std::move(source), nullptr);
+}
+
+xiiResult xiiGraph::MoveFromInternal(xiiGraph&& source, const xiiGraphHandleMap* pMapping)
+{
   if (&source == this)
     return m_bDispatching ? XII_FAILURE : XII_SUCCESS;
   if (m_bDispatching || source.m_bDispatching ||
@@ -103,10 +108,13 @@ xiiResult xiiGraph::MoveFrom(xiiGraph&& source)
     for (auto edge : source.GetEdges())
       XII_SUCCEED_OR_RETURN(m_Validator(source, source.GetSource(edge), source.GetTarget(edge), edge));
   }
-  Broadcast({xiiGraphEvent::Type::BeforeReset});
+  xiiGraphEvent event{xiiGraphEvent::Type::BeforeReset};
+  event.m_pMapping = pMapping;
+  Broadcast(event);
   source.Broadcast({xiiGraphEvent::Type::BeforeReset});
-  m_pStorage = std::move(source.m_pStorage);
-  Broadcast({xiiGraphEvent::Type::Reset});
+  m_pStorage   = std::move(source.m_pStorage);
+  event.m_Type = xiiGraphEvent::Type::Reset;
+  Broadcast(event);
   source.Broadcast({xiiGraphEvent::Type::Reset});
   return XII_SUCCESS;
 }
@@ -117,7 +125,8 @@ xiiResult xiiGraph::CopyFrom(const xiiGraph& source, xiiGraphHandleMap* out_pMap
     return XII_FAILURE;
   xiiGraph copy(m_pAllocator);
   XII_SUCCEED_OR_RETURN(copy.SetLimits(m_uiVertexLimit, m_uiEdgeLimit));
-  XII_SUCCEED_OR_RETURN(copy.Reserve(source.GetVertexCount(), source.GetEdgeCount()));
+  if (source.GetVertexCount() != 0)
+    XII_SUCCEED_OR_RETURN(copy.Reserve(source.GetVertexCount(), source.GetEdgeCount()));
   xiiGraphHandleMap mapping(m_pAllocator);
   for (auto vertex : source.GetVertices())
   {
@@ -131,7 +140,7 @@ xiiResult xiiGraph::CopyFrom(const xiiGraph& source, xiiGraphHandleMap* out_pMap
     XII_SUCCEED_OR_RETURN(copy.TryAddEdge(mapping.m_Vertices[source.GetSource(edge)], mapping.m_Vertices[source.GetTarget(edge)], cloned));
     mapping.m_Edges.Insert(edge, cloned);
   }
-  XII_SUCCEED_OR_RETURN(MoveFrom(std::move(copy)));
+  XII_SUCCEED_OR_RETURN(MoveFromInternal(std::move(copy), &mapping));
   if (out_pMapping)
   {
     out_pMapping->m_Vertices = std::move(mapping.m_Vertices);

@@ -6,10 +6,20 @@
 #include <Core/Graph/GraphSynchronization.h>
 #include <CoreTest/CoreTestPCH.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Threading/Thread.h>
 
 namespace GraphFacilitiesTestDetail
 {
+  class RejectingAllocator : public xiiAllocator
+  {
+  public:
+    void*          Allocate(size_t, size_t, xiiMemoryUtils::DestructorFunction = nullptr) override { return nullptr; }
+    void           Deallocate(void*) override {}
+    size_t         AllocatedSize(const void*) override { return 0; }
+    xiiAllocatorId GetId() const override { return {}; }
+    Stats          GetStats() const override { return {}; }
+  };
   class WriterThread : public xiiThread
   {
   public:
@@ -37,6 +47,29 @@ namespace GraphFacilitiesTestDetail
 
 XII_CREATE_SIMPLE_TEST(Graph, Facilities)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Recoverable metadata allocation and full empty compaction")
+  {
+    GraphFacilitiesTestDetail::RejectingAllocator failingAllocator;
+    xiiGraph                                      failingGraph(&failingAllocator);
+    xiiGraphVertexHandle                          rejected;
+    XII_TEST_BOOL(failingGraph.TryInitialize().Failed());
+    XII_TEST_BOOL(failingGraph.TryAddVertex(rejected).Failed());
+    XII_TEST_BOOL(failingGraph.Reserve(1, 1).Failed());
+    XII_TEST_BOOL(rejected.IsInvalidated());
+    XII_TEST_INT(failingGraph.GetVertexCount(), 0);
+    xiiAllocatorWithPolicy<xiiAllocationPolicyProxy, xiiAllocatorTrackingMode::AllocationStats> allocator("GraphCompactTest", xiiFoundation::GetDefaultAllocator());
+    xiiGraph                                                                                    graph(&allocator);
+    const auto                                                                                  old = graph.AddVertex();
+    for (xiiUInt32 i = 0; i < 1024; ++i)
+      graph.AddEdge(old, graph.AddVertex());
+    graph.Clear();
+    XII_TEST_BOOL(allocator.GetStats().m_uiAllocationSize > 0);
+    xiiGraphHandleMap mapping;
+    XII_TEST_RESULT(graph.Compact(mapping));
+    XII_TEST_INT(allocator.GetStats().m_uiAllocationSize, 0);
+    const auto fresh = graph.AddVertex();
+    XII_TEST_BOOL(fresh != old && !graph.IsValid(old));
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Validation, events, reentrant mutation and reconnection")
   {
     xiiGraph   graph;
@@ -186,6 +219,10 @@ XII_CREATE_SIMPLE_TEST(Graph, Facilities)
     XII_TEST_BOOL(graph.m_Data.GetVertexData(a) == nullptr && graph.m_Data.GetEdgeData(edge) == nullptr);
     XII_TEST_BOOL(graph.m_Data.SetVertexData(a, xiiUniquePtr<xiiUInt32>()).Failed());
     XII_TEST_RESULT(graph.m_Data.SetVertexData(b, xiiUniquePtr<xiiUInt32>(XII_DEFAULT_NEW(xiiUInt32, 3))));
+    xiiGraphHandleMap mapping;
+    XII_TEST_RESULT(graph.m_Graph.Compact(mapping));
+    XII_TEST_INT(**graph.m_Data.GetVertexData(mapping.m_Vertices[b]), 3);
+    XII_TEST_BOOL(!graph.m_Graph.IsValid(b));
     XII_TEST_RESULT(graph.m_Graph.TryClear());
     XII_TEST_BOOL(graph.m_Data.GetVertexData(b) == nullptr);
   }

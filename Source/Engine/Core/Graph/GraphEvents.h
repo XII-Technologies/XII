@@ -4,6 +4,7 @@
 #include <Core/Graph/GraphHandles.h>
 
 class xiiGraph;
+struct xiiGraphHandleMap;
 
 /// Handlers observe consistent topology. Before-removal handles are valid; after-removal handles are stale.
 /// Mutating the emitting graph from a handler or validator is rejected.
@@ -28,6 +29,8 @@ struct xiiGraphEvent
   xiiGraphEdgeHandle   m_hEdge;
   xiiGraphVertexHandle m_hSource;
   xiiGraphVertexHandle m_hTarget;
+  /// Valid only during the synchronous reset notification. Enables property maps to follow compaction.
+  const xiiGraphHandleMap* m_pMapping = nullptr;
 };
 
 XII_DEFINE_AS_POD_TYPE(xiiGraphEvent::Type);

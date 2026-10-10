@@ -102,6 +102,7 @@ public:
   xiiGraphEdgeHandle   FindEdge(xiiGraphVertexHandle hSource, xiiGraphVertexHandle hTarget) const;
 
 private:
+  xiiResult MoveFromInternal(xiiGraph&& source, const xiiGraphHandleMap* pMapping);
   struct Storage;
   xiiGraphVertexHandle  MakeVertexHandle(LocalId id) const;
   xiiGraphEdgeHandle    MakeEdgeHandle(LocalId id) const;
