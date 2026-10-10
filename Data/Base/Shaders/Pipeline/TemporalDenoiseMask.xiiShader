@@ -1,0 +1,6 @@
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+#define XII_DENOISE_FORMAT "r8"
+#include <Shaders/Pipeline/Passes/Denoising/TemporalDenoise.h>

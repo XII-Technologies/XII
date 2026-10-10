@@ -7,6 +7,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
@@ -24,8 +26,8 @@ Texture2D<float4> g_SparseVoxelIrradiance;
 StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData;
 StructuredBuffer<uint2>                 g_ReflectionProbeClusters;
 TextureCube<float4>                     g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES];
-RWTexture2D<float4>                     g_IndirectOut;
-RWTexture2D<float4>                     g_EnvironmentSpecularOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>                     g_IndirectOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>                     g_EnvironmentSpecularOut;
 
 #include <Shaders/Pipeline/Passes/Reflection/ReflectionProbeSampling.h>
 

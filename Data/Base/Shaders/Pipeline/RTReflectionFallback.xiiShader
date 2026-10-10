@@ -7,8 +7,10 @@ ALL
 
 [COMPUTE_SHADER]
 
-RWTexture2D<float4> g_RTReflRaw;
-RWTexture2D<float>  g_RTReflHitDistance;
+#include <Shaders/Common/StorageImageFormat.h>
+
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_RTReflRaw;
+XII_STORAGE_IMAGE_FORMAT("r16f") RWTexture2D<float>  g_RTReflHitDistance;
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

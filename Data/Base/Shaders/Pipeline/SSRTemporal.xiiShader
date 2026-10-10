@@ -7,6 +7,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Reflections/SSRTemporalConstants.h>
@@ -20,7 +22,7 @@ Texture2D<uint>     g_GBufferObjectId;
 Texture2D<float2>   g_Velocity;
 Texture2D<float4>   g_PreviousSurface;
 Texture2D<uint2>    g_PreviousIdentitySignature;
-RWTexture2D<float4> g_ResolvedReflection;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_ResolvedReflection;
 RWTexture2D<uint2>  g_CurrentIdentitySignature;
 
 uint PackSSRMaterialSignature(float4 material)

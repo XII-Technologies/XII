@@ -8,10 +8,12 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 Texture3D<float4>   g_FroxelScattering;
-RWTexture3D<float4> g_FroxelIntegratedOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture3D<float4> g_FroxelIntegratedOut;
 
 static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 

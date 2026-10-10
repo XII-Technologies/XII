@@ -3,6 +3,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Motion-vector reprojection and temporal reservoir reuse for stochastic near-field GI.
 
 #include "PipelineCommon.xiiShader"
@@ -17,7 +19,7 @@ Texture2D<float2> g_Velocity        : register(t8);
 Texture2D<float4> g_PreviousSample  : register(t9);
 Texture2D<float2> g_PreviousState   : register(t10);
 Texture2D<float4> g_PreviousSurface : register(t11);
-RWTexture2D<float4> g_TemporalSample : register(u12);
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_TemporalSample : register(u12);
 RWTexture2D<float2> g_TemporalState  : register(u13);
 
 [numthreads(8, 8, 1)]

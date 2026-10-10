@@ -3,13 +3,15 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Optional display-linear grading. Identity defaults preserve calibrated simulation output.
 
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/Passes/Output/ColorGradingConstants.h>
 
 Texture2D<float4>   g_DisplayLinear;
-RWTexture2D<float4> g_GradedOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_GradedOut;
 
 float HashNoise(uint2 pixel, uint frameIndex)
 {

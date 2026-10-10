@@ -7,6 +7,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/LightingData.h>
 
@@ -21,7 +23,7 @@ Texture2D<float4>      g_GBufferMaterial;
 Texture2D<float4>      g_GBufferEmissive;
 Texture2D<uint4>       g_TemporalReservoir;
 RWTexture2D<uint4>     g_ReservoirOut;
-RWTexture2D<float4>    g_SurfaceOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>    g_SurfaceOut;
 
 static const int2 XII_RESTIR_NEIGHBOR_OFFSETS[8] =
 {

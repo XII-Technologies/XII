@@ -3,6 +3,8 @@ ALL
 
 [SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Directional-light visibility against the frame TLAS. The output follows the pipeline shadow
 // convention: zero is visible and one is fully occluded.
 
@@ -37,7 +39,7 @@ float3 SampleDirectionalEmitter(float3 centerDirection, float2 randomSample, flo
 RaytracingAccelerationStructure g_RayTracingScene : register(t4);
 Texture2D<float>                 g_SceneDepth      : register(t5);
 Texture2D<float2>                g_GBufferNormal   : register(t6);
-RWTexture2D<float>               g_RTShadowOut     : register(u7);
+XII_STORAGE_IMAGE_FORMAT("r8") RWTexture2D<float>               g_RTShadowOut     : register(u7);
 
 [shader("raygeneration")]
 void main()

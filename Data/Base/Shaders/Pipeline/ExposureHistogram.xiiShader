@@ -8,8 +8,8 @@ ALL
 
 #include <Shaders/Pipeline/Passes/Exposure/ExposureHistogramConstants.h>
 
-Texture2D<float4>          g_HDRInput   : register(t0);
-RWStructuredBuffer<uint>   g_Histogram  : register(u0); // 256 uint counters
+Texture2D<float4>          g_HDRInput;
+RWStructuredBuffer<uint>   g_Histogram; // 256 uint counters
 
 groupshared uint gs_LocalHistogram[256];
 

@@ -7,8 +7,10 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 Texture2D<float4>   g_SSGI;
-RWTexture2D<float4> g_HDRScene;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_HDRScene;
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

@@ -3,13 +3,15 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Full-resolution soft-knee bloom extraction with a tent filter.
 
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/Passes/Output/BloomConstants.h>
 
 Texture2D<float4>   g_HDRIn;
-RWTexture2D<float4> g_BloomOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_BloomOut;
 
 float3 ExtractBloom(float3 color)
 {

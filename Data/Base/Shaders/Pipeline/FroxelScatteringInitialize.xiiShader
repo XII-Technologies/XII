@@ -7,11 +7,13 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Volumetrics/VolumetricMediumData.h>
 
 StructuredBuffer<xiiFroxelMediumData> g_FroxelMeta;
-RWTexture3D<float4>                  g_FroxelScatterOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture3D<float4>                  g_FroxelScatterOut;
 
 static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 

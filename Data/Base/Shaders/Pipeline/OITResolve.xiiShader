@@ -11,9 +11,11 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 Texture2D<float4>   g_OITAccum;  // sum(alpha * color * weight)
 Texture2D<float>    g_OITReveal; // product of (1 - alpha)
-RWTexture2D<float4> g_HDROut;    // in/out: opaque scene color
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_HDROut;    // in/out: opaque scene color
 
 // WBOIT weight function (McGuire & Bavoil 2013, Eq. 7).
 // weight = alpha * max(1e-2, min(3e3, 10 / (1e-5 + |z/5|^2 + |z/200|^6)))

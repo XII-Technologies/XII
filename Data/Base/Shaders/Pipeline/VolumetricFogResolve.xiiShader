@@ -8,12 +8,14 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 
 Texture3D<float4>   g_FroxelIntegrated;
 Texture2D<float>    g_SceneDepth;
-RWTexture2D<float4> g_VolumetricOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_VolumetricOut;
 
 static const float XII_FROXEL_SLICE_COUNT = 64.0f;
 

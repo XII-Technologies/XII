@@ -3,6 +3,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Screen-space ambient-visibility fallback. This version deliberately has no hidden constants:
 // every bound name matches the pass contract and all tuning values are stable physical distances.
 
@@ -10,7 +12,7 @@ ALL
 
 Texture2D<float>   g_SceneDepth      : register(t4);
 Texture2D<float4>  g_NormalRoughness : register(t5);
-RWTexture2D<float> g_AOOut           : register(u6);
+XII_STORAGE_IMAGE_FORMAT("r8") RWTexture2D<float> g_AOOut           : register(u6);
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

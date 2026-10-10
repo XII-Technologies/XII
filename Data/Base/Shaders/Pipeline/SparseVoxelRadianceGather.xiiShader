@@ -7,6 +7,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/SparseVoxelRadiance/SparseVoxelRadianceConstants.h>
@@ -22,7 +24,7 @@ Texture2D<float2>                         g_GBufNormal;
 StructuredBuffer<uint>                    g_SparseVoxelPageTable;
 StructuredBuffer<xiiGpuSparseVoxelLevel> g_SparseVoxelLevels;
 StructuredBuffer<float4>                  g_SparseVoxelRadiancePool;
-RWTexture2D<float4>                       g_SparseVoxelIrradianceOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4>                       g_SparseVoxelIrradianceOut;
 
 float3 LoadBrickRadiance(uint physicalBrick, float3 localVoxelCoordinate)
 {

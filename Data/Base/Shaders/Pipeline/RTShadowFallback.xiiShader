@@ -3,13 +3,15 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Screen-space fallback for directional shadow visibility when hardware ray tracing or a frame
 // TLAS is unavailable.
 
 #include "PipelineCommon.xiiShader"
 
 Texture2D<float>   g_SceneDepth  : register(t5);
-RWTexture2D<float> g_RTShadowOut : register(u6);
+XII_STORAGE_IMAGE_FORMAT("r8") RWTexture2D<float> g_RTShadowOut : register(u6);
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid : SV_DispatchThreadID)

@@ -12,7 +12,9 @@ ALL
 
 [COMPUTE_SHADER]
 
-RWTexture2D<float2> g_BRDFLutOut;
+#include <Shaders/Common/StorageImageFormat.h>
+
+XII_STORAGE_IMAGE_FORMAT("rg16f") RWTexture2D<float2> g_BRDFLutOut;
 
 // Hammersley low-discrepancy sequence.
 float2 Hammersley(uint i, uint n)

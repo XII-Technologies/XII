@@ -3,12 +3,14 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 // Contrast-adaptive sharpening. Sampling in normalized coordinates also supports spatial upscaling.
 
 #include <Shaders/Common/Common.h>
 
 Texture2D<float4>   g_TAAIn;
-RWTexture2D<float4> g_Upscaled;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Upscaled;
 
 [numthreads(8, 8, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)

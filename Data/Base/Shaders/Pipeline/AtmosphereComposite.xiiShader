@@ -9,6 +9,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereConstants.h>
@@ -17,7 +19,7 @@ ALL
 Texture2D<float>    g_SceneDepth;
 Texture2D<float4>   g_Transmittance; // precomputed LUT
 Texture2D<float4>   g_MultiScatter;  // 32x32 fms LUT
-RWTexture2D<float4> g_HDRScene;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_HDRScene;
 
 // Sample the transmittance LUT for a given camera height and sun zenith.
 float3 SampleTransmittance(float heightKm, float cosZenith)

@@ -11,6 +11,8 @@ ALL
 
 [COMPUTE_SHADER]
 
+#include <Shaders/Common/StorageImageFormat.h>
+
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Refraction/SSRefractionConstants.h>
 
@@ -19,7 +21,7 @@ Texture2D<float2>   g_GBufNormal;   // oct-encoded world normals
 Texture2D<float4>   g_GBufMaterial; // alpha stores the normalized material-feature byte
 Texture2D<float4>   g_GBufEmissive; // alpha stores the authored transmission factor
 Texture2D<float4>   g_HDRIn;        // immutable scene snapshot sampled behind the surface
-RWTexture2D<float4> g_HDROut;       // authoritative scene output
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_HDROut;       // authoritative scene output
 
 static const uint MATERIAL_FEATURE_TRANSMISSION = 1u << 6u;
 
