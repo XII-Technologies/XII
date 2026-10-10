@@ -6,7 +6,7 @@
 
 #if XII_ENABLED(XII_SHADER_PLATFORM)
 // Resource-array bounds must be expanded before resource binding assignment.
-#define XII_MAX_REFLECTION_PROBES 64
+#  define XII_MAX_REFLECTION_PROBES 64
 static const uint XII_REFLECTION_PROBE_SHAPE_SPHERE = 0u;
 static const uint XII_REFLECTION_PROBE_SHAPE_BOX    = 1u;
 #else

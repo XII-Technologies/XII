@@ -899,8 +899,8 @@ void xiiBuiltinRenderPipelineRuntime::SetupReflectionProbeSelect(xiiReflectionPr
     const xiiVec3 vAbsoluteScale   = pProbe->m_GlobalTransform.m_vScale.Abs();
     const float   fMaximumScale    = xiiMath::Max(vAbsoluteScale.x, xiiMath::Max(vAbsoluteScale.y, vAbsoluteScale.z));
     const float   fInfluenceRadius = pProbe->m_InfluenceShape == xiiReflectionProbeInfluenceShape::Sphere ?
-      pProbe->m_fSphereRadius * fMaximumScale :
-      pProbe->m_vHalfExtents.CompMul(vAbsoluteScale).GetLength();
+        pProbe->m_fSphereRadius * fMaximumScale :
+        pProbe->m_vHalfExtents.CompMul(vAbsoluteScale).GetLength();
 
     xiiGPUReflectionProbe& gpuProbe = data.m_Probes.ExpandAndGetRef();
     gpuProbe.WorldToProbe           = pProbe->m_GlobalTransform.GetInverse().GetAsMat4();

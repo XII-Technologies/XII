@@ -344,14 +344,14 @@ void xiiGpuShadowRasterManager::EngineStartup()
     return;
 
   xiiGALSamplerCreationDescription sampler;
-  sampler.m_MinFilter = xiiGALFilterType::Anisotropic;
-  sampler.m_MagFilter = xiiGALFilterType::Anisotropic;
-  sampler.m_MipFilter = xiiGALFilterType::Anisotropic;
-  sampler.m_AddressU = xiiGALTextureAddressMode::Wrap;
-  sampler.m_AddressV = xiiGALTextureAddressMode::Wrap;
-  sampler.m_AddressW = xiiGALTextureAddressMode::Wrap;
-  sampler.m_uiMaxAnisotropy                                    = 8;
-  s_pState->m_pMaterialSampler                                 = pDevice->CreateSampler(sampler);
+  sampler.m_MinFilter          = xiiGALFilterType::Anisotropic;
+  sampler.m_MagFilter          = xiiGALFilterType::Anisotropic;
+  sampler.m_MipFilter          = xiiGALFilterType::Anisotropic;
+  sampler.m_AddressU           = xiiGALTextureAddressMode::Wrap;
+  sampler.m_AddressV           = xiiGALTextureAddressMode::Wrap;
+  sampler.m_AddressW           = xiiGALTextureAddressMode::Wrap;
+  sampler.m_uiMaxAnisotropy    = 8;
+  s_pState->m_pMaterialSampler = pDevice->CreateSampler(sampler);
 
   const xiiShaderResourceHandle hShader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowDepth.xiiShader");
   s_pState->m_hShaderPermutation             = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);

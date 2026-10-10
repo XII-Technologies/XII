@@ -179,7 +179,7 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     view->SetCamera(&camera);
     view->SetViewport(xiiRectFloat(0, 0, 32, 32));
     view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow());
-    const float viewBloomStrength = view->GetDisplayOutputSettings().m_fBloomStrength;
+    const float                         viewBloomStrength = view->GetDisplayOutputSettings().m_fBloomStrength;
     xiiRenderPipelineResourceDescriptor definition;
     xiiRenderPipelineResource::GetDefaultDescriptor(definition);
     xiiVariantDictionary display;
