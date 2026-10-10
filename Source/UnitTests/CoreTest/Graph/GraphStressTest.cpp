@@ -164,9 +164,19 @@ XII_CREATE_SIMPLE_TEST(Graph, Stress)
         }
         else if (action == 8 && !edges.IsEmpty())
         {
-          auto& edge = edges[random.UIntInRange(edges.GetCount())];
-          XII_TEST_BOOL(graph.RemoveEdge(edge.m_Handle) == edge.m_bActive);
-          edge.m_bActive = false;
+          auto&      edge   = edges[random.UIntInRange(edges.GetCount())];
+          const auto target = random.UIntInRange(24);
+          if (edge.m_bActive && vertices[slot].m_bActive && vertices[target].m_bActive && random.Bool())
+          {
+            XII_TEST_RESULT(graph.ReconnectEdge(edge.m_Handle, vertices[slot].m_Handle, vertices[target].m_Handle));
+            edge.m_Source = vertices[slot].m_Handle;
+            edge.m_Target = vertices[target].m_Handle;
+          }
+          else
+          {
+            XII_TEST_BOOL(graph.RemoveEdge(edge.m_Handle) == edge.m_bActive);
+            edge.m_bActive = false;
+          }
         }
         else
         {
