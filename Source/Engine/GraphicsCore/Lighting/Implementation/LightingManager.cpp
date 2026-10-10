@@ -12,9 +12,9 @@ class xiiLightingManagerState
 {
 public:
   xiiIdTable<xiiLightingContextId, xiiUniquePtr<xiiLightingSystem>> m_Contexts;
-  xiiSharedPtr<xiiGALTexture> m_pBRDFLUT;
-  bool                        m_bBRDFLUTGenerated = false;
-  bool                        m_bEngineStarted    = false;
+  xiiSharedPtr<xiiGALTexture>                                       m_pBRDFLUT;
+  bool                                                              m_bBRDFLUTGenerated = false;
+  bool                                                              m_bEngineStarted    = false;
 };
 
 xiiUniquePtr<xiiLightingManagerState> xiiLightingManager::s_pState;

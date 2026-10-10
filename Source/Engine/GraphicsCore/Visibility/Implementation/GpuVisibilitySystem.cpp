@@ -427,9 +427,9 @@ void xiiGpuVisibilitySystem::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComp
       if (feedback.m_uiKey == 0U)
         continue;
 
-      const xiiUInt32   uiPackedKey     = feedback.m_uiKey - 1U;
-      const xiiUInt32   uiGeometryIndex = uiPackedKey & 0xFFFFFU;
-      const xiiUInt32   uiDesiredLod    = (uiPackedKey >> 20U) & 7U;
+      const xiiUInt32         uiPackedKey     = feedback.m_uiKey - 1U;
+      const xiiUInt32         uiGeometryIndex = uiPackedKey & 0xFFFFFU;
+      const xiiUInt32         uiDesiredLod    = (uiPackedKey >> 20U) & 7U;
       const xiiGeometryHandle hGeometry(xiiGeometryId(uiGeometryIndex, feedback.m_uiGeometryGeneration));
       if (feedback.m_uiDesiredLod != uiDesiredLod || !xiiGeometryResidencyManager::IsValid(hGeometry))
       {

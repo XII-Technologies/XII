@@ -71,11 +71,11 @@ public:
   }
 
   xiiIdTable<xiiAtmosphereLUTId, CacheEntry> m_Entries;
-  xiiAtmosphereSettings       m_Settings;
-  xiiAtmosphereLUTHandle      m_hDefaultEntry;
-  xiiUInt64                   m_uiConfigurationRevision = 1U;
-  bool                        m_bEngineStarted          = false;
-  bool                        m_bInitialized            = false;
+  xiiAtmosphereSettings                      m_Settings;
+  xiiAtmosphereLUTHandle                     m_hDefaultEntry;
+  xiiUInt64                                  m_uiConfigurationRevision = 1U;
+  bool                                       m_bEngineStarted          = false;
+  bool                                       m_bInitialized            = false;
 };
 
 xiiUniquePtr<xiiAtmosphereManager::State> xiiAtmosphereManager::s_pState;

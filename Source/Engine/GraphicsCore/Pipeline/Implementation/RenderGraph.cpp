@@ -278,8 +278,8 @@ void xiiRenderGraphBuilder::ExportTexture(xiiRenderGraphTextureHandle hTexture, 
   XII_ASSERT_DEV(finalState != xiiGALResourceStateFlags::Unknown, "An exported texture requires a concrete final state.");
   xiiRenderGraph::ResourceEntry& resource = m_Graph.m_Resources[id.m_InstanceIndex];
   XII_ASSERT_DEV(resource.m_bIsTexture, "ExportTexture received a buffer handle.");
-  resource.m_ExportFinalState                           = finalState;
-  resource.m_Versions[id.m_Generation].m_bExported      = true;
+  resource.m_ExportFinalState                      = finalState;
+  resource.m_Versions[id.m_Generation].m_bExported = true;
 }
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description)
@@ -432,8 +432,8 @@ void xiiRenderGraphBuilder::ExportBuffer(xiiRenderGraphBufferHandle hBuffer, xii
   XII_ASSERT_DEV(finalState != xiiGALResourceStateFlags::Unknown, "An exported buffer requires a concrete final state.");
   xiiRenderGraph::ResourceEntry& resource = m_Graph.m_Resources[id.m_InstanceIndex];
   XII_ASSERT_DEV(!resource.m_bIsTexture, "ExportBuffer received a texture handle.");
-  resource.m_ExportFinalState                          = finalState;
-  resource.m_Versions[id.m_Generation].m_bExported     = true;
+  resource.m_ExportFinalState                      = finalState;
+  resource.m_Versions[id.m_Generation].m_bExported = true;
 }
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::WriteBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState)

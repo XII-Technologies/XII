@@ -35,13 +35,13 @@ public:
     bool                                  m_bOnDemandRequested  = false;
   };
 
-  xiiDynamicArray<xiiUniquePtr<Entry>>          m_Entries;
+  xiiDynamicArray<xiiUniquePtr<Entry>>                       m_Entries;
   xiiIdTable<xiiRenderGraphContextId, xiiUniquePtr<Context>> m_Contexts;
-  xiiUniquePtr<xiiRenderGraphResourceCache>     m_pResourceCache;
-  xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pProfiler;
-  xiiGpuFrameCompletionTracker                  m_FrameCompletionTracker;
-  xiiUInt32                                     m_uiNextRegistrationOrder = 0U;
-  bool                                          m_bEngineStarted          = false;
+  xiiUniquePtr<xiiRenderGraphResourceCache>                  m_pResourceCache;
+  xiiUniquePtr<xiiRenderGraphTimestampProfiler>              m_pProfiler;
+  xiiGpuFrameCompletionTracker                               m_FrameCompletionTracker;
+  xiiUInt32                                                  m_uiNextRegistrationOrder = 0U;
+  bool                                                       m_bEngineStarted          = false;
 };
 
 xiiUniquePtr<xiiRenderGraphManagerState> xiiRenderGraphManager::s_pState;

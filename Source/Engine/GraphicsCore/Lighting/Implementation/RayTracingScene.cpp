@@ -34,8 +34,8 @@ struct xiiRayTracingSceneManager::GeometrySlot
   xiiUInt32                         m_uiIndexStride        = 0U;
   xiiUInt32                         m_uiPrimitiveCount     = 0U;
   xiiRayTracingGeometryId           m_Id;
-  bool                              m_bAllocated           = false;
-  bool                              m_bBLASDirty           = true;
+  bool                              m_bAllocated = false;
+  bool                              m_bBLASDirty = true;
 };
 
 struct xiiRayTracingSceneManager::InstanceSlot
@@ -89,14 +89,14 @@ public:
   xiiDynamicArray<GeometrySlot>                  m_Geometries;
   xiiDynamicArray<InstanceSlot>                  m_Instances;
   xiiDynamicArray<FrameResources>                m_Frames;
-  xiiRayTracingSceneDescription   m_Configuration;
-  xiiUInt64                       m_uiSceneRevision    = 0U;
-  xiiUInt32                       m_uiGeometryCount    = 0U;
-  xiiUInt32                       m_uiInstanceCount    = 0U;
-  xiiUInt64                       m_uiLastFrameIndex   = 0U;
-  bool                            m_bEngineStarted     = false;
-  bool                            m_bHardwareSupported = false;
-  bool                            m_bInitialized       = false;
+  xiiRayTracingSceneDescription                  m_Configuration;
+  xiiUInt64                                      m_uiSceneRevision    = 0U;
+  xiiUInt32                                      m_uiGeometryCount    = 0U;
+  xiiUInt32                                      m_uiInstanceCount    = 0U;
+  xiiUInt64                                      m_uiLastFrameIndex   = 0U;
+  bool                                           m_bEngineStarted     = false;
+  bool                                           m_bHardwareSupported = false;
+  bool                                           m_bInitialized       = false;
 };
 
 namespace
@@ -445,11 +445,11 @@ xiiRayTracingGeometryHandle xiiRayTracingSceneManager::RegisterGeometry(const xi
   const xiiRayTracingGeometryId id      = s_pState->m_GeometryIds.Insert(0U);
   const xiiUInt32               uiIndex = id.m_InstanceIndex;
   s_pState->m_GeometryIds[id]           = uiIndex;
-  GeometrySlot& slot = s_pState->m_Geometries[uiIndex];
-  slot.m_Description = description;
+  GeometrySlot& slot                    = s_pState->m_Geometries[uiIndex];
+  slot.m_Description                    = description;
   slot.m_Id                             = id;
-  slot.m_bAllocated  = true;
-  slot.m_bBLASDirty  = true;
+  slot.m_bAllocated                     = true;
+  slot.m_bBLASDirty                     = true;
   ++s_pState->m_uiGeometryCount;
   ++s_pState->m_uiSceneRevision;
   return xiiRayTracingGeometryHandle(id);
@@ -505,11 +505,11 @@ xiiRayTracingInstanceHandle xiiRayTracingSceneManager::CreateInstance(const xiiR
   const xiiRayTracingInstanceId id      = s_pState->m_InstanceIds.Insert(0U);
   const xiiUInt32               uiIndex = id.m_InstanceIndex;
   s_pState->m_InstanceIds[id]           = uiIndex;
-  InstanceSlot& slot     = s_pState->m_Instances[uiIndex];
-  slot.m_Description     = description;
+  InstanceSlot& slot                    = s_pState->m_Instances[uiIndex];
+  slot.m_Description                    = description;
   slot.m_Id                             = id;
-  slot.m_bRequiresAnyHit = false;
-  slot.m_bAllocated      = true;
+  slot.m_bRequiresAnyHit                = false;
+  slot.m_bAllocated                     = true;
   ++s_pState->m_uiInstanceCount;
   ++s_pState->m_uiSceneRevision;
   return xiiRayTracingInstanceHandle(id);
