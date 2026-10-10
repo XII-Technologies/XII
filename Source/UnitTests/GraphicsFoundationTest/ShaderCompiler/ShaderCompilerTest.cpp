@@ -189,11 +189,12 @@ cbuffer Globals : register(b1, space0)
 {
   float4 Tint;
 };
+RaytracingAccelerationStructure Scene : register(t4, space0);
 )";
 
     xiiDynamicArray<xiiGALShaderResourceDefinition> resources;
     xiiGALShaderParser::ParseShaderResources(szSource, resources);
-    XII_TEST_INT(resources.GetCount(), 4U);
+    XII_TEST_INT(resources.GetCount(), 5U);
 
     XII_TEST_STRING(resources[0].m_ResourceDescription.m_sName.GetView(), "Albedo");
     XII_TEST_BOOL(resources[0].m_ResourceDescription.m_Type == xiiGALShaderResourceType::TextureSRV);
@@ -219,6 +220,10 @@ cbuffer Globals : register(b1, space0)
     XII_TEST_BOOL(resources[3].m_ResourceDescription.m_Type == xiiGALShaderResourceType::ConstantBuffer);
     XII_TEST_INT(resources[3].m_ResourceDescription.m_uiArraySize, 1U);
 
+    XII_TEST_BOOL(resources[4].m_ResourceDescription.m_Type == xiiGALShaderResourceType::AccelerationStructure);
+    XII_TEST_INT(resources[4].m_ResourceDescription.m_uiBindIndex, 4U);
+    XII_TEST_STRING(resources[4].m_ResourceDescription.m_sName.GetView(), "Scene");
+
     xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription> bindings;
     for (const xiiGALShaderResourceDefinition& resource : resources)
     {
@@ -239,6 +244,7 @@ cbuffer Globals : register(b1, space0)
     XII_TEST_BOOL(patchedSource.FindSubString("Texture2D<float4> Albedo : register(x7, space4)") != nullptr);
     XII_TEST_BOOL(patchedSource.FindSubString("RWStructuredBuffer<float4> Output[4] : register(x8, space4)") != nullptr);
     XII_TEST_BOOL(patchedSource.FindSubString("register(t3, space2)") == nullptr);
+    XII_TEST_BOOL(patchedSource.FindSubString("RaytracingAccelerationStructure Scene : register(x11, space4)") != nullptr);
 
     xiiMuteLog                      muteLog;
     xiiGALShaderResourceDescription validBinding;
