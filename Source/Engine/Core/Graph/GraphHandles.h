@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <Core/CoreDLL.h>
+
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Types/Id.h>
 

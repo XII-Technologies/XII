@@ -1,6 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <Core/CoreDLL.h>
+
 #include <Core/Graph/GraphHandles.h>
 
 class xiiGraph;

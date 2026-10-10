@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <Core/CoreDLL.h>
+
 #include <Core/Graph/Graph.h>
 #include <Core/Graph/GraphAlgorithmTypes.h>
 #include <Core/Graph/GraphOptimizationTypes.h>

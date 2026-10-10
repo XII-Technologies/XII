@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Core/CoreDLL.h>
+
 #include <Foundation/Threading/AtomicInteger.h>
 
 namespace xiiInternal

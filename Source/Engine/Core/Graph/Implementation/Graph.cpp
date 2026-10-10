@@ -1,14 +1,21 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Core/CorePCH.h>
+
 #include <Core/Graph/GraphMappings.h>
 #include <Core/Graph/Implementation/GraphIdentity.h>
 #include <Core/Graph/Implementation/GraphStorage.h>
 #include <Foundation/Types/ScopeExit.h>
 
-xiiGraph::xiiGraph(xiiAllocator* pAllocator) : m_pAllocator(pAllocator), m_Events(pAllocator) {}
+xiiGraph::xiiGraph(xiiAllocator* pAllocator) :
+  m_pAllocator(pAllocator), m_Events(pAllocator)
+{
+}
+
 xiiGraph::~xiiGraph() = default;
-xiiGraph::xiiGraph(xiiGraph&& other) : xiiGraph(other.m_pAllocator)
+
+xiiGraph::xiiGraph(xiiGraph&& other) :
+  xiiGraph(other.m_pAllocator)
 {
   MoveFrom(std::move(other)).IgnoreResult();
 }

@@ -15,6 +15,7 @@ namespace GraphTestDetail
     xiiGraphVertexHandle m_Handle;
     bool                 m_bActive = false;
   };
+
   struct ReferenceEdge
   {
     xiiGraphEdgeHandle   m_Handle;
@@ -23,8 +24,7 @@ namespace GraphTestDetail
     bool                 m_bActive = true;
   };
 
-  void CheckStructure(const xiiGraph& graph, xiiArrayPtr<const ReferenceVertex> vertices,
-                      xiiArrayPtr<const ReferenceEdge> edges, const xiiHashTable<xiiGraphEdgeHandle, xiiUInt32>& edgeIndices)
+  void CheckStructure(const xiiGraph& graph, xiiArrayPtr<const ReferenceVertex> vertices, xiiArrayPtr<const ReferenceEdge> edges, const xiiHashTable<xiiGraphEdgeHandle, xiiUInt32>& edgeIndices)
   {
     xiiUInt32 vertexCount = 0;
     xiiUInt32 edgeCount   = 0;

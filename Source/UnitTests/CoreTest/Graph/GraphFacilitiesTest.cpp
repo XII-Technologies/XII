@@ -1,10 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <CoreTest/CoreTestPCH.h>
+
 #include <Core/Graph/GraphData.h>
 #include <Core/Graph/GraphMappings.h>
 #include <Core/Graph/GraphSerialization.h>
 #include <Core/Graph/GraphSynchronization.h>
-#include <CoreTest/CoreTestPCH.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Threading/Thread.h>

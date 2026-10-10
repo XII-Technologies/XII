@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
 #include <Core/Graph/Graph.h>
 #include <Foundation/Containers/IdTable.h>
 
@@ -14,6 +15,7 @@ struct xiiGraph::Storage
     xiiUInt32 m_uiOutDegree  = 0;
     xiiUInt32 m_uiDenseIndex = xiiInvalidIndex;
   };
+
   struct Edge
   {
     LocalId   m_Source;
@@ -26,7 +28,10 @@ struct xiiGraph::Storage
   };
 
   explicit Storage(xiiAllocator* pAllocator, xiiUInt64 identity) :
-    m_Vertices(pAllocator), m_Edges(pAllocator), m_VertexHandles(pAllocator), m_EdgeHandles(pAllocator), m_uiGraphId(identity) {}
+    m_Vertices(pAllocator), m_Edges(pAllocator), m_VertexHandles(pAllocator), m_EdgeHandles(pAllocator), m_uiGraphId(identity)
+  {
+  }
+
   xiiIdTable<LocalId, Vertex>           m_Vertices;
   xiiIdTable<LocalId, Edge>             m_Edges;
   xiiDynamicArray<xiiGraphVertexHandle> m_VertexHandles;

@@ -1,6 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
+#include <Core/CoreDLL.h>
+
 #include <Core/Graph/Graph.h>
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Reflection/Reflection.h>

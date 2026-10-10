@@ -1,7 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
+
 #include <Core/CoreDLL.h>
+
 #include <Core/Graph/GraphEvents.h>
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/DynamicArray.h>
