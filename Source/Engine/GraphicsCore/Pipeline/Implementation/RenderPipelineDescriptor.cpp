@@ -6,6 +6,7 @@
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 // clang-format off
@@ -112,3 +113,5 @@ xiiResult xiiRenderPipelineResourceDescriptor::Deserialize(xiiStreamReader& stre
   *this = std::move(replacement);
   return XII_SUCCESS;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelineDescriptor);

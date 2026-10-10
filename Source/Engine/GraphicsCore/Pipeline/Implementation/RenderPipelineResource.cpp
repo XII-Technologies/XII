@@ -3,6 +3,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineResource, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineResource>)
@@ -50,8 +51,7 @@ void xiiRenderPipelineResource::UpdateMemoryUsage(MemoryUsage& usage)
   usage.m_uiMemoryGPU = 0;
   if (m_pPipeline)
   {
-    const auto& descriptor = m_pPipeline->GetDescriptor();
-    usage.m_uiMemoryCPU += static_cast<xiiUInt32>(descriptor.m_Passes.GetHeapMemoryUsage() + descriptor.m_Connections.GetHeapMemoryUsage());
+    usage.m_uiMemoryCPU += static_cast<xiiUInt32>(sizeof(xiiRenderPipeline) + m_pPipeline->GetHeapMemoryUsage());
   }
 }
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineResourceDescriptor)
@@ -67,3 +67,5 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineRe
   m_pPipeline = std::move(pipeline);
   return {xiiResourceState::Loaded, 0, 0};
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelineResource);

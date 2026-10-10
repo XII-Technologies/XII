@@ -2,6 +2,7 @@
 
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)
@@ -14,9 +15,15 @@ xiiResult xiiRenderPipelinePass::Configure(const xiiVariantDictionary& propertie
     const auto* property = GetDynamicRTTI()->FindPropertyByName(it.Key());
     if (!property || property->GetCategory() != xiiPropertyCategory::Member || property->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
       return XII_FAILURE;
-    const auto current = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), this);
-    if (current.IsValid() && !it.Value().CanConvertTo(current.GetType())) return XII_FAILURE;
-    xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), this, it.Value());
+    const auto current   = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), this);
+    xiiVariant converted = it.Value();
+    if (current.IsValid())
+    {
+      xiiResult conversion = XII_FAILURE;
+      converted            = it.Value().ConvertTo(current.GetType(), &conversion);
+      XII_SUCCEED_OR_RETURN(conversion);
+    }
+    xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), this, converted);
   }
   return XII_SUCCESS;
 }
@@ -54,3 +61,5 @@ xiiResult xiiRenderPipelinePassContext::SetOutput(xiiStringView name, xiiRenderG
   m_Bindings[i].m_hBuffer = buffer;
   return XII_SUCCESS;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelinePass);

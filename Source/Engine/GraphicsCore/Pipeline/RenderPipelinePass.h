@@ -8,6 +8,7 @@
 
 class xiiView;
 struct xiiRenderPipelinePassContext;
+struct xiiRenderPipelineResourceDescriptor;
 
 /// Pin schemas are supplied by the reflected pass type, rather than trusted asset data.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
@@ -45,6 +46,9 @@ public:
   virtual xiiResult Configure(const xiiVariantDictionary& properties);
   virtual void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
   virtual xiiResult Build(xiiRenderPipelinePassContext& context)                   = 0;
+  /// Optional domain validation after generic connectivity and ordering have been validated.
+  /// Runs on CPU during compilation; failure prevents publication of the entire resource.
+  virtual xiiResult ValidatePipeline(const xiiRenderPipelineResourceDescriptor&, xiiArrayPtr<const xiiUInt32>, xiiUInt32, xiiStringBuilder*) const { return XII_SUCCESS; }
   /// Clears view-local history after camera cuts and configuration changes.
   virtual void InvalidateTemporalHistory() {}
 };

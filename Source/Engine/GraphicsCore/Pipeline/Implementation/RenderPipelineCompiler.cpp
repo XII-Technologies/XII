@@ -5,6 +5,11 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
+xiiRenderPipeline::xiiRenderPipeline() :
+  m_TopologyAllocator("Render Pipeline Topology", xiiDefaultAllocatorWrapper::GetAllocator()), m_Topology(&m_TopologyAllocator)
+{
+}
+
 xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
   const auto fail = [&](xiiStringView message) {
@@ -16,8 +21,10 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   xiiSharedPtr<xiiRenderPipeline> result = XII_DEFAULT_NEW(xiiRenderPipeline);
   result->m_Descriptor                   = descriptor;
   XII_SUCCEED_OR_RETURN(result->m_Topology.Reserve(descriptor.m_Passes.GetCount(), descriptor.m_Connections.GetCount()));
-  xiiDynamicArray<xiiGraphVertexHandle> vertices;
-  xiiHashTable<xiiString, bool>         names;
+  xiiDynamicArray<xiiGraphVertexHandle>   vertices;
+  xiiDynamicArray<xiiRenderPipelinePass*> prototypes;
+  XII_SCOPE_EXIT(for (auto* prototype : prototypes) prototype->GetDynamicRTTI()->GetAllocator()->Deallocate(prototype));
+  xiiHashTable<xiiString, bool> names;
   for (const auto& definition : descriptor.m_Passes)
   {
     if (definition.m_sName.IsEmpty() || names.Contains(definition.m_sName)) return fail("Pass names must be nonempty and unique.");
@@ -25,7 +32,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     const auto* type = xiiRTTI::FindTypeByName(definition.m_sType);
     if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate()) return fail("Unknown or abstract render pipeline pass type.");
     xiiRenderPipelinePass* prototype = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
-    XII_SCOPE_EXIT(type->GetAllocator()->Deallocate(prototype));
+    prototypes.PushBack(prototype);
     if (prototype->Configure(definition.m_Properties).Failed()) return fail("Invalid pass configuration.");
     auto& pass             = result->m_Passes.ExpandAndGetRef();
     pass.m_pType           = type;
@@ -74,6 +81,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   xiiDynamicArray<xiiGraphVertexHandle> order;
   if (xiiGraphAlgorithms::TopologicalSort(result->m_Topology, order).Failed()) return fail("Render pipeline contains a dependency cycle.");
   for (auto vertex : order) result->m_Order.PushBack(result->m_Topology.GetVertexIndex(vertex));
+  for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
+    XII_SUCCEED_OR_RETURN(prototypes[i]->ValidatePipeline(descriptor, result->m_Order, i, out_error));
   result->m_Connections.Sort([](const Connection& a, const Connection& b) { return a.m_uiTargetBinding < b.m_uiTargetBinding; });
   xiiUInt32 offset = 0;
   for (auto& pass : result->m_Passes)

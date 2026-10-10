@@ -4,6 +4,7 @@
 
 #include <Core/Graph/Graph.h>
 #include <Core/ResourceManager/Resource.h>
+#include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
@@ -43,6 +44,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
 class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
 {
 public:
+  xiiRenderPipeline();
   struct Pass
   {
     const xiiRTTI*                        m_pType = nullptr;
@@ -61,15 +63,18 @@ public:
   const xiiGraph&                            GetTopology() const { return m_Topology; }
   const xiiRenderPipelineResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
   xiiArrayPtr<const xiiUInt32>               GetExecutionOrder() const { return m_Order; }
+  /// Inclusive CPU memory estimate, including topology, compiled bindings and nested configuration.
+  xiiUInt64 GetHeapMemoryUsage() const;
 
 private:
   friend class xiiRenderPipelineInstance;
-  xiiGraph                            m_Topology;
-  xiiRenderPipelineResourceDescriptor m_Descriptor;
-  xiiDynamicArray<Pass>               m_Passes;
-  xiiDynamicArray<Connection>         m_Connections;
-  xiiDynamicArray<xiiUInt32>          m_Order;
-  xiiUInt32                           m_uiBindingCount = 0;
+  xiiAllocatorWithPolicy<xiiAllocationPolicyProxy, xiiAllocatorTrackingMode::AllocationStats> m_TopologyAllocator;
+  xiiGraph                                                                                    m_Topology;
+  xiiRenderPipelineResourceDescriptor                                                         m_Descriptor;
+  xiiDynamicArray<Pass>                                                                       m_Passes;
+  xiiDynamicArray<Connection>                                                                 m_Connections;
+  xiiDynamicArray<xiiUInt32>                                                                  m_Order;
+  xiiUInt32                                                                                   m_uiBindingCount = 0;
 };
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
