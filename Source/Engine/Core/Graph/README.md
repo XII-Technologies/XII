@@ -1,201 +1,273 @@
 # Core graph
 
-`xiiGraph` owns the topology of a directed multigraph. Vertices are lightweight
-structural records, not engine objects. Parallel edges, self-loops, cycles and
-disconnected vertices are supported. Domain validation belongs to the owner.
+`xiiGraph` owns directed multigraph topology. Parallel edges, self-loops, cycles
+and disconnected vertices are supported. Domain objects, pins, types and edge
+categories remain consumer data. The facility has no rendering, editor or Qt
+dependencies.
 
-## Repository integration and design decisions
+## Repository integration and representation
 
-Core already publicly depends on Foundation (and Texture). These files use only
-Core's export macro and Foundation containers, IDs, allocators, delegates and
-atomic integers. They introduce no renderer, editor or Qt dependencies.
+Core publicly depends on Foundation (and Texture). This facility uses Foundation
+containers, generational IDs, allocators, delegates, events, streams, reflection
+and scoped locks. Existing `xiiAbstractObjectGraph` represents reflected object
+properties/assets; `xiiDGMLGraph` exports visualization descriptions; Utilities'
+`xiiPathSearch` generates domain-specific search states. None provides this
+mutable, domain-independent multigraph topology.
 
-The existing facilities solve different problems:
+Two `xiiIdTable`s provide slot allocation and O(1) lookup. Dense handle arrays
+provide O(V) and O(E) enumeration without scanning vacant slots. Each edge belongs
+to an intrusive doubly linked outgoing list and incoming list; vertices store
+list heads and degrees. This avoids per-vertex adjacency allocations and allows
+O(1) unlinking. Indexed adjacency trades contiguous neighbour scanning for
+predictable mutation cost. No graph elements require polymorphic engine objects.
 
-- `xiiAbstractObjectGraph` stores reflected object properties and asset identities
-  for serialization and patching.
-- `xiiDGMLGraph` builds visualization/export descriptions.
-- Utilities' `xiiPathSearch` provides domain-generated pathfinding states.
-- Render graphs and editor/visual-script graphs carry consumer-specific semantics.
-- World uses stable handles and composition; resource handles additionally manage
-  ownership. The topology does not need reference counting or polymorphic nodes.
+The recursive CMake source discovery integrates these files into Core/CoreTest.
+Reconfigure CMake after adding files; no extra dependencies are required.
 
-`xiiIdTable` supplies slot allocation, generation maintenance and constant-time
-lookup. Its iterator scans vacant slots, so two dense handle arrays separately
-enumerate live vertices and edges. A dense array alone would need an additional
-identity mapping; adjacency arrays per vertex would allocate for individual
-vertices and require scans or back-index bookkeeping for removal. Instead each
-edge participates in two intrusive doubly linked lists, with heads in its source
-and target vertices. This costs four local IDs per edge, permits O(1) unlinking
-from both lists, and needs no per-vertex allocation. Adjacency trades contiguous
-scanning for indexed list traversal and predictable mutation costs.
-
-The build system discovers Core and CoreTest sources recursively. Reconfigure
-CMake after adding these files; no target dependencies or source lists change.
-
-## Usage and payload ownership
+## Public API and ownership
 
 ```cpp
 #include <Core/Graph/GraphAlgorithms.h>
-#include <Foundation/Containers/HashTable.h>
+#include <Core/Graph/GraphData.h>
 
-xiiGraph graph;
-const auto producer = graph.AddVertex();
-const auto consumer = graph.AddVertex();
-const auto connection = graph.AddEdge(producer, consumer);
-
-// Consumer-owned objects retain their existing ownership and lifetime rules.
-xiiHashTable<xiiGraphVertexHandle, MyPass*> passes;
-passes.Insert(producer, pProducerPass);
-passes.Insert(consumer, pConsumerPass);
+xiiGraphWithData<MyPass*, MyConnectionMetadata> topology;
+auto& graph = topology.m_Graph;
+XII_SUCCEED_OR_RETURN(graph.Reserve(128, 256));
+xiiGraphVertexHandle producer, consumer;
+xiiGraphEdgeHandle connection;
+XII_SUCCEED_OR_RETURN(graph.TryAddVertex(producer));
+XII_SUCCEED_OR_RETURN(graph.TryAddVertex(consumer));
+XII_SUCCEED_OR_RETURN(graph.TryAddEdge(producer, consumer, connection));
+XII_SUCCEED_OR_RETURN(topology.m_Data.SetVertexData(producer, pProducerPass));
 
 for (auto it = graph.GetOutgoingEdges(producer); it.IsValid(); ++it)
 {
   const auto neighbour = graph.GetTarget(it.GetHandle());
-  // Inspect the connection or neighbour's consumer-owned payload.
+  // Inspect the edge or neighbour's consumer data without adjacency copies.
 }
 
 xiiGraphAlgorithmWorkspace scratch;
 xiiDynamicArray<xiiGraphVertexHandle> executionOrder;
-if (xiiGraphAlgorithms::TopologicalSort(graph, executionOrder, &scratch).Succeeded())
-{
-  // Sources precede targets for every connection.
-}
+XII_SUCCEED_OR_RETURN(xiiGraphAlgorithms::TopologicalSort(graph, executionOrder, &scratch));
 ```
 
-Both handle types support hash tables and ordered maps. External payload maps
-must be maintained by their owner: removing a vertex removes incident topology,
-but does not erase entries from external maps or destroy referenced objects.
-An owner that needs incident edge payload cleanup should inspect incoming and
-outgoing edges before removal (a self-loop occurs in both lists).
+Use the plain graph with external handle-keyed containers when the consumer
+already owns its objects. Both handle types support Foundation hash tables and
+ordered maps. `xiiGraphData<VertexData, EdgeData>` optionally attaches typed
+property maps to an existing graph; `xiiGraphWithData` composes a graph and its
+maps. Properties can hold values, raw pointers or engine smart pointers.
+Raw pointers retain consumer ownership; smart pointers follow their own ownership
+rules. Missing properties are permitted. Attached maps automatically destroy
+removed properties and preserve them across compaction through remapping.
+The graph must outlive attached maps. Property pointers are transient across
+changes to their map. Independently maintained external maps require explicit
+cleanup/remapping, or an event subscription.
 
-For transient dense arrays, `GetVertexIndex()` indexes `GetVertices()`. Rebuild
-such associations after mutation; that index is not a stable identifier.
+`TryAddVertex`, `TryAddEdge`, `TryRemoveVertex`, `TryRemoveEdge`, `TryClear`,
+`Reserve`, `SetLimits`, and `ReconnectEdge` report failures with `xiiResult`.
+Convenience `Add*` forms return invalid handles; `Remove*` returns false;
+`Clear` ignores failure. Use the Try forms where failures need to propagate.
+Reconnection preserves the edge identity and changes both adjacency lists.
+Invalid reconnection leaves the original connectivity unchanged.
 
-Pin IDs, connection categories, types, and domain metadata can live in edge
-payloads. Domain validation can reject connections before `AddEdge()`. No
-`xiiNodeGraph` is needed until concrete consumers establish a shared contract.
+A connection validator can reject incompatible pins, parallel edges or cycles
+according to domain policy. Its existing-edge argument distinguishes insertion
+from reconnection. Validators are read-only and must not mutate either input
+graph. For topology replacement, the destination validator examines the complete
+replacement graph with existing-edge handles. Setting a validator does not
+retroactively validate existing edges.
 
-## Identity, invalid operations and ordering
+Synchronous events cover additions, before/after removals, reconnection and
+before/after topology replacement. Before-removal handles are valid;
+after-removal handles are stale. Reentrant mutation of emitting graphs is
+rejected. Reset events expose an optional remapping valid only during that
+notification. Listener registration follows Foundation event rules.
 
-Each 16-byte handle combines a Foundation `xiiGenericId<32, 31>` with a 64-bit
-graph lifetime identity. Vertex and edge handles are distinct types. Graph
-identities are allocated atomically once per graph, never recycled during the
-process lifetime. Even a graph constructed at a previous graph's address rejects
-the old handles. Exhausting the graph identity space terminates the process.
-The unused high local-ID bit avoids Foundation's 64-bit mask-shift limitation.
+## Identity, replacement and invalidation
 
-Element storage can relocate; handles survive unrelated mutations and growth.
-Removal increments the slot generation through `xiiIdTable`. On removing an
-element at generation `0x7FFFFFFF`, its slot remains occupied but inactive rather
-than wrapping. Retired records never appear in enumeration, adjacency, counts
-or algorithms, and are rejected by `IsValid()`. Retirement happens only after
-over two billion lifetimes of a slot. `Clear()` removes live elements individually
-rather than resetting ID tables, preserving generations and retired slots.
-Graphs cannot be copied or moved; cloning would require explicit handle remapping.
-Handle internals are implementation details, not portable or persistent IDs.
+Each 16-byte typed handle combines `xiiGenericId<32, 31>` and a 64-bit graph
+identity. Identities are allocated lazily, atomically and never recycled within
+the process. Exhaustion returns `XII_FAILURE`; there is no exception or fatal
+termination path in the graph. The unused high local-ID bit avoids Foundation's
+64-bit mask-shift limitation.
 
-Invalid, stale and foreign handles are safely rejected. `AddEdge()` returns an
-invalid handle, removals return `false`, degree queries return zero, adjacency
-queries return an empty cursor, and endpoint queries return invalid handles.
-`GetVertexIndex()` returns `xiiInvalidIndex`. `FindEdge()` finds the newest surviving
-edge between valid endpoints, or returns an invalid handle. Parallel connections
-can all be found by filtering the source's outgoing edges by target.
+Handles survive unrelated mutation and buffer growth. Removing an element
+increments its slot generation. At the maximum generation, a slot retires rather
+than wrapping; it never appears in counts, enumeration, adjacency or algorithms.
+`Clear` retains buffers and generation history. A graph recreated at the same
+address rejects the previous graph's handles. Invalid, stale and foreign handles
+are safely rejected; queries return zero, empty views/cursors or invalid handles.
+`FindEdge` finds the newest surviving matching edge. Enumerate matching outgoing
+edges to obtain all parallel connections.
 
-All views, indices and adjacency cursors must be reacquired after **any** mutation,
-including `Reserve()`. No record references or pointers are exposed. Dense lists
-use swap removal, so their order is unspecified after removal. Adjacency is newest
-first. The same sequence of mutations yields the same enumeration and algorithm
-orders; handles themselves differ between graph lifetimes.
+`CopyFrom` explicitly copies topology and returns optional old-to-new handle
+maps. `MoveFrom` transfers topology and source handles; the source becomes empty
+and rejects them. Destination handles are invalidated. Limits and validation of
+the destination apply; rejected replacements preserve both graphs and output
+maps. The move constructor is available outside callbacks. Fallible copying uses
+`CopyFrom` rather than a C++ copy constructor. Listeners, validators and attached
+payload maps belong to graph objects and are not transferred with topology.
+Allocations transferred by move retain their original allocator, which must
+remain alive. Future destination allocations use the transferred buffers'
+allocator until storage is rebuilt.
 
-Concurrent const operations are allowed when allocators, scratch and output
-containers are suitable. Mutation requires external exclusive synchronization.
-Do not mutate during an algorithm or visitor. A workspace must not be shared by
-overlapping or reentrant algorithm calls.
+`Compact` rebuilds live topology and returns a complete handle remapping. All
+old handles become stale; attached typed property maps follow the new handles.
+External maps must apply the returned mapping. This explicitly trades identity
+replacement for reclaiming high-water storage and retired slots. Compacting an
+empty graph releases all topology storage. Copy/compaction costs O(V + E) and
+requires temporary storage for old/new topology and maps.
 
-## Complexity and allocation
+All views, dense indices and adjacency cursors must be reacquired after any
+mutation, including `Reserve`. No record references are exposed. Dense indices
+are transient, not stable keys. Dense enumeration uses swap removal; adjacency
+is newest first. A fixed sequence of mutations produces deterministic orders,
+although new graph lifetimes have different handle identities.
 
-Here V and E count **live** elements.
+Plain graphs allow concurrent const queries when allocator/output/callback
+requirements are met. Mutation requires exclusive synchronization. The optional
+`xiiSynchronizedGraph::Read()`/`Write()` returns Foundation scoped locked access;
+both use an exclusive mutex. Keep views and cursors inside that scope. Handles
+may escape, but must be revalidated when next accessed. Graph destruction,
+lock ordering and attached payload synchronization remain owner responsibilities.
+
+## Algorithms and filtered topology
+
+`xiiGraphAlgorithms` provides iterative algorithms over public connectivity.
+No persistent traversal state or duplicate topology is stored. Optional reusable
+workspaces and outputs retain allocations. A workspace must not be shared by
+overlapping calls. Callbacks must not mutate topology; edge filters/weights must
+remain consistent throughout a call. Empty filters select all edges. Filters can
+select enabled edges, typed connections, data flow or execution flow without
+constructing another graph. Filtered components still include isolated vertices.
+
+| Algorithm | Time | Auxiliary workspace |
+| --- | --- | --- |
+| BFS / DFS / reachability | O(V + E) | O(V) |
+| Topological sort / cycle detection | O(V + E) | O(V) |
+| Strong / weak components | O(V + E) | O(V) |
+| Unweighted shortest path (BFS) | O(V + E) | O(V) |
+| Nonnegative lowest-cost path (indexed-heap Dijkstra) | O((V + E) log V) | O(V) |
+| Maximum flow (Edmonds-Karp) | O(V + E + V E squared) | O(V + E) |
+| Minimum spanning forest (Kruskal, direction ignored) | O(V + E log E) | O(V + E) |
+
+Bounds include state initialization and assume O(1) callbacks. No traversal
+uses recursive C++ calls. Single-source traversal initializes O(V) state and
+visits only reachable successors; visitors return false to stop successfully.
+Invalid starts or empty visitors fail. A valid vertex reaches itself through a
+zero-length path. BFS visits by nondecreasing distance; DFS visits in preorder.
+
+Kahn sorting counts parallel edges independently, includes disconnected
+components and returns failure with empty output on cycles, including loops.
+Ready vertices use FIFO order seeded by dense enumeration. Cycle detection shares
+the sorting kernel. Iterative Kosaraju shares the DFS walker, then uses existing
+incoming connectivity, without constructing a reversed graph. Weak components
+traverse both directions. Component output is flat vertices plus offsets.
+
+Paths return vertices, edges and cost. Failure clears output. Dijkstra requires
+finite nonnegative examined weights; it does not validate unreachable/unexamined
+edges. Maximum flow requires distinct source/target and finite nonnegative
+capacities; parallel/opposing edges are independent, with reverse residual arcs
+provided by incoming edges. Output lists every graph edge and its flow; excluded
+edges have zero flow. Kruskal accepts finite weights, including negative weights;
+empty weights mean unit weights. Loops are ignored, parallel edges compete and
+isolated vertices count as components. Weight/flow arithmetic uses double and
+inherits floating-point precision; nonfinite accumulated results fail explicitly.
+
+## Allocation and operation complexity
 
 | Operation | Time |
 | --- | --- |
-| Insert vertex / edge | Amortized O(1); O(capacity) when ID storage grows |
-| Validate / lookup / endpoints / degree | O(1) |
-| Remove edge | O(1) |
-| Remove vertex | O(in-degree + out-degree), counting a loop only once for removal |
-| Enumerate vertices / edges | O(V) / O(E) |
-| Incoming / outgoing adjacency | O(in-degree) / O(out-degree), no allocations |
+| Vertex / edge insertion | Amortized O(1), O(capacity) on growth |
+| Validity / endpoints / degree / dense index | O(1) |
+| Edge removal / reconnection | O(1), excluding domain callbacks |
+| Vertex removal | O(in-degree + out-degree) |
+| Enumeration | O(V) / O(E) |
+| Incoming / outgoing adjacency | O(incident edges), no allocations |
 | Find one connection | O(out-degree) |
-| Clear | O(V + E), retains buffers and generations |
-| Destruction | O(vertex slot capacity + edge slot capacity), including retired slots |
-| BFS / DFS / reachability | O(V + E), including O(V) initialization |
-| Topological sort / cycle detection | O(V + E) |
-| Strong / weak components | O(V + E) |
+| Clear | O(V + E), retains storage |
+| Copy / compact / snapshot capture or apply | Expected O(V + E) |
+| Move | O(1) transfer plus destination destruction and O(E) validation if installed |
+| Destruction | O(vertex slot capacity + edge slot capacity) |
 
-The graph has four growing contiguous buffers: two ID tables and two dense handle
-arrays, all using the supplied allocator. Empty construction allocates nothing.
-`Reserve()` preallocates for construction; allocator lifetime must exceed graph
-lifetime. No nodes or edges allocate individually. Capacity follows Foundation's
-growth and alignment policies, and memory follows the high-water mark, not only
-the current live count. On an ABI with 8-byte alignment for 64-bit integers, the
-vertex record is 32 bytes and the edge record 56 bytes; adding an 8-byte ID-table
-key and a 16-byte dense handle gives approximately 56 bytes per vertex and 80
-bytes per edge before unused capacity and container overhead. Retired slots keep
-their ID-table storage but have no dense handles.
+Callbacks, optional property destruction and allocator work add their own costs.
+An empty graph allocates nothing. First use allocates one storage descriptor;
+two ID-table buffers and two dense arrays grow through the chosen allocator.
+There are no per-element topology allocations. `Reserve` avoids subsequent growth
+within reserved capacities. On an ABI with 8-byte alignment of 64-bit integers,
+vertex/edge records are 32/56 bytes; ID-table keys and dense handles add 24 bytes
+per live element, approximately 56/80 bytes before unused capacity/container
+metadata. Retired slots retain their records but have no dense handles. Events
+allocate only when subscribed; typed maps and algorithm buffers are optional.
+Allocator lifetimes must cover their graph, maps, workspaces and output buffers.
+Foundation delegate captures larger than inline storage may allocate.
 
-All algorithms use O(V) scratch, with no recursive C++ calls. The optional
-workspace and output containers retain capacity for repeated execution. Single
-source traversal visits only reachable successors but initializes O(V) state.
-Visitors return `false` to stop successfully. Invalid starts or empty visitors
-fail. Reachability includes a zero-length path from a valid vertex to itself.
+`SetLimits` bounds occupied slots (including retired slots). The maximum
+`0xFFFFFFC0` respects Foundation's 32-bit capacity/alignment arithmetic; available
+memory normally imposes a much smaller bound. Identity exhaustion, declared
+capacity limits, invalid operations, domain rejection, stream failures and
+storage-descriptor allocation failure return `xiiResult`. Foundation container
+buffer growth follows its existing allocation-success contract. General
+recoverable buffer OOM would require fallible allocation support in Foundation
+containers; it is not implemented by silently replacing engine containers here.
 
-Topological sorting uses Kahn's algorithm and handles parallel edge indegrees
-individually. Empty graphs succeed; cycles fail with empty output. Ready vertices
-use FIFO order seeded by the current dense vertex order. Cycle detection shares
-the same kernel and needs no result array. Strong components use Kosaraju with
-the same explicit DFS walker as depth-first traversal, followed by traversal of
-existing incoming edges; no reversed graph is constructed. Weak components visit
-both incoming and outgoing edges. Component output is one flat vertex array and
-an offset array, with no per-component allocations.
+## Serialization and reflection
 
-## Serialization, events and limitations
+`xiiGraphSnapshot` is an optional reflected, versioned, endian-independent
+portable topology representation. It stores vertex count and each edge's endpoint
+indices, preserving isolated vertices, loops and parallel edges. Runtime handle
+bits, allocator details and algorithm scratch are excluded. `Capture` follows
+dense enumeration; `Apply` returns index-to-runtime handles for domain payloads.
+Apply and Load are transactional; malformed data, unsupported versions,
+truncation, limits or destination validation failures leave outputs unchanged.
+Load is bounded by configurable counts (default one million vertices and four
+million edges) and reads validated endpoint pairs incrementally.
 
-There is no generic asset format, reflection registration, automatic mutation
-event stream, payload storage, synchronization, or exception/OOM recovery. These
-are consumer policies. Container capacity is limited by Foundation's 32-bit
-capacity management and available memory. Capacity is not compacted, because
-discarding vacant-slot generation history would weaken stale-handle rejection.
-Shortest paths, flow algorithms and spanning trees are intentionally outside
-this initial facility.
+Graph reflection exposes read-only counts; snapshot reflection exposes topology
+properties. Consumers can use snapshots within their domain asset format, or
+serialize their own stable asset IDs and remap on load. Arbitrary typed payload
+serialization requires a consumer codec; the graph does not invent a universal
+asset format or reflect every possible payload type.
 
-A consumer should serialize its own stable asset IDs and edge endpoint IDs,
-then remap them to new runtime handles on load. Writing each edge separately
-preserves parallel edges and self-loops. Algorithm scratch and runtime handle
-bits must not be serialized. Foundation's existing reflection/stream/object-graph
-facilities remain available for the consumer's domain format and events.
+## File organization and future consumers
 
-A future render-pipeline owner could map vertex handles to existing pass objects
-and edge handles to resource/pin metadata, validate compatible connections, then
-use topological sorting for scheduling and SCCs for diagnostics. Resource lifetime,
-barriers, pass ownership and renderer-specific validation remain in that owner.
-No renderer adoption or editor changes are part of this implementation.
+Public files separate graph/handles, typed data, events, remapping, snapshots,
+synchronization, algorithm callback types, algorithm interfaces and result types.
+Implementation files separate lifetime/storage, mutation, connectivity, identity,
+serialization, reflection, traversal, topological sorting, components, paths,
+flow and spanning forests. Tests separate structure, facilities, algorithms,
+optimization and randomized stress.
+
+Render pipelines can associate existing pass pointers with vertices and
+resource/pin metadata with edges, validate compatible connections, filter edge
+categories, sort scheduling dependencies and use SCCs for diagnostics. Material,
+script, animation, behavior and procedural systems can use the same topology
+with their own metadata and validation. Ownership of passes, resource barriers,
+execution semantics, pin schemas and editors remain in those consumers. No
+additional speculative node graph abstraction is required.
 
 ## Verification
 
-`CoreTest/Graph` covers structural operations, invalid and foreign handles,
-actual slot reuse and generation changes, growth, loops, parallel edges, high
-degree removal, clearing, graph recreation at the same address, traversal order,
-early stopping, DAG ordering, cycles, disconnected components, and a
-30,000-vertex chain/cycle without recursion.
+The five Graph test groups cover structure, stale/foreign handles, actual slot
+reuse, identity exhaustion, capacity limits, growth, loops, parallel edges,
+reconnection, high-degree removal, clearing and graph recreation at the same
+address. Facilities tests cover validation, events/reentrancy, copy/move,
+compaction and owned payload preservation, refused metadata allocation, stream
+failures/truncation/bounds, reflection and four concurrent scoped writers.
 
-Stress coverage compares 8,000 seeded mutation steps with independent edge
-records, checking validity, endpoints, degrees, exact adjacency membership and
-enumeration after every step. Eighty generated graphs (empty connectivity,
-sparse, dense and complete; both arbitrary directed graphs and DAGs) compare
-reachability, cycle detection, SCC and weak-component equivalence against an
-independent Floyd-Warshall reference. BFS additionally checks distance ordering.
-Explicitly tracked allocators verify reserved construction, allocation-free
-adjacency, repeated algorithm reuse after warm-up, and balanced destruction.
+Basic algorithm tests include exact traversal order, early stopping, disconnected
+components, DAGs, cycles and a 30,000-vertex chain/cycle. Stress tests compare 8,000
+seeded mutation steps (including reconnection) against independent edge records,
+checking all structural invariants after every step. Eighty generated graphs
+compare connectivity/components against independent transitive closure.
+Fifty generated multigraphs compare Dijkstra against Floyd-Warshall, maximum flow
+against exhaustive minimum cuts and spanning forests against independent Prim.
+Tests also validate flow capacities/conservation, filtered edge categories,
+invalid weights and allocation-free repeated algorithm execution after warm-up.
+
+Verified with the VS2026 x64 Debug preset: Core and CoreTest build successfully;
+all 20 Core subtests pass, including all five Graph groups. The graph source and
+tests contain no `<exception>`, `throw` or `std::terminate` use.
 
 ```powershell
 cmake --preset vs2026x64
