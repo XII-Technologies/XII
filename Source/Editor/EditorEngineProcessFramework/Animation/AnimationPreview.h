@@ -21,10 +21,10 @@ public:
   xiiResult Build(const xiiSkeletonResource& skeleton, const xiiMeshResourceDescriptor& mesh,
                   const xiiAnimationClipResource* pClip = nullptr, double fNormalizedPosition = 0.0);
 
-  /// Acquires the mesh and its default skeleton, samples, and updates a world-owned component.
+  /// Acquires the mesh and its default skeleton (or an explicitly selected skeleton), samples, and updates a world-owned component.
   /// The caller holds world write access. Loading/missing resources fail and clear stale pose data.
   /// A mesh without a default skeleton permits bind-pose preview only; clip preview fails.
-  xiiResult UpdateMesh(xiiSkinnedMeshComponent& component, const xiiAnimationClipResourceHandle& hClip = {}, double fNormalizedPosition = 0.0);
+  xiiResult UpdateMesh(xiiSkinnedMeshComponent& component, const xiiAnimationClipResourceHandle& hClip = {}, double fNormalizedPosition = 0.0, const xiiSkeletonResourceHandle& hSkeletonOverride = {});
 
   xiiArrayPtr<const xiiMat4> GetSkinningMatrices() const { return m_Palette; }
   const xiiAnimationPose&    GetPose() const { return m_Pose; }

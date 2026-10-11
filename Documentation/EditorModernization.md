@@ -398,3 +398,13 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   native resource round trips, import-setting preservation and the 65,535-joint
   boundary. The dependent test executable builds. Skeleton document/preview
   integration and full Editor workflows still require migration and verification.
+- Shared skeleton preview geometry supports bones, exact-name highlighting,
+  authored box/sphere/capsule/convex colliders, joint axes and swing/twist limits.
+  It uses existing Core geometry and regular debug-render passes, retains no
+  borrowed resource pointers, and computes conservative focus/thumbnail bounds.
+  Authoring IPC is separate from native skeleton resources. Animation preview
+  can apply an explicitly selected skeleton rather than the mesh default.
+- All 11 Vulkan Editor framework subtests pass, including selected bone GPU
+  readback, collider bounds, malformed metadata, and explicit skeleton component
+  application (`Workspace/editor-skeleton-preview-tests.log`). Tests caught and
+  corrected selection lookup by string-view storage and inward bounds rounding.

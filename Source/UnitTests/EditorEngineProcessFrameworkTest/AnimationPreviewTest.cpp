@@ -161,6 +161,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
     XII_TEST_RESULT(preview.UpdateMesh(*component));
     XII_TEST_BOOL(!component->GetSkeleton().IsValid());
     XII_TEST_BOOL(component->GetSkinningMatrices().IsEmpty());
+    XII_TEST_RESULT(preview.UpdateMesh(*component, {}, 0.0, hSkeleton));
+    XII_TEST_BOOL(component->GetSkeleton() == hSkeleton);
+    XII_TEST_INT(component->GetSkinningMatrices().GetCount(), 2);
     XII_TEST_BOOL(preview.UpdateMesh(*component, hClip, 0.5).Failed());
     component->SetMesh({});
     XII_TEST_BOOL(preview.UpdateMesh(*component, hClip, 0.5).Failed());

@@ -55,7 +55,7 @@ xiiResult xiiAnimationPreview::Build(const xiiSkeletonResource& skeleton, const 
   return XII_SUCCESS;
 }
 
-xiiResult xiiAnimationPreview::UpdateMesh(xiiSkinnedMeshComponent& component, const xiiAnimationClipResourceHandle& hClip, double fNormalizedPosition)
+xiiResult xiiAnimationPreview::UpdateMesh(xiiSkinnedMeshComponent& component, const xiiAnimationClipResourceHandle& hClip, double fNormalizedPosition, const xiiSkeletonResourceHandle& hSkeletonOverride)
 {
   bool success = false;
   XII_SCOPE_EXIT(if (!success) { component.ClearPose(); m_Palette.Clear(); m_Pose.Clear(); });
@@ -65,7 +65,7 @@ xiiResult xiiAnimationPreview::UpdateMesh(xiiSkinnedMeshComponent& component, co
   if (!mesh || mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
     return XII_FAILURE;
   const auto& descriptor = mesh->GetDescriptor();
-  const auto& hSkeleton  = descriptor.m_hDefaultSkeleton;
+  const auto& hSkeleton  = hSkeletonOverride.IsValid() ? hSkeletonOverride : descriptor.m_hDefaultSkeleton;
   if (!hSkeleton.IsValid())
   {
     if (hClip.IsValid())

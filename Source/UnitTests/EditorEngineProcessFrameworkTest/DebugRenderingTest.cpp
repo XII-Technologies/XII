@@ -18,6 +18,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <SharedPluginAssets/SkeletonAsset/SkeletonPreview.h>
 #include <Texture/Image/Image.h>
 
 XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
@@ -115,6 +116,33 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
   checkCenter(0, 0, 255);
   world.Update();
   checkCenter(0, 0, 0);
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Skeleton preview geometry reaches the GPU through regular debug passes")
+  {
+    xiiSkeletonResourceDescriptor skeleton;
+    skeleton.AddJoint("Root", xiiMath::MaxValue<xiiUInt16>(), xiiTransform::Make(xiiVec3(-1, 0, 0)));
+    skeleton.AddJoint("Child", 0, xiiTransform::Make(xiiVec3(2, 0, 0)));
+    skeleton.BuildModelSpaceRestPose();
+    xiiSkeletonPreviewSettings settings;
+    settings.m_sHighlightedBones = "Child;";
+    xiiSkeletonPreview preview;
+    XII_TEST_RESULT(preview.Build(skeleton.m_Joints, settings));
+    XII_TEST_RESULT(xiiDebugRenderer::DrawGeometry(*first, preview.GetGeometry(), xiiColor::White));
+    world.Update();
+    xiiImage image;
+    if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, image)))
+    {
+      bool foundBone = false;
+      for (xiiUInt32 y = 30; y < 34; ++y)
+      {
+        const auto* pixel = image.GetPixelPointer<xiiUInt8>(0, 0, 0, 32, y);
+        foundBone |= pixel[0] == 255 && pixel[1] == 255 && pixel[2] == 0;
+      }
+      XII_TEST_BOOL(foundBone);
+    }
+    world.Update();
+    checkCenter(0, 0, 0);
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Overlay geometry bypasses occlusion and preserves scene depth")
   {
