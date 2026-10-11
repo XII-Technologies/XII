@@ -775,3 +775,45 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   FileSystemModel watcher/deletion assertions, including unsafe indexing after
   missing events (`Workspace/editor-native-animation-graph-tools-tests.log`).
   That independent failure remains under investigation.
+
+- Native animation graph authoring now uses shared tooling. Shared tooling
+  now owns reflected node settings, pose pin creation, document compilation and
+  native descriptor validation. Qt retains the canvas, property presentation and
+  document shell. The six evaluated native node kinds are exposed; IK enum values
+  that currently fall through to rest pose are not advertised as implemented.
+  Core graph topology checks disconnected cycles and evaluation depth before
+  publishing a descriptor. Blend thresholds follow explicit pin order; transition
+  priority follows authored array order. Document UUID order stabilizes native
+  node indices across remove/undo and serialization.
+- The graph test covers native asset loading, Blend1D/additive/layered/state-machine
+  execution, per-instance parameters/state, invalid topology and depth. Those
+  checks passed before adding document command coverage. The full 26-subtest Vulkan
+  suite passed with the graph test running without an unnecessary graphics device
+  (`Workspace/editor-native-animation-graph-cpu-tests.log`). Two earlier runs with
+  that extra device failed at the later ViewLifecycle image allocation; isolated
+  ViewLifecycle passed. This observation does not establish the underlying Vulkan
+  device-lifecycle cause or resolve the earlier GpuDrivenScene device-lost issue.
+- Actual document command tests exposed a null-parent dereference when adding a
+  root node through xiiNodeCommandAccessor, and node removal bypassing the existing
+  connection-aware removal command. Both are repaired. Pin resize
+  undo/redo, DDL connections/position restoration and node remove/undo now pass.
+  A hash mismatch after node remove/undo exposed unstable child enumeration;
+  sorting by UUID stabilizes compiled indices. The corrected document test passes
+  (`Workspace/editor-native-animation-graph-document-only.log`), and all 26 Vulkan
+  integration subtests pass with this coverage
+  (`Workspace/editor-native-animation-graph-document-integration.log`).
+- All five graph Qt translation units compiled individually before the shared
+  document compiler extraction; the document source also compiled afterward
+  (`Workspace/editor-native-animation-graph-qt-build.log`). The fresh full asset
+  plugin build compiled graph sources and remains blocked by removed PropertyAnim
+  and TextureAtlasDesc includes (`Workspace/editor-native-animation-graph-plugin-build.log`).
+  An earlier automatic approval usage limit prevented a test/build sequence; the
+  normal approval path subsequently succeeded and validation above completed.
+- Old pin-based animation graph documents are currently rejected before phantom
+  type registration, preserving the original file instead of dropping unsupported
+  data on save. This is a temporary explicit compatibility gap: migration of
+  supported legacy pose operations remains required. Included graphs, trigger and
+  numeric pin semantics have no current native equivalent. Native root motion,
+  event dispatch, graph reload state invalidation and repeated-subgraph evaluation
+  costs also remain open Engine/tooling concerns. The graph migration and overall
+  Editor modernization are not complete.
