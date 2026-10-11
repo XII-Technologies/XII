@@ -16,7 +16,7 @@ DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 DepthEnable = true
 DepthWriteEnable = true
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #define USE_COLOR0
 
@@ -65,7 +65,7 @@ VS_OUT main(VS_IN_POS_ONLY Input)
   return RetVal;
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #define USE_COLOR0
 

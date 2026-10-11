@@ -16,7 +16,7 @@ DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 DepthEnable = false
 DepthWriteEnable = false
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #define USE_TEXCOORD0
 #define USE_COLOR0
@@ -75,7 +75,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
   return RetVal;
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #define USE_TEXCOORD0
 #define USE_COLOR0
