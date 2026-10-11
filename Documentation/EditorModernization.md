@@ -133,3 +133,23 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   implementation has been changed or passing asset-watching claim made. Logs:
   `Workspace/editor-tools-foundation-tests.log` and
   `Workspace/editor-tools-foundation-tests-unrestricted.log`.
+
+## Frame scheduling and document lifetime evidence
+
+- Views expose independent render activation. Disabled views retain their valid
+  configuration and pipeline instances. Extraction, scene synchronization, and
+  graph execution skip them. GraphicsCore tests pass after this change.
+- Editor redraw requests activate their view for one frame. Shared document
+  infrastructure consumes requests after presentation and reports which windows
+  need presentation. Remote requests activate only the selected remote context.
+- Document shutdown releases borrowed-world contexts before world owners. Layers
+  detach their parent when their scene closes, preventing later access to a
+  destroyed scene context.
+- All four Editor engine-process integration subtests pass on Vulkan, including
+  real graph execution/readback in a paused world, independent view activation,
+  redraw expiration, view/window teardown, and shared-world shutdown ordering.
+- Engine-process orchestration has been migrated to paused-world updates,
+  requested-window presentation, balanced GAL frames, locked cache invalidation,
+  and resource reclamation without rendering from the IPC callback. Its build
+  still stops at the missing legacy gizmo renderer; application-level execution
+  of this migration remains unverified until that integration is replaced.

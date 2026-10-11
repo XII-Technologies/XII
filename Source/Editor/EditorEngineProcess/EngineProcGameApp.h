@@ -28,18 +28,20 @@ public:
   virtual void      AfterCoreSystemsStartup() override;
 
   virtual void BeforeCoreSystemsShutdown() override;
+  void         BeforeHighLevelSystemsShutdown() override;
 
   virtual xiiApplication::Execution Run() override;
 
   void LogWriter(const xiiLoggingEventData& e);
-
-  virtual bool ShouldApplicaitonQuit() const override;
 
 protected:
   virtual void                                    BaseInit_ConfigureLogging() override;
   virtual void                                    Deinit_ShutdownLogging() override;
   virtual void                                    Init_FileSystem_ConfigureDataDirs() override;
   virtual bool                                    Run_ProcessApplicationInput() override;
+  void                                            Run_WorldUpdateAndRender() override;
+  void                                            Run_PresentImage() override;
+  void                                            Run_FinishFrame() override;
   virtual xiiUniquePtr<xiiEditorEngineProcessApp> CreateEngineProcessApp();
 
   virtual void ActivateGameStateAtStartup() override
@@ -65,6 +67,8 @@ private:
 
   void HandleResourceUpdateMsg(const xiiResourceUpdateMsgToEngine& msg);
   void HandleResourceRestoreMsg(const xiiRestoreResourceMsgToEngine& msg);
+  void InvalidateRenderData();
+  void FreeGalResources();
 
   xiiEngineProcessDocumentContext* CreateDocumentContext(const xiiDocumentOpenMsgToEngine* pMsg);
 

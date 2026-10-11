@@ -20,9 +20,10 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Pipeline/RenderDataManager.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <shellscalingapi.h>
@@ -161,21 +162,27 @@ void xiiEngineProcessGameApplication::RemoveEditorAssertHandler()
   g_PreviousAssertHandler = nullptr;
 }
 
+void xiiEngineProcessGameApplication::BeforeHighLevelSystemsShutdown()
+{
+  m_LongOpWorkerManager.Shutdown();
+  m_IPC.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEngineProcessGameApplication::EventHandlerIPC, this));
+  DeactivateGameState();
+  xiiEngineProcessDocumentContext::DestroyAllDocumentContexts();
+  m_pApp = nullptr;
+  SUPER::BeforeHighLevelSystemsShutdown();
+}
+
 void xiiEngineProcessGameApplication::BeforeCoreSystemsShutdown()
 {
   RemoveEditorAssertHandler();
-
-  m_pApp = nullptr;
-
-  m_LongOpWorkerManager.Shutdown();
-
-  m_IPC.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEngineProcessGameApplication::EventHandlerIPC, this));
 
   SUPER::BeforeCoreSystemsShutdown();
 }
 
 xiiApplication::Execution xiiEngineProcessGameApplication::Run()
 {
+  if (WasQuitRequested())
+    return xiiApplication::Execution::Quit;
   bool bPendingOpInProgress = false;
   do
   {
@@ -185,17 +192,89 @@ xiiApplication::Execution xiiEngineProcessGameApplication::Run()
     {
       xiiEngineProcessDocumentContext::UpdateDocumentContexts();
     }
-  } while (!bPendingOpInProgress && m_uiRedrawCountExecuted == m_uiRedrawCountReceived);
+  } while (!WasQuitRequested() && !bPendingOpInProgress && m_uiRedrawCountExecuted == m_uiRedrawCountReceived);
 
   // If the editor enqueues a frame to be rendered, the loop above will break due to m_uiRedrawCountExecuted != m_uiRedrawCountReceived, and we will render a frame.
   // Alternatively, a pending operations is active at which point we render as fast as we can, ignoring the editor lock step.
-  // Note there are two other cases in which we render a frame: when "FreeGalResources" or "FreeAllResources" messages are sent we must render a frame to clear pending deletions and free memory.
   xiiApplication::Execution res = SUPER::Run();
-  xiiRenderWorld::ClearMainViews();
 
   m_uiRedrawCountExecuted = m_uiRedrawCountReceived;
 
   return res;
+}
+
+void xiiEngineProcessGameApplication::Run_WorldUpdateAndRender()
+{
+  XII_PROFILE_SCOPE("EditorWorldUpdateAndRender");
+  xiiGALDevice::GetDefaultDevice()->BeginFrame();
+  Run_BeforeWorldUpdate();
+
+  // Paused Editor worlds must still initialize components and render. Individual
+  // world update functions declare whether they require simulation.
+  const auto group = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
+  for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
+    xiiTaskSystem::AddTaskToGroup(group, xiiWorld::GetWorld(i)->GetUpdateTask());
+  xiiTaskSystem::StartTaskGroup(group);
+  xiiTaskSystem::WaitForGroup(group);
+
+  Run_AfterWorldUpdate();
+  Run_UpdatePlugins();
+}
+
+void xiiEngineProcessGameApplication::Run_PresentImage()
+{
+  auto*                                                 manager = xiiWindowManager::GetSingleton();
+  xiiTemporaryHybridArray<xiiRegisteredWindowHandle, 8> windows;
+  manager->GetRegistered(windows);
+  bool captured = false;
+  for (const auto window : windows)
+  {
+    bool redraw = false;
+    if (xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw) && !redraw)
+      continue;
+    auto* nativeWindow = manager->GetWindow(window);
+    auto* output       = nativeWindow ? nativeWindow->GetOutputTarget() : nullptr;
+    if (!output)
+      continue;
+    xiiStringBuilder context;
+    if (windows.GetCount() > 1)
+      context.Set(" - ", manager->GetName(window));
+    ExecuteTakeScreenshot(output, context);
+    if (!captured)
+    {
+      ExecuteFrameCapture(nativeWindow->GetNativeWindowHandle(), context);
+      captured = true;
+    }
+    output->PresentImage();
+  }
+}
+
+void xiiEngineProcessGameApplication::Run_FinishFrame()
+{
+  xiiEngineProcessDocumentContext::FinishFrame();
+  xiiGALDevice::GetDefaultDevice()->EndFrame();
+  SUPER::Run_FinishFrame();
+}
+
+void xiiEngineProcessGameApplication::InvalidateRenderData()
+{
+  for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
+  {
+    auto* world = xiiWorld::GetWorld(i);
+    XII_LOCK(world->GetWriteMarker());
+    if (auto* module = world->GetModule<xiiRenderWorldModule>())
+      module->DeleteAllCachedRenderData();
+  }
+}
+
+void xiiEngineProcessGameApplication::FreeGalResources()
+{
+  if (!xiiGALDevice::HasDefaultDevice())
+    return;
+  auto device = xiiGALDevice::GetDefaultDevice();
+  device->WaitIdle();
+  device->BeginFrame();
+  device->EndFrame();
 }
 
 void xiiEngineProcessGameApplication::LogWriter(const xiiLoggingEventData& e)
@@ -408,13 +487,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       Init_PlatformProfile_LoadForRuntime();
 
       xiiResourceManager::ReloadAllResources(false);
-      for (xiiUInt32 uiWorldIndex = 0; uiWorldIndex < xiiWorld::GetWorldCount(); ++uiWorldIndex)
-      {
-        if (xiiWorld* pWorld = xiiWorld::GetWorld(uiWorldIndex))
-        {
-          pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
-        }
-      }
+      InvalidateRenderData();
     }
     else if (pMsg1->m_sWhatToDo == "ReloadAssetLUT")
     {
@@ -422,16 +495,12 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     }
     else if (pMsg1->m_sWhatToDo == "FreeGalResources")
     {
-      xiiRenderWorld::ClearMainViews();
-      RunOneFrame();
-      xiiGALDevice::GetDefaultDevice()->WaitIdle();
+      FreeGalResources();
     }
     else if (pMsg1->m_sWhatToDo == "FreeAllResources")
     {
       xiiResourceManager::FreeAllUnusedResources();
-      xiiRenderWorld::ClearMainViews();
-      RunOneFrame();
-      xiiGALDevice::GetDefaultDevice()->WaitIdle();
+      FreeGalResources();
     }
     else if (pMsg1->m_sWhatToDo == "ReloadResources")
     {
@@ -439,13 +508,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       {
         xiiResourceManager::ReloadAllResources(false);
       }
-      for (xiiUInt32 uiWorldIndex = 0; uiWorldIndex < xiiWorld::GetWorldCount(); ++uiWorldIndex)
-      {
-        if (xiiWorld* pWorld = xiiWorld::GetWorld(uiWorldIndex))
-        {
-          pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
-        }
-      }
+      InvalidateRenderData();
     }
     else if (pMsg1->m_sWhatToDo == "SaveProfiling")
     {
