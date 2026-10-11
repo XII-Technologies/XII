@@ -37,15 +37,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("AutoSaveMinutes", m_uiAutoSaveMinutes)->AddAttributes(new xiiDefaultValueAttribute(5), new xiiClampValueAttribute(0, 24 * 60)),
 
     // START GROUP Engine View Light Settings
-    XII_MEMBER_PROPERTY("SkyBox", m_bSkyBox)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiGroupAttribute("Engine View Light Settings")),
-    XII_MEMBER_PROPERTY("SkyLight", m_bSkyLight)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiClampValueAttribute(0.0f, 2.0f)),
-    XII_MEMBER_PROPERTY("SkyLightCubeMap", m_sSkyLightCubeMap)->AddAttributes(new xiiDefaultValueAttribute(xiiStringView("{ 0b202e08-a64f-465d-b38e-15b81d161822 }")), new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Cube")),
-    XII_MEMBER_PROPERTY("SkyLightIntensity", m_fSkyLightIntensity)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 20.0f)),
-    XII_MEMBER_PROPERTY("DirectionalLight", m_bDirectionalLight)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("DirectionalLight", m_bDirectionalLight)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiGroupAttribute("Engine View Light Settings")),
     XII_MEMBER_PROPERTY("DirectionalLightAngle", m_DirectionalLightAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(70.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(360.0f))),
     XII_MEMBER_PROPERTY("DirectionalLightShadows", m_bDirectionalLightShadows),
     XII_MEMBER_PROPERTY("DirectionalLightIntensity", m_fDirectionalLightIntensity)->AddAttributes(new xiiDefaultValueAttribute(10.0f)),
-    XII_MEMBER_PROPERTY("Fog", m_bFog),
     XII_ARRAY_MEMBER_PROPERTY("RecentTypes", m_RecentlyCreatedTypes)->AddAttributes(new xiiHiddenAttribute()),
   }
   XII_END_PROPERTIES;
@@ -66,28 +61,18 @@ xiiEditorPreferencesUser::~xiiEditorPreferencesUser()
 
 void xiiEditorPreferencesUser::ApplyDefaultValues(xiiEngineViewLightSettings& ref_settings)
 {
-  ref_settings.SetSkyBox(m_bSkyBox);
-  ref_settings.SetSkyLight(m_bSkyLight);
-  ref_settings.SetSkyLightCubeMap(m_sSkyLightCubeMap);
-  ref_settings.SetSkyLightIntensity(m_fSkyLightIntensity);
   ref_settings.SetDirectionalLight(m_bDirectionalLight);
   ref_settings.SetDirectionalLightAngle(m_DirectionalLightAngle);
   ref_settings.SetDirectionalLightShadows(m_bDirectionalLightShadows);
   ref_settings.SetDirectionalLightIntensity(m_fDirectionalLightIntensity);
-  ref_settings.SetFog(m_bFog);
 }
 
 void xiiEditorPreferencesUser::SetAsDefaultValues(const xiiEngineViewLightSettings& settings)
 {
-  m_bSkyBox                    = settings.GetSkyBox();
-  m_bSkyLight                  = settings.GetSkyLight();
-  m_sSkyLightCubeMap           = settings.GetSkyLightCubeMap();
-  m_fSkyLightIntensity         = settings.GetSkyLightIntensity();
   m_bDirectionalLight          = settings.GetDirectionalLight();
   m_DirectionalLightAngle      = settings.GetDirectionalLightAngle();
   m_bDirectionalLightShadows   = settings.GetDirectionalLightShadows();
   m_fDirectionalLightIntensity = settings.GetDirectionalLightIntensity();
-  m_bFog                       = settings.GetFog();
   TriggerPreferencesChangedEvent();
 }
 

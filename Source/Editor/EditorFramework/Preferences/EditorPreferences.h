@@ -35,17 +35,12 @@ public:
   // Auto-save interval in minutes. 0 = off.
   xiiUInt32 m_uiAutoSaveMinutes = 5;
 
-  bool      m_bSkyBox                      = true;
-  bool      m_bSkyLight                    = true;
-  xiiString m_sSkyLightCubeMap             = "{ 0b202e08-a64f-465d-b38e-15b81d161822 }";
-  float     m_fSkyLightIntensity           = 1.0f;
-  bool      m_bDirectionalLight            = true;
-  xiiAngle  m_DirectionalLightAngle        = xiiAngle::MakeFromDegree(70.0f);
-  bool      m_bDirectionalLightShadows     = false;
-  float     m_fDirectionalLightIntensity   = 10.0f;
-  bool      m_bFog                         = false;
-  bool      m_bClearEditorLogsOnPlay       = true;
-  bool      m_bCombinedEditorAndEngineLogs = true;
+  bool     m_bDirectionalLight            = true;
+  xiiAngle m_DirectionalLightAngle        = xiiAngle::MakeFromDegree(70.0f);
+  bool     m_bDirectionalLightShadows     = false;
+  float    m_fDirectionalLightIntensity   = 10.0f;
+  bool     m_bClearEditorLogsOnPlay       = true;
+  bool     m_bCombinedEditorAndEngineLogs = true;
 
   void SetShowInDevelopmentFeatures(bool b);
   bool GetShowInDevelopmentFeatures() const

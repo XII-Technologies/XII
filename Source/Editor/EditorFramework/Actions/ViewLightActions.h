@@ -17,15 +17,10 @@ public:
   static void MapToolbarActions(xiiStringView sMapping);
 
   static xiiActionDescriptorHandle s_hLightMenu;
-  static xiiActionDescriptorHandle s_hSkyBox;
-  static xiiActionDescriptorHandle s_hSkyLight;
-  static xiiActionDescriptorHandle s_hSkyLightCubeMap;
-  static xiiActionDescriptorHandle s_hSkyLightIntensity;
   static xiiActionDescriptorHandle s_hDirLight;
   static xiiActionDescriptorHandle s_hDirLightAngle;
   static xiiActionDescriptorHandle s_hDirLightShadows;
   static xiiActionDescriptorHandle s_hDirLightIntensity;
-  static xiiActionDescriptorHandle s_hFog;
   static xiiActionDescriptorHandle s_hSetAsDefault;
 };
 
