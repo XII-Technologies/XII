@@ -770,7 +770,7 @@ void xiiSceneContext::HandleGameModeMsg(const xiiGameModeMsgToEngine* pMsg)
       return;
 
     xiiLog::Info("Attempting to stop Play-the-Game mode");
-    pState->RequestQuit();
+    pState->RequestQuit("editor-force");
   }
 }
 

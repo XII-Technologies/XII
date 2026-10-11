@@ -271,3 +271,11 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   Camera framing uses Foundation's current distance query, and transform tools
   include the authoritative game-object reflection declaration directly instead
   of depending on transitive headers. Verification: `Workspace/editor-framework-build.log`.
+- `EditorEngineProcess` now builds as an application as well as the shared
+  framework. Escape and Stop pass the current game-state API's documented
+  `editor-esc` and `editor-force` request sources. This preserves game states'
+  ability to distinguish user Escape from an explicit Editor Stop.
+  `Workspace/editor-process-build.log` records the successful build. The scene
+  plugin still fails on removed extractor, shadow-pool, animation declaration,
+  and global render-world interfaces (`Workspace/editor-process-scene-build.log`);
+  its viewport features require migration, not replacement API shims.

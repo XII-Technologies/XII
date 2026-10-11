@@ -766,7 +766,7 @@ bool xiiEngineProcessGameApplication::Run_ProcessApplicationInput()
   {
     if (m_pGameState)
     {
-      m_pGameState->RequestQuit();
+      m_pGameState->RequestQuit("editor-esc");
     }
   }
   else
