@@ -5,8 +5,8 @@
 #include <EnginePluginAssets/AnimationClipAsset/AnimationClipContext.h>
 #include <EnginePluginAssets/AnimationClipAsset/AnimationClipView.h>
 
-#include <GameEngine/Animation/Skeletal/SimpleAnimationComponent.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipContext, 1, xiiRTTIDefaultAllocator<xiiAnimationClipContext>)
@@ -49,30 +49,13 @@ void xiiAnimationClipContext::HandleMessage(const xiiEditorEngineDocumentMsg* pM
       auto pWorld = m_pWorld;
       XII_LOCK(pWorld->GetWriteMarker());
 
-      xiiStringBuilder sAnimClipGuid;
-      xiiConversionUtils::ToString(GetDocumentGuid(), sAnimClipGuid);
-
-      xiiAnimatedMeshComponent* pAnimMesh;
-      if (pWorld->TryGetComponent(m_hAnimMeshComponent, pAnimMesh))
+      xiiSkinnedMeshComponent* mesh = nullptr;
+      if (pWorld->TryGetComponent(m_hAnimMeshComponent, mesh))
       {
-        pAnimMesh->DeleteComponent();
-        m_hAnimMeshComponent.Invalidate();
-      }
-
-      xiiSimpleAnimationComponent* pAnimController;
-      if (pWorld->TryGetComponent(m_hAnimControllerComponent, pAnimController))
-      {
-        pAnimController->DeleteComponent();
-        m_hAnimControllerComponent.Invalidate();
-      }
-
-      if (!m_sAnimatedMeshToUse.IsEmpty())
-      {
-        m_hAnimMeshComponent       = xiiAnimatedMeshComponent::CreateComponent(m_pGameObject, pAnimMesh);
-        m_hAnimControllerComponent = xiiSimpleAnimationComponent::CreateComponent(m_pGameObject, pAnimController);
-
-        pAnimMesh->SetMeshFile(m_sAnimatedMeshToUse);
-        pAnimController->SetAnimationClipFile(sAnimClipGuid);
+        mesh->ClearPose();
+        mesh->SetSkeleton({});
+        mesh->SetMesh(m_sAnimatedMeshToUse.IsEmpty() ? xiiMeshResourceHandle() :
+                                                       xiiResourceManager::LoadResource<xiiMeshResource>(m_sAnimatedMeshToUse));
       }
     }
     else if (pMsg->m_sWhatToDo == "PlaybackPos")
@@ -85,26 +68,15 @@ void xiiAnimationClipContext::HandleMessage(const xiiEditorEngineDocumentMsg* pM
 
   if (auto pMsg = xiiDynamicCast<const xiiViewRedrawMsgToEngine*>(pMsg0))
   {
-    auto pWorld = m_pWorld;
-    XII_LOCK(pWorld->GetWriteMarker());
-
-    xiiSimpleAnimationComponent* pAnimController;
-    if (pWorld->TryGetComponent(m_hAnimControllerComponent, pAnimController))
+    UpdatePreviewPose().IgnoreResult(); // Also refreshes resources after reload.
+    xiiResourceLock<xiiAnimationClipResource> clip(m_hAnimationClip, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+    if (clip && clip.GetAcquireResult() == xiiResourceAcquireResult::Final)
     {
-      if (pAnimController->m_hAnimationClip.IsValid())
-      {
-        xiiResourceLock<xiiAnimationClipResource> pResource(pAnimController->m_hAnimationClip, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
-
-        if (pResource.GetAcquireResult() == xiiResourceAcquireResult::Final)
-        {
-          xiiSimpleDocumentConfigMsgToEditor msg;
-          msg.m_DocumentGuid = pMsg->m_DocumentGuid;
-          msg.m_sWhatToDo    = "ClipDuration";
-          msg.m_PayloadValue = pResource->GetDescriptor().GetDuration();
-
-          SendProcessMessage(&msg);
-        }
-      }
+      xiiSimpleDocumentConfigMsgToEditor msg;
+      msg.m_DocumentGuid = pMsg->m_DocumentGuid;
+      msg.m_sWhatToDo    = "ClipDuration";
+      msg.m_PayloadValue = clip->GetDuration();
+      SendProcessMessage(&msg);
     }
   }
 
@@ -123,6 +95,11 @@ void xiiAnimationClipContext::OnInitialize()
     obj.m_bDynamic = true;
     obj.m_sName.Assign("SkeletonPreview");
     pWorld->CreateObject(obj, m_pGameObject);
+    xiiSkinnedMeshComponent* mesh = nullptr;
+    m_hAnimMeshComponent          = xiiSkinnedMeshComponent::CreateComponent(m_pGameObject, mesh);
+    xiiStringBuilder clipGuid;
+    xiiConversionUtils::ToString(GetDocumentGuid(), clipGuid);
+    m_hAnimationClip = xiiResourceManager::LoadResource<xiiAnimationClipResource>(clipGuid);
   }
 }
 
@@ -138,23 +115,12 @@ void xiiAnimationClipContext::DestroyViewContext(xiiEngineProcessViewContext* pC
 
 bool xiiAnimationClipContext::UpdateThumbnailViewContext(xiiEngineProcessViewContext* pThumbnailViewContext)
 {
+  const double previousPosition = m_fPlaybackPosition;
+  XII_SCOPE_EXIT(m_fPlaybackPosition = previousPosition);
+  m_fPlaybackPosition = 0.5;
+  if (UpdatePreviewPose().Failed())
+    return false;
   xiiBoundingBoxSphere bounds = GetWorldBounds(m_pWorld);
-
-  if (!m_hAnimControllerComponent.IsInvalidated())
-  {
-    XII_LOCK(m_pWorld->GetWriteMarker());
-
-    xiiSimpleAnimationComponent* pAnimController;
-    if (m_pWorld->TryGetComponent(m_hAnimControllerComponent, pAnimController))
-    {
-      pAnimController->SetNormalizedPlaybackPosition(0.5f);
-      pAnimController->m_fSpeed = 0.0f;
-
-      m_pWorld->SetWorldSimulationEnabled(true);
-      m_pWorld->Update();
-      m_pWorld->SetWorldSimulationEnabled(false);
-    }
-  }
 
   xiiAnimationClipViewContext* pMeshViewContext = static_cast<xiiAnimationClipViewContext*>(pThumbnailViewContext);
   return pMeshViewContext->UpdateThumbnailCamera(bounds);
@@ -192,12 +158,15 @@ void xiiAnimationClipContext::QuerySelectionBBox(const xiiEditorEngineDocumentMs
 
 void xiiAnimationClipContext::SetPlaybackPosition(double pos)
 {
-  XII_LOCK(m_pWorld->GetWriteMarker());
+  if (xiiMath::IsFinite(pos))
+    m_fPlaybackPosition = xiiMath::Clamp(pos, 0.0, 1.0);
+}
 
-  xiiSimpleAnimationComponent* pAnimController;
-  if (m_pWorld->TryGetComponent(m_hAnimControllerComponent, pAnimController))
-  {
-    pAnimController->SetNormalizedPlaybackPosition(static_cast<float>(pos));
-    pAnimController->m_fSpeed = 0.0f;
-  }
+xiiResult xiiAnimationClipContext::UpdatePreviewPose()
+{
+  XII_LOCK(m_pWorld->GetWriteMarker());
+  xiiSkinnedMeshComponent* mesh = nullptr;
+  if (!m_pWorld->TryGetComponent(m_hAnimMeshComponent, mesh))
+    return XII_FAILURE;
+  return m_Preview.UpdateMesh(*mesh, m_hAnimationClip, m_fPlaybackPosition);
 }

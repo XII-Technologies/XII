@@ -4,6 +4,7 @@
 
 #include <EnginePluginAssets/EnginePluginAssetsDLL.h>
 
+#include <EditorEngineProcessFramework/Animation/AnimationPreview.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -35,4 +36,5 @@ private:
 
   xiiGameObject*        m_pAnimatedMeshObject;
   xiiMeshResourceHandle m_hAnimatedMesh;
+  xiiAnimationPreview   m_Preview;
 };

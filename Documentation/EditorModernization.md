@@ -324,3 +324,27 @@ migration progresses; no requirement is waived because a subsystem is difficult.
 - These migrated sources compile (`Workspace/editor-preview-bindings-build.log`).
   The remaining asset-plugin compilation failures are the animation contexts and
   texture view implementations; full preview GUI workflows remain unverified.
+- Animated-mesh and animation-clip contexts now own current skinned-mesh
+  components. Clip scrubbing samples runtime animation resources directly;
+  thumbnail sampling uses the midpoint without advancing or toggling world
+  simulation, and restores the document's scrub position afterward. Duration
+  reporting is independent of whether a preview mesh is selected.
+- Shared `xiiAnimationPreview` reuses CPU pose/palette scratch storage and maps
+  skeleton joint names to the mesh's palette indices and inverse bind matrices.
+  Sparse slots are identity matrices. Missing joints, duplicate indices, invalid
+  bind matrices, nonfinite scrub positions, and clips on meshes without skeletons
+  fail with `xiiResult`; failed updates clear stale component pose data. Resources
+  are acquired per update, so reloads do not retain borrowed resource pointers.
+- All eight Vulkan Editor integration subtests pass, including exact scrub
+  samples, reordered/sparse palettes, failure recovery, component application
+  without simulation, bind-pose handling, and live clip reload through the
+  ResourceManager (`Workspace/editor-animation-preview-tests.log`). The test
+  caught and prompted a fix for invalid bind matrices before multiplication.
+  These checks verify CPU pose data and component state, not final skinned GPU
+  output. Both migrated animation contexts compile; the asset plugin still fails
+  in skeleton context visualization and texture views
+  (`Workspace/editor-animation-context-build.log`). GraphicsCore's existing
+  regression suite also passes (`Workspace/editor-preview-bindings-tests.log`).
+- Downstream `EditorFramework` and `EditorEngineProcess` builds also pass after
+  the shared animation and picking changes
+  (`Workspace/editor-animation-consumers-build.log`).

@@ -4,6 +4,7 @@
 
 #include <EnginePluginAssets/EnginePluginAssetsDLL.h>
 
+#include <EditorEngineProcessFramework/Animation/AnimationPreview.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <GraphicsCore/Declarations.h>
 
@@ -26,11 +27,14 @@ protected:
   virtual bool                         UpdateThumbnailViewContext(xiiEngineProcessViewContext* pThumbnailViewContext) override;
 
 private:
-  void QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg);
-  void SetPlaybackPosition(double pos);
+  void      QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg);
+  void      SetPlaybackPosition(double pos);
+  xiiResult UpdatePreviewPose();
 
-  xiiGameObject*     m_pGameObject = nullptr;
-  xiiString          m_sAnimatedMeshToUse;
-  xiiComponentHandle m_hAnimMeshComponent;
-  xiiComponentHandle m_hAnimControllerComponent;
+  xiiGameObject*                 m_pGameObject = nullptr;
+  xiiString                      m_sAnimatedMeshToUse;
+  xiiComponentHandle             m_hAnimMeshComponent;
+  xiiAnimationClipResourceHandle m_hAnimationClip;
+  xiiAnimationPreview            m_Preview;
+  double                         m_fPlaybackPosition = 0.0;
 };
