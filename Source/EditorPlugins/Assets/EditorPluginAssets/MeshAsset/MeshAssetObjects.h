@@ -3,7 +3,7 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <EditorPluginAssets/Util/AssetUtils.h>
+#include <SharedPluginAssets/Common/MeshMaterialSlots.h>
 #include <GraphicsCore/Declarations.h>
 #include <ModelImporter/MeshImport.h>
 #include <SharedPluginAssets/Common/MeshImportTransform.h>

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <EditorPluginAssets/Util/AssetUtils.h>
+#include <SharedPluginAssets/Common/MeshMaterialSlots.h>
 #include <ModelImporter/MeshImport.h>
 
 struct xiiPropertyMetaStateEvent;

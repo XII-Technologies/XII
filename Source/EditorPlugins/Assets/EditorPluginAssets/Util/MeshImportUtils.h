@@ -3,7 +3,7 @@
 #pragma once
 
 #include <EditorPluginAssets/EditorPluginAssetsDLL.h>
-#include <EditorPluginAssets/Util/AssetUtils.h>
+#include <SharedPluginAssets/Common/MeshMaterialSlots.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 
 class xiiMeshResourceDescriptor;

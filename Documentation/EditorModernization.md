@@ -603,3 +603,18 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   migration for static and animated assets (`Workspace/editor-mesh-properties-*.log`).
   Document transforms and material import still require migration before the full
   asset plugin can build; no integrated GUI verification is claimed.
+
+- Material slot metadata now resides in SharedPluginAssets, with its existing
+  reflected type identity and serialized properties intact. Obsolete Qt-only
+  AssetUtils files are removed and consumers use the shared definition directly.
+  Reconciliation follows source material labels and duplicate occurrence order,
+  preserves user assignments and temporary highlights across reorderings, and
+  retains index-based unnamed legacy slots. It operates in linear expected time
+  with one hash table and a linked-index scratch array. Native shared material
+  slots are deliberately independent of mesh section counts.
+- All 23 Vulkan Editor integration subtests pass, including reorder, duplicate,
+  removal, unnamed legacy, shared-slot and idempotent reconciliation checks
+  (`Workspace/editor-mesh-slots-build.log`, `Workspace/editor-mesh-slots-tests.log`).
+  Document and material import migration remains in progress. Investigation also
+  confirms that the current binary material writer has no typed native PBR block;
+  it needs migration before imported PBR fields can reach native runtime state.
