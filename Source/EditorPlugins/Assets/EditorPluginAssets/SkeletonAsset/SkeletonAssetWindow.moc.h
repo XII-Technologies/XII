@@ -30,6 +30,7 @@ private:
   void SendRedrawMsg();
   void QueryObjectBBox(xiiInt32 iPurpose = 0);
   void SelectionEventHandler(const xiiSelectionManagerEvent& e);
+  void SendSelectionHighlights();
   void SkeletonAssetEventHandler(const xiiSkeletonAssetEvent& e);
 
   void PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e);

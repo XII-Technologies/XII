@@ -34,6 +34,7 @@ public:
   static void PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 
   xiiStatus WriteResource(xiiStreamWriter& inout_stream, const xiiEditableSkeleton& skeleton) const;
+  xiiStatus SendPreviewConfiguration() const;
 
   bool m_bIsTransforming = false;
 
@@ -66,8 +67,6 @@ protected:
   virtual void               UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
   virtual xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
-
-  const xiiEditableSkeleton* MergeWithNewSkeleton(xiiEditableSkeleton& newSkeleton);
 
   xiiEvent<const xiiSkeletonAssetEvent&> m_Events;
   bool                                   m_bRenderBones       = true;

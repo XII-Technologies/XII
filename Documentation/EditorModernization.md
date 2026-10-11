@@ -455,3 +455,15 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   integration subtests pass; the test executable and EditorEngineProcess build
   (`Workspace/editor-skeleton-import-final-build.log`). Mesh and clip import
   consumers still require their own migration to current native descriptors.
+- Skeleton asset documents now use the native importer and shared hierarchy
+  merge, serialize native resource descriptors, and send tooling metadata through
+  separate IPC for live views and thumbnails. Live custom resource streams no
+  longer contain the file-loader envelope. Opening/reconnecting a window resends
+  authoring data and highlights. Exposed-bone traversal is iterative and rejects
+  invalid ownership. Asset type version 11 requests regeneration of old binaries.
+- Skeleton document, transform and window sources compile individually with the
+  Qt configuration (`Workspace/editor-skeleton-document-final-compile.log`,
+  `Workspace/editor-skeleton-import-final-compile.log`,
+  `Workspace/editor-skeleton-window-final-compile.log`). Other asset types still
+  prevent the complete Qt plugin build, so import/undo/reconnect GUI workflows
+  have not yet been verified as an integrated Editor application.
