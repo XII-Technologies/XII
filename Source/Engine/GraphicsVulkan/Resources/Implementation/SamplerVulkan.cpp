@@ -26,6 +26,15 @@ xiiResult xiiGALSamplerVulkan::InitPlatform()
   vk::Device                          vkLogicalDevice            = pDeviceVulkan->GetVulkanLogicalDevice();
   const vk::PhysicalDeviceProperties& vkPhysicalDeviceProperties = pDeviceVulkan->GetVulkanPhysicalDeviceProperties();
 
+  if ((m_Description.m_AddressU == xiiGALTextureAddressMode::MirrorOnce ||
+       m_Description.m_AddressV == xiiGALTextureAddressMode::MirrorOnce ||
+       m_Description.m_AddressW == xiiGALTextureAddressMode::MirrorOnce) &&
+      !pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_bSamplerMirrorClampToEdge)
+  {
+    xiiLog::Error("MirrorOnce texture addressing requires VK_KHR_sampler_mirror_clamp_to_edge on this device.");
+    return XII_FAILURE;
+  }
+
   vk::SamplerCreateInfo vkSamplerCreateInfo = {};
   vkSamplerCreateInfo.pNext                 = nullptr;
   vkSamplerCreateInfo.flags                 = {};

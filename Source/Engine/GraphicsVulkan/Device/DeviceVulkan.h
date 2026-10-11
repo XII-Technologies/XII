@@ -63,6 +63,7 @@ public:
     vk::PhysicalDeviceShaderDrawParametersFeatures      m_ShaderDrawParameters;
     vk::PhysicalDeviceCustomBorderColorFeaturesEXT      m_CustomBorderColor;
 
+    bool m_bSamplerMirrorClampToEdge = false; ///< True when the device extension enabling MirrorOnce address mode is active.
     bool m_bSpirv14                  = false; ///< Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension.
     bool m_bSpirv15                  = false; ///< DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5.
     bool m_bSubgroupOps              = false; ///< Requires Vulkan 1.1.

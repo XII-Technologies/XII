@@ -1119,6 +1119,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   ExtensionFeatures enabledExtensionFeatures = {};
 
+  // MirrorOnce is a native GAL address mode. This extension has no feature structure.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME))
+  {
+    deviceExtensions.PushBack(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
+    enabledExtensionFeatures.m_bSamplerMirrorClampToEdge = true;
+  }
+
   // To enable some device extensions you must enable instance extension VK_KHR_get_physical_device_properties2 and add feature description to DeviceCreateInfo.pNext.
   const bool bSupportsDeviceFeatures2 = IsExtensionEnabled(m_EnabledExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   if (bSupportsDeviceFeatures2)
