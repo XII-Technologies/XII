@@ -9,6 +9,7 @@
 #include <GraphicsCore/Declarations.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ModelImporter/ModelImporter.h>
+#include <ToolsFoundation/Animation/ExposedBone.h>
 
 //////////////////////////////////////////////////////////////////////////
 

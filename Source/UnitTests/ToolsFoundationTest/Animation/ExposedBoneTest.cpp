@@ -5,8 +5,56 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <ToolsFoundation/Animation/ExposedBone.h>
+#include <ToolsFoundation/CommandHistory/CommandHistory.h>
+#include <ToolsFoundationTest/Object/TestObjectManager.h>
+#include <ToolsFoundationTest/Reflection/ReflectionTestClasses.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(AnimationAuthoring);
+
+XII_CREATE_SIMPLE_TEST(AnimationAuthoring, BoneCommands)
+{
+  xiiTestDocument document("BoneCommands", true);
+  document.InitializeAfterLoading(false);
+  xiiObjectAccessorBase* pAccessor = document.GetObjectAccessor();
+  xiiUuid                objectGuid;
+  pAccessor->StartTransaction("Create bone property owner");
+  XII_TEST_STATUS(pAccessor->AddObject(nullptr, static_cast<const xiiAbstractProperty*>(nullptr), -1, xiiGetStaticRTTI<xiiVariantTestStruct>(), objectGuid));
+  pAccessor->FinishTransaction();
+  const xiiDocumentObject*    pObject = pAccessor->GetObject(objectGuid);
+  const xiiVariantTestStruct* pNative = static_cast<const xiiVariantTestStruct*>(document.m_ObjectMirror.GetNativeObjectPointer(pObject));
+  if (!XII_TEST_BOOL(pNative != nullptr))
+    return;
+  auto VerifyBone = [&](const xiiExposedBone& expected) {
+    const xiiVariant* pValue = pNative->m_VariantDictionary.GetValue("hand");
+    if (XII_TEST_BOOL(pValue != nullptr))
+      XII_TEST_BOOL(pValue->Get<xiiExposedBone>() == expected);
+  };
+
+  xiiExposedBone bone;
+  bone.m_sName   = "hand";
+  bone.m_sParent = "arm";
+  bone.m_Transform.m_vPosition.Set(1, 2, 3);
+  bone.m_Transform.m_vScale.Set(2, 3, 4);
+  const xiiAbstractProperty* pProperty = pObject->GetType()->FindPropertyByName("VariantDictionary");
+  pAccessor->StartTransaction("Insert bone override");
+  XII_TEST_STATUS(pAccessor->InsertValue(pObject, pProperty, xiiVariant(bone), "hand"));
+  pAccessor->FinishTransaction();
+
+  xiiExposedBone rotated          = bone;
+  rotated.m_Transform.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisX(), xiiAngle::MakeFromDegree(30));
+  pAccessor->StartTransaction("Rotate bone");
+  XII_TEST_STATUS(pAccessor->SetValue(pObject, pProperty, xiiVariant(rotated), "hand"));
+  pAccessor->FinishTransaction();
+  VerifyBone(rotated);
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  VerifyBone(bone);
+  XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+  XII_TEST_BOOL(pNative->m_VariantDictionary.IsEmpty());
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  VerifyBone(bone);
+  XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+  VerifyBone(rotated);
+}
 
 XII_CREATE_SIMPLE_TEST(AnimationAuthoring, BonePersistence)
 {

@@ -10,7 +10,7 @@
 #include <EditorFramework/Gizmos/TranslateGizmo.h>
 #include <EditorFramework/Manipulators/ManipulatorAdapter.h>
 #include <Foundation/Containers/DynamicArray.h>
-#include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
+#include <ToolsFoundation/Animation/ExposedBone.h>
 
 struct xiiGizmoEvent;
 
@@ -25,8 +25,6 @@ public:
 
 protected:
   virtual void Finalize() override;
-
-  void MigrateSelection();
 
   virtual void Update() override;
   void         RotateGizmoEventHandler(const xiiGizmoEvent& e);
@@ -47,11 +45,11 @@ protected:
   xiiDeque<ElementGizmo>          m_Gizmos;
   xiiTransform                    m_RootTransform = xiiTransform::MakeIdentity();
 
-  void    RetrieveBones();
-  void    ConfigureGizmos();
-  void    SetTransform(xiiUInt32 uiBone, const xiiTransform& value);
-  xiiMat4 ComputeFullTransform(xiiUInt32 uiBone) const;
-  xiiMat4 ComputeParentTransform(xiiUInt32 uiBone) const;
+  xiiDynamicArray<xiiMat4> m_ParentTransforms;
+
+  xiiResult RetrieveBones();
+  void      ConfigureGizmos();
+  void      SetTransform(xiiUInt32 uiBone, const xiiTransform& value);
 
   static xiiString s_sLastSelectedBone;
 };

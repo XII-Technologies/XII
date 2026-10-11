@@ -6,7 +6,6 @@
 #include <EditorPluginAssets/AnimationClipAsset/AnimationClipAsset.h>
 #include <Foundation/Utilities/Progress.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
-#include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ModelImporter/ModelImporter.h>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
@@ -118,11 +117,8 @@ xiiTransformStatus xiiAnimationClipAssetDocument::InternalTransformAsset(xiiStre
   if (pImporter == nullptr)
     return xiiStatus("No known importer for this file type.");
 
-  xiiEditableSkeleton skeleton;
-
   xiiModelImporter::ImportOptions opt;
   opt.m_sSourceFile = sAbsFilename;
-  // opt.m_pSkeletonOutput = &skeleton; // TODO: may be needed later to optimize the clip
   opt.m_pAnimationOutput    = &desc;
   opt.m_bAdditiveAnimation  = pProp->m_bAdditive;
   opt.m_sAnimationToImport  = pProp->m_sAnimationClipToExtract;

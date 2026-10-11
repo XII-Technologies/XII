@@ -168,3 +168,15 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   unsorted/disconnected hierarchies, invalid input, and a 10,000-bone chain.
   This validates the shared data boundary; the full skeleton asset importer,
   preview, and interactive manipulation workflows still require migration.
+- Property editing, manipulation, scene pose metadata, and skeleton parameter
+  metadata now include the tooling value directly. Animation clip transformation
+  no longer constructs an unused deleted skeleton authoring object. Manipulators
+  validate hierarchies, rebuild when keys/counts change, respect visibility,
+  reject singular manipulation transforms, and preserve translation/scale during
+  rotation edits. Invalid property selections clear the widget's displayed values.
+- A fourth `AnimationAuthoring` test passes real document commands, object mirror
+  synchronization, bone override insertion/rotation, undo, and redo. The migrated
+  property widget compiles; `EditorFramework` still fails at the missing gizmo
+  handle integration, so manipulator compilation and GUI interaction are not yet
+  verified. See `Workspace/editor-bone-consumers-build.log` and
+  `Workspace/editor-bone-tests.log`.
