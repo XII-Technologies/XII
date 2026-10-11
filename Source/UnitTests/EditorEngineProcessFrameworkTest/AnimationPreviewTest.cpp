@@ -73,6 +73,29 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
     XII_TEST_VEC3(preview.GetSkinningMatrices()[1].GetTranslationVector(), xiiVec3(0.5f, 0, 0), 0.0001f);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Additive clips sample neutral missing joints and preview over rest pose")
+  {
+    xiiAnimationClipResourceDescriptor additive;
+    additive.m_Duration = xiiTime::MakeFromSeconds(2);
+    additive.m_bAdditive = true;
+    additive.m_bLooping = false;
+    auto& delta = additive.AddJointTrack("Child");
+    delta.m_PositionKeys.PushBack({0, xiiVec3::MakeZero()});
+    delta.m_PositionKeys.PushBack({2, xiiVec3(2, 0, 0)});
+    const auto handle = xiiResourceManager::CreateResource<xiiAnimationClipResource>("EditorAdditivePreviewClip", std::move(additive));
+    xiiResourceLock<xiiAnimationClipResource> resource(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!XII_TEST_BOOL(resource.GetPointer() != nullptr))
+      return;
+    xiiAnimationPose sampled;
+    resource->SampleLocalPose(*skeleton.GetPointer(), xiiTime::MakeFromSeconds(1), sampled);
+    XII_TEST_BOOL(sampled.m_LocalTransforms[0].IsEqual(xiiTransform::MakeIdentity(), 0.0001f));
+    XII_TEST_VEC3(sampled.m_LocalTransforms[1].m_vPosition, xiiVec3(1, 0, 0), 0.0001f);
+    XII_TEST_VEC3(sampled.m_LocalTransforms[1].m_vScale, xiiVec3(1), 0.0001f);
+    XII_TEST_RESULT(preview.Build(*skeleton.GetPointer(), mesh, resource.GetPointer(), 0.5));
+    XII_TEST_VEC3(preview.GetSkinningMatrices()[0].GetTranslationVector(), xiiVec3(1, 0, 0), 0.0001f);
+    XII_TEST_BOOL(preview.GetSkinningMatrices()[2].IsEqual(xiiMat4::MakeIdentity(), 0.0001f));
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid mappings and times clear stale output")
   {
     rootBone.m_uiBoneIndex = 0;

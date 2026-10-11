@@ -306,6 +306,11 @@ const xiiAnimationClipResourceDescriptor& xiiAnimationClipResource::GetDescripto
 void xiiAnimationClipResource::SampleLocalPose(const xiiSkeletonResource& skeleton, xiiTime sampleTime, xiiAnimationPose& ref_pose) const
 {
   ref_pose.ResetToRestPose(skeleton);
+  if (m_Descriptor.m_bAdditive)
+  {
+    for (auto& transform : ref_pose.m_LocalTransforms)
+      transform = xiiTransform::MakeIdentity();
+  }
 
 #if defined(BUILDSYSTEM_ENABLE_OZZ_SUPPORT)
   const ozz::animation::Animation* pOzzAnimation = GetOzzAnimation();

@@ -16,7 +16,17 @@ xiiResult xiiAnimationPreview::Build(const xiiSkeletonResource& skeleton, const 
   if (!xiiMath::IsFinite(fNormalizedPosition))
     return XII_FAILURE;
   if (pClip)
+  {
     pClip->SampleLocalPose(skeleton, pClip->GetDuration() * xiiMath::Clamp(fNormalizedPosition, 0.0, 1.0), m_Pose);
+    if (pClip->IsAdditive())
+    {
+      xiiAnimationPose restPose;
+      restPose.ResetToRestPose(skeleton);
+      m_Pose.AdditiveBlend(restPose, m_Pose, 1.0f);
+      m_Pose.BuildModelSpacePose(skeleton);
+      m_Pose.BuildSkinningMatrices(skeleton);
+    }
+  }
   else
   {
     m_Pose.ResetToRestPose(skeleton);

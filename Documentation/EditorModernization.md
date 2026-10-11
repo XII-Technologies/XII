@@ -713,3 +713,12 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   null-pointer crash. Other backends and complete Editor GUI workflows remain
   unverified. The previously recorded GpuDrivenScene device-lost smoke failure
   has not been resolved or reclassified by this slice.
+
+- Native additive clips now initialize unanimated joint transforms to identity,
+  so rest transforms are not applied twice during additive blending. Animation
+  preview composes additive deltas over the skeleton rest pose before building
+  its palette. Existing absolute clips retain rest-pose defaults. Direct native
+  resource sampling and sparse/reordered preview palettes are covered by the
+  passing Vulkan Editor suite (`Workspace/editor-animation-import-tests-build.log`,
+  `Workspace/editor-animation-import-tests.log`; 25 subtests including the native
+  animation reader under development).
