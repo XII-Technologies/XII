@@ -57,9 +57,9 @@ struct XII_SHAREDPLUGINASSETS_DLL xiiEditableSkeletonBoneCollider : public xiiRe
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEditableSkeletonBoneCollider, xiiReflectedClass);
 
-  xiiString                 m_sIdentifier;
-  xiiDynamicArray<xiiVec3>  m_VertexPositions;
-  xiiDynamicArray<xiiUInt8> m_TriangleIndices;
+  xiiString                  m_sIdentifier;
+  xiiDynamicArray<xiiVec3>   m_VertexPositions;
+  xiiDynamicArray<xiiUInt32> m_TriangleIndices;
 };
 
 /// A document-owned joint. Names, reflected property names and versions preserve existing skeleton assets.

@@ -71,7 +71,16 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SkeletonPreview)
     collider.m_TriangleIndices[2] = 3;
     XII_TEST_BOOL(preview.Build(descriptor.m_Joints, settings, &authoring).Failed());
     XII_TEST_BOOL(preview.GetGeometry().GetLines().IsEmpty());
-    collider.m_TriangleIndices[2]   = 2;
+    collider.m_VertexPositions.SetCount(300, xiiVec3::MakeZero());
+    collider.m_VertexPositions[299] = xiiVec3(0, 3, 0);
+    collider.m_TriangleIndices[2]   = 299;
+    XII_TEST_RESULT(preview.Build(descriptor.m_Joints, settings, &authoring));
+    XII_TEST_INT(preview.GetGeometry().GetLines().GetCount(), 3);
+    bool       foundLargeIndexVertex = false;
+    const auto expected              = descriptor.m_Joints[1].m_ModelRestPose.TransformPosition(xiiVec3(0, 3, 0));
+    for (const auto& vertex : preview.GetGeometry().GetVertices())
+      foundLargeIndexVertex |= vertex.m_vPosition.IsEqual(expected, 0.0001f);
+    XII_TEST_BOOL(foundLargeIndexVertex);
     settings.m_bColliders           = false;
     settings.m_bJoints              = true;
     settings.m_bSwingLimits         = true;
@@ -95,6 +104,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SkeletonPreview)
     xiiUniquePtr<xiiEditableSkeleton> restored;
     XII_TEST_RESULT(message.GetSkeleton(restored));
     XII_TEST_INT(restored->m_Children.GetCount(), 2);
+    XII_TEST_INT(restored->m_Children[0]->m_Children[0]->m_BoneColliders[0].m_TriangleIndices[2], 299);
     XII_TEST_FLOAT(restored->m_Children[0]->m_Children[0]->m_SwingLimitY.GetDegree(), 130, 0.001f);
     XII_TEST_RESULT(preview.Build(descriptor.m_Joints, settings, restored.Borrow()));
     message.m_Data.Clear();

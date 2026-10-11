@@ -3,6 +3,8 @@
 #include <SharedPluginAssets/SharedPluginAssetsPCH.h>
 
 #include <Foundation/Reflection/Implementation/PropertyAttributes.h>
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
 #include <SharedPluginAssets/SkeletonAsset/EditableSkeleton.h>
 
 // clang-format off
@@ -30,7 +32,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonBoneShape, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonBoneCollider, 1, xiiRTTIDefaultAllocator<xiiEditableSkeletonBoneCollider>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonBoneCollider, 2, xiiRTTIDefaultAllocator<xiiEditableSkeletonBoneCollider>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -102,3 +104,28 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 2, xiiRTTIDefaultAllocator
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
+
+namespace
+{
+  class SkeletonColliderIndicesPatch : public xiiGraphPatch
+  {
+  public:
+    SkeletonColliderIndicesPatch() : xiiGraphPatch("xiiEditableSkeletonBoneCollider", 2) {}
+
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* pNode) const override
+    {
+      auto* property = pNode->FindProperty("TriangleIndices");
+      if (property == nullptr || !property->m_Value.IsA<xiiVariantArray>())
+        return;
+      auto indices = property->m_Value.Get<xiiVariantArray>();
+      for (auto& index : indices)
+      {
+        if (index.IsA<xiiUInt8>())
+          index = static_cast<xiiUInt32>(index.Get<xiiUInt8>());
+      }
+      property->m_Value = std::move(indices);
+    }
+  };
+
+  SkeletonColliderIndicesPatch s_ColliderIndicesPatch;
+} // namespace

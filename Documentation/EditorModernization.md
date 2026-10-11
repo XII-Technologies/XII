@@ -437,3 +437,9 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   computes manipulator frames in import coordinates, and rejects invalid input
   without replacing the existing document hierarchy. All 13 Vulkan integration
   subtests pass (`Workspace/editor-skeleton-merge-tests.log`).
+- Convex authoring collider indices now use 32 bits instead of bytes, avoiding
+  truncation above vertex 255. A versioned graph patch widens existing asset
+  values; standard RTTI numeric conversion also reads legacy binary properties.
+  Tests cover the old schema, 300-vertex round trips, preview geometry using
+  index 299 and authoring IPC preservation. All 14 Vulkan integration subtests
+  pass (`Workspace/editor-skeleton-import-final-tests.log`).

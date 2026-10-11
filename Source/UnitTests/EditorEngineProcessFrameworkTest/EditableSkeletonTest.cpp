@@ -3,6 +3,7 @@
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Serialization/BinarySerializer.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <SharedPluginAssets/SkeletonAsset/EditableSkeleton.h>
@@ -171,6 +172,56 @@ XII_CREATE_SIMPLE_TEST(EditorViews, EditableSkeleton)
     document.m_fUniformScaling = 0;
     XII_TEST_BOOL(document.MergeImportedHierarchy(imported).Failed());
     XII_TEST_BOOL(document.m_Children[0] == newRoot);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Collider index schema migrates byte indices and round trips large geometry")
+  {
+    xiiAbstractObjectGraph legacy;
+    auto*                  node = legacy.AddNode(xiiUuid::MakeUuid(), "xiiEditableSkeletonBoneCollider", 1, "root");
+    xiiVariantArray        byteIndices;
+    byteIndices.PushBack(xiiUInt8(0));
+    byteIndices.PushBack(xiiUInt8(1));
+    byteIndices.PushBack(xiiUInt8(255));
+    node->AddProperty("TriangleIndices", byteIndices);
+    xiiAbstractObjectGraph types;
+    auto*                  typeNode = types.AddNode(xiiUuid::MakeUuid(), "xiiReflectedTypeDescriptor", 1);
+    typeNode->AddProperty("TypeName", "xiiEditableSkeletonBoneCollider");
+    typeNode->AddProperty("ParentTypeName", "xiiReflectedClass");
+    typeNode->AddProperty("TypeVersion", xiiUInt32(1));
+    xiiDefaultMemoryStreamStorage storage;
+    xiiMemoryStreamWriter         writer(&storage);
+    xiiAbstractGraphBinarySerializer::Write(writer, &legacy, &types);
+    xiiMemoryStreamReader  reader(&storage);
+    xiiAbstractObjectGraph patched;
+    xiiAbstractObjectGraph patchedTypes;
+    xiiAbstractGraphBinarySerializer::Read(reader, &patched, &patchedTypes, true);
+    const auto* patchedNode = patched.GetNodeByName("root");
+    XII_TEST_INT(patchedNode->GetTypeVersion(), 2);
+    const auto& indices = patchedNode->FindProperty("TriangleIndices")->m_Value.Get<xiiVariantArray>();
+    XII_TEST_BOOL(indices[2].IsA<xiiUInt32>());
+    XII_TEST_INT(indices[2].ConvertTo<xiiUInt32>(), 255);
+    // Binary IPC readers also accept legacy numeric property values through standard RTTI conversion.
+    xiiMemoryStreamReader legacyReader(&storage);
+    const xiiRTTI*        type     = nullptr;
+    auto*                 collider = static_cast<xiiEditableSkeletonBoneCollider*>(xiiReflectionSerializer::ReadObjectFromBinary(legacyReader, type));
+    if (XII_TEST_BOOL(collider != nullptr && type == xiiGetStaticRTTI<xiiEditableSkeletonBoneCollider>()))
+    {
+      XII_TEST_INT(collider->m_TriangleIndices[2], 255);
+      collider->m_VertexPositions.SetCount(300, xiiVec3::MakeZero());
+      collider->m_TriangleIndices[2] = 299;
+      xiiDefaultMemoryStreamStorage modernStorage;
+      xiiMemoryStreamWriter         modernWriter(&modernStorage);
+      xiiReflectionSerializer::WriteObjectToBinary(modernWriter, type, collider);
+      xiiMemoryStreamReader modernReader(&modernStorage);
+      auto*                 restored = static_cast<xiiEditableSkeletonBoneCollider*>(xiiReflectionSerializer::ReadObjectFromBinary(modernReader, type));
+      if (XII_TEST_BOOL(restored != nullptr))
+      {
+        XII_TEST_INT(restored->m_VertexPositions.GetCount(), 300);
+        XII_TEST_INT(restored->m_TriangleIndices[2], 299);
+        XII_DEFAULT_DELETE(restored);
+      }
+    }
+    XII_DEFAULT_DELETE(collider);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Malformed inputs reject safely and clear stale output")
