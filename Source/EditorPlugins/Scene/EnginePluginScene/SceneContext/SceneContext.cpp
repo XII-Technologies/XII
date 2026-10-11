@@ -16,10 +16,11 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/AnimationSystem/Declarations.h>
-#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Lights/Implementation/ShadowPool.h>
 #include <GraphicsCore/Lights/SkyLightComponent.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
 
 // clang-format off
@@ -57,6 +58,10 @@ void xiiSceneContext::DrawSelectionBounds(const xiiViewHandle& hView)
 
   XII_LOCK(m_pWorld->GetWriteMarker());
 
+  xiiView* pView = nullptr;
+  if (!m_pWorld->GetOrCreateModule<xiiRenderWorldModule>()->TryGetView(hView, pView))
+    return;
+
   for (const auto& obj : m_Selection)
   {
     xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
@@ -69,7 +74,7 @@ void xiiSceneContext::DrawSelectionBounds(const xiiViewHandle& hView)
 
     if (bounds.IsValid())
     {
-      xiiDebugRenderer::DrawLineBoxCorners(hView, bounds.GetBox(), 0.25f, xiiColorScheme::LightUI(xiiColorScheme::Yellow));
+      xiiDebugRenderer::DrawLineBoxCorners(*pView, bounds.GetBox(), 0.25f, xiiColorScheme::LightUI(xiiColorScheme::Yellow));
     }
   }
 }

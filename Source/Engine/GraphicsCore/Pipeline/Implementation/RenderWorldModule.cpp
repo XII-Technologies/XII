@@ -8,6 +8,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
@@ -121,21 +122,19 @@ void xiiRenderWorldModule::Initialize()
 
 void xiiRenderWorldModule::Deinitialize()
 {
+  // Removing entries invalidates ID-table iterators. Snapshot the handles before
+  // destruction, which also lets deletion listeners observe already-invalid handles.
+  xiiDynamicArray<xiiViewHandle> views;
+  views.Reserve(m_ViewIdTable.GetCount());
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
-    ViewDetail viewDetail;
-
-    if (m_ViewIdTable.Remove(it.Id(), &viewDetail))
-    {
-      xiiViewEvent viewEvent;
-      viewEvent.m_Type  = xiiViewEventType::Deleted;
-      viewEvent.m_pView = viewDetail.m_pView.Borrow();
-
-      m_ViewEvents.Broadcast(viewEvent);
-    }
+    views.PushBack(it.Value().m_pView->GetHandle());
   }
+  for (const auto& view : views)
+    DestroyView(view);
 
   m_uiRenderFrameIndex = 0;
+  xiiDebugRenderer::ClearContext(GetWorld());
   m_FrameCompletionTracker.Reset();
   m_bFrameCompletionTrackerInitialized = false;
 }
@@ -147,8 +146,7 @@ void xiiRenderWorldModule::OnSimulationStarted()
 xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)
 {
   ViewDetail viewDetail;
-  viewDetail.m_pView          = XII_DEFAULT_NEW(xiiView, m_pWorld);
-  viewDetail.m_pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
+  viewDetail.m_pView = XII_DEFAULT_NEW(xiiView, m_pWorld);
 
   viewDetail.m_pView->SetName(sName);
 
@@ -157,6 +155,7 @@ xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& ou
   XII_VERIFY(m_ViewIdTable.TryGetValue(viewId, pViewDetail), "Failed to retrieve view detail after valid insert.");
 
   pViewDetail->m_pView->m_InternalId = viewId;
+  pViewDetail->m_pExtractedData      = XII_DEFAULT_NEW(xiiExtractedRenderData, *pViewDetail->m_pView);
   pViewDetail->m_pView->SetExtractedRenderData(pViewDetail->m_pExtractedData.Borrow());
 
   xiiViewEvent viewEvent;
@@ -182,6 +181,7 @@ void xiiRenderWorldModule::DestroyView(const xiiViewHandle& hView)
   viewEvent.m_Type  = xiiViewEventType::Deleted;
   viewEvent.m_pView = viewDetail.m_pView.Borrow();
   m_ViewEvents.Broadcast(viewEvent);
+  xiiDebugRenderer::ClearContext(*viewDetail.m_pView);
 }
 
 bool xiiRenderWorldModule::TryGetView(const xiiViewHandle& hView, xiiView*& out_pView) const

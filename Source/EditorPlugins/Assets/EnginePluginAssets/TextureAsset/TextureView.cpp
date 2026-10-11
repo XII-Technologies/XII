@@ -72,6 +72,7 @@ void xiiTextureViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
       sText.AppendFormat("{} ({}x{})", iMipLevel, uiMipWidth, uiMipHeight);
     }
 
-    xiiDebugRenderer::DrawInfoText(m_hView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
+    if (const xiiView* pView = GetView())
+      xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
   }
 }

@@ -135,11 +135,8 @@ public:
   /// Initializes the extracted render data with a world debug context. The geometry rendered in this context is rendered in all views for that scene.
   xiiExtractedRenderData(const xiiWorld* pWorld);
 
-  /// Initializes the extracted render data with a view debug context. The geometry rendered in this context is only rendered in this view.
-  xiiExtractedRenderData(const xiiViewHandle& hView);
-
   /// Initializes the extracted render data with both a world and view debug context. The geometry rendered in the world context is rendered in all views for that scene, while the geometry rendered in the view context is only rendered in this view.
-  xiiExtractedRenderData(const xiiWorld* pWorld, const xiiViewHandle& hView);
+  xiiExtractedRenderData(const xiiView& view);
 
   ~xiiExtractedRenderData();
 

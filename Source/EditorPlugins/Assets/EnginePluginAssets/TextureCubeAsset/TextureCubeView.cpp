@@ -57,6 +57,7 @@ void xiiTextureCubeViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 
     sText.PrependFormat("{0}x{1}x6 - ", uiWidthAndHeight, uiWidthAndHeight);
 
-    xiiDebugRenderer::DrawInfoText(m_hView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
+    if (const xiiView* pView = GetView())
+      xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
   }
 }

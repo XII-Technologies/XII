@@ -144,6 +144,10 @@ struct XII_GRAPHICSCORE_DLL xiiMatOrTransform
 class XII_GRAPHICSCORE_DLL xiiDebugRenderer
 {
 public:
+  /// Releases transient and persistent data for a destroyed view/world. Requires exclusive use of the context;
+  /// it must not race extraction or rendering. RenderWorldModule calls this during view and world teardown.
+  static void ClearContext(const xiiDebugRendererContext& context);
+
   /// Renders the given set of lines for one frame.
   static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 

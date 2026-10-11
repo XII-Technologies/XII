@@ -83,6 +83,7 @@ void xiiAnimatedMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     sText.AppendFormat("Bytes Per Vertex: \t{}\n", bufferDescription.m_uiElementByteStride);
     sText.AppendFormat("Bounding Box: \twidth={0}, depth={1}, height={2}", xiiArgF(bbox.GetHalfExtents().x * 2, 2), xiiArgF(bbox.GetHalfExtents().y * 2, 2), xiiArgF(bbox.GetHalfExtents().z * 2, 2));
 
-    xiiDebugRenderer::DrawInfoText(m_hView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
+    if (const xiiView* pView = GetView())
+      xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
   }
 }

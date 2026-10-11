@@ -87,7 +87,8 @@ void xiiSkeletonViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     xiiStringBuilder sText;
     sText.AppendFormat("Joints: {}\n", uiNumJoints);
 
-    xiiDebugRenderer::Draw2DText(m_hView, sText, xiiVec2I32(10, viewHeight - 10), xiiColor::White, 16, xiiDebugTextHAlign::Left, xiiDebugTextVAlign::Bottom);
+    if (const xiiView* pView = GetView())
+      xiiDebugRenderer::Draw2DText(*pView, sText, xiiVec2I32(10, viewHeight - 10), xiiColor::White, 16, xiiDebugTextHAlign::Left, xiiDebugTextVAlign::Bottom);
   }
 }
 

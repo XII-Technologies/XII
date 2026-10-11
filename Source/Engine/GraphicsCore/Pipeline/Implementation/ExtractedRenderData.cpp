@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 xiiExtractedRenderData::xiiExtractedRenderData() = default;
 
@@ -11,13 +12,8 @@ xiiExtractedRenderData::xiiExtractedRenderData(const xiiWorld* pWorld) :
 {
 }
 
-xiiExtractedRenderData::xiiExtractedRenderData(const xiiViewHandle& hView) :
-  m_ViewDebugContext(hView)
-{
-}
-
-xiiExtractedRenderData::xiiExtractedRenderData(const xiiWorld* pWorld, const xiiViewHandle& hView) :
-  m_WorldDebugContext(pWorld), m_ViewDebugContext(hView)
+xiiExtractedRenderData::xiiExtractedRenderData(const xiiView& view) :
+  m_WorldDebugContext(view.GetWorld()), m_ViewDebugContext(view)
 {
 }
 

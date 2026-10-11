@@ -75,7 +75,7 @@ void xiiEditorSelectedObjectsExtractor::Extract(const xiiView& view, const xiiDy
         const float fAspect = 9.0f / 16.0f;
 
         // TODO: use aspect ratio of camera render target, if available
-        xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), xiiRectFloat(20, 20, 256, 256 * fAspect), 0, xiiColor::White, m_hRenderTarget);
+        xiiDebugRenderer::Draw2DRectangle(view, xiiRectFloat(20, 20, 256, 256 * fAspect), 0, xiiColor::White, m_hRenderTarget);
 
         // TODO: if the camera renders to a texture anyway, use its view + render target instead
 

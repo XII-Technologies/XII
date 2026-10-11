@@ -78,7 +78,7 @@ void xiiDebugTextComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   xiiStringBuilder sb;
   sb.SetFormat(m_sText, m_fValue0, m_fValue1, m_fValue2, m_fValue3);
 
-  xiiDebugRenderer::Draw3DText(msg.m_pView->GetHandle(), sb, GetOwner()->GetGlobalPosition(), m_Color);
+  xiiDebugRenderer::Draw3DText(*msg.m_pView, sb, GetOwner()->GetGlobalPosition(), m_Color);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Debug_Implementation_DebugTextComponent);

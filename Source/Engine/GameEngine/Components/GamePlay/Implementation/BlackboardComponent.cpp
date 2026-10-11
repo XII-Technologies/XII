@@ -260,7 +260,7 @@ void xiiBlackboardComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) c
     sb.AppendFormat("{}: {}\n", it.Key(), it.Value().m_Value);
   }
 
-  xiiDebugRenderer::Draw3DText(msg.m_pView->GetHandle(), sb, GetOwner()->GetGlobalPosition(), xiiColor::Orange);
+  xiiDebugRenderer::Draw3DText(*msg.m_pView, sb, GetOwner()->GetGlobalPosition(), xiiColor::Orange);
 }
 
 //////////////////////////////////////////////////////////////////////////

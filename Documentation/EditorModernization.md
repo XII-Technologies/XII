@@ -202,3 +202,23 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   drawing, highlighting, and scene picking still need to be connected to current
   rendering APIs. Interactive gizmos and the full Editor build remain unverified;
   no old renderer/component implementation has been restored.
+
+## Debug rendering integration evidence
+
+- Debug visualization now uses render-graph-managed native render passes rather
+  than creating an unused render-pass cache. Transient vertices use reusable
+  dynamic GAL buffers with CPU write access instead of immutable mesh resources.
+  Global constants resolve against the shader stages actually present in reflection.
+  Failed shader permutations are rejected before dereferencing missing shaders.
+- Debug contexts include both world identity and the world-local view handle.
+  New views initialize their extracted debug contexts after handle assignment;
+  teardown releases their transient/persistent data. World shutdown snapshots
+  view handles before removal, fixing an ID-table iterator invalidation crash.
+- All four debug shaders now use the current shader compiler's stage sections.
+  `EditorEngineProcessFrameworkTest` builds and all six Vulkan subtests pass,
+  including actual triangle drawing, GPU copy/readback, isolation between worlds
+  with identical local view handles, one-frame consumption, and world destruction
+  with live views. Logs: `Workspace/editor-debug-build.log` and
+  `Workspace/editor-debug-tests.log`. A non-failing Vulkan shader-interface warning
+  reports an unused vertex output. Multi-view world debug consumption and overlay
+  depth behavior still need coverage before the gizmo drawing integration.
