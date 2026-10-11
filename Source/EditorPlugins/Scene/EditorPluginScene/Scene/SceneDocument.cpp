@@ -1778,14 +1778,22 @@ void xiiSceneDocument::ExportSceneGeometry(xiiStringView sFile, bool bOnlySelect
   msg.m_iExtractionMode = iExtractionMode;
   msg.m_Transform       = mTransform;
 
-  SendMessageToEngine(&msg);
-
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", sFile), xiiTime::MakeFromSeconds(5.0f));
+  if (!SendMessageToEngine(&msg))
+    xiiQtUiServices::MessageBoxStatus(xiiStatus("The engine process is unavailable."), "Geometry export failed.");
 }
 
 void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
   xiiGameObjectDocument::HandleEngineMessage(pMsg);
+
+  if (const auto* result = xiiDynamicCast<const xiiExportSceneGeometryResultMsgToEditor*>(pMsg))
+  {
+    if (result->m_bSucceeded)
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{}'", result->m_sOutputFile), xiiTime::MakeFromSeconds(5));
+    else
+      xiiQtUiServices::MessageBoxStatus(xiiStatus(result->m_sFailure.GetData()), "Geometry export failed.");
+    return;
+  }
 
   if (const xiiGameModeMsgToEditor* msg = xiiDynamicCast<const xiiGameModeMsgToEditor*>(pMsg))
   {

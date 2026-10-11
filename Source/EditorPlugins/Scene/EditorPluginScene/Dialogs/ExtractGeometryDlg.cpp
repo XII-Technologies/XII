@@ -3,14 +3,14 @@
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
 #include <EditorPluginScene/Dialogs/ExtractGeometryDlg.moc.h>
-#include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
+#include <SharedPluginScene/Scene/SceneGeometryExporter.h>
 
 #include <QFileDialog>
 
 QString xiiQtExtractGeometryDlg::s_sDestinationFile;
 bool    xiiQtExtractGeometryDlg::s_bOnlySelection    = false;
-int     xiiQtExtractGeometryDlg::s_iExtractionMode   = (int)xiiWorldGeoExtractionUtil::ExtractionMode::RenderMesh;
+int     xiiQtExtractGeometryDlg::s_iExtractionMode   = (int)xiiSceneGeometryExportMode::RenderMesh;
 int     xiiQtExtractGeometryDlg::s_iCoordinateSystem = 1;
 
 xiiQtExtractGeometryDlg::xiiQtExtractGeometryDlg(QWidget* pParent)

@@ -40,6 +40,18 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportSceneGeometryMsgToEngine, 1, xiiRTTIDe
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportSceneGeometryResultMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiExportSceneGeometryResultMsgToEditor>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Succeeded", m_bSucceeded),
+    XII_MEMBER_PROPERTY("File", m_sOutputFile),
+    XII_MEMBER_PROPERTY("Failure", m_sFailure),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPullObjectStateMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiPullObjectStateMsgToEngine>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 

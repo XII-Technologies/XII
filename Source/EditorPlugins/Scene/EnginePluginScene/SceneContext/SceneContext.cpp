@@ -20,7 +20,6 @@
 #include <GraphicsCore/Lights/Implementation/ShadowPool.h>
 #include <GraphicsCore/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
-#include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneContext, 1, xiiRTTIDefaultAllocator<xiiSceneContext>)
@@ -1178,25 +1177,6 @@ xiiArrayPtr<xiiWorldRttiConverterContext*> xiiSceneContext::GetAllContexts()
 void xiiSceneContext::HandleExposedPropertiesMsg(const xiiExposedDocumentObjectPropertiesMsgToEngine* pMsg)
 {
   m_ExposedSceneProperties = pMsg->m_Properties;
-}
-
-void xiiSceneContext::HandleSceneGeometryMsg(const xiiExportSceneGeometryMsgToEngine* pMsg)
-{
-  xiiWorldGeoExtractionUtil::MeshObjectList objects;
-
-  xiiTagSet excludeTags;
-  excludeTags.SetByName("Editor");
-
-  if (pMsg->m_bSelectionOnly)
-  {
-    xiiWorldGeoExtractionUtil::ExtractWorldGeometry(objects, *m_pWorld, static_cast<xiiWorldGeoExtractionUtil::ExtractionMode>(pMsg->m_iExtractionMode), m_SelectionWithChildren);
-  }
-  else
-  {
-    xiiWorldGeoExtractionUtil::ExtractWorldGeometry(objects, *m_pWorld, static_cast<xiiWorldGeoExtractionUtil::ExtractionMode>(pMsg->m_iExtractionMode), &excludeTags);
-  }
-
-  xiiWorldGeoExtractionUtil::WriteWorldGeometryToOBJ(pMsg->m_sOutputFile, objects, pMsg->m_Transform);
 }
 
 void xiiSceneContext::HandlePullObjectStateMsg(const xiiPullObjectStateMsgToEngine* pMsg)

@@ -133,7 +133,7 @@ public:
   void PauseSimulation();
 
   xiiTransformStatus ExportScene(bool bCreateThumbnail);
-  void               ExportSceneGeometry(xiiStringView sFile, bool bOnlySelection, int iExtractionMode /* xiiWorldGeoExtractionUtil::ExtractionMode */, const xiiMat3& mTransform);
+  void               ExportSceneGeometry(xiiStringView sFile, bool bOnlySelection, int iExtractionMode /* xiiSceneGeometryExportMode */, const xiiMat3& mTransform);
 
   virtual void HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
   void         HandleGameModeMsg(const xiiGameModeMsgToEditor* pMsg);

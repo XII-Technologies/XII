@@ -966,3 +966,50 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   builder/resource/GPU suite reported above validates the native output boundary;
   project-wide Qt asset transformation and reload remain unverified until the
   full plugin is buildable and the Editor workflow is exercised.
+
+
+- Scene geometry export now consumes native mesh components and resources through
+  a Qt-free SharedPluginScene exporter. It exports LOD-zero sections, local
+  instances and current skinning with corrected winding under mirrored object
+  or coordinate transforms. GPU-only vertex/index buffers are read back through
+  GAL commands and completed fences, without permanently retaining CPU geometry
+  or constructing a second rendering pipeline. This is a synchronous tooling
+  operation between frames; it is not placed in the rendering hot path.
+- Collision export uses Core's static-mesh message, and navigation export uses
+  its native geometry-module interface. Missing providers and unsupported
+  selection queries return explicit errors. The native navigation interface has
+  no object IDs, so per-object navigation export cannot be implemented through
+  it. Nonzero morph weights are rejected because the native mesh exposes no CPU
+  morph-delta interface. Output contains OBJ positions/faces, not material/UV/
+  normal assets. Validation failures leave a previous output intact. Final I/O
+  uses the existing deferred writer and reports failures; that writer does not
+  provide atomic replacement on disk failure and buffers the output in memory.
+- Export requests now receive an engine-result IPC message. The Editor reports
+  success only after the engine has written the file, reports unavailable engine
+  connections and displays export failures. The obsolete runtime exporter include
+  and its integration are removed; scene export handling has its own source file.
+- All 31 Editor engine-process integration subtests pass on Windows Debug/Vulkan,
+  including real GPU-only readback, both index widths, selected sections, local
+  instances, skinning, coordinate conversion, native collision/navigation test
+  providers, invalid provider data, failed validation preserving previous output,
+  deterministic output and result-message serialization. Build/test logs:
+  `Workspace/editor-scene-geometry-build.log`,
+  `Workspace/editor-scene-geometry-tests.log`,
+  `Workspace/editor-scene-geometry-integration-tests.log`,
+  `Workspace/editor-scene-geometry-final-build.log` and
+  `Workspace/editor-scene-geometry-final-tests.log`.
+  The scene document, export dialog and engine handler compile individually
+  (`Workspace/editor-scene-geometry-document-compile.log`,
+  `Workspace/editor-scene-geometry-dialog-compile.log`,
+  `Workspace/editor-scene-geometry-handler-compile.log`). Selected-source checks
+  use the exact backslash paths from the generated MSBuild projects and verify
+  the requested translation unit appears in compiler output; earlier forward-
+  slash selections compiled only the precompiled header. Both decal translation
+  units were rechecked with exact selections and pass as recorded in their logs.
+- The broader application build produces EditorEngineProcess and Player, but
+  Editor/EditorProcessor remain blocked by PropertyAnimResource authoring and
+  EnginePluginScene's removed shadow-pool, global render-world, sky-light and
+  animation-message integrations. Scene view picking/selection still uses obsolete
+  pass-property APIs and needs substantive migration. These failures are recorded
+  in `Workspace/editor-modernization-current-build.log`. Integrated Qt workflows,
+  D3D12, Linux and macOS remain unverified; the comprehensive goal is incomplete.
