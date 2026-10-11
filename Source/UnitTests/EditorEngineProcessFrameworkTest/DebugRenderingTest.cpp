@@ -2,6 +2,7 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <Core/Graphics/Geometry.h>
 #include <Core/World/World.h>
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <Foundation/Configuration/Startup.h>
@@ -12,6 +13,8 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <Texture/Image/Image.h>
 
@@ -49,6 +52,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
   depthDescription.m_BindFlags = xiiGALBindFlags::DepthStencil;
   auto depth                   = environment.GetDevice()->CreateTexture(depthDescription);
 
+  float clearDepth = 1.0f;
+
   struct ClearData
   {
     xiiRenderGraphTextureHandle m_Color;
@@ -63,10 +68,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     view->SetRenderGraphBuilder([&](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
       graph.AddPass<ClearData>("Debug test clear", xiiGALCommandQueueFlags::Graphics, [&](ClearData& data, xiiRenderGraphBuilder& builder) {
           data.m_Color = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, color, color->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
-          data.m_Depth = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, depth, depth->GetResourceState()), xiiGALResourceStateFlags::DepthWrite); }, [](const ClearData& data, xiiRenderGraphPassContext& context) {
+          data.m_Depth = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, depth, depth->GetResourceState()), xiiGALResourceStateFlags::DepthWrite); }, [&](const ClearData& data, xiiRenderGraphPassContext& context) {
           auto& commandList = context.GetCommandList();
           commandList.ClearRenderTargetView(context.GetTexture(data.m_Color)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
-          commandList.ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0); }, true);
+          commandList.ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, clearDepth, 0); }, true);
       xiiDebugRenderer::AddRenderGraphPasses(graph);
       graph.AddPass<ClearData>("Debug test capture", xiiGALCommandQueueFlags::Graphics, [&](ClearData& data, xiiRenderGraphBuilder& builder) {
           data.m_Color = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::CopySource);
@@ -108,6 +113,89 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
   checkCenter(0, 0, 255);
   world.Update();
   checkCenter(0, 0, 0);
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Overlay geometry bypasses occlusion and preserves scene depth")
+  {
+    clearDepth = 0.0f;
+    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
+    world.Update();
+    checkCenter(0, 0, 0);
+    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red, xiiDebugRendererDepthMode::Overlay);
+    world.Update();
+    checkCenter(255, 0, 0);
+
+    xiiDebugRendererLine line(xiiVec3(-1, 0, 0), xiiVec3(1, 0, 0));
+    xiiDebugRenderer::DrawLines(*first, xiiMakeArrayPtr(&line, 1), xiiColor::Blue, xiiMat4::MakeIdentity(), xiiDebugRendererDepthMode::Overlay);
+    world.Update();
+    xiiImage lineImage;
+    if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, lineImage)))
+    {
+      bool foundLine = false;
+      for (xiiUInt32 y = 30; y < 34; ++y)
+        foundLine |= lineImage.GetPixelPointer<xiiUInt8>(0, 0, 0, 32, y)[2] == 255;
+      XII_TEST_BOOL(foundLine);
+    }
+
+    xiiGeometry geometry;
+    geometry.AddBox(xiiVec3(1), false);
+    geometry.TriangulatePolygons();
+    XII_TEST_RESULT(xiiDebugRenderer::DrawGeometry(*first, geometry, xiiColor::Blue, xiiMat4::MakeTranslation(xiiVec3(0.2f, 0, 0)), xiiDebugRendererDepthMode::Overlay));
+    world.Update();
+    checkCenter(0, 0, 255);
+
+    // Read depth as floats, with the staging row pitch supplied by the backend.
+    auto                  commandList = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    auto                  queue       = environment.GetDevice()->GetCommandQueue();
+    xiiGALTextureReadback readback(environment.GetDevice());
+    commandList->Begin();
+    readback.Enqueue(commandList, {.m_pTexture = depth});
+    commandList->End();
+    queue->WaitForFenceValue(queue->Submit(commandList));
+    readback.WaitForNextCompleted();
+    const auto capture = readback.GetCompleted();
+    if (XII_TEST_BOOL(static_cast<bool>(capture)))
+    {
+      commandList->Begin();
+      xiiGALMappedTextureSubresource mapped;
+      if (XII_TEST_RESULT(commandList->MapTextureSubresource(capture.m_pStagingTexture, {}, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped)))
+      {
+        for (xiiUInt32 y = 0; y < 64; ++y)
+        {
+          const float* row = xiiMemoryUtils::AddByteOffset(static_cast<const float*>(mapped.m_pData), y * mapped.m_uiStride);
+          for (xiiUInt32 x = 0; x < 64; ++x)
+            XII_TEST_FLOAT(row[x], 0.0f, 0.0f);
+        }
+        XII_TEST_RESULT(commandList->UnmapTextureSubresource(capture.m_pStagingTexture, {}));
+      }
+      commandList->End();
+      queue->WaitForFenceValue(queue->Submit(commandList));
+      readback.RecycleStagingTexture(capture.m_pStagingTexture);
+    }
+
+    // Failure is atomic even when malformed lines follow otherwise-valid triangles.
+    geometry.GetLines().PushBack({0, geometry.GetVertices().GetCount()});
+    XII_TEST_BOOL(xiiDebugRenderer::DrawGeometry(*first, geometry, xiiColor::Red, xiiMat4::MakeIdentity(), xiiDebugRendererDepthMode::Overlay).Failed());
+    world.Update();
+    checkCenter(0, 0, 0);
+    geometry.GetLines().Clear();
+    geometry.GetPolygons()[0].m_Vertices[0] = geometry.GetVertices().GetCount();
+    XII_TEST_BOOL(xiiDebugRenderer::DrawGeometry(*first, geometry, xiiColor::Red).Failed());
+    geometry.Clear();
+    geometry.AddBox(xiiVec3(1), false);
+    XII_TEST_BOOL(xiiDebugRenderer::DrawGeometry(*first, geometry, xiiColor::Red).Failed()); // Triangulation is explicit.
+    geometry.TriangulatePolygons();
+    xiiMat4 projection = xiiMat4::MakeIdentity();
+    projection.SetRow(3, xiiVec4(0, 0, 1, 1));
+    XII_TEST_BOOL(xiiDebugRenderer::DrawGeometry(*first, geometry, xiiColor::Red, projection).Failed());
+    auto invalidColor = xiiColor::White;
+    invalidColor.r    = xiiMath::Infinity<float>();
+    XII_TEST_BOOL(xiiDebugRenderer::DrawGeometry(*first, geometry, invalidColor).Failed());
+    clearDepth = 1.0f;
+    xiiDebugRenderer::DrawSolidTriangles(&world, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red, xiiDebugRendererDepthMode::Overlay);
+    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Blue);
+    world.Update();
+    checkCenter(255, 0, 0); // World overlays follow the view's ordinary primitives too.
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Indexed boxes and textured primitives use their actual shaders")
   {

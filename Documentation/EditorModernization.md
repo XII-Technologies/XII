@@ -232,3 +232,15 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   Logs: `Workspace/editor-debug-multiview-build.log` and
   `Workspace/editor-debug-multiview-tests.log`. Overlay depth behavior and the
   Editor's gizmo handle integration remain to be implemented.
+- World-space lines, triangles, and triangulated Core geometry now support an
+  explicit overlay mode through the same renderer and upload batches. Overlays
+  run after world/view depth-tested primitives with depth/stencil testing and
+  writes disabled. No alternate Editor renderer or depth-clearing workaround is
+  introduced. Core geometry validation returns `xiiResult` and rejects malformed
+  indices, non-triangle polygons, non-finite data, and non-affine transforms
+  before submitting any primitives.
+- Vulkan readback verifies occlusion of ordinary geometry, visible overlay lines
+  and triangles, transformed geometry, world/view ordering, and unchanged depth
+  at every pixel after drawing an overlay. The six integration subtests pass;
+  see `Workspace/editor-overlay-build.log` and `Workspace/editor-overlay-tests.log`.
+  Connecting synchronized Editor handles and interactive picking remains open.
