@@ -129,6 +129,7 @@ namespace
     xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                            m_LineBoxes;
     xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                            m_SolidBoxes;
     xiiMap<xiiSharedPtr<xiiGALTextureView>, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_TexturedTriangle2DVertices;
+    xiiMap<xiiSharedPtr<xiiGALTextureView>, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_OverlayTexturedTriangle2DVertices;
     xiiMap<xiiSharedPtr<xiiGALTextureView>, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_TexturedTriangle3DVertices;
 
     xiiDynamicArray<InfoTextData>                          m_InfoTextData[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT];
@@ -159,6 +160,7 @@ namespace
     data.m_TriangleVertices.Clear();
     data.m_Triangle2DVertices.Clear();
     data.m_TexturedTriangle2DVertices.Clear();
+    data.m_OverlayTexturedTriangle2DVertices.Clear();
     data.m_TexturedTriangle3DVertices.Clear();
     data.m_sTextLines2D.Clear();
     data.m_sTextLines3D.Clear();
@@ -1093,13 +1095,13 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
   data.m_Triangle2DVertices.PushBackRange(xiiMakeArrayPtr(vertices));
 }
 
-void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale)
+void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale, xiiDebugRendererDepthMode depthMode)
 {
   xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, xiiResourceAcquireMode::AllowLoadingFallback);
-  Draw2DRectangle(context, rectInPixel, fDepth, color, pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource), vScale);
+  Draw2DRectangle(context, rectInPixel, fDepth, color, pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource), vScale, depthMode);
 }
 
-void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale)
+void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale, xiiDebugRendererDepthMode depthMode)
 {
   TexVertex vertices[6];
 
@@ -1125,7 +1127,8 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
 
   auto& data = GetDataForExtraction(context);
 
-  data.m_TexturedTriangle2DVertices[pTextureView].PushBackRange(xiiMakeArrayPtr(vertices));
+  auto& groups = depthMode == xiiDebugRendererDepthMode::Overlay ? data.m_OverlayTexturedTriangle2DVertices : data.m_TexturedTriangle2DVertices;
+  groups[pTextureView].PushBackRange(xiiMakeArrayPtr(vertices));
 }
 
 void xiiDebugRenderer::Draw2DLineRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color)
@@ -1630,6 +1633,7 @@ namespace
 
     xiiDynamicArray<PreparedVertexBatch>         m_Triangles2D;
     xiiDynamicArray<PreparedTexturedVertexBatch> m_TexturedTriangles2D;
+    xiiDynamicArray<PreparedTexturedVertexBatch> m_OverlayTexturedTriangles2D;
     xiiDynamicArray<PreparedVertexBatch>         m_Lines2D;
     xiiDynamicArray<PreparedGlyphBatch>          m_Text2D;
   };
@@ -2363,6 +2367,7 @@ namespace
     {
       UploadVertexArray(uploadState, allocator, transitions, pScreenSpaceData->m_Triangle2DVertices, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_Triangles2D);
       UploadTexturedVertexBatches(uploadState, allocator, transitions, pScreenSpaceData->m_TexturedTriangle2DVertices, out_preparedData.m_TexturedTriangles2D);
+      UploadTexturedVertexBatches(uploadState, allocator, transitions, pScreenSpaceData->m_OverlayTexturedTriangle2DVertices, out_preparedData.m_OverlayTexturedTriangles2D);
       UploadVertexArray(uploadState, allocator, transitions, pScreenSpaceData->m_Line2DVertices, xiiGALPrimitiveTopology::LineList, out_preparedData.m_Lines2D);
       Upload2DText(uploadState, allocator, transitions, *pScreenSpaceData, out_preparedData.m_Text2D);
     }
@@ -2393,14 +2398,14 @@ namespace
     }
   }
 
-  static void DrawTexturedVertexBatches(const DebugDrawState& drawState, xiiArrayPtr<const PreparedTexturedVertexBatch> batches, bool bPreTransformed)
+  static void DrawTexturedVertexBatches(const DebugDrawState& drawState, xiiArrayPtr<const PreparedTexturedVertexBatch> batches, bool bPreTransformed, bool bOverlay = false)
   {
     for (const PreparedTexturedVertexBatch& batch : batches)
     {
       if (batch.m_pVertexBuffer == nullptr || batch.m_uiVertexCount == 0U || batch.m_pTextureView == nullptr)
         continue;
 
-      xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::TexturedPrimitive, xiiGALPrimitiveTopology::TriangleList, bPreTransformed, batch.m_bMonochrome);
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::TexturedPrimitive, xiiGALPrimitiveTopology::TriangleList, bPreTransformed, batch.m_bMonochrome, bOverlay);
       if (pPipeline == nullptr)
         continue;
 
@@ -2492,6 +2497,7 @@ namespace
   {
     DrawVertexBatches(drawState, preparedData.m_Triangles2D, xiiGALPrimitiveTopology::TriangleList, true);
     DrawTexturedVertexBatches(drawState, preparedData.m_TexturedTriangles2D, true);
+    DrawTexturedVertexBatches(drawState, preparedData.m_OverlayTexturedTriangles2D, true, true);
     DrawVertexBatches(drawState, preparedData.m_Lines2D, xiiGALPrimitiveTopology::LineList, true);
     DrawGlyphBatches(drawState, preparedData.m_Text2D);
   }

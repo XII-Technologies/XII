@@ -374,6 +374,26 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     checkCenter(0, 0, 255);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Textured overlays bypass depth without changing depth-tested rectangles")
+  {
+    auto sampledDescription                     = colorDescription;
+    sampledDescription.m_Size                   = {1, 1};
+    const xiiUInt8                     pixels[] = {0, 0, 255, 255};
+    const xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(pixels, 4), 4, 4);
+    const xiiGALTextureData            initialData(xiiMakeArrayPtr(&subresource, 1));
+    auto                               sampled = environment.GetDevice()->CreateTexture(sampledDescription, &initialData);
+    clearDepth                                 = 0;
+    xiiDebugRenderer::Draw2DRectangle(*first, xiiRectFloat(0, 0, 64, 64), 0, xiiColor::White, sampled->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    world.Update();
+    checkCenter(0, 0, 0);
+    xiiDebugRenderer::Draw2DRectangle(*first, xiiRectFloat(0, 0, 64, 64), 0, xiiColor::White, sampled->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1), xiiDebugRendererDepthMode::Overlay);
+    world.Update();
+    checkCenter(0, 0, 255);
+    world.Update();
+    checkCenter(0, 0, 0);
+    clearDepth = 1;
+  }
+
   // Both views write the same capture target, so the second view must see the
   // world draw too. Consuming the context after the first view leaves it black.
   auto* third = configure(world);

@@ -1121,3 +1121,14 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   manager recreation and whole-world teardown. It passes together with the new
   camera-preview test in `Workspace/editor-camera-preview-tests.log`; the
   dependent Windows Debug engine-process build also passes.
+
+- Textured screen rectangles accept the existing `xiiDebugRendererDepthMode`.
+  The default remains depth-tested; explicit overlays use the native cached
+  overlay depth state and normal debug upload/visualization passes. This is
+  needed for camera previews over native scene depth, where a depth-tested
+  rectangle at zero disappears. Vulkan pixel tests verify depth rejection,
+  overlay visibility and one-frame consumption, and the camera-preview test
+  verifies a partial rectangle composited into an actual viewport target.
+  The three focused tests pass in `Workspace/editor-camera-preview-tests.log`;
+  dependent engine-process targets build in
+  `Workspace/editor-camera-preview-final-build.log`.

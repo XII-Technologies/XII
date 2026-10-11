@@ -205,10 +205,10 @@ public:
   static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color);
 
   /// Renders a textured 2D rectangle in screen-space for one frame.
-  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale = xiiVec2(1, 1));
+  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale = xiiVec2(1, 1), xiiDebugRendererDepthMode depthMode = xiiDebugRendererDepthMode::DepthTested);
 
-  /// Renders a textured 2D rectangle in screen-space for one frame.
-  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale = xiiVec2(1, 1));
+  /// Renders a textured 2D rectangle in screen-space for one frame. Overlay ignores scene depth.
+  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale = xiiVec2(1, 1), xiiDebugRendererDepthMode depthMode = xiiDebugRendererDepthMode::DepthTested);
 
   /// Renders a wireframe 2D rectangle in screen-space for one frame.
   static void Draw2DLineRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color);
