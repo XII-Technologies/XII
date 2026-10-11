@@ -37,12 +37,13 @@ public:
   xiiString                    m_sSourceFile;
   xiiString                    m_sAnimationClipToExtract;
   xiiDynamicArray<xiiString>   m_AvailableClips;
+  float                        m_fSampleRate  = 30.0f;
   bool                         m_bAdditive    = false;
   xiiUInt32                    m_uiFirstFrame = 0;
   xiiUInt32                    m_uiNumFrames  = 0;
   xiiString                    m_sPreviewMesh;
   xiiEnum<xiiRootMotionSource> m_RootMotionMode;
-  xiiVec3                      m_vConstantRootMotion;
+  xiiVec3                      m_vConstantRootMotion = xiiVec3::MakeZero();
 
   xiiEventTrackData m_EventTrack;
 
@@ -67,9 +68,6 @@ protected:
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
   virtual xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
 
-  // void ApplyCustomRootMotion(xiiAnimationClipResourceDescriptor& anim) const;
-  // void ExtractRootMotionFromFeet(xiiAnimationClipResourceDescriptor& anim, const xiiSkeleton& skeleton) const;
-  // void MakeRootMotionConstantAverage(xiiAnimationClipResourceDescriptor& anim) const;
 
 private:
   float m_fSimulationSpeed = 1.0f;

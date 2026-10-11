@@ -746,3 +746,21 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   file loading/sampling (`Workspace/editor-animation-import-tests-build.log`,
   `Workspace/editor-animation-import-tests.log`). No new animation format or
   joint-index dependency was introduced.
+
+- Animation clip documents now transform with the native animation importer and
+  descriptor, exposing explicit trim/bake FPS and preserving authored event order
+  at equal times. Background source metadata changes request foreground import;
+  foreground updates use document transactions. Document version 6 invalidates
+  transformed caches. Import-all discovers labels without baking every source
+  clip, sanitizes/free-selects filenames and cleans up newly created documents
+  on failure before publishing output documents.
+- The clip document, manager and window compile separately with Qt, zero warnings
+  or errors (`Workspace/editor-animation-clip-AnimationClipAsset.cpp-build.log`,
+  `Workspace/editor-animation-clip-AnimationClipAssetManager.cpp-build.log`,
+  `Workspace/editor-animation-clip-AnimationClipAssetWindow.moc.cpp-build.log`).
+  Full GUI import/undo verification remains pending other plugin migrations.
+  Authored nonzero constant root motion is retained but explicitly prevents
+  transformation: the current runtime neither stores that velocity nor consumes
+  pose root motion. Timeline events serialize natively; runtime event dispatch
+  remains unavailable. These are unresolved Engine capabilities, not completed
+  Editor features.
