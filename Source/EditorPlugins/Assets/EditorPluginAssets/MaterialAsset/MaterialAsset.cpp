@@ -7,6 +7,7 @@
 #include <EditorPluginAssets/MaterialAsset/ShaderTypeRegistry.h>
 #include <EditorPluginAssets/VisualShader/VsCodeGenerator.h>
 #include <Foundation/CodeUtils/Preprocessor.h>
+#include <GraphicsCore/Material/MaterialAssetFile.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
@@ -118,10 +119,10 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialShaderMode, 1)
-XII_ENUM_CONSTANTS(xiiMaterialShaderMode::BaseMaterial, xiiMaterialShaderMode::File, xiiMaterialShaderMode::Custom)
+XII_ENUM_CONSTANTS(xiiMaterialShaderMode::BaseMaterial, xiiMaterialShaderMode::File, xiiMaterialShaderMode::Custom, xiiMaterialShaderMode::Native)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 4, xiiRTTIDefaultAllocator<xiiMaterialAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 5, xiiRTTIDefaultAllocator<xiiMaterialAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -129,6 +130,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 4, xiiRTTIDefaultAl
     XII_ACCESSOR_PROPERTY("BaseMaterial", GetBaseMaterial, SetBaseMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material", xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("Surface", GetSurface, SetSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("AssetFilterTags", m_sAssetFilterTags),
+    XII_MEMBER_PROPERTY("NativeMaterial", m_NativeMaterial),
     XII_ACCESSOR_PROPERTY("Shader", GetShader, SetShader)->AddAttributes(new xiiFileBrowserAttribute("Select Shader", "*.xiiShader", "CustomAction_CreateShaderFromTemplate")),
     // This property holds the phantom shader properties type so it is only used in the object graph but not actually in the instance of this object.
     XII_ACCESSOR_PROPERTY("ShaderProperties", GetShaderProperties, SetShaderProperties)->AddFlags(xiiPropertyFlags::PointerOwner)->AddAttributes(new xiiContainerAttribute(false, false, false)),
@@ -137,7 +139,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetProperties, 4, xiiRTTIDefaultAl
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocument, 7, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialAssetDocument, 8, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -217,6 +219,7 @@ void xiiMaterialAssetProperties::SetShaderMode(xiiEnum<xiiMaterialShaderMode> mo
     }
     break;
     case xiiMaterialShaderMode::File:
+    case xiiMaterialShaderMode::Native:
     {
       pAccessor->SetValueByName(m_pDocument->GetPropertyObject(), "BaseMaterial", "").AssertSuccess();
       pAccessor->SetValueByName(m_pDocument->GetPropertyObject(), "Shader", "").AssertSuccess();
@@ -256,6 +259,13 @@ void xiiMaterialAssetProperties::UpdateShader(bool bForce)
   XII_ASSERT_DEBUG(pHistory->IsInTransaction(), "Missing undo scope on stack.");
 
   xiiDocumentObject* pPropObject = m_pDocument->GetShaderPropertyObject();
+
+  if (m_ShaderMode == xiiMaterialShaderMode::Native)
+  {
+    if (pPropObject != nullptr)
+      DeleteProperties();
+    return;
+  }
 
   // TODO: If m_sShader is empty, we need to get the shader of our base material and use that one instead
   // for the code below. The type name is the clean path to the shader at the moment.
@@ -405,7 +415,9 @@ void xiiMaterialAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSt
   {
     xiiInt64 shaderMode = e.m_pObject->GetTypeAccessor().GetValue("ShaderMode").ConvertTo<xiiInt64>();
 
-    auto& props = *e.m_pPropertyStates;
+    auto& props                            = *e.m_pPropertyStates;
+    props["NativeMaterial"].m_Visibility   = shaderMode == xiiMaterialShaderMode::Native ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    props["ShaderProperties"].m_Visibility = shaderMode == xiiMaterialShaderMode::Native ? xiiPropertyUiState::Invisible : xiiPropertyUiState::Default;
 
     if (shaderMode == xiiMaterialShaderMode::File)
       props["Shader"].m_Visibility = xiiPropertyUiState::Default;
@@ -857,6 +869,35 @@ void xiiMaterialAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
 {
   SUPER::UpdateAssetDocumentInfo(pInfo);
 
+  if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Native)
+  {
+    // Runtime handle reflection exposes resource IDs as strings; dependency metadata
+    // belongs to the Editor and is gathered explicitly for the nested native descriptor.
+    const auto& d   = GetProperties()->m_NativeMaterial;
+    auto        add = [&](xiiStringView id) {
+      if (!id.IsEmpty())
+      {
+        pInfo->m_TransformDependencies.Insert(id);
+        pInfo->m_ThumbnailDependencies.Insert(id);
+        pInfo->m_PackageDependencies.Insert(id);
+      }
+    };
+    if (d.m_hBaseMaterial.IsValid())
+      add(d.m_hBaseMaterial.GetResourceID());
+    if (d.m_hShader.IsValid())
+      add(d.m_hShader.GetResourceID());
+    for (const auto& texture : {d.m_hBaseColorTexture, d.m_hNormalTexture, d.m_hMetallicRoughnessTexture, d.m_hOcclusionTexture,
+                                d.m_hEmissiveTexture, d.m_hHeightTexture, d.m_hClearCoatTexture, d.m_hTransmissionTexture})
+      if (texture.IsValid())
+        add(texture.GetResourceID());
+    for (const auto& binding : d.m_Texture2DBindings)
+      if (binding.m_Value.IsValid())
+        add(binding.m_Value.GetResourceID());
+    for (const auto& binding : d.m_TextureCubeBindings)
+      if (binding.m_Value.IsValid())
+        add(binding.m_Value.GetResourceID());
+  }
+
   if (!GetProperties()->m_sAssetFilterTags.IsEmpty())
   {
     const xiiStringBuilder tags(";", GetProperties()->m_sAssetFilterTags, ";");
@@ -910,6 +951,9 @@ void xiiMaterialAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
 xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_stream0, const xiiPlatformProfile* pAssetProfile, bool bEmbedLowResData) const
 {
   const xiiMaterialAssetProperties* pProp = GetProperties();
+
+  if (pProp->m_ShaderMode == xiiMaterialShaderMode::Native)
+    return xiiMaterialAssetFile::Write(inout_stream0, pProp->m_NativeMaterial);
 
   xiiStringBuilder sValue;
 

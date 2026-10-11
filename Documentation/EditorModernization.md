@@ -618,3 +618,25 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   Document and material import migration remains in progress. Investigation also
   confirms that the current binary material writer has no typed native PBR block;
   it needs migration before imported PBR fields can reach native runtime state.
+
+- Native material assets now have version 8 typed PBR state in addition to the
+  existing custom shader constants, permutations and texture bindings. Scalar
+  fields, rendering domain/shading/blend/alpha modes, feature flags, sort priority
+  and all eight native texture slots survive asset loading and reload. Version
+  4-7 readers remain available for existing transformed content. Invalid typed
+  blocks fail transactionally through xiiResult; destination write failures are
+  returned without asserting stream operators on the external destination.
+- Material documents offer Native mode using the existing reflected runtime
+  descriptor, avoiding a second PBR property schema. Shader-file/base-material
+  and visual-shader workflows retain their authored data. Native mode exposes
+  the typed descriptor and hides phantom shader settings; resource dependencies
+  are gathered explicitly for its nested handles and custom bindings. Document
+  version 8 rebuilds transformed caches. The material document source compiles
+  individually with Qt and no warnings/errors.
+- All 24 Vulkan Editor integration subtests pass, including native material
+  equality, every-byte typed-block truncation, unknown enums, non-finite input,
+  failing destination streams, resource loading, custom constants, Unicode texture
+  IDs and forced reload (`Workspace/editor-native-material-build.log`,
+  `Workspace/editor-native-material-tests.log`). The legacy generic shader payload
+  reader still uses its original stream checks; this slice validates the new typed
+  block. Mesh material import is not yet connected to Native mode.

@@ -7,6 +7,7 @@
 #include <Foundation/IO/OpenDdlUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
+#include <GraphicsCore/Material/MaterialAssetFile.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
@@ -1197,7 +1198,11 @@ xiiResourceLoadDescription xiiMaterialResource::UpdateContent(xiiStreamReader* p
 
     xiiUInt8 uiVersion = 0;
     (*pOuterStream) >> uiVersion;
-    XII_ASSERT_DEV(uiVersion >= 4 && uiVersion <= 7, "Unknown xiiBinMaterial version {0}", uiVersion);
+    if (uiVersion < 4 || uiVersion > 8)
+    {
+      res.m_State = xiiResourceState::LoadedResourceMissing;
+      return res;
+    }
 
     xiiUInt8 uiCompressionMode = 0;
     if (uiVersion >= 6)
@@ -1346,6 +1351,13 @@ xiiResourceLoadDescription xiiMaterialResource::UpdateContent(xiiStreamReader* p
     {
       xiiStringBuilder sUnusedLegacyField;
       s >> sUnusedLegacyField;
+    }
+
+    if (uiVersion >= 8 && xiiMaterialAssetFile::ReadPbrBlock(s, m_Description).Failed())
+    {
+      m_Description.Clear();
+      res.m_State = xiiResourceState::LoadedResourceMissing;
+      return res;
     }
 
     if (uiVersion >= 5)

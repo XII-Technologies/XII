@@ -4,6 +4,7 @@
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderNodeManager.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 
 class xiiMaterialAssetDocument;
 struct xiiPropertyMetaStateEvent;
@@ -18,6 +19,7 @@ struct xiiMaterialShaderMode
     BaseMaterial,
     File,
     Custom,
+    Native, ///< Typed material definition consumed directly by the native renderer.
 
     Default = BaseMaterial
   };
@@ -98,6 +100,7 @@ public:
   xiiMap<xiiString, xiiVariant>  m_CachedProperties;
   xiiMaterialAssetDocument*      m_pDocument = nullptr;
   xiiEnum<xiiMaterialShaderMode> m_ShaderMode;
+  xiiMaterialResourceDescriptor  m_NativeMaterial;
 };
 
 class xiiMaterialAssetDocument : public xiiSimpleAssetDocument<xiiMaterialAssetProperties>
