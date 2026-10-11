@@ -96,6 +96,8 @@ void xiiDecalContext::OnInitialize()
     xiiStringBuilder sDecalGuid;
     xiiConversionUtils::ToString(GetDocumentGuid(), sDecalGuid);
 
+    const auto hDecal = xiiResourceManager::LoadResource<xiiDecalResource>(sDecalGuid);
+
     // box
     {
       obj.m_sName.Assign("Decal1");
@@ -104,7 +106,7 @@ void xiiDecalContext::OnInitialize()
 
       xiiDecalComponent* pDecal;
       xiiDecalComponent::CreateComponent(pObj, pDecal);
-      pDecal->DecalFile_Insert(0, sDecalGuid);
+      pDecal->SetDecal(hDecal);
     }
 
     // torus
@@ -115,7 +117,7 @@ void xiiDecalContext::OnInitialize()
 
       xiiDecalComponent* pDecal;
       xiiDecalComponent::CreateComponent(pObj, pDecal);
-      pDecal->DecalFile_Insert(0, sDecalGuid);
+      pDecal->SetDecal(hDecal);
     }
 
     // sphere
@@ -126,7 +128,7 @@ void xiiDecalContext::OnInitialize()
 
       xiiDecalComponent* pDecal;
       xiiDecalComponent::CreateComponent(pObj, pDecal);
-      pDecal->DecalFile_Insert(0, sDecalGuid);
+      pDecal->SetDecal(hDecal);
     }
 
 
@@ -140,7 +142,7 @@ void xiiDecalContext::OnInitialize()
       xiiDecalComponent* pDecal;
       xiiDecalComponent::CreateComponent(pObj, pDecal);
       pDecal->SetExtents(xiiVec3(2));
-      pDecal->DecalFile_Insert(0, sDecalGuid);
+      pDecal->SetDecal(hDecal);
     }
 
     // torus
@@ -153,7 +155,7 @@ void xiiDecalContext::OnInitialize()
       xiiDecalComponent* pDecal;
       xiiDecalComponent::CreateComponent(pObj, pDecal);
       pDecal->SetExtents(xiiVec3(2));
-      pDecal->DecalFile_Insert(0, sDecalGuid);
+      pDecal->SetDecal(hDecal);
     }
 
     // sphere
@@ -166,7 +168,7 @@ void xiiDecalContext::OnInitialize()
       xiiDecalComponent* pDecal;
       xiiDecalComponent::CreateComponent(pObj, pDecal);
       pDecal->SetExtents(xiiVec3(2));
-      pDecal->DecalFile_Insert(0, sDecalGuid);
+      pDecal->SetDecal(hDecal);
     }
   }
 }

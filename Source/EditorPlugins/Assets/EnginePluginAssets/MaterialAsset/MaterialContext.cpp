@@ -4,10 +4,8 @@
 
 #include <EnginePluginAssets/MaterialAsset/MaterialContext.h>
 #include <EnginePluginAssets/MaterialAsset/MaterialView.h>
-#include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
-#include <GraphicsCore/Pipeline/RenderDataManager.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialContext, 1, xiiRTTIDefaultAllocator<xiiMaterialContext>)
@@ -42,6 +40,7 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
       // make sure all scenes etc rebuild their render cache
       if (m_pWorld != nullptr)
       {
+        XII_LOCK(m_pWorld->GetWriteMarker());
         m_pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
       }
     }
@@ -99,9 +98,6 @@ void xiiMaterialContext::OnInitialize()
 
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
-        desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALResourceFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
@@ -144,9 +140,6 @@ void xiiMaterialContext::OnInitialize()
 
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
-        desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALResourceFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
@@ -189,9 +182,6 @@ void xiiMaterialContext::OnInitialize()
 
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
-        desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALResourceFormat::RGBA8UNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALResourceFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
@@ -229,11 +219,8 @@ void xiiMaterialContext::OnInitialize()
     xiiConversionUtils::ToString(GetDocumentGuid(), sMaterialGuid);
     m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(sMaterialGuid);
 
-    // 20 material overrides should be enough for any mesh.
-    for (xiiUInt32 i = 0; i < 20; ++i)
-    {
-      pMesh->SetMaterial(i, m_hMaterial);
-    }
+    // All three generated preview meshes have one material slot.
+    pMesh->SetMaterialOverride(0, m_hMaterial);
   }
 }
 

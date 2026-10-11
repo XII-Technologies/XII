@@ -86,7 +86,7 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
   xiiSharedPtr<const xiiRenderPipeline> compiled;
   xiiStringBuilder                      error;
   if (xiiRenderPipeline::Compile(descriptor, compiled, &error).Failed())
-    return xiiStatus(error);
+    return xiiStatus(error.GetView());
 
   xiiDeferredFileWriter file;
   file.SetOutput(pMsg->m_sOutputFile);

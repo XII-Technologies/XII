@@ -128,7 +128,7 @@ void xiiTextureCubeContext::OnInitialize()
     xiiMeshComponent* pMesh;
     m_hPreviewMesh2D = xiiMeshComponent::CreateComponent(pObj, pMesh);
     pMesh->SetMesh(m_hPreviewMeshResource);
-    pMesh->SetMaterial(0, m_hMaterial);
+    pMesh->SetMaterialOverride(0, m_hMaterial);
   }
 }
 

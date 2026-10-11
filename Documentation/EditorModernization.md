@@ -310,3 +310,17 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   the asset plugin remains incomplete in other contexts and previews
   (`Workspace/editor-skeleton-view-build.log`). Skeleton GUI manipulation remains
   unverified until the complete plugin and Editor build.
+- Material and decal previews now create world-owned views and consume the normal
+  pipeline resource. The unused MATERIAL_PREVIEW view permutation is removed
+  (no shader references it). Material preview geometry uses the authoritative
+  common mesh layout, which already includes UV1 and color; obsolete input-layout
+  streams and the removed mesh-buffer helper are gone. All generated material
+  preview meshes have one material slot, replacing the guessed 20-slot override.
+- Mesh and texture contexts use current material overrides. Mesh IPC replacement
+  acquires world write access and clears old overrides before applying the new
+  list, preventing stale slots when the list shrinks. Decal previews share one
+  typed decal resource handle across their six projected instances. Pipeline
+  export errors now pass their string view to the status type explicitly.
+- These migrated sources compile (`Workspace/editor-preview-bindings-build.log`).
+  The remaining asset-plugin compilation failures are the animation contexts and
+  texture view implementations; full preview GUI workflows remain unverified.

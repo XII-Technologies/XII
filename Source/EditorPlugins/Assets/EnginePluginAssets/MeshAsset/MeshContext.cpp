@@ -29,9 +29,11 @@ void xiiMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg)
 {
   if (auto* pMsg = xiiDynamicCast<const xiiEditorEngineSetMaterialsMsg*>(pDocMsg))
   {
+    XII_LOCK(m_pWorld->GetWriteMarker());
     xiiMeshComponent* pMesh;
     if (m_pMeshObject && m_pMeshObject->TryGetComponentOfBaseType(pMesh))
     {
+      pMesh->ClearMaterialOverrides();
       for (xiiUInt32 i = 0; i < pMsg->m_Materials.GetCount(); ++i)
       {
         xiiMaterialResourceHandle hMat;
@@ -41,7 +43,7 @@ void xiiMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg)
           hMat = xiiResourceManager::LoadResource<xiiMaterialResource>(pMsg->m_Materials[i]);
         }
 
-        pMesh->SetMaterial(i, hMat);
+        pMesh->SetMaterialOverride(i, hMat);
       }
     }
 
