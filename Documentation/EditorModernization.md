@@ -443,3 +443,15 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   Tests cover the old schema, 300-vertex round trips, preview geometry using
   index 299 and authoring IPC preservation. All 14 Vulkan integration subtests
   pass (`Workspace/editor-skeleton-import-final-tests.log`).
+- ModelImporter now reads skeletons into native runtime descriptors plus separate
+  tooling collider geometry through the existing Assimp dependency. It has no Qt
+  or shared Editor plugin dependency and does not restore the removed importer
+  hierarchy, runtime authoring types or offline Ozz construction. Unused private
+  Ozz, meshoptimizer and mikktspace dependencies are removed from this module.
+- Actual glTF file tests cover external buffers, Unicode paths, mirrored TRS
+  matrices, parent ordering, inverse binds, longest joint-name matching and
+  collider-local coordinates. Reload and invalid-source tests reject duplicate
+  names, singular poses and shear while clearing stale output. All 14 Vulkan
+  integration subtests pass; the test executable and EditorEngineProcess build
+  (`Workspace/editor-skeleton-import-final-build.log`). Mesh and clip import
+  consumers still require their own migration to current native descriptors.
