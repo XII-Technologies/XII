@@ -467,3 +467,11 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-skeleton-window-final-compile.log`). Other asset types still
   prevent the complete Qt plugin build, so import/undo/reconnect GUI workflows
   have not yet been verified as an integrated Editor application.
+- The full Qt asset-plugin build now gets through the migrated skeleton sources.
+  Remaining failures include mesh/clip import, animation graph pins, property
+  animation resources, old texture settings and atlas APIs
+  (`Workspace/editor-asset-plugin-current-build.log`). Gradient thumbnails use
+  native image descriptions; material defaults use the current string-view API.
+  Both changed sources compile individually (`Workspace/editor-gradient-document-compile.log`,
+  `Workspace/editor-material-document-compile.log`). Their GUI workflows remain
+  part of the pending integrated Editor verification.

@@ -1298,8 +1298,8 @@ xiiUuid xiiMaterialAssetDocument::GetLitBaseMaterial()
 {
   if (!s_LitBaseMaterial.IsValid())
   {
-    static const char* szLitMaterialAssetPath = xiiMaterialResource::GetDefaultMaterialFileName(xiiMaterialResource::DefaultMaterialType::Lit);
-    auto               assetInfo              = xiiAssetCurator::GetSingleton()->FindSubAsset(szLitMaterialAssetPath);
+    const auto szLitMaterialAssetPath = xiiMaterialResource::GetDefaultMaterialFileName(xiiMaterialResource::DefaultMaterialType::Lit);
+    auto       assetInfo              = xiiAssetCurator::GetSingleton()->FindSubAsset(szLitMaterialAssetPath);
     if (assetInfo)
       s_LitBaseMaterial = assetInfo->m_Data.m_Guid;
     else
@@ -1312,8 +1312,8 @@ xiiUuid xiiMaterialAssetDocument::GetLitAlphaTestBaseMaterial()
 {
   if (!s_LitAlphaTextBaseMaterial.IsValid())
   {
-    static const char* szLitAlphaTestMaterialAssetPath = xiiMaterialResource::GetDefaultMaterialFileName(xiiMaterialResource::DefaultMaterialType::LitAlphaTest);
-    auto               assetInfo                       = xiiAssetCurator::GetSingleton()->FindSubAsset(szLitAlphaTestMaterialAssetPath);
+    const auto szLitAlphaTestMaterialAssetPath = xiiMaterialResource::GetDefaultMaterialFileName(xiiMaterialResource::DefaultMaterialType::LitAlphaTest);
+    auto       assetInfo                       = xiiAssetCurator::GetSingleton()->FindSubAsset(szLitAlphaTestMaterialAssetPath);
     if (assetInfo)
       s_LitAlphaTextBaseMaterial = assetInfo->m_Data.m_Guid;
     else
