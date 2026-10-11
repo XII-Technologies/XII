@@ -4,480 +4,215 @@
 
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorPluginAssets/MaterialAsset/MaterialAsset.h>
-#include <EditorPluginAssets/TextureAsset/TextureAsset.h>
 #include <EditorPluginAssets/Util/MeshImportUtils.h>
-#include <Foundation/IO/FileSystem/DeferredFileWriter.h>
-#include <Foundation/Utilities/Progress.h>
-#include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
-#include <ModelImporter/Importer/Importer.h>
+#include <EditorPluginAssets/Util/MeshTextureImport.h>
+#include <ModelImporter/MeshImport.h>
 
-namespace xiiMeshImportUtils
+namespace
 {
-  void FillFileFilter(xiiDynamicArray<xiiString>& out_list, xiiStringView sSeparated)
+  xiiStatus ValidateTextures(const xiiModelMeshMaterial& material)
   {
-    sSeparated.Split(false, out_list, ";", "*", ".");
+    xiiHashSet<xiiUInt32> usages;
+    for (const auto& texture : material.m_Textures)
+    {
+      if (usages.Contains(static_cast<xiiUInt32>(texture.m_Usage)))
+        return xiiStatus(xiiFmt("Material '{}' uses layered textures. The native material renderer has one texture per slot.", material.m_sName));
+      usages.Insert(static_cast<xiiUInt32>(texture.m_Usage));
+      if (texture.m_uiUVChannel != 0 || texture.m_vUVOffset != xiiVec2::MakeZero() || texture.m_vUVScale != xiiVec2(1) ||
+          texture.m_fUVRotation != 0 || texture.m_fBlend != 1 || texture.m_Operation != xiiModelMaterialTexture::Operation::Multiply)
+        return xiiStatus(xiiFmt("Material '{}' requires per-texture UV mapping or layered blending that the native renderer does not expose. Assign a custom material or import geometry without materials.", material.m_sName));
+    }
+    return XII_SUCCESS;
   }
 
-  xiiString ImportOrResolveTexture(const char* szImportSourceFolder, const char* szImportTargetFolder, xiiStringView sTexturePath, xiiModelImporter::TextureSemantic hint, bool bTextureClamp, const xiiModelImporter::Importer* pImporter)
+  xiiStatus ConfigureMaterial(xiiMaterialAssetDocument& document, const xiiModelMeshMaterial& material, const xiiModelMeshImport& imported,
+                              xiiStringView sourceDirectory, xiiStringView targetDirectory)
   {
-    if (!xiiUnicodeUtils::IsValidUtf8(sTexturePath.GetStartPointer(), sTexturePath.GetEndPointer()))
+    auto* accessor = document.GetObjectAccessor();
+    accessor->StartTransaction("Import Native Material");
+    bool committed = false;
+    XII_SCOPE_EXIT(if (!committed) accessor->CancelTransaction());
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(document.GetPropertyObject(), "ShaderMode", static_cast<xiiInt32>(xiiMaterialShaderMode::Native)));
+    const auto* properties = accessor->GetChildObjectByName(document.GetPropertyObject(), "NativeMaterial", xiiVariant());
+    if (properties == nullptr)
+      return xiiStatus("Native material descriptor is missing from the document.");
+    xiiColor baseColor = material.m_BaseColor;
+    baseColor.a *= material.m_fOpacity;
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "BaseColor", baseColor));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "EmissiveColor", material.m_EmissiveColor));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Metallic", material.m_fMetallic));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Roughness", material.m_fRoughness));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "AlphaCutoff", material.m_fAlphaCutoff));
+    const auto alpha = material.m_AlphaMode == xiiModelMeshMaterial::AlphaMode::Mask ? xiiMaterialAlphaMode::Mask :
+                                                                                       (material.m_AlphaMode == xiiModelMeshMaterial::AlphaMode::Blend ? xiiMaterialAlphaMode::Blend : xiiMaterialAlphaMode::Opaque);
+    const auto blend = material.m_AlphaMode == xiiModelMeshMaterial::AlphaMode::Mask ? xiiMaterialBlendMode::Masked :
+                                                                                       (material.m_AlphaMode == xiiModelMeshMaterial::AlphaMode::Blend ? xiiMaterialBlendMode::Translucent : xiiMaterialBlendMode::Opaque);
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "AlphaMode", static_cast<xiiInt32>(alpha)));
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "BlendMode", static_cast<xiiInt32>(blend)));
+    auto flags = xiiBitflags<xiiMaterialFeatureFlags>(xiiMaterialFeatureFlags::Default);
+    flags.AddOrRemove(xiiMaterialFeatureFlags::TwoSided, material.m_bTwoSided);
+    XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "Features", static_cast<xiiInt64>(flags.GetValue())));
+    const xiiModelMaterialTexture* roughness = nullptr;
+    const xiiModelMaterialTexture* metallic  = nullptr;
+    for (const auto& texture : material.m_Textures)
     {
-      xiiLog::Error("Texture to resolve is not a valid UTF-8 string.");
-      return xiiString();
-    }
-
-    xiiHybridArray<xiiString, 16> allowedExtensions;
-    FillFileFilter(allowedExtensions, xiiFileBrowserAttribute::ImagesLdrAndHdr);
-
-    xiiStringBuilder sFinalTextureName;
-    xiiPathUtils::MakeValidFilename(sTexturePath.GetFileName(), '_', sFinalTextureName);
-
-    xiiStringBuilder relTexturePath = szImportSourceFolder;
-    relTexturePath.AppendPath(sFinalTextureName);
-
-    if (auto itTex = pImporter->m_OutputTextures.Find(sTexturePath); itTex.IsValid())
-    {
-      if (itTex.Value().m_RawData.IsEmpty() || !allowedExtensions.Contains(itTex.Value().m_sFileFormatExtension))
+      if (texture.m_Usage == xiiModelTextureUsage::Roughness)
       {
-        xiiLog::Error("Mesh uses embedded texture of unsupported type ('{}').", itTex.Value().m_sFileFormatExtension);
-        return xiiString();
+        roughness = &texture;
+        continue;
       }
-
-      itTex.Value().GenerateFileName(sFinalTextureName);
-
-      xiiStringBuilder sEmbededFile;
-      sEmbededFile = szImportTargetFolder;
-      sEmbededFile.AppendPath(sFinalTextureName);
-
-      relTexturePath = sEmbededFile;
-    }
-
-    xiiStringBuilder newAssetPathAbs = szImportTargetFolder;
-    newAssetPathAbs.AppendPath(sFinalTextureName);
-    newAssetPathAbs.ChangeFileExtension("xiiTextureAsset");
-
-    if (auto textureAssetInfo = xiiAssetCurator::GetSingleton()->FindSubAsset(newAssetPathAbs))
-    {
-      // Try to resolve.
-
-      xiiStringBuilder guidString;
-      return xiiConversionUtils::ToString(textureAssetInfo->m_Data.m_Guid, guidString);
-    }
-    else
-    {
-      // Import otherwise
-
-      xiiTextureAssetDocument* textureDocument = xiiDynamicCast<xiiTextureAssetDocument*>(xiiQtEditorApp::GetSingleton()->CreateDocument(newAssetPathAbs, xiiDocumentFlags::None));
-      if (!textureDocument)
+      if (texture.m_Usage == xiiModelTextureUsage::Metallic)
       {
-        xiiLog::Error("Failed to create new texture asset '{0}'", sTexturePath);
-        return sFinalTextureName;
+        metallic = &texture;
+        continue;
       }
-
-      xiiObjectAccessorBase* pAccessor = textureDocument->GetObjectAccessor();
-      pAccessor->StartTransaction("Import Texture");
-      xiiDocumentObject* pTextureAsset = textureDocument->GetPropertyObject();
-
-      if (xiiAssetCurator::GetSingleton()->FindBestMatchForFile(relTexturePath, allowedExtensions).Failed())
+      const char* property = nullptr;
+      auto        usage    = xiiTextureConverterUsage::Linear;
+      switch (texture.m_Usage)
       {
-        relTexturePath = sFinalTextureName;
-      }
-
-      pAccessor->SetValueByName(pTextureAsset, "Input1", relTexturePath.GetData()).LogFailure();
-
-      xiiEnum<xiiTexture2DChannelMappingEnum> channelMapping;
-
-      // Try to map usage.
-      xiiEnum<xiiTextureConverterUsage> usage;
-      switch (hint)
-      {
-        case xiiModelImporter::TextureSemantic::DiffuseMap:
-          usage = xiiTextureConverterUsage::Color;
+        case xiiModelTextureUsage::BaseColor:
+          property = "BaseColorTexture";
+          usage    = xiiTextureConverterUsage::Color;
           break;
-
-        case xiiModelImporter::TextureSemantic::DiffuseAlphaMap:
-          usage          = xiiTextureConverterUsage::Color;
-          channelMapping = xiiTexture2DChannelMappingEnum::RGBA1;
+        case xiiModelTextureUsage::Normal:
+          property = "NormalTexture";
+          usage    = xiiTextureConverterUsage::NormalMap;
+          XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "NormalScale", texture.m_fStrength));
           break;
-        case xiiModelImporter::TextureSemantic::OcclusionMap: // Making wild guesses here.
-        case xiiModelImporter::TextureSemantic::EmissiveMap:
-          usage = xiiTextureConverterUsage::Color;
+        case xiiModelTextureUsage::MetallicRoughness:
+          property = "MetallicRoughnessTexture";
           break;
-
-        case xiiModelImporter::TextureSemantic::RoughnessMap:
-        case xiiModelImporter::TextureSemantic::MetallicMap:
-          channelMapping = xiiTexture2DChannelMappingEnum::R1;
-          usage          = xiiTextureConverterUsage::Linear;
+        case xiiModelTextureUsage::Occlusion:
+          property = "OcclusionTexture";
+          XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "OcclusionStrength", texture.m_fStrength));
           break;
-
-        case xiiModelImporter::TextureSemantic::OrmMap:
-          channelMapping = xiiTexture2DChannelMappingEnum::RGB1;
-          usage          = xiiTextureConverterUsage::Linear;
+        case xiiModelTextureUsage::Emissive:
+          property = "EmissiveTexture";
+          usage    = xiiTextureConverterUsage::Color;
           break;
-
-        case xiiModelImporter::TextureSemantic::NormalMap:
-          usage = xiiTextureConverterUsage::NormalMap;
+        case xiiModelTextureUsage::Height:
+          property = "HeightTexture";
           break;
-
-        case xiiModelImporter::TextureSemantic::DisplacementMap:
-          usage          = xiiTextureConverterUsage::Linear;
-          channelMapping = xiiTexture2DChannelMappingEnum::R1;
-          break;
-
         default:
-          usage = xiiTextureConverterUsage::Auto;
+          return xiiStatus("Unsupported native material texture usage.");
       }
-
-      pAccessor->SetValueByName(pTextureAsset, "Usage", usage.GetValue()).LogFailure();
-      pAccessor->SetValueByName(pTextureAsset, "ChannelMapping", channelMapping.GetValue()).LogFailure();
-
-      if (bTextureClamp)
-      {
-        pAccessor->SetValueByName(pTextureAsset, "AddressModeU", (int)xiiGALTextureAddressMode::Clamp).LogFailure();
-        pAccessor->SetValueByName(pTextureAsset, "AddressModeV", (int)xiiGALTextureAddressMode::Clamp).LogFailure();
-        pAccessor->SetValueByName(pTextureAsset, "AddressModeW", (int)xiiGALTextureAddressMode::Clamp).LogFailure();
-      }
-
-      // TODO: Set... something else?
-
-      pAccessor->FinishTransaction();
-      textureDocument->SaveDocument().LogFailure();
-
-      xiiStringBuilder guid;
-      xiiConversionUtils::ToString(textureDocument->GetGuid(), guid);
-      textureDocument->GetDocumentManager()->CloseDocument(textureDocument);
-
-      return guid;
+      xiiString asset;
+      XII_SUCCEED_OR_RETURN(xiiMeshImportUtils::ImportTexture(texture, imported, sourceDirectory, targetDirectory, usage, texture.m_Usage == xiiModelTextureUsage::BaseColor, asset));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, property, asset));
     }
-  };
-
-  void SetMeshAssetMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_materialSlots, const xiiModelImporter::Importer* pImporter)
-  {
-    const auto& opt = pImporter->GetImportOptions();
-
-    const xiiUInt32 uiNumSubmeshes = opt.m_pMeshOutput->GetSubMeshes().GetCount();
-
-    inout_materialSlots.SetCount(uiNumSubmeshes);
-
-    for (const auto& material : pImporter->m_OutputMaterials)
+    if (roughness != nullptr || metallic != nullptr)
     {
-      if (material.m_iReferencedByMesh < 0)
-        continue;
-
-      inout_materialSlots[material.m_iReferencedByMesh].m_sLabel = material.m_sName;
+      xiiString asset;
+      XII_SUCCEED_OR_RETURN(xiiMeshImportUtils::ImportMetallicRoughnessTexture(roughness, metallic, imported, sourceDirectory, targetDirectory, asset));
+      XII_SUCCEED_OR_RETURN(accessor->SetValueByName(properties, "MetallicRoughnessTexture", asset));
     }
+    accessor->FinishTransaction();
+    committed = true;
+    return document.SaveDocument();
   }
+} // namespace
 
-  void CopyMeshAssetMaterialSlotToResource(xiiMeshResourceDescriptor& ref_desc, const xiiHybridArray<xiiMaterialResourceSlot, 8>& materialSlots)
+void xiiMeshImportUtils::SetMeshAssetMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_slots, const xiiModelMeshImport& imported)
+{
+  xiiHybridArray<xiiStringView, 16> labels;
+  labels.Reserve(imported.m_Materials.GetCount());
+  for (const auto& material : imported.m_Materials)
+    labels.PushBack(material.m_sName);
+  xiiMeshMaterialSlots::Reconcile(labels, inout_slots);
+}
+
+xiiResult xiiMeshImportUtils::CopyMeshAssetMaterialSlotToResource(xiiMeshResourceDescriptor& inout_descriptor, xiiArrayPtr<const xiiMaterialResourceSlot> materialSlots)
+{
+  if (materialSlots.GetCount() != inout_descriptor.GetMaterials().GetCount())
+    return XII_FAILURE;
+  for (xiiUInt32 i = 0; i < materialSlots.GetCount(); ++i)
+    inout_descriptor.SetMaterial(i, materialSlots[i].m_sResource);
+  return XII_SUCCESS;
+}
+
+xiiStatus xiiMeshImportUtils::ImportMeshAssetMaterials(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_slots, xiiStringView documentPath,
+                                                       xiiStringView sourceFile, const xiiModelMeshImport& imported)
+{
+  if (inout_slots.GetCount() != imported.m_Materials.GetCount())
+    return xiiStatus("Native mesh material slot count does not match imported material definitions.");
+  // Validate the whole pending import before creating any documents.
+  for (xiiUInt32 i = 0; i < inout_slots.GetCount(); ++i)
+    if (inout_slots[i].m_sResource.IsEmpty())
+      XII_SUCCEED_OR_RETURN(ValidateTextures(imported.m_Materials[i]));
+  xiiStringBuilder targetDirectory(documentPath);
+  targetDirectory.RemoveFileExtension();
+  targetDirectory.Append("_data");
+  XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(targetDirectory));
+  const auto                         sourceDirectory = sourceFile.GetFileDirectory();
+  auto                               materialSlots   = inout_slots;
+  xiiHashTable<xiiString, xiiUInt32> nameCounts;
+  xiiHybridArray<xiiString, 16>      names;
+  xiiHashSet<xiiString>              usedNames;
+  for (const auto& material : imported.m_Materials)
   {
-    for (xiiUInt32 i = 0; i < materialSlots.GetCount(); ++i)
-    {
-      ref_desc.SetMaterial(i, materialSlots[i].m_sResource);
-    }
+    xiiStringBuilder name;
+    xiiPathUtils::MakeValidFilename(material.m_sName, '_', name);
+    if (name.IsEmpty())
+      name = "Material";
+    names.PushBack(name);
+    name.ToLower();
+    ++nameCounts[name];
+    usedNames.Insert(name);
   }
-
-  static void ImportMeshAssetMaterialProperties(xiiMaterialAssetDocument* pMaterialDoc, const xiiModelImporter::OutputMaterial& material, const char* szImportSourceFolder, const char* szImportTargetFolder, const xiiModelImporter::Importer* pImporter)
+  for (xiiUInt32 i = 0; i < materialSlots.GetCount(); ++i)
   {
-    xiiStringBuilder materialName = xiiPathUtils::GetFileName(pMaterialDoc->GetDocumentPath());
-
-    XII_LOG_BLOCK("Apply Material Settings", materialName.GetData());
-
-    xiiObjectAccessorBase* pAccessor = pMaterialDoc->GetObjectAccessor();
-    pAccessor->StartTransaction("Apply Material Settings");
-    xiiDocumentObject* pMaterialAsset = pMaterialDoc->GetPropertyObject();
-
-    xiiStringBuilder tmp;
-
-    // Set base material.
-    xiiStatus res = pAccessor->SetValueByName(pMaterialAsset, "BaseMaterial", xiiConversionUtils::ToString(xiiMaterialAssetDocument::GetLitBaseMaterial(), tmp).GetData());
-    res.LogFailure();
-    if (res.Failed())
-      return;
-
-    // From now on we're setting shader properties.
-    xiiDocumentObject* pMaterialProperties = pMaterialDoc->GetShaderPropertyObject();
-
-    xiiVariant propertyValue;
-
-    xiiString textureAo, textureRoughness, textureMetallic;
-    material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::OcclusionMap, textureAo);
-    material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::RoughnessMap, textureRoughness);
-    material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::MetallicMap, textureMetallic);
-
-    const bool bHasOrmTexture = !textureRoughness.IsEmpty() && ((textureAo == textureRoughness) || (textureMetallic == textureRoughness));
-
-
-    // Set base texture.
+    if (!materialSlots[i].m_sResource.IsEmpty())
+      continue;
+    xiiStringBuilder name(names[i]), path;
+    xiiStringBuilder key(name);
+    key.ToLower();
+    if (nameCounts[key] > 1)
     {
-      xiiString textureDiffuse;
-
-      if (material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::DiffuseMap, textureDiffuse))
+      do
       {
-        pAccessor->SetValueByName(pMaterialProperties, "UseBaseTexture", true).LogFailure();
-        pAccessor->SetValueByName(pMaterialProperties, "BaseTexture", xiiVariant(xiiMeshImportUtils::ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureDiffuse, xiiModelImporter::TextureSemantic::DiffuseMap, false, pImporter))).LogFailure();
-      }
-      else
-      {
-        pAccessor->SetValueByName(pMaterialProperties, "UseBaseTexture", false).LogFailure();
-      }
+        name.AppendFormat("_{}", i);
+        key = name;
+        key.ToLower();
+      } while (usedNames.Contains(key));
+      usedNames.Insert(key);
     }
-
-    // Set Normal Texture / Roughness Texture
+    path.Set(targetDirectory, "/", name, ".xiiMaterialAsset");
+    xiiStringBuilder id;
+    if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(path))
     {
-      xiiString textureNormal;
-
-      if (!material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::NormalMap, textureNormal))
-      {
-        // Due to the lack of options in stuff like obj files, people stuff normals into the bump slot.
-        material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::DisplacementMap, textureNormal);
-      }
-
-      if (!textureNormal.IsEmpty())
-      {
-        pAccessor->SetValueByName(pMaterialProperties, "UseNormalTexture", true).LogFailure();
-
-        pAccessor->SetValueByName(pMaterialProperties, "NormalTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureNormal, xiiModelImporter::TextureSemantic::NormalMap, false, pImporter))).LogFailure();
-      }
-      else
-      {
-        pAccessor->SetValueByName(pMaterialProperties, "NormalTexture", xiiConversionUtils::ToString(xiiMaterialAssetDocument::GetNeutralNormalMap(), tmp).GetData()).LogFailure();
-      }
+      materialSlots[i].m_sResource = xiiConversionUtils::ToString(asset->m_Data.m_Guid, id);
+      continue;
     }
-
-    if (!bHasOrmTexture)
-    {
-      if (!textureRoughness.IsEmpty())
-      {
-        pAccessor->SetValueByName(pMaterialProperties, "UseRoughnessTexture", true).LogFailure();
-
-        pAccessor->SetValueByName(pMaterialProperties, "RoughnessTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter::TextureSemantic::RoughnessMap, false, pImporter))).LogFailure();
-      }
-      else
-      {
-        pAccessor->SetValueByName(pMaterialProperties, "RoughnessTexture", "White.color").LogFailure();
-      }
-    }
-
-    // Set metallic texture
-    if (!bHasOrmTexture)
-    {
-      if (!textureMetallic.IsEmpty())
-      {
-        pAccessor->SetValueByName(pMaterialProperties, "UseMetallicTexture", true).LogFailure();
-        pAccessor->SetValueByName(pMaterialProperties, "MetallicTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureMetallic, xiiModelImporter::TextureSemantic::MetallicMap, false, pImporter))).LogFailure();
-      }
-    }
-
-    // Set emissive texture
-    {
-      xiiString textureEmissive;
-
-      if (material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::EmissiveMap, textureEmissive))
-      {
-        pAccessor->SetValueByName(pMaterialProperties, "UseEmissiveTexture", true).LogFailure();
-        pAccessor->SetValueByName(pMaterialProperties, "EmissiveTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureEmissive, xiiModelImporter::TextureSemantic::EmissiveMap, false, pImporter))).LogFailure();
-      }
-    }
-
-    // Set AO texture
-    if (!bHasOrmTexture)
-    {
-      xiiString textureAo;
-
-      if (material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::OcclusionMap, textureAo))
-      {
-        pAccessor->SetValueByName(pMaterialProperties, "UseOcclusionTexture", true).LogFailure();
-        pAccessor->SetValueByName(pMaterialProperties, "OcclusionTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureAo, xiiModelImporter::TextureSemantic::OcclusionMap, false, pImporter))).LogFailure();
-      }
-    }
-
-    // TODO: ambient occlusion texture
-
-    // Set base color property
-    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::DiffuseColor, propertyValue) && propertyValue.IsA<xiiColor>())
-    {
-      pAccessor->SetValueByName(pMaterialProperties, "BaseColor", propertyValue).LogFailure();
-    }
-
-    // Set emissive color property
-    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::EmissiveColor, propertyValue) && propertyValue.IsA<xiiColor>())
-    {
-      pAccessor->SetValueByName(pMaterialProperties, "EmissiveColor", propertyValue).LogFailure();
-    }
-
-    // Set two-sided property
-    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::TwosidedValue, propertyValue) && propertyValue.IsNumber())
-    {
-      pAccessor->SetValueByName(pMaterialProperties, "TWO_SIDED", propertyValue.ConvertTo<bool>()).LogFailure();
-    }
-
-    // Set metallic property
-    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::MetallicValue, propertyValue) && propertyValue.IsNumber())
-    {
-      float value = propertyValue.ConvertTo<float>();
-
-      // probably in 0-255 range
-      if (value >= 1.0f)
-        value = 1.0f;
-      else
-        value = 0.0f;
-
-      pAccessor->SetValueByName(pMaterialProperties, "MetallicValue", value).LogFailure();
-    }
-
-    // Set roughness property
-    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::RoughnessValue, propertyValue) && propertyValue.IsNumber())
-    {
-      float value = propertyValue.ConvertTo<float>();
-
-      // probably in 0-255 range
-      if (value > 1.0f)
-        value /= 255.0f;
-
-      value = xiiMath::Clamp(value, 0.0f, 1.0f);
-      value = xiiMath::Lerp(0.4f, 1.0f, value);
-
-      // the extracted roughness value is really just a guess to get started
-
-      pAccessor->SetValueByName(pMaterialProperties, "RoughnessValue", value).LogFailure();
-    }
-
-    // Set ORM Texture
-    if (bHasOrmTexture)
-    {
-      pAccessor->SetValueByName(pMaterialProperties, "UseOrmTexture", true).LogFailure();
-      pAccessor->SetValueByName(pMaterialProperties, "UseOcclusionTexture", false).LogFailure();
-      pAccessor->SetValueByName(pMaterialProperties, "UseRoughnessTexture", false).LogFailure();
-      pAccessor->SetValueByName(pMaterialProperties, "UseMetallicTexture", false).LogFailure();
-
-      pAccessor->SetValueByName(pMaterialProperties, "MetallicTexture", "").LogFailure();
-      pAccessor->SetValueByName(pMaterialProperties, "OcclusionTexture", "").LogFailure();
-      pAccessor->SetValueByName(pMaterialProperties, "RoughnessTexture", "").LogFailure();
-      pAccessor->SetValueByName(pMaterialProperties, "RoughnessValue", 1.0f).LogFailure();
-      pAccessor->SetValueByName(pMaterialProperties, "MetallicValue", 0.0f).LogFailure();
-
-      pAccessor->SetValueByName(pMaterialProperties, "OrmTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter::TextureSemantic::OrmMap, false, pImporter))).LogFailure();
-    }
-
-    // Todo:
-    // * Shading Mode
-    // * Mask Threshold
-
-    pAccessor->FinishTransaction();
+    if (xiiOSFile::ExistsFile(path))
+      return xiiStatus(xiiFmt("Material asset exists but is not indexed yet: '{}'. Retry after asset discovery.", path));
+    auto* document = xiiDynamicCast<xiiMaterialAssetDocument*>(xiiQtEditorApp::GetSingleton()->CreateDocument(path, xiiDocumentFlags::None));
+    if (document == nullptr)
+      return xiiStatus(xiiFmt("Could not create material asset '{}'.", path));
+    bool saved = false;
+    XII_SCOPE_EXIT(
+      document->GetDocumentManager()->CloseDocument(document);
+      if (!saved) { if (xiiOSFile::DeleteFile(path).Failed()) xiiLog::Error("Could not remove failed imported asset: '{}'.", path); xiiAssetCurator::GetSingleton()->NotifyOfFileChange(path); });
+    XII_SUCCEED_OR_RETURN(ConfigureMaterial(*document, imported.m_Materials[i], imported, sourceDirectory, targetDirectory));
+    saved                        = true;
+    materialSlots[i].m_sResource = xiiConversionUtils::ToString(document->GetGuid(), id);
   }
+  inout_slots = std::move(materialSlots);
+  return XII_SUCCESS;
+}
 
-  void ImportMeshAssetMaterials(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_materialSlots, xiiStringView sDocumentDirectory, const xiiModelImporter::Importer* pImporter)
-  {
-    XII_PROFILE_SCOPE("ImportMeshAssetMaterials");
-
-    xiiStringBuilder targetDirectory = sDocumentDirectory;
-    targetDirectory.RemoveFileExtension();
-    targetDirectory.Append("_data/");
-    const xiiStringBuilder sourceDirectory = xiiPathUtils::GetFileDirectory(pImporter->GetImportOptions().m_sSourceFile);
-
-    xiiStringBuilder tmp;
-    xiiStringBuilder newResourcePathAbs;
-
-    const xiiUInt32 uiNumSubmeshes = inout_materialSlots.GetCount();
-
-    if (uiNumSubmeshes == 0)
-      return;
-
-    xiiProgressRange range("Importing Materials", uiNumSubmeshes, false);
-
-    xiiHashTable<const xiiModelImporter::OutputMaterial*, xiiString> importMatToGuid;
-
-    xiiHybridArray<xiiDocument*, 32> pendingSaveTasks;
-
-    auto WaitForPendingTasks = [&pendingSaveTasks]() {
-      XII_PROFILE_SCOPE("WaitForPendingTasks");
-      for (xiiDocument* pDoc : pendingSaveTasks)
-      {
-        pDoc->GetDocumentManager()->CloseDocument(pDoc);
-      }
-      pendingSaveTasks.Clear();
-    };
-
-    xiiHybridArray<xiiString, 16> allowedExtensions;
-    FillFileFilter(allowedExtensions, xiiFileBrowserAttribute::ImagesLdrAndHdr);
-
-    for (const auto& itTex : pImporter->m_OutputTextures)
-    {
-      if (itTex.Value().m_RawData.IsEmpty() || !allowedExtensions.Contains(itTex.Value().m_sFileFormatExtension))
-      {
-        xiiLog::Error("Mesh uses embedded texture of unsupported type ('{}').", itTex.Value().m_sFileFormatExtension);
-        continue;
-      }
-
-      xiiStringBuilder sFinalTextureName;
-      itTex.Value().GenerateFileName(sFinalTextureName);
-
-      xiiStringBuilder sEmbededFile;
-      sEmbededFile = targetDirectory;
-      sEmbededFile.AppendPath(sFinalTextureName);
-
-      xiiDeferredFileWriter out;
-      out.SetOutput(sEmbededFile, true);
-      out.WriteBytes(itTex.Value().m_RawData.GetPtr(), itTex.Value().m_RawData.GetCount()).AssertSuccess();
-      out.Close().IgnoreResult();
-    }
-
-    for (const auto& impMaterial : pImporter->m_OutputMaterials)
-    {
-      if (impMaterial.m_iReferencedByMesh < 0)
-        continue;
-
-      const xiiUInt32 subMeshIdx = impMaterial.m_iReferencedByMesh;
-
-      range.BeginNextStep("Importing Material");
-
-      // Didn't find currently set resource, create new imported material.
-      if (!xiiAssetCurator::GetSingleton()->FindSubAsset(inout_materialSlots[subMeshIdx].m_sResource))
-      {
-        // Check first if we already imported this material.
-        if (importMatToGuid.TryGetValue(&impMaterial, inout_materialSlots[subMeshIdx].m_sResource))
-          continue;
-
-        // Put the new asset in the data folder.
-        newResourcePathAbs = targetDirectory;
-        newResourcePathAbs.AppendPath(impMaterial.m_sName);
-        newResourcePathAbs.Append(".xiiMaterialAsset");
-
-        // Does the generated path already exist? Use it.
-        if (const auto assetInfo = xiiAssetCurator::GetSingleton()->FindSubAsset(newResourcePathAbs))
-        {
-          inout_materialSlots[subMeshIdx].m_sResource = xiiConversionUtils::ToString(assetInfo->m_Data.m_Guid, tmp);
-          continue;
-        }
-
-        xiiMaterialAssetDocument* pMaterialDoc = xiiDynamicCast<xiiMaterialAssetDocument*>(xiiQtEditorApp::GetSingleton()->CreateDocument(newResourcePathAbs, xiiDocumentFlags::AsyncSave));
-        if (!pMaterialDoc)
-        {
-          xiiLog::Error("Failed to create new material '{0}'", impMaterial.m_sName);
-          continue;
-        }
-
-        ImportMeshAssetMaterialProperties(pMaterialDoc, impMaterial, sourceDirectory, targetDirectory, pImporter);
-        inout_materialSlots[subMeshIdx].m_sResource = xiiConversionUtils::ToString(pMaterialDoc->GetGuid(), tmp);
-
-        pMaterialDoc->SaveDocumentAsync({});
-        pendingSaveTasks.PushBack(pMaterialDoc);
-
-        // we have to flush because materials create worlds in the engine process and there is a world limit of 64
-        if (pendingSaveTasks.GetCount() >= 16)
-          WaitForPendingTasks();
-      }
-
-      // If we have a material now, fill the mapping.
-      // It is important to do this even for "old"/known materials since a mesh might have gotten a new slot that points to the same
-      // material as previous slots.
-      if (!inout_materialSlots[subMeshIdx].m_sResource.IsEmpty())
-      {
-        importMatToGuid.Insert(&impMaterial, inout_materialSlots[subMeshIdx].m_sResource);
-      }
-    }
-
-    WaitForPendingTasks();
-  }
-
-} // namespace xiiMeshImportUtils
+xiiTransformStatus xiiMeshImportUtils::PrepareMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_slots, bool importMaterials, bool allowImport,
+                                                            xiiStringView documentPath, xiiStringView sourceFile, const xiiModelMeshImport& imported)
+{
+  auto materialSlots = inout_slots;
+  SetMeshAssetMaterialSlots(materialSlots, imported);
+  bool pendingMaterials = false;
+  if (importMaterials)
+    for (const auto& slot : materialSlots)
+      pendingMaterials |= slot.m_sResource.IsEmpty();
+  if (!allowImport && (pendingMaterials || !xiiMeshMaterialSlots::Equal(materialSlots, inout_slots)))
+    return xiiTransformStatus(xiiTransformResult::NeedsImport);
+  if (pendingMaterials)
+    XII_SUCCEED_OR_RETURN(ImportMeshAssetMaterials(materialSlots, documentPath, sourceFile, imported));
+  inout_slots = std::move(materialSlots);
+  return XII_SUCCESS;
+}

@@ -679,3 +679,24 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   and document transform compile individually with Qt, and converter integration
   tests verify exact linear channel values for all three mappings (included in
   the 24 passing Vulkan Editor integration subtests above).
+
+- Static and animated mesh documents now transform through the native mesh
+  importer and packed resource descriptor. Procedural meshes use the same layout
+  and section-aware meshlet compilation. Simplification, root transforms, skin
+  weights, material labels and default skeleton references use current APIs.
+  Slot changes are staged and background transforms request foreground import
+  instead of modifying documents. Binary output failures propagate as results.
+- Imported materials use Native mode and typed PBR fields, exact texture samplers,
+  source-relative/embedded images, independent roughness/metallic channel packing,
+  normal/occlusion strengths and correct alpha modes. Explicit user assignments
+  are preserved. Unique sanitized names prevent duplicate material overwrites;
+  failed generated documents are closed and removed rather than reused as blank
+  assets. Unsupported layered or per-texture UV semantics fail with an actionable
+  status instead of being silently flattened. Separate factor maps must share a
+  sampler, matching the runtime's single metallic/roughness texture binding.
+- All six affected Qt source files compile independently with zero warnings/errors.
+  The full asset plugin build compiles both mesh documents and shared import
+  utilities, but still fails in animation clip, animation graph, property animation
+  and decal atlas integrations (`Workspace/editor-native-mesh-plugin-build.log`).
+  All 24 Vulkan Editor integration subtests pass; no complete GUI import workflow
+  is claimed while those plugin-wide migrations remain unfinished.
