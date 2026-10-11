@@ -209,11 +209,12 @@ void xiiAnimationClipResourceDescriptor::ComputeRuntimeHash()
   {
     hashWriter << track.m_sJointName.GetHash();
     hashWriter << track.m_uiJointIndex;
-    hashWriter << track.m_PositionKeys.GetCount();
-    hashWriter << track.m_RotationKeys.GetCount();
-    hashWriter << track.m_ScaleKeys.GetCount();
+    hashWriter.WriteArray(track.m_PositionKeys).IgnoreResult();
+    hashWriter.WriteArray(track.m_RotationKeys).IgnoreResult();
+    hashWriter.WriteArray(track.m_ScaleKeys).IgnoreResult();
   }
 
+  hashWriter.WriteArray(m_Events).IgnoreResult();
   hashWriter << m_OzzAnimationData.GetCount();
   if (!m_OzzAnimationData.IsEmpty())
   {

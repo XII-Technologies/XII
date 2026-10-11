@@ -50,11 +50,41 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationAssetLoading)
   clip.m_Duration = xiiTime::MakeFromSeconds(2);
   clip.AddJointTrack("Root").m_PositionKeys.PushBack({0, xiiVec3(1, 2, 3)});
   write(clipPath, clip);
-  auto hClip = xiiResourceManager::LoadResource<xiiAnimationClipResource>(clipPath);
+  auto      hClip    = xiiResourceManager::LoadResource<xiiAnimationClipResource>(clipPath);
+  xiiUInt32 clipHash = 0;
   {
     xiiResourceLock<xiiAnimationClipResource> loaded(hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (XII_TEST_BOOL(loaded && loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
+    {
       XII_TEST_DOUBLE(loaded->GetDuration().GetSeconds(), 2, 0.0001);
+      clipHash = loaded->GetRuntimeHash();
+    }
+  }
+  clip.m_JointTracks[0].m_PositionKeys[0].m_Value.x = 4;
+  write(clipPath, clip);
+  XII_TEST_BOOL(xiiResourceManager::ReloadResource(hClip, true));
+  {
+    xiiResourceLock<xiiAnimationClipResource> loaded(hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (XII_TEST_BOOL(loaded && loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
+    {
+      XII_TEST_BOOL(loaded->GetRuntimeHash() != clipHash);
+      clipHash = loaded->GetRuntimeHash();
+      XII_TEST_VEC3(loaded->GetDescriptor().m_JointTracks[0].m_PositionKeys[0].m_Value, xiiVec3(4, 2, 3), 0);
+    }
+  }
+  auto& event   = clip.m_Events.ExpandAndGetRef();
+  event.m_fTime = 0.5f;
+  event.m_sEvent.Assign("Footstep");
+  write(clipPath, clip);
+  XII_TEST_BOOL(xiiResourceManager::ReloadResource(hClip, true));
+  {
+    xiiResourceLock<xiiAnimationClipResource> loaded(hClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (XII_TEST_BOOL(loaded && loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
+    {
+      XII_TEST_BOOL(loaded->GetRuntimeHash() != clipHash);
+      XII_TEST_INT(loaded->GetDescriptor().m_Events.GetCount(), 1);
+      XII_TEST_STRING(loaded->GetDescriptor().m_Events[0].m_sEvent.GetString(), "Footstep");
+    }
   }
   xiiAnimGraphResourceDescriptor graph;
   graph.SetOutputNode(graph.AddClipNode("Walk", hClip));

@@ -722,3 +722,10 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   passing Vulkan Editor suite (`Workspace/editor-animation-import-tests-build.log`,
   `Workspace/editor-animation-import-tests.log`; 25 subtests including the native
   animation reader under development).
+
+- Native animation clip runtime hashes now include all key values/times and events,
+  instead of only track key counts. File-backed forced reload tests distinguish
+  edits with identical key counts and event-only edits, while checking loaded data.
+  All 25 Vulkan Editor integration subtests pass
+  (`Workspace/editor-animation-import-tests-build.log`,
+  `Workspace/editor-animation-import-tests.log`).
