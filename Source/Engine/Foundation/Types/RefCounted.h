@@ -30,6 +30,23 @@ public:
     return xiiAtomicUtils::Increment(m_uiRefCount);
   }
 
+  /// Adds a reference only while the count is nonzero. Never resurrects an object
+  /// whose last reference was released. The caller must separately ensure the
+  /// object's memory remains accessible (for example, with a cache lock also
+  /// taken by its destructor); this is not a weak pointer by itself.
+  inline bool TryAddRef() const
+  {
+    xiiUInt32 count = xiiAtomicUtils::Read(m_uiRefCount);
+    while (count != 0)
+    {
+      const xiiUInt32 previous = xiiAtomicUtils::CompareExchange(m_uiRefCount, count, count + 1);
+      if (previous == count)
+        return true;
+      count = previous;
+    }
+    return false;
+  }
+
   /// Decrements the reference counter. Returns the new reference count.
   inline xiiUInt32 ReleaseRef() const // [tested]
   {

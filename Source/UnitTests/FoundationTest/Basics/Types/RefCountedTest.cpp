@@ -18,11 +18,15 @@ XII_CREATE_SIMPLE_TEST(Basics, RefCounted)
 
     XII_TEST_BOOL(Instance.GetRefCount() == 0);
     XII_TEST_BOOL(!Instance.IsReferenced());
+    XII_TEST_BOOL(!Instance.TryAddRef());
 
     Instance.AddRef();
 
     XII_TEST_BOOL(Instance.GetRefCount() == 1);
     XII_TEST_BOOL(Instance.IsReferenced());
+    XII_TEST_BOOL(Instance.TryAddRef());
+    XII_TEST_INT(Instance.GetRefCount(), 2);
+    Instance.ReleaseRef();
 
     /// Test scoped ref pointer
     {
@@ -77,5 +81,7 @@ XII_CREATE_SIMPLE_TEST(Basics, RefCounted)
 
     XII_TEST_BOOL(Instance.GetRefCount() == 0);
     XII_TEST_BOOL(!Instance.IsReferenced());
+    XII_TEST_BOOL(!Instance.TryAddRef());
+    XII_TEST_INT(Instance.GetRefCount(), 0);
   }
 }
