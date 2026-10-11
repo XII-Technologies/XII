@@ -181,6 +181,9 @@ xiiResult xiiMeshImportInternal::ReadMaterial(const aiScene& scene, const aiMate
   aiString alpha;
   if (material.Get(AI_MATKEY_GLTF_ALPHAMODE, alpha) == AI_SUCCESS)
   {
+    // Assimp mirrors glTF baseColorFactor.a into OPACITY. It is not an independent
+    // multiplier; applying both would square alpha when authoring native materials.
+    out_material.m_fOpacity = 1.0f;
     if (xiiStringView(alpha.C_Str()) == "MASK")
       out_material.m_AlphaMode = xiiModelMeshMaterial::AlphaMode::Mask;
     else if (xiiStringView(alpha.C_Str()) == "BLEND")

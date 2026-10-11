@@ -71,7 +71,7 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshMaterial
   xiiColor                                 m_EmissiveColor = xiiColor::Black;
   float                                    m_fMetallic     = 0;
   float                                    m_fRoughness    = 1;
-  float                                    m_fOpacity      = 1;
+  float                                    m_fOpacity      = 1; ///< Independent opacity multiplier; glTF alpha is already in m_BaseColor.a.
   float                                    m_fAlphaCutoff  = 0.5f;
   bool                                     m_bTwoSided     = false;
   AlphaMode                                m_AlphaMode     = AlphaMode::Opaque;

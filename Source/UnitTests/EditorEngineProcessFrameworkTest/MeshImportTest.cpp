@@ -164,6 +164,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshImport)
     XII_TEST_FLOAT(material.m_fMetallic, 0.35f, 0.0001f);
     XII_TEST_FLOAT(material.m_fRoughness, 0.2f, 0.0001f);
     XII_TEST_FLOAT(material.m_BaseColor.b, 0.6f, 0.0001f);
+    XII_TEST_FLOAT(material.m_BaseColor.a * material.m_fOpacity, 0.8f, 0.0001f);
     XII_TEST_FLOAT(material.m_EmissiveColor.g, 0.2f, 0.0001f);
     XII_TEST_FLOAT(material.m_fAlphaCutoff, 0.3f, 0.0001f);
     XII_TEST_BOOL(material.m_bTwoSided && material.m_AlphaMode == xiiModelMeshMaterial::AlphaMode::Mask);
