@@ -565,3 +565,28 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   restored, rebuilt and retested afterward. This renderer failure remains unresolved;
   the smoke test and integrated GUI workflows are not claimed as passing. Qt mesh
   and animated-mesh import still require migration from the removed importer framework.
+
+- ModelImporter now reads source files directly into current native mesh descriptors,
+  with separate geometry, skinning and material implementations. No removed importer
+  hierarchy or Qt dependency is restored. Instance transforms, affine shear, mirrored
+  winding, shared source material slots, two UV sets, vertex colors and section-aware
+  meshlets are retained. Mesh-local named bone palettes preserve inverse bind poses;
+  the strongest four influences use deterministic byte quantization, with exact
+  normalized sums and rigid fallback for unweighted vertices. Invalid or unsupported
+  native input returns xiiResult failure and clears all output.
+- Imported material metadata and embedded texture bytes are owned by the result.
+  PBR factors, alpha mode/cutoff, two-sidedness, normal/occlusion strength, texture
+  addressing/filtering, UV channels/transforms and layered references are retained.
+  The glTF occlusion slot is identified by its strength metadata; ordinary lightmaps
+  are not reinterpreted as occlusion. Source glTF UVs follow Assimp's canonical V
+  conversion before the optional import flip. Conservative/aggressive simplification
+  weld equivalent source corners first and compact unused vertices afterward.
+- EditorEngineProcessFrameworkTest builds and all 21 Vulkan integration subtests
+  pass (`Workspace/editor-mesh-import-test-build.log`,
+  `Workspace/editor-mesh-import-tests.log`). Actual Unicode-path glTF and OBJ source
+  fixtures cover transformed instances, PBR/embedded data, deterministic reimport,
+  native serialization, skin/skeleton bind agreement, normalized/raw weights,
+  invalid late input, unsupported morph/UV data, a 66049-vertex UInt32 mesh,
+  triangle coverage and both simplification modes. Additional UV/color sets and
+  animated morph targets are rejected because the current native rendering layout
+  cannot represent them. Qt asset documents still need to adopt this reader.
