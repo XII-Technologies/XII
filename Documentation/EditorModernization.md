@@ -369,3 +369,17 @@ migration progresses; no requirement is waived because a subsystem is difficult.
 - Shared framework tests, EditorFramework and EditorEngineProcess build after
   texture integration (`Workspace/editor-texture-consumers-build.log`). Texture
   GUI interactions remain unverified until the complete Editor/plugin build.
+- Explicit asset-browser folder renames/deletions now remove the complete
+  tracked subtree, including nested folder records. Files are removed before
+  folders, descendant folders before parents, and case variants/unrelated
+  adjacent prefixes are preserved. The new regression failed with five errors
+  before the fix and now passes on the workspace ReFS volume.
+- All 17 ToolsFoundation subtests pass with output on the host's NTFS temporary
+  volume (`Workspace/editor-subtree-tests.log`), including normal and forced
+  fallback directory watchers. The explicit subtree regression also passes on
+  ReFS (`Workspace/editor-subtree-refs-tests.log`). Native probes identified a
+  separate ReFS notification limitation: case-only directory renames produce
+  no immediate event; extended notifications return ERROR_INVALID_FUNCTION.
+  The existing watcher-only casing test therefore still fails on ReFS, while
+  the Editor's explicit NotifyOfChange path is covered and passes. Temporary
+  native watcher tracing was removed; no filesystem-specific workaround added.

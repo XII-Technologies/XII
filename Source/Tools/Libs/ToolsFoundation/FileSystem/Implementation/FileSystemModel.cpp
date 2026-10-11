@@ -879,7 +879,8 @@ void xiiFileSystemModel::RemoveFileOrFolder(const xiiDataDirPath& absolutePath, 
   {
     if (bRecurseIntoFolders)
     {
-      xiiSet<xiiDataDirPath> previouslyKnownFiles;
+      xiiSet<xiiDataDirPath>          previouslyKnownFiles;
+      xiiDynamicArray<xiiDataDirPath> previouslyKnownFolders;
       {
         FILESYSTEM_PROFILE("FindReferencedFiles");
         XII_LOCK(m_FilesMutex);
@@ -897,12 +898,26 @@ void xiiFileSystemModel::RemoveFileOrFolder(const xiiDataDirPath& absolutePath, 
           }
           ++itlowerBound;
         }
+        for (auto it = m_ReferencedFolders.LowerBound(absolutePath); it.IsValid(); ++it)
+        {
+          if (!it.Key().GetAbsolutePath().StartsWith_NoCase(absolutePath.GetAbsolutePath()))
+            break;
+          // Keep other spellings of a case-only rename and unrelated adjacent prefixes.
+          if (xiiPathUtils::IsSubPath(absolutePath, it.Key().GetAbsolutePath()))
+            previouslyKnownFolders.PushBack(it.Key());
+        }
       }
       {
         FILESYSTEM_PROFILE("HandleRemovedFiles");
         for (const xiiDataDirPath& file : previouslyKnownFiles)
         {
           RemoveFileOrFolder(file, false);
+        }
+        // The map sorts a parent before its descendants. Reverse the snapshot so every
+        // nested folder's removal event precedes its parent, after all file removals.
+        for (xiiUInt32 i = previouslyKnownFolders.GetCount(); i > 0; --i)
+        {
+          RemoveFileOrFolder(previouslyKnownFolders[i - 1], false);
         }
       }
     }
