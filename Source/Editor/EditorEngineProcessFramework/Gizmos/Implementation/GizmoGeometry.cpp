@@ -169,7 +169,9 @@ xiiResult xiiGizmoGeometry::PickRay(const xiiMat4& transform, const xiiVec3& vRa
       !xiiMath::IsFinite(fLineRadius) || fLineRadius < 0 || vRayDirection.IsZero(0.0f))
     return XII_FAILURE;
   xiiMat4 inverse = transform;
-  if (inverse.Invert().Failed())
+  // Screen-sized nobs can have very small, perfectly invertible scales. Reject singularity rather than
+  // comparing the dimensional determinant against a world-scale epsilon; validate the inverse instead.
+  if (inverse.Invert(0.0f).Failed() || !inverse.IsValid())
     return XII_FAILURE;
   const xiiVec3 localStart     = inverse.TransformPosition(vRayStart);
   const xiiVec3 localDirection = inverse.TransformDirection(vRayDirection);

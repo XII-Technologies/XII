@@ -211,6 +211,8 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         if (bRenderEditorGizmos)
         {
           pView->m_ExcludeTags.Remove(editorTag);
+          if (pDocumentContext->DrawGizmos(*pView).Failed())
+            xiiLog::Warning("Could not draw one or more Editor handles for this view.");
         }
         else
         {

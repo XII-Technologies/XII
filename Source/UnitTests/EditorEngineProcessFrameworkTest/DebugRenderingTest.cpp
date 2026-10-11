@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
 #include <Core/Graphics/Geometry.h>
@@ -143,6 +144,16 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     world.Update();
     checkCenter(0, 0, 255);
 
+    xiiGeometry mirroredTriangle;
+    mirroredTriangle.AddVertex(xiiVec3(-1, -1, 0), xiiVec3::MakeAxisZ());
+    mirroredTriangle.AddVertex(xiiVec3(1, -1, 0), xiiVec3::MakeAxisZ());
+    mirroredTriangle.AddVertex(xiiVec3(0, 1, 0), xiiVec3::MakeAxisZ());
+    xiiUInt32 triangleIndices[] = {0, 1, 2};
+    mirroredTriangle.AddPolygon(xiiMakeArrayPtr(triangleIndices), false);
+    XII_TEST_RESULT(xiiDebugRenderer::DrawGeometry(*first, mirroredTriangle, xiiColor(0, 1, 0), xiiMat4::MakeScaling(xiiVec3(-1, 1, 1)), xiiDebugRendererDepthMode::Overlay));
+    world.Update();
+    checkCenter(0, 255, 0);
+
     // Read depth as floats, with the staging row pitch supplied by the backend.
     auto                  commandList = environment.GetDevice()->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
     auto                  queue       = environment.GetDevice()->GetCommandQueue();
@@ -195,6 +206,54 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Blue);
     world.Update();
     checkCenter(255, 0, 0); // World overlays follow the view's ordinary primitives too.
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Synchronized handles use debug batches, overlay depth, and wire visualizers")
+  {
+    xiiEngineGizmoHandle handle;
+    handle.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::Box, xiiColor::Red, xiiGizmoFlags::ShowInOrtho | xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop);
+    handle.SetVisible(true);
+    XII_TEST_BOOL(handle.SetupForEngine(&world, 41));
+    XII_TEST_BOOL(!handle.SetupForEngine(&world, 42));
+    clearDepth = 0;
+    XII_TEST_RESULT(handle.Draw(*first, 0));
+    world.Update();
+    checkCenter(255, 0, 0);
+    xiiImage solid;
+    XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, solid));
+    xiiUInt32 solidPixels = 0;
+    for (xiiUInt64 i = 0; i < solid.GetByteBlobPtr().GetCount(); i += 4)
+      solidPixels += solid.GetByteBlobPtr()[i] > 0 ? 1 : 0;
+    XII_TEST_BOOL(solidPixels > 100);
+    XII_TEST_RESULT(handle.Draw(*first, 41));
+    world.Update();
+    xiiImage highlighted;
+    XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, highlighted));
+    const auto* pixel = highlighted.GetPixelPointer<xiiUInt8>(0, 0, 0, 32, 32);
+    XII_TEST_BOOL(pixel[0] > 200 && pixel[1] == pixel[0] && pixel[2] < 150);
+    handle.SetVisible(false);
+    XII_TEST_RESULT(handle.Draw(*first, 0));
+    world.Update();
+    checkCenter(0, 0, 0);
+    handle.SetVisible(true);
+    handle.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::Box, xiiColor::Red, xiiGizmoFlags::ShowInOrtho);
+    XII_TEST_RESULT(handle.Draw(*first, 0));
+    world.Update();
+    checkCenter(0, 0, 0); // Ordinary handles retain scene depth testing.
+    clearDepth = 1;
+    handle.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::Box, xiiColor::Blue, xiiGizmoFlags::ShowInOrtho | xiiGizmoFlags::Visualizer | xiiGizmoFlags::Pickable);
+    XII_TEST_RESULT(handle.Draw(*first, 0));
+    world.Update();
+    xiiImage wire;
+    XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, wire));
+    xiiUInt32 wirePixels = 0;
+    for (xiiUInt64 i = 0; i < wire.GetByteBlobPtr().GetCount(); i += 4)
+      wirePixels += wire.GetByteBlobPtr()[i + 2] > 0 ? 1 : 0;
+    XII_TEST_BOOL(wirePixels > 0 && wirePixels < solidPixels);
+    float fTime = -1;
+    XII_TEST_BOOL(handle.PickRay(*first, xiiVec3(0, 0, 5), -xiiVec3::MakeAxisZ(), fTime).Failed());
+    XII_TEST_FLOAT(fTime, -1, 0); // Visualizers never steal manipulator interaction.
+    XII_TEST_INT(world.GetObjectCount(), 0);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Indexed boxes and textured primitives use their actual shaders")

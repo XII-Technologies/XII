@@ -3,7 +3,6 @@
 #include <EnginePluginAssets/EnginePluginAssetsPCH.h>
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
-#include <EditorEngineProcessFramework/Gizmos/GizmoComponent.h>
 #include <EnginePluginAssets/SkeletonAsset/SkeletonContext.h>
 #include <EnginePluginAssets/SkeletonAsset/SkeletonView.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -40,12 +39,6 @@ void xiiSkeletonViewContext::Redraw(bool bRenderEditorGizmos)
     else
     {
       pView->m_ExcludeTags.Remove(tagNoOrtho);
-    }
-
-    XII_LOCK(pView->GetWorld()->GetWriteMarker());
-    if (auto pGizmoManager = pView->GetWorld()->GetComponentManager<xiiGizmoComponentManager>())
-    {
-      pGizmoManager->m_uiHighlightID = GetDocumentContext()->m_Context.m_uiHighlightID;
     }
   }
 

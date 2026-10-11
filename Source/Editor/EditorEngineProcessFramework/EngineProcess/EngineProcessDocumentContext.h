@@ -18,6 +18,15 @@ class xiiProcessMessage;
 class xiiExportDocumentMsgToEngine;
 class xiiCreateThumbnailMsgToEngine;
 struct xiiResourceEvent;
+class xiiView;
+
+struct xiiEditorGizmoPickResult
+{
+  xiiUuid m_HandleGuid;
+  xiiVec3 m_vPosition    = xiiVec3::MakeZero();
+  float   m_fRayTime     = 0.0f;
+  bool    m_bAlwaysOnTop = false;
+};
 
 struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessDocumentContextFlags
 {
@@ -89,6 +98,14 @@ public:
   virtual const xiiWorldRttiConverterContext& GetContext() const { return m_Context; }
 
   xiiWorld* GetWorld() const { return m_pWorld; }
+
+  /// Submits this document's synchronized handles to the view's normal debug-render graph passes.
+  /// Requires exclusive document/world access. A view from another world is rejected.
+  xiiResult DrawGizmos(const xiiView& view);
+  /// Picks document handles at normalized viewport coordinates. Overlay handles take priority, then
+  /// nearest forward ray time; equal hits follow sync GUID order. Misses leave the output unchanged.
+  /// Scene geometry occlusion is evaluated by the scene picking consumer using the returned ray time.
+  xiiResult PickGizmo(const xiiView& view, float fNormalizedX, float fNormalizedY, xiiEditorGizmoPickResult& out_result);
 
   /// Tries to resolve a 'reference' (given in pData) to a xiiGameObject.
   virtual xiiGameObjectHandle ResolveStringToGameObjectHandle(const void* pString, xiiComponentHandle hThis, xiiStringView sProperty) const;

@@ -35,7 +35,7 @@ public:
   xiiEditorGuidEngineHandleMap<xiiUInt32> m_OtherPickingMap;
   xiiEditorGuidEngineHandleMap<xiiUInt32> m_ComponentPickingMap;
   xiiUInt32                               m_uiNextComponentPickingID = 1;
-  xiiUInt32                               m_uiHighlightID            = 1;
+  xiiUInt32                               m_uiHighlightID            = 0;
 
   struct Event
   {

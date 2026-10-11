@@ -244,3 +244,26 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   at every pixel after drawing an overlay. The six integration subtests pass;
   see `Workspace/editor-overlay-build.log` and `Workspace/editor-overlay-tests.log`.
   Connecting synchronized Editor handles and interactive picking remains open.
+- Synchronized Editor handles now own settings and cached CPU geometry, with no
+  world objects, gizmo components, mesh/material resources, or separate renderer.
+  The shared view redraw submits them to GraphicsCore debug passes. Projection,
+  viewport height, camera distance, and the user scale determine constant sizing;
+  drawing and CPU picking use the same camera-facing transform. Orthographic
+  filtering, overlay depth, highlighting, and non-pickable wire visualizers are
+  retained. Mirrored Core geometry preserves front-face winding, and small
+  invertible handle transforms no longer fail picking because of an absolute
+  determinant epsilon.
+- Document handle picking chooses overlay priority then nearest forward hit.
+  IPC updates retain identity while invalidating geometry only when necessary;
+  deleting a sync object unregisters its picking ID and clears its highlight.
+  The remaining references to the removed gizmo component/renderer are gone.
+  Scene picking still needs to combine this interface with current scene geometry
+  queries; integrated Editor interaction is not yet verified.
+- `EditorEngineProcessFrameworkTest` builds and all seven Vulkan subtests pass,
+  including projected sizing, tiny nobs, camera-facing axes, IPC topology changes,
+  hidden handles, picking priority, and registration teardown. GPU readback verifies
+  handle rendering, highlighting, depth rejection, overlays, mirrored triangles,
+  and wire visualizers. All 17 `GraphicsCoreTest` subtests pass. Logs:
+  `Workspace/editor-gizmo-tests.log` and `Workspace/editor-gizmo-core-tests.log`.
+  The broader `EditorFramework` build reaches two remaining errors in camera
+  framing and transform-tool RTTI includes (`Workspace/editor-gizmo-editor-build.log`).

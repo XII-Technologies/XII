@@ -19,7 +19,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
-#include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
+#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -537,7 +537,8 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
   }
   else if (const auto* pMsg2b = xiiDynamicCast<const xiiGlobalSettingsMsgToEngine*>(e.m_pMessage))
   {
-    xiiGizmoRenderer::s_fGizmoScale = pMsg2b->m_fGizmoScale;
+    if (xiiEngineGizmoHandle::SetGizmoScale(pMsg2b->m_fGizmoScale).Failed())
+      xiiLog::Warning("Ignoring invalid Editor gizmo scale {0}.", pMsg2b->m_fGizmoScale);
   }
   else if (const auto* pMsg3 = xiiDynamicCast<const xiiChangeCVarMsgToEngine*>(e.m_pMessage))
   {

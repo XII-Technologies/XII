@@ -4,7 +4,6 @@
 
 #include <Core/Interfaces/SoundInterface.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
-#include <EditorEngineProcessFramework/Gizmos/GizmoComponent.h>
 #include <EnginePluginScene/SceneView/SceneView.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -150,12 +149,6 @@ void xiiSceneViewContext::Redraw(bool bRenderEditorGizmos)
     else
     {
       pView->m_ExcludeTags.Remove(tagNoOrtho);
-    }
-
-    XII_LOCK(pView->GetWorld()->GetWriteMarker());
-    if (auto pGizmoManager = pView->GetWorld()->GetComponentManager<xiiGizmoComponentManager>())
-    {
-      pGizmoManager->m_uiHighlightID = GetDocumentContext()->m_Context.m_uiHighlightID;
     }
   }
 

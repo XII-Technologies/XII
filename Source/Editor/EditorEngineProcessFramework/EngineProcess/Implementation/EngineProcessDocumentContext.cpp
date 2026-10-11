@@ -9,6 +9,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/RemoteViewContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
+#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -380,6 +381,14 @@ void xiiEngineProcessDocumentContext::AddSyncObject(xiiEditorEngineSyncObject* p
 
 void xiiEngineProcessDocumentContext::RemoveSyncObject(xiiEditorEngineSyncObject* pSync)
 {
+  auto&           context     = GetContext();
+  const xiiUInt32 uiPickingID = context.m_OtherPickingMap.GetHandle(pSync->GetGuid());
+  if (uiPickingID != 0)
+  {
+    context.m_OtherPickingMap.UnregisterObject(pSync->GetGuid());
+    if (context.m_uiHighlightID == uiPickingID)
+      context.m_uiHighlightID = 0;
+  }
   m_SyncObjects.Remove(pSync->GetGuid());
 }
 
@@ -946,6 +955,8 @@ ref_to_is_updated:
 
 void xiiEngineProcessDocumentContext::UpdateSyncObjects()
 {
+  if (!m_pWorld)
+    return;
   for (auto it : m_SyncObjects)
   {
     auto pSyncObject = it.Value();
@@ -967,4 +978,46 @@ void xiiEngineProcessDocumentContext::UpdateSyncObjects()
       pSyncObject->UpdateForEngine(m_pWorld);
     }
   }
+}
+
+xiiResult xiiEngineProcessDocumentContext::DrawGizmos(const xiiView& view)
+{
+  if (!m_pWorld || view.GetWorld() != m_pWorld)
+    return XII_FAILURE;
+  xiiResult result = XII_SUCCESS;
+  for (auto it : m_SyncObjects)
+    if (auto* handle = xiiDynamicCast<xiiEngineGizmoHandle*>(it.Value()))
+      if (handle->Draw(view, GetContext().m_uiHighlightID).Failed())
+        result = XII_FAILURE;
+  return result;
+}
+
+xiiResult xiiEngineProcessDocumentContext::PickGizmo(const xiiView& view, float fNormalizedX, float fNormalizedY, xiiEditorGizmoPickResult& out_result)
+{
+  if (!m_pWorld || view.GetWorld() != m_pWorld || !view.IsValid() ||
+      !xiiMath::IsFinite(fNormalizedX) || !xiiMath::IsFinite(fNormalizedY) || fNormalizedX < 0 || fNormalizedX > 1 || fNormalizedY < 0 || fNormalizedY > 1)
+    return XII_FAILURE;
+  xiiVec3 start, direction;
+  XII_SUCCEED_OR_RETURN(view.ComputePickingRay(fNormalizedX, fNormalizedY, start, direction));
+  bool                     found = false;
+  xiiEditorGizmoPickResult closest;
+  for (auto it : m_SyncObjects)
+  {
+    auto* handle = xiiDynamicCast<xiiEngineGizmoHandle*>(it.Value());
+    float fTime;
+    if (!handle || handle->PickRay(view, start, direction, fTime).Failed())
+      continue;
+    const bool bOnTop = handle->IsAlwaysOnTop();
+    if (found && ((!bOnTop && closest.m_bAlwaysOnTop) || (bOnTop == closest.m_bAlwaysOnTop && fTime >= closest.m_fRayTime)))
+      continue;
+    closest.m_HandleGuid   = it.Key();
+    closest.m_fRayTime     = fTime;
+    closest.m_vPosition    = start + direction * fTime;
+    closest.m_bAlwaysOnTop = bOnTop;
+    found                  = true;
+  }
+  if (!found)
+    return XII_FAILURE;
+  out_result = closest;
+  return XII_SUCCESS;
 }

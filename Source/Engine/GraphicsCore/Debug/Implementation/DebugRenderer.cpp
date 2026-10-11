@@ -583,9 +583,13 @@ xiiResult xiiDebugRenderer::DrawGeometry(const xiiDebugRendererContext& context,
     output.m_vPosition = transform.m_Mat4.TransformPosition(vertices[index].m_vPosition);
     output.m_Color     = vertices[index].m_Color * color;
   };
+  const bool bFlipWinding = transform.m_Mat4.GetRotationalPart().GetDeterminant() < 0.0f;
   for (const auto& polygon : geometry.GetPolygons())
-    for (xiiUInt32 index : polygon.m_Vertices)
-      appendVertex(triangles, index);
+  {
+    appendVertex(triangles, polygon.m_Vertices[0]);
+    appendVertex(triangles, polygon.m_Vertices[bFlipWinding ? 2 : 1]);
+    appendVertex(triangles, polygon.m_Vertices[bFlipWinding ? 1 : 2]);
+  }
   for (const auto& line : geometry.GetLines())
   {
     appendVertex(lines, line.m_uiStartVertex);
