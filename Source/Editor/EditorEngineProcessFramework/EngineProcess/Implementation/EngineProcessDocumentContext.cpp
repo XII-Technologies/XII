@@ -8,18 +8,15 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/RemoteViewContext.h>
+#include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/ImageUtils.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiEngineProcessDocumentContextFlags)
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiEngineProcessDocumentContextFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiEngineProcessDocumentContextFlags::None),
   XII_BITFLAGS_CONSTANT(xiiEngineProcessDocumentContextFlags::CreateWorld),
 XII_END_STATIC_REFLECTED_BITFLAGS;
@@ -146,6 +143,9 @@ void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, co
 
 void xiiEngineProcessDocumentContext::Deinitialize()
 {
+  if (m_pThumbnailViewContext)
+    DestroyThumbnailViewContext();
+
   OnDeinitialize();
 
   ClearViewContexts();
@@ -459,97 +459,15 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
       xiiCreateThumbnailMsgToEditor ret;
       ret.m_DocumentGuid = GetDocumentGuid();
 
-      // Download image
+      xiiImage image;
+      if (xiiCaptureThumbnail(m_pThumbnailColorRT.Borrow(), {m_uiThumbnailWidth / static_cast<xiiUInt32>(ThumbnailSuperscaleFactor), m_uiThumbnailHeight / static_cast<xiiUInt32>(ThumbnailSuperscaleFactor)}, image).Succeeded())
       {
-        xiiSharedPtr<xiiGALDevice> pDevice        = xiiGALDevice::GetDefaultDevice();
-        auto                       pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
-
-        xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-        XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
-
-        pCommandList->Begin();
-        {
-          pCommandList->BeginDebugGroup("Thumbnail Readback");
-          {
-            pCommandList->CopyTexture(m_pThumbnailColorRT, m_pThumbnailColorRTStaging);
-          }
-          pCommandList->EndDebugGroup();
-        }
-        pCommandList->End();
-        pGraphicsQueue->Submit(pCommandList);
-
-        const xiiEnum<xiiGALResourceFormat> format = m_pThumbnailColorRT->GetDescription().m_Format;
-
-        xiiImageHeader header;
-        header.SetImageFormat(xiiTextureUtils::GalFormatToImageFormat(format, true));
-        header.SetWidth(m_uiThumbnailWidth);
-        header.SetHeight(m_uiThumbnailHeight);
-        xiiImage image;
-        image.ResetAndAlloc(header);
-        XII_ASSERT_DEV(static_cast<xiiUInt64>(m_uiThumbnailWidth) * static_cast<xiiUInt64>(m_uiThumbnailHeight) * 4 == header.ComputeDataSize(), "Thumbnail xiiImage has different size than data buffer!");
-
-        const xiiUInt32 uiStride      = 4U * m_uiThumbnailWidth;
-        const xiiUInt32 uiDepthStride = 4U * m_uiThumbnailWidth * m_uiThumbnailHeight;
-        auto*           pImageData    = image.GetPixelPointer<xiiUInt8>();
-
-        pCommandList->Begin();
-        {
-          pCommandList->BeginDebugGroup("Thumbnail Readback Download");
-          {
-            xiiGALTextureMipLevelData      sourceSubResource;
-            xiiGALMappedTextureSubresource mappedSubResource;
-            if (pCommandList->MapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
-            {
-              const auto& textureDescription = m_pThumbnailColorRTStaging->GetDescription();
-              const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-
-              if (mappedSubResource.m_pData)
-              {
-                /// \todo Support depth pitch.
-                if (mappedSubResource.m_uiStride == uiStride)
-                {
-                  const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-                  memcpy(pImageData, mappedSubResource.m_pData, uiMemorySize);
-                }
-                else
-                {
-                  // Copy row by row.
-                  const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-                  for (xiiUInt32 y = 0; y < uiHeight; ++y)
-                  {
-                    const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
-                    void*       pDestination = xiiMemoryUtils::AddByteOffset(pImageData, y * uiStride);
-
-                    memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
-                  }
-                }
-              }
-              else
-              {
-                xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
-              }
-
-              pCommandList->UnmapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource).IgnoreResult();
-            }
-          }
-          pCommandList->EndDebugGroup();
-        }
-        pCommandList->End();
-        pGraphicsQueue->Submit(pCommandList);
-
-        xiiImage  imageSwap;
-        xiiImage* pImage     = &image;
-        xiiImage* pImageSwap = &imageSwap;
-        for (xiiUInt32 uiSuperscaleFactor = ThumbnailSuperscaleFactor; uiSuperscaleFactor > 1; uiSuperscaleFactor /= 2)
-        {
-          xiiImageUtils::Scale(*pImage, *pImageSwap, pImage->GetWidth() / 2, pImage->GetHeight() / 2).IgnoreResult();
-          xiiMath::Swap(pImage, pImageSwap);
-        }
-
-        ret.m_ThumbnailData.SetCountUninitialized((m_uiThumbnailWidth / ThumbnailSuperscaleFactor) * (m_uiThumbnailHeight / ThumbnailSuperscaleFactor) * 4);
-        xiiMemoryUtils::Copy(ret.m_ThumbnailData.GetData(), pImage->GetPixelPointer<xiiUInt8>(), ret.m_ThumbnailData.GetCount());
+        ret.m_ThumbnailData.SetCountUninitialized(static_cast<xiiUInt32>(image.GetByteBlobPtr().GetCount()));
+        xiiMemoryUtils::Copy(ret.m_ThumbnailData.GetData(), image.GetPixelPointer<xiiUInt8>(), ret.m_ThumbnailData.GetCount());
+      }
+      else
+      {
+        xiiLog::Error("Failed to capture thumbnail for document '{0}'.", GetDocumentGuid());
       }
 
       DestroyThumbnailViewContext();
@@ -574,6 +492,17 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
   XII_ASSERT_DEV(!xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode(), "Wrong mode for thumbnail creation");
   XII_ASSERT_DEV(m_pThumbnailViewContext == nullptr, "Thumbnail rendering already in progress.");
   static_assert((ThumbnailSuperscaleFactor & (ThumbnailSuperscaleFactor - 1)) == 0, "ThumbnailSuperscaleFactor must be power of 2.");
+  if (pMsg->m_uiWidth == 0 || pMsg->m_uiHeight == 0 ||
+      pMsg->m_uiWidth > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor ||
+      pMsg->m_uiHeight > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor)
+  {
+    xiiLog::Error("Invalid thumbnail dimensions: {0}x{1}.", pMsg->m_uiWidth, pMsg->m_uiHeight);
+    xiiCreateThumbnailMsgToEditor response;
+    response.m_DocumentGuid = GetDocumentGuid();
+    SendProcessMessage(&response);
+    return;
+  }
+
   m_uiThumbnailConvergenceFrames = 0;
   m_uiThumbnailWidth             = pMsg->m_uiWidth * ThumbnailSuperscaleFactor;
   m_uiThumbnailHeight            = pMsg->m_uiHeight * ThumbnailSuperscaleFactor;
@@ -588,7 +517,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  // Create render target for picking
+  // Create the offscreen pipeline output target.
   xiiGALTextureCreationDescription tcd;
   tcd.m_Type        = xiiGALResourceDimension::Texture2D;
   tcd.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
@@ -598,22 +527,18 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   m_pThumbnailColorRT = pDevice->CreateTexture(tcd);
 
-  tcd.m_BindFlags      = {};
-  tcd.m_Usage          = xiiGALResourceUsage::Staging;
-  tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+  if (!m_pThumbnailColorRT)
+  {
+    xiiLog::Error("Failed to create thumbnail render target.");
+    DestroyThumbnailViewContext();
+    xiiCreateThumbnailMsgToEditor response;
+    response.m_DocumentGuid = GetDocumentGuid();
+    SendProcessMessage(&response);
+    return;
+  }
 
-  m_pThumbnailColorRTStaging = pDevice->CreateTexture(tcd);
-
-  tcd.m_Format         = xiiGALResourceFormat::D32Float;
-  tcd.m_CPUAccessFlags = {};
-  tcd.m_Usage          = xiiGALResourceUsage::Mutable;
-  tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-
-  m_pThumbnailDepthRT = pDevice->CreateTexture(tcd);
-
-  m_ThumbnailRenderTargets.m_pRTs[0]   = m_pThumbnailColorRT->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  m_ThumbnailRenderTargets.m_pDSTarget = m_pThumbnailDepthRT->GetDefaultView(xiiGALTextureViewType::DepthStencil);
-  m_pThumbnailViewContext->SetupRenderTarget({}, &m_ThumbnailRenderTargets, m_uiThumbnailWidth, m_uiThumbnailHeight);
+  // Depth and intermediate attachments belong to the selected render pipeline.
+  m_pThumbnailViewContext->SetupRenderTarget({}, m_pThumbnailColorRT->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow(), m_uiThumbnailWidth, m_uiThumbnailHeight);
 
   xiiResourceManager::ForceNoFallbackAcquisition(3);
   OnThumbnailViewContextRequested();
@@ -628,15 +553,12 @@ void xiiEngineProcessDocumentContext::DestroyThumbnailViewContext()
 {
   OnDestroyThumbnailViewContext();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   DestroyViewContext(m_pThumbnailViewContext);
   m_pThumbnailViewContext = nullptr;
 
-  m_pThumbnailColorRTStaging.Clear();
   m_pThumbnailColorRT.Clear();
-  m_pThumbnailDepthRT.Clear();
 
+  XII_LOCK(m_pWorld->GetWriteMarker());
   m_pWorld->SetWorldSimulationEnabled(m_bWorldSimStateBeforeThumbnail);
 }
 
