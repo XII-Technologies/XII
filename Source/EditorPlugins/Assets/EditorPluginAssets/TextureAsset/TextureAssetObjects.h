@@ -4,6 +4,7 @@
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
+#include <SharedPluginAssets/TextureAsset/TextureAssetProfile.h>
 #include <Texture/Converter/TextureConverterEnums.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
@@ -33,27 +34,6 @@ struct xiiTexture2DChannelMappingEnum
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiTexture2DChannelMappingEnum);
-
-struct xiiTexture2DResolution
-{
-  using StorageType = xiiInt8;
-
-  enum Enum
-  {
-    Fixed64x64,
-    Fixed128x128,
-    Fixed256x256,
-    Fixed512x512,
-    Fixed1024x1024,
-    Fixed2048x2048,
-    CVarRtResolution1,
-    CVarRtResolution2,
-
-    Default = Fixed256x256
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiTexture2DResolution);
 
 struct xiiRenderTargetFormat
 {
@@ -101,7 +81,7 @@ public:
   bool  m_bFlipHorizontal        = false;
   bool  m_bDilateColor           = false;
   bool  m_bPreserveAlphaCoverage = false;
-  float m_fCVarResolutionScale   = 1.0f;
+  float m_fResolutionScale       = 1.0f;
   float m_fHdrExposureBias       = 0;
   float m_fAlphaThreshold        = 0.5f;
 

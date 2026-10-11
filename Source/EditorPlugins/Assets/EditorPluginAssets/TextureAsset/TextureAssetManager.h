@@ -2,17 +2,9 @@
 
 #pragma once
 
-#include <Core/Configuration/PlatformProfile.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorPluginAssets/EditorPluginAssetsDLL.h>
-
-class XII_EDITORPLUGINASSETS_DLL xiiTextureAssetProfileConfig : public xiiProfileConfigData
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiTextureAssetProfileConfig, xiiProfileConfigData);
-
-public:
-  xiiUInt16 m_uiMaxResolution = 1024 * 16;
-};
+#include <SharedPluginAssets/TextureAsset/TextureAssetProfile.h>
 
 class xiiTextureAssetDocumentManager : public xiiAssetDocumentManager
 {

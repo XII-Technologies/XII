@@ -522,3 +522,20 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   old GPU handle lifetime, invalid definitions and failed writes
   (`Workspace/editor-render-target-verification-tests.log`). The complete
   GraphicsCoreTest suite also passes (`Workspace/editor-texture-graphics-core-tests.log`).
+- Render-target documents now write native descriptions in a separate transform
+  source. Shared texture profile configuration owns two target resolution slots
+  with the former 256/512 defaults; dimensions are baked during transformation
+  instead of depending on removed runtime resolution CVars. Legacy document slot
+  identities and scale values migrate to profile settings. Existing project
+  profiles retain defaults for new fields, and all resolution fields participate
+  in the transform cache hash. Custom runtime CVar values must be transferred to
+  the corresponding profile fields; runtime CVar resizing is no longer offered.
+  Texture document version 8 regenerates cached binaries. Unsupported texture
+  and cube stream transformations return explicit failure.
+- Shared profile tests cover fixed and scaled dimensions, quantization, bounds,
+  invalid values, cache hashes and old profile loading. The full asset-plugin
+  build compiles migrated texture, cube, LUT and render-target sources; remaining
+  failures concern mesh import, animation clips/graphs, property animation and
+  decal atlas APIs (`Workspace/editor-asset-plugin-textures-build.log`). Texture
+  document, property, manager and target sources also compile individually with
+  Qt. Full Editor linking and GUI workflows remain pending.

@@ -8,7 +8,7 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 7, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 8, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -398,98 +398,9 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(xiiStringView
 
   const auto* pAssetConfig = pAssetProfile->GetTypeConfig<xiiTextureAssetProfileConfig>();
 
-  const auto props = GetProperties();
-
   if (m_bIsRenderTarget)
   {
-    xiiDeferredFileWriter file;
-    file.SetOutput(sTargetFile);
-
-    XII_SUCCEED_OR_RETURN(AssetHeader.Write(file));
-
-    // TODO: move this into a shared location, reuse in xiiTextureConverter::WriteTexHeader
-    const xiiUInt8 uiTexFileFormatVersion = 5;
-    file << uiTexFileFormatVersion;
-
-    xiiGALResourceFormat::Enum format  = xiiGALResourceFormat::Unknown;
-    bool                       bIsSRGB = false;
-
-    switch (props->m_RtFormat)
-    {
-      case xiiRenderTargetFormat::RGBA8:
-        format = xiiGALResourceFormat::RGBA8UNormalized;
-        break;
-
-      case xiiRenderTargetFormat::RGBA8sRgb:
-        format  = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-        bIsSRGB = true;
-        break;
-
-      case xiiRenderTargetFormat::RGB10:
-        format = xiiGALResourceFormat::RG11B10Float;
-        break;
-
-      case xiiRenderTargetFormat::RGBA16:
-        format = xiiGALResourceFormat::RGBA16Float;
-        break;
-    }
-
-    file << bIsSRGB;
-    file << (xiiUInt8)props->m_AddressModeU;
-    file << (xiiUInt8)props->m_AddressModeV;
-    file << (xiiUInt8)props->m_AddressModeW;
-    file << (xiiUInt8)props->m_SamplerPreset;
-
-    xiiInt16 resX = 0, resY = 0;
-
-    switch (props->m_Resolution)
-    {
-      case xiiTexture2DResolution::Fixed64x64:
-        resX = 64;
-        resY = 64;
-        break;
-      case xiiTexture2DResolution::Fixed128x128:
-        resX = 128;
-        resY = 128;
-        break;
-      case xiiTexture2DResolution::Fixed256x256:
-        resX = 256;
-        resY = 256;
-        break;
-      case xiiTexture2DResolution::Fixed512x512:
-        resX = 512;
-        resY = 512;
-        break;
-      case xiiTexture2DResolution::Fixed1024x1024:
-        resX = 1024;
-        resY = 1024;
-        break;
-      case xiiTexture2DResolution::Fixed2048x2048:
-        resX = 2048;
-        resY = 2048;
-        break;
-      case xiiTexture2DResolution::CVarRtResolution1:
-        resX = -1;
-        resY = 1;
-        break;
-      case xiiTexture2DResolution::CVarRtResolution2:
-        resX = -1;
-        resY = 2;
-        break;
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-
-    file << resX;
-    file << resY;
-    file << props->m_fCVarResolutionScale;
-    file << (int)format;
-
-
-    if (file.Close().Failed())
-      return xiiTransformStatus(xiiFmt("Writing to target file failed: '{0}'", sTargetFile));
-
-    return xiiTransformStatus();
+    return WriteRenderTargetAsset(sTargetFile, AssetHeader, pAssetConfig);
   }
   else
   {

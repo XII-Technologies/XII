@@ -10,16 +10,6 @@
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProfileConfig, 1, xiiRTTIDefaultAllocator<xiiTextureAssetProfileConfig>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("MaxResolution", m_uiMaxResolution)->AddAttributes(new xiiDefaultValueAttribute(16 * 1024)),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocumentManager, 1, xiiRTTIDefaultAllocator<xiiTextureAssetDocumentManager>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
@@ -67,7 +57,7 @@ xiiTextureAssetDocumentManager::~xiiTextureAssetDocumentManager()
 
 xiiUInt64 xiiTextureAssetDocumentManager::ComputeAssetProfileHashImpl(const xiiPlatformProfile* pAssetProfile) const
 {
-  return pAssetProfile->GetTypeConfig<xiiTextureAssetProfileConfig>()->m_uiMaxResolution;
+  return pAssetProfile->GetTypeConfig<xiiTextureAssetProfileConfig>()->GetTransformHash();
 }
 
 void xiiTextureAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentManager::Event& e)

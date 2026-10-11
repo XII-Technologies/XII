@@ -74,4 +74,25 @@ namespace
 
   TextureSamplerPatch s_TexturePatch("xiiTextureAssetProperties", 6, true);
   TextureSamplerPatch s_CubePatch("xiiTextureCubeAssetProperties", 4, false);
+
+  class TextureProfileResolutionPatch : public xiiGraphPatch
+  {
+  public:
+    TextureProfileResolutionPatch() : xiiGraphPatch("xiiTextureAssetProperties", 7) {}
+
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* pNode) const override
+    {
+      pNode->RenameProperty("CVarResScale", "ResolutionScale");
+      if (auto* property = pNode->FindProperty("Resolution"); property != nullptr && property->m_Value.IsA<xiiString>())
+      {
+        const auto& value = property->m_Value.Get<xiiString>();
+        if (value == "xiiTexture2DResolution::CVarRtResolution1")
+          property->m_Value = xiiInt32(6); // ProfileResolution1 retains the persisted slot identity.
+        else if (value == "xiiTexture2DResolution::CVarRtResolution2")
+          property->m_Value = xiiInt32(7);
+      }
+    }
+  };
+
+  TextureProfileResolutionPatch s_ProfileResolutionPatch;
 } // namespace

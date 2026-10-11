@@ -13,16 +13,11 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexture2DChannelMappingEnum, 1)
   XII_ENUM_CONSTANTS(xiiTexture2DChannelMappingEnum::RGBA1, xiiTexture2DChannelMappingEnum::RGB1_A2, xiiTexture2DChannelMappingEnum::R1_G2_B3_A4)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexture2DResolution, 1)
-  XII_ENUM_CONSTANTS(xiiTexture2DResolution::Fixed64x64, xiiTexture2DResolution::Fixed128x128, xiiTexture2DResolution::Fixed256x256, xiiTexture2DResolution::Fixed512x512, xiiTexture2DResolution::Fixed1024x1024, xiiTexture2DResolution::Fixed2048x2048)
-  XII_ENUM_CONSTANTS(xiiTexture2DResolution::CVarRtResolution1, xiiTexture2DResolution::CVarRtResolution2)
-XII_END_STATIC_REFLECTED_ENUM;
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderTargetFormat, 1)
   XII_ENUM_CONSTANTS(xiiRenderTargetFormat::RGBA8sRgb, xiiRenderTargetFormat::RGBA8, xiiRenderTargetFormat::RGB10, xiiRenderTargetFormat::RGBA16)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 6, xiiRTTIDefaultAllocator<xiiTextureAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 7, xiiRTTIDefaultAllocator<xiiTextureAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -31,7 +26,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 6, xiiRTTIDefaultAll
 
     XII_ENUM_MEMBER_PROPERTY("Format", xiiRenderTargetFormat, m_RtFormat),
     XII_ENUM_MEMBER_PROPERTY("Resolution", xiiTexture2DResolution, m_Resolution),
-    XII_MEMBER_PROPERTY("CVarResScale", m_fCVarResolutionScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 10.0f)),
+    XII_MEMBER_PROPERTY("ResolutionScale", m_fResolutionScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 10.0f)),
 
     XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTextureConverterMipmapMode, m_MipmapMode),
     XII_MEMBER_PROPERTY("PreserveAlphaCoverage", m_bPreserveAlphaCoverage),
@@ -73,9 +68,9 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
     if (isRenderTarget)
     {
       const xiiInt32 resMode   = e.m_pObject->GetTypeAccessor().GetValue("Resolution").ConvertTo<xiiInt32>();
-      const bool     resIsCVar = resMode == xiiTexture2DResolution::CVarRtResolution1 || resMode == xiiTexture2DResolution::CVarRtResolution2;
+      const bool     resUsesProfile = resMode == xiiTexture2DResolution::ProfileResolution1 || resMode == xiiTexture2DResolution::ProfileResolution2;
 
-      props["CVarResScale"].m_Visibility          = resIsCVar ? xiiPropertyUiState::Default : xiiPropertyUiState::Disabled;
+      props["ResolutionScale"].m_Visibility          = resUsesProfile ? xiiPropertyUiState::Default : xiiPropertyUiState::Disabled;
       props["Usage"].m_Visibility                 = xiiPropertyUiState::Invisible;
       props["MipmapMode"].m_Visibility            = xiiPropertyUiState::Invisible;
       props["CompressionMode"].m_Visibility       = xiiPropertyUiState::Invisible;
@@ -101,7 +96,7 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
       const bool hasMips = e.m_pObject->GetTypeAccessor().GetValue("MipmapMode").ConvertTo<xiiInt32>() != xiiTextureConverterMipmapMode::None;
       const bool isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTextureConverterUsage::Hdr;
 
-      props["CVarResScale"].m_Visibility          = xiiPropertyUiState::Invisible;
+      props["ResolutionScale"].m_Visibility          = xiiPropertyUiState::Invisible;
       props["Usage"].m_Visibility                 = xiiPropertyUiState::Default;
       props["Mipmaps"].m_Visibility               = xiiPropertyUiState::Default;
       props["Compression"].m_Visibility           = xiiPropertyUiState::Default;
