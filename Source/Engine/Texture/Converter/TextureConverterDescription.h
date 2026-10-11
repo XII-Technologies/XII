@@ -7,6 +7,7 @@
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 #include <Texture/Image/Image.h>
 
 
@@ -61,10 +62,7 @@ public:
 
   // Mipmaps / filtering
   xiiEnum<xiiTextureConverterMipmapMode> m_MipmapMode;
-  xiiEnum<xiiGALFilterType>              m_FilterMode; // only used when writing to XII specific formats
-  xiiEnum<xiiGALTextureAddressMode>      m_AddressModeU;
-  xiiEnum<xiiGALTextureAddressMode>      m_AddressModeV;
-  xiiEnum<xiiGALTextureAddressMode>      m_AddressModeW;
+  xiiGALSamplerCreationDescription       m_SamplerDescription; ///< Persistent runtime sampling and mipmap border settings.
   bool                                   m_bPreserveMipmapCoverage = false;
   float                                  m_fMipmapAlphaThreshold   = 0.5f;
 

@@ -484,3 +484,17 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   40 Vulkan GraphicsFoundationTest subtests pass
   (`Workspace/editor-image-dimensions-tests.log`,
   `Workspace/editor-texture-foundation-tests.log`).
+- TextureConverter and LUT documents share the native texture asset writer:
+  asset header, texture description, sampler description and DDS payload. Filter
+  presets now resolve to explicit GAL sampler settings instead of casting preset
+  numbers into unrelated GAL enum values. Texture/cube/LUT document versions
+  request regeneration of cached binaries. Unsupported LUT stream transforms
+  return failure rather than reporting a successful empty transform.
+- All 15 Vulkan EditorEngineProcessFrameworkTest subtests pass, including native
+  loader round-trips, ResourceManager loading of mipmapped 2D/3D/cube/LUT assets,
+  depth-one volumes, GPU texture and sampler validation, 2D readback, and all 12
+  filter presets through the actual converter executable
+  (`Workspace/editor-texture-assets-tests.log`). TextureTest, TextureConverter,
+  EditorEngineProcess and the integration test executable build. The migrated
+  LUT source compiles individually with Qt; full texture document migration and
+  the complete Qt asset-plugin build remain pending.

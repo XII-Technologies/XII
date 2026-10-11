@@ -102,7 +102,7 @@ xiiCommandLineOptionEnum opt_AddressU("_TextureConverter", "-addressU", "Which t
 xiiCommandLineOptionEnum opt_AddressV("_TextureConverter", "-addressV", "Which texture address mode to use along V. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2", 1);
 xiiCommandLineOptionEnum opt_AddressW("_TextureConverter", "-addressW", "Which texture address mode to use along W. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2", 1);
 
-xiiCommandLineOptionEnum opt_Filter("_TextureConverter", "-filter", "Which texture filter mode to use at runtime. Only supported by XII specific output formats.", "Default = 9 | Lowest = 7 | Low = 8 | High = 10 | Highest = 11 | Nearest = 0 | Linear = 1 | Trilinear = 2 | Aniso2x = 3 | Aniso4x = 4 | Aniso8x = 5 | Aniso16x = 6", 9);
+xiiCommandLineOptionEnum opt_Filter("_TextureConverter", "-filter", "Sampler preset stored in XII output formats. Lowest/Low/Default use point/bilinear/trilinear filtering; High/Highest use 4x/16x anisotropy.", "Default = 9 | Lowest = 7 | Low = 8 | High = 10 | Highest = 11 | Nearest = 0 | Linear = 1 | Trilinear = 2 | Aniso2x = 3 | Aniso4x = 4 | Aniso8x = 5 | Aniso16x = 6", 9);
 
 xiiCommandLineOptionEnum opt_BumpMapFilter("_TextureConverter", "-bumpMapFilter", "Filter used to approximate the x/y bump map gradients.", "Finite = 0 | Sobel = 1 | Scharr = 2", 0);
 
@@ -425,18 +425,18 @@ xiiResult xiiTextureConverter::ParseWrapModes()
     return XII_SUCCESS;
 
   {
-    xiiInt32 iValue                         = opt_AddressU.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    m_Processor.m_Descriptor.m_AddressModeU = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
+    xiiInt32 iValue                                          = opt_AddressU.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+    m_Processor.m_Descriptor.m_SamplerDescription.m_AddressU = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
   {
-    xiiInt32 iValue                         = opt_AddressV.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    m_Processor.m_Descriptor.m_AddressModeV = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
+    xiiInt32 iValue                                          = opt_AddressV.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+    m_Processor.m_Descriptor.m_SamplerDescription.m_AddressV = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
 
   if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
   {
-    xiiInt32 iValue                         = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    m_Processor.m_Descriptor.m_AddressModeW = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
+    xiiInt32 iValue                                          = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    m_Processor.m_Descriptor.m_SamplerDescription.m_AddressW = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
 
   return XII_SUCCESS;
@@ -450,8 +450,43 @@ xiiResult xiiTextureConverter::ParseFilterModes()
     return XII_SUCCESS;
   }
 
-  xiiInt32 iValue                       = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-  m_Processor.m_Descriptor.m_FilterMode = static_cast<xiiGALFilterType::Enum>(iValue);
+  const xiiInt32 preset     = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+  auto&          sampler    = m_Processor.m_Descriptor.m_SamplerDescription;
+  sampler.m_MinFilter       = xiiGALFilterType::Linear;
+  sampler.m_MagFilter       = xiiGALFilterType::Linear;
+  sampler.m_MipFilter       = xiiGALFilterType::Linear;
+  sampler.m_uiMaxAnisotropy = 0;
+  // CLI values are authoring presets, not native GAL filter enumeration values.
+  // Quality presets compile into fixed sampler settings; runtime definitions remain native descriptions.
+  switch (preset)
+  {
+    case 0: // Nearest
+    case 7: // Lowest
+      sampler.m_MinFilter = xiiGALFilterType::Point;
+      sampler.m_MagFilter = xiiGALFilterType::Point;
+      sampler.m_MipFilter = xiiGALFilterType::Point;
+      break;
+    case 1: // Linear
+    case 8: // Low
+      sampler.m_MipFilter = xiiGALFilterType::Point;
+      break;
+    case 2: // Trilinear
+    case 9: // Default
+      break;
+    case 3:  // Aniso2x
+    case 4:  // Aniso4x
+    case 5:  // Aniso8x
+    case 6:  // Aniso16x
+    case 10: // High
+    case 11: // Highest
+      sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
+      sampler.m_MipFilter       = xiiGALFilterType::Anisotropic;
+      sampler.m_uiMaxAnisotropy = preset <= 6 ? (1U << (preset - 2)) : (preset == 10 ? 4U : 16U);
+      break;
+    default:
+      return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 

@@ -6,7 +6,7 @@
 #include <EditorPluginAssets/TextureCubeAsset/TextureCubeAsset.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetDocument, 3, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetDocument, 4, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
