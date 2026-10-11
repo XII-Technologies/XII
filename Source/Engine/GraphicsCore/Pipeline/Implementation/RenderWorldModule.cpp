@@ -517,7 +517,13 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
       const xiiWorld* world = GetWorld();
       for (auto it = world->GetObjects(); it.IsValid(); ++it)
       {
-        const xiiGameObject*      pObject = it;
+        const xiiGameObject* pObject = it;
+        // Filter before cache reuse as tags and activation can change without invalidating static render data.
+        const xiiTagSet& tags = pObject->GetTags();
+        const xiiView&   view = *viewDetail.m_pView;
+        if (!pObject->IsActive() || tags.IsAnySet(view.m_ExcludeTags) || (!view.m_IncludeTags.IsEmpty() && !tags.IsAnySet(view.m_IncludeTags)))
+          continue;
+
         const xiiGameObjectHandle hObject = pObject->GetHandle();
 
         msg.m_hCurrentObject    = hObject;

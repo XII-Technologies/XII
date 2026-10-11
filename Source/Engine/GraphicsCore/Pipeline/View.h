@@ -178,7 +178,11 @@ public:
   const RenderGraphBuilder& GetRenderGraphBuilder() const;
   xiiUInt32                 GetRenderGraphBuilderVersion() const;
 
+  /// Extract active objects with any of these tags. An empty set includes all active objects.
+  /// Tags apply to each object independently; parent tags are not inherited.
   xiiTagSet m_IncludeTags;
+  /// Exclude objects with any of these tags, even if they also match m_IncludeTags.
+  /// Both filters are evaluated each extraction, including for cached static render data.
   xiiTagSet m_ExcludeTags;
 
   xiiRenderGraph*       GetRenderGraph() { return &m_RenderGraphContext.GetGraph(); }

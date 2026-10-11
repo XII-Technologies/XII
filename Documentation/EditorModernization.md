@@ -1093,3 +1093,21 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-scene-context-current-build.log`. Full Editor/Processor builds,
   integrated GUI workflows and non-Vulkan/non-Windows configurations remain
   unverified or blocked as recorded above. The comprehensive goal remains active.
+
+- Native view extraction now applies active-object and include/exclude tag filters
+  before static-cache reuse. Include tags match any tag (an empty set includes all
+  active objects); any exclusion wins. Tags are evaluated per object without
+  inheriting parent tags, while activation follows the World hierarchy. This
+  fixes the underlying rendering path required by Editor hidden objects, hidden
+  layers and orthographic exclusions; the legacy scene plugin still needs its
+  remaining rendering integrations migrated before those GUI workflows can be
+  verified.
+- A Vulkan integration test exercises two real world-local views through normal
+  extraction and graph execution. It covers static-cache reuse, uncached packets,
+  independent filters, include OR, exclusion precedence, filter changes, object
+  tag changes, hide/unhide and hierarchy activation. The rendering graph uses a
+  simple clear pass to isolate extraction from scene shading. Windows Debug builds
+  of EditorEngineProcessFrameworkTest and EditorEngineProcess pass, and all 34
+  engine-process subtests pass on Vulkan. Evidence:
+  `Workspace/editor-scene-visibility-build.log` and
+  `Workspace/editor-scene-visibility-tests.log`.
