@@ -2,6 +2,7 @@
 
 #include <ToolsFoundationTest/ToolsFoundationTestPCH.h>
 
+#include <ToolsFoundation/Serialization/ToolsSerializationUtils.h>
 #include <ToolsFoundationTest/Object/TestObjectManager.h>
 #include <ToolsFoundationTest/Reflection/ReflectionTestClasses.h>
 
@@ -109,4 +110,24 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, DocumentObjectManager)
   }
 
   manager.DestroyAllObjects();
+}
+
+XII_CREATE_SIMPLE_TEST(DocumentObject, CopyProperties)
+{
+  xiiTestDocumentObjectManager manager;
+  auto*                        object = manager.CreateObject(xiiGetStaticRTTI<xiiIntegerStruct>());
+  XII_SCOPE_EXIT(manager.DestroyObject(object));
+  XII_TEST_BOOL(object->GetTypeAccessor().SetValue("Int8", xiiInt8(7)));
+  XII_TEST_BOOL(object->GetTypeAccessor().SetValue("Int16", xiiInt16(42)));
+
+  xiiIntegerStruct complete;
+  xiiToolsSerializationUtils::CopyProperties(object, &manager, &complete, xiiGetStaticRTTI<xiiIntegerStruct>());
+  XII_TEST_INT(complete.GetInt8(), 7);
+  XII_TEST_INT(complete.m_iInt16, 42);
+
+  xiiIntegerStruct filtered;
+  xiiToolsSerializationUtils::CopyProperties(object, &manager, &filtered, xiiGetStaticRTTI<xiiIntegerStruct>(),
+                                             [](const xiiAbstractProperty* property) { return xiiStringView(property->GetPropertyName()) != "Int16"; });
+  XII_TEST_INT(filtered.GetInt8(), 7);
+  XII_TEST_INT(filtered.m_iInt16, 1);
 }

@@ -764,3 +764,14 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   pose root motion. Timeline events serialize natively; runtime event dispatch
   remains unavailable. These are unresolved Engine capabilities, not completed
   Editor features.
+
+- Shared document-to-native property copying now accepts an empty delegate as its
+  default and actually honors an explicit property filter. The default retains
+  the established exclusion of hidden properties. The default-call compilation
+  failure was exposed by native animation graph authoring. All six DocumentObject
+  subtests pass, including copied and filtered values
+  (`Workspace/editor-native-animation-graph-document-tests.log`). The broader
+  ToolsFoundation run passed AnimationAuthoring and DocumentObject, but failed
+  FileSystemModel watcher/deletion assertions, including unsafe indexing after
+  missing events (`Workspace/editor-native-animation-graph-tools-tests.log`).
+  That independent failure remains under investigation.
