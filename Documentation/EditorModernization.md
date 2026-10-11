@@ -383,3 +383,18 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   The existing watcher-only casing test therefore still fails on ReFS, while
   the Editor's explicit NotifyOfChange path is covered and passes. Temporary
   native watcher tracing was removed; no filesystem-specific workaround added.
+- Skeleton authoring now has a shared, Qt-independent asset-tool model preserving
+  the existing reflected type names, versions and properties. Import coordinates,
+  collider/constraint settings and preview configuration belong to tooling; native
+  runtime resources receive parent-before-child joints, rest matrices, inverse
+  bind matrices and bounds. Removed runtime skeleton builders/visualizers and Ozz
+  authoring APIs are not restored. Mesh import presets also move out of the runtime
+  declarations: their deleted implementation had left unresolved symbols.
+- Conversion uses `xiiResult`, preserves reflected coordinate systems through
+  signed-scale decomposition, and rejects malformed ownership, duplicate/empty
+  names, invalid coordinate settings and non-invertible/non-finite poses. Conversion
+  and ownership cleanup are iterative. All 10 Vulkan Editor framework subtests pass
+  (`Workspace/editor-skeleton-model-tests.log`), including authoring reflection and
+  native resource round trips, import-setting preservation and the 65,535-joint
+  boundary. The dependent test executable builds. Skeleton document/preview
+  integration and full Editor workflows still require migration and verification.

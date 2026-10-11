@@ -1,0 +1,189 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
+
+#include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Serialization/ReflectionSerializer.h>
+#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
+#include <SharedPluginAssets/SkeletonAsset/EditableSkeleton.h>
+
+namespace
+{
+  xiiEditableSkeletonJoint* AddJoint(xiiHybridArray<xiiEditableSkeletonJoint*, 4>& children, const char* szName, xiiVec3 position = xiiVec3::MakeZero())
+  {
+    xiiEditableSkeletonJoint* pJoint = XII_DEFAULT_NEW(xiiEditableSkeletonJoint);
+    pJoint->SetName(szName);
+    pJoint->m_LocalTransform.m_vPosition = position;
+    children.PushBack(pJoint);
+    return pJoint;
+  }
+} // namespace
+
+XII_CREATE_SIMPLE_TEST(EditorViews, EditableSkeleton)
+{
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native conversion preserves hierarchy, mirrored matrices and resource round trip")
+  {
+    xiiEditableSkeleton skeleton;
+    skeleton.m_fUniformScaling          = 2.5f;
+    auto* pRoot                         = AddJoint(skeleton.m_Children, "Root", xiiVec3(1, 2, 3));
+    pRoot->m_LocalTransform.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(1, 2, 3).GetNormalized(), xiiAngle::MakeFromDegree(37));
+    pRoot->m_LocalTransform.m_vScale    = xiiVec3(-1, 2, 3);
+    auto* pChild                        = AddJoint(pRoot->m_Children, "Child", xiiVec3(2, 3, 4));
+    auto* pOther                        = AddJoint(skeleton.m_Children, "Other", xiiVec3(6, 7, 8));
+
+    for (xiiUInt32 flip = 0; flip < 2; ++flip)
+    {
+      skeleton.m_ImportTransform = xiiMeshImportTransform::Custom;
+      skeleton.m_bFlipForwardDir = flip != 0;
+      xiiTransform root;
+      XII_TEST_RESULT(skeleton.GetRootTransform(root));
+      xiiSkeletonResourceDescriptor descriptor;
+      XII_TEST_RESULT(skeleton.FillResourceDescriptor(descriptor));
+      XII_TEST_INT(descriptor.m_Joints.GetCount(), 3);
+      XII_TEST_STRING(descriptor.m_Joints[0].m_sName.GetData(), "Root");
+      XII_TEST_STRING(descriptor.m_Joints[1].m_sName.GetData(), "Child");
+      XII_TEST_STRING(descriptor.m_Joints[2].m_sName.GetData(), "Other");
+      XII_TEST_INT(descriptor.m_Joints[1].m_uiParentIndex, 0);
+      XII_TEST_INT(descriptor.m_Joints[2].m_uiParentIndex, xiiMath::MaxValue<xiiUInt16>());
+      const auto rootModel = root.GetAsMat4() * pRoot->m_LocalTransform.GetAsMat4();
+      XII_TEST_BOOL(descriptor.m_Joints[0].m_ModelRestPose.IsEqual(rootModel, 0.0001f));
+      XII_TEST_BOOL(descriptor.m_Joints[1].m_ModelRestPose.IsEqual(rootModel * pChild->m_LocalTransform.GetAsMat4(), 0.0001f));
+      XII_TEST_BOOL(descriptor.m_Joints[2].m_ModelRestPose.IsEqual(root.GetAsMat4() * pOther->m_LocalTransform.GetAsMat4(), 0.0001f));
+      for (const auto& joint : descriptor.m_Joints)
+      {
+        XII_TEST_BOOL((joint.m_ModelRestPose * joint.m_InverseBindPose).IsEqual(xiiMat4::MakeIdentity(), 0.0001f));
+        XII_TEST_BOOL(descriptor.m_Bounds.GetBox().Contains(joint.m_ModelRestPose.GetTranslationVector()));
+      }
+      xiiDefaultMemoryStreamStorage storage;
+      xiiMemoryStreamWriter         writer(&storage);
+      XII_TEST_RESULT(descriptor.Serialize(writer));
+      xiiMemoryStreamReader         reader(&storage);
+      xiiSkeletonResourceDescriptor restored;
+      XII_TEST_RESULT(restored.Deserialize(reader));
+      XII_TEST_INT(restored.m_uiRuntimeHash, descriptor.m_uiRuntimeHash);
+      XII_TEST_BOOL(restored.m_Joints[1].m_ModelRestPose.IsEqual(descriptor.m_Joints[1].m_ModelRestPose, 0.0001f));
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Authoring schema round trip and import merge retain user settings")
+  {
+    xiiEditableSkeleton skeleton;
+    skeleton.m_sSourceFile                           = "Meshes/Character.glb";
+    skeleton.m_sPreviewMesh                          = "PreviewMesh";
+    skeleton.m_sSurfaceFile                          = "Surface";
+    skeleton.m_uiCollisionLayer                      = 4;
+    skeleton.m_sLeftFootJoint                        = "LeftFoot";
+    auto* pRoot                                      = AddJoint(skeleton.m_Children, "Root");
+    pRoot->m_JointType                               = xiiSkeletonJointType::SwingTwist;
+    pRoot->m_fStiffness                              = 12;
+    pRoot->m_SwingLimitY                             = xiiAngle::MakeFromDegree(35);
+    pRoot->m_bOverrideCollisionLayer                 = true;
+    pRoot->m_uiCollisionLayerOverride                = 7;
+    pRoot->m_BoneShapes.ExpandAndGetRef().m_Geometry = xiiSkeletonJointGeometryType::Capsule;
+    auto& collider                                   = pRoot->m_BoneColliders.ExpandAndGetRef();
+    collider.m_sIdentifier                           = "ImportedCollider";
+    collider.m_VertexPositions.PushBack(xiiVec3(1, 2, 3));
+    collider.m_TriangleIndices.PushBack(0);
+    AddJoint(pRoot->m_Children, "Child", xiiVec3(1, 2, 3));
+    xiiDefaultMemoryStreamStorage storage;
+    xiiMemoryStreamWriter         writer(&storage);
+    xiiReflectionSerializer::WriteObjectToBinary(writer, skeleton.GetDynamicRTTI(), &skeleton);
+    xiiMemoryStreamReader reader(&storage);
+    const xiiRTTI*        pType   = nullptr;
+    void*                 pObject = xiiReflectionSerializer::ReadObjectFromBinary(reader, pType);
+    if (XII_TEST_BOOL(pObject != nullptr && pType == xiiGetStaticRTTI<xiiEditableSkeleton>()))
+    {
+      auto* pRestored = static_cast<xiiEditableSkeleton*>(pObject);
+      XII_TEST_STRING(pRestored->m_sSourceFile.GetData(), skeleton.m_sSourceFile.GetData());
+      XII_TEST_STRING(pRestored->m_sLeftFootJoint.GetData(), "LeftFoot");
+      XII_TEST_INT(pRestored->m_uiCollisionLayer, 4);
+      XII_TEST_INT(pRestored->m_Children.GetCount(), 1);
+      auto* pJoint = pRestored->m_Children[0];
+      XII_TEST_INT(pJoint->m_Children.GetCount(), 1);
+      XII_TEST_INT(pJoint->m_JointType.GetValue(), xiiSkeletonJointType::SwingTwist);
+      XII_TEST_FLOAT(pJoint->m_SwingLimitY.GetDegree(), 35, 0.001f);
+      XII_TEST_INT(pJoint->m_BoneShapes[0].m_Geometry.GetValue(), xiiSkeletonJointGeometryType::Capsule);
+      XII_TEST_VEC3(pJoint->m_BoneColliders[0].m_VertexPositions[0], xiiVec3(1, 2, 3), 0.001f);
+      XII_TEST_INT(pJoint->m_uiCollisionLayerOverride, 7);
+
+      xiiEditableSkeletonJoint imported;
+      imported.SetName("Reimported");
+      imported.m_LocalTransform.m_vPosition.Set(5, 6, 7);
+      imported.CopyPropertiesFrom(pJoint);
+      XII_TEST_STRING(imported.GetName(), "Reimported");
+      XII_TEST_VEC3(imported.m_LocalTransform.m_vPosition, xiiVec3(5, 6, 7), 0.001f);
+      XII_TEST_BOOL(imported.m_Children.IsEmpty() && imported.m_BoneColliders.IsEmpty());
+      XII_TEST_INT(imported.m_BoneShapes.GetCount(), 1);
+      XII_TEST_INT(imported.m_uiCollisionLayerOverride, 7);
+    }
+    if (pObject != nullptr)
+      pType->GetAllocator()->Deallocate(pObject);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Malformed inputs reject safely and clear stale output")
+  {
+    xiiEditableSkeleton           skeleton;
+    auto*                         pRoot  = AddJoint(skeleton.m_Children, "Root");
+    auto*                         pChild = AddJoint(pRoot->m_Children, "Child");
+    xiiSkeletonResourceDescriptor descriptor;
+    XII_TEST_RESULT(skeleton.FillResourceDescriptor(descriptor));
+    pChild->SetName("Root");
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    XII_TEST_BOOL(descriptor.m_Joints.IsEmpty());
+    pChild->SetName("");
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    pChild->SetName("Child");
+    pChild->m_LocalTransform.m_vScale.x = 0;
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    pChild->m_LocalTransform.m_vScale.x    = 1;
+    pChild->m_LocalTransform.m_vPosition.x = xiiMath::Infinity<float>();
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    pChild->m_LocalTransform.SetIdentity();
+    pRoot->m_Children.PushBack(pChild);
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    pRoot->m_Children.PopBack();
+    pChild->m_Children.PushBack(pRoot);
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    pChild->m_Children.Clear();
+    pRoot->m_Children.PushBack(nullptr);
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    pRoot->m_Children.PopBack();
+    skeleton.m_ImportTransform = xiiMeshImportTransform::Custom;
+    skeleton.m_RightDir        = skeleton.m_UpDir;
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    skeleton.m_RightDir        = xiiBasisAxis::NegativeX;
+    skeleton.m_fUniformScaling = xiiMath::Infinity<float>();
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    skeleton.m_fUniformScaling = 0;
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    skeleton.m_fUniformScaling = 1;
+    XII_TEST_RESULT(skeleton.FillResourceDescriptor(descriptor));
+    // The owner also cleans up malformed child links without recursion or double deletion.
+    pChild->m_Children.PushBack(pRoot);
+    skeleton.m_Children.PushBack(pChild);
+    skeleton.ClearJoints();
+    XII_TEST_BOOL(skeleton.m_Children.IsEmpty());
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Deep hierarchy and joint index boundary")
+  {
+    xiiEditableSkeleton skeleton;
+    auto*               pParent = AddJoint(skeleton.m_Children, "Joint0");
+    xiiStringBuilder    name;
+    for (xiiUInt32 i = 1; i < xiiMath::MaxValue<xiiUInt16>(); ++i)
+    {
+      name.SetFormat("Joint{}", i);
+      pParent = AddJoint(pParent->m_Children, name.GetData());
+    }
+    xiiSkeletonResourceDescriptor descriptor;
+    XII_TEST_RESULT(skeleton.FillResourceDescriptor(descriptor));
+    XII_TEST_INT(descriptor.m_Joints.GetCount(), xiiMath::MaxValue<xiiUInt16>());
+    XII_TEST_INT(descriptor.m_Joints.PeekBack().m_uiParentIndex, xiiMath::MaxValue<xiiUInt16>() - 2);
+    AddJoint(pParent->m_Children, "Overflow");
+    XII_TEST_BOOL(skeleton.FillResourceDescriptor(descriptor).Failed());
+    XII_TEST_BOOL(descriptor.m_Joints.IsEmpty());
+    skeleton.ClearJoints();
+    XII_TEST_RESULT(skeleton.FillResourceDescriptor(descriptor));
+    XII_TEST_BOOL(descriptor.m_Bounds.IsValid());
+  }
+}

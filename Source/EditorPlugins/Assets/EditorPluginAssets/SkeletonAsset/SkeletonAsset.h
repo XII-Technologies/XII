@@ -4,7 +4,7 @@
 
 #include <EditorFramework/Assets/AssetDocumentGenerator.h>
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
+#include <SharedPluginAssets/SkeletonAsset/EditableSkeleton.h>
 
 //////////////////////////////////////////////////////////////////////////
 

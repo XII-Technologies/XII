@@ -8,6 +8,6 @@ xii_create_target(APPLICATION ${PROJECT_NAME})
 
 # Reuse the backend-neutral GPU fixture rather than duplicate device and shader setup.
 target_sources(${PROJECT_NAME} PRIVATE ../GraphicsFoundationTest/TestingEnvironment/Implementation/TestingEnvironment.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorEngineProcessFramework)
+target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorEngineProcessFramework SharedPluginAssets)
 xii_add_renderers(${PROJECT_NAME})
 xii_ci_add_test(${PROJECT_NAME} NEEDS_HW_ACCESS)

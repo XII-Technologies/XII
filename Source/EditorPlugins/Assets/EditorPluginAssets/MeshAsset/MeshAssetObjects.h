@@ -6,6 +6,7 @@
 #include <EditorPluginAssets/Util/AssetUtils.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
+#include <SharedPluginAssets/Common/MeshImportTransform.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
 struct xiiPropertyMetaStateEvent;
