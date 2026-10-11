@@ -108,4 +108,64 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
   checkCenter(0, 0, 255);
   world.Update();
   checkCenter(0, 0, 0);
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Indexed boxes and textured primitives use their actual shaders")
+  {
+    xiiDebugRenderer::DrawSolidBox(*first, xiiBoundingBox::MakeFromMinMax(xiiVec3(-1), xiiVec3(1)), xiiColor::Yellow);
+    world.Update();
+    checkCenter(255, 255, 0);
+
+    auto sampledDescription                     = colorDescription;
+    sampledDescription.m_Size                   = {1, 1};
+    const xiiUInt8                     pixels[] = {0, 0, 255, 255};
+    const xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(pixels, 4), 4, 4);
+    const xiiGALTextureData            initialData(xiiMakeArrayPtr(&subresource, 1));
+    auto                               sampled = environment.GetDevice()->CreateTexture(sampledDescription, &initialData);
+    xiiDebugRenderer::Draw2DRectangle(*first, xiiRectFloat(0, 0, 64, 64), 0, xiiColor::White, sampled->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    world.Update();
+    checkCenter(0, 0, 255);
+  }
+
+  // Both views write the same capture target, so the second view must see the
+  // world draw too. Consuming the context after the first view leaves it black.
+  auto* third = configure(world);
+  XII_TEST_BOOL(!(xiiDebugRendererContext(*first) == xiiDebugRendererContext(*third)));
+  xiiDebugRenderer::DrawSolidTriangles(&world, xiiMakeArrayPtr(&triangle, 1), xiiColor::Green);
+  world.Update();
+  checkCenter(0, 128, 0);
+  world.Update();
+  checkCenter(0, 0, 0);
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "World text uses each viewport and persistent text is prepared once")
+  {
+    first->SetRenderEnabled(false);
+    third->SetViewport({0, 0, 32, 64});
+    const xiiColor translucentWhite(1, 1, 1, 0.5f);
+    xiiDebugRenderer::DrawInfoText(*third, xiiDebugTextPlacement::BottomRight, "Test", "X", translucentWhite);
+    world.Update();
+    xiiImage reference;
+    if (!XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, reference)))
+      return;
+    bool hasText = false;
+    for (xiiUInt64 i = 0; i < reference.GetByteBlobPtr().GetCount(); i += 4)
+      hasText |= reference.GetByteBlobPtr()[i] > 0;
+    XII_TEST_BOOL(hasText);
+
+    first->SetRenderEnabled(true);
+    xiiDebugRenderer::AddPersistentInfoText(&world, xiiDebugTextPlacement::BottomRight, "X", xiiTime::MakeFromSeconds(60), translucentWhite);
+    for (xiiUInt32 frame = 0; frame < 3; ++frame)
+    {
+      world.Update();
+      xiiImage actual;
+      if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, actual)))
+      {
+        const xiiImageView& actualView    = actual;
+        const xiiImageView& referenceView = reference;
+        XII_TEST_BOOL(actualView.GetByteBlobPtr() == referenceView.GetByteBlobPtr());
+      }
+    }
+    xiiDebugRenderer::ClearContext(&world);
+    world.Update();
+    checkCenter(0, 0, 0);
+  }
 }

@@ -220,5 +220,15 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   with identical local view handles, one-frame consumption, and world destruction
   with live views. Logs: `Workspace/editor-debug-build.log` and
   `Workspace/editor-debug-tests.log`. A non-failing Vulkan shader-interface warning
-  reports an unused vertex output. Multi-view world debug consumption and overlay
-  depth behavior still need coverage before the gizmo drawing integration.
+  reports an unused vertex output.
+- World debug data now freezes once per graph frame and is reused by every view.
+  Persistent draws are prepared once, and info text is laid out for each viewport
+  without modifying the frozen snapshot. Font/textured draws use the shared
+  immutable clamp sampler; failed resource binding prevents a GPU draw.
+- Extended GPU readback checks pass for two views consuming the same world draw,
+  one-frame expiry, indexed boxes, textured rectangles, and translucent persistent
+  text across unequal viewport widths. Three consecutive frames match a separately
+  rendered reference byte-for-byte, detecting duplicated text or stale placement.
+  Logs: `Workspace/editor-debug-multiview-build.log` and
+  `Workspace/editor-debug-multiview-tests.log`. Overlay depth behavior and the
+  Editor's gizmo handle integration remain to be implemented.

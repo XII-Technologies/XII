@@ -137,6 +137,8 @@ namespace
   struct DoubleBufferedPerContextData
   {
     xiiUInt32                    m_uiCurrentDataIndex = 0U;
+    xiiUInt64                    m_uiRenderingFrame   = 0U;
+    bool                         m_bHasRenderingFrame = false;
     xiiUniquePtr<PerContextData> m_pData[2];
   };
 
@@ -325,7 +327,7 @@ namespace
   }
 
   template <typename AddFunc>
-  static xiiUInt32 AddTextLines(const xiiDebugRendererContext& context, const xiiFormatString& text0, const xiiVec2I32& vPositionInPixel, xiiUInt32 uiSizeInPixel, xiiDebugTextHAlign::Enum horizontalAlignment, xiiDebugTextVAlign::Enum verticalAlignment, AddFunc func)
+  static xiiUInt32 AddTextLines(const xiiFormatString& text0, const xiiVec2I32& vPositionInPixel, xiiUInt32 uiSizeInPixel, xiiDebugTextHAlign::Enum horizontalAlignment, xiiDebugTextVAlign::Enum verticalAlignment, AddFunc func)
   {
     if (text0.IsEmpty())
       return 0;
@@ -396,10 +398,6 @@ namespace
       screenPosY -= lines.GetCount() * fLineHeight - fLineSpacing;
 
     {
-      XII_LOCK(s_Mutex);
-
-      auto& data = GetDataForExtraction(context);
-
       xiiVec2 currentPos(screenPosX, screenPosY);
 
       for (xiiStringView line : lines)
@@ -419,7 +417,7 @@ namespace
           while (const char* colPtrNext = line.FindSubString("\t", colPtrCur))
           {
             const xiiVec2 tabOff(addWidth * fGlyphWidth, 0);
-            func(data, xiiStringView(colPtrCur, colPtrNext), currentPos + tabOff);
+            func(xiiStringView(colPtrCur, colPtrNext), currentPos + tabOff);
 
             addWidth += maxColumWidth[uiColIdx];
 
@@ -430,12 +428,12 @@ namespace
           // last column
           {
             const xiiVec2 tabOff(addWidth * fGlyphWidth, 0);
-            func(data, xiiStringView(colPtrCur, line.GetEndPointer()), currentPos + tabOff);
+            func(xiiStringView(colPtrCur, line.GetEndPointer()), currentPos + tabOff);
           }
         }
         else
         {
-          func(data, line, currentPos);
+          func(line, currentPos);
         }
 
         currentPos.y += fLineHeight;
@@ -1089,7 +1087,9 @@ void xiiDebugRenderer::Draw2DLineRectangle(const xiiDebugRendererContext& contex
 
 xiiUInt32 xiiDebugRenderer::Draw2DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec2I32& vPositionInPixel, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Left*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Top*/)
 {
-  return AddTextLines(context, text, vPositionInPixel, uiSizeInPixel, horizontalAlignment, verticalAlignment, [=](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
+  XII_LOCK(s_Mutex);
+  auto& ref_data = GetDataForExtraction(context);
+  return AddTextLines(text, vPositionInPixel, uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](xiiStringView sLine, xiiVec2 vTopLeftCorner) {
     auto& textLine            = ref_data.m_sTextLines2D.ExpandAndGetRef();
     textLine.m_sText          = sLine;
     textLine.m_vTopLeftCorner = vTopLeftCorner;
@@ -1128,7 +1128,9 @@ void xiiDebugRenderer::AddPersistentInfoText(const xiiDebugRendererContext& cont
 
 xiiUInt32 xiiDebugRenderer::Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Center*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Bottom*/)
 {
-  return AddTextLines(context, text, xiiVec2I32(0), uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
+  XII_LOCK(s_Mutex);
+  auto& ref_data = GetDataForExtraction(context);
+  return AddTextLines(text, xiiVec2I32(0), uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](xiiStringView sLine, xiiVec2 vTopLeftCorner) {
     auto& textLine            = ref_data.m_sTextLines3D.ExpandAndGetRef();
     textLine.m_sText          = sLine;
     textLine.m_vTopLeftCorner = vTopLeftCorner;
@@ -1588,6 +1590,7 @@ namespace
     xiiGALCommandList& m_CommandList;
     xiiUInt32          m_uiViewportWidth  = 1U;
     xiiUInt32          m_uiViewportHeight = 1U;
+    xiiUInt64          m_uiFrameIndex     = 0U;
   };
 
   struct DebugDrawState
@@ -1916,15 +1919,6 @@ namespace
     collector.m_LastRequestedState.Clear();
   }
 
-  static PerContextData* GetRenderingData(const xiiDebugRendererContext& context)
-  {
-    DoubleBufferedPerContextData* pDoubleBufferedContextData = nullptr;
-    if (!s_PerContextData.TryGetValue(context, pDoubleBufferedContextData))
-      return nullptr;
-
-    return pDoubleBufferedContextData->m_pData[pDoubleBufferedContextData->m_uiCurrentDataIndex].Borrow();
-  }
-
   static void AdvanceToNextExtractionBuffer(const xiiDebugRendererContext& context)
   {
     XII_LOCK(s_Mutex);
@@ -1945,7 +1939,7 @@ namespace
     pDoubleBufferedContextData->m_uiCurrentDataIndex = uiNextDataIndex;
   }
 
-  static PerContextData* PrepareWorldSpaceData(const xiiDebugRendererContext& context)
+  static void PrepareWorldSpaceData(const xiiDebugRendererContext& context)
   {
     {
       XII_LOCK(s_Mutex);
@@ -2013,11 +2007,9 @@ namespace
         ++i;
       }
     }
-
-    return GetRenderingData(context);
   }
 
-  static PerContextData* PrepareScreenSpaceData(const xiiDebugRendererContext& context, xiiUInt32 uiViewportWidth, xiiUInt32 uiViewportHeight)
+  static void PreparePersistentInfoText(const xiiDebugRendererContext& context)
   {
     {
       XII_LOCK(s_Mutex);
@@ -2040,62 +2032,27 @@ namespace
         ++i;
       }
     }
+  }
 
-    PerContextData* pData = GetRenderingData(context);
-    if (pData == nullptr)
-      return nullptr;
+  // Freeze once per graph frame. All views of a world see the same immutable
+  // snapshot; extraction can immediately start filling the other buffer.
+  static const PerContextData* PrepareFrameData(const xiiDebugRendererContext& context, xiiUInt64 uiFrame)
+  {
+    XII_LOCK(s_Mutex);
+    auto& buffered = s_PerContextData[context];
+    if (buffered.m_bHasRenderingFrame && buffered.m_uiRenderingFrame == uiFrame)
+      return buffered.m_pData[1U - buffered.m_uiCurrentDataIndex].Borrow();
 
-    static_assert(static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT) == 6U);
+    PrepareWorldSpaceData(context);
+    PreparePersistentInfoText(context);
+    PerContextData& data = GetDataForExtraction(context);
+    for (auto& corner : data.m_InfoTextData)
+      xiiSorting::InsertionSort(corner, [](const InfoTextData& lhs, const InfoTextData& rhs) { return lhs.m_sGroup < rhs.m_sGroup; });
 
-    constexpr xiiDebugTextHAlign::Enum horizontalAlignment[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
-      xiiDebugTextHAlign::Left,
-      xiiDebugTextHAlign::Center,
-      xiiDebugTextHAlign::Right,
-      xiiDebugTextHAlign::Left,
-      xiiDebugTextHAlign::Center,
-      xiiDebugTextHAlign::Right,
-    };
-
-    constexpr xiiDebugTextVAlign::Enum verticalAlignment[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Bottom,
-      xiiDebugTextVAlign::Bottom,
-      xiiDebugTextVAlign::Bottom,
-    };
-
-    const xiiInt32 lineHeight                                                       = static_cast<xiiInt32>(xiiDebugRenderer::GetTextLineHeight());
-    xiiVec2I32     anchor[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
-      xiiVec2I32(10, 10),
-      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), 10),
-      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth) - 10, 10),
-      xiiVec2I32(10, static_cast<xiiInt32>(uiViewportHeight) - 10),
-      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), static_cast<xiiInt32>(uiViewportHeight) - 10),
-      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth) - 10, static_cast<xiiInt32>(uiViewportHeight) - 10),
-    };
-
-    for (xiiUInt32 uiCorner = 0; uiCorner < static_cast<xiiUInt32>(xiiDebugTextPlacement::ENUM_COUNT); ++uiCorner)
-    {
-      auto& cornerData = pData->m_InfoTextData[uiCorner];
-      xiiSorting::InsertionSort(cornerData, [](const InfoTextData& lhs, const InfoTextData& rhs) -> bool { return lhs.m_sGroup < rhs.m_sGroup; });
-
-      xiiVec2I32     currentPosition = anchor[uiCorner];
-      const xiiInt32 offset          = verticalAlignment[uiCorner] == xiiDebugTextVAlign::Top ? lineHeight : -lineHeight;
-
-      for (xiiUInt32 i = 0; i < cornerData.GetCount(); ++i)
-      {
-        if (i > 0U && cornerData[i - 1U].m_sGroup != cornerData[i].m_sGroup)
-        {
-          currentPosition.y += offset;
-        }
-
-        currentPosition.y += offset * xiiDebugRenderer::Draw2DText(context, cornerData[i].m_sText.GetData(), currentPosition, cornerData[i].m_Color, 16U, horizontalAlignment[uiCorner], verticalAlignment[uiCorner]);
-      }
-    }
-
+    buffered.m_uiRenderingFrame   = uiFrame;
+    buffered.m_bHasRenderingFrame = true;
     AdvanceToNextExtractionBuffer(context);
-    return pData;
+    return &data;
   }
 
   static void UploadVertexArray(const DebugUploadState& uploadState, DebugUploadAllocator& allocator, DebugTransitionCollector& transitions, xiiArrayPtr<const Vertex> vertices, xiiGALPrimitiveTopology::Enum topology, xiiDynamicArray<PreparedVertexBatch>& out_batches)
@@ -2248,12 +2205,70 @@ namespace
       AppendGlyphs(glyphs, textLine);
     }
 
+    const auto uiViewportWidth  = uploadState.m_uiViewportWidth;
+    const auto uiViewportHeight = uploadState.m_uiViewportHeight;
+    static_assert(static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT) == 6U);
+
+    constexpr xiiDebugTextHAlign::Enum horizontalAlignment[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
+      xiiDebugTextHAlign::Left,
+      xiiDebugTextHAlign::Center,
+      xiiDebugTextHAlign::Right,
+      xiiDebugTextHAlign::Left,
+      xiiDebugTextHAlign::Center,
+      xiiDebugTextHAlign::Right,
+    };
+
+    constexpr xiiDebugTextVAlign::Enum verticalAlignment[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Bottom,
+      xiiDebugTextVAlign::Bottom,
+      xiiDebugTextVAlign::Bottom,
+    };
+
+    const xiiInt32 lineHeight                                                       = static_cast<xiiInt32>(xiiDebugRenderer::GetTextLineHeight());
+    xiiVec2I32     anchor[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
+      xiiVec2I32(10, 10),
+      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), 10),
+      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth) - 10, 10),
+      xiiVec2I32(10, static_cast<xiiInt32>(uiViewportHeight) - 10),
+      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), static_cast<xiiInt32>(uiViewportHeight) - 10),
+      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth) - 10, static_cast<xiiInt32>(uiViewportHeight) - 10),
+    };
+
+    for (xiiUInt32 uiCorner = 0; uiCorner < static_cast<xiiUInt32>(xiiDebugTextPlacement::ENUM_COUNT); ++uiCorner)
+    {
+      const auto& cornerData = data.m_InfoTextData[uiCorner];
+
+      xiiVec2I32     currentPosition = anchor[uiCorner];
+      const xiiInt32 offset          = verticalAlignment[uiCorner] == xiiDebugTextVAlign::Top ? lineHeight : -lineHeight;
+
+      for (xiiUInt32 i = 0; i < cornerData.GetCount(); ++i)
+      {
+        if (i > 0U && cornerData[i - 1U].m_sGroup != cornerData[i].m_sGroup)
+        {
+          currentPosition.y += offset;
+        }
+
+        currentPosition.y += offset * AddTextLines(cornerData[i].m_sText.GetData(), currentPosition, 16U, horizontalAlignment[uiCorner], verticalAlignment[uiCorner], [&](xiiStringView line, xiiVec2 position) {
+                               TextLineData2D textLine;
+                               textLine.m_sText          = line;
+                               textLine.m_vTopLeftCorner = position;
+                               textLine.m_Color          = cornerData[i].m_Color;
+                               textLine.m_uiSizeInPixel  = 16U;
+                               AppendGlyphs(glyphs, textLine);
+                             });
+      }
+    }
+
     UploadGlyphs(uploadState, allocator, transitions, glyphs, out_batches);
   }
 
   static void UploadContextData(const xiiDebugRendererContext& context, const DebugUploadState& uploadState, DebugUploadAllocator& allocator, DebugTransitionCollector& transitions, PreparedContextData& out_preparedData)
   {
-    if (const PerContextData* pWorldSpaceData = PrepareWorldSpaceData(context); pWorldSpaceData != nullptr)
+    const PerContextData* pWorldSpaceData = PrepareFrameData(context, uploadState.m_uiFrameIndex);
+    if (pWorldSpaceData != nullptr)
     {
       UploadBoxInstances(uploadState, allocator, transitions, pWorldSpaceData->m_SolidBoxes, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_SolidBoxes);
       UploadVertexArray(uploadState, allocator, transitions, pWorldSpaceData->m_TriangleVertices, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_Triangles3D);
@@ -2263,7 +2278,7 @@ namespace
       Upload3DText(uploadState, allocator, transitions, *pWorldSpaceData, out_preparedData.m_Text3D);
     }
 
-    if (const PerContextData* pScreenSpaceData = PrepareScreenSpaceData(context, uploadState.m_uiViewportWidth, uploadState.m_uiViewportHeight); pScreenSpaceData != nullptr)
+    if (const PerContextData* pScreenSpaceData = pWorldSpaceData; pScreenSpaceData != nullptr)
     {
       UploadVertexArray(uploadState, allocator, transitions, pScreenSpaceData->m_Triangle2DVertices, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_Triangles2D);
       UploadTexturedVertexBatches(uploadState, allocator, transitions, pScreenSpaceData->m_TexturedTriangle2DVertices, out_preparedData.m_TexturedTriangles2D);
@@ -2291,7 +2306,8 @@ namespace
 
       xiiGALBuffer* pVertexBuffers[] = {batch.m_pVertexBuffer};
       drawState.m_CommandList.SetVertexBuffers(0U, xiiMakeArrayPtr(pVertexBuffers), xiiArrayPtr<xiiUInt64>(), xiiGALSetVertexBufferFlags::Reset, xiiGALStateTransitionMode::None);
-      drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).IgnoreResult();
+      if (drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        continue;
       drawState.m_CommandList.Draw({batch.m_uiVertexCount, drawState.m_uiEyeCount});
     }
   }
@@ -2313,7 +2329,8 @@ namespace
 
       xiiGALBuffer* pVertexBuffers[] = {batch.m_pVertexBuffer};
       drawState.m_CommandList.SetVertexBuffers(0U, xiiMakeArrayPtr(pVertexBuffers), xiiArrayPtr<xiiUInt64>(), xiiGALSetVertexBufferFlags::Reset, xiiGALStateTransitionMode::None);
-      drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).IgnoreResult();
+      if (drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        continue;
       drawState.m_CommandList.Draw({batch.m_uiVertexCount, drawState.m_uiEyeCount});
     }
   }
@@ -2339,7 +2356,8 @@ namespace
       xiiGALBuffer* pVertexBuffers[] = {batch.m_pVertexBuffer};
       drawState.m_CommandList.SetVertexBuffers(0U, xiiMakeArrayPtr(pVertexBuffers), xiiArrayPtr<xiiUInt64>(), xiiGALSetVertexBufferFlags::Reset, xiiGALStateTransitionMode::None);
       drawState.m_CommandList.SetIndexBuffer(batch.m_pIndexBuffer, 0U, xiiGALStateTransitionMode::None);
-      drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).IgnoreResult();
+      if (drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        continue;
       drawState.m_CommandList.DrawIndexed({batch.m_uiIndexCount, batch.m_IndexType, batch.m_uiInstanceCount * drawState.m_uiEyeCount});
     }
   }
@@ -2367,7 +2385,8 @@ namespace
       BindGlobalConstants(drawState.m_CommandList);
       drawState.m_CommandList.ResolveAndSetShaderResourceBufferView("glyphData", batch.m_pGlyphDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource).Borrow(), xiiGALShaderType::Vertex);
       drawState.m_CommandList.ResolveAndSetShaderResourceTextureView("FontTexture", pFontTextureView, xiiGALShaderType::Pixel);
-      drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).IgnoreResult();
+      if (drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        continue;
       drawState.m_CommandList.Draw({batch.m_uiGlyphCount * 6U, drawState.m_uiEyeCount});
     }
   }
@@ -2425,7 +2444,7 @@ void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRen
   const xiiUInt32 uiViewportWidth  = xiiMath::Max(1U, static_cast<xiiUInt32>(xiiMath::Round(pView->GetViewport().width)));
   const xiiUInt32 uiViewportHeight = xiiMath::Max(1U, static_cast<xiiUInt32>(xiiMath::Round(pView->GetViewport().height)));
 
-  DebugUploadState         uploadState{*pView, cmd, uiViewportWidth, uiViewportHeight};
+  DebugUploadState         uploadState{*pView, cmd, uiViewportWidth, uiViewportHeight, context.GetFrameIndex()};
   DebugUploadAllocator     allocator;
   DebugTransitionCollector transitionCollector;
   PreparedDebugViewData    preparedViewData;

@@ -141,6 +141,8 @@ struct XII_GRAPHICSCORE_DLL xiiMatOrTransform
 /// Shapes can be rendered for a single frame, or 'persistent' for a certain duration.
 /// The 'context' specifies whether shapes are generally visible in a scene, from all views,
 /// or specific to a single view. See the xiiDebugRendererContext constructors for what can be implicitly used as a context.
+/// Draws submitted before the first debug upload of a world frame are visible in all applicable views of that frame.
+/// Later submissions enter the next frame's extraction buffer. Graphs rendering the same world frame must use the same frame index.
 class XII_GRAPHICSCORE_DLL xiiDebugRenderer
 {
 public:
