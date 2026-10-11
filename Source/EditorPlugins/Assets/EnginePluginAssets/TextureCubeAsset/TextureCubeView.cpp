@@ -37,7 +37,7 @@ void xiiTextureCubeViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
   // Do not apply render mode here otherwise we would switch to a different pipeline.
   // Also use hard-coded clipping planes so the quad is not culled to early.
 
-  xiiCameraMode::Enum cameraMode = (xiiCameraMode::Enum)pMsg->m_iCameraMode;
+  xiiCameraMode::Enum cameraMode = pMsg->m_CameraMode.GetValue();
   m_Camera.SetCameraMode(cameraMode, pMsg->m_fFovOrDim, 0.0001f, 50.0f);
   m_Camera.LookAt(pMsg->m_vPosition, pMsg->m_vPosition + pMsg->m_vDirForwards, pMsg->m_vDirUp);
 

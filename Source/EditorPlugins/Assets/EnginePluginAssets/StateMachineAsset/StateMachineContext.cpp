@@ -5,7 +5,7 @@
 #include <EnginePluginAssets/StateMachineAsset/StateMachineContext.h>
 #include <SharedPluginAssets/StateMachineAsset/StateMachineGraphTypes.h>
 
-#include <GameEngine/StateMachine/StateMachineBuiltins.h>
+#include <GameEngine/Components/StateMachine/StateMachineBuiltins.h>
 
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/StringDeduplicationContext.h>

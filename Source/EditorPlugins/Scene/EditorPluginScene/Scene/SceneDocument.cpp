@@ -16,7 +16,7 @@
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
-#include <GraphicsCore/Components/CameraComponent.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/Widgets/SearchableTypeMenu.moc.h>
 #include <ToolsFoundation/Command/TreeCommands.h>

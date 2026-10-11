@@ -25,8 +25,8 @@
 #include <GameEngine/Configuration/RendererProfileConfigs.h>
 #include <GameEngine/Gameplay/GreyBoxComponent.h>
 #include <GraphicsCore/Lights/BoxReflectionProbeComponent.h>
-#include <GraphicsCore/Lights/PointLightComponent.h>
-#include <GraphicsCore/Lights/SpotLightComponent.h>
+#include <GraphicsCore/Components/Lights/PointLightComponent.h>
+#include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <GuiFoundation/Action/ActionMapManager.h>
 #include <GuiFoundation/Action/CommandHistoryActions.h>
 #include <GuiFoundation/Action/DocumentActions.h>

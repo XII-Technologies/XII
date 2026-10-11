@@ -4,8 +4,8 @@
 
 #include <Core/Collection/CollectionResource.h>
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <GameEngine/Gameplay/BlackboardComponent.h>
-#include <GameEngine/Utils/BlackboardTemplateResource.h>
+#include <GameEngine/Components/GamePlay/BlackboardComponent.h>
+#include <GameEngine/Resources/BlackboardTemplateResource.h>
 
 struct xiiBlackboardTemplateAssetObject : public xiiReflectedClass
 {

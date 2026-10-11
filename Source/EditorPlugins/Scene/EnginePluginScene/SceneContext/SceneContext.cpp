@@ -17,7 +17,7 @@
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/AnimationSystem/Declarations.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Lights/DirectionalLightComponent.h>
+#include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Lights/Implementation/ShadowPool.h>
 #include <GraphicsCore/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
@@ -546,11 +546,11 @@ void xiiSceneContext::UnregisterLayer(xiiLayerContext* pLayer)
 
 void xiiSceneContext::AddLayerIndexTag(const xiiEntityMsgToEngine& msg, xiiWorldRttiConverterContext& ref_context, const xiiTag& layerTag)
 {
-  if (msg.m_change.m_Change.m_Operation == xiiObjectChangeType::NodeAdded)
+  if (msg.m_Change.m_Change.m_Operation == xiiObjectChangeType::NodeAdded)
   {
-    if ((msg.m_change.m_Change.m_sProperty == "Children" || msg.m_change.m_Change.m_sProperty.IsEmpty()) && msg.m_change.m_Change.m_Value.IsA<xiiUuid>())
+    if ((msg.m_Change.m_Change.m_sProperty == "Children" || msg.m_Change.m_Change.m_sProperty.IsEmpty()) && msg.m_Change.m_Change.m_Value.IsA<xiiUuid>())
     {
-      const xiiUuid&         object = msg.m_change.m_Change.m_Value.Get<xiiUuid>();
+      const xiiUuid&         object = msg.m_Change.m_Change.m_Value.Get<xiiUuid>();
       xiiRttiConverterObject target = ref_context.GetObjectByGUID(object);
 
       if (target.m_pType == xiiGetStaticRTTI<xiiGameObject>() && target.m_pObject != nullptr)

@@ -113,3 +113,23 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   gizmo and extractor integrations, animation/state-machine headers, Editor image
   conversion, and other stale consumers. The Editor has not yet been launched;
   the integrated workflow gates above remain open.
+
+## Shared Editor consumer migration evidence
+
+- IPC clients send the current typed camera/render-mode fields and object-change
+  payload. Thumbnail decoding uses GAL image descriptions, explicit Qt row pitch,
+  and propagates save failures. Persisted monochrome/color wireframe preferences
+  are patched to the supported wireframe mode.
+- Moved component, state-machine, blackboard, and texture-converter includes now
+  reference their current modules. `SharedPluginAssets` builds. The remaining
+  `EditorFramework` build failures are missing gizmo and editable-skeleton
+  integrations; those workflows still require substantive migration.
+- `ToolsFoundationTest` builds. Document objects, command history, metadata,
+  object mirrors, variant properties, and data-directory paths pass. The file
+  model fails case-only directory rename and subsequent deletion. The failure
+  repeats outside the sandbox. An isolated watcher probe confirms ordinary
+  directory renames emit notifications but case-only directory renames do not on
+  this Windows installation, through either Windows watcher path. No watcher
+  implementation has been changed or passing asset-watching claim made. Logs:
+  `Workspace/editor-tools-foundation-tests.log` and
+  `Workspace/editor-tools-foundation-tests-unrestricted.log`.

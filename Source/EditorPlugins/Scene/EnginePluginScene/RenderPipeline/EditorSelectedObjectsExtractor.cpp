@@ -6,7 +6,7 @@
 #include <EnginePluginScene/RenderPipeline/EditorSelectedObjectsExtractor.h>
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GameEngine/Configuration/RendererProfileConfigs.h>
-#include <GraphicsCore/Components/CameraComponent.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>

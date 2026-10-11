@@ -629,9 +629,7 @@ xiiStatus xiiAssetDocument::SaveThumbnail(const xiiImage& img, const ThumbnailIn
 
   // make sure the thumbnail is in a format that Qt understands
 
-  /// \todo A conversion to B8G8R8X8_UNORM currently fails
-
-  if (xiiImageConversion::Convert(img, converted, xiiImageFormat::R8G8B8A8_UNORM).Failed())
+  if (xiiImageConversion::Convert(img, converted, xiiGALResourceFormat::RGBA8UNormalizedSRGB).Failed())
   {
     const xiiStringBuilder sResourceFile = GetThumbnailFilePath();
 
@@ -639,7 +637,7 @@ xiiStatus xiiAssetDocument::SaveThumbnail(const xiiImage& img, const ThumbnailIn
     return xiiStatus(xiiFmt("Could not convert asset thumbnail to target format: '{0}'", sResourceFile));
   }
 
-  QImage qimg(converted.GetPixelPointer<xiiUInt8>(), converted.GetWidth(), converted.GetHeight(), QImage::Format_RGBA8888);
+  QImage qimg(converted.GetPixelPointer<xiiUInt8>(), converted.GetWidth(), converted.GetHeight(), static_cast<qsizetype>(converted.GetRowPitch()), QImage::Format_RGBA8888);
 
   return SaveThumbnail(qimg, thumbnailInfo);
 }
@@ -819,19 +817,19 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
   {
     if (data.GetCount() != msg.m_uiWidth * msg.m_uiHeight * 4)
     {
-      return xiiStatus(xiiFmt("Thumbnail generation for {0} failed, thumbnail data is empty.", GetDocumentTypeName()));
+      return xiiStatus(xiiFmt("Thumbnail generation for {0} failed, unexpected thumbnail data size.", GetDocumentTypeName()));
     }
 
-    xiiImageHeader imgHeader;
-    imgHeader.SetImageFormat(xiiImageFormat::R8G8B8A8_UNORM);
-    imgHeader.SetWidth(msg.m_uiWidth);
-    imgHeader.SetHeight(msg.m_uiHeight);
+    xiiGALTextureCreationDescription description;
+    description.m_Type   = xiiGALResourceDimension::Texture2D;
+    description.m_Format = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+    description.m_Size   = {msg.m_uiWidth, msg.m_uiHeight};
 
     xiiImage image;
-    image.ResetAndAlloc(imgHeader);
-    XII_ASSERT_DEV(data.GetCount() == imgHeader.ComputeDataSize(), "Thumbnail xiiImage has different size than data buffer!");
+    image.ResetAndAlloc(description);
+    XII_ASSERT_DEV(data.GetCount() == image.ComputeDataSize(), "Thumbnail xiiImage has different size than data buffer!");
     xiiMemoryUtils::Copy(image.GetPixelPointer<xiiUInt8>(), data.GetData(), msg.m_uiWidth * msg.m_uiHeight * 4);
-    SaveThumbnail(image, thumbnailInfo).LogFailure();
+    XII_SUCCEED_OR_RETURN(SaveThumbnail(image, thumbnailInfo));
 
     xiiLog::Success("{0} thumbnail for \"{1}\" has been exported.", GetDocumentTypeName(), GetDocumentPath());
 

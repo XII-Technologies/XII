@@ -6,7 +6,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoComponent.h>
 #include <EnginePluginScene/SceneView/SceneView.h>
-#include <GraphicsCore/Components/CameraComponent.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
@@ -41,7 +41,7 @@ void xiiSceneViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
       pView->SetRenderPassProperty("EditorPickingPass", "PickTransparent", pMsg2->m_bEnablePickTransparent);
     }
 
-    if (pMsg2->m_iCameraMode == xiiCameraMode::PerspectiveFixedFovX || pMsg2->m_iCameraMode == xiiCameraMode::PerspectiveFixedFovY)
+    if (pMsg2->m_CameraMode == xiiCameraMode::PerspectiveFixedFovX || pMsg2->m_CameraMode == xiiCameraMode::PerspectiveFixedFovY)
     {
       if (!m_pSceneContext->IsPlayTheGameActive())
       {

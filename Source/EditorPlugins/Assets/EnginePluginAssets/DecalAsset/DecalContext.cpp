@@ -4,7 +4,7 @@
 
 #include <EnginePluginAssets/DecalAsset/DecalContext.h>
 #include <EnginePluginAssets/DecalAsset/DecalView.h>
-#include <GraphicsCore/Decals/DecalComponent.h>
+#include <GraphicsCore/Components/Render/DecalComponent.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 
 // clang-format off

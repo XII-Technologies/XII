@@ -3,7 +3,7 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <Texture/TextureConverter/TextureConverterEnums.h>
+#include <Texture/Converter/TextureConverterEnums.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
 struct xiiPropertyMetaStateEvent;
