@@ -2,6 +2,7 @@
 
 #include <EditorFramework/EditorFrameworkPCH.h>
 
+#include <Core/World/GameObject.h>
 #include <EditorFramework/DocumentWindow/GameObjectDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/GameObjectViewWidget.moc.h>
 #include <EditorFramework/EditTools/GizmoEditTool.h>

@@ -267,3 +267,7 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-gizmo-tests.log` and `Workspace/editor-gizmo-core-tests.log`.
   The broader `EditorFramework` build reaches two remaining errors in camera
   framing and transform-tool RTTI includes (`Workspace/editor-gizmo-editor-build.log`).
+- `EditorFramework` now builds in Windows Debug with unity compilation disabled.
+  Camera framing uses Foundation's current distance query, and transform tools
+  include the authoritative game-object reflection declaration directly instead
+  of depending on transitive headers. Verification: `Workspace/editor-framework-build.log`.
