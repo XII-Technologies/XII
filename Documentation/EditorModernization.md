@@ -408,3 +408,15 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   readback, collider bounds, malformed metadata, and explicit skeleton component
   application (`Workspace/editor-skeleton-preview-tests.log`). Tests caught and
   corrected selection lookup by string-view storage and inward bounds rounding.
+- Native skeleton, clip and animation-graph resources now have a registered file
+  loader that consumes the standard transformed-asset envelope before exposing
+  the native descriptor. Custom memory loaders continue supplying descriptors
+  directly. Previously the default loader's path/header prefix was interpreted
+  as descriptor data. File modification tracking and ResourceManager ownership
+  remain standard; invalid envelopes and unsupported native versions are rejected.
+- Transformed-file loading and file reload pass for native animation resources;
+  malformed headers produce the expected missing-resource result without asserts.
+  All 13 Vulkan Editor subtests and the GraphicsCore regression suite pass
+  (`Workspace/editor-animation-loading-tests.log`,
+  `Workspace/editor-animation-loading-core-tests.log`). Dependent engine process
+  and test targets build (`Workspace/editor-animation-loading-build.log`).
