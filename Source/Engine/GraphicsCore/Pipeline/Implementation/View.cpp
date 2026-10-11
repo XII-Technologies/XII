@@ -2,6 +2,7 @@
 
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
+#include <Foundation/Time/Clock.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>

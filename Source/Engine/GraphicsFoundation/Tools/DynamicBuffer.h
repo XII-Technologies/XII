@@ -4,6 +4,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 

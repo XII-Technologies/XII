@@ -4,6 +4,8 @@
 
 #include <Foundation/Threading/Lock.h>
 #include <GraphicsCore/Material/MaterialInstance.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Textures/TextureCubeResource.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialResourceBinding, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMaterialResourceBinding>)
@@ -39,9 +41,11 @@ xiiResult xiiMaterialInstance::Initialize(xiiSharedPtr<const xiiMaterialSchema> 
   m_RuntimeState.m_uiLayoutHash = m_pSchema->GetLayoutHash();
   m_ResourceBindings.SetCount(m_pSchema->GetTextures().GetCount());
 
-  const auto textures = m_pSchema->GetTextures();
-  for (xiiUInt32 i = 0U; i < textures.GetCount(); ++i)
-    m_ResourceBindings[i].m_Id = textures[i].m_Id;
+  xiiArrayPtr<const xiiMaterialTextureDefinition> pTextureDefinitions = m_pSchema->GetTextures();
+  for (xiiUInt32 i = 0U; i < pTextureDefinitions.GetCount(); ++i)
+  {
+    m_ResourceBindings[i].m_Id = pTextureDefinitions[i].m_Id;
+  }
 
   m_DirtyFlags                = xiiMaterialDirtyFlags::All;
   m_uiRevision                = 1U;
@@ -64,7 +68,9 @@ xiiResult xiiMaterialInstance::SetParameter(xiiMaterialParameterId id, const xii
 
   m_DirtyFlags.Add(xiiMaterialDirtyFlags::Parameters);
   if (pDefinition->m_Flags.IsSet(xiiMaterialParameterFlags::Specialization))
+  {
     m_DirtyFlags.Add(xiiMaterialDirtyFlags::Specialization | xiiMaterialDirtyFlags::Pipeline);
+  }
 
   ++m_uiRevision;
   m_RuntimeState.m_uiRevision = m_uiRevision;
