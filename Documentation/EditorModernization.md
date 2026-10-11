@@ -914,3 +914,30 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-native-decal-core-tests.log`). This establishes the native
   resource boundary; the Qt decal atlas producer and individual asset transform
   still need migration and are not reported as complete.
+
+- SharedPluginAssets now provides a Qt-free native decal atlas builder using the
+  existing TexturePacker and image conversion utilities. Full IDs determine
+  deterministic packing order; all channels share one layout, dimensions and
+  authored mip count. It applies separate alpha masks, linearizes color inputs,
+  converts ORM to native R/M/AO, reconstructs XY normals and safely normalizes
+  degenerate normals, retains HDR emissive in finite half-float output and
+  extrudes edges through padding corners. Missing optional channels use native
+  neutral values. Sources and float atlas channels are processed incrementally.
+- Builder limits are explicit: default 1024-pixel entries, 4096-pixel source and
+  atlas extents, configurable source bounds up to 8192 and padding 1..64. It
+  rejects invalid image dimensions/mips, incomplete channel inputs, non-finite
+  pixels, HDR overflow, duplicate IDs and capacity exhaustion without replacing
+  the previous descriptor. Empty projects produce valid neutral atlases. Output
+  is uncompressed RGBA8 plus half-float emissive; format compression and multiple
+  project atlases are not part of this stage. The current native renderer samples
+  mip zero; filtered atlas tails must not be assumed to isolate neighboring tiles.
+- Real image-file tests cover shared pixel coordinates, alpha masks, ORM channel
+  order, XY normals, HDR, padding corners, neutral channels, aspect-preserving
+  downscaling, deterministic order, complete mip chains, rejected inputs and
+  empty projects. Generated output uploads through xiiDecalAtlasResource and
+  Vulkan readback verifies the packed pixels. All 30 Editor integration subtests
+  pass (`Workspace/editor-decal-builder-gpu-build.log`,
+  `Workspace/editor-decal-builder-gpu-tests.log`,
+  `Workspace/editor-decal-builder-integration-tests.log`). The Qt producer still
+  needs to call this builder and write per-decal descriptors; that remaining
+  migration is explicit and the overall Editor goal remains incomplete.
