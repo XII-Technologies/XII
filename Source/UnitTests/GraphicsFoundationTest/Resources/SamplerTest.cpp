@@ -8,6 +8,7 @@ XII_CREATE_SIMPLE_TEST(Resources, Sampler)
 {
   xiiGPUTestingEnvironment environment;
   XII_TEST_BOOL(environment.Initialize().Succeeded());
+  const auto initialDeviceReferences = environment.GetDevice()->GetRefCount();
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Creation, retention, and deduplication")
   {
@@ -31,6 +32,14 @@ XII_CREATE_SIMPLE_TEST(Resources, Sampler)
       XII_TEST_BOOL(pSamplerA->GetDescription() == description);
       XII_TEST_BOOL(pSamplerA->GetDevice().Borrow() == environment.GetDevice());
       XII_TEST_BOOL(pSamplerA == pSamplerB);
+      pSamplerA.Clear();
+      XII_TEST_INT(pSamplerB->GetRefCount(), 1);
+      pSamplerB.Clear();
+      pSamplerA = environment.GetDevice()->CreateSampler(description);
+      XII_TEST_BOOL(pSamplerA != nullptr);
+      XII_TEST_INT(pSamplerA->GetRefCount(), 1);
     }
   }
+  environment.GetDevice()->WaitIdle();
+  XII_TEST_INT(environment.GetDevice()->GetRefCount(), initialDeviceReferences);
 }

@@ -42,7 +42,6 @@ public:
 
   // Internal objects retrieval.
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator*            GetAllocator() const { return m_Allocator.GetParent(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiD3D12MemoryAllocator* GetD3D12Allocator() const { return m_pAllocatorD3D12.Borrow(); }
 
   [[nodiscard]] XII_ALWAYS_INLINE ID3D12Device1* GetD3D12Device() const { return m_pD3D12Device; }

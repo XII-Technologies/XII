@@ -227,7 +227,7 @@ xiiInternal::NewInstance<xiiGALBufferView> xiiGALBufferD3D12::CreateViewPlatform
 
   XII_DELETE(pBufferViewD3D12.m_pAllocator, pBufferViewD3D12.m_pInstance);
 
-  return pBufferViewD3D12;
+  return nullptr;
 }
 
 void xiiGALBufferD3D12::SetDebugNamePlatform(xiiStringView sName) const

@@ -2455,7 +2455,7 @@ namespace
     xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::Text, xiiGALPrimitiveTopology::TriangleList, true, false);
     if (pPipeline == nullptr)
       return;
-    xiiGALTextureView* pFontTextureView = pFontTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource).Borrow();
+    auto pFontTextureView = pFontTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     for (const PreparedGlyphBatch& batch : batches)
     {

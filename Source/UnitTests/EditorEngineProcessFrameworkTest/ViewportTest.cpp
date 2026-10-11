@@ -128,7 +128,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
   xiiViewHandle removed;
   {
     TestViewContext first(&document), second(&document);
-    auto*           target = texture->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow();
+    auto            target = texture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
     first.SetupRenderTarget({}, target, 80, 60);
     second.SetupRenderTarget({}, target, 80, 60);
     auto* firstView  = first.BorrowView();
@@ -145,6 +145,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
     XII_TEST_BOOL(firstView->GetCamera() != secondView->GetCamera());
     XII_TEST_BOOL(firstView->GetRenderPipelineResource() == secondView->GetRenderPipelineResource());
     XII_TEST_BOOL(firstView->GetRenderTargetView() == target);
+    XII_TEST_INT(target->GetRefCount(), 3); // Two views plus this client, with no cache ownership.
+    auto* borrowedTarget = target.Borrow();
+    target.Clear();
+    XII_TEST_BOOL(firstView->GetRenderTargetView() == borrowedTarget);
+    XII_TEST_BOOL(secondView->GetRenderTargetView() == borrowedTarget);
+    target = texture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+    XII_TEST_BOOL(target.Borrow() == borrowedTarget);
     first.SetupRenderTarget({}, target, 40, 30);
     XII_TEST_BOOL(first.BorrowView() == firstView);
     XII_TEST_FLOAT(firstView->GetViewport().width, 40, 0);

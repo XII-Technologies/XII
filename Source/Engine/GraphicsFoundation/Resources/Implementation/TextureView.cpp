@@ -34,6 +34,9 @@ xiiGALTextureView::xiiGALTextureView(xiiSharedPtr<xiiGALDevice> pDevice, xiiShar
   XII_ASSERT_DEBUG(m_pTexture != nullptr, "The given texture must not be nullptr.");
 }
 
-xiiGALTextureView::~xiiGALTextureView() = default;
+xiiGALTextureView::~xiiGALTextureView()
+{
+  m_pTexture->UnregisterDefaultView(this);
+}
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_TextureView);

@@ -68,7 +68,8 @@ public:
   void          SetName(xiiStringView sName);
 
   xiiGALTextureView* GetRenderTargetView() const;
-  void               SetRenderTargetView(xiiGALTextureView* pRenderTargetView);
+  /// Retains the offscreen output view and its texture until replaced or this view is destroyed.
+  void SetRenderTargetView(xiiGALTextureView* pRenderTargetView);
 
   /// Sets the swapchain that this view will be rendering into.
   const xiiGALSwapChain* GetSwapChain() const;
@@ -247,8 +248,8 @@ private:
 
   /// Non-owning pointer to the swapchain this view renders into.
   /// Set via SetSwapChain(); may be nullptr for off-screen views.
-  const xiiGALSwapChain* m_pSwapChain        = nullptr;
-  xiiGALTextureView*     m_pRenderTargetView = nullptr;
+  const xiiGALSwapChain*          m_pSwapChain = nullptr;
+  xiiSharedPtr<xiiGALTextureView> m_pRenderTargetView;
 
   xiiViewRenderResourceContextHandle m_hPipelineRuntime;
   xiiRenderPipelineResourceHandle    m_hRenderPipeline;

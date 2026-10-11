@@ -191,6 +191,8 @@ public:
   /// \return The reference-counted pointer to the texture view.
   ///
   /// \note The function **increases** the reference counter for the returned interface.
+  /// Views are created lazily and reused while retained. Keep the returned shared
+  /// pointer for as long as the view is used, including across command recording.
   [[nodiscard]] xiiSharedPtr<xiiGALTextureView> GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
   /// This returns the sparse texture properties.
@@ -214,6 +216,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiGALTextureView;
   friend class xiiMemoryUtils;
 
   xiiGALTexture(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTextureCreationDescription& creationDescription);
@@ -229,10 +232,11 @@ protected:
 
   xiiGALExternalMemoryDescription m_ExternalMemoryDescription;
 
-  xiiSharedPtr<xiiGALTextureView> m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
+  // Non-owning cache, synchronized by the device mutex. Views own this resource.
+  xiiGALTextureView* m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT] = {};
 
 private:
-  void CreateDefaultResourceViews();
+  void UnregisterDefaultView(const xiiGALTextureView* pView);
 };
 
 XII_GRAPHICSFOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTextureCreationDescription& description);

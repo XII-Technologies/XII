@@ -125,7 +125,9 @@ public:
   ///
   /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
   ///
-  /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
+  /// The returned shared pointer owns a reference to the view and its buffer.
+  /// Views are created lazily and reused while retained. Keep the returned shared
+  /// pointer for as long as the view is used, including across command recording.
   [[nodiscard]] xiiSharedPtr<xiiGALBufferView> GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType);
 
   /// This returns the buffer memory properties.
@@ -173,6 +175,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiGALBufferView;
   friend class xiiMemoryUtils;
 
   xiiGALBuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBufferCreationDescription& creationDescription);
@@ -192,8 +195,9 @@ protected:
   xiiBitflags<xiiGALExternalMemoryKind>  m_ExternalMemoryKind;
   xiiBitflags<xiiGALMemoryPropertyFlags> m_MemoryPropertyFlags;
 
-  xiiSharedPtr<xiiGALBufferView> m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];
+  // Non-owning cache, synchronized by the device mutex. Views own this resource.
+  xiiGALBufferView* m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT] = {};
 
 private:
-  void CreateDefaultResourceViews();
+  void UnregisterDefaultView(const xiiGALBufferView* pView);
 };

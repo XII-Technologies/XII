@@ -34,6 +34,14 @@ namespace
     return uiElement == 0U && uiBinding < singleBindings.GetCount() ? singleBindings[uiBinding] : nullptr;
   }
 
+  template <typename T>
+  [[nodiscard]] T* GetDescriptorElement(const xiiDynamicArray<xiiSharedPtr<T>>& singleBindings, const xiiDynamicArray<xiiDynamicArray<xiiSharedPtr<T>>>& arrayBindings, xiiUInt32 uiBinding, xiiUInt32 uiElement)
+  {
+    if (uiBinding < arrayBindings.GetCount() && uiElement < arrayBindings[uiBinding].GetCount())
+      return arrayBindings[uiBinding][uiElement].Borrow();
+    return uiElement == 0U && uiBinding < singleBindings.GetCount() ? singleBindings[uiBinding].Borrow() : nullptr;
+  }
+
   [[nodiscard]] bool IsDescriptorElementBound(const xiiGALPipelineResourceDescriptionVulkan& layout, const xiiGALCommandListDataVulkan::ResourceSetBindings& resources, xiiUInt32 uiElement)
   {
     switch (layout.m_DescriptorType)
@@ -925,9 +933,9 @@ void xiiGALCommandListVulkan::SetShaderResourceBufferViewPlatform(const xiiGALPi
   auto& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
 
   bindSetResources.m_pBoundBufferResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
-  bindSetResources.m_pBoundBufferResourceViews[bindingInformation.m_uiBindSlot] = pBufferViewVulkan != nullptr ? pBufferViewVulkan : nullptr;
+  bindSetResources.m_pBoundBufferResourceViews[bindingInformation.m_uiBindSlot] = xiiSharedPtr<xiiGALBufferViewVulkan>(pBufferViewVulkan, GetDevice()->GetAllocator());
   if (bindingInformation.m_uiBindSlot < bindSetResources.m_pBoundBufferResourceViewArrays.GetCount() && !bindSetResources.m_pBoundBufferResourceViewArrays[bindingInformation.m_uiBindSlot].IsEmpty())
-    bindSetResources.m_pBoundBufferResourceViewArrays[bindingInformation.m_uiBindSlot][0] = pBufferViewVulkan;
+    bindSetResources.m_pBoundBufferResourceViewArrays[bindingInformation.m_uiBindSlot][0] = xiiSharedPtr<xiiGALBufferViewVulkan>(pBufferViewVulkan, GetDevice()->GetAllocator());
 
   m_CommandListData.m_bDescriptorsModified = true;
 }
@@ -939,7 +947,7 @@ void xiiGALCommandListVulkan::SetShaderResourceBufferViewsPlatform(const xiiGALP
   bindings.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
   bindings[bindingInformation.m_uiBindSlot].EnsureCount(uiFirstElement + pBufferViews.GetCount());
   for (xiiUInt32 i = 0; i < pBufferViews.GetCount(); ++i)
-    bindings[bindingInformation.m_uiBindSlot][uiFirstElement + i] = xiiDynamicCast<xiiGALBufferViewVulkan*>(pBufferViews[i]);
+    bindings[bindingInformation.m_uiBindSlot][uiFirstElement + i] = xiiSharedPtr<xiiGALBufferViewVulkan>(xiiDynamicCast<xiiGALBufferViewVulkan*>(pBufferViews[i]), GetDevice()->GetAllocator());
   if (uiFirstElement == 0U && !pBufferViews.IsEmpty())
   {
     auto& singles = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet].m_pBoundBufferResourceViews;
@@ -958,9 +966,9 @@ void xiiGALCommandListVulkan::SetShaderResourceTextureViewPlatform(const xiiGALP
   auto& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
 
   bindSetResources.m_pBoundTextureResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
-  bindSetResources.m_pBoundTextureResourceViews[bindingInformation.m_uiBindSlot] = pTextureViewVulkan != nullptr ? pTextureViewVulkan : nullptr;
+  bindSetResources.m_pBoundTextureResourceViews[bindingInformation.m_uiBindSlot] = xiiSharedPtr<xiiGALTextureViewVulkan>(pTextureViewVulkan, GetDevice()->GetAllocator());
   if (bindingInformation.m_uiBindSlot < bindSetResources.m_pBoundTextureResourceViewArrays.GetCount() && !bindSetResources.m_pBoundTextureResourceViewArrays[bindingInformation.m_uiBindSlot].IsEmpty())
-    bindSetResources.m_pBoundTextureResourceViewArrays[bindingInformation.m_uiBindSlot][0] = pTextureViewVulkan;
+    bindSetResources.m_pBoundTextureResourceViewArrays[bindingInformation.m_uiBindSlot][0] = xiiSharedPtr<xiiGALTextureViewVulkan>(pTextureViewVulkan, GetDevice()->GetAllocator());
 
   m_CommandListData.m_bDescriptorsModified = true;
 }
@@ -972,7 +980,7 @@ void xiiGALCommandListVulkan::SetShaderResourceTextureViewsPlatform(const xiiGAL
   bindings.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
   bindings[bindingInformation.m_uiBindSlot].EnsureCount(uiFirstElement + pTextureViews.GetCount());
   for (xiiUInt32 i = 0; i < pTextureViews.GetCount(); ++i)
-    bindings[bindingInformation.m_uiBindSlot][uiFirstElement + i] = xiiDynamicCast<xiiGALTextureViewVulkan*>(pTextureViews[i]);
+    bindings[bindingInformation.m_uiBindSlot][uiFirstElement + i] = xiiSharedPtr<xiiGALTextureViewVulkan>(xiiDynamicCast<xiiGALTextureViewVulkan*>(pTextureViews[i]), GetDevice()->GetAllocator());
   if (uiFirstElement == 0U && !pTextureViews.IsEmpty())
   {
     auto& singles = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet].m_pBoundTextureResourceViews;
@@ -991,9 +999,9 @@ void xiiGALCommandListVulkan::SetUnorderedAccessBufferViewPlatform(const xiiGALP
   auto& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
 
   bindSetResources.m_pBoundUnorderedAccessBufferResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
-  bindSetResources.m_pBoundUnorderedAccessBufferResourceViews[bindingInformation.m_uiBindSlot] = pBufferViewVulkan != nullptr ? pBufferViewVulkan : nullptr;
+  bindSetResources.m_pBoundUnorderedAccessBufferResourceViews[bindingInformation.m_uiBindSlot] = xiiSharedPtr<xiiGALBufferViewVulkan>(pBufferViewVulkan, GetDevice()->GetAllocator());
   if (bindingInformation.m_uiBindSlot < bindSetResources.m_pBoundUnorderedAccessBufferResourceViewArrays.GetCount() && !bindSetResources.m_pBoundUnorderedAccessBufferResourceViewArrays[bindingInformation.m_uiBindSlot].IsEmpty())
-    bindSetResources.m_pBoundUnorderedAccessBufferResourceViewArrays[bindingInformation.m_uiBindSlot][0] = pBufferViewVulkan;
+    bindSetResources.m_pBoundUnorderedAccessBufferResourceViewArrays[bindingInformation.m_uiBindSlot][0] = xiiSharedPtr<xiiGALBufferViewVulkan>(pBufferViewVulkan, GetDevice()->GetAllocator());
 
   m_CommandListData.m_bDescriptorsModified = true;
 }
@@ -1005,7 +1013,7 @@ void xiiGALCommandListVulkan::SetUnorderedAccessBufferViewsPlatform(const xiiGAL
   bindings.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
   bindings[bindingInformation.m_uiBindSlot].EnsureCount(uiFirstElement + pBufferViews.GetCount());
   for (xiiUInt32 i = 0; i < pBufferViews.GetCount(); ++i)
-    bindings[bindingInformation.m_uiBindSlot][uiFirstElement + i] = xiiDynamicCast<xiiGALBufferViewVulkan*>(pBufferViews[i]);
+    bindings[bindingInformation.m_uiBindSlot][uiFirstElement + i] = xiiSharedPtr<xiiGALBufferViewVulkan>(xiiDynamicCast<xiiGALBufferViewVulkan*>(pBufferViews[i]), GetDevice()->GetAllocator());
   if (uiFirstElement == 0U && !pBufferViews.IsEmpty())
   {
     auto& singles = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet].m_pBoundUnorderedAccessBufferResourceViews;
@@ -1024,9 +1032,9 @@ void xiiGALCommandListVulkan::SetUnorderedAccessTextureViewPlatform(const xiiGAL
   auto& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
 
   bindSetResources.m_pBoundUnorderedAccessTextureResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
-  bindSetResources.m_pBoundUnorderedAccessTextureResourceViews[bindingInformation.m_uiBindSlot] = pTextureViewVulkan != nullptr ? pTextureViewVulkan : nullptr;
+  bindSetResources.m_pBoundUnorderedAccessTextureResourceViews[bindingInformation.m_uiBindSlot] = xiiSharedPtr<xiiGALTextureViewVulkan>(pTextureViewVulkan, GetDevice()->GetAllocator());
   if (bindingInformation.m_uiBindSlot < bindSetResources.m_pBoundUnorderedAccessTextureResourceViewArrays.GetCount() && !bindSetResources.m_pBoundUnorderedAccessTextureResourceViewArrays[bindingInformation.m_uiBindSlot].IsEmpty())
-    bindSetResources.m_pBoundUnorderedAccessTextureResourceViewArrays[bindingInformation.m_uiBindSlot][0] = pTextureViewVulkan;
+    bindSetResources.m_pBoundUnorderedAccessTextureResourceViewArrays[bindingInformation.m_uiBindSlot][0] = xiiSharedPtr<xiiGALTextureViewVulkan>(pTextureViewVulkan, GetDevice()->GetAllocator());
 
   m_CommandListData.m_bDescriptorsModified = true;
 }
@@ -1038,7 +1046,7 @@ void xiiGALCommandListVulkan::SetUnorderedAccessTextureViewsPlatform(const xiiGA
   bindings.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
   bindings[bindingInformation.m_uiBindSlot].EnsureCount(uiFirstElement + pTextureViews.GetCount());
   for (xiiUInt32 i = 0; i < pTextureViews.GetCount(); ++i)
-    bindings[bindingInformation.m_uiBindSlot][uiFirstElement + i] = xiiDynamicCast<xiiGALTextureViewVulkan*>(pTextureViews[i]);
+    bindings[bindingInformation.m_uiBindSlot][uiFirstElement + i] = xiiSharedPtr<xiiGALTextureViewVulkan>(xiiDynamicCast<xiiGALTextureViewVulkan*>(pTextureViews[i]), GetDevice()->GetAllocator());
   if (uiFirstElement == 0U && !pTextureViews.IsEmpty())
   {
     auto& singles = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet].m_pBoundUnorderedAccessTextureResourceViews;

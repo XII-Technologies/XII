@@ -511,19 +511,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
 
   xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData, externalMemoryKind);
 
-  FinalizeBufferInternal(description, pBuffer);
-
   return pBuffer;
-}
-
-void xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription& description, xiiSharedPtr<xiiGALBuffer>& pBuffer)
-{
-  XII_IGNORE_UNUSED(description);
-
-  if (pBuffer != nullptr)
-  {
-    pBuffer->CreateDefaultResourceViews();
-  }
 }
 
 xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
@@ -757,19 +745,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
 
   xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData, externalMemoryKind);
 
-  FinalizeTextureInternal(description, pTexture);
-
   return pTexture;
-}
-
-void xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCreationDescription& description, xiiSharedPtr<xiiGALTexture>& pTexture)
-{
-  XII_IGNORE_UNUSED(description);
-
-  if (pTexture != nullptr)
-  {
-    pTexture->CreateDefaultResourceViews();
-  }
 }
 
 xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescription& description)
@@ -781,9 +757,11 @@ xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreat
   {
     for (xiiGALSampler* pCachedSampler : it.Value())
     {
-      if (pCachedSampler->GetDescription() == description)
+      if (pCachedSampler->GetDescription() == description && pCachedSampler->TryAddRef())
       {
-        return xiiSharedPtr<xiiGALSampler>(pCachedSampler, &m_Allocator);
+        xiiSharedPtr<xiiGALSampler> sampler(pCachedSampler, GetAllocator());
+        pCachedSampler->ReleaseRef();
+        return sampler;
       }
     }
   }

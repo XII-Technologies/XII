@@ -8,6 +8,7 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/TextureView.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
 xiiCVarFloat cvar_DynamicRenderingMinScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
@@ -44,6 +45,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 2, xiiRTTINoAllocator)
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
+{
+  m_pRenderTargetView = pRenderTargetView == nullptr ? xiiSharedPtr<xiiGALTextureView>() :
+                                                       xiiSharedPtr<xiiGALTextureView>(pRenderTargetView, pRenderTargetView->GetDevice()->GetAllocator());
+}
 
 xiiBuiltinRenderPipelineRuntime* xiiView::GetBuiltinRuntime() const
 {

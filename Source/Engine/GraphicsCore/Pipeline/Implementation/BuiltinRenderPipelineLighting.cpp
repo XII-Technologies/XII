@@ -711,7 +711,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRDIEmissiveVisibility(xiiReSTIRD
 
   data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
   data.m_hReservoir             = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir,
-                                          data.m_bUseHardwareRayTracing ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+                                                      data.m_bUseHardwareRayTracing ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
 
   if (data.m_bUseHardwareRayTracing)
   {
@@ -996,7 +996,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteIndirectLighting(const xiiDeferredI
 
     xiiHybridArray<xiiGALTextureView*, XII_MAX_REFLECTION_PROBES> reflectionProbeViews;
     reflectionProbeViews.SetCount(XII_MAX_REFLECTION_PROBES);
-    xiiGALTextureView* pFallbackView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+    xiiSharedPtr<xiiGALTextureView> pFallbackView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
     for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < XII_MAX_REFLECTION_PROBES; ++uiProbeIndex)
     {
       reflectionProbeViews[uiProbeIndex] = uiProbeIndex < data.m_hReflectionProbeTextures.GetCount() ?

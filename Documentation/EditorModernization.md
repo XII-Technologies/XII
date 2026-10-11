@@ -860,3 +860,33 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   identifies a strong ownership cycle between default buffer/texture views and
   their parent resources. Repair and regression coverage are in progress; the
   complete suite is not reported as passing. Temporary diagnostics are removed.
+
+- The atlas suite's repeated-device failure is repaired at the ownership boundary.
+  Default buffer/texture views are created lazily and cached without owning a
+  reference; client views retain their parent resource. Cache acquisition pins
+  only nonzero reference counts under the device mutex, so a concurrent final
+  release cannot resurrect a destroyed view. Sampler cache acquisition uses the
+  same rule. Backend view creation returns null after failed initialization.
+- Independently reference-counted Vulkan/D3D12 GAL objects now use the device's
+  parent allocator, consistently with reconstructed shared pointers. This
+  allocator outlives device teardown; device-owned helpers retain their internal
+  tracking allocator. The previous mismatch leaked proxy allocation records and
+  could deallocate a final child through a proxy destroyed with its device.
+- Command-list shader resource/UAV bindings retain views through the existing
+  command data retirement path. Offscreen xiiView outputs retain their target
+  views, and local renderer callers preserve shared ownership across use. No
+  resource-to-default-view ownership cycle remains. The API documents lazy view
+  identity and the requirement to retain borrowed views.
+- Regression tests verify cache reuse and release, parent-resource retention,
+  concurrent acquisition/final release, sampler release/recreation, fixture
+  device reference balance, a final view outliving the device owner, and two
+  Editor views retaining the same output after the caller releases it. All
+  configured dependent targets build; all 40 GraphicsFoundation, 18 GraphicsCore
+  and 28 Editor engine-process subtests pass, including the atlas reload/readback
+  and formerly failing ViewLifecycle tests (`Workspace/editor-gal-ownership-build.log`,
+  `Workspace/editor-gal-ownership-resources-tests.log`,
+  `Workspace/editor-gal-ownership-graphics-tests.log`,
+  `Workspace/editor-gal-ownership-core-tests.log`,
+  `Workspace/editor-gal-ownership-editor-tests.log`). Windows Debug/Vulkan was
+  exercised; D3D12 ownership code was updated consistently but is not enabled in
+  this workspace and was not compiled or run. GUI workflows remain unverified.

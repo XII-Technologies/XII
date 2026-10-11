@@ -229,7 +229,7 @@ xiiInternal::NewInstance<xiiGALBufferView> xiiGALBufferVulkan::CreateViewPlatfor
 
   XII_DELETE(pBufferViewVulkan.m_pAllocator, pBufferViewVulkan.m_pInstance);
 
-  return pBufferViewVulkan;
+  return nullptr;
 }
 
 void xiiGALBufferVulkan::SetDebugNamePlatform(xiiStringView sName) const

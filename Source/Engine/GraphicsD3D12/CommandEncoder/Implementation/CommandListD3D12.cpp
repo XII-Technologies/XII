@@ -884,7 +884,7 @@ void xiiGALCommandListD3D12::SetShaderResourceBufferViewPlatform(const xiiGALPip
   xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
 
   bindSetResources.m_pBoundBufferResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
-  bindSetResources.m_pBoundBufferResourceViews[bindingInformation.m_uiBindSlot] = pBufferViewD3D12 != nullptr ? pBufferViewD3D12 : nullptr;
+  bindSetResources.m_pBoundBufferResourceViews[bindingInformation.m_uiBindSlot] = xiiSharedPtr<xiiGALBufferViewD3D12>(pBufferViewD3D12, GetDevice()->GetAllocator());
 
   m_CommandListData.m_bDescriptorsModified = true;
 }
@@ -898,7 +898,7 @@ void xiiGALCommandListD3D12::SetShaderResourceTextureViewPlatform(const xiiGALPi
   xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
 
   bindSetResources.m_pBoundTextureResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
-  bindSetResources.m_pBoundTextureResourceViews[bindingInformation.m_uiBindSlot] = pTextureViewD3D12 != nullptr ? pTextureViewD3D12 : nullptr;
+  bindSetResources.m_pBoundTextureResourceViews[bindingInformation.m_uiBindSlot] = xiiSharedPtr<xiiGALTextureViewD3D12>(pTextureViewD3D12, GetDevice()->GetAllocator());
 
   m_CommandListData.m_bDescriptorsModified = true;
 }
@@ -912,7 +912,7 @@ void xiiGALCommandListD3D12::SetUnorderedAccessBufferViewPlatform(const xiiGALPi
   xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
 
   bindSetResources.m_pBoundUnorderedAccessBufferResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
-  bindSetResources.m_pBoundUnorderedAccessBufferResourceViews[bindingInformation.m_uiBindSlot] = pBufferViewD3D12 != nullptr ? pBufferViewD3D12 : nullptr;
+  bindSetResources.m_pBoundUnorderedAccessBufferResourceViews[bindingInformation.m_uiBindSlot] = xiiSharedPtr<xiiGALBufferViewD3D12>(pBufferViewD3D12, GetDevice()->GetAllocator());
 
   m_CommandListData.m_bDescriptorsModified = true;
 }
@@ -926,7 +926,7 @@ void xiiGALCommandListD3D12::SetUnorderedAccessTextureViewPlatform(const xiiGALP
   xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
 
   bindSetResources.m_pBoundUnorderedAccessTextureResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
-  bindSetResources.m_pBoundUnorderedAccessTextureResourceViews[bindingInformation.m_uiBindSlot] = pTextureViewD3D12 != nullptr ? pTextureViewD3D12 : nullptr;
+  bindSetResources.m_pBoundUnorderedAccessTextureResourceViews[bindingInformation.m_uiBindSlot] = xiiSharedPtr<xiiGALTextureViewD3D12>(pTextureViewD3D12, GetDevice()->GetAllocator());
 
   m_CommandListData.m_bDescriptorsModified = true;
 }
@@ -1229,7 +1229,7 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
 
           case xiiGALShaderResourceType::BufferSRV:
           {
-            xiiGALBufferViewD3D12* pBufferViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundBufferResourceViews.GetCount() ? boundSetResources.m_pBoundBufferResourceViews[resource.m_uiBindSlot] : nullptr;
+            xiiGALBufferViewD3D12* pBufferViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundBufferResourceViews.GetCount() ? boundSetResources.m_pBoundBufferResourceViews[resource.m_uiBindSlot].Borrow() : nullptr;
             if (pBufferViewD3D12 == nullptr || pBufferViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
             {
               xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no shader-resource buffer view bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
@@ -1261,7 +1261,7 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
           case xiiGALShaderResourceType::TextureAndSampler:
           case xiiGALShaderResourceType::InputAttachment:
           {
-            xiiGALTextureViewD3D12* pTextureViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundTextureResourceViews.GetCount() ? boundSetResources.m_pBoundTextureResourceViews[resource.m_uiBindSlot] : nullptr;
+            xiiGALTextureViewD3D12* pTextureViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundTextureResourceViews.GetCount() ? boundSetResources.m_pBoundTextureResourceViews[resource.m_uiBindSlot].Borrow() : nullptr;
             if (pTextureViewD3D12 == nullptr || pTextureViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
             {
               xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no shader-resource texture view bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
@@ -1293,7 +1293,7 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
 
           case xiiGALShaderResourceType::BufferUAV:
           {
-            xiiGALBufferViewD3D12* pBufferViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? boundSetResources.m_pBoundUnorderedAccessBufferResourceViews[resource.m_uiBindSlot] : nullptr;
+            xiiGALBufferViewD3D12* pBufferViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? boundSetResources.m_pBoundUnorderedAccessBufferResourceViews[resource.m_uiBindSlot].Borrow() : nullptr;
             if (pBufferViewD3D12 == nullptr || pBufferViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
             {
               xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no unordered-access buffer view bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
@@ -1323,7 +1323,7 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
 
           case xiiGALShaderResourceType::TextureUAV:
           {
-            xiiGALTextureViewD3D12* pTextureViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? boundSetResources.m_pBoundUnorderedAccessTextureResourceViews[resource.m_uiBindSlot] : nullptr;
+            xiiGALTextureViewD3D12* pTextureViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? boundSetResources.m_pBoundUnorderedAccessTextureResourceViews[resource.m_uiBindSlot].Borrow() : nullptr;
             if (pTextureViewD3D12 == nullptr || pTextureViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
             {
               xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no unordered-access texture view bound at '{}'.", GetDebugName(), resource.m_sName.GetView());

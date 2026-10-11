@@ -10,6 +10,7 @@ XII_CREATE_SIMPLE_TEST(Resources, Buffer)
 {
   xiiGPUTestingEnvironment environment;
   XII_TEST_BOOL(environment.Initialize().Succeeded());
+  const auto initialDeviceReferences = environment.GetDevice()->GetRefCount();
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Structured buffer and default views")
   {
@@ -22,6 +23,7 @@ XII_CREATE_SIMPLE_TEST(Resources, Buffer)
 
     xiiSharedPtr<xiiGALBuffer> pBuffer = environment.GetDevice()->CreateBuffer(description);
     XII_TEST_BOOL(pBuffer != nullptr);
+    XII_TEST_INT(pBuffer->GetRefCount(), 1);
 
     XII_TEST_BOOL(pBuffer->GetDescription() == description);
     XII_TEST_INT(pBuffer->GetSize(), 1024U);
@@ -44,5 +46,37 @@ XII_CREATE_SIMPLE_TEST(Resources, Buffer)
     XII_TEST_BOOL(pUAV->GetBuffer() == pBuffer);
     XII_TEST_INT(pSRV->GetDescription().m_uiByteWidth, 1024U);
     XII_TEST_INT(pUAV->GetDescription().m_uiByteWidth, 1024U);
+    XII_TEST_BOOL(pSRV == pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    XII_TEST_INT(pSRV->GetRefCount(), 1);
+    pSRV.Clear();
+    XII_TEST_INT(pBuffer->GetRefCount(), 2);
+    pSRV = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+    XII_TEST_BOOL(pSRV != nullptr);
+    pBuffer.Clear();
+    XII_TEST_INT(pSRV->GetBuffer()->GetSize(), 1024);
+    XII_TEST_BOOL(pSRV->GetBuffer() == pUAV->GetBuffer());
+    pUAV.Clear();
+    pSRV.Clear();
+  }
+  environment.GetDevice()->WaitIdle();
+  XII_TEST_INT(environment.GetDevice()->GetRefCount(), initialDeviceReferences);
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Last view outlives the device owner")
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize              = 64;
+    description.m_Mode                = xiiGALBufferMode::Structured;
+    description.m_uiElementByteStride = 16;
+    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    auto buffer                       = environment.GetDevice()->CreateBuffer(description);
+    if (!XII_TEST_BOOL(buffer != nullptr))
+      return;
+    auto view = buffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+    if (!XII_TEST_BOOL(view != nullptr))
+      return;
+    buffer.Clear();
+    environment.Shutdown();
+    XII_TEST_INT(view->GetBuffer()->GetSize(), 64);
+    XII_TEST_BOOL(view->GetDevice() != nullptr);
+    view.Clear(); // Also destroys the resource and its device; their allocator must still exist.
   }
 }

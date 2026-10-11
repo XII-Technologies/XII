@@ -49,18 +49,18 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
       m_pBoundSamplerStateArrays                       = std::move(other.m_pBoundSamplerStateArrays);
     }
 
-    xiiDynamicArray<xiiGALBufferVulkan*>                       m_pBoundConstantBuffers;
-    xiiDynamicArray<xiiGALBufferViewVulkan*>                   m_pBoundBufferResourceViews;
-    xiiDynamicArray<xiiGALTextureViewVulkan*>                  m_pBoundTextureResourceViews;
-    xiiDynamicArray<xiiGALTopLevelASVulkan*>                   m_pBoundAccelerationStructures;
-    xiiDynamicArray<xiiGALBufferViewVulkan*>                   m_pBoundUnorderedAccessBufferResourceViews;
-    xiiDynamicArray<xiiGALTextureViewVulkan*>                  m_pBoundUnorderedAccessTextureResourceViews;
-    xiiDynamicArray<xiiGALSamplerVulkan*>                      m_pBoundSamplerStates;
-    xiiDynamicArray<xiiDynamicArray<xiiGALBufferViewVulkan*>>  m_pBoundBufferResourceViewArrays;
-    xiiDynamicArray<xiiDynamicArray<xiiGALTextureViewVulkan*>> m_pBoundTextureResourceViewArrays;
-    xiiDynamicArray<xiiDynamicArray<xiiGALBufferViewVulkan*>>  m_pBoundUnorderedAccessBufferResourceViewArrays;
-    xiiDynamicArray<xiiDynamicArray<xiiGALTextureViewVulkan*>> m_pBoundUnorderedAccessTextureResourceViewArrays;
-    xiiDynamicArray<xiiDynamicArray<xiiGALSamplerVulkan*>>     m_pBoundSamplerStateArrays;
+    xiiDynamicArray<xiiGALBufferVulkan*>                                    m_pBoundConstantBuffers;
+    xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>                   m_pBoundBufferResourceViews;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>>                  m_pBoundTextureResourceViews;
+    xiiDynamicArray<xiiGALTopLevelASVulkan*>                                m_pBoundAccelerationStructures;
+    xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>                   m_pBoundUnorderedAccessBufferResourceViews;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>>                  m_pBoundUnorderedAccessTextureResourceViews;
+    xiiDynamicArray<xiiGALSamplerVulkan*>                                   m_pBoundSamplerStates;
+    xiiDynamicArray<xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>>  m_pBoundBufferResourceViewArrays;
+    xiiDynamicArray<xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>>> m_pBoundTextureResourceViewArrays;
+    xiiDynamicArray<xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>>  m_pBoundUnorderedAccessBufferResourceViewArrays;
+    xiiDynamicArray<xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>>> m_pBoundUnorderedAccessTextureResourceViewArrays;
+    xiiDynamicArray<xiiDynamicArray<xiiGALSamplerVulkan*>>                  m_pBoundSamplerStateArrays;
   };
 
   XII_ALWAYS_INLINE xiiGALCommandListDataVulkan()  = default;

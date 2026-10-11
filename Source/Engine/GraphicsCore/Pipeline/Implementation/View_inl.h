@@ -22,12 +22,7 @@ XII_ALWAYS_INLINE void xiiView::SetName(xiiStringView sName)
 
 XII_ALWAYS_INLINE xiiGALTextureView* xiiView::GetRenderTargetView() const
 {
-  return m_pRenderTargetView;
-}
-
-XII_ALWAYS_INLINE void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
-{
-  m_pRenderTargetView = pRenderTargetView;
+  return m_pRenderTargetView.Borrow();
 }
 
 XII_ALWAYS_INLINE const xiiGALSwapChain* xiiView::GetSwapChain() const

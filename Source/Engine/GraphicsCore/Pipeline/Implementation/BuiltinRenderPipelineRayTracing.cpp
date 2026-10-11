@@ -97,7 +97,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedGlobalIllumination(const x
       cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", context.GetBuffer(data.m_hReflectionProbeData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayMiss);
       xiiHybridArray<xiiGALTextureView*, XII_MAX_REFLECTION_PROBES> reflectionProbeViews;
       reflectionProbeViews.SetCount(XII_MAX_REFLECTION_PROBES);
-      xiiGALTextureView* pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+      xiiSharedPtr<xiiGALTextureView> pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
       for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < XII_MAX_REFLECTION_PROBES; ++uiProbeIndex)
       {
         reflectionProbeViews[uiProbeIndex] = uiProbeIndex < data.m_hReflectionProbeTextures.GetCount() ?
@@ -478,7 +478,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedReflections(const xiiRayTr
       cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", context.GetBuffer(data.m_hReflectionProbeData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayMiss);
       xiiHybridArray<xiiGALTextureView*, XII_MAX_REFLECTION_PROBES> reflectionProbeViews;
       reflectionProbeViews.SetCount(XII_MAX_REFLECTION_PROBES);
-      xiiGALTextureView* pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+      xiiSharedPtr<xiiGALTextureView> pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
       for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < XII_MAX_REFLECTION_PROBES; ++uiProbeIndex)
       {
         reflectionProbeViews[uiProbeIndex] = uiProbeIndex < data.m_hReflectionProbeTextures.GetCount() ?

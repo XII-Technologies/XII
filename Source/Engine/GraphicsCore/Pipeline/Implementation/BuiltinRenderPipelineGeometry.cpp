@@ -155,7 +155,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteHiZPyramid(const xiiHiZPyramidData&
           constantsTransition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
           cmd.TransitionResourceStates(xiiMakeArrayPtr(&constantsTransition, 1U));
 
-          xiiGALTextureView* pSourceView = bCopyDepth ? pDepth->GetDefaultView(xiiGALTextureViewType::ShaderResource).Borrow() : sourceViews[uiMip - 1U].Borrow();
+          xiiSharedPtr<xiiGALTextureView> pSourceView = bCopyDepth ? pDepth->GetDefaultView(xiiGALTextureViewType::ShaderResource) : sourceViews[uiMip - 1U];
           cmd.ResolveAndSetShaderResourceTextureView("g_DepthSrc", pSourceView, xiiGALShaderType::Compute);
           cmd.ResolveAndSetUnorderedAccessTextureView("g_HiZOut", destinationViews[uiMip].Borrow(), xiiGALShaderType::Compute);
           cmd.CommitShaderResources(xiiGALStateTransitionMode::None).AssertSuccess();
