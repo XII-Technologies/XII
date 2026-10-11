@@ -729,3 +729,20 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   All 25 Vulkan Editor integration subtests pass
   (`Workspace/editor-animation-import-tests-build.log`,
   `Workspace/editor-animation-import-tests.log`).
+
+- The ModelImporter animation reader now produces native named-joint clip
+  descriptors through Assimp, with metadata-only clip discovery, selected-clip
+  import, frame trimming and first-pose additive deltas. Linear keys retain
+  authored times; STEP boundaries use consecutive native float times; cubic
+  Hermite translation/scale and quaternion curves bake at the configured FPS
+  while retaining source keys. Runtime sampling resolves names against reordered
+  skeletons. Ambiguous names, malformed transforms/keys, morph/vertex channels,
+  per-channel extrapolation/repeat and excessive output fail with xiiResult and
+  a diagnostic. DEFAULT boundary behavior preserves rest transforms except for
+  glTF's required clamping. Cubic baking is an approximation between samples.
+- All 25 Vulkan Editor integration subtests pass, including Unicode source paths,
+  clip discovery, trimming, one-frame clips, STEP/cubic vector and rotation
+  values, additive sparse joints, failed imports and imported native asset
+  file loading/sampling (`Workspace/editor-animation-import-tests-build.log`,
+  `Workspace/editor-animation-import-tests.log`). No new animation format or
+  joint-index dependency was introduced.
