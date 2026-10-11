@@ -11,12 +11,13 @@
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphResource.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
 
 namespace
 {
-  /// Native animation resources consume descriptor streams. File loading removes the standard asset
+  /// Native mesh and animation resources consume descriptor streams. File loading removes the standard asset
   /// envelope here; custom memory loaders continue supplying descriptors directly.
-  class AnimationResourceLoader final : public xiiResourceLoaderFromFile
+  class DescriptorResourceLoader final : public xiiResourceLoaderFromFile
   {
     struct LoadedData
     {
@@ -58,9 +59,20 @@ namespace
       }
       const auto descriptorOffset  = data->m_Reader.GetReadPosition();
       xiiUInt32  descriptorVersion = 0;
-      if (data->m_Reader.ReadDWordValue(&descriptorVersion).Failed() || descriptorVersion != 1)
+      xiiResult  versionRead       = XII_FAILURE;
+      if (pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshResource>() || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshBufferResource>())
       {
-        xiiLog::Error("Animation asset '{}' uses an unsupported descriptor format. Re-transform its source asset.", pResource->GetResourceID());
+        xiiTypeVersion meshVersion = 0;
+        versionRead                = data->m_Reader.ReadWordValue(&meshVersion);
+        descriptorVersion          = meshVersion;
+      }
+      else
+      {
+        versionRead = data->m_Reader.ReadDWordValue(&descriptorVersion);
+      }
+      if (versionRead.Failed() || descriptorVersion != 1)
+      {
+        xiiLog::Error("Native descriptor asset '{}' uses an unsupported descriptor format. Re-transform its source asset.", pResource->GetResourceID());
         XII_DEFAULT_DELETE(data);
         return {};
       }
@@ -84,11 +96,11 @@ namespace
     }
   };
 
-  xiiUniquePtr<AnimationResourceLoader> s_pAnimationResourceLoader;
+  xiiUniquePtr<DescriptorResourceLoader> s_pDescriptorResourceLoader;
 } // namespace
 
 // clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, AnimationResourceLoader)
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DescriptorResourceLoader)
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
     "Core"
@@ -96,19 +108,23 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, AnimationResourceLoader)
 
   ON_CORESYSTEMS_STARTUP
   {
-    s_pAnimationResourceLoader = XII_DEFAULT_NEW(AnimationResourceLoader);
-    xiiResourceManager::SetResourceTypeLoader<xiiSkeletonResource>(s_pAnimationResourceLoader.Borrow());
-    xiiResourceManager::SetResourceTypeLoader<xiiAnimationClipResource>(s_pAnimationResourceLoader.Borrow());
-    xiiResourceManager::SetResourceTypeLoader<xiiAnimGraphResource>(s_pAnimationResourceLoader.Borrow());
+    s_pDescriptorResourceLoader = XII_DEFAULT_NEW(DescriptorResourceLoader);
+    xiiResourceManager::SetResourceTypeLoader<xiiSkeletonResource>(s_pDescriptorResourceLoader.Borrow());
+    xiiResourceManager::SetResourceTypeLoader<xiiMeshResource>(s_pDescriptorResourceLoader.Borrow());
+    xiiResourceManager::SetResourceTypeLoader<xiiMeshBufferResource>(s_pDescriptorResourceLoader.Borrow());
+    xiiResourceManager::SetResourceTypeLoader<xiiAnimationClipResource>(s_pDescriptorResourceLoader.Borrow());
+    xiiResourceManager::SetResourceTypeLoader<xiiAnimGraphResource>(s_pDescriptorResourceLoader.Borrow());
   }
   ON_CORESYSTEMS_SHUTDOWN
   {
     xiiResourceManager::SetResourceTypeLoader<xiiSkeletonResource>(nullptr);
+    xiiResourceManager::SetResourceTypeLoader<xiiMeshResource>(nullptr);
+    xiiResourceManager::SetResourceTypeLoader<xiiMeshBufferResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiAnimationClipResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiAnimGraphResource>(nullptr);
-    s_pAnimationResourceLoader.Clear();
+    s_pDescriptorResourceLoader.Clear();
   }
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_AnimationResourceLoader);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Resources_Implementation_DescriptorResourceLoader);

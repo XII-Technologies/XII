@@ -659,3 +659,14 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   eleven invalid converter invocations (`Workspace/editor-custom-sampler-build.log`,
   `Workspace/editor-custom-sampler-tests.log`). The complete Editor plugin remains
   subject to the other documented asset migrations.
+
+- File-backed native mesh resources now use the same standard asset-envelope
+  loader as native animation resources. Custom memory loaders still supply raw
+  descriptors. The loader checks the correct 16-bit mesh / 32-bit animation
+  descriptor version and retains file timestamps for resource reload detection.
+  Mesh reloads publish uniquely identified immutable GPU buffers, so cached or
+  retained previous buffers cannot mask new geometry. All 24 Vulkan Editor
+  integration subtests pass, including disk loading, forced reload, changed
+  bounds, distinct GPU buffers and retained previous-buffer validity
+  (`Workspace/editor-native-mesh-documents-build.log`,
+  `Workspace/editor-native-mesh-documents-tests.log`).

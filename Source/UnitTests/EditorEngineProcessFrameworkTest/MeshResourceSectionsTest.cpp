@@ -6,6 +6,8 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <TestFramework/Utilities/TestLogInterface.h>
@@ -49,6 +51,63 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshResourceSections)
     XII_TEST_BOOL(shared->GetMeshBuffer() == mesh->GetMeshBuffer());
     XII_TEST_INT(shared->GetSections()[1].m_uiFirstMeshlet, 1);
     XII_TEST_INT(shared->GetLODs()[0].m_uiMeshletCount, 2);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native asset files load and reload independent GPU buffers")
+  {
+    xiiStringBuilder path(":imgout/NativeMeshSections.xiiBinMesh");
+    auto             writeFile = [&](float scale) -> xiiResult {
+      xiiGeometry source;
+      source.AddBox(xiiVec3(scale), true);
+      xiiMeshResourceDescriptor description;
+      description.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(source, xiiGALPrimitiveTopology::TriangleList, false);
+      description.AddMaterialSlot("");
+      description.AddMaterialSlot("");
+      description.AddSection(5, 0, 0);
+      description.AddSection(7, 5, 1);
+      description.m_UsageFlags.Add(xiiMeshResourceUsageFlags::CpuReadable);
+      description.ComputeBounds();
+      XII_SUCCEED_OR_RETURN(description.BuildMeshlets());
+      xiiFileWriter file;
+      XII_SUCCEED_OR_RETURN(file.Open(path));
+      xiiAssetFileHeader header;
+      header.SetFileHashAndVersion(12345, 13);
+      XII_SUCCEED_OR_RETURN(header.Write(file));
+      description.Save(file);
+      return XII_SUCCESS;
+    };
+    if (!XII_TEST_RESULT(writeFile(2)))
+      return;
+    const auto                  diskHandle = xiiResourceManager::LoadResource<xiiMeshResource>(path);
+    xiiMeshBufferResourceHandle oldBuffer;
+    {
+      xiiResourceLock<xiiMeshResource> loaded(diskHandle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (!XII_TEST_BOOL(loaded && loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
+        return;
+      XII_TEST_INT(loaded->GetSections().GetCount(), 2);
+      XII_TEST_INT(loaded->GetMeshletCount(), 2);
+      XII_TEST_FLOAT(loaded->GetBounds().m_vBoxHalfExtents.x, 1, 0.0001f);
+      oldBuffer = loaded->GetMeshBuffer();
+    }
+    if (!XII_TEST_RESULT(writeFile(4)))
+      return;
+    XII_TEST_BOOL(xiiResourceManager::ReloadResource(diskHandle, true));
+    {
+      xiiResourceLock<xiiMeshResource> loaded(diskHandle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (!XII_TEST_BOOL(loaded && loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
+        return;
+      XII_TEST_FLOAT(loaded->GetBounds().m_vBoxHalfExtents.x, 2, 0.0001f);
+      XII_TEST_BOOL(loaded->GetMeshBuffer() != oldBuffer);
+      xiiResourceLock<xiiMeshBufferResource> previous(oldBuffer, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      xiiResourceLock<xiiMeshBufferResource> current(loaded->GetMeshBuffer(), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (XII_TEST_BOOL(previous && current))
+      {
+        XII_TEST_BOOL(previous->GetVertexBuffer() != current->GetVertexBuffer());
+        XII_TEST_FLOAT(previous->GetBounds().m_vBoxHalfExtents.x, 1, 0.0001f);
+        XII_TEST_FLOAT(current->GetBounds().m_vBoxHalfExtents.x, 2, 0.0001f);
+        XII_TEST_INT(current->GetMeshlets()[1].m_uiMaterialIndex, 1);
+      }
+    }
   }
 
   auto makeInvalid = [&]() {

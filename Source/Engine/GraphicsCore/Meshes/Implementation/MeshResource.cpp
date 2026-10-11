@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Threading/AtomicInteger.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshResource, 1, xiiRTTIDefaultAllocator<xiiMeshResource>)
@@ -135,7 +136,10 @@ void xiiMeshResource::CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& 
   }
 
   xiiStringBuilder sBufferResourceId;
-  sBufferResourceId.Set(GetResourceID(), "#MeshBuffer");
+  // Reloads publish new immutable GPU data. Retained buffers from previous content remain
+  // valid, including when the parent resource is later destroyed and recreated with its ID.
+  static xiiAtomicInteger64 s_uiBufferGeneration;
+  sBufferResourceId.SetFormat("{}#MeshBuffer-{}", GetResourceID(), s_uiBufferGeneration.Increment());
 
   xiiMeshBufferResourceDescriptor bufferDescriptor = std::move(inout_descriptor.GetMeshBufferDescriptor());
   bufferDescriptor.m_bKeepCpuMeshData              = inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::CpuReadable);
