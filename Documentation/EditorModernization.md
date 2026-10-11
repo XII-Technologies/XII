@@ -359,3 +359,13 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   reload from serialized definitions, and invalid-setting rejection
   (`Workspace/editor-texture-preview-tests.log`). The cube test caught the
   forward-camera/reversed-depth mismatch and verifies visible near faces.
+- Texture and cube document contexts now retain only resource handles and IPC
+  inspection settings. Preview mesh objects, per-document preview materials,
+  resource-event callbacks and unused internal material assets are removed;
+  statistics read acquired loaded resources and mip-size shifts are bounded.
+  Both context/view pairs compile (`Workspace/editor-texture-context-build.log`).
+  The full asset plugin's remaining failure is the skeleton context's reference
+  to the removed animated-mesh component; its visualization migration is pending.
+- Shared framework tests, EditorFramework and EditorEngineProcess build after
+  texture integration (`Workspace/editor-texture-consumers-build.log`). Texture
+  GUI interactions remain unverified until the complete Editor/plugin build.

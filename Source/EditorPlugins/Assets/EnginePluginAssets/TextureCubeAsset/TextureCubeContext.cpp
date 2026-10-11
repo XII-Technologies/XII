@@ -5,7 +5,6 @@
 #include <EnginePluginAssets/TextureCubeAsset/TextureCubeContext.h>
 #include <EnginePluginAssets/TextureCubeAsset/TextureCubeView.h>
 
-#include <GraphicsCore/Meshes/MeshComponent.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeContext, 1, xiiRTTIDefaultAllocator<xiiTextureCubeContext>)
@@ -26,110 +25,27 @@ xiiTextureCubeContext::xiiTextureCubeContext() :
 
 void xiiTextureCubeContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentConfigMsgToEngine>() && m_hMaterial.IsValid())
+  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentConfigMsgToEngine>())
   {
-    const xiiDocumentConfigMsgToEngine* pMsg2 = static_cast<const xiiDocumentConfigMsgToEngine*>(pMsg);
-
-    xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-    if (pMsg2->m_sWhatToDo == "SetChannelMode")
+    const auto& config = *static_cast<const xiiDocumentConfigMsgToEngine*>(pMsg);
+    if (config.m_sWhatToDo == "SetChannelMode")
     {
-      pMaterial->SetParameter("ShowChannelMode", pMsg2->m_iValue);
-      pMaterial->SetParameter("AlphaThreshold", pMsg2->m_fValue);
+      m_iChannelMode    = config.m_iValue;
+      m_fAlphaThreshold = config.m_fValue;
     }
-    else if (pMsg2->m_sWhatToDo == "SetLodLevel")
+    else if (config.m_sWhatToDo == "SetLodLevel")
     {
-      pMaterial->SetParameter("LodLevel", pMsg2->m_iValue);
+      m_iLodLevel = config.m_iValue;
     }
   }
-
   xiiEngineProcessDocumentContext::HandleMessage(pMsg);
 }
 
 void xiiTextureCubeContext::OnInitialize()
 {
-  const char*      szMeshName = "DefaultTextureCubePreviewMesh";
-  xiiStringBuilder sTextureGuid;
-  xiiConversionUtils::ToString(GetDocumentGuid(), sTextureGuid);
-  const xiiStringBuilder sMaterialResource(sTextureGuid.GetData(), " - TextureCube Preview");
-
-  m_hPreviewMeshResource = xiiResourceManager::GetExistingResource<xiiMeshResource>(szMeshName);
-  m_hMaterial            = xiiResourceManager::GetExistingResource<xiiMaterialResource>(sMaterialResource);
-
-  m_hTexture                               = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTextureGuid);
-  xiiGALResourceFormat::Enum textureFormat = xiiGALResourceFormat::Unknown;
-  {
-    xiiResourceLock<xiiTextureCubeResource> pTexture(m_hTexture, xiiResourceAcquireMode::PointerOnly);
-
-    textureFormat = pTexture->GetFormat();
-    pTexture->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiTextureCubeContext::OnResourceEvent, this), m_TextureResourceEventSubscriber);
-  }
-
-  // Preview Mesh
-  if (!m_hPreviewMeshResource.IsValid())
-  {
-    const char* szMeshBufferName = "DefaultTextureCubePreviewMeshBuffer";
-
-    xiiMeshBufferResourceHandle hMeshBuffer = xiiResourceManager::GetExistingResource<xiiMeshBufferResource>(szMeshBufferName);
-
-    if (!hMeshBuffer.IsValid())
-    {
-      // Build geometry
-      xiiGeometry geom;
-      geom.AddStackedSphere(0.5f, 64, 64);
-      geom.ComputeTangents();
-
-      xiiMeshBufferResourceDescriptor desc;
-      desc.AddCommonStreams();
-      desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
-
-      hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
-    }
-    {
-      xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
-
-      xiiMeshResourceDescriptor md;
-      md.UseExistingMeshBuffer(hMeshBuffer);
-      md.AddSubMesh(pMeshBuffer->GetPrimitiveCount(), 0, 0);
-      md.SetMaterial(0, "");
-      md.ComputeBounds();
-
-      m_hPreviewMeshResource = xiiResourceManager::GetOrCreateResource<xiiMeshResource>(szMeshName, std::move(md), pMeshBuffer->GetResourceDescription());
-    }
-  }
-
-  // Preview Material
-  if (!m_hMaterial.IsValid())
-  {
-    xiiMaterialResourceDescriptor md;
-    md.m_hBaseMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Editor/Materials/TextureCubePreview.xiiMaterial");
-
-    auto& tb = md.m_TextureCubeBindings.ExpandAndGetRef();
-    tb.m_Name.Assign("BaseTexture");
-    tb.m_Value = m_hTexture;
-
-    auto& param = md.m_Parameters.ExpandAndGetRef();
-    param.m_Name.Assign("IsLinear");
-    param.m_Value = textureFormat != xiiGALResourceFormat::Unknown ? !xiiGALResourceFormat::IsSrgb(textureFormat) : false;
-
-    m_hMaterial = xiiResourceManager::GetOrCreateResource<xiiMaterialResource>(sMaterialResource, std::move(md));
-  }
-
-  // Preview Object
-  {
-    XII_LOCK(m_pWorld->GetWriteMarker());
-
-    xiiGameObjectDescription obj;
-    xiiGameObject*           pObj;
-
-    obj.m_sName.Assign("TextureCubePreview");
-    obj.m_LocalRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
-    m_hPreviewObject    = m_pWorld->CreateObject(obj, pObj);
-
-    xiiMeshComponent* pMesh;
-    m_hPreviewMesh2D = xiiMeshComponent::CreateComponent(pObj, pMesh);
-    pMesh->SetMesh(m_hPreviewMeshResource);
-    pMesh->SetMaterialOverride(0, m_hMaterial);
-  }
+  xiiStringBuilder textureGuid;
+  xiiConversionUtils::ToString(GetDocumentGuid(), textureGuid);
+  m_hTexture = xiiResourceManager::LoadResource<xiiTextureCubeResource>(textureGuid);
 }
 
 xiiEngineProcessViewContext* xiiTextureCubeContext::CreateViewContext()
@@ -140,17 +56,4 @@ xiiEngineProcessViewContext* xiiTextureCubeContext::CreateViewContext()
 void xiiTextureCubeContext::DestroyViewContext(xiiEngineProcessViewContext* pContext)
 {
   XII_DEFAULT_DELETE(pContext);
-}
-
-void xiiTextureCubeContext::OnResourceEvent(const xiiResourceEvent& e)
-{
-  if (e.m_Type == xiiResourceEvent::Type::ResourceContentUpdated)
-  {
-    const xiiTextureCubeResource* pTexture = static_cast<const xiiTextureCubeResource*>(e.m_pResource);
-    if (pTexture->GetFormat() != xiiGALResourceFormat::Unknown)
-    {
-      xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::BlockTillLoaded);
-      pMaterial->SetParameter("IsLinear", !xiiGALResourceFormat::IsSrgb(pTexture->GetFormat()));
-    }
-  }
 }
