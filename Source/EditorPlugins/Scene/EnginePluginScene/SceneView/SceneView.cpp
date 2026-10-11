@@ -88,7 +88,7 @@ bool xiiSceneViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& boun
   {
     pView->SetViewRenderMode(xiiViewRenderMode::Default);
     pView->SetRenderPassProperty("EditorSelectionPass", "Active", false);
-    pView->SetExtractorProperty("EditorShapeIconsExtractor", "Active", false);
+    pView->SetPipelineParameter("Editor.ShapeIcons", false);
     pView->SetRenderPassProperty("EditorPickingPass", "PickSelected", true);
   }
 
@@ -203,30 +203,8 @@ void xiiSceneViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
   if (pView != nullptr)
   {
     pView->SetRenderPassProperty("EditorSelectionPass", "Active", m_pSceneContext->GetRenderSelectionOverlay());
-    pView->SetExtractorProperty("EditorShapeIconsExtractor", "Active", m_pSceneContext->GetRenderShapeIcons());
+    pView->SetPipelineParameter("Editor.ShapeIcons", m_pSceneContext->GetRenderShapeIcons());
   }
-}
-
-xiiViewHandle xiiSceneViewContext::CreateView()
-{
-  xiiView* pView = nullptr;
-  xiiRenderWorld::CreateView("Editor - View", pView);
-
-  pView->SetRenderPipelineResource(CreateDefaultRenderPipeline());
-
-  xiiVariant sceneContextVariant(m_pSceneContext);
-  pView->SetExtractorProperty("EditorShapeIconsExtractor", "SceneContext", sceneContextVariant);
-
-  xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext();
-  pView->SetWorld(pDocumentContext->GetWorld());
-  pView->SetCamera(&m_Camera);
-  pView->SetCullingCamera(&m_CullingCamera);
-  pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
-
-  const xiiTag& tagHidden = xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorHidden");
-
-  pView->m_ExcludeTags.Set(tagHidden);
-  return pView->GetHandle();
 }
 
 void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)

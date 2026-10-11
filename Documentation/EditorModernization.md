@@ -1171,3 +1171,53 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   Current diagnostics: `Workspace/editor-scene-camera-current-build.log`.
   The broader modernization goal remains active; GUI and other backend/platform
   configurations remain unverified.
+
+- Shape icons now use the reflected `xiiSceneShapeIconPass` in SharedPluginScene,
+  with separate collection, graph rendering and pipeline-definition sources.
+  Its resource definition inserts into the native default pipeline before Debug;
+  scene view creation selects this resource through the world-local render module.
+  Thumbnail/preview views pass through without icons. The obsolete sprite-based
+  shape-icon extractor and its SceneContext property are removed.
+- Collection includes objects without render data, respects active state, view
+  include/exclude tags, Editor/EditorHidden tags and HideShapeIcon, and emits one
+  icon per object using the first active component with an available icon. Gamma
+  color properties retain priority over linear properties and category colors.
+  Reflection pointers exist only during collection, so plugin reload cannot leave
+  a persistent RTTI/property cache dangling. ResourceManager owns icon textures.
+- Projected-quad culling retains partially visible icons. Perspective and
+  orthographic sizing preserve world size and the pixel cap. Camera-space depth
+  orders far-to-near composition independently of projected depth encoding.
+  Contiguous textures are drawn as instanced batches; per-resource import names
+  prevent different icon textures from aliasing in the render graph. Graph-managed
+  clears preserve the resource states declared to the graph on Vulkan.
+- One shader writes display color and R32UInt picking IDs with identical alpha
+  and scene-depth coverage, including depth textures at a different render
+  resolution. Empty frames clear IDs; disabled/non-Editor views expose no picking
+  texture. IDs index the pass's current-frame object/component handle records.
+  Asynchronous consumers must capture those records and validate world handles;
+  the legacy scene picking message/readback-property integration is not yet
+  migrated. `xiiView` exposes read-only pipeline instance inspection at CPU frame
+  boundaries, with explicit borrowed-state lifetime rules.
+- Vulkan tests execute the real resource-defined icon pass against controlled
+  color/depth source passes and read back both color and integer IDs. They verify
+  alpha holes, reflected colors, scene-depth occlusion, overlapping textures,
+  instance offsets, missing component icons, visibility changes and stale-ID
+  clearing, perspective/orthographic sizing, partial-quad clipping, independent
+  view instances, invalid settings, disabled/preview views and serialized native
+  pipeline definitions. These tests do not establish full native scene shading or
+  Editor GUI picking. The pass currently targets single-sample 2D mono Editor
+  views and uses independent MRT blending; other configurations are not verified.
+- Windows Debug builds of EditorEngineProcessFrameworkTest, EditorFrameworkTest
+  and EditorEngineProcess pass. All 37 Vulkan engine-process subtests and the
+  Editor document-lifecycle test pass. SceneViewRendering.cpp compiles against
+  current Engine headers. Logs: `Workspace/editor-shape-icons-final-build.log`,
+  `Workspace/editor-shape-icons-final-tests.log`,
+  `Workspace/editor-shape-icons-editor-tests.log` and
+  `Workspace/editor-scene-shape-rendering-compile.log`.
+- The full EnginePluginScene target still fails at its removed animation-message
+  and global render-world headers; shape-icon extraction is no longer a build
+  blocker. Selection rendering, scene picking/IPC and remaining scene animation
+  and lighting integration still need migration. Current diagnostics are in
+  `Workspace/editor-shape-icons-scene-build.log`. The modernization goal remains
+  active, and integrated GUI / other backend and platform verification remains
+  outstanding.
