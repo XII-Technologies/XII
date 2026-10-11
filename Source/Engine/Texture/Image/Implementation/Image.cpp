@@ -162,7 +162,7 @@ xiiUInt32 xiiImageView::GetDepth(xiiUInt32 uiMipLevel /*= 0*/) const
 {
   XII_ASSERT_DEV(uiMipLevel < m_Description.m_uiMipLevels, "Invalid mip level {} for image with {} mip levels.", uiMipLevel, m_Description.m_uiMipLevels);
 
-  return xiiMath::Max(m_Description.m_uiArraySizeOrDepth >> uiMipLevel, 1U);
+  return m_Description.Is3D() ? xiiMath::Max(m_Description.m_uiArraySizeOrDepth >> uiMipLevel, 1U) : 1U;
 }
 
 xiiUInt32 xiiImageView::GetMipLevelCount() const
@@ -177,7 +177,10 @@ xiiUInt32 xiiImageView::GetNumFaces() const
 
 xiiUInt32 xiiImageView::GetNumArrayIndices() const
 {
-  return m_Description.IsCube() ? m_Description.m_uiArraySizeOrDepth / 6U : m_Description.m_uiArraySizeOrDepth;
+  if (m_Description.IsCube())
+    return m_Description.m_uiArraySizeOrDepth / 6U;
+
+  return m_Description.IsArray() ? m_Description.m_uiArraySizeOrDepth : 1U;
 }
 
 xiiUInt32 xiiImageView::GetPlaneCount() const

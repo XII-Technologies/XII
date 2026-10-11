@@ -475,3 +475,12 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   Both changed sources compile individually (`Workspace/editor-gradient-document-compile.log`,
   `Workspace/editor-material-document-compile.log`). Their GUI workflows remain
   part of the pending integrated Editor verification.
+- Native image dimensions now distinguish volume depth, array layers and cube
+  faces. DDS reading retains texture dimensions and array metadata; cube/volume
+  construction, scaling and mip generation preserve their native descriptions.
+  Volume upload validation uses one subresource per mip, array upload pitch
+  checks restart at each layer, and 3D resources retain their type at depth one
+  and account for all uploaded slices. Both ImageDimensions regressions and all
+  40 Vulkan GraphicsFoundationTest subtests pass
+  (`Workspace/editor-image-dimensions-tests.log`,
+  `Workspace/editor-texture-foundation-tests.log`).

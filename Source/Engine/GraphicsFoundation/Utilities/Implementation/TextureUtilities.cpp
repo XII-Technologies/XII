@@ -814,12 +814,13 @@ xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALT
   out_subresourceData.Clear();
   out_Data.Clear();
 
-  const xiiUInt32 uiTotalSubResources = description.m_uiMipLevels * description.m_uiArraySizeOrDepth;
+  const xiiUInt32 uiArraySize         = description.Is3D() ? 1U : description.m_uiArraySizeOrDepth;
+  const xiiUInt32 uiTotalSubResources = GetSubResourceCount(description);
   out_subresourceData.Reserve(uiTotalSubResources);
 
   // First compute total size needed.
   xiiUInt64 uiTotalSize = 0;
-  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.m_uiArraySizeOrDepth; ++uiArraySlice)
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < uiArraySize; ++uiArraySlice)
   {
     for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
     {
@@ -835,7 +836,7 @@ xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALT
 
   // Now assign subresource pointers into the already allocated buffer.
   xiiUInt64 uiCurrentOffset = 0;
-  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.m_uiArraySizeOrDepth; ++uiArraySlice)
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < uiArraySize; ++uiArraySlice)
   {
     for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
     {

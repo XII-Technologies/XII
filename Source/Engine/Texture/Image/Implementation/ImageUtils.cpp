@@ -764,11 +764,12 @@ static void DownScaleFast(const xiiImageView& image, xiiImage& out_result, xiiUI
 
   xiiUInt32 pixelStride = xiiGALTextureUtilities::GetBitsPerPixel(format) / 8;
 
-  xiiGALTextureCreationDescription intermediateHeader;
-  intermediateHeader.m_Size.width         = uiWidth;
-  intermediateHeader.m_Size.height        = originalHeight;
-  intermediateHeader.m_uiArraySizeOrDepth = numArrayElements * numFaces;
-  intermediateHeader.m_Format             = format;
+  xiiGALTextureCreationDescription intermediateHeader = image.GetDescription();
+  intermediateHeader.m_uiMipLevels                    = 1;
+  intermediateHeader.m_Size.width                     = uiWidth;
+  intermediateHeader.m_Size.height                    = originalHeight;
+  intermediateHeader.m_uiArraySizeOrDepth             = numArrayElements * numFaces;
+  intermediateHeader.m_Format                         = format;
 
   xiiImage intermediate;
   intermediate.ResetAndAlloc(intermediateHeader);
@@ -786,11 +787,11 @@ static void DownScaleFast(const xiiImageView& image, xiiImage& out_result, xiiUI
 
   // input and output images may be the same, so we can't access the original image below this point
 
-  xiiGALTextureCreationDescription outHeader;
-  outHeader.m_Size.width         = uiWidth;
-  outHeader.m_Size.height        = uiHeight;
-  outHeader.m_uiArraySizeOrDepth = numFaces * numArrayElements;
-  outHeader.m_Format             = format;
+  xiiGALTextureCreationDescription outHeader = intermediateHeader;
+  outHeader.m_Size.width                     = uiWidth;
+  outHeader.m_Size.height                    = uiHeight;
+  outHeader.m_uiArraySizeOrDepth             = numFaces * numArrayElements;
+  outHeader.m_Format                         = format;
 
   out_result.ResetAndAlloc(outHeader);
 
@@ -1153,9 +1154,8 @@ void xiiImageUtils::GenerateMipMaps(const xiiImageView& source, xiiImage& ref_ta
   {
     for (xiiUInt32 face = 0; face < source.GetNumFaces(); face++)
     {
-      xiiGALTextureCreationDescription currentMipMapHeader = header;
+      xiiGALTextureCreationDescription currentMipMapHeader = source.GetSubImageView(0, face, arrayIndex).GetDescription();
       currentMipMapHeader.m_uiMipLevels                    = 1;
-      currentMipMapHeader.m_uiArraySizeOrDepth             = 1;
 
       auto sourceView = source.GetSubImageView(0, face, arrayIndex).GetByteBlobPtr();
       auto targetView = ref_target.GetSubImageView(0, face, arrayIndex).GetByteBlobPtr();
@@ -1558,6 +1558,8 @@ xiiResult xiiImageUtils::CreateCubemapFrom6Files(xiiImage& ref_dstImg, const xii
   XII_PROFILE_SCOPE("xiiImageUtils::CreateCubemapFrom6Files");
 
   xiiGALTextureCreationDescription header = pSourceImages[0].GetDescription();
+  header.m_Type                           = xiiGALResourceDimension::TextureCube;
+  header.m_uiMipLevels                    = 1;
   header.m_uiArraySizeOrDepth             = 6;
 
   if (header.m_Size.width != header.m_Size.height)
@@ -1592,12 +1594,16 @@ xiiResult xiiImageUtils::CreateVolumeTextureFromSingleFile(xiiImage& ref_dstImg,
   const xiiUInt32 uiWidthHeight = srcImg.GetHeight();
   const xiiUInt32 uiDepth       = srcImg.GetWidth() / uiWidthHeight;
 
+  if (srcImg.GetNumFaces() != 1 || srcImg.GetNumArrayIndices() != 1 || srcImg.GetDepth() != 1 || srcImg.GetWidth() % uiWidthHeight != 0)
+    return XII_FAILURE;
+
   if (!xiiMath::IsPowerOf2(uiWidthHeight))
     return XII_FAILURE;
   if (!xiiMath::IsPowerOf2(uiDepth))
     return XII_FAILURE;
 
   xiiGALTextureCreationDescription header;
+  header.m_Type               = xiiGALResourceDimension::Texture3D;
   header.m_Size.width         = uiWidthHeight;
   header.m_Size.height        = uiWidthHeight;
   header.m_uiArraySizeOrDepth = uiDepth;

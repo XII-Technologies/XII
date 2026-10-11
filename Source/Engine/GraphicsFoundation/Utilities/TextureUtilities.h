@@ -265,8 +265,8 @@ public:
   /// Returns the default texture cube creation description.
   [[nodiscard]] static xiiGALTextureCreationDescription GetDefaultTextureCubeDescription() noexcept;
 
-  /// Returns the total number of subresources for the given texture description.
-  XII_ALWAYS_INLINE static xiiUInt32 GetSubResourceCount(const xiiGALTextureCreationDescription& description) noexcept { return description.m_uiMipLevels * description.m_uiArraySizeOrDepth; }
+  /// Returns the total number of subresources. A volume mip includes all of its depth slices.
+  XII_ALWAYS_INLINE static xiiUInt32 GetSubResourceCount(const xiiGALTextureCreationDescription& description) noexcept { return description.m_uiMipLevels * (description.Is3D() ? 1U : description.m_uiArraySizeOrDepth); }
 
   /// Returns the required row pitch for the given texture description and mip level.
   XII_ALWAYS_INLINE static xiiUInt32 GetRequiredRowPitch(const xiiGALTextureCreationDescription& description, xiiUInt32 uiMipLevel)

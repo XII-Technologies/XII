@@ -68,7 +68,7 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
   ref_td.m_TextureDescription.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
   xiiUInt32 uiDepth = pImage->GetDepth(uiHighestMipLevel);
-  if (uiDepth > 1)
+  if (pImage->GetDescription().Is3D())
   {
     ref_td.m_TextureDescription.m_Type               = xiiGALResourceDimension::Texture3D;
     ref_td.m_TextureDescription.m_uiArraySizeOrDepth = uiDepth;
@@ -107,7 +107,7 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 
         id.m_uiDepthStride = pImage->GetDepthPitch(mip);
 
-        out_uiMemoryUsed += static_cast<xiiUInt32>(id.m_uiDepthStride);
+        out_uiMemoryUsed += static_cast<xiiUInt32>(id.m_pData.GetCount());
       }
     }
   }

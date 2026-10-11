@@ -751,7 +751,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
       const xiiUInt32 uiRequiredSlicePitch = xiiGALTextureUtilities::GetRequiredSlicePitch(description, uiMipLevel);
       XII_GAL_DEVICE_CHECK(subResource.m_uiDepthStride >= uiRequiredSlicePitch, "The sub-resource slice pitch ({0}) is smaller than the required slice pitch ({1}).", subResource.m_uiDepthStride, uiRequiredSlicePitch);
 
-      ++uiMipLevel;
+      uiMipLevel = (uiMipLevel + 1U) % description.m_uiMipLevels;
     }
   }
 
