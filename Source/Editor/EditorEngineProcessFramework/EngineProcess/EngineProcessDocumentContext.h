@@ -4,6 +4,7 @@
 
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
 
+#include <Core/System/WindowManager.h>
 #include <EditorEngineProcessFramework/EngineProcess/WorldRttiConverterContext.h>
 #include <Foundation/Types/Uuid.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
@@ -64,7 +65,13 @@ public:
   static void                             AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
   static bool                             PendingOperationsInProgress();
   static void                             UpdateDocumentContexts();
-  static void                             DestroyDocumentContext(xiiUuid guid);
+  /// Consumes redraw requests after presentation; thumbnails request another frame on their next tick.
+  static void FinishFrame();
+  /// Returns whether a window belongs to document views and combines their presentation requests.
+  static bool TryGetWindowRedrawState(xiiRegisteredWindowHandle hWindow, bool& out_bRedrawRequested);
+  static void DestroyDocumentContext(xiiUuid guid);
+  /// Releases borrowed-world contexts before contexts which own their world.
+  static void DestroyAllDocumentContexts();
 
   // Returns the bounding box of the objects in the world.
   xiiBoundingBoxSphere GetWorldBounds(xiiWorld* pWorld);

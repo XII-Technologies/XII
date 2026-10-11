@@ -45,6 +45,8 @@ xiiLayerContext::~xiiLayerContext() = default;
 
 void xiiLayerContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
+  if (!m_pWorld || !m_pParentSceneContext)
+    return;
   // Everything in the picking buffer needs a unique ID. As layers and scene share the same world we need to make sure no id is used twice.
   // To achieve this the scene's next ID is retrieved on every change and written back in base new IDs were used up.
   m_Context.m_uiNextComponentPickingID = m_pParentSceneContext->m_Context.m_uiNextComponentPickingID;
@@ -61,7 +63,8 @@ void xiiLayerContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
 void xiiLayerContext::SceneDeinitialized()
 {
   // If the scene is deinitialized the world is destroyed so there is no use tracking anything further.
-  m_pWorld = nullptr;
+  m_pWorld              = nullptr;
+  m_pParentSceneContext = nullptr;
   m_Context.Clear();
 }
 
@@ -98,7 +101,8 @@ void xiiLayerContext::OnDeinitialize()
   }
 
   m_LayerTag = xiiTag();
-  m_pParentSceneContext->UnregisterLayer(this);
+  if (m_pParentSceneContext)
+    m_pParentSceneContext->UnregisterLayer(this);
   m_pParentSceneContext = nullptr;
 }
 

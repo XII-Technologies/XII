@@ -64,7 +64,7 @@ void xiiRemoteEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineV
       XII_LOCK(pPreviousWorld->GetWriteMarker());
       if (auto* pPreviousView = s_pActiveRemoteViewContext->GetView())
       {
-        pPreviousView->SetCamera(nullptr);
+        pPreviousView->SetRenderEnabled(false);
         pPreviousView->SetSwapChain(nullptr);
       }
     }
@@ -84,6 +84,8 @@ void xiiRemoteEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineV
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(size.width), static_cast<float>(size.height)));
       s_pActiveRemoteViewContext = this;
       s_uiActiveViewID           = pMsg->m_uiViewID;
+      m_hEditorWindow            = hWindow;
+      pView->SetRenderEnabled(true);
     }
     return;
   }
@@ -108,6 +110,12 @@ void xiiRemoteEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineV
         xiiLog::Error("Failed to save remote view screenshot to '{0}'.", pScreenshot->m_sOutputFile);
     }
   }
+}
+
+void xiiRemoteEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
+{
+  if (s_pActiveRemoteViewContext == this)
+    xiiEngineProcessViewContext::Redraw(bRenderEditorGizmos);
 }
 
 xiiViewHandle xiiRemoteEngineProcessViewContext::CreateView()

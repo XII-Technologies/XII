@@ -66,6 +66,11 @@ public:
   virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiGALTextureView* pRenderTargetView, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
   virtual void Redraw(bool bRenderEditorGizmos);
 
+  /// Consumes this frame's redraw request without discarding camera or pipeline state.
+  void SuspendRendering();
+
+  xiiRegisteredWindowHandle GetWindowHandle() const { return m_hEditorWindow; }
+
   /// Focuses camera on the given object
   static bool FocusCameraOnObject(xiiCamera& inout_camera, const xiiBoundingBoxSphere& objectBounds, float fFov, const xiiVec3& vViewDir);
 
@@ -85,11 +90,11 @@ protected:
   virtual xiiViewHandle CreateView() = 0;
 
 protected:
-  xiiCamera     m_Camera;
-  xiiViewHandle m_hView;
-  xiiUInt32     m_uiViewID;
+  xiiCamera                 m_Camera;
+  xiiViewHandle             m_hView;
+  xiiUInt32                 m_uiViewID;
+  xiiRegisteredWindowHandle m_hEditorWindow;
 
 private:
-  xiiRegisteredWindowHandle        m_hEditorWindow;
   xiiEngineProcessDocumentContext* m_pDocumentContext;
 };

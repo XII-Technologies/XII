@@ -61,6 +61,47 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContexts()
   }
 }
 
+void xiiEngineProcessDocumentContext::FinishFrame()
+{
+  for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
+  {
+    auto& context = *it.Value();
+    for (auto* view : context.m_ViewContexts)
+      if (view)
+        view->SuspendRendering();
+    if (context.m_pThumbnailViewContext)
+      context.m_pThumbnailViewContext->SuspendRendering();
+  }
+}
+
+bool xiiEngineProcessDocumentContext::TryGetWindowRedrawState(xiiRegisteredWindowHandle hWindow, bool& out_bRedrawRequested)
+{
+  out_bRedrawRequested = false;
+  if (hWindow.IsInvalidated())
+    return false;
+
+  bool found = false;
+  for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
+  {
+    auto& context = *it.Value();
+    for (auto* viewContext : context.m_ViewContexts)
+    {
+      if (!viewContext || viewContext->GetWindowHandle() != hWindow)
+        continue;
+      found = true;
+      if (auto* world = context.GetWorld())
+      {
+        XII_LOCK(world->GetReadMarker());
+        const auto* module = static_cast<const xiiWorld*>(world)->GetModule<xiiRenderWorldModule>();
+        xiiView*    view   = nullptr;
+        if (module && module->TryGetView(viewContext->GetViewHandle(), view))
+          out_bRedrawRequested |= view->IsRenderEnabled() && view->IsValid();
+      }
+    }
+  }
+  return found;
+}
+
 void xiiEngineProcessDocumentContext::DestroyDocumentContext(xiiUuid guid)
 {
   xiiEngineProcessDocumentContext* pContext = nullptr;
@@ -69,6 +110,18 @@ void xiiEngineProcessDocumentContext::DestroyDocumentContext(xiiUuid guid)
     pContext->Deinitialize();
     pContext->GetDynamicRTTI()->GetAllocator()->Deallocate(pContext);
   }
+}
+
+void xiiEngineProcessDocumentContext::DestroyAllDocumentContexts()
+{
+  xiiDynamicArray<xiiUuid> borrowedWorldContexts;
+  for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
+    if (!it.Value()->m_Flags.IsSet(xiiEngineProcessDocumentContextFlags::CreateWorld))
+      borrowedWorldContexts.PushBack(it.Key());
+  for (const auto& guid : borrowedWorldContexts)
+    DestroyDocumentContext(guid);
+  while (!s_DocumentContexts.IsEmpty())
+    DestroyDocumentContext(s_DocumentContexts.GetIterator().Key());
 }
 
 xiiBoundingBoxSphere xiiEngineProcessDocumentContext::GetWorldBounds(xiiWorld* pWorld)

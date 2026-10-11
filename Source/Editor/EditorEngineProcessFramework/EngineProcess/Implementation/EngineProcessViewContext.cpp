@@ -178,7 +178,11 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain
     return;
   XII_LOCK(world->GetWriteMarker());
   if (m_hView.IsInvalidated())
+  {
     m_hView = CreateView();
+    if (auto* view = GetView())
+      view->SetRenderEnabled(false);
+  }
   if (auto* view = GetView())
   {
     view->SetSwapChain(pSwapChain.Borrow());
@@ -201,6 +205,7 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         if (!pRenderWorldModule->TryGetView(m_hView, pView))
           return;
 
+        pView->SetRenderEnabled(true);
         const xiiTag& editorTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
 
         if (bRenderEditorGizmos)
@@ -213,6 +218,16 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         }
       }
     }
+  }
+}
+
+void xiiEngineProcessViewContext::SuspendRendering()
+{
+  if (auto* world = GetDocumentContext()->GetWorld())
+  {
+    XII_LOCK(world->GetWriteMarker());
+    if (auto* view = GetView())
+      view->SetRenderEnabled(false);
   }
 }
 

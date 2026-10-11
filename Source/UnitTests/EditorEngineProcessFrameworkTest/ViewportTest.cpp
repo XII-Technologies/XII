@@ -24,6 +24,7 @@ namespace
     using xiiEngineProcessViewContext::xiiEngineProcessViewContext;
     using xiiEngineProcessViewContext::SetCamera;
     xiiView* BorrowView() const { return GetView(); }
+    void     SetWindowHandle(xiiRegisteredWindowHandle window) { m_hEditorWindow = window; }
 
   protected:
     xiiViewHandle CreateView() override
@@ -38,14 +39,33 @@ namespace
 
   class TestDocumentContext : public xiiEngineProcessDocumentContext
   {
+    XII_ADD_DYNAMIC_REFLECTION(TestDocumentContext, xiiEngineProcessDocumentContext);
+
   public:
+    TestDocumentContext() : xiiEngineProcessDocumentContext(xiiEngineProcessDocumentContextFlags::None) {}
+    explicit TestDocumentContext(xiiBitflags<xiiEngineProcessDocumentContextFlags> flags) : xiiEngineProcessDocumentContext(flags) {}
     explicit TestDocumentContext(xiiWorld& world) : xiiEngineProcessDocumentContext(xiiEngineProcessDocumentContextFlags::None) { m_pWorld = &world; }
     ~TestDocumentContext() { m_pWorld = nullptr; }
+    TestViewContext* AddView()
+    {
+      auto* view = static_cast<TestViewContext*>(CreateViewContext());
+      m_ViewContexts.PushBack(view);
+      return view;
+    }
+    xiiDelegate<void()> m_OnDeinitialize;
 
   protected:
+    void OnDeinitialize() override
+    {
+      if (m_OnDeinitialize.IsValid())
+        m_OnDeinitialize();
+    }
     xiiEngineProcessViewContext* CreateViewContext() override { return XII_DEFAULT_NEW(TestViewContext, this); }
     void                         DestroyViewContext(xiiEngineProcessViewContext* context) override { XII_DEFAULT_DELETE(context); }
   };
+
+  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(TestDocumentContext, 1, xiiRTTIDefaultAllocator<TestDocumentContext>)
+  XII_END_DYNAMIC_REFLECTED_TYPE;
 
   // A test output owns a reference exactly as a GAL swapchain does.
   class ReferencedWindowOutput : public xiiWindowOutputTargetBase
@@ -115,6 +135,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
     auto* secondView = second.BorrowView();
     if (!XII_TEST_BOOL(firstView && secondView))
       return;
+    XII_TEST_BOOL(!firstView->IsRenderEnabled());
+    first.Redraw(true);
+    XII_TEST_BOOL(firstView->IsRenderEnabled());
+    first.SuspendRendering();
+    XII_TEST_BOOL(!firstView->IsRenderEnabled());
     XII_TEST_BOOL(firstView->GetWorld() == &world);
     XII_TEST_BOOL(firstView != secondView);
     XII_TEST_BOOL(firstView->GetCamera() != secondView->GetCamera());
@@ -158,14 +183,14 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
       configure(*firstView, firstExecutions);
       configure(*secondView, secondExecutions);
       world.SetWorldSimulationEnabled(false);
-      firstView->SetRenderEnabled(false);
-      secondView->SetRenderEnabled(false);
+      first.SuspendRendering();
+      second.SuspendRendering();
       XII_TEST_BOOL(firstView->IsValid());
       world.Update();
       XII_TEST_INT(firstExecutions, 0);
       XII_TEST_INT(secondExecutions, 0);
 
-      firstView->SetRenderEnabled(true);
+      first.Redraw(false);
       world.Update();
       XII_TEST_INT(firstExecutions, 1);
       XII_TEST_INT(secondExecutions, 0);
@@ -178,8 +203,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
         XII_TEST_INT(pixel[2], 255);
         XII_TEST_INT(pixel[3], 255);
       }
-      firstView->SetRenderEnabled(false);
-      secondView->SetRenderEnabled(true);
+      first.SuspendRendering();
+      second.Redraw(false);
       world.Update();
       XII_TEST_INT(firstExecutions, 1);
       XII_TEST_INT(secondExecutions, 1);
@@ -193,4 +218,55 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
   }
   xiiView* stale = nullptr;
   XII_TEST_BOOL(!module->TryGetView(removed, stale));
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Document redraw requests expire after presentation and release their windows")
+  {
+    const auto           guid    = xiiUuid::MakeUuid();
+    TestDocumentContext* context = XII_DEFAULT_NEW(TestDocumentContext, world);
+    xiiEngineProcessDocumentContext::AddDocumentContext(guid, {}, context, nullptr, "View test");
+    auto* viewContext = context->AddView();
+    viewContext->SetupRenderTarget({}, texture->GetDefaultView(xiiGALTextureViewType::RenderTarget), 80, 60);
+    auto*      windows = xiiWindowManager::GetSingleton();
+    const auto window  = windows->Register("Editor Test", viewContext, XII_DEFAULT_NEW(xiiEditorProcessViewWindow));
+    viewContext->SetWindowHandle(window);
+    bool redraw = true;
+    XII_TEST_BOOL(xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw));
+    XII_TEST_BOOL(!redraw);
+    viewContext->Redraw(true);
+    XII_TEST_BOOL(xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw));
+    XII_TEST_BOOL(redraw);
+    xiiEngineProcessDocumentContext::FinishFrame();
+    XII_TEST_BOOL(xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw));
+    XII_TEST_BOOL(!redraw);
+    XII_TEST_BOOL(!xiiEngineProcessDocumentContext::TryGetWindowRedrawState({}, redraw));
+    const auto handle = viewContext->GetViewHandle();
+    xiiEngineProcessDocumentContext::DestroyDocumentContext(guid);
+    XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(guid) == nullptr);
+    XII_TEST_BOOL(!windows->IsValid(window));
+    XII_TEST_BOOL(!module->TryGetView(handle, stale));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Shared-world documents close before their owning document")
+  {
+    const auto           ownerGuid    = xiiUuid::MakeUuid();
+    const auto           borrowerGuid = xiiUuid::MakeUuid();
+    TestDocumentContext* owner        = XII_DEFAULT_NEW(TestDocumentContext, xiiEngineProcessDocumentContextFlags::CreateWorld);
+    xiiEngineProcessDocumentContext::AddDocumentContext(ownerGuid, {}, owner, nullptr, "Owner test");
+    TestDocumentContext* borrower = XII_DEFAULT_NEW(TestDocumentContext, *owner->GetWorld());
+    xiiEngineProcessDocumentContext::AddDocumentContext(borrowerGuid, {}, borrower, nullptr, "Borrower test");
+    bool borrowerClosed = false, ownerClosed = false;
+    borrower->m_OnDeinitialize = [&]() {
+      XII_TEST_BOOL(owner->GetWorld() == borrower->GetWorld());
+      XII_TEST_BOOL(!ownerClosed);
+      borrowerClosed = true;
+    };
+    owner->m_OnDeinitialize = [&]() {
+      XII_TEST_BOOL(borrowerClosed);
+      ownerClosed = true;
+    };
+    xiiEngineProcessDocumentContext::DestroyAllDocumentContexts();
+    XII_TEST_BOOL(borrowerClosed && ownerClosed);
+    XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(ownerGuid) == nullptr);
+    XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(borrowerGuid) == nullptr);
+  }
 }
