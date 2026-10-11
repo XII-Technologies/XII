@@ -700,3 +700,16 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   and decal atlas integrations (`Workspace/editor-native-mesh-plugin-build.log`).
   All 24 Vulkan Editor integration subtests pass; no complete GUI import workflow
   is claimed while those plugin-wide migrations remain unfinished.
+
+- The broader Vulkan GraphicsFoundation regression suite builds and all 40
+  subtests pass, including real offscreen/pipeline execution and BLAS/TLAS
+  creation (`Workspace/editor-native-sampler-foundation-build.log`,
+  `Workspace/editor-native-sampler-foundation-tests.log`). Its first run failed
+  TLAS creation and then dereferenced null. The device reported ray tracing
+  enabled; rebuilding all Vulkan translation units resolved the creation failure
+  without a backend source change (`Workspace/editor-native-sampler-vulkan-rebuild.log`).
+  The TLAS test now guards initialization and creation failures, preserving the
+  failing assertion while allowing useful diagnostics instead of a secondary
+  null-pointer crash. Other backends and complete Editor GUI workflows remain
+  unverified. The previously recorded GpuDrivenScene device-lost smoke failure
+  has not been resolved or reclassified by this slice.
