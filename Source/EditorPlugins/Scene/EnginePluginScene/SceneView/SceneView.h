@@ -5,13 +5,13 @@
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
+#include <SharedPluginScene/Scene/SceneCameraPreview.h>
 
 class xiiView;
 class xiiViewRedrawMsgToEngine;
 class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
 class xiiEditorRenderPass;
-class xiiSelectedObjectsExtractorBase;
 class xiiSceneContext;
 class xiiViewMarqueePickingMsgToEngine;
 
@@ -29,6 +29,7 @@ public:
 
   virtual void HandleViewMessage(const xiiEditorEngineViewMsg* pMsg) override;
   virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiGALTextureView* pRenderTargetView, xiiUInt16 uiWidth, xiiUInt16 uiHeight) override;
+  void         SuspendRendering() override;
 
   bool UpdateThumbnailCamera(const xiiBoundingBoxSphere& bounds);
   void SetInvisibleLayerTags(const xiiArrayPtr<xiiTag> removeTags, const xiiArrayPtr<xiiTag> addTags);
@@ -42,9 +43,12 @@ protected:
   void MarqueePickObjects(const xiiViewMarqueePickingMsgToEngine* pMsg);
 
 private:
+  void UpdateCameraPreview(bool bRenderEditorGizmos);
+
   xiiSceneContext* m_pSceneContext;
 
   bool m_bUpdatePickingData;
 
-  xiiCamera m_CullingCamera;
+  xiiCamera             m_CullingCamera;
+  xiiSceneCameraPreview m_CameraPreview;
 };

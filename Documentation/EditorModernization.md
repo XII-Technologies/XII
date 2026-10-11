@@ -1132,3 +1132,42 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   The three focused tests pass in `Workspace/editor-camera-preview-tests.log`;
   dependent engine-process targets build in
   `Workspace/editor-camera-preview-final-build.log`.
+
+- Selected-camera previews now use `xiiSceneCameraPreview`, with a separate
+  world-local view, camera, target and native pipeline instance per scene viewport.
+  Pipeline definitions are referenced through the owning viewport's resource
+  handle. Projection, exposure, render scale and camera tags are updated through
+  current Engine APIs, including cameras whose usage hint is None. Camera changes
+  invalidate temporal history. Failed updates suspend the preview; viewport
+  redraw consumption suspends auxiliary views through the virtual view-context
+  hook. Teardown destroys the preview view before its world. The old selected-
+  objects extractor and globally shared `EditorCameraRT` resource are removed.
+- Preview allocation initializes a black image, so composition never samples an
+  uninitialized target. The fixed 256x144 overlay samples the most recently
+  rendered preview. Stereo uses the previous mono perspective fallback rather
+  than claiming to preview an HMD. Camera selection/visibility and suspension
+  are isolated in `SceneViewCameraPreview.cpp`, which compiles against current
+  headers. Source registration follows the repository's CMake source discovery.
+- GPU tests cover independent targets/cameras with a shared pipeline resource,
+  projection/exposure/scale/tags, actual resource-driven graph execution and
+  readback, initialized contents, suspension/resumption, native viewport overlay
+  composition and one-frame consumption, invalid settings, cross-world rejection,
+  externally destroyed/recreated views and destruction. The test pipeline uses
+  a reflected color-clear pass plus native debug passes to isolate preview
+  ownership/composition from scene shading. Full scene shading and GUI camera
+  selection are not established by these tests.
+- Windows Debug builds of EditorEngineProcessFrameworkTest, EditorFrameworkTest
+  and EditorEngineProcess pass. All 36 Vulkan engine-process subtests and the
+  headless Editor document-lifecycle test pass. Logs:
+  `Workspace/editor-camera-preview-integration-build.log`,
+  `Workspace/editor-camera-preview-final-tests.log`,
+  `Workspace/editor-camera-preview-editor-tests.log` and
+  `Workspace/editor-scene-camera-preview-compile.log`.
+- The full scene-plugin build still fails in its legacy shape-icon extractor,
+  animation-message include and global render-world include. Picking, selection
+  overlays, shape icons and the remaining scene animation/lighting integration
+  still require migration; the new preview controller's isolated source compile
+  does not substitute for a linked scene-plugin or integrated Editor test.
+  Current diagnostics: `Workspace/editor-scene-camera-current-build.log`.
+  The broader modernization goal remains active; GUI and other backend/platform
+  configurations remain unverified.

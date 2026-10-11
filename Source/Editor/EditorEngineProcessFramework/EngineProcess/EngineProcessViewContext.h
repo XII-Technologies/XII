@@ -69,7 +69,7 @@ public:
   virtual void Redraw(bool bRenderEditorGizmos);
 
   /// Consumes this frame's redraw request without discarding camera or pipeline state.
-  void SuspendRendering();
+  virtual void SuspendRendering();
 
   xiiRegisteredWindowHandle GetWindowHandle() const { return m_hEditorWindow; }
 

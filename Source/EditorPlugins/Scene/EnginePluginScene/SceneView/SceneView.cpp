@@ -10,7 +10,7 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 xiiSceneViewContext::xiiSceneViewContext(xiiSceneContext* pSceneContext) :
-  xiiEngineProcessViewContext(pSceneContext)
+  xiiEngineProcessViewContext(pSceneContext), m_CameraPreview(*pSceneContext->GetWorld())
 {
   m_pSceneContext      = pSceneContext;
   m_bUpdatePickingData = true;
@@ -137,6 +137,7 @@ void xiiSceneViewContext::SetInvisibleLayerTags(const xiiArrayPtr<xiiTag> remove
 void xiiSceneViewContext::Redraw(bool bRenderEditorGizmos)
 {
   XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  UpdateCameraPreview(bRenderEditorGizmos);
   if (xiiView* pView = GetView())
   {
     if (bRenderEditorGizmos && DrawGrid(m_pSceneContext->GetGridDensity(), m_pSceneContext->GetGridTransform(), m_pSceneContext->IsGridInGlobalSpace()).Failed())
@@ -214,7 +215,6 @@ xiiViewHandle xiiSceneViewContext::CreateView()
   pView->SetRenderPipelineResource(CreateDefaultRenderPipeline());
 
   xiiVariant sceneContextVariant(m_pSceneContext);
-  pView->SetExtractorProperty("EditorSelectedObjectsExtractor", "SceneContext", sceneContextVariant);
   pView->SetExtractorProperty("EditorShapeIconsExtractor", "SceneContext", sceneContextVariant);
 
   xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext();
