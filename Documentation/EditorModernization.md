@@ -180,3 +180,25 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   handle integration, so manipulator compilation and GUI interaction are not yet
   verified. See `Workspace/editor-bone-consumers-build.log` and
   `Workspace/editor-bone-tests.log`.
+
+## Gizmo replacement implementation evidence
+
+- The replacement's shared geometry/picking layer uses Core's `xiiGeometry` and
+  Utilities' OBJ loader. It implements all 13 shape categories referenced by
+  current manipulators and visualizers, including file meshes. Geometry owns no
+  game objects, render resources, or Qt objects. Local bounds accelerate solid
+  picking; picking uses the actual triangles and lines without temporary storage.
+- Ray queries support non-unit directions, transformed/non-uniformly scaled
+  geometry, double-sided triangles, and world-space line tolerance. Invalid
+  queries and misses preserve the output value. Build failures clear geometry.
+  Malformed OBJ face references now fail before the shared loader indexes them.
+- `EditorEngineProcessFrameworkTest` builds and all five Vulkan subtests pass,
+  including geometry/index integrity for all procedural shapes, transformed hits,
+  bounded line hits, file mesh triangulation, and invalid OBJ references. Existing
+  thumbnail readback and paused-world execution tests also pass. Logs:
+  `Workspace/editor-gizmo-geometry-build.log` and
+  `Workspace/editor-gizmo-geometry-tests.log`.
+- This is the geometry/picking stage of the replacement. Sync handles, viewport
+  drawing, highlighting, and scene picking still need to be connected to current
+  rendering APIs. Interactive gizmos and the full Editor build remain unverified;
+  no old renderer/component implementation has been restored.
