@@ -60,6 +60,7 @@ public:
   xiiResult ParseCompressionMode();
   xiiResult ParseWrapModes();
   xiiResult ParseFilterModes();
+  xiiResult ParseSamplerOverrides();
   xiiResult ParseResolutionModifiers();
   xiiResult ParseMiscOptions();
   xiiResult ParseAssetHeader();

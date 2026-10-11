@@ -26,6 +26,10 @@ struct XII_TEXTURE_DLL xiiTextureConverterSamplerPreset
 
   /// Changes filtering and anisotropy only. Invalid presets leave the description unchanged.
   static xiiResult ConfigureSampler(Enum preset, xiiGALSamplerCreationDescription& inout_description);
+
+  /// Validates regular color-texture filtering, anisotropy and LOD bounds without changing the sampler.
+  /// Comparison and reduction filters belong to specialized runtime samplers, not imported color assets.
+  static xiiResult ValidateFiltering(const xiiGALSamplerCreationDescription& description);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTextureConverterSamplerPreset);

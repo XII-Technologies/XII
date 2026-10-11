@@ -79,6 +79,64 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureSamplerProperties)
     XII_TEST_INT(sampler.m_MagFilter.GetValue(), sampler.m_MinFilter.GetValue());
     XII_TEST_INT(sampler.m_MipFilter.GetValue(), preset <= 1 ? xiiGALFilterType::Point : sampler.m_MinFilter.GetValue());
   }
+  XII_TEST_RESULT(xiiTextureConverterSamplerPreset::ValidateFiltering(sampler));
+  for (auto minFilter : {xiiGALFilterType::Point, xiiGALFilterType::Linear})
+    for (auto magFilter : {xiiGALFilterType::Point, xiiGALFilterType::Linear})
+      for (auto mipFilter : {xiiGALFilterType::Point, xiiGALFilterType::Linear})
+        for (float maxLOD : {0.0f, 5.0f, xiiMath::MaxValue<float>()})
+        {
+          xiiGALSamplerCreationDescription custom;
+          custom.m_MinFilter = minFilter;
+          custom.m_MagFilter = magFilter;
+          custom.m_MipFilter = mipFilter;
+          custom.m_fMaxLOD   = maxLOD;
+          XII_TEST_RESULT(xiiTextureConverterSamplerPreset::ValidateFiltering(custom));
+        }
+  for (xiiUInt32 invalid = 0; invalid < 11; ++invalid)
+  {
+    xiiGALSamplerCreationDescription custom;
+    switch (invalid)
+    {
+      case 0:
+        custom.m_MinFilter = xiiGALFilterType::Unknown;
+        break;
+      case 1:
+        custom.m_MipFilter = xiiGALFilterType::ComparisonPoint;
+        break;
+      case 2:
+        custom.m_MagFilter = xiiGALFilterType::MinimumLinear;
+        break;
+      case 3:
+        custom.m_MinFilter = xiiGALFilterType::Anisotropic;
+        break;
+      case 4:
+        custom.m_uiMaxAnisotropy = 2;
+        break;
+      case 5:
+        custom.m_fMipLODBias = xiiMath::NaN<float>();
+        break;
+      case 6:
+        custom.m_fMinLOD = -1;
+        break;
+      case 7:
+        custom.m_fMaxLOD = xiiMath::Infinity<float>();
+        break;
+      case 8:
+        custom.m_fMinLOD = 2;
+        custom.m_fMaxLOD = 1;
+        break;
+      case 9:
+      case 10:
+        custom.m_MinFilter       = xiiGALFilterType::Anisotropic;
+        custom.m_MagFilter       = xiiGALFilterType::Anisotropic;
+        custom.m_MipFilter       = xiiGALFilterType::Anisotropic;
+        custom.m_uiMaxAnisotropy = invalid == 9 ? 0 : 17;
+        break;
+    }
+    const auto hash = custom.CalculateHash();
+    XII_TEST_BOOL(xiiTextureConverterSamplerPreset::ValidateFiltering(custom).Failed());
+    XII_TEST_INT(custom.CalculateHash(), hash);
+  }
   const auto previousHash = sampler.CalculateHash();
   XII_TEST_BOOL(xiiTextureConverterSamplerPreset::ConfigureSampler(static_cast<xiiTextureConverterSamplerPreset::Enum>(255), sampler).Failed());
   XII_TEST_INT(sampler.CalculateHash(), previousHash);

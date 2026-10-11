@@ -26,4 +26,23 @@ xiiResult xiiTextureConverterSamplerPreset::ConfigureSampler(Enum preset, xiiGAL
   return XII_SUCCESS;
 }
 
+xiiResult xiiTextureConverterSamplerPreset::ValidateFiltering(const xiiGALSamplerCreationDescription& description)
+{
+  bool anisotropic = false;
+  for (auto filter : {description.m_MinFilter, description.m_MagFilter, description.m_MipFilter})
+  {
+    if (filter < xiiGALFilterType::Point || filter > xiiGALFilterType::Anisotropic)
+      return XII_FAILURE;
+    anisotropic |= filter == xiiGALFilterType::Anisotropic;
+  }
+  if (anisotropic && (description.m_MinFilter != xiiGALFilterType::Anisotropic || description.m_MagFilter != xiiGALFilterType::Anisotropic || description.m_MipFilter != xiiGALFilterType::Anisotropic || description.m_uiMaxAnisotropy == 0 || description.m_uiMaxAnisotropy > 16))
+    return XII_FAILURE;
+  if (!anisotropic && description.m_uiMaxAnisotropy != 0)
+    return XII_FAILURE;
+  if (!xiiMath::IsFinite(description.m_fMipLODBias) || !xiiMath::IsFinite(description.m_fMinLOD) ||
+      !xiiMath::IsFinite(description.m_fMaxLOD) || description.m_fMinLOD < 0 || description.m_fMaxLOD < description.m_fMinLOD)
+    return XII_FAILURE;
+  return XII_SUCCESS;
+}
+
 XII_STATICLINK_FILE(Texture, Texture_Converter_Implementation_SamplerPreset);

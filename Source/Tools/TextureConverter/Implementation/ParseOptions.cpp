@@ -437,7 +437,6 @@ xiiResult xiiTextureConverter::ParseWrapModes()
     m_Processor.m_Descriptor.m_SamplerDescription.m_AddressV = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
 
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
   {
     xiiInt32 iValue = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
     if (iValue <= xiiGALTextureAddressMode::Unknown || iValue >= xiiGALTextureAddressMode::ENUM_COUNT)
@@ -465,7 +464,8 @@ xiiResult xiiTextureConverter::ParseFilterModes()
     xiiTextureConverterSamplerPreset::Aniso4x, xiiTextureConverterSamplerPreset::Aniso16x};
   if (option < 0 || option >= XII_ARRAY_SIZE(presets))
     return XII_FAILURE;
-  return xiiTextureConverterSamplerPreset::ConfigureSampler(presets[option], m_Processor.m_Descriptor.m_SamplerDescription);
+  XII_SUCCEED_OR_RETURN(xiiTextureConverterSamplerPreset::ConfigureSampler(presets[option], m_Processor.m_Descriptor.m_SamplerDescription));
+  return ParseSamplerOverrides();
 }
 
 xiiResult xiiTextureConverter::ParseResolutionModifiers()

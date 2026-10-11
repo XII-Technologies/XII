@@ -640,3 +640,22 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-native-material-tests.log`). The legacy generic shader payload
   reader still uses its original stream checks; this slice validates the new typed
   block. Mesh material import is not yet connected to Native mode.
+
+- Texture documents now support custom native color-texture filtering: independent
+  minification, magnification and mip filters, anisotropy, LOD bias and LOD bounds.
+  Existing sampler presets and their identities remain unchanged; older documents
+  retain preset behavior. Both converted textures and render targets use the same
+  validation. Texture document version 9 invalidates transformed caches. All three
+  affected Qt source files compile individually with zero warnings/errors.
+- Converter sampler overrides parse signed finite values and reject malformed
+  values, unknown filters, mixed anisotropic filtering and invalid LOD intervals
+  through xiiResult. The native W address is now retained for 2D textures as well
+  as volumes. Actual GPU tests discovered that Vulkan had never enabled the
+  extension required by the already exposed MirrorOnce mode. It now enables that
+  extension when available and returns failure on unsupported devices.
+- All 24 Vulkan Editor integration subtests pass, including all twelve glTF
+  minification/magnification combinations, base-level-only sampling with retained
+  mip images, custom anisotropy/LOD bounds, native GPU sampler round trips and
+  eleven invalid converter invocations (`Workspace/editor-custom-sampler-build.log`,
+  `Workspace/editor-custom-sampler-tests.log`). The complete Editor plugin remains
+  subject to the other documented asset migrations.

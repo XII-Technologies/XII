@@ -39,13 +39,8 @@ xiiTransformStatus xiiTextureAssetDocument::WriteRenderTargetAsset(xiiStringView
       return xiiTransformStatus("Invalid render-target format.");
   }
   xiiGALSamplerCreationDescription sampler;
-  XII_SUCCEED_OR_RETURN(xiiTextureConverterSamplerPreset::ConfigureSampler(properties->m_SamplerPreset, sampler));
-  for (auto mode : {properties->m_AddressModeU, properties->m_AddressModeV, properties->m_AddressModeW})
-    if (mode <= xiiGALTextureAddressMode::Unknown || mode >= xiiGALTextureAddressMode::ENUM_COUNT)
-      return xiiTransformStatus("Invalid render-target address mode.");
-  sampler.m_AddressU = properties->m_AddressModeU;
-  sampler.m_AddressV = properties->m_AddressModeV;
-  sampler.m_AddressW = properties->m_AddressModeW;
+  if (properties->GetSamplerDescription(sampler).Failed())
+    return xiiTransformStatus("Invalid render-target sampler filtering, anisotropy, LOD bounds or address mode.");
   xiiDeferredFileWriter file;
   file.SetOutput(sTargetFile);
   XII_SUCCEED_OR_RETURN(xiiTextureAssetFile::WriteRenderTarget(file, description, sampler, header));

@@ -76,6 +76,9 @@ public:
 
   xiiInt32 GetNumInputFiles() const;
 
+  /// Builds the persistent native sampler. Failure leaves the destination unchanged.
+  xiiResult GetSamplerDescription(xiiGALSamplerCreationDescription& out_description) const;
+
   bool  m_bIsRenderTarget        = false;
   bool  m_bPremultipliedAlpha    = false;
   bool  m_bFlipHorizontal        = false;
@@ -86,9 +89,17 @@ public:
   float m_fAlphaThreshold        = 0.5f;
 
   xiiEnum<xiiTextureConverterSamplerPreset> m_SamplerPreset;
-  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeU = xiiGALTextureAddressMode::Wrap;
-  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeV = xiiGALTextureAddressMode::Wrap;
-  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeW = xiiGALTextureAddressMode::Wrap;
+  bool                                      m_bUseCustomFiltering = false;
+  xiiEnum<xiiGALFilterType>                 m_MinFilter           = xiiGALFilterType::Linear;
+  xiiEnum<xiiGALFilterType>                 m_MagFilter           = xiiGALFilterType::Linear;
+  xiiEnum<xiiGALFilterType>                 m_MipFilter           = xiiGALFilterType::Linear;
+  xiiUInt32                                 m_uiMaxAnisotropy     = 0;
+  float                                     m_fMipLODBias         = 0;
+  float                                     m_fMinLOD             = 0;
+  float                                     m_fMaxLOD             = xiiMath::MaxValue<float>();
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeU        = xiiGALTextureAddressMode::Wrap;
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeV        = xiiGALTextureAddressMode::Wrap;
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeW        = xiiGALTextureAddressMode::Wrap;
   xiiEnum<xiiTexture2DResolution>           m_Resolution;
   xiiEnum<xiiTextureConverterUsage>         m_TextureUsage;
   xiiEnum<xiiRenderTargetFormat>            m_RtFormat;

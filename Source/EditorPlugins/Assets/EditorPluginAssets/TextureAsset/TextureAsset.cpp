@@ -8,7 +8,7 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 8, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 9, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -140,10 +140,8 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
 {
   const xiiTextureAssetProperties* pProp = GetProperties();
   xiiGALSamplerCreationDescription sampler;
-  XII_SUCCEED_OR_RETURN(xiiTextureConverterSamplerPreset::ConfigureSampler(pProp->m_SamplerPreset, sampler));
-  for (auto mode : {pProp->m_AddressModeU, pProp->m_AddressModeV, pProp->m_AddressModeW})
-    if (mode <= xiiGALTextureAddressMode::Unknown || mode >= xiiGALTextureAddressMode::ENUM_COUNT)
-      return xiiStatus("Invalid texture address mode.");
+  if (pProp->GetSamplerDescription(sampler).Failed())
+    return xiiStatus("Invalid texture sampler filtering, anisotropy, LOD bounds or address mode.");
 
   QStringList      arguments;
   xiiStringBuilder temp;
@@ -242,7 +240,19 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
   arguments << "-addressU" << ToWrapMode(pProp->m_AddressModeU);
   arguments << "-addressV" << ToWrapMode(pProp->m_AddressModeV);
   arguments << "-addressW" << ToWrapMode(pProp->m_AddressModeW);
-  arguments << "-filter" << ToFilterMode(pProp->m_SamplerPreset);
+  if (pProp->m_bUseCustomFiltering)
+  {
+    // Full float precision preserves imported mip limits and bias across the converter process.
+    arguments << "-minFilter" << QString::number(sampler.m_MinFilter.GetValue());
+    arguments << "-magFilter" << QString::number(sampler.m_MagFilter.GetValue());
+    arguments << "-mipFilter" << QString::number(sampler.m_MipFilter.GetValue());
+    arguments << "-maxAnisotropy" << QString::number(sampler.m_uiMaxAnisotropy);
+    arguments << "-mipLODBias" << QString::number(sampler.m_fMipLODBias, 'g', 9);
+    arguments << "-minLOD" << QString::number(sampler.m_fMinLOD, 'g', 9);
+    arguments << "-maxLOD" << QString::number(sampler.m_fMaxLOD, 'g', 9);
+  }
+  else
+    arguments << "-filter" << ToFilterMode(pProp->m_SamplerPreset);
 
   const xiiInt32 iNumInputFiles = pProp->GetNumInputFiles();
   for (xiiInt32 i = 0; i < iNumInputFiles; ++i)
@@ -253,7 +263,7 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
       break;
 
     arguments << temp.GetData();
-    arguments << QString(pProp->GetAbsoluteInputFilePath(i).GetData());
+    arguments << QString::fromUtf8(pProp->GetAbsoluteInputFilePath(i).GetData());
   }
 
   switch (pProp->GetChannelMapping())

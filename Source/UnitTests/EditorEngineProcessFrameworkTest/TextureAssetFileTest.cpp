@@ -147,6 +147,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureAssetFile)
       options.m_onStdOut = [&](xiiStringView text) {
         childOutput.Append(text);
       };
+      options.m_onStdError = options.m_onStdOut;
       xiiProcess process;
       if (!XII_TEST_RESULT(process.Launch(options)) || !XII_TEST_RESULT(process.WaitToFinish(xiiTime::MakeFromSeconds(30))))
         return;
@@ -173,6 +174,82 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureAssetFile)
       XII_TEST_INT(result.m_Image.GetWidth(), 4);
       XII_TEST_INT(result.m_Image.GetPixelPointer<xiiUInt8>()[0], 32);
     }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Custom filtering survives the converter, resource loader and GPU sampler")
+  {
+    xiiStringBuilder executable(xiiOSFile::GetApplicationDirectory(), "/xiiTextureConverter");
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    executable.Append(".exe");
+#  endif
+    xiiUInt32 combination = 0;
+    auto      convert     = [&](xiiStringView extra, bool success, xiiStringBuilder& output) -> bool {
+      xiiStringBuilder path;
+      path.SetFormat(":imgout/CustomSampler{}.xiiBinTexture2D", combination++);
+      if (!XII_TEST_RESULT(xiiFileSystem::ResolvePath(path, &output, nullptr)))
+        return false;
+      xiiProcessOptions options;
+      options.m_sProcess = executable;
+      options.AddArgument("-in");
+      options.AddArgument(inputFile);
+      options.AddArgument("-out");
+      options.AddArgument(output);
+      options.AddCommandLine("-type 2D -compression None -mipmaps Linear -usage Linear -minRes 4 -maxRes 4 -rgba in0 -addressU Mirror -addressV Clamp -addressW MirrorOnce -assetHashLow 0x12345678 -assetHashHigh 0x1 -assetVersion 2");
+      options.AddCommandLine(extra);
+      xiiStringBuilder childOutput;
+      options.m_onStdOut = [&](xiiStringView text) {
+        childOutput.Append(text);
+      };
+      options.m_onStdError = options.m_onStdOut;
+      xiiProcess process;
+      if (!XII_TEST_RESULT(process.Launch(options)) || !XII_TEST_RESULT(process.WaitToFinish(xiiTime::MakeFromSeconds(30))))
+        return false;
+      if (!XII_TEST_BOOL_MSG((process.GetExitCode() == 0) == success, "%s: %s", xiiString(extra).GetData(), childOutput.GetData()))
+        return false;
+      if (!success)
+        XII_TEST_BOOL(!xiiOSFile::ExistsFile(output));
+      return true;
+    };
+    for (xiiUInt32 minFilter : {1U, 2U})
+      for (xiiUInt32 magFilter : {1U, 2U})
+        for (xiiUInt32 mipMode = 0; mipMode < 3; ++mipMode)
+        {
+          const xiiUInt32  mipFilter = mipMode == 2 ? 2 : 1;
+          const float      maxLOD    = mipMode == 0 ? 0 : xiiMath::MaxValue<float>();
+          xiiStringBuilder extra, output;
+          extra.SetFormat("-minFilter {} -magFilter {} -mipFilter {} -maxAnisotropy 0 -mipLODBias -0.375 -maxLOD {}", minFilter, magFilter, mipFilter, mipMode == 0 ? "0" : "3.40282347e38");
+          if (!convert(extra, true, output))
+            return;
+          const auto                            handle = xiiResourceManager::LoadResource<xiiTexture2DResource>(output);
+          xiiResourceLock<xiiTexture2DResource> resource(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+          if (!XII_TEST_BOOL(resource && resource.GetAcquireResult() == xiiResourceAcquireResult::Final))
+            return;
+          const auto& sampler = resource->GetGALSampler()->GetDescription();
+          XII_TEST_INT(sampler.m_MinFilter.GetValue(), minFilter);
+          XII_TEST_INT(sampler.m_MagFilter.GetValue(), magFilter);
+          XII_TEST_INT(sampler.m_MipFilter.GetValue(), mipFilter);
+          XII_TEST_INT(sampler.m_AddressW.GetValue(), xiiGALTextureAddressMode::MirrorOnce);
+          XII_TEST_FLOAT(sampler.m_fMipLODBias, -0.375f, 0);
+          XII_TEST_FLOAT(sampler.m_fMaxLOD, maxLOD, 0);
+          XII_TEST_INT(resource->GetGALTexture()->GetDescription().m_uiMipLevels, 3);
+        }
+    xiiStringBuilder output;
+    if (convert("-minFilter 3 -magFilter 3 -mipFilter 3 -maxAnisotropy 8 -minLOD 1 -maxLOD 2", true, output))
+    {
+      const auto                            handle = xiiResourceManager::LoadResource<xiiTexture2DResource>(output);
+      xiiResourceLock<xiiTexture2DResource> resource(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (XII_TEST_BOOL(resource && resource.GetAcquireResult() == xiiResourceAcquireResult::Final))
+      {
+        const auto& sampler = resource->GetGALSampler()->GetDescription();
+        XII_TEST_INT(sampler.m_uiMaxAnisotropy, 8);
+        XII_TEST_FLOAT(sampler.m_fMinLOD, 1, 0);
+        XII_TEST_FLOAT(sampler.m_fMaxLOD, 2, 0);
+      }
+    }
+    for (const char* invalid : {"-minFilter 3", "-minFilter 0", "-magFilter 257", "-mipFilter 4", "-maxAnisotropy 2",
+                                "-minLOD -1", "-minLOD 3 -maxLOD 2", "-maxLOD 1e99", "-minLOD 1garbage", "-magFilter junk", "-maxAnisotropy -1"})
+      if (!convert(invalid, false, output))
+        return;
   }
 #endif
 }

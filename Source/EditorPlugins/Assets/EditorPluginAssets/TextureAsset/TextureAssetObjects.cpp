@@ -17,7 +17,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderTargetFormat, 1)
   XII_ENUM_CONSTANTS(xiiRenderTargetFormat::RGBA8sRgb, xiiRenderTargetFormat::RGBA8, xiiRenderTargetFormat::RGB10, xiiRenderTargetFormat::RGBA16)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 7, xiiRTTIDefaultAllocator<xiiTextureAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 8, xiiRTTIDefaultAllocator<xiiTextureAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -38,6 +38,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 7, xiiRTTIDefaultAll
     XII_MEMBER_PROPERTY("HdrExposureBias", m_fHdrExposureBias)->AddAttributes(new xiiClampValueAttribute(-20.0f, 20.0f)),
 
     XII_ENUM_MEMBER_PROPERTY("SamplerPreset", xiiTextureConverterSamplerPreset, m_SamplerPreset),
+    XII_MEMBER_PROPERTY("UseCustomFiltering", m_bUseCustomFiltering),
+    XII_ENUM_MEMBER_PROPERTY("MinFilter", xiiGALFilterType, m_MinFilter)->AddAttributes(new xiiDefaultValueAttribute(xiiGALFilterType::Linear)),
+    XII_ENUM_MEMBER_PROPERTY("MagFilter", xiiGALFilterType, m_MagFilter)->AddAttributes(new xiiDefaultValueAttribute(xiiGALFilterType::Linear)),
+    XII_ENUM_MEMBER_PROPERTY("MipFilter", xiiGALFilterType, m_MipFilter)->AddAttributes(new xiiDefaultValueAttribute(xiiGALFilterType::Linear)),
+    XII_MEMBER_PROPERTY("MaxAnisotropy", m_uiMaxAnisotropy)->AddAttributes(new xiiClampValueAttribute(0, 16)),
+    XII_MEMBER_PROPERTY("MipLODBias", m_fMipLODBias),
+    XII_MEMBER_PROPERTY("MinLOD", m_fMinLOD)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("MaxLOD", m_fMaxLOD)->AddAttributes(new xiiDefaultValueAttribute(xiiMath::MaxValue<float>()), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_ENUM_MEMBER_PROPERTY("AddressModeU", xiiGALTextureAddressMode, m_AddressModeU),
     XII_ENUM_MEMBER_PROPERTY("AddressModeV", xiiGALTextureAddressMode, m_AddressModeV),
     XII_ENUM_MEMBER_PROPERTY("AddressModeW", xiiGALTextureAddressMode, m_AddressModeW),
@@ -63,14 +71,18 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
 
     const bool isRenderTarget = e.m_pObject->GetTypeAccessor().GetValue("IsRenderTarget").ConvertTo<bool>();
 
-    props["AddressModeW"].m_Visibility = xiiPropertyUiState::Invisible;
+    props["AddressModeW"].m_Visibility  = xiiPropertyUiState::Invisible;
+    const bool customFiltering          = e.m_pObject->GetTypeAccessor().GetValue("UseCustomFiltering").ConvertTo<bool>();
+    props["SamplerPreset"].m_Visibility = customFiltering ? xiiPropertyUiState::Invisible : xiiPropertyUiState::Default;
+    for (const char* name : {"MinFilter", "MagFilter", "MipFilter", "MaxAnisotropy", "MipLODBias", "MinLOD", "MaxLOD"})
+      props[name].m_Visibility = customFiltering ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
 
     if (isRenderTarget)
     {
-      const xiiInt32 resMode   = e.m_pObject->GetTypeAccessor().GetValue("Resolution").ConvertTo<xiiInt32>();
+      const xiiInt32 resMode        = e.m_pObject->GetTypeAccessor().GetValue("Resolution").ConvertTo<xiiInt32>();
       const bool     resUsesProfile = resMode == xiiTexture2DResolution::ProfileResolution1 || resMode == xiiTexture2DResolution::ProfileResolution2;
 
-      props["ResolutionScale"].m_Visibility          = resUsesProfile ? xiiPropertyUiState::Default : xiiPropertyUiState::Disabled;
+      props["ResolutionScale"].m_Visibility       = resUsesProfile ? xiiPropertyUiState::Default : xiiPropertyUiState::Disabled;
       props["Usage"].m_Visibility                 = xiiPropertyUiState::Invisible;
       props["MipmapMode"].m_Visibility            = xiiPropertyUiState::Invisible;
       props["CompressionMode"].m_Visibility       = xiiPropertyUiState::Invisible;
@@ -96,7 +108,7 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
       const bool hasMips = e.m_pObject->GetTypeAccessor().GetValue("MipmapMode").ConvertTo<xiiInt32>() != xiiTextureConverterMipmapMode::None;
       const bool isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTextureConverterUsage::Hdr;
 
-      props["ResolutionScale"].m_Visibility          = xiiPropertyUiState::Invisible;
+      props["ResolutionScale"].m_Visibility       = xiiPropertyUiState::Invisible;
       props["Usage"].m_Visibility                 = xiiPropertyUiState::Default;
       props["Mipmaps"].m_Visibility               = xiiPropertyUiState::Default;
       props["Compression"].m_Visibility           = xiiPropertyUiState::Default;
@@ -333,3 +345,29 @@ public:
 };
 
 xiiTextureAssetPropertiesPatch_4_5 g_xiiTextureAssetPropertiesPatch_4_5;
+
+xiiResult xiiTextureAssetProperties::GetSamplerDescription(xiiGALSamplerCreationDescription& out_description) const
+{
+  xiiGALSamplerCreationDescription sampler;
+  if (m_bUseCustomFiltering)
+  {
+    sampler.m_MinFilter       = m_MinFilter;
+    sampler.m_MagFilter       = m_MagFilter;
+    sampler.m_MipFilter       = m_MipFilter;
+    sampler.m_uiMaxAnisotropy = m_uiMaxAnisotropy;
+    sampler.m_fMipLODBias     = m_fMipLODBias;
+    sampler.m_fMinLOD         = m_fMinLOD;
+    sampler.m_fMaxLOD         = m_fMaxLOD;
+  }
+  else
+    XII_SUCCEED_OR_RETURN(xiiTextureConverterSamplerPreset::ConfigureSampler(m_SamplerPreset, sampler));
+  XII_SUCCEED_OR_RETURN(xiiTextureConverterSamplerPreset::ValidateFiltering(sampler));
+  for (auto mode : {m_AddressModeU, m_AddressModeV, m_AddressModeW})
+    if (mode <= xiiGALTextureAddressMode::Unknown || mode >= xiiGALTextureAddressMode::ENUM_COUNT)
+      return XII_FAILURE;
+  sampler.m_AddressU = m_AddressModeU;
+  sampler.m_AddressV = m_AddressModeV;
+  sampler.m_AddressW = m_AddressModeW;
+  out_description    = sampler;
+  return XII_SUCCESS;
+}
