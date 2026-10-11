@@ -14,8 +14,6 @@ public:
 
   bool UpdateThumbnailCamera(const xiiBoundingBoxSphere& bounds);
 
-  virtual void Redraw(bool bRenderEditorGizmos) override;
-
 protected:
   virtual xiiViewHandle CreateView() override;
   virtual void          SetCamera(const xiiViewRedrawMsgToEngine* pMsg) override;

@@ -247,6 +247,37 @@ xiiResult xiiEngineProcessViewContext::DrawGrid(float fSpacing, const xiiTransfo
   return XII_SUCCESS;
 }
 
+xiiResult xiiEngineProcessViewContext::PickGizmoAtPixel(xiiUInt32 x, xiiUInt32 y, xiiViewPickingResultMsgToEditor& out_result) const
+{
+  out_result.m_ObjectGuid    = xiiUuid();
+  out_result.m_ComponentGuid = xiiUuid();
+  out_result.m_OtherGuid     = xiiUuid();
+  out_result.m_uiPartIndex   = 0;
+  out_result.m_vPickedNormal.SetZero();
+  out_result.m_vPickedPosition.SetZero();
+  out_result.m_vPickingRayStartPosition.SetZero();
+
+  auto* world = GetDocumentContext()->GetWorld();
+  if (!world)
+    return XII_FAILURE;
+  XII_LOCK(world->GetWriteMarker());
+  const auto* view = GetView();
+  if (!view || !view->IsValid())
+    return XII_FAILURE;
+  const auto& viewport = view->GetViewport();
+  if (!xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) ||
+      !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0)
+    return XII_FAILURE;
+
+  xiiEditorGizmoPickResult hit;
+  XII_SUCCEED_OR_RETURN(GetDocumentContext()->PickGizmo(*view, (static_cast<float>(x) + 0.5f - viewport.x) / viewport.width,
+                                                        (static_cast<float>(y) + 0.5f - viewport.y) / viewport.height, hit));
+  out_result.m_OtherGuid                = hit.m_HandleGuid;
+  out_result.m_vPickedPosition          = hit.m_vPosition;
+  out_result.m_vPickingRayStartPosition = hit.m_vRayStartPosition;
+  return XII_SUCCESS;
+}
+
 bool xiiEngineProcessViewContext::FocusCameraOnObject(xiiCamera& inout_camera, const xiiBoundingBoxSphere& objectBounds, float fFov, const xiiVec3& vViewDir)
 {
   if (!objectBounds.IsValid())

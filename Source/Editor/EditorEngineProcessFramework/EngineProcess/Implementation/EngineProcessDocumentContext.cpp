@@ -994,7 +994,7 @@ xiiResult xiiEngineProcessDocumentContext::DrawGizmos(const xiiView& view)
 
 xiiResult xiiEngineProcessDocumentContext::PickGizmo(const xiiView& view, float fNormalizedX, float fNormalizedY, xiiEditorGizmoPickResult& out_result)
 {
-  if (!m_pWorld || view.GetWorld() != m_pWorld || !view.IsValid() ||
+  if (!m_pWorld || view.GetWorld() != m_pWorld || !view.IsValid() || view.GetCamera()->GetCameraMode() == xiiCameraMode::None ||
       !xiiMath::IsFinite(fNormalizedX) || !xiiMath::IsFinite(fNormalizedY) || fNormalizedX < 0 || fNormalizedX > 1 || fNormalizedY < 0 || fNormalizedY > 1)
     return XII_FAILURE;
   xiiVec3 start, direction;
@@ -1010,11 +1010,12 @@ xiiResult xiiEngineProcessDocumentContext::PickGizmo(const xiiView& view, float 
     const bool bOnTop = handle->IsAlwaysOnTop();
     if (found && ((!bOnTop && closest.m_bAlwaysOnTop) || (bOnTop == closest.m_bAlwaysOnTop && fTime >= closest.m_fRayTime)))
       continue;
-    closest.m_HandleGuid   = it.Key();
-    closest.m_fRayTime     = fTime;
-    closest.m_vPosition    = start + direction * fTime;
-    closest.m_bAlwaysOnTop = bOnTop;
-    found                  = true;
+    closest.m_HandleGuid        = it.Key();
+    closest.m_vRayStartPosition = start;
+    closest.m_fRayTime          = fTime;
+    closest.m_vPosition         = start + direction * fTime;
+    closest.m_bAlwaysOnTop      = bOnTop;
+    found                       = true;
   }
   if (!found)
     return XII_FAILURE;

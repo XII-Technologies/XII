@@ -6,6 +6,7 @@
 #include <Core/World/WorldDesc.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/MemoryStream.h>
@@ -46,6 +47,15 @@ namespace
   protected:
     xiiEngineProcessViewContext* CreateViewContext() override { return nullptr; }
     void                         DestroyViewContext(xiiEngineProcessViewContext*) override {}
+  };
+  class GizmoTestView : public xiiEngineProcessViewContext
+  {
+  public:
+    GizmoTestView(GizmoTestDocument& document, xiiViewHandle view) : xiiEngineProcessViewContext(&document) { m_hView = view; }
+    using xiiEngineProcessViewContext::PickGizmoAtPixel;
+
+  protected:
+    xiiViewHandle CreateView() override { return {}; }
   };
 } // namespace
 
@@ -182,6 +192,43 @@ XII_CREATE_SIMPLE_TEST(EditorViews, GizmoHandles)
     XII_TEST_BOOL(document.PickGizmo(*view, 0.5f, 0.5f, result).Failed());
     XII_TEST_BOOL(result.m_HandleGuid == farHandle.GetGuid()); // Failure leaves the output unchanged.
     XII_TEST_BOOL(document.PickGizmo(*view, -0.1f, 0.5f, result).Failed());
+    // The view context owns this view and destroys it when the block ends.
+    GizmoTestView pickingView(document, view->GetHandle());
+    nearHandle.SetVisible(true);
+    document.SendHandle(nearHandle);
+    view->SetViewport({11, 27, 511, 511});
+    xiiViewPickingResultMsgToEditor reply;
+    reply.m_DocumentGuid    = xiiUuid::MakeUuid();
+    reply.m_uiViewID        = 19;
+    const auto documentGuid = reply.m_DocumentGuid;
+    XII_TEST_RESULT(pickingView.PickGizmoAtPixel(266, 282, reply));
+    XII_TEST_BOOL(reply.m_OtherGuid == nearHandle.GetGuid());
+    XII_TEST_BOOL(!reply.m_ObjectGuid.IsValid() && !reply.m_ComponentGuid.IsValid());
+    XII_TEST_VEC3(reply.m_vPickedPosition, xiiVec3(0, 0, 1.5f), 0.001f);
+    xiiVec3 rayStart, rayDirection;
+    XII_TEST_RESULT(view->ComputePickingRay(0.5f, 0.5f, rayStart, rayDirection));
+    XII_TEST_VEC3(reply.m_vPickingRayStartPosition, rayStart, 0.001f);
+    XII_TEST_VEC3(reply.m_vPickedNormal, xiiVec3::MakeZero(), 0);
+    XII_TEST_BOOL(reply.m_DocumentGuid == documentGuid);
+    XII_TEST_INT(reply.m_uiViewID, 19);
+    reply.m_ObjectGuid = reply.m_ComponentGuid = xiiUuid::MakeUuid();
+    reply.m_uiPartIndex                        = 42;
+    reply.m_vPickedNormal.Set(1);
+    XII_TEST_BOOL(pickingView.PickGizmoAtPixel(0, 0, reply).Failed());
+    XII_TEST_BOOL(!reply.m_OtherGuid.IsValid() && !reply.m_ObjectGuid.IsValid() && !reply.m_ComponentGuid.IsValid());
+    XII_TEST_INT(reply.m_uiPartIndex, 0);
+    XII_TEST_VEC3(reply.m_vPickedPosition, xiiVec3::MakeZero(), 0);
+    XII_TEST_VEC3(reply.m_vPickingRayStartPosition, xiiVec3::MakeZero(), 0);
+    XII_TEST_VEC3(reply.m_vPickedNormal, xiiVec3::MakeZero(), 0);
+    XII_TEST_BOOL(reply.m_DocumentGuid == documentGuid);
+    XII_TEST_INT(reply.m_uiViewID, 19);
+    view->SetViewport({0, 0, 0, 0});
+    XII_TEST_BOOL(pickingView.PickGizmoAtPixel(0, 0, reply).Failed());
+    view->SetViewport({0, 0, 512, 512});
+    xiiCamera uninitializedCamera;
+    view->SetCamera(&uninitializedCamera);
+    XII_TEST_BOOL(pickingView.PickGizmoAtPixel(256, 256, reply).Failed());
+    view->SetCamera(&camera);
     document.RemoveHandle(nearHandle);
     XII_TEST_BOOL(document.GetContext().m_OtherPickingMap.GetHandleToGuidMap().IsEmpty());
   }

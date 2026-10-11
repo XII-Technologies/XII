@@ -23,9 +23,10 @@ class xiiView;
 struct xiiEditorGizmoPickResult
 {
   xiiUuid m_HandleGuid;
-  xiiVec3 m_vPosition    = xiiVec3::MakeZero();
-  float   m_fRayTime     = 0.0f;
-  bool    m_bAlwaysOnTop = false;
+  xiiVec3 m_vRayStartPosition = xiiVec3::MakeZero();
+  xiiVec3 m_vPosition         = xiiVec3::MakeZero();
+  float   m_fRayTime          = 0.0f;
+  bool    m_bAlwaysOnTop      = false;
 };
 
 struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessDocumentContextFlags

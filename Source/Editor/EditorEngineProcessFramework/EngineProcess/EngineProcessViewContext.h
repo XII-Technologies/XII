@@ -12,6 +12,7 @@
 class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
 class xiiViewRedrawMsgToEngine;
+class xiiViewPickingResultMsgToEditor;
 class xiiEditorEngineViewMsg;
 class xiiView;
 class xiiGALSwapChain;
@@ -83,6 +84,10 @@ protected:
   xiiView* GetView() const;
   /// Submits reusable grid geometry to this view's regular debug-render passes.
   xiiResult DrawGrid(float fSpacing, const xiiTransform& transform = xiiTransform::MakeIdentity(), bool bGlobal = true);
+  /// Picks synchronized handles at a window pixel center, accounting for viewport offsets.
+  /// Clears all hit fields on failure; document and view routing fields remain unchanged.
+  /// Gizmos do not report a surface normal. The caller sends or combines the result.
+  xiiResult PickGizmoAtPixel(xiiUInt32 x, xiiUInt32 y, xiiViewPickingResultMsgToEditor& out_result) const;
   void      SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
   void      HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
   void      OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size);

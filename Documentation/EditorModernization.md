@@ -297,3 +297,16 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   for rotated local placement, orthographic zoom, tiny spacing, extreme viewports,
   and overflow rejection. Logs: `Workspace/editor-grid-build.log`,
   `Workspace/editor-grid-tests.log`, and `Workspace/editor-grid-plugin-build.log`.
+- Skeleton previews now create views in their document's render-world module,
+  use the default pipeline resource, and query current skeleton joint counts.
+  Picking synchronized bone handles uses the shared CPU geometry rather than
+  properties of the removed Editor picking pass. The shared pixel picker honors
+  viewport offsets and pixel centers, returns the actual ray origin, and clears
+  hit fields on failure without changing IPC routing fields. Uninitialized
+  cameras are rejected before computing projection matrices.
+- All seven Vulkan integration subtests pass, including offset viewport picking,
+  stale reply clearing, zero-area viewport and uninitialized camera rejection
+  (`Workspace/editor-skeleton-view-tests.log`). The skeleton view source compiles;
+  the asset plugin remains incomplete in other contexts and previews
+  (`Workspace/editor-skeleton-view-build.log`). Skeleton GUI manipulation remains
+  unverified until the complete plugin and Editor build.
