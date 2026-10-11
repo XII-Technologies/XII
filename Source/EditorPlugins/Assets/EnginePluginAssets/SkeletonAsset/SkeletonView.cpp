@@ -61,12 +61,13 @@ xiiViewHandle xiiSkeletonViewContext::CreateView()
 
 void xiiSkeletonViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 {
+  XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  xiiEngineProcessViewContext::SetCamera(pMsg);
   if (m_pContext->m_bDisplayGrid)
   {
-    xiiEngineProcessViewContext::DrawSimpleGrid();
+    if (DrawGrid(0.25f).Failed())
+      xiiLog::Warning("Could not build the skeleton preview grid.");
   }
-
-  xiiEngineProcessViewContext::SetCamera(pMsg);
 
   const xiiUInt32 viewHeight = pMsg->m_uiWindowHeight;
 

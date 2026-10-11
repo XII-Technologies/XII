@@ -89,7 +89,6 @@ bool xiiSceneViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& boun
     pView->SetViewRenderMode(xiiViewRenderMode::Default);
     pView->SetRenderPassProperty("EditorSelectionPass", "Active", false);
     pView->SetExtractorProperty("EditorShapeIconsExtractor", "Active", false);
-    pView->SetExtractorProperty("EditorGridExtractor", "Active", false);
     pView->SetRenderPassProperty("EditorPickingPass", "PickSelected", true);
   }
 
@@ -137,9 +136,11 @@ void xiiSceneViewContext::SetInvisibleLayerTags(const xiiArrayPtr<xiiTag> remove
 
 void xiiSceneViewContext::Redraw(bool bRenderEditorGizmos)
 {
-  xiiView* pView = nullptr;
-  if (xiiRenderWorld::TryGetView(m_hView, pView))
+  XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  if (xiiView* pView = GetView())
   {
+    if (bRenderEditorGizmos && DrawGrid(m_pSceneContext->GetGridDensity(), m_pSceneContext->GetGridTransform(), m_pSceneContext->IsGridInGlobalSpace()).Failed())
+      xiiLog::Warning("Could not build the scene grid.");
     const xiiTag& tagNoOrtho = xiiTagRegistry::GetGlobalRegistry().RegisterTag("NotInOrthoMode");
 
     if (pView->GetCamera()->IsOrthographic())
@@ -215,7 +216,6 @@ xiiViewHandle xiiSceneViewContext::CreateView()
   xiiVariant sceneContextVariant(m_pSceneContext);
   pView->SetExtractorProperty("EditorSelectedObjectsExtractor", "SceneContext", sceneContextVariant);
   pView->SetExtractorProperty("EditorShapeIconsExtractor", "SceneContext", sceneContextVariant);
-  pView->SetExtractorProperty("EditorGridExtractor", "SceneContext", sceneContextVariant);
 
   xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext();
   pView->SetWorld(pDocumentContext->GetWorld());

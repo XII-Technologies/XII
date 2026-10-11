@@ -2,9 +2,11 @@
 
 #include <EnginePluginAssets/EnginePluginAssetsPCH.h>
 
+#include <Core/World/World.h>
 #include <EnginePluginAssets/AnimationClipAsset/AnimationClipContext.h>
 #include <EnginePluginAssets/AnimationClipAsset/AnimationClipView.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 xiiAnimationClipViewContext::xiiAnimationClipViewContext(xiiAnimationClipContext* pContext) :
   xiiEngineProcessViewContext(pContext)
@@ -26,23 +28,20 @@ bool xiiAnimationClipViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphe
 xiiViewHandle xiiAnimationClipViewContext::CreateView()
 {
   xiiView* pView = nullptr;
-  xiiRenderWorld::CreateView("Animation Clip Editor - View", pView);
+  GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Animation Clip Editor - View", pView);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
 
-  pView->SetRenderPipelineResource(CreateDefaultRenderPipeline());
-
-  xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext();
-  pView->SetWorld(pDocumentContext->GetWorld());
   pView->SetCamera(&m_Camera);
   return pView->GetHandle();
 }
 
 void xiiAnimationClipViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 {
+  XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  xiiEngineProcessViewContext::SetCamera(pMsg);
   if (m_pContext->m_bDisplayGrid)
   {
-    xiiEngineProcessViewContext::DrawSimpleGrid();
+    if (DrawGrid(0.25f).Failed())
+      xiiLog::Warning("Could not build the animation preview grid.");
   }
-
-  xiiEngineProcessViewContext::SetCamera(pMsg);
 }

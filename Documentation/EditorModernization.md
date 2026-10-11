@@ -279,3 +279,21 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   plugin still fails on removed extractor, shadow-pool, animation declaration,
   and global render-world interfaces (`Workspace/editor-process-scene-build.log`);
   its viewport features require migration, not replacement API shims.
+- Scene and asset-preview grids now share `xiiEditorGrid` CPU geometry and the
+  standard debug-render graph passes. The removed grid extractor, renderer,
+  mutable GPU buffer, shader/layout setup, and render-data class are deleted.
+  Local/global placement, ten-step major lines, orthographic camera alignment,
+  and zoom-dependent spacing remain; orthographic grids now account for camera
+  position when placing their background plane. Tiny snap steps use bounded
+  double-precision density calculations instead of overflowing an integer factor.
+- Mesh, animated-mesh, and animation-clip views now belong to their document's
+  render-world module and use the normal default pipeline resource. Mesh
+  statistics query current vertex streams/counts rather than dereferencing a GPU
+  buffer and dividing by its stride. Those three view sources compile; the full
+  asset plugin still fails in its unmigrated contexts and other previews.
+- `EditorEngineProcessFrameworkTest`, `EditorFramework`, and `EditorEngineProcess`
+  build in Windows Debug. All seven Vulkan integration subtests pass, with new
+  grid readback checks for visible lines and depth occlusion, and geometry checks
+  for rotated local placement, orthographic zoom, tiny spacing, extreme viewports,
+  and overflow rejection. Logs: `Workspace/editor-grid-build.log`,
+  `Workspace/editor-grid-tests.log`, and `Workspace/editor-grid-plugin-build.log`.

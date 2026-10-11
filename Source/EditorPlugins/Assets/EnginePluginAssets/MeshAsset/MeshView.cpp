@@ -2,11 +2,12 @@
 
 #include <EnginePluginAssets/EnginePluginAssetsPCH.h>
 
+#include <Core/World/World.h>
 #include <EnginePluginAssets/MeshAsset/MeshContext.h>
 #include <EnginePluginAssets/MeshAsset/MeshView.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 xiiMeshViewContext::xiiMeshViewContext(xiiMeshContext* pMeshContext) :
   xiiEngineProcessViewContext(pMeshContext)
@@ -28,25 +29,22 @@ bool xiiMeshViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& bound
 xiiViewHandle xiiMeshViewContext::CreateView()
 {
   xiiView* pView = nullptr;
-  xiiRenderWorld::CreateView("Mesh Editor - View", pView);
+  GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Mesh Editor - View", pView);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
 
-  pView->SetRenderPipelineResource(CreateDefaultRenderPipeline());
-
-  xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext();
-  pView->SetWorld(pDocumentContext->GetWorld());
   pView->SetCamera(&m_Camera);
   return pView->GetHandle();
 }
 
 void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 {
+  XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  xiiEngineProcessViewContext::SetCamera(pMsg);
   if (m_pContext->m_bDisplayGrid)
   {
-    xiiEngineProcessViewContext::DrawSimpleGrid();
+    if (DrawGrid(0.25f).Failed())
+      xiiLog::Warning("Could not build the mesh preview grid.");
   }
-
-  xiiEngineProcessViewContext::SetCamera(pMsg);
 
   auto hMesh = m_pContext->GetMesh();
   if (hMesh.IsValid())
@@ -54,9 +52,7 @@ void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     xiiResourceLock<xiiMeshResource>       pMesh(hMesh, xiiResourceAcquireMode::AllowLoadingFallback);
     xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(pMesh->GetMeshBuffer(), xiiResourceAcquireMode::AllowLoadingFallback);
 
-    auto& bufferDescription = pMeshBuffer->GetVertexBuffer()->GetDescription();
-
-    xiiUInt32      uiNumVertices  = static_cast<xiiUInt32>(bufferDescription.m_uiSize / bufferDescription.m_uiElementByteStride);
+    xiiUInt32      uiNumVertices  = pMeshBuffer->GetVertexCount();
     xiiUInt32      uiNumTriangles = pMeshBuffer->GetPrimitiveCount();
     xiiBoundingBox bbox           = xiiBoundingBox::MakeFromMinMax(xiiVec3(-1), xiiVec3(1));
 
@@ -67,13 +63,13 @@ void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 
     xiiUInt32 uiNumUVs    = 0;
     xiiUInt32 uiNumColors = 0;
-    for (auto& vertexStream : pMeshBuffer->GetInputLayout().m_VertexStreams)
+    for (const auto& vertexStream : pMeshBuffer->GetVertexStreams())
     {
-      if (vertexStream.m_Semantic >= xiiGALInputLayoutSemantic::TexCoord0 && vertexStream.m_Semantic <= xiiGALInputLayoutSemantic::TexCoord9)
+      if (vertexStream.m_Semantic == xiiMeshVertexSemantic::TexCoord0 || vertexStream.m_Semantic == xiiMeshVertexSemantic::TexCoord1)
       {
         ++uiNumUVs;
       }
-      else if (vertexStream.m_Semantic >= xiiGALInputLayoutSemantic::Color0 && vertexStream.m_Semantic <= xiiGALInputLayoutSemantic::Color7)
+      else if (vertexStream.m_Semantic == xiiMeshVertexSemantic::Color0)
       {
         ++uiNumColors;
       }
@@ -84,7 +80,7 @@ void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     sText.AppendFormat("Vertices: \t{}\t\n", uiNumVertices);
     sText.AppendFormat("UV Channels: \t{}\t\n", uiNumUVs);
     sText.AppendFormat("Color Channels: \t{}\t\n", uiNumColors);
-    sText.AppendFormat("Bytes Per Vertex: \t{}\t\n", bufferDescription.m_uiElementByteStride);
+    sText.AppendFormat("Bytes Per Vertex: \t{}\t\n", pMeshBuffer->GetVertexStride());
     sText.AppendFormat("Bounding Box: \twidth={0}, depth={1}, height={2}\t", xiiArgF(bbox.GetHalfExtents().x * 2, 2), xiiArgF(bbox.GetHalfExtents().y * 2, 2), xiiArgF(bbox.GetHalfExtents().z * 2, 2));
 
     if (const xiiView* pView = GetView())

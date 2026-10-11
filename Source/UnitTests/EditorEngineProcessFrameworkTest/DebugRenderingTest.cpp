@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
+#include <EditorEngineProcessFramework/Rendering/EditorGrid.h>
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
 #include <Core/Graphics/Geometry.h>
@@ -254,6 +255,78 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     XII_TEST_BOOL(handle.PickRay(*first, xiiVec3(0, 0, 5), -xiiVec3::MakeAxisZ(), fTime).Failed());
     XII_TEST_FLOAT(fTime, -1, 0); // Visualizers never steal manipulator interaction.
     XII_TEST_INT(world.GetObjectCount(), 0);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Editor grids share debug passes and remain bounded across zoom levels")
+  {
+    xiiEditorGrid grid;
+    XII_TEST_RESULT(grid.Build(*first, 1.0f));
+    XII_TEST_INT(grid.GetLines().GetCount(), 10);
+    const float expectedDepth = camera.GetNearPlane() * 0.05f + camera.GetFarPlane() * 0.95f;
+    for (const auto& line : grid.GetLines())
+    {
+      XII_TEST_FLOAT((line.m_vStart - camera.GetCenterPosition()).Dot(camera.GetCenterDirForwards()), expectedDepth, 0.001f);
+      XII_TEST_FLOAT((line.m_vEnd - camera.GetCenterPosition()).Dot(camera.GetCenterDirForwards()), expectedDepth, 0.001f);
+    }
+    xiiDebugRenderer::DrawLines(*first, grid.GetLines(), xiiColor::White);
+    world.Update();
+    xiiImage gridImage;
+    XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, gridImage));
+    bool hasGrid = false;
+    for (xiiUInt64 i = 0; i < gridImage.GetByteBlobPtr().GetCount(); i += 4)
+      hasGrid |= gridImage.GetByteBlobPtr()[i] > 0 || gridImage.GetByteBlobPtr()[i + 2] > 0;
+    XII_TEST_BOOL(hasGrid);
+    clearDepth = 0;
+    xiiDebugRenderer::DrawLines(*first, grid.GetLines(), xiiColor::White);
+    world.Update();
+    XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, gridImage));
+    bool hasOccludedGrid = false;
+    for (xiiUInt64 i = 0; i < gridImage.GetByteBlobPtr().GetCount(); i += 4)
+      hasOccludedGrid |= gridImage.GetByteBlobPtr()[i] > 0 || gridImage.GetByteBlobPtr()[i + 2] > 0;
+    XII_TEST_BOOL(!hasOccludedGrid);
+    clearDepth = 1;
+
+    first->SetViewport({0, 0, 100000, 100000});
+    XII_TEST_RESULT(grid.Build(*first, 1.0e-35f));
+    XII_TEST_BOOL(grid.GetLines().GetCount() > 0 && grid.GetLines().GetCount() <= 4102);
+    first->SetViewport({0, 0, 64, 64});
+    camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 1.0e20f, -100, 100);
+    XII_TEST_RESULT(grid.Build(*first, 0.001f));
+    XII_TEST_BOOL(grid.GetLines().GetCount() <= 4102);
+    for (const auto& line : grid.GetLines())
+      XII_TEST_BOOL(line.m_vStart.IsValid() && line.m_vEnd.IsValid());
+
+    camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 4, 0.1f, 100);
+    camera.LookAt(xiiVec3(5, 0, 0), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+    auto placement = xiiTransform::MakeIdentity();
+    placement.m_vPosition.Set(0, 0.25f, 0.5f);
+    XII_TEST_RESULT(grid.Build(*first, 1, placement, false));
+    for (const auto& line : grid.GetLines())
+    {
+      const auto relative = line.m_vStart - placement.m_vPosition;
+      XII_TEST_FLOAT(relative.Dot(camera.GetCenterDirRight()), xiiMath::Round(relative.Dot(camera.GetCenterDirRight())), 0.001f);
+      XII_TEST_FLOAT(relative.Dot(camera.GetCenterDirUp()), xiiMath::Round(relative.Dot(camera.GetCenterDirUp())), 0.001f);
+    }
+    camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+    placement.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisY(), xiiAngle::MakeFromDegree(90));
+    XII_TEST_RESULT(grid.Build(*first, 0.25f, placement, false));
+    XII_TEST_INT(grid.GetLines().GetCount(), 202);
+    for (const auto& line : grid.GetLines())
+    {
+      XII_TEST_FLOAT(line.m_vStart.x, placement.m_vPosition.x, 0.001f);
+      XII_TEST_FLOAT(line.m_vEnd.x, placement.m_vPosition.x, 0.001f);
+    }
+    XII_TEST_BOOL(grid.Build(*first, -1).Failed());
+    XII_TEST_BOOL(grid.GetLines().IsEmpty());
+    XII_TEST_BOOL(grid.Build(*first, xiiMath::Infinity<float>()).Failed());
+    XII_TEST_BOOL(grid.Build(*first, xiiMath::MaxValue<float>()).Failed());
+    XII_TEST_RESULT(grid.Build(*first, 0));
+    XII_TEST_BOOL(grid.GetLines().IsEmpty());
+    placement.m_vScale.SetZero();
+    XII_TEST_RESULT(grid.Build(*first, 1, placement));
+    XII_TEST_BOOL(grid.GetLines().IsEmpty());
+    camera.SetCameraMode(xiiCameraMode::OrthoFixedHeight, 4, 0.1f, 100);
+    camera.LookAt(xiiVec3(0, 0, 5), xiiVec3::MakeZero(), xiiVec3::MakeAxisY());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Indexed boxes and textured primitives use their actual shaders")

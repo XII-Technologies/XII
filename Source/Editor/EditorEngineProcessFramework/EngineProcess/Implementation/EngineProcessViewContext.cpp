@@ -233,6 +233,20 @@ void xiiEngineProcessViewContext::SuspendRendering()
   }
 }
 
+xiiResult xiiEngineProcessViewContext::DrawGrid(float fSpacing, const xiiTransform& transform, bool bGlobal)
+{
+  auto* world = GetDocumentContext()->GetWorld();
+  if (!world)
+    return XII_FAILURE;
+  XII_LOCK(world->GetWriteMarker());
+  auto* view = GetView();
+  if (!view)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(m_Grid.Build(*view, fSpacing, transform, bGlobal));
+  xiiDebugRenderer::DrawLines(*view, m_Grid.GetLines(), xiiColor::White);
+  return XII_SUCCESS;
+}
+
 bool xiiEngineProcessViewContext::FocusCameraOnObject(xiiCamera& inout_camera, const xiiBoundingBoxSphere& objectBounds, float fFov, const xiiVec3& vViewDir)
 {
   if (!objectBounds.IsValid())

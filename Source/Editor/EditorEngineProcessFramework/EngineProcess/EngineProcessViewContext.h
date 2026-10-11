@@ -6,6 +6,7 @@
 #include <Core/System/Window.h>
 #include <Core/System/WindowManager.h>
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
+#include <EditorEngineProcessFramework/Rendering/EditorGrid.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 
 class xiiEngineProcessDocumentContext;
@@ -80,9 +81,11 @@ protected:
   /// Resolves the view through its owning document world. The caller must hold the world's access marker
   /// for the entire use of the returned non-owning pointer.
   xiiView* GetView() const;
-  void     SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
-  void     HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
-  void     OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size);
+  /// Submits reusable grid geometry to this view's regular debug-render passes.
+  xiiResult DrawGrid(float fSpacing, const xiiTransform& transform = xiiTransform::MakeIdentity(), bool bGlobal = true);
+  void      SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
+  void      HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
+  void      OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size);
 
   virtual void SetCamera(const xiiViewRedrawMsgToEngine* pMsg);
 
@@ -97,4 +100,5 @@ protected:
 
 private:
   xiiEngineProcessDocumentContext* m_pDocumentContext;
+  xiiEditorGrid                    m_Grid;
 };
