@@ -348,3 +348,14 @@ migration progresses; no requirement is waived because a subsystem is difficult.
 - Downstream `EditorFramework` and `EditorEngineProcess` builds also pass after
   the shared animation and picking changes
   (`Workspace/editor-animation-consumers-build.log`).
+- Texture inspection now has a reflected resource-driven pipeline pass in shared
+  Editor infrastructure, with world-owned views, native packed geometry, managed
+  render-graph drawing, and the existing debug-overlay stages. GPU bindings are
+  acquired each build; settings and pass instances belong to individual views.
+  Channel/alpha/coverage selection, automatic/explicit mip sampling, sRGB and
+  linear output targets, and engine cube-face orientation are supported.
+- All nine Vulkan Editor integration subtests pass, including GPU readback of
+  channel/mip values and all six cube faces, independent view settings, pipeline
+  reload from serialized definitions, and invalid-setting rejection
+  (`Workspace/editor-texture-preview-tests.log`). The cube test caught the
+  forward-camera/reversed-depth mismatch and verifies visible near faces.
