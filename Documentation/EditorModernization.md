@@ -420,3 +420,14 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   (`Workspace/editor-animation-loading-tests.log`,
   `Workspace/editor-animation-loading-core-tests.log`). Dependent engine process
   and test targets build (`Workspace/editor-animation-loading-build.log`).
+- Skeleton document contexts now cache shared tooling geometry and apply the
+  explicitly selected native skeleton to current skinned-mesh components. Each
+  document owns its world, settings and mutable preview state. Reloaded topology
+  requires matching authoring metadata; failed updates clear stale mesh poses.
+  Reset releases old-world handles, selections and cached resource versions.
+- All 13 Vulkan Editor integration subtests pass, including two documents sharing
+  one skeleton, independent mesh selection, native resource reload, mismatched
+  metadata recovery and document reset (`Workspace/editor-skeleton-reset-tests.log`).
+  EnginePluginAssets and the integration executable build. Full Qt asset-plugin
+  integration remains incomplete; model-import and several other asset sources
+  still refer to removed APIs. Editor GUI workflows remain unverified.

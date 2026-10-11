@@ -23,6 +23,8 @@ xiiSkeletonViewContext::~xiiSkeletonViewContext() = default;
 
 bool xiiSkeletonViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& bounds)
 {
+  if (const auto* pView = GetView())
+    m_pContext->DrawSkeleton(*pView).IgnoreResult();
   return !FocusCameraOnObject(m_Camera, bounds, 45.0f, -xiiVec3(5, -2, 3));
 }
 
@@ -40,6 +42,8 @@ void xiiSkeletonViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 {
   XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
   xiiEngineProcessViewContext::SetCamera(pMsg);
+  if (const auto* pView = GetView())
+    m_pContext->DrawSkeleton(*pView).IgnoreResult(); // Resources may still be loading.
   if (m_pContext->m_bDisplayGrid)
   {
     if (DrawGrid(0.25f).Failed())
@@ -51,7 +55,9 @@ void xiiSkeletonViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
   auto hSkeleton = m_pContext->GetSkeleton();
   if (hSkeleton.IsValid())
   {
-    xiiResourceLock<xiiSkeletonResource> pSkeleton(hSkeleton, xiiResourceAcquireMode::AllowLoadingFallback);
+    xiiResourceLock<xiiSkeletonResource> pSkeleton(hSkeleton, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+    if (!pSkeleton || pSkeleton.GetAcquireResult() != xiiResourceAcquireResult::Final)
+      return;
 
     xiiUInt32 uiNumJoints = pSkeleton->GetJointCount();
 
