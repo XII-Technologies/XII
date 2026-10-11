@@ -3,6 +3,7 @@
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/MemoryStream.h>
@@ -153,6 +154,84 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationGraphAsset)
     XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(5, 0, 0), 0.0001f);
     other.Update(*skeleton.GetPointer(), xiiTime::MakeZero(), pose);
     XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(1, 0, 0), 0.0001f);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Resource reload discards indexed state and blends but retains parameters")
+  {
+    const auto handle  = xiiResourceManager::LoadResource<xiiAnimGraphResource>("AnimationGraphAssetReload");
+    auto       publish = [&](const xiiAnimGraphResourceDescriptor& definition) -> bool {
+      xiiAnimGraphResourceDescriptor replacement;
+      const auto                     result = xiiAnimationGraphAssetCompiler::Compile(definition, replacement, &error);
+      if (!XII_TEST_BOOL_MSG(result.Succeeded(), "%s", error.GetData()))
+        return false;
+      xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
+      xiiMemoryStreamWriter                     writer(&loader->m_CustomData);
+      if (!XII_TEST_RESULT(replacement.Serialize(writer)))
+        return false;
+      xiiResourceManager::UpdateResourceWithCustomLoader(handle, std::move(loader));
+      xiiResourceLock<xiiAnimGraphResource> loaded(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      return XII_TEST_BOOL(loaded && loaded.GetAcquireResult() == xiiResourceAcquireResult::Final);
+    };
+    xiiAnimGraphResourceDescriptor definition;
+    definition.AddClipNode("Idle", clipA);
+    definition.AddClipNode("Walk", clipB);
+    definition.SetOutputNode(definition.AddStateMachineNode("States", inputs));
+    definition.AddTransition(0, 1, "Moving", 0.5f, xiiTime::MakeFromSeconds(1));
+    if (!publish(definition))
+      return;
+    xiiAnimGraphInstance first, second;
+    first.SetGraph(handle);
+    second.SetGraph(handle);
+    first.SetFloat("Speed", 0.75f);
+    first.SetBool("Keep", true);
+    first.SetBool("Moving", true);
+    xiiAnimationPose pose;
+    first.Update(*skeleton.GetPointer(), xiiTime::MakeZero(), pose);
+    first.SetBool("Moving", false);
+    first.Update(*skeleton.GetPointer(), xiiTime::MakeFromSeconds(0.25), pose);
+    XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(2, 0, 0), 0.0001f);
+    second.Update(*skeleton.GetPointer(), xiiTime::MakeZero(), pose);
+    XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(1, 0, 0), 0.0001f);
+
+    // Both old state indices remain valid. Reload must still discard the active
+    // Walk state and its partially completed blend, independently per instance.
+    definition.m_Transitions.Clear();
+    if (!publish(definition))
+      return;
+    first.Update(*skeleton.GetPointer(), xiiTime::MakeZero(), pose);
+    XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(1, 0, 0), 0.0001f);
+    XII_TEST_FLOAT(first.GetFloat(xiiTempHashedString("Speed")), 0.75f, 0);
+    XII_TEST_BOOL(first.GetBool(xiiTempHashedString("Keep")));
+    XII_TEST_BOOL(!second.GetBool(xiiTempHashedString("Keep")));
+    second.Update(*skeleton.GetPointer(), xiiTime::MakeZero(), pose);
+    XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(1, 0, 0), 0.0001f);
+
+    // Time resets too, even for an identical descriptor reload (same hash).
+    xiiAnimationClipResourceDescriptor timed;
+    timed.m_Duration = xiiTime::MakeFromSeconds(2);
+    timed.m_bLooping = false;
+    auto& track      = timed.AddJointTrack("Root");
+    track.m_PositionKeys.PushBack({0, xiiVec3::MakeZero()});
+    track.m_PositionKeys.PushBack({2, xiiVec3(8, 0, 0)});
+    const auto timedClip = xiiResourceManager::CreateResource<xiiAnimationClipResource>("AnimationGraphAssetTimed", std::move(timed));
+    definition.Clear();
+    definition.SetOutputNode(definition.AddClipNode("Timed", timedClip));
+    if (!publish(definition))
+      return;
+    first.Update(*skeleton.GetPointer(), xiiTime::MakeFromSeconds(0.5), pose);
+    XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(2, 0, 0), 0.0001f);
+    first.SetGraph(handle);
+    first.Update(*skeleton.GetPointer(), xiiTime::MakeFromSeconds(0.25), pose);
+    XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(3, 0, 0), 0.0001f);
+    if (!publish(definition))
+      return;
+    first.Update(*skeleton.GetPointer(), xiiTime::MakeFromSeconds(0.25), pose);
+    XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3(1, 0, 0), 0.0001f);
+    first.Reset();
+    XII_TEST_BOOL(first.GetGraph() == handle);
+    XII_TEST_FLOAT(first.GetFloat(xiiTempHashedString("Speed")), 0, 0);
+    XII_TEST_BOOL(!first.GetBool(xiiTempHashedString("Keep")));
+    first.Update(*skeleton.GetPointer(), xiiTime::MakeZero(), pose);
+    XII_TEST_VEC3(pose.m_LocalTransforms[0].m_vPosition, xiiVec3::MakeZero(), 0.0001f);
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Structural failures do not publish partial descriptors")
   {

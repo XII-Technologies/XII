@@ -814,6 +814,17 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   data on save. This is a temporary explicit compatibility gap: migration of
   supported legacy pose operations remains required. Included graphs, trigger and
   numeric pin semantics have no current native equivalent. Native root motion,
-  event dispatch, graph reload state invalidation and repeated-subgraph evaluation
-  costs also remain open Engine/tooling concerns. The graph migration and overall
+  event dispatch and repeated-subgraph evaluation costs also remain open
+  Engine/tooling concerns. The graph migration and overall
   Editor modernization are not complete.
+
+- Native animation graph instances now observe the ResourceManager change counter
+  before evaluating. Reload discards indexed active/previous states, in-flight
+  blends and playback time while retaining per-instance bool/float parameters.
+  Identical-content reloads also reset playback; assigning the same handle does
+  not. Runtime instance code is separated from descriptor/resource serialization.
+  CPU graph tests cover both instances, in-range stale indices, partial blends,
+  time reset and explicit Reset semantics (`Workspace/editor-animation-graph-reload-tests.log`).
+  The dependent integration target builds and all 26 Vulkan Editor integration
+  subtests pass (`Workspace/editor-animation-graph-reload-build.log`,
+  `Workspace/editor-animation-graph-reload-integration.log`).

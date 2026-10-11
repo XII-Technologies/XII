@@ -143,8 +143,12 @@ private:
 class XII_GRAPHICSCORE_DLL xiiAnimGraphInstance
 {
 public:
+  /// Restart playback and clear parameters, retaining the selected graph.
   void Reset();
 
+  /// Changing the graph restarts playback while retaining instance parameters.
+  /// Resource reloads restart playback on the next Update, even if node indices
+  /// remain in range. Reassigning the same handle does not restart playback.
   void                              SetGraph(const xiiAnimGraphResourceHandle& hGraph);
   const xiiAnimGraphResourceHandle& GetGraph() const;
 
@@ -154,9 +158,12 @@ public:
   void SetBool(xiiStringView sName, bool bValue);
   bool GetBool(const xiiTempHashedString& sName, bool bFallback = false) const;
 
+  /// Instances own mutable playback state and require external synchronization.
   void Update(const xiiSkeletonResource& skeleton, xiiTime deltaTime, xiiAnimationPose& ref_pose);
 
 private:
+  void ResetPlayback();
+
   void      EvaluateNode(const xiiAnimGraphResourceDescriptor& graph, xiiUInt16 uiNodeIndex, const xiiAnimGraphNode& node, const xiiSkeletonResource& skeleton, xiiAnimationPose& ref_pose);
   void      EvaluateNodeIndex(const xiiAnimGraphResourceDescriptor& graph, xiiUInt16 uiNodeIndex, const xiiSkeletonResource& skeleton, xiiAnimationPose& ref_pose);
   bool      IsTransitionConditionTrue(const xiiAnimGraphTransition& transition) const;
@@ -165,6 +172,8 @@ private:
 private:
   xiiAnimGraphResourceHandle           m_hGraph;
   xiiTime                              m_Time;
+  xiiUInt32                            m_uiGraphChangeCounter = 0;
+  bool                                 m_bHasGraphRevision    = false;
   xiiHashTable<xiiHashedString, float> m_Floats;
   xiiHashTable<xiiHashedString, bool>  m_Bools;
   xiiHashTable<xiiUInt16, xiiUInt16>   m_StateMachineStates;
