@@ -490,7 +490,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
   {
     auto& viewDetail = it.Value();
 
-    if (!viewDetail.m_pView->IsValid())
+    if (!viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
 
     XII_ASSERT_DEV(viewDetail.m_pExtractedData != nullptr, "xiiRenderWorldModule view cache entry must always have extracted render data.");
@@ -594,7 +594,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     ViewDetail& viewDetail = it.Value();
-    if (viewDetail.m_pView->IsValid())
+    if (viewDetail.m_pView->IsRenderEnabled() && viewDetail.m_pView->IsValid())
       XII_IGNORE_UNUSED(viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex));
   }
 
@@ -615,7 +615,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   {
     auto& viewDetail = it.Value();
 
-    if (!viewDetail.m_pView->IsValid())
+    if (!viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
 
     if (!bGlobalIlluminationFrameStarted && viewDetail.m_pView->GetCamera() != nullptr)

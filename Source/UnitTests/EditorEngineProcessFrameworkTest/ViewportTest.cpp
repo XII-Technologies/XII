@@ -7,11 +7,14 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
+#include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <Texture/Image/Image.h>
 
 namespace
 {
@@ -135,6 +138,57 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
     XII_TEST_BOOL(firstView->GetCamera()->GetCameraMode() == xiiCameraMode::OrthoFixedHeight);
     XII_TEST_VEC3(firstView->GetCamera()->GetCenterPosition(), camera.m_vPosition, 0.001f);
     XII_TEST_BOOL(firstView->GetViewRenderMode() == xiiViewRenderMode::Wireframe);
+
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Paused worlds execute only enabled views and retain their configuration")
+    {
+      struct ClearPassData
+      {
+        xiiRenderGraphTextureHandle m_Target;
+      };
+      xiiUInt32 firstExecutions = 0, secondExecutions = 0;
+      auto      configure = [&](xiiView& view, xiiUInt32& executions) {
+        view.SetRenderGraphBuilder([&texture, &executions](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
+          graph.AddPass<ClearPassData>("Editor output test", xiiGALCommandQueueFlags::Graphics, [&texture](ClearPassData& data, xiiRenderGraphBuilder& builder) {
+              auto imported = builder.ImportTexture("Editor output", texture, texture->GetResourceState());
+              data.m_Target = builder.WriteTexture(imported, xiiGALResourceStateFlags::RenderTarget); }, [&executions](const ClearPassData& data, xiiRenderGraphPassContext& context) {
+              ++executions;
+              context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Blue); }, true);
+        });
+      };
+      configure(*firstView, firstExecutions);
+      configure(*secondView, secondExecutions);
+      world.SetWorldSimulationEnabled(false);
+      firstView->SetRenderEnabled(false);
+      secondView->SetRenderEnabled(false);
+      XII_TEST_BOOL(firstView->IsValid());
+      world.Update();
+      XII_TEST_INT(firstExecutions, 0);
+      XII_TEST_INT(secondExecutions, 0);
+
+      firstView->SetRenderEnabled(true);
+      world.Update();
+      XII_TEST_INT(firstExecutions, 1);
+      XII_TEST_INT(secondExecutions, 0);
+      xiiImage rendered;
+      if (XII_TEST_RESULT(xiiCaptureThumbnail(texture, {80, 60}, rendered)))
+      {
+        const auto* pixel = rendered.GetPixelPointer<xiiUInt8>();
+        XII_TEST_INT(pixel[0], 0);
+        XII_TEST_INT(pixel[1], 0);
+        XII_TEST_INT(pixel[2], 255);
+        XII_TEST_INT(pixel[3], 255);
+      }
+      firstView->SetRenderEnabled(false);
+      secondView->SetRenderEnabled(true);
+      world.Update();
+      XII_TEST_INT(firstExecutions, 1);
+      XII_TEST_INT(secondExecutions, 1);
+      XII_TEST_BOOL(!world.GetWorldSimulationEnabled());
+      XII_TEST_BOOL(firstView->GetCamera() != nullptr);
+      XII_TEST_BOOL(firstView->GetRenderTargetView() == target);
+      XII_TEST_FLOAT(firstView->GetViewport().width, 40, 0);
+      XII_TEST_BOOL(firstView->GetRenderPipelineResource() == secondView->GetRenderPipelineResource());
+    }
     removed = first.GetViewHandle();
   }
   xiiView* stale = nullptr;

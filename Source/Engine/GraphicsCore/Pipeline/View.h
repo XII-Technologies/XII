@@ -130,6 +130,13 @@ public:
 
   bool IsValid() const;
 
+  /// Controls render-data extraction and graph execution by the owning world module.
+  /// Disabled views retain their camera, targets, pipeline instance, and cached resources.
+  /// This does not change IsValid(). Call InvalidateTemporalHistory() when resuming after a camera cut.
+  /// Like other view mutations, this requires exclusive access to the owning world.
+  void SetRenderEnabled(bool bEnabled) { m_bRenderEnabled = bEnabled; }
+  bool IsRenderEnabled() const { return m_bRenderEnabled; }
+
   /// Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
   ///
   /// fNormalizedScreenPosX and fNormalizedScreenPosY are expected to be in [0; 1] range (normalized screen coordinates).
@@ -219,6 +226,7 @@ private:
   xiiHashedString m_sName;
 
   xiiUInt32          m_uiRenderGraphBuilderVersion = 0;
+  bool               m_bRenderEnabled              = true;
   xiiCamera*         m_pCamera                     = nullptr;
   const xiiCamera*   m_pCullingCamera              = nullptr;
   const xiiCamera*   m_pLodCamera                  = nullptr;
