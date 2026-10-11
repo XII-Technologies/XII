@@ -46,7 +46,7 @@ public:
 
   static void FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
 
-  xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pGALTexture[m_uiLoadedTextures - 1]; }
+  xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_uiLoadedTextures > 0 ? m_pGALTexture[m_uiLoadedTextures - 1] : nullptr; }
   xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pSampler; }
 
 protected:

@@ -8,6 +8,7 @@ class xiiAssetFileHeader;
 class xiiImageView;
 class xiiStreamWriter;
 struct xiiGALSamplerCreationDescription;
+struct xiiGALTextureCreationDescription;
 
 namespace xiiTextureAssetFile
 {
@@ -16,4 +17,8 @@ namespace xiiTextureAssetFile
   /// Shared by asset producers so their binary payload matches native texture resource loading.
   XII_TEXTURE_DLL xiiResult WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image,
                                        const xiiGALSamplerCreationDescription& sampler, const xiiAssetFileHeader& header);
+
+  /// Writes a mutable 2D render-target definition without image data. Contents are produced by rendering.
+  XII_TEXTURE_DLL xiiResult WriteRenderTarget(xiiStreamWriter& inout_stream, const xiiGALTextureCreationDescription& description,
+                                              const xiiGALSamplerCreationDescription& sampler, const xiiAssetFileHeader& header);
 } // namespace xiiTextureAssetFile

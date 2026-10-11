@@ -511,3 +511,14 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   property sources compile individually with Qt. Full Editor workflows remain
   unverified; render-target assets still require migration from the removed
   binary format, and other asset plugin failures remain.
+- Native texture resources now load mutable render-target definitions without
+  image payloads or streaming quality levels. Texture and sampler creation
+  failures propagate as missing-resource state; empty resources return null GPU
+  handles safely. GPU memory accounting covers all native subresources, loader
+  failure paths release temporary data, and texture asset writer I/O failures
+  propagate through xiiResult without asserting stream operators.
+- All 18 Vulkan Editor integration subtests pass, including native render-target
+  envelopes, four target formats, GPU clear/readback, forced file reload, retained
+  old GPU handle lifetime, invalid definitions and failed writes
+  (`Workspace/editor-render-target-verification-tests.log`). The complete
+  GraphicsCoreTest suite also passes (`Workspace/editor-texture-graphics-core-tests.log`).
