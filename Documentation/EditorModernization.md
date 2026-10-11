@@ -840,3 +840,23 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   an unresolved platform notification limitation, not evidence of correct external
   rename handling. Temporary tracing is removed; the test now avoids indexing
   missing event timestamps, retaining the actual event/count failures.
+
+
+- Decal atlas loading now consumes four prepacked channel images with one shared
+  UV layout. It uploads real pixel data and complete authored mip chains, releases
+  CPU images after upload and rejects invalid metadata, channel formats and
+  truncated payloads transactionally. The metadata-only runtime packing stub and
+  its neutral-only GPU output are removed. Descriptor serialization, GPU upload
+  and lookup implementations are separate files; normal asset files use the
+  existing native descriptor loader. Per-decal asset authoring and the Editor atlas
+  producer still require migration to this format.
+- GraphicsCore and the dependent Editor integration target build. New atlas tests
+  pass, including every file truncation, bounded DDS allocation, native file
+  loading, four-channel GPU readback and reload retaining an old GPU snapshot
+  (`Workspace/editor-decal-atlas-tests-build.log`, `Workspace/editor-decal-atlas-tests.log`).
+  The full suite reaches 28 subtests but fails at the later ViewLifecycle Vulkan
+  allocations (`Workspace/editor-decal-atlas-integration-tests.log`). Temporary
+  fixture diagnostics show many device references remain after shutdown. Inspection
+  identifies a strong ownership cycle between default buffer/texture views and
+  their parent resources. Repair and regression coverage are in progress; the
+  complete suite is not reported as passing. Temporary diagnostics are removed.

@@ -11,11 +11,12 @@
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphResource.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
+#include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 
 namespace
 {
-  /// Native mesh and animation resources consume descriptor streams. File loading removes the standard asset
+  /// Native mesh, animation and packed decal atlas resources consume descriptor streams. File loading removes the standard asset
   /// envelope here; custom memory loaders continue supplying descriptors directly.
   class DescriptorResourceLoader final : public xiiResourceLoaderFromFile
   {
@@ -60,17 +61,18 @@ namespace
       const auto descriptorOffset  = data->m_Reader.GetReadPosition();
       xiiUInt32  descriptorVersion = 0;
       xiiResult  versionRead       = XII_FAILURE;
-      if (pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshResource>() || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshBufferResource>())
+      const bool packedDecalAtlas  = pResource->GetDynamicRTTI()->IsDerivedFrom<xiiDecalAtlasResource>();
+      if (packedDecalAtlas || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshResource>() || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshBufferResource>())
       {
-        xiiTypeVersion meshVersion = 0;
-        versionRead                = data->m_Reader.ReadWordValue(&meshVersion);
-        descriptorVersion          = meshVersion;
+        xiiTypeVersion wordVersion = 0;
+        versionRead                = data->m_Reader.ReadWordValue(&wordVersion);
+        descriptorVersion          = wordVersion;
       }
       else
       {
         versionRead = data->m_Reader.ReadDWordValue(&descriptorVersion);
       }
-      if (versionRead.Failed() || descriptorVersion != 1)
+      if (versionRead.Failed() || descriptorVersion != (packedDecalAtlas ? 2U : 1U))
       {
         xiiLog::Error("Native descriptor asset '{}' uses an unsupported descriptor format. Re-transform its source asset.", pResource->GetResourceID());
         XII_DEFAULT_DELETE(data);
@@ -114,6 +116,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DescriptorResourceLoader)
     xiiResourceManager::SetResourceTypeLoader<xiiMeshBufferResource>(s_pDescriptorResourceLoader.Borrow());
     xiiResourceManager::SetResourceTypeLoader<xiiAnimationClipResource>(s_pDescriptorResourceLoader.Borrow());
     xiiResourceManager::SetResourceTypeLoader<xiiAnimGraphResource>(s_pDescriptorResourceLoader.Borrow());
+    xiiResourceManager::SetResourceTypeLoader<xiiDecalAtlasResource>(s_pDescriptorResourceLoader.Borrow());
   }
   ON_CORESYSTEMS_SHUTDOWN
   {
@@ -122,6 +125,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DescriptorResourceLoader)
     xiiResourceManager::SetResourceTypeLoader<xiiMeshBufferResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiAnimationClipResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiAnimGraphResource>(nullptr);
+    xiiResourceManager::SetResourceTypeLoader<xiiDecalAtlasResource>(nullptr);
     s_pDescriptorResourceLoader.Clear();
   }
 XII_END_SUBSYSTEM_DECLARATION;

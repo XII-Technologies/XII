@@ -12,6 +12,7 @@
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <Texture/Image/Image.h>
 
 /// G-Buffer channels a decal may write.
 struct XII_GRAPHICSCORE_DLL xiiDecalChannelMask
@@ -60,7 +61,8 @@ struct XII_GRAPHICSCORE_DLL xiiDecalProjectionMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDecalProjectionMode);
 
-/// One atlas source entry and its packed UV metadata.
+/// One packed decal and its metadata. Source handles are optional provenance;
+/// they are not loaded or sampled by the atlas resource.
 struct XII_GRAPHICSCORE_DLL xiiDecalAtlasEntry
 {
   xiiHashedString m_sDecalId; ///< Unique identifier for the decal, used for lookup.
@@ -70,27 +72,35 @@ struct XII_GRAPHICSCORE_DLL xiiDecalAtlasEntry
   xiiTexture2DResourceHandle m_hMaterial; ///< Handle to the material texture for this decal, typically containing roughness, metallic and ambient occlusion packed together.
   xiiTexture2DResourceHandle m_hEmissive; ///< Handle to the emissive texture for this decal.
 
-  xiiSizeU16 m_Size       = xiiSizeU16(256, 256); ///< Original size of the decal textures, used for packing and UV calculations.
+  xiiSizeU16 m_Size       = xiiSizeU16(256, 256); ///< Original decal dimensions in pixels.
   xiiUInt8   m_uiPadding  = 2U;                   ///< Padding in pixels to add around this decal in the atlas to prevent bleeding. This is typically 2 pixels for bilinear filtering, but may need to be higher for mipmapping or if the source textures have alpha coverage that extends to the edges.
-  xiiUInt8   m_uiPriority = 128U;                 ///< Priority for packing and rendering. Higher priority decals are packed closer to the top-left corner of the atlas, which can result in better sampling quality due to how mipmaps are generated. This also allows controlling the rendering order of decals, as higher priority decals can be rendered after lower priority ones to reduce overdraw.
+  xiiUInt8   m_uiPriority = 128U;                 ///< Authored priority metadata. Atlas loading never repacks entries.
 
-  xiiBitflags<xiiDecalChannelMask> m_ChannelMask; ///< Mask of G-Buffer channels that this decal writes to. This allows packing multiple decals into the same atlas, as decals that write to different channels can be blended together without artifacts.
+  xiiBitflags<xiiDecalChannelMask> m_ChannelMask; ///< G-Buffer channels written by this decal.
 
   xiiVec4 m_vUVRect = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f); ///< UV rectangle in the atlas where this decal is located, in normalized coordinates. xy = UV minimum, zw = UV size inside the packed atlas.
 
   xiiVec4 m_vTextureMetrics = xiiVec4(1.0f / 256.0f, 1.0f / 256.0f, 256.0f, 256.0f); ///< Texture metrics for this decal, used for sampling and mipmap calculations. xy = texel size (1 / original texture size), zw = packed pixel size (original texture size + padding, in pixels).
 };
 
-/// Descriptor used to build a packed decal atlas resource at runtime or by tools.
+/// Prepacked atlas produced by tools. All four channels share each entry's UV
+/// rectangle, dimensions and mip count. Images are upload data, released by the
+/// resource after GPU creation; source texture handles on entries are metadata.
 struct XII_GRAPHICSCORE_DLL xiiDecalAtlasResourceDescriptor
 {
-  xiiSizeU16                          m_AtlasSize        = xiiSizeU16(2048, 2048); ///< Size of the atlas texture to create. This should be a power of two for optimal mipmapping, but it is not strictly required.
-  xiiUInt8                            m_uiPadding        = 2U;                     ///< Default padding in pixels to add around each decal in the atlas to prevent bleeding. This can be overridden per decal entry, but this value is used as a default for entries that do not specify their own padding.
-  bool                                m_bGenerateMipMaps = true;                   ///< Whether to generate mipmaps for the atlas texture. This is typically true for projected decals, as they can be sampled at varying distances, but may be false for mesh decals that are always sampled at a fixed size.
-  xiiDynamicArray<xiiDecalAtlasEntry> m_Entries;                                   ///< Array of entries to pack into the atlas, which contains the metadata for all entries. The packing algorithm will use the size and padding of each entry to determine how to pack them into the atlas, and will fill in the UVRect and TextureMetrics for each entry based on where they are packed.
+  xiiSizeU16                          m_AtlasSize        = xiiSizeU16(2048, 2048); ///< Shared extent of all four prepacked channel images (up to 16384 per axis).
+  xiiUInt8                            m_uiPadding        = 2U;                     ///< Tool packing configuration retained as metadata.
+  bool                                m_bGenerateMipMaps = true;                   ///< Requires a complete authored mip chain when true, otherwise a single mip.
+  xiiDynamicArray<xiiDecalAtlasEntry> m_Entries;                                   ///< Unique decal IDs and their already resolved rectangles. No runtime packing.
 
-  void Save(xiiStreamWriter& ref_stream) const;
-  void Load(xiiStreamReader& ref_stream);
+  /// Albedo (sRGB), tangent normal, roughness/metallic/AO (linear), emissive.
+  xiiImage m_LayerImages[4];
+
+  xiiResult Validate() const;
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  /// Failure leaves this descriptor unchanged. Removed metadata-only atlas files
+  /// require retransformation; they never contained renderable source pixels.
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 };
 
 /// Packed decal atlas with metadata mapping decal IDs to UV rectangles.
@@ -105,13 +115,13 @@ class XII_GRAPHICSCORE_DLL xiiDecalAtlasResource final : public xiiResource
 public:
   xiiDecalAtlasResource();
 
-  /// Returns the descriptor used to create this atlas, which contains the metadata for all entries.
+  /// Returns packed metadata. CPU layer images are released after successful upload.
   XII_ALWAYS_INLINE const xiiDecalAtlasResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
 
   /// Returns the array of entries in this atlas, which contains the metadata for all entries.
   XII_ALWAYS_INLINE xiiArrayPtr<const xiiDecalAtlasEntry> GetEntries() const { return m_Descriptor.m_Entries; }
 
-  /// Returns the GPU texture for the given channel. All channels are packed into the same atlas, so this returns the same texture for all channels.
+  /// Returns the albedo atlas. Other channels have separate GPU textures.
   XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pAlbedoAtlasTexture; }
 
   /// Returns the GPU texture for the albedo channel.
@@ -140,18 +150,17 @@ private:
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
   virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
-  void PackAtlas();
-  void CreateGPUAtlases();
-  void RebuildLookup();
+  xiiResult CreateGPUAtlases();
+  void      RebuildLookup();
 
 private:
   xiiDecalAtlasResourceDescriptor          m_Descriptor;     ///< Descriptor used to create this atlas, which contains the metadata for all entries.
   xiiHashTable<xiiHashedString, xiiUInt32> m_IdToEntryIndex; ///< Lookup table mapping decal IDs to their index in the entries array for fast retrieval.
 
-  xiiSharedPtr<xiiGALTexture> m_pAlbedoAtlasTexture;   ///< GPU texture for the albedo channel. All channels are packed into the same atlas, so this is also returned by GetGALTexture().
-  xiiSharedPtr<xiiGALTexture> m_pNormalAtlasTexture;   ///< GPU texture for the normal channel. All channels are packed into the same atlas, so this is also returned by GetGALTexture().
-  xiiSharedPtr<xiiGALTexture> m_pMaterialAtlasTexture; ///< GPU texture for the material channel. All channels are packed into the same atlas, so this is also returned by GetGALTexture().
-  xiiSharedPtr<xiiGALTexture> m_pEmissiveAtlasTexture; ///< GPU texture for the emissive channel. All channels are packed into the same atlas, so this is also returned by GetGALTexture().
+  xiiSharedPtr<xiiGALTexture> m_pAlbedoAtlasTexture;   ///< Albedo channel; also returned by GetGALTexture().
+  xiiSharedPtr<xiiGALTexture> m_pNormalAtlasTexture;   ///< GPU texture for the normal channel, with the shared atlas layout.
+  xiiSharedPtr<xiiGALTexture> m_pMaterialAtlasTexture; ///< GPU texture for the material channel, with the shared atlas layout.
+  xiiSharedPtr<xiiGALTexture> m_pEmissiveAtlasTexture; ///< GPU texture for the emissive channel, with the shared atlas layout.
   xiiSharedPtr<xiiGALSampler> m_pAtlasSampler;         ///< Sampler state used for sampling the atlas textures.
   xiiUInt32                   m_uiMemoryGPU = 0U;      ///< Memory usage of the GPU resources for this atlas, used for tracking and reporting memory usage.
 };
