@@ -190,8 +190,12 @@ struct XII_GRAPHICSCORE_DLL xiiDecalResourceDescriptor
   float    m_fEmissive    = 0.0f; ///< Default emissive intensity for this decal, used if the emissive texture does not contain an emissive channel or if this decal is not packed into an atlas. This is typically used for projected decals, as mesh decals can have their emissive intensity controlled by vertex colors or material parameters, but it can also be used for mesh decals if desired.
   xiiUInt8 m_uiPriority   = 128U; ///< Priority for rendering this decal. Higher priority decals are rendered after lower priority ones, which can reduce overdraw and improve performance. This is typically used for projected decals, as mesh decals can have their rendering order controlled by their position in the scene or by material parameters, but it can also be used for mesh decals if desired.
 
-  void Save(xiiStreamWriter& ref_stream) const;
-  void Load(xiiStreamReader& ref_stream);
+  /// Validates finite rendering parameters and the atlas lookup identity.
+  xiiResult Validate() const;
+  /// Preserves the native version-one field layout. Propagates write failures.
+  xiiResult Serialize(xiiStreamWriter& stream) const;
+  /// Rejects invalid or truncated data without changing this descriptor.
+  xiiResult Deserialize(xiiStreamReader& stream);
 };
 
 /// Decal material resource. Components can override any per-instance parameter after referencing this resource.

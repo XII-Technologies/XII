@@ -7,9 +7,11 @@
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <TestFramework/Utilities/TestLogInterface.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 
 namespace
@@ -242,6 +244,67 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DecalAtlasResource)
       return;
     verify(*resource.GetPointer(), 64);
     XII_TEST_BOOL(resource->GetAlbedoTexture() != previous);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native decal files reference and reload the packed atlas")
+  {
+    xiiDecalResourceDescriptor decal;
+    decal.m_sDecalId      = atlas.m_Entries[0].m_sDecalId;
+    decal.m_hAtlas        = handle;
+    decal.m_ChannelMask   = xiiDecalChannelMask::All;
+    decal.m_fOpacity      = 0.25f;
+    decal.m_fEmissive     = 2;
+    const char* decalPath = ":imgout/Decals/Native.xiiBinDecal";
+    auto        write     = [&]() {
+      xiiFileWriter file;
+      if (!XII_TEST_RESULT(file.Open(decalPath)))
+        return;
+      xiiAssetFileHeader header;
+      header.SetFileHashAndVersion(0x0123456789ABCDEF, 1);
+      XII_TEST_RESULT(header.Write(file));
+      XII_TEST_RESULT(decal.Serialize(file));
+    };
+    write();
+    auto decalHandle = xiiResourceManager::LoadResource<xiiDecalResource>(decalPath);
+    {
+      xiiResourceLock<xiiDecalResource> resource(decalHandle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (XII_TEST_BOOL(resource && resource.GetAcquireResult() == xiiResourceAcquireResult::Final))
+      {
+        XII_TEST_BOOL(resource->GetDescriptor().m_hAtlas == handle);
+        XII_TEST_BOOL(resource->GetDescriptor().m_sDecalId == decal.m_sDecalId);
+        XII_TEST_FLOAT(resource->GetDescriptor().m_fOpacity, 0.25f, 0);
+        XII_TEST_FLOAT(resource->GetDescriptor().m_fEmissive, 2, 0);
+      }
+    }
+    decal.m_fOpacity = 0.75f;
+    write();
+    // Final acquisition can precede the worker's stream cleanup. A subsequent
+    // reload is valid once that loading task has retired.
+    xiiTaskSystem::WaitForCondition([]() { return !xiiResourceManager::IsAnyLoadingInProgress(); });
+    XII_TEST_BOOL(xiiResourceManager::ReloadResource(decalHandle, true));
+    {
+      xiiResourceLock<xiiDecalResource> resource(decalHandle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      if (XII_TEST_BOOL(resource && resource.GetAcquireResult() == xiiResourceAcquireResult::Final))
+      {
+        XII_TEST_BOOL(resource->GetDescriptor().m_hAtlas == handle);
+        XII_TEST_FLOAT(resource->GetDescriptor().m_fOpacity, 0.75f, 0);
+      }
+    }
+    xiiTestLogInterface   log;
+    xiiTestLogSystemScope logScope(&log, true);
+    log.ExpectMessage("Missing Resource of Type 'xiiDecalResource'", xiiLogMsgType::SeriousWarningMsg);
+    xiiUniquePtr<xiiResourceLoaderFromMemory> invalidLoader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
+    xiiMemoryStreamWriter                     invalidWriter(&invalidLoader->m_CustomData);
+    invalidWriter.WriteVersion(99);
+    xiiTaskSystem::WaitForCondition([]() { return !xiiResourceManager::IsAnyLoadingInProgress(); });
+    xiiResourceManager::UpdateResourceWithCustomLoader(decalHandle, std::move(invalidLoader));
+    {
+      xiiResourceLock<xiiDecalResource> resource(decalHandle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      XII_TEST_BOOL(!resource);
+    }
+    xiiResourceLock<xiiDecalResource> missing(decalHandle, xiiResourceAcquireMode::PointerOnly);
+    XII_TEST_BOOL(missing->GetLoadingState() == xiiResourceState::LoadedResourceMissing);
+    XII_TEST_BOOL(!missing->GetDescriptor().m_hAtlas.IsValid());
+    XII_TEST_BOOL(missing->GetDescriptor().m_sDecalId.IsEmpty());
   }
   xiiImage captured;
   if (XII_TEST_RESULT(xiiCaptureThumbnail(previous, {4, 4}, captured)))

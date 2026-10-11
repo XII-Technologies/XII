@@ -2,23 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/ResourceManager/ResourceManager.h>
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Decals/DecalResource.h>
-#include <GraphicsCore/Textures/Texture2DResource.h>
-#include <GraphicsFoundation/Device/Device.h>
-
-namespace
-{
-  static void SkipResourceFileHeader(xiiStreamReader& ref_stream)
-  {
-    xiiStringBuilder sAbsoluteFilePath;
-    ref_stream >> sAbsoluteFilePath;
-
-    xiiAssetFileHeader assetHeader;
-    assetHeader.Read(ref_stream).IgnoreResult();
-  }
-} // namespace
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiDecalChannelMask, 1)
@@ -48,7 +32,9 @@ xiiDecalResource::xiiDecalResource() :
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDecalResource, xiiDecalResourceDescriptor)
 {
-  m_Descriptor = descriptor;
+  if (descriptor.Validate().Failed())
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
+  m_Descriptor = std::move(descriptor);
 
   xiiResourceLoadDescription description;
   description.m_uiQualityLevelsDiscardable = 0U;
@@ -74,73 +60,19 @@ xiiResourceLoadDescription xiiDecalResource::UpdateContent(xiiStreamReader* pStr
 {
   XII_LOG_BLOCK("xiiDecalResource::UpdateContent", GetResourceIdOrDescription());
 
-  if (pStream == nullptr)
+  xiiDecalResourceDescriptor descriptor;
+  if (pStream == nullptr || descriptor.Deserialize(*pStream).Failed())
   {
-    xiiResourceLoadDescription description;
-    description.m_uiQualityLevelsDiscardable = 0U;
-    description.m_uiQualityLevelsLoadable    = 0U;
-    description.m_State                      = xiiResourceState::LoadedResourceMissing;
-    return description;
+    UnloadData(Unload::AllQualityLevels);
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
   }
-
-  SkipResourceFileHeader(*pStream);
-  m_Descriptor.Load(*pStream);
-
-  xiiResourceLoadDescription description;
-  description.m_uiQualityLevelsDiscardable = 0U;
-  description.m_uiQualityLevelsLoadable    = 0U;
-  description.m_State                      = xiiResourceState::Loaded;
-  return description;
+  return CreateResource(std::move(descriptor));
 }
 
 void xiiDecalResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
   out_NewMemoryUsage.m_uiMemoryCPU = sizeof(*this);
   out_NewMemoryUsage.m_uiMemoryGPU = 0U;
-}
-
-void xiiDecalResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
-{
-  ref_stream.WriteVersion(1U);
-
-  ref_stream << m_sDecalId;
-  ref_stream << m_hAtlas;
-  ref_stream << m_hAlbedo;
-  ref_stream << m_hNormal;
-  ref_stream << m_hMaterial;
-  ref_stream << m_hEmissive;
-  ref_stream << m_vUVOffset;
-  ref_stream << m_vUVScale;
-  ref_stream << m_Tint;
-  ref_stream << m_ChannelMask;
-  ref_stream << m_fOpacity;
-  ref_stream << m_fNormalBlend;
-  ref_stream << m_fRoughness;
-  ref_stream << m_fMetallic;
-  ref_stream << m_fEmissive;
-  ref_stream << m_uiPriority;
-}
-
-void xiiDecalResourceDescriptor::Load(xiiStreamReader& ref_stream)
-{
-  ref_stream.ReadVersion(1U);
-
-  ref_stream >> m_sDecalId;
-  ref_stream >> m_hAtlas;
-  ref_stream >> m_hAlbedo;
-  ref_stream >> m_hNormal;
-  ref_stream >> m_hMaterial;
-  ref_stream >> m_hEmissive;
-  ref_stream >> m_vUVOffset;
-  ref_stream >> m_vUVScale;
-  ref_stream >> m_Tint;
-  ref_stream >> m_ChannelMask;
-  ref_stream >> m_fOpacity;
-  ref_stream >> m_fNormalBlend;
-  ref_stream >> m_fRoughness;
-  ref_stream >> m_fMetallic;
-  ref_stream >> m_fEmissive;
-  ref_stream >> m_uiPriority;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Decals_Implementation_DecalResource);

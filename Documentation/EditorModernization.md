@@ -890,3 +890,27 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-gal-ownership-editor-tests.log`). Windows Debug/Vulkan was
   exercised; D3D12 ownership code was updated consistently but is not enabled in
   this workspace and was not compiled or run. GUI workflows remain unverified.
+
+- Per-decal resources now use checked native descriptor streams through the same
+  ResourceManager file loader as their packed atlases. Serialization preserves
+  the existing version-one binary field layout, reports failures with xiiResult,
+  validates finite rendering parameters and checks atlas lookup identity. Reads
+  publish only complete valid descriptors, with bounded UTF-8 IDs and exact
+  resource types; invalid reloads clear stale atlas references. Atlas and decal
+  descriptors share their private bounded metadata reader, with matching writer
+  limits. Descriptor serialization and resource lifetime code are separate files.
+- Tests cover all descriptor fields, optional source handles, mirrored/tiled UVs,
+  every truncation, unsupported versions, wrong handle types, malformed lengths,
+  invalid parameters and failed writes. Actual native decal asset files load and
+  reload while retaining the packed atlas handle; malformed replacements become
+  missing resources with cleared old metadata. Reload tests wait for existing
+  loader task cleanup before requesting a subsequent reload, following the
+  ResourceManager's existing lifecycle. All three decal/atlas subtests pass, as
+  do all 29 Editor integration and 18 GraphicsCore subtests
+  (`Workspace/editor-native-decal-verification-build.log`,
+  `Workspace/editor-native-decal-reload-build.log`,
+  `Workspace/editor-native-decal-reload-tests.log`,
+  `Workspace/editor-native-decal-integration-tests.log`,
+  `Workspace/editor-native-decal-core-tests.log`). This establishes the native
+  resource boundary; the Qt decal atlas producer and individual asset transform
+  still need migration and are not reported as complete.

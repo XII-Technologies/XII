@@ -5,46 +5,10 @@
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Decals/DecalResource.h>
+#include <GraphicsCore/Decals/Implementation/DecalSerialization.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
-
-namespace
-{
-  // This file format does not use string deduplication. Bound metadata before
-  // allocating and require the complete UTF-8 text before interning an ID.
-  xiiResult ReadAtlasString(xiiStreamReader& stream, xiiStringBuilder& text)
-  {
-    xiiUInt32 length = 0;
-    if (stream.ReadDWordValue(&length).Failed() || length > 16 * 1024)
-      return XII_FAILURE;
-    xiiHybridArray<char, 256> bytes;
-    bytes.SetCountUninitialized(length + 1);
-    if (stream.ReadBytes(bytes.GetData(), length) != length)
-      return XII_FAILURE;
-    bytes[length] = '\0';
-    if (!xiiUnicodeUtils::IsValidUtf8(bytes.GetData(), bytes.GetData() + length) || xiiStringUtils::GetStringElementCount(bytes.GetData()) != length)
-      return XII_FAILURE;
-    text = xiiStringView(bytes.GetData(), length);
-    return XII_SUCCESS;
-  }
-
-  xiiResult ReadSourceTexture(xiiStreamReader& stream, xiiTexture2DResourceHandle& texture)
-  {
-    xiiStringBuilder type, id;
-    XII_SUCCEED_OR_RETURN(ReadAtlasString(stream, type));
-    if (type.IsEmpty())
-      return XII_SUCCESS;
-    XII_SUCCEED_OR_RETURN(ReadAtlasString(stream, id));
-    const auto* rtti = xiiResourceManager::FindResourceForAssetType(type);
-    if (rtti == nullptr)
-      rtti = xiiRTTI::FindTypeByName(type);
-    if (id.IsEmpty() || rtti != xiiGetStaticRTTI<xiiTexture2DResource>())
-      return XII_FAILURE;
-    texture = xiiResourceManager::LoadResource<xiiTexture2DResource>(id);
-    return XII_SUCCESS;
-  }
-} // namespace
 
 xiiResult xiiDecalAtlasResourceDescriptor::Validate() const
 {
@@ -82,7 +46,11 @@ xiiResult xiiDecalAtlasResourceDescriptor::Validate() const
   for (const auto& entry : m_Entries)
   {
     const auto& uv = entry.m_vUVRect;
-    if (entry.m_sDecalId.IsEmpty() || names.Insert(entry.m_sDecalId) || !entry.m_Size.HasNonZeroArea() ||
+    if (entry.m_sDecalId.IsEmpty() || entry.m_sDecalId.GetString().GetElementCount() > xiiDecalSerialization::MaxStringBytes ||
+        entry.m_hAlbedo.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes ||
+        entry.m_hNormal.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes ||
+        entry.m_hMaterial.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes ||
+        entry.m_hEmissive.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes || names.Insert(entry.m_sDecalId) || !entry.m_Size.HasNonZeroArea() ||
         !uv.IsValid() || uv.x < 0 || uv.y < 0 || uv.z <= 0 || uv.w <= 0 || uv.x + uv.z > 1 || uv.y + uv.w > 1 ||
         !entry.m_vTextureMetrics.IsValid() || entry.m_vTextureMetrics.x <= 0 || entry.m_vTextureMetrics.y <= 0 ||
         entry.m_vTextureMetrics.z <= 0 || entry.m_vTextureMetrics.w <= 0 ||
@@ -150,12 +118,12 @@ xiiResult xiiDecalAtlasResourceDescriptor::Deserialize(xiiStreamReader& stream)
   for (auto& entry : descriptor.m_Entries)
   {
     xiiStringBuilder id;
-    XII_SUCCEED_OR_RETURN(ReadAtlasString(stream, id));
+    XII_SUCCEED_OR_RETURN(xiiDecalSerialization::ReadString(stream, id));
     entry.m_sDecalId.Assign(id);
-    XII_SUCCEED_OR_RETURN(ReadSourceTexture(stream, entry.m_hAlbedo));
-    XII_SUCCEED_OR_RETURN(ReadSourceTexture(stream, entry.m_hNormal));
-    XII_SUCCEED_OR_RETURN(ReadSourceTexture(stream, entry.m_hMaterial));
-    XII_SUCCEED_OR_RETURN(ReadSourceTexture(stream, entry.m_hEmissive));
+    XII_SUCCEED_OR_RETURN(xiiDecalSerialization::ReadResourceHandle(stream, entry.m_hAlbedo));
+    XII_SUCCEED_OR_RETURN(xiiDecalSerialization::ReadResourceHandle(stream, entry.m_hNormal));
+    XII_SUCCEED_OR_RETURN(xiiDecalSerialization::ReadResourceHandle(stream, entry.m_hMaterial));
+    XII_SUCCEED_OR_RETURN(xiiDecalSerialization::ReadResourceHandle(stream, entry.m_hEmissive));
     xiiUInt16 channelMask = 0;
     if (stream.ReadBytes(&entry.m_Size, sizeof(entry.m_Size)) != sizeof(entry.m_Size) ||
         stream.ReadBytes(&entry.m_uiPadding, sizeof(entry.m_uiPadding)) != sizeof(entry.m_uiPadding) ||

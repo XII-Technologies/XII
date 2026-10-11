@@ -16,7 +16,7 @@
 
 namespace
 {
-  /// Native mesh, animation and packed decal atlas resources consume descriptor streams. File loading removes the standard asset
+  /// Native mesh, animation and decal resources consume descriptor streams. File loading removes the standard asset
   /// envelope here; custom memory loaders continue supplying descriptors directly.
   class DescriptorResourceLoader final : public xiiResourceLoaderFromFile
   {
@@ -62,7 +62,7 @@ namespace
       xiiUInt32  descriptorVersion = 0;
       xiiResult  versionRead       = XII_FAILURE;
       const bool packedDecalAtlas  = pResource->GetDynamicRTTI()->IsDerivedFrom<xiiDecalAtlasResource>();
-      if (packedDecalAtlas || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshResource>() || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshBufferResource>())
+      if (packedDecalAtlas || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiDecalResource>() || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshResource>() || pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshBufferResource>())
       {
         xiiTypeVersion wordVersion = 0;
         versionRead                = data->m_Reader.ReadWordValue(&wordVersion);
@@ -117,6 +117,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DescriptorResourceLoader)
     xiiResourceManager::SetResourceTypeLoader<xiiAnimationClipResource>(s_pDescriptorResourceLoader.Borrow());
     xiiResourceManager::SetResourceTypeLoader<xiiAnimGraphResource>(s_pDescriptorResourceLoader.Borrow());
     xiiResourceManager::SetResourceTypeLoader<xiiDecalAtlasResource>(s_pDescriptorResourceLoader.Borrow());
+    xiiResourceManager::SetResourceTypeLoader<xiiDecalResource>(s_pDescriptorResourceLoader.Borrow());
   }
   ON_CORESYSTEMS_SHUTDOWN
   {
@@ -126,6 +127,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DescriptorResourceLoader)
     xiiResourceManager::SetResourceTypeLoader<xiiAnimationClipResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiAnimGraphResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiDecalAtlasResource>(nullptr);
+    xiiResourceManager::SetResourceTypeLoader<xiiDecalResource>(nullptr);
     s_pDescriptorResourceLoader.Clear();
   }
 XII_END_SUBSYSTEM_DECLARATION;
