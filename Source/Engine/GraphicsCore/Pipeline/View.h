@@ -28,6 +28,7 @@
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 class xiiBuiltinRenderPipelineRuntime;
+class xiiRenderPipelineInstance;
 class xiiFrustum;
 class xiiWorld;
 class xiiRenderGraph;
@@ -169,6 +170,11 @@ public:
 
   void                                   SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& pipeline);
   const xiiRenderPipelineResourceHandle& GetRenderPipelineResource() const { return m_hRenderPipeline; }
+
+  /// Read-only view-local pass state from the most recent pipeline build. Call only at a CPU frame
+  /// boundary while holding world access. Pass pointers/arrays are borrowed until the next build;
+  /// resource replacement or a failed synchronization can destroy them. Empty before the first build.
+  const xiiRenderPipelineInstance& GetRenderPipelineInstance() const;
   void                                   SetPipelineParameter(xiiStringView name, const xiiVariant& value);
   void                                   RemovePipelineParameter(xiiStringView name);
   const xiiVariantDictionary&            GetPipelineParameters() const { return m_PipelineParameters; }

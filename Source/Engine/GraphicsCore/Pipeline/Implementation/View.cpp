@@ -59,6 +59,11 @@ xiiBuiltinRenderPipelineRuntime* xiiView::GetBuiltinRuntime() const
   return runtime;
 }
 
+const xiiRenderPipelineInstance& xiiView::GetRenderPipelineInstance() const
+{
+  return GetBuiltinRuntime()->m_Instance;
+}
+
 xiiView::xiiView(xiiWorld* pWorld) :
   m_pWorld(pWorld)
 {
