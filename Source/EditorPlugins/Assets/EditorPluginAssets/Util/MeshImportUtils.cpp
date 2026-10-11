@@ -133,9 +133,9 @@ namespace xiiMeshImportUtils
 
       if (bTextureClamp)
       {
-        pAccessor->SetValueByName(pTextureAsset, "AddressModeU", (int)xiiImageAddressMode::Clamp).LogFailure();
-        pAccessor->SetValueByName(pTextureAsset, "AddressModeV", (int)xiiImageAddressMode::Clamp).LogFailure();
-        pAccessor->SetValueByName(pTextureAsset, "AddressModeW", (int)xiiImageAddressMode::Clamp).LogFailure();
+        pAccessor->SetValueByName(pTextureAsset, "AddressModeU", (int)xiiGALTextureAddressMode::Clamp).LogFailure();
+        pAccessor->SetValueByName(pTextureAsset, "AddressModeV", (int)xiiGALTextureAddressMode::Clamp).LogFailure();
+        pAccessor->SetValueByName(pTextureAsset, "AddressModeW", (int)xiiGALTextureAddressMode::Clamp).LogFailure();
       }
 
       // TODO: Set... something else?

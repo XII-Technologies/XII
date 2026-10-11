@@ -18,7 +18,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetDocument, 4, xiiRTTINoAlloca
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-const char* ToFilterMode(xiiTextureFilterSetting::Enum mode);
+const char* ToFilterMode(xiiTextureConverterSamplerPreset::Enum mode);
 const char* ToUsageMode(xiiTextureConverterUsage::Enum mode);
 const char* ToCompressionMode(xiiTextureConverterCompressionMode::Enum mode);
 const char* ToMipmapMode(xiiTextureConverterMipmapMode::Enum mode);
@@ -31,6 +31,8 @@ xiiTextureCubeAssetDocument::xiiTextureCubeAssetDocument(xiiStringView sDocument
 xiiStatus xiiTextureCubeAssetDocument::RunTextureConverter(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail)
 {
   const xiiTextureCubeAssetProperties* pProp = GetProperties();
+  xiiGALSamplerCreationDescription     sampler;
+  XII_SUCCEED_OR_RETURN(xiiTextureConverterSamplerPreset::ConfigureSampler(pProp->m_SamplerPreset, sampler));
 
   QStringList      arguments;
   xiiStringBuilder temp;
@@ -92,7 +94,7 @@ xiiStatus xiiTextureCubeAssetDocument::RunTextureConverter(xiiStringView sTarget
   arguments << "-usage";
   arguments << ToUsageMode(pProp->m_TextureUsage);
 
-  arguments << "-filter" << ToFilterMode(pProp->m_TextureFilter);
+  arguments << "-filter" << ToFilterMode(pProp->m_SamplerPreset);
 
   arguments << "-type";
   arguments << "Cubemap";

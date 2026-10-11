@@ -654,6 +654,9 @@ xiiUInt32 xiiImageUtils::GetSampleIndex(xiiUInt32 uiNumTexels, xiiInt32 iIndex, 
       case xiiGALTextureAddressMode::Clamp:
         return xiiMath::Clamp<xiiInt32>(iIndex, 0, uiNumTexels - 1);
 
+      case xiiGALTextureAddressMode::MirrorOnce:
+        return xiiMath::Min(iIndex < 0 ? static_cast<xiiUInt32>(-static_cast<xiiInt64>(iIndex) - 1) : static_cast<xiiUInt32>(iIndex), uiNumTexels - 1);
+
       case xiiGALTextureAddressMode::Border:
         out_bUseBorderColor = true;
         return 0;

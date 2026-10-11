@@ -10,6 +10,18 @@
 
 XII_CREATE_SIMPLE_TEST_GROUP(ImageDimensions);
 
+XII_CREATE_SIMPLE_TEST(ImageDimensions, MirrorOnceSampling)
+{
+  const xiiInt32  indices[]  = {xiiMath::MinValue<xiiInt32>(), -9, -5, -4, -2, -1, 0, 1, 3, 4, 5, 9, xiiMath::MaxValue<xiiInt32>()};
+  const xiiUInt32 expected[] = {3, 3, 3, 3, 1, 0, 0, 1, 3, 3, 3, 3, 3};
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(indices); ++i)
+  {
+    bool border = false;
+    XII_TEST_INT(xiiImageUtils::GetSampleIndex(4, indices[i], xiiGALTextureAddressMode::MirrorOnce, border), expected[i]);
+    XII_TEST_BOOL(!border);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(ImageDimensions, LayoutAndDDS)
 {
   const xiiGALResourceDimension::Enum types[] = {xiiGALResourceDimension::Texture1D, xiiGALResourceDimension::Texture1DArray,

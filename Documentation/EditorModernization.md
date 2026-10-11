@@ -498,3 +498,16 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   EditorEngineProcess and the integration test executable build. The migrated
   LUT source compiles individually with Qt; full texture document migration and
   the complete Qt asset-plugin build remain pending.
+- Texture and cube documents now expose fixed converter sampler presets and
+  native GAL address modes. Shared document graph patches migrate all 12 legacy
+  filter values and four address modes from numeric or named properties; asset
+  generators and imported material texture settings use the new properties.
+  Preset compilation is shared with TextureConverter and leaves unrelated native
+  sampler settings intact. MirrorOnce addressing is supported by conversion and
+  CPU sampling, including extreme signed indices.
+- All 16 Vulkan EditorEngineProcessFrameworkTest subtests and three
+  ImageDimensions subtests pass (`Workspace/editor-texture-properties-tests.log`,
+  `Workspace/editor-texture-properties-cpu-tests.log`). Texture/cube document and
+  property sources compile individually with Qt. Full Editor workflows remain
+  unverified; render-target assets still require migration from the removed
+  binary format, and other asset plugin failures remain.

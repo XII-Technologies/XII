@@ -3,6 +3,7 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 #include <Texture/Converter/TextureConverterEnums.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
@@ -104,13 +105,13 @@ public:
   float m_fHdrExposureBias       = 0;
   float m_fAlphaThreshold        = 0.5f;
 
-  xiiEnum<xiiTextureFilterSetting>  m_TextureFilter;
-  xiiEnum<xiiImageAddressMode>      m_AddressModeU;
-  xiiEnum<xiiImageAddressMode>      m_AddressModeV;
-  xiiEnum<xiiImageAddressMode>      m_AddressModeW;
-  xiiEnum<xiiTexture2DResolution>   m_Resolution;
-  xiiEnum<xiiTextureConverterUsage> m_TextureUsage;
-  xiiEnum<xiiRenderTargetFormat>    m_RtFormat;
+  xiiEnum<xiiTextureConverterSamplerPreset> m_SamplerPreset;
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeU = xiiGALTextureAddressMode::Wrap;
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeV = xiiGALTextureAddressMode::Wrap;
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeW = xiiGALTextureAddressMode::Wrap;
+  xiiEnum<xiiTexture2DResolution>           m_Resolution;
+  xiiEnum<xiiTextureConverterUsage>         m_TextureUsage;
+  xiiEnum<xiiRenderTargetFormat>            m_RtFormat;
 
   xiiEnum<xiiTextureConverterCompressionMode> m_CompressionMode;
   xiiEnum<xiiTextureConverterMipmapMode>      m_MipmapMode;

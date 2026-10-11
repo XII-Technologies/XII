@@ -3,6 +3,7 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 #include <Texture/Converter/TextureConverterEnums.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
@@ -55,7 +56,7 @@ public:
   xiiEnum<xiiTextureConverterCompressionMode> m_CompressionMode;
   xiiEnum<xiiTextureConverterMipmapMode>      m_MipmapMode;
 
-  xiiEnum<xiiTextureFilterSetting>          m_TextureFilter;
+  xiiEnum<xiiTextureConverterSamplerPreset> m_SamplerPreset;
   xiiEnum<xiiTextureConverterUsage>         m_TextureUsage;
   xiiEnum<xiiTextureCubeChannelMappingEnum> m_ChannelMapping;
 

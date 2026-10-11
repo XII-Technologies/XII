@@ -6,6 +6,30 @@
 
 #include <Foundation/Reflection/Reflection.h>
 
+struct xiiGALSamplerCreationDescription;
+
+/// Authoring presets compiled into fixed native sampler settings. Runtime samplers do not retain this enum.
+struct XII_TEXTURE_DLL xiiTextureConverterSamplerPreset
+{
+  using StorageType = xiiUInt8;
+  enum Enum
+  {
+    Nearest,
+    Linear,
+    Trilinear,
+    Aniso2x,
+    Aniso4x,
+    Aniso8x,
+    Aniso16x,
+    Default = Trilinear
+  };
+
+  /// Changes filtering and anisotropy only. Invalid presets leave the description unchanged.
+  static xiiResult ConfigureSampler(Enum preset, xiiGALSamplerCreationDescription& inout_description);
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTextureConverterSamplerPreset);
+
 struct xiiTextureConverterOutputType
 {
   enum Enum

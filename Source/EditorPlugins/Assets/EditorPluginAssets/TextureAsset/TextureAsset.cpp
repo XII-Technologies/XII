@@ -36,52 +36,44 @@ xiiTextureAssetDocument::xiiTextureAssetDocument(xiiStringView sDocumentPath) :
 {
 }
 
-static const char* ToWrapMode(xiiImageAddressMode::Enum mode)
+static const char* ToWrapMode(xiiGALTextureAddressMode::Enum mode)
 {
   switch (mode)
   {
-    case xiiImageAddressMode::Repeat:
+    case xiiGALTextureAddressMode::Wrap:
       return "Repeat";
-    case xiiImageAddressMode::Clamp:
+    case xiiGALTextureAddressMode::Clamp:
       return "Clamp";
-    case xiiImageAddressMode::ClampBorder:
+    case xiiGALTextureAddressMode::Border:
       return "ClampBorder";
-    case xiiImageAddressMode::Mirror:
+    case xiiGALTextureAddressMode::Mirror:
       return "Mirror";
+    case xiiGALTextureAddressMode::MirrorOnce:
+      return "MirrorOnce";
     default:
       XII_ASSERT_NOT_IMPLEMENTED;
       return "";
   }
 }
 
-const char* ToFilterMode(xiiTextureFilterSetting::Enum mode)
+const char* ToFilterMode(xiiTextureConverterSamplerPreset::Enum mode)
 {
   switch (mode)
   {
-    case xiiTextureFilterSetting::FixedNearest:
+    case xiiTextureConverterSamplerPreset::Nearest:
       return "Nearest";
-    case xiiTextureFilterSetting::FixedBilinear:
-      return "Bilinear";
-    case xiiTextureFilterSetting::FixedTrilinear:
+    case xiiTextureConverterSamplerPreset::Linear:
+      return "Linear";
+    case xiiTextureConverterSamplerPreset::Trilinear:
       return "Trilinear";
-    case xiiTextureFilterSetting::FixedAnisotropic2x:
+    case xiiTextureConverterSamplerPreset::Aniso2x:
       return "Aniso2x";
-    case xiiTextureFilterSetting::FixedAnisotropic4x:
+    case xiiTextureConverterSamplerPreset::Aniso4x:
       return "Aniso4x";
-    case xiiTextureFilterSetting::FixedAnisotropic8x:
+    case xiiTextureConverterSamplerPreset::Aniso8x:
       return "Aniso8x";
-    case xiiTextureFilterSetting::FixedAnisotropic16x:
+    case xiiTextureConverterSamplerPreset::Aniso16x:
       return "Aniso16x";
-    case xiiTextureFilterSetting::LowestQuality:
-      return "Lowest";
-    case xiiTextureFilterSetting::LowQuality:
-      return "Low";
-    case xiiTextureFilterSetting::DefaultQuality:
-      return "Default";
-    case xiiTextureFilterSetting::HighQuality:
-      return "High";
-    case xiiTextureFilterSetting::HighestQuality:
-      return "Highest";
   }
 
   XII_ASSERT_NOT_IMPLEMENTED;
@@ -147,6 +139,11 @@ const char* ToCompressionMode(xiiTextureConverterCompressionMode::Enum mode)
 xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail, const xiiTextureAssetProfileConfig* pAssetConfig)
 {
   const xiiTextureAssetProperties* pProp = GetProperties();
+  xiiGALSamplerCreationDescription sampler;
+  XII_SUCCEED_OR_RETURN(xiiTextureConverterSamplerPreset::ConfigureSampler(pProp->m_SamplerPreset, sampler));
+  for (auto mode : {pProp->m_AddressModeU, pProp->m_AddressModeV, pProp->m_AddressModeW})
+    if (mode <= xiiGALTextureAddressMode::Unknown || mode >= xiiGALTextureAddressMode::ENUM_COUNT)
+      return xiiStatus("Invalid texture address mode.");
 
   QStringList      arguments;
   xiiStringBuilder temp;
@@ -245,7 +242,7 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
   arguments << "-addressU" << ToWrapMode(pProp->m_AddressModeU);
   arguments << "-addressV" << ToWrapMode(pProp->m_AddressModeV);
   arguments << "-addressW" << ToWrapMode(pProp->m_AddressModeW);
-  arguments << "-filter" << ToFilterMode(pProp->m_TextureFilter);
+  arguments << "-filter" << ToFilterMode(pProp->m_SamplerPreset);
 
   const xiiInt32 iNumInputFiles = pProp->GetNumInputFiles();
   for (xiiInt32 i = 0; i < iNumInputFiles; ++i)
@@ -441,7 +438,7 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(xiiStringView
     file << (xiiUInt8)props->m_AddressModeU;
     file << (xiiUInt8)props->m_AddressModeV;
     file << (xiiUInt8)props->m_AddressModeW;
-    file << (xiiUInt8)props->m_TextureFilter;
+    file << (xiiUInt8)props->m_SamplerPreset;
 
     xiiInt16 resX = 0, resY = 0;
 
@@ -851,27 +848,27 @@ xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs
   else if (sMode == "TextureImport.Occlusion")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::R1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowestQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Nearest);
   }
   else if (sMode == "TextureImport.Height")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::R1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Linear);
   }
   else if (sMode == "TextureImport.Roughness")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::R1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Linear);
   }
   else if (sMode == "TextureImport.Metalness")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::R1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Linear);
   }
   else if (sMode == "TextureImport.ORM")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::RGB1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Linear);
   }
 
   return XII_SUCCESS;

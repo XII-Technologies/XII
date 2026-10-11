@@ -10,7 +10,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureCubeChannelMappingEnum, 1)
   XII_ENUM_CONSTANTS(xiiTextureCubeChannelMappingEnum::RGB1, xiiTextureCubeChannelMappingEnum::RGBA1, xiiTextureCubeChannelMappingEnum::RGB1TO6, xiiTextureCubeChannelMappingEnum::RGBA1TO6)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetProperties, 3, xiiRTTIDefaultAllocator<xiiTextureCubeAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetProperties, 4, xiiRTTIDefaultAllocator<xiiTextureCubeAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -21,7 +21,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetProperties, 3, xiiRTTIDefaul
 
     XII_MEMBER_PROPERTY("HdrExposureBias", m_fHdrExposureBias)->AddAttributes(new xiiClampValueAttribute(-20.0f, 20.0f)),
 
-    XII_ENUM_MEMBER_PROPERTY("TextureFilter", xiiTextureFilterSetting, m_TextureFilter),
+    XII_ENUM_MEMBER_PROPERTY("SamplerPreset", xiiTextureConverterSamplerPreset, m_SamplerPreset),
 
     XII_ENUM_MEMBER_PROPERTY("ChannelMapping", xiiTextureCubeChannelMappingEnum, m_ChannelMapping),
 

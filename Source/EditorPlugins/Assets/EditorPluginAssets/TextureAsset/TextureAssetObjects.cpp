@@ -22,7 +22,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderTargetFormat, 1)
   XII_ENUM_CONSTANTS(xiiRenderTargetFormat::RGBA8sRgb, xiiRenderTargetFormat::RGBA8, xiiRenderTargetFormat::RGB10, xiiRenderTargetFormat::RGBA16)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 5, xiiRTTIDefaultAllocator<xiiTextureAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 6, xiiRTTIDefaultAllocator<xiiTextureAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -42,10 +42,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 5, xiiRTTIDefaultAll
     XII_MEMBER_PROPERTY("FlipHorizontal", m_bFlipHorizontal),
     XII_MEMBER_PROPERTY("HdrExposureBias", m_fHdrExposureBias)->AddAttributes(new xiiClampValueAttribute(-20.0f, 20.0f)),
 
-    XII_ENUM_MEMBER_PROPERTY("TextureFilter", xiiTextureFilterSetting, m_TextureFilter),
-    XII_ENUM_MEMBER_PROPERTY("AddressModeU", xiiImageAddressMode, m_AddressModeU),
-    XII_ENUM_MEMBER_PROPERTY("AddressModeV", xiiImageAddressMode, m_AddressModeV),
-    XII_ENUM_MEMBER_PROPERTY("AddressModeW", xiiImageAddressMode, m_AddressModeW),
+    XII_ENUM_MEMBER_PROPERTY("SamplerPreset", xiiTextureConverterSamplerPreset, m_SamplerPreset),
+    XII_ENUM_MEMBER_PROPERTY("AddressModeU", xiiGALTextureAddressMode, m_AddressModeU),
+    XII_ENUM_MEMBER_PROPERTY("AddressModeV", xiiGALTextureAddressMode, m_AddressModeV),
+    XII_ENUM_MEMBER_PROPERTY("AddressModeW", xiiGALTextureAddressMode, m_AddressModeW),
 
     XII_ENUM_MEMBER_PROPERTY("ChannelMapping", xiiTexture2DChannelMappingEnum, m_ChannelMapping),
 
@@ -276,15 +276,15 @@ public:
       {
         if (pAddress->m_Value.Get<xiiString>() == "xiiTexture2DAddressMode::Wrap")
         {
-          pNode->ChangeProperty(szAddressModes[i], (xiiInt32)xiiImageAddressMode::Repeat);
+          pNode->ChangeProperty(szAddressModes[i], xiiInt32(0) /* version 4 Repeat */);
         }
         else if (pAddress->m_Value.Get<xiiString>() == "xiiTexture2DAddressMode::Clamp")
         {
-          pNode->ChangeProperty(szAddressModes[i], (xiiInt32)xiiImageAddressMode::Clamp);
+          pNode->ChangeProperty(szAddressModes[i], xiiInt32(1) /* version 4 Clamp */);
         }
         else if (pAddress->m_Value.Get<xiiString>() == "xiiTexture2DAddressMode::Mirror")
         {
-          pNode->ChangeProperty(szAddressModes[i], (xiiInt32)xiiImageAddressMode::Mirror);
+          pNode->ChangeProperty(szAddressModes[i], xiiInt32(3) /* version 4 Mirror */);
         }
       }
     }
