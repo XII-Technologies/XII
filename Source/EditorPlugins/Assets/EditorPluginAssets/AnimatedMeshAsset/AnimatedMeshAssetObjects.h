@@ -3,7 +3,7 @@
 #pragma once
 
 #include <EditorPluginAssets/Util/AssetUtils.h>
-#include <GraphicsCore/Meshes/MeshBufferUtils.h>
+#include <ModelImporter/MeshImport.h>
 
 struct xiiPropertyMetaStateEvent;
 
@@ -20,15 +20,12 @@ public:
   xiiString m_sMeshFile;
   xiiString m_sDefaultSkeleton;
 
-  bool m_bRecalculateNormals   = false;
-  bool m_bRecalculateTrangents = true;
-  bool m_bNormalizeWeights     = false;
-  bool m_bImportMaterials      = true;
+  bool m_bRecalculateNormals  = false;
+  bool m_bRecalculateTangents = true;
+  bool m_bNormalizeWeights    = true;
+  bool m_bImportMaterials     = true;
 
-  xiiEnum<xiiMeshNormalPrecision>       m_NormalPrecision;
-  xiiEnum<xiiMeshTexCoordPrecision>     m_TexCoordPrecision;
-  xiiEnum<xiiMeshBoneWeigthPrecision>   m_BoneWeightPrecision;
-  xiiEnum<xiiMeshVertexColorConversion> m_VertexColorConversion;
+  xiiEnum<xiiModelVertexColorConversion> m_VertexColorConversion;
 
   xiiHybridArray<xiiMaterialResourceSlot, 8> m_Slots;
 

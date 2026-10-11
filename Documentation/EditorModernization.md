@@ -590,3 +590,16 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   triangle coverage and both simplification modes. Additional UV/color sets and
   animated morph targets are rejected because the current native rendering layout
   cannot represent them. Qt asset documents still need to adopt this reader.
+
+- Static and animated mesh property UIs now use ModelImporter's color conversion
+  enum and the current packed layout. Removed normal/UV/bone precision controls
+  no longer imply unsupported runtime layouts. Shared graph patches remove those
+  controls from saved documents and migrate named legacy color values (including
+  the old Srgb spelling); numeric identities remain unchanged. Source filenames,
+  simplification and explicit weight-normalization choices are retained. The
+  animated mesh C++ default now agrees with its reflected normalized default.
+- Both Qt mesh property sources compile independently with zero warnings/errors;
+  all 22 Vulkan Editor integration subtests pass, including numeric/named property
+  migration for static and animated assets (`Workspace/editor-mesh-properties-*.log`).
+  Document transforms and material import still require migration before the full
+  asset plugin can build; no integrated GUI verification is claimed.

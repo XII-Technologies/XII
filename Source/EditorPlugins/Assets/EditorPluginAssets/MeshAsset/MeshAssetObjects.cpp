@@ -7,7 +7,7 @@
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 4, xiiRTTIDefaultAllocator<xiiMeshAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 5, xiiRTTIDefaultAllocator<xiiMeshAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -19,10 +19,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 4, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("UniformScaling", m_fUniformScaling)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0001f, 10000.0f)),
     XII_MEMBER_PROPERTY("RecalculateNormals", m_bRecalculateNormals),
-    XII_MEMBER_PROPERTY("RecalculateTangents", m_bRecalculateTrangents)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_ENUM_MEMBER_PROPERTY("NormalPrecision", xiiMeshNormalPrecision, m_NormalPrecision),
-    XII_ENUM_MEMBER_PROPERTY("TexCoordPrecision", xiiMeshTexCoordPrecision, m_TexCoordPrecision),
-    XII_ENUM_MEMBER_PROPERTY("VertexColorConversion", xiiMeshVertexColorConversion, m_VertexColorConversion),
+    XII_MEMBER_PROPERTY("RecalculateTangents", m_bRecalculateTangents)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_ENUM_MEMBER_PROPERTY("VertexColorConversion", xiiModelVertexColorConversion, m_VertexColorConversion),
     XII_MEMBER_PROPERTY("ImportMaterials", m_bImportMaterials)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("Radius", m_fRadius)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("Radius2", m_fRadius2)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, xiiVariant())),
@@ -110,8 +108,6 @@ void xiiMeshAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaStateE
     props["ImportMaterials"].m_Visibility       = xiiPropertyUiState::Invisible;
     props["RecalculateNormals"].m_Visibility    = xiiPropertyUiState::Invisible;
     props["RecalculateTangents"].m_Visibility   = xiiPropertyUiState::Invisible;
-    props["NormalPrecision"].m_Visibility       = xiiPropertyUiState::Invisible;
-    props["TexCoordPrecision"].m_Visibility     = xiiPropertyUiState::Invisible;
     props["VertexColorConversion"].m_Visibility = xiiPropertyUiState::Invisible;
 
     props["MeshSimplification"].m_Visibility       = bSimplify ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
@@ -131,8 +127,6 @@ void xiiMeshAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaStateE
         props["ImportMaterials"].m_Visibility       = xiiPropertyUiState::Default;
         props["RecalculateNormals"].m_Visibility    = xiiPropertyUiState::Default;
         props["RecalculateTangents"].m_Visibility   = xiiPropertyUiState::Default;
-        props["NormalPrecision"].m_Visibility       = xiiPropertyUiState::Default;
-        props["TexCoordPrecision"].m_Visibility     = xiiPropertyUiState::Default;
         props["VertexColorConversion"].m_Visibility = xiiPropertyUiState::Default;
         break;
 

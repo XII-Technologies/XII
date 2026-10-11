@@ -5,7 +5,7 @@
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
 #include <EditorPluginAssets/Util/AssetUtils.h>
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Meshes/MeshBufferUtils.h>
+#include <ModelImporter/MeshImport.h>
 #include <SharedPluginAssets/Common/MeshImportTransform.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
@@ -64,13 +64,11 @@ public:
 
   xiiMeshPrimitive::Enum m_PrimitiveType = xiiMeshPrimitive::Default;
 
-  bool m_bRecalculateNormals   = false;
-  bool m_bRecalculateTrangents = true;
-  bool m_bImportMaterials      = true;
+  bool m_bRecalculateNormals  = false;
+  bool m_bRecalculateTangents = true;
+  bool m_bImportMaterials     = true;
 
-  xiiEnum<xiiMeshNormalPrecision>       m_NormalPrecision;
-  xiiEnum<xiiMeshTexCoordPrecision>     m_TexCoordPrecision;
-  xiiEnum<xiiMeshVertexColorConversion> m_VertexColorConversion;
+  xiiEnum<xiiModelVertexColorConversion> m_VertexColorConversion;
 
   xiiHybridArray<xiiMaterialResourceSlot, 8> m_Slots;
 
