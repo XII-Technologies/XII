@@ -431,3 +431,9 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   EnginePluginAssets and the integration executable build. Full Qt asset-plugin
   integration remains incomplete; model-import and several other asset sources
   still refer to removed APIs. Editor GUI workflows remain unverified.
+- Skeleton reimport merging is shared tooling logic, independently testable from
+  Qt and file parsing. It transfers imported hierarchy ownership, keeps document
+  configuration and joint user settings by name, replaces generated colliders,
+  computes manipulator frames in import coordinates, and rejects invalid input
+  without replacing the existing document hierarchy. All 13 Vulkan integration
+  subtests pass (`Workspace/editor-skeleton-merge-tests.log`).

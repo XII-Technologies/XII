@@ -121,6 +121,11 @@ public:
   /// Iterative conversion and destruction support deep hierarchies. Failure clears out_descriptor.
   xiiResult FillResourceDescriptor(xiiSkeletonResourceDescriptor& out_descriptor) const;
 
+  /// Replaces the hierarchy with imported joints, preserving document settings and per-joint user properties by name.
+  /// The document's import coordinates determine manipulator frames. Imported transforms and collider meshes win.
+  /// Success transfers joint ownership and empties newSkeleton; failure leaves this document unchanged.
+  xiiResult MergeImportedHierarchy(xiiEditableSkeleton& newSkeleton);
+
   xiiString                                    m_sSourceFile;
   xiiString                                    m_sPreviewMesh;
   xiiString                                    m_sSurfaceFile;

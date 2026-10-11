@@ -120,6 +120,59 @@ XII_CREATE_SIMPLE_TEST(EditorViews, EditableSkeleton)
       pType->GetAllocator()->Deallocate(pObject);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Reimport transfers hierarchy and preserves settings atomically")
+  {
+    xiiEditableSkeleton document;
+    document.m_sSourceFile                                   = "Original.glb";
+    document.m_sPreviewMesh                                  = "Preview";
+    document.m_fUniformScaling                               = 2;
+    document.m_ImportTransform                               = xiiMeshImportTransform::Custom;
+    document.m_bFlipForwardDir                               = true;
+    auto* oldRoot                                            = AddJoint(document.m_Children, "Root");
+    oldRoot->m_fStiffness                                    = 42;
+    oldRoot->m_BoneShapes.ExpandAndGetRef().m_Geometry       = xiiSkeletonJointGeometryType::Sphere;
+    oldRoot->m_BoneColliders.ExpandAndGetRef().m_sIdentifier = "OldGenerated";
+    auto* oldChild                                           = AddJoint(oldRoot->m_Children, "Child");
+    oldChild->m_bOverrideSurface                             = true;
+    oldChild->m_sSurfaceOverride                             = "Surface";
+    AddJoint(document.m_Children, "Removed");
+
+    xiiEditableSkeleton imported;
+    auto*               newRoot                              = AddJoint(imported.m_Children, "Root", xiiVec3(1, 2, 3));
+    auto*               added                                = AddJoint(newRoot->m_Children, "Added", xiiVec3(4, 5, 6));
+    auto*               newChild                             = AddJoint(newRoot->m_Children, "Child", xiiVec3(7, 8, 9));
+    newRoot->m_BoneColliders.ExpandAndGetRef().m_sIdentifier = "NewGenerated";
+    XII_TEST_RESULT(document.MergeImportedHierarchy(imported));
+    XII_TEST_BOOL(imported.m_Children.IsEmpty());
+    XII_TEST_INT(document.m_Children.GetCount(), 1);
+    XII_TEST_BOOL(document.m_Children[0] == newRoot);
+    XII_TEST_BOOL(newRoot->m_Children[0] == added && newRoot->m_Children[1] == newChild);
+    XII_TEST_STRING(document.m_sSourceFile.GetData(), "Original.glb");
+    XII_TEST_STRING(document.m_sPreviewMesh.GetData(), "Preview");
+    XII_TEST_FLOAT(document.m_fUniformScaling, 2, 0);
+    XII_TEST_FLOAT(newRoot->m_fStiffness, 42, 0);
+    XII_TEST_INT(newRoot->m_BoneShapes.GetCount(), 1);
+    XII_TEST_STRING(newRoot->m_BoneColliders[0].m_sIdentifier.GetData(), "NewGenerated");
+    XII_TEST_BOOL(newChild->m_bOverrideSurface);
+    XII_TEST_STRING(newChild->m_sSurfaceOverride.GetData(), "Surface");
+    XII_TEST_VEC3(newChild->m_LocalTransform.m_vPosition, xiiVec3(7, 8, 9), 0);
+    xiiSkeletonResourceDescriptor native;
+    XII_TEST_RESULT(document.FillResourceDescriptor(native));
+    XII_TEST_VEC3(newChild->m_vGizmoOffsetPositionRO, native.m_Joints[2].m_ModelRestPose.GetTranslationVector(), 0.0001f);
+    XII_TEST_BOOL(newRoot->m_qGizmoOffsetRotationRO.IsValid() && newChild->m_qGizmoOffsetRotationRO.IsValid());
+    XII_TEST_BOOL(newChild->m_qGizmoOffsetRotationRO.GetAsMat3().IsValid());
+
+    xiiEditableSkeleton invalid;
+    auto*               invalidRoot = AddJoint(invalid.m_Children, "Duplicate");
+    AddJoint(invalidRoot->m_Children, "Duplicate");
+    XII_TEST_BOOL(document.MergeImportedHierarchy(invalid).Failed());
+    XII_TEST_BOOL(document.m_Children[0] == newRoot && invalid.m_Children[0] == invalidRoot);
+    XII_TEST_BOOL(document.MergeImportedHierarchy(document).Failed());
+    document.m_fUniformScaling = 0;
+    XII_TEST_BOOL(document.MergeImportedHierarchy(imported).Failed());
+    XII_TEST_BOOL(document.m_Children[0] == newRoot);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Malformed inputs reject safely and clear stale output")
   {
     xiiEditableSkeleton           skeleton;
