@@ -66,9 +66,9 @@ void xiiSceneViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
   }
 }
 
-void xiiSceneViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
+void xiiSceneViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiGALTextureView* pRenderTargetView, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
 {
-  xiiEngineProcessViewContext::SetupRenderTarget(pSwapChain, pRenderTargets, uiWidth, uiHeight);
+  xiiEngineProcessViewContext::SetupRenderTarget(pSwapChain, pRenderTargetView, uiWidth, uiHeight);
 
   xiiView* pView = nullptr;
   if (xiiRenderWorld::TryGetView(m_hView, pView))

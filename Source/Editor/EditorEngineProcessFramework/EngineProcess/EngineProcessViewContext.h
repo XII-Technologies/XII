@@ -3,8 +3,8 @@
 #pragma once
 
 #include <Core/Graphics/Camera.h>
-#include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/System/Window.h>
+#include <Core/System/WindowManager.h>
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 
@@ -12,8 +12,9 @@ class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
 class xiiViewRedrawMsgToEngine;
 class xiiEditorEngineViewMsg;
-
-using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
+class xiiView;
+class xiiGALSwapChain;
+class xiiGALTextureView;
 
 /// Represents the window inside the editor process, into which the engine process renders
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEditorProcessViewWindow : public xiiWindowBase
@@ -31,20 +32,23 @@ public:
   xiiResult UpdateWindow(xiiWindowHandle hParentWindow, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
 
   // Inherited via xiiWindowBase
-  virtual xiiSizeU32      GetClientAreaSize() const override { return xiiSizeU32(m_uiWidth, m_uiHeight); }
-  virtual xiiWindowHandle GetNativeWindowHandle() const override { return m_hWindow; }
-  virtual void            ProcessWindowMessages() override {}
-  virtual bool            IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const override { return false; }
-  virtual bool            IsVisible() const override { return true; }
-  virtual void            AddReference() override { m_iReferenceCount.Increment(); }
-  virtual void            RemoveReference() override { m_iReferenceCount.Decrement(); }
+  virtual xiiSizeU32         GetClientAreaSize() const override { return xiiSizeU32(m_uiWidth, m_uiHeight); }
+  virtual xiiWindowHandle    GetNativeWindowHandle() const override { return m_hWindow; }
+  virtual void               ProcessWindowMessages() override {}
+  virtual bool               IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const override { return false; }
+  virtual bool               IsVisible() const override { return true; }
+  virtual void               AddReference() override { m_iReferenceCount.Increment(); }
+  virtual void               RemoveReference() override { m_iReferenceCount.Decrement(); }
+  void                       SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget) override { m_pOutputTarget = std::move(pOutputTarget); }
+  xiiWindowOutputTargetBase* GetOutputTarget() const override { return m_pOutputTarget.Borrow(); }
 
   xiiUInt16 m_uiWidth;
   xiiUInt16 m_uiHeight;
 
 private:
-  xiiWindowHandle    m_hWindow;
-  xiiAtomicInteger32 m_iReferenceCount = 0;
+  xiiWindowHandle                         m_hWindow;
+  xiiAtomicInteger32                      m_iReferenceCount = 0;
+  xiiUniquePtr<xiiWindowOutputTargetBase> m_pOutputTarget;
 };
 
 /// Represents a view context in the engine process that is used to render a view for an editor document. It is responsible for creating a view, setting up the render target and handling view messages from the editor process.
@@ -59,7 +63,7 @@ public:
   xiiEngineProcessDocumentContext* GetDocumentContext() const { return m_pDocumentContext; }
 
   virtual void HandleViewMessage(const xiiEditorEngineViewMsg* pMsg);
-  virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
+  virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiGALTextureView* pRenderTargetView, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
   virtual void Redraw(bool bRenderEditorGizmos);
 
   /// Focuses camera on the given object
@@ -68,9 +72,12 @@ public:
   xiiViewHandle GetViewHandle() const { return m_hView; }
 
 protected:
-  void SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
-  void HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
-  void OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size);
+  /// Resolves the view through its owning document world. The caller must hold the world's access marker
+  /// for the entire use of the returned non-owning pointer.
+  xiiView* GetView() const;
+  void     SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
+  void     HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
+  void     OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size);
 
   virtual void SetCamera(const xiiViewRedrawMsgToEngine* pMsg);
 
