@@ -1139,7 +1139,8 @@ void FileSystemModelTest()
       XII_LOCK(fileEventLock);
       XII_LOCK(folderEventLock);
       // Check file removed before folder.
-      XII_TEST_BOOL(fileEventTimestamps[0] < folderEventTimestamps[0]);
+      if (fileEventTimestamps.GetCount() == 1 && folderEventTimestamps.GetCount() == 1)
+        XII_TEST_BOOL(fileEventTimestamps[0] < folderEventTimestamps[0]);
     }
 
     ClearFolders();

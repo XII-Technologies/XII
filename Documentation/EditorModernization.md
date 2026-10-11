@@ -828,3 +828,15 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   The dependent integration target builds and all 26 Vulkan Editor integration
   subtests pass (`Workspace/editor-animation-graph-reload-build.log`,
   `Workspace/editor-animation-graph-reload-integration.log`).
+
+- The FileSystemModel failure reproduces without animation tests in a fresh output
+  directory (`Workspace/editor-filesystem-investigation-tests.log`). This workspace
+  uses ReFS. Temporary raw watcher tracing shows case-only renames emit
+  FILE_ACTION_RENAMED_OLD_NAME without NEW_NAME; folder notification completion
+  waits for a subsequent operation. The mirror consequently retains the old
+  spelling and asserts during deletion. Direct owned-directory probes reproduce
+  this with MoveFileW, MoveFileExW and both native rename-information variants;
+  ReadDirectoryChangesExW reports ERROR_INVALID_FUNCTION on this volume. This is
+  an unresolved platform notification limitation, not evidence of correct external
+  rename handling. Temporary tracing is removed; the test now avoids indexing
+  missing event timestamps, retaining the actual event/count failures.
