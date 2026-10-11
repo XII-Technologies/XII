@@ -153,3 +153,18 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   and resource reclamation without rendering from the IPC callback. Its build
   still stops at the missing legacy gizmo renderer; application-level execution
   of this migration remains unverified until that integration is replaced.
+
+## Bone authoring value migration evidence
+
+- `xiiExposedBone` is a tooling-owned value in `ToolsFoundation/Animation`;
+  runtime skeletons and poses remain in GraphicsCore. The existing reflected
+  type name/version, properties, and binary field order are preserved.
+- Hashing uses string contents and transform components rather than object
+  memory, and canonicalizes signed zero to match value equality. A nonrecursive
+  hierarchy evaluator rejects duplicate names, missing parents, cycles, invalid
+  local transforms, and non-finite accumulated matrices with `xiiResult`.
+- `ToolsFoundationTest` builds and all three `AnimationAuthoring` subtests pass:
+  legacy field-order reads, binary/DDL reflection, variant round trips, hashing,
+  unsorted/disconnected hierarchies, invalid input, and a 10,000-bone chain.
+  This validates the shared data boundary; the full skeleton asset importer,
+  preview, and interactive manipulation workflows still require migration.
