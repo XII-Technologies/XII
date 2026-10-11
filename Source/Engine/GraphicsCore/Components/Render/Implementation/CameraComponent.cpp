@@ -27,14 +27,16 @@ void xiiCameraComponentManager::Initialize()
 
   auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
 
-  pRenderWorldModule->GetViewEvents().AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
+  m_ViewEventSubscription = pRenderWorldModule->GetViewEvents().AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
 }
 
 void xiiCameraComponentManager::Deinitialize()
 {
-  auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
-
-  pRenderWorldModule->GetViewEvents().RemoveEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
+  // The event takes its value by copy, so the converted const-reference delegate is not comparable.
+  // Use the subscription identity and never create a render module during world teardown.
+  if (auto* module = GetWorld()->GetModule<xiiRenderWorldModule>())
+    module->GetViewEvents().RemoveEventHandler(m_ViewEventSubscription);
+  m_ViewEventSubscription = 0;
 
   SUPER::Deinitialize();
 }

@@ -1111,3 +1111,13 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   engine-process subtests pass on Vulkan. Evidence:
   `Workspace/editor-scene-visibility-build.log` and
   `Workspace/editor-scene-visibility-tests.log`.
+
+- Native camera managers now retain the view-event subscription ID. The event
+  passes its value by copy while the callback takes a const reference; the
+  converted delegate is not comparable and cannot be removed by reconstructing
+  a member-function delegate. Teardown removes the original subscription and
+  does not create a render module. A Vulkan regression test covers both module
+  creation orders, explicit camera-manager deletion, view creation afterward,
+  manager recreation and whole-world teardown. It passes together with the new
+  camera-preview test in `Workspace/editor-camera-preview-tests.log`; the
+  dependent Windows Debug engine-process build also passes.

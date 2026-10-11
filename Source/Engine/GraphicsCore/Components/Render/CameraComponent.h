@@ -6,6 +6,7 @@
 
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
+#include <Foundation/Communication/Event.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 
@@ -40,6 +41,7 @@ private:
 
   xiiDynamicArray<xiiComponentHandle> m_ModifiedCameras;
   xiiDynamicArray<xiiComponentHandle> m_RenderTargetCameras;
+  xiiEventSubscriptionID              m_ViewEventSubscription = 0;
 };
 
 class XII_GRAPHICSCORE_DLL xiiCameraComponent : public xiiComponent
