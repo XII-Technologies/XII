@@ -276,8 +276,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("Right", m_vDirRight),
     XII_MEMBER_PROPERTY("ViewMat", m_ViewMatrix),
     XII_MEMBER_PROPERTY("ProjMat", m_ProjMatrix),
-    XII_ENUM_MEMBER_PROPERTY("CameraMode", xiiEnum<xiiCameraMode>, m_CameraMode),
-    XII_ENUM_MEMBER_PROPERTY("RenderMode", xiiEnum<xiiViewRenderMode>, m_RenderMode),
+    XII_ENUM_MEMBER_PROPERTY("CameraMode", xiiCameraMode, m_CameraMode),
+    XII_ENUM_MEMBER_PROPERTY("RenderMode", xiiViewRenderMode, m_RenderMode),
   }
   XII_END_PROPERTIES;
 }
