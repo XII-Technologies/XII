@@ -81,3 +81,35 @@ Each workflow above remains unverified until it has direct runtime or automated
 evidence. Linux, macOS, and alternative build configurations require separate
 verification. This inventory and its remaining gates will be updated as the
 migration progresses; no requirement is waived because a subsystem is difficult.
+
+## Shared viewport migration evidence
+
+- `EditorEngineProcessFramework` builds in Windows Debug, with unity disabled.
+- Embedded windows now own their output targets and are registered with
+  `xiiWindowManager`; views belong to the document world's render module.
+  Output destruction releases swapchain references before window teardown.
+- Offscreen views use one output texture view; the pipeline owns depth and
+  intermediate attachments. Thumbnail capture uses GAL texture readback, waits
+  for GPU completion, respects mapped row pitches, and publishes no image on
+  failure. Thumbnail cancellation restores the world's simulation state.
+- Remote activation creates a world-local view, detaches the previous view from
+  the shared window, and accepts redraws only for the active document and ID.
+  Its former reversed creation condition and unreachable redraw handling are
+  removed. Remote-window presentation still needs runtime verification.
+- Directional preview lighting uses the current light component and deletes its
+  objects when disabled or destroyed. The removed skybox/skylight components
+  and global fog toggle have no equivalent supported preview-control API.
+  Their obsolete toolbar actions and preference fields are removed together;
+  remaining directional preference names are preserved. Scene atmosphere and
+  volumetric-medium components remain available for native scene authoring.
+  This does not migrate existing scene assets or delete their data. Unsupported
+  preview preference fields are discarded when preferences are next saved.
+- New `EditorEngineProcessFrameworkTest` coverage passes all four subtests on
+  Vulkan: output ownership, camera-message serialization and light lifetime,
+  thumbnail pixel readback/scaling, and world-local view lifecycle with isolated
+  cameras, shared pipeline resources, viewport updates, and stale-view rejection.
+  Vulkan is the only backend enabled in this build (`XII_BUILD_D3D12=OFF`).
+- The dependent Editor/engine-process/processor build still fails on obsolete
+  gizmo and extractor integrations, animation/state-machine headers, Editor image
+  conversion, and other stale consumers. The Editor has not yet been launched;
+  the integrated workflow gates above remain open.
