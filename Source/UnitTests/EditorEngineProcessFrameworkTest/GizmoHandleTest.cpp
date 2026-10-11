@@ -20,7 +20,11 @@ namespace
   class GizmoTestDocument : public xiiEngineProcessDocumentContext
   {
   public:
-    explicit GizmoTestDocument(xiiWorld& world) : xiiEngineProcessDocumentContext(xiiEngineProcessDocumentContextFlags::None) { m_pWorld = &world; }
+    explicit GizmoTestDocument(xiiWorld& world) : xiiEngineProcessDocumentContext(xiiEngineProcessDocumentContextFlags::None)
+    {
+      m_pWorld = &world;
+      XII_TEST_STATUS(Initialize(xiiUuid::MakeUuid(), {}, nullptr, "Gizmo test"));
+    }
     ~GizmoTestDocument() { Deinitialize(); }
     using xiiEngineProcessDocumentContext::UpdateSyncObjects;
 

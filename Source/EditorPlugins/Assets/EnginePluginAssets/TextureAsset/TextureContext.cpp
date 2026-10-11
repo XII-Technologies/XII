@@ -45,11 +45,12 @@ void xiiTextureContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
   xiiEngineProcessDocumentContext::HandleMessage(pMsg);
 }
 
-void xiiTextureContext::OnInitialize()
+xiiStatus xiiTextureContext::OnInitialize()
 {
   xiiStringBuilder textureGuid;
   xiiConversionUtils::ToString(GetDocumentGuid(), textureGuid);
   m_hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(textureGuid);
+  return XII_SUCCESS;
 }
 
 xiiEngineProcessViewContext* xiiTextureContext::CreateViewContext()

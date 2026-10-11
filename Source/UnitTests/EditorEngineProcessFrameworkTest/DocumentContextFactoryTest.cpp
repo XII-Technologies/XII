@@ -166,10 +166,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DocumentContextFactory)
     XII_TEST_BOOL(context->GetDynamicRTTI() == xiiGetStaticRTTI<DefaultFactoryTestContext>());
     XII_TEST_INT(FactoryTestContext::s_uiAllocations, 1);
     XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(request.m_DocumentGuid) == nullptr);
-    xiiEngineProcessDocumentContext::AddDocumentContext(request.m_DocumentGuid, request.m_DocumentMetaData, context, nullptr, type);
+    XII_TEST_STATUS(xiiEngineProcessDocumentContext::AddDocumentContext(request.m_DocumentGuid, request.m_DocumentMetaData, context, nullptr, type));
     XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(request.m_DocumentGuid) == context);
     XII_TEST_STRING(context->GetDocumentType(), type);
-    context->Reset();
+    XII_TEST_STATUS(context->Reset());
     XII_TEST_BOOL(xiiEngineProcessDocumentContext::GetDocumentContext(request.m_DocumentGuid) == context);
     xiiEngineProcessDocumentContext::DestroyDocumentContext(request.m_DocumentGuid);
     context = nullptr;

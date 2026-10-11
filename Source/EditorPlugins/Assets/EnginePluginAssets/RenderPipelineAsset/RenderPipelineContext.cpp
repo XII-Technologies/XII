@@ -36,10 +36,6 @@ void xiiRenderPipelineContext::HandleMessage(const xiiEditorEngineDocumentMsg* p
   xiiEngineProcessDocumentContext::HandleMessage(pMsg);
 }
 
-void xiiRenderPipelineContext::OnInitialize()
-{
-}
-
 xiiEngineProcessViewContext* xiiRenderPipelineContext::CreateViewContext()
 {
   XII_ASSERT_DEV(false, "Should not be called");

@@ -17,7 +17,6 @@
 #include <GraphicsCore/AnimationSystem/Declarations.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
 #include <GraphicsCore/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
@@ -531,6 +530,9 @@ xiiUInt32 xiiSceneContext::RegisterLayer(xiiLayerContext* pLayer)
 
 void xiiSceneContext::UnregisterLayer(xiiLayerContext* pLayer)
 {
+  m_bInvisibleLayersDirty = true;
+  if (m_ActiveLayer == pLayer->GetDocumentGuid())
+    m_ActiveLayer = GetDocumentGuid();
   m_Contexts.RemoveAndSwap(&pLayer->m_Context);
 
   for (xiiUInt32 i = 0; i < m_Layers.GetCount(); ++i)
@@ -572,7 +574,7 @@ const xiiArrayPtr<const xiiTag> xiiSceneContext::GetInvisibleLayerTags() const
   return m_InvisibleLayerTags.GetArrayPtr();
 }
 
-void xiiSceneContext::OnInitialize()
+xiiStatus xiiSceneContext::OnInitialize()
 {
   XII_LOCK(m_pWorld->GetWriteMarker());
 
@@ -584,7 +586,7 @@ void xiiSceneContext::OnInitialize()
 
   m_LayerTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Layer_Scene");
 
-  xiiShadowPool::AddExcludeTagToWhiteList(m_LayerTag);
+  return XII_SUCCESS;
 }
 
 void xiiSceneContext::OnDeinitialize()
@@ -604,6 +606,12 @@ void xiiSceneContext::OnDeinitialize()
       pLayer->SceneDeinitialized();
     }
   }
+  m_Layers.Clear();
+  m_Contexts.Clear();
+  m_ActiveLayer.Invalidate();
+  m_ObjectsToTag.Clear();
+  m_InvisibleLayerTags.Clear();
+  m_bInvisibleLayersDirty = true;
 }
 
 xiiEngineProcessViewContext* xiiSceneContext::CreateViewContext()

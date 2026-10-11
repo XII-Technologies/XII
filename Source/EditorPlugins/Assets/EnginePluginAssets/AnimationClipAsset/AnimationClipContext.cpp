@@ -83,7 +83,7 @@ void xiiAnimationClipContext::HandleMessage(const xiiEditorEngineDocumentMsg* pM
   xiiEngineProcessDocumentContext::HandleMessage(pMsg0);
 }
 
-void xiiAnimationClipContext::OnInitialize()
+xiiStatus xiiAnimationClipContext::OnInitialize()
 {
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
@@ -101,6 +101,7 @@ void xiiAnimationClipContext::OnInitialize()
     xiiConversionUtils::ToString(GetDocumentGuid(), clipGuid);
     m_hAnimationClip = xiiResourceManager::LoadResource<xiiAnimationClipResource>(clipGuid);
   }
+  return XII_SUCCESS;
 }
 
 xiiEngineProcessViewContext* xiiAnimationClipContext::CreateViewContext()

@@ -35,12 +35,21 @@ xiiEngineProcessDocumentContext* xiiEngineProcessDocumentContext::GetDocumentCon
   return pResult;
 }
 
-void xiiEngineProcessDocumentContext::AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pContext, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
+xiiStatus xiiEngineProcessDocumentContext::AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pContext, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
 {
-  XII_ASSERT_DEV(!s_DocumentContexts.Contains(guid), "Cannot add a view with an index that already exists");
-  s_DocumentContexts[guid] = pContext;
+  if (!pContext || !guid.IsValid() || sDocumentType.IsEmpty())
+    return xiiStatus("Document registration requires a context, a valid GUID and a document type.");
+  if (s_DocumentContexts.Contains(guid))
+    return xiiStatus("A context is already registered for this document GUID.");
+  if (pContext->m_bInitializationStarted)
+    return xiiStatus("The context is already initialized and cannot be registered again.");
 
-  pContext->Initialize(guid, metaData, pIPC, sDocumentType);
+  // Initialization hooks may resolve their own context or a parent through the registry.
+  s_DocumentContexts[guid] = pContext;
+  const xiiStatus status   = pContext->Initialize(guid, metaData, pIPC, sDocumentType);
+  if (status.Failed())
+    s_DocumentContexts.Remove(guid);
+  return status;
 }
 
 bool xiiEngineProcessDocumentContext::PendingOperationsInProgress()
@@ -164,16 +173,23 @@ xiiEngineProcessDocumentContext::xiiEngineProcessDocumentContext(xiiBitflags<xii
 
 xiiEngineProcessDocumentContext::~xiiEngineProcessDocumentContext()
 {
+  XII_ASSERT_DEV(!m_bInitializationStarted, "Context has not been deinitialized.");
   XII_ASSERT_DEV(m_pWorld == nullptr, "World has not been deleted! Call 'xiiEngineProcessDocumentContext::DestroyDocumentContext'");
 
   GetContext().m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler, this));
 }
 
-void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
+xiiStatus xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
 {
-  m_DocumentGuid = documentGuid;
-  m_MetaData     = metaData;
-  m_pIPC         = pIPC;
+  if (m_bInitializationStarted)
+    return xiiStatus("The document context is already initialized. Reset or deinitialize it before initializing again.");
+  if (!documentGuid.IsValid() || sDocumentType.IsEmpty())
+    return xiiStatus("Context initialization requires a valid document GUID and type.");
+
+  m_bInitializationStarted = true;
+  m_DocumentGuid           = documentGuid;
+  m_MetaData               = metaData;
+  m_pIPC                   = pIPC;
 
   if (m_sDocumentType != sDocumentType)
   {
@@ -192,11 +208,16 @@ void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, co
     GetContext().m_pWorld = m_pWorld;
     m_Mirror.InitReceiver(&GetContext());
   }
-  OnInitialize();
+  const xiiStatus status = OnInitialize();
+  if (status.Failed())
+    Deinitialize();
+  return status;
 }
 
 void xiiEngineProcessDocumentContext::Deinitialize()
 {
+  if (!m_bInitializationStarted)
+    return;
   if (m_pThumbnailViewContext)
     DestroyThumbnailViewContext();
 
@@ -212,7 +233,8 @@ void xiiEngineProcessDocumentContext::Deinitialize()
   {
     XII_DEFAULT_DELETE(m_pWorld);
   }
-  m_pWorld = nullptr;
+  m_pWorld                 = nullptr;
+  m_bInitializationStarted = false;
 }
 
 void xiiEngineProcessDocumentContext::SendProcessMessage(xiiProcessMessage* pMsg)
@@ -468,14 +490,18 @@ void xiiEngineProcessDocumentContext::ProcessEditorEngineSyncObjectMsg(const xii
   pSyncObject->SetModified(true);
 }
 
-void xiiEngineProcessDocumentContext::Reset()
+xiiStatus xiiEngineProcessDocumentContext::Reset()
 {
-  xiiUuid guid = m_DocumentGuid;
-  auto    ipc  = m_pIPC;
+  if (!m_bInitializationStarted)
+    return xiiStatus("Cannot reset a document context which is not initialized.");
+  xiiUuid          guid         = m_DocumentGuid;
+  auto             ipc          = m_pIPC;
+  const xiiVariant metaData     = m_MetaData;
+  const xiiString  documentType = m_sDocumentType;
 
   Deinitialize();
 
-  Initialize(guid, m_MetaData, ipc, m_sDocumentType);
+  return Initialize(guid, metaData, ipc, documentType);
 }
 
 void xiiEngineProcessDocumentContext::ClearExistingObjects()
@@ -483,8 +509,8 @@ void xiiEngineProcessDocumentContext::ClearExistingObjects()
   GetContext().DeleteExistingObjects();
 }
 
-void xiiEngineProcessDocumentContext::OnInitialize() {}
-void xiiEngineProcessDocumentContext::OnDeinitialize() {}
+xiiStatus xiiEngineProcessDocumentContext::OnInitialize() { return XII_SUCCESS; }
+void      xiiEngineProcessDocumentContext::OnDeinitialize() {}
 
 bool xiiEngineProcessDocumentContext::PendingOperationInProgress() const
 {

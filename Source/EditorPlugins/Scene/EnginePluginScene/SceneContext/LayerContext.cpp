@@ -4,7 +4,6 @@
 
 #include <EnginePluginScene/SceneContext/LayerContext.h>
 #include <EnginePluginScene/SceneContext/SceneContext.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
 
 
 // clang-format off
@@ -73,11 +72,14 @@ const xiiTag& xiiLayerContext::GetLayerTag() const
   return m_LayerTag;
 }
 
-void xiiLayerContext::OnInitialize()
+xiiStatus xiiLayerContext::OnInitialize()
 {
-  xiiUuid                          parentScene = m_MetaData.Get<xiiUuid>();
-  xiiEngineProcessDocumentContext* pContext    = GetDocumentContext(parentScene);
-  m_pParentSceneContext                        = xiiDynamicCast<xiiSceneContext*>(pContext);
+  if (!m_MetaData.IsA<xiiUuid>())
+    return xiiStatus("A scene layer requires its parent scene GUID as metadata.");
+  auto* parent = xiiDynamicCast<xiiSceneContext*>(GetDocumentContext(m_MetaData.Get<xiiUuid>()));
+  if (!parent || !parent->GetWorld())
+    return xiiStatus("The layer's parent scene is not loaded or does not own a world.");
+  m_pParentSceneContext = parent;
 
   m_pWorld           = m_pParentSceneContext->GetWorld();
   m_Context.m_pWorld = m_pWorld;
@@ -88,7 +90,7 @@ void xiiLayerContext::OnInitialize()
   sVisibilityTag.SetFormat("Layer_{}", uiLayerID);
   m_LayerTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag(sVisibilityTag);
 
-  xiiShadowPool::AddExcludeTagToWhiteList(m_LayerTag);
+  return XII_SUCCESS;
 }
 
 void xiiLayerContext::OnDeinitialize()

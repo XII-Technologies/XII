@@ -24,7 +24,7 @@ xiiDecalContext::xiiDecalContext() :
 {
 }
 
-void xiiDecalContext::OnInitialize()
+xiiStatus xiiDecalContext::OnInitialize()
 {
   const char* szMeshName = "DefaultDecalPreviewMesh";
   m_hPreviewMeshResource = xiiResourceManager::GetExistingResource<xiiMeshResource>(szMeshName);
@@ -171,6 +171,7 @@ void xiiDecalContext::OnInitialize()
       pDecal->SetDecal(hDecal);
     }
   }
+  return XII_SUCCESS;
 }
 
 xiiEngineProcessViewContext* xiiDecalContext::CreateViewContext()

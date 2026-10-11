@@ -27,8 +27,8 @@ public:
   bool m_bDisplayGrid = true;
 
 protected:
-  virtual void OnInitialize() override;
-  virtual void OnDeinitialize() override;
+  virtual xiiStatus OnInitialize() override;
+  virtual void      OnDeinitialize() override;
 
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;

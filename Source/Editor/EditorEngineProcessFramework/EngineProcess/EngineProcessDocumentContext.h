@@ -63,8 +63,10 @@ public:
   xiiEngineProcessDocumentContext(xiiBitflags<xiiEngineProcessDocumentContextFlags> flags);
   virtual ~xiiEngineProcessDocumentContext();
 
-  virtual void Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
-  void         Deinitialize();
+  /// Initializes the context and rolls back partially initialized state on failure.
+  virtual xiiStatus Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
+  /// Releases initialized or partially initialized state. Repeated calls are safe.
+  void Deinitialize();
 
   /// Returns the document type for which this context was created. Useful in case a context may be used for multiple document types.
   xiiStringView GetDocumentType() const { return m_sDocumentType; }
@@ -78,7 +80,8 @@ public:
   /// On success the caller owns the uninitialized context and must register it or deallocate it through its RTTI allocator.
   /// On failure out_pContext is null. Does not modify the document registry.
   static xiiStatus AllocateDocumentContext(const xiiDocumentOpenMsgToEngine& request, xiiEngineProcessDocumentContext*& out_pContext);
-  static void      AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
+  /// Takes ownership on success. Failure leaves ownership unchanged and rolls back any initialization begun here.
+  static xiiStatus AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
   static bool      PendingOperationsInProgress();
   static void      UpdateDocumentContexts();
   /// Consumes redraw requests after presentation; thumbnails request another frame on their next tick.
@@ -96,8 +99,8 @@ public:
 
   const xiiUuid& GetDocumentGuid() const { return m_DocumentGuid; }
 
-  virtual void Reset();
-  void         ClearExistingObjects();
+  virtual xiiStatus Reset();
+  void              ClearExistingObjects();
 
   xiiIPCObjectMirrorEngine                    m_Mirror;
   xiiWorldRttiConverterContext                m_Context; // TODO: Move actual context into the EngineProcessDocumentContext
@@ -118,8 +121,9 @@ public:
   virtual xiiGameObjectHandle ResolveStringToGameObjectHandle(const void* pString, xiiComponentHandle hThis, xiiStringView sProperty) const;
 
 protected:
-  virtual void OnInitialize();
-  virtual void OnDeinitialize();
+  /// OnDeinitialize must release any state acquired before this hook returns failure.
+  virtual xiiStatus OnInitialize();
+  virtual void      OnDeinitialize();
 
   /// Needs to be implemented to create a view context used for windows and thumbnails rendering.
   virtual xiiEngineProcessViewContext* CreateViewContext() = 0;
@@ -220,6 +224,7 @@ private:
   xiiSharedPtr<xiiGALTexture>  m_pThumbnailColorRT;
   bool                         m_bWorldSimStateBeforeThumbnail = false;
   xiiString                    m_sDocumentType;
+  bool                         m_bInitializationStarted = false;
 
   //////////////////////////////////////////////////////////////////////////
   // GameObject reference resolution

@@ -1020,8 +1020,8 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   for the requested type; missing/ambiguous registrations, unallocatable types,
   invalid custom allocator signatures and custom allocation rejection fail before
   registry mutation. A rejected custom allocation no longer falls back to default
-  construction. The existing context initialization hooks remain void; this does
-  not introduce a general recoverable initialization protocol for those hooks.
+  construction. Context initialization and reset also return `xiiStatus`, as
+  described below, so allocation success alone is not reported as a loaded context.
 - Document-open IPC now carries an explicit success flag and diagnostic. The
   Editor records a terminal failed state, reports its reason to the document UI
   and waiting transforms, and skips mirroring/selection/preview initialization on
@@ -1053,3 +1053,43 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-document-status-tests.log`. These results do not establish
   integrated Editor startup or GUI workflow correctness; the broader application
   and legacy plugin blockers recorded above still need migration.
+
+
+- Context initialization, initialization hooks, registry insertion and reset now
+  propagate `xiiStatus`. Failed initialization runs partial-state teardown, removes
+  its temporary registry entry and leaves the allocation with its caller. The
+  engine application releases failed allocations and destroys contexts whose
+  reset failed before sending the failure acknowledgement. Duplicate/invalid
+  registration and double initialization leave the existing context intact.
+  Deinitialization is idempotent, including after failed initialization or reset.
+- All asset context hooks use the result contract; the empty render-pipeline hook
+  was removed. Scene layers reject missing/invalid parent-scene metadata and
+  unavailable parent worlds before borrowing anything. Scene teardown clears its
+  transient layer/context/tag lists, and layer removal invalidates visibility
+  bookkeeping and falls back to the owning scene if it removed the active layer.
+  The removed shadow pool's whitelist calls and includes are deleted; this does
+  not establish native layer visibility or shadow filtering, whose renderer
+  integration remains an outstanding scene migration requirement.
+- Initialization tests exercise real world creation and destruction, partial-state
+  cleanup, a second initialization attempt, duplicate registration, failed reset,
+  registry ownership, repeated teardown and borrowed-world preservation. Live
+  worlds are counted through occupied world slots because GetWorldCount includes
+  vacant slots. The gizmo test fixture now follows the actual context initialization
+  lifecycle before creating synchronized handles.
+- EditorEngineProcessFrameworkTest, EditorFrameworkTest and EditorEngineProcess
+  build on Windows Debug. All 33 engine-process subtests pass on Vulkan, and the
+  Editor document lifecycle test still passes headlessly. The layer translation
+  unit compiles with its real generated-project source selection. Logs:
+  `Workspace/editor-document-initialization-build.log`,
+  `Workspace/editor-document-initialization-tests.log`,
+  `Workspace/editor-document-initialization-integration-tests.log`,
+  `Workspace/editor-document-initialization-editor-tests.log` and
+  `Workspace/editor-document-layer-compile.log`.
+- A full EnginePluginScene build still fails on its removed extractor base,
+  animation-message declarations and global render-world header. The scene
+  context's changed teardown path is therefore not runtime-verified; the layer
+  source check and generic context lifetime tests do not substitute for integrated
+  scene/layer tests. Current diagnostics are recorded in
+  `Workspace/editor-scene-context-current-build.log`. Full Editor/Processor builds,
+  integrated GUI workflows and non-Vulkan/non-Windows configurations remain
+  unverified or blocked as recorded above. The comprehensive goal remains active.

@@ -656,9 +656,19 @@ xiiEngineProcessDocumentContext* xiiEngineProcessGameApplication::CreateDocument
     }
     else
     {
-      xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
-      m.m_bSucceeded = true;
-      xiiLog::Dev("Created context of type '{}' for '{}'.", pDocumentContext->GetDynamicRTTI()->GetTypeName(), pMsg->m_sDocumentType);
+      const xiiStatus initialized = xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
+      if (initialized.Failed())
+      {
+        m.m_sFailure = initialized.GetMessageString();
+        pDocumentContext->GetDynamicRTTI()->GetAllocator()->Deallocate(pDocumentContext);
+        pDocumentContext = nullptr;
+        xiiLog::Error("Could not initialize document '{}': {}", pMsg->m_sDocumentType, m.m_sFailure);
+      }
+      else
+      {
+        m.m_bSucceeded = true;
+        xiiLog::Dev("Created context of type '{}' for '{}'.", pDocumentContext->GetDynamicRTTI()->GetTypeName(), pMsg->m_sDocumentType);
+      }
     }
   }
   else if (pDocumentContext->GetDocumentType() != pMsg->m_sDocumentType)
@@ -668,8 +678,15 @@ xiiEngineProcessDocumentContext* xiiEngineProcessGameApplication::CreateDocument
   }
   else
   {
-    pDocumentContext->Reset();
-    m.m_bSucceeded = true;
+    const xiiStatus reset = pDocumentContext->Reset();
+    if (reset.Failed())
+    {
+      m.m_sFailure = reset.GetMessageString();
+      xiiEngineProcessDocumentContext::DestroyDocumentContext(pMsg->m_DocumentGuid);
+      pDocumentContext = nullptr;
+    }
+    else
+      m.m_bSucceeded = true;
   }
 
   m_IPC.SendMessage(&m);

@@ -71,7 +71,7 @@ void xiiMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg)
   xiiEngineProcessDocumentContext::HandleMessage(pDocMsg);
 }
 
-void xiiMeshContext::OnInitialize()
+xiiStatus xiiMeshContext::OnInitialize()
 {
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
@@ -98,6 +98,7 @@ void xiiMeshContext::OnInitialize()
       pMeshRes->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiMeshContext::OnResourceEvent, this), m_MeshResourceEventSubscriber);
     }
   }
+  return XII_SUCCESS;
 }
 
 xiiEngineProcessViewContext* xiiMeshContext::CreateViewContext()

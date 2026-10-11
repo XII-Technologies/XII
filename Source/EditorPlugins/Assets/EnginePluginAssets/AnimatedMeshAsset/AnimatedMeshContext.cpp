@@ -79,7 +79,7 @@ void xiiAnimatedMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDo
   xiiEngineProcessDocumentContext::HandleMessage(pDocMsg);
 }
 
-void xiiAnimatedMeshContext::OnInitialize()
+xiiStatus xiiAnimatedMeshContext::OnInitialize()
 {
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
@@ -102,6 +102,7 @@ void xiiAnimatedMeshContext::OnInitialize()
     m_hAnimatedMesh = xiiResourceManager::LoadResource<xiiMeshResource>(sAnimatedMeshGuid);
     pAnimatedMesh->SetMesh(m_hAnimatedMesh);
   }
+  return XII_SUCCESS;
 }
 
 xiiEngineProcessViewContext* xiiAnimatedMeshContext::CreateViewContext()

@@ -22,7 +22,7 @@ public:
   float                             GetAlphaThreshold() const { return m_fAlphaThreshold; }
 
 protected:
-  virtual void OnInitialize() override;
+  virtual xiiStatus OnInitialize() override;
 
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;

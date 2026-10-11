@@ -73,7 +73,7 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
   xiiEngineProcessDocumentContext::HandleMessage(pMsg);
 }
 
-void xiiMaterialContext::OnInitialize()
+xiiStatus xiiMaterialContext::OnInitialize()
 {
   {
     const char* szSphereMeshName = "SphereMaterialPreviewMesh";
@@ -222,6 +222,7 @@ void xiiMaterialContext::OnInitialize()
     // All three generated preview meshes have one material slot.
     pMesh->SetMaterialOverride(0, m_hMaterial);
   }
+  return XII_SUCCESS;
 }
 
 xiiEngineProcessViewContext* xiiMaterialContext::CreateViewContext()

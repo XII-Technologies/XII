@@ -44,8 +44,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SkeletonContext)
   publish();
   xiiSkeletonContext first;
   xiiSkeletonContext second;
-  first.Initialize(guid, {}, nullptr, "Skeleton");
-  second.Initialize(guid, {}, nullptr, "Skeleton");
+  XII_TEST_STATUS(first.Initialize(guid, {}, nullptr, "Skeleton"));
+  XII_TEST_STATUS(second.Initialize(guid, {}, nullptr, "Skeleton"));
   XII_SCOPE_EXIT(second.Deinitialize(); first.Deinitialize());
   XII_TEST_BOOL(first.GetSkeleton() == second.GetSkeleton());
   XII_TEST_BOOL(first.GetWorld() != second.GetWorld());
@@ -133,7 +133,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SkeletonContext)
     XII_TEST_RESULT(first.DrawSkeleton(*firstView));
   }
 
-  first.Reset();
+  XII_TEST_STATUS(first.Reset());
   XII_TEST_BOOL(first.GetSkeleton() == hSkeleton);
   XII_LOCK(first.GetWorld()->GetWriteMarker());
   xiiView* resetView = nullptr;

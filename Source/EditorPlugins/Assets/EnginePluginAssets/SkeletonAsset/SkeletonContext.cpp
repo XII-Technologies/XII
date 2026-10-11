@@ -102,7 +102,7 @@ void xiiSkeletonContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg
   xiiEngineProcessDocumentContext::HandleMessage(pDocMsg);
 }
 
-void xiiSkeletonContext::OnInitialize()
+xiiStatus xiiSkeletonContext::OnInitialize()
 {
   XII_LOCK(m_pWorld->GetWriteMarker());
   xiiGameObjectDescription object;
@@ -112,6 +112,7 @@ void xiiSkeletonContext::OnInitialize()
   xiiStringBuilder guid;
   xiiConversionUtils::ToString(GetDocumentGuid(), guid);
   m_hSkeleton = xiiResourceManager::LoadResource<xiiSkeletonResource>(guid);
+  return XII_SUCCESS;
 }
 
 void xiiSkeletonContext::OnDeinitialize()

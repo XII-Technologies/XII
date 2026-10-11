@@ -230,7 +230,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
   {
     const auto           guid    = xiiUuid::MakeUuid();
     TestDocumentContext* context = XII_DEFAULT_NEW(TestDocumentContext, world);
-    xiiEngineProcessDocumentContext::AddDocumentContext(guid, {}, context, nullptr, "View test");
+    XII_TEST_STATUS(xiiEngineProcessDocumentContext::AddDocumentContext(guid, {}, context, nullptr, "View test"));
     auto* viewContext = context->AddView();
     viewContext->SetupRenderTarget({}, texture->GetDefaultView(xiiGALTextureViewType::RenderTarget), 80, 60);
     auto*      windows = xiiWindowManager::GetSingleton();
@@ -258,9 +258,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
     const auto           ownerGuid    = xiiUuid::MakeUuid();
     const auto           borrowerGuid = xiiUuid::MakeUuid();
     TestDocumentContext* owner        = XII_DEFAULT_NEW(TestDocumentContext, xiiEngineProcessDocumentContextFlags::CreateWorld);
-    xiiEngineProcessDocumentContext::AddDocumentContext(ownerGuid, {}, owner, nullptr, "Owner test");
+    XII_TEST_STATUS(xiiEngineProcessDocumentContext::AddDocumentContext(ownerGuid, {}, owner, nullptr, "Owner test"));
     TestDocumentContext* borrower = XII_DEFAULT_NEW(TestDocumentContext, *owner->GetWorld());
-    xiiEngineProcessDocumentContext::AddDocumentContext(borrowerGuid, {}, borrower, nullptr, "Borrower test");
+    XII_TEST_STATUS(xiiEngineProcessDocumentContext::AddDocumentContext(borrowerGuid, {}, borrower, nullptr, "Borrower test"));
     bool borrowerClosed = false, ownerClosed = false;
     borrower->m_OnDeinitialize = [&]() {
       XII_TEST_BOOL(owner->GetWorld() == borrower->GetWorld());

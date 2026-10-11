@@ -16,8 +16,6 @@ public:
   virtual void HandleMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
 
 protected:
-  virtual void OnInitialize() override;
-
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
 
