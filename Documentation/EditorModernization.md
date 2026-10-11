@@ -941,3 +941,28 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-decal-builder-integration-tests.log`). The Qt producer still
   needs to call this builder and write per-decal descriptors; that remaining
   migration is explicit and the overall Editor goal remains incomplete.
+
+
+- Qt decal transforms now call the native shared atlas builder and serialize an
+  individual native descriptor for every decal. Normal asset table entries map
+  those descriptors to their files; the manager adds only the shared atlas alias.
+  Atlas paths and build hashes respect the selected platform profile, full UUIDs
+  and ordered dependency hashes. Collection releases the curator inventory lock
+  before opening documents and closes documents it opened on failure or success.
+- Generated atlases use deferred publication, native asset headers and the
+  version-two packed descriptor; cache checks require matching native versions,
+  dependency hash and a complete final marker. Regeneration explicitly reloads
+  the active-profile atlas through existing engine-process resource messages.
+  The document version invalidates old empty decal outputs. Legacy colorize
+  settings remain authored but fail transformation with an explicit diagnostic:
+  the current native decal renderer has no equivalent blending path.
+- Both changed Qt translation units compile individually, and the broader
+  EditorPluginAssets build compiles decal sources. That full plugin still fails
+  on the removed GameEngine PropertyAnimResource dependency; no replacement
+  runtime property-animation resource exists in the current Engine. Logs:
+  `Workspace/editor-native-decal-plugin-build.log`,
+  `Workspace/editor-native-decal-manager-compile.log` and
+  `Workspace/editor-native-decal-document-compile.log`. The 30-subtest shared
+  builder/resource/GPU suite reported above validates the native output boundary;
+  project-wide Qt asset transformation and reload remain unverified until the
+  full plugin is buildable and the Editor workflow is exercised.

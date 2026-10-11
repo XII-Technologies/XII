@@ -13,17 +13,15 @@ public:
   xiiDecalAssetDocumentManager();
   ~xiiDecalAssetDocumentManager();
 
-  virtual void      AddEntriesToAssetTable(xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const override;
-  virtual xiiString GetAssetTableEntry(const xiiSubAsset* pSubAsset, xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile) const override;
+  virtual void AddEntriesToAssetTable(xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile, xiiDelegate<void(xiiStringView sGuid, xiiStringView sPath, xiiStringView sType)> addEntry) const override;
 
   /// There is only a single decal texture per project. This function creates it, in case any decal asset was modified.
   xiiStatus GenerateDecalTexture(const xiiPlatformProfile* pAssetProfile);
   xiiString GetDecalTexturePath(const xiiPlatformProfile* pAssetProfile) const;
 
 private:
-  void      OnDocumentManagerEvent(const xiiDocumentManager::Event& e);
-  bool      IsDecalTextureUpToDate(const char* szDecalFile, xiiUInt64 uiAssetHash) const;
-  xiiStatus RunTextureConverter(const char* szTargetFile, const char* szInputFile, const xiiAssetFileHeader& AssetHeader);
+  void OnDocumentManagerEvent(const xiiDocumentManager::Event& e);
+  bool IsDecalTextureUpToDate(const char* szDecalFile, xiiUInt64 uiAssetHash) const;
 
   virtual void InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) override;
   virtual void InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const override;

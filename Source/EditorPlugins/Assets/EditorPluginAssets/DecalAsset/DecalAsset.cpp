@@ -5,6 +5,7 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorPluginAssets/DecalAsset/DecalAsset.h>
 #include <EditorPluginAssets/DecalAsset/DecalAssetManager.h>
+#include <GraphicsCore/Decals/DecalResource.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 
 // clang-format off
@@ -68,7 +69,7 @@ void xiiDecalAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaState
 }
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalAssetDocument, 5, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalAssetDocument, 6, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -79,7 +80,24 @@ xiiDecalAssetDocument::xiiDecalAssetDocument(xiiStringView sDocumentPath) :
 
 xiiTransformStatus xiiDecalAssetDocument::InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
-  return static_cast<xiiDecalAssetDocumentManager*>(GetAssetDocumentManager())->GenerateDecalTexture(pAssetProfile);
+  XII_SUCCEED_OR_RETURN(static_cast<xiiDecalAssetDocumentManager*>(GetAssetDocumentManager())->GenerateDecalTexture(pAssetProfile));
+  const auto*                properties = GetProperties();
+  xiiDecalResourceDescriptor descriptor;
+  xiiStringBuilder           id;
+  xiiConversionUtils::ToString(GetGuid(), id);
+  descriptor.m_sDecalId.Assign(id);
+  descriptor.m_hAtlas      = xiiResourceManager::LoadResource<xiiDecalAtlasResource>("{ ProjectDecalAtlas }");
+  descriptor.m_ChannelMask = xiiDecalChannelMask::Albedo;
+  if (properties->NeedsNormal())
+    descriptor.m_ChannelMask.Add(xiiDecalChannelMask::Normal);
+  if (properties->NeedsORM())
+    descriptor.m_ChannelMask.Add(xiiDecalChannelMask::Material);
+  if (properties->NeedsEmissive())
+  {
+    descriptor.m_ChannelMask.Add(xiiDecalChannelMask::Emissive);
+    descriptor.m_fEmissive = 1.0f;
+  }
+  return descriptor.Serialize(stream);
 }
 
 xiiTransformStatus xiiDecalAssetDocument::InternalCreateThumbnail(const ThumbnailInfo& Unused)
