@@ -305,7 +305,7 @@ void xiiQtSkeletonAssetDocumentWindow::InternalRedraw()
 
 void xiiQtSkeletonAssetDocumentWindow::ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg)
 {
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentOpenResponseMsgToEditor>())
+  if (const auto* response = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(pMsg); response && response->m_bSucceeded)
   {
     // Initial opening and engine-process reconnect both recreate the per-document context.
     SendLiveResourcePreview();

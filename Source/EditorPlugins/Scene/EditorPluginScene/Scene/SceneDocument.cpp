@@ -1803,7 +1803,8 @@ void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMs
 
   if (const xiiDocumentOpenResponseMsgToEditor* msg = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(pMsg))
   {
-    SyncObjectHiddenState();
+    if (msg->m_bSucceeded)
+      SyncObjectHiddenState();
   }
 
   if (const xiiPushObjectStateMsgToEditor* msg = xiiDynamicCast<const xiiPushObjectStateMsgToEditor*>(pMsg))

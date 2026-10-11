@@ -421,13 +421,14 @@ void xiiAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) cons
 
 void xiiAssetDocument::EngineConnectionEventHandler(const xiiEditorEngineProcessConnection::Event& e)
 {
-  if (e.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessCrashed)
+  if (e.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessCrashed || e.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessShutdown)
   {
     m_EngineStatus = EngineStatus::Disconnected;
   }
   else if (e.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessStarted)
   {
     m_EngineStatus = EngineStatus::Initializing;
+    m_sEngineFailure.Clear();
   }
 }
 
@@ -779,18 +780,7 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
 
   xiiLog::Info("Create {0} thumbnail for \"{1}\"", GetDocumentTypeName(), GetDocumentPath());
 
-  if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Disconnected)
-  {
-    return xiiStatus(xiiFmt("Create {0} thumbnail for \"{1}\" failed, engine not started or crashed.", GetDocumentTypeName(), GetDocumentPath()));
-  }
-  else if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Initializing)
-  {
-    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), xiiTime::MakeFromSeconds(10)).Failed())
-    {
-      return xiiStatus(xiiFmt("Create {0} thumbnail for \"{1}\" failed, document initialization timed out.", GetDocumentTypeName(), GetDocumentPath()));
-    }
-    XII_ASSERT_DEV(GetEngineStatus() == xiiAssetDocument::EngineStatus::Loaded, "After receiving xiiDocumentOpenResponseMsgToEditor, the document should be in loaded state.");
-  }
+  XII_SUCCEED_OR_RETURN(WaitForEngineStatusLoaded(xiiTime::MakeFromSeconds(10)));
 
   SyncObjectsToEngine();
   xiiCreateThumbnailMsgToEngine msg;
@@ -844,46 +834,53 @@ xiiUInt16 xiiAssetDocument::GetAssetTypeVersion() const
   return (xiiUInt16)GetDynamicRTTI()->GetTypeVersion();
 }
 
-xiiStatus xiiAssetDocument::WaitForEngineStatusLoaded() const
+xiiStatus xiiAssetDocument::WaitForEngineStatusLoaded(xiiTime timeout) const
 {
-  if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Disconnected)
+  if (GetEngineStatus() == EngineStatus::Initializing)
   {
-    return xiiStatus(xiiFmt("Loading {0} document '{1}' failed, engine not started or crashed.", GetDocumentTypeName(), GetDocumentPath()));
+    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), timeout).Failed())
+      return xiiStatus(xiiFmt("Loading {} document '{}' failed, document initialization timed out or engine crashed.", GetDocumentTypeName(), GetDocumentPath()));
   }
-  else if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Initializing)
-  {
-    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), {}).Failed())
-    {
-      return xiiStatus(xiiFmt("Loading {0} document '{1}' failed, document initialization timed out or engine crashed.", GetDocumentTypeName(), GetDocumentPath()));
-    }
-    XII_ASSERT_DEV(GetEngineStatus() == xiiAssetDocument::EngineStatus::Loaded, "After receiving xiiDocumentOpenResponseMsgToEditor, the document should be in loaded state.");
-  }
-  return XII_SUCCESS;
+
+  if (GetEngineStatus() == EngineStatus::Loaded)
+    return XII_SUCCESS;
+  if (GetEngineStatus() == EngineStatus::Failed)
+    return xiiStatus(xiiFmt("Loading {} document '{}' failed: {}", GetDocumentTypeName(), GetDocumentPath(), m_sEngineFailure));
+  if (GetEngineStatus() == EngineStatus::Unsupported)
+    return xiiStatus("This document does not support engine IPC.");
+  return xiiStatus(xiiFmt("Loading {} document '{}' failed, engine not started or crashed.", GetDocumentTypeName(), GetDocumentPath()));
 }
 
 bool xiiAssetDocument::SendMessageToEngine(xiiEditorEngineDocumentMsg* pMessage /*= false*/) const
 {
-  return GetEditorEngineConnection()->SendMessage(pMessage);
+  return GetEditorEngineConnection() && GetEditorEngineConnection()->SendMessage(pMessage);
 }
 
 void xiiAssetDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentOpenResponseMsgToEditor>())
+  if (const auto* response = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(pMsg))
   {
-    if (m_EngineConnectionType == xiiAssetDocEngineConnection::FullObjectMirroring)
+    if (!response->m_bSucceeded)
     {
-      // make sure the engine clears the document first
-      xiiDocumentClearMsgToEngine msgClear;
-      msgClear.m_DocumentGuid = GetGuid();
-      SendMessageToEngine(&msgClear);
-
-      m_pMirror->SendDocument();
+      m_EngineStatus   = EngineStatus::Failed;
+      m_sEngineFailure = response->m_sFailure;
+      xiiLog::Error("Engine rejected document '{}': {}", GetDocumentPath(), m_sEngineFailure);
+      ShowDocumentStatus(xiiFmt("Engine could not open this document: {}", m_sEngineFailure));
     }
-    m_EngineStatus = EngineStatus::Loaded;
-    // make sure all sync objects are 'modified' so that they will get resent as well
-    for (auto* pObject : m_SyncObjects)
+    else
     {
-      pObject->SetModified();
+      m_sEngineFailure.Clear();
+      if (m_EngineConnectionType == xiiAssetDocEngineConnection::FullObjectMirroring)
+      {
+        // Clear the successfully created context before sending the full document state.
+        xiiDocumentClearMsgToEngine msgClear;
+        msgClear.m_DocumentGuid = GetGuid();
+        SendMessageToEngine(&msgClear);
+        m_pMirror->SendDocument();
+      }
+      m_EngineStatus = EngineStatus::Loaded;
+      for (auto* pObject : m_SyncObjects)
+        pObject->SetModified();
     }
   }
 
@@ -968,7 +965,8 @@ void xiiAssetDocument::SendDocumentOpenMessage(bool bOpen)
   // load resources, and if the file redirection does not happen correctly, derived resource types may not be created as they should
   xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
 
-  m_EngineStatus = EngineStatus::Initializing;
+  m_EngineStatus = bOpen ? EngineStatus::Initializing : EngineStatus::Disconnected;
+  m_sEngineFailure.Clear();
 
   xiiDocumentOpenMsgToEngine m;
   m.m_DocumentGuid     = GetGuid();
@@ -978,6 +976,7 @@ void xiiAssetDocument::SendDocumentOpenMessage(bool bOpen)
 
   if (!xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&m))
   {
+    m_EngineStatus = EngineStatus::Disconnected;
     xiiLog::Error("Failed to send DocumentOpenMessage");
   }
 }

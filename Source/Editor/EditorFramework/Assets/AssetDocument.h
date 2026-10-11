@@ -115,6 +115,7 @@ public:
     Unsupported,  ///< This document does not have engine IPC.
     Disconnected, ///< Engine process crashed or not started yet.
     Initializing, ///< Document is being initialized on the engine process side.
+    Failed,       ///< The engine rejected document context creation. Retried when the document is reopened or the engine reconnects.
     Loaded,       ///< Any message sent after this state is reached will work on a fully loaded document.
   };
 
@@ -122,7 +123,7 @@ public:
   EngineStatus GetEngineStatus() const { return m_EngineStatus; }
 
   /// Waits for GetEngineStatus to return Loaded or returns a failure reason.
-  xiiStatus WaitForEngineStatusLoaded() const;
+  xiiStatus WaitForEngineStatusLoaded(xiiTime timeout = {}) const;
 
   /// Passed into xiiEngineProcessDocumentContext::Initialize on the engine process side. Allows the document to provide additional data to the engine process during context creation.
   virtual xiiVariant GetCreateEngineMetaData() const { return xiiVariant(); }
@@ -288,6 +289,7 @@ protected:
   xiiTransformStatus DoTransformAsset(const xiiPlatformProfile* pAssetProfile, xiiBitflags<xiiTransformFlags> transformFlags);
 
   EngineStatus                m_EngineStatus;
+  xiiString                   m_sEngineFailure;
   xiiAssetDocEngineConnection m_EngineConnectionType = xiiAssetDocEngineConnection::None;
 
   xiiEditorEngineConnection* m_pEngineConnection;

@@ -247,7 +247,15 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentClearMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiDocumentClearMsgToEngine>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentOpenResponseMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiDocumentOpenResponseMsgToEditor> )
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentOpenResponseMsgToEditor, 2, xiiRTTIDefaultAllocator<xiiDocumentOpenResponseMsgToEditor>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Succeeded", m_bSucceeded),
+    XII_MEMBER_PROPERTY("Failure", m_sFailure),
+  }
+  XII_END_PROPERTIES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewDestroyedMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiViewDestroyedMsgToEngine>)

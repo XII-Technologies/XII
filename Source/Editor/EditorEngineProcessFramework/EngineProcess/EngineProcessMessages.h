@@ -244,6 +244,9 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiDocumentOpenResponseMsgToEditor : 
 
 public:
   xiiDocumentOpenResponseMsgToEditor() = default;
+
+  bool      m_bSucceeded = false;
+  xiiString m_sFailure;
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewDestroyedMsgToEngine : public xiiEditorEngineViewMsg

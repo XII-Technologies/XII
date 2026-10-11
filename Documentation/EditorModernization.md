@@ -1013,3 +1013,43 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   pass-property APIs and needs substantive migration. These failures are recorded
   in `Workspace/editor-modernization-current-build.log`. Integrated Qt workflows,
   D3D12, Linux and macOS remain unverified; the comprehensive goal is incomplete.
+
+
+- Document-context allocation now lives in the engine-process framework and
+  returns `xiiStatus`. Reflection registration must identify exactly one context
+  for the requested type; missing/ambiguous registrations, unallocatable types,
+  invalid custom allocator signatures and custom allocation rejection fail before
+  registry mutation. A rejected custom allocation no longer falls back to default
+  construction. The existing context initialization hooks remain void; this does
+  not introduce a general recoverable initialization protocol for those hooks.
+- Document-open IPC now carries an explicit success flag and diagnostic. The
+  Editor records a terminal failed state, reports its reason to the document UI
+  and waiting transforms, and skips mirroring/selection/preview initialization on
+  failure. Thumbnail requests use the same readiness check with their existing
+  ten-second timeout. Normal engine shutdown now invalidates loaded document
+  state, as crashes already did. Reopening/reconnecting can recover the document.
+- Remote preview sends the document metadata and waits for the remote engine's
+  actual acknowledgement before mirroring or activating a view. Rejection and
+  timeout are reported without replacing the local document's state with remote
+  failure. Mixed Editor/engine-process binaries must be rebuilt together for the
+  updated internal message schema. A remote preview session itself remains
+  unverified; no remote endpoint was exercised.
+- `EditorFrameworkTest` is a new tooling-only test target for shared Editor
+  infrastructure, independent of asset plugins and GPU backend setup. Its first
+  test exercises the actual asset document's rejected-open state, diagnostic,
+  sync-object behavior, recovery after restart, shutdown invalidation, missing
+  connection and failed full-mirroring path without launching an engine process.
+  Engine-process tests also cover reflected default/custom context allocation,
+  exact alias matching, invalid requests, duplicate registrations, rejected and
+  malformed allocators, allocation/registry/reset/destruction lifetime and both
+  acknowledgement serialization outcomes.
+- Windows Debug builds of EditorFramework, EditorEngineProcess,
+  EditorEngineProcessFrameworkTest and EditorFrameworkTest pass. All 32 engine-
+  process subtests pass on Vulkan, and EditorFrameworkTest passes headlessly.
+  Logs: `Workspace/editor-document-context-build.log`,
+  `Workspace/editor-document-context-tests.log`,
+  `Workspace/editor-document-context-integration-tests.log`,
+  `Workspace/editor-document-status-build.log` and
+  `Workspace/editor-document-status-tests.log`. These results do not establish
+  integrated Editor startup or GUI workflow correctness; the broader application
+  and legacy plugin blockers recorded above still need migration.

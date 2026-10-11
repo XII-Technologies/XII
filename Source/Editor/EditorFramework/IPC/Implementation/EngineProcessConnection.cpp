@@ -188,25 +188,40 @@ void xiiEditorEngineProcessConnection::ActivateRemoteProcess(const xiiAssetDocum
   if (!ConnectToRemoteProcess())
     return;
 
-  // resend entire document
+  xiiDocumentOpenMsgToEngine request;
+  request.m_DocumentGuid     = pDocument->GetGuid();
+  request.m_bDocumentOpen    = true;
+  request.m_sDocumentType    = pDocument->GetDocumentTypeDescriptor()->m_sDocumentTypeName;
+  request.m_DocumentMetaData = pDocument->GetCreateEngineMetaData();
+  if (!m_pRemoteProcess->SendMessage(&request))
   {
-    // open document message
-    {
-      xiiDocumentOpenMsgToEngine msg;
-      msg.m_DocumentGuid  = pDocument->GetGuid();
-      msg.m_bDocumentOpen = true;
-      msg.m_sDocumentType = pDocument->GetDocumentTypeDescriptor()->m_sDocumentTypeName;
-      m_pRemoteProcess->SendMessage(&msg);
-    }
-
-    if (pDocument->GetDynamicRTTI()->IsDerivedFrom<xiiAssetDocument>())
-    {
-      xiiAssetDocument*                  pAssetDoc = (xiiAssetDocument*)pDocument;
-      xiiDocumentOpenResponseMsgToEditor response;
-      response.m_DocumentGuid = pDocument->GetGuid();
-      pAssetDoc->HandleEngineMessage(&response);
-    }
+    xiiQtUiServices::MessageBoxStatus(xiiStatus("Failed to send the document to the remote engine."), "Remote preview failed.");
+    return;
   }
+
+  xiiDocumentOpenResponseMsgToEditor response;
+  response.m_DocumentGuid                                         = request.m_DocumentGuid;
+  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&response](xiiProcessMessage* message) -> bool {
+    const auto* opened = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(message);
+    if (!opened || opened->m_DocumentGuid != response.m_DocumentGuid)
+      return false;
+    response.m_bSucceeded = opened->m_bSucceeded;
+    response.m_sFailure   = opened->m_sFailure;
+    return true;
+  };
+  if (m_pRemoteProcess->WaitForMessage(xiiGetStaticRTTI<xiiDocumentOpenResponseMsgToEditor>(), xiiTime::MakeFromSeconds(30), &callback).Failed())
+  {
+    xiiQtUiServices::MessageBoxStatus(xiiStatus("The remote engine disconnected or document initialization timed out."), "Remote preview failed.");
+    return;
+  }
+  if (!response.m_bSucceeded)
+  {
+    xiiQtUiServices::MessageBoxStatus(xiiStatus(response.m_sFailure.GetData()), "Remote preview failed.");
+    return;
+  }
+
+  // Mirroring and document-specific initialization follow the remote engine's actual acknowledgement.
+  const_cast<xiiAssetDocument*>(pDocument)->HandleEngineMessage(&response);
 
   // send activation message
   {

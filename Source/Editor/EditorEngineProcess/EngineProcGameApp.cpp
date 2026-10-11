@@ -614,7 +614,6 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     if (pMsg5->m_bDocumentOpen)
     {
       pDocumentContext = CreateDocumentContext(pMsg5);
-      XII_ASSERT_DEV(pDocumentContext != nullptr, "Could not create a document context for document type '{0}'", pMsg5->m_sDocumentType);
     }
     else
     {
@@ -649,48 +648,28 @@ xiiEngineProcessDocumentContext* xiiEngineProcessGameApplication::CreateDocument
 
   if (pDocumentContext == nullptr)
   {
-    xiiRTTI::ForEachDerivedType<xiiEngineProcessDocumentContext>([&](const xiiRTTI* pRtti) {
-      auto* pProp = pRtti->FindPropertyByName("DocumentType");
-      if (pProp && pProp->GetCategory() == xiiPropertyCategory::Constant)
-      {
-        const xiiStringBuilder sDocTypes(";", static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant().ConvertTo<xiiString>(), ";");
-        const xiiStringBuilder sRequestedType(";", pMsg->m_sDocumentType, ";");
-
-        if (sDocTypes.FindSubString(sRequestedType) != nullptr)
-        {
-          xiiLog::Dev("Created Context of type '{0}' for '{1}'", pRtti->GetTypeName(), pMsg->m_sDocumentType);
-          for (auto pFunc : pRtti->GetFunctions())
-          {
-            if (pFunc->GetPropertyName() == "AllocateContext")
-            {
-              xiiVariant                    res;
-              xiiHybridArray<xiiVariant, 1> params;
-              params.PushBack(pMsg);
-              pFunc->Execute(nullptr, params, res);
-              if (res.IsA<xiiEngineProcessDocumentContext*>())
-              {
-                pDocumentContext = res.Get<xiiEngineProcessDocumentContext*>();
-              }
-              else
-              {
-                xiiLog::Error("Failed to call custom allocator '{}::{}'.", pRtti->GetTypeName(), pFunc->GetPropertyName());
-              }
-            }
-          }
-
-          if (!pDocumentContext)
-          {
-            pDocumentContext = pRtti->GetAllocator()->Allocate<xiiEngineProcessDocumentContext>();
-          }
-
-          xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
-        }
-      }
-    });
+    const xiiStatus status = xiiEngineProcessDocumentContext::AllocateDocumentContext(*pMsg, pDocumentContext);
+    if (status.Failed())
+    {
+      m.m_sFailure = status.GetMessageString();
+      xiiLog::Error("Could not open document '{}': {}", pMsg->m_sDocumentType, m.m_sFailure);
+    }
+    else
+    {
+      xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
+      m.m_bSucceeded = true;
+      xiiLog::Dev("Created context of type '{}' for '{}'.", pDocumentContext->GetDynamicRTTI()->GetTypeName(), pMsg->m_sDocumentType);
+    }
+  }
+  else if (pDocumentContext->GetDocumentType() != pMsg->m_sDocumentType)
+  {
+    m.m_sFailure     = "The document GUID is already registered for a different document type.";
+    pDocumentContext = nullptr;
   }
   else
   {
     pDocumentContext->Reset();
+    m.m_bSucceeded = true;
   }
 
   m_IPC.SendMessage(&m);

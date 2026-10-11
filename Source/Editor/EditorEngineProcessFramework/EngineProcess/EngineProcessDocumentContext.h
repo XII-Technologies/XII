@@ -17,6 +17,7 @@ class xiiEngineProcessCommunicationChannel;
 class xiiProcessMessage;
 class xiiExportDocumentMsgToEngine;
 class xiiCreateThumbnailMsgToEngine;
+class xiiDocumentOpenMsgToEngine;
 struct xiiResourceEvent;
 class xiiView;
 
@@ -72,9 +73,14 @@ public:
   virtual void HandleMessage(const xiiEditorEngineDocumentMsg* pMsg);
 
   static xiiEngineProcessDocumentContext* GetDocumentContext(xiiUuid guid);
-  static void                             AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
-  static bool                             PendingOperationsInProgress();
-  static void                             UpdateDocumentContexts();
+  /// Allocates the unique reflected context registered for the requested document type.
+  /// A custom static AllocateContext(const xiiDocumentOpenMsgToEngine*) may reject the request by returning null.
+  /// On success the caller owns the uninitialized context and must register it or deallocate it through its RTTI allocator.
+  /// On failure out_pContext is null. Does not modify the document registry.
+  static xiiStatus AllocateDocumentContext(const xiiDocumentOpenMsgToEngine& request, xiiEngineProcessDocumentContext*& out_pContext);
+  static void      AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
+  static bool      PendingOperationsInProgress();
+  static void      UpdateDocumentContexts();
   /// Consumes redraw requests after presentation; thumbnails request another frame on their next tick.
   static void FinishFrame();
   /// Returns whether a window belongs to document views and combines their presentation requests.

@@ -1042,7 +1042,7 @@ void xiiGameObjectDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg
 {
   SUPER::HandleEngineMessage(pMsg);
 
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentOpenResponseMsgToEditor>())
+  if (const auto* response = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(pMsg); response && response->m_bSucceeded)
   {
     ScheduleSendObjectSelection();
   }
