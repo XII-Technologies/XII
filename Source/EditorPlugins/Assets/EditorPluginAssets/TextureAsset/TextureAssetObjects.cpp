@@ -11,6 +11,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexture2DChannelMappingEnum, 1)
   XII_ENUM_CONSTANTS(xiiTexture2DChannelMappingEnum::RG1, xiiTexture2DChannelMappingEnum::R1_G2)
   XII_ENUM_CONSTANTS(xiiTexture2DChannelMappingEnum::RGB1, xiiTexture2DChannelMappingEnum::RGB1_ABLACK, xiiTexture2DChannelMappingEnum::R1_G2_B3)
   XII_ENUM_CONSTANTS(xiiTexture2DChannelMappingEnum::RGBA1, xiiTexture2DChannelMappingEnum::RGB1_A2, xiiTexture2DChannelMappingEnum::R1_G2_B3_A4)
+  XII_ENUM_CONSTANTS(xiiTexture2DChannelMappingEnum::WHITE_R1_R2, xiiTexture2DChannelMappingEnum::WHITE_R1_WHITE, xiiTexture2DChannelMappingEnum::WHITE_WHITE_R1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiRenderTargetFormat, 1)
@@ -147,6 +148,7 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
           props["Input3"].m_Visibility = xiiPropertyUiState::Default;
           // fall through
 
+        case xiiTexture2DChannelMappingEnum::WHITE_R1_R2:
         case xiiTexture2DChannelMappingEnum::RGB1_A2:
         case xiiTexture2DChannelMappingEnum::R1_G2:
           props["Input2"].m_Visibility = xiiPropertyUiState::Default;
@@ -206,10 +208,13 @@ xiiInt32 xiiTextureAssetProperties::GetNumInputFiles() const
     case xiiTexture2DChannelMappingEnum::RGB1:
     case xiiTexture2DChannelMappingEnum::RGB1_ABLACK:
     case xiiTexture2DChannelMappingEnum::RGBA1:
+    case xiiTexture2DChannelMappingEnum::WHITE_R1_WHITE:
+    case xiiTexture2DChannelMappingEnum::WHITE_WHITE_R1:
       return 1;
 
     case xiiTexture2DChannelMappingEnum::R1_G2:
     case xiiTexture2DChannelMappingEnum::RGB1_A2:
+    case xiiTexture2DChannelMappingEnum::WHITE_R1_R2:
       return 2;
 
     case xiiTexture2DChannelMappingEnum::R1_G2_B3:

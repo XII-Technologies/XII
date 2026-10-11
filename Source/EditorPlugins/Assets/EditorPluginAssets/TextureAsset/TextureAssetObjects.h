@@ -29,6 +29,11 @@ struct xiiTexture2DChannelMappingEnum
     RGB1_ABLACK,
     R1_G2_B3_A4,
 
+    // Linear channel packing with a neutral white channel for absent source data.
+    WHITE_R1_R2,
+    WHITE_R1_WHITE,
+    WHITE_WHITE_R1,
+
     Default = RGB1,
   };
 };

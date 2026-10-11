@@ -670,3 +670,12 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   bounds, distinct GPU buffers and retained previous-buffer validity
   (`Workspace/editor-native-mesh-documents-build.log`,
   `Workspace/editor-native-mesh-documents-tests.log`).
+
+- Texture assets expose three additional channel mappings that pack independent
+  red-channel factors into green and blue, with neutral white for absent inputs.
+  Existing mapping identities remain unchanged. Both source images remain asset
+  dependencies; no detached packed-image derivative is generated. Texture
+  document version 10 invalidates transformed caches. The reflected properties
+  and document transform compile individually with Qt, and converter integration
+  tests verify exact linear channel values for all three mappings (included in
+  the 24 passing Vulkan Editor integration subtests above).

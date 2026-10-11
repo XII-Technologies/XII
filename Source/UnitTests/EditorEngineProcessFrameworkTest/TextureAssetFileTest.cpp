@@ -136,7 +136,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureAssetFile)
       executable.Append(".exe");
 #  endif
       options.m_sProcess = executable;
-      options.AddArgument("-in");
+      options.AddArgument("-in0");
       options.AddArgument(inputFile);
       options.AddArgument("-out");
       options.AddArgument(output);
@@ -183,15 +183,20 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureAssetFile)
     executable.Append(".exe");
 #  endif
     xiiUInt32 combination = 0;
-    auto      convert     = [&](xiiStringView extra, bool success, xiiStringBuilder& output) -> bool {
+    auto      convert     = [&](xiiStringView extra, bool success, xiiStringBuilder& output, xiiStringView secondInput = {}) -> bool {
       xiiStringBuilder path;
       path.SetFormat(":imgout/CustomSampler{}.xiiBinTexture2D", combination++);
       if (!XII_TEST_RESULT(xiiFileSystem::ResolvePath(path, &output, nullptr)))
         return false;
       xiiProcessOptions options;
       options.m_sProcess = executable;
-      options.AddArgument("-in");
+      options.AddArgument("-in0");
       options.AddArgument(inputFile);
+      if (!secondInput.IsEmpty())
+      {
+        options.AddArgument("-in1");
+        options.AddArgument(secondInput);
+      }
       options.AddArgument("-out");
       options.AddArgument(output);
       options.AddCommandLine("-type 2D -compression None -mipmaps Linear -usage Linear -minRes 4 -maxRes 4 -rgba in0 -addressU Mirror -addressV Clamp -addressW MirrorOnce -assetHashLow 0x12345678 -assetHashHigh 0x1 -assetVersion 2");
@@ -245,6 +250,37 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureAssetFile)
         XII_TEST_FLOAT(sampler.m_fMinLOD, 1, 0);
         XII_TEST_FLOAT(sampler.m_fMaxLOD, 2, 0);
       }
+    }
+    // Importing separate scalar maps must retain independent input dependencies and use
+    // neutral white for absent factors. Color conversion must not alter linear mask values.
+    xiiGALTextureCreationDescription maskDescription;
+    maskDescription.m_Type   = xiiGALResourceDimension::Texture2D;
+    maskDescription.m_Size   = {4, 4};
+    maskDescription.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+    xiiImage mask;
+    mask.ResetAndAlloc(maskDescription);
+    for (auto& value : mask.GetBlobPtr<xiiUInt8>())
+      value = 192;
+    xiiStringBuilder maskPath;
+    if (!XII_TEST_RESULT(mask.SaveTo(":imgout/MetallicMask.dds")) ||
+        !XII_TEST_RESULT(xiiFileSystem::ResolvePath(":imgout/MetallicMask.dds", &maskPath, nullptr)))
+      return;
+    for (xiiUInt32 mapping = 0; mapping < 3; ++mapping)
+    {
+      xiiStringBuilder extra;
+      extra.SetFormat("-r white -g {} -b {}", mapping == 2 ? "white" : "in0.r", mapping == 1 ? "white" : "in1.r");
+      if (!convert(extra, true, output, maskPath))
+        return;
+      xiiFileReader file;
+      if (!XII_TEST_RESULT(file.Open(output)))
+        return;
+      xiiTextureResourceLoader::LoadedData data;
+      if (!XII_TEST_RESULT(xiiTextureResourceLoader::LoadTexFile(file, data)))
+        return;
+      const auto* pixel = data.m_Image.GetPixelPointer<xiiUInt8>();
+      XII_TEST_INT(pixel[0], 255);
+      XII_TEST_INT(pixel[1], mapping == 2 ? 255 : 32);
+      XII_TEST_INT(pixel[2], mapping == 1 ? 255 : 192);
     }
     for (const char* invalid : {"-minFilter 3", "-minFilter 0", "-magFilter 257", "-mipFilter 4", "-maxAnisotropy 2",
                                 "-minLOD -1", "-minLOD 3 -maxLOD 2", "-maxLOD 1e99", "-minLOD 1garbage", "-magFilter junk", "-maxAnisotropy -1"})

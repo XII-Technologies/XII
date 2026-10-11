@@ -8,7 +8,7 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 9, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 10, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -333,6 +333,16 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
       arguments << "in1.r";
     }
     break;
+
+    case xiiTexture2DChannelMappingEnum::WHITE_R1_R2:
+      arguments << "-r" << "white" << "-g" << "in0.r" << "-b" << "in1.r";
+      break;
+    case xiiTexture2DChannelMappingEnum::WHITE_R1_WHITE:
+      arguments << "-r" << "white" << "-g" << "in0.r" << "-b" << "white";
+      break;
+    case xiiTexture2DChannelMappingEnum::WHITE_WHITE_R1:
+      arguments << "-r" << "white" << "-g" << "white" << "-b" << "in0.r";
+      break;
 
     case xiiTexture2DChannelMappingEnum::R1_G2_B3_A4:
     {
