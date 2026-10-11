@@ -117,8 +117,7 @@ xiiResourceLoadDescription xiiMeshResource::UpdateContent(xiiStreamReader* pStre
     return res;
   }
 
-  CreateResource(std::move(descriptor));
-  return res;
+  return CreateResource(std::move(descriptor));
 }
 
 void xiiMeshResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
@@ -168,7 +167,8 @@ void xiiMeshResource::LoadMaterialSlots(const xiiMeshResourceDescriptor& descrip
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor)
 {
   descriptor.ComputeBounds();
-  descriptor.BuildMeshlets();
+  if (descriptor.BuildMeshlets().Failed())
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
 
   CreateMeshBufferFromDescriptor(descriptor);
   LoadMaterialSlots(descriptor);

@@ -202,7 +202,10 @@ public:
   ///
   /// \param uiMaxVertices Maximum number of vertices per meshlet, used to control the size of meshlets for rendering.
   /// \param uiMaxPrimitives Maximum number of primitives per meshlet, used to control the size of meshlets for rendering.
-  void BuildMeshlets(xiiUInt32 uiMaxVertices = 64U, xiiUInt32 uiMaxPrimitives = 124U);
+  /// Clusters each section independently and stores contiguous LOD ranges. Returns failure for invalid
+  /// section topology or geometry, clearing generated ranges and MeshShaderReady. Shared GPU buffers
+  /// retain their supplied ranges; point/line meshes succeed without clusters.
+  xiiResult BuildMeshlets(xiiUInt32 uiMaxVertices = 64U, xiiUInt32 uiMaxPrimitives = 124U);
 
   /// Sets the bounding volume for this mesh resource, used for culling and LOD selection.
   void SetBounds(const xiiBoundingBoxSphere& bounds);

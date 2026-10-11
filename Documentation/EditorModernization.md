@@ -539,3 +539,29 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   decal atlas APIs (`Workspace/editor-asset-plugin-textures-build.log`). Texture
   document, property, manager and target sources also compile individually with
   Qt. Full Editor linking and GUI workflows remain pending.
+- Mesh-import investigation exposed a native meshlet correctness issue: whole-buffer
+  clustering crossed material sections, assigned material zero and inferred section
+  ranges from reordered primitive offsets. Meshlet construction now has an explicit
+  range API returning xiiResult, clusters each section independently, preserves
+  material/section/LOD metadata and emits contiguous LOD spans. The builder resides
+  in its own source, reads vertices once and reuses scratch storage across ranges;
+  section identity matching uses hash buckets instead of repeated full scans.
+  Invalid geometry clears generated output and propagates missing-resource state
+  through creation and UpdateContent. Shared GPU buffers retain existing ranges;
+  empty and point/line meshes remain supported. The native binary schema is unchanged.
+- All 18 GraphicsCore subtests and 19 Vulkan Editor integration subtests pass
+  (`Workspace/editor-meshlet-restored-core-tests.log`,
+  `Workspace/editor-meshlet-restored-editor-tests.log`). Coverage reconstructs
+  generated triangles and checks coverage, winding, material isolation, interleaved
+  and shared LOD geometry, UInt16/UInt32 indices, serialization, deterministic
+  rebuilding, invalid ranges/layouts/indices/positions, GPU buffer creation,
+  immutable resource sharing and streamed compilation failures. GraphicsCoreTest,
+  EditorEngineProcessFrameworkTest and GpuDrivenScene build successfully.
+- The three-frame GpuDrivenScene smoke test fails with Vulkan ErrorDeviceLost at
+  SwapChainVulkan.cpp:541. A controlled comparison using the prior committed
+  whole-buffer meshlet algorithm reproduces the same assertion
+  (`Workspace/editor-meshlet-gpu-smoke.log`,
+  `Workspace/editor-meshlet-baseline-gpu-smoke.log`). The final implementation was
+  restored, rebuilt and retested afterward. This renderer failure remains unresolved;
+  the smoke test and integrated GUI workflows are not claimed as passing. Qt mesh
+  and animated-mesh import still require migration from the removed importer framework.
