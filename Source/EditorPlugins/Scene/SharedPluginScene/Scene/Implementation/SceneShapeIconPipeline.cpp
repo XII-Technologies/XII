@@ -3,6 +3,7 @@
 #include <SharedPluginScene/SharedPluginScenePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
 xiiResult xiiSceneShapeIconPass::GetPipelineDescriptor(xiiRenderPipelineResourceDescriptor& descriptor)
@@ -14,8 +15,17 @@ xiiResult xiiSceneShapeIconPass::GetPipelineDescriptor(xiiRenderPipelineResource
       debug = i;
   if (debug == xiiInvalidIndex)
     return XII_FAILURE;
-  const auto icons = descriptor.AddPass("Scene shape icons", GetStaticRTTI()->GetTypeName());
-  bool       color = false, order = false, depth = false;
+  const auto icons   = descriptor.AddPass("Scene shape icons", GetStaticRTTI()->GetTypeName());
+  const auto meshes  = descriptor.AddPass("Scene mesh picking", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName());
+  xiiUInt32  prepare = xiiInvalidIndex;
+  for (xiiUInt32 i = 0; i < descriptor.m_Passes.GetCount(); ++i)
+    if (descriptor.m_Passes[i].m_sName == "PrepareFrame")
+      prepare = i;
+  if (prepare == xiiInvalidIndex)
+    return XII_FAILURE;
+  for (const xiiStringView buffer : {"GPU Geometry Metadata", "GPU Meshlet Metadata", "Surface Material GPU Storage"})
+    XII_SUCCEED_OR_RETURN(descriptor.Connect(prepare, buffer, meshes, buffer));
+  bool color = false, order = false, depth = false;
   // Snapshot because Connect can grow the connection array. Preserve the producer's pin identity.
   const auto connections = descriptor.m_Connections;
   for (const auto& connection : connections)
