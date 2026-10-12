@@ -101,5 +101,3 @@ void SetAppStats()
 #endif
   xiiStats::SetStat("Platform/Endianess", sOut.GetData());
 }
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_App);

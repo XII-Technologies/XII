@@ -76,7 +76,3 @@ xiiFileserveFileState xiiFileserveClientContext::GetFileStatus(xiiUInt16& inout_
 
   return xiiFileserveFileState::NonExistant;
 }
-
-
-
-XII_STATICLINK_FILE(FileservePlugin, FileservePlugin_Fileserver_ClientContext);

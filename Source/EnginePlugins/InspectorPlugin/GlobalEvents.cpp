@@ -138,6 +138,3 @@ void RemoveGlobalEventHandler()
 
   xiiTelemetry::RemoveEventHandler(GlobalEventsDetail::TelemetryEventsHandler);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_GlobalEvents);

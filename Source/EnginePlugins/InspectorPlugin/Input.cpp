@@ -122,6 +122,3 @@ void RemoveInputEventHandler()
   xiiInputManager::RemoveEventHandler(InputDetail::InputManagerEventHandler);
   xiiTelemetry::RemoveEventHandler(InputDetail::TelemetryEventsHandler);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Input);

@@ -515,5 +515,3 @@ xiiResult xiiFileserver::SendConnectionInfo(const char* szClientAddress, xiiUInt
   network->ShutdownConnection();
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(FileservePlugin, FileservePlugin_Fileserver_Fileserver);

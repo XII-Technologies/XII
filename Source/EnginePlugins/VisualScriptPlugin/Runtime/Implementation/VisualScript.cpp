@@ -396,4 +396,4 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiVisualScriptSendMessageMode, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
-XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Runtime_VisualScript);
+XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Runtime_Implementation_VisualScript);
