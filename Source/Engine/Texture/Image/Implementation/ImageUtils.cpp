@@ -560,6 +560,9 @@ xiiResult xiiImageUtils::Copy(const xiiImageView& srcImg, const xiiRectU32& srcR
 
 xiiResult xiiImageUtils::ExtractLowerMipChain(const xiiImageView& srcImg, xiiImage& ref_dstImg, xiiUInt32 uiNumMips)
 {
+  if (!srcImg.IsValid() || uiNumMips == 0 || srcImg.GetMipLevelCount() == 0)
+    return XII_FAILURE;
+
   const xiiGALTextureCreationDescription& srcImgHeader = srcImg.GetDescription();
 
   if (srcImgHeader.m_uiArraySizeOrDepth != 1)
@@ -570,7 +573,8 @@ xiiResult xiiImageUtils::ExtractLowerMipChain(const xiiImageView& srcImg, xiiIma
 
   XII_PROFILE_SCOPE("xiiImageUtils::ExtractLowerMipChain");
 
-  xiiUInt32 uiTotalMips = xiiGALTextureUtilities::GetMipLevelCount(srcImgHeader);
+  // A valid image may store a partial chain or have mip generation disabled.
+  const xiiUInt32 uiTotalMips = srcImg.GetMipLevelCount();
   uiNumMips             = xiiMath::Min(uiNumMips, uiTotalMips);
 
   const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(srcImgHeader.m_Format);

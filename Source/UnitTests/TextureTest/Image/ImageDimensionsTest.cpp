@@ -10,6 +10,54 @@
 
 XII_CREATE_SIMPLE_TEST_GROUP(ImageDimensions);
 
+XII_CREATE_SIMPLE_TEST(ImageDimensions, StoredLowerMipChain)
+{
+  const auto formats = {xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC1UNormalized};
+  for (auto format : formats)
+  {
+    for (xiiUInt32 storedMips : {1U, 2U, 3U})
+    {
+      xiiGALTextureCreationDescription description;
+      description.m_Type        = xiiGALResourceDimension::Texture2D;
+      description.m_Size        = {32, 16};
+      description.m_Format      = format;
+      description.m_uiMipLevels = storedMips;
+      xiiImage source;
+      source.ResetAndAlloc(description);
+      for (xiiUInt32 mip = 0; mip < storedMips; ++mip)
+        for (auto& byte : source.GetSubImageView(mip).GetBlobPtr<xiiUInt8>())
+          byte = static_cast<xiiUInt8>(31U + mip);
+
+      for (xiiUInt32 requestedMips : {1U, 2U, 6U})
+      {
+        xiiImage result;
+        if (!XII_TEST_RESULT(xiiImageUtils::ExtractLowerMipChain(source, result, requestedMips)))
+          return;
+        const auto count = xiiMath::Min(storedMips, requestedMips);
+        const auto first = storedMips - count;
+        XII_TEST_INT(result.GetMipLevelCount(), count);
+        XII_TEST_INT(result.GetWidth(), source.GetWidth(first));
+        XII_TEST_INT(result.GetHeight(), source.GetHeight(first));
+        for (xiiUInt32 mip = 0; mip < count; ++mip)
+        {
+          const xiiImageView expected = source.GetSubImageView(first + mip);
+          const xiiImageView actual   = result.GetSubImageView(mip);
+          XII_TEST_BOOL(actual.GetByteBlobPtr() == expected.GetByteBlobPtr());
+        }
+      }
+
+      xiiImage result;
+      result.ResetAndCopy(source);
+      const xiiImageView& original = source;
+      const xiiImageView& unchanged = result;
+      XII_TEST_BOOL(xiiImageUtils::ExtractLowerMipChain(source, result, 0).Failed());
+      XII_TEST_BOOL(unchanged.GetByteBlobPtr() == original.GetByteBlobPtr());
+      XII_TEST_BOOL(xiiImageUtils::ExtractLowerMipChain(xiiImage(), result, 1).Failed());
+      XII_TEST_BOOL(unchanged.GetByteBlobPtr() == original.GetByteBlobPtr());
+    }
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(ImageDimensions, MirrorOnceSampling)
 {
   const xiiInt32  indices[]  = {xiiMath::MinValue<xiiInt32>(), -9, -5, -4, -2, -1, 0, 1, 3, 4, 5, 9, xiiMath::MaxValue<xiiInt32>()};
