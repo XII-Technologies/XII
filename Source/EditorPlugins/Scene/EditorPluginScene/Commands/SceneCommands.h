@@ -2,13 +2,16 @@
 
 #pragma once
 
+#include <EditorPluginScene/EditorPluginSceneDLL.h>
 #include <ToolsFoundation/Command/Command.h>
 #include <ToolsFoundation/Document/Document.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 class xiiRandomGauss;
 
-class xiiDuplicateObjectsCommand : public xiiCommand
+/// Copies selected hierarchies with remapped identities and reversible world-space transforms.
+/// Grouping creates one game object per copy at the average source position. A common parent is
+/// retained; sources with different parents are grouped at the document root.
+class XII_EDITORPLUGINSCENE_DLL xiiDuplicateObjectsCommand : public xiiCommand
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDuplicateObjectsCommand, xiiCommand);
 
@@ -37,7 +40,8 @@ private:
 
   void SetAsSelection();
 
-  void DeserializeGraph(xiiAbstractObjectGraph& graph);
+  xiiStatus DeserializeGraph(xiiAbstractObjectGraph& graph);
+  xiiStatus GroupRootObjects(xiiAbstractObjectGraph& graph);
 
   void CreateOneDuplicate(xiiAbstractObjectGraph& graph, xiiHybridArray<xiiDocument::PasteInfo, 16>& ToBePasted);
   void AdjustObjectPositions(xiiHybridArray<xiiDocument::PasteInfo, 16>& Duplicates, xiiUInt32 uiNumDuplicate, xiiRandomGauss& rngRotX, xiiRandomGauss& rngRotY, xiiRandomGauss& rngRotZ, xiiRandomGauss& rngTransX, xiiRandomGauss& rngTransY, xiiRandomGauss& rngTransZ);
@@ -52,7 +56,6 @@ private:
     xiiDocumentObject* m_pParent;
     xiiString          m_sParentProperty;
     xiiVariant         m_Index;
-    xiiUInt32          m_uiSelectionOrder = 0;
   };
 
   xiiDeque<const xiiDocumentObject*>  m_OriginalSelection;

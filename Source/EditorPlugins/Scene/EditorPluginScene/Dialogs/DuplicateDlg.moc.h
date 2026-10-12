@@ -7,12 +7,12 @@
 
 #include <QDialog>
 
-class xiiQtDuplicateDlg : public QDialog, public Ui_DuplicateDlg
+class XII_EDITORPLUGINSCENE_DLL xiiQtDuplicateDlg : public QDialog, public Ui_DuplicateDlg
 {
   Q_OBJECT
 
 public:
-  xiiQtDuplicateDlg(QWidget* pParent = nullptr);
+  xiiQtDuplicateDlg(QWidget* pParent = nullptr, const xiiVec3& selectionSize = xiiVec3::MakeZero());
 
   static xiiUInt32 s_uiNumberOfCopies;
   static bool      s_bGroupCopies;

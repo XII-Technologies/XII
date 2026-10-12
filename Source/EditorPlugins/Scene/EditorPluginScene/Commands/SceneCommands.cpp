@@ -5,8 +5,6 @@
 #include <EditorPluginScene/Commands/SceneCommands.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Math/Random.h>
-#include <Foundation/Serialization/DdlSerializer.h>
-#include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDuplicateObjectsCommand, 1, xiiRTTIDefaultAllocator<xiiDuplicateObjectsCommand>)
@@ -54,10 +52,19 @@ xiiStatus xiiDuplicateObjectsCommand::DoInternal(bool bRedo)
 
   if (!bRedo)
   {
-    XII_ASSERT_DEV(!m_bGroupDuplicates, "Not yet implemented");
+    if (!m_vAccumulativeTranslation.IsValid() || !m_vAccumulativeRotation.IsValid() ||
+        !m_vRandomRotation.IsValid() || !m_vRandomTranslation.IsValid() ||
+        m_vRandomRotation.CompMin(xiiVec3::MakeZero()) != xiiVec3::MakeZero() ||
+        m_vRandomTranslation.CompMin(xiiVec3::MakeZero()) != xiiVec3::MakeZero() ||
+        !xiiMath::IsFinite(m_fRevolveRadius) || m_fRevolveRadius < 0 ||
+        !xiiMath::IsFinite(m_RevolveStartAngle.GetRadian()) || !xiiMath::IsFinite(m_RevolveAngleStep.GetRadian()) ||
+        m_iRevolveAxis < 0 || m_iRevolveAxis > 3)
+      return xiiStatus("Duplicate Objects: transforms must be finite, random ranges and radius nonnegative, and revolve axis valid.");
 
     xiiAbstractObjectGraph graph;
-    DeserializeGraph(graph);
+    XII_SUCCEED_OR_RETURN(DeserializeGraph(graph));
+    if (m_bGroupDuplicates)
+      XII_SUCCEED_OR_RETURN(GroupRootObjects(graph));
 
     if (m_uiNumberOfCopies == 0)
     {
@@ -80,18 +87,18 @@ xiiStatus xiiDuplicateObjectsCommand::DoInternal(bool bRedo)
       xiiRandomGauss rngRotX, rngRotY, rngRotZ, rngTransX, rngTransY, rngTransZ;
 
       if (m_vRandomRotation.x > 0)
-        rngRotX.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds(), (xiiUInt32)(m_vRandomRotation.x));
+        rngRotX.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds(), 1024);
       if (m_vRandomRotation.y > 0)
-        rngRotY.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 1, (xiiUInt32)(m_vRandomRotation.y));
+        rngRotY.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 1, 1024);
       if (m_vRandomRotation.z > 0)
-        rngRotZ.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 2, (xiiUInt32)(m_vRandomRotation.z));
+        rngRotZ.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 2, 1024);
 
       if (m_vRandomTranslation.x > 0)
-        rngTransX.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 3, (xiiUInt32)(m_vRandomTranslation.x * 100));
+        rngTransX.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 3, 1024);
       if (m_vRandomTranslation.y > 0)
-        rngTransY.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 4, (xiiUInt32)(m_vRandomTranslation.y * 100));
+        rngTransY.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 4, 1024);
       if (m_vRandomTranslation.z > 0)
-        rngTransZ.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 5, (xiiUInt32)(m_vRandomTranslation.z * 100));
+        rngTransZ.Initialize((xiiUInt64)xiiTime::Now().GetNanoseconds() + 5, 1024);
 
       for (xiiUInt32 copies = 0; copies < m_uiNumberOfCopies; ++copies)
       {
@@ -121,8 +128,6 @@ void xiiDuplicateObjectsCommand::SetAsSelection()
 {
   if (!m_DuplicatedObjects.IsEmpty())
   {
-    m_DuplicatedObjects.Sort([](const auto& lhs, const auto& rhs) { return lhs.m_uiSelectionOrder < rhs.m_uiSelectionOrder; });
-
     auto pSelMan = m_pDocument->GetSelectionManager();
 
     xiiDeque<const xiiDocumentObject*> NewSelection = m_OriginalSelection;
@@ -133,173 +138,6 @@ void xiiDuplicateObjectsCommand::SetAsSelection()
     }
 
     pSelMan->SetSelection(NewSelection);
-  }
-}
-
-void xiiDuplicateObjectsCommand::DeserializeGraph(xiiAbstractObjectGraph& graph)
-{
-  xiiRawMemoryStreamReader memoryReader(m_sGraphTextFormat.GetData(), m_sGraphTextFormat.GetElementCount());
-  xiiAbstractGraphDdlSerializer::Read(memoryReader, &graph).IgnoreResult();
-}
-
-void xiiDuplicateObjectsCommand::CreateOneDuplicate(xiiAbstractObjectGraph& graph, xiiHybridArray<xiiDocument::PasteInfo, 16>& ToBePasted)
-{
-  xiiSceneDocument* pDocument = static_cast<xiiSceneDocument*>(GetDocument());
-
-  // Remap
-  const xiiUuid seed = xiiUuid::MakeUuid();
-  graph.ReMapNodeGuids(seed);
-
-  xiiDocumentObjectConverterReader reader(&graph, pDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateOnly);
-
-
-  xiiStringBuilder sParentGuids = m_sParentNodes;
-  xiiStringBuilder sNextParentGuid;
-
-  xiiMap<xiiUuid, xiiUuid> ParentGuids;
-
-  while (!sParentGuids.IsEmpty())
-  {
-    sNextParentGuid.SetSubString_ElementCount(sParentGuids, 40);
-    sParentGuids.Shrink(41, 0);
-
-    xiiUuid guidObj = xiiConversionUtils::ConvertStringToUuid(sNextParentGuid);
-    guidObj.CombineWithSeed(seed);
-
-    sNextParentGuid.SetSubString_ElementCount(sParentGuids, 40);
-    sParentGuids.Shrink(41, 0);
-
-    ParentGuids[guidObj] = xiiConversionUtils::ConvertStringToUuid(sNextParentGuid);
-  }
-
-  xiiHybridArray<xiiUInt32, 32> selectionOrder;
-
-  auto& nodes = graph.GetAllNodes();
-  for (auto it = nodes.GetIterator(); it.IsValid(); ++it)
-  {
-    auto* pNode = it.Value();
-
-    if (pNode->GetNodeName() == "root")
-    {
-      auto* pNewObject = reader.CreateObjectFromNode(pNode);
-
-      if (pNewObject)
-      {
-        reader.ApplyPropertiesToObject(pNode, pNewObject);
-
-        selectionOrder.PushBack(0);
-
-        if (auto* pProperty = pNode->FindProperty("__SelectionOrder"))
-        {
-          selectionOrder.PeekBack() = pProperty->m_Value.ConvertTo<xiiUInt32>();
-        }
-
-        auto& ref     = ToBePasted.ExpandAndGetRef();
-        ref.m_pObject = pNewObject;
-        ref.m_pParent = nullptr;
-
-        const xiiUuid guidParent = ParentGuids[pNode->GetGuid()];
-
-        if (guidParent.IsValid())
-          ref.m_pParent = pDocument->GetObjectManager()->GetObject(guidParent);
-      }
-    }
-  }
-
-  if (pDocument->DuplicateSelectedObjects(ToBePasted, graph, false))
-  {
-    for (xiiUInt32 i = 0; i < ToBePasted.GetCount(); ++i)
-    {
-      const auto& item = ToBePasted[i];
-
-      auto& po              = m_DuplicatedObjects.ExpandAndGetRef();
-      po.m_pObject          = item.m_pObject;
-      po.m_Index            = item.m_pObject->GetPropertyIndex();
-      po.m_pParent          = item.m_pParent;
-      po.m_sParentProperty  = item.m_pObject->GetParentProperty();
-      po.m_uiSelectionOrder = selectionOrder[i];
-    }
-  }
-  else
-  {
-    for (const auto& item : ToBePasted)
-    {
-      pDocument->GetObjectManager()->DestroyObject(item.m_pObject);
-    }
-  }
-
-  // undo uuid changes, so that we can do this again with another seed
-  graph.ReMapNodeGuids(seed, true);
-}
-
-
-void xiiDuplicateObjectsCommand::AdjustObjectPositions(xiiHybridArray<xiiDocument::PasteInfo, 16>& Duplicates, xiiUInt32 uiNumDuplicate, xiiRandomGauss& rngRotX, xiiRandomGauss& rngRotY, xiiRandomGauss& rngRotZ, xiiRandomGauss& rngTransX, xiiRandomGauss& rngTransY, xiiRandomGauss& rngTransZ)
-{
-  xiiSceneDocument* pScene = static_cast<xiiSceneDocument*>(m_pDocument);
-
-  const float fStep = uiNumDuplicate;
-
-  xiiVec3 vRandT(0.0f);
-  xiiVec3 vRandR(0.0f);
-
-  if (m_vRandomRotation.x != 0)
-    vRandR.x = rngRotX.SignedValue();
-  if (m_vRandomRotation.y != 0)
-    vRandR.y = rngRotY.SignedValue();
-  if (m_vRandomRotation.z != 0)
-    vRandR.z = rngRotZ.SignedValue();
-
-  if (m_vRandomTranslation.x != 0)
-    vRandT.x = rngTransX.SignedValue() / 100.0f;
-  if (m_vRandomTranslation.y != 0)
-    vRandT.y = rngTransY.SignedValue() / 100.0f;
-  if (m_vRandomTranslation.z != 0)
-    vRandT.z = rngTransZ.SignedValue() / 100.0f;
-
-  xiiVec3 vPosOffset(0.0f);
-
-  if (m_iRevolveAxis > 0 && m_fRevolveRadius != 0.0f && m_RevolveAngleStep != xiiAngle())
-  {
-    xiiVec3  vRevolveAxis(0.0f);
-    xiiAngle revolve = m_RevolveStartAngle;
-
-    switch (m_iRevolveAxis)
-    {
-      case 1:
-        vRevolveAxis.Set(1, 0, 0);
-        vPosOffset.Set(0, 0, m_fRevolveRadius);
-        break;
-      case 2:
-        vRevolveAxis.Set(0, 1, 0);
-        vPosOffset.Set(m_fRevolveRadius, 0, 0);
-        break;
-      case 3:
-        vRevolveAxis.Set(0, 0, 1);
-        vPosOffset.Set(0, m_fRevolveRadius, 0);
-        break;
-    }
-
-    revolve += fStep * m_RevolveAngleStep;
-
-    xiiMat3 mRevolve = xiiMat3::MakeAxisRotation(vRevolveAxis, revolve);
-
-    vPosOffset = mRevolve * vPosOffset;
-  }
-
-  xiiQuat qRot = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.x + vRandR.x), xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.y + vRandR.y), xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.z + vRandR.z));
-
-  for (const auto& pi : Duplicates)
-  {
-    xiiTransform tGlobal = pScene->GetGlobalTransform(pi.m_pObject);
-
-    tGlobal.m_vScale.Set(1.0f);
-    tGlobal.m_vPosition += vPosOffset + (1.0f + fStep) * m_vAccumulativeTranslation + vRandT;
-    tGlobal.m_qRotation = qRot * tGlobal.m_qRotation;
-
-    /// \todo EditorPluginScene: Modifying the position through a command after creating the object seems to destroy the undo-ability of this
-    /// operation Duplicating multiple objects (with some translation) and then undoing that will crash the editor process
-
-    pScene->SetGlobalTransform(pi.m_pObject, tGlobal, TransformationChanges::Translation | TransformationChanges::Rotation);
   }
 }
 
