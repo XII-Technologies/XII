@@ -106,7 +106,7 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
   {
     xiiWorld* pWorld = xiiWorld::GetWorld(i);
 
-    if (pWorld->GetWorldSimulationEnabled())
+    if (pWorld != nullptr && pWorld->GetWorldSimulationEnabled())
     {
       xiiTaskSystem::AddTaskToGroup(updateWorldsTaskID, pWorld->GetUpdateTask());
     }

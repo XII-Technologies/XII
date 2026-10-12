@@ -381,10 +381,10 @@ public:
   ///@}
 
 public:
-  /// Returns the number of active worlds.
+  /// Returns the number of registry slots. Removed worlds leave empty slots; GetWorld(index) can return nullptr.
   static xiiUInt32 GetWorldCount();
 
-  /// Returns the world with the given index.
+  /// Returns the world at a registry index, or nullptr for an empty slot. The index must be below GetWorldCount().
   static xiiWorld* GetWorld(xiiUInt32 uiIndex);
 
   /// Returns the world for the given game object handle.

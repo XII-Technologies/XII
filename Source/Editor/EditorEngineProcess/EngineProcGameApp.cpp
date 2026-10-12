@@ -213,7 +213,10 @@ void xiiEngineProcessGameApplication::Run_WorldUpdateAndRender()
   // world update functions declare whether they require simulation.
   const auto group = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
   for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
-    xiiTaskSystem::AddTaskToGroup(group, xiiWorld::GetWorld(i)->GetUpdateTask());
+  {
+    if (auto* world = xiiWorld::GetWorld(i))
+      xiiTaskSystem::AddTaskToGroup(group, world->GetUpdateTask());
+  }
   xiiTaskSystem::StartTaskGroup(group);
   xiiTaskSystem::WaitForGroup(group);
 
@@ -261,6 +264,8 @@ void xiiEngineProcessGameApplication::InvalidateRenderData()
   for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
   {
     auto* world = xiiWorld::GetWorld(i);
+    if (!world)
+      continue;
     XII_LOCK(world->GetWriteMarker());
     if (auto* module = world->GetModule<xiiRenderWorldModule>())
       module->DeleteAllCachedRenderData();
