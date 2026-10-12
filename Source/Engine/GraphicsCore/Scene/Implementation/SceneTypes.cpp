@@ -34,7 +34,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 2, xiiRTTIDefault
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -47,7 +47,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 3, xiiRTTIDefaul
       XII_MEMBER_PROPERTY("BoundsExtents", m_BoundsExtents),
       XII_MEMBER_PROPERTY("GeometryIndex", m_uiGeometryIndex),
       XII_MEMBER_PROPERTY("MaterialIndex", m_uiMaterialIndex),
-      XII_MEMBER_PROPERTY("ObjectIndex", m_uiObjectIndex),
+      XII_MEMBER_PROPERTY("ObjectId", m_uiObjectId),
       XII_MEMBER_PROPERTY("Flags", m_uiFlags),
       XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
       XII_MEMBER_PROPERTY("UserData", m_uiUserData),

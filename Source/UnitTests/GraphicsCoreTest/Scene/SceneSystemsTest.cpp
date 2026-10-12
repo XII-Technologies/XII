@@ -9,6 +9,39 @@ XII_CREATE_SIMPLE_TEST_GROUP(Scene);
 
 XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GPU identity survives compaction and rejects retired generations")
+  {
+    xiiSceneDatabaseContext context;
+    XII_TEST_RESULT(context.Initialize());
+    auto&              scene = context.GetDatabase();
+    xiiSceneObjectDesc description;
+    description.m_uiUserData = 0U; // Legal application data, independent of the background ID.
+    auto first               = scene.CreateObject(description);
+    auto second              = scene.CreateObject(description);
+    scene.CommitFrame(1);
+    const auto firstId  = scene.GetGpuInstances()[0].m_uiObjectId;
+    const auto secondId = scene.GetGpuInstances()[1].m_uiObjectId;
+    XII_TEST_BOOL(firstId != 0 && firstId != secondId);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(firstId) == first);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(secondId) == second);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(0).IsInvalidated());
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(xiiInvalidIndex).IsInvalidated());
+    XII_TEST_BOOL(scene.DestroyObject(first));
+    scene.CommitFrame(2);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiObjectId, secondId);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(firstId).IsInvalidated());
+    // Clear retains the ID table's generations even when the hot arrays are rebuilt.
+    scene.Clear();
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(secondId).IsInvalidated());
+    auto replacement = scene.CreateObject(description);
+    scene.CommitFrame(3);
+    XII_TEST_BOOL(replacement.GetInternalID().m_InstanceIndex == first.GetInternalID().m_InstanceIndex);
+    XII_TEST_BOOL(scene.GetGpuInstances()[0].m_uiObjectId != firstId);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(firstId).IsInvalidated());
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(scene.GetGpuInstances()[0].m_uiObjectId) == replacement);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiUserData, 0U);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Hierarchy transforms and previous frame state")
   {
     xiiSceneDatabaseContext sceneContext;
@@ -43,7 +76,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     const xiiGpuSceneInstance* pChildInstance = nullptr;
     for (const xiiGpuSceneInstance& instance : scene.GetGpuInstances())
     {
-      if (instance.m_uiObjectIndex == child.GetInternalID().m_InstanceIndex)
+      if (scene.ResolveGpuObjectId(instance.m_uiObjectId) == child)
       {
         pChildInstance = &instance;
         break;

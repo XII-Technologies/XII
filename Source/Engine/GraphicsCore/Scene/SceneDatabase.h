@@ -21,7 +21,7 @@ class XII_GRAPHICSCORE_DLL xiiSceneDatabase
 public:
   ~xiiSceneDatabase();
 
-  /// Removes every object and resets generations, hierarchy links, GPU mirrors, and revisions.
+  /// Removes every object and advances generations, clearing hierarchy links, GPU mirrors, and revisions.
   /// Capacity is retained so simulation worlds can be restarted without reallocating hot arrays.
   void Clear();
   void Reserve(xiiUInt32 uiObjectCapacity);
@@ -29,9 +29,12 @@ public:
   [[nodiscard]] xiiSceneObjectHandle CreateObject(const xiiSceneObjectDesc& desc);
   bool                               DestroyObject(xiiSceneObjectHandle hObject);
 
-  [[nodiscard]] bool      IsAlive(xiiSceneObjectHandle hObject) const;
-  [[nodiscard]] xiiUInt32 GetObjectCount() const { return m_Objects.GetCount(); }
-  [[nodiscard]] xiiUInt64 GetRevision() const { return m_uiRevision; }
+  [[nodiscard]] bool IsAlive(xiiSceneObjectHandle hObject) const;
+  /// Resolves a GPU identity from this context's records. Zero, removed identities, and stale
+  /// generations return an invalid handle. IDs are context-local, like xiiSceneObjectHandle.
+  [[nodiscard]] xiiSceneObjectHandle ResolveGpuObjectId(xiiUInt32 uiObjectId) const;
+  [[nodiscard]] xiiUInt32            GetObjectCount() const { return m_Objects.GetCount(); }
+  [[nodiscard]] xiiUInt64            GetRevision() const { return m_uiRevision; }
 
   bool SetParent(xiiSceneObjectHandle hObject, xiiSceneObjectHandle hParent);
   bool SetLocalTransform(xiiSceneObjectHandle hObject, const xiiMat4& localTransform);
@@ -70,7 +73,7 @@ private:
   void               RebuildGpuInstances();
 
   xiiIdTable<xiiSceneObjectId, xiiUInt32>           m_Objects;
-  xiiDynamicArray<xiiUInt8>                         m_Alive;
+  xiiDynamicArray<xiiSceneObjectHandle>             m_ObjectHandles;
   xiiDynamicArray<xiiUInt8>                         m_TransformDirty;
   xiiDynamicArray<xiiUInt8>                         m_GpuDirty;
   xiiDynamicArray<xiiUInt32>                        m_Parent;

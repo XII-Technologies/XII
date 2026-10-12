@@ -96,12 +96,14 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
   xiiVec4   m_BoundsExtents       = xiiVec4::MakeZero();
   xiiUInt32 m_uiGeometryIndex     = xiiInvalidIndex;
   xiiUInt32 m_uiMaterialIndex     = xiiInvalidIndex;
-  xiiUInt32 m_uiObjectIndex       = xiiInvalidIndex;
-  xiiUInt32 m_uiFlags             = 0U;
-  xiiUInt32 m_uiVisibilityMask    = 0xFFFFFFFFU;
-  xiiUInt32 m_uiUserData          = 0U;
-  xiiUInt32 m_uiFirstPrimitive    = 0U;
-  xiiUInt32 m_uiPrimitiveCount    = 0U; ///< Zero means the complete selected LOD.
+  /// Context-local, generation-checked identity. Zero denotes background; application user data
+  /// remains independent. Resolve through the database that produced this record.
+  xiiUInt32 m_uiObjectId       = 0U;
+  xiiUInt32 m_uiFlags          = 0U;
+  xiiUInt32 m_uiVisibilityMask = 0xFFFFFFFFU;
+  xiiUInt32 m_uiUserData       = 0U;
+  xiiUInt32 m_uiFirstPrimitive = 0U;
+  xiiUInt32 m_uiPrimitiveCount = 0U; ///< Zero means the complete selected LOD.
 };
 
 static_assert(sizeof(xiiGpuSceneInstance) % 16U == 0U, "GPU scene records must preserve structured-buffer alignment.");

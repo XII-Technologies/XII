@@ -154,7 +154,7 @@ void main(uint threadIndex : SV_GroupThreadID,
     output.TexCoord = texCoord;
     output.MaterialIndex = instance.MaterialIndex;
     output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));
-    output.ObjectId = instance.UserData;
+    output.ObjectId = instance.ObjectId;
     vertices[threadIndex] = output;
   }
 

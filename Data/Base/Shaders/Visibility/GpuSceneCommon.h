@@ -13,7 +13,7 @@ struct GpuSceneInstance
   float4   BoundsExtents;
   uint     GeometryIndex;
   uint     MaterialIndex;
-  uint     ObjectIndex;
+  uint     ObjectId;
   uint     Flags;
   uint     VisibilityMask;
   uint     UserData;
