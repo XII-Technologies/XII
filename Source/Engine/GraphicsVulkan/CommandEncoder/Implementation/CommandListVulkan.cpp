@@ -2373,14 +2373,14 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     xiiGALBufferVulkan* pIndexBufferVulkan     = xiiDynamicCast<xiiGALBufferVulkan*>(triangleBuildData.m_pIndexBuffer);
     xiiGALBufferVulkan* pTransformBufferVulkan = xiiDynamicCast<xiiGALBufferVulkan*>(triangleBuildData.m_pTransformBuffer);
 
-    TransitionOrVerifyBufferState(pVertexBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eAccelerationStructureReadKHR, "Using vertex buffer for BLAS build");
+    TransitionOrVerifyBufferState(pVertexBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eShaderRead, "Using vertex buffer for BLAS build");
     if (pIndexBufferVulkan != nullptr)
     {
-      TransitionOrVerifyBufferState(pIndexBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eAccelerationStructureReadKHR, "Using index buffer for BLAS build");
+      TransitionOrVerifyBufferState(pIndexBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eShaderRead, "Using index buffer for BLAS build");
     }
     if (pTransformBufferVulkan != nullptr)
     {
-      TransitionOrVerifyBufferState(pTransformBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eAccelerationStructureReadKHR, "Using transform buffer for BLAS build");
+      TransitionOrVerifyBufferState(pTransformBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eShaderRead, "Using transform buffer for BLAS build");
     }
 
     vk::AccelerationStructureGeometryTrianglesDataKHR vkTriangleData = {};
@@ -2417,7 +2417,7 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     const xiiGALBLASBoundingBoxBuildDescription& boxBuildData   = description.m_BoundingBoxes[i];
 
     xiiGALBufferVulkan* pBoundingBoxBufferVulkan = xiiDynamicCast<xiiGALBufferVulkan*>(boxBuildData.m_pBoundingBoxBuffer);
-    TransitionOrVerifyBufferState(pBoundingBoxBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eAccelerationStructureReadKHR, "Using AABB buffer for BLAS build");
+    TransitionOrVerifyBufferState(pBoundingBoxBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eShaderRead, "Using AABB buffer for BLAS build");
 
     vk::AccelerationStructureGeometryAabbsDataKHR vkAABBsData = {};
     vkAABBsData.data.deviceAddress                            = pBoundingBoxBufferVulkan->GetVulkanBufferDeviceAddress() + boxBuildData.m_uiBoundingBoxOffset;
@@ -2478,7 +2478,7 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
     destinationState.Add(xiiGALResourceStateFlags::BuildASRead);
   }
 
-  TransitionOrVerifyBufferState(pInstanceBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eAccelerationStructureReadKHR, "Using instance buffer for TLAS build");
+  TransitionOrVerifyBufferState(pInstanceBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eShaderRead, "Using instance buffer for TLAS build");
   TransitionOrVerifyBufferState(pScratchBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, vk::AccessFlagBits::eAccelerationStructureWriteKHR, "Using scratch buffer for TLAS build");
   TransitionOrVerifyAccelerationStructureState(pTopLevelASVulkan, description.m_ResourceStateTransitionMode, destinationState, "Using destination TLAS for build");
 
