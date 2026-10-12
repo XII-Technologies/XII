@@ -78,8 +78,9 @@ void xiiSkeletonComponent::SetAnimationClip(const xiiAnimationClipResourceHandle
   if (m_hAnimationClip == hClip)
     return;
 
-  m_hAnimationClip = hClip;
-  m_PlaybackTime   = xiiTime::MakeZero();
+  m_hAnimationClip         = hClip;
+  m_PlaybackTime           = xiiTime::MakeZero();
+  m_uiPoseSkeletonRevision = xiiInvalidIndex;
 }
 
 const xiiAnimationClipResourceHandle& xiiSkeletonComponent::GetAnimationClip() const
@@ -94,6 +95,7 @@ void xiiSkeletonComponent::SetAnimationGraph(const xiiAnimGraphResourceHandle& h
 
   m_hAnimationGraph = hGraph;
   m_AnimGraphInstance.SetGraph(hGraph);
+  m_uiPoseSkeletonRevision = xiiInvalidIndex;
 }
 
 const xiiAnimGraphResourceHandle& xiiSkeletonComponent::GetAnimationGraph() const
@@ -173,10 +175,14 @@ void xiiSkeletonComponent::Update()
   {
     m_PlaybackTime += deltaTime;
     xiiResourceLock<xiiAnimationClipResource> pClip(m_hAnimationClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-    if (pClip)
+    if (!pClip || pClip.GetAcquireResult() != xiiResourceAcquireResult::Final)
     {
-      pClip->SampleLocalPose(*pSkeleton.GetPointer(), m_PlaybackTime, m_CurrentPose);
+      m_CurrentPose.Clear();
+      if (m_bApplyToOwnerMesh)
+        ApplyPoseToSkinnedMesh();
+      return;
     }
+    pClip->SampleLocalPose(*pSkeleton.GetPointer(), m_PlaybackTime, m_CurrentPose);
   }
   else
   {

@@ -63,6 +63,21 @@ does not satisfy it.
   integration; property animation, GreyBox authoring and legacy lighting asset
   migration remain separate outstanding work. This checkpoint does not establish
   a successful full Editor application build or launch.
+  Full EnginePluginScene and EditorPluginScene builds were attempted after this
+  checkpoint; both stop at EnginePluginScene's SceneView dependency on the removed
+  `GraphicsCore/RenderWorld/RenderWorld.h`. That file also retains obsolete
+  pass-property and readback picking APIs. Logs:
+  `Workspace/editor-native-scene-plugin-build.log` and
+  `Workspace/editor-native-scene-editor-plugin-build.log`.
+- Follow-up review invalidates snapshots immediately when changing clips or
+  animation graphs. Failed clip acquisition clears the evaluated pose instead of
+  marking previous animation data as current. The regression test changes and
+  removes a real clip and verifies snapshots fail until the next evaluation.
+  Both test targets rebuild successfully and all 39 Vulkan engine-process / 6
+  EditorFramework tests pass again. Evidence:
+  `Workspace/editor-native-pose-reconfiguration-build.log`,
+  `Workspace/editor-native-pose-reconfiguration-tests.log` and
+  `Workspace/editor-native-pose-reconfiguration-editor-tests.log`.
 
 ## Baseline and architecture assessment
 
