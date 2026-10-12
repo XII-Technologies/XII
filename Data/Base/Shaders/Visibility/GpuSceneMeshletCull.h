@@ -191,11 +191,11 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
 
   const GpuGeometryRecord geometry          = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
   const float             distanceToCamera  = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
-  const float             projectedCoverage = instance.BoundsCenterRadius.w * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
-  const uint              desiredLod        = SelectDesiredLod(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y);
+  const float             projectedCoverage = GetInstanceLodRadius(instance) * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
+  const uint              desiredLod        = SelectInstanceDesiredLod(geometry, instance, distanceToCamera, view.ViewportAndHiZ.y);
   const uint4             previousHistory   = instanceIndex < previousHistoryCapacity ? g_PreviousLodHistory[instanceIndex] : uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
-  const uint              lodIndex          = SelectResidentLodWithHistory(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y,
-                                                                           instance.UserData, previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
+  const uint              lodIndex          = SelectInstanceResidentLod(geometry, instance, distanceToCamera, view.ViewportAndHiZ.y,
+                                                                        previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
   if (dispatchThreadId.x == 0u)
   {
     if (instanceIndex < currentHistoryCapacity)

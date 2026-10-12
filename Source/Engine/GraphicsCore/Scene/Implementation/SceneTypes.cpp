@@ -14,7 +14,7 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSceneObjectHandle>)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiSceneObjectDesc>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiSceneObjectDesc>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -30,11 +30,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 2, xiiRTTIDefault
       XII_MEMBER_PROPERTY("UserData", m_uiUserData),
       XII_MEMBER_PROPERTY("FirstPrimitive", m_uiFirstPrimitive),
       XII_MEMBER_PROPERTY("PrimitiveCount", m_uiPrimitiveCount),
+      XII_MEMBER_PROPERTY("ForcedLod", m_uiForcedLod),
+      XII_MEMBER_PROPERTY("LodBias", m_fLodBias),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 5, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -53,6 +55,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 4, xiiRTTIDefaul
       XII_MEMBER_PROPERTY("UserData", m_uiUserData),
       XII_MEMBER_PROPERTY("FirstPrimitive", m_uiFirstPrimitive),
       XII_MEMBER_PROPERTY("PrimitiveCount", m_uiPrimitiveCount),
+      XII_MEMBER_PROPERTY("ForcedLod", m_uiForcedLod),
+      XII_MEMBER_PROPERTY("LodBias", m_fLodBias),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;

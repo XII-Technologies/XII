@@ -19,6 +19,9 @@ struct GpuSceneInstance
   uint     UserData;
   uint     FirstPrimitive;
   uint     PrimitiveCount;
+  uint     ForcedLod;
+  float    LodBias;
+  uint2    LodPadding;
 };
 
 struct GpuVisibilityView
@@ -145,6 +148,35 @@ uint SelectResidentLodWithHistory(GpuGeometryRecord geometry, float worldSpaceRa
   // Demote only after crossing below the current LOD threshold minus a dead band.
   const float demotionThreshold = geometry.Lods[previousLod].MinimumScreenCoverage * (1.0f - deadBand);
   return projectedCoverage < demotionThreshold ? desiredLod : previousLod;
+}
+
+// Component bias scales coverage, never the physical bounds used by frustum or cone culling.
+float GetInstanceLodRadius(GpuSceneInstance instance)
+{
+  return instance.BoundsCenterRadius.w * exp2(clamp(instance.LodBias, -16.0f, 16.0f));
+}
+
+uint SelectInstanceDesiredLod(GpuGeometryRecord geometry, GpuSceneInstance instance, float distanceToCamera, float viewportHeight)
+{
+  if (instance.ForcedLod != 0xFFFFFFFFu)
+    return instance.ForcedLod < min(geometry.LodCount, 8u) ? instance.ForcedLod : 0xFFFFFFFFu;
+  return SelectDesiredLod(geometry, GetInstanceLodRadius(instance), distanceToCamera, viewportHeight);
+}
+
+uint SelectInstanceResidentLod(GpuGeometryRecord geometry, GpuSceneInstance instance, float distanceToCamera, float viewportHeight,
+                               uint4 previousHistory, uint previousHistoryToken, float hysteresis)
+{
+  if (instance.ForcedLod != 0xFFFFFFFFu)
+  {
+    // A different resident LOD may have unrelated primitive/section ranges. Do not silently
+    // substitute it for a forced draw; feedback requests the exact authored LOD instead.
+    const uint desired = SelectInstanceDesiredLod(geometry, instance, distanceToCamera, viewportHeight);
+    if (desired == 0xFFFFFFFFu)
+      return desired;
+    return (geometry.ResidentLodMask & (1u << desired)) != 0u ? desired : 0xFFFFFFFFu;
+  }
+  return SelectResidentLodWithHistory(geometry, GetInstanceLodRadius(instance), distanceToCamera, viewportHeight,
+                                      instance.UserData, previousHistory, previousHistoryToken, hysteresis);
 }
 
 bool SphereInsideFrustum(float3 center, float radius, GpuVisibilityView view)

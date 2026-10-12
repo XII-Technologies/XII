@@ -37,6 +37,8 @@ void xiiSceneDatabase::Clear()
   m_MaterialIndices.Clear();
   m_FirstPrimitives.Clear();
   m_PrimitiveCounts.Clear();
+  m_ForcedLods.Clear();
+  m_LodBiases.Clear();
   m_VisibilityMasks.Clear();
   m_UserData.Clear();
   m_Flags.Clear();
@@ -68,6 +70,8 @@ void xiiSceneDatabase::Reserve(xiiUInt32 uiObjectCapacity)
   m_MaterialIndices.Reserve(uiObjectCapacity);
   m_FirstPrimitives.Reserve(uiObjectCapacity);
   m_PrimitiveCounts.Reserve(uiObjectCapacity);
+  m_ForcedLods.Reserve(uiObjectCapacity);
+  m_LodBiases.Reserve(uiObjectCapacity);
   m_VisibilityMasks.Reserve(uiObjectCapacity);
   m_UserData.Reserve(uiObjectCapacity);
   m_Flags.Reserve(uiObjectCapacity);
@@ -79,6 +83,9 @@ void xiiSceneDatabase::Reserve(xiiUInt32 uiObjectCapacity)
 
 xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& desc)
 {
+  if ((desc.m_uiForcedLod != xiiInvalidIndex && desc.m_uiForcedLod >= 8U) || !xiiMath::IsFinite(desc.m_fLodBias))
+    return {};
+
   const xiiSceneObjectId id      = m_Objects.Insert(0U);
   const xiiUInt32        uiIndex = id.m_InstanceIndex;
   m_Objects[id]                  = uiIndex;
@@ -100,6 +107,8 @@ xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& de
     EnsureCount(m_MaterialIndices, uiCount, xiiInvalidIndex);
     EnsureCount(m_FirstPrimitives, uiCount, 0U);
     EnsureCount(m_PrimitiveCounts, uiCount, 0U);
+    EnsureCount(m_ForcedLods, uiCount, xiiInvalidIndex);
+    EnsureCount(m_LodBiases, uiCount, 0.0f);
     EnsureCount(m_VisibilityMasks, uiCount, 0xFFFFFFFFU);
     EnsureCount(m_UserData, uiCount, 0U);
     EnsureCount(m_Flags, uiCount, xiiBitflags<xiiSceneObjectFlags>(xiiSceneObjectFlags::Default));
@@ -121,6 +130,8 @@ xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& de
   m_MaterialIndices[uiIndex]          = desc.m_uiMaterialIndex;
   m_FirstPrimitives[uiIndex]          = desc.m_uiFirstPrimitive;
   m_PrimitiveCounts[uiIndex]          = desc.m_uiPrimitiveCount;
+  m_ForcedLods[uiIndex]               = desc.m_uiForcedLod;
+  m_LodBiases[uiIndex]                = desc.m_fLodBias;
   m_VisibilityMasks[uiIndex]          = desc.m_uiVisibilityMask;
   m_UserData[uiIndex]                 = desc.m_uiUserData;
   m_Flags[uiIndex]                    = desc.m_Flags;
@@ -304,6 +315,20 @@ bool xiiSceneDatabase::SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32
   return true;
 }
 
+xiiResult xiiSceneDatabase::SetLodSelection(xiiSceneObjectHandle hObject, xiiUInt32 uiForcedLod, float fLodBias)
+{
+  if (!IsAlive(hObject) || (uiForcedLod != xiiInvalidIndex && uiForcedLod >= 8U) || !xiiMath::IsFinite(fLodBias))
+    return XII_FAILURE;
+  const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
+  if (m_ForcedLods[uiObject] == uiForcedLod && m_LodBiases[uiObject] == fLodBias)
+    return XII_SUCCESS;
+  m_ForcedLods[uiObject] = uiForcedLod;
+  m_LodBiases[uiObject]  = fLodBias;
+  m_GpuDirty[uiObject]   = 1U;
+  ++m_uiRevision;
+  return XII_SUCCESS;
+}
+
 bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags)
 {
   if (!IsAlive(hObject))
@@ -444,6 +469,8 @@ void xiiSceneDatabase::RebuildGpuInstances()
     instance.m_uiUserData              = m_UserData[uiObject];
     instance.m_uiFirstPrimitive        = m_FirstPrimitives[uiObject];
     instance.m_uiPrimitiveCount        = m_PrimitiveCounts[uiObject];
+    instance.m_uiForcedLod             = m_ForcedLods[uiObject];
+    instance.m_fLodBias                = m_LodBiases[uiObject];
 
     const bool bDirty = m_GpuDirty[uiObject] != 0U || bMoved || uiPreviousCount != m_Objects.GetCount();
     if (bDirty && !bRangeOpen)

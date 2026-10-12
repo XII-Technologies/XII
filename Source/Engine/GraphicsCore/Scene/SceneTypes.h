@@ -74,7 +74,9 @@ struct XII_GRAPHICSCORE_DLL xiiSceneObjectDesc
   xiiUInt32                        m_uiVisibilityMask = 0xFFFFFFFFU;
   xiiUInt32                        m_uiUserData       = 0U;
   xiiUInt32                        m_uiFirstPrimitive = 0U;
-  xiiUInt32                        m_uiPrimitiveCount = 0U; ///< Zero means the complete selected LOD.
+  xiiUInt32                        m_uiPrimitiveCount = 0U;              ///< Zero means the complete selected LOD.
+  xiiUInt32                        m_uiForcedLod      = xiiInvalidIndex; ///< Automatic selection when invalid; otherwise requires this resident LOD.
+  float                            m_fLodBias         = 0.0f;            ///< Octaves of projected coverage: +1 doubles coverage, favoring finer LODs.
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneObjectDesc);
@@ -104,9 +106,14 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
   xiiUInt32 m_uiUserData       = 0U;
   xiiUInt32 m_uiFirstPrimitive = 0U;
   xiiUInt32 m_uiPrimitiveCount = 0U; ///< Zero means the complete selected LOD.
+  xiiUInt32 m_uiForcedLod      = xiiInvalidIndex;
+  float     m_fLodBias         = 0.0f;
+  xiiUInt32 m_uiLodPadding[2]  = {};
 };
 
-static_assert(sizeof(xiiGpuSceneInstance) % 16U == 0U, "GPU scene records must preserve structured-buffer alignment.");
+static_assert(sizeof(xiiGpuSceneInstance) == 256U, "GPU scene records must match GpuSceneCommon.h.");
+static_assert(offsetof(xiiGpuSceneInstance, m_uiForcedLod) == 240U && offsetof(xiiGpuSceneInstance, m_fLodBias) == 244U,
+              "GPU LOD controls must preserve the structured-buffer layout.");
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSceneInstance);
 

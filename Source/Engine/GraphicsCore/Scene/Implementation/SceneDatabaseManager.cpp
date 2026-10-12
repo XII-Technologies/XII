@@ -205,6 +205,15 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
   if (pSlot == nullptr || !s_pState->m_bEngineStarted || !xiiGeometryResidencyManager::IsInitialized())
     return XII_FAILURE;
 
+  // Reject invalid selection controls before changing membership or acquiring resources.
+  for (const auto* data : packets)
+  {
+    const auto* mesh = xiiDynamicCast<const xiiMeshRenderData*>(data);
+    if (mesh && mesh->m_hMesh.IsValid() &&
+        (!xiiMath::IsFinite(mesh->m_fLodBias) || (mesh->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && mesh->m_uiLODIndex >= 8U)))
+      return XII_FAILURE;
+  }
+
   xiiSceneDatabase& scene = *pSlot->m_pDatabase;
   // Several filtered snapshots can be synchronized during one CPU frame. Membership belongs
   // to this call, while resource retirement still uses the GPU frame timeline.
@@ -216,6 +225,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     if (!renderData.m_hMesh.IsValid())
       continue;
 
+    const xiiUInt32                             forcedLod     = renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? renderData.m_uiLODIndex : xiiInvalidIndex;
     xiiUInt32                                   materialIndex = 0;
     const xiiMaterialResourceHandle             hMaterial     = SelectMaterial(renderData, materialIndex);
     const xiiSceneDatabaseManagerState::MeshKey key{renderData.m_hOwnerObject, renderData.m_hOwnerComponent, renderData.m_uiUniqueID, renderData.m_uiSectionIndex};
@@ -247,6 +257,8 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       desc.m_uiUserData       = renderData.m_uiUniqueID;
       desc.m_uiFirstPrimitive = renderData.m_uiFirstPrimitive;
       desc.m_uiPrimitiveCount = renderData.m_uiPrimitiveCount;
+      desc.m_uiForcedLod      = forcedLod;
+      desc.m_fLodBias         = renderData.m_fLodBias;
 
       xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
       if (mesh.GetAcquireResult() == xiiResourceAcquireResult::Final)
@@ -316,6 +328,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     scene.SetLocalTransform(pEntry->m_hSceneObject, renderData.m_GlobalTransform.GetAsMat4());
     scene.SetFlags(pEntry->m_hSceneObject, GetSceneFlags(renderData, hMaterial));
     scene.SetPrimitiveRange(pEntry->m_hSceneObject, renderData.m_uiFirstPrimitive, renderData.m_uiPrimitiveCount);
+    XII_SUCCEED_OR_RETURN(scene.SetLodSelection(pEntry->m_hSceneObject, forcedLod, renderData.m_fLodBias));
     xiiGeometryResidencyManager::RequestResidency(pEntry->m_hGeometry, renderData.m_uiLODIndex, uiFrameIndex);
     xiiGeometryResidencyManager::Touch(pEntry->m_hGeometry, uiFrameIndex);
   }

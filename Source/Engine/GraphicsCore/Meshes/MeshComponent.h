@@ -83,7 +83,7 @@ public:
   xiiUInt32 m_uiSectionIndex   = xiiInvalidIndex; ///< The section index to render, used to select a specific section of the mesh for rendering.
   xiiUInt32 m_uiInstanceCount  = 1U;              ///< The number of instances to render, used for instanced rendering.
 
-  float m_fLodBias = 0.0f; ///< LOD bias to apply when selecting the LOD level to render, used to adjust LOD selection based on distance or performance requirements.
+  float m_fLodBias = 0.0f; ///< Projected-coverage octaves for automatic GPU LOD selection; +1 doubles coverage and favors finer LODs.
 
   xiiBitflags<xiiMeshRenderDataFlags> m_Flags = xiiMeshRenderDataFlags::Default; ///< Flags specifying various properties of the mesh render data, used to determine how the mesh should be rendered.
 

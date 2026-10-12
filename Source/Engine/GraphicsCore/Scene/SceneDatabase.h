@@ -42,8 +42,13 @@ public:
   bool SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeometryIndex);
   bool SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMaterialIndex);
   bool SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount);
-  bool SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags);
-  bool SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask);
+  /// Sets native GPU LOD selection without changing geometry ownership. Invalid forced LOD means
+  /// automatic selection. A forced LOD must be below eight; non-finite bias and stale handles fail
+  /// without mutation. Bias is measured in coverage octaves, saturated to [-16, 16] on the GPU.
+  /// Forced selection bypasses hysteresis and emits no geometry until the requested LOD is resident.
+  [[nodiscard]] xiiResult SetLodSelection(xiiSceneObjectHandle hObject, xiiUInt32 uiForcedLod, float fLodBias);
+  bool                    SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags);
+  bool                    SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask);
 
   [[nodiscard]] const xiiMat4&                   GetGlobalTransform(xiiSceneObjectHandle hObject) const;
   [[nodiscard]] const xiiBoundingBoxSphere&      GetGlobalBounds(xiiSceneObjectHandle hObject) const;
@@ -88,6 +93,8 @@ private:
   xiiDynamicArray<xiiUInt32>                        m_MaterialIndices;
   xiiDynamicArray<xiiUInt32>                        m_FirstPrimitives;
   xiiDynamicArray<xiiUInt32>                        m_PrimitiveCounts;
+  xiiDynamicArray<xiiUInt32>                        m_ForcedLods;
+  xiiDynamicArray<float>                            m_LodBiases;
   xiiDynamicArray<xiiUInt32>                        m_VisibilityMasks;
   xiiDynamicArray<xiiUInt32>                        m_UserData;
   xiiDynamicArray<xiiBitflags<xiiSceneObjectFlags>> m_Flags;
