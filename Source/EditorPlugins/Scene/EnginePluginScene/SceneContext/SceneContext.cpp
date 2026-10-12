@@ -14,10 +14,10 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GameEngine/GameApplication/GameApplication.h>
-#include <GraphicsCore/AnimationSystem/Declarations.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <SharedPluginScene/Scene/ScenePreviewLighting.h>
+#include <SharedPluginScene/Scene/SceneSkeletonPose.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneContext, 1, xiiRTTIDefaultAllocator<xiiSceneContext>)
@@ -606,7 +606,7 @@ void xiiSceneContext::OnDeinitialize()
   }
   m_Layers.Clear();
   m_Contexts.Clear();
-  m_ActiveLayer.Invalidate();
+  m_ActiveLayer = {};
   m_ObjectsToTag.Clear();
   m_InvisibleLayerTags.Clear();
   m_bInvisibleLayersDirty = true;
@@ -962,9 +962,7 @@ void xiiSceneContext::UpdateDocumentContext()
 
   if (xiiGameStateBase* pState = GetGameState())
   {
-    // If we have a running game state we always want to render it (e.g. play the game).
-    pState->AddMainViewsToRender();
-
+    // The world's render module executes its registered views during world update.
     if (pState->WasQuitRequested())
     {
       xiiGameApplicationBase::GetGameApplicationBaseInstance()->DeactivateGameState();
@@ -1171,10 +1169,8 @@ void xiiSceneContext::HandlePullObjectStateMsg(const xiiPullObjectStateMsgToEngi
       state.m_vPosition                  = pObject->GetGlobalPosition();
       state.m_qRotation                  = pObject->GetGlobalRotation();
 
-      xiiMsgRetrieveBoneState msg;
-      pObject->SendMessage(msg);
-
-      state.m_BoneTransforms = msg.m_BoneTransforms;
+      // A missing or unevaluated pose does not prevent pulling the object's world transform.
+      xiiCollectSceneSkeletonPose(*pObject, state.m_sSkeletonResource, state.m_BoneTransforms).IgnoreResult();
     }
   }
 

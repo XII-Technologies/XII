@@ -58,6 +58,7 @@ struct xiiPushObjectStateData
   xiiQuat                         m_qRotation;
   bool                            m_bAdjustFromPrefabRootChild = false; // only used internally, not synchronized
   xiiMap<xiiString, xiiTransform> m_BoneTransforms;
+  xiiString                       m_sSkeletonResource;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_SHAREDPLUGINSCENE_DLL, xiiPushObjectStateData);
