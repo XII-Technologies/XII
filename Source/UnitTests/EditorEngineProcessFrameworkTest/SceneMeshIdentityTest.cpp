@@ -166,6 +166,12 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
       auto&      cache     = graphContext.GetResourceCache();
       const auto completed = xiiRenderGraphManager::PrepareFrame(1, 3);
       xiiGeometryResidencyManager::ProcessStreaming(1, completed, xiiMath::MaxValue<xiiUInt64>());
+      xiiUInt64 capacity = 0;
+      XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(context.GetHandle(), capacity));
+      XII_TEST_BOOL(capacity > 0);
+      xiiUInt64 invalidCapacity = 42;
+      XII_TEST_BOOL(xiiSceneDatabaseManager::GetExtractedMeshletCapacity({}, invalidCapacity).Failed());
+      XII_TEST_INT(invalidCapacity, 0);
       cache.BeginFrame(1, completed);
       graph.BeginSetup(1);
       const auto uploadedGeometry = xiiGeometryResidencyManager::AddUploadPass(graph, 1);
@@ -443,6 +449,18 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Retirement, clearing and destroyed contexts reject stale mesh identities")
   {
+    const auto     frame = nextFrame++;
+    xiiRenderData  nonMesh;
+    xiiRenderData* filtered[] = {nullptr, &second, &nonMesh};
+    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(xiiMakeArrayPtr(filtered), frame));
+    XII_TEST_INT(scene.GetObjectCount(), 1);
+    XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), firstId, source).Failed());
+    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, frame));
+    XII_TEST_INT(scene.GetObjectCount(), 3);
+    // Repeated membership changes in a single GPU frame must not keep absent packets alive.
+    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(xiiMakeArrayPtr(filtered), frame));
+    XII_TEST_INT(scene.GetObjectCount(), 1);
+    XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), secondId, source));
     extracted.Clear();
     extracted.AddRenderData(&second);
     extracted.SortAndBatches();

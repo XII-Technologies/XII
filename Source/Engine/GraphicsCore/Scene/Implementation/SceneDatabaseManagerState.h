@@ -42,7 +42,7 @@ public:
     xiiGeometryHandle         m_hGeometry;
     xiiMaterialResourceHandle m_hMaterial;
     xiiMaterialGpuHandle      m_hGpuMaterial;
-    xiiUInt64                 m_uiLastSeenFrame = 0U;
+    xiiUInt64                 m_uiSynchronization = 0U;
   };
 
   struct Slot
@@ -51,6 +51,7 @@ public:
     xiiHashTable<MeshKey, ExtractedMeshEntry, MeshKeyHash> m_ExtractedMeshes;
     xiiHashTable<xiiUInt32, xiiSceneMeshSource>            m_MeshSources;
     xiiUInt64                                              m_uiLastSynchronizedFrame = 0U;
+    xiiUInt64                                              m_uiSynchronization       = 0U;
   };
 
   xiiIdTable<xiiSceneDatabaseContextId, Slot> m_Contexts;

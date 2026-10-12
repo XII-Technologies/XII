@@ -93,6 +93,12 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
 {
   pins.PushBack({"Before", xiiRenderPipelinePin::Order, true, true});
   pins.PushBack({"After", xiiRenderPipelinePin::Order, false, true});
+  if (m_sStage == "PrepareFrame")
+  {
+    pins.PushBack({"GPU Geometry Metadata", xiiRenderPipelinePin::Buffer, false, true});
+    pins.PushBack({"GPU Meshlet Metadata", xiiRenderPipelinePin::Buffer, false, true});
+    pins.PushBack({"Surface Material GPU Storage", xiiRenderPipelinePin::Buffer, false, true});
+  }
   if (m_sStage == "Visibility")
   {
     pins.PushBack({"LightingDataReady", xiiRenderPipelinePin::Buffer, false, true});

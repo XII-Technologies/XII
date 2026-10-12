@@ -176,12 +176,42 @@ xiiSceneDatabase* xiiSceneDatabaseManager::GetDatabase(xiiSceneDatabaseContextHa
 
 xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseContextHandle handle, const xiiExtractedRenderData& extractedData, xiiUInt64 uiFrameIndex)
 {
+  return SynchronizeExtractedMeshes(handle, extractedData.GetAllRenderData(), uiFrameIndex);
+}
+
+xiiResult xiiSceneDatabaseManager::GetExtractedMeshletCapacity(xiiSceneDatabaseContextHandle context, xiiUInt64& out_uiMeshlets)
+{
+  out_uiMeshlets   = 0;
+  const auto* slot = GetSlot(s_pState.Borrow(), context);
+  if (!slot || !s_pState->m_bEngineStarted)
+    return XII_FAILURE;
+  xiiUInt64 total = 0;
+  for (auto it = slot->m_ExtractedMeshes.GetIterator(); it.IsValid(); ++it)
+  {
+    const auto* geometry = xiiGeometryResidencyManager::GetGpuRecord(it.Value().m_hGeometry);
+    if (!geometry)
+      return XII_FAILURE;
+    xiiUInt32 maximum = 0;
+    for (xiiUInt32 lod = 0; lod < geometry->m_uiLodCount; ++lod)
+      if ((geometry->m_uiResidentLodMask & (1U << lod)) != 0)
+        maximum = xiiMath::Max(maximum, geometry->m_Lods[lod].m_uiMeshletCount);
+    total += maximum; // At most UInt32 instances * UInt32 meshlets; the sum fits UInt64.
+  }
+  out_uiMeshlets = total;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseContextHandle handle, xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 uiFrameIndex)
+{
   xiiSceneDatabaseManagerState::Slot* pSlot = GetSlot(s_pState.Borrow(), handle);
   if (pSlot == nullptr || !s_pState->m_bEngineStarted || !xiiGeometryResidencyManager::IsInitialized())
     return XII_FAILURE;
 
-  xiiSceneDatabase&                                     scene = *pSlot->m_pDatabase;
-  const xiiRenderDataBatch::Iterator<xiiMeshRenderData> meshes(extractedData.GetAllRenderData(), 0U, xiiMath::MaxValue<xiiUInt32>());
+  xiiSceneDatabase& scene = *pSlot->m_pDatabase;
+  // Several filtered snapshots can be synchronized during one CPU frame. Membership belongs
+  // to this call, while resource retirement still uses the GPU frame timeline.
+  const auto                                            synchronization = ++pSlot->m_uiSynchronization;
+  const xiiRenderDataBatch::Iterator<xiiMeshRenderData> meshes(packets, 0U, xiiMath::MaxValue<xiiUInt32>());
   for (auto it = meshes; it.IsValid(); ++it)
   {
     const xiiMeshRenderData& renderData = *it;
@@ -224,12 +254,12 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
         desc.m_LocalBounds = mesh->GetBounds();
 
       xiiSceneDatabaseManagerState::ExtractedMeshEntry entry;
-      entry.m_hSceneObject    = scene.CreateObject(desc);
-      entry.m_hMesh           = renderData.m_hMesh;
-      entry.m_hGeometry       = hGeometry;
-      entry.m_hMaterial       = hMaterial;
-      entry.m_hGpuMaterial    = hGpuMaterial;
-      entry.m_uiLastSeenFrame = uiFrameIndex;
+      entry.m_hSceneObject      = scene.CreateObject(desc);
+      entry.m_hMesh             = renderData.m_hMesh;
+      entry.m_hGeometry         = hGeometry;
+      entry.m_hMaterial         = hMaterial;
+      entry.m_hGpuMaterial      = hGpuMaterial;
+      entry.m_uiSynchronization = synchronization;
       if (entry.m_hSceneObject.IsInvalidated())
       {
         xiiGeometryResidencyManager::ReleaseMeshGeometry(renderData.m_hMesh, uiFrameIndex);
@@ -275,7 +305,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     if (pEntry == nullptr)
       continue;
 
-    pEntry->m_uiLastSeenFrame = uiFrameIndex;
+    pEntry->m_uiSynchronization = synchronization;
     scene.SetLocalTransform(pEntry->m_hSceneObject, renderData.m_GlobalTransform.GetAsMat4());
     scene.SetFlags(pEntry->m_hSceneObject, GetSceneFlags(renderData, hMaterial));
     scene.SetPrimitiveRange(pEntry->m_hSceneObject, renderData.m_uiFirstPrimitive, renderData.m_uiPrimitiveCount);
@@ -285,7 +315,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
 
   for (auto it = pSlot->m_ExtractedMeshes.GetIterator(); it.IsValid();)
   {
-    if (it.Value().m_uiLastSeenFrame == uiFrameIndex)
+    if (it.Value().m_uiSynchronization == synchronization)
     {
       ++it;
       continue;
@@ -377,6 +407,11 @@ const xiiSceneDatabase& xiiSceneDatabaseContext::GetDatabase() const
 xiiResult xiiSceneDatabaseContext::SynchronizeExtractedMeshes(const xiiExtractedRenderData& extractedData, xiiUInt64 uiFrameIndex)
 {
   return xiiSceneDatabaseManager::SynchronizeExtractedMeshes(m_Handle, extractedData, uiFrameIndex);
+}
+
+xiiResult xiiSceneDatabaseContext::SynchronizeExtractedMeshes(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 uiFrameIndex)
+{
+  return xiiSceneDatabaseManager::SynchronizeExtractedMeshes(m_Handle, packets, uiFrameIndex);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Scene_Implementation_SceneDatabaseManager);

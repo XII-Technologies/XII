@@ -45,14 +45,16 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
 
   // CPU dynamic resolution PID (pre-graph). View owns scale/resolution state.
 
-  bool bResult = blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
-  XII_IGNORE_UNUSED(bResult);
+  uiFrameIndex = graph.GetFrameIndex();
 
   // Geometry residency and visibility are process services. The view keeps only generation-
   // checked context handles, so their allocator-backed state is guaranteed to be constructed and
   // destroyed by the GraphicsCore subsystem while the Foundation allocator and GAL device exist.
   geometry  = xiiGeometryResidencyManager::AddUploadPass(graph, uiFrameIndex);
   materials = xiiMaterialManager::AddUploadPasses(graph);
+  blackboard.Set(xiiRGBlackboardKeys::k_GpuGeometryBaseIndex, geometry.m_uiGeometryBaseIndex);
+  blackboard.Set(xiiRGBlackboardKeys::k_GpuMaximumResidentMeshlets, geometry.m_uiMaximumResidentMeshletCount);
+  blackboard.Set(xiiRGBlackboardKeys::k_GpuSurfaceMaterialBaseIndex, materials.m_uiSurfaceBaseIndex);
 
   // Build the primary view's compact meshlet stream from the subsystem-owned scene. Frustum and
   // LOD culling are refined by the previous frame's subsystem-owned Hi-Z history when valid; the
@@ -101,7 +103,9 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
 
   if (m_View.m_pExtractedData != nullptr)
   {
-    m_Resources.m_LightingSystem.BuildFrameData(m_View, *m_View.m_pExtractedData, uiFrameIndex);
+    // Lighting's shader sampling token is intentionally 32-bit; residency and capture lifetimes
+    // above retain the complete render-graph frame identity.
+    m_Resources.m_LightingSystem.BuildFrameData(m_View, *m_View.m_pExtractedData, static_cast<xiiUInt32>(uiFrameIndex));
   }
 
   xiiEmissiveLightManager::BuildDescription emissiveBuildDescription;
@@ -147,7 +151,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
     }
   }
   m_Resources.m_LightingSystem.WriteBlackboard(blackboard);
-  m_Resources.m_LightingPasses.m_uiFrameIndex = uiFrameIndex;
+  m_Resources.m_LightingPasses.m_uiFrameIndex = static_cast<xiiUInt32>(uiFrameIndex);
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)

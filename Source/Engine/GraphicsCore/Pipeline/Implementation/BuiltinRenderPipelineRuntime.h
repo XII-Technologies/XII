@@ -424,7 +424,7 @@ private:
   xiiView& m_View;
   struct Frame
   {
-    xiiUInt32                                                       uiFrameIndex = 0;
+    xiiUInt64                                                       uiFrameIndex = 0;
     xiiGeometryResidencyManager::UploadHandles                      geometry;
     xiiMaterialGpuStorage::UploadHandles                            materials;
     xiiGpuVisibilityOutputs                                         mainVisibility;
