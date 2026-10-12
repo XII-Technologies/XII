@@ -2141,3 +2141,94 @@ world submission clock. The comprehensive modernization goal remains active.
   static-link inventories, case-only ReFS watching, manager frame timelines, shared temporal
   manager isolation and broader manual workflow parity remain active work. D3D12, Release,
   Linux and macOS remain unverified.
+
+
+### Shared GPU Frame Timeline (2026-10-12)
+
+- World rendering and registered render graphs now use one subsystem-owned frame counter,
+  completion tracker and recording mutex through `xiiRenderGraphFrame`. Its result-returning
+  Begin prepares global managers and waits for reusable slices. End captures all submitted
+  queue fence values and releases the mutex; scope destruction does the same on early returns.
+  Empty frames and frames that fail compilation retain valid retirement points. Extraction
+  remains parallel, and render graphs retain their existing asynchronous queue scheduling.
+- The former world-local tracker and caller-supplied manager frame counters are removed.
+  The GPU-driven sample prepares its scene and executes registered graphs inside one scope.
+  Registered graph frequency uses the common device frame index, including world submissions.
+  Frame scopes require same-thread use and must end before renderer shutdown; nested scopes,
+  repeated Begin and a zero submission window return failure. End is idempotent. Context
+  creation/destruction and graph registration changes remain frame-boundary operations;
+  concurrent registration or context destruction is unsupported.
+- The requested submission window is bounded by configured material, geometry, shadow and
+  ray-tracing rings and the smallest live visibility context ring. This prevents callers with
+  a larger window from overwriting a shorter ring still consumed by the GPU. Visibility-ring
+  inspection is linear in live contexts, as is the existing visibility frame preparation;
+  the frame scope carries two 64-bit counters and no topology or per-view history.
+- The native WorldRenderFrames regression interleaves two concurrently updated worlds,
+  registered graphs and empty scopes for eight iterations. A registered pass uploads the
+  exact frame identity and verifies it by GPU readback. A two-slot visibility context bounds
+  a requested 64-frame window. A cyclic graph registered after the uploading graph fails
+  compilation through `xiiResult`; recovery waits for the captured frame and executes again.
+  Destroying a world or the shorter visibility context leaves the remaining consumers valid.
+- This consolidates submission and retirement, not view-specific temporal ownership. Shared
+  DDGI/radiance histories, deformed geometry, legacy sky/probe/GreyBox migration, additional
+  static-link inventories, case-only ReFS watching and broader manual workflow parity remain
+  active work. D3D12, Release, Linux and macOS remain unverified.
+
+- Windows VS2026 Debug x64 builds pass for Editor, EditorPluginVisualScript, EditorProcessor,
+  EditorFrameworkTest, EditorEngineProcessFrameworkTest, GraphicsCoreTest,
+  GraphicsFoundationTest and GpuDrivenScene: `Workspace/editor-shared-frame-final-build.log`.
+  All 50 Vulkan engine-process, 18 GraphicsCore, 40 GraphicsFoundation and ten native Qt Editor
+  subtests pass: `Workspace/editor-shared-frame-integrated-tests.log`,
+  `Workspace/editor-shared-frame-core-tests.log`,
+  `Workspace/editor-shared-frame-foundation-tests.log` and
+  `Workspace/editor-shared-frame-qt-tests.log`. These results include GPU readback,
+  concurrent worlds, failed-frame recovery, actual viewport capture and IPC picking.
+
+### Sample Integration And Vulkan Synchronization Diagnosis (2026-10-12)
+
+- The GPU-driven sample shader still referenced the removed scene-instance ObjectIndex field.
+  Its color variation now consumes application-owned UserData, preserving the sample's stable
+  object labels independently of native generation identities. The sample validates its loaded
+  draw shader before recording, reports shader/frame failures with a nonzero application result,
+  and reports the completed count for bounded runs. Optional hardware ray tracing can explicitly
+  be disabled through `-ray-tracing false` to exercise the supported raster-only device path;
+  default behavior retains optional hardware ray tracing.
+- Vulkan GPU-assisted and synchronization validation identified two actual hazards in the sample:
+  AS-build input buffers require shader-read access at the AS-build stage, while the previous
+  BuildASRead mapping included only acceleration-structure reads. The buffer mapping and
+  BLAS/TLAS input verification now include the correct access. Acceleration-structure object
+  barriers remain separate. Swap-chain acquisition waits now cover all commands in the small
+  acquisition submission so its initial undefined-to-transfer image transition cannot precede
+  acquisition. No CPU queue-idle workaround is introduced into frame execution.
+- Visibility LOD feedback maps completed readbacks with DoNotWait, matching the existing queue
+  completion check and Vulkan's explicit synchronization contract.
+- Initial synchronization evidence: `Workspace/editor-shared-frame-sample-validation.log`
+  reports AS-build input read-after-write and acquisition layout write-after-read hazards.
+  After repair, `Workspace/editor-shared-frame-sample-synconly.log` and
+  `Workspace/editor-shared-frame-sample-syncfixed-validation.log` report neither hazard.
+  They still end in ErrorDeviceLost on larger/longer workloads, so they are not passing runs.
+  The raster-only 64-frame comparison also loses the device:
+  `Workspace/editor-shared-frame-sample-raster.log`; hardware ray tracing is not required.
+- Small uninstrumented eight-frame (2x2) and sixteen-frame (8x8) sample runs exit normally:
+  `Workspace/editor-shared-frame-sample-small.log` and
+  `Workspace/editor-shared-frame-sample-syncfixed.log`. These successful bounded runs do not
+  establish long-run stability or resolve the historically recorded device-loss problem.
+  GPU-assisted safe-mode instrumentation changes workload and timing; its larger-run failure
+  has not been attributed to instrumentation or a driver timeout. Further diagnosis remains
+  active work alongside view-specific temporal history and the broader migration inventory.
+
+- Final Windows Debug builds including the sample, Editor, VisualScript plugin, processor,
+  native Qt tests and graphics consumers pass:
+  `Workspace/editor-shared-frame-final-integration-build.log`. All 118 automated subtests pass
+  again after the Vulkan repairs (50 engine-process, 40 Foundation, 18 Core, ten Qt):
+  `Workspace/editor-shared-frame-final-integrated-tests.log`,
+  `Workspace/editor-shared-frame-final-foundation-tests.log`,
+  `Workspace/editor-shared-frame-final-core-tests.log` and
+  `Workspace/editor-shared-frame-final-qt-tests.log`.
+  The final 2x2 sample explicitly reports eight completed frames and exits normally with both
+  GPU-assisted safe-mode and synchronization validation enabled and no validation errors:
+  `Workspace/editor-shared-frame-sample-final-small-validation.log`.
+  Existing nonfatal validation advisories about combined validation modes and instrumented
+  shader compilation cost remain. No assertion artifact remains in the checkout; failed-run
+  assertions are preserved alongside their Workspace diagnostic logs. Longer sample stability,
+  view-specific temporal ownership and the comprehensive Editor migration remain unproven.
