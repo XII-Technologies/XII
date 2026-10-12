@@ -3795,6 +3795,9 @@ void xiiGALCommandListVulkan::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> ind
 
 void xiiGALCommandListVulkan::PrepareForDispatchCompute()
 {
+  // Explicit transitions (including render-graph barriers) must precede dispatch even when
+  // shader resources were committed with Verify and queued no additional transitions.
+  FlushBarriers();
 }
 
 void xiiGALCommandListVulkan::PrepareForRayTracing()
