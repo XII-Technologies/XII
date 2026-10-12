@@ -167,7 +167,6 @@ private:
   static void SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
   static void StartupRenderEvents();
   static void ShutdownRenderEvents();
-  static void ResetFrameExecution();
 
   void OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
   bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const;
@@ -194,8 +193,6 @@ private:
   xiiEvent<xiiViewEvent, xiiMutex>  m_ViewEvents;
 
   static xiiUniquePtr<ExtractionEvent> s_pRenderEvent;
-  struct FrameExecutionState;
-  static xiiUniquePtr<FrameExecutionState> s_pFrameExecution;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderWorldModule_inl.h>

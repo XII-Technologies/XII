@@ -14,11 +14,11 @@
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
-#include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -63,16 +63,6 @@ namespace
 
 xiiUniquePtr<xiiRenderWorldModule::ExtractionEvent> xiiRenderWorldModule::s_pRenderEvent;
 
-struct xiiRenderWorldModule::FrameExecutionState
-{
-  xiiMutex                     m_Mutex;
-  xiiGpuFrameCompletionTracker m_Completion;
-  xiiUInt64                    m_uiFrameIndex = 0;
-  bool                         m_bInitialized = false;
-};
-
-xiiUniquePtr<xiiRenderWorldModule::FrameExecutionState> xiiRenderWorldModule::s_pFrameExecution;
-
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderWorldEvents)
 
@@ -91,10 +81,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderWorldEvents)
     xiiRenderWorldModule::ShutdownRenderEvents();
   }
 
-  ON_HIGHLEVELSYSTEMS_SHUTDOWN
-  {
-    xiiRenderWorldModule::ResetFrameExecution();
-  }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
@@ -102,24 +88,12 @@ XII_END_SUBSYSTEM_DECLARATION;
 void xiiRenderWorldModule::StartupRenderEvents()
 {
   XII_ASSERT_DEV(s_pRenderEvent == nullptr, "Render world events were started twice.");
-  s_pRenderEvent    = XII_DEFAULT_NEW(ExtractionEvent);
-  s_pFrameExecution = XII_DEFAULT_NEW(FrameExecutionState);
+  s_pRenderEvent = XII_DEFAULT_NEW(ExtractionEvent);
 }
 
 void xiiRenderWorldModule::ShutdownRenderEvents()
 {
-  ResetFrameExecution();
-  s_pFrameExecution.Clear();
   s_pRenderEvent.Clear();
-}
-
-void xiiRenderWorldModule::ResetFrameExecution()
-{
-  if (!s_pFrameExecution)
-    return;
-  s_pFrameExecution->m_Completion.Reset();
-  s_pFrameExecution->m_uiFrameIndex = 0;
-  s_pFrameExecution->m_bInitialized = false;
 }
 
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
@@ -603,30 +577,16 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (m_ViewIdTable.IsEmpty())
     return;
 
-  // Worlds update concurrently, but residency, material frame slices and physical resource
-  // states are shared by the device. Order graph recording and frame retirement across worlds;
-  // extraction remains parallel and each graph retains its asynchronous GPU queues.
-  auto& frames = *s_pFrameExecution;
-  XII_LOCK(frames.m_Mutex);
-  if (!frames.m_bInitialized)
+  // Device-global frame slices and retirement share one clock with registered graphs.
+  // Extraction remains parallel; the frame scope serializes recording and captures all queues.
+  xiiRenderGraphFrame frame;
+  if (frame.Begin().Failed())
   {
-    frames.m_Completion.Initialize(pDevice.Borrow());
-    frames.m_bInitialized = true;
+    xiiLog::Error("Could not begin the world rendering frame.");
+    return;
   }
-
-  // Frame zero is the conservative "nothing has completed" sentinel used by all deferred
-  // resource managers. Real submissions therefore start at one.
-  const xiiUInt64     uiFrameIndex     = ++frames.m_uiFrameIndex;
-  constexpr xiiUInt32 uiFramesInFlight = 3U;
-  if (uiFrameIndex > uiFramesInFlight)
-    frames.m_Completion.WaitForFrame(uiFrameIndex - uiFramesInFlight);
-  const xiiUInt64 uiCompletedFrame = frames.m_Completion.PollCompletedFrames();
-  if (xiiGALBindlessResourceTable::IsInitialized())
-    xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
-  if (xiiMaterialManager::IsInitialized())
-    xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
-  if (xiiGpuVisibilityManager::IsInitialized())
-    xiiGpuVisibilityManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  const xiiUInt64 uiFrameIndex     = frame.GetFrameIndex();
+  const xiiUInt64 uiCompletedFrame = frame.GetCompletedFrame();
 
   // Convert extracted engine meshes into persistent, subsystem-owned GPU scene records before
   // residency streaming runs. Stable render IDs retain previous transforms across frames.
@@ -647,7 +607,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
     xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
   }
-  xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   bool bGlobalIlluminationFrameStarted = false;
 
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
@@ -720,8 +679,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     }
     resourceCache.EndFrame();
   }
-
-  frames.m_Completion.CaptureSubmittedFrame(uiFrameIndex);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderWorldModule);

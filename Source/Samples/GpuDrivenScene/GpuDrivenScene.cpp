@@ -198,8 +198,13 @@ public:
     const bool bCanRender = m_pSwapChain != nullptr && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture() != nullptr;
     if (bCanRender)
     {
-      ++m_uiFrameIndex;
-      const xiiUInt64 uiCompletedFrame = xiiRenderGraphManager::PrepareFrame(m_uiFrameIndex, m_Configuration.m_uiFramesInFlight);
+      xiiRenderGraphFrame frame;
+      if (frame.Begin(m_Configuration.m_uiFramesInFlight).Failed())
+      {
+        m_pDevice->EndFrame();
+        return Execution::Quit;
+      }
+      m_uiFrameIndex = frame.GetFrameIndex();
       m_World.Update(m_uiFrameIndex, xiiClock::GetGlobalClock()->GetTimeDiff());
 
       m_TargetSize       = m_pWindow->GetClientAreaSize();
@@ -216,7 +221,7 @@ public:
       settings.m_bEnableAsyncQueues   = false;
       settings.m_bEnableSplitBarriers = false;
       settings.m_bEnableGPUProfiling  = true;
-      if (xiiRenderGraphManager::ExecuteFrame(m_uiFrameIndex, uiCompletedFrame, nullptr, settings, &error).Succeeded())
+      if (xiiRenderGraphManager::ExecuteFrame(frame, nullptr, settings, &error).Succeeded())
       {
         if (m_uiFrameIndex == 1U)
         {

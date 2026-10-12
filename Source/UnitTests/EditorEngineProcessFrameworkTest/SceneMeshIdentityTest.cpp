@@ -162,9 +162,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
         return;
       auto visibilityContext = xiiGpuVisibilityManager::CreateContext();
       XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiGpuVisibilityManager::DestroyContext(visibilityContext));
-      auto&      graph     = graphContext.GetGraph();
-      auto&      cache     = graphContext.GetResourceCache();
-      const auto completed = xiiRenderGraphManager::PrepareFrame(1, 3);
+      auto&               graph = graphContext.GetGraph();
+      auto&               cache = graphContext.GetResourceCache();
+      xiiRenderGraphFrame frame;
+      if (!XII_TEST_RESULT(frame.Begin()))
+        return;
+      XII_TEST_INT(frame.GetFrameIndex(), 1);
+      const auto completed = frame.GetCompletedFrame();
       xiiGeometryResidencyManager::ProcessStreaming(1, completed, xiiMath::MaxValue<xiiUInt64>());
       xiiUInt64 capacity = 0;
       XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(context.GetHandle(), capacity));
