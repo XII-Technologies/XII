@@ -22,6 +22,7 @@ class xiiWorldWriter;
 class xiiDeferredFileWriter;
 class xiiLayerContext;
 struct xiiGameApplicationExecutionEvent;
+class xiiScenePreviewLighting;
 
 class XII_ENGINEPLUGINSCENE_DLL xiiSceneContext : public xiiEngineProcessDocumentContext
 {
@@ -120,8 +121,7 @@ private:
   xiiDeque<xiiGameObjectHandle>            m_Selection;
   xiiDeque<xiiGameObjectHandle>            m_SelectionWithChildren;
   xiiSet<xiiGameObjectHandle>              m_SelectionWithChildrenSet;
-  xiiGameObjectHandle                      m_hSkyLight;
-  xiiGameObjectHandle                      m_hDirectionalLight;
+  xiiUniquePtr<xiiScenePreviewLighting>    m_pPreviewLighting;
   xiiDynamicArray<xiiExposedSceneProperty> m_ExposedSceneProperties;
 
   xiiPushObjectStateMsgToEditor m_PushObjectStateMsg;

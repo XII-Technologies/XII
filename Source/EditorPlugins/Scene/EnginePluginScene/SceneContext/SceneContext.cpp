@@ -15,10 +15,9 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/AnimationSystem/Declarations.h>
-#include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <SharedPluginScene/Scene/ScenePreviewLighting.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneContext, 1, xiiRTTIDefaultAllocator<xiiSceneContext>)
@@ -594,8 +593,7 @@ void xiiSceneContext::OnDeinitialize()
   m_Selection.Clear();
   m_SelectionWithChildren.Clear();
   m_SelectionWithChildrenSet.Clear();
-  m_hSkyLight.Invalidate();
-  m_hDirectionalLight.Invalidate();
+  RemoveAmbientLight();
 
   m_LayerTag = xiiTag();
 
@@ -1051,81 +1049,6 @@ bool xiiSceneContext::UpdateThumbnailViewContext(xiiEngineProcessViewContext* pT
   const bool           result               = pMaterialViewContext->UpdateThumbnailCamera(bounds);
 
   return result;
-}
-
-void xiiSceneContext::AddAmbientLight(bool bSetEditorTag, bool bForce)
-{
-  if (!m_hSkyLight.IsInvalidated() || !m_hDirectionalLight.IsInvalidated())
-    return;
-
-  XII_LOCK(GetWorld()->GetWriteMarker());
-
-  // delay adding ambient light until the scene isn't empty, to prevent adding two skylights
-  if (!bForce && GetWorld()->GetObjectCount() == 0)
-    return;
-
-  xiiSkyLightComponentManager* pSkyMan = GetWorld()->GetComponentManager<xiiSkyLightComponentManager>();
-  if (pSkyMan == nullptr || pSkyMan->GetSingletonComponent() == nullptr)
-  {
-    // only create a skylight, if there is none yet
-
-    xiiGameObjectDescription obj;
-    obj.m_sName.Assign("Sky Light");
-
-    if (bSetEditorTag)
-    {
-      const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
-      obj.m_Tags.Set(tagEditor); // to prevent it from being exported
-    }
-
-    xiiGameObject* pObj;
-    m_hSkyLight = GetWorld()->CreateObject(obj, pObj);
-
-
-    xiiSkyLightComponent* pSkyLight = nullptr;
-    xiiSkyLightComponent::CreateComponent(pObj, pSkyLight);
-    pSkyLight->SetCubeMapFile("{ 0b202e08-a64f-465d-b38e-15b81d161822 }");
-    pSkyLight->SetReflectionProbeMode(xiiReflectionProbeMode::Static);
-  }
-
-  {
-    xiiGameObjectDescription obj;
-    obj.m_sName.Assign("Ambient Light");
-
-    obj.m_LocalRotation = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(-14.510815f), xiiAngle::MakeFromDegree(43.07951f), xiiAngle::MakeFromDegree(93.223808f));
-
-    if (bSetEditorTag)
-    {
-      const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
-      obj.m_Tags.Set(tagEditor); // to prevent it from being exported
-    }
-
-    xiiGameObject* pLight;
-    m_hDirectionalLight = GetWorld()->CreateObject(obj, pLight);
-
-    xiiDirectionalLightComponent* pDirLight = nullptr;
-    xiiDirectionalLightComponent::CreateComponent(pLight, pDirLight);
-    pDirLight->SetIntensity(10.0f);
-  }
-}
-
-void xiiSceneContext::RemoveAmbientLight()
-{
-  XII_LOCK(GetWorld()->GetWriteMarker());
-
-  if (!m_hSkyLight.IsInvalidated())
-  {
-    // make sure to remove the object RIGHT NOW, otherwise it may still exist during scene export (without the "Editor" tag)
-    GetWorld()->DeleteObjectNow(m_hSkyLight);
-    m_hSkyLight.Invalidate();
-  }
-
-  if (!m_hDirectionalLight.IsInvalidated())
-  {
-    // make sure to remove the object RIGHT NOW, otherwise it may still exist during scene export (without the "Editor" tag)
-    GetWorld()->DeleteObjectNow(m_hDirectionalLight);
-    m_hDirectionalLight.Invalidate();
-  }
 }
 
 const xiiEngineProcessDocumentContext* xiiSceneContext::GetActiveDocumentContext() const

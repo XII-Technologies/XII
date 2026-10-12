@@ -1295,3 +1295,50 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   refers to the removed render-pipeline CVar; remaining scene picking/selection,
   animation and lighting integrations must be migrated before claiming a linked
   scene plugin or functional integrated Editor workflow.
+
+## Native scene preview lighting and immediate export
+
+- Scene editing and thumbnail lighting now use `xiiScenePreviewLighting`, backed
+  by native `xiiSkyAtmosphereComponent` and `xiiDirectionalLightComponent` objects.
+  The procedural atmosphere replaces the obsolete global cubemap skylight helper;
+  it uses the lowest atmosphere priority, allowing authored skies to win through
+  the native renderer's normal priority ordering. The directional fill retains
+  the previous orientation and explicitly uses 10 lux. This does not reinterpret
+  finite-volume reflection captures as global environment lighting.
+- The helper owns only generational World object handles. Creation is deferred
+  for empty scenes unless thumbnails force it; repeated creation updates export
+  tags without duplicating helpers. Missing objects or components are repaired.
+  Scene deinitialization destroys the controller before its World, and thumbnail
+  cleanup deletes untagged helpers immediately. Scene-specific integration lives
+  in `SceneContextLighting.cpp`; no Qt or renderer compatibility API was added.
+- Immediate-export tests exposed a Core bug: hierarchy traversal visited deleted
+  objects whose transformation storage had not yet been reclaimed. Both traversal
+  orders now reject invalidated identities. Core regressions cover static and
+  dynamic hierarchies, deleted roots and children, live inactive objects, and
+  World serialization before any cleanup update. This prevents removed thumbnail
+  lighting from appearing as empty objects in an immediate scene export.
+- All 21 Core subtests, all 38 Vulkan engine-process subtests, all 18 GraphicsCore
+  subtests and the EditorFramework document-lifecycle test pass. The lighting test
+  exercises forced/deferred creation, tag changes, export exclusion, immediate
+  deletion/export, external deletion repair, native render-data extraction,
+  authored atmosphere priority, independent view filters, World clear and
+  controller destruction. Its render graph uses a clear pass to isolate extraction
+  and ownership; a full shaded-scene image and integrated GUI lighting toggle have
+  not been verified.
+- Windows Debug builds of CoreTest, EditorEngineProcessFrameworkTest,
+  EditorEngineProcess, EditorFrameworkTest and GraphicsCoreTest pass.
+  `SceneContextLighting.cpp` compiles with zero warnings/errors. Evidence:
+  `Workspace/editor-preview-lighting-core-build.log`,
+  `Workspace/editor-preview-lighting-core-tests.log`,
+  `Workspace/editor-preview-lighting-all-tests.log`,
+  `Workspace/editor-preview-lighting-dependent-build.log`,
+  `Workspace/editor-preview-lighting-editor-tests.log`,
+  `Workspace/editor-preview-lighting-graphics-tests.log` and
+  `Workspace/editor-preview-lighting-scene-compile.log`.
+- The complete scene plugin still requires native animation state pullback and
+  scene picking/selection migration. Scene authoring's default sky creation and
+  obsolete skylight property metadata also remain to be migrated; the preview
+  helper does not convert existing scene assets. Other platforms/backends and
+  integrated Editor GUI workflows remain unverified.
+  `Workspace/editor-preview-lighting-scene-build.log` confirms that the full build
+  still stops at the removed animation declarations and global RenderWorld headers.
