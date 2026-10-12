@@ -4,6 +4,7 @@
 
 #include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #include <Foundation/Configuration/CVar.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 
@@ -14,7 +15,27 @@ XII_IMPLEMENT_SINGLETON(xiiRenderDoc);
 
 static xiiCommandLineOptionBool opt_NoCaptures("RenderDoc", "-NoCaptures", "Disables RenderDoc capture support.", false);
 
-static xiiRenderDoc g_RenderDocSingleton;
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(RenderDocPlugin, RenderDoc)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    XII_DEFAULT_NEW(xiiRenderDoc);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiRenderDoc* pSingleton = xiiRenderDoc::GetSingleton();
+    XII_DEFAULT_DELETE(pSingleton);
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
 
 xiiRenderDoc::xiiRenderDoc() :
   m_SingletonRegistrar(this)
@@ -292,4 +313,4 @@ bool xiiRenderDoc::AcquireApiFromDll(HMODULE hHandle)
   return true;
 }
 
-XII_STATICLINK_FILE(RenderDocPlugin, RenderDocPlugin_RenderDocSingleton);
+XII_STATICLINK_FILE(RenderDocPlugin, RenderDocPlugin_Implementation_RenderDocSingleton);
