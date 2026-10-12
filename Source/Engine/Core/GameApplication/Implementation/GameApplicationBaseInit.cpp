@@ -281,5 +281,3 @@ void xiiGameApplicationBase::Deinit_ShutdownLogging()
   xiiGlobalLog::RemoveLogWriter(m_LogToVsID);
 #endif
 }
-
-XII_STATICLINK_FILE(Core, Core_GameApplication_Implementation_GameApplicationBaseInit);

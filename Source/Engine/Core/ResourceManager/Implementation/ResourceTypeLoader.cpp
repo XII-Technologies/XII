@@ -132,5 +132,3 @@ bool xiiResourceLoaderFromMemory::IsResourceOutdated(const xiiResource* pResourc
 
   return true;
 }
-
-XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_ResourceTypeLoader);

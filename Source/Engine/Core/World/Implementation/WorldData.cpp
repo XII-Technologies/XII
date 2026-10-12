@@ -404,5 +404,3 @@ namespace xiiInternal
   }
 
 } // namespace xiiInternal
-
-XII_STATICLINK_FILE(Core, Core_World_Implementation_WorldData);

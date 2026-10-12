@@ -147,5 +147,3 @@ const char* xiiLuaWrapper::GetStringVariable(const char* szName, const char* szD
 }
 
 #endif // BUILDSYSTEM_ENABLE_LUA_SUPPORT
-
-XII_STATICLINK_FILE(Core, Core_Scripting_LuaWrapper_Variables);

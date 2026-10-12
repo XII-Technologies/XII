@@ -107,5 +107,3 @@ void xiiCollectionUtils::AddResourceHandle(xiiCollectionResourceDescriptor& ref_
     }
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_Collection_Implementation_CollectionUtils);

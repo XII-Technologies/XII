@@ -1840,5 +1840,3 @@ void xiiGeometry::AddArch(const xiiVec3& vSize0, xiiUInt32 uiNumSegments, float 
     }
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_Graphics_Implementation_Geometry);

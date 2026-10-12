@@ -107,5 +107,3 @@ void xiiStateMap::RetrieveString(const xiiTempHashedString& sName, xiiString& ou
     out_sValue = sDefaultValue;
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_GameState_Implementation_StateMap);

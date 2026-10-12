@@ -388,3 +388,5 @@ xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
 }
 
 #endif
+
+XII_STATICLINK_FILE(Core, Core_Platform_SDL_Window_SDL);

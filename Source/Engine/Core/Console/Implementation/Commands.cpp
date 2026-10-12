@@ -63,5 +63,3 @@ void xiiQuakeConsole::ExecuteBoundKey(xiiStringView sKey)
     ExecuteCommand(it.Value());
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_Console_Implementation_Commands);

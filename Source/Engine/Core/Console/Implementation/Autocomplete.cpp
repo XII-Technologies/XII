@@ -200,5 +200,3 @@ void xiiCommandInterpreter::AutoComplete(xiiCommandInterpreterState& inout_state
     inout_state.m_sInput.Append(FindCommonString(AutoCompleteOptions).GetData());
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_Console_Implementation_Autocomplete);

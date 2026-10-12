@@ -407,5 +407,3 @@ xiiStringView xiiInputManager::GetInputSlotTouchPointPositionY(xiiUInt32 uiIndex
       return "";
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_Input_Implementation_InputManager);

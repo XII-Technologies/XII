@@ -765,5 +765,3 @@ void xiiConvexHullGenerator::RetrieveVertices(xiiDynamicArray<xiiVec3>& out_vert
     }
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_Graphics_Implementation_ConvexHull);

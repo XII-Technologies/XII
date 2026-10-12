@@ -77,5 +77,3 @@ float xiiCoordinateSystemConversion::ConvertTargetLength(float fLength) const
 {
   return fLength * m_fTargetToSourceScale;
 }
-
-XII_STATICLINK_FILE(Core, Core_World_Implementation_CoordinateSystem);

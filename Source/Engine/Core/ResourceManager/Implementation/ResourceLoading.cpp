@@ -440,5 +440,3 @@ void xiiResourceManager::EnsureResourceLoadingState(xiiResource* pResourceToLoad
     }
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_ResourceLoading);

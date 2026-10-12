@@ -815,5 +815,3 @@ void xiiWorldReader::InstantiationContext::SetSubProgressCompletion(double fComp
     m_pSubProgressRange->SetCompletion(fCompletion);
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_WorldSerializer_Implementation_WorldReader);
