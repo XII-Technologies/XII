@@ -22,6 +22,7 @@ public:
   xiiString GetApplicationDataFolder() const;
 
   /// The writable location where the application should store preferences (user specific settings).
+  /// Uses the mounted APPDATA directory when present, otherwise the default application user-data folder.
   xiiString GetApplicationPreferencesFolder() const;
 
   /// The writable location where preferences for the current xiiToolsProject should be stored (user specific settings).
