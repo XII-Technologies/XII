@@ -9,12 +9,76 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <Texture/Image/Image.h>
+
+XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiUniquePtr<xiiWorld> worlds[2];
+  xiiUInt64              frames[2]     = {};
+  xiiUInt32              executions[2] = {};
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    xiiWorldDescription description("Concurrent rendered world");
+    worlds[i] = XII_DEFAULT_NEW(xiiWorld, description);
+    XII_LOCK(worlds[i]->GetWriteMarker());
+    worlds[i]->SetWorldSimulationEnabled(false);
+    xiiView* view = nullptr;
+    worlds[i]->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Concurrent view", view);
+    xiiGALTextureCreationDescription target;
+    target.m_Type      = xiiGALResourceDimension::Texture2D;
+    target.m_Size      = {8, 8};
+    target.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
+    target.m_BindFlags = xiiGALBindFlags::RenderTarget;
+    auto texture       = environment.GetDevice()->CreateTexture(target);
+    view->SetRenderTargetView(texture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    view->SetViewport({0, 0, 8, 8});
+    view->SetCamera(&camera);
+    view->SetRenderGraphBuilder([&, i](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
+      struct Data
+      {
+        XII_DECLARE_POD_TYPE();
+      };
+      graph.AddPass<Data>("Record world frame", xiiGALCommandQueueFlags::Graphics, [](Data&, xiiRenderGraphBuilder&) {}, [&, i](const Data&, xiiRenderGraphPassContext& context) {
+          frames[i] = context.GetFrameIndex();
+          ++executions[i]; }, true);
+    });
+  }
+  xiiUInt64 previousFrame = 0;
+  for (xiiUInt32 iteration = 0; iteration < 8; ++iteration)
+  {
+    const auto group = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
+    for (auto& world : worlds)
+      xiiTaskSystem::AddTaskToGroup(group, world->GetUpdateTask());
+    xiiTaskSystem::StartTaskGroup(group);
+    xiiTaskSystem::WaitForGroup(group);
+    XII_TEST_BOOL(frames[0] > previousFrame && frames[1] > previousFrame);
+    XII_TEST_BOOL(frames[0] != frames[1]);
+    XII_TEST_INT(executions[0], iteration + 1);
+    XII_TEST_INT(executions[1], iteration + 1);
+    previousFrame = xiiMath::Max(frames[0], frames[1]);
+  }
+  worlds[0].Clear();
+  {
+    XII_LOCK(worlds[1]->GetWriteMarker());
+    worlds[1]->Update();
+  }
+  XII_TEST_BOOL(frames[1] > previousFrame);
+}
 
 namespace
 {

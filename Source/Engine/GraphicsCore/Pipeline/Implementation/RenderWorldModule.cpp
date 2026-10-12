@@ -14,6 +14,7 @@
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -62,6 +63,16 @@ namespace
 
 xiiUniquePtr<xiiRenderWorldModule::ExtractionEvent> xiiRenderWorldModule::s_pRenderEvent;
 
+struct xiiRenderWorldModule::FrameExecutionState
+{
+  xiiMutex                     m_Mutex;
+  xiiGpuFrameCompletionTracker m_Completion;
+  xiiUInt64                    m_uiFrameIndex = 0;
+  bool                         m_bInitialized = false;
+};
+
+xiiUniquePtr<xiiRenderWorldModule::FrameExecutionState> xiiRenderWorldModule::s_pFrameExecution;
+
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderWorldEvents)
 
@@ -80,18 +91,35 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderWorldEvents)
     xiiRenderWorldModule::ShutdownRenderEvents();
   }
 
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    xiiRenderWorldModule::ResetFrameExecution();
+  }
+
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 void xiiRenderWorldModule::StartupRenderEvents()
 {
   XII_ASSERT_DEV(s_pRenderEvent == nullptr, "Render world events were started twice.");
-  s_pRenderEvent = XII_DEFAULT_NEW(ExtractionEvent);
+  s_pRenderEvent    = XII_DEFAULT_NEW(ExtractionEvent);
+  s_pFrameExecution = XII_DEFAULT_NEW(FrameExecutionState);
 }
 
 void xiiRenderWorldModule::ShutdownRenderEvents()
 {
+  ResetFrameExecution();
+  s_pFrameExecution.Clear();
   s_pRenderEvent.Clear();
+}
+
+void xiiRenderWorldModule::ResetFrameExecution()
+{
+  if (!s_pFrameExecution)
+    return;
+  s_pFrameExecution->m_Completion.Reset();
+  s_pFrameExecution->m_uiFrameIndex = 0;
+  s_pFrameExecution->m_bInitialized = false;
 }
 
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
@@ -133,10 +161,7 @@ void xiiRenderWorldModule::Deinitialize()
   for (const auto& view : views)
     DestroyView(view);
 
-  m_uiRenderFrameIndex = 0;
   xiiDebugRenderer::ClearContext(GetWorld());
-  m_FrameCompletionTracker.Reset();
-  m_bFrameCompletionTrackerInitialized = false;
 }
 
 void xiiRenderWorldModule::OnSimulationStarted()
@@ -575,19 +600,27 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (!pDevice)
     return;
 
-  if (!m_bFrameCompletionTrackerInitialized)
+  if (m_ViewIdTable.IsEmpty())
+    return;
+
+  // Worlds update concurrently, but residency, material frame slices and physical resource
+  // states are shared by the device. Order graph recording and frame retirement across worlds;
+  // extraction remains parallel and each graph retains its asynchronous GPU queues.
+  auto& frames = *s_pFrameExecution;
+  XII_LOCK(frames.m_Mutex);
+  if (!frames.m_bInitialized)
   {
-    m_FrameCompletionTracker.Initialize(pDevice.Borrow());
-    m_bFrameCompletionTrackerInitialized = true;
+    frames.m_Completion.Initialize(pDevice.Borrow());
+    frames.m_bInitialized = true;
   }
 
   // Frame zero is the conservative "nothing has completed" sentinel used by all deferred
   // resource managers. Real submissions therefore start at one.
-  const xiiUInt64     uiFrameIndex     = ++m_uiRenderFrameIndex;
+  const xiiUInt64     uiFrameIndex     = ++frames.m_uiFrameIndex;
   constexpr xiiUInt32 uiFramesInFlight = 3U;
   if (uiFrameIndex > uiFramesInFlight)
-    m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
-  const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
+    frames.m_Completion.WaitForFrame(uiFrameIndex - uiFramesInFlight);
+  const xiiUInt64 uiCompletedFrame = frames.m_Completion.PollCompletedFrames();
   if (xiiGALBindlessResourceTable::IsInitialized())
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   if (xiiMaterialManager::IsInitialized())
@@ -688,5 +721,5 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     resourceCache.EndFrame();
   }
 
-  m_FrameCompletionTracker.CaptureSubmittedFrame(uiFrameIndex);
+  frames.m_Completion.CaptureSubmittedFrame(uiFrameIndex);
 }

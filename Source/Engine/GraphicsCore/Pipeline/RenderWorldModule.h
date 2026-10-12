@@ -8,7 +8,6 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
-#include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 
 class xiiRenderGraph;
@@ -168,6 +167,7 @@ private:
   static void SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
   static void StartupRenderEvents();
   static void ShutdownRenderEvents();
+  static void ResetFrameExecution();
 
   void OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
   bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const;
@@ -190,14 +190,12 @@ private:
     ViewExtractionCache                  m_ExtractionCache;
   };
 
-  xiiUInt64                    m_uiRenderFrameIndex = 0;
-  xiiGpuFrameCompletionTracker m_FrameCompletionTracker;
-  bool                         m_bFrameCompletionTrackerInitialized = false;
-
   xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
   xiiEvent<xiiViewEvent, xiiMutex>  m_ViewEvents;
 
   static xiiUniquePtr<ExtractionEvent> s_pRenderEvent;
+  struct FrameExecutionState;
+  static xiiUniquePtr<FrameExecutionState> s_pFrameExecution;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderWorldModule_inl.h>
