@@ -10,6 +10,22 @@ struct xiiMsgExtractRenderData;
 
 using xiiReflectionCaptureComponentManager = xiiComponentManager<class xiiReflectionCaptureComponent, xiiBlockStorageType::Compact>;
 
+/// Describes a local reflection capture's influence and full-weight blend volumes to tooling.
+/// Contains reflected property bindings only; visualization and UI remain outside the runtime.
+class XII_GRAPHICSCORE_DLL xiiReflectionCaptureVisualizerAttribute : public xiiVisualizerAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiReflectionCaptureVisualizerAttribute, xiiVisualizerAttribute);
+
+public:
+  xiiReflectionCaptureVisualizerAttribute();
+  xiiReflectionCaptureVisualizerAttribute(xiiStringView sShapeProperty, xiiStringView sHalfExtentsProperty, xiiStringView sRadiusProperty, xiiStringView sBlendDistanceProperty);
+
+  const xiiUntrackedString& GetShapeProperty() const { return m_sProperty1; }
+  const xiiUntrackedString& GetHalfExtentsProperty() const { return m_sProperty2; }
+  const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty3; }
+  const xiiUntrackedString& GetBlendDistanceProperty() const { return m_sProperty4; }
+};
+
 /// Shape used to evaluate a local reflection probe's influence volume.
 struct xiiReflectionProbeInfluenceShape
 {

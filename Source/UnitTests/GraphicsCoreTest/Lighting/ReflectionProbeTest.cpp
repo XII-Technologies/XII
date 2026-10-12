@@ -26,6 +26,14 @@ XII_CREATE_SIMPLE_TEST(Lighting, ReflectionProbes)
     XII_TEST_BOOL(pComponentType->FindPropertyByName("Saturation") != nullptr);
     XII_TEST_BOOL(pComponentType->FindPropertyByName("Priority") != nullptr);
     XII_TEST_BOOL(pComponentType->FindPropertyByName("ParallaxCorrected") != nullptr);
+    const auto* visualizer = pComponentType->GetAttributeByType<xiiReflectionCaptureVisualizerAttribute>();
+    if (XII_TEST_BOOL(visualizer != nullptr))
+    {
+      XII_TEST_STRING(visualizer->GetShapeProperty(), "InfluenceShape");
+      XII_TEST_STRING(visualizer->GetHalfExtentsProperty(), "HalfExtents");
+      XII_TEST_STRING(visualizer->GetRadiusProperty(), "SphereRadius");
+      XII_TEST_STRING(visualizer->GetBlendDistanceProperty(), "BlendDistance");
+    }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid influence values are contained")
