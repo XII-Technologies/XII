@@ -186,10 +186,10 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex)
     return;
 
-  // Section/material candidates share one geometry-level selection. Read the same
-  // representative's history even when some candidates were filtered last frame.
+  // Instance culling already selected the LOD before routing and occlusion tests.
+  // Streaming feedback uses the same representative and active-instance bounds.
   uint selectionIndex = instanceIndex;
-  if (instance.LodSelectionIndex < sceneCount && g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex)
+  if (instance.LodSelectionIndex < min(view.InstanceCount, sceneCount) && g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex)
     selectionIndex = instance.LodSelectionIndex;
   const GpuSceneInstance selection = g_SceneInstances[selectionIndex];
   const GpuGeometryRecord geometry          = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
