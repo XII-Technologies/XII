@@ -52,9 +52,10 @@ void xiiTextureCubeAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumen
   }
 }
 
-void xiiTextureCubeAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiTextureCubeAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiTextureCubeAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiTextureCubeAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

@@ -119,9 +119,10 @@ void xiiMeshAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentManage
   }
 }
 
-void xiiMeshAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiMeshAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiMeshAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiMeshAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

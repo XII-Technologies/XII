@@ -47,9 +47,10 @@ void xiiSkeletonAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentMa
   }
 }
 
-void xiiSkeletonAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiSkeletonAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiSkeletonAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiSkeletonAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

@@ -50,9 +50,10 @@ void xiiStateMachineAssetManager::OnDocumentManagerEvent(const xiiDocumentManage
   }
 }
 
-void xiiStateMachineAssetManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiStateMachineAssetManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiStateMachineAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiStateMachineAssetManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

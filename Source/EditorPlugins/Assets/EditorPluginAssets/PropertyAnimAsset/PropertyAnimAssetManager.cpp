@@ -50,9 +50,10 @@ void xiiPropertyAnimAssetDocumentManager::OnDocumentManagerEvent(const xiiDocume
   }
 }
 
-void xiiPropertyAnimAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiPropertyAnimAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiPropertyAnimAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiPropertyAnimAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

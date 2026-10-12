@@ -78,7 +78,7 @@ void xiiTextureAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentMan
   }
 }
 
-void xiiTextureAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiTextureAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   xiiTextureAssetDocument* pDoc = new xiiTextureAssetDocument(sPath);
   out_pDocument                 = pDoc;
@@ -87,6 +87,7 @@ void xiiTextureAssetDocumentManager::InternalCreateDocument(xiiStringView sDocum
   {
     pDoc->m_bIsRenderTarget = true;
   }
+  return XII_SUCCESS;
 }
 
 void xiiTextureAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

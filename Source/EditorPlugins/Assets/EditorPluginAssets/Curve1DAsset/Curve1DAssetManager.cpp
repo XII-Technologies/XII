@@ -48,9 +48,10 @@ void xiiCurve1DAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentMan
   }
 }
 
-void xiiCurve1DAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiCurve1DAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiCurve1DAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiCurve1DAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

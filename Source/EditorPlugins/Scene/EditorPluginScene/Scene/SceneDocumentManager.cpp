@@ -66,7 +66,7 @@ xiiSceneDocumentManager::xiiSceneDocumentManager()
   }
 }
 
-void xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   if (sDocumentTypeName.IsEqual("Scene"))
   {
@@ -74,9 +74,7 @@ void xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumentType
 
     if (bCreateNewDocument)
     {
-      const xiiStatus status = xiiCreateDefaultScene(*out_pDocument->GetObjectAccessor());
-      if (status.Failed())
-        xiiLog::Error("Failed to populate the new scene: {}", status.GetMessageString());
+      XII_SUCCEED_OR_RETURN(xiiCreateDefaultScene(*out_pDocument->GetObjectAccessor()));
     }
   }
   else if (sDocumentTypeName.IsEqual("Prefab"))
@@ -94,9 +92,17 @@ void xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumentType
     {
       // Opened via a parent scene document
       xiiScene2Document* pDoc = const_cast<xiiScene2Document*>(xiiDynamicCast<const xiiScene2Document*>(pOpenContext->GetDocumentObjectManager()->GetDocument()));
+      if (pDoc == nullptr)
+        return xiiStatus("A scene layer requires a parent scene document.");
+
       out_pDocument           = new xiiLayerDocument(sPath, pDoc);
     }
   }
+  else
+  {
+    return xiiStatus("Unsupported scene document type.");
+  }
+  return XII_SUCCESS;
 }
 
 void xiiSceneDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

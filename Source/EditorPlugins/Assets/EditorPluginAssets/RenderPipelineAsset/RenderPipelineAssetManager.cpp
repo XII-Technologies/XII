@@ -50,9 +50,10 @@ void xiiRenderPipelineAssetManager::OnDocumentManagerEvent(const xiiDocumentMana
   }
 }
 
-void xiiRenderPipelineAssetManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiRenderPipelineAssetManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiRenderPipelineAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiRenderPipelineAssetManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

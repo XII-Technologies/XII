@@ -26,6 +26,7 @@ public:
   /// \param flags Flags to define various options like whether a window should be created.
   /// \param pOpenContext An generic context object. Allows for custom data to be passed along into the construction. E.g. inform a sub-document which main document it belongs to.
   /// \return Returns the error in case the operations failed.
+  /// With AsyncSave, success means construction and scheduling succeeded; persistence finishes asynchronously.
   xiiStatus CreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags = xiiDocumentFlags::None, const xiiDocumentObject* pOpenContext = nullptr);
 
   /// Opens an existing document.
@@ -110,8 +111,10 @@ protected:
   virtual void InternalCloneDocument(xiiStringView sPath, xiiStringView sClonePath, const xiiUuid& documentId, const xiiUuid& seedGuid, const xiiUuid& cloneGuid, xiiAbstractObjectGraph* pHeader, xiiAbstractObjectGraph* pObjects, xiiAbstractObjectGraph* pTypes);
 
 private:
-  virtual void InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) = 0;
-  virtual void InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const                                                           = 0;
+  /// Constructs a document, including its initial content. On failure the manager destroys any returned document.
+  /// A successful factory must return a non-null document. Loading, registration and window events follow only on success.
+  virtual xiiStatus InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) = 0;
+  virtual void      InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const                                                           = 0;
 
 private:
   xiiStatus CreateOrOpenDocument(bool bCreate, xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext = nullptr);
