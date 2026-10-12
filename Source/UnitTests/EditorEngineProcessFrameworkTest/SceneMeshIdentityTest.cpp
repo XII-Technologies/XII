@@ -18,6 +18,8 @@
 #include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
@@ -170,10 +172,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
       xiiCamera  camera;
       camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
       camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
-      // This raster service explicitly consumes reversed-Z depth (clear 0, greater comparison).
-      const auto                      projection     = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(60), 1, 100, 0.1f,
-                                                                                                                   xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
-      const auto                      viewProjection = projection * camera.GetViewMatrix();
+      auto*      worldRenderer = world.GetOrCreateModule<xiiRenderWorldModule>();
+      xiiView*   view          = nullptr;
+      const auto viewHandle    = worldRenderer->CreateView("Identity projection", view);
+      XII_SCOPE_EXIT(worldRenderer->DestroyView(viewHandle));
+      view->SetCamera(&camera);
+      view->SetViewport({0, 0, 32, 32});
+      const auto                      viewProjection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
       const auto                      frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
       const auto                      visibilityView = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetObjectCount());
       xiiGpuVisibilityPassDescription visibilityDescription;

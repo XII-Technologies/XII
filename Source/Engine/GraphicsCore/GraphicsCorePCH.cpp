@@ -138,6 +138,7 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_RenderPipelineResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_SortingFunctions);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_View);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_ViewData);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_ViewPicking);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_ViewRenderResourceManager);
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_ViewRenderMode);

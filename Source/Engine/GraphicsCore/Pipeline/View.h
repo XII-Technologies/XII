@@ -150,7 +150,7 @@ public:
   /// Returns XII_FAILURE, if the point could not be projected into screen-space.
   xiiResult ComputeScreenSpacePos(const xiiVec3& vWorldPos, xiiVec3& out_vScreenPosNormalized) const;
 
-  /// Calculates the world-space position that the given normalized screen-space coordinate maps to
+  /// Calculates the near-plane world position at the normalized screen coordinates.
   xiiResult ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos) const;
 
   /// Converts a screen-space position from pixel coordinates to normalized coordinates.
@@ -159,6 +159,7 @@ public:
   /// Converts a screen-space position from normalized coordinates to pixel coordinates.
   void ConvertScreenNormalizedPosToPixelPos(xiiVec3& inout_vNormalizedPos);
 
+  /// Native projections use ZeroToOne reversed Z (near=1, far=0), unlike Core camera projections.
   const xiiMat4& GetProjectionMatrix(xiiCameraEye eye) const;
   const xiiMat4& GetInverseProjectionMatrix(xiiCameraEye eye) const;
   const xiiMat4& GetViewMatrix(xiiCameraEye eye) const;

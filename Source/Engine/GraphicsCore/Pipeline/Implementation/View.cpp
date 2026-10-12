@@ -208,11 +208,15 @@ void xiiView::UpdateCachedMatrices() const
     m_fLastViewportAspectRatio         = fViewportAspectRatio;
 
 
-    m_pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[0], xiiCameraEye::Left);
-    m_Data.m_InverseProjectionMatrix[0] = m_Data.m_ProjectionMatrix[0].GetInverse(0.0f);
-
-    m_pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[1], xiiCameraEye::Right);
-    m_Data.m_InverseProjectionMatrix[1] = m_Data.m_ProjectionMatrix[1].GetInverse(0.0f);
+    for (xiiUInt32 i = 0; i < 2; ++i)
+    {
+      auto& projection = m_Data.m_ProjectionMatrix[i];
+      m_pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, projection, static_cast<xiiCameraEye>(i), xiiClipSpaceDepthRange::ZeroToOne);
+      // Cameras retain their general-purpose near=0 / far=1 convention. Native rendering uses
+      // reversed Z (near=1 / far=0), including supplied asymmetric stereo projections.
+      projection.SetRow(2, projection.GetRow(3) - projection.GetRow(2));
+      m_Data.m_InverseProjectionMatrix[i] = projection.GetInverse(0.0f);
+    }
   }
 
   if (bUpdateVP)

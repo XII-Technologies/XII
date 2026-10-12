@@ -20,8 +20,6 @@ VS_OUT main(VS_IN input)
 {
   VS_OUT output;
   output.Position = mul(ViewProjection, float4(input.Position, 1));
-  // Camera matrices use forward depth; the render graph's scene depth is reversed Z.
-  output.Position.z = output.Position.w - output.Position.z;
   output.Normal = input.Normal;
   output.UV = input.UV;
   return output;

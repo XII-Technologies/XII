@@ -7,6 +7,25 @@ does not satisfy it.
 
 ## Native GPU mesh identity for SceneView picking
 
+- Native `xiiView` projections now consistently use ZeroToOne reversed Z, matching
+  depth prepasses, G-buffer rasterization and surface queries. Core cameras retain
+  their conventional projection contract. Both eyes, including asymmetric stereo
+  matrices, are converted when view matrices are cached. Camera replacement also
+  invalidates caches even if the replacement's modification counters match.
+  `xiiViewData` query implementation is separated into its own source file: rays
+  start on the near plane and use an interior depth to support infinite far planes.
+  Invalid/non-finite queries return `xiiResult` failure without changing outputs.
+  Texture preview shaders consume the native projection directly; their previous
+  local depth reversal was removed to preserve nearest cube-sphere coverage.
+- Windows Debug dependent builds pass for GraphicsCoreTest and the engine-process
+  tests. All 18 Core tests and all 41 Vulkan engine-process tests pass, including
+  perspective/orthographic, negative orthographic near planes, asymmetric stereo,
+  infinite far planes, camera replacement and invalid query tests. Native mesh
+  raster readback now uses an actual `xiiView` projection. Cube preview face and
+  resource reload tests also pass. Evidence:
+  `Workspace/editor-native-view-projection-build.log`,
+  `Workspace/editor-native-view-projection-tests.log` and
+  `Workspace/editor-native-view-projection-core-tests.log`.
 - A dedicated native surface-query raster now consumes the existing compact
   visibility stream, geometry residency and material tables. It produces one
   RGBA32UInt target containing native identity, depth bits and oct-encoded smooth
@@ -56,7 +75,8 @@ does not satisfy it.
   reads back the actual R32UInt result, and resolves the visible mesh to its native
   component. It also checks background zero, colliding component/section IDs,
   packet retirement, database clearing, invalid contexts and non-extracted scene
-  objects. The raster test supplies the service's documented reversed-Z matrix.
+  objects. The initial raster fixture supplied a reversed-Z matrix; it now exercises
+  the native view's projection as described above.
   Evidence: `Workspace/editor-scene-mesh-source-verified-build.log`,
   `Workspace/editor-scene-mesh-source-tests.log`,
   `Workspace/editor-scene-mesh-source-core-tests.log`,
@@ -65,8 +85,8 @@ does not satisfy it.
 - This checkpoint supplies the native identity path for geometry picking. It
   does not complete SceneView's readback/IPC migration or establish a successful
   full Scene plugin build. SceneView query integration, selected-object click-through,
-  selection overlays, indexed-fallback picking, complete viewport projection/depth
-  integration and integrated Qt interaction still require verification/migration.
+  selection overlays, indexed-fallback picking, full viewport integration and
+  integrated Qt interaction still require verification/migration.
   The existing SceneView compile blocker documented below remains outstanding.
 
 ## Native skeleton pose authoring and simulation pullback
