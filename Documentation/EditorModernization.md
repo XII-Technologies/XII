@@ -1858,3 +1858,84 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   application startup, project/document windows, viewport interaction and other
   platforms remain separate verification work; these builds and source tests do not
   establish completion of the comprehensive Editor modernization goal.
+
+## Native application, scene window and renderer lifecycle verification
+
+- The production Editor startup test now opens an isolated project and real Qt
+  document windows. It exercises the preserved property-animation source editor,
+  queued selection after delete/undo/redo, window destruction, and project shutdown.
+  Preference paths honor the existing `:appdata/` mount, so the startup override
+  isolates document preferences as well as logs. Application data identity matches
+  the Editor's tool-data directory. Optional plugin data mounts follow the runtime
+  application convention.
+- A production default scene is created with its native mesh components and
+  pipeline resource. The native Qt test transforms the bundled Sphere mesh through
+  the asset curator, writes asset tables, renders a 256-by-256 viewport through the
+  Engine process, and verifies varied captured pixels. Picking requests traverse
+  the real IPC connection and return the Sphere document UUID. The test drives
+  the normal frame protocol and retries asynchronous picking within a bounded
+  timeout while resource loading settles. Transform editing, undo/redo, save and
+  reopen preserve the scene and object UUIDs and the final transform. Closing the
+  window and project exercises destruction of both preview and scene worlds.
+- Application world-update loops now skip vacant world-registry slots. Closing a
+  preview world previously left a null slot that these loops dereferenced when
+  the remaining scene continued rendering. The registry's documented count is
+  its slot count; existing live-world identity and allocation semantics are retained.
+- Native rendering exposed runtime defects beyond the Editor adapters. Reverse-Z
+  swapchain clear depth zero is accepted. Required shader permutations block for
+  their actual definitions, and invalid handles are rejected before acquisition.
+  Concurrent pipeline-cache misses and shared material registration are serialized
+  with their existing managers. World rendering shares one frame-completion clock
+  and serializes manager preparation, recording and submission across worlds;
+  extraction and GPU queues within a graph remain asynchronous. Emissive triangle
+  extraction binds its required linear-wrap sampler and checks resource commits.
+- Debug drawing resamples reduced-resolution scene depth to the display target
+  through a depth-only render-graph pass. Matching attachments reuse the original
+  depth. Intermediate coordinates start at zero even for offset presentation
+  viewports. GPU tests verify visible, occluded and overlay triangles on an odd-sized
+  display with both zero and nonzero viewport origins. Unsupported resampling
+  dimensions and mismatched attachment sample counts fail preparation explicitly.
+- Vulkan query pools grow in fixed-size blocks instead of exhausting at their
+  initial capacities. Recorded and in-flight commands retain their query slots
+  independently of public query objects. Retirement and readback use actual queue
+  submission fences. Reusable lists reset slots before each execution through
+  primary reset preambles, outside render passes. Secondary lists propagate those
+  preambles and remain retained by submitted primaries until completion. Secondary
+  commands declare render-pass continuation only when they inherit a render pass.
+  Failed preamble recording returns `xiiResult` failure and releases the unbegun
+  allocation. Completed command data is destroyed outside pool locks, and device
+  shutdown drains secondary retirement before destroying query pools. Pool blocks
+  remain allocated until device shutdown; reusable lists retain slots until reset
+  or destruction.
+
+Verification on Windows, VS2026 Debug, Qt 6.11 and Vulkan:
+
+- Integrated builds of Editor, EditorProcessor, EditorPluginVisualScript and
+  GraphicsFoundationTest pass, including the production Scene/Assets plugins and
+  Engine process: `Workspace/editor-native-integrated-final-build.log`.
+- All 40 GraphicsFoundation subtests pass, including 1537 duration queries over
+  repeated allocation/reuse, release of public queries before submission, reusable
+  primary and secondary query execution, and release of both command lists before
+  GPU completion: `Workspace/editor-secondary-query-retirement-tests.log`.
+- All 18 GraphicsCore subtests pass:
+  `Workspace/editor-native-core-final-tests.log`.
+- All 45 Vulkan engine-process subtests pass, including offset debug depth,
+  concurrent cache/material acquisition, multiple world frame submission, native
+  mesh section picking and resource reload:
+  `Workspace/editor-secondary-final-engine-tests.log`.
+- All ten offscreen Editor subtests pass:
+  `Workspace/editor-offscreen-final-tests.log`. The native Qt Startup integration
+  subtest also passes, including actual viewport capture and IPC picking:
+  `Workspace/editor-native-scene-final-tests.log`.
+
+These results supersede the earlier unverified application/window startup and
+integrated build notes. Native Qt verification is automated through production
+widgets and IPC; manual mouse-driven manipulation, material dragging, broad visual
+quality comparisons and full workflow parity are not established. Vulkan is the
+only compiled backend here; D3D12, other platforms and Release remain unverified.
+Hardware without host query reset, allocation-failure injection and secondary
+queries inside inherited render passes have not been exercised. Cross-LOD residency,
+indexed/deformed native picking, legacy scene migrations and the ReFS case-only
+notification limitation remain outstanding. The manual RenderGraphManager frame
+timeline and shared temporal managers still require review against the common
+world submission clock. The comprehensive modernization goal remains active.
