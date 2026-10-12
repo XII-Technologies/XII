@@ -11,8 +11,8 @@
 class xiiGALPipelineCache::State
 {
 public:
-  template <typename HandleType, typename DescriptorType, typename KeyType>
-  HandleType TryGetPipeline(const DescriptorType& description, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table)
+  template <typename PipelinePtr, typename DescriptorType, typename KeyType, typename CreatePipeline>
+  PipelinePtr GetOrCreatePipeline(const DescriptorType& description, xiiHashTable<KeyType, PipelinePtr, CacheKeyHasher>& table, CreatePipeline create)
   {
     XII_ASSERT_DEV(m_pDevice != nullptr, "GAL device not initialized.");
 
@@ -21,26 +21,15 @@ public:
     key.m_uiHash      = xiiGALDescriptorHash::Hash(description);
 
     XII_LOCK(m_Mutex);
-    if (HandleType* pExistingPipeline = table.GetValue(key))
+    if (PipelinePtr* pExistingPipeline = table.GetValue(key))
       return *pExistingPipeline;
-    return {};
-  }
 
-  template <typename HandleType, typename DescriptorType, typename KeyType>
-  xiiResult TryInsertPipeline(const DescriptorType& description, HandleType hNewPipeline, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table)
-  {
-    KeyType key;
-    key.m_Description = description;
-    key.m_uiHash      = xiiGALDescriptorHash::Hash(description);
-
-    XII_LOCK(m_Mutex);
-    HandleType hExistingPipeline;
-    if (table.Insert(key, hNewPipeline, &hExistingPipeline))
-    {
-      XII_ASSERT_DEBUG(hExistingPipeline == hNewPipeline, "On collision, both pipelines must be the same (create should have just increased the ref count).");
-      return XII_FAILURE;
-    }
-    return XII_SUCCESS;
+    // The device creates distinct objects for identical descriptors. Keep a cache miss
+    // locked through creation so concurrent worlds share one pipeline and one compilation.
+    PipelinePtr pipeline = create();
+    if (pipeline)
+      table.Insert(key, pipeline);
+    return pipeline;
   }
 
   void Clear()
@@ -135,19 +124,7 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALPipelineCache::GetPipeline(const
   if (!IsInitialized())
     return {};
 
-  xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipeline = s_pState->TryGetPipeline<xiiSharedPtr<xiiGALGraphicsPipelineState>>(description, s_pState->m_GraphicsPipelines);
-
-  if (!pGraphicsPipeline)
-  {
-    pGraphicsPipeline = s_pState->m_pDevice->CreateGraphicsPipelineState(description);
-
-    if (!pGraphicsPipeline)
-      return {};
-
-    s_pState->TryInsertPipeline<xiiSharedPtr<xiiGALGraphicsPipelineState>>(description, pGraphicsPipeline, s_pState->m_GraphicsPipelines).IgnoreResult();
-  }
-
-  return pGraphicsPipeline;
+  return s_pState->GetOrCreatePipeline(description, s_pState->m_GraphicsPipelines, [&] { return s_pState->m_pDevice->CreateGraphicsPipelineState(description); });
 }
 
 xiiSharedPtr<xiiGALComputePipelineState> xiiGALPipelineCache::GetPipeline(const xiiGALComputePipelineStateCreationDescription& description)
@@ -156,19 +133,7 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGALPipelineCache::GetPipeline(const 
   if (!IsInitialized())
     return {};
 
-  xiiSharedPtr<xiiGALComputePipelineState> pComputePipeline = s_pState->TryGetPipeline<xiiSharedPtr<xiiGALComputePipelineState>>(description, s_pState->m_ComputePipelines);
-
-  if (!pComputePipeline)
-  {
-    pComputePipeline = s_pState->m_pDevice->CreateComputePipelineState(description);
-
-    if (!pComputePipeline)
-      return {};
-
-    s_pState->TryInsertPipeline<xiiSharedPtr<xiiGALComputePipelineState>>(description, pComputePipeline, s_pState->m_ComputePipelines).IgnoreResult();
-  }
-
-  return pComputePipeline;
+  return s_pState->GetOrCreatePipeline(description, s_pState->m_ComputePipelines, [&] { return s_pState->m_pDevice->CreateComputePipelineState(description); });
 }
 
 xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALPipelineCache::GetPipeline(const xiiGALRayTracingPipelineStateCreationDescription& description)
@@ -177,19 +142,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALPipelineCache::GetPipeline(con
   if (!IsInitialized())
     return {};
 
-  xiiSharedPtr<xiiGALRayTracingPipelineState> pRayTracingPipeline = s_pState->TryGetPipeline<xiiSharedPtr<xiiGALRayTracingPipelineState>>(description, s_pState->m_RayTracingPipelines);
-
-  if (!pRayTracingPipeline)
-  {
-    pRayTracingPipeline = s_pState->m_pDevice->CreateRayTracingPipelineState(description);
-
-    if (!pRayTracingPipeline)
-      return {};
-
-    s_pState->TryInsertPipeline<xiiSharedPtr<xiiGALRayTracingPipelineState>>(description, pRayTracingPipeline, s_pState->m_RayTracingPipelines).IgnoreResult();
-  }
-
-  return pRayTracingPipeline;
+  return s_pState->GetOrCreatePipeline(description, s_pState->m_RayTracingPipelines, [&] { return s_pState->m_pDevice->CreateRayTracingPipelineState(description); });
 }
 
 xiiUInt32 xiiGALPipelineCache::CacheKeyHasher::Hash(const xiiGALPipelineCache::GraphicsPipelineCacheKey& a)
