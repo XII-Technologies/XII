@@ -2474,3 +2474,85 @@ world submission clock. The comprehensive modernization goal remains active.
   No new assertion artifact is produced. Deformed execution/picking, legacy
   sky/probe/GreyBox migration, ReFS notifications and broader manual Editor workflow
   parity remain outstanding; this checkpoint does not complete the modernization.
+
+
+## ReFS Asset Watcher Recovery And Lifetime Verification
+
+- Fresh native probes reproduced the earlier ReFS case-only rename failure:
+  all five tested rename APIs changed the directory's stored spelling but did
+  not signal the pending notification read until another filesystem operation.
+  Only `OLD_NAME` arrived. Adding notification filter bits did not restore the
+  missing pair. Evidence: `Workspace/editor-refs-rename-current-probe.log` and
+  `Workspace/editor-refs-rename-filter-probe.log`. File casing changes and some
+  removal completions also exhibited delayed delivery in the Foundation IO suite.
+- The Windows watcher now reconciles existing cached paths on ReFS while polling.
+  It checks at most 128 paths per batch, at most once per 100 ms; a failed portable
+  stats query gets one additional native attributes query to distinguish a missing
+  path from an inaccessible one. File contents are never scanned. Each batch
+  walks the cached hierarchy in O(N); the metadata budget does not bound that CPU
+  traversal. With a stable cache and sufficiently frequent polling, checking all
+  N paths takes approximately ceil(N / 128) batches. The watcher retains an ordinal
+  and temporary mutations, rather than another copy of filesystem topology.
+  NTFS keeps native notifications without this metadata polling.
+- Recovery repairs leaves before their ancestors, preserving cached subtrees when
+  multiple file and directory names change before one poll. Delayed native names
+  resolve against the existing mirror and do not duplicate recovered removals or
+  rename pairs. A normal rename still follows the recovered case rename correctly.
+  Nonrecursive watches inspect only immediate children. The multi-watcher API also
+  performs recovery after a wait timeout and accepts an empty watcher list.
+- Two existing mirror defects were exposed and fixed: enumeration did not select
+  the nested directory iterator after descending, and directory type lookup omitted
+  the trailing slash stored in directory keys. Mirror file moves preserve their
+  associated value, including the watcher's pending-create state. Cached casing
+  resolution works after the actual path has been deleted and rejects paths outside
+  the mirror. A dedicated portable mirror regression verifies these behaviors.
+- Rename sources now survive successive polls, including type inference for a
+  `NEW_NAME` that arrives in a later native batch. ReFS's unpaired old-name records
+  cannot become the source of a subsequent unrelated rename. Empty completions no
+  longer discard already collected fallback notifications.
+- Watcher shutdown cancels reads issued by any thread with `CancelIoEx`, waits for
+  their completion, and only then releases the event, handle, mirror and buffer
+  lifetime. This replaces `CancelIo`, which only cancelled reads issued by the
+  calling thread. The event creation failure path now checks for null and releases
+  the opened directory. Access to one watcher still requires external serialization;
+  calls may move sequentially between threads.
+- Five focused regressions cover nested and coalesced case changes, file/ancestor
+  deletion before polling, more than two metadata batches, nonrecursive scope,
+  late native records, normal rename pairing and worker-issued read cancellation
+  across 16 close/reopen cycles. Existing watcher tests now await asynchronous
+  delivery and do not impose an ordering across independent watchers. They still
+  verify event identity, type, action and count. The OSFile iterator test now owns
+  a deterministic fixture and checks recursive traversal and `SkipFolder`, rather
+  than assuming the executable directory contains subdirectories.
+- Windows Debug DLL integration builds pass for FoundationTest, ToolsFoundationTest,
+  Editor, EditorProcessor, EditorFrameworkTest and EditorEngineProcessFrameworkTest:
+  `Workspace/editor-directory-reconciliation-integration-build.log`. The isolated
+  static build also passes in `Workspace/editor-directory-static-build.log` and
+  `Workspace/editor-file-iterator-static-build.log`. The additional iterator fixture
+  compiles in the DLL build in `Workspace/editor-file-iterator-fixture-build.log`.
+- Final validation passes, with 327 test executions across the selected runs:
+  - 120 DLL Foundation executions across three ReFS IO suite passes:
+    `Workspace/editor-directory-io-repeated-tests.log`.
+  - 15 focused ReFS executions across three passes, plus five NTFS executions:
+    `Workspace/editor-directory-recovery-repeated-tests.log` and
+    `Workspace/editor-directory-recovery-ntfs-final-tests.log`.
+  - 40 DLL Foundation executions on NTFS, including its forced fallback watcher:
+    `Workspace/editor-directory-io-ntfs-tests.log`.
+  - All 19 DLL tooling subtests on ReFS:
+    `Workspace/editor-tools-directory-final-tests.log`.
+  - All 40 static Foundation IO, five static watcher recovery and 19 static tooling
+    subtests on ReFS: `Workspace/editor-directory-static-io-final-tests.log`,
+    `Workspace/editor-directory-static-recovery-final-tests.log`, and
+    `Workspace/editor-directory-static-tools-tests.log`.
+  - All ten production Qt Editor workflows and 54 native Editor subtests:
+    `Workspace/editor-directory-qt-tests.log` and
+    `Workspace/editor-directory-native-tests.log`. Vulkan synchronization validation
+    reports no validation errors; no assertion artifact is produced.
+- The earlier ReFS filesystem-model failure is resolved for these verified DLL and
+  static runs. This is recovery of known cached identities, not a replacement for
+  native discovery of newly created names or an unconditional full-disk rescan after
+  notification overflow. Intermediate filesystem states can coalesce. Linux, macOS,
+  Release and D3D12 configurations were not exercised in this checkpoint.
+  Deformed geometry execution/picking, legacy sky/probe/GreyBox migration and broader
+  manual Editor workflow parity remain outstanding. The modernization goal remains
+  incomplete.
