@@ -47,6 +47,9 @@ public:
   /// and Editor.SelectedObjects, emits no CPU captures, and does not provide Pick queries.
   bool m_bSelectionOnly = false;
 
+  /// Prefer mesh shading when available. False selects indexed vertex pulling on all devices.
+  bool m_bUseMeshShaders = true;
+
 private:
   xiiUniquePtr<xiiSceneMeshPickingState> m_pState;
 };

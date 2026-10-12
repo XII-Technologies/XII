@@ -30,17 +30,17 @@
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
 
-XII_CREATE_SIMPLE_TEST(NativeSceneLod, Sections)
+static void TestLodSections(bool enableMeshShaders)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize()))
+  if (!XII_TEST_RESULT(environment.Initialize(enableMeshShaders)))
     return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  if (!xiiGpuSceneRasterManager::IsSupported())
+  if (!xiiGpuSceneRasterManager::IsPickingSupported())
   {
-    xiiTestFramework::Output(xiiTestOutput::Message, "Native LOD section tests require mesh shaders.");
+    xiiTestFramework::Output(xiiTestOutput::Message, "Native LOD section query shaders are unavailable.");
     return;
   }
 
@@ -185,9 +185,13 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Sections)
     if (onlyTransparent)
       visibilityView.m_uiRequiredFlags |= xiiSceneObjectFlags::Transparent;
     xiiGpuVisibilityPassDescription visibilityDescription;
-    visibilityDescription.m_bAsyncCompute          = false;
-    visibilityDescription.m_bEnableLodFeedback     = false;
-    const auto                          visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, scene.GetHandle(), visibilityView, geometryUpload, visibilityDescription);
+    visibilityDescription.m_bAsyncCompute      = false;
+    visibilityDescription.m_bEnableLodFeedback = false;
+    auto visibility                            = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, scene.GetHandle(), visibilityView, geometryUpload, visibilityDescription);
+    // A single-section candidate contains one box meshlet. Exercise an exact 16-byte indirect
+    // command allocation as well as the normal retained visibility capacity.
+    if (!enableMeshShaders && expectedCandidates == 1)
+      visibility.m_uiMaxVisibleMeshlets = 1;
     xiiGpuSceneGBufferRasterDescription raster;
     raster.m_ViewProjectionMatrix = projection;
     raster.m_uiWidth = raster.m_uiHeight = 64;
@@ -198,6 +202,16 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Sections)
     xiiRenderGraphTextureHandle surface;
     if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "LOD section surface", visibility, geometryUpload, materialUpload, raster, surface)))
       return;
+    auto invalidRaster      = raster;
+    invalidRaster.m_uiWidth = 0;
+    auto rejectedSurface    = surface;
+    XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Invalid query", visibility, geometryUpload, materialUpload, invalidRaster, rejectedSurface).Failed());
+    XII_TEST_BOOL(!rejectedSurface.IsValid());
+    auto invalidVisibility                   = visibility;
+    invalidVisibility.m_uiMaxVisibleMeshlets = 0;
+    rejectedSurface                          = surface;
+    XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Invalid indexed query", invalidVisibility, geometryUpload, materialUpload, raster, rejectedSurface, false).Failed());
+    XII_TEST_BOOL(!rejectedSurface.IsValid());
     xiiEmissiveLightManager::BuildDescription emissiveDescription;
     emissiveDescription.m_Visibility       = visibility;
     emissiveDescription.m_Geometry         = geometryUpload;
@@ -210,7 +224,14 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Sections)
     {
       XII_DECLARE_POD_TYPE();
     };
-    graph.AddPass<Export>("LOD emitter export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) { builder.ExportBuffer(emissive.m_hHeader, xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {}, true);
+    graph.AddPass<Export>("LOD emitter export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
+      builder.ExportBuffer(emissive.m_hHeader, xiiGALResourceStateFlags::ShaderResource);
+      if (!enableMeshShaders)
+      {
+        const auto commands = graph.FindBuffer("LOD section surface Indexed commands buffer");
+        builder.ExportBuffer(builder.ReadBuffer(commands, xiiGALResourceStateFlags::IndirectArgument), xiiGALResourceStateFlags::IndirectArgument);
+        builder.ExportBuffer(builder.ReadBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::IndirectArgument), xiiGALResourceStateFlags::IndirectArgument);
+      } }, [](const Export&, xiiRenderGraphPassContext&) {}, true);
     xiiScenePickingReadback readback;
     xiiUInt32               slot;
     XII_TEST_RESULT(readback.Poll(slot));
@@ -223,6 +244,21 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Sections)
       return;
     completion.CaptureSubmittedFrame(frame);
     completion.WaitForFrame(frame);
+    if (!enableMeshShaders)
+    {
+      xiiUInt32 count = 0;
+      xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(visibility.m_hVisibleMeshletCount).Borrow(), 0, count);
+      if (count != 0)
+      {
+        xiiVec4U32 command;
+        const auto commands = graph.FindBuffer("LOD section surface Indexed commands buffer");
+        xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(commands).Borrow(), 0, command);
+        XII_TEST_INT(command.x, 36);
+        XII_TEST_INT(command.y, 1);
+        XII_TEST_INT(command.z, 0);
+        XII_TEST_INT(command.w, 0);
+      }
+    }
     XII_TEST_RESULT(readback.Poll(slot));
     xiiHashSet<xiiUInt32> seenSections;
     const auto            words = readback.GetPixels();
@@ -290,4 +326,14 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Sections)
     render(-8, 1, 2, 3, 1);
     render(8, 0, 2, 2, 0);
   }
+}
+
+XII_CREATE_SIMPLE_TEST(NativeSceneLod, Sections)
+{
+  TestLodSections(true);
+}
+
+XII_CREATE_SIMPLE_TEST(NativeSceneLod, SectionsWithoutMeshShaders)
+{
+  TestLodSections(false);
 }

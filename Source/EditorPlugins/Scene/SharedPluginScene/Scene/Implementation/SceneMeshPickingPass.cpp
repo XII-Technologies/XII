@@ -12,11 +12,12 @@
 #include <SharedPluginScene/Scene/Implementation/SceneMeshPickingState.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneMeshPickingPass, 1, xiiRTTIDefaultAllocator<xiiSceneMeshPickingPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneMeshPickingPass, 2, xiiRTTIDefaultAllocator<xiiSceneMeshPickingPass>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("SelectionOnly", m_bSelectionOnly)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("UseMeshShaders", m_bUseMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
   XII_END_PROPERTIES;
 }
@@ -64,7 +65,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(parameter("Editor.PickTransparent", transparent));
   if (!enabled || view->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
     return XII_SUCCESS;
-  if (!view->IsValid() || !view->GetExtractedRenderData() || !xiiGpuSceneRasterManager::IsSupported())
+  if (!view->IsValid() || !view->GetExtractedRenderData() || !xiiGpuSceneRasterManager::IsPickingSupported())
     return XII_FAILURE;
 
   if (!m_pState)
@@ -176,7 +177,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   raster.m_uiMeshDispatchGroupCountX = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(state.m_hVisibility);
   raster.m_uiMeshDispatchGroupCountY = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(state.m_hVisibility);
   xiiRenderGraphTextureHandle surface;
-  XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(context.m_Graph, context.m_sPassName, visibility, geometry, materials, raster, surface));
+  XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(context.m_Graph, context.m_sPassName, visibility, geometry, materials, raster, surface, m_bUseMeshShaders));
   XII_SUCCEED_OR_RETURN(context.SetOutput("Surface", surface));
   if (!m_bSelectionOnly)
     XII_SUCCEED_OR_RETURN(state.Capture(context, surface));

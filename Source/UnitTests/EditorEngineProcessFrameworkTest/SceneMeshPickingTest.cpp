@@ -127,25 +127,33 @@ namespace
   }
 } // namespace
 
-XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
+static void TestSceneMeshPicking(bool enableMeshShaders)
 {
   xiiGPUTestingEnvironment environment;
-  if (!XII_TEST_RESULT(environment.Initialize()))
+  if (!XII_TEST_RESULT(environment.Initialize(enableMeshShaders)))
     return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   // Destroy extracted packets after GPU completion and before resource-manager shutdown.
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  if (!xiiGpuSceneRasterManager::IsSupported())
+  if (!xiiGpuSceneRasterManager::IsPickingSupported())
   {
-    xiiTestFramework::Output(xiiTestOutput::Message, "Native mesh query pass requires mesh shaders; GPU queries were not exercised on this device.");
+    xiiTestFramework::Output(xiiTestOutput::Message, "Native mesh query shaders are unavailable; GPU queries were not exercised on this device.");
     return;
+  }
+  if (!enableMeshShaders)
+  {
+    XII_TEST_BOOL(environment.GetDevice()->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Disabled);
+    XII_TEST_BOOL(!xiiGpuSceneRasterManager::IsSupported());
   }
   xiiRenderPipelineResourceDescriptor definition;
   definition.AddPass("Tables", MeshQueryTables::GetStaticRTTI()->GetTypeName());
-  definition.AddPass("Query", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName());
+  xiiVariantDictionary querySettings;
+  querySettings.Insert("UseMeshShaders", enableMeshShaders);
+  definition.AddPass("Query", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName(), querySettings);
   xiiVariantDictionary selectedSettings;
   selectedSettings.Insert("SelectionOnly", true);
+  selectedSettings.Insert("UseMeshShaders", enableMeshShaders);
   definition.AddPass("Selected query", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName(), selectedSettings);
   xiiVariantDictionary overlaySettings;
   overlaySettings.Insert("VisibleColor", xiiColor::Red);
@@ -306,6 +314,54 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     XII_TEST_BOOL(objects.Contains(frontOwner));
     XII_TEST_BOOL(!objects.Contains(backOwner));
     XII_TEST_INT(objects.GetCount(), 1);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Odd triangle tails preserve UInt16 and UInt32 source geometry")
+  {
+    for (const auto indexType : {xiiGALValueType::UInt16, xiiGALValueType::UInt32})
+    {
+      xiiGeometry triangle;
+      triangle.AddVertex(xiiVec3(-0.5f, -0.5f, -0.5f), -xiiVec3::MakeAxisX());
+      triangle.AddVertex(xiiVec3(-0.5f, 0.0f, 0.5f), -xiiVec3::MakeAxisX());
+      triangle.AddVertex(xiiVec3(-0.5f, 0.5f, -0.5f), -xiiVec3::MakeAxisX());
+      xiiUInt32 vertices[] = {0, 1, 2};
+      triangle.AddPolygon(xiiMakeArrayPtr(vertices), false);
+      xiiMeshResourceDescriptor description;
+      auto&                     buffer = description.GetMeshBufferDescriptor();
+      buffer.AllocateStreamsFromGeometry(triangle, xiiGALPrimitiveTopology::TriangleList, false);
+      if (indexType == xiiGALValueType::UInt16)
+      {
+        const xiiUInt16 indices[] = {0, 1, 2};
+        buffer.SetIndexData(xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(indices), sizeof(indices)), 3, indexType);
+      }
+      else
+      {
+        const xiiUInt32 indices[] = {0, 1, 2};
+        buffer.SetIndexData(xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(indices), sizeof(indices)), 3, indexType);
+      }
+      description.AddSubMesh(1, 0, 0);
+      description.ComputeBounds();
+      const auto triangleMesh  = xiiResourceManager::CreateResource<xiiMeshResource>(indexType == xiiGALValueType::UInt16 ? "NativeQueryTriangle16" : "NativeQueryTriangle32", std::move(description));
+      front.m_hMesh            = triangleMesh;
+      front.m_uiPrimitiveCount = 1;
+      frontLodComponent->SetMesh(triangleMesh);
+      if (!render() || !render())
+        return;
+      XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+      XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
+      XII_TEST_FLOAT(hit.m_vWorldPosition.x, -0.5f, 0.001f);
+      XII_TEST_VEC3(hit.m_vWorldNormal, -xiiVec3::MakeAxisX(), 0.001f);
+      xiiResourceLock<xiiMeshResource>       resource(triangleMesh, xiiResourceAcquireMode::PointerOnly);
+      xiiResourceLock<xiiMeshBufferResource> resident(resource->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+      XII_TEST_INT(resident->GetIndexCount(), 3);
+      XII_TEST_INT(resident->GetIndexType().GetValue(), indexType);
+      XII_TEST_INT(resident->GetIndexBuffer()->GetDescription().m_uiSize, indexType == xiiGALValueType::UInt16 ? 8 : 12);
+      XII_TEST_INT(resident->GetMeshletPrimitiveIndexBuffer()->GetDescription().m_uiSize, 4);
+    }
+    front.m_hMesh            = mesh;
+    front.m_uiPrimitiveCount = loaded->GetSections()[0].m_uiPrimitiveCount;
+    frontLodComponent->SetMesh(mesh);
+    if (!render() || !render())
+      return;
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Component LOD controls and section selection invalidate captured picking images")
   {
@@ -681,4 +737,14 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     XII_TEST_BOOL(pass->Pick(*view, 24, 28, hit).Failed());
   }
   view->GetExtractedRenderData()->Clear();
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
+{
+  TestSceneMeshPicking(true);
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPickingWithoutMeshShaders)
+{
+  TestSceneMeshPicking(false);
 }
