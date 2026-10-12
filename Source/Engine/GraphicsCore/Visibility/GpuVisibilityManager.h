@@ -44,6 +44,9 @@ public:
   /// streaming is scheduled for the new frame.
   static void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
 
+  /// Smallest frame-buffer ring across live contexts; zero when no contexts exist.
+  [[nodiscard]] static xiiUInt32 GetMinimumFramesInFlight();
+
   /// Creates an isolated visibility context on the current default GAL device.
   [[nodiscard]] static xiiGpuVisibilityContextHandle CreateContext(const xiiGpuVisibilityDescription& description = {});
   static void                                        DestroyContext(xiiGpuVisibilityContextHandle handle);

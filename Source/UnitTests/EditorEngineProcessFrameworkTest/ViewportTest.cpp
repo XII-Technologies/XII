@@ -8,11 +8,14 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
+#include <EditorEngineProcessFrameworkTest/GpuBufferReadback.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <Texture/Image/Image.h>
@@ -58,6 +61,43 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
           ++executions[i]; }, true);
     });
   }
+  xiiGpuVisibilityDescription visibility;
+  visibility.m_uiMaxInstances           = 4;
+  visibility.m_uiMaxVisibleMeshlets     = 4;
+  visibility.m_uiMaxMeshletsPerGeometry = 1;
+  visibility.m_uiMaxVisibilitySets      = 1;
+  visibility.m_uiLodFeedbackCapacity    = 4;
+  visibility.m_uiFramesInFlight         = 2;
+  const auto shortRing                  = xiiGpuVisibilityManager::CreateContext(visibility);
+  if (!XII_TEST_BOOL(xiiGpuVisibilityManager::IsValid(shortRing)))
+    return;
+  XII_SCOPE_EXIT(xiiGpuVisibilityManager::DestroyContext(shortRing));
+  XII_TEST_INT(xiiGpuVisibilityManager::GetMinimumFramesInFlight(), 2);
+  xiiUInt64                             registeredFrame = 0;
+  xiiRenderGraphRegistrationDescription registration;
+  registration.m_sName  = "Interleaved registered frame";
+  const auto registered = xiiRenderGraphManager::RegisterGraph(registration, [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
+    struct Stamp
+    {
+      xiiRenderGraphBufferHandle m_Buffer;
+      xiiUInt64                  m_uiFrame = 0;
+    };
+    graph.AddPass<Stamp>("GPU frame stamp", xiiGALCommandQueueFlags::Graphics, [&](Stamp& data, xiiRenderGraphBuilder& builder) {
+      xiiGALBufferCreationDescription buffer;
+      buffer.m_uiSize = sizeof(xiiUInt64);
+      buffer.m_BindFlags = xiiGALBindFlags::ShaderResource;
+      buffer.m_Mode = xiiGALBufferMode::Structured;
+      buffer.m_uiElementByteStride = sizeof(xiiUInt64);
+      data.m_Buffer = builder.WriteBuffer("Frame stamp", buffer, xiiGALResourceStateFlags::CopyDestination);
+      builder.ExportBuffer(data.m_Buffer, xiiGALResourceStateFlags::CopySource);
+      data.m_uiFrame = graph.GetFrameIndex(); }, [&](const Stamp& data, xiiRenderGraphPassContext& context) {
+      registeredFrame = context.GetFrameIndex();
+      context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_Buffer), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&data.m_uiFrame), sizeof(data.m_uiFrame))); });
+  });
+  XII_SCOPE_EXIT(xiiRenderGraphManager::UnregisterGraph(registered));
+  xiiRenderGraphFrame inactive;
+  XII_TEST_BOOL(inactive.Begin(0).Failed());
+  XII_TEST_BOOL(xiiRenderGraphManager::ExecuteFrame(inactive, nullptr).Failed());
   xiiUInt64 previousFrame = 0;
   for (xiiUInt32 iteration = 0; iteration < 8; ++iteration)
   {
@@ -71,7 +111,70 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     XII_TEST_INT(executions[0], iteration + 1);
     XII_TEST_INT(executions[1], iteration + 1);
     previousFrame = xiiMath::Max(frames[0], frames[1]);
+    {
+      xiiRenderGraphFrame frame;
+      if (!XII_TEST_RESULT(frame.Begin(64)))
+        return;
+      XII_TEST_INT(frame.GetFrameIndex(), previousFrame + 1);
+      XII_TEST_BOOL(frame.GetCompletedFrame() >= frame.GetFrameIndex() - 2);
+      xiiRenderGraphFrame nested;
+      XII_TEST_BOOL(nested.Begin().Failed());
+      XII_TEST_BOOL(frame.Begin().Failed());
+      XII_TEST_RESULT(xiiRenderGraphManager::ExecuteFrame(frame, nullptr));
+      XII_TEST_INT(registeredFrame, previousFrame + 1);
+    }
+    auto*     graph         = xiiRenderGraphManager::GetGraph(registered);
+    xiiUInt64 uploadedFrame = 0;
+    if (xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph->GetExportedBuffer(graph->FindBuffer("Frame stamp")).Borrow(), 0, uploadedFrame))
+      XII_TEST_INT(uploadedFrame, registeredFrame);
+    previousFrame = registeredFrame;
+    // Empty and early-return scopes still capture the queue timeline, keeping ring waits valid.
+    {
+      xiiRenderGraphFrame empty;
+      XII_TEST_RESULT(empty.Begin(1));
+      XII_TEST_INT(empty.GetFrameIndex(), ++previousFrame);
+      empty.End();
+      empty.End();
+      XII_TEST_BOOL(!empty.IsActive());
+    }
   }
+  // A later graph can fail compilation after an earlier graph submitted GPU work.
+  // The automatic frame scope must still capture it and release the recording lock.
+  xiiRenderGraphRegistrationDescription invalidRegistration;
+  invalidRegistration.m_sName     = "Cyclic registered frame";
+  invalidRegistration.m_iPriority = 1;
+  const auto cyclic               = xiiRenderGraphManager::RegisterGraph(invalidRegistration, [](xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
+    struct Data
+    {
+      xiiRenderGraphBufferHandle m_Buffer;
+    };
+    auto       source    = graph.AddPass<Data>("Original version", xiiGALCommandQueueFlags::Graphics, [](Data& data, xiiRenderGraphBuilder& builder) {
+      xiiGALBufferCreationDescription buffer;
+      buffer.m_uiSize = 8;
+      data.m_Buffer = builder.WriteBuffer("Cyclic buffer", buffer, xiiGALResourceStateFlags::CopyDestination); }, [](const Data&, xiiRenderGraphPassContext&) {});
+    const auto original  = source.first->m_Buffer;
+    auto       overwrite = graph.AddPass<Data>("Overwrite", xiiGALCommandQueueFlags::Graphics, [original](Data& data, xiiRenderGraphBuilder& builder) { data.m_Buffer = builder.WriteBuffer(original, xiiGALResourceStateFlags::CopyDestination); }, [](const Data&, xiiRenderGraphPassContext&) {});
+    const auto newer     = overwrite.first->m_Buffer;
+    graph.AddPass<Data>("Read both physical versions", xiiGALCommandQueueFlags::Graphics, [original, newer](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_Buffer = builder.ReadBuffer(original, xiiGALResourceStateFlags::CopySource);
+      data.m_Buffer = builder.ReadBuffer(newer, xiiGALResourceStateFlags::CopySource); }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
+  });
+  XII_SCOPE_EXIT(xiiRenderGraphManager::UnregisterGraph(cyclic));
+  xiiStringBuilder error;
+  XII_TEST_BOOL(xiiRenderGraphManager::ExecuteFrame(nullptr, 1, {}, &error).Failed());
+  XII_TEST_BOOL(error.FindSubString("dependency cycle") != nullptr);
+  XII_TEST_INT(registeredFrame, ++previousFrame);
+  XII_TEST_BOOL(xiiRenderGraphManager::UnregisterGraph(cyclic));
+  {
+    xiiRenderGraphFrame recovery;
+    XII_TEST_RESULT(recovery.Begin(1));
+    XII_TEST_INT(recovery.GetFrameIndex(), previousFrame + 1);
+    XII_TEST_BOOL(recovery.GetCompletedFrame() >= previousFrame);
+    XII_TEST_RESULT(xiiRenderGraphManager::ExecuteFrame(recovery, nullptr));
+    previousFrame = registeredFrame;
+  }
+  xiiGpuVisibilityManager::DestroyContext(shortRing);
+  XII_TEST_BOOL(xiiGpuVisibilityManager::GetMinimumFramesInFlight() != 2);
   worlds[0].Clear();
   {
     XII_LOCK(worlds[1]->GetWriteMarker());

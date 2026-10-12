@@ -6,6 +6,7 @@
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
@@ -309,6 +310,20 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
     s_pState->m_FrameMutex.Unlock();
     return XII_FAILURE;
   }
+  // All global and context-local slices advance on this clock. Never reuse a shorter
+  // ring while its previous occupant is still in flight, even if the caller permits more.
+  if (xiiMaterialManager::IsInitialized())
+    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiMaterialManager::GetGpuStorage().GetFramesInFlight());
+  if (xiiGeometryResidencyManager::IsInitialized())
+    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight);
+  if (xiiRayTracingSceneManager::IsInitialized())
+    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiRayTracingSceneManager::GetConfiguration().m_uiFramesInFlight);
+  if (xiiVirtualShadowMapManager::IsInitialized())
+    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiVirtualShadowMapManager::GetConfiguration().m_uiFramesInFlight);
+  const xiiUInt32 uiVisibilityFrames = xiiGpuVisibilityManager::GetMinimumFramesInFlight();
+  if (uiVisibilityFrames != 0U)
+    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, uiVisibilityFrames);
+
   s_pState->m_bFrameActive     = true;
   const xiiUInt64 uiFrameIndex = ++s_pState->m_uiFrameIndex;
   if (uiFrameIndex > uiFramesInFlight)

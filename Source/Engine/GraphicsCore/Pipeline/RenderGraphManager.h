@@ -78,6 +78,8 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphFrame
 public:
   xiiRenderGraphFrame() = default;
   ~xiiRenderGraphFrame();
+  /// The requested submission window is bounded by the smallest live material, geometry,
+  /// visibility, shadow or ray-tracing buffer ring. Zero, an already active scope, or nested frames return failure.
   [[nodiscard]] xiiResult Begin(xiiUInt32 uiFramesInFlight = 3U);
   void                    End();
   [[nodiscard]] bool      IsActive() const { return m_uiFrameIndex != 0U; }

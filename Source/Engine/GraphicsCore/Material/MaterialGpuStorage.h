@@ -81,6 +81,7 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiMaterialInstance> GetMaterial(xiiMaterialGpuHandle handle) const;
   [[nodiscard]] xiiUInt32                         GetGpuOffset(xiiMaterialGpuHandle handle, xiiUInt64 uiFrameIndex) const;
   [[nodiscard]] xiiUInt32                         GetMaterialStride() const { return m_uiMaterialStride; }
+  [[nodiscard]] xiiUInt32                         GetFramesInFlight() const { return m_Description.m_uiFramesInFlight; }
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer>        GetBuffer() const { return m_pBuffer; }
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer>        GetSurfaceBuffer() const { return m_pSurfaceBuffer; }
   [[nodiscard]] xiiUInt32                         GetSurfaceBaseIndex(xiiUInt64 uiFrameIndex) const;
