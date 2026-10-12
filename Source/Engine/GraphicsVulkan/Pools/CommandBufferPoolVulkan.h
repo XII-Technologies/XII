@@ -140,7 +140,7 @@ public:
 
   /// Poll fences and reclaim any completed buffers.
   /// Call at the start of each frame or from a dedicated thread.
-  void ReclaimCompleted();
+  xiiUInt32 ReclaimCompleted();
 
   /// Resets *all* underlying VkCommandPools, invalidating prerecorded buffers.
   /// Freelist is cleared; next allocate will re‐create new buffers.

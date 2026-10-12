@@ -682,10 +682,36 @@ void xiiGALCommandListVulkan::BeginPlatform()
 
   VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-  xiiGALQueryPoolVulkan* pQueryPoolVulkan = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
-  pQueryPoolVulkan->ResetStaleQueries(m_vkCommandBuffer);
 
   m_RecordingState = RecordingState::Recording;
+}
+
+xiiResult xiiGALCommandListVulkan::RecordQueryReset(xiiGALQueryPoolVulkan* pPool, xiiGALQueryType::Enum type, xiiUInt32 uiIndex)
+{
+  auto* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow());
+  if (pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_HostQueryReset.hostQueryReset && !m_Description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit))
+  {
+    m_CommandListData.m_QueryReferences.PushBack(xiiGALQueryReferenceVulkan(pPool, type, uiIndex));
+    pDeviceVulkan->GetVulkanLogicalDevice().resetQueryPool(pPool->GetQueryPool(type, uiIndex), pPool->GetLocalQueryIndex(type, uiIndex), 1U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    return XII_SUCCESS;
+  }
+
+  if (m_QueryResetAllocation.Get() == VK_NULL_HANDLE)
+  {
+    m_QueryResetAllocation = pDeviceVulkan->GetCommandBufferPool(m_Description.m_QueueFlags)->AllocatePrimaryCommandBuffer();
+    vk::CommandBufferBeginInfo beginInfo = {};
+    beginInfo.flags = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit) ? vk::CommandBufferUsageFlagBits::eSimultaneousUse : vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+    if (m_QueryResetAllocation.Get() == VK_NULL_HANDLE ||
+        m_QueryResetAllocation.Get().begin(&beginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) != vk::Result::eSuccess)
+      return XII_FAILURE;
+    m_QueryResetCommandBuffers.PushBack(m_QueryResetAllocation.Get());
+    // A reusable command list can execute again after a previous submission used these slots.
+    m_QueryResetAllocation.Get().pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, 0U, nullptr, 0U, nullptr, 0U, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
+
+  m_CommandListData.m_QueryReferences.PushBack(xiiGALQueryReferenceVulkan(pPool, type, uiIndex));
+  m_QueryResetAllocation.Get().resetQueryPool(pPool->GetQueryPool(type, uiIndex), pPool->GetLocalQueryIndex(type, uiIndex), 1U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  return XII_SUCCESS;
 }
 
 void xiiGALCommandListVulkan::EndPlatform()
@@ -696,6 +722,13 @@ void xiiGALCommandListVulkan::EndPlatform()
 
   FlushBarriers();
 
+  if (m_QueryResetAllocation.Get() != VK_NULL_HANDLE)
+  {
+    // All resets must finish before the main command buffer can use these query slots.
+    m_QueryResetAllocation.Get().pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, 0U, nullptr, 0U, nullptr, 0U, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    VK_ASSERT_DEV(m_QueryResetAllocation.Get().end(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  }
+
   VK_ASSERT_DEV(m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_RecordingState = RecordingState::Ended;
@@ -704,14 +737,19 @@ void xiiGALCommandListVulkan::EndPlatform()
 void xiiGALCommandListVulkan::ResetPlatform()
 {
   // For one-time submit command buffers, they are invalidated once submitted to a queue.
-  if (m_vkCommandBuffer != VK_NULL_HANDLE)
+  if (m_vkCommandBuffer != VK_NULL_HANDLE && m_uiSubmittedFenceValue != 0U)
   {
     xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
     xiiGALCommandBufferPoolVulkan*   pCommandBufferPoolVulkan = pDeviceVulkan->GetCommandBufferPool(m_Description.m_QueueFlags);
 
-    pCommandBufferPoolVulkan->RecycleAfterSubmit(std::move(m_CommandBufferAllocation), std::move(m_CommandListData), pDeviceVulkan->GetCommandQueue(m_Description.m_QueueFlags)->GetNextFenceValue());
+    if (m_QueryResetAllocation.Get() != VK_NULL_HANDLE)
+      pCommandBufferPoolVulkan->RecycleAfterSubmit(std::move(m_QueryResetAllocation), {}, m_uiSubmittedFenceValue);
+    pCommandBufferPoolVulkan->RecycleAfterSubmit(std::move(m_CommandBufferAllocation), std::move(m_CommandListData), m_uiSubmittedFenceValue);
   }
 
+  m_uiSubmittedFenceValue = 0U;
+  m_QueryResetAllocation = {};
+  m_QueryResetCommandBuffers.Clear();
   m_CommandBufferAllocation = {};
   m_vkCommandBuffer         = VK_NULL_HANDLE;
   m_CommandListData         = {};
@@ -724,6 +762,8 @@ void xiiGALCommandListVulkan::SubmitPlatform(xiiGALCommandList* pSecondaryComman
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALCommandListVulkan*         pCommandListVulkan = xiiDynamicCast<xiiGALCommandListVulkan*>(pSecondaryCommandList);
 
+  m_QueryResetCommandBuffers.PushBackRange(pCommandListVulkan->m_QueryResetCommandBuffers);
+  m_CommandListData.m_SecondaryCommandLists.PushBack(xiiSharedPtr<xiiGALCommandList>(pSecondaryCommandList, m_pDevice->GetAllocator()));
   vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
 
   m_vkCommandBuffer.executeCommands(1U, &vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
@@ -2573,11 +2613,13 @@ void xiiGALCommandListVulkan::BeginQueryPlatform(xiiGALQuery* pQuery)
   xiiGALQueryPoolVulkan*           pQueryPoolVulkan = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
   xiiGALQueryVulkan*               pQueryVulkan     = xiiDynamicCast<xiiGALQueryVulkan*>(pQuery);
 
-  pQueryVulkan->OnBeginQuery(this);
+  if (!pQueryVulkan->OnBeginQuery(this))
+    return;
 
   xiiGALQueryType::Enum queryType   = pQueryVulkan->GetDescription().m_Type;
-  vk::QueryPool         vkQueryPool = pQueryPoolVulkan->GetQueryPool(queryType);
-  xiiUInt32             uiIndex     = pQueryVulkan->GetQueryPoolIndex(0);
+  const xiiUInt32 uiAllocation = pQueryVulkan->GetQueryPoolIndex(0);
+  vk::QueryPool vkQueryPool = pQueryPoolVulkan->GetQueryPool(queryType, uiAllocation);
+  xiiUInt32 uiIndex = pQueryPoolVulkan->GetLocalQueryIndex(queryType, uiAllocation);
 
   XII_ASSERT_DEV(vkQueryPool != VK_NULL_HANDLE, "Query pool is not initialized for query type.");
 
@@ -2633,11 +2675,13 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
   xiiGALQueryPoolVulkan*           pQueryPoolVulkan = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
   xiiGALQueryVulkan*               pQueryVulkan     = xiiDynamicCast<xiiGALQueryVulkan*>(pQuery);
 
-  pQueryVulkan->OnEndQuery(this);
+  if (!pQueryVulkan->OnEndQuery(this))
+    return;
 
   xiiGALQueryType::Enum queryType   = pQueryVulkan->GetDescription().m_Type;
-  vk::QueryPool         vkQueryPool = pQueryPoolVulkan->GetQueryPool(queryType);
-  xiiUInt32             uiIndex     = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);
+  const xiiUInt32 uiAllocation = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);
+  vk::QueryPool vkQueryPool = pQueryPoolVulkan->GetQueryPool(queryType, uiAllocation);
+  xiiUInt32 uiIndex = pQueryPoolVulkan->GetLocalQueryIndex(queryType, uiAllocation);
 
   XII_ASSERT_DEV(vkQueryPool != VK_NULL_HANDLE, "Query pool is not initialized for query type.");
 

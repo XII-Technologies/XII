@@ -102,9 +102,8 @@ xiiGALQueryPoolVulkan::xiiGALQueryPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, 
 
     auto& queryPoolInfo = m_QueryPools[queryType];
 
-    queryPoolInfo->Initialize(vkQueryPoolCreateInfo, queryType);
-
-    XII_ASSERT_DEV(!queryPoolInfo->IsInvalidated() && queryPoolInfo->GetQueryCount() == vkQueryPoolCreateInfo.queryCount && queryPoolInfo->GetQueryType() == queryType, "");
+    if (queryPoolInfo->Initialize(vkQueryPoolCreateInfo, queryType).Failed())
+      xiiLog::Error("Failed to create Vulkan query pool for type {}.", queryType);
   }
 }
 
@@ -121,8 +120,6 @@ xiiGALQueryPoolVulkan::~xiiGALQueryPoolVulkan()
       continue;
 
     xiiLog::Info("Query Type {} : {} / {}", uiQueryType, queryPoolInformation->GetMaxAllocatedQueries(), queryPoolInformation->GetQueryCount());
-
-    queryPoolInformation->DeInitialize();
   }
 #endif
 
@@ -139,16 +136,19 @@ void xiiGALQueryPoolVulkan::DiscardQuery(xiiGALQueryType::Enum queryType, xiiUIn
   m_QueryPools[queryType]->Discard(uiIndex);
 }
 
-xiiUInt32 xiiGALQueryPoolVulkan::ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer)
+void xiiGALQueryPoolVulkan::SetQueryFenceValue(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex, xiiUInt64 uiFenceValue)
 {
-  xiiUInt32 uiResetQueryCount = 0U;
+  m_QueryPools[queryType]->SetFenceValue(uiIndex, uiFenceValue);
+}
 
-  for (auto& queryPoolInfo : m_QueryPools)
-  {
-    uiResetQueryCount += queryPoolInfo->ResetStaleQueries(vkCommandBuffer);
-  }
+xiiUInt64 xiiGALQueryPoolVulkan::GetQueryFenceValue(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex) const
+{
+  return m_QueryPools[queryType]->GetFenceValue(uiIndex);
+}
 
-  return uiResetQueryCount;
+void xiiGALQueryPoolVulkan::RetainQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex)
+{
+  m_QueryPools[queryType]->Retain(uiIndex);
 }
 
 ///////////////////////////////////////////////////////////
@@ -160,131 +160,86 @@ xiiGALQueryPoolVulkan::QueryPoolInformation::QueryPoolInformation(xiiGALDeviceVu
 
 xiiGALQueryPoolVulkan::QueryPoolInformation::~QueryPoolInformation()
 {
-  xiiUInt32 uiPendingQueries = GetQueryCount() - (m_AvailableQueries.GetCount() + m_StaleQueries.GetCount());
-
-  if (uiPendingQueries > 0)
-  {
+  const xiiUInt32 uiPendingQueries = GetQueryCount() - m_AvailableQueries.GetCount();
+  if (uiPendingQueries > 0U)
     xiiLog::Error("There are '{}' pending queries of type {}.", uiPendingQueries, xiiArgEnum(m_QueryType));
-  }
 
-  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
-
-  vkLogicalDevice.destroyQueryPool(m_vkQueryPool, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  for (vk::QueryPool pool : m_Blocks)
+    m_pDeviceVulkan->GetVulkanLogicalDevice().destroyQueryPool(pool, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
-void xiiGALQueryPoolVulkan::QueryPoolInformation::Initialize(const vk::QueryPoolCreateInfo& vkQueryPoolCreateInfo, xiiGALQueryType::Enum queryType)
+xiiResult xiiGALQueryPoolVulkan::QueryPoolInformation::Initialize(const vk::QueryPoolCreateInfo& createInfo, xiiGALQueryType::Enum queryType)
 {
   XII_ASSERT_DEV(queryType != xiiGALQueryType::Undefined, "Invalid query pool type.");
-
   m_QueryType    = queryType;
-  m_uiQueryCount = vkQueryPoolCreateInfo.queryCount;
-
-  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
-
-  VK_ASSERT_DEV(vkLogicalDevice.createQueryPool(&vkQueryPoolCreateInfo, nullptr, &m_vkQueryPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-  m_StaleQueries.SetCountUninitialized(m_uiQueryCount);
-
-  for (xiiUInt32 i = 0; i < m_uiQueryCount; ++i)
-  {
-    m_StaleQueries[i] = i;
-  }
+  m_vkCreateInfo = createInfo;
+  return AddBlock();
 }
 
-void xiiGALQueryPoolVulkan::QueryPoolInformation::DeInitialize()
+xiiResult xiiGALQueryPoolVulkan::QueryPoolInformation::AddBlock()
 {
-  if (!IsInvalidated())
-  {
-    // Intentionally left blank for non-invalidated pools.
-  }
+  if (GetQueryCount() > xiiInvalidIndex - m_vkCreateInfo.queryCount)
+    return XII_FAILURE;
+
+  vk::QueryPool pool = VK_NULL_HANDLE;
+  if (m_pDeviceVulkan->GetVulkanLogicalDevice().createQueryPool(&m_vkCreateInfo, nullptr, &pool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()) != vk::Result::eSuccess)
+    return XII_FAILURE;
+
+  const xiiUInt32 uiFirstIndex = GetQueryCount();
+  m_Blocks.PushBack(pool);
+  m_ReferenceCounts.SetCount(uiFirstIndex + m_vkCreateInfo.queryCount, 0U);
+  m_FenceValues.SetCount(uiFirstIndex + m_vkCreateInfo.queryCount, xiiMath::MaxValue<xiiUInt64>());
+  for (xiiUInt32 i = 0U; i < m_vkCreateInfo.queryCount; ++i)
+    m_AvailableQueries.PushBack(uiFirstIndex + i);
+  return XII_SUCCESS;
 }
 
 xiiUInt32 xiiGALQueryPoolVulkan::QueryPoolInformation::Allocate()
 {
-  xiiUInt32 uiIndex = xiiInvalidIndex;
-
   XII_LOCK(m_QueriesMutex);
+  if (IsInvalidated() || (m_AvailableQueries.IsEmpty() && AddBlock().Failed()))
+    return xiiInvalidIndex;
 
-  if (!m_AvailableQueries.IsEmpty())
-  {
-    uiIndex = m_AvailableQueries.PeekBack();
-
-    m_AvailableQueries.PopBack();
-
-    m_uiMaxAllocatedQueries = xiiMath::Max(m_uiMaxAllocatedQueries, m_uiQueryCount - m_AvailableQueries.GetCount());
-  }
-
+  const xiiUInt32 uiIndex = m_AvailableQueries.PeekBack();
+  m_AvailableQueries.PopBack();
+  m_ReferenceCounts[uiIndex] = 1U;
+  m_FenceValues[uiIndex]     = xiiMath::MaxValue<xiiUInt64>();
+  m_uiMaxAllocatedQueries    = xiiMath::Max(m_uiMaxAllocatedQueries, GetQueryCount() - m_AvailableQueries.GetCount());
   return uiIndex;
+}
+
+vk::QueryPool xiiGALQueryPoolVulkan::QueryPoolInformation::GetQueryPool(xiiUInt32 uiIndex) const
+{
+  XII_LOCK(m_QueriesMutex);
+  XII_ASSERT_DEV(uiIndex < GetQueryCount(), "Query index out of range.");
+  return m_Blocks[uiIndex / m_vkCreateInfo.queryCount];
+}
+
+void xiiGALQueryPoolVulkan::QueryPoolInformation::SetFenceValue(xiiUInt32 uiIndex, xiiUInt64 uiFenceValue)
+{
+  XII_LOCK(m_QueriesMutex);
+  m_FenceValues[uiIndex] = uiFenceValue;
+}
+
+xiiUInt64 xiiGALQueryPoolVulkan::QueryPoolInformation::GetFenceValue(xiiUInt32 uiIndex) const
+{
+  XII_LOCK(m_QueriesMutex);
+  return m_FenceValues[uiIndex];
+}
+
+void xiiGALQueryPoolVulkan::QueryPoolInformation::Retain(xiiUInt32 uiIndex)
+{
+  XII_LOCK(m_QueriesMutex);
+  XII_ASSERT_DEV(uiIndex < GetQueryCount() && m_ReferenceCounts[uiIndex] > 0U, "Cannot retain an unallocated query.");
+  ++m_ReferenceCounts[uiIndex];
 }
 
 void xiiGALQueryPoolVulkan::QueryPoolInformation::Discard(xiiUInt32 uiIndex)
 {
   XII_LOCK(m_QueriesMutex);
-
-  XII_ASSERT_DEV(uiIndex < m_uiQueryCount, "Queue index ({}) is out of range.", uiIndex);
-  XII_ASSERT_DEV(m_vkQueryPool != VK_NULL_HANDLE, "Query pool is not yet initialized");
-  XII_ASSERT_DEV(!m_AvailableQueries.Contains(uiIndex), "Index ({}) is already present in available queries list.", uiIndex);
-  XII_ASSERT_DEV(!m_StaleQueries.Contains(uiIndex), "Index ({}) is already present in stale queries list.", uiIndex);
-
-  m_StaleQueries.PushBack(uiIndex);
-}
-
-xiiUInt32 xiiGALQueryPoolVulkan::QueryPoolInformation::ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer)
-{
-  if (m_StaleQueries.IsEmpty())
-    return 0U;
-
-  vk::Device  vkLogicalDevice            = m_pDeviceVulkan->GetVulkanLogicalDevice();
-  const auto& vkEnabledExtensionFeatures = m_pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
-
-  auto ResetQueries = [&](xiiUInt32 uiFirstQuery, xiiUInt32 uiQueryCount) -> void {
-    if (vkEnabledExtensionFeatures.m_HostQueryReset.hostQueryReset)
-    {
-      vkLogicalDevice.resetQueryPool(m_vkQueryPool, uiFirstQuery, uiQueryCount, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-    }
-    else
-    {
-      // Note that vkCmdResetQueryPool must be called outside of a render pass, so it is suboptimal to postpone query reset until it is used.
-      vkCommandBuffer.resetQueryPool(m_vkQueryPool, uiFirstQuery, uiQueryCount, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-    }
-  };
-
-  XII_LOCK(m_QueriesMutex);
-
-  XII_ASSERT_DEV(!IsInvalidated(), "Query pool is not yet initialized.");
-
-  // After query pool creation, each query must be reset before it is used.
-  // Queries must also be reset between uses (17.2).
-  xiiUInt32 uiCommandCount = 0U;
-
-  if (m_StaleQueries.GetCount() == m_uiQueryCount)
-  {
-    ResetQueries(0, m_uiQueryCount);
-
-    m_AvailableQueries.SetCountUninitialized(m_uiQueryCount);
-
-    for (xiiUInt32 i = 0; i < m_uiQueryCount; ++i)
-    {
-      m_AvailableQueries[i] = i;
-    }
-
-    uiCommandCount = 1;
-  }
-  else
-  {
-    for (auto& uiStaleQuery : m_StaleQueries)
-    {
-      ResetQueries(uiStaleQuery, 1);
-
-      m_AvailableQueries.PushBack(uiStaleQuery);
-    }
-
-    uiCommandCount = m_StaleQueries.GetCount();
-  }
-
-  m_StaleQueries.Clear();
-
-  return uiCommandCount;
+  XII_ASSERT_DEV(uiIndex < GetQueryCount() && m_ReferenceCounts[uiIndex] > 0U, "Cannot discard an unallocated query.");
+  if (--m_ReferenceCounts[uiIndex] == 0U)
+    m_AvailableQueries.PushBack(uiIndex);
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_QueryPoolVulkan);

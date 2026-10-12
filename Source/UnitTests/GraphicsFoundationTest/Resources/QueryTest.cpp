@@ -157,4 +157,72 @@ XII_CREATE_SIMPLE_TEST(Resources, Query)
       XII_TEST_INT(static_cast<xiiUInt32>(pQuery->GetQueryState()), static_cast<xiiUInt32>(xiiGALQuery::QueryState::Inactive));
     }
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Grow duration pools, retain in-flight slots, and reuse completed queries")
+  {
+    auto* pDevice = environment.GetDevice();
+    if (pDevice->GetFeatures().m_DurationQueries != xiiGALDeviceFeatureState::Enabled)
+      return;
+    auto*                                pQueue = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+    xiiGALCommandListCreationDescription listDescription;
+    listDescription.m_QueueFlags                    = xiiGALCommandQueueFlags::Graphics;
+    auto                                       list = pDevice->CreateCommandList(listDescription);
+    xiiDynamicArray<xiiSharedPtr<xiiGALQuery>> queries;
+    queries.Reserve(1537U);
+    for (xiiUInt32 iteration = 0U; iteration < 2U; ++iteration)
+    {
+      list->Begin();
+      for (xiiUInt32 i = 0U; i < 1537U; ++i)
+      {
+        xiiGALQueryCreationDescription description;
+        description.m_Type = xiiGALQueryType::Duration;
+        auto query         = pDevice->CreateQuery(description);
+        if (!XII_TEST_BOOL(query != nullptr))
+          return;
+        list->BeginQuery(query);
+        list->EndQuery(query);
+        queries.PushBack(std::move(query));
+      }
+      list->End();
+      // Drop some public query objects before submission. Their recorded slots must remain reserved until GPU completion.
+      queries.RemoveAtAndSwap(0U, 537U);
+      const auto fence = pQueue->Submit(list);
+      pQueue->WaitForFenceValue(fence);
+      for (auto& query : queries)
+      {
+        xiiGALQueryDataDuration data;
+        XII_TEST_BOOL(query->GetData(&data, sizeof(data)));
+        XII_TEST_BOOL(data.m_uiFrequency > 0U);
+      }
+      queries.Clear();
+    }
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Reset query slots on every reusable command-list submission")
+  {
+    auto* pDevice = environment.GetDevice();
+    if (pDevice->GetFeatures().m_DurationQueries != xiiGALDeviceFeatureState::Enabled)
+      return;
+    xiiGALCommandListCreationDescription description;
+    description.m_QueueFlags            = xiiGALCommandQueueFlags::Graphics;
+    description.m_Flags                 = xiiGALCommandListFlags::MultiSubmit;
+    auto                           list = pDevice->CreateCommandList(description);
+    xiiGALQueryCreationDescription queryDescription;
+    queryDescription.m_Type = xiiGALQueryType::Duration;
+    auto query              = pDevice->CreateQuery(queryDescription);
+    list->Begin();
+    list->BeginQuery(query);
+    list->EndQuery(query);
+    list->End();
+    XII_TEST_BOOL(!query->GetData(nullptr, 0U, false));
+    auto* queue = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+    for (xiiUInt32 submission = 0U; submission < 3U; ++submission)
+    {
+      queue->WaitForFenceValue(queue->Submit(list));
+      xiiGALQueryDataDuration data;
+      XII_TEST_BOOL(query->GetData(&data, sizeof(data), false));
+      XII_TEST_BOOL(data.m_uiFrequency > 0U);
+    }
+    list->Reset();
+    query->Invalidate();
+    pDevice->WaitIdle();
+  }
 }

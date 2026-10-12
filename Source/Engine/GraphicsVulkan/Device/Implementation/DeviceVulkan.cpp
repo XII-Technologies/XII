@@ -2058,6 +2058,13 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
   VK_ASSERT_DEV(m_LogicalDevice.waitIdle(m_InstanceDispatchLoader));
 
+  // Releasing completed primary lists can retire their retained secondary lists. Drain both
+  // before destroying query pools or command queues during device shutdown.
+  for (auto* pool : {m_pTransferCommandBufferPool.Borrow(), m_pComputeCommandBufferPool.Borrow(), m_pGraphicsCommandBufferPool.Borrow()})
+  {
+    if (pool)
+      while (pool->ReclaimCompleted() != 0U) {}
+  }
   m_pDeferredDeletionQueue->ReleaseResources(true);
 }
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
@@ -83,6 +84,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_pDescriptorSetPoolVulkan    = std::move(other.m_pDescriptorSetPoolVulkan);
     m_pNullVertexBuffer           = std::move(other.m_pNullVertexBuffer);
     m_TemporaryQueryPools         = std::move(other.m_TemporaryQueryPools);
+    m_QueryReferences             = std::move(other.m_QueryReferences);
+    m_SecondaryCommandLists       = std::move(other.m_SecondaryCommandLists);
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
   }
 
@@ -104,6 +107,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_pDescriptorSetPoolVulkan    = std::move(other.m_pDescriptorSetPoolVulkan);
     m_pNullVertexBuffer           = std::move(other.m_pNullVertexBuffer);
     m_TemporaryQueryPools         = std::move(other.m_TemporaryQueryPools);
+    m_QueryReferences             = std::move(other.m_QueryReferences);
+    m_SecondaryCommandLists       = std::move(other.m_SecondaryCommandLists);
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
 
     return *this;
@@ -177,6 +182,9 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
   xiiSharedPtr<xiiGALBufferVulkan> m_pNullVertexBuffer; ///< In Vulkan, we cannot bind a null vertex buffer, so we have to create a zeroed-out vertex buffer.
 
   xiiDynamicArray<vk::QueryPool> m_TemporaryQueryPools; ///< Query pools created while recording and destroyed after GPU execution completes.
+
+  xiiDynamicArray<xiiGALQueryReferenceVulkan>      m_QueryReferences;
+  xiiDynamicArray<xiiSharedPtr<xiiGALCommandList>> m_SecondaryCommandLists;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };
