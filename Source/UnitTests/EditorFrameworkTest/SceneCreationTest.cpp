@@ -3,7 +3,9 @@
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 
 #include <EditorEngineProcessFramework/EngineProcess/WorldRttiConverterContext.h>
+#include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/BinarySerializer.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
@@ -12,6 +14,7 @@
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <SharedPluginScene/Scene/SceneCreation.h>
 #include <ToolsFoundation/Document/Document.h>
+#include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Object/DocumentObjectMirror.h>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
@@ -21,12 +24,47 @@ namespace
   class SceneCreationDocument : public xiiDocument
   {
   public:
-    SceneCreationDocument() : xiiDocument("SceneCreationTest.xiiScene", XII_DEFAULT_NEW(xiiDocumentObjectManager))
+    SceneCreationDocument(xiiStringView path = "SceneCreationTest.xiiScene", bool createInfo = true) : xiiDocument(path, XII_DEFAULT_NEW(xiiDocumentObjectManager))
     {
-      m_pDocumentInfo = CreateDocumentInfo();
+      if (createInfo)
+        m_pDocumentInfo = CreateDocumentInfo();
     }
 
     xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiDocumentInfo); }
+  };
+
+  class SceneCreationManager : public xiiDocumentManager
+  {
+  public:
+    SceneCreationManager()
+    {
+      m_Type.m_sDocumentTypeName = "Scene";
+      m_Type.m_sFileExtension    = "xiiScene";
+      m_Type.m_pDocumentType     = xiiGetStaticRTTI<xiiDocument>();
+      m_Type.m_pManager          = this;
+    }
+
+    ~SceneCreationManager() override { CloseAllDocumentsOfManager(); }
+
+    xiiStatus CloneDocument(xiiStringView, xiiStringView, xiiUuid&) override
+    {
+      ++m_uiTemplateClones;
+      return xiiStatus("The native default scene must not be replaced by a bundled legacy template.");
+    }
+
+    xiiUInt32 m_uiTemplateClones = 0;
+
+  private:
+    xiiStatus InternalCreateDocument(xiiStringView, xiiStringView path, bool create, xiiDocument*& out_document, const xiiDocumentObject*) override
+    {
+      out_document = new SceneCreationDocument(path, false);
+      if (create)
+        return xiiCreateDefaultScene(*out_document->GetObjectAccessor());
+      return XII_SUCCESS;
+    }
+
+    void                      InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& types) const override { types.PushBack(&m_Type); }
+    xiiDocumentTypeDescriptor m_Type;
   };
 
   class RejectLightIntensityAccessor : public xiiObjectCommandAccessor
@@ -81,6 +119,37 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, SceneCreation)
   SceneCreationDocument document;
   XII_TEST_STATUS(xiiCreateDefaultScene(*document.GetObjectAccessor()));
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default document creation uses native content with the shipped data mounted")
+  {
+    xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+    output.AppendPath("NativeSceneCreation");
+    XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output));
+    XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "SceneCreation", "SceneCreationBase", xiiDataDirUsage::ReadOnly));
+    XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "SceneCreation", ":", xiiDataDirUsage::AllowWrites));
+    XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("SceneCreation"));
+    output.AppendPath("Native.xiiScene");
+
+    SceneCreationManager manager;
+    xiiDocument*         created = nullptr;
+    // Exercise the normal template-aware path, without EmptyDocument bypassing template lookup.
+    XII_TEST_STATUS(manager.CreateDocument("Scene", output, created, xiiDocumentFlags::None));
+    XII_TEST_INT(manager.m_uiTemplateClones, 0);
+    if (created != nullptr)
+    {
+      CheckScene(*static_cast<SceneCreationDocument*>(created));
+      const auto id = created->GetGuid();
+      manager.CloseDocument(created);
+      XII_TEST_STATUS(manager.OpenDocument("Scene", output, created, xiiDocumentFlags::None));
+      if (created != nullptr)
+      {
+        XII_TEST_BOOL(created->GetGuid() == id);
+        XII_TEST_INT(created->GetUnknownObjectTypeInstances(), 0);
+        CheckScene(*static_cast<SceneCreationDocument*>(created));
+        manager.CloseDocument(created);
+      }
+    }
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native component definitions and single-transaction undo / redo")
   {
     CheckScene(document);
@@ -118,7 +187,7 @@ XII_CREATE_SIMPLE_TEST(EditorDocuments, SceneCreation)
     xiiWorldDescription description("Default scene mirror");
     // Match the engine-process document's editable World configuration.
     description.m_bReportErrorWhenStaticObjectMoves = false;
-    xiiWorld            world(description);
+    xiiWorld world(description);
     XII_LOCK(world.GetWriteMarker());
     xiiWorldRttiConverterContext context;
     context.m_pWorld = &world;

@@ -51,7 +51,7 @@ void xiiLongOpsAdapter::DocumentManagerEventHandler(const xiiDocumentManager::Ev
   if (e.m_Type == xiiDocumentManager::Event::Type::DocumentOpened)
   {
     const xiiRTTI* pRttiScene = xiiRTTI::FindTypeByName("xiiSceneDocument");
-    const bool     bIsScene   = e.m_pDocument->GetDocumentTypeDescriptor()->m_pDocumentType->IsDerivedFrom(pRttiScene);
+    const bool     bIsScene   = pRttiScene != nullptr && e.m_pDocument->GetDocumentTypeDescriptor()->m_pDocumentType->IsDerivedFrom(pRttiScene);
     if (bIsScene)
     {
       CheckAllTypes();
@@ -65,7 +65,7 @@ void xiiLongOpsAdapter::DocumentManagerEventHandler(const xiiDocumentManager::Ev
   if (e.m_Type == xiiDocumentManager::Event::Type::DocumentClosing)
   {
     const xiiRTTI* pRttiScene = xiiRTTI::FindTypeByName("xiiSceneDocument");
-    const bool     bIsScene   = e.m_pDocument->GetDocumentTypeDescriptor()->m_pDocumentType->IsDerivedFrom(pRttiScene);
+    const bool     bIsScene   = pRttiScene != nullptr && e.m_pDocument->GetDocumentTypeDescriptor()->m_pDocumentType->IsDerivedFrom(pRttiScene);
     if (bIsScene)
     {
       xiiLongOpControllerManager::GetSingleton()->CancelAndRemoveAllOpsForDocument(e.m_pDocument->GetGuid());
