@@ -5,6 +5,65 @@ The authoritative objective is comprehensive Editor and tooling modernization,
 including integrated workflows and compatibility. Passing library builds alone
 does not satisfy it.
 
+## Native skeleton pose authoring and simulation pullback
+
+- Native `xiiSkeletonPoseComponent` now reflects a sparse `BoneTransforms` map of
+  absolute runtime local transforms, plus its mesh-application setting. Overrides
+  are keyed by joint name, survive skeleton reordering/reload, and leave unknown
+  names available for later resource revisions. Removing an override restores the
+  joint's rest pose. The pose manager also evaluates while simulation is disabled,
+  so document edits reach the native pose without entering play mode.
+- `SetLocalPose` validates a complete indexed input and binds it to the currently
+  loaded skeleton's names before replacing overrides. Invalid inputs return
+  `xiiResult` without modifying authored data. Component binary version 2 saves
+  authored overrides; version 1 indexed poses resolve once against their skeleton.
+  Unresolved version 1 data is retained when saving before resource availability.
+  Pose implementation and mesh-palette construction have separate source files.
+- Both native animation and pose components expose evaluated pose snapshots by
+  joint name. Snapshots reject uninitialized poses and changed skeleton revisions,
+  including reloads that preserve joint count. Transforms, names and pose counts
+  are validated before a snapshot is returned. Runtime code has no Qt or exposed
+  bone metadata dependency.
+- Mesh palette mapping moved from preview-only code into GraphicsCore. Native
+  components and previews now share resolution of mesh bone names, palette indices
+  and mesh inverse bind poses. Sparse unused slots are identity; malformed mappings
+  clear the output. Native mesh application reuses palette/scratch capacity and
+  clears failed skinning output without discarding independent morph weights.
+- Bone gizmos resolve the existing asset metadata hierarchy into native coordinates,
+  baking import coordinates into default root joints once and preserving reflected
+  scale signs. Native overrides already include those coordinates. Synthetic import
+  metadata is not exposed as an editable joint. Rotation edits preserve translation
+  and nonuniform scale and insert missing overrides through the command accessor.
+  Manipulators now observe collection insertion/removal as well as value changes.
+  Skeleton curator notifications defer metadata refresh to redraw, with owned event
+  subscriptions. Exposed-bone metadata remains a tooling/asset format, not runtime
+  component storage.
+- Scene simulation pullback uses native component snapshots instead of the removed
+  animation message. IPC carries skeleton identity, and layered scene documents
+  apply transforms only to a matching skeleton component. Failed pose commands
+  cancel the layer transaction. Animated components take precedence over static
+  pose components when collecting an object's pose. Scene context teardown now
+  resets UUIDs using the current API and relies on world-owned registered views
+  rather than the removed per-frame game-state view submission call.
+- Windows Debug builds of EditorFrameworkTest, EditorEngineProcessFrameworkTest
+  and EditorEngineProcess pass. All 6 EditorFramework tests and all 39 Vulkan
+  engine-process tests pass, including real document-to-world pose mirroring,
+  insert/remove undo/redo, simulated curator refresh notifications, skeleton
+  resource reload/reordering, component version 1 loading, version 2 world round
+  trips, IPC serialization and reordered sparse mesh palettes. Production
+  Scene2Document and SceneContext selected compiles pass with zero warnings/errors.
+  Evidence: `Workspace/editor-native-pose-verified-build.log`,
+  `Workspace/editor-native-pose-editor-tests.log`,
+  `Workspace/editor-native-pose-engine-tests.log`,
+  `Workspace/editor-native-pose-Scene2Document-compile.log` and
+  `Workspace/editor-native-pose-SceneContext-compile.log`.
+- Integrated Qt gizmo interaction, real curator-file reload notification delivery,
+  play-the-game window rendering, the complete scene-plugin link and other
+  platforms/backends remain unverified. SceneView still requires native picking
+  integration; property animation, GreyBox authoring and legacy lighting asset
+  migration remain separate outstanding work. This checkpoint does not establish
+  a successful full Editor application build or launch.
+
 ## Baseline and architecture assessment
 
 Baseline: `2ac6681c3` on 2026-10-11, clean worktree. The Windows VS2026 workspace
