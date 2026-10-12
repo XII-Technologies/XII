@@ -7,6 +7,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
+#include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -257,6 +258,22 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
 {
+  // This fixture checks allocation continuity at a fixed resolution. The production PID
+  // changes resolution under load and correctly recreates all nine temporal histories.
+  // Pin both bounds so shader compilation, validation and other tests cannot resize it.
+  auto* minimum = xiiCVar::FindCVarByName("Rendering.DynamicResolution.MinimumRenderScale");
+  auto* maximum = xiiCVar::FindCVarByName("Rendering.DynamicResolution.MaximumRenderScale");
+  if (!XII_TEST_BOOL(minimum && maximum) ||
+      !XII_TEST_BOOL(minimum->GetType() == xiiCVarType::Float && maximum->GetType() == xiiCVarType::Float))
+    return;
+  auto&      minimumScale    = *static_cast<xiiCVarFloat*>(minimum);
+  auto&      maximumScale    = *static_cast<xiiCVarFloat*>(maximum);
+  const auto previousMinimum = minimumScale.GetValue();
+  const auto previousMaximum = maximumScale.GetValue();
+  XII_SCOPE_EXIT(minimumScale = previousMinimum; maximumScale = previousMaximum);
+  minimumScale = 1.0f;
+  maximumScale = 1.0f;
+
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
     return;
@@ -304,6 +321,8 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
       XII_LOCK(worlds[view]->GetWriteMarker());
       worlds[view]->Update();
       environment.GetDevice()->WaitIdle();
+      XII_TEST_INT(views[view]->GetRenderResolutionWidth(), 32);
+      XII_TEST_INT(views[view]->GetRenderResolutionHeight(), 32);
       checks[view] = xiiDynamicCast<const xiiPipelineHistoryCheck*>(views[view]->GetRenderPipelineInstance().GetPass(inspect));
       if (!XII_TEST_BOOL(checks[view] != nullptr))
         return;
