@@ -2,6 +2,7 @@
 
 #include <EnginePluginScene/EnginePluginScenePCH.h>
 
+#include <EnginePluginScene/SceneContext/SceneContext.h>
 #include <EnginePluginScene/SceneView/SceneView.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -26,4 +27,25 @@ xiiViewHandle xiiSceneViewContext::CreateView()
   view->SetPipelineParameter("Editor.ShapeIcons", m_pSceneContext->GetRenderShapeIcons());
   view->m_ExcludeTags.Set(xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorHidden"));
   return view->GetHandle();
+}
+
+void xiiSceneViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiGALTextureView* pRenderTargetView, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
+{
+  xiiEngineProcessViewContext::SetupRenderTarget(pSwapChain, pRenderTargetView, uiWidth, uiHeight);
+  XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  if (xiiView* view = GetView())
+    for (const xiiTag& tag : m_pSceneContext->GetInvisibleLayerTags())
+      view->m_ExcludeTags.Set(tag);
+}
+
+void xiiSceneViewContext::SetInvisibleLayerTags(const xiiArrayPtr<xiiTag> removeTags, const xiiArrayPtr<xiiTag> addTags)
+{
+  XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  if (xiiView* view = GetView())
+  {
+    for (const xiiTag& tag : removeTags)
+      view->m_ExcludeTags.Remove(tag);
+    for (const xiiTag& tag : addTags)
+      view->m_ExcludeTags.Set(tag);
+  }
 }

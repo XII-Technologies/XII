@@ -1222,6 +1222,14 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   active, and integrated GUI / other backend and platform verification remains
   outstanding.
 
+- Scene viewport target setup and invisible-layer updates now use the owning
+  World's view under its write marker instead of the removed global RenderWorld.
+  Layer changes continue updating the same native view filters consumed by scene
+  extraction and shape-icon collection. `SceneViewRendering.cpp` compiles with
+  zero warnings/errors (`Workspace/editor-scene-layer-rendering-compile.log`).
+  The full scene-plugin build and integrated GUI layer toggles remain unverified
+  while the other legacy scene integrations are migrated.
+
 - Shape-icon picking now exposes nonblocking point and marquee queries on the
   native per-view pass. Each of three bounded capture slots pairs its GPU ID image
   with compact generational object/component handles. Queries validate the World,

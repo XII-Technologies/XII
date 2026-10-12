@@ -65,22 +65,6 @@ void xiiSceneViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
   }
 }
 
-void xiiSceneViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiGALTextureView* pRenderTargetView, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
-{
-  xiiEngineProcessViewContext::SetupRenderTarget(pSwapChain, pRenderTargetView, uiWidth, uiHeight);
-
-  xiiView* pView = nullptr;
-  if (xiiRenderWorld::TryGetView(m_hView, pView))
-  {
-    xiiTagSet&                      excludeTags = pView->m_ExcludeTags;
-    const xiiArrayPtr<const xiiTag> addTags     = m_pSceneContext->GetInvisibleLayerTags();
-    for (const xiiTag& addTag : addTags)
-    {
-      excludeTags.Set(addTag);
-    }
-  }
-}
-
 bool xiiSceneViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& bounds)
 {
   xiiView* pView = nullptr;
@@ -115,23 +99,6 @@ bool xiiSceneViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& boun
   bool bResult    = !FocusCameraOnObject(m_Camera, bounds, 70.0f, -xiiVec3(5, -2, 3));
   m_CullingCamera = m_Camera;
   return bResult;
-}
-
-void xiiSceneViewContext::SetInvisibleLayerTags(const xiiArrayPtr<xiiTag> removeTags, const xiiArrayPtr<xiiTag> addTags)
-{
-  xiiView* pView = nullptr;
-  if (xiiRenderWorld::TryGetView(m_hView, pView))
-  {
-    xiiTagSet& excludeTags = pView->m_ExcludeTags;
-    for (const xiiTag& removeTag : removeTags)
-    {
-      excludeTags.Remove(removeTag);
-    }
-    for (const xiiTag& addTag : addTags)
-    {
-      excludeTags.Set(addTag);
-    }
-  }
 }
 
 void xiiSceneViewContext::Redraw(bool bRenderEditorGizmos)
