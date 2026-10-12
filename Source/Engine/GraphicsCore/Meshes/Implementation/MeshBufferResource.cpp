@@ -683,6 +683,17 @@ void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuf
   desc.m_Mode                = bindFlags.IsSet(xiiGALBindFlags::IndexBuffer) ? xiiGALBufferMode::Raw : xiiGALBufferMode::Structured;
   desc.m_uiElementByteStride = uiStride;
 
+  // Bindless byte-address reads access complete words, including packed primitive and UInt16
+  // index tails. Retain logical element counts in the descriptor; pad only the GPU allocation.
+  xiiDynamicArray<xiiUInt8> paddedData;
+  if (bindFlags.IsSet(xiiGALBindFlags::ShaderResource) && (data.GetCount() & 3U) != 0U)
+  {
+    paddedData.SetCount(xiiMath::RoundUp(data.GetCount(), 4U));
+    xiiMemoryUtils::Copy(paddedData.GetData(), data.GetPtr(), data.GetCount());
+    xiiMemoryUtils::ZeroFill(paddedData.GetData() + data.GetCount(), paddedData.GetCount() - data.GetCount());
+    data          = paddedData;
+    desc.m_uiSize = data.GetCount();
+  }
   xiiGALBufferData initialData(const_cast<xiiUInt8*>(data.GetPtr()), data.GetCount());
   out_pBuffer = pDevice->CreateBuffer(desc, &initialData);
 
