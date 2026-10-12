@@ -420,5 +420,3 @@ bool xiiGALDescriptorHash::Equal(const xiiGALPipelineResourceSignatureCreationDe
 {
   return a == b;
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_DescriptorHash);

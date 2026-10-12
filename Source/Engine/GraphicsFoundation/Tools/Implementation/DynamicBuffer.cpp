@@ -200,3 +200,5 @@ void xiiGALDynamicBuffer::CopyStaleBuffer(xiiSharedPtr<xiiGALCommandList> pComma
 
   m_pStaleBuffer.Clear();
 }
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Tools_Implementation_DynamicBuffer);

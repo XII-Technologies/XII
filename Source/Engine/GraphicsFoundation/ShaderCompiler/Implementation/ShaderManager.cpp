@@ -333,5 +333,3 @@ xiiUInt32 xiiGALShaderManager::FilterPermutationVariables(xiiArrayPtr<const xiiH
 
   return xiiGALPermutationVariable::CalculateHash(out_FilteredPermutationVariables);
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_ShaderCompiler_Implementation_ShaderManager);

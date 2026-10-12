@@ -241,5 +241,3 @@ void xiiGALQueryPoolVulkan::QueryPoolInformation::Discard(xiiUInt32 uiIndex)
   if (--m_ReferenceCounts[uiIndex] == 0U)
     m_AvailableQueries.PushBack(uiIndex);
 }
-
-XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_QueryPoolVulkan);

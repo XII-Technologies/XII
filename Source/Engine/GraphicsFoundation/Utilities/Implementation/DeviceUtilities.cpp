@@ -171,5 +171,3 @@ xiiResult xiiGALDeviceUtilities::MapAndUpdateBuffer(xiiGALCommandList* pCommandL
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_DeviceUtilities);

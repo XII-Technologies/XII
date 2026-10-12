@@ -884,5 +884,3 @@ void xiiGALTextureUtilities::CopySubresourceToMemory(const xiiGALTextureCreation
     }
   }
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_TextureUtilities);

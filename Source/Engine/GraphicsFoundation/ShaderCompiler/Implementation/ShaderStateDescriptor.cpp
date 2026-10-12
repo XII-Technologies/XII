@@ -521,5 +521,3 @@ xiiResult xiiGALShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_ShaderStateDescriptor);

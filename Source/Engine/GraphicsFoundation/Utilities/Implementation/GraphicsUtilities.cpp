@@ -76,5 +76,3 @@ xiiGALSamplerCreationDescription xiiGALGraphicsUtilities::GetDefaultSamplerDescr
     .m_fMaxLOD            = 4200.0f,
   };
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_GraphicsUtilities);

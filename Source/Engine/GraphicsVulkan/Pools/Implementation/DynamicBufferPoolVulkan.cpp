@@ -144,5 +144,3 @@ void xiiGALDynamicBufferPoolVulkan::Reset()
   }
   m_LargeAllocations.Clear();
 }
-
-XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_DynamicBufferPoolVulkan);
