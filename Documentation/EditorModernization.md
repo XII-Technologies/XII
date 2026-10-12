@@ -1342,3 +1342,68 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   integrated Editor GUI workflows remain unverified.
   `Workspace/editor-preview-lighting-scene-build.log` confirms that the full build
   still stops at the removed animation declarations and global RenderWorld headers.
+
+## Native scene authoring, reflection volumes and visualizer lifetime
+
+- New scene creation now uses `xiiCreateDefaultScene` through the document object
+  accessor. The initial camera shortcut/thumbnail usage, sphere asset and position,
+  sky tag and light orientation are retained. Native atmosphere and directional
+  light components replace the removed skybox/skylight types; the light explicitly
+  authors 10 lux. The procedural sky changes the new-scene default appearance.
+  All edits form one undoable transaction and a rejected operation rolls back the
+  complete setup, preserving any existing content. The manager logs setup failure;
+  its underlying void document-factory API still needs status propagation so
+  callers cannot save a document whose initial setup failed.
+- EditorFramework tests execute this production setup, verify native properties,
+  undo/redo, serialize and reload its document graph, and mirror it into a native
+  World. Mirrored undo/redo removes/recreates the actual objects. An injected final
+  light-property failure verifies rollback and preservation of existing content.
+  These tests do not launch the integrated scene window or establish final shaded
+  scene appearance.
+- Reflection captures now expose a runtime reflection attribute describing their
+  shape, half extents, radius and blend distance. The Editor-owned native adapter
+  draws the box/sphere influence and inner full-weight boundary using regular
+  synchronized visualizer handles. Dimensions match native local-space reflection
+  sampling, including object transforms, inward blend distances and degenerate
+  blend boundaries. Invalid active settings hide the visualization; unused shape
+  settings do not hide a valid volume. No Qt types entered GraphicsCore.
+- Shape-specific property visibility uses the native capture schema. Camera
+  render-target rectangle visibility compares the current `RenderTarget` enum,
+  fixing the obsolete numeric value that selected `CinematicView`. Native light
+  metadata handles the actual `ShadowFadeOutRange` property instead of naming
+  removed shadow/cascade settings. This does not restore the camera component's
+  currently disabled render-to-texture implementation.
+- Removed metadata/registration for absent skylight and greybox types and the
+  unused camera-pipeline string enum, whose profile configuration and camera
+  consumer no longer exist. The old box-probe adapter was replaced by the native
+  capture adapter. Existing scene assets are not rewritten or automatically
+  converted; legacy skybox/skylight/probe/greybox asset migration and greybox
+  material-drag integration remain outstanding. Removing dead property handlers
+  prevents their missing-type assertions on ordinary property-grid queries; it
+  does not establish replacement runtime behavior for those legacy asset types.
+- Visualizer registries retain the active selection and rebuild when factory
+  creators change, respecting the factory's closest matching creator and fallback.
+  Unregistering a creator destroys adapters and synchronized handles while plugin
+  code is still loaded. Empty/closing selections remove cached document entries.
+  Scene plugin unload now unregisters its point, spot and reflection creators.
+  Tests cover late registration, derived creator replacement/fallback, independent
+  documents, creator removal, synchronized-handle cleanup and cleared selections.
+  Actual DLL unload/reload in the integrated GUI remains unverified.
+- Windows Debug builds of EditorFrameworkTest, GraphicsCoreTest,
+  EditorEngineProcessFrameworkTest and EditorEngineProcess pass. All four Editor
+  authoring/lifecycle tests, all 18 GraphicsCore tests and all 38 Vulkan
+  engine-process tests pass. Production `SceneDocumentManager.cpp` and
+  `EditorPluginScene.cpp` compile with zero warnings/errors. The Editor tests also
+  compile and exercise the production scene metadata and capture adapter units.
+  Evidence: `Workspace/editor-reflection-authoring-final-build.log`,
+  `Workspace/editor-reflection-authoring-final-editor-tests.log`,
+  `Workspace/editor-reflection-authoring-graphics-tests.log`,
+  `Workspace/editor-reflection-authoring-engine-tests.log`,
+  `Workspace/editor-scene-creation-manager-compile.log` and
+  `Workspace/editor-reflection-authoring-plugin-compile.log`.
+- The full EditorPluginScene build remains blocked by EnginePluginScene's removed
+  animation-declarations and global RenderWorld headers
+  (`Workspace/editor-reflection-authoring-scene-build.log`). Native bone state
+  pullback/editing, scene picking/selection, document-factory failure propagation,
+  integrated GUI workflows and other platform/backend configurations still need
+  implementation or verification. The modernization goal remains incomplete.
