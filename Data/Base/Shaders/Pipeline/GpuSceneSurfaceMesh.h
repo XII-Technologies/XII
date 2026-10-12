@@ -103,16 +103,17 @@ void main(uint threadIndex : SV_GroupThreadID,
     vertices[threadIndex] = xiiLoadSceneSurfaceVertex(instance, lod, sourceVertex);
   }
 
-  if (threadIndex < primitiveCount)
+  // A meshlet can contain more primitives than the 64 lanes in this workgroup.
+  for (uint primitiveIndex = threadIndex; primitiveIndex < primitiveCount; primitiveIndex += 64u)
   {
-    const uint sourcePrimitive = meshlet.Header.x + threadIndex;
-    const uint primitiveOffset = meshlet.Header.z + threadIndex * 3u;
+    const uint sourcePrimitive = meshlet.Header.x + primitiveIndex;
+    const uint primitiveOffset = meshlet.Header.z + primitiveIndex * 3u;
     const uint3 primitiveIndices = uint3(
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 0u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
     const bool primitiveSelected = instance.PrimitiveCount == 0u ||
       (sourcePrimitive >= instance.FirstPrimitive && sourcePrimitive - instance.FirstPrimitive < instance.PrimitiveCount);
-    triangles[threadIndex] = primitiveSelected && all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);
+    triangles[primitiveIndex] = primitiveSelected && all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);
   }
 }

@@ -73,7 +73,7 @@ namespace
   }
 } // namespace
 
-XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
+static void RunSceneMeshIdentity(bool denseMeshlet)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -83,7 +83,17 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   xiiGeometry geometry;
-  geometry.AddBox(xiiVec3(1), true);
+  if (denseMeshlet)
+  {
+    // An 8x8 vertex grid forms 98 triangles within a single meshlet. Its front surface
+    // coincides with the box fixture so projection/depth/normal assertions remain shared.
+    xiiGeometry::GeoOptions options;
+    options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(-0.5f, 0, 0)) *
+      xiiMat4::MakeAxisRotation(xiiVec3::MakeAxisY(), xiiAngle::MakeFromDegree(-90));
+    geometry.AddRect(xiiVec2(1), 7, 7, options);
+  }
+  else
+    geometry.AddBox(xiiVec3(1), true);
   xiiMeshResourceDescriptor descriptor;
   descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList);
   descriptor.AddSubMesh(descriptor.GetMeshBufferDescriptor().GetPrimitiveCount(), 0, 0);
@@ -93,6 +103,17 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
   xiiResourceLock<xiiMeshResource> loaded(mesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
     return;
+
+  if (denseMeshlet)
+  {
+    xiiResourceLock<xiiMeshBufferResource> buffer(loaded->GetMeshBuffer(), xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    const auto                             meshlets                     = buffer->GetMeshlets();
+    bool                                   hasMorePrimitivesThanThreads = false;
+    for (const auto& meshlet : meshlets)
+      hasMorePrimitivesThanThreads |= meshlet.m_uiPrimitiveCount > 64 && meshlet.m_uiVertexCount <= 64;
+    if (!XII_TEST_BOOL(hasMorePrimitivesThanThreads))
+      return;
+  }
 
   xiiWorldDescription worldDescription("Mesh identity owners");
   xiiWorld            world(worldDescription);
@@ -268,6 +289,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
       if (ReadIds(*environment.GetDevice(), texture.Borrow(), pixels))
       {
         XII_TEST_INT(pixels[16 * 32 + 16], firstId);
+        if (denseMeshlet)
+          for (xiiUInt32 y = 8; y < 24; ++y)
+            for (xiiUInt32 x = 8; x < 24; ++x)
+              XII_TEST_INT(pixels[y * 32 + x], firstId);
         XII_TEST_INT(pixels[0], 0);
         XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), pixels[16 * 32 + 16], source));
         XII_TEST_BOOL(source.m_hOwnerComponent == firstComponent);
@@ -277,6 +302,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
       {
         const xiiUInt32 center = (16 * 32 + 16) * 4;
         XII_TEST_INT(pixels[center], firstId);
+        if (denseMeshlet)
+          for (xiiUInt32 y = 8; y < 24; ++y)
+            for (xiiUInt32 x = 8; x < 24; ++x)
+              XII_TEST_INT(pixels[(y * 32 + x) * 4], firstId);
         XII_TEST_INT(pixels[0], 0);
         const auto  surfaceClip = viewProjection * xiiVec4(-0.5f, 0, 0, 1);
         const float depth       = std::bit_cast<float>(pixels[center + 1]);
@@ -485,4 +514,15 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
     XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(oldContext, replacementId, source).Failed());
     XII_TEST_BOOL(source.m_hOwnerObject.IsInvalidated());
   }
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
+{
+  RunSceneMeshIdentity(false);
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(MeshletRaster);
+XII_CREATE_SIMPLE_TEST(MeshletRaster, DensePrimitiveCoverage)
+{
+  RunSceneMeshIdentity(true);
 }

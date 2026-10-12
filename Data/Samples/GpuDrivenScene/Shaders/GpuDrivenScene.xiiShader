@@ -82,10 +82,11 @@ void main(uint threadIndex : SV_GroupThreadID,
     vertices[threadIndex] = output;
   }
 
-  if (threadIndex < primitiveCount)
+  // A meshlet can contain more primitives than the 64 lanes in this workgroup.
+  for (uint primitiveIndex = threadIndex; primitiveIndex < primitiveCount; primitiveIndex += 64u)
   {
-    const uint primitiveOffset = meshlet.Header.z + threadIndex * 3u;
-    triangles[threadIndex] = uint3(
+    const uint primitiveOffset = meshlet.Header.z + primitiveIndex * 3u;
+    triangles[primitiveIndex] = uint3(
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 0u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
