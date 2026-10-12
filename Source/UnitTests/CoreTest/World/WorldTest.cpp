@@ -3,6 +3,8 @@
 #include <CoreTest/CoreTestPCH.h>
 
 #include <Core/World/World.h>
+#include <Core/WorldSerializer/WorldWriter.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Time/Clock.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 
@@ -897,5 +899,64 @@ XII_CREATE_SIMPLE_TEST(World, World)
     XII_TEST_BOOL(world.SearchForObject("G:C2/P:B/../../A", pKey3) == pA2);
 
     XII_TEST_BOOL(world.SearchForObject("G:B2/C/..") == nullptr); // malformed path
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(World, DeletedObjectTraversal)
+{
+  for (bool dynamic : {false, true})
+  {
+    xiiWorldDescription description("Deleted traversal objects");
+    xiiWorld            world(description);
+    XII_LOCK(world.GetWriteMarker());
+    xiiGameObjectDescription objectDescription;
+    objectDescription.m_bDynamic = dynamic;
+    xiiGameObject* root          = nullptr;
+    const auto     hRoot         = world.CreateObject(objectDescription, root);
+    objectDescription.m_hParent  = hRoot;
+    xiiGameObject* child         = nullptr;
+    const auto     hChild        = world.CreateObject(objectDescription, child);
+    objectDescription.m_hParent.Invalidate();
+    xiiGameObject* survivor  = nullptr;
+    const auto     hSurvivor = world.CreateObject(objectDescription, survivor);
+    survivor->SetActiveFlag(false); // Inactive is still alive and must be visited / exported.
+    world.DeleteObjectNow(hRoot, false);
+    XII_TEST_INT(world.GetObjectCount(), 1);
+    XII_TEST_BOOL(!world.TryGetObject(hRoot, root));
+    XII_TEST_BOOL(!world.TryGetObject(hChild, child));
+
+    for (auto method : {xiiWorld::TraversalMethod::BreadthFirst, xiiWorld::TraversalMethod::DepthFirst})
+    {
+      xiiUInt32 count   = 0;
+      auto      visitor = [&](xiiGameObject* object) {
+        ++count;
+        XII_TEST_BOOL(object->GetHandle() == hSurvivor);
+        return xiiVisitorExecution::Continue;
+      };
+      world.Traverse(visitor, method);
+      XII_TEST_INT(count, 1);
+    }
+
+    xiiDefaultMemoryStreamStorage storage;
+    xiiMemoryStreamWriter         stream(&storage);
+    xiiWorldWriter                writer;
+    writer.WriteWorld(stream, world);
+    XII_TEST_INT(writer.GetAllWrittenRootObjects().GetCount(), 1);
+    XII_TEST_INT(writer.GetAllWrittenChildObjects().GetCount(), 0);
+    XII_TEST_BOOL(writer.GetAllWrittenRootObjects()[0]->GetHandle() == hSurvivor);
+
+    world.DeleteObjectNow(hSurvivor, false);
+    for (auto method : {xiiWorld::TraversalMethod::BreadthFirst, xiiWorld::TraversalMethod::DepthFirst})
+    {
+      xiiUInt32 count   = 0;
+      auto      visitor = [&](xiiGameObject*) {
+        ++count;
+        return xiiVisitorExecution::Continue;
+      };
+      world.Traverse(visitor, method);
+      XII_TEST_INT(count, 0);
+    }
+    writer.WriteWorld(stream, world);
+    XII_TEST_INT(writer.GetAllWrittenRootObjects().GetCount(), 0);
   }
 }
