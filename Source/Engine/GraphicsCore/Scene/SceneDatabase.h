@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/IdTable.h>
 #include <GraphicsCore/Scene/SceneTypes.h>
 
@@ -42,6 +43,13 @@ public:
   bool SetGeometry(xiiSceneObjectHandle hObject, xiiUInt32 uiGeometryIndex);
   bool SetMaterial(xiiSceneObjectHandle hObject, xiiUInt32 uiMaterialIndex);
   bool SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount);
+  /// Associates a native ushort4/byte4 palette with one instance. No resource ownership transfers.
+  /// Invalid handles, non-affine matrices and stream ranges outside the stride fail atomically.
+  /// Empty palettes restore bind pose; the preceding pose survives one committed frame for velocity.
+  /// First assignment and resetHistory initialize previous pose to current (e.g. after mesh reload).
+  /// Input must not alias internal storage. Call before CommitFrame; external synchronization is required.
+  [[nodiscard]] xiiResult SetSkinningPalette(xiiSceneObjectHandle hObject, xiiArrayPtr<const xiiMat4> palette,
+                                             xiiUInt32 uiVertexStride, xiiUInt32 uiBoneIndicesOffset, xiiUInt32 uiBoneWeightsOffset, bool bResetHistory = false);
   /// Sets native GPU LOD selection without changing geometry ownership. Invalid forced LOD means
   /// automatic selection. A forced LOD must be below eight; non-finite bias and stale handles fail
   /// without mutation. Bias is measured in coverage octaves, saturated to [-16, 16] on the GPU.
@@ -69,6 +77,7 @@ public:
   void CommitFrame(xiiUInt64 uiFrameIndex);
 
   [[nodiscard]] xiiArrayPtr<const xiiGpuSceneInstance> GetGpuInstances() const { return m_GpuInstances; }
+  [[nodiscard]] xiiArrayPtr<const xiiMat4>             GetGpuSkinningMatrices() const { return m_GpuSkinningMatrices; }
   [[nodiscard]] xiiArrayPtr<const xiiSceneUploadRange> GetUploadRanges() const { return m_UploadRanges; }
   [[nodiscard]] const xiiSceneDatabaseStats&           GetStats() const { return m_Stats; }
 
@@ -85,6 +94,22 @@ private:
   void               MarkSubtreeDirty(xiiUInt32 uiObject);
   void               UpdateDirtyTransforms();
   void               RebuildGpuInstances();
+  void               BuildSkinningSnapshot(xiiUInt32 uiObject, xiiGpuSceneInstance& instance);
+  void               PrepareSkinningSnapshots();
+  void               AdvanceSkinningPoses();
+
+  struct SkinningPose
+  {
+    xiiDynamicArray<xiiMat4> m_Current;
+    xiiDynamicArray<xiiMat4> m_Previous;
+    xiiUInt32                m_uiVertexStride      = 0U;
+    xiiUInt32                m_uiBoneIndicesOffset = 0U;
+    xiiUInt32                m_uiBoneWeightsOffset = 0U;
+    xiiVec4U32               m_SnapshotRange       = xiiVec4U32::MakeZero();
+  };
+  /// Only posed instances allocate palette state; ordinary static scenes pay no per-object arrays.
+  xiiHashTable<xiiUInt32, SkinningPose> m_SkinningPoses;
+  xiiDynamicArray<xiiMat4>              m_GpuSkinningMatrices;
 
   xiiIdTable<xiiSceneObjectId, xiiUInt32>           m_Objects;
   xiiDynamicArray<xiiSceneObjectHandle>             m_ObjectHandles;

@@ -23,6 +23,14 @@ struct GpuSceneInstance
   float    LodBias;
   uint     DrawLod;
   uint     LodSelectionIndex;
+  uint     SkinningOffset;
+  uint     SkinningCount;
+  uint     PreviousSkinningOffset;
+  uint     PreviousSkinningCount;
+  uint     BoneIndicesOffset;
+  uint     BoneWeightsOffset;
+  uint     SkinningVertexStride;
+  uint     SkinningPadding;
 };
 
 struct GpuVisibilityView

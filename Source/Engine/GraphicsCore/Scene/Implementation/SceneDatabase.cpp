@@ -21,6 +21,8 @@ xiiSceneDatabase::~xiiSceneDatabase() = default;
 
 void xiiSceneDatabase::Clear()
 {
+  m_SkinningPoses.Clear();
+  m_GpuSkinningMatrices.Clear();
   m_Objects.Clear();
   m_ObjectHandles.Clear();
   m_TransformDirty.Clear();
@@ -159,6 +161,7 @@ bool xiiSceneDatabase::DestroyObject(xiiSceneObjectHandle hObject)
     return false;
 
   const xiiUInt32 uiIndex = hObject.GetInternalID().m_InstanceIndex;
+  m_SkinningPoses.Remove(hObject.GetInternalID().m_Data);
   DetachFromParent(uiIndex);
 
   // Orphans retain their world transform, preventing destruction from moving an entire assembly.
@@ -445,6 +448,7 @@ void xiiSceneDatabase::UpdateDirtyTransforms()
 void xiiSceneDatabase::RebuildGpuInstances()
 {
   const xiiUInt32 uiPreviousCount = m_GpuInstances.GetCount();
+  PrepareSkinningSnapshots();
   m_GpuToObjectIndex.Clear();
   m_GpuToObjectIndex.Reserve(m_Objects.GetCount());
   m_GpuInstances.SetCount(m_Objects.GetCount());
@@ -509,6 +513,7 @@ void xiiSceneDatabase::RebuildGpuInstances()
     instance.m_uiForcedLod             = m_ForcedLods[uiObject];
     instance.m_uiDrawLod               = m_DrawLods[uiObject];
     instance.m_fLodBias                = m_LodBiases[uiObject];
+    BuildSkinningSnapshot(uiObject, instance);
 
     const bool bDirty = m_GpuDirty[uiObject] != 0U;
     if (bDirty && !bRangeOpen)
@@ -532,6 +537,7 @@ void xiiSceneDatabase::RebuildGpuInstances()
 
   if (bRangeOpen)
     m_UploadRanges.PushBack({uiRangeStart, m_GpuInstances.GetCount() - uiRangeStart});
+  AdvanceSkinningPoses();
 }
 
 void xiiSceneDatabase::CommitFrame(xiiUInt64 uiFrameIndex)

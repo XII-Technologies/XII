@@ -112,9 +112,18 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
   xiiUInt32 m_uiDrawLod        = xiiInvalidIndex;
   /// Dense index of the object supplying geometry-level LOD controls and history. Invalid means self.
   xiiUInt32 m_uiLodSelectionIndex = xiiInvalidIndex;
+  /// Matrix indices in the scene's frame snapshot. Counts of zero select bind pose.
+  xiiUInt32 m_uiSkinningOffset         = 0U;
+  xiiUInt32 m_uiSkinningCount          = 0U;
+  xiiUInt32 m_uiPreviousSkinningOffset = 0U;
+  xiiUInt32 m_uiPreviousSkinningCount  = 0U;
+  xiiUInt32 m_uiBoneIndicesOffset      = 0U;
+  xiiUInt32 m_uiBoneWeightsOffset      = 0U;
+  xiiUInt32 m_uiSkinningVertexStride   = 0U;
+  xiiUInt32 m_uiSkinningPadding        = 0U;
 };
 
-static_assert(sizeof(xiiGpuSceneInstance) == 256U, "GPU scene records must match GpuSceneCommon.h.");
+static_assert(sizeof(xiiGpuSceneInstance) == 288U && offsetof(xiiGpuSceneInstance, m_uiSkinningOffset) == 256U, "GPU scene records must match GpuSceneCommon.h.");
 static_assert(offsetof(xiiGpuSceneInstance, m_uiForcedLod) == 240U && offsetof(xiiGpuSceneInstance, m_fLodBias) == 244U && offsetof(xiiGpuSceneInstance, m_uiDrawLod) == 248U && offsetof(xiiGpuSceneInstance, m_uiLodSelectionIndex) == 252U,
               "GPU LOD controls must preserve the structured-buffer layout.");
 

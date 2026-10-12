@@ -37,7 +37,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 4, xiiRTTIDefault
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 6, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 7, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -60,6 +60,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 6, xiiRTTIDefaul
       XII_MEMBER_PROPERTY("ForcedLod", m_uiForcedLod),
       XII_MEMBER_PROPERTY("DrawLod", m_uiDrawLod),
       XII_MEMBER_PROPERTY("LodBias", m_fLodBias),
+      XII_MEMBER_PROPERTY("SkinningOffset", m_uiSkinningOffset),
+      XII_MEMBER_PROPERTY("SkinningCount", m_uiSkinningCount),
+      XII_MEMBER_PROPERTY("PreviousSkinningOffset", m_uiPreviousSkinningOffset),
+      XII_MEMBER_PROPERTY("PreviousSkinningCount", m_uiPreviousSkinningCount),
+      XII_MEMBER_PROPERTY("BoneIndicesOffset", m_uiBoneIndicesOffset),
+      XII_MEMBER_PROPERTY("BoneWeightsOffset", m_uiBoneWeightsOffset),
+      XII_MEMBER_PROPERTY("SkinningVertexStride", m_uiSkinningVertexStride),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;

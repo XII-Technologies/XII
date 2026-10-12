@@ -6,6 +6,7 @@
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Scene/Implementation/SceneDatabaseManagerState.h>
+#include <GraphicsCore/Scene/Implementation/SceneExtractedSkinning.h>
 
 namespace
 {
@@ -62,6 +63,12 @@ namespace
                             xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiUInt64 uiFrameIndex, xiiUInt64 synchronization, xiiSceneObjectHandle& inout_hLodRepresentative)
   {
     auto&           scene     = *slot.m_pDatabase;
+    xiiResourceLock<xiiMeshResource> meshDefinition(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
+    if (meshDefinition.GetAcquireResult() != xiiResourceAcquireResult::Final)
+      return XII_SUCCESS;
+    xiiExtractedMeshSkinning skinning;
+    XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*meshDefinition.GetPointer(), renderData, skinning));
+    bool            resetSkinningHistory = true;
     const xiiUInt32 forcedLod = renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? renderData.m_uiLODIndex : xiiInvalidIndex;
     const auto      hMaterial = materialIndex < renderData.m_hMaterials.GetCount() ? renderData.m_hMaterials[materialIndex] : xiiMaterialResourceHandle{};
 
@@ -136,6 +143,7 @@ namespace
 
       xiiGeometryResidencyManager::ReleaseMeshGeometry(pEntry->m_hGeometry, uiFrameIndex);
       const bool changed  = pEntry->m_hGeometry != hGeometry;
+      resetSkinningHistory = changed;
       pEntry->m_hMesh     = renderData.m_hMesh;
       pEntry->m_hGeometry = hGeometry;
       if (changed)
@@ -164,6 +172,11 @@ namespace
     pEntry->m_uiSynchronization = synchronization;
     scene.SetLocalTransform(pEntry->m_hSceneObject, renderData.m_GlobalTransform.GetAsMat4());
     scene.SetFlags(pEntry->m_hSceneObject, GetSceneFlags(renderData, hMaterial));
+    scene.SetLocalBounds(pEntry->m_hSceneObject, skinning.m_Bounds);
+    // Sections/LODs share their representative's pose, just as they share LOD history.
+    if (inout_hLodRepresentative.IsInvalidated())
+      XII_SUCCEED_OR_RETURN(scene.SetSkinningPalette(pEntry->m_hSceneObject, renderData.m_SkinningMatrices,
+                                                     skinning.m_uiVertexStride, skinning.m_uiBoneIndicesOffset, skinning.m_uiBoneWeightsOffset, resetSkinningHistory));
     scene.SetPrimitiveRange(pEntry->m_hSceneObject, uiFirstPrimitive, uiPrimitiveCount);
     XII_SUCCEED_OR_RETURN(scene.SetLodSelection(pEntry->m_hSceneObject, forcedLod, renderData.m_fLodBias, key.m_uiLodIndex));
     XII_SUCCEED_OR_RETURN(scene.SetLodGroup(pEntry->m_hSceneObject, inout_hLodRepresentative));

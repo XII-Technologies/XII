@@ -9,6 +9,80 @@ XII_CREATE_SIMPLE_TEST_GROUP(Scene);
 
 XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pose snapshots share section palettes and preserve one frame of vertex motion")
+  {
+    xiiSceneDatabaseContext context;
+    XII_TEST_RESULT(context.Initialize());
+    auto&      scene  = context.GetDatabase();
+    const auto member = scene.CreateObject({});
+    const auto owner  = scene.CreateObject({});
+    XII_TEST_RESULT(scene.SetLodGroup(member, owner));
+    const xiiMat4 first[]  = {xiiMat4::MakeTranslation(xiiVec3(1, 2, 3))};
+    const xiiMat4 second[] = {xiiMat4::MakeTranslation(xiiVec3(4, 5, 6)), xiiMat4::MakeIdentity()};
+    auto          setPose  = [&](xiiArrayPtr<const xiiMat4> matrices, bool reset = false) {
+      return scene.SetSkinningPalette(owner, matrices, 72, 60, 68, reset);
+    };
+    XII_TEST_RESULT(setPose(first));
+    scene.CommitFrame(1);
+    auto current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningCount, 1);
+    XII_TEST_INT(current.m_uiPreviousSkinningCount, 1);
+    XII_TEST_INT(current.m_uiSkinningOffset, current.m_uiPreviousSkinningOffset);
+    XII_TEST_INT(scene.GetGpuSkinningMatrices().GetCount(), 1);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices()[current.m_uiSkinningOffset] == first[0]);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiSkinningOffset, current.m_uiSkinningOffset);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiSkinningCount, 1);
+    const auto revision = scene.GetRevision();
+    XII_TEST_BOOL(scene.SetSkinningPalette({}, first, 72, 60, 68).Failed());
+    XII_TEST_BOOL(scene.SetSkinningPalette(owner, first, 72, 66, 68).Failed());
+    XII_TEST_BOOL(scene.SetSkinningPalette(owner, first, 72, 60, 69).Failed());
+    XII_TEST_BOOL(scene.SetSkinningPalette(owner, first, 71, 60, 67).Failed());
+    auto invalid          = xiiMat4::MakeIdentity();
+    invalid.Element(0, 3) = 1;
+    XII_TEST_BOOL(setPose(xiiMakeArrayPtr(&invalid, 1)).Failed());
+    XII_TEST_INT(scene.GetRevision(), revision);
+    XII_TEST_RESULT(setPose(second));
+    scene.CommitFrame(2);
+    current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningCount, 2);
+    XII_TEST_INT(current.m_uiPreviousSkinningCount, 1);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices()[current.m_uiSkinningOffset] == second[0]);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices()[current.m_uiPreviousSkinningOffset] == first[0]);
+    XII_TEST_INT(scene.GetGpuSkinningMatrices().GetCount(), 3);
+    scene.CommitFrame(3);
+    current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningOffset, current.m_uiPreviousSkinningOffset);
+    XII_TEST_INT(scene.GetGpuSkinningMatrices().GetCount(), 2);
+    XII_TEST_RESULT(setPose({}));
+    scene.CommitFrame(4);
+    current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningCount, 0);
+    XII_TEST_INT(current.m_uiPreviousSkinningCount, 2);
+    XII_TEST_INT(current.m_uiBoneIndicesOffset, 60);
+    XII_TEST_INT(current.m_uiBoneWeightsOffset, 68);
+    scene.CommitFrame(5);
+    XII_TEST_INT(scene.GetGpuInstances()[1].m_uiPreviousSkinningCount, 0);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices().IsEmpty());
+    XII_TEST_BOOL(!scene.GetUploadRanges().IsEmpty());
+    XII_TEST_RESULT(setPose(first));
+    scene.CommitFrame(6);
+    XII_TEST_RESULT(setPose(second, true));
+    scene.CommitFrame(7);
+    current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningOffset, current.m_uiPreviousSkinningOffset);
+    XII_TEST_BOOL(scene.DestroyObject(owner));
+    scene.CommitFrame(8);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices().IsEmpty());
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiSkinningCount, 0);
+    XII_TEST_BOOL(scene.SetSkinningPalette(owner, first, 72, 60, 68).Failed());
+    scene.Clear();
+    const auto reused = scene.CreateObject({});
+    XII_TEST_BOOL(reused != owner);
+    scene.CommitFrame(9);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiSkinningCount, 0);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices().IsEmpty());
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "LOD controls preserve identity and reject invalid mutations")
   {
     xiiSceneDatabaseContext context;
