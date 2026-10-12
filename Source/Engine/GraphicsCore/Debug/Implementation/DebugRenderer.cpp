@@ -1897,7 +1897,9 @@ namespace
       permutationVariables.Insert(permutationName, permutationValue);
     }
 
-    xiiShaderPermutationResourceHandle            hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+    xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+    if (!hPermutation.IsValid())
+      return nullptr;
     xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
     if (!pPermutation.IsValid() || !pPermutation->IsShaderValid() || pPermutation->GetGALShader(xiiGALShaderType::Vertex) == nullptr || pPermutation->GetGALShader(xiiGALShaderType::Pixel) == nullptr)
     {

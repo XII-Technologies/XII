@@ -17,8 +17,10 @@ bool xiiBuiltinRenderPipelineRuntime::EnsureRayTracingReSTIRDIEmissiveVisibility
 
   xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ReSTIRDIEmissiveVisibilityRT.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+  if (!hPermutation.IsValid())
+    return false;
+  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the ReSTIR DI emissive visibility ray-tracing shader permutation.");
@@ -100,8 +102,10 @@ bool xiiBuiltinRenderPipelineRuntime::EnsureRayTracingShadowResources()
 
   xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTShadow.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+  if (!hPermutation.IsValid())
+    return false;
+  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the hardware ray-traced shadow shader permutation.");
@@ -183,8 +187,10 @@ bool xiiBuiltinRenderPipelineRuntime::EnsureRayTracingAmbientOcclusionResources(
 
   xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTAO.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+  if (!hPermutation.IsValid())
+    return false;
+  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the ray-traced ambient-occlusion shader permutation.");
@@ -266,8 +272,10 @@ bool xiiBuiltinRenderPipelineRuntime::EnsureRayTracingGlobalIlluminationResource
 
   xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTGIFinalGather.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+  if (!hPermutation.IsValid())
+    return false;
+  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the hardware ray-traced GI shader permutation.");
@@ -351,8 +359,10 @@ bool xiiBuiltinRenderPipelineRuntime::EnsureRayTracingReflectionResources()
 
   xiiShaderResourceHandle                        hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RTReflection.xiiShader");
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+  if (!hPermutation.IsValid())
+    return false;
+  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
   {
     xiiLog::Error("Failed to load the hardware ray-tracing reflection shader permutation.");
@@ -435,10 +445,13 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiBuiltinRenderPipelineRuntime::Ensure
   xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
 
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, /*bBlockTillLoaded=*/true);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+  if (!hPermutation.IsValid())
+    return {};
 
   xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-  XII_ASSERT_DEV(pPermutation.IsValid(), "Failed to load shader permutation: '{}'.", sShaderPath);
+  if (!pPermutation.IsValid() || !pPermutation->IsShaderValid())
+    return nullptr;
 
   xiiGALComputePipelineStateCreationDescription description;
   description.m_pComputeShader             = pPermutation->GetGALShader(xiiGALShaderType::Compute);
@@ -465,10 +478,13 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiBuiltinRenderPipelineRuntime::Ensur
   xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
 
   xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, /*bBlockTillLoaded=*/true);
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+  if (!hPermutation.IsValid())
+    return {};
 
   xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-  XII_ASSERT_DEV(pPermutation.IsValid(), "Failed to load shader permutation: '{}'.", sShaderPath);
+  if (!pPermutation.IsValid() || !pPermutation->IsShaderValid())
+    return nullptr;
 
   xiiGALGraphicsPipelineStateCreationDescription description;
   description.m_pPipelineResourceSignature            = pPermutation->GetPipelineResourceSignature();

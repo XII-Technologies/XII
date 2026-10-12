@@ -656,13 +656,13 @@ void xiiGpuSceneRasterManager::EngineStartup()
 
 
   const xiiShaderResourceHandle hShader            = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneDepth.xiiShader");
-  s_pState->m_hDepthShaderPermutation              = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);
+  s_pState->m_hDepthShaderPermutation              = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, false);
   const xiiShaderResourceHandle hGBufferShader     = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneGBuffer.xiiShader");
-  s_pState->m_hGBufferShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hGBufferShader, {}, true);
+  s_pState->m_hGBufferShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hGBufferShader, {}, false);
   const auto hPickingShader                        = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuScenePicking.xiiShader");
-  s_pState->m_hPickingShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hPickingShader, {}, true);
+  s_pState->m_hPickingShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hPickingShader, {}, false);
   const xiiShaderResourceHandle hForwardPlusShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneForwardPlus.xiiShader");
-  s_pState->m_hForwardPlusShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hForwardPlusShader, {}, true);
+  s_pState->m_hForwardPlusShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hForwardPlusShader, {}, false);
 }
 
 void xiiGpuSceneRasterManager::EngineShutdown()

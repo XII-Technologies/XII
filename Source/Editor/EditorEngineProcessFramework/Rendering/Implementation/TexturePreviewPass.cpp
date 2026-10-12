@@ -151,7 +151,9 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
   if (!geometry || !geometry->GetVertexBuffer() || !geometry->GetIndexBuffer())
     return XII_FAILURE;
   auto                                          shader      = xiiResourceManager::LoadResource<xiiShaderResource>(m_bCube ? "Shaders/Editor/TextureCubePreview.xiiShader" : "Shaders/Editor/TexturePreview.xiiShader");
-  auto                                          permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
+  auto                                          permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
+  if (!permutation.IsValid())
+    return XII_FAILURE;
   xiiResourceLock<xiiShaderPermutationResource> program(permutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!program || !program->IsShaderValid() || !program->GetGALShader(xiiGALShaderType::Vertex) || !program->GetGALShader(xiiGALShaderType::Pixel))
     return XII_FAILURE;

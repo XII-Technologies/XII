@@ -112,7 +112,9 @@ xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
   if (!m_Icons.IsEmpty())
   {
     auto                                          shader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Editor/SceneShapeIcons.xiiShader");
-    auto                                          permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
+    auto                                          permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
+    if (!permutation.IsValid())
+      return XII_FAILURE;
     xiiResourceLock<xiiShaderPermutationResource> program(permutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!program || !program->IsShaderValid() || !program->GetGALShader(xiiGALShaderType::Vertex) || !program->GetGALShader(xiiGALShaderType::Pixel))
       return XII_FAILURE;

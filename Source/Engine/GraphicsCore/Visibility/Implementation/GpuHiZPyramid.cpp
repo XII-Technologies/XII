@@ -258,8 +258,10 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiGpuHiZPyramid::LoadComputePipeline(x
 {
   const xiiShaderResourceHandle                  hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
   xiiHashTable<xiiHashedString, xiiHashedString> variables(xiiTemporaryAllocator::Get());
-  const xiiShaderPermutationResourceHandle       hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, variables, true);
-  xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  const xiiShaderPermutationResourceHandle       hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, variables, false);
+  if (!hPermutation.IsValid())
+    return nullptr;
+  xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid())
     return nullptr;
 

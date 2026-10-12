@@ -354,9 +354,9 @@ void xiiGpuShadowRasterManager::EngineStartup()
   s_pState->m_pMaterialSampler = pDevice->CreateSampler(sampler);
 
   const xiiShaderResourceHandle hShader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowDepth.xiiShader");
-  s_pState->m_hShaderPermutation             = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);
+  s_pState->m_hShaderPermutation             = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, false);
   const xiiShaderResourceHandle hClearShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuShadowPageClear.xiiShader");
-  s_pState->m_hClearShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hClearShader, {}, true);
+  s_pState->m_hClearShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hClearShader, {}, false);
 }
 
 void xiiGpuShadowRasterManager::EngineShutdown()

@@ -65,7 +65,9 @@ xiiResult xiiSceneSelectionPass::Build(xiiRenderPipelinePassContext& context)
       viewport.x < 0 || viewport.y < 0 || viewport.x + viewport.width > output->m_Size.width || viewport.y + viewport.height > output->m_Size.height)
     return XII_FAILURE;
   auto                                          shader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Editor/SceneSelection.xiiShader");
-  auto                                          permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, true);
+  auto                                          permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
+  if (!permutation.IsValid())
+    return XII_FAILURE;
   xiiResourceLock<xiiShaderPermutationResource> program(permutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!program || !program->IsShaderValid() || !program->GetGALShader(xiiGALShaderType::Vertex) || !program->GetGALShader(xiiGALShaderType::Pixel))
     return XII_FAILURE;
