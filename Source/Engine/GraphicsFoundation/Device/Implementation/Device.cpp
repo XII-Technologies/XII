@@ -1459,7 +1459,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
 
     if (resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
     {
-      XII_GAL_DEVICE_CHECK(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", i);
+      XII_GAL_DEVICE_CHECK(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource '{}' (at index '{}') specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", resource.m_sName, i);
     }
     if (resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure)
     {
