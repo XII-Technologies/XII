@@ -2622,3 +2622,94 @@ world submission clock. The comprehensive modernization goal remains active.
   workflow parity also remain outstanding. This checkpoint does not establish
   Release, static GraphicsCore, D3D12, Linux or macOS behavior; the full modernization
   goal remains active.
+
+## Native GPU Scene Skinning, Picking And Pose History
+
+- This checkpoint implements the shared GPU palette path left open above. Scene
+  databases retain current/previous affine matrices only for posed instances, keyed
+  by the full generation-checked scene identity. Commit packs an immutable snapshot;
+  equal current/previous palettes share a range, and sections/LODs follow their
+  representative's range. Clearing preserves the preceding pose for one committed
+  interval, then retires its CPU state. Destruction and database clearing discard
+  palette state; geometry reload resets history as each context adopts the revision.
+- The GPU instance ABI grows from 256 to 288 bytes for palette ranges and native
+  ushort4/normalized-byte4 stream offsets. Reflection and the shared shader record
+  match. There is no new persistent asset format or ownership transfer. Purely
+  static scenes allocate no per-object palette arrays; posed instances retain two
+  arrays and the committed snapshot. Packing and graph upload cost O(palette data).
+- Visibility uploads a graph-owned structured matrix buffer with a copied snapshot,
+  using the existing resource cache and queue/fence lifetime. Every native vertex
+  consumer declares its read: scene depth/G-buffer/Forward+, shadow raster, mesh and
+  indexed surface queries, emissive triangle construction, and the GPU-driven sample.
+  Static scenes bind one identity matrix. No separate Editor deformation renderer,
+  resource cache, bindless ownership system or exception-based failure path is added.
+- A shared shader evaluator normalizes positive byte weights by their sum, ignores
+  invalid zero-weight indices, preserves zero-weight bind vertices, bounds-checks
+  referenced joints/streams and evaluates both pose intervals. Surface normals use
+  the inverse transpose of the blended linear transform; tangent frames follow the
+  transformed surface and reflection sign. G-buffer velocity uses the previous pose
+  as well as the previous object/view transforms. Unposed vertices take an early
+  return without palette access or deformation math.
+- Frustum culling uses conservative posed instance bounds for skinned meshlets.
+  Bind-pose cones and temporal HiZ rejection are bypassed while either pose interval
+  is skinned, preventing false rejection when a palette moves with a fixed object
+  transform. This trades culling precision for correctness; it does not compute
+  tight deformed meshlet bounds or cones. Bounds/stream preparation runs once per
+  extracted mesh group rather than once per expanded section/LOD candidate.
+- Reload testing found that a surviving representative could become a member of a
+  new group while retaining its old private palette. Extraction now clears that
+  obsolete history. The test follows differently timed adoption in two contexts,
+  verifies their independent snapshots, and checks shared ranges across sections.
+- New GPU readback tests exercise both mesh and indexed queries, palette-only motion
+  outside bind-pose visibility, pose clearing, normalized multi-bone weights with a
+  non-255 sum, ignored invalid zero-weight joints, sheared/nonuniform normals, pose
+  velocity and zero velocity after stopping. Transfer/async-compute/graphics reads
+  run through the real render graph. Core tests cover invalid input, stale handles,
+  generation reuse, clearing, section sharing and one-interval history.
+- Removed `Shaders/Pipeline/Skinning.xiiShader`: the repository had no caller or
+  reference to it, it lacked the current shader section format, and its vertex ABI
+  differed from the native packed mesh streams. Its unconnected morph code was not
+  an implemented runtime facility. Native consumers now share `GpuSceneSkinning.h`.
+- Windows Debug DLL builds pass for GraphicsCoreTest, EditorEngineProcessFrameworkTest,
+  EditorFrameworkTest, Editor, EditorProcessor and GpuDrivenScene:
+  `Workspace/editor-gpu-skinning-verification-build.log` (exit zero). All 21 Core
+  subtests and all 57 native Editor subtests pass. After the final preparation
+  optimization, all three skinning and four native LOD subtests pass again. Logs:
+  `Workspace/editor-gpu-skinning-core-final-tests.log`,
+  `Workspace/editor-gpu-skinning-verified-native-tests.log`,
+  `Workspace/editor-gpu-skinning-focused-final-tests.log`, and
+  `Workspace/editor-gpu-skinning-lod-final-tests.log`. Native GPU tests use Vulkan
+  synchronization validation; all three skinning tests also pass with GPU-assisted
+  safe-mode validation: `Workspace/editor-gpu-skinning-gpuav-tests.log`.
+- Full-sample GPU-assisted validation exposed a regression: evaluating both palette
+  intervals in the sample's normal-only mesh shader produced device loss at the first
+  frame. It reproduced with and without ray tracing and outside the restricted
+  process environment. A reversible comparison with the previous sample shader
+  completed 64 frames using the same new scene ABI, isolating the shader path.
+  The evaluator now separates current-surface evaluation from history; sample,
+  Forward+ and both surface query shaders evaluate only the pose they consume.
+  G-buffer history is evaluated after the current surface, avoiding two simultaneously
+  live blended matrices. This preserves deformation rather than bypassing it.
+- The repaired full 24-by-16 sample completes 64 frames with GPU-assisted safe-mode
+  and synchronization validation both without ray tracing and with it enabled:
+  `Workspace/editor-gpu-skinning-sample-current-surface.log` and
+  `Workspace/editor-gpu-skinning-sample-final-gpuav.log` (exit zero). The full native
+  suite passes again after this repair, and all three skinning readback tests pass
+  with the final current-only query shaders:
+  `Workspace/editor-gpu-skinning-current-query-tests.log`. No Vulkan validation errors
+  were observed in these final runs. Earlier sample failures and their assertion
+  output remain under `Workspace/editor-gpu-skinning-sample-gpuav*.log` and
+  `Workspace/editor-gpu-skinning-device-loss-assert.txt` as diagnostic evidence.
+- All ten Qt tests pass, including the integrated production viewport, asset
+  transformation, picking, capture and shutdown:
+  `Workspace/editor-gpu-skinning-qt-elevated-tests.log`. The preceding restricted
+  process run passed nine document tests but timed out waiting for an engine-process
+  picking reply. The rerun passed without changing product code or test timeouts;
+  the failed run and its engine-process log remain recorded for investigation.
+- Ray-tracing acceleration structures still reference immutable bind-pose geometry;
+  this raster palette path does not provide per-instance deformed BLAS. Morph delta
+  retention/import and runtime deformation also remain open. Posed shadow/emissive
+  bindings compile and run in the integrated pipeline, but dedicated posed-pixel
+  assertions for those paths remain to be added. Legacy sky/probe/GreyBox migration
+  and broader manual Editor workflow parity remain active work. Release, static
+  GraphicsCore, D3D12, Linux and macOS have not been verified at this checkpoint.
