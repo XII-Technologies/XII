@@ -72,11 +72,13 @@ void xiiGpuHiZPyramid::Shutdown()
 {
   m_Frames.Clear();
   m_pBuildPipeline.Clear();
-  m_pDevice         = nullptr;
-  m_Description     = {};
-  m_Size            = {};
-  m_uiMipLevelCount = 0U;
-  m_bHistoryValid   = false;
+  m_pDevice          = nullptr;
+  m_Description      = {};
+  m_Size             = {};
+  m_uiMipLevelCount  = 0U;
+  m_uiLastBuiltSlot  = xiiInvalidIndex;
+  m_uiLastBuiltFrame = 0U;
+  m_bHistoryValid    = false;
 }
 
 xiiResult xiiGpuHiZPyramid::Resize(xiiUInt32 uiWidth, xiiUInt32 uiHeight)
@@ -87,8 +89,11 @@ xiiResult xiiGpuHiZPyramid::Resize(xiiUInt32 uiWidth, xiiUInt32 uiHeight)
     return XII_SUCCESS;
 
   m_Frames.Clear();
-  m_Size            = xiiSizeU32(uiWidth, uiHeight);
-  m_uiMipLevelCount = 1U;
+  m_bHistoryValid    = false;
+  m_uiLastBuiltSlot  = xiiInvalidIndex;
+  m_uiLastBuiltFrame = 0U;
+  m_Size             = xiiSizeU32(uiWidth, uiHeight);
+  m_uiMipLevelCount  = 1U;
   for (xiiUInt32 width = uiWidth, height = uiHeight; width > 1U || height > 1U;)
   {
     width  = xiiMath::Max(width >> 1U, 1U);
@@ -149,10 +154,10 @@ void xiiGpuHiZPyramid::Invalidate()
 
 xiiRenderGraphTextureHandle xiiGpuHiZPyramid::ImportPrevious(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
 {
-  if (!m_bHistoryValid || m_Frames.IsEmpty() || uiFrameIndex == 0U)
+  if (!m_bHistoryValid || m_Frames.IsEmpty() || uiFrameIndex <= m_uiLastBuiltFrame)
     return {};
 
-  const xiiUInt32 uiSlot = static_cast<xiiUInt32>((uiFrameIndex - 1U) % m_Frames.GetCount());
+  const xiiUInt32 uiSlot = m_uiLastBuiltSlot;
   auto            import = graph.AddPass<ImportPassData>(
     "Import Previous GPU Hi-Z", xiiGALCommandQueueFlags::Compute,
     [this, uiSlot](ImportPassData& data, xiiRenderGraphBuilder& builder) {
@@ -166,10 +171,10 @@ xiiRenderGraphTextureHandle xiiGpuHiZPyramid::ImportPrevious(xiiRenderGraph& gra
 
 void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute)
 {
-  if (m_Frames.IsEmpty() || !hSceneDepth.IsValid())
+  if (m_Frames.IsEmpty() || !hSceneDepth.IsValid() || uiFrameIndex <= m_uiLastBuiltFrame)
     return;
 
-  const xiiUInt32                            uiSlot = static_cast<xiiUInt32>(uiFrameIndex % m_Frames.GetCount());
+  const xiiUInt32                            uiSlot = m_uiLastBuiltSlot == xiiInvalidIndex ? 0U : (m_uiLastBuiltSlot + 1U) % m_Frames.GetCount();
   const xiiBitflags<xiiGALCommandQueueFlags> queue  = bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
   auto                                       build  = graph.AddPass<BuildPassData>(
     "Build GPU Hi-Z History", queue,
@@ -189,7 +194,7 @@ void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameInde
       builder.SetPassSideEffects(true);
       builder.SetPassAllowMerge(false);
     },
-    [this](const BuildPassData& data, xiiRenderGraphPassContext& context) {
+    [this, uiSlot, uiFrameIndex](const BuildPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& commandList  = context.GetCommandList();
       xiiGALTexture*     pDestination = context.GetTexture(data.m_hDestination);
       xiiGALBuffer*      pConstants   = context.GetBuffer(data.m_hConstants);
@@ -244,7 +249,9 @@ void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameInde
       // Promote temporal history only after the render graph actually records this pass. Merely
       // scheduling a build is insufficient: graph compilation may fail or execution may be
       // skipped, in which case exposing this ring slot next frame would sample unwritten data.
-      m_bHistoryValid = true;
+      m_bHistoryValid    = true;
+      m_uiLastBuiltSlot  = uiSlot;
+      m_uiLastBuiltFrame = uiFrameIndex;
     },
     true);
 
