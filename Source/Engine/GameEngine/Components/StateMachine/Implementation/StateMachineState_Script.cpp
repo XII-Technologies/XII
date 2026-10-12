@@ -278,3 +278,5 @@ bool xiiStateMachineState_Script::GetParameter(xiiStringView sKey, xiiVariant& o
   out_value = m_Parameters.GetValue(it);
   return true;
 }
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_StateMachine_Implementation_StateMachineState_Script);

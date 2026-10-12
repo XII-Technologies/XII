@@ -130,4 +130,4 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiImageDataResource, xiiImageDataResourceDesc
   return res;
 }
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Utils_Implementation_ImageDataResource);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Resources_Implementation_ImageDataResource);

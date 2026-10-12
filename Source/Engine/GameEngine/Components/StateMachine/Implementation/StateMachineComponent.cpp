@@ -441,4 +441,4 @@ void xiiStateMachineComponent::Update()
 }
 
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachineComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_StateMachine_Implementation_StateMachineComponent);

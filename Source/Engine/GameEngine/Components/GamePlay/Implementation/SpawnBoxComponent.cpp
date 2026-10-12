@@ -255,3 +255,5 @@ void xiiSpawnBoxComponent::Spawn(xiiUInt32 uiCount)
     pResource->InstantiatePrefab(*GetWorld(), tGlobal, options);
   }
 }
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_SpawnBoxComponent);

@@ -218,5 +218,3 @@ void xiiSceneLoadUtility::TickSceneLoading()
     XII_REPORT_FAILURE("Invalid code path.");
   }
 }
-
-XII_STATICLINK_FILE(GameEngine, GameEngine_Utils_Implementation_SceneLoadUtil);

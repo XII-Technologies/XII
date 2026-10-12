@@ -101,4 +101,4 @@ bool xiiPlayerStartPointComponent::GetParameter(xiiStringView sKey, xiiVariant& 
 }
 
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_PlayerStartPointComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_PlayerStartPointComponent);

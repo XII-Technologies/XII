@@ -665,4 +665,4 @@ public:
 xiiBlackboardComponent_2_3 g_xiiBlackboardComponent_2_3;
 
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_BlackboardComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_BlackboardComponent);
