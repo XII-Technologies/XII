@@ -58,4 +58,17 @@ XII_CREATE_SIMPLE_TEST(Device, SwapChain)
     swapChain.Present();
     XII_TEST_INT(swapChain.m_uiPresentCount, 1U);
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native swapchain accepts reverse depth clear")
+  {
+    auto window = environment.CreateWindow(128, 128, "Reverse depth swapchain");
+    if (!XII_TEST_BOOL(window != nullptr))
+      return;
+    xiiGALSwapChainCreationDescription description;
+    description.m_pWindow            = window.Borrow();
+    description.m_fDefaultDepthValue = 0.0f;
+    auto swapChain                   = environment.GetDevice()->CreateSwapChain(description);
+    if (XII_TEST_BOOL(swapChain != nullptr))
+      XII_TEST_FLOAT(swapChain->GetDescription().m_fDefaultDepthValue, 0.0f, 0.0f);
+  }
 }

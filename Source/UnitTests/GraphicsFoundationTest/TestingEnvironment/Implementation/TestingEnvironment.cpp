@@ -141,8 +141,15 @@ void xiiGPUTestingEnvironment::Shutdown()
 
 xiiUniquePtr<xiiWindowBase> xiiGPUTestingEnvironment::CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle)
 {
-  XII_IGNORE_UNUSED(uiWidth);
-  XII_IGNORE_UNUSED(uiHeight);
-  XII_IGNORE_UNUSED(sTitle);
-  return {};
+  xiiWindowCreationDescription description;
+  description.m_Title                = sTitle;
+  description.m_Resolution           = xiiSizeU32(uiWidth, uiHeight);
+  description.m_uiWindowNumber       = xiiWindow::GetNextUnusedWindowNumber();
+  description.m_bSetForegroundOnInit = false;
+  description.m_bClipMouseCursor     = false;
+  description.m_bShowMouseCursor     = true;
+  xiiUniquePtr<xiiWindow> window     = XII_DEFAULT_NEW(xiiWindow);
+  if (window->Initialize(description).Failed())
+    return {};
+  return window;
 }
