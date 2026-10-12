@@ -61,6 +61,3 @@ void xiiTestLogInterface::ExpectMessage(const char* szMsg, xiiLogMsgType::Enum t
   em.m_iCount        = iCount;
   em.m_Type          = type;
 }
-
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Utilities_TestLogInterface);

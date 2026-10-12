@@ -56,6 +56,3 @@ xiiResult xiiSimpleTestGroup::DeInitializeSubTest(xiiInt32 iIdentifier)
   xiiMemoryTracker::DumpMemoryLeaks();
   return XII_SUCCESS;
 }
-
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Framework_SimpleTest);

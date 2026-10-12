@@ -148,6 +148,3 @@ xiiInt32 xiiTestSetup::GetFailedTestCount()
 {
   return xiiTestFramework::GetInstance()->GetTestsFailedCount();
 }
-
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Utilities_TestSetup);

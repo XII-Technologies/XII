@@ -50,5 +50,3 @@ void xiiQtTestDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem& op
 }
 
 #endif
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Framework_Qt_qtTestDelegate);

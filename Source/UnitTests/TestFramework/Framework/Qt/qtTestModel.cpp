@@ -593,5 +593,3 @@ void xiiQtTestModel::UpdateModel()
 }
 
 #endif
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Framework_Qt_qtTestModel);

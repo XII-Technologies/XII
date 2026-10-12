@@ -162,6 +162,3 @@ xiiTestAppRun xiiTestBaseClass::DoSubTestRun(xiiInt32 iIdentifier, double& fDura
 
   return ret;
 }
-
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Framework_TestBaseClass);

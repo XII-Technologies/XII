@@ -492,5 +492,3 @@ void xiiTestFrameworkResult::xiiTestResult::Reset()
     m_SubTests[uiSubTest].m_Result.Reset();
   }
 }
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Framework_TestResults);

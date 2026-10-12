@@ -41,5 +41,3 @@ void xiiQtTestFramework::SetSubTestStatusImpl(xiiUInt32 uiSubTestIndex, const ch
 }
 
 #endif
-
-XII_STATICLINK_FILE(TestFramework, TestFramework_Framework_Qt_qtTestFramework);
