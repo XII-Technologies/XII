@@ -38,7 +38,8 @@ void xiiSceneDatabase::BuildSkinningSnapshot(xiiUInt32 uiObject, xiiGpuSceneInst
   const auto    representative = m_LodGroups[uiObject];
   const auto    handle         = IsAlive(representative) && m_GeometryIndices[representative.GetInternalID().m_InstanceIndex] == m_GeometryIndices[uiObject] ? representative : m_ObjectHandles[uiObject];
   SkinningPose* pose           = nullptr;
-  if (instance.m_uiSkinningCount != 0 || instance.m_uiPreviousSkinningCount != 0)
+  // Newly allocated POD records have no history to inspect and are already dirty.
+  if (m_GpuDirty[uiObject] == 0 && (instance.m_uiSkinningCount != 0 || instance.m_uiPreviousSkinningCount != 0))
     m_GpuDirty[uiObject] = 1;
   // Reset the entire tail, including instances that were previously posed or reused.
   instance.m_uiSkinningOffset = instance.m_uiSkinningCount = 0;
