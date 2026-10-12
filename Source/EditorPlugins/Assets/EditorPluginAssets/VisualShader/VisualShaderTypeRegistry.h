@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <EditorPluginAssets/EditorPluginAssetsDLL.h>
 #include <Foundation/Basics.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Configuration/Startup.h>
@@ -64,7 +65,7 @@ struct xiiVisualShaderNodeDescriptor
 };
 
 
-class xiiVisualShaderTypeRegistry
+class XII_EDITORPLUGINASSETS_DLL xiiVisualShaderTypeRegistry
 {
   XII_DECLARE_SINGLETON(xiiVisualShaderTypeRegistry);
 

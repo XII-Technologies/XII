@@ -2,8 +2,11 @@
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
+#include <EditorFrameworkTest/SceneWindowTest.h>
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
@@ -12,6 +15,7 @@
 #include <QElapsedTimer>
 #include <QPointer>
 #include <QTreeView>
+#include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
@@ -24,12 +28,23 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
   auto* editor = xiiQtEditorApp::GetSingleton();
   if (!XII_TEST_BOOL(editor != nullptr))
     return;
+  // Linked test plugins initialize before the Editor's data mounts. Keep their initial
+  // startup separate, then use the same read-only tool-data identity as EditorProcessor.
+  xiiStartup::StartupCoreSystems();
+  auto*           application  = xiiApplication::GetApplicationInstance();
+  const xiiString previousName = application->GetApplicationName();
+  application->SetApplicationName("xiiEditor");
+  XII_SCOPE_EXIT(application->SetApplicationName(previousName));
   xiiStringBuilder preferences = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   preferences.AppendPath("EditorStartupPreferences");
   XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(preferences));
   editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
   XII_SCOPE_EXIT(editor->ShutdownEditor());
   XII_TEST_BOOL(editor->IsRunning());
+  xiiStringBuilder preferenceRoot = xiiApplicationServices::GetSingleton()->GetApplicationPreferencesFolder();
+  preferenceRoot.Trim("/\\");
+  preferences.Trim("/\\");
+  XII_TEST_STRING(preferenceRoot, preferences);
   XII_TEST_BOOL(xiiQtContainerWindow::GetContainerWindow() != nullptr);
   QApplication::processEvents();
   XII_TEST_BOOL(!xiiQtDocumentWindow::GetAllDocumentWindows().IsEmpty());
@@ -121,6 +136,7 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     document->GetDocumentManager()->CloseDocument(document);
     pump();
     XII_TEST_BOOL(closedWindow.isNull());
+    TestSceneWindow(*editor, project.GetFileDirectory());
     editor->CloseProject();
     pump();
     XII_TEST_BOOL(!xiiToolsProject::IsProjectOpen());
