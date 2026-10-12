@@ -41,16 +41,23 @@ public:
   /// Removes a directory. Deletes any files & directories inside.
   xiiResult RemoveDirectory(xiiStringView sPath);
 
+  /// Moves a file, preserving its associated value.
+  xiiResult MoveFile(xiiStringView sFromPath, xiiStringView sToPath);
+
   /// Moves a directory. Any files & folders inside are moved with it.
   xiiResult MoveDirectory(xiiStringView sFromPath, xiiStringView sToPath);
 
   using EnumerateFunc = xiiDelegate<void(const xiiStringBuilder& path, Type type)>;
 
-  /// Enumerates the files & directories under the given path
+  /// Enumerates files and directories under the given path in post-order.
   xiiResult Enumerate(xiiStringView sPath, EnumerateFunc callbackFunc);
 
   /// On success, out_Type will contains the type of the object (file or folder).
   xiiResult GetType(xiiStringView sPath, Type& out_type);
+
+  /// Resolves an existing cached path using case-insensitive component matching.
+  /// Intended for filesystems whose notifications may use obsolete casing.
+  xiiResult GetPathCasing(xiiStringView sPath, xiiStringBuilder& out_sPath, Type& out_type) const;
 
 private:
   DirEntry* FindDirectory(xiiStringBuilder& path);
@@ -263,6 +270,22 @@ xiiResult xiiFileSystemMirror<T>::RemoveDirectory(xiiStringView sPath)
 }
 
 template <typename T>
+xiiResult xiiFileSystemMirror<T>::MoveFile(xiiStringView sFromPath, xiiStringView sToPath)
+{
+  xiiStringBuilder relative  = sFromPath;
+  DirEntry*        directory = FindDirectory(relative);
+  if (!directory)
+    return XII_FAILURE;
+  auto file = directory->m_files.Find(relative);
+  if (!file.IsValid())
+    return XII_FAILURE;
+  if (sFromPath == sToPath)
+    return XII_SUCCESS;
+  XII_SUCCEED_OR_RETURN(AddFile(sToPath, file.Value(), nullptr, nullptr));
+  return RemoveFile(sFromPath);
+}
+
+template <typename T>
 xiiResult xiiFileSystemMirror<T>::MoveDirectory(xiiStringView sFromPath, xiiStringView sToPath)
 {
   xiiStringBuilder sFromPathBuilder = sFromPath;
@@ -363,6 +386,7 @@ xiiResult xiiFileSystemMirror<T>::Enumerate(xiiStringView sPath, EnumerateFunc c
       currentSubDirIt.Next();
       dirStack.PushBack({currentDir, currentSubDirIt});
       currentDir = nextDir;
+      currentSubDirIt = currentDir->m_subDirectories.GetIterator();
     }
     else
     {
@@ -421,6 +445,7 @@ xiiResult xiiFileSystemMirror<T>::GetType(xiiStringView sPath, Type& out_type)
     return XII_SUCCESS;
   }
 
+  EnsureTrailingSlash(sPathBuilder);
   auto itDir = dir->m_subDirectories.Find(sPathBuilder);
   if (itDir.IsValid())
   {
@@ -460,4 +485,69 @@ typename xiiFileSystemMirror<T>::DirEntry* xiiFileSystemMirror<T>::FindDirectory
   } while (found);
 
   return currentDir;
+}
+
+template <typename T>
+xiiResult xiiFileSystemMirror<T>::GetPathCasing(xiiStringView sPath, xiiStringBuilder& out_sPath, Type& out_type) const
+{
+  if (m_sTopLevelDirPath.IsEmpty())
+    return XII_FAILURE;
+  xiiStringBuilder remaining = sPath;
+  remaining.MakeCleanPath();
+  RemoveTrailingSlash(remaining);
+  xiiStringBuilder resolved = m_sTopLevelDirPath;
+  RemoveTrailingSlash(resolved);
+  if (remaining.IsEqual_NoCase(resolved))
+  {
+    out_sPath = resolved;
+    out_type  = Type::Directory;
+    return XII_SUCCESS;
+  }
+  if (!remaining.StartsWith_NoCase(m_sTopLevelDirPath))
+    return XII_FAILURE;
+  remaining.Shrink(m_sTopLevelDirPath.GetCharacterCount(), 0);
+  const DirEntry* directory = &m_TopLevelDir;
+  while (!remaining.IsEmpty())
+  {
+    const char*         separator = remaining.FindSubString("/");
+    const xiiStringView component(remaining.GetData(), separator ? separator : remaining.GetData() + remaining.GetElementCount());
+    xiiStringBuilder    key(component, "/");
+    auto                child = directory->m_subDirectories.Find(key);
+    if (!child.IsValid())
+    {
+      for (child = directory->m_subDirectories.GetIterator(); child.IsValid(); ++child)
+        if (child.Key().IsEqual_NoCase(key))
+          break;
+    }
+    if (child.IsValid())
+    {
+      resolved.AppendPath(child.Key());
+      directory = &child.Value();
+      if (!separator)
+      {
+        RemoveTrailingSlash(resolved);
+        out_sPath = resolved;
+        out_type  = Type::Directory;
+        return XII_SUCCESS;
+      }
+      remaining.Shrink(xiiStringUtils::GetCharacterCount(component.GetStartPointer(), component.GetEndPointer()) + 1, 0);
+      continue;
+    }
+    if (separator)
+      return XII_FAILURE;
+    auto file = directory->m_files.Find(component);
+    if (!file.IsValid())
+    {
+      for (file = directory->m_files.GetIterator(); file.IsValid(); ++file)
+        if (file.Key().IsEqual_NoCase(component))
+          break;
+    }
+    if (!file.IsValid())
+      return XII_FAILURE;
+    resolved.AppendPath(file.Key());
+    out_sPath = resolved;
+    out_type  = Type::File;
+    return XII_SUCCESS;
+  }
+  return XII_FAILURE;
 }
