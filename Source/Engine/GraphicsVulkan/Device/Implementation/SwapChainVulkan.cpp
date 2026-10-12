@@ -665,7 +665,9 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
       {
         xiiGALScopedDebugGroup debugGroup(pCommandListVulkan, "Add Swap Chain Wait Semaphore");
 
-        pCommandListVulkan->AddWaitSemaphore(vkImageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+        // The first clear includes an undefined-to-transfer layout transition. Wait before
+        // that transition too, not only its later color/transfer memory accesses.
+        pCommandListVulkan->AddWaitSemaphore(vkImageAcquiredSemaphore, vk::PipelineStageFlagBits::eAllCommands);
 
         // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
         if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
