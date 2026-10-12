@@ -70,6 +70,7 @@ struct GpuMeshlet
   uint4  Header;
   uint   PackedPrimitiveVertexCount;
   uint   PackedLodSection;
+  uint2  Padding;
   float4 Bounds;
   float4 Cone;
 };

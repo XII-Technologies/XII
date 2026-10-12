@@ -129,7 +129,9 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
       meshlet.m_uiLodIndex             = range.m_uiLodIndex;
       meshlet.m_Bounds                 = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(bounds.center[0], bounds.center[1], bounds.center[2]), bounds.radius);
       meshlet.m_vConeAxis              = xiiVec3(bounds.cone_axis[0], bounds.cone_axis[1], bounds.cone_axis[2]);
-      meshlet.m_fConeCutoff            = xiiMath::Sqrt(xiiMath::Max(0.0f, 1.0f - bounds.cone_cutoff * bounds.cone_cutoff));
+      // meshoptimizer's cutoff of one denotes a degenerate/wide cone that must always
+      // pass. Preserve XII's disabled sentinel rather than normalizing its zero axis.
+      meshlet.m_fConeCutoff = bounds.cone_cutoff >= 1.0f || meshlet.m_vConeAxis.IsZero() ? -1.0f : xiiMath::Sqrt(xiiMath::Max(0.0f, 1.0f - bounds.cone_cutoff * bounds.cone_cutoff));
       m_MeshletVertexRemap.PushBackRange(xiiArrayPtr<const xiiUInt32>(optimizedVertices.GetData() + source.vertex_offset, source.vertex_count));
       m_MeshletPrimitiveIndices.PushBackRange(xiiArrayPtr<const xiiUInt8>(optimizedTriangles.GetData() + source.triangle_offset, source.triangle_count * 3));
       m_MeshletMaterialIndices.PushBack(range.m_uiMaterialIndex);

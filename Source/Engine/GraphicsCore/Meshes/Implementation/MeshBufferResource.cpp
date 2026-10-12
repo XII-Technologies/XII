@@ -145,6 +145,7 @@ xiiResult xiiMeshlet::Serialize(xiiStreamWriter& inout_stream) const
 
 xiiResult xiiMeshlet::Deserialize(xiiStreamReader& inout_stream)
 {
+  xiiMemoryUtils::ZeroFillArray(m_uiGpuPadding);
   inout_stream >> m_uiFirstPrimitive;
   inout_stream >> m_uiVertexRemapOffset;
   inout_stream >> m_uiPrimitiveIndexOffset;

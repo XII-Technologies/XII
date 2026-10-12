@@ -137,6 +137,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
   xiiUInt16         m_uiVertexCount          = 0U;                            ///< The number of unique vertices in this meshlet, used to identify how many unique vertices are referenced by the primitives in this meshlet for rendering and culling purposes.
   xiiUInt16         m_uiLodIndex             = 0U;                            ///< The index of the LOD this meshlet belongs to, used to identify which level of detail this meshlet is part of for LOD-based rendering and culling.
   xiiUInt16         m_uiSectionIndex         = 0U;                            ///< The index of the section this meshlet belongs to, used to identify which section of the mesh this meshlet is part of for rendering and culling purposes.
+  xiiUInt32         m_uiGpuPadding[2]        = {};                            ///< Aligns Bounds and Cone to the float4 members in the portable GPU record. Not serialized.
   xiiBoundingSphere m_Bounds                 = xiiBoundingSphere::MakeZero(); ///< The bounding sphere of this meshlet, used for frustum culling and other spatial queries during rendering.
   xiiVec3           m_vConeAxis              = xiiVec3(0.0f, 0.0f, 1.0f);     ///< The axis of the normal cone for this meshlet, used for backface culling and other orientation-based culling techniques during rendering.
   float             m_fConeCutoff            = -1.0f;                         ///< The cutoff angle for the normal cone of this meshlet, where values in the range [-1, 1] represent the cosine of the cutoff angle and are used for backface culling and other orientation-based culling techniques during rendering. A value of -1 means no normal cone culling, while a value of 0 means a 90-degree cutoff angle.
@@ -145,7 +146,8 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-static_assert(sizeof(xiiMeshlet) % 16U == 0U, "Meshlet records must preserve structured-buffer alignment.");
+static_assert(sizeof(xiiMeshlet) == 64U && offsetof(xiiMeshlet, m_Bounds) == 32U && offsetof(xiiMeshlet, m_vConeAxis) == 48U && offsetof(xiiMeshlet, m_fConeCutoff) == 60U,
+              "Meshlet records must match GpuMeshlet's structured-buffer member offsets, including the aligned float4 bounds and cone.");
 
 /// DrawMeshIndirect-compatible command payload.
 struct XII_GRAPHICSCORE_DLL xiiMeshDrawCommand
