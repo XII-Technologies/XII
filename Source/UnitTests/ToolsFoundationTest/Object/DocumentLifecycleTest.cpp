@@ -3,7 +3,9 @@
 #include <ToolsFoundationTest/ToolsFoundationTestPCH.h>
 
 #include <Foundation/IO/FileSystem/FileSystem.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundationTest/Object/TestObjectManager.h>
@@ -275,6 +277,87 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, DocumentLifecycle)
     XII_TEST_STRING(status.GetMessageString(), "Injected load failure.");
     XII_TEST_INT(state.m_uiInitialized, 0);
     XII_TEST_INT(state.m_Order.GetCount(), 1);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Malformed document structure fails before initialization")
+  {
+    xiiUniquePtr<xiiAbstractObjectGraph> header, objects, types;
+    XII_TEST_STATUS(xiiDocument::ReadDocument(path, header, objects, types));
+    if (header == nullptr || objects == nullptr || types == nullptr)
+      return;
+
+    xiiStringBuilder malformedPath = output;
+    malformedPath.AppendPath("Malformed.xiiLifecycleTest");
+    for (xiiUInt32 corruption = 0; corruption < 5; ++corruption)
+    {
+      xiiAbstractObjectGraph badHeader, badObjects;
+      header->Clone(badHeader);
+      objects->Clone(badObjects);
+      if (corruption == 0)
+        badHeader.Clear();
+      else if (corruption == 1)
+        badObjects.Clear();
+      else if (corruption == 2)
+        badHeader.GetNodeByName("Header")->RemoveProperty("DocumentID");
+      else
+        badHeader.GetNodeByName("Header")->FindProperty("DocumentID")->m_Value = corruption == 3 ? xiiVariant(42) : xiiVariant(xiiUuid());
+
+      xiiFileWriter writer;
+      XII_TEST_RESULT(writer.Open(malformedPath));
+      xiiAbstractGraphDdlSerializer::WriteDocument(writer, &badHeader, &badObjects, types.Borrow());
+      writer.Close();
+      state             = {};
+      document          = &sentinel;
+      const auto status = manager.OpenDocument("Lifecycle", malformedPath, document, flags);
+      CheckFailure(status);
+      XII_TEST_INT(state.m_uiInitialized, 0);
+      XII_TEST_INT(state.m_uiConstructed, 1);
+      const char* expected = corruption == 0 ? "The document header is missing." :
+        corruption == 1                      ? "The document object tree is missing." :
+                                               "The document identity is missing or invalid.";
+      XII_TEST_STRING(status.GetMessageString(), expected);
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Legacy embedded headers without a types block retain identity and content")
+  {
+    xiiUniquePtr<xiiAbstractObjectGraph> header, objects, types;
+    XII_TEST_STATUS(xiiDocument::ReadDocument(path, header, objects, types));
+    if (header == nullptr || objects == nullptr)
+      return;
+
+    objects->CopyNodeIntoGraph(header->GetNodeByName("Header"));
+    xiiStringBuilder legacyPath = output;
+    legacyPath.AppendPath("Legacy.xiiLifecycleTest");
+    xiiFileWriter writer;
+    XII_TEST_RESULT(writer.Open(legacyPath));
+    xiiAbstractGraphDdlSerializer::Write(writer, objects.Borrow());
+    writer.Close();
+
+    // Reusing output storage must not retain types from the previously read document.
+    XII_TEST_STATUS(xiiDocument::ReadDocument(legacyPath, header, objects, types));
+    XII_TEST_BOOL(types != nullptr);
+    if (types != nullptr)
+      XII_TEST_BOOL(types->GetAllNodes().IsEmpty());
+
+    state = {};
+    XII_TEST_STATUS(manager.OpenDocument("Lifecycle", legacyPath, document, flags));
+    if (document == nullptr)
+      return;
+    XII_TEST_BOOL(document->GetGuid() == savedId);
+    const auto* object = document->GetObjectManager()->GetObject(payload);
+    XII_TEST_BOOL(object != nullptr);
+    if (object != nullptr)
+      XII_TEST_INT(document->GetObjectAccessor()->GetByName<xiiInt32>(object, "Int32"), 4711);
+    XII_TEST_STATUS(document->SaveDocument(true));
+    manager.CloseDocument(document);
+    header  = nullptr;
+    objects = nullptr;
+    types   = nullptr;
+    XII_TEST_STATUS(xiiDocument::ReadDocument(legacyPath, header, objects, types));
+    XII_TEST_BOOL(types != nullptr);
+    if (header != nullptr)
+      XII_TEST_BOOL(header->GetNodeByName("Header")->FindProperty("DocumentID")->m_Value.Get<xiiUuid>() == savedId);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Failed initial persistence destroys the initialized document")
