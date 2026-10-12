@@ -11,8 +11,17 @@
 #include <GraphicsCore/Visibility/GpuSceneRaster.h>
 #include <SharedPluginScene/Scene/Implementation/SceneMeshPickingState.h>
 
+// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneMeshPickingPass, 1, xiiRTTIDefaultAllocator<xiiSceneMeshPickingPass>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("SelectionOnly", m_bSelectionOnly)->AddAttributes(new xiiDefaultValueAttribute(false)),
+  }
+  XII_END_PROPERTIES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiSceneMeshPickingPass::xiiSceneMeshPickingPass()  = default;
 xiiSceneMeshPickingPass::~xiiSceneMeshPickingPass() = default;
@@ -50,7 +59,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
     }
     return XII_SUCCESS;
   };
-  XII_SUCCEED_OR_RETURN(parameter("Editor.Picking", enabled));
+  XII_SUCCEED_OR_RETURN(parameter(m_bSelectionOnly ? "Editor.SelectionOverlay" : "Editor.Picking", enabled));
   XII_SUCCEED_OR_RETURN(parameter("Editor.PickSelected", selected));
   XII_SUCCEED_OR_RETURN(parameter("Editor.PickTransparent", transparent));
   if (!enabled || view->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
@@ -63,7 +72,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   auto& state = *m_pState;
   XII_SUCCEED_OR_RETURN(state.Poll());
   state.m_Selected.Clear();
-  if (!selected)
+  if (m_bSelectionOnly || !selected)
   {
     if (const auto* objects = context.m_Parameters.GetValue("Editor.SelectedObjects"))
     {
@@ -84,7 +93,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   for (auto* packet : view->GetExtractedRenderData()->GetAllRenderData())
   {
     const auto* mesh = xiiDynamicCast<const xiiMeshRenderData*>(packet);
-    if (!mesh || state.m_Selected.Contains(mesh->m_hOwnerObject))
+    if (!mesh || (m_bSelectionOnly ? !state.m_Selected.Contains(mesh->m_hOwnerObject) : state.m_Selected.Contains(mesh->m_hOwnerObject)))
       continue;
     const xiiGameObject* object    = nullptr;
     const xiiComponent*  component = nullptr;
@@ -117,6 +126,8 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   if (!state.m_Scene.IsInitialized())
     XII_SUCCEED_OR_RETURN(state.m_Scene.Initialize());
   XII_SUCCEED_OR_RETURN(state.m_Scene.SynchronizeExtractedMeshes(state.m_Packets, context.m_Graph.GetFrameIndex()));
+  if (m_bSelectionOnly && state.m_Packets.IsEmpty())
+    return XII_SUCCESS;
 
   xiiGeometryResidencyManager::UploadHandles geometry;
   geometry.m_hGeometryMetadata = context.GetInputBuffer("GPU Geometry Metadata");
@@ -144,7 +155,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   const auto&     matrix         = view->GetViewProjectionMatrix(xiiCameraEye::Left);
   const auto      frustum        = xiiFrustum::MakeFromMVP(matrix, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
   auto            visibilityView = xiiGpuVisibilitySystem::BuildView(matrix, frustum, view->GetCamera()->GetCenterPosition(), width, height, 0, instances);
-  if (!transparent)
+  if (!transparent && !m_bSelectionOnly)
     visibilityView.m_uiExcludedFlags |= xiiSceneObjectFlags::Transparent;
   xiiGpuVisibilityPassDescription visibilityDescription;
   visibilityDescription.m_sName              = context.m_sPassName;
@@ -166,7 +177,8 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderGraphTextureHandle surface;
   XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(context.m_Graph, context.m_sPassName, visibility, geometry, materials, raster, surface));
   XII_SUCCEED_OR_RETURN(context.SetOutput("Surface", surface));
-  XII_SUCCEED_OR_RETURN(state.Capture(context, surface));
+  if (!m_bSelectionOnly)
+    XII_SUCCEED_OR_RETURN(state.Capture(context, surface));
   valid = true;
   return XII_SUCCESS;
 }

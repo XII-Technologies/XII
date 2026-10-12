@@ -4,9 +4,11 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
+#include <SharedPluginScene/Scene/SceneRenderPipeline.h>
+#include <SharedPluginScene/Scene/SceneSelectionPass.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
-xiiResult xiiSceneShapeIconPass::GetPipelineDescriptor(xiiRenderPipelineResourceDescriptor& descriptor)
+xiiResult xiiSceneRenderPipeline::GetDefaultDescriptor(xiiRenderPipelineResourceDescriptor& descriptor)
 {
   xiiRenderPipelineResource::GetDefaultDescriptor(descriptor);
   xiiUInt32 debug = xiiInvalidIndex;
@@ -15,16 +17,24 @@ xiiResult xiiSceneShapeIconPass::GetPipelineDescriptor(xiiRenderPipelineResource
       debug = i;
   if (debug == xiiInvalidIndex)
     return XII_FAILURE;
-  const auto icons   = descriptor.AddPass("Scene shape icons", GetStaticRTTI()->GetTypeName());
-  const auto meshes  = descriptor.AddPass("Scene mesh picking", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName());
-  xiiUInt32  prepare = xiiInvalidIndex;
+  const auto           icons  = descriptor.AddPass("Scene shape icons", xiiSceneShapeIconPass::GetStaticRTTI()->GetTypeName());
+  const auto           meshes = descriptor.AddPass("Scene mesh picking", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName());
+  xiiVariantDictionary selectedSettings;
+  selectedSettings.Insert("SelectionOnly", true);
+  const auto selected  = descriptor.AddPass("Scene selected surfaces", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName(), selectedSettings);
+  const auto selection = descriptor.AddPass("Scene selection", xiiSceneSelectionPass::GetStaticRTTI()->GetTypeName());
+  XII_SUCCEED_OR_RETURN(descriptor.Connect(selected, "Surface", selection, "SelectionSurface"));
+  xiiUInt32 prepare = xiiInvalidIndex;
   for (xiiUInt32 i = 0; i < descriptor.m_Passes.GetCount(); ++i)
     if (descriptor.m_Passes[i].m_sName == "PrepareFrame")
       prepare = i;
   if (prepare == xiiInvalidIndex)
     return XII_FAILURE;
   for (const xiiStringView buffer : {"GPU Geometry Metadata", "GPU Meshlet Metadata", "Surface Material GPU Storage"})
+  {
     XII_SUCCEED_OR_RETURN(descriptor.Connect(prepare, buffer, meshes, buffer));
+    XII_SUCCEED_OR_RETURN(descriptor.Connect(prepare, buffer, selected, buffer));
+  }
   bool color = false, order = false, depth = false;
   // Snapshot because Connect can grow the connection array. Preserve the producer's pin identity.
   const auto connections = descriptor.m_Connections;
@@ -43,27 +53,29 @@ xiiResult xiiSceneShapeIconPass::GetPipelineDescriptor(xiiRenderPipelineResource
         }
       }
       const bool isColor = connection.m_sInput == "DisplayLinearColor";
-      XII_SUCCEED_OR_RETURN(descriptor.Connect(connection.m_uiSource, connection.m_sOutput, icons, isColor ? "Color" : "Before"));
+      XII_SUCCEED_OR_RETURN(descriptor.Connect(connection.m_uiSource, connection.m_sOutput, selection, isColor ? "Color" : "Before"));
+      XII_SUCCEED_OR_RETURN(descriptor.Connect(selection, isColor ? "Color" : "After", icons, isColor ? "Color" : "Before"));
       XII_SUCCEED_OR_RETURN(descriptor.Connect(icons, isColor ? "Color" : "After", debug, connection.m_sInput));
       (isColor ? color : order) = true;
     }
     else if (connection.m_sInput == "SceneDepth")
     {
       XII_SUCCEED_OR_RETURN(descriptor.Connect(connection.m_uiSource, connection.m_sOutput, icons, "SceneDepth"));
+      XII_SUCCEED_OR_RETURN(descriptor.Connect(connection.m_uiSource, connection.m_sOutput, selection, "SceneDepth"));
       depth = true;
     }
   }
   return color && order && depth ? XII_SUCCESS : XII_FAILURE;
 }
 
-xiiRenderPipelineResourceHandle xiiSceneShapeIconPass::GetPipeline()
+xiiRenderPipelineResourceHandle xiiSceneRenderPipeline::GetDefaultResource()
 {
   const xiiStringView id       = "{ XII Editor Scene Pipeline }";
   auto                existing = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(id);
   if (existing.IsValid())
     return existing;
   xiiRenderPipelineResourceDescriptor descriptor;
-  if (GetPipelineDescriptor(descriptor).Failed())
+  if (GetDefaultDescriptor(descriptor).Failed())
     return {};
   return xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>(id, std::move(descriptor));
 }

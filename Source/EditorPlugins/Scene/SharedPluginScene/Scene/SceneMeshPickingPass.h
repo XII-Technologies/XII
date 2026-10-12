@@ -43,6 +43,10 @@ public:
   /// Exclusive right/bottom edges. Unique native owners in first visible pixel order.
   xiiResult PickObjectsInRect(const xiiView& view, const xiiRectU32& rectangle, xiiDynamicArray<xiiGameObjectHandle>& out_objects) const;
 
+  /// A selected-only surface producer for selection compositing. Uses Editor.SelectionOverlay
+  /// and Editor.SelectedObjects, emits no CPU captures, and does not provide Pick queries.
+  bool m_bSelectionOnly = false;
+
 private:
   xiiUniquePtr<xiiSceneMeshPickingState> m_pState;
 };

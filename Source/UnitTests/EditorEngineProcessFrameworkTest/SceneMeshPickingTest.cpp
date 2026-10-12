@@ -4,10 +4,14 @@
 
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
+#include <GraphicsCore/Material/MaterialAssetFile.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -19,9 +23,14 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuSceneRaster.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
+#include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
+#include <SharedPluginScene/Scene/SceneRenderPipeline.h>
+#include <SharedPluginScene/Scene/SceneSelectionPass.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
 namespace
@@ -37,6 +46,8 @@ namespace
     {
       for (const xiiStringView name : {"GPU Geometry Metadata", "GPU Meshlet Metadata", "Surface Material GPU Storage"})
         pins.PushBack({name, xiiRenderPipelinePin::Buffer, false, false});
+      pins.PushBack({"Color", xiiRenderPipelinePin::Texture, false, false});
+      pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, false, false});
     }
     xiiResult Build(xiiRenderPipelinePassContext& context) override
     {
@@ -47,11 +58,68 @@ namespace
       context.m_Blackboard.Set(xiiRGBlackboardKeys::k_GpuSurfaceMaterialBaseIndex, material.m_uiSurfaceBaseIndex);
       XII_SUCCEED_OR_RETURN(context.SetOutput("GPU Geometry Metadata", geometry.m_hGeometryMetadata));
       XII_SUCCEED_OR_RETURN(context.SetOutput("GPU Meshlet Metadata", geometry.m_hMeshletMetadata));
-      return context.SetOutput("Surface Material GPU Storage", material.m_hSurfaceData);
+      XII_SUCCEED_OR_RETURN(context.SetOutput("Surface Material GPU Storage", material.m_hSurfaceData));
+      struct Data
+      {
+        xiiRenderGraphTextureHandle m_Color, m_Depth;
+        float                       m_fDepth = 0;
+      };
+      xiiRenderGraphTextureHandle color, depth;
+      auto                        target = context.m_pView->GetRenderTargetView()->GetTexture();
+      context.m_Graph.AddPass<Data>("Query test clear", xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
+        color = data.m_Color = builder.WriteTexture(builder.ImportTexture("Query test Color", target, target->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
+        builder.SetPassRenderPassManaged(); }, [](const Data& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data.m_Color)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Blue); });
+      context.m_Graph.AddPass<Data>("Query test depth", xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
+        auto description = target->GetDescription();
+        description.m_Size = {16, 16}; // Depth can have a different resolution from the query surface.
+        description.m_Format = xiiGALResourceFormat::D32Float;
+        description.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+        depth = data.m_Depth = builder.WriteTexture("Query test SceneDepth", description, xiiGALResourceStateFlags::DepthWrite);
+        if (const auto* setting = context.m_Parameters.GetValue("Test.SceneDepth")) data.m_fDepth = setting->Get<float>();
+        builder.SetPassRenderPassManaged(); }, [](const Data& data, xiiRenderGraphPassContext& execution) {
+        auto& commands = execution.GetCommandList();
+        commands.ClearDepthStencilView(execution.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, data.m_fDepth, 0); });
+      XII_SUCCEED_OR_RETURN(context.SetOutput("Color", color));
+      return context.SetOutput("SceneDepth", depth);
     }
   };
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(MeshQueryTables, 1, xiiRTTIDefaultAllocator<MeshQueryTables>)
   XII_END_DYNAMIC_REFLECTED_TYPE;
+
+  bool ReadColorPixel(xiiGALDevice& device, xiiGALTexture* texture, xiiUInt32 x, xiiUInt32 y, xiiUInt32& out_pixel)
+  {
+    xiiGALTextureReadback                readback(&device);
+    xiiGALCommandListCreationDescription description;
+    description.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+    auto commands            = device.CreateCommandList(description);
+    commands->Begin();
+    xiiGALTextureReadback::ReadbackRequest request;
+    request.m_pTexture  = texture;
+    const auto enqueued = readback.Enqueue(commands.Borrow(), request);
+    commands->End();
+    if (!XII_TEST_RESULT(enqueued))
+      return false;
+    auto* queue = device.GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+    queue->WaitForFenceValue(queue->Submit(commands.Borrow()));
+    readback.WaitForNextCompleted();
+    const auto capture = readback.GetCompleted();
+    if (!XII_TEST_BOOL(static_cast<bool>(capture)))
+      return false;
+    XII_SCOPE_EXIT(readback.RecycleStagingTexture(capture.m_pStagingTexture));
+    commands->Begin();
+    xiiGALMappedTextureSubresource mapped;
+    xiiGALTextureMipLevelData      mip;
+    if (!XII_TEST_RESULT(commands->MapTextureSubresource(capture.m_pStagingTexture, mip, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped)))
+    {
+      commands->End();
+      return false;
+    }
+    const auto* row     = xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt32*>(mapped.m_pData), y * mapped.m_uiStride);
+    out_pixel           = row[x];
+    const auto unmapped = commands->UnmapTextureSubresource(capture.m_pStagingTexture, mip);
+    commands->End();
+    return XII_TEST_RESULT(unmapped);
+  }
 } // namespace
 
 XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
@@ -70,8 +138,22 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
   xiiRenderPipelineResourceDescriptor definition;
   definition.AddPass("Tables", MeshQueryTables::GetStaticRTTI()->GetTypeName());
   definition.AddPass("Query", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName());
+  xiiVariantDictionary selectedSettings;
+  selectedSettings.Insert("SelectionOnly", true);
+  definition.AddPass("Selected query", xiiSceneMeshPickingPass::GetStaticRTTI()->GetTypeName(), selectedSettings);
+  xiiVariantDictionary overlaySettings;
+  overlaySettings.Insert("VisibleColor", xiiColor::Red);
+  overlaySettings.Insert("OccludedColor", xiiColor::Lime);
+  overlaySettings.Insert("FillOpacity", 0.5f);
+  definition.AddPass("Selection", xiiSceneSelectionPass::GetStaticRTTI()->GetTypeName(), overlaySettings);
   for (const xiiStringView name : {"GPU Geometry Metadata", "GPU Meshlet Metadata", "Surface Material GPU Storage"})
+  {
     XII_TEST_RESULT(definition.Connect(0, name, 1, name));
+    XII_TEST_RESULT(definition.Connect(0, name, 2, name));
+  }
+  XII_TEST_RESULT(definition.Connect(0, "Color", 3, "Color"));
+  XII_TEST_RESULT(definition.Connect(0, "SceneDepth", 3, "SceneDepth"));
+  XII_TEST_RESULT(definition.Connect(2, "Surface", 3, "SelectionSurface"));
   auto                      pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("NativeMeshQueryPipeline", std::move(definition));
   xiiRenderPipelineInstance instance, other;
   if (!XII_TEST_RESULT(instance.Synchronize(pipeline)) || !XII_TEST_RESULT(other.Synchronize(pipeline)))
@@ -83,7 +165,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
   XII_TEST_BOOL(instance.GetPipeline() == other.GetPipeline());
   xiiRenderPipelineResourceDescriptor   editorDefinition;
   xiiSharedPtr<const xiiRenderPipeline> editorPipeline;
-  XII_TEST_RESULT(xiiSceneShapeIconPass::GetPipelineDescriptor(editorDefinition));
+  XII_TEST_RESULT(xiiSceneRenderPipeline::GetDefaultDescriptor(editorDefinition));
   XII_TEST_RESULT(xiiRenderPipeline::Compile(editorDefinition, editorPipeline));
 
   xiiGeometry box;
@@ -178,8 +260,15 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     auto& execution = runtime ? *runtime : instance;
     if (!XII_TEST_RESULT(execution.Build(queryView ? queryView : view, graph, graphContext.GetBlackboard(), parameters)))
       return false;
+    struct Export
+    {
+      XII_DECLARE_POD_TYPE();
+    };
+    graph.AddPass<Export>("Query test export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
+      const auto color = builder.ReadTexture(graph.FindTexture("Query test Color"), xiiGALResourceStateFlags::CopySource);
+      builder.ExportTexture(color, xiiGALResourceStateFlags::CopySource); }, [](const Export&, xiiRenderGraphPassContext&) {});
     graph.EndSetup();
-    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphContext.GetBlackboard(), &cache)))
+    if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), queryView ? queryView : view, &graphContext.GetBlackboard(), &cache)))
       return false;
     completion.CaptureSubmittedFrame(frame);
     completion.WaitForFrame(frame); // Test-only wait; production queries remain nonblocking.
@@ -206,6 +295,53 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     XII_TEST_BOOL(objects.Contains(frontOwner));
     XII_TEST_BOOL(!objects.Contains(backOwner));
     XII_TEST_INT(objects.GetCount(), 1);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Material resource reload rejects old images and refreshes native coverage")
+  {
+    const auto material = xiiResourceManager::LoadResource<xiiMaterialResource>("NativeQueryReloadMaterial");
+    auto       publish  = [&](float opacity) -> bool {
+      xiiMaterialResourceDescriptor description;
+      description.m_AlphaMode                          = xiiMaterialAlphaMode::Mask;
+      description.m_BlendMode                          = xiiMaterialBlendMode::Masked;
+      description.m_BaseColor.a                        = opacity;
+      xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
+      xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
+      stream << "NativeQueryReloadMaterial.xiiBinMaterial";
+      xiiAssetFileHeader header;
+      if (!XII_TEST_RESULT(header.Write(stream)) || !XII_TEST_RESULT(xiiMaterialAssetFile::Write(stream, description)))
+        return false;
+      xiiResourceManager::UpdateResourceWithCustomLoader(material, std::move(loader));
+      xiiResourceLock<xiiMaterialResource> loadedMaterial(material, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      return XII_TEST_BOOL(loadedMaterial.GetAcquireResult() == xiiResourceAcquireResult::Final);
+    };
+    if (!publish(1.0f))
+      return;
+    front.m_hMaterials.PushBack(material);
+    if (!XII_TEST_BOOL(world.TryGetComponent(frontComponent, component)))
+      return;
+    component->SetMaterialOverride(0, material);
+    if (!render() || !render())
+      return;
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+    XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
+    if (!publish(0.0f))
+      return;
+    XII_TEST_BOOL(pass->Pick(*view, 24, 28, hit).Failed());
+    if (!render() || !render())
+      return;
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+    XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == backOwner);
+    if (!publish(1.0f))
+      return;
+    XII_TEST_BOOL(pass->Pick(*view, 24, 28, hit).Failed());
+    if (!render() || !render())
+      return;
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+    XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
+    front.m_hMaterials.Clear();
+    component->ClearMaterialOverrides();
+    if (!render() || !render())
+      return;
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Shared resource views retain independent native query captures")
   {
@@ -243,6 +379,46 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     XII_TEST_INT(mainScene.GetDatabase().GetObjectCount(), 2);
     for (const auto& entry : mainScene.GetDatabase().GetGpuInstances())
       XII_TEST_BOOL((entry.m_uiFlags & xiiSceneObjectFlags::Enabled) != 0);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native selected surfaces compose visible and occluded selection independently of click-through")
+  {
+    xiiUInt32 pixel = 0;
+    if (ReadColorPixel(*environment.GetDevice(), target.Borrow(), 24, 28, pixel))
+    {
+      XII_TEST_FLOAT(static_cast<float>(pixel & 255), 128, 1);
+      XII_TEST_INT((pixel >> 8) & 255, 0);
+      XII_TEST_FLOAT(static_cast<float>((pixel >> 16) & 255), 128, 1);
+      XII_TEST_INT(pixel >> 24, 255);
+    }
+    const auto* selectedPass = xiiDynamicCast<const xiiSceneMeshPickingPass*>(instance.GetPass(2));
+    if (ReadColorPixel(*environment.GetDevice(), target.Borrow(), 15, 28, pixel))
+    {
+      XII_TEST_INT(pixel & 255, 255); // Outline has full coverage rather than interior fill opacity.
+      XII_TEST_INT((pixel >> 16) & 255, 0);
+    }
+    if (ReadColorPixel(*environment.GetDevice(), target.Borrow(), 8, 12, pixel))
+      XII_TEST_INT(pixel, 0xFFFF0000U); // Background outside the selected silhouette is preserved.
+    XII_TEST_BOOL(selectedPass && selectedPass->m_bSelectionOnly);
+    XII_TEST_BOOL(selectedPass->Pick(*view, 24, 28, hit).Failed());
+    parameters.Insert("Test.SceneDepth", 1.0f);
+    if (!render())
+      return;
+    if (ReadColorPixel(*environment.GetDevice(), target.Borrow(), 24, 28, pixel))
+    {
+      XII_TEST_INT(pixel & 255, 0);
+      XII_TEST_FLOAT(static_cast<float>((pixel >> 8) & 255), 128, 1);
+      XII_TEST_FLOAT(static_cast<float>((pixel >> 16) & 255), 128, 1);
+    }
+    parameters.Insert("Editor.SelectionOverlay", false);
+    if (!render())
+      return;
+    if (ReadColorPixel(*environment.GetDevice(), target.Borrow(), 24, 28, pixel))
+      XII_TEST_INT(pixel, 0xFFFF0000U); // Original opaque blue, including alpha.
+    XII_TEST_BOOL(!graphContext.GetGraph().FindTexture("Selected query Surface").IsValid());
+    parameters.Insert("Editor.SelectionOverlay", true);
+    parameters.Insert("Test.SceneDepth", 0.0f);
+    if (!render())
+      return;
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Camera, viewport, live transform, deletion and explicit history invalidation")
   {

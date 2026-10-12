@@ -1,0 +1,63 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[RENDERSTATE]
+BlendEnable0 = true
+SourceBlend0 = BlendFactor_SourceAlpha
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+SourceBlendAlpha0 = BlendFactor_Zero
+DestinationBlendAlpha0 = BlendFactor_One
+DepthEnable = false
+DepthWriteEnable = false
+CullMode = CullMode_None
+
+[VERTEX_SHADER]
+struct VS_OUT
+{
+  float4 Position : SV_Position;
+  float2 UV : TEXCOORD0;
+};
+VS_OUT main(uint vertex : SV_VertexID)
+{
+  VS_OUT result;
+  result.UV = float2((vertex << 1) & 2, vertex & 2);
+  result.Position = float4(result.UV * float2(2, -2) + float2(-1, 1), 0, 1);
+  return result;
+}
+
+[PIXEL_SHADER]
+#include <Shaders/Editor/SceneSelectionConstants.h>
+Texture2D<uint4> SelectionSurface;
+Texture2D<float> SceneDepth;
+
+float4 main(float4 position : SV_Position, float2 uv : TEXCOORD0) : SV_Target0
+{
+  uint width, height;
+  SelectionSurface.GetDimensions(width, height);
+  int2 pixel = min(int2(saturate(uv) * float2(width, height)), int2(width - 1, height - 1));
+  uint4 center = SelectionSurface.Load(int3(pixel, 0));
+  uint4 surface = center;
+  bool edge = false;
+  int radius = int(OutlineWidth);
+  for (int y = -radius; y <= radius; ++y)
+    for (int x = -radius; x <= radius; ++x)
+    {
+      int2 neighborPixel = pixel + int2(x, y);
+      uint4 neighbor = 0;
+      if (all(neighborPixel >= 0) && neighborPixel.x < int(width) && neighborPixel.y < int(height))
+        neighbor = SelectionSurface.Load(int3(neighborPixel, 0));
+      edge = edge || (neighbor.x != center.x && (neighbor.x != 0 || center.x != 0));
+      if (center.x == 0 && neighbor.x != 0 && (surface.x == 0 || asfloat(neighbor.y) > asfloat(surface.y)))
+        surface = neighbor;
+    }
+  if (surface.x == 0) discard;
+  uint depthWidth, depthHeight;
+  SceneDepth.GetDimensions(depthWidth, depthHeight);
+  uint2 depthPixel = min(uint2(saturate(uv) * float2(depthWidth, depthHeight)), uint2(depthWidth - 1, depthHeight - 1));
+  bool occluded = asfloat(surface.y) + 0.00001 < SceneDepth.Load(int3(depthPixel, 0));
+  float4 color = occluded ? OccludedColor : VisibleColor;
+  color.a *= edge ? 1.0 : FillOpacity;
+  return color;
+}

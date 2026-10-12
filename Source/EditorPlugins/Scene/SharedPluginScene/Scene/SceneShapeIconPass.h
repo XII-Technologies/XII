@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/World/Declarations.h>
-#include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <SharedPluginScene/SharedPluginSceneDLL.h>
 
@@ -42,11 +42,6 @@ public:
     xiiColor                   m_Color;
     float                      m_fCameraDepth = 0; ///< Distance along camera forward; used for compositing order.
   };
-
-  /// Inserts into the native default pipeline before Debug, retaining all scene shading stages.
-  /// Does not access GAL; the returned definition is editable/serializable like any pipeline asset.
-  static xiiResult                       GetPipelineDescriptor(xiiRenderPipelineResourceDescriptor& out_descriptor);
-  static xiiRenderPipelineResourceHandle GetPipeline();
 
   void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   xiiResult Build(xiiRenderPipelinePassContext& context) override;

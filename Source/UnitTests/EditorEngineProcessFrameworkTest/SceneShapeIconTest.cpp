@@ -13,6 +13,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <SharedPluginScene/Scene/SceneRenderPipeline.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
 namespace
@@ -552,13 +553,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default scene pipeline is a valid serializable native definition")
   {
     xiiRenderPipelineResourceDescriptor native;
-    XII_TEST_RESULT(xiiSceneShapeIconPass::GetPipelineDescriptor(native));
+    XII_TEST_RESULT(xiiSceneRenderPipeline::GetDefaultDescriptor(native));
     xiiSharedPtr<const xiiRenderPipeline> compiled;
     xiiStringBuilder                      error;
     XII_TEST_RESULT(xiiRenderPipeline::Compile(native, compiled, &error));
     XII_TEST_BOOL_MSG(compiled != nullptr, "%s", error.GetData());
-    XII_TEST_BOOL(xiiSceneShapeIconPass::GetPipeline().IsValid());
-    XII_TEST_BOOL(xiiSceneShapeIconPass::GetPipeline() == xiiSceneShapeIconPass::GetPipeline());
+    XII_TEST_BOOL(xiiSceneRenderPipeline::GetDefaultResource().IsValid());
+    XII_TEST_BOOL(xiiSceneRenderPipeline::GetDefaultResource() == xiiSceneRenderPipeline::GetDefaultResource());
     xiiDefaultMemoryStreamStorage storage;
     xiiMemoryStreamWriter         writer(&storage);
     XII_TEST_RESULT(native.Serialize(writer));

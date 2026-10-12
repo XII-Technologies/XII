@@ -8,7 +8,7 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <SharedPluginScene/Scene/SceneCameraSettings.h>
-#include <SharedPluginScene/Scene/SceneShapeIconPass.h>
+#include <SharedPluginScene/Scene/SceneRenderPipeline.h>
 
 namespace
 {
@@ -19,7 +19,7 @@ xiiViewHandle xiiSceneViewContext::CreateView()
 {
   auto* world = GetDocumentContext()->GetWorld();
   XII_LOCK(world->GetWriteMarker());
-  auto pipeline = xiiSceneShapeIconPass::GetPipeline();
+  auto pipeline = xiiSceneRenderPipeline::GetDefaultResource();
   if (!pipeline.IsValid())
   {
     xiiLog::Error("Could not create the native Editor scene pipeline resource.");
