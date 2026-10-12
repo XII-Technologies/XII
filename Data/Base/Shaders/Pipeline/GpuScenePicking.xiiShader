@@ -13,6 +13,7 @@ CullMode = CullMode_None
 #include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
 
 [MESH_SHADER]
+#define XII_SCENE_SURFACE_CURRENT_ONLY
 #include <Shaders/Pipeline/GpuSceneSurfaceMesh.h>
 
 [PIXEL_SHADER]

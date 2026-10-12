@@ -23,7 +23,13 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   float4       localTangent  = asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset));
   const float2 texCoord      = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset));
   float3       previousLocalPosition;
+#if defined(XII_SCENE_SURFACE_CURRENT_ONLY)
+  // Surface queries do not consume velocity. Keep pose history out of their shader.
+  previousLocalPosition = localPosition;
+  if (!xiiSkinCurrentSurface(instance, lod, sourceVertex, localPosition, localNormal, localTangent))
+#else
   if (!xiiSkinSurface(instance, lod, sourceVertex, localPosition, localNormal, localTangent, previousLocalPosition))
+#endif
     return xiiInvalidSceneSurfaceVertex();
 
   const float3 worldPosition         = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
