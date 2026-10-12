@@ -7,6 +7,25 @@ does not satisfy it.
 
 ## Native GPU mesh identity for SceneView picking
 
+- A dedicated native surface-query raster now consumes the existing compact
+  visibility stream, geometry residency and material tables. It produces one
+  RGBA32UInt target containing native identity, depth bits and oct-encoded smooth
+  geometric normal bits, plus its transient reversed-Z depth buffer. It needs no
+  G-buffer or scene depth prepass. Callers choose transparent visibility separately
+  from the main scene; zero-opacity translucent pixels and masked alpha holes
+  reveal the surface behind them. G-buffer and picking share canonical mesh
+  emission and material coverage shader code. `AddPickingPass` uses `xiiResult`,
+  rejects invalid descriptions and clears its output on failure. Shader lifetime
+  remains subsystem-owned; no Editor or Qt dependencies enter GraphicsCore.
+- The Windows Debug engine-process target builds and all 40 Vulkan tests pass
+  after this addition. Actual GPU readback verifies opacity-independent opaque
+  coverage, masked rejection/acceptance, translucent rejection/acceptance and
+  transparent visibility exclusion, including native component resolution and
+  nearest-surface depth. It also verifies the packed normal and invalid inputs.
+  The direct-graph fixture uses its own native completion tracker, independent of
+  the registered graph manager's submission timeline. Evidence:
+  `Workspace/editor-native-mesh-query-build.log` and
+  `Workspace/editor-native-mesh-query-tests.log`.
 - The native mesh-shader G-buffer now writes a context-local, generation-checked
   scene identity. Zero denotes background; application render IDs remain separate
   user data. This replaces the unused GPU object-index field without changing the
@@ -45,7 +64,7 @@ does not satisfy it.
   `Workspace/editor-scene-mesh-source-editor-tests.log`.
 - This checkpoint supplies the native identity path for geometry picking. It
   does not complete SceneView's readback/IPC migration or establish a successful
-  full Scene plugin build. Transparent picking, selected-object click-through,
+  full Scene plugin build. SceneView query integration, selected-object click-through,
   selection overlays, indexed-fallback picking, complete viewport projection/depth
   integration and integrated Qt interaction still require verification/migration.
   The existing SceneView compile blocker documented below remains outstanding.

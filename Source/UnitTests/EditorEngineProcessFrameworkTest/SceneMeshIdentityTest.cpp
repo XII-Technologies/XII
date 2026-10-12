@@ -2,6 +2,8 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <bit>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -9,9 +11,11 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Scene/SceneDatabaseManager.h>
@@ -19,6 +23,7 @@
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 
@@ -54,9 +59,11 @@ namespace
       commands->End();
       return false;
     }
-    pixels.SetCount(capture.m_uiWidth * capture.m_uiHeight);
+    const xiiUInt32 wordsPerPixel = capture.m_uiBytesPerPixel / sizeof(xiiUInt32);
+    const xiiUInt32 rowWords      = capture.m_uiWidth * wordsPerPixel;
+    pixels.SetCount(rowWords * capture.m_uiHeight);
     for (xiiUInt32 y = 0; y < capture.m_uiHeight; ++y)
-      xiiMemoryUtils::Copy(pixels.GetData() + y * capture.m_uiWidth, xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt32*>(mapped.m_pData), y * mapped.m_uiStride), capture.m_uiWidth);
+      xiiMemoryUtils::Copy(pixels.GetData() + y * rowWords, xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt32*>(mapped.m_pData), y * mapped.m_uiStride), rowWords);
     const auto result = commands->UnmapTextureSubresource(capture.m_pStagingTexture, mip);
     commands->End();
     return XII_TEST_RESULT(result);
@@ -205,13 +212,18 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
       const auto outputs                   = xiiGpuSceneRasterManager::AddGBufferPass(graph, "Identity G-buffer", depth, velocity.first->m_Target, visibility, uploadedGeometry, materials, raster);
       if (!XII_TEST_BOOL(outputs.IsValid()))
         return;
+      xiiRenderGraphTextureHandle query;
+      if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Identity query", visibility, uploadedGeometry, materials, raster, query)))
+        return;
       struct Export
       {
         XII_DECLARE_POD_TYPE();
       };
       graph.AddPass<Export>("Identity export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
         XII_IGNORE_UNUSED(builder.ReadTexture(outputs.m_hObjectId, xiiGALResourceStateFlags::ShaderResource));
-        builder.ExportTexture(outputs.m_hObjectId, xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+        builder.ExportTexture(outputs.m_hObjectId, xiiGALResourceStateFlags::ShaderResource);
+        XII_IGNORE_UNUSED(builder.ReadTexture(query, xiiGALResourceStateFlags::ShaderResource));
+        builder.ExportTexture(query, xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
       graph.EndSetup();
       if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphContext.GetBlackboard(), &cache)))
         return;
@@ -224,10 +236,137 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
         XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), pixels[16 * 32 + 16], source));
         XII_TEST_BOOL(source.m_hOwnerComponent == firstComponent);
       }
+      auto queryTexture = graph.GetExportedTexture(query);
+      if (ReadIds(*environment.GetDevice(), queryTexture.Borrow(), pixels))
+      {
+        const xiiUInt32 center = (16 * 32 + 16) * 4;
+        XII_TEST_INT(pixels[center], firstId);
+        XII_TEST_INT(pixels[0], 0);
+        const auto  surfaceClip = viewProjection * xiiVec4(-0.5f, 0, 0, 1);
+        const float depth       = std::bit_cast<float>(pixels[center + 1]);
+        XII_TEST_FLOAT(depth, surfaceClip.z / surfaceClip.w, 0.0001f);
+        XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 2]), 0.0f, 0.0001f);
+        XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 3]), 0.5f, 0.0001f);
+      }
       cache.EndFrame();
     }
     else
       xiiTestFramework::Output(xiiTestOutput::Message, "Mesh-shader raster identity was not exercised on this device.");
+  }
+
+  // These graphs execute directly, outside the registered-graph manager's frame timeline.
+  xiiGpuFrameCompletionTracker completion;
+  completion.Initialize(environment.GetDevice());
+  completion.CaptureSubmittedFrame(1);
+  xiiUInt64 nextFrame = 2;
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native surface queries respect authored opacity and transparent visibility")
+  {
+    if (xiiGpuSceneRasterManager::IsSupported())
+    {
+      xiiRenderGraphContext graphContext;
+      if (!XII_TEST_RESULT(graphContext.Initialize("Material coverage queries")))
+        return;
+      auto visibilityContext = xiiGpuVisibilityManager::CreateContext();
+      XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiGpuVisibilityManager::DestroyContext(visibilityContext));
+      xiiCamera camera;
+      camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+      camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+      const auto                          projection     = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(60), 1, 100, 0.1f,
+                                                                                                                       xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+      const auto                          viewProjection = projection * camera.GetViewMatrix();
+      const auto                          frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+      xiiGpuSceneGBufferRasterDescription raster;
+      raster.m_ViewProjectionMatrix = viewProjection;
+      raster.m_uiWidth = raster.m_uiHeight = 32;
+      raster.m_uiVertexStride              = sizeof(xiiMeshPackedVertex);
+      raster.m_uiNormalOffset              = offsetof(xiiMeshPackedVertex, m_vNormal);
+      raster.m_uiTangentOffset             = offsetof(xiiMeshPackedVertex, m_vTangent);
+      raster.m_uiTexCoordOffset            = offsetof(xiiMeshPackedVertex, m_vTexCoord0);
+      raster.m_uiMeshDispatchGroupCountX   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(visibilityContext);
+      raster.m_uiMeshDispatchGroupCountY   = xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(visibilityContext);
+
+      const auto renderCoverage = [&](xiiMaterialAlphaMode::Enum alphaMode, float opacity, bool pickTransparent, xiiUInt32 expectedId) {
+        const auto frame = nextFrame++;
+        if (frame > 3)
+          completion.WaitForFrame(frame - 3);
+        const auto completed = completion.PollCompletedFrames();
+        xiiGALBindlessResourceTable::Collect(completed);
+        xiiMaterialManager::BeginFrame(frame, completed);
+        xiiGpuVisibilityManager::BeginFrame(frame, completed);
+        xiiMaterialResourceDescriptor materialDescription;
+        materialDescription.m_AlphaMode   = alphaMode;
+        materialDescription.m_BlendMode   = alphaMode == xiiMaterialAlphaMode::Blend ? xiiMaterialBlendMode::Translucent :
+          alphaMode == xiiMaterialAlphaMode::Mask                                    ? xiiMaterialBlendMode::Masked :
+                                                                                       xiiMaterialBlendMode::Opaque;
+        materialDescription.m_BaseColor.a = opacity;
+        xiiStringBuilder materialName;
+        materialName.SetFormat("Query coverage material {}", frame);
+        const auto                           material = xiiResourceManager::CreateResource<xiiMaterialResource>(materialName, std::move(materialDescription));
+        xiiResourceLock<xiiMaterialResource> loadedMaterial(material, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+        if (!XII_TEST_BOOL(loadedMaterial.GetAcquireResult() == xiiResourceAcquireResult::Final))
+          return;
+        first.m_hMaterials.SetCount(1);
+        first.m_hMaterials[0] = material;
+        if (!XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, frame)))
+          return;
+        xiiMaterialManager::PrepareGpuResources();
+        xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
+        auto& graph = graphContext.GetGraph();
+        auto& cache = graphContext.GetResourceCache();
+        cache.BeginFrame(frame, completed);
+        XII_SCOPE_EXIT(cache.EndFrame());
+        graph.BeginSetup(frame);
+        const auto uploadedGeometry      = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
+        const auto materials             = xiiMaterialManager::AddUploadPasses(graph);
+        auto       visibilityView        = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetObjectCount());
+        visibilityView.m_uiExcludedFlags = pickTransparent ? 0 : xiiSceneObjectFlags::Transparent;
+        xiiGpuVisibilityPassDescription visibilityDescription;
+        visibilityDescription.m_bAsyncCompute      = false;
+        visibilityDescription.m_bEnableLodFeedback = false;
+        const auto                  visibility     = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, context.GetHandle(), visibilityView, uploadedGeometry, visibilityDescription);
+        xiiRenderGraphTextureHandle query;
+        auto                        invalidRaster = raster;
+        invalidRaster.m_uiWidth                   = 0;
+        XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Invalid coverage query", visibility, uploadedGeometry, materials, invalidRaster, query).Failed());
+        XII_TEST_BOOL(!query.IsValid());
+        if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Coverage query", visibility, uploadedGeometry, materials, raster, query)))
+          return;
+        XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Missing visibility query", {}, uploadedGeometry, materials, raster, query).Failed());
+        XII_TEST_BOOL(!query.IsValid());
+        if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Coverage final query", visibility, uploadedGeometry, materials, raster, query)))
+          return;
+        struct Export
+        {
+          XII_DECLARE_POD_TYPE();
+        };
+        graph.AddPass<Export>("Coverage export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
+          XII_IGNORE_UNUSED(builder.ReadTexture(query, xiiGALResourceStateFlags::ShaderResource));
+          builder.ExportTexture(query, xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+        graph.EndSetup();
+        if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphContext.GetBlackboard(), &cache)))
+          return;
+        completion.CaptureSubmittedFrame(frame);
+        auto                       texture = graph.GetExportedTexture(query);
+        xiiDynamicArray<xiiUInt32> pixels;
+        if (ReadIds(*environment.GetDevice(), texture.Borrow(), pixels))
+        {
+          const xiiUInt32 center = (16 * 32 + 16) * 4;
+          XII_TEST_INT(pixels[center], expectedId);
+          XII_TEST_INT(pixels[0], 0);
+          const auto expectedClip = viewProjection * xiiVec4(expectedId == firstId ? -0.5f : 2.5f, 0, 0, 1);
+          XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 1]), expectedClip.z / expectedClip.w, 0.0001f);
+          XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), pixels[center], source));
+          XII_TEST_BOOL(source.m_hOwnerComponent == (expectedId == firstId ? firstComponent : secondComponent));
+        }
+      };
+      renderCoverage(xiiMaterialAlphaMode::Opaque, 0.0f, false, firstId);
+      renderCoverage(xiiMaterialAlphaMode::Mask, 0.25f, false, secondId);
+      renderCoverage(xiiMaterialAlphaMode::Mask, 0.75f, false, firstId);
+      renderCoverage(xiiMaterialAlphaMode::Blend, 0.0f, true, secondId);
+      renderCoverage(xiiMaterialAlphaMode::Blend, 0.25f, true, firstId);
+      renderCoverage(xiiMaterialAlphaMode::Blend, 0.25f, false, secondId);
+      first.m_hMaterials.Clear();
+    }
   }
 
   xiiMeshRenderData section;
@@ -242,7 +381,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
     section.m_uiPrimitiveCount = first.m_uiPrimitiveCount;
     extracted.AddRenderData(&section);
     extracted.SortAndBatches();
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, 2));
+    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, nextFrame++));
     XII_TEST_INT(scene.GetObjectCount(), 3);
     xiiUInt32 sectionId = 0;
     for (const auto& instance : scene.GetGpuInstances())
@@ -264,13 +403,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
     extracted.Clear();
     extracted.AddRenderData(&second);
     extracted.SortAndBatches();
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, 3));
+    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, nextFrame++));
     XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), firstId, source).Failed());
     XII_TEST_BOOL(source.m_hOwnerComponent.IsInvalidated());
     XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), secondId, source));
     scene.Clear();
     XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), secondId, source).Failed());
-    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, 4));
+    XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, nextFrame++));
     XII_TEST_INT(scene.GetObjectCount(), 1);
     XII_TEST_BOOL(xiiSceneDatabaseManager::ResolveExtractedMesh(context.GetHandle(), secondId, source).Failed());
     const auto replacementId = scene.GetGpuInstances()[0].m_uiObjectId;

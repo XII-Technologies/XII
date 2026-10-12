@@ -19,16 +19,7 @@
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneRasterConstants.h>
 
-class xiiGpuSceneRasterManagerState
-{
-public:
-  xiiShaderPermutationResourceHandle m_hDepthShaderPermutation;
-  xiiShaderPermutationResourceHandle m_hGBufferShaderPermutation;
-  xiiShaderPermutationResourceHandle m_hForwardPlusShaderPermutation;
-  xiiSharedPtr<xiiGALSampler>        m_pMaterialSampler;
-  bool                               m_bEngineStarted        = false;
-  bool                               m_bMeshShadersSupported = false;
-};
+#include <GraphicsCore/Visibility/Implementation/GpuSceneRasterState.h>
 
 xiiUniquePtr<xiiGpuSceneRasterManagerState> xiiGpuSceneRasterManager::s_pState;
 
@@ -668,6 +659,8 @@ void xiiGpuSceneRasterManager::EngineStartup()
   s_pState->m_hDepthShaderPermutation              = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, true);
   const xiiShaderResourceHandle hGBufferShader     = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneGBuffer.xiiShader");
   s_pState->m_hGBufferShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hGBufferShader, {}, true);
+  const auto hPickingShader                        = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuScenePicking.xiiShader");
+  s_pState->m_hPickingShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hPickingShader, {}, true);
   const xiiShaderResourceHandle hForwardPlusShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneForwardPlus.xiiShader");
   s_pState->m_hForwardPlusShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hForwardPlusShader, {}, true);
 }
@@ -680,6 +673,7 @@ void xiiGpuSceneRasterManager::EngineShutdown()
   s_pState->m_pMaterialSampler = nullptr;
   s_pState->m_hDepthShaderPermutation.Invalidate();
   s_pState->m_hGBufferShaderPermutation.Invalidate();
+  s_pState->m_hPickingShaderPermutation.Invalidate();
   s_pState->m_hForwardPlusShaderPermutation.Invalidate();
   s_pState->m_bMeshShadersSupported = false;
   s_pState->m_bEngineStarted        = false;

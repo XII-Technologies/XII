@@ -80,6 +80,17 @@ public:
   [[nodiscard]] static bool IsSupported();
   [[nodiscard]] static bool IsForwardPlusSupported();
 
+  /// Rasterizes a nearest-surface query using the canonical mesh stream and material coverage.
+  /// Produces RGBA32UInt: native object ID, float depth bits, and two float oct-normal bits.
+  /// Zero ID is background. Owns a transient reversed-Z depth target; no scene prepass is needed.
+  /// Include/exclude transparent objects through the visibility stream. Zero-opacity translucent
+  /// pixels are discarded; masked materials use their authored alpha cutoff. Normals are smooth
+  /// geometric normals (no normal-map perturbation). Previous-frame/jitter fields are ignored.
+  /// Unsupported mesh shaders or invalid inputs fail and clear the output handle.
+  [[nodiscard]] static xiiResult AddPickingPass(xiiRenderGraph& graph, xiiStringView sName,
+                                                const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                                const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface);
+
   /// Adds a reversed-Z depth prepass and returns the produced depth version. Invalid input or a
   /// device without mesh shaders returns an invalid handle so callers can select an indexed fallback.
   [[nodiscard]] static xiiRenderGraphTextureHandle AddDepthPrepass(xiiRenderGraph& graph, xiiStringView sName,

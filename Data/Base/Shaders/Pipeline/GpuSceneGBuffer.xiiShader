@@ -12,170 +12,15 @@ CullMode = CullMode_None
 
 [SHADER]
 
-#include <Shaders/Materials/GpuSurfaceMaterial.h>
-#include <Shaders/Pipeline/PipelineCommon.xiiShader>
-#include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
-#include <Shaders/Visibility/GpuSceneCommon.h>
-
-struct GBufferVertex
-{
-  float4 Position : SV_Position;
-  float3 WorldNormal : TEXCOORD0;
-  float3 WorldTangent : TEXCOORD1;
-  float TangentSign : TEXCOORD2;
-  float2 TexCoord : TEXCOORD3;
-  nointerpolation uint MaterialIndex : TEXCOORD4;
-  float4 PreviousClipPosition : TEXCOORD5;
-  nointerpolation uint ObjectId : TEXCOORD6;
-};
-
-uint LoadByte(ByteAddressBuffer source, uint byteOffset)
-{
-  const uint word = source.Load(byteOffset & ~3u);
-  return (word >> ((byteOffset & 3u) * 8u)) & 0xFFu;
-}
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
 
 [MESH_SHADER]
 
-StructuredBuffer<GpuSceneInstance> g_SceneInstances;
-StructuredBuffer<GpuGeometryRecord> g_Geometry;
-StructuredBuffer<GpuMeshlet> g_Meshlets;
-StructuredBuffer<uint2> g_VisibleMeshlets;
-StructuredBuffer<uint> g_VisibleMeshletCount;
-ByteAddressBuffer g_Buffers[];
-
-[outputtopology("triangle")]
-[numthreads(64, 1, 1)]
-void main(uint threadIndex : SV_GroupThreadID,
-          uint3 groupIndex : SV_GroupID,
-          out vertices GBufferVertex vertices[64],
-          out indices uint3 triangles[126])
-{
-  uint visibleCountCapacity, visibleCountStride;
-  uint visibleCapacity, visibleStride;
-  uint sceneCapacity, sceneStride;
-  uint geometryCapacity, geometryStride;
-  uint meshletCapacity, meshletStride;
-  g_VisibleMeshletCount.GetDimensions(visibleCountCapacity, visibleCountStride);
-  g_VisibleMeshlets.GetDimensions(visibleCapacity, visibleStride);
-  g_SceneInstances.GetDimensions(sceneCapacity, sceneStride);
-  g_Geometry.GetDimensions(geometryCapacity, geometryStride);
-  g_Meshlets.GetDimensions(meshletCapacity, meshletStride);
-
-  const uint visibleMeshletIndex = groupIndex.x +
-    groupIndex.y * MeshDispatchGroupCountX +
-    groupIndex.z * MeshDispatchGroupCountX * MeshDispatchGroupCountY;
-  if (visibleCountCapacity == 0u || visibleMeshletIndex >= min(g_VisibleMeshletCount[0], visibleCapacity))
-  {
-    SetMeshOutputCounts(0u, 0u);
-    return;
-  }
-
-  const uint2 visible = g_VisibleMeshlets[visibleMeshletIndex];
-  if (visible.x >= sceneCapacity || visible.y >= meshletCapacity)
-  {
-    SetMeshOutputCounts(0u, 0u);
-    return;
-  }
-
-  const GpuSceneInstance instance = g_SceneInstances[visible.x];
-  if (GeometryBaseIndex >= geometryCapacity || instance.GeometryIndex >= geometryCapacity - GeometryBaseIndex)
-  {
-    SetMeshOutputCounts(0u, 0u);
-    return;
-  }
-
-  const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
-  const GpuMeshlet meshlet = g_Meshlets[visible.y];
-  const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
-  if (lodIndex >= min(geometry.LodCount, 8u))
-  {
-    SetMeshOutputCounts(0u, 0u);
-    return;
-  }
-
-  const GpuGeometryLod lod = geometry.Lods[lodIndex];
-  const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
-  const uint vertexCount = meshlet.PackedPrimitiveVertexCount >> 16u;
-  if (instance.PrimitiveCount != 0u)
-  {
-    const uint selectedEnd = instance.FirstPrimitive + instance.PrimitiveCount;
-    const uint meshletEnd = meshlet.Header.x + primitiveCount;
-    if (meshlet.Header.x >= selectedEnd || meshletEnd <= instance.FirstPrimitive)
-    {
-      SetMeshOutputCounts(0u, 0u);
-      return;
-    }
-  }
-  if (vertexCount > 64u || primitiveCount > 126u || (primitiveCount > 0u && vertexCount == 0u) ||
-      lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletRemapBufferIndex == 0xFFFFFFFFu || lod.MeshletPrimitiveBufferIndex == 0xFFFFFFFFu)
-  {
-    SetMeshOutputCounts(0u, 0u);
-    return;
-  }
-
-  uint vertexBufferBytes;
-  uint remapBufferBytes;
-  uint primitiveBufferBytes;
-  g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
-  g_Buffers[lod.MeshletRemapBufferIndex].GetDimensions(remapBufferBytes);
-  g_Buffers[lod.MeshletPrimitiveBufferIndex].GetDimensions(primitiveBufferBytes);
-  const uint lastAttributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
-  if (VertexStride < lastAttributeEnd || meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
-      meshlet.Header.z > primitiveBufferBytes || primitiveCount * 3u > primitiveBufferBytes - meshlet.Header.z)
-  {
-    SetMeshOutputCounts(0u, 0u);
-    return;
-  }
-
-  SetMeshOutputCounts(vertexCount, primitiveCount);
-
-  if (threadIndex < vertexCount)
-  {
-    const uint sourceVertex = g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + threadIndex) * 4u);
-    const uint vertexOffset = sourceVertex * VertexStride;
-    const bool vertexIsValid = vertexOffset <= vertexBufferBytes && lastAttributeEnd <= vertexBufferBytes - vertexOffset;
-    const float3 localPosition = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset)) : 0.0f;
-    const float3 localNormal = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + NormalOffset)) : float3(0.0f, 0.0f, 1.0f);
-    const float4 localTangent = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset)) : float4(1.0f, 0.0f, 0.0f, 1.0f);
-    const float2 texCoord = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset)) : 0.0f;
-
-    const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
-    const float3 previousWorldPosition = mul(instance.PreviousGlobalTransform, float4(localPosition, 1.0f)).xyz;
-    float3 worldNormal = normalize(float3(dot(instance.NormalTransformRow0.xyz, localNormal), dot(instance.NormalTransformRow1.xyz, localNormal), dot(instance.NormalTransformRow2.xyz, localNormal)));
-    float3 worldTangent = normalize(mul((float3x3)instance.GlobalTransform, localTangent.xyz));
-    worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
-
-    GBufferVertex output;
-    output.Position = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
-    output.WorldNormal = worldNormal;
-    output.WorldTangent = worldTangent;
-    output.TangentSign = localTangent.w;
-    output.TexCoord = texCoord;
-    output.MaterialIndex = instance.MaterialIndex;
-    output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));
-    output.ObjectId = instance.ObjectId;
-    vertices[threadIndex] = output;
-  }
-
-  if (threadIndex < primitiveCount)
-  {
-    const uint sourcePrimitive = meshlet.Header.x + threadIndex;
-    const uint primitiveOffset = meshlet.Header.z + threadIndex * 3u;
-    const uint3 primitiveIndices = uint3(
-      LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 0u),
-      LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
-      LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
-    const bool primitiveSelected = instance.PrimitiveCount == 0u ||
-      (sourcePrimitive >= instance.FirstPrimitive && sourcePrimitive - instance.FirstPrimitive < instance.PrimitiveCount);
-    triangles[threadIndex] = primitiveSelected && all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);
-  }
-}
+#include <Shaders/Pipeline/GpuSceneSurfaceMesh.h>
 
 [PIXEL_SHADER]
 
-StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
-Texture2D<float4> g_Textures[];
+#include <Shaders/Pipeline/GpuSceneSurfaceMaterial.h>
 
 struct GBufferOutput
 {
@@ -190,34 +35,16 @@ struct GBufferOutput
 
 GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
 {
-  uint materialCount, materialStride;
-  g_SurfaceMaterials.GetDimensions(materialCount, materialStride);
-  const bool materialIsValid = input.MaterialIndex != 0xFFFFFFFFu && MaterialBaseIndex < materialCount && input.MaterialIndex < materialCount - MaterialBaseIndex;
+  xiiGpuSurfaceMaterial material = xiiLoadSceneSurfaceMaterial(input.MaterialIndex, MaterialBaseIndex);
 
-  xiiGpuSurfaceMaterial material = (xiiGpuSurfaceMaterial)0;
-  material.BaseColorOpacity = 1.0f;
-  material.EmissiveColorAndRoughness.w = 0.5f;
-  material.SurfaceParameters = float4(0.0f, 0.5f, 0.0f, 1.0f);
-  material.LayerParameters = float4(0.5f, 1.0f, 0.0f, 0.1f);
-  material.TextureIndices0 = 0xFFFFFFFFu;
-  material.TextureIndices1 = 0xFFFFFFFFu;
-  material.Metadata.y = 0xF000u;
-  if (materialIsValid)
-    material = g_SurfaceMaterials[MaterialBaseIndex + input.MaterialIndex];
-
-  const bool isTwoSided = (material.Metadata.y & (1u << 10u)) != 0u;
-  if (!isFrontFace && !isTwoSided)
-    clip(-1.0f);
-
-  float4 baseColor = max(material.BaseColorOpacity, 0.0f);
+  float4 baseColor = xiiSampleSceneBaseColor(material, input.TexCoord);
+  xiiClipSceneSurface(material, baseColor, isFrontFace, false);
   float3 emissive = max(material.EmissiveColorAndRoughness.rgb, 0.0f);
   float roughness = saturate(material.EmissiveColorAndRoughness.w);
   float metallic = saturate(material.SurfaceParameters.x);
   float occlusion = 1.0f;
   float transmission = saturate(material.SurfaceParameters.z);
 
-  if (material.TextureIndices0.x != 0xFFFFFFFFu)
-    baseColor *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)].Sample(g_sAnisotropicWrap, input.TexCoord), 0.0f);
   if (material.TextureIndices0.z != 0xFFFFFFFFu)
   {
     const float4 metallicRoughness = g_Textures[NonUniformResourceIndex(material.TextureIndices0.z)].Sample(g_sLinearWrap, input.TexCoord);
@@ -233,11 +60,6 @@ GBufferOutput main(GBufferVertex input, bool isFrontFace : SV_IsFrontFace)
     emissive *= max(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)].Sample(g_sLinearWrap, input.TexCoord).rgb, 0.0f);
   if (material.TextureIndices1.w != 0xFFFFFFFFu)
     transmission *= saturate(g_Textures[NonUniformResourceIndex(material.TextureIndices1.w)].Sample(g_sLinearWrap, input.TexCoord).r);
-
-  // xiiMaterialAlphaMode::Mask is the only deferred alpha mode. Translucent surfaces are excluded
-  // by the visibility stream and rendered by their forward path.
-  if (material.Metadata.z == 1u)
-    clip(baseColor.a - material.LayerParameters.x);
 
   float3 worldNormal = normalize(input.WorldNormal) * (isFrontFace ? 1.0f : -1.0f);
   if (material.TextureIndices0.y != 0xFFFFFFFFu)

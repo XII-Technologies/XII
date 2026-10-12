@@ -149,6 +149,7 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_RenderWorld_Implementation_RenderWorld);
   XII_STATICLINK_REFERENCE(GraphicsCore_Scene_Implementation_SceneDatabase);
   XII_STATICLINK_REFERENCE(GraphicsCore_Scene_Implementation_SceneMeshSource);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Visibility_Implementation_GpuScenePicking);
   XII_STATICLINK_REFERENCE(GraphicsCore_Scene_Implementation_SceneSpatialHierarchy);
   XII_STATICLINK_REFERENCE(GraphicsCore_Scene_Implementation_SceneTypes);
   XII_STATICLINK_REFERENCE(GraphicsCore_Resources_Implementation_DescriptorResourceLoader);
