@@ -2307,3 +2307,52 @@ world submission clock. The comprehensive modernization goal remains active.
   Its assertion is preserved as `Workspace/editor-history-sample-raster-sync-assert.txt`;
   the recorded exit code is -2147483645. The reader-state repair does not establish longer
   sample stability, and the cause of this device loss remains unresolved.
+
+### Per-View Global Illumination Ownership
+
+- Replaced process-global DDGI and sparse voxel radiance schedulers with `xiiDDGIContext`
+  and `xiiSparseVoxelRadianceContext`. Each existing lighting context owns its CPU cells,
+  scrolling origin, update suppression, history flags, pipeline bindings and persistent
+  GPU storage. The LightingManager's generation-checked context ownership releases this
+  state during view disposal and high-level shutdown, before the GAL device is destroyed.
+  The obsolete GI subsystem registrations and global manager APIs are removed; all callers
+  use the new ownership model without compatibility aliases.
+- Lighting preparation schedules both clipmaps from the current view's camera and shared
+  64-bit render-frame token. RenderWorldModule no longer selects a first camera to overwrite
+  global GI state. Camera cuts and failed recording invalidate only the owning view's GI
+  history. Physical storage and residency remain allocated; subsequent updates use zero
+  temporal weight until valid data is recorded again.
+- Context initialization supports CPU-only scheduling with a null device. Supplying a device
+  creates private GPU storage. Initialization failure preserves the previous configuration;
+  invalid or repeated frame indices, non-finite/out-of-range camera positions and overflowing
+  DDGI dimensions return failure without modifying existing state. Lighting-context creation
+  propagates initialization failure, and lighting-stage construction fails when required GI
+  resources or shader pipelines cannot be produced.
+- Ownership makes the memory cost explicit: the default sparse pool is 32 MiB per lighting
+  context (4096 bricks, 8x8x8 voxels, 16 bytes per voxel), plus its CPU scheduler and DDGI atlases.
+  No additional per-frame persistent copies or synchronization primitives were introduced.
+  Contexts are not thread-safe. Their public contract requires graphs to be discarded and GPU
+  work completed before reinitialization, shutdown or destruction. Reflected settings/state
+  schemas and existing asset IDs/formats are unchanged.
+- CPU regressions retain toroidal probe scrolling, relocation and sparse residency coverage,
+  and add independent contexts at widely separated camera origins, failed initialization,
+  invalid frames/coordinates, view-local invalidation, repeated shutdown and reinitialization.
+  The native default-pipeline regression now verifies separate persistent DDGI atlases and
+  sparse pools, reads back actual uploaded probe positions and clipmap origins, and queues
+  twelve additional view submissions without intervening WaitIdle calls. Eighteen total view
+  submissions pass with Vulkan synchronization validation in the strengthened test.
+- Windows Debug integration builds pass for Editor, VisualScript, EditorProcessor, native Qt
+  and engine-process tests, graphics Core/Foundation tests, and GpuDrivenScene:
+  `Workspace/editor-gi-context-integration-build.log` (exit zero). All 124 affected subtests pass:
+  20 Core, 53 engine-process, 41 Foundation and ten Qt, including production viewport/IPC tests.
+  Evidence: `Workspace/editor-gi-context-final-core-tests.log`,
+  `Workspace/editor-gi-context-final-native-tests.log`,
+  `Workspace/editor-gi-context-final-foundation-tests.log`, and
+  `Workspace/editor-gi-context-final-qt-tests.log`. Both GPU suites use Vulkan synchronization
+  validation. The subsequently strengthened readback and overlapping-frame regressions also
+  pass: `Workspace/editor-gi-context-readback-tests.log` and
+  `Workspace/editor-gi-context-overlap-tests.log` (three temporal subtests each).
+- The separately reproduced longer GpuDrivenScene device loss remains unresolved; this GI
+  migration does not establish sample stability. Deformed picking, legacy sky/probe/GreyBox
+  migration and the remaining Editor inventory remain active work. D3D12, Release, Linux and
+  macOS have not been validated here.
