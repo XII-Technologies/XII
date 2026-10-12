@@ -81,4 +81,4 @@ void xiiDebugTextComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   xiiDebugRenderer::Draw3DText(*msg.m_pView, sb, GetOwner()->GetGlobalPosition(), m_Color);
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Debug_Implementation_DebugTextComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Debug_Implementation_DebugTextComponent);

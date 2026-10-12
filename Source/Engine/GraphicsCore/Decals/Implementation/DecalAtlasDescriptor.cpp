@@ -169,5 +169,3 @@ xiiResult xiiDecalAtlasResourceDescriptor::Deserialize(xiiStreamReader& stream)
   *this = std::move(descriptor);
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Decals_Implementation_DecalAtlasDescriptor);

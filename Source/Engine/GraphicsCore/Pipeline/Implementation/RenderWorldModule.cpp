@@ -723,3 +723,5 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
   frames.m_Completion.CaptureSubmittedFrame(uiFrameIndex);
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderWorldModule);

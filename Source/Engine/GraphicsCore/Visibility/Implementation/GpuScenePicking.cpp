@@ -142,5 +142,3 @@ xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStr
   out_hSurface                      = pass.first->m_Target;
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Visibility_Implementation_GpuScenePicking);

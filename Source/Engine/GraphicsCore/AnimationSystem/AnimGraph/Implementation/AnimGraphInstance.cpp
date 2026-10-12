@@ -324,5 +324,3 @@ void xiiAnimGraphInstance::EvaluateNode(const xiiAnimGraphResourceDescriptor& gr
       break;
   }
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_Implementation_AnimGraphInstance);

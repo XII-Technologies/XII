@@ -176,5 +176,3 @@ void xiiAnimationPose::LayeredBlend(const xiiAnimationPose& basePose, const xiiA
   m_ModelTransforms.Clear();
   m_SkinningMatrices.Clear();
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_AnimationPose);

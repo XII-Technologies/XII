@@ -48,5 +48,3 @@ xiiResult xiiAnimationPose::BuildMeshSkinningPalette(const xiiSkeletonResource& 
   success = true;
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_AnimationPoseMesh);

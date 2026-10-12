@@ -22,5 +22,3 @@ xiiResult xiiView::ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiSceneMeshSour
   out_source = source;
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_ViewPicking);

@@ -14,5 +14,3 @@ xiiResult xiiSceneDatabaseManager::ResolveExtractedMesh(xiiSceneDatabaseContextH
     return XII_FAILURE;
   return slot->m_MeshSources.TryGetValue(uiGpuObjectId, out_source) ? XII_SUCCESS : XII_FAILURE;
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Scene_Implementation_SceneMeshSource);

@@ -264,4 +264,4 @@ void xiiReflectionCaptureComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDa
   ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::IfStatic);
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionCaptureComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Lights_Implementation_ReflectionCaptureComponent);

@@ -241,3 +241,5 @@ xiiSpotLightVisualizerAttribute::xiiSpotLightVisualizerAttribute(xiiStringView s
   xiiVisualizerAttribute(sAngleProperty, sRangeProperty, sIntensityProperty, sColorProperty, sRadiusProperty)
 {
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Lights_Implementation_SpotLightComponent);

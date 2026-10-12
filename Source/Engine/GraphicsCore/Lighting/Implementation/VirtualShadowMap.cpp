@@ -1184,3 +1184,5 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
   readbackPass.first->m_uiSlot  = uiSlot;
   readbackPass.first->m_uiFrame = uiFrameIndex;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_VirtualShadowMap);

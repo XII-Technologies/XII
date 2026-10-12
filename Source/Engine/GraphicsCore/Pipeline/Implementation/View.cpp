@@ -392,3 +392,5 @@ void xiiView::RemovePipelineParameter(xiiStringView name)
   if (m_PipelineParameters.Remove(name))
     InvalidateTemporalHistory();
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_View);

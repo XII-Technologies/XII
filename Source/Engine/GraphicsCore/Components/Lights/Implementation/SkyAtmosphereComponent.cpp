@@ -173,4 +173,4 @@ void xiiSkyAtmosphereComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& 
   ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_SkyAtmosphereComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Lights_Implementation_SkyAtmosphereComponent);

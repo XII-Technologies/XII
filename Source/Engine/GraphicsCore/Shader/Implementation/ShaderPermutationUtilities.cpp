@@ -111,3 +111,5 @@ void xiiShaderPermutationUtilities::Shutdown()
 {
   s_pState.Clear();
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ShaderPermutationUtilities);

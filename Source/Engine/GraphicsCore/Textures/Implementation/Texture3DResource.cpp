@@ -246,4 +246,4 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDesc
   return ret;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Texture3DResource);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Implementation_Texture3DResource);

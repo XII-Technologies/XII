@@ -191,3 +191,5 @@ xiiResult xiiMaterialCompiler::ValidateShaderLayout(const xiiMaterialSchema& sch
   out_layout.m_bValid = bValid;
   return bValid ? XII_SUCCESS : XII_FAILURE;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Material_Implementation_MaterialCompiler);

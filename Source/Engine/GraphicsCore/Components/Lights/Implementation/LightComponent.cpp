@@ -206,3 +206,5 @@ float xiiLightComponent::GetLuminance(float fEmittingAreaSquareMeters, float fPr
 {
   return xiiPhotometricUtils::ToLuminance(m_fIntensity, m_IntensityUnit, fEmittingAreaSquareMeters, fProjectedAreaSquareMeters);
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Lights_Implementation_LightComponent);

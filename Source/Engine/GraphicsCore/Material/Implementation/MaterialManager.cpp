@@ -450,3 +450,5 @@ xiiResult xiiMaterialManager::ApplyConfiguration()
   s_pState->m_bInitialized = s_pState->m_pSystem->Initialize(pDevice.Borrow(), s_pState->m_Description).Succeeded();
   return s_pState->m_bInitialized ? XII_SUCCESS : XII_FAILURE;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Material_Implementation_MaterialManager);

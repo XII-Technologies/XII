@@ -487,5 +487,3 @@ void xiiSceneDatabase::CommitFrame(xiiUInt64 uiFrameIndex)
   m_Stats.m_uiRevision         = m_uiRevision;
   m_uiLastCommittedFrame       = uiFrameIndex;
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Scene_Implementation_SceneDatabase);

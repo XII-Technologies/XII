@@ -104,4 +104,4 @@ xiiUInt32 xiiRenderComponent::GetUniqueIdForRendering(const xiiComponent& compon
   return (uniqueId & dynamicBitMask) | (component.GetOwner()->IsDynamic() ? dynamicBit : 0);
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_RenderComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Render_Implementation_RenderComponent);

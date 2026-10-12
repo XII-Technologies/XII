@@ -1908,3 +1908,5 @@ xiiResult xiiRenderGraph::DumpToDot(xiiStringBuilder& out_sDot) const
 
   return xiiRenderGraphDebug::DumpToDot(m_CompiledPasses, m_Barriers, m_MergeGroups, m_QueueSubmissions, m_ResourceDescriptions, m_ResourceVersions, out_sDot);
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderGraph);

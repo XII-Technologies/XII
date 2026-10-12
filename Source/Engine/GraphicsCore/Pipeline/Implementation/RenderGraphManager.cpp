@@ -493,3 +493,5 @@ xiiRenderGraphTimestampProfiler& xiiRenderGraphContext::GetProfiler()
   XII_ASSERT_DEV(pProfiler != nullptr, "The render graph context is not initialized or was invalidated by subsystem shutdown.");
   return *pProfiler;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderGraphManager);

@@ -577,4 +577,4 @@ void xiiCameraComponent::OnDeactivated()
   SUPER::OnDeactivated();
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_CameraComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Render_Implementation_CameraComponent);

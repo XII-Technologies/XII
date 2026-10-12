@@ -78,5 +78,3 @@ namespace xiiDebugRendererInternal
     return pass.first->m_Target;
   }
 } // namespace xiiDebugRendererInternal
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Debug_Implementation_DebugDepth);

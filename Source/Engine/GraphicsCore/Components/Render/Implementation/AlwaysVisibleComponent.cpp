@@ -27,4 +27,4 @@ xiiResult xiiAlwaysVisibleComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bo
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_AlwaysVisibleComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Render_Implementation_AlwaysVisibleComponent);

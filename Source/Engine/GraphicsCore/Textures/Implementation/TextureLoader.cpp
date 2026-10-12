@@ -208,4 +208,4 @@ void xiiTextureResourceLoader::WriteTextureLoadStream(xiiStreamWriter& w, const 
   w.WriteBytes(&pImage, sizeof(xiiImage*)).IgnoreResult();
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_TextureLoader);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Implementation_TextureLoader);

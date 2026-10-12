@@ -156,4 +156,4 @@ bool xiiGALRenderPassCache::CacheKeyHasher::Equal(const xiiGALRenderPassCache::R
   return a.m_uiHash == b.m_uiHash && a.m_Description == b.m_Description;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_GPUResourcePool_Implementation_RenderPassCache);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPassCache);

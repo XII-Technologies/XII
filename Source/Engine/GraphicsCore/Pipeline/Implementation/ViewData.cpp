@@ -36,5 +36,3 @@ xiiResult xiiViewData::ComputeWorldSpacePos(float x, float y, xiiVec3& out_vWorl
   out_vWorldPos = position;
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_ViewData);

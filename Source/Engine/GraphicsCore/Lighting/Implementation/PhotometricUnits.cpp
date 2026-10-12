@@ -129,3 +129,5 @@ float xiiPhotometricUtils::ToLuminance(float fValue, xiiEnum<xiiPhotometricUnit>
       return 0.0f;
   }
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_PhotometricUnits);
