@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+#include <EditorFrameworkTest/SceneDuplicationTest.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
@@ -196,6 +197,11 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       XII_TEST_BOOL(PumpUntil([&] { return image.load(QString::fromUtf8(capture.GetData())); }, 10000));
       XII_TEST_INT(image.width(), 1280);
       XII_TEST_INT(image.height(), 720);
+
+      TestSceneDuplicationAction(*scene, sphereID);
+      view->SyncToEngine();
+      PumpUntil([] { return false; }, 200);
+      XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed());
     }
   }
   else

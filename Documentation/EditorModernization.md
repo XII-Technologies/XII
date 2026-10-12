@@ -2769,3 +2769,44 @@ Verification:
 This verification uses an isolated production Editor test project. The existing
 user project and its preferences were left untouched. Release, other graphics
 backends and other operating systems have not been tested for this repair.
+
+### Scene Hierarchy Duplication
+
+Duplicate Special's grouping option previously reached an unimplemented assertion,
+and its selection-size spacing controls were hidden. Grouping now constructs one
+ordinary reflected game object per copy using the existing serialized hierarchy,
+GUID remapping, document ownership and command history. A shared parent is retained;
+mixed-parent selections are grouped at the document root. Source world poses,
+negative and nonuniform scales, nested children and selection order are preserved.
+Each group rotates about the average source position.
+
+Copy roots are ordered before insertion. Sorting the entire recorded copy list by
+source selection order after insertion interleaved different copies and invalidated
+the relationship between redo order and recorded insertion indices. The new tests
+exposed this issue and verify copy-major ordering and stable identities through
+three undo/redo cycles and redo-history destruction.
+
+The dialog obtains hierarchy bounds through the existing engine selection-bounds
+query, with a distinct purpose from focus-on-selection. Axis spacing cycles through
+positive extent, negative extent and zero. Missing or degenerate bounds disable
+only the affected spacing helpers. Fractional random translation/rotation ranges
+now use a nonzero Gaussian distribution, and stationary revolve placement works
+with a nonzero start angle and zero angle step. Invalid authored parameters,
+malformed parent mappings and singular grouping parents return failure before
+hierarchy mutation. Graph preparation, transforms and modal orchestration are split
+into cohesive source files.
+
+Verification: Debug builds of EditorFrameworkTest, Editor and dependent tooling pass
+(`Workspace/editor-duplicate-final-build.log`). All eleven Qt subtests pass
+(`Workspace/editor-duplicate-final-tests.log`), including document-level grouped and
+ungrouped transformations, mixed parents, invalid inputs, dialog controls, and the
+production native viewport's real modal action, engine-provided spacing, mirrored
+group insertion/removal and undo/redo. The full run also repeats the 160-frame
+viewport resize stress test. Its engine log contains no allocation, validation or
+access-violation errors. The initial restricted rebuild failed while copying Qt
+plugins; the native-access retry passed. An earlier full run reported success but
+its child engine logged a late access violation after unexpectedly entering Play
+mode and closing the scene. That evidence remains under
+`Workspace/TestOutput/editor-duplicate-native/Logs`; scene closure during Play is
+being investigated separately rather than treating the test runner as sufficient
+proof of child-process lifecycle correctness.
