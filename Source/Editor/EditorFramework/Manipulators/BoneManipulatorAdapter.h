@@ -13,11 +13,12 @@
 #include <ToolsFoundation/Animation/ExposedBone.h>
 
 struct xiiGizmoEvent;
+struct xiiAssetCuratorEvent;
 
-/// Makes an array of xiiExposedBone properties editable in the viewport
+/// Edits native named bone transforms using skeleton asset metadata for the hierarchy.
 ///
 /// Enabled by attaching the xiiBoneManipulatorAttribute.
-class xiiBoneManipulatorAdapter : public xiiManipulatorAdapter
+class XII_EDITORFRAMEWORK_DLL xiiBoneManipulatorAdapter : public xiiManipulatorAdapter
 {
 public:
   xiiBoneManipulatorAdapter();
@@ -29,6 +30,7 @@ protected:
   virtual void Update() override;
   void         RotateGizmoEventHandler(const xiiGizmoEvent& e);
   void         ClickGizmoEventHandler(const xiiGizmoEvent& e);
+  void         AssetCuratorEventHandler(const xiiAssetCuratorEvent& e);
 
   virtual void UpdateGizmoTransform() override;
 
@@ -43,9 +45,11 @@ protected:
   xiiVariantArray                 m_Keys;
   xiiDynamicArray<xiiExposedBone> m_Bones;
   xiiDeque<ElementGizmo>          m_Gizmos;
-  xiiTransform                    m_RootTransform = xiiTransform::MakeIdentity();
 
-  xiiDynamicArray<xiiMat4> m_ParentTransforms;
+  xiiDynamicArray<xiiMat4>                            m_ParentTransforms;
+  xiiUuid                                             m_SkeletonAssetGuid;
+  bool                                                m_bSkeletonMetadataDirty = false;
+  xiiEvent<const xiiAssetCuratorEvent&>::Unsubscriber m_AssetEventsUnsubscriber;
 
   xiiResult RetrieveBones();
   void      ConfigureGizmos();
