@@ -1600,7 +1600,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         if (pPersistent == nullptr || (*pPersistent)->GetDescription().CalculateHash() != resourceEntry.m_TextureDescription.CalculateHash())
         {
           xiiSharedPtr<xiiGALTexture> pTexture = pDevice->CreateTexture(resourceEntry.m_TextureDescription);
-          XII_ASSERT_ALWAYS(pTexture != nullptr, "Failed to create persistent render graph texture '{}'.", resourceEntry.m_sName);
+          if (pTexture == nullptr)
+          {
+            if (out_pError != nullptr)
+              out_pError->SetFormat("Failed to allocate persistent texture '{}'.", resourceEntry.m_sName);
+            return XII_FAILURE;
+          }
           pTexture->SetDebugName(resourceEntry.m_sName);
           m_PersistentTextures.Insert(resourceEntry.m_sName, pTexture);
           pPersistent = m_PersistentTextures.GetValue(resourceEntry.m_sName);
@@ -1613,7 +1618,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         if (pPersistent == nullptr || (*pPersistent)->GetDescription().CalculateHash() != resourceEntry.m_BufferDescription.CalculateHash())
         {
           xiiSharedPtr<xiiGALBuffer> pBuffer = pDevice->CreateBuffer(resourceEntry.m_BufferDescription);
-          XII_ASSERT_ALWAYS(pBuffer != nullptr, "Failed to create persistent render graph buffer '{}'.", resourceEntry.m_sName);
+          if (pBuffer == nullptr)
+          {
+            if (out_pError != nullptr)
+              out_pError->SetFormat("Failed to allocate persistent buffer '{}'.", resourceEntry.m_sName);
+            return XII_FAILURE;
+          }
           pBuffer->SetDebugName(resourceEntry.m_sName);
           m_PersistentBuffers.Insert(resourceEntry.m_sName, pBuffer);
           pPersistent = m_PersistentBuffers.GetValue(resourceEntry.m_sName);
@@ -1668,7 +1678,14 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     xiiGALCommandListCreationDescription commandListDescription;
     commandListDescription.m_QueueFlags          = actualQueueFlags;
     xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
-    XII_ASSERT_ALWAYS(pCommandList != nullptr, "Failed to create command list.");
+    if (pCommandList == nullptr)
+    {
+      if (out_pError != nullptr)
+        *out_pError = "Failed to allocate render graph command list.";
+      if (bEnableGpuProfiling)
+        pProfiler->OnFrameAbort();
+      return XII_FAILURE;
+    }
 
     pCommandList->Begin();
 
@@ -1689,6 +1706,20 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     xiiUInt32 uiCurrentMergeGroup = xiiInvalidIndex;
     bool      bInsideRenderPass   = false;
+
+    // Recorded barriers update GAL's tracked states immediately. Submit the valid prefix on
+    // failure so those states still describe real GPU work, then stop before using a null resource.
+    auto abortSubmission = [&]() {
+      if (bInsideRenderPass)
+        pCommandList->EndRenderPass();
+      if (bEnableGpuProfiling)
+        pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
+      pCommandList->End();
+      pQueue->Submit(pCommandList);
+      if (bEnableGpuProfiling)
+        pProfiler->OnFrameAbort();
+      return XII_FAILURE;
+    };
 
     for (xiiUInt32 uiSortedIndex : submission.m_PassOrder)
     {
@@ -1711,6 +1742,13 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
             else
               pAliasTexture = pResourceCache->AcquireTexture(resourceEntry.m_TextureDescription);
           }
+          if (pAliasTexture == nullptr)
+          {
+            const auto& description = resourceEntry.m_TextureDescription;
+            if (out_pError != nullptr)
+              out_pError->SetFormat("Failed to allocate texture '{}' ({} x {}, {} slices, {} mips, {} samples, format {}).", resourceEntry.m_sName, description.m_Size.width, description.m_Size.height, description.m_uiArraySizeOrDepth, description.m_uiMipLevels, description.m_uiSampleCount, description.m_Format.GetValue());
+            return abortSubmission();
+          }
           resolvedTextures[uiResourceIndex] = pAliasTexture;
           if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
             m_ExportedTextures.Insert(resourceEntry.m_Id.m_uiValue, pAliasTexture);
@@ -1729,6 +1767,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
               pAliasBuffer = pDevice->CreateBuffer(resourceEntry.m_BufferDescription);
             else
               pAliasBuffer = pResourceCache->AcquireBuffer(resourceEntry.m_BufferDescription);
+          }
+          if (pAliasBuffer == nullptr)
+          {
+            if (out_pError != nullptr)
+              out_pError->SetFormat("Failed to allocate buffer '{}' ({} bytes).", resourceEntry.m_sName, resourceEntry.m_BufferDescription.m_uiSize);
+            return abortSubmission();
           }
           resolvedBuffers[uiResourceIndex] = pAliasBuffer;
           if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
@@ -1796,15 +1840,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
         if (MaterializeRenderPassGroup(compiledPass.m_uiMergeGroupIndex, pDevice, resolvedTextures, out_pError).Failed())
         {
-          if (bEnableGpuProfiling)
-            pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
-          pCommandList->End();
-          // Resource transitions already recorded above updated GAL's tracked state. Submit
-          // this valid prefix so imported resources cannot retain layouts that never executed.
-          pQueue->Submit(pCommandList);
-          if (bEnableGpuProfiling)
-            pProfiler->OnFrameAbort();
-          return XII_FAILURE;
+          return abortSubmission();
         }
 
         if (mergeGroup.m_pNativeRenderPass != nullptr && mergeGroup.m_pFramebuffer != nullptr)
