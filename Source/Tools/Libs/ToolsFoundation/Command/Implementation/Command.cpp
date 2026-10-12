@@ -131,6 +131,7 @@ xiiStatus xiiCommand::AddSubCommand(xiiCommand& command)
   if (ret.Failed())
   {
     m_ChildActions.PopBack();
+    pCommand->Cleanup(CommandState::WasUndone);
     pCommand->GetDynamicRTTI()->GetAllocator()->Deallocate(pCommand);
     return ret;
   }
