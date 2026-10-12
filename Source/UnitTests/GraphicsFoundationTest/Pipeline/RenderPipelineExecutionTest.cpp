@@ -212,7 +212,7 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
       commandList->Begin();
       xiiGALTextureReadback::ReadbackRequest request;
       request.m_pTexture = target.Borrow();
-      readback.Enqueue(commandList.Borrow(), request);
+      XII_TEST_RESULT(readback.Enqueue(commandList.Borrow(), request));
       commandList->End();
       auto* queue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
       queue->WaitForFenceValue(queue->Submit(commandList.Borrow()));

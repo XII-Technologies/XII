@@ -137,9 +137,11 @@ namespace
     auto commands            = device.CreateCommandList(description);
     commands->Begin();
     xiiGALTextureReadback::ReadbackRequest request;
-    request.m_pTexture = texture;
-    readback.Enqueue(commands.Borrow(), request);
+    request.m_pTexture  = texture;
+    const auto enqueued = readback.Enqueue(commands.Borrow(), request);
     commands->End();
+    if (!XII_TEST_RESULT(enqueued))
+      return false;
     auto* queue = device.GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
     queue->WaitForFenceValue(queue->Submit(commands.Borrow()));
     readback.WaitForNextCompleted();

@@ -20,22 +20,42 @@ xiiGALTextureReadback::xiiGALTextureReadback(xiiGALDevice* pDevice) :
   xiiGALFenceCreationDescription fenceDescription;
   fenceDescription.m_Type = xiiGALFenceType::CpuWaitOnly;
   m_pFence                = m_pDevice->CreateFence(fenceDescription);
-  m_pFence->SetDebugName("Texture Readback Fence");
+  if (m_pFence)
+    m_pFence->SetDebugName("Texture Readback Fence");
 }
 
 xiiGALTextureReadback::~xiiGALTextureReadback() = default;
 
-void xiiGALTextureReadback::Enqueue(xiiGALCommandList* pCommandList, const ReadbackRequest& request)
+xiiResult xiiGALTextureReadback::Enqueue(xiiGALCommandList* pCommandList, const ReadbackRequest& request)
 {
-  XII_ASSERT_DEV(pCommandList != nullptr, "Invalid command list.");
-  XII_ASSERT_DEV(request, "Invalid readback request.");
+  if (!pCommandList || !request || !m_pFence)
+    return XII_FAILURE;
+
+  if (pCommandList->GetDevice().Borrow() != m_pDevice || request.m_pTexture->GetDevice().Borrow() != m_pDevice)
+    return XII_FAILURE;
 
   const xiiGALTextureCreationDescription& sourceTextureDescription = request.m_pTexture->GetDescription();
+  const auto                              type                     = sourceTextureDescription.m_Type;
+  if (type != xiiGALResourceDimension::Texture2D && type != xiiGALResourceDimension::Texture2DArray &&
+      type != xiiGALResourceDimension::TextureCube && type != xiiGALResourceDimension::TextureCubeArray)
+    return XII_FAILURE;
+  const auto& format = xiiGALTextureUtilities::GetResourceFormatProperties(sourceTextureDescription.m_Format);
+  if (sourceTextureDescription.m_uiSampleCount != 1 || request.m_uiMipLevel >= sourceTextureDescription.m_uiMipLevels ||
+      request.m_uiArraySlice >= sourceTextureDescription.m_uiArraySizeOrDepth || format.IsCompressed() || format.GetElementSize() == 0)
+    return XII_FAILURE;
 
   // Resolve subresource dimensions.
   const xiiSizeU32 fullSize    = sourceTextureDescription.m_Size;
   xiiUInt32        uiMipWidth  = xiiMath::Max(1U, fullSize.width >> request.m_uiMipLevel);
   xiiUInt32        uiMipHeight = xiiMath::Max(1U, fullSize.height >> request.m_uiMipLevel);
+  if (request.m_uiRegionW == 0U || request.m_uiRegionH == 0U)
+  {
+    if (request.m_uiRegionX || request.m_uiRegionY || request.m_uiRegionW || request.m_uiRegionH)
+      return XII_FAILURE;
+  }
+  else if (request.m_uiRegionX >= uiMipWidth || request.m_uiRegionY >= uiMipHeight ||
+           request.m_uiRegionW > uiMipWidth - request.m_uiRegionX || request.m_uiRegionH > uiMipHeight - request.m_uiRegionY)
+    return XII_FAILURE;
 
   // Region box.
   xiiBoundingBoxU32 box;
@@ -61,6 +81,8 @@ void xiiGALTextureReadback::Enqueue(xiiGALCommandList* pCommandList, const Readb
   stagingDescription.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
 
   xiiGALTexture* pStagingTexture = AcquireStagingTexture(stagingDescription);
+  if (!pStagingTexture)
+    return XII_FAILURE;
 
   xiiGALTextureMipLevelData sourceMipLevelData;
   sourceMipLevelData.m_uiMipLevel   = request.m_uiMipLevel;
@@ -103,6 +125,7 @@ void xiiGALTextureReadback::Enqueue(xiiGALCommandList* pCommandList, const Readb
     XII_LOCK(m_PendingMutex);
     m_Pending.PushBack(std::move(pendingCapture));
   }
+  return XII_SUCCESS;
 }
 
 bool xiiGALTextureReadback::HasCompleted() const

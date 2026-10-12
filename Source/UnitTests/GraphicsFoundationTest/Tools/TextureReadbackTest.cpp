@@ -62,8 +62,23 @@ XII_CREATE_SIMPLE_TEST(Tools, TextureReadback)
     request.m_uiRegionH   = 3U;
 
     pCommandList->Begin();
+    XII_TEST_BOOL(readback.Enqueue(nullptr, request).Failed());
+    XII_TEST_BOOL(readback.Enqueue(pCommandList.Borrow(), {}).Failed());
+    auto invalid        = request;
+    invalid.m_uiRegionW = xiiMath::MaxValue<xiiUInt32>();
+    XII_TEST_BOOL(readback.Enqueue(pCommandList.Borrow(), invalid).Failed());
+    invalid             = request;
+    invalid.m_uiRegionH = 0;
+    XII_TEST_BOOL(readback.Enqueue(pCommandList.Borrow(), invalid).Failed());
+    invalid              = request;
+    invalid.m_uiMipLevel = 31;
+    XII_TEST_BOOL(readback.Enqueue(pCommandList.Borrow(), invalid).Failed());
+    invalid                = request;
+    invalid.m_uiArraySlice = 1;
+    XII_TEST_BOOL(readback.Enqueue(pCommandList.Borrow(), invalid).Failed());
+    XII_TEST_BOOL(!readback.HasCompleted());
     pCommandList->UpdateTexture(pTexture.Borrow(), mipLevel, fullBox, sourceData);
-    readback.Enqueue(pCommandList.Borrow(), request);
+    XII_TEST_RESULT(readback.Enqueue(pCommandList.Borrow(), request));
     pCommandList->End();
 
     xiiGALCommandQueue* pQueue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
@@ -107,7 +122,7 @@ XII_CREATE_SIMPLE_TEST(Tools, TextureReadback)
     readback.RecycleStagingTexture(capture.m_pStagingTexture);
 
     pCommandList->Begin();
-    readback.Enqueue(pCommandList.Borrow(), request);
+    XII_TEST_RESULT(readback.Enqueue(pCommandList.Borrow(), request));
     pCommandList->End();
     const xiiUInt64 uiSecondFenceValue = pQueue->Submit(pCommandList.Borrow());
     pQueue->WaitForFenceValue(uiSecondFenceValue);

@@ -30,8 +30,9 @@ xiiResult xiiCaptureThumbnail(xiiGALTexture* pTexture, xiiSizeU32 outputSize, xi
 
   xiiGALTextureReadback readback(pDevice);
   pCommandList->Begin();
-  readback.Enqueue(pCommandList, {.m_pTexture = pTexture});
+  const auto enqueued = readback.Enqueue(pCommandList, {.m_pTexture = pTexture});
   pCommandList->End();
+  XII_SUCCEED_OR_RETURN(enqueued);
   pQueue->WaitForFenceValue(pQueue->Submit(pCommandList));
   readback.WaitForNextCompleted();
   const auto capture = readback.GetCompleted();

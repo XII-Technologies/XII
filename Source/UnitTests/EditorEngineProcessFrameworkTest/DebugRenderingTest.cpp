@@ -188,7 +188,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     auto                  queue       = environment.GetDevice()->GetCommandQueue();
     xiiGALTextureReadback readback(environment.GetDevice());
     commandList->Begin();
-    readback.Enqueue(commandList, {.m_pTexture = depth});
+    XII_TEST_RESULT(readback.Enqueue(commandList, {.m_pTexture = depth}));
     commandList->End();
     queue->WaitForFenceValue(queue->Submit(commandList));
     readback.WaitForNextCompleted();

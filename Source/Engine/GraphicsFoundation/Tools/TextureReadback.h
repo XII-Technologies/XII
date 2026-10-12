@@ -59,7 +59,10 @@ public:
   /// Enqueue a readback from a texture into an internal staging texture.
   ///
   /// Records copy commands on the provided command list and signals an internal fence.
-  void Enqueue(xiiGALCommandList* pCommandList, const ReadbackRequest& request);
+  /// Failure rejects invalid subresources/regions or unavailable staging/fence resources without
+  /// recording a copy or adding a pending capture. Supports single-sample, uncompressed 2D textures,
+  /// 2D arrays and cube faces. The source and command list must belong to this helper's device.
+  xiiResult Enqueue(xiiGALCommandList* pCommandList, const ReadbackRequest& request);
 
   /// Returns true if the oldest pending readback has completed on the GPU.
   [[nodiscard]] bool HasCompleted() const;
