@@ -356,8 +356,10 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
   }
 
   m_pImpl->m_OverlappedEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
-  if (m_pImpl->m_OverlappedEvent == INVALID_HANDLE_VALUE)
+  if (m_pImpl->m_OverlappedEvent == nullptr)
   {
+    CloseHandle(m_pImpl->m_DirectoryHandle);
+    m_pImpl->m_FileSystemMirror.Clear();
     return XII_FAILURE;
   }
 
@@ -371,10 +373,15 @@ void xiiDirectoryWatcher::CloseDirectory()
 {
   if (!m_sDirectoryPath.IsEmpty())
   {
-    CancelIo(m_pImpl->m_DirectoryHandle);
+    // Reads can be issued by a worker thread. CancelIo only cancels reads from
+    // this thread, and cancellation itself does not wait for buffer writes to end.
+    CancelIoEx(m_pImpl->m_DirectoryHandle, &m_pImpl->m_Overlapped);
+    DWORD transferred = 0;
+    GetOverlappedResult(m_pImpl->m_DirectoryHandle, &m_pImpl->m_Overlapped, &transferred, TRUE);
     CloseHandle(m_pImpl->m_OverlappedEvent);
     CloseHandle(m_pImpl->m_DirectoryHandle);
     m_sDirectoryPath.Clear();
+    m_pImpl->m_FileSystemMirror.Clear();
   }
 }
 
