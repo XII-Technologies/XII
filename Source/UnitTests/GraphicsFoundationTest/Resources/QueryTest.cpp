@@ -225,4 +225,48 @@ XII_CREATE_SIMPLE_TEST(Resources, Query)
     query->Invalidate();
     pDevice->WaitIdle();
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Secondary query commands survive repeated submission and release before completion")
+  {
+    auto* pDevice = environment.GetDevice();
+    if (pDevice->GetFeatures().m_DurationQueries != xiiGALDeviceFeatureState::Enabled)
+      return;
+    auto*                          queue = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+    xiiGALQueryCreationDescription queryDescription;
+    queryDescription.m_Type                    = xiiGALQueryType::Duration;
+    auto                                 query = pDevice->CreateQuery(queryDescription);
+    xiiGALCommandListCreationDescription listDescription;
+    listDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+    listDescription.m_Flags      = xiiGALCommandListFlags::Secondary | xiiGALCommandListFlags::MultiSubmit;
+    auto secondary               = pDevice->CreateCommandList(listDescription);
+    if (!XII_TEST_BOOL(query != nullptr && secondary != nullptr))
+      return;
+    secondary->Begin();
+    secondary->BeginQuery(query);
+    secondary->EndQuery(query);
+    secondary->End();
+    listDescription.m_Flags = xiiGALCommandListFlags::MultiSubmit;
+    auto primary            = pDevice->CreateCommandList(listDescription);
+    if (!XII_TEST_BOOL(primary != nullptr))
+      return;
+    primary->Begin();
+    primary->Submit(secondary);
+    primary->End();
+    XII_TEST_BOOL(!query->GetData(nullptr, 0U, false));
+    for (xiiUInt32 submission = 0U; submission < 3U; ++submission)
+    {
+      queue->WaitForFenceValue(queue->Submit(primary));
+      xiiGALQueryDataDuration data;
+      XII_TEST_BOOL(query->GetData(&data, sizeof(data), false));
+      XII_TEST_BOOL(data.m_uiFrequency > 0U);
+    }
+    const auto fence = queue->Submit(primary);
+    // The submitted primary must retain the secondary list and its reset preamble until completion.
+    secondary = nullptr;
+    primary   = nullptr;
+    queue->WaitForFenceValue(fence);
+    xiiGALQueryDataDuration data;
+    XII_TEST_BOOL(query->GetData(&data, sizeof(data)));
+    XII_TEST_BOOL(data.m_uiFrequency > 0U);
+    pDevice->WaitIdle();
+  }
 }

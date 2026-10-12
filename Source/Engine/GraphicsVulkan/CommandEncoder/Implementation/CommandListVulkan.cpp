@@ -667,10 +667,9 @@ void xiiGALCommandListVulkan::BeginPlatform()
 
   if (m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
   {
-    vkCommandBufferBeginInfo.flags |= vk::CommandBufferUsageFlagBits::eRenderPassContinue;
-
     if (xiiGALRenderPassVulkan* pRenderPassVulkan = xiiDynamicCast<xiiGALRenderPassVulkan*>(m_Description.m_pRenderPass))
     {
+      vkCommandBufferBeginInfo.flags |= vk::CommandBufferUsageFlagBits::eRenderPassContinue;
       vkCommandBufferInheritanceInfo.renderPass = pRenderPassVulkan->GetVulkanRenderPass();
     }
     if (xiiGALFramebufferVulkan* pFramebufferVulkan = xiiDynamicCast<xiiGALFramebufferVulkan*>(m_Description.m_pFramebuffer))
@@ -703,7 +702,11 @@ xiiResult xiiGALCommandListVulkan::RecordQueryReset(xiiGALQueryPoolVulkan* pPool
     beginInfo.flags = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit) ? vk::CommandBufferUsageFlagBits::eSimultaneousUse : vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
     if (m_QueryResetAllocation.Get() == VK_NULL_HANDLE ||
         m_QueryResetAllocation.Get().begin(&beginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) != vk::Result::eSuccess)
+    {
+      // Do not retain an unbegun buffer: later queries may retry, and EndPlatform must skip it.
+      m_QueryResetAllocation = {};
       return XII_FAILURE;
+    }
     m_QueryResetCommandBuffers.PushBack(m_QueryResetAllocation.Get());
     // A reusable command list can execute again after a previous submission used these slots.
     m_QueryResetAllocation.Get().pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, 0U, nullptr, 0U, nullptr, 0U, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());

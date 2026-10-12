@@ -97,6 +97,8 @@ struct xiiGALQueryReferenceVulkan
 
   xiiGALQueryReferenceVulkan& operator=(xiiGALQueryReferenceVulkan&& other) noexcept
   {
+    if (this == &other)
+      return *this;
     if (m_pPool != nullptr)
       m_pPool->DiscardQuery(m_Type, m_uiIndex);
     m_pPool   = std::exchange(other.m_pPool, nullptr);
