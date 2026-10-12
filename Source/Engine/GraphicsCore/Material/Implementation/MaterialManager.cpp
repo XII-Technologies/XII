@@ -4,6 +4,7 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
@@ -24,6 +25,7 @@ namespace
 class xiiMaterialManagerState
 {
 public:
+  xiiMutex m_Mutex;
   struct ResourceMaterialEntry
   {
     xiiMaterialGpuHandle              m_hGpuMaterial;
@@ -170,6 +172,8 @@ xiiResult xiiMaterialManager::Configure(const xiiMaterialGpuStorageDescription& 
   if (s_pState == nullptr || description.m_uiMaxMaterials == 0U || description.m_uiMaxParameterBytes == 0U || description.m_uiFramesInFlight == 0U)
     return XII_FAILURE;
 
+  XII_LOCK(s_pState->m_Mutex);
+
   if (s_pState->m_bInitialized && s_pState->m_pSystem->GetGpuStorage().GetStatistics().m_uiActiveMaterials != 0U)
   {
     XII_ASSERT_DEV(false, "The material manager cannot be reconfigured while material slots are active.");
@@ -203,6 +207,8 @@ void xiiMaterialManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComplete
   if (!IsInitialized())
     return;
 
+  XII_LOCK(s_pState->m_Mutex);
+
   s_pState->m_uiFrameIndex = uiFrameIndex;
   s_pState->m_pSystem->BeginFrame(uiFrameIndex, uiCompletedFrame);
   PrepareGpuResources();
@@ -213,6 +219,8 @@ void xiiMaterialManager::PrepareGpuResources()
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before preparing GPU resources.");
   if (!IsInitialized())
     return;
+
+  XII_LOCK(s_pState->m_Mutex);
 
   // Resource reloads rebuild their immutable default instance. Preserve the stable GPU slot used
   // by scene records and replace only the instance behind it before gathering this frame's upload.
@@ -270,13 +278,18 @@ void xiiMaterialManager::PrepareGpuResources()
 xiiMaterialGpuHandle xiiMaterialManager::RegisterMaterial(xiiSharedPtr<xiiMaterialInstance> pInstance)
 {
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before registering materials.");
-  return IsInitialized() ? s_pState->m_pSystem->RegisterMaterial(std::move(pInstance)) : xiiMaterialGpuHandle{};
+  if (!IsInitialized())
+    return {};
+  XII_LOCK(s_pState->m_Mutex);
+  return s_pState->m_pSystem->RegisterMaterial(std::move(pInstance));
 }
 
 void xiiMaterialManager::UnregisterMaterial(xiiMaterialGpuHandle handle)
 {
-  if (IsInitialized())
-    s_pState->m_pSystem->UnregisterMaterial(handle);
+  if (!IsInitialized())
+    return;
+  XII_LOCK(s_pState->m_Mutex);
+  s_pState->m_pSystem->UnregisterMaterial(handle);
 }
 
 xiiMaterialGpuHandle xiiMaterialManager::AcquireMaterialResource(const xiiMaterialResourceHandle& hMaterial)
@@ -284,6 +297,8 @@ xiiMaterialGpuHandle xiiMaterialManager::AcquireMaterialResource(const xiiMateri
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before acquiring material resources.");
   if (!IsInitialized() || !hMaterial.IsValid())
     return {};
+
+  XII_LOCK(s_pState->m_Mutex);
 
   xiiMaterialManagerState::ResourceMaterialEntry* pEntry = nullptr;
   if (s_pState->m_ResourceMaterials.TryGetValue(hMaterial, pEntry))
@@ -316,6 +331,8 @@ void xiiMaterialManager::ReleaseMaterialResource(const xiiMaterialResourceHandle
   if (!IsInitialized() || !hMaterial.IsValid())
     return;
 
+  XII_LOCK(s_pState->m_Mutex);
+
   xiiMaterialManagerState::ResourceMaterialEntry* pEntry = nullptr;
   if (!s_pState->m_ResourceMaterials.TryGetValue(hMaterial, pEntry))
     return;
@@ -334,18 +351,27 @@ void xiiMaterialManager::ReleaseMaterialResource(const xiiMaterialResourceHandle
 xiiRenderGraphBufferHandle xiiMaterialManager::AddUploadPass(xiiRenderGraph& graph)
 {
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before adding upload passes.");
-  return IsInitialized() ? s_pState->m_pSystem->AddUploadPass(graph) : xiiRenderGraphBufferHandle{};
+  if (!IsInitialized())
+    return {};
+  XII_LOCK(s_pState->m_Mutex);
+  return s_pState->m_pSystem->AddUploadPass(graph);
 }
 
 xiiMaterialGpuStorage::UploadHandles xiiMaterialManager::AddUploadPasses(xiiRenderGraph& graph)
 {
   XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before adding upload passes.");
-  return IsInitialized() ? s_pState->m_pSystem->AddUploadPasses(graph) : xiiMaterialGpuStorage::UploadHandles{};
+  if (!IsInitialized())
+    return {};
+  XII_LOCK(s_pState->m_Mutex);
+  return s_pState->m_pSystem->AddUploadPasses(graph);
 }
 
 xiiResult xiiMaterialManager::ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData)
 {
-  return IsInitialized() ? s_pState->m_pSystem->ExtractRenderData(handle, out_renderData) : XII_FAILURE;
+  if (!IsInitialized())
+    return XII_FAILURE;
+  XII_LOCK(s_pState->m_Mutex);
+  return s_pState->m_pSystem->ExtractRenderData(handle, out_renderData);
 }
 
 xiiMaterialGpuStorage& xiiMaterialManager::GetGpuStorage()
