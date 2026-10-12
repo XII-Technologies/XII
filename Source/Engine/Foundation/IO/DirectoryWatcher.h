@@ -32,6 +32,10 @@ enum class xiiDirectoryWatcherType
 
 /// \brief
 ///   Watches file actions in a directory. Changes need to be polled.
+///
+/// Serialize access to each instance externally. Sequential calls may use different threads.
+/// Windows ReFS repairs delayed case changes and removals through bounded metadata checks
+/// while polling. Intermediate filesystem states can be coalesced.
 class XII_FOUNDATION_DLL xiiDirectoryWatcher
 {
 public:
