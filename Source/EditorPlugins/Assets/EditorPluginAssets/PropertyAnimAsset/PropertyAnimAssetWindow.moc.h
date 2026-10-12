@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include <EditorFramework/DocumentWindow/GameObjectDocumentWindow.moc.h>
-#include <EditorFramework/EditTools/EditTool.h>
 #include <Foundation/Basics.h>
+#include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
 #include <GuiFoundation/Widgets/CurveEditData.h>
 #include <QTreeView>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
@@ -19,7 +18,6 @@ struct xiiDocumentObjectStructureEvent;
 class xiiPropertyAnimAssetDocument;
 class xiiQtColorGradientEditorWidget;
 class xiiColorGradientAssetData;
-class xiiQtQuadViewWidget;
 class xiiQtTimeScrubberToolbar;
 struct xiiPropertyAnimAssetDocumentEvent;
 class QKeyEvent;
@@ -52,7 +50,7 @@ protected:
   QSet<QString> m_SelectedItems;
 };
 
-class xiiQtPropertyAnimAssetDocumentWindow : public xiiQtGameObjectDocumentWindow, public xiiGameObjectGizmoInterface
+class xiiQtPropertyAnimAssetDocumentWindow : public xiiQtDocumentWindow
 {
   Q_OBJECT
 
@@ -62,20 +60,8 @@ public:
 
   virtual xiiStringView GetWindowLayoutGroupName() const override { return "PropertyAnimAsset"; }
 
-public Q_SLOTS:
-  void ToggleViews(QWidget* pView);
-
-public:
-  /// \name xiiGameObjectGizmoInterface implementation
-  ///@{
-  virtual xiiObjectAccessorBase* GetObjectAccessor() override;
-  virtual bool                   CanDuplicateSelection() const override;
-  virtual void                   DuplicateSelection() override;
-  ///@}
-
 protected:
-  virtual void InternalRedraw() override;
-  void         PropertyAnimAssetEventHandler(const xiiPropertyAnimAssetDocumentEvent& e);
+  void PropertyAnimAssetEventHandler(const xiiPropertyAnimAssetDocumentEvent& e);
 
 private Q_SLOTS:
   void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
@@ -140,16 +126,13 @@ private Q_SLOTS:
 
 private:
   xiiPropertyAnimAssetDocument* GetPropertyAnimDocument();
-  // void PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e);
-  void StructureEventHandler(const xiiDocumentObjectStructureEvent& e);
-  void SelectionEventHandler(const xiiSelectionManagerEvent& e);
-  void CommandHistoryEventHandler(const xiiCommandHistoryEvent& e);
-  void UpdateCurveEditor();
-  void UpdateGradientEditor();
-  void UpdateEventTrackEditor();
-  void UpdateSelectionData();
+  void                          StructureEventHandler(const xiiDocumentObjectStructureEvent& e);
+  void                          CommandHistoryEventHandler(const xiiCommandHistoryEvent& e);
+  void                          UpdateCurveEditor();
+  void                          UpdateGradientEditor();
+  void                          UpdateEventTrackEditor();
+  void                          UpdateSelectionData();
 
-  xiiQtQuadViewWidget*            m_pQuadViewWidget;
   xiiCurveGroupData               m_CurvesToDisplay;
   xiiColorGradientAssetData*      m_pGradientToDisplay  = nullptr;
   xiiInt32                        m_iMapGradientToTrack = -1;

@@ -220,39 +220,10 @@ static void ConfigureCurve1DAsset()
 
 static void ConfigurePropertyAnimAsset()
 {
-  // Menu Bar
-  {
-    xiiActionMapManager::RegisterActionMap("PropertyAnimAssetMenuBar", "AssetMenuBar");
-    xiiStandardMenus::MapActions("PropertyAnimAssetMenuBar", xiiStandardMenuTypes::Scene | xiiStandardMenuTypes::View);
-    xiiDocumentActions::MapToolsActions("PropertyAnimAssetMenuBar");
-    xiiGameObjectSelectionActions::MapActions("PropertyAnimAssetMenuBar");
-    xiiGameObjectDocumentActions::MapMenuActions("PropertyAnimAssetMenuBar");
-    xiiGameObjectDocumentActions::MapMenuSimulationSpeed("PropertyAnimAssetMenuBar");
-    xiiTransformGizmoActions::MapMenuActions("PropertyAnimAssetMenuBar");
-    xiiTranslateGizmoAction::MapActions("PropertyAnimAssetMenuBar");
-  }
-
-  // Tool Bar
-  {
-    xiiActionMapManager::RegisterActionMap("PropertyAnimAssetToolBar", "AssetToolbar");
-    xiiGameObjectContextActions::MapToolbarActions("PropertyAnimAssetToolBar");
-    xiiGameObjectDocumentActions::MapToolbarActions("PropertyAnimAssetToolBar");
-    xiiTransformGizmoActions::MapToolbarActions("PropertyAnimAssetToolBar");
-  }
-
-  // View Tool Bar
-  {
-    xiiActionMapManager::RegisterActionMap("PropertyAnimAssetViewToolBar", "AssetViewToolbar");
-    xiiViewActions::MapToolbarActions("PropertyAnimAssetViewToolBar", xiiViewActions::PerspectiveMode | xiiViewActions::RenderMode | xiiViewActions::ActivateRemoteProcess);
-    xiiQuadViewActions::MapToolbarActions("PropertyAnimAssetViewToolBar");
-  }
-
-  // SceneGraph Context Menu
-  {
-    xiiActionMapManager::RegisterActionMap("PropertyAnimAsset_ScenegraphContextMenu");
-    xiiGameObjectSelectionActions::MapContextMenuActions("PropertyAnimAsset_ScenegraphContextMenu");
-    xiiGameObjectContextActions::MapContextMenuActions("PropertyAnimAsset_ScenegraphContextMenu");
-  }
+  xiiActionMapManager::RegisterActionMap("PropertyAnimAssetMenuBar", "AssetMenuBar");
+  xiiActionMapManager::GetActionMap("PropertyAnimAssetMenuBar")->HideAction(xiiAssetActions::s_hTransformAsset, "G.AssetDoc");
+  xiiActionMapManager::RegisterActionMap("PropertyAnimAssetToolBar", "AssetToolbar");
+  xiiActionMapManager::GetActionMap("PropertyAnimAssetToolBar")->HideAction(xiiAssetActions::s_hTransformAsset, "AssetCategory");
 }
 
 static void ConfigureDecalAsset()
