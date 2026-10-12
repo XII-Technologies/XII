@@ -7,6 +7,26 @@ does not satisfy it.
 
 ## Native GPU mesh identity for SceneView picking
 
+- Scene icon captures now use one internal `xiiScenePickingReadback` transport,
+  which also reads the native packed RGBA32UInt mesh query output. Native owner
+  validation remains with each consumer. Three slot tables pair images with their
+  original metadata; completed slot metadata is consumed before another capture
+  can reserve that slot. Same-frame reservations remain distinct. Reservations
+  from graphs that did not execute are released at the next frame boundary, using
+  the render graph's full 64-bit setup frame identity. Pending captures are drained
+  before resizing or changing formats; no GPU submission or wait occurs in the
+  transport. Overflow checks bound host pixel storage, and view/camera/target
+  snapshots continue to reject stale queries.
+- Windows Debug builds pass for EditorEngineProcessFrameworkTest,
+  EditorEngineProcess and GraphicsCoreTest. All 41 Vulkan engine-process tests and
+  all 18 GraphicsCore tests pass. The native mesh fixture fills all three capture
+  slots, verifies fourth-capture backpressure, and compares asynchronously
+  published packed pixels with GPU readback. Existing icon picking, marquee,
+  resizing, camera/target invalidation and per-view isolation coverage passes
+  through the consolidated transport. Evidence:
+  `Workspace/editor-native-picking-readback-build.log`,
+  `Workspace/editor-native-picking-readback-tests.log` and
+  `Workspace/editor-native-picking-readback-core-tests.log`.
 - Native `xiiView` projections now consistently use ZeroToOne reversed Z, matching
   depth prepasses, G-buffer rasterization and surface queries. Core cameras retain
   their conventional projection contract. Both eyes, including asymmetric stereo

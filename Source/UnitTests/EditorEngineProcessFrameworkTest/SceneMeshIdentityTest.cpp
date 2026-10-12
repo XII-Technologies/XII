@@ -28,6 +28,7 @@
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
 
 namespace
 {
@@ -178,6 +179,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
       XII_SCOPE_EXIT(worldRenderer->DestroyView(viewHandle));
       view->SetCamera(&camera);
       view->SetViewport({0, 0, 32, 32});
+      view->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
       const auto                      viewProjection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
       const auto                      frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
       const auto                      visibilityView = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetObjectCount());
@@ -229,6 +231,25 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
         builder.ExportTexture(outputs.m_hObjectId, xiiGALResourceStateFlags::ShaderResource);
         XII_IGNORE_UNUSED(builder.ReadTexture(query, xiiGALResourceStateFlags::ShaderResource));
         builder.ExportTexture(query, xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+      xiiScenePickingReadback asyncReadback;
+      xiiUInt32               completedSlot, reservedSlot;
+      XII_TEST_RESULT(asyncReadback.Poll(completedSlot));
+      XII_TEST_INT(completedSlot, xiiInvalidIndex);
+      xiiVariantDictionary         parameters;
+      xiiRenderPipelinePassContext captureContext{view, graph, graphContext.GetBlackboard(), parameters, {}, {}, "Mesh identity"};
+      if (!XII_TEST_RESULT(asyncReadback.AddCapture(captureContext, query, reservedSlot)))
+        return;
+      XII_TEST_BOOL(reservedSlot != xiiInvalidIndex);
+      for (xiiUInt32 i = 1; i < xiiScenePickingReadback::SlotCount; ++i)
+      {
+        XII_TEST_RESULT(asyncReadback.Poll(completedSlot));
+        XII_TEST_RESULT(asyncReadback.AddCapture(captureContext, query, reservedSlot));
+        XII_TEST_INT(reservedSlot, i);
+      }
+      xiiUInt32 backpressureSlot;
+      XII_TEST_RESULT(asyncReadback.Poll(completedSlot));
+      XII_TEST_RESULT(asyncReadback.AddCapture(captureContext, query, backpressureSlot));
+      XII_TEST_INT(backpressureSlot, xiiInvalidIndex);
       graph.EndSetup();
       if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphContext.GetBlackboard(), &cache)))
         return;
@@ -253,6 +274,23 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshIdentity)
         XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 2]), 0.0f, 0.0001f);
         XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 3]), 0.5f, 0.0001f);
       }
+      // ReadIds waited for a subsequent graphics submission; the capture transport itself never waits.
+      XII_TEST_RESULT(asyncReadback.Poll(completedSlot));
+      XII_TEST_INT(completedSlot, reservedSlot);
+      XII_TEST_BOOL(asyncReadback.Matches(*view));
+      XII_TEST_INT(asyncReadback.GetWordsPerPixel(), 4);
+      XII_TEST_INT(asyncReadback.GetPixels().GetCount(), 32 * 32 * 4);
+      if (asyncReadback.GetPixels().GetCount() == pixels.GetCount())
+        XII_TEST_BOOL(asyncReadback.GetPixels() == pixels.GetArrayPtr());
+      XII_TEST_RESULT(asyncReadback.Poll(completedSlot));
+      XII_TEST_INT(completedSlot, xiiInvalidIndex);
+      view->SetViewport({1, 0, 32, 32});
+      XII_TEST_BOOL(!asyncReadback.Matches(*view));
+      view->SetViewport({0, 0, 32, 32});
+      XII_TEST_BOOL(asyncReadback.Matches(*view));
+      asyncReadback.Invalidate();
+      XII_TEST_BOOL(!asyncReadback.Matches(*view));
+      XII_TEST_BOOL(asyncReadback.GetPixels().IsEmpty());
       cache.EndFrame();
     }
     else

@@ -488,6 +488,10 @@ public:
   ///        Clears all pass registrations and resource declarations from the previous frame.
   void BeginSetup(xiiUInt64 uiFrameIndex);
 
+  /// Full frame identity supplied to BeginSetup, available during pass construction as well as
+  /// execution. Use this for frame-scoped subsystem state instead of truncated blackboard values.
+  [[nodiscard]] xiiUInt64 GetFrameIndex() const { return m_uiFrameIndex; }
+
   /// Registers a typed pass and immediately invokes its setup callback.
   ///
   /// \tparam TPassData - Plain data struct holding per-frame data and resource handles. Must be default-constructible. Lifetime is managed by the graph.
