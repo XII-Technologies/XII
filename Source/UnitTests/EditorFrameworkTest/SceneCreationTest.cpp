@@ -8,6 +8,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/BinarySerializer.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
@@ -80,6 +81,19 @@ namespace
     }
   };
 
+  class RejectBoxMeshAccessor : public xiiObjectCommandAccessor
+  {
+  public:
+    using xiiObjectCommandAccessor::xiiObjectCommandAccessor;
+
+    xiiStatus SetValue(const xiiDocumentObject* object, const xiiAbstractProperty* property, const xiiVariant& value, xiiVariant index = {}) override
+    {
+      if (property->GetPropertyName() == "Mesh")
+        return xiiStatus("Injected box mesh assignment failure.");
+      return xiiObjectCommandAccessor::SetValue(object, property, value, index);
+    }
+  };
+
   const xiiDocumentObject* FindComponent(const xiiDocumentObject* object, const xiiRTTI* type)
   {
     if (object->GetType() == type)
@@ -113,6 +127,76 @@ namespace
     XII_TEST_FLOAT(accessor->GetByName<float>(light, "Intensity"), 10.0f, 0.0f);
   }
 } // namespace
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, SceneBoxCreation)
+{
+  const auto            bounds   = xiiBoundingBox::MakeFromMinMax(xiiVec3(-2, -1, 3), xiiVec3(4, 5, 7));
+  const auto            material = xiiConversionUtils::ConvertStringToUuid("{ 1c47ee4c-0379-4280-85f5-b8cda61941d2 }");
+  SceneCreationDocument document;
+  xiiUuid               object;
+  XII_TEST_STATUS(xiiCreateSceneBox(*document.GetObjectAccessor(), bounds, material, object));
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native box dimensions, material and stable undo identity")
+  {
+    auto*       accessor = document.GetObjectAccessor();
+    const auto* authored = accessor->GetObject(object);
+    if (!XII_TEST_BOOL(authored != nullptr))
+      return;
+    const auto* mesh = FindComponent(authored, xiiGetStaticRTTI<xiiMeshComponent>());
+    if (!XII_TEST_BOOL(mesh != nullptr))
+      return;
+    XII_TEST_VEC3(accessor->GetByName<xiiVec3>(authored, "LocalPosition"), xiiVec3(1, 2, 5), 0);
+    XII_TEST_VEC3(accessor->GetByName<xiiVec3>(authored, "LocalScaling"), xiiVec3(6, 6, 4), 0);
+    XII_TEST_INT(accessor->GetByName<xiiUInt32>(mesh, "SectionIndex"), 0);
+    XII_TEST_INT(accessor->GetCountByName(mesh, "MaterialOverrides"), 1);
+    XII_TEST_STRING(accessor->GetByName<xiiString>(mesh, "MaterialOverrides", 0), "{ 1c47ee4c-0379-4280-85f5-b8cda61941d2 }");
+    XII_TEST_INT(document.GetCommandHistory()->GetUndoStackSize(), 1);
+    XII_TEST_STATUS(document.GetCommandHistory()->Undo());
+    XII_TEST_BOOL(accessor->GetObject(object) == nullptr);
+    XII_TEST_STATUS(document.GetCommandHistory()->Redo());
+    XII_TEST_BOOL(accessor->GetObject(object) != nullptr);
+
+    XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "SceneBoxCreation", "SceneBoxBase", xiiDataDirUsage::ReadOnly));
+    XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("SceneBoxCreation"));
+    xiiUniquePtr<xiiAbstractObjectGraph> header, objects, types;
+    XII_TEST_STATUS(xiiDocument::ReadDocument(":SceneBoxBase/Meshes/Box.xiiMeshAsset", header, objects, types));
+    if (!XII_TEST_BOOL(header && objects))
+      return;
+    const auto* info = header->GetNodeByName("Header");
+    if (!XII_TEST_BOOL(info != nullptr && info->FindProperty("DocumentID") != nullptr))
+      return;
+    const auto asset = xiiConversionUtils::ConvertStringToUuid(accessor->GetByName<xiiString>(mesh, "Mesh"));
+    XII_TEST_BOOL(info->FindProperty("DocumentID")->m_Value.Get<xiiUuid>() == asset);
+    bool found = false;
+    for (auto it = objects->GetAllNodes().GetIterator(); it.IsValid(); ++it)
+    {
+      const auto* node = it.Value();
+      if (node->GetType() != "xiiMeshAssetProperties")
+        continue;
+      found                 = true;
+      const auto* primitive = node->FindProperty("PrimitiveType");
+      const auto* scale     = node->FindProperty("UniformScaling");
+      if (XII_TEST_BOOL(primitive && scale))
+      {
+        XII_TEST_STRING(primitive->m_Value.Get<xiiString>(), "xiiMeshPrimitive::Box");
+        XII_TEST_FLOAT(scale->m_Value.Get<float>(), 1.0f, 0);
+      }
+    }
+    XII_TEST_BOOL(found);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid dimensions and partial command failures preserve existing content")
+  {
+    xiiUuid failedObject = object;
+    XII_TEST_BOOL(xiiCreateSceneBox(*document.GetObjectAccessor(), xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3::MakeZero(), xiiVec3::MakeZero()), {}, failedObject).Failed());
+    XII_TEST_BOOL(!failedObject.IsValid());
+    XII_TEST_INT(document.GetCommandHistory()->GetUndoStackSize(), 1);
+    RejectBoxMeshAccessor rejected(document.GetCommandHistory());
+    XII_TEST_BOOL(xiiCreateSceneBox(rejected, bounds, {}, failedObject).Failed());
+    XII_TEST_BOOL(!failedObject.IsValid());
+    XII_TEST_INT(document.GetObjectManager()->GetRootObject()->GetChildren().GetCount(), 1);
+    XII_TEST_BOOL(document.GetObjectAccessor()->GetObject(object) != nullptr);
+    XII_TEST_INT(document.GetCommandHistory()->GetUndoStackSize(), 1);
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(EditorDocuments, SceneCreation)
 {

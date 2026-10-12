@@ -5,7 +5,6 @@
 #include <EditorFramework/DragDrop/DragDropInfo.h>
 #include <EditorPluginScene/DragDropHandlers/MaterialDragDropHandler.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
-#include <GameEngine/Gameplay/GreyBoxComponent.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 
@@ -25,7 +24,7 @@ float xiiMaterialDragDropHandler::CanHandle(const xiiDragDropInfo* pInfo) const
 
   const xiiDocument* pDocument = xiiDocumentManager::GetDocumentByGuid(pInfo->m_TargetDocument);
 
-  if (!pDocument->GetDynamicRTTI()->IsDerivedFrom<xiiSceneDocument>())
+  if (!pDocument || !pDocument->GetDynamicRTTI()->IsDerivedFrom<xiiSceneDocument>())
     return 0.0f;
 
   return IsSpecificAssetType(pInfo, "Material") ? 1.0f : 0.0f;
@@ -33,15 +32,18 @@ float xiiMaterialDragDropHandler::CanHandle(const xiiDragDropInfo* pInfo) const
 
 void xiiMaterialDragDropHandler::OnDragBegin(const xiiDragDropInfo* pInfo)
 {
-  m_pDocument = xiiDocumentManager::GetDocumentByGuid(pInfo->m_TargetDocument);
-  XII_ASSERT_DEV(m_pDocument != nullptr, "Invalid document GUID in drag & drop operation");
+  m_pDocument          = xiiDocumentManager::GetDocumentByGuid(pInfo->m_TargetDocument);
+  m_AppliedToComponent = xiiUuid::MakeInvalid();
+  m_iAppliedToSlot     = -1;
+  if (!m_pDocument)
+    return;
 
   m_pDocument->GetCommandHistory()->BeginTemporaryCommands("Drag Material", true);
 }
 
 void xiiMaterialDragDropHandler::OnDragUpdate(const xiiDragDropInfo* pInfo)
 {
-  if (!pInfo->m_TargetComponent.IsValid())
+  if (!m_pDocument || !pInfo->m_TargetComponent.IsValid() || pInfo->m_iTargetObjectSubID < 0)
     return;
 
   const xiiDocumentObject* pComponent = m_pDocument->GetObjectManager()->GetObject(pInfo->m_TargetComponent);
@@ -52,47 +54,46 @@ void xiiMaterialDragDropHandler::OnDragUpdate(const xiiDragDropInfo* pInfo)
   if (m_AppliedToComponent == pInfo->m_TargetComponent && m_iAppliedToSlot == pInfo->m_iTargetObjectSubID)
     return;
 
-  m_AppliedToComponent = pInfo->m_TargetComponent;
-  m_iAppliedToSlot     = pInfo->m_iTargetObjectSubID;
-
-  if (pComponent->GetTypeAccessor().GetType()->IsDerivedFrom<xiiMeshComponent>())
+  if (pComponent->GetTypeAccessor().GetType()->IsDerivedFrom<xiiMeshComponentBase>())
   {
+    const auto material = GetAssetGuidString(pInfo);
+    if (material.IsEmpty())
+      return;
     xiiResizeAndSetObjectPropertyCommand cmd;
     cmd.m_Object    = pInfo->m_TargetComponent;
     cmd.m_Index     = pInfo->m_iTargetObjectSubID;
-    cmd.m_sProperty = "Materials";
-    cmd.m_NewValue  = GetAssetGuidString(pInfo);
+    cmd.m_sProperty = "MaterialOverrides";
+    cmd.m_NewValue  = material;
 
     m_pDocument->GetCommandHistory()->StartTransaction("Assign Material");
-    m_pDocument->GetCommandHistory()->AddCommand(cmd).AssertSuccess();
+    const auto status = m_pDocument->GetCommandHistory()->AddCommand(cmd);
+    if (status.Failed())
+    {
+      m_pDocument->GetCommandHistory()->CancelTransaction();
+      m_pDocument->ShowDocumentStatus(xiiFmt("Could not assign material: {}", status.GetMessageString()));
+      return;
+    }
     m_pDocument->GetCommandHistory()->FinishTransaction();
-  }
-
-  if (pComponent->GetTypeAccessor().GetType()->IsDerivedFrom<xiiGreyBoxComponent>())
-  {
-    xiiSetObjectPropertyCommand cmd;
-    cmd.m_Object    = pInfo->m_TargetComponent;
-    cmd.m_sProperty = "Material";
-    cmd.m_NewValue  = GetAssetGuidString(pInfo);
-
-    m_pDocument->GetCommandHistory()->StartTransaction("Assign Material");
-    m_pDocument->GetCommandHistory()->AddCommand(cmd).AssertSuccess();
-    m_pDocument->GetCommandHistory()->FinishTransaction();
+    m_AppliedToComponent = pInfo->m_TargetComponent;
+    m_iAppliedToSlot     = pInfo->m_iTargetObjectSubID;
   }
 }
 
 void xiiMaterialDragDropHandler::OnDragCancel()
 {
-  m_pDocument->GetCommandHistory()->CancelTemporaryCommands();
+  if (m_pDocument)
+    m_pDocument->GetCommandHistory()->CancelTemporaryCommands();
 }
 
 void xiiMaterialDragDropHandler::OnDrop(const xiiDragDropInfo* pInfo)
 {
-  if (pInfo->m_TargetComponent.IsValid())
+  if (!m_pDocument)
+    return;
+  if (pInfo->m_TargetComponent.IsValid() && m_AppliedToComponent == pInfo->m_TargetComponent && m_iAppliedToSlot == pInfo->m_iTargetObjectSubID)
   {
     const xiiDocumentObject* pComponent = m_pDocument->GetObjectManager()->GetObject(pInfo->m_TargetComponent);
 
-    if (pComponent && (pComponent->GetTypeAccessor().GetType()->IsDerivedFrom<xiiMeshComponent>() || pComponent->GetTypeAccessor().GetType()->IsDerivedFrom<xiiGreyBoxComponent>()))
+    if (pComponent && pComponent->GetTypeAccessor().GetType()->IsDerivedFrom<xiiMeshComponentBase>())
     {
       m_pDocument->GetCommandHistory()->FinishTemporaryCommands();
       return;

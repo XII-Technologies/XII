@@ -11,28 +11,39 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 bool xiiAssetDragDropHandler::IsAssetType(const xiiDragDropInfo* pInfo) const
 {
-  return pInfo->m_pMimeData->hasFormat("application/xiiEditor.AssetGuid");
+  return pInfo && pInfo->m_pMimeData && pInfo->m_pMimeData->hasFormat("application/xiiEditor.AssetGuid");
 }
 
 xiiString xiiAssetDragDropHandler::GetAssetGuidString(const xiiDragDropInfo* pInfo) const
 {
+  if (!IsAssetType(pInfo))
+    return {};
   QByteArray  ba = pInfo->m_pMimeData->data("application/xiiEditor.AssetGuid");
   QDataStream stream(&ba, QIODevice::ReadOnly);
 
-  xiiHybridArray<QString, 1> guids;
-  stream >> guids;
-
-  if (guids.GetCount() > 1)
+  xiiUInt32 count = 0;
+  stream >> count;
+  if (stream.status() != QDataStream::Ok || count == 0)
+    return {};
+  if (count > 1)
   {
     xiiLog::Warning("Dragging more than one asset type is currently not supported");
   }
 
-  return guids[0].toUtf8().data();
+  // Only the first asset is supported. Reading it directly also avoids reserving an
+  // array using an unchecked count from a malformed or external drag payload.
+  QString first;
+  stream >> first;
+  const xiiString guid = first.toUtf8().data();
+  return stream.status() == QDataStream::Ok && xiiConversionUtils::IsStringUuid(guid) ? guid : xiiString();
 }
 
 xiiString xiiAssetDragDropHandler::GetAssetsDocumentTypeName(const xiiUuid& assetTypeGuid) const
 {
-  return xiiAssetCurator::GetSingleton()->GetSubAsset(assetTypeGuid)->m_Data.m_sSubAssetsDocumentTypeName.GetData();
+  if (!assetTypeGuid.IsValid())
+    return {};
+  const auto asset = xiiAssetCurator::GetSingleton()->GetSubAsset(assetTypeGuid);
+  return asset ? asset->m_Data.m_sSubAssetsDocumentTypeName.GetString() : xiiString();
 }
 
 bool xiiAssetDragDropHandler::IsSpecificAssetType(const xiiDragDropInfo* pInfo, const char* szType) const

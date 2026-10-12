@@ -4,9 +4,10 @@
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Visualizers/VisualizerAdapter.h>
+#include <EditorPluginScene/EditorPluginSceneDLL.h>
 
 /// Native reflection influence volume and inner full-weight boundary, in the probe's local space.
-class xiiReflectionCaptureVisualizerAdapter : public xiiVisualizerAdapter
+class XII_EDITORPLUGINSCENE_DLL xiiReflectionCaptureVisualizerAdapter : public xiiVisualizerAdapter
 {
 protected:
   void Finalize() override;
