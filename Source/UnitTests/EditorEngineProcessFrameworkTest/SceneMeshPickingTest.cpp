@@ -7,6 +7,7 @@
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Material/MaterialAssetFile.h>
@@ -16,6 +17,7 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
+#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -167,6 +169,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  XII_SCOPE_EXIT(xiiFrameAllocator::Reset()); // Destroy extracted packets before resource-manager shutdown.
   if (!xiiGpuSceneRasterManager::IsSupported())
   {
     xiiTestFramework::Output(xiiTestOutput::Message, "Native mesh query pass requires mesh shaders; GPU queries were not exercised on this device.");
@@ -571,6 +574,97 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     parameters.Insert("Editor.SelectionOverlay", true);
     parameters.Insert("Test.SceneDepth", 0.0f);
     if (!render())
+      return;
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Whole-mesh extraction preserves section identity and distinct material slots through GPU queries")
+  {
+    xiiGeometry             sectionGeometry;
+    xiiGeometry::GeoOptions options;
+    options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0, -0.65f, 0));
+    sectionGeometry.AddBox(xiiVec3(0.8f), true, options);
+    options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0, 0.65f, 0));
+    sectionGeometry.AddBox(xiiVec3(0.8f), true, options);
+    xiiMeshResourceDescriptor sections;
+    sections.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(sectionGeometry, xiiGALPrimitiveTopology::TriangleList);
+    sections.AddSubMesh(12, 0, 5);
+    sections.AddSubMesh(12, 12, 2);
+    sections.SetMaterial(5, "");
+    sections.SetMaterial(2, "NativeQueryReloadMaterial");
+    sections.ComputeBounds();
+    const auto sectionMesh = xiiResourceManager::CreateResource<xiiMeshResource>("NativeQuerySectionMesh", std::move(sections));
+    XII_TEST_BOOL(world.TryGetComponent(frontComponent, component));
+    component->SetMesh(sectionMesh);
+    component->SetSectionIndex(xiiInvalidIndex);
+    xiiExtractedRenderData  sectionPackets;
+    xiiMsgExtractRenderData message;
+    message.m_pView                = view;
+    message.m_pExtractedRenderData = &sectionPackets;
+    XII_TEST_BOOL(component->SendMessage(message));
+    sectionPackets.SortAndBatches();
+    if (!XII_TEST_INT(sectionPackets.GetAllRenderData().GetCount(), 2))
+      return;
+    view->GetExtractedRenderData()->Clear();
+    extracted.Clear();
+    for (auto* packet : sectionPackets.GetAllRenderData())
+    {
+      const auto* section = xiiDynamicCast<const xiiMeshRenderData*>(packet);
+      if (!XII_TEST_BOOL(section && section->m_uiSectionIndex < 2))
+        return;
+      XII_TEST_INT(section->m_uiFirstPrimitive, section->m_uiSectionIndex * 12);
+      XII_TEST_INT(section->m_uiPrimitiveCount, 12);
+      XII_TEST_INT(section->m_uiMeshletCount, 1);
+      XII_TEST_BOOL(section->m_hOwnerObject == frontOwner);
+      view->GetExtractedRenderData()->AddRenderData(packet);
+      extracted.AddRenderData(packet);
+    }
+    view->GetExtractedRenderData()->SortAndBatches();
+    extracted.SortAndBatches();
+    parameters.Insert("Editor.PickSelected", true);
+    parameters.Insert("Editor.SelectedObjects", xiiVariantArray{});
+    if (!render() || !render())
+      return;
+    bool seen[2] = {};
+    for (xiiUInt32 x = 8; x < 40; ++x)
+    {
+      if (!XII_TEST_RESULT(pass->Pick(*view, x, 28, hit)))
+        return;
+      if (hit.m_Source.m_hOwnerObject.IsInvalidated())
+        continue;
+      const xiiUInt32 section = hit.m_vWorldPosition.y < 0 ? 0 : 1;
+      XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
+      XII_TEST_INT(hit.m_Source.m_uiSectionIndex, section);
+      XII_TEST_INT(hit.m_Source.m_uiMaterialIndex, section == 0 ? 5 : 2);
+      seen[section] = true;
+    }
+    XII_TEST_BOOL(seen[0] && seen[1]);
+    component->SetSectionIndex(1);
+    sectionPackets.Clear();
+    XII_TEST_BOOL(component->SendMessage(message));
+    sectionPackets.SortAndBatches();
+    XII_TEST_INT(sectionPackets.GetAllRenderData().GetCount(), 1);
+    if (sectionPackets.GetAllRenderData().GetCount() == 1)
+      XII_TEST_INT(static_cast<xiiMeshRenderData*>(sectionPackets.GetAllRenderData()[0])->m_uiFirstPrimitive, 12);
+    component->SetSectionIndex(99);
+    sectionPackets.Clear();
+    XII_TEST_BOOL(component->SendMessage(message));
+    sectionPackets.SortAndBatches();
+    XII_TEST_BOOL(sectionPackets.GetAllRenderData().IsEmpty());
+    component->SetMesh(mesh);
+    component->SetSectionIndex(xiiInvalidIndex);
+    view->GetExtractedRenderData()->Clear();
+    extracted.Clear();
+    for (auto* packet : {&front, &back})
+    {
+      view->GetExtractedRenderData()->AddRenderData(packet);
+      extracted.AddRenderData(packet);
+    }
+    view->GetExtractedRenderData()->SortAndBatches();
+    extracted.SortAndBatches();
+    parameters.Insert("Editor.PickSelected", false);
+    xiiVariantArray selected;
+    selected.PushBack(static_cast<xiiUInt64>(frontOwner.GetInternalID().m_Data));
+    parameters.Insert("Editor.SelectedObjects", selected);
+    if (!render() || !render())
       return;
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Camera, viewport, live transform, deletion and explicit history invalidation")

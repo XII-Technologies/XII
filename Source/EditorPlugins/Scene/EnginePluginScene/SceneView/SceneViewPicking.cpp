@@ -104,7 +104,7 @@ void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)
   if (meshAvailable && !meshHit.m_Source.m_hOwnerObject.IsInvalidated() &&
       ResolveGuids(*m_pSceneContext, meshHit.m_Source.m_hOwnerObject, meshHit.m_Source.m_hOwnerComponent, result))
   {
-    result.m_uiPartIndex              = meshHit.m_Source.m_uiSectionIndex;
+    result.m_uiPartIndex              = meshHit.m_Source.m_uiMaterialIndex;
     result.m_vPickedPosition          = meshHit.m_vWorldPosition;
     result.m_vPickedNormal            = meshHit.m_vWorldNormal;
     result.m_vPickingRayStartPosition = meshHit.m_vRayStart;

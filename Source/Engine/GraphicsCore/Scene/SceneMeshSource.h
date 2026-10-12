@@ -13,6 +13,7 @@ struct XII_GRAPHICSCORE_DLL xiiSceneMeshSource
   xiiSceneObjectHandle m_hSceneObject;
   xiiGameObjectHandle  m_hOwnerObject;
   xiiComponentHandle   m_hOwnerComponent;
-  xiiUInt32            m_uiSectionIndex = xiiInvalidIndex;
-  xiiUInt32            m_uiRenderDataId = 0U;
+  xiiUInt32            m_uiSectionIndex  = xiiInvalidIndex;
+  xiiUInt32            m_uiMaterialIndex = 0U; ///< Mesh material slot, which can differ from the section index.
+  xiiUInt32            m_uiRenderDataId  = 0U;
 };

@@ -107,24 +107,22 @@ namespace
     return flags;
   }
 
-  xiiMaterialResourceHandle SelectMaterial(const xiiMeshRenderData& renderData)
+  xiiMaterialResourceHandle SelectMaterial(const xiiMeshRenderData& renderData, xiiUInt32& out_uiMaterialIndex)
   {
-    if (renderData.m_hMaterials.IsEmpty())
-      return {};
-
-    xiiUInt32 uiMaterialIndex = 0U;
+    out_uiMaterialIndex = 0U;
     if (renderData.m_uiSectionIndex != xiiInvalidIndex && renderData.m_hMesh.IsValid())
     {
       xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
-      if (mesh.GetAcquireResult() == xiiResourceAcquireResult::Final)
+      if (mesh->GetLoadingState() == xiiResourceState::Loaded)
       {
-        const xiiArrayPtr<const xiiMeshSection> sections = mesh->GetSections();
+        const auto                              lods     = mesh->GetLODs();
+        const xiiArrayPtr<const xiiMeshSection> sections = lods.IsEmpty() ? mesh->GetSections() : lods[xiiMath::Min(renderData.m_uiLODIndex, lods.GetCount() - 1)].m_Sections;
         if (renderData.m_uiSectionIndex < sections.GetCount())
-          uiMaterialIndex = sections[renderData.m_uiSectionIndex].m_uiMaterialIndex;
+          out_uiMaterialIndex = sections[renderData.m_uiSectionIndex].m_uiMaterialIndex;
       }
     }
 
-    return uiMaterialIndex < renderData.m_hMaterials.GetCount() ? renderData.m_hMaterials[uiMaterialIndex] : xiiMaterialResourceHandle{};
+    return out_uiMaterialIndex < renderData.m_hMaterials.GetCount() ? renderData.m_hMaterials[out_uiMaterialIndex] : xiiMaterialResourceHandle{};
   }
 } // namespace
 
@@ -218,7 +216,8 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     if (!renderData.m_hMesh.IsValid())
       continue;
 
-    const xiiMaterialResourceHandle             hMaterial = SelectMaterial(renderData);
+    xiiUInt32                                   materialIndex = 0;
+    const xiiMaterialResourceHandle             hMaterial     = SelectMaterial(renderData, materialIndex);
     const xiiSceneDatabaseManagerState::MeshKey key{renderData.m_hOwnerObject, renderData.m_hOwnerComponent, renderData.m_uiUniqueID, renderData.m_uiSectionIndex};
 
     xiiSceneDatabaseManagerState::ExtractedMeshEntry* pEntry = nullptr;
@@ -274,6 +273,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       source.m_hOwnerObject    = key.m_hObject;
       source.m_hOwnerComponent = key.m_hComponent;
       source.m_uiSectionIndex  = key.m_uiSectionIndex;
+      source.m_uiMaterialIndex = materialIndex;
       source.m_uiRenderDataId  = key.m_uiRenderDataId;
       pSlot->m_MeshSources.Insert(entry.m_hSceneObject.GetInternalID().m_Data + 1U, source);
     }
@@ -310,6 +310,8 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     if (pEntry == nullptr)
       continue;
 
+    auto& source                = pSlot->m_MeshSources[pEntry->m_hSceneObject.GetInternalID().m_Data + 1U];
+    source.m_uiMaterialIndex    = materialIndex;
     pEntry->m_uiSynchronization = synchronization;
     scene.SetLocalTransform(pEntry->m_hSceneObject, renderData.m_GlobalTransform.GetAsMat4());
     scene.SetFlags(pEntry->m_hSceneObject, GetSceneFlags(renderData, hMaterial));

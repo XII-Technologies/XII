@@ -332,7 +332,29 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_m
   if (pRenderData->m_uiInstanceCount == 0U)
     return;
 
-  ref_msg.AddRenderData(pRenderData, GetRenderDataCaching());
+  const auto                              lods     = pMesh->GetLODs();
+  const xiiArrayPtr<const xiiMeshSection> sections = lods.IsEmpty() ? pMesh->GetSections() : lods[ClampLODIndex(*pMesh.GetPointer(), pRenderData->m_uiLODIndex)].m_Sections;
+  if (m_uiSectionIndex != xiiInvalidIndex || sections.IsEmpty())
+  {
+    if (sections.IsEmpty() || m_uiSectionIndex < sections.GetCount())
+      ref_msg.AddRenderData(pRenderData, GetRenderDataCaching());
+    return;
+  }
+
+  // A section owns a primitive range and material slot. Keep those boundaries in
+  // ordinary extraction so native scene consumers never shade the entire mesh
+  // with slot zero or lose the section identity needed by editor queries.
+  for (xiiUInt32 section = 0; section < sections.GetCount(); ++section)
+  {
+    if (sections[section].m_uiPrimitiveCount == 0)
+      continue;
+    auto* packet = section == 0 ? pRenderData : pWorldModule->CreateRenderDataForThisFrame<xiiMeshRenderData>(this);
+    if (packet != pRenderData)
+      *packet = *pRenderData;
+    packet->m_uiSectionIndex = section;
+    FillRangeFromSection(*packet, sections[section]);
+    ref_msg.AddRenderData(packet, GetRenderDataCaching());
+  }
 }
 
 void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const
@@ -358,7 +380,7 @@ void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, con
     FillRangeFromLOD(ref_renderData, pLODs[ClampLODIndex(mesh, ref_renderData.m_uiLODIndex)]);
   }
 
-  const xiiArrayPtr<const xiiMeshSection> pSections = mesh.GetSections();
+  const xiiArrayPtr<const xiiMeshSection> pSections = pLODs.IsEmpty() ? mesh.GetSections() : pLODs[ClampLODIndex(mesh, ref_renderData.m_uiLODIndex)].m_Sections;
   if (m_uiSectionIndex < pSections.GetCount())
   {
     FillRangeFromSection(ref_renderData, pSections[m_uiSectionIndex]);
