@@ -1987,3 +1987,50 @@ world submission clock. The comprehensive modernization goal remains active.
 - The final integrated Editor and EditorPluginVisualScript build also passes:
   `Workspace/editor-modernization-checkpoint-build.log`. No static-link,
   Release or additional platform/backend verification is implied by this build.
+
+
+## Native scene LOD controls and GPU surface verification
+
+- `xiiLODMeshComponent` already exposed forced LOD and bias, but native scene
+  synchronization dropped both controls. The scene database now preserves them
+  across creation, updates, compaction and slot reuse. Selection changes dirty
+  the GPU upload; unchanged controls preserve revisions. Invalid handles,
+  out-of-range forced indices and non-finite bias return `xiiResult` failure.
+  Invalid extraction controls are checked before membership/resource mutation.
+- GPU visibility honors forced LOD without applying coverage bias or hysteresis.
+  A forced LOD absent from the definition or not resident emits no meshlets;
+  existing streaming requests can make it resident without substituting a LOD
+  with unrelated ranges. Automatic bias uses projected-coverage octaves, with
+  positive values favoring finer detail. Only selection coverage changes, not
+  physical frustum/cone bounds. GPU evaluation saturates bias to [-16, 16].
+- Ordinary and temporal Hi-Z meshlet culling now use the existing shared shader
+  implementation. Removing the duplicated ordinary implementation ensures both
+  paths use identical selection, feedback and primitive-range rules. The GPU
+  scene record grows from 240 to 256 bytes, with exact C++ size/offset assertions
+  against the HLSL layout. CPU storage adds one index and one float per object.
+  Reflection versions advance; mesh asset formats are unchanged.
+- The dedicated `NativeSceneLod` Vulkan test runs eight actual visibility and
+  surface-query frames: coarse/fine forced selection despite opposing biases,
+  missing and nonexistent forced LODs, automatic positive/negative bias, and
+  both ordinary and temporal Hi-Z paths. It stages the compact visibility stream
+  and selected meshlet metadata, then reads nearest-surface identity and depth.
+  Forced draws retain extracted primitive ranges and verify owner/material slots.
+  CPU tests cover invalid inputs, mutation preservation, revisions and reuse.
+  Native buffer readback is shared with the existing picking fixture.
+- Windows Debug builds pass for GraphicsCoreTest, EditorEngineProcessFrameworkTest,
+  Editor and EditorPluginVisualScript: `Workspace/editor-native-lod-final-build.log`.
+  The final fixture rebuild passes: `Workspace/editor-native-lod-final-test-build.log`.
+  All 46 engine-process subtests pass: `Workspace/editor-native-lod-integrated-tests.log`.
+  The final absent-LOD shader guard and eight-frame fixture also pass independently:
+  `Workspace/editor-native-lod-focused-final-tests.log`. All 18 GraphicsCore tests
+  and all ten native Qt Editor tests pass: `Workspace/editor-native-lod-core-final-tests.log`
+  and `Workspace/editor-native-lod-qt-tests.log`. Native Qt runs include viewport
+  capture and real IPC picking. No assertion artifact is produced.
+- Automatic GPU LOD selection still needs per-LOD section/range/material mapping
+  when section layouts differ; the automatic-bias fixture deliberately uses a
+  whole-LOD range and does not establish that missing behavior. Indexed/deformed
+  native queries, legacy sky/probe/GreyBox migration, additional static-link
+  inventories, the ReFS case-only watcher limitation, manual-manager frame
+  timeline and shared temporal-manager isolation remain outstanding. Manual UI
+  workflow parity, D3D12, Release and other platforms remain unverified. The
+  comprehensive modernization goal remains active.
