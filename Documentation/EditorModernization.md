@@ -1939,3 +1939,51 @@ indexed/deformed native picking, legacy scene migrations and the ReFS case-only
 notification limitation remain outstanding. The manual RenderGraphManager frame
 timeline and shared temporal managers still require review against the common
 world submission clock. The comprehensive modernization goal remains active.
+
+## Current renderer and gameplay registration inventories
+
+- GraphicsCore and GameEngine static-link inventories now follow StaticLinkUtil's
+  current registration discovery. The previous inventories contained 112 and 40
+  references, respectively, without a corresponding source registration marker.
+  Removed pass, PropertyAnim, GreyBox, animation-node and former VisualScript
+  registrations are gone. Current material managers, render graph/world services,
+  particles, light/render components, gameplay volumes and resources are represented.
+- Both inventories and their file markers match the existing generator's output:
+  90 unique GraphicsCore references and 21 unique GameEngine references, with no
+  unresolved points. Review verifies that implementation bodies are unchanged.
+  Other libraries' static inventories have not been migrated in this checkpoint.
+- The dependent Windows Debug DLL build passes for EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest, GraphicsCoreTest and EditorProcessor:
+  `Workspace/editor-staticlink-inventory-build.log`. All ten native Qt Editor tests,
+  all 45 Vulkan engine-process tests and all 18 GraphicsCore tests pass:
+  `Workspace/editor-staticlink-native-tests.log`,
+  `Workspace/editor-staticlink-engine-tests.log` and
+  `Workspace/editor-staticlink-core-tests.log`. This is source registration audit
+  and DLL integration evidence; a complete static-link configuration has not run.
+
+## Texture conversion with disabled or partial mip chains
+
+- Inspecting native-run assertion artifacts exposed a separate asset conversion
+  defect. `ExtractLowerMipChain` used the theoretical maximum mip count for the
+  dimensions instead of the image's stored count. The bundled Grid asset disables
+  mip generation while requesting six low-resolution levels, causing access to
+  nonexistent mip levels. The helper now clamps to stored levels. Invalid images
+  and zero requested levels return `xiiResult` failure without changing output.
+- Byte-level tests cover one-, two- and three-level compressed and uncompressed
+  chains, requests larger than the stored chain, and failure preservation. All four
+  ImageDimensions subtests and all five TextureConverterTool subtests pass:
+  `Workspace/editor-stored-mip-chain-tests.log` and
+  `Workspace/editor-stored-mip-tool-tests.log`. The exact Grid conversion options
+  also succeed with isolated output paths, producing the main image, thumbnail and
+  low-resolution image without a new assertion artifact:
+  `Workspace/editor-stored-mip-converter-tests.log`.
+- TextureTest, EditorFrameworkTest and EditorProcessor build successfully:
+  `Workspace/editor-stored-mip-chain-final-build.log`. All ten native Editor tests
+  pass again with `XII_SILENT_ASSERTS=1` inherited by child processes, so assertions
+  crash instead of opening unattended dialogs. No assertion artifact is produced:
+  `Workspace/editor-stored-mip-native-tests.log`. Earlier passing native runs did
+  not expose this child-process failure through their test status; the clean
+  conversion and native rerun above supersede that evidence gap.
+- The final integrated Editor and EditorPluginVisualScript build also passes:
+  `Workspace/editor-modernization-checkpoint-build.log`. No static-link,
+  Release or additional platform/backend verification is implied by this build.
