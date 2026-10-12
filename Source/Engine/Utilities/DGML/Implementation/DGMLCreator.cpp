@@ -83,7 +83,3 @@ void xiiDGMLGraphCreator::FillGraphFromWorld(xiiWorld* pWorld, xiiDGMLGraph& ref
   GraphVisitor visitor(ref_graph);
   pWorld->Traverse(xiiWorld::VisitorFunc(&GraphVisitor::Visit, &visitor), xiiWorld::BreadthFirst);
 }
-
-
-
-XII_STATICLINK_FILE(Utilities, Utilities_DGML_Implementation_DGMLCreator);

@@ -664,4 +664,4 @@ bool xiiDdsFileFormat::CanWriteFileType(xiiStringView sExtension) const
   return CanReadFileType(sExtension);
 }
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Formats_DdsFileFormat);
+XII_STATICLINK_FILE(Texture, Texture_Image_Formats_Implementation_DdsFileFormat);

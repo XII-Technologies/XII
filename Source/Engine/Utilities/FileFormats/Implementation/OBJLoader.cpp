@@ -317,7 +317,3 @@ xiiResult xiiOBJLoader::LoadMTL(const char* szFile, const char* szMaterialBasePa
 
   return XII_SUCCESS;
 }
-
-
-
-XII_STATICLINK_FILE(Utilities, Utilities_FileFormats_Implementation_OBJLoader);

@@ -246,4 +246,4 @@ bool xiiStbImageFileFormats::CanWriteFileType(xiiStringView sExtension) const
   return false;
 }
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Formats_StbImageFileFormats);
+XII_STATICLINK_FILE(Texture, Texture_Image_Formats_Implementation_StbImageFileFormats);

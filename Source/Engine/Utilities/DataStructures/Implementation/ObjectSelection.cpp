@@ -64,7 +64,3 @@ void xiiObjectSelection::ToggleSelection(xiiGameObjectHandle hObject)
   // ensures invalid objects don't get added
   AddObject(hObject);
 }
-
-
-
-XII_STATICLINK_FILE(Utilities, Utilities_DataStructures_Implementation_ObjectSelection);

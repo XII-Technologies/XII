@@ -135,4 +135,4 @@ XII_STATICLINK_FORCE static xiiImageConversion_CompressDxTexCpu s_conversion_com
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_DXTexCpuConversions);
+XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_Implementation_DirectXTextureCpuConversions);
