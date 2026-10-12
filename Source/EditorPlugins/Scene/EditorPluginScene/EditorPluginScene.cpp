@@ -107,7 +107,6 @@ void AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
 }
 
 void xiiCameraComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
-void xiiSkyLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 void xiiGreyBoxComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 void xiiLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 void xiiSceneDocument_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
@@ -223,7 +222,6 @@ void OnLoadPlugin()
 
   // component property meta states
   xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiCameraComponent_PropertyMetaStateEventHandler);
-  xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiSkyLightComponent_PropertyMetaStateEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiGreyBoxComponent_PropertyMetaStateEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiLightComponent_PropertyMetaStateEventHandler);
 }
@@ -236,7 +234,6 @@ void OnUnloadPlugin()
   xiiDocumentManager::s_Events.RemoveEventHandler(xiiMakeDelegate(OnDocumentManagerEvent));
   xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(AssetCuratorEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiGreyBoxComponent_PropertyMetaStateEventHandler);
-  xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiSkyLightComponent_PropertyMetaStateEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiCameraComponent_PropertyMetaStateEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiLightComponent_PropertyMetaStateEventHandler);
 
@@ -273,24 +270,6 @@ void xiiCameraComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent&
   props["RenderTarget"].m_Visibility       = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Disabled;
   props["RenderTargetOffset"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
   props["RenderTargetSize"].m_Visibility   = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-}
-
-void xiiSkyLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
-{
-  static const xiiRTTI* pRtti = xiiRTTI::FindTypeByName("xiiSkyLightComponent");
-  XII_ASSERT_DEBUG(pRtti != nullptr, "Did the typename change?");
-
-  if (e.m_pObject->GetTypeAccessor().GetType() != pRtti)
-    return;
-
-  const xiiInt64 iReflectionProbeMode = e.m_pObject->GetTypeAccessor().GetValue("ReflectionProbeMode").ConvertTo<xiiInt64>();
-  const bool     bIsStatic            = (iReflectionProbeMode == 0); // xiiReflectionProbeMode::Static
-
-  auto& props = *e.m_pPropertyStates;
-
-  props["CubeMap"].m_Visibility = bIsStatic ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-  // props["RenderTargetOffset"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-  // props["RenderTargetSize"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
 }
 
 void xiiGreyBoxComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)

@@ -5,5 +5,5 @@ xii_requires_editor()
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 xii_create_target(APPLICATION ${PROJECT_NAME})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorFramework)
+target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorFramework SharedPluginScene)
 xii_ci_add_test(${PROJECT_NAME})

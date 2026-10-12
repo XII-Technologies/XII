@@ -22,8 +22,5 @@ private:
 
   virtual bool GeneratesProfileSpecificAssets() const override { return false; }
 
-  void SetupDefaultScene(xiiDocument* pDocument);
-
-
   xiiStaticArray<xiiAssetDocumentTypeDescriptor, 4> m_DocTypeDescs;
 };
