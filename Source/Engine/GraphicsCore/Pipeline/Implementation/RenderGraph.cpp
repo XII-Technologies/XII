@@ -1086,6 +1086,68 @@ void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResour
 
 void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings)
 {
+  struct StateAccess
+  {
+    xiiUInt32 m_uiEstablishingPass   = xiiInvalidIndex;
+    xiiUInt32 m_LastAccessOnQueue[3] = {xiiInvalidIndex, xiiInvalidIndex, xiiInvalidIndex};
+  };
+  xiiDynamicArray<StateAccess> stateAccess;
+  stateAccess.SetCount(m_Resources.GetCount());
+  xiiDynamicArray<xiiUInt32> passToCompiled, passToSubmission;
+  passToCompiled.SetCount(m_Passes.GetCount(), xiiInvalidIndex);
+  passToSubmission.SetCount(m_Passes.GetCount(), xiiInvalidIndex);
+  for (xiiUInt32 i = 0; i < m_CompiledPasses.GetCount(); ++i)
+    passToCompiled[m_CompiledPasses[i].m_uiPassIndex] = i;
+  for (xiiUInt32 i = 0; i < m_QueueSubmissions.GetCount(); ++i)
+    for (xiiUInt32 compiledIndex : m_QueueSubmissions[i].m_PassOrder)
+      passToSubmission[m_CompiledPasses[compiledIndex].m_uiPassIndex] = i;
+
+  const auto addStateDependency = [&](xiiUInt32 consumerPass, xiiUInt32 producerPass) {
+    if (producerPass == xiiInvalidIndex || producerPass == consumerPass)
+      return;
+    auto& consumer = m_CompiledPasses[passToCompiled[consumerPass]];
+    if (!consumer.m_DependencyPassIndices.Contains(producerPass))
+      consumer.m_DependencyPassIndices.PushBack(producerPass);
+    const xiiUInt32 producerSubmission = passToSubmission[producerPass];
+    const xiiUInt32 consumerSubmission = passToSubmission[consumerPass];
+    if (xiiRenderGraphSkills::AsyncCompute::RequiresFence(producerSubmission, consumerSubmission,
+                                                          m_QueueSubmissions[producerSubmission].m_uiQueueIndex, m_QueueSubmissions[consumerSubmission].m_uiQueueIndex))
+    {
+      auto& waits = m_QueueSubmissions[consumerSubmission].m_WaitSubmissionIndices;
+      if (!waits.Contains(producerSubmission))
+        waits.PushBack(producerSubmission);
+    }
+  };
+  const auto trackStateAccess = [&](xiiUInt32 passIndex, const ResourceUsage& usage) {
+    auto&           state        = stateAccess[usage.m_uiResourceIndex];
+    const auto&     resource     = m_Resources[usage.m_uiResourceIndex];
+    const xiiUInt32 queue        = m_CompiledPasses[passToCompiled[passIndex]].m_uiQueueIndex;
+    xiiUInt32       sourceQueues = 0;
+    for (xiiUInt32 previous : state.m_LastAccessOnQueue)
+      if (previous != xiiInvalidIndex)
+        ++sourceQueues;
+    if (resource.m_CurrentState != usage.m_RequiredState || usage.m_RequiredState == xiiGALResourceStateFlags::UnorderedAccess)
+    {
+      // A layout transition is a write even between readers of the same graph version. It
+      // must follow every queue still using the old state, not just the version's producer.
+      for (xiiUInt32 previous : state.m_LastAccessOnQueue)
+        addStateDependency(passIndex, previous);
+      for (xiiUInt32& previous : state.m_LastAccessOnQueue)
+        previous = xiiInvalidIndex;
+      state.m_uiEstablishingPass = passIndex;
+    }
+    else
+    {
+      // Readers in the same state may overlap, but all must wait for the pass that established
+      // that state. Waiting only for the original data producer can race a reader's transition.
+      addStateDependency(passIndex, state.m_uiEstablishingPass);
+    }
+    state.m_LastAccessOnQueue[queue] = passIndex;
+    // With parallel readers, a split begin attached to one reader can precede completion of
+    // the others. Join their fences first and perform the entire transition at the consumer.
+    return sourceQueues <= 1U;
+  };
+
   // Initialize resource states from imported resources.
   for (ResourceEntry& resourceEntry : m_Resources)
   {
@@ -1112,6 +1174,7 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
 
     for (const ResourceUsage& usage : pass.m_Reads)
     {
+      const bool                                  bSingleSourceQueue = trackStateAccess(uiPassIndex, usage);
       const xiiUInt32                             uiResourceIndex = usage.m_uiResourceIndex;
       ResourceEntry&                              resourceEntry   = m_Resources[uiResourceIndex];
       const xiiBitflags<xiiGALResourceStateFlags> requiredState   = usage.m_RequiredState;
@@ -1121,7 +1184,7 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
         // UAV barriers are immediate; all other transitions may be split between the previous
         // access and this consumer.
         const bool bUAVBarrier = (resourceEntry.m_CurrentState == xiiGALResourceStateFlags::UnorderedAccess && requiredState == xiiGALResourceStateFlags::UnorderedAccess);
-        const bool bSplit      = settings.m_bEnableSplitBarriers && !bUAVBarrier && (resourceEntry.m_uiCurrentProducerPassIdx != xiiInvalidIndex);
+        const bool bSplit      = settings.m_bEnableSplitBarriers && bSingleSourceQueue && !bUAVBarrier && (resourceEntry.m_uiCurrentProducerPassIdx != xiiInvalidIndex);
         EmitBarrier(uiPassIndex, uiResourceIndex, usage.m_bIsTexture, requiredState, bSplit);
       }
 
@@ -1131,13 +1194,14 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
 
     for (const ResourceUsage& usage : pass.m_Writes)
     {
+      const bool                                  bSingleSourceQueue = trackStateAccess(uiPassIndex, usage);
       const xiiUInt32                             uiResourceIndex = usage.m_uiResourceIndex;
       ResourceEntry&                              resourceEntry   = m_Resources[uiResourceIndex];
       const xiiBitflags<xiiGALResourceStateFlags> requiredState   = usage.m_RequiredState;
 
       if (resourceEntry.m_CurrentState != requiredState || requiredState == xiiGALResourceStateFlags::UnorderedAccess)
       {
-        const bool bSplit = settings.m_bEnableSplitBarriers && (resourceEntry.m_uiCurrentProducerPassIdx != xiiInvalidIndex) && (requiredState != xiiGALResourceStateFlags::UnorderedAccess);
+        const bool bSplit = settings.m_bEnableSplitBarriers && bSingleSourceQueue && (resourceEntry.m_uiCurrentProducerPassIdx != xiiInvalidIndex) && (requiredState != xiiGALResourceStateFlags::UnorderedAccess);
         EmitBarrier(uiPassIndex, uiResourceIndex, usage.m_bIsTexture, requiredState, bSplit);
       }
 
@@ -1154,6 +1218,10 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
     ResourceEntry& resource = m_Resources[uiResourceIndex];
     if (resource.m_ExportFinalState == xiiGALResourceStateFlags::Unknown || resource.m_uiLastUsePassIdx == xiiInvalidIndex || resource.m_CurrentState == resource.m_ExportFinalState)
       continue;
+
+    const xiiUInt32 exportPass = m_CompiledPasses[resource.m_uiLastUsePassIdx].m_uiPassIndex;
+    for (xiiUInt32 previous : stateAccess[uiResourceIndex].m_LastAccessOnQueue)
+      addStateDependency(exportPass, previous);
 
     xiiRenderGraphBarrierDescription barrier;
     barrier.m_uiResourceIndex = uiResourceIndex;
