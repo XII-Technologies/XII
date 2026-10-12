@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
@@ -11,6 +10,7 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
 class xiiLightingSystem;
+class xiiGALDevice;
 
 /// Configuration for the camera-centred far-field radiance clipmap.
 struct XII_GRAPHICSCORE_DLL xiiSparseVoxelRadianceSettings
@@ -115,31 +115,36 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuSparseVoxelLevel
 static_assert(sizeof(xiiGpuSparseVoxelLevel) == 32U);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSparseVoxelLevel);
 
-/// Subsystem-owned sparse voxel radiance residency and update scheduler.
-///
-/// The manager maintains nested camera-centred clipmaps in a fixed physical
-/// brick pool. Overlapping world bricks retain their physical slots and
-/// temporal history while newly exposed slabs are allocated deterministically.
-class XII_GRAPHICSCORE_DLL xiiSparseVoxelRadianceManager
+/// Camera-centred GI state owned by one lighting context. CPU scheduling can be used without a device.
+/// GPU storage is private to the context; settings and algorithm state are never process global.
+/// This object is not thread-safe. It must outlive graphs capturing it. Before reinitialization,
+/// shutdown or destruction, discard those graphs and wait for their submitted GPU work to finish.
+class XII_GRAPHICSCORE_DLL xiiSparseVoxelRadianceContext
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiSparseVoxelRadianceManager);
-  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, SparseVoxelRadianceManager);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiSparseVoxelRadianceContext);
 
 public:
-  xiiSparseVoxelRadianceManager() = delete;
+  xiiSparseVoxelRadianceContext();
+  ~xiiSparseVoxelRadianceContext();
 
-  [[nodiscard]] static xiiResult Configure(const xiiSparseVoxelRadianceSettings& settings);
-  [[nodiscard]] static bool      IsSubsystemInitialized();
-  [[nodiscard]] static bool      IsInitialized();
+  /// Initialize CPU scheduling and, when a device is supplied, persistent GPU storage.
+  /// Failure preserves an existing configuration. A null device selects CPU-only scheduling.
+  [[nodiscard]] xiiResult Initialize(const xiiSparseVoxelRadianceSettings& settings = {}, xiiSharedPtr<xiiGALDevice> pDevice = nullptr);
+  void                    Shutdown();
+  [[nodiscard]] bool      IsInitialized() const;
+  /// Discard accumulated lighting without reallocating storage or disturbing another view.
+  void InvalidateHistory();
 
-  static void BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);
-  static void CommitBrickUpdate(xiiUInt32 uiPhysicalBrick, xiiUInt64 uiPackedKey, bool bValid);
+  /// Frames must be nonzero and strictly increasing; the entire clipmap must fit its cell coordinates.
+  /// Non-finite or out-of-range positions and invalid frames fail without changing state.
+  [[nodiscard]] xiiResult BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);
+  void                    CommitBrickUpdate(xiiUInt32 uiPhysicalBrick, xiiUInt64 uiPackedKey, bool bValid);
 
-  [[nodiscard]] static xiiArrayPtr<const xiiSparseVoxelBrickState>  GetBricks();
-  [[nodiscard]] static xiiArrayPtr<const xiiSparseVoxelBrickUpdate> GetScheduledUpdates();
-  [[nodiscard]] static xiiSparseVoxelRadianceFrameStats             GetFrameStats();
-  [[nodiscard]] static const xiiSparseVoxelRadianceSettings&        GetConfiguration();
-  [[nodiscard]] static const xiiSparseVoxelBrickState*              FindBrick(xiiUInt64 uiPackedKey);
+  [[nodiscard]] xiiArrayPtr<const xiiSparseVoxelBrickState>  GetBricks() const;
+  [[nodiscard]] xiiArrayPtr<const xiiSparseVoxelBrickUpdate> GetScheduledUpdates() const;
+  [[nodiscard]] xiiSparseVoxelRadianceFrameStats             GetFrameStats() const;
+  [[nodiscard]] const xiiSparseVoxelRadianceSettings&        GetConfiguration() const;
+  [[nodiscard]] const xiiSparseVoxelBrickState*              FindBrick(xiiUInt64 uiPackedKey) const;
 
   struct UpdateHandles
   {
@@ -151,19 +156,14 @@ public:
 
   /// Adds the sparse radiance injection pass and publishes the page table and
   /// persistent pool consumed by far-field final gather.
-  [[nodiscard]] static UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
+  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
 
   /// Collision-free key used by CPU residency, GPU page tables, captures, and tools.
   [[nodiscard]] static xiiUInt64 PackBrickKey(xiiUInt32 uiClipmapLevel, const xiiVec3I32& vCell);
   static void                    UnpackBrickKey(xiiUInt64 uiPackedKey, xiiUInt32& out_uiClipmapLevel, xiiVec3I32& out_vCell);
 
 private:
-  static void                    Startup();
-  static void                    EngineStartup();
-  static void                    EngineShutdown();
-  static void                    Shutdown();
-  [[nodiscard]] static xiiResult CreateGpuResources();
-
+  [[nodiscard]] xiiResult CreateGpuResources();
   class State;
-  static xiiUniquePtr<State> s_pState;
+  xiiUniquePtr<State> m_pState;
 };

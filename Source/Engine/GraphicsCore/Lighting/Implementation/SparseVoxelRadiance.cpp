@@ -3,7 +3,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
-#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashTable.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
@@ -45,7 +44,7 @@ namespace
   }
 } // namespace
 
-class xiiSparseVoxelRadianceManager::State
+class xiiSparseVoxelRadianceContext::State
 {
 public:
   xiiSparseVoxelRadianceSettings             m_Settings;
@@ -60,39 +59,10 @@ public:
   xiiUInt64                                  m_uiFrameIndex         = 0U;
   xiiUInt64                                  m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
   xiiUInt32                                  m_uiVoxelsPerBrick     = 0U;
-  bool                                       m_bEngineStarted       = false;
-  bool                                       m_bInitialized         = false;
+  xiiSharedPtr<xiiGALDevice>                 m_pDevice;
 };
 
-xiiUniquePtr<xiiSparseVoxelRadianceManager::State> xiiSparseVoxelRadianceManager::s_pState;
-
 // clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, SparseVoxelRadianceManager)
-  BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation"
-  END_SUBSYSTEM_DEPENDENCIES
-
-  ON_CORESYSTEMS_STARTUP
-  {
-    xiiSparseVoxelRadianceManager::Startup();
-  }
-
-  ON_HIGHLEVELSYSTEMS_STARTUP
-  {
-    xiiSparseVoxelRadianceManager::EngineStartup();
-  }
-
-  ON_HIGHLEVELSYSTEMS_SHUTDOWN
-  {
-    xiiSparseVoxelRadianceManager::EngineShutdown();
-  }
-
-  ON_CORESYSTEMS_SHUTDOWN
-  {
-    xiiSparseVoxelRadianceManager::Shutdown();
-  }
-XII_END_SUBSYSTEM_DECLARATION;
-
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSparseVoxelRadianceSettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSparseVoxelRadianceSettings>)
 {
   XII_BEGIN_PROPERTIES
@@ -185,48 +155,28 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSparseVoxelLevel, xiiNoBase, 1, xiiRTTIDef
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiSparseVoxelRadianceManager::Startup()
+xiiSparseVoxelRadianceContext::xiiSparseVoxelRadianceContext() = default;
+
+xiiSparseVoxelRadianceContext::~xiiSparseVoxelRadianceContext()
 {
-  XII_ASSERT_DEV(s_pState == nullptr, "Sparse voxel radiance manager started twice.");
-  s_pState = XII_DEFAULT_NEW(State);
-  Configure(xiiSparseVoxelRadianceSettings()).IgnoreResult();
+  Shutdown();
 }
 
-void xiiSparseVoxelRadianceManager::EngineStartup()
+void xiiSparseVoxelRadianceContext::Shutdown()
 {
-  if (s_pState != nullptr)
-  {
-    s_pState->m_bEngineStarted = true;
-    CreateGpuResources().IgnoreResult();
-  }
+  m_pState.Clear();
 }
 
-void xiiSparseVoxelRadianceManager::EngineShutdown()
+xiiResult xiiSparseVoxelRadianceContext::CreateGpuResources()
 {
-  if (s_pState != nullptr)
-  {
-    s_pState->m_pUpdatePipeline.Clear();
-    s_pState->m_pRadiancePool.Clear();
-    s_pState->m_bEngineStarted = false;
-  }
-}
-
-void xiiSparseVoxelRadianceManager::Shutdown()
-{
-  EngineShutdown();
-  s_pState.Clear();
-}
-
-xiiResult xiiSparseVoxelRadianceManager::CreateGpuResources()
-{
-  if (s_pState == nullptr || !s_pState->m_bEngineStarted || s_pState->m_uiVoxelsPerBrick == 0U)
+  if (m_pState == nullptr || m_pState->m_pDevice == nullptr || m_pState->m_uiVoxelsPerBrick == 0U)
     return XII_FAILURE;
 
-  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  const xiiSharedPtr<xiiGALDevice>& pDevice = m_pState->m_pDevice;
   if (pDevice == nullptr)
     return XII_FAILURE;
 
-  const xiiUInt64 uiElementCount = static_cast<xiiUInt64>(s_pState->m_Settings.m_uiMaxResidentBricks) * s_pState->m_uiVoxelsPerBrick;
+  const xiiUInt64 uiElementCount = static_cast<xiiUInt64>(m_pState->m_Settings.m_uiMaxResidentBricks) * m_pState->m_uiVoxelsPerBrick;
   const xiiUInt64 uiBufferSize   = uiElementCount * sizeof(xiiVec4);
   if (uiBufferSize == 0U || uiBufferSize > xiiMath::MaxValue<xiiUInt32>())
     return XII_FAILURE;
@@ -242,50 +192,51 @@ xiiResult xiiSparseVoxelRadianceManager::CreateGpuResources()
     return XII_FAILURE;
   pRadiancePool->SetDebugName("Sparse Voxel Radiance Pool");
 
-  s_pState->m_pRadiancePool = std::move(pRadiancePool);
+  m_pState->m_pRadiancePool = std::move(pRadiancePool);
   return XII_SUCCESS;
 }
 
-xiiResult xiiSparseVoxelRadianceManager::Configure(const xiiSparseVoxelRadianceSettings& settings)
+xiiResult xiiSparseVoxelRadianceContext::Initialize(const xiiSparseVoxelRadianceSettings& settings, xiiSharedPtr<xiiGALDevice> pDevice)
 {
-  if (s_pState == nullptr || !IsConfigurationValid(settings))
+  if (!IsConfigurationValid(settings))
     return XII_FAILURE;
 
-  s_pState->m_Settings = settings;
-  s_pState->m_Bricks.Clear();
-  s_pState->m_Bricks.SetCount(settings.m_uiMaxResidentBricks);
-  s_pState->m_FreeBricks.Clear();
-  s_pState->m_FreeBricks.Reserve(settings.m_uiMaxResidentBricks);
+  auto previous       = std::move(m_pState);
+  m_pState            = XII_DEFAULT_NEW(State);
+  m_pState->m_pDevice = std::move(pDevice);
+
+  m_pState->m_Settings = settings;
+  m_pState->m_Bricks.Clear();
+  m_pState->m_Bricks.SetCount(settings.m_uiMaxResidentBricks);
+  m_pState->m_FreeBricks.Clear();
+  m_pState->m_FreeBricks.Reserve(settings.m_uiMaxResidentBricks);
   for (xiiUInt32 i = settings.m_uiMaxResidentBricks; i > 0U; --i)
   {
     const xiiUInt32 uiPhysicalBrick                       = i - 1U;
-    s_pState->m_Bricks[uiPhysicalBrick].m_uiPhysicalBrick = uiPhysicalBrick;
-    s_pState->m_FreeBricks.PushBack(uiPhysicalBrick);
+    m_pState->m_Bricks[uiPhysicalBrick].m_uiPhysicalBrick = uiPhysicalBrick;
+    m_pState->m_FreeBricks.PushBack(uiPhysicalBrick);
   }
-  s_pState->m_BrickLookup.Clear();
-  s_pState->m_BrickLookup.Reserve(settings.m_uiMaxResidentBricks);
-  s_pState->m_ScheduledUpdates.Clear();
-  s_pState->m_ClipmapMinimumCells.SetCount(settings.m_uiClipmapLevels);
-  s_pState->m_Stats                = {};
-  s_pState->m_uiVoxelsPerBrick     = settings.m_uiBrickVoxelResolution * settings.m_uiBrickVoxelResolution * settings.m_uiBrickVoxelResolution;
-  s_pState->m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
-  s_pState->m_bInitialized         = true;
-  if (s_pState->m_bEngineStarted)
-    return CreateGpuResources();
+  m_pState->m_BrickLookup.Clear();
+  m_pState->m_BrickLookup.Reserve(settings.m_uiMaxResidentBricks);
+  m_pState->m_ScheduledUpdates.Clear();
+  m_pState->m_ClipmapMinimumCells.SetCount(settings.m_uiClipmapLevels);
+  m_pState->m_Stats                = {};
+  m_pState->m_uiVoxelsPerBrick     = settings.m_uiBrickVoxelResolution * settings.m_uiBrickVoxelResolution * settings.m_uiBrickVoxelResolution;
+  m_pState->m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
+  if (m_pState->m_pDevice != nullptr && CreateGpuResources().Failed())
+  {
+    m_pState = std::move(previous);
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 
-bool xiiSparseVoxelRadianceManager::IsSubsystemInitialized()
+bool xiiSparseVoxelRadianceContext::IsInitialized() const
 {
-  return s_pState != nullptr;
+  return m_pState != nullptr;
 }
 
-bool xiiSparseVoxelRadianceManager::IsInitialized()
-{
-  return s_pState != nullptr && s_pState->m_bInitialized;
-}
-
-xiiUInt64 xiiSparseVoxelRadianceManager::PackBrickKey(xiiUInt32 uiClipmapLevel, const xiiVec3I32& vCell)
+xiiUInt64 xiiSparseVoxelRadianceContext::PackBrickKey(xiiUInt32 uiClipmapLevel, const xiiVec3I32& vCell)
 {
   if (uiClipmapLevel >= 8U || !IsCoordinateRepresentable(vCell.x) || !IsCoordinateRepresentable(vCell.y) || !IsCoordinateRepresentable(vCell.z))
     return xiiMath::MaxValue<xiiUInt64>();
@@ -296,7 +247,7 @@ xiiUInt64 xiiSparseVoxelRadianceManager::PackBrickKey(xiiUInt32 uiClipmapLevel, 
   return x | (y << s_uiCoordinateBits) | (z << (s_uiCoordinateBits * 2U)) | (static_cast<xiiUInt64>(uiClipmapLevel) << s_uiLevelShift);
 }
 
-void xiiSparseVoxelRadianceManager::UnpackBrickKey(xiiUInt64 uiPackedKey, xiiUInt32& out_uiClipmapLevel, xiiVec3I32& out_vCell)
+void xiiSparseVoxelRadianceContext::UnpackBrickKey(xiiUInt64 uiPackedKey, xiiUInt32& out_uiClipmapLevel, xiiVec3I32& out_vCell)
 {
   out_uiClipmapLevel = static_cast<xiiUInt32>((uiPackedKey >> s_uiLevelShift) & 0x7ULL);
   out_vCell.x        = static_cast<xiiInt32>(uiPackedKey & s_uiCoordinateMask) - static_cast<xiiInt32>(s_uiCoordinateBias);
@@ -304,10 +255,43 @@ void xiiSparseVoxelRadianceManager::UnpackBrickKey(xiiUInt64 uiPackedKey, xiiUIn
   out_vCell.z        = static_cast<xiiInt32>((uiPackedKey >> (s_uiCoordinateBits * 2U)) & s_uiCoordinateMask) - static_cast<xiiInt32>(s_uiCoordinateBias);
 }
 
-void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex)
+void xiiSparseVoxelRadianceContext::InvalidateHistory()
 {
   if (!IsInitialized())
     return;
+  for (auto& brick : m_pState->m_Bricks)
+  {
+    brick.m_Flags.Remove(xiiSparseVoxelBrickFlags::Valid);
+    if (brick.m_Flags.IsSet(xiiSparseVoxelBrickFlags::Resident))
+      brick.m_Flags.Add(xiiSparseVoxelBrickFlags::Dirty);
+    brick.m_uiLastUpdateFrame = 0;
+  }
+  for (auto& update : m_pState->m_ScheduledUpdates)
+    update.m_fHistoryWeight = 0.0f;
+  m_pState->m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
+}
+
+xiiResult xiiSparseVoxelRadianceContext::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex)
+{
+  if (!IsInitialized() || uiFrameIndex == 0 || uiFrameIndex <= m_pState->m_uiFrameIndex ||
+      !xiiMath::IsFinite(vCameraPosition.x) || !xiiMath::IsFinite(vCameraPosition.y) || !xiiMath::IsFinite(vCameraPosition.z))
+    return XII_FAILURE;
+
+  const auto& configuration = m_pState->m_Settings;
+  for (xiiUInt32 level = 0; level < configuration.m_uiClipmapLevels; ++level)
+  {
+    const float brickSize = configuration.m_fBaseVoxelSize * static_cast<float>(XII_BIT(level)) * configuration.m_uiBrickVoxelResolution;
+    if (!xiiMath::IsFinite(brickSize) || brickSize <= 0.0f)
+      return XII_FAILURE;
+    const xiiVec3 cellPosition = vCameraPosition / brickSize;
+    for (xiiUInt32 axis = 0; axis < 3; ++axis)
+    {
+      const double minimum = static_cast<double>(xiiMath::Floor(cellPosition.GetData()[axis])) - configuration.m_uiClipmapBrickResolution / 2U;
+      if (!xiiMath::IsFinite(minimum) || minimum < -static_cast<double>(s_uiCoordinateBias) ||
+          minimum + configuration.m_uiClipmapBrickResolution - 1.0 >= s_uiCoordinateBias)
+        return XII_FAILURE;
+    }
+  }
 
   struct RequiredBrick
   {
@@ -321,11 +305,11 @@ void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, x
     float      m_fDistanceSquared;
   };
 
-  s_pState->m_uiFrameIndex = uiFrameIndex;
-  s_pState->m_ScheduledUpdates.Clear();
-  s_pState->m_Stats = {};
+  m_pState->m_uiFrameIndex = uiFrameIndex;
+  m_pState->m_ScheduledUpdates.Clear();
+  m_pState->m_Stats = {};
 
-  const xiiSparseVoxelRadianceSettings& settings     = s_pState->m_Settings;
+  const xiiSparseVoxelRadianceSettings& settings     = m_pState->m_Settings;
   const xiiUInt32                       uiResolution = settings.m_uiClipmapBrickResolution;
   xiiDynamicArray<RequiredBrick>        requiredBricks;
   requiredBricks.Reserve(uiResolution * uiResolution * uiResolution * settings.m_uiClipmapLevels);
@@ -337,7 +321,7 @@ void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, x
     const xiiVec3    vCellPosition   = vCameraPosition / fBrickWorldSize;
     const xiiVec3I32 vCenterCell(static_cast<xiiInt32>(xiiMath::Floor(vCellPosition.x)), static_cast<xiiInt32>(xiiMath::Floor(vCellPosition.y)), static_cast<xiiInt32>(xiiMath::Floor(vCellPosition.z)));
     const xiiVec3I32 vMinimumCell          = vCenterCell - xiiVec3I32(static_cast<xiiInt32>(uiResolution / 2U));
-    s_pState->m_ClipmapMinimumCells[level] = vMinimumCell;
+    m_pState->m_ClipmapMinimumCells[level] = vMinimumCell;
 
     for (xiiUInt32 z = 0U; z < uiResolution; ++z)
     {
@@ -363,15 +347,15 @@ void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, x
     }
   }
 
-  s_pState->m_Stats.m_uiRequiredBrickCount = requiredBricks.GetCount();
+  m_pState->m_Stats.m_uiRequiredBrickCount = requiredBricks.GetCount();
 
   // First mark every retained brick. The allocation pass can then evict only
   // slots outside the new clipmap windows, independent of enumeration order.
   for (const RequiredBrick& required : requiredBricks)
   {
     xiiUInt32 uiPhysicalBrick = xiiInvalidIndex;
-    if (s_pState->m_BrickLookup.TryGetValue(required.m_uiPackedKey, uiPhysicalBrick))
-      s_pState->m_Bricks[uiPhysicalBrick].m_uiLastUsedFrame = uiFrameIndex;
+    if (m_pState->m_BrickLookup.TryGetValue(required.m_uiPackedKey, uiPhysicalBrick))
+      m_pState->m_Bricks[uiPhysicalBrick].m_uiLastUsedFrame = uiFrameIndex;
   }
 
   struct EvictionCandidate
@@ -383,10 +367,10 @@ void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, x
   };
 
   xiiDynamicArray<EvictionCandidate> evictionCandidates;
-  evictionCandidates.Reserve(s_pState->m_BrickLookup.GetCount());
-  for (xiiUInt32 candidate = 0U; candidate < s_pState->m_Bricks.GetCount(); ++candidate)
+  evictionCandidates.Reserve(m_pState->m_BrickLookup.GetCount());
+  for (xiiUInt32 candidate = 0U; candidate < m_pState->m_Bricks.GetCount(); ++candidate)
   {
-    const xiiSparseVoxelBrickState& brick = s_pState->m_Bricks[candidate];
+    const xiiSparseVoxelBrickState& brick = m_pState->m_Bricks[candidate];
     if (brick.m_Flags.IsSet(xiiSparseVoxelBrickFlags::Resident) && brick.m_uiLastUsedFrame != uiFrameIndex)
       evictionCandidates.PushBack({candidate, brick.m_uiLastUsedFrame});
   }
@@ -400,24 +384,24 @@ void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, x
   for (const RequiredBrick& required : requiredBricks)
   {
     xiiUInt32 uiPhysicalBrick = xiiInvalidIndex;
-    if (s_pState->m_BrickLookup.TryGetValue(required.m_uiPackedKey, uiPhysicalBrick))
+    if (m_pState->m_BrickLookup.TryGetValue(required.m_uiPackedKey, uiPhysicalBrick))
       continue;
 
-    if (!s_pState->m_FreeBricks.IsEmpty())
+    if (!m_pState->m_FreeBricks.IsEmpty())
     {
-      uiPhysicalBrick = s_pState->m_FreeBricks.PeekBack();
-      s_pState->m_FreeBricks.PopBack();
+      uiPhysicalBrick = m_pState->m_FreeBricks.PeekBack();
+      m_pState->m_FreeBricks.PopBack();
     }
     else
     {
       if (uiNextEviction >= evictionCandidates.GetCount())
         continue;
       uiPhysicalBrick = evictionCandidates[uiNextEviction++].m_uiPhysicalBrick;
-      s_pState->m_BrickLookup.Remove(s_pState->m_Bricks[uiPhysicalBrick].m_uiPackedKey);
-      ++s_pState->m_Stats.m_uiEvictedBrickCount;
+      m_pState->m_BrickLookup.Remove(m_pState->m_Bricks[uiPhysicalBrick].m_uiPackedKey);
+      ++m_pState->m_Stats.m_uiEvictedBrickCount;
     }
 
-    xiiSparseVoxelBrickState& brick = s_pState->m_Bricks[uiPhysicalBrick];
+    xiiSparseVoxelBrickState& brick = m_pState->m_Bricks[uiPhysicalBrick];
     brick                           = {};
     brick.m_uiPackedKey             = required.m_uiPackedKey;
     brick.m_uiPhysicalBrick         = uiPhysicalBrick;
@@ -427,8 +411,8 @@ void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, x
     brick.m_fVoxelSize              = required.m_fVoxelSize;
     brick.m_uiLastUsedFrame         = uiFrameIndex;
     brick.m_Flags                   = xiiSparseVoxelBrickFlags::Resident | xiiSparseVoxelBrickFlags::Dirty;
-    s_pState->m_BrickLookup.Insert(required.m_uiPackedKey, uiPhysicalBrick);
-    ++s_pState->m_Stats.m_uiAllocatedBrickCount;
+    m_pState->m_BrickLookup.Insert(required.m_uiPackedKey, uiPhysicalBrick);
+    ++m_pState->m_Stats.m_uiAllocatedBrickCount;
   }
 
   struct UpdateCandidate
@@ -446,10 +430,10 @@ void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, x
   for (const RequiredBrick& required : requiredBricks)
   {
     xiiUInt32 uiPhysicalBrick = xiiInvalidIndex;
-    if (!s_pState->m_BrickLookup.TryGetValue(required.m_uiPackedKey, uiPhysicalBrick))
+    if (!m_pState->m_BrickLookup.TryGetValue(required.m_uiPackedKey, uiPhysicalBrick))
       continue;
 
-    xiiSparseVoxelBrickState& brick = s_pState->m_Bricks[uiPhysicalBrick];
+    xiiSparseVoxelBrickState& brick = m_pState->m_Bricks[uiPhysicalBrick];
     if (brick.m_Flags.IsSet(xiiSparseVoxelBrickFlags::Valid) && uiFrameIndex >= brick.m_uiLastUpdateFrame && uiFrameIndex - brick.m_uiLastUpdateFrame >= settings.m_uiRefreshIntervalFrames)
       brick.m_Flags.Add(xiiSparseVoxelBrickFlags::Dirty);
     if (brick.m_Flags.IsSet(xiiSparseVoxelBrickFlags::Dirty))
@@ -465,71 +449,72 @@ void xiiSparseVoxelRadianceManager::BeginFrame(const xiiVec3& vCameraPosition, x
   });
 
   const xiiUInt32 uiUpdateCount = xiiMath::Min(settings.m_uiBrickUpdateBudget, candidates.GetCount());
-  s_pState->m_ScheduledUpdates.Reserve(uiUpdateCount);
+  m_pState->m_ScheduledUpdates.Reserve(uiUpdateCount);
   for (xiiUInt32 i = 0U; i < uiUpdateCount; ++i)
   {
-    const xiiSparseVoxelBrickState& brick = s_pState->m_Bricks[candidates[i].m_uiPhysicalBrick];
-    s_pState->m_ScheduledUpdates.PushBack({brick.m_uiPackedKey, brick.m_uiPhysicalBrick, brick.m_uiClipmapLevel, brick.m_vWorldMinimum, brick.m_fVoxelSize,
+    const xiiSparseVoxelBrickState& brick = m_pState->m_Bricks[candidates[i].m_uiPhysicalBrick];
+    m_pState->m_ScheduledUpdates.PushBack({brick.m_uiPackedKey, brick.m_uiPhysicalBrick, brick.m_uiClipmapLevel, brick.m_vWorldMinimum, brick.m_fVoxelSize,
                                            brick.m_Flags.IsSet(xiiSparseVoxelBrickFlags::Valid) ? settings.m_fTemporalHysteresis : 0.0f});
   }
 
-  s_pState->m_Stats.m_uiResidentBrickCount  = s_pState->m_BrickLookup.GetCount();
-  s_pState->m_Stats.m_uiDirtyBrickCount     = candidates.GetCount();
-  s_pState->m_Stats.m_uiScheduledBrickCount = s_pState->m_ScheduledUpdates.GetCount();
+  m_pState->m_Stats.m_uiResidentBrickCount  = m_pState->m_BrickLookup.GetCount();
+  m_pState->m_Stats.m_uiDirtyBrickCount     = candidates.GetCount();
+  m_pState->m_Stats.m_uiScheduledBrickCount = m_pState->m_ScheduledUpdates.GetCount();
+  return XII_SUCCESS;
 }
 
-void xiiSparseVoxelRadianceManager::CommitBrickUpdate(xiiUInt32 uiPhysicalBrick, xiiUInt64 uiPackedKey, bool bValid)
+void xiiSparseVoxelRadianceContext::CommitBrickUpdate(xiiUInt32 uiPhysicalBrick, xiiUInt64 uiPackedKey, bool bValid)
 {
-  if (!IsInitialized() || uiPhysicalBrick >= s_pState->m_Bricks.GetCount())
+  if (!IsInitialized() || uiPhysicalBrick >= m_pState->m_Bricks.GetCount())
     return;
 
-  xiiSparseVoxelBrickState& brick = s_pState->m_Bricks[uiPhysicalBrick];
+  xiiSparseVoxelBrickState& brick = m_pState->m_Bricks[uiPhysicalBrick];
   if (brick.m_uiPackedKey != uiPackedKey || !brick.m_Flags.IsSet(xiiSparseVoxelBrickFlags::Resident))
     return;
 
   brick.m_Flags.Remove(xiiSparseVoxelBrickFlags::Dirty | xiiSparseVoxelBrickFlags::Valid);
   brick.m_Flags.AddOrRemove(xiiSparseVoxelBrickFlags::Valid, bValid);
-  brick.m_uiLastUpdateFrame = s_pState->m_uiFrameIndex;
+  brick.m_uiLastUpdateFrame = m_pState->m_uiFrameIndex;
 }
 
-xiiArrayPtr<const xiiSparseVoxelBrickState> xiiSparseVoxelRadianceManager::GetBricks()
+xiiArrayPtr<const xiiSparseVoxelBrickState> xiiSparseVoxelRadianceContext::GetBricks() const
 {
-  return IsInitialized() ? xiiArrayPtr<const xiiSparseVoxelBrickState>(s_pState->m_Bricks.GetData(), s_pState->m_Bricks.GetCount()) : xiiArrayPtr<const xiiSparseVoxelBrickState>();
+  return IsInitialized() ? xiiArrayPtr<const xiiSparseVoxelBrickState>(m_pState->m_Bricks.GetData(), m_pState->m_Bricks.GetCount()) : xiiArrayPtr<const xiiSparseVoxelBrickState>();
 }
 
-xiiArrayPtr<const xiiSparseVoxelBrickUpdate> xiiSparseVoxelRadianceManager::GetScheduledUpdates()
+xiiArrayPtr<const xiiSparseVoxelBrickUpdate> xiiSparseVoxelRadianceContext::GetScheduledUpdates() const
 {
-  return IsInitialized() ? xiiArrayPtr<const xiiSparseVoxelBrickUpdate>(s_pState->m_ScheduledUpdates.GetData(), s_pState->m_ScheduledUpdates.GetCount()) : xiiArrayPtr<const xiiSparseVoxelBrickUpdate>();
+  return IsInitialized() ? xiiArrayPtr<const xiiSparseVoxelBrickUpdate>(m_pState->m_ScheduledUpdates.GetData(), m_pState->m_ScheduledUpdates.GetCount()) : xiiArrayPtr<const xiiSparseVoxelBrickUpdate>();
 }
 
-xiiSparseVoxelRadianceFrameStats xiiSparseVoxelRadianceManager::GetFrameStats()
+xiiSparseVoxelRadianceFrameStats xiiSparseVoxelRadianceContext::GetFrameStats() const
 {
-  return IsInitialized() ? s_pState->m_Stats : xiiSparseVoxelRadianceFrameStats();
+  return IsInitialized() ? m_pState->m_Stats : xiiSparseVoxelRadianceFrameStats();
 }
 
-const xiiSparseVoxelRadianceSettings& xiiSparseVoxelRadianceManager::GetConfiguration()
+const xiiSparseVoxelRadianceSettings& xiiSparseVoxelRadianceContext::GetConfiguration() const
 {
-  XII_ASSERT_RELEASE(IsInitialized(), "Sparse voxel radiance manager is not initialized.");
-  return s_pState->m_Settings;
+  XII_ASSERT_RELEASE(IsInitialized(), "Sparse voxel radiance context is not initialized.");
+  return m_pState->m_Settings;
 }
 
-const xiiSparseVoxelBrickState* xiiSparseVoxelRadianceManager::FindBrick(xiiUInt64 uiPackedKey)
+const xiiSparseVoxelBrickState* xiiSparseVoxelRadianceContext::FindBrick(xiiUInt64 uiPackedKey) const
 {
   if (!IsInitialized())
     return nullptr;
   xiiUInt32 uiPhysicalBrick = xiiInvalidIndex;
-  return s_pState->m_BrickLookup.TryGetValue(uiPackedKey, uiPhysicalBrick) ? &s_pState->m_Bricks[uiPhysicalBrick] : nullptr;
+  return m_pState->m_BrickLookup.TryGetValue(uiPackedKey, uiPhysicalBrick) ? &m_pState->m_Bricks[uiPhysicalBrick] : nullptr;
 }
 
-xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem)
+xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem)
 {
   UpdateHandles result;
-  if (!IsInitialized() || pLightingSystem == nullptr)
+  if (!IsInitialized() || m_pState->m_uiFrameIndex == 0 || pLightingSystem == nullptr)
     return result;
-  if (s_pState->m_pRadiancePool == nullptr && CreateGpuResources().Failed())
+  if (m_pState->m_pRadiancePool == nullptr && CreateGpuResources().Failed())
     return result;
 
-  if (s_pState->m_pUpdatePipeline == nullptr)
+  if (m_pState->m_pUpdatePipeline == nullptr)
   {
     const xiiShaderResourceHandle                  hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/SparseVoxelRadianceUpdate.xiiShader");
     xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
@@ -543,8 +528,8 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
     xiiGALComputePipelineStateCreationDescription pipelineDescription;
     pipelineDescription.m_pComputeShader             = permutation->GetGALShader(xiiGALShaderType::Compute);
     pipelineDescription.m_pPipelineResourceSignature = permutation->GetPipelineResourceSignature();
-    s_pState->m_pUpdatePipeline                      = xiiGALPipelineCache::GetPipeline(pipelineDescription);
-    if (s_pState->m_pUpdatePipeline == nullptr)
+    m_pState->m_pUpdatePipeline                      = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+    if (m_pState->m_pUpdatePipeline == nullptr)
       return result;
   }
 
@@ -561,13 +546,13 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
     const xiiLightingSystem*                                                  m_pLightingSystem = nullptr;
   };
 
-  const bool bPerformUpdates = s_pState->m_uiLastGpuUpdateFrame != s_pState->m_uiFrameIndex;
+  const bool bPerformUpdates = m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex;
   auto       pass            = graph.AddPass<UpdatePassData>(
     "Sparse Voxel Radiance Update", xiiGALCommandQueueFlags::Compute,
-    [bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+    [this, bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
       xiiGALBufferCreationDescription description;
-      const xiiUInt32                 uiResolution = s_pState->m_Settings.m_uiClipmapBrickResolution;
-      const xiiUInt32                 uiPageCount  = s_pState->m_Settings.m_uiClipmapLevels * uiResolution * uiResolution * uiResolution;
+      const xiiUInt32                 uiResolution = m_pState->m_Settings.m_uiClipmapBrickResolution;
+      const xiiUInt32                 uiPageCount  = m_pState->m_Settings.m_uiClipmapLevels * uiResolution * uiResolution * uiResolution;
       description.m_uiSize                         = xiiMath::Max(uiPageCount, 1U) * sizeof(xiiUInt32);
       description.m_uiElementByteStride            = sizeof(xiiUInt32);
       description.m_BindFlags                      = xiiGALBindFlags::ShaderResource;
@@ -576,11 +561,11 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
       description.m_CPUAccessFlags                 = xiiGALCPUAccessFlag::Write;
       data.m_hPageTable                            = builder.WriteBuffer(xiiRGBlackboardKeys::k_SparseVoxelPageTable, description, xiiGALResourceStateFlags::ShaderResource);
 
-      description.m_uiSize              = xiiMath::Max(s_pState->m_Settings.m_uiClipmapLevels, 1U) * sizeof(xiiGpuSparseVoxelLevel);
+      description.m_uiSize              = xiiMath::Max(m_pState->m_Settings.m_uiClipmapLevels, 1U) * sizeof(xiiGpuSparseVoxelLevel);
       description.m_uiElementByteStride = sizeof(xiiGpuSparseVoxelLevel);
       data.m_hLevelData                 = builder.WriteBuffer(xiiRGBlackboardKeys::k_SparseVoxelLevelData, description, xiiGALResourceStateFlags::ShaderResource);
 
-      description.m_uiSize              = xiiMath::Max(bPerformUpdates ? s_pState->m_ScheduledUpdates.GetCount() : 0U, 1U) * sizeof(xiiGpuSparseVoxelBrickUpdate);
+      description.m_uiSize              = xiiMath::Max(bPerformUpdates ? m_pState->m_ScheduledUpdates.GetCount() : 0U, 1U) * sizeof(xiiGpuSparseVoxelBrickUpdate);
       description.m_uiElementByteStride = sizeof(xiiGpuSparseVoxelBrickUpdate);
       data.m_hUpdates                   = builder.WriteBuffer("SparseVoxelUpdates", description, xiiGALResourceStateFlags::ShaderResource);
 
@@ -591,13 +576,13 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
       description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       data.m_hConstants            = builder.WriteBuffer(xiiRGBlackboardKeys::k_SparseVoxelConstants, description, xiiGALResourceStateFlags::ConstantBuffer);
 
-      data.m_hRadiancePool = builder.ImportBuffer(xiiRGBlackboardKeys::k_SparseVoxelRadiancePool, s_pState->m_pRadiancePool, s_pState->m_pRadiancePool->GetResourceState());
+      data.m_hRadiancePool = builder.ImportBuffer(xiiRGBlackboardKeys::k_SparseVoxelRadiancePool, m_pState->m_pRadiancePool, m_pState->m_pRadiancePool->GetResourceState());
       data.m_hRadiancePool = bPerformUpdates ? builder.WriteBuffer(data.m_hRadiancePool, xiiGALResourceStateFlags::UnorderedAccess) : builder.ReadBuffer(data.m_hRadiancePool, xiiGALResourceStateFlags::ShaderResource);
       builder.ExportBuffer(data.m_hRadiancePool, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(bPerformUpdates);
       builder.SetPassAllowMerge(false);
     },
-    [](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
+    [this](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd = context.GetCommandList();
       {
         xiiGALMapHelper<xiiUInt32> mapped(cmd, context.GetBuffer(data.m_hPageTable), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -614,21 +599,21 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
       }
       {
         xiiGALMapHelper<xiiSparseVoxelRadianceConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-        constants->ClipmapAndUpdateCounts = xiiVec4U32(s_pState->m_Settings.m_uiClipmapLevels, s_pState->m_Settings.m_uiClipmapBrickResolution,
-                                                                        s_pState->m_Settings.m_uiBrickVoxelResolution, data.m_Updates.GetCount());
-        constants->PoolLayout             = xiiVec4U32(s_pState->m_uiVoxelsPerBrick, s_pState->m_Settings.m_uiMaxResidentBricks, static_cast<xiiUInt32>(s_pState->m_uiFrameIndex), 0U);
-        constants->RadianceSettings       = xiiVec4(s_pState->m_Settings.m_fTemporalHysteresis, 0.0f, 0.0f, 0.0f);
+        constants->ClipmapAndUpdateCounts = xiiVec4U32(m_pState->m_Settings.m_uiClipmapLevels, m_pState->m_Settings.m_uiClipmapBrickResolution,
+                                                       m_pState->m_Settings.m_uiBrickVoxelResolution, data.m_Updates.GetCount());
+        constants->PoolLayout             = xiiVec4U32(m_pState->m_uiVoxelsPerBrick, m_pState->m_Settings.m_uiMaxResidentBricks, static_cast<xiiUInt32>(m_pState->m_uiFrameIndex), 0U);
+        constants->RadianceSettings       = xiiVec4(m_pState->m_Settings.m_fTemporalHysteresis, 0.0f, 0.0f, 0.0f);
       }
 
       if (!data.m_Updates.IsEmpty())
       {
-        cmd.SetPipelineState(s_pState->m_pUpdatePipeline);
+        cmd.SetPipelineState(m_pState->m_pUpdatePipeline);
         data.m_pLightingSystem->BindFrameConstants(cmd, xiiGALShaderType::Compute);
         cmd.ResolveAndSetConstantBuffer("xiiSparseVoxelRadianceConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
         cmd.ResolveAndSetShaderResourceBufferView("g_SparseVoxelUpdates", context.GetBuffer(data.m_hUpdates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
         cmd.ResolveAndSetUnorderedAccessBufferView("g_SparseVoxelRadiancePool", context.GetBuffer(data.m_hRadiancePool)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
         cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-        const xiiUInt32 uiVoxelUpdateCount = data.m_Updates.GetCount() * s_pState->m_uiVoxelsPerBrick;
+        const xiiUInt32 uiVoxelUpdateCount = data.m_Updates.GetCount() * m_pState->m_uiVoxelsPerBrick;
         cmd.DispatchCompute({(uiVoxelUpdateCount + 63U) / 64U, 1U, 1U});
 
         for (const xiiGpuSparseVoxelBrickUpdate& update : data.m_Updates)
@@ -637,22 +622,22 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
           CommitBrickUpdate(update.m_vPhysicalLevelAndKey.x, uiPackedKey, true);
         }
       }
-      if (s_pState->m_uiLastGpuUpdateFrame != s_pState->m_uiFrameIndex)
-        s_pState->m_uiLastGpuUpdateFrame = s_pState->m_uiFrameIndex;
+      if (m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex)
+        m_pState->m_uiLastGpuUpdateFrame = m_pState->m_uiFrameIndex;
     });
 
   pass.first->m_pLightingSystem   = pLightingSystem;
-  const xiiUInt32 uiResolution    = s_pState->m_Settings.m_uiClipmapBrickResolution;
+  const xiiUInt32 uiResolution    = m_pState->m_Settings.m_uiClipmapBrickResolution;
   const xiiUInt32 uiPagesPerLevel = uiResolution * uiResolution * uiResolution;
-  pass.first->m_PageTable.SetCount(s_pState->m_Settings.m_uiClipmapLevels * uiPagesPerLevel);
+  pass.first->m_PageTable.SetCount(m_pState->m_Settings.m_uiClipmapLevels * uiPagesPerLevel);
   for (xiiUInt32& uiPage : pass.first->m_PageTable)
     uiPage = xiiInvalidIndex;
-  pass.first->m_LevelData.SetCount(s_pState->m_Settings.m_uiClipmapLevels);
-  for (xiiUInt32 level = 0U; level < s_pState->m_Settings.m_uiClipmapLevels; ++level)
+  pass.first->m_LevelData.SetCount(m_pState->m_Settings.m_uiClipmapLevels);
+  for (xiiUInt32 level = 0U; level < m_pState->m_Settings.m_uiClipmapLevels; ++level)
   {
-    const float             fVoxelSize      = s_pState->m_Settings.m_fBaseVoxelSize * static_cast<float>(XII_BIT(level));
-    const float             fBrickWorldSize = fVoxelSize * s_pState->m_Settings.m_uiBrickVoxelResolution;
-    const xiiVec3I32        vMinimumCell    = s_pState->m_ClipmapMinimumCells[level];
+    const float             fVoxelSize      = m_pState->m_Settings.m_fBaseVoxelSize * static_cast<float>(XII_BIT(level));
+    const float             fBrickWorldSize = fVoxelSize * m_pState->m_Settings.m_uiBrickVoxelResolution;
+    const xiiVec3I32        vMinimumCell    = m_pState->m_ClipmapMinimumCells[level];
     xiiGpuSparseVoxelLevel& gpuLevel        = pass.first->m_LevelData[level];
     gpuLevel.m_vMinimumCellAndPageOffset    = xiiVec4I32(vMinimumCell.x, vMinimumCell.y, vMinimumCell.z, static_cast<xiiInt32>(level * uiPagesPerLevel));
     gpuLevel.m_vVoxelAndBrickSize           = xiiVec4(fVoxelSize, fBrickWorldSize, 1.0f / fVoxelSize, 1.0f / fBrickWorldSize);
@@ -665,7 +650,7 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
         {
           const xiiVec3I32 vCell           = vMinimumCell + xiiVec3I32(static_cast<xiiInt32>(x), static_cast<xiiInt32>(y), static_cast<xiiInt32>(z));
           xiiUInt32        uiPhysicalBrick = xiiInvalidIndex;
-          if (s_pState->m_BrickLookup.TryGetValue(PackBrickKey(level, vCell), uiPhysicalBrick) && s_pState->m_Bricks[uiPhysicalBrick].m_Flags.IsSet(xiiSparseVoxelBrickFlags::Valid))
+          if (m_pState->m_BrickLookup.TryGetValue(PackBrickKey(level, vCell), uiPhysicalBrick) && m_pState->m_Bricks[uiPhysicalBrick].m_Flags.IsSet(xiiSparseVoxelBrickFlags::Valid))
             pass.first->m_PageTable[level * uiPagesPerLevel + (z * uiResolution + y) * uiResolution + x] = uiPhysicalBrick;
         }
       }
@@ -674,8 +659,8 @@ xiiSparseVoxelRadianceManager::UpdateHandles xiiSparseVoxelRadianceManager::AddU
 
   if (bPerformUpdates)
   {
-    pass.first->m_Updates.Reserve(s_pState->m_ScheduledUpdates.GetCount());
-    for (const xiiSparseVoxelBrickUpdate& update : s_pState->m_ScheduledUpdates)
+    pass.first->m_Updates.Reserve(m_pState->m_ScheduledUpdates.GetCount());
+    for (const xiiSparseVoxelBrickUpdate& update : m_pState->m_ScheduledUpdates)
     {
       xiiUInt32 uiHistoryBits = 0U;
       xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&uiHistoryBits), reinterpret_cast<const xiiUInt8*>(&update.m_fHistoryWeight), sizeof(float));

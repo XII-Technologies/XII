@@ -153,7 +153,7 @@ xiiLightingSystem::~xiiLightingSystem()
   Shutdown();
 }
 
-void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings)
+xiiResult xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings)
 {
   m_Settings = settings;
   switch (m_Settings.m_ReSTIRDIQualityPreset.GetValue())
@@ -257,11 +257,25 @@ void xiiLightingSystem::Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xii
   m_LightData.Reserve(m_Settings.m_uiMaxActiveLights);
   m_LocalShadowData.Reserve(m_Settings.m_uiMaxActiveLights);
 
+  if (m_DDGI.Initialize({}, m_pDevice).Failed() || m_SparseVoxelRadiance.Initialize({}, m_pDevice).Failed())
+  {
+    Shutdown();
+    return XII_FAILURE;
+  }
   EnsureGpuResources();
+  return XII_SUCCESS;
+}
+
+void xiiLightingSystem::InvalidateGlobalIlluminationHistory()
+{
+  m_DDGI.InvalidateHistory();
+  m_SparseVoxelRadiance.InvalidateHistory();
 }
 
 void xiiLightingSystem::Shutdown()
 {
+  m_DDGI.Shutdown();
+  m_SparseVoxelRadiance.Shutdown();
   m_pCameraConstantsBuffer.Clear();
   m_pLightConstantsBuffer.Clear();
   m_pGlobalConstantsBuffer.Clear();

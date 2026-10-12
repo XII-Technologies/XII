@@ -359,7 +359,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildDepthAndGeometry(xiiRenderGraph& grap
   m_Frame.contactShadowPass = graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupContactShadowData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteContactShadowData, this));
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // Lighting preparation passes, which generate lookup textures and lighting auxiliaries.
   graph.AddPass<xiiBRDFLutGenerationData>("BRDFLUTGenerate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupBRDFLutGeneration, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteBRDFLutGeneration, this));
@@ -367,11 +367,21 @@ void xiiBuiltinRenderPipelineRuntime::BuildLightingPreparation(xiiRenderGraph& g
   graph.AddPass<xiiAtmosphereMultiScatterData>("AtmosphereMultiScatterLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupAtmosphereMultiScatter, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteAtmosphereMultiScatter, this));
   graph.AddPass<xiiSkyIrradianceConvolutionData>("SkyIrradianceConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSkyIrradianceConvolution, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSkyIrradianceConvolution, this));
   graph.AddPass<xiiVolumetricFogInitializationData>("VolumetricFogInitialization", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupVolumetricFogInitialization, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteVolumetricFogInitialization, this));
-  XII_IGNORE_UNUSED(xiiSparseVoxelRadianceManager::AddUpdatePass(graph, m_Resources.m_LightingSystem.BorrowSystem()));
+  auto* lighting = m_Resources.m_LightingSystem.BorrowSystem();
+  if (m_View.GetCamera() == nullptr)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(lighting->GetDDGIContext().BeginFrame(m_View.GetCamera()->GetPosition(), graph.GetFrameIndex()));
+  XII_SUCCEED_OR_RETURN(lighting->GetSparseVoxelRadianceContext().BeginFrame(m_View.GetCamera()->GetPosition(), graph.GetFrameIndex()));
+  const auto sparse = lighting->GetSparseVoxelRadianceContext().AddUpdatePass(graph, lighting);
+  if (!sparse.m_hRadiancePool.IsValid() || !sparse.m_hPageTable.IsValid() || !sparse.m_hLevelData.IsValid() || !sparse.m_hConstants.IsValid())
+    return XII_FAILURE;
   graph.AddPass<xiiSparseVoxelRadianceGatherData>("SparseVoxelRadianceGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSparseVoxelRadianceGather, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSparseVoxelRadianceGather, this));
-  XII_IGNORE_UNUSED(xiiDDGIManager::AddUpdatePass(graph, m_Resources.m_LightingSystem.BorrowSystem()));
+  const auto ddgi = lighting->GetDDGIContext().AddUpdatePass(graph, lighting);
+  if (!ddgi.m_hIrradianceAtlas.IsValid() || !ddgi.m_hDistanceAtlas.IsValid() || !ddgi.m_hProbeStates.IsValid() || !ddgi.m_hProbeConstants.IsValid())
+    return XII_FAILURE;
   graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteDDGIProbeSampling, this));
   graph.AddPass<xiiGroundTruthAmbientOcclusionData>("GroundTruthAmbientOcclusion", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupGroundTruthAmbientOcclusion, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusion, this));
+  return XII_SUCCESS;
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
@@ -521,10 +531,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
     return XII_SUCCESS;
   }
   if (stage == "LightingPreparation")
-  {
-    BuildLightingPreparation(graph, blackboard);
-    return XII_SUCCESS;
-  }
+    return BuildLightingPreparation(graph, blackboard);
   if (stage == "Lighting")
   {
     BuildLighting(graph, blackboard);
@@ -595,6 +602,8 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
 
 void xiiBuiltinRenderPipelineRuntime::InvalidateTemporalHistory()
 {
+  if (m_Resources.m_LightingSystem.IsInitialized())
+    m_Resources.m_LightingSystem.BorrowSystem()->InvalidateGlobalIlluminationHistory();
   m_Resources.m_DepthPasses.m_bMotionHistoryValid                  = false;
   m_Resources.m_ShadowPasses.m_bRayTracedShadowHistoryValid        = false;
   m_Resources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = false;

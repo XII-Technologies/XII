@@ -12,8 +12,10 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Enum.h>
 #include <Foundation/Types/SharedPtr.h>
+#include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/IESProfileResource.h>
 #include <GraphicsCore/Lighting/LocalShadow.h>
+#include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 class xiiExtractedRenderData;
@@ -176,12 +178,21 @@ public:
 
   xiiGALBuffer* GetLightDataBuffer() const;
 
+  xiiDDGIContext&                      GetDDGIContext() { return m_DDGI; }
+  const xiiDDGIContext&                GetDDGIContext() const { return m_DDGI; }
+  xiiSparseVoxelRadianceContext&       GetSparseVoxelRadianceContext() { return m_SparseVoxelRadiance; }
+  const xiiSparseVoxelRadianceContext& GetSparseVoxelRadianceContext() const { return m_SparseVoxelRadiance; }
+  void                                 InvalidateGlobalIlluminationHistory();
+
 private:
   friend class xiiLightingManager;
 
+  xiiDDGIContext                m_DDGI;
+  xiiSparseVoxelRadianceContext m_SparseVoxelRadiance;
+
   xiiLightingSystem();
 
-  void Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings = {});
+  [[nodiscard]] xiiResult Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings = {});
   void Shutdown();
 
   struct PerFrameCameraConstants

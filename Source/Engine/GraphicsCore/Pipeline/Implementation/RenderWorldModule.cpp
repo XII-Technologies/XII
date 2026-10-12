@@ -10,8 +10,6 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
-#include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
@@ -607,7 +605,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
     xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
   }
-  bool bGlobalIlluminationFrameStarted = false;
 
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
@@ -615,13 +612,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
     if (!viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
-
-    if (!bGlobalIlluminationFrameStarted && viewDetail.m_pView->GetCamera() != nullptr)
-    {
-      xiiDDGIManager::BeginFrame(viewDetail.m_pView->GetCamera()->GetPosition(), uiFrameIndex);
-      xiiSparseVoxelRadianceManager::BeginFrame(viewDetail.m_pView->GetCamera()->GetPosition(), uiFrameIndex);
-      bGlobalIlluminationFrameStarted = true;
-    }
 
     xiiRenderGraph*              pGraph        = viewDetail.m_pView->GetRenderGraph();
     xiiRenderGraphBlackboard&    blackboard    = viewDetail.m_pView->GetBlackboard();

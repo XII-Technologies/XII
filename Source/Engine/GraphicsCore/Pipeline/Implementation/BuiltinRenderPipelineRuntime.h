@@ -141,7 +141,7 @@ public:
   void                        BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                   BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);

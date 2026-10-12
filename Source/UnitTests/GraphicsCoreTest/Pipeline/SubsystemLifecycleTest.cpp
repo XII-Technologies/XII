@@ -5,12 +5,10 @@
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
-#include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/GpuShadowRaster.h>
 #include <GraphicsCore/Lighting/LightingManager.h>
 #include <GraphicsCore/Lighting/RayTracingScene.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
-#include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Lighting/VolumetricMedium.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -31,8 +29,6 @@ static_assert(!std::is_default_constructible_v<xiiGpuVisibilityManager>, "Visibi
 static_assert(!std::is_default_constructible_v<xiiLightingManager>, "Lighting contexts must be owned by the lighting subsystem.");
 static_assert(!std::is_default_constructible_v<xiiGpuShadowRasterManager>, "GPU shadow raster state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiVirtualShadowMapManager>, "Virtual shadow residency must be owned by its subsystem.");
-static_assert(!std::is_default_constructible_v<xiiDDGIManager>, "DDGI state must be owned by its subsystem.");
-static_assert(!std::is_default_constructible_v<xiiSparseVoxelRadianceManager>, "Sparse radiance state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiAtmosphereManager>, "Atmosphere LUT state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiRayTracingSceneManager>, "Ray tracing scene state must be owned by its subsystem.");
 static_assert(!std::is_default_constructible_v<xiiSensorRenderingManager>, "Sensor profiles must be owned by their subsystem.");
@@ -57,8 +53,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(xiiLightingManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiGpuShadowRasterManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiVirtualShadowMapManager::IsSubsystemInitialized());
-    XII_TEST_BOOL(xiiDDGIManager::IsSubsystemInitialized());
-    XII_TEST_BOOL(xiiSparseVoxelRadianceManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiAtmosphereManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiRayTracingSceneManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiSensorRenderingManager::IsSubsystemInitialized());
