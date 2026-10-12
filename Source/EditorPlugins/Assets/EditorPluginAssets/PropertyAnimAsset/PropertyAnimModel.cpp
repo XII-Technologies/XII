@@ -36,9 +36,6 @@ QVariant xiiQtPropertyAnimModel::data(const QModelIndex& index, int iRole) const
     case Qt::DecorationRole:
       return pItem->m_Icon;
 
-    case UserRoles::TrackPtr:
-      return QVariant::fromValue((void*)pItem->m_pTrack);
-
     case UserRoles::TreeItem:
       return QVariant::fromValue((void*)pItem);
 
@@ -125,7 +122,7 @@ void xiiQtPropertyAnimModel::DocumentPropertyEventHandler(const xiiDocumentObjec
 {
   if (e.m_EventType == xiiDocumentObjectPropertyEvent::Type::PropertySet)
   {
-    if (e.m_sProperty == "ObjectPath")
+    if (e.m_sProperty == "ObjectPath" || e.m_sProperty == "ComponentType" || e.m_sProperty == "Property" || e.m_sProperty == "Target")
     {
       TriggerBuildMapping();
       return;
@@ -262,7 +259,7 @@ void xiiQtPropertyAnimModel::BuildMapping(xiiInt32 iToUse, xiiInt32 iTrackIdx, x
   else
   {
     pThisEntry->m_iTrackIdx = iTrackIdx;
-    pThisEntry->m_pTrack    = pTrack;
+    pThisEntry->m_TrackGuid = m_pAssetDoc->GetPropertyObject()->GetTypeAccessor().GetValue("Tracks", iTrackIdx).Get<xiiUuid>();
 
     switch (pTrack->m_Target)
     {

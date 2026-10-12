@@ -288,7 +288,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::UpdateSelectionData()
   m_CurvesToDisplay.m_bOwnsData         = false;
   m_CurvesToDisplay.m_uiFramesPerSecond = pDoc->GetProperties()->m_uiFramesPerSecond;
 
-  xiiSet<xiiInt32> tracks;
+  xiiSet<xiiUuid> tracks;
 
   for (const QModelIndex& selIdx : m_pSelectionModel->selection().indexes())
   {
@@ -297,8 +297,8 @@ void xiiQtPropertyAnimAssetDocumentWindow::UpdateSelectionData()
     xiiQtPropertyAnimModel* pModel = m_pPropertiesModel;
 
     auto addRecursive = [&tracks, pModel](auto& ref_self, const xiiQtPropertyAnimModelTreeEntry* pTreeItem) -> void {
-      if (pTreeItem->m_pTrack != nullptr)
-        tracks.Insert(pTreeItem->m_iTrackIdx);
+      if (pTreeItem->m_TrackGuid.IsValid())
+        tracks.Insert(pTreeItem->m_TrackGuid);
 
       for (xiiInt32 iChild : pTreeItem->m_Children)
       {
@@ -307,16 +307,16 @@ void xiiQtPropertyAnimAssetDocumentWindow::UpdateSelectionData()
       }
     };
 
-    addRecursive(addRecursive, pTreeItem);
+    if (pTreeItem != nullptr)
+      addRecursive(addRecursive, pTreeItem);
   }
 
   auto& trackArray = pDoc->GetProperties()->m_Tracks;
-  for (auto it = tracks.GetIterator(); it.IsValid(); ++it)
+  for (xiiUInt32 iTrackIdx = 0; iTrackIdx < trackArray.GetCount(); ++iTrackIdx)
   {
-    const xiiInt32 iTrackIdx = it.Key();
-
-    // this can happen during undo/redo when the selection still names data that has just been removed
-    if (iTrackIdx >= (xiiInt32)trackArray.GetCount())
+    // A queued model rebuild can still contain removed tracks or obsolete array indices.
+    const auto guid = pDoc->GetPropertyObject()->GetTypeAccessor().GetValue("Tracks", iTrackIdx).Get<xiiUuid>();
+    if (!tracks.Contains(guid))
       continue;
 
     if (trackArray[iTrackIdx]->m_Target != xiiPropertyAnimationChannel::Color)
@@ -492,9 +492,12 @@ void xiiQtPropertyAnimAssetDocumentWindow::onTreeItemDoubleClicked(const QModelI
   xiiQtPropertyAnimModelTreeEntry* pTreeItem =
     reinterpret_cast<xiiQtPropertyAnimModelTreeEntry*>(m_pPropertiesModel->data(index, xiiQtPropertyAnimModel::UserRoles::TreeItem).value<void*>());
 
-  if (pTreeItem != nullptr && pTreeItem->m_pTrack != nullptr)
+  if (pTreeItem != nullptr && pTreeItem->m_TrackGuid.IsValid())
   {
-    if (pTreeItem->m_pTrack->m_Target == xiiPropertyAnimationChannel::Color)
+    const auto* object = GetDocument()->GetObjectManager()->GetObject(pTreeItem->m_TrackGuid);
+    if (object == nullptr)
+      return;
+    if (object->GetTypeAccessor().GetValue("Target").ConvertTo<xiiInt64>() == xiiPropertyAnimationChannel::Color)
     {
       m_pGradientEditor->FrameGradient();
       m_pColorGradientPanel->raise();
@@ -560,8 +563,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler(const xiiC
   if (e.m_Type == xiiCommandHistoryEvent::Type::TransactionEnded || e.m_Type == xiiCommandHistoryEvent::Type::UndoEnded ||
       e.m_Type == xiiCommandHistoryEvent::Type::RedoEnded)
   {
-    UpdateCurveEditor();
-    UpdateGradientEditor();
+    UpdateSelectionData();
     UpdateEventTrackEditor();
   }
 }
