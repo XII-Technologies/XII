@@ -123,13 +123,21 @@ namespace
     }
   };
 
-  xiiMeshResourceHandle CreateExportMesh(xiiStringView id, bool cpuReadable)
+  xiiMeshResourceHandle CreateExportMesh(xiiStringView id, bool cpuReadable, bool customInfluences = false)
   {
     xiiGeometry geometry;
     geometry.AddVertex(xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     geometry.AddVertex(xiiVec3(1, 0, 0), xiiVec3(0, 0, 1));
     geometry.AddVertex(xiiVec3(0, 1, 0), xiiVec3(0, 0, 1));
     geometry.AddVertex(xiiVec3(1, 1, 0), xiiVec3(0, 0, 1));
+    if (customInfluences)
+    {
+      auto& vertices            = geometry.GetVertices();
+      vertices[0].m_BoneIndices = xiiVec4U16(0, 1, 65535, 65535);
+      vertices[0].m_BoneWeights = xiiColorLinearUB(60, 20, 0, 0);
+      vertices[1].m_BoneIndices = xiiVec4U16(65535);
+      vertices[1].m_BoneWeights = xiiColorLinearUB(0, 0, 0, 0);
+    }
     xiiUInt32 a[] = {0, 1, 2}, b[] = {1, 3, 2};
     geometry.AddPolygon(a, false);
     geometry.AddPolygon(b, false);
@@ -233,7 +241,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneGeometryExporter)
     xiiSkinnedMeshComponent::CreateComponent(skinnedObject, skinned);
     skinned->SetMesh(cpuMesh);
     const xiiMat4 matrices[] = {xiiMat4::MakeTranslation(xiiVec3(0, 0, 7))};
-    skinned->SetSkinningMatrices(matrices);
+    XII_TEST_RESULT(skinned->SetSkinningMatrices(matrices));
     world.Update();
     xiiGameObjectHandle selection[] = {skinnedObject->GetHandle()};
     XII_TEST_STATUS(xiiSceneGeometryExporter::ExportOBJ(world, path, xiiSceneGeometryExportMode::RenderMesh, xiiMat3::MakeIdentity(), true, selection));
@@ -253,6 +261,42 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneGeometryExporter)
     XII_TEST_RESULT(result.Load(path));
     XII_TEST_STRING(result.m_Text, previous);
     world.DeleteObjectNow(gpuHandle);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native skinning agrees for CPU data and GPU readback, including zero weights")
+  {
+    for (bool cpuReadable : {true, false})
+    {
+      const auto               mesh            = CreateExportMesh(cpuReadable ? "EditorExportWeightedCpuMesh" : "EditorExportWeightedGpuMesh", cpuReadable, true);
+      xiiGameObject*           owner           = nullptr;
+      const auto               handle          = world.CreateObject(object, owner);
+      xiiSkinnedMeshComponent* component       = nullptr;
+      const auto               componentHandle = xiiSkinnedMeshComponent::CreateComponent(owner, component);
+      component->SetMesh(mesh);
+      const xiiMat4 palette[] = {xiiMat4::MakeTranslation(xiiVec3(0, 0, 7)), xiiMat4::MakeTranslation(xiiVec3(0, 0, 15))};
+      XII_TEST_RESULT(component->SetSkinningMatrices(palette));
+      world.Update();
+      if (!XII_TEST_BOOL(world.TryGetComponent(componentHandle, component)))
+        return;
+      const xiiGameObjectHandle selection[] = {handle};
+      XII_TEST_STATUS(xiiSceneGeometryExporter::ExportOBJ(world, path, xiiSceneGeometryExportMode::RenderMesh, xiiMat3::MakeIdentity(), true, selection));
+      XII_TEST_RESULT(result.Load(path));
+      XII_TEST_VEC3(result.m_Vertices[0], xiiVec3(0, 0, 9), 0.00001f);
+      XII_TEST_VEC3(result.m_Vertices[1], xiiVec3(1, 0, 0), 0.00001f);
+      XII_TEST_VEC3(result.m_Vertices[2], xiiVec3(0, 1, 7), 0.00001f);
+      const auto previous = result.m_Text;
+      XII_TEST_RESULT(component->SetSkinningMatrices(xiiMakeArrayPtr(palette, 1)));
+      XII_TEST_BOOL(xiiSceneGeometryExporter::ExportOBJ(world, path, xiiSceneGeometryExportMode::RenderMesh, xiiMat3::MakeIdentity(), true, selection).Failed());
+      XII_TEST_RESULT(result.Load(path));
+      XII_TEST_STRING(result.m_Text, previous);
+      component->ClearPose();
+      world.Update();
+      XII_TEST_STATUS(xiiSceneGeometryExporter::ExportOBJ(world, path, xiiSceneGeometryExportMode::RenderMesh, xiiMat3::MakeIdentity(), true, selection));
+      XII_TEST_RESULT(result.Load(path));
+      XII_TEST_VEC3(result.m_Vertices[0], xiiVec3::MakeZero(), 0.00001f);
+      XII_TEST_VEC3(result.m_Vertices[1], xiiVec3(1, 0, 0), 0.00001f);
+      world.DeleteObjectNow(handle);
+    }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Geometry export IPC reports the actual engine result")

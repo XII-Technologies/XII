@@ -4,6 +4,7 @@
 
 #include <GraphicsCore/AnimationSystem/AnimationPose.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Meshes/MeshSkinning.h>
 
 xiiResult xiiAnimationPose::BuildMeshSkinningPalette(const xiiSkeletonResource& skeleton, const xiiMeshResourceDescriptor& mesh,
                                                      xiiDynamicArray<xiiMat4>& out_palette, xiiDynamicBitfield& inout_usedSlots) const
@@ -42,9 +43,7 @@ xiiResult xiiAnimationPose::BuildMeshSkinningPalette(const xiiSkeletonResource& 
       out_palette[slot] = m_ModelTransforms[joint] * bone.Value().m_GlobalInverseRestPoseMatrix;
     }
   }
-  for (const auto& matrix : out_palette)
-    if (!matrix.IsValid())
-      return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(xiiMeshSkinning::ValidatePalette(out_palette));
   success = true;
   return XII_SUCCESS;
 }

@@ -10,6 +10,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Meshes/MeshSkinning.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
@@ -528,21 +529,28 @@ const xiiSkeletonResourceHandle& xiiSkinnedMeshComponent::GetSkeleton() const
   return m_hSkeleton;
 }
 
-void xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices)
+xiiResult xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices)
 {
-  m_SkinningMatrices.SetCount(pMatrices.GetCount());
+  XII_SUCCEED_OR_RETURN(xiiMeshSkinning::ValidatePalette(pMatrices));
+  // A subrange of our palette can only shrink the array. Copy forwards before destroying
+  // its tail; non-aliased input may grow and needs its destination elements constructed first.
+  if (pMatrices.GetCount() > m_SkinningMatrices.GetCount())
+    m_SkinningMatrices.SetCount(pMatrices.GetCount());
   for (xiiUInt32 i = 0; i < pMatrices.GetCount(); ++i)
   {
     m_SkinningMatrices[i] = pMatrices[i];
   }
+  m_SkinningMatrices.SetCount(pMatrices.GetCount());
 
+  TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
+  return XII_SUCCESS;
 }
 
 xiiResult xiiSkinnedMeshComponent::SetAnimationPose(const xiiSkeletonResourceHandle& hSkeleton, const xiiAnimationPose& pose)
 {
   bool success = false;
-  XII_SCOPE_EXIT(if (!success) { m_SkinningMatrices.Clear(); InvalidateCachedRenderData(); });
+  XII_SCOPE_EXIT(if (!success) { m_SkinningMatrices.Clear(); TriggerLocalBoundsUpdate(); InvalidateCachedRenderData(); });
   if (!hSkeleton.IsValid() || !GetMesh().IsValid())
     return XII_FAILURE;
   xiiResourceLock<xiiSkeletonResource> skeleton(hSkeleton, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
@@ -551,6 +559,7 @@ xiiResult xiiSkinnedMeshComponent::SetAnimationPose(const xiiSkeletonResourceHan
     return XII_FAILURE;
   XII_SUCCEED_OR_RETURN(pose.BuildMeshSkinningPalette(*skeleton.GetPointer(), mesh->GetDescriptor(), m_SkinningMatrices, m_UsedPaletteSlots));
   SetSkeleton(hSkeleton);
+  TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
   success = true;
   return XII_SUCCESS;
@@ -610,6 +619,12 @@ void xiiSkinnedMeshComponent::FillRenderData(xiiMeshRenderData& ref_renderData, 
 
   ref_renderData.m_Flags.Add(xiiMeshRenderDataFlags::Skinned);
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::MorphTargets, !m_MorphWeights.IsEmpty());
+}
+
+xiiResult xiiSkinnedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
+{
+  XII_SUCCEED_OR_RETURN(SUPER::GetLocalBounds(ref_bounds, ref_bAlwaysVisible, ref_msg));
+  return xiiMeshSkinning::ComputeBounds(ref_bounds, m_SkinningMatrices, ref_bounds);
 }
 
 xiiBitflags<xiiMeshRenderDataFlags> xiiSkinnedMeshComponent::GetMeshRenderFlags() const

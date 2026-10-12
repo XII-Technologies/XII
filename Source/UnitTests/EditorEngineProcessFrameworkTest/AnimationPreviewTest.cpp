@@ -150,6 +150,36 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
     XII_TEST_VEC3(component->GetSkinningMatrices()[0].GetTranslationVector(), xiiVec3(1, 0, 0), 0.0001f);
     XII_TEST_BOOL(!world.GetWorldSimulationEnabled());
 
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pose mutations refresh world bounds without simulation")
+    {
+      world.Update();
+      XII_TEST_BOOL(object->GetLocalBounds().GetBox().Contains(xiiVec3(1.5f, 0, 0)));
+      const xiiMat4 matrices[] = {xiiMat4::MakeTranslation(xiiVec3(10, 0, 0)), xiiMat4::MakeTranslation(xiiVec3(30, 0, 0))};
+      XII_TEST_RESULT(component->SetSkinningMatrices(matrices));
+      world.Update();
+      XII_TEST_BOOL(object->GetLocalBounds().GetBox().Contains(xiiVec3(30.5f, 0, 0)));
+      XII_TEST_BOOL(object->GetLocalBounds().GetBox().Contains(xiiVec3(-0.5f, 0, 0)));
+      auto invalid          = xiiMat4::MakeIdentity();
+      invalid.Element(0, 3) = 1;
+      XII_TEST_BOOL(component->SetSkinningMatrices(xiiMakeArrayPtr(&invalid, 1)).Failed());
+      XII_TEST_INT(component->GetSkinningMatrices().GetCount(), 2);
+      XII_TEST_VEC3(component->GetSkinningMatrices()[1].GetTranslationVector(), xiiVec3(30, 0, 0), 0);
+      XII_TEST_RESULT(component->SetSkinningMatrices(component->GetSkinningMatrices().GetSubArray(1, 1)));
+      XII_TEST_INT(component->GetSkinningMatrices().GetCount(), 1);
+      XII_TEST_VEC3(component->GetSkinningMatrices()[0].GetTranslationVector(), xiiVec3(30, 0, 0), 0);
+      component->ClearPose();
+      world.Update();
+      XII_TEST_VEC3(object->GetLocalBounds().GetBox().m_vMax, xiiVec3(0.5f), 0.0001f);
+      XII_TEST_RESULT(component->SetSkinningMatrices(matrices));
+      XII_TEST_BOOL(component->SetAnimationPose({}, preview.GetPose()).Failed());
+      world.Update();
+      XII_TEST_BOOL(component->GetSkinningMatrices().IsEmpty());
+      XII_TEST_VEC3(object->GetLocalBounds().GetBox().m_vMax, xiiVec3(0.5f), 0.0001f);
+      XII_TEST_RESULT(preview.UpdateMesh(*component, hClip, 0.5));
+      world.Update();
+      XII_TEST_BOOL(object->GetLocalBounds().GetBox().Contains(xiiVec3(1.5f, 0, 0)));
+    }
+
     auto hReloadableClip = xiiResourceManager::LoadResource<xiiAnimationClipResource>("EditorAnimationPreviewReloadableClip");
     auto PublishClip     = [&](float endPosition) {
       xiiAnimationClipResourceDescriptor replacement;
@@ -171,6 +201,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
     PublishClip(6);
     XII_TEST_RESULT(preview.UpdateMesh(*component, hReloadableClip, 0.5));
     XII_TEST_VEC3(component->GetSkinningMatrices()[0].GetTranslationVector(), xiiVec3(2, 0, 0), 0.0001f);
+    world.Update();
+    XII_TEST_BOOL(object->GetLocalBounds().GetBox().Contains(xiiVec3(2.5f, 0, 0)));
 
     xiiMeshResourceDescriptor bindMesh;
     {

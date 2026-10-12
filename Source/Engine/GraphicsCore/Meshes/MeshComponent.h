@@ -282,6 +282,7 @@ public:
   // xiiMeshComponentBase
 
 protected:
+  virtual xiiResult                           GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
   virtual void                                FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const override;
   virtual xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
 
@@ -298,8 +299,9 @@ public:
   /// Returns a handle to the skeleton resource for this skinned mesh component, used to access the skeleton for skinning this mesh.
   const xiiSkeletonResourceHandle& GetSkeleton() const; // [ property ]
 
-  /// Sets the skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
-  void SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
+  /// Sets finite affine mesh-space skinning matrices and refreshes spatial bounds. Empty restores
+  /// bind pose. Invalid palettes fail without changing the current pose. Input may alias the current palette.
+  [[nodiscard]] xiiResult SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
 
   /// Applies an evaluated skeleton pose in this mesh's bone palette order. Acquires current mesh/skeleton definitions.
   /// Failure clears stale skinning matrices without changing morph weights. Scratch capacity is reused.

@@ -74,7 +74,7 @@ xiiResult xiiAnimationPreview::UpdateMesh(xiiSkinnedMeshComponent& component, co
   else
     XII_SUCCEED_OR_RETURN(Build(*skeleton.GetPointer(), descriptor));
   component.SetSkeleton(hSkeleton);
-  component.SetSkinningMatrices(m_Palette);
+  XII_SUCCEED_OR_RETURN(component.SetSkinningMatrices(m_Palette));
   success = true;
   return XII_SUCCESS;
 }

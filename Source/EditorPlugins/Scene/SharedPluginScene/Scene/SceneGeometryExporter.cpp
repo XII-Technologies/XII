@@ -12,6 +12,7 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Meshes/MeshSkinning.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -160,18 +161,12 @@ namespace
       xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&p), vertex + position->m_uiOffset, sizeof(p));
       if (!skin.IsEmpty())
       {
-        xiiUInt16 joint[4];
-        xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(joint), vertex + bones->m_uiOffset, sizeof(joint));
-        const auto* influence = vertex + weights->m_uiOffset;
-        xiiVec3     deformed  = xiiVec3::MakeZero();
-        for (xiiUInt32 j = 0; j < 4; ++j)
-          if (influence[j] != 0)
-          {
-            if (joint[j] >= skin.GetCount() || !skin[joint[j]].IsValid())
-              return xiiStatus("Native mesh skinning references an invalid joint matrix.");
-            deformed += skin[joint[j]].TransformPosition(p) * (influence[j] / 255.0f);
-          }
-        p = deformed;
+        xiiVec4U16       joints;
+        xiiColorLinearUB influence;
+        xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&joints), vertex + bones->m_uiOffset, sizeof(joints));
+        xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&influence), vertex + weights->m_uiOffset, sizeof(influence));
+        if (xiiMeshSkinning::TransformPosition(p, joints, influence, skin, p).Failed())
+          return xiiStatus("Native mesh skinning references invalid influences or produces a non-finite position.");
       }
       if (!p.IsValid())
         return xiiStatus("Native mesh export encountered a non-finite vertex.");
