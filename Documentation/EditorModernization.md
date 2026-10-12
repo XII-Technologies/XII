@@ -1821,3 +1821,40 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   Other platforms/backends and the broader outstanding migrations above remain
   unverified or incomplete; this is continued progress toward the comprehensive
   modernization objective, not completion of that objective.
+
+## Property-animation source preservation and integrated build
+
+- Repository inspection confirms that property animation has no Engine resource,
+  component, or EnginePluginAssets document context. Skeletal animation clips have
+  different binding and sampling semantics and cannot represent arbitrary reflected
+  property tracks. No shipped property-animation source documents were found; external
+  project documents must still be preserved.
+- Existing `.xiiPropertyAnimAsset` documents retain editable curves, gradients, event
+  tracks, binding paths, FPS and duration. Their document UUIDs, track UUIDs and control
+  point UUIDs survive save/reopen and undo/redo. The source editor uses the regular
+  document window and local object mirror without a runtime connection. A visible
+  notice explains the absent runtime export and 3D preview. Unsupported context
+  keyframing, engine mirroring, viewports, gizmos and transform actions were removed.
+- The production document manager opens existing files but rejects creation, removes
+  runtime-compatible asset tags, disables transformation and publishes no asset-table
+  resource redirection. It does not emit the obsolete binary format. Existing source
+  files remain editable; this is not a replacement property-animation runtime.
+- Editor-owned `xiiPropertyAnimationChannel` replaces the removed runtime enum. A
+  track version patch preserves numeric channel values and migrates legacy named
+  values while leaving bindings and child objects intact. The unused, unreflected
+  playback-mode field was removed. Invalid legacy FPS values are bounded during
+  scrubbing to avoid division by zero or a zero frame step.
+- EditorFrameworkTest now links the production asset plugin and supplies the real
+  application and Qt lifetime required by its startup services. Tests exercise all
+  nine legacy channel names, numeric channel storage, disk persistence, stable
+  identities, curve/gradient/event content, undo/redo, and production-manager source
+  policy. All nine editor document subtests pass using Qt's offscreen platform:
+  `Workspace/editor-property-source-final-build.log` and
+  `Workspace/editor-property-source-final-tests.log`.
+- The Windows Debug integrated build passes for Editor, EditorProcessor,
+  EditorPluginAssets and EditorPluginVisualScript, including their scene and engine
+  process dependencies: `Workspace/editor-property-source-integrated-build.log`.
+  This supersedes the property-animation compile blocker recorded above. Integrated
+  application startup, project/document windows, viewport interaction and other
+  platforms remain separate verification work; these builds and source tests do not
+  establish completion of the comprehensive Editor modernization goal.
