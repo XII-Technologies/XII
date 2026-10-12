@@ -1,0 +1,67 @@
+// XII Engine - indexed vertex-pull commands from the canonical visible-meshlet stream.
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+#include <Shaders/Visibility/GpuSceneCommon.h>
+#include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
+
+StructuredBuffer<GpuSceneInstance> g_SceneInstances;
+StructuredBuffer<GpuGeometryRecord> g_Geometry;
+StructuredBuffer<GpuMeshlet> g_Meshlets;
+StructuredBuffer<uint2> g_VisibleMeshlets;
+StructuredBuffer<uint> g_VisibleMeshletCount;
+RWStructuredBuffer<uint4> g_IndexedCommands;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchIndex : SV_DispatchThreadID)
+{
+  uint capacity, stride;
+  g_IndexedCommands.GetDimensions(capacity, stride);
+  const uint commandIndex = dispatchIndex.x;
+  if (commandIndex >= capacity)
+    return;
+  uint visibleCapacity;
+  g_VisibleMeshlets.GetDimensions(visibleCapacity, stride);
+  if (commandIndex >= min(g_VisibleMeshletCount[0], visibleCapacity))
+    return;
+  // The graphics submission uses the GPU visibility counter. Invalid candidates draw nothing.
+  g_IndexedCommands[commandIndex] = 0u;
+  uint sceneCapacity, geometryCapacity, meshletCapacity;
+  g_SceneInstances.GetDimensions(sceneCapacity, stride);
+  g_Geometry.GetDimensions(geometryCapacity, stride);
+  g_Meshlets.GetDimensions(meshletCapacity, stride);
+  const uint2 visible = g_VisibleMeshlets[commandIndex];
+  const uint instanceIndex = visible.x;
+  if (instanceIndex >= sceneCapacity || visible.y >= meshletCapacity)
+    return;
+  const GpuSceneInstance instance = g_SceneInstances[instanceIndex];
+  if (GeometryBaseIndex >= geometryCapacity || instance.GeometryIndex >= geometryCapacity - GeometryBaseIndex)
+    return;
+  const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
+  const GpuMeshlet meshlet = g_Meshlets[visible.y];
+  const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
+  if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.ResidentLodMask & (1u << lodIndex)) == 0u ||
+      (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
+    return;
+  const GpuGeometryLod lod = geometry.Lods[lodIndex];
+  if (lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletRemapBufferIndex == 0xFFFFFFFFu || lod.MeshletPrimitiveBufferIndex == 0xFFFFFFFFu ||
+      lod.MeshletCount == 0u)
+    return;
+  const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  if (meshlet.Header.x > lod.IndexCount / 3u || primitiveCount > lod.IndexCount / 3u - meshlet.Header.x)
+    return;
+  uint begin = meshlet.Header.x;
+  uint end = begin + primitiveCount;
+  if (instance.PrimitiveCount != 0u)
+  {
+    if (instance.FirstPrimitive > lod.IndexCount / 3u || instance.PrimitiveCount > lod.IndexCount / 3u - instance.FirstPrimitive)
+      return;
+    begin = max(begin, instance.FirstPrimitive);
+    end = min(end, instance.FirstPrimitive + instance.PrimitiveCount);
+  }
+  if (begin >= end)
+    return;
+  // StartInstance identifies the compact meshlet, which resolves both scene instance and LOD.
+  g_IndexedCommands[commandIndex] = uint4((end - begin) * 3u, 1u, (begin - meshlet.Header.x) * 3u, commandIndex);
+}

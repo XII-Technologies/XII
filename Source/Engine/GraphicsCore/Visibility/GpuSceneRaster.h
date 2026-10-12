@@ -78,6 +78,7 @@ public:
   [[nodiscard]] static bool IsSubsystemInitialized();
   [[nodiscard]] static bool IsInitialized();
   [[nodiscard]] static bool IsSupported();
+  [[nodiscard]] static bool IsPickingSupported();
   [[nodiscard]] static bool IsForwardPlusSupported();
 
   /// Rasterizes a nearest-surface query using the canonical mesh stream and material coverage.
@@ -86,10 +87,13 @@ public:
   /// Include/exclude transparent objects through the visibility stream. Zero-opacity translucent
   /// pixels are discarded; masked materials use their authored alpha cutoff. Normals are smooth
   /// geometric normals (no normal-map perturbation). Previous-frame/jitter fields are ignored.
-  /// Unsupported mesh shaders or invalid inputs fail and clear the output handle.
+  /// Uses mesh shaders when requested and supported, otherwise pulls indexed vertices from the
+  /// same resident geometry. Both routes use the same LOD selection, identity and material coverage.
+  /// Invalid inputs fail and clear the output handle. Indexed queries consume the same visible meshlets;
+  /// their transient command storage is O(visible-meshlet capacity).
   [[nodiscard]] static xiiResult AddPickingPass(xiiRenderGraph& graph, xiiStringView sName,
                                                 const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface);
+                                                const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders = true);
 
   /// Adds a reversed-Z depth prepass and returns the produced depth version. Invalid input or a
   /// device without mesh shaders returns an invalid handle so callers can select an indexed fallback.

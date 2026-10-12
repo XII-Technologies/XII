@@ -9,6 +9,8 @@ StructuredBuffer<uint2> g_VisibleMeshlets;
 StructuredBuffer<uint> g_VisibleMeshletCount;
 ByteAddressBuffer g_Buffers[];
 
+#include <Shaders/Pipeline/GpuSceneSurfaceData.h>
+
 [outputtopology("triangle")]
 [numthreads(64, 1, 1)]
 void main(uint threadIndex : SV_GroupThreadID,
@@ -98,29 +100,7 @@ void main(uint threadIndex : SV_GroupThreadID,
   if (threadIndex < vertexCount)
   {
     const uint sourceVertex = g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + threadIndex) * 4u);
-    const uint vertexOffset = sourceVertex * VertexStride;
-    const bool vertexIsValid = vertexOffset <= vertexBufferBytes && lastAttributeEnd <= vertexBufferBytes - vertexOffset;
-    const float3 localPosition = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset)) : 0.0f;
-    const float3 localNormal = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + NormalOffset)) : float3(0.0f, 0.0f, 1.0f);
-    const float4 localTangent = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset)) : float4(1.0f, 0.0f, 0.0f, 1.0f);
-    const float2 texCoord = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset)) : 0.0f;
-
-    const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
-    const float3 previousWorldPosition = mul(instance.PreviousGlobalTransform, float4(localPosition, 1.0f)).xyz;
-    float3 worldNormal = normalize(float3(dot(instance.NormalTransformRow0.xyz, localNormal), dot(instance.NormalTransformRow1.xyz, localNormal), dot(instance.NormalTransformRow2.xyz, localNormal)));
-    float3 worldTangent = normalize(mul((float3x3)instance.GlobalTransform, localTangent.xyz));
-    worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
-
-    GBufferVertex output;
-    output.Position = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
-    output.WorldNormal = worldNormal;
-    output.WorldTangent = worldTangent;
-    output.TangentSign = localTangent.w;
-    output.TexCoord = texCoord;
-    output.MaterialIndex = instance.MaterialIndex;
-    output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));
-    output.ObjectId = instance.ObjectId;
-    vertices[threadIndex] = output;
+    vertices[threadIndex] = xiiLoadSceneSurfaceVertex(instance, lod, sourceVertex);
   }
 
   if (threadIndex < primitiveCount)

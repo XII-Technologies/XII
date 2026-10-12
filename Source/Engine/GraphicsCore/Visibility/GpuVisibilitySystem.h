@@ -133,6 +133,8 @@ struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityOutputs
   xiiRenderGraphBufferHandle m_hVisibleMeshletCount;
   xiiRenderGraphBufferHandle m_hIndirectCommands;
   xiiRenderGraphBufferHandle m_hIndirectCommandCount;
+  /// Capacity of the compact visible-meshlet stream, shared by mesh and indexed consumers.
+  xiiUInt32 m_uiMaxVisibleMeshlets = 0U;
 };
 
 /// GPU-driven visibility pipeline shared by scene, shadow, sensor, and editor views.

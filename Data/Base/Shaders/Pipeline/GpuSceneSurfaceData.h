@@ -1,0 +1,41 @@
+// XII Engine - canonical surface attributes and transforms for mesh and indexed rasterization.
+#pragma once
+
+GBufferVertex xiiInvalidSceneSurfaceVertex()
+{
+  GBufferVertex result = (GBufferVertex)0;
+  result.Position      = float4(0, 0, -1, 1);
+  return result;
+}
+
+GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLod lod, uint sourceVertex)
+{
+  uint vertexBufferBytes;
+  g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
+  const uint lastAttributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
+  if (VertexStride < lastAttributeEnd || sourceVertex >= lod.VertexCount ||
+      vertexBufferBytes < lastAttributeEnd || sourceVertex > (vertexBufferBytes - lastAttributeEnd) / VertexStride)
+    return xiiInvalidSceneSurfaceVertex();
+  const uint   vertexOffset  = sourceVertex * VertexStride;
+  const float3 localPosition = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset));
+  const float3 localNormal   = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + NormalOffset));
+  const float4 localTangent  = asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset));
+  const float2 texCoord      = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset));
+
+  const float3 worldPosition         = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
+  const float3 previousWorldPosition = mul(instance.PreviousGlobalTransform, float4(localPosition, 1.0f)).xyz;
+  float3       worldNormal           = normalize(float3(dot(instance.NormalTransformRow0.xyz, localNormal), dot(instance.NormalTransformRow1.xyz, localNormal), dot(instance.NormalTransformRow2.xyz, localNormal)));
+  float3       worldTangent          = normalize(mul((float3x3)instance.GlobalTransform, localTangent.xyz));
+  worldTangent                       = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
+
+  GBufferVertex output;
+  output.Position             = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
+  output.WorldNormal          = worldNormal;
+  output.WorldTangent         = worldTangent;
+  output.TangentSign          = localTangent.w;
+  output.TexCoord             = texCoord;
+  output.MaterialIndex        = instance.MaterialIndex;
+  output.PreviousClipPosition = mul(PreviousViewProjectionMatrix, float4(previousWorldPosition, 1.0f));
+  output.ObjectId             = instance.ObjectId;
+  return output;
+}
