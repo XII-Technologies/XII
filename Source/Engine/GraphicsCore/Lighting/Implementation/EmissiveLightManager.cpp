@@ -4,6 +4,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Lighting/EmissiveLightManager.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -96,6 +97,8 @@ namespace
 class xiiEmissiveLightManager::State
 {
 public:
+  xiiMutex                                 m_Mutex;
+  xiiSharedPtr<xiiGALSampler>              m_pMaterialSampler;
   xiiEmissiveLightSettings                 m_Settings;
   xiiEmissiveLightStats                    m_Stats;
   xiiSharedPtr<xiiGALComputePipelineState> m_pBuildPipeline;
@@ -226,7 +229,20 @@ void xiiEmissiveLightManager::Startup()
 void xiiEmissiveLightManager::EngineStartup()
 {
   if (s_pState != nullptr)
-    s_pState->m_bEngineStarted = true;
+  {
+    const auto device = xiiGALDevice::GetDefaultDevice();
+    if (!device)
+      return;
+    xiiGALSamplerCreationDescription sampler;
+    sampler.m_MinFilter          = xiiGALFilterType::Linear;
+    sampler.m_MagFilter          = xiiGALFilterType::Linear;
+    sampler.m_MipFilter          = xiiGALFilterType::Linear;
+    sampler.m_AddressU           = xiiGALTextureAddressMode::Wrap;
+    sampler.m_AddressV           = xiiGALTextureAddressMode::Wrap;
+    sampler.m_AddressW           = xiiGALTextureAddressMode::Wrap;
+    s_pState->m_pMaterialSampler = device->CreateSampler(sampler);
+    s_pState->m_bEngineStarted   = s_pState->m_pMaterialSampler != nullptr;
+  }
 }
 
 void xiiEmissiveLightManager::EngineShutdown()
@@ -236,6 +252,7 @@ void xiiEmissiveLightManager::EngineShutdown()
     s_pState->m_pBuildPipeline.Clear();
     s_pState->m_pAliasBlockBuildPipeline.Clear();
     s_pState->m_pAliasGlobalBuildPipeline.Clear();
+    s_pState->m_pMaterialSampler.Clear();
     s_pState->m_bEngineStarted = false;
   }
 }
@@ -251,6 +268,7 @@ xiiResult xiiEmissiveLightManager::Configure(const xiiEmissiveLightSettings& set
   if (s_pState == nullptr || !IsConfigurationValid(settings))
     return XII_FAILURE;
 
+  XII_LOCK(s_pState->m_Mutex);
   s_pState->m_Settings                   = settings;
   s_pState->m_Stats.m_uiTriangleCapacity = settings.m_uiMaxTriangles;
   return XII_SUCCESS;
@@ -264,7 +282,10 @@ const xiiEmissiveLightSettings& xiiEmissiveLightManager::GetConfiguration()
 
 xiiEmissiveLightStats xiiEmissiveLightManager::GetStats()
 {
-  return s_pState != nullptr ? s_pState->m_Stats : xiiEmissiveLightStats{};
+  if (s_pState == nullptr)
+    return {};
+  XII_LOCK(s_pState->m_Mutex);
+  return s_pState->m_Stats;
 }
 
 bool xiiEmissiveLightManager::IsSubsystemInitialized()
@@ -282,6 +303,8 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
   BuildOutputs outputs;
   if (!IsInitialized())
     return outputs;
+
+  XII_LOCK(s_pState->m_Mutex);
 
   const bool bExtract = description.m_Visibility.m_hSceneInstances.IsValid() &&
     description.m_Geometry.m_hGeometryMetadata.IsValid() && description.m_Geometry.m_hMeshletMetadata.IsValid() &&
@@ -375,7 +398,9 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       cmd.ResolveAndSetUnorderedAccessBufferView("g_EmissiveHeader", context.GetBuffer(data.m_hHeader)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       xiiGALBindlessResourceTable::BindBufferSRVs(cmd, "g_Buffers", xiiGALShaderType::Compute);
       xiiGALBindlessResourceTable::BindTextureSRVs(cmd, "g_Textures", xiiGALShaderType::Compute);
-      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.ResolveAndSetSampler("g_sLinearWrap", xiiEmissiveLightManager::s_pState->m_pMaterialSampler.Borrow(), xiiGALShaderType::Compute);
+      if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+        return;
 
       cmd.DispatchCompute({data.m_Description.m_Geometry.m_uiMaximumResidentMeshletCount, data.m_uiDispatchY, data.m_uiDispatchZ});
     });
@@ -450,7 +475,8 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasProbabilities", context.GetBuffer(data.m_hProbabilities)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasSmall", context.GetBuffer(data.m_hSmall)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasLarge", context.GetBuffer(data.m_hLarge)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+        return;
       cmd.DispatchCompute({data.m_uiDispatchWidth, data.m_uiDispatchHeight, 1U});
     });
   aliasBlockPass.first->m_uiTriangleCapacity = uiTriangleCapacity;
@@ -509,7 +535,8 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasProbabilities", context.GetBuffer(data.m_hProbabilities)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasSmall", context.GetBuffer(data.m_hSmall)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_AliasLarge", context.GetBuffer(data.m_hLarge)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      if (cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+        return;
       cmd.DispatchCompute({1U, 1U, 1U});
     });
   aliasGlobalPass.first->m_uiTriangleCapacity = uiTriangleCapacity;

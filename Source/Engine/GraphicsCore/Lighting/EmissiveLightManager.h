@@ -44,6 +44,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiEmissiveLightStats);
 /// consumes the generation-bearing geometry table, frame-sliced scene instances, and canonical
 /// material table, then reconstructs world-space emissive triangles from bindless mesh buffers.
 /// Allocator-backed state exists only between GraphicsCore subsystem startup and shutdown.
+/// Configuration, graph construction and statistics are synchronized. Startup/shutdown and
+/// references returned by GetConfiguration() require callers to quiesce configuration changes.
 class XII_GRAPHICSCORE_DLL xiiEmissiveLightManager
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiEmissiveLightManager);
