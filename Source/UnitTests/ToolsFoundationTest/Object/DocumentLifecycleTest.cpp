@@ -7,6 +7,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <TestFramework/Utilities/TestLogInterface.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundationTest/Object/TestObjectManager.h>
 #include <ToolsFoundationTest/Reflection/ReflectionTestClasses.h>
@@ -395,5 +396,34 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, DocumentLifecycle)
       XII_TEST_BOOL(document->GetGuid() == asyncId);
       manager.CloseDocument(document);
     }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Asynchronous persistence failure is reported and preserves unsaved state")
+  {
+    xiiStringBuilder blockedPath = path;
+    blockedPath.AppendPath("AsyncBlocked.xiiLifecycleTest");
+    state                          = {};
+    bool                  reported = false;
+    xiiTestLogInterface   log;
+    xiiTestLogSystemScope logScope(&log);
+    log.ExpectMessage("Failed to save new document", xiiLogMsgType::ErrorMsg);
+
+    // Async creation reports scheduling success; the later result uses the ordinary document status event.
+    XII_TEST_STATUS(manager.CreateDocument("Lifecycle", blockedPath, document, flags | xiiDocumentFlags::AsyncSave));
+    if (document == nullptr)
+      return;
+    document->m_EventsOne.AddEventHandler([&](const xiiDocumentEvent& event) {
+      if (event.m_Type == xiiDocumentEvent::Type::DocumentStatusMsg)
+      {
+        XII_TEST_BOOL(event.m_sStatusMsg.StartsWith("Failed to save document:"));
+        XII_TEST_BOOL(event.m_pDocument->IsModified());
+        reported = true;
+      }
+    });
+    manager.CloseDocument(document);
+    XII_TEST_BOOL(reported);
+    XII_TEST_INT(state.m_uiBeforeClosing, 1);
+    XII_TEST_INT(state.m_uiDestroyed, 1);
+    XII_TEST_BOOL(!xiiOSFile::ExistsFile(blockedPath));
   }
 }

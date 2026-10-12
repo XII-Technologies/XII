@@ -274,7 +274,13 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
         out_pDocument->SetModified(true);
         if (flags.IsSet(xiiDocumentFlags::AsyncSave))
         {
-          out_pDocument->SaveDocumentAsync({});
+          out_pDocument->SaveDocumentAsync([](xiiDocument* pDocument, xiiStatus status) {
+            if (status.Failed())
+            {
+              xiiLog::Error("Failed to save new document '{}': {}", pDocument->GetDocumentPath(), status.GetMessageString());
+              pDocument->ShowDocumentStatus(xiiFmt("Failed to save document: {}", status.GetMessageString()));
+            }
+          });
         }
         else
         {
