@@ -40,6 +40,10 @@ public:
   ///        Implementations should schedule result readback here (with appropriate frame delay).
   virtual void OnFrameEnd(xiiUInt64 uiFrameIndex) = 0;
 
+  /// Called instead of OnFrameEnd when recording fails, after closing any active query scope.
+  /// Discard this frame's measurements while retaining in-flight query resources safely.
+  virtual void OnFrameAbort() = 0;
+
   /// Returns the last resolved GPU duration for the given pass in milliseconds.
   ///        Returns 0.0f if no data is yet available (warmup frames).
   [[nodiscard]] virtual float GetPassDurationMs(xiiStringView sPassName) const = 0;
@@ -72,6 +76,7 @@ public:
   void OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnFrameEnd(xiiUInt64 uiFrameIndex) override;
+  void OnFrameAbort() override;
 
   /// Returns the last resolved GPU duration for the given pass in milliseconds.
   [[nodiscard]] float GetPassDurationMs(xiiStringView sPassName) const override;

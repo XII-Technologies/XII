@@ -671,11 +671,21 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     compileSettings.m_bEnableAsyncQueues  = true;
     compileSettings.m_bEnableCompileCache = true;
 
-    if (pGraph->Compile(compileSettings).Succeeded())
+    xiiStringBuilder graphError;
+    if (pGraph->Compile(compileSettings, &graphError).Succeeded())
     {
       // Pass the view's per-view profiler into the executor so every pass gets Duration bracketed.
-      const xiiResult executeResult = pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler());
-      XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", viewDetail.m_pView->GetName());
+      if (pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler(), &graphError).Failed())
+      {
+        // Earlier callbacks may have recorded/promoted history before a later submission fails.
+        // That state cannot be used as completed temporal input on the next view update.
+        viewDetail.m_pView->InvalidateTemporalHistory();
+        xiiLog::Error("Failed to execute render graph for view '{}': {}", viewDetail.m_pView->GetName(), graphError);
+      }
+    }
+    else
+    {
+      xiiLog::Error("Failed to compile render graph for view '{}': {}", viewDetail.m_pView->GetName(), graphError);
     }
     resourceCache.EndFrame();
   }

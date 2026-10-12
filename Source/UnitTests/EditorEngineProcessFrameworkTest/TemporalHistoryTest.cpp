@@ -14,6 +14,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
+#include <TestFramework/Utilities/TestLogInterface.h>
 
 namespace
 {
@@ -275,4 +276,133 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
     for (xiiUInt32 history = 0; history < xiiPipelineHistoryCheck::s_uiHistoryCount; ++history)
       XII_TEST_BOOL(checks[0]->m_LastOutput[history] != checks[1]->m_LastOutput[history]);
   }
+}
+
+class xiiPipelineHistoryFailure : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiPipelineHistoryFailure, xiiRenderPipelinePass);
+
+public:
+  xiiUInt32                   m_uiRecordings    = 0;
+  xiiUInt32                   m_uiInvalidations = 0;
+  bool                        m_bHistoryValid   = false;
+  xiiSharedPtr<xiiGALTexture> m_pImage;
+  void                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>&) const override {}
+  void                        InvalidateTemporalHistory() override
+  {
+    if (m_uiRecordings != 0)
+      ++m_uiInvalidations;
+    m_bHistoryValid = false;
+  }
+  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  {
+    if (!m_pImage)
+    {
+      xiiGALTextureCreationDescription texture;
+      texture.m_Type      = xiiGALResourceDimension::Texture2D;
+      texture.m_Size      = {8, 8};
+      texture.m_Format    = xiiGALResourceFormat::R32Float;
+      texture.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+      m_pImage            = xiiGALDevice::GetDefaultDevice()->CreateTexture(texture);
+      if (!m_pImage)
+        return XII_FAILURE;
+    }
+    struct History
+    {
+      xiiRenderGraphBufferHandle  m_Token;
+      xiiRenderGraphTextureHandle m_Image;
+    };
+    const auto history = context.m_Graph.AddPass<History>("Record history before failure", xiiGALCommandQueueFlags::Graphics, [this](History& data, xiiRenderGraphBuilder& builder) {
+        xiiGALBufferCreationDescription buffer;
+        buffer.m_uiSize = sizeof(xiiUInt32);
+        buffer.m_BindFlags = xiiGALBindFlags::ShaderResource;
+        buffer.m_Mode = xiiGALBufferMode::Raw;
+        data.m_Token = builder.WriteBuffer("History ordering token", buffer, xiiGALResourceStateFlags::CopyDestination);
+        data.m_Image = builder.WriteTexture(builder.ImportTexture("Recoverable history image", m_pImage, m_pImage->GetResourceState()), xiiGALResourceStateFlags::CopyDestination); }, [this](const History& data, xiiRenderGraphPassContext& execute) {
+        execute.GetCommandList().ClearRenderTargetView(execute.GetTexture(data.m_Image)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.25f, 0, 0, 1));
+        ++m_uiRecordings;
+        m_bHistoryValid = true; }, true);
+    if (m_uiRecordings == 0)
+    {
+      struct InvalidAttachments
+      {
+        XII_DECLARE_POD_TYPE();
+      };
+      // Both images are valid GAL textures. Only their combined framebuffer is invalid, which
+      // fails during materialization after the earlier history callback has already recorded.
+      context.m_Graph.AddPass<InvalidAttachments>("Fail after recording history", xiiGALCommandQueueFlags::Graphics, [&](InvalidAttachments&, xiiRenderGraphBuilder& builder) {
+          static_cast<void>(builder.ReadBuffer(history.first->m_Token, xiiGALResourceStateFlags::ShaderResource));
+          xiiGALTextureCreationDescription texture;
+          texture.m_Type = xiiGALResourceDimension::Texture2D;
+          texture.m_Size = {8, 8};
+          texture.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+          texture.m_BindFlags = xiiGALBindFlags::RenderTarget;
+          static_cast<void>(builder.WriteTexture("Full-size attachment", texture, xiiGALResourceStateFlags::RenderTarget));
+          texture.m_Size = {4, 4};
+          static_cast<void>(builder.WriteTexture("Mismatched attachment", texture, xiiGALResourceStateFlags::RenderTarget));
+          builder.SetPassRenderPassManaged(); }, [](const InvalidAttachments&, xiiRenderGraphPassContext&) {}, true);
+    }
+    return XII_SUCCESS;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineHistoryFailure, 1, xiiRTTIDefaultAllocator<xiiPipelineHistoryFailure>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(TemporalHistory, FailedRecordingInvalidatesHistory)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  xiiRenderPipelineResourceDescriptor definition;
+  definition.AddPass("History failure regression", "xiiPipelineHistoryFailure");
+  const auto          pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Recoverable history failure", std::move(definition));
+  xiiWorldDescription description("Failed recording recovery");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  world.SetWorldSimulationEnabled(false);
+  xiiView* view = nullptr;
+  world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Recovering temporal view", view);
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiGALTextureCreationDescription target;
+  target.m_Type      = xiiGALResourceDimension::Texture2D;
+  target.m_Size      = {8, 8};
+  target.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
+  target.m_BindFlags = xiiGALBindFlags::RenderTarget;
+  auto texture       = environment.GetDevice()->CreateTexture(target);
+  if (!XII_TEST_BOOL(texture != nullptr))
+    return;
+  view->SetRenderTargetView(texture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  view->SetViewport({0, 0, 8, 8});
+  view->SetCamera(&camera);
+  view->SetRenderPipelineResource(pipeline);
+  {
+    xiiTestLogInterface   log;
+    xiiTestLogSystemScope logScope(&log, true);
+    log.ExpectMessage("dimensions do not match the framebuffer", xiiLogMsgType::ErrorMsg);
+    world.Update();
+  }
+  const auto* pass = xiiDynamicCast<const xiiPipelineHistoryFailure*>(view->GetRenderPipelineInstance().GetPass(0));
+  if (!XII_TEST_BOOL(pass != nullptr))
+    return;
+  XII_TEST_INT(pass->m_uiRecordings, 1);
+  XII_TEST_INT(pass->m_uiInvalidations, 1);
+  XII_TEST_BOOL(!pass->m_bHistoryValid);
+  environment.GetDevice()->WaitIdle();
+  CheckDepthHistory(*environment.GetDevice(), pass->m_pImage.Borrow(), 0.25f);
+  world.Update();
+  environment.GetDevice()->WaitIdle();
+  XII_TEST_INT(pass->m_uiRecordings, 2);
+  XII_TEST_INT(pass->m_uiInvalidations, 1);
+  XII_TEST_BOOL(pass->m_bHistoryValid);
+  // Wrap the profiler's query ring after the aborted recording, then verify it remains usable.
+  for (xiiUInt32 i = 0; i < 6; ++i)
+    world.Update();
+  environment.GetDevice()->WaitIdle();
+  XII_TEST_INT(pass->m_uiRecordings, 8);
+  XII_TEST_INT(pass->m_uiInvalidations, 1);
 }

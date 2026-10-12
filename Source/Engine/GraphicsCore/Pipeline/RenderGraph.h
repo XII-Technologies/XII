@@ -564,6 +564,9 @@ public:
   /// \param out_pError     - Optional diagnostics output.
   ///
   /// \returns XII_SUCCESS on success.
+  /// Failure may follow partial GPU submission. A valid recorded prefix is submitted to preserve
+  /// tracked resource states; callers must invalidate temporal state and retain frame resources
+  /// until the submitted work completes, including on failure.
   [[nodiscard]] xiiResult Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler = nullptr, xiiStringBuilder* out_pError = nullptr);
 
 

@@ -1381,7 +1381,6 @@ xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xii
     const xiiBitflags<xiiGALResourceStateFlags> attachmentState    = group.m_AttachmentStates[uiAttachmentIndex];
     const bool                                  bDepth             = attachmentState.IsAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead);
 
-    XII_ASSERT_DEV(textureDescription.Is2D(), "Render graph native attachments must be 2D textures.");
     if (!textureDescription.Is2D())
     {
       if (out_pError != nullptr)
@@ -1391,7 +1390,6 @@ xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xii
 
     if (framebufferSize.HasNonZeroArea())
     {
-      XII_ASSERT_DEV(framebufferSize == textureDescription.m_Size, "All framebuffer attachments must have identical dimensions.");
       if (framebufferSize != textureDescription.m_Size)
       {
         if (out_pError != nullptr)
@@ -1730,7 +1728,14 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
         if (MaterializeRenderPassGroup(compiledPass.m_uiMergeGroupIndex, pDevice, resolvedTextures, out_pError).Failed())
         {
+          if (bEnableGpuProfiling)
+            pProfiler->OnGraphEnd(*pCommandList, m_Id.m_uiValue, uiSubmissionIndex, uiActualQueueIndex);
           pCommandList->End();
+          // Resource transitions already recorded above updated GAL's tracked state. Submit
+          // this valid prefix so imported resources cannot retain layouts that never executed.
+          pQueue->Submit(pCommandList);
+          if (bEnableGpuProfiling)
+            pProfiler->OnFrameAbort();
           return XII_FAILURE;
         }
 
