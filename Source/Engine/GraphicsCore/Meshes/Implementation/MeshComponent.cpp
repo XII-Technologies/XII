@@ -5,6 +5,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
+#include <GraphicsCore/AnimationSystem/AnimationPose.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
@@ -490,6 +491,23 @@ void xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMa
   }
 
   InvalidateCachedRenderData();
+}
+
+xiiResult xiiSkinnedMeshComponent::SetAnimationPose(const xiiSkeletonResourceHandle& hSkeleton, const xiiAnimationPose& pose)
+{
+  bool success = false;
+  XII_SCOPE_EXIT(if (!success) { m_SkinningMatrices.Clear(); InvalidateCachedRenderData(); });
+  if (!hSkeleton.IsValid() || !GetMesh().IsValid())
+    return XII_FAILURE;
+  xiiResourceLock<xiiSkeletonResource> skeleton(hSkeleton, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+  xiiResourceLock<xiiMeshResource>     mesh(GetMesh(), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+  if (!skeleton || !mesh || skeleton.GetAcquireResult() != xiiResourceAcquireResult::Final || mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(pose.BuildMeshSkinningPalette(*skeleton.GetPointer(), mesh->GetDescriptor(), m_SkinningMatrices, m_UsedPaletteSlots));
+  SetSkeleton(hSkeleton);
+  InvalidateCachedRenderData();
+  success = true;
+  return XII_SUCCESS;
 }
 
 xiiArrayPtr<const xiiMat4> xiiSkinnedMeshComponent::GetSkinningMatrices() const

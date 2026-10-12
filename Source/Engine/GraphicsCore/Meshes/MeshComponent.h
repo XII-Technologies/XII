@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <Foundation/Containers/Bitfield.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
@@ -12,6 +13,7 @@ class xiiMaterialResource;
 using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 
 struct xiiMsgExtractRenderData;
+struct xiiAnimationPose;
 
 using xiiStaticMeshComponentManager    = xiiComponentManager<class xiiStaticMeshComponent, xiiBlockStorageType::Compact>;
 using xiiMeshComponentManager          = xiiComponentManager<class xiiMeshComponent, xiiBlockStorageType::Compact>;
@@ -287,6 +289,10 @@ public:
   /// Sets the skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
   void SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
 
+  /// Applies an evaluated skeleton pose in this mesh's bone palette order. Acquires current mesh/skeleton definitions.
+  /// Failure clears stale skinning matrices without changing morph weights. Scratch capacity is reused.
+  xiiResult SetAnimationPose(const xiiSkeletonResourceHandle& hSkeleton, const xiiAnimationPose& pose);
+
   /// Returns a reference to the array of skinning matrices for this skinned mesh component, used to access the skinning transformation data for rendering this mesh.
   xiiArrayPtr<const xiiMat4> GetSkinningMatrices() const;
 
@@ -302,7 +308,8 @@ public:
 protected:
   xiiSkeletonResourceHandle m_hSkeleton;        ///< The skeleton resource for this skinned mesh component, used to specify the skeleton for skinning this mesh.
   xiiDynamicArray<xiiMat4>  m_SkinningMatrices; ///< Array of skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
-  xiiDynamicArray<float>    m_MorphWeights;     ///< Array of morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
+  xiiDynamicBitfield        m_UsedPaletteSlots;
+  xiiDynamicArray<float>    m_MorphWeights; ///< Array of morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
 };
 
 /// Instanced mesh component for many local-space instances of one mesh resource.

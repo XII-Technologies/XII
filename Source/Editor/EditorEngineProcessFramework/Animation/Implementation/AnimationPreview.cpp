@@ -34,33 +34,7 @@ xiiResult xiiAnimationPreview::Build(const xiiSkeletonResource& skeleton, const 
     m_Pose.BuildSkinningMatrices(skeleton);
   }
 
-  if (mesh.m_Bones.IsEmpty())
-    m_Palette = m_Pose.m_SkinningMatrices;
-  else
-  {
-    xiiUInt32 count = 0;
-    for (const auto& bone : mesh.m_Bones)
-    {
-      if (bone.Value().m_uiBoneIndex == xiiMath::MaxValue<xiiUInt16>() || !bone.Value().m_GlobalInverseRestPoseMatrix.IsValid())
-        return XII_FAILURE;
-      count = xiiMath::Max(count, static_cast<xiiUInt32>(bone.Value().m_uiBoneIndex) + 1);
-    }
-    m_Palette.SetCount(count, xiiMat4::MakeIdentity());
-    m_UsedPaletteSlots.SetCount(count, false);
-    m_UsedPaletteSlots.ClearAllBits();
-    for (const auto& bone : mesh.m_Bones)
-    {
-      const auto joint = skeleton.FindJointByName(bone.Key());
-      const auto slot  = bone.Value().m_uiBoneIndex;
-      if (joint >= m_Pose.m_ModelTransforms.GetCount() || m_UsedPaletteSlots.IsBitSet(slot))
-        return XII_FAILURE;
-      m_UsedPaletteSlots.SetBit(slot);
-      m_Palette[slot] = m_Pose.m_ModelTransforms[joint] * bone.Value().m_GlobalInverseRestPoseMatrix;
-    }
-  }
-  for (const auto& matrix : m_Palette)
-    if (!matrix.IsValid())
-      return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(m_Pose.BuildMeshSkinningPalette(skeleton, mesh, m_Palette, m_UsedPaletteSlots));
   success = true;
   return XII_SUCCESS;
 }

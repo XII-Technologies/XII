@@ -27,20 +27,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonComponent, 1, xiiComponentMode::Dynamic)
 }
 XII_END_COMPONENT_TYPE
 
-XII_BEGIN_COMPONENT_TYPE(xiiSkeletonPoseComponent, 1, xiiComponentMode::Dynamic)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Skeleton", xiiDependencyFlags::Package)),
-  }
-  XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiCategoryAttribute("RenderWorld/Animation"),
-  }
-  XII_END_ATTRIBUTES;
-}
-XII_END_COMPONENT_TYPE
 // clang-format on
 
 xiiSkeletonComponent::xiiSkeletonComponent()  = default;
@@ -79,6 +65,7 @@ void xiiSkeletonComponent::SetSkeleton(const xiiSkeletonResourceHandle& hSkeleto
 
   m_hSkeleton = hSkeleton;
   m_CurrentPose.Clear();
+  m_uiPoseSkeletonRevision = xiiInvalidIndex;
 }
 
 const xiiSkeletonResourceHandle& xiiSkeletonComponent::GetSkeleton() const
@@ -149,14 +136,31 @@ const xiiAnimationPose& xiiSkeletonComponent::GetCurrentPose() const
   return m_CurrentPose;
 }
 
+xiiResult xiiSkeletonComponent::CopyCurrentLocalPose(xiiMap<xiiString, xiiTransform>& out_transforms) const
+{
+  out_transforms.Clear();
+  if (!m_hSkeleton.IsValid() || m_uiPoseSkeletonRevision == xiiInvalidIndex)
+    return XII_FAILURE;
+  xiiResourceLock<xiiSkeletonResource> skeleton(m_hSkeleton, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  if (!skeleton || skeleton.GetAcquireResult() != xiiResourceAcquireResult::Final ||
+      skeleton->GetCurrentResourceChangeCounter() != m_uiPoseSkeletonRevision)
+    return XII_FAILURE;
+  return m_CurrentPose.CopyLocalTransforms(*skeleton.GetPointer(), out_transforms);
+}
+
 void xiiSkeletonComponent::Update()
 {
+  const auto previousRevision = m_uiPoseSkeletonRevision;
+  m_uiPoseSkeletonRevision    = xiiInvalidIndex;
   if (!m_hSkeleton.IsValid())
     return;
 
   xiiResourceLock<xiiSkeletonResource> pSkeleton(m_hSkeleton, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-  if (!pSkeleton)
+  if (!pSkeleton || pSkeleton.GetAcquireResult() != xiiResourceAcquireResult::Final)
     return;
+
+  if (previousRevision != pSkeleton->GetCurrentResourceChangeCounter())
+    m_CurrentPose.Clear();
 
   const xiiTime deltaTime = GetWorld()->GetClock().GetTimeDiff() * static_cast<double>(m_fPlaybackSpeed);
 
@@ -181,6 +185,9 @@ void xiiSkeletonComponent::Update()
     m_CurrentPose.BuildSkinningMatrices(*pSkeleton.GetPointer());
   }
 
+  if (m_CurrentPose.m_LocalTransforms.GetCount() == pSkeleton->GetJointCount())
+    m_uiPoseSkeletonRevision = pSkeleton->GetCurrentResourceChangeCounter();
+
   if (m_bApplyToOwnerMesh)
   {
     ApplyPoseToSkinnedMesh();
@@ -189,116 +196,11 @@ void xiiSkeletonComponent::Update()
 
 void xiiSkeletonComponent::ApplyPoseToSkinnedMesh()
 {
-  xiiSkinnedMeshComponent* pSkinnedMesh = nullptr;
-  if (!GetOwner()->TryGetComponentOfBaseType(pSkinnedMesh))
+  xiiSkinnedMeshComponent* mesh = nullptr;
+  if (!GetOwner()->TryGetComponentOfBaseType(mesh))
     return;
-
-  if (!pSkinnedMesh->GetSkeleton().IsValid() && m_hSkeleton.IsValid())
-  {
-    pSkinnedMesh->SetSkeleton(m_hSkeleton);
-  }
-
-  pSkinnedMesh->SetSkinningMatrices(m_CurrentPose.m_SkinningMatrices);
-}
-
-xiiSkeletonPoseComponent::xiiSkeletonPoseComponent()  = default;
-xiiSkeletonPoseComponent::~xiiSkeletonPoseComponent() = default;
-
-void xiiSkeletonPoseComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
-{
-  SUPER::SerializeComponent(inout_stream);
-  xiiStreamWriter& s = inout_stream.GetStream();
-
-  s << m_hSkeleton;
-  s << m_bApplyToOwnerMesh;
-  s << m_CurrentPose.m_LocalTransforms.GetCount();
-  for (const xiiTransform& transform : m_CurrentPose.m_LocalTransforms)
-  {
-    s << transform;
-  }
-}
-
-void xiiSkeletonPoseComponent::DeserializeComponent(xiiWorldReader& inout_stream)
-{
-  SUPER::DeserializeComponent(inout_stream);
-  xiiStreamReader& s = inout_stream.GetStream();
-
-  s >> m_hSkeleton;
-  s >> m_bApplyToOwnerMesh;
-
-  xiiUInt32 uiPoseCount = 0U;
-  s >> uiPoseCount;
-  m_CurrentPose.m_LocalTransforms.SetCount(uiPoseCount);
-  for (xiiTransform& transform : m_CurrentPose.m_LocalTransforms)
-  {
-    s >> transform;
-  }
-}
-
-void xiiSkeletonPoseComponent::SetSkeleton(const xiiSkeletonResourceHandle& hSkeleton)
-{
-  if (m_hSkeleton == hSkeleton)
-    return;
-
-  m_hSkeleton = hSkeleton;
-  m_CurrentPose.Clear();
-}
-
-const xiiSkeletonResourceHandle& xiiSkeletonPoseComponent::GetSkeleton() const
-{
-  return m_hSkeleton;
-}
-
-void xiiSkeletonPoseComponent::SetLocalPose(xiiArrayPtr<const xiiTransform> localPose)
-{
-  m_CurrentPose.m_LocalTransforms.SetCount(localPose.GetCount());
-  for (xiiUInt32 i = 0; i < localPose.GetCount(); ++i)
-  {
-    m_CurrentPose.m_LocalTransforms[i] = localPose[i];
-  }
-}
-
-const xiiAnimationPose& xiiSkeletonPoseComponent::GetCurrentPose() const
-{
-  return m_CurrentPose;
-}
-
-void xiiSkeletonPoseComponent::Update()
-{
-  if (!m_hSkeleton.IsValid())
-    return;
-
-  xiiResourceLock<xiiSkeletonResource> pSkeleton(m_hSkeleton, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-  if (!pSkeleton)
-    return;
-
-  if (m_CurrentPose.m_LocalTransforms.GetCount() != pSkeleton->GetJointCount())
-  {
-    m_CurrentPose.ResetToRestPose(*pSkeleton.GetPointer());
-  }
-
-  m_CurrentPose.BuildModelSpacePose(*pSkeleton.GetPointer());
-  m_CurrentPose.BuildSkinningMatrices(*pSkeleton.GetPointer());
-
-  if (m_bApplyToOwnerMesh)
-  {
-    ApplyPoseToSkinnedMesh();
-  }
-}
-
-void xiiSkeletonPoseComponent::ApplyPoseToSkinnedMesh()
-{
-  xiiSkinnedMeshComponent* pSkinnedMesh = nullptr;
-  if (!GetOwner()->TryGetComponentOfBaseType(pSkinnedMesh))
-    return;
-
-  if (!pSkinnedMesh->GetSkeleton().IsValid() && m_hSkeleton.IsValid())
-  {
-    pSkinnedMesh->SetSkeleton(m_hSkeleton);
-  }
-
-  pSkinnedMesh->SetSkinningMatrices(m_CurrentPose.m_SkinningMatrices);
+  if (!mesh->GetSkeleton().IsValid() || mesh->GetSkeleton() == m_hSkeleton)
+    mesh->SetAnimationPose(m_hSkeleton, m_CurrentPose).IgnoreResult();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_SkeletonComponent);
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_SkeletonPoseComponent);

@@ -4,6 +4,25 @@
 
 #include <GraphicsCore/AnimationSystem/AnimationPose.h>
 
+xiiResult xiiAnimationPose::CopyLocalTransforms(const xiiSkeletonResource& skeleton, xiiMap<xiiString, xiiTransform>& out_transforms) const
+{
+  out_transforms.Clear();
+  if (m_LocalTransforms.GetCount() != skeleton.GetJointCount())
+    return XII_FAILURE;
+
+  for (xiiUInt32 i = 0; i < m_LocalTransforms.GetCount(); ++i)
+  {
+    const auto& name = skeleton.GetJoint(i).m_sName.GetString();
+    if (name.IsEmpty() || out_transforms.Contains(name) || !m_LocalTransforms[i].IsValid())
+    {
+      out_transforms.Clear();
+      return XII_FAILURE;
+    }
+    out_transforms.Insert(name, m_LocalTransforms[i]);
+  }
+  return XII_SUCCESS;
+}
+
 namespace
 {
   static xiiTransform BlendTransform(const xiiTransform& a, const xiiTransform& b, float fWeight)
