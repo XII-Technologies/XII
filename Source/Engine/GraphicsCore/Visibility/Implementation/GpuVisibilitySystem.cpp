@@ -413,7 +413,7 @@ void xiiGpuVisibilitySystem::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComp
       continue;
 
     void* pMappedData = nullptr;
-    if (pCommandList->MapBuffer(m_pLodFeedbackReadbackBuffers[uiResourceSlot], xiiGALMapType::Read, xiiGALMapFlags::None, pMappedData).Failed())
+    if (pCommandList->MapBuffer(m_pLodFeedbackReadbackBuffers[uiResourceSlot], xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pMappedData).Failed())
       continue;
 
     const xiiGpuLodFeedback* pFeedback = static_cast<const xiiGpuLodFeedback*>(pMappedData);

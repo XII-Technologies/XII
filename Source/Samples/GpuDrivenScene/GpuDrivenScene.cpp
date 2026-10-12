@@ -43,10 +43,11 @@
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 
-xiiCommandLineOptionInt opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
-xiiCommandLineOptionInt opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after rendering this many frames (zero runs until closed).", 0U);
-xiiCommandLineOptionInt opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
-xiiCommandLineOptionInt opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
+xiiCommandLineOptionInt  opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
+xiiCommandLineOptionInt  opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after rendering this many frames (zero runs until closed).", 0U);
+xiiCommandLineOptionBool opt_GpuDrivenRayTracing("GpuDrivenScene", "-ray-tracing", "Enable optional hardware ray tracing scene builds and validation dispatch.", true);
+xiiCommandLineOptionInt  opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
+xiiCommandLineOptionInt  opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
 
 namespace
 {
@@ -174,7 +175,10 @@ public:
   {
     const xiiInt32 iFrameLimit = opt_GpuDrivenFrameCount.GetOptionValue(xiiCommandLineOption::LogMode::Never);
     if (iFrameLimit > 0 && m_uiFrameIndex >= static_cast<xiiUInt64>(iFrameLimit))
+    {
+      xiiLog::Info("Completed {} GPU-driven frames.", m_uiFrameIndex);
       return Execution::Quit;
+    }
 
     m_pWindow->ProcessWindowMessages();
     if (!m_pWindow->IsVisible())
@@ -194,6 +198,21 @@ public:
     xiiClock::GetGlobalClock()->Update();
     xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
+    if (!m_hShaderPermutation.IsValid())
+    {
+      xiiLog::Error("The GPU-driven draw shader could not be loaded.");
+      SetReturnCode(1);
+      return Execution::Quit;
+    }
+    // Keep the validated permutation acquired while recording this frame.
+    xiiResourceLock<xiiShaderPermutationResource> drawShader(m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+    if (!drawShader.IsValid() || !drawShader->IsShaderValid())
+    {
+      xiiLog::Error("The GPU-driven draw shader failed to compile; stopping rendering.");
+      SetReturnCode(1);
+      return Execution::Quit;
+    }
+
     m_pDevice->BeginFrame();
     const bool bCanRender = m_pSwapChain != nullptr && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture() != nullptr;
     if (bCanRender)
@@ -201,6 +220,8 @@ public:
       xiiRenderGraphFrame frame;
       if (frame.Begin(m_Configuration.m_uiFramesInFlight).Failed())
       {
+        xiiLog::Error("Could not begin the GPU-driven rendering frame.");
+        SetReturnCode(1);
         m_pDevice->EndFrame();
         return Execution::Quit;
       }
@@ -232,7 +253,13 @@ public:
         }
       }
       else
-        xiiLog::Error("GPU-driven render graph compile failed: {0}", error);
+      {
+        xiiLog::Error("GPU-driven render graph execution failed: {0}", error);
+        SetReturnCode(1);
+        frame.End();
+        m_pDevice->EndFrame();
+        return Execution::Quit;
+      }
       m_pSwapChain->Present();
     }
     else if (m_pSwapChain)
@@ -285,7 +312,7 @@ public:
     deviceDescription.m_DeviceFeatures.m_TimestampQueries              = xiiGALDeviceFeatureState::Optional;
     deviceDescription.m_DeviceFeatures.m_DurationQueries               = xiiGALDeviceFeatureState::Optional;
     deviceDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Optional;
-    deviceDescription.m_DeviceFeatures.m_RayTracing                    = xiiGALDeviceFeatureState::Optional;
+    deviceDescription.m_DeviceFeatures.m_RayTracing                    = opt_GpuDrivenRayTracing.GetOptionValue(xiiCommandLineOption::LogMode::Always) ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
     // Timeline fences are required for GPU-side synchronization between the
     // graphics, asynchronous-compute, and transfer queues.
     deviceDescription.m_DeviceFeatures.m_NativeFence = xiiGALDeviceFeatureState::Optional;

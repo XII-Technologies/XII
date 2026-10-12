@@ -26,7 +26,7 @@ struct MeshVertex
   float3 WorldNormal : NORMAL0;
   float3 WorldPosition : TEXCOORD2;
   nointerpolation uint MaterialIndex : TEXCOORD0;
-  nointerpolation uint ObjectIndex : TEXCOORD1;
+  nointerpolation uint ObjectUserData : TEXCOORD1;
 };
 
 uint LoadByte(ByteAddressBuffer source, uint byteOffset)
@@ -78,7 +78,7 @@ void main(uint threadIndex : SV_GroupThreadID,
       dot(instance.NormalTransformRow2.xyz, localNormal)));
     output.WorldPosition = worldPosition;
     output.MaterialIndex = instance.MaterialIndex;
-    output.ObjectIndex = instance.ObjectIndex;
+    output.ObjectUserData = instance.UserData;
     vertices[threadIndex] = output;
   }
 
@@ -108,7 +108,7 @@ struct MeshVertex
   float3 WorldNormal : NORMAL0;
   float3 WorldPosition : TEXCOORD2;
   nointerpolation uint MaterialIndex : TEXCOORD0;
-  nointerpolation uint ObjectIndex : TEXCOORD1;
+  nointerpolation uint ObjectUserData : TEXCOORD1;
 };
 
 float EvaluateSunShadow(float3 worldPosition, float3 worldNormal, float3 directionToSun)
@@ -151,6 +151,6 @@ float4 main(MeshVertex input) : SV_Target0
   const float diffuse = saturate(dot(normalize(input.WorldNormal), lightDirection));
   const float shadow = EvaluateSunShadow(input.WorldPosition, normalize(input.WorldNormal), lightDirection);
   const float3 lighting = AmbientColor.rgb + diffuse * SunDirectionIntensity.w * shadow;
-  const float selectionPulse = 0.04f * sin((float)input.ObjectIndex * 0.6180339f);
+  const float selectionPulse = 0.04f * sin((float)input.ObjectUserData * 0.6180339f);
   return float4(saturate(baseColor.rgb * lighting + selectionPulse), baseColor.a);
 }
