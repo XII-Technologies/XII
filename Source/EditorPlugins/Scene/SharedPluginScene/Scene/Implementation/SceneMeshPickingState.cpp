@@ -28,7 +28,7 @@ void xiiSceneMeshPickingState::OnResourceEvent(const xiiResourceEvent& event)
   if (event.m_Type != xiiResourceEvent::Type::ResourceContentUpdated && event.m_Type != xiiResourceEvent::Type::ResourceContentUnloading)
     return;
   const auto* type = event.m_pResource->GetDynamicRTTI();
-  if (type->IsDerivedFrom<xiiMeshResource>() || type->IsDerivedFrom<xiiMaterialResource>() || type->IsDerivedFrom<xiiTexture2DResource>() ||
+  if (type->IsDerivedFrom<xiiMeshResource>() || type->IsDerivedFrom<xiiMeshBufferResource>() || type->IsDerivedFrom<xiiMaterialResource>() || type->IsDerivedFrom<xiiTexture2DResource>() ||
       type->IsDerivedFrom<xiiShaderResource>() || type->IsDerivedFrom<xiiShaderPermutationResource>())
     m_ResourceEpoch.Increment(); // Loader threads never mutate readback or owner storage.
 }

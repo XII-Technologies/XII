@@ -67,7 +67,7 @@ namespace
   {
     for (auto it = slot.m_ExtractedMeshes.GetIterator(); it.IsValid(); ++it)
     {
-      xiiGeometryResidencyManager::ReleaseMeshGeometry(it.Value().m_hMesh, slot.m_uiLastSynchronizedFrame);
+      xiiGeometryResidencyManager::ReleaseMeshGeometry(it.Value().m_hGeometry, slot.m_uiLastSynchronizedFrame);
       xiiMaterialManager::ReleaseMaterialResource(it.Value().m_hMaterial);
     }
 
@@ -227,7 +227,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     // before recreating entries; stale scene handles must never update a newly reused slot.
     if (pEntry != nullptr && !scene.IsAlive(pEntry->m_hSceneObject))
     {
-      xiiGeometryResidencyManager::ReleaseMeshGeometry(pEntry->m_hMesh, uiFrameIndex);
+      xiiGeometryResidencyManager::ReleaseMeshGeometry(pEntry->m_hGeometry, uiFrameIndex);
       xiiMaterialManager::ReleaseMaterialResource(pEntry->m_hMaterial);
       pSlot->m_MeshSources.Remove(pEntry->m_hSceneObject.GetInternalID().m_Data + 1U);
       pSlot->m_ExtractedMeshes.Remove(key);
@@ -262,7 +262,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       entry.m_uiSynchronization = synchronization;
       if (entry.m_hSceneObject.IsInvalidated())
       {
-        xiiGeometryResidencyManager::ReleaseMeshGeometry(renderData.m_hMesh, uiFrameIndex);
+        xiiGeometryResidencyManager::ReleaseMeshGeometry(hGeometry, uiFrameIndex);
         xiiMaterialManager::ReleaseMaterialResource(hMaterial);
         continue;
       }
@@ -277,20 +277,25 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       source.m_uiRenderDataId  = key.m_uiRenderDataId;
       pSlot->m_MeshSources.Insert(entry.m_hSceneObject.GetInternalID().m_Data + 1U, source);
     }
-    else if (pEntry->m_hMesh != renderData.m_hMesh)
+    else
     {
+      // Resource handles survive content reloads. Acquire the current content revision before
+      // releasing the previous one, including when two views migrate during different frames.
       const xiiGeometryHandle hGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(renderData.m_hMesh);
       if (hGeometry.IsInvalidated())
         continue;
 
-      xiiGeometryResidencyManager::ReleaseMeshGeometry(pEntry->m_hMesh, uiFrameIndex);
+      xiiGeometryResidencyManager::ReleaseMeshGeometry(pEntry->m_hGeometry, uiFrameIndex);
+      const bool changed  = pEntry->m_hGeometry != hGeometry;
       pEntry->m_hMesh     = renderData.m_hMesh;
       pEntry->m_hGeometry = hGeometry;
-      scene.SetGeometry(pEntry->m_hSceneObject, hGeometry.GetInternalID().m_InstanceIndex);
-
-      xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
-      if (mesh.GetAcquireResult() == xiiResourceAcquireResult::Final)
-        scene.SetLocalBounds(pEntry->m_hSceneObject, mesh->GetBounds());
+      if (changed)
+      {
+        scene.SetGeometry(pEntry->m_hSceneObject, hGeometry.GetInternalID().m_InstanceIndex);
+        xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
+        if (mesh->GetLoadingState() == xiiResourceState::Loaded)
+          scene.SetLocalBounds(pEntry->m_hSceneObject, mesh->GetBounds());
+      }
     }
 
     if (pEntry != nullptr && pEntry->m_hMaterial != hMaterial)
@@ -323,7 +328,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
 
     pSlot->m_MeshSources.Remove(it.Value().m_hSceneObject.GetInternalID().m_Data + 1U);
     scene.DestroyObject(it.Value().m_hSceneObject);
-    xiiGeometryResidencyManager::ReleaseMeshGeometry(it.Value().m_hMesh, uiFrameIndex);
+    xiiGeometryResidencyManager::ReleaseMeshGeometry(it.Value().m_hGeometry, uiFrameIndex);
     xiiMaterialManager::ReleaseMaterialResource(it.Value().m_hMaterial);
     it = pSlot->m_ExtractedMeshes.Remove(it);
   }

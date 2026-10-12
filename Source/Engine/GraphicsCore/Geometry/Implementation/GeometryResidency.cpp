@@ -12,10 +12,18 @@
 class xiiGeometryResidencyManager::State
 {
 public:
+  struct GeometryHash
+  {
+    static xiiUInt32 Hash(xiiGeometryHandle handle) { return xiiHashHelper<xiiUInt32>::Hash(handle.GetInternalID().m_Data); }
+    static bool      Equal(xiiGeometryHandle a, xiiGeometryHandle b) { return a == b; }
+  };
+
   struct MeshGeometryEntry
   {
-    xiiGeometryHandle m_hGeometry;
-    xiiUInt32         m_uiReferenceCount = 0U;
+    xiiMeshResourceHandle m_hMesh;
+    xiiUInt32             m_uiMeshRevision   = 0U;
+    xiiUInt32             m_uiBufferRevision = 0U;
+    xiiUInt32             m_uiReferenceCount = 0U;
   };
 
   void ClearGpuState()
@@ -30,6 +38,7 @@ public:
     m_FreeMeshletRanges.Clear();
     m_PendingMeshletUploads.Clear();
     m_MeshGeometries.Clear();
+    m_CurrentMeshGeometries.Clear();
     m_uiFramesInFlight      = 0U;
     m_uiAllFrameMask        = 0U;
     m_uiBudgetBytes         = 0U;
@@ -39,22 +48,23 @@ public:
     m_bInitialized          = false;
   }
 
-  xiiIdTable<xiiGeometryId, xiiUInt32>                   m_GeometryIds;
-  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper>      m_Slots;
-  xiiSharedPtr<xiiGALBuffer>                             m_pMetadataBuffer;
-  xiiSharedPtr<xiiGALBuffer>                             m_pMeshletMetadataBuffer;
-  xiiDynamicArray<FreeRange>                             m_FreeMeshletRanges;
-  xiiDynamicArray<UploadPassData::MeshletUpload>         m_PendingMeshletUploads;
-  xiiHashTable<xiiMeshResourceHandle, MeshGeometryEntry> m_MeshGeometries;
-  xiiUInt32                                              m_uiFramesInFlight      = 0U;
-  xiiUInt64                                              m_uiAllFrameMask        = 0U;
-  xiiUInt64                                              m_uiBudgetBytes         = 0U;
-  xiiUInt64                                              m_uiResidentBytes       = 0U;
-  xiiUInt64                                              m_uiLastUploadedBytes   = 0U;
-  xiiUInt64                                              m_uiNextMeshletUploadId = 1U;
-  xiiGeometryResidencyDescription                        m_Configuration;
-  bool                                                   m_bEngineStarted = false;
-  bool                                                   m_bInitialized   = false;
+  xiiIdTable<xiiGeometryId, xiiUInt32>                             m_GeometryIds;
+  xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper>                m_Slots;
+  xiiSharedPtr<xiiGALBuffer>                                       m_pMetadataBuffer;
+  xiiSharedPtr<xiiGALBuffer>                                       m_pMeshletMetadataBuffer;
+  xiiDynamicArray<FreeRange>                                       m_FreeMeshletRanges;
+  xiiDynamicArray<UploadPassData::MeshletUpload>                   m_PendingMeshletUploads;
+  xiiHashTable<xiiGeometryHandle, MeshGeometryEntry, GeometryHash> m_MeshGeometries;
+  xiiHashTable<xiiMeshResourceHandle, xiiGeometryHandle>           m_CurrentMeshGeometries;
+  xiiUInt32                                                        m_uiFramesInFlight      = 0U;
+  xiiUInt64                                                        m_uiAllFrameMask        = 0U;
+  xiiUInt64                                                        m_uiBudgetBytes         = 0U;
+  xiiUInt64                                                        m_uiResidentBytes       = 0U;
+  xiiUInt64                                                        m_uiLastUploadedBytes   = 0U;
+  xiiUInt64                                                        m_uiNextMeshletUploadId = 1U;
+  xiiGeometryResidencyDescription                                  m_Configuration;
+  bool                                                             m_bEngineStarted = false;
+  bool                                                             m_bInitialized   = false;
 };
 
 xiiUniquePtr<xiiGeometryResidencyManager::State> xiiGeometryResidencyManager::s_pState;
@@ -406,7 +416,7 @@ void xiiGeometryResidencyManager::UnregisterGeometry(xiiGeometryHandle handle, x
     return;
   Slot& slot           = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
   slot.m_State         = xiiGeometryResidencyState::EvictPending;
-  slot.m_uiRetireFrame = uiFrameIndex;
+  slot.m_uiRetireFrame = xiiMath::Max(slot.m_uiRetireFrame, xiiMath::Max(uiFrameIndex, slot.m_uiLastUsedFrame));
 }
 
 xiiGeometryHandle xiiGeometryResidencyManager::AcquireMeshGeometry(const xiiMeshResourceHandle& hMesh)
@@ -414,25 +424,34 @@ xiiGeometryHandle xiiGeometryResidencyManager::AcquireMeshGeometry(const xiiMesh
   if (!IsInitialized() || !hMesh.IsValid())
     return {};
 
+  xiiResourceLock<xiiMeshResource> mesh(hMesh, xiiResourceAcquireMode::PointerOnly);
+  if (mesh->GetLoadingState() != xiiResourceState::Loaded || !mesh->GetMeshBuffer().IsValid())
+    return {};
+  xiiResourceLock<xiiMeshBufferResource> buffer(mesh->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+  if (buffer->GetLoadingState() != xiiResourceState::Loaded)
+    return {};
+  const auto meshRevision   = mesh->GetCurrentResourceChangeCounter();
+  const auto bufferRevision = buffer->GetCurrentResourceChangeCounter();
+
+  xiiGeometryHandle         cached;
   State::MeshGeometryEntry* pCachedEntry = nullptr;
-  if (s_pState->m_MeshGeometries.TryGetValue(hMesh, pCachedEntry))
+  if (s_pState->m_CurrentMeshGeometries.TryGetValue(hMesh, cached) &&
+      s_pState->m_MeshGeometries.TryGetValue(cached, pCachedEntry))
   {
-    if (IsValid(pCachedEntry->m_hGeometry))
+    if (IsValid(cached) && GetState(cached) != xiiGeometryResidencyState::EvictPending &&
+        pCachedEntry->m_uiMeshRevision == meshRevision && pCachedEntry->m_uiBufferRevision == bufferRevision)
     {
       XII_ASSERT_DEV(pCachedEntry->m_uiReferenceCount < xiiMath::MaxValue<xiiUInt32>(), "Mesh geometry reference count overflow.");
       if (pCachedEntry->m_uiReferenceCount == xiiMath::MaxValue<xiiUInt32>())
         return {};
 
       ++pCachedEntry->m_uiReferenceCount;
-      return pCachedEntry->m_hGeometry;
+      return cached;
     }
 
-    s_pState->m_MeshGeometries.Remove(hMesh);
+    // Existing users own this exact revision. Replacing the current lookup must never
+    // redirect their release to the new record or overwrite GPU data still in flight.
   }
-
-  xiiResourceLock<xiiMeshResource> mesh(hMesh, xiiResourceAcquireMode::PointerOnly);
-  if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
-    return {};
 
   xiiGeometryDescription description;
   if (BuildMeshGeometryDescription(*mesh.GetPointer(), description).Failed())
@@ -443,30 +462,35 @@ xiiGeometryHandle xiiGeometryResidencyManager::AcquireMeshGeometry(const xiiMesh
     return {};
 
   State::MeshGeometryEntry entry;
-  entry.m_hGeometry        = hGeometry;
+  entry.m_hMesh            = hMesh;
+  entry.m_uiMeshRevision   = meshRevision;
+  entry.m_uiBufferRevision = bufferRevision;
   entry.m_uiReferenceCount = 1U;
-  s_pState->m_MeshGeometries.Insert(hMesh, entry);
+  s_pState->m_MeshGeometries.Insert(hGeometry, entry);
+  s_pState->m_CurrentMeshGeometries.Insert(hMesh, hGeometry);
 
   // Start with the coarsest authored LOD. Fine LODs are requested on demand by visibility users.
   RequestResidency(hGeometry, description.m_Lods.GetCount() - 1U, 0U);
   return hGeometry;
 }
 
-void xiiGeometryResidencyManager::ReleaseMeshGeometry(const xiiMeshResourceHandle& hMesh, xiiUInt64 uiFrameIndex)
+void xiiGeometryResidencyManager::ReleaseMeshGeometry(xiiGeometryHandle hGeometry, xiiUInt64 uiFrameIndex)
 {
-  if (s_pState == nullptr || !hMesh.IsValid())
+  if (s_pState == nullptr || hGeometry.IsInvalidated())
     return;
 
   State::MeshGeometryEntry* pEntry = nullptr;
-  if (!s_pState->m_MeshGeometries.TryGetValue(hMesh, pEntry) || pEntry->m_uiReferenceCount == 0U)
+  if (!s_pState->m_MeshGeometries.TryGetValue(hGeometry, pEntry) || pEntry->m_uiReferenceCount == 0U)
     return;
 
   --pEntry->m_uiReferenceCount;
   if (pEntry->m_uiReferenceCount != 0U)
     return;
 
-  const xiiGeometryHandle hGeometry = pEntry->m_hGeometry;
-  s_pState->m_MeshGeometries.Remove(hMesh);
+  xiiGeometryHandle current;
+  if (s_pState->m_CurrentMeshGeometries.TryGetValue(pEntry->m_hMesh, current) && current == hGeometry)
+    s_pState->m_CurrentMeshGeometries.Remove(pEntry->m_hMesh);
+  s_pState->m_MeshGeometries.Remove(hGeometry);
   UnregisterGeometry(hGeometry, uiFrameIndex);
 }
 
@@ -509,13 +533,19 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
 void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex)
 {
   if (IsValid(handle))
-    s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex].m_uiLastUsedFrame = uiFrameIndex;
+  {
+    auto& lastUsed = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex].m_uiLastUsedFrame;
+    lastUsed       = xiiMath::Max(lastUsed, uiFrameIndex);
+  }
 }
 
 bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& inout_uiUploadBudget)
 {
-  xiiGpuGeometryRecord record     = slot.m_GpuRecord;
-  xiiUInt64            uiNewBytes = 0U;
+  xiiGpuGeometryRecord      record     = slot.m_GpuRecord;
+  xiiUInt64                 uiNewBytes = 0U;
+  State::MeshGeometryEntry* meshEntry  = nullptr;
+  const auto                slotIndex  = static_cast<xiiUInt32>(&slot - s_pState->m_Slots.GetData());
+  s_pState->m_MeshGeometries.TryGetValue(xiiGeometryHandle(xiiGeometryId(slotIndex, record.m_uiGeneration)), meshEntry);
 
   struct PendingAllocation
   {
@@ -540,8 +570,12 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
 
     const xiiGeometryLodSource&            source = slot.m_Description.m_Lods[i];
     xiiResourceLock<xiiMeshBufferResource> mesh(source.m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
-    if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    if (mesh->GetLoadingState() != xiiResourceState::Loaded ||
+        (meshEntry && mesh->GetCurrentResourceChangeCounter() != meshEntry->m_uiBufferRevision))
     {
+      // A shared source buffer may itself reload. Never combine its new payload with
+      // an older geometry revision's resident LODs; scene synchronization acquires a
+      // replacement record while existing bindless references keep the old data alive.
       rollback();
       return false;
     }
@@ -615,7 +649,9 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
   for (xiiUInt32 uiLod : newLods)
   {
     xiiResourceLock<xiiMeshBufferResource> mesh(slot.m_Description.m_Lods[uiLod].m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
-    if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final || !RegisterBindlessResources(slot, record, uiLod, *mesh.GetPointerNonConst()))
+    if (mesh->GetLoadingState() != xiiResourceState::Loaded ||
+        (meshEntry && mesh->GetCurrentResourceChangeCounter() != meshEntry->m_uiBufferRevision) ||
+        !RegisterBindlessResources(slot, record, uiLod, *mesh.GetPointerNonConst()))
     {
       for (xiiUInt32 uiRegisteredLod : registeredLods)
       {

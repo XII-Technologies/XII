@@ -35,6 +35,43 @@
 
 namespace
 {
+  template <typename T>
+  bool ReadBufferRecord(xiiGALDevice& device, xiiGALBuffer* source, xiiUInt64 offset, T& value)
+  {
+    if (!XII_TEST_BOOL(source != nullptr))
+      return false;
+    xiiGALBufferCreationDescription buffer;
+    buffer.m_uiSize                              = sizeof(T);
+    buffer.m_Usage                               = xiiGALResourceUsage::Staging;
+    buffer.m_CPUAccessFlags                      = xiiGALCPUAccessFlag::Read;
+    auto                                 staging = device.CreateBuffer(buffer);
+    xiiGALCommandListCreationDescription description;
+    description.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+    auto commands            = device.CreateCommandList(description);
+    if (!XII_TEST_BOOL(staging != nullptr && commands != nullptr))
+      return false;
+    commands->Begin();
+    const auto previous = source->GetResourceState();
+    commands->CopyBufferRegion(source, offset, staging.Borrow(), 0, sizeof(T));
+    xiiGALStateTransitionDescription transition;
+    transition.m_pResource       = source;
+    transition.m_NewState        = previous;
+    transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+    commands->TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
+    commands->End();
+    auto* queue = device.GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+    queue->WaitForFenceValue(queue->Submit(commands.Borrow()));
+    commands->Begin();
+    void*      data   = nullptr;
+    const auto mapped = commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, data);
+    if (mapped.Succeeded() && data)
+      xiiMemoryUtils::Copy(&value, static_cast<const T*>(data), 1);
+    if (mapped.Succeeded())
+      commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read).AssertSuccess();
+    commands->End();
+    return XII_TEST_RESULT(mapped) && XII_TEST_BOOL(data != nullptr);
+  }
+
   /// A minimal resource producer exercises the same explicit frame-table contract as PrepareFrame
   /// without involving lighting/postprocessing in a focused native query fixture.
   class MeshQueryTables : public xiiRenderPipelinePass
@@ -266,7 +303,10 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     };
     graph.AddPass<Export>("Query test export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
       const auto color = builder.ReadTexture(graph.FindTexture("Query test Color"), xiiGALResourceStateFlags::CopySource);
-      builder.ExportTexture(color, xiiGALResourceStateFlags::CopySource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+      builder.ExportTexture(color, xiiGALResourceStateFlags::CopySource);
+      for (const xiiStringView name : {"GPU Scene Instances", "Query GPU Visible Instance Count", "Query GPU Visible Meshlet Count"})
+        if (const auto buffer = graph.FindBuffer(name); buffer.IsValid())
+          builder.ExportBuffer(builder.ReadBuffer(buffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
     graph.EndSetup();
     if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), queryView ? queryView : view, &graphContext.GetBlackboard(), &cache)))
       return false;
@@ -340,6 +380,119 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
     front.m_hMaterials.Clear();
     component->ClearMaterialOverrides();
+    if (!render() || !render())
+      return;
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Mesh reload publishes new geometry while delayed views retain their exact revision")
+  {
+    const auto reloadedMesh = xiiResourceManager::LoadResource<xiiMeshResource>("NativeQueryReloadMesh");
+    const auto publish      = [&](float size) -> bool {
+      xiiGeometry shape;
+      shape.AddBox(xiiVec3(size), true);
+      xiiMeshResourceDescriptor description;
+      description.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(shape, xiiGALPrimitiveTopology::TriangleList);
+      description.AddSubMesh(description.GetMeshBufferDescriptor().GetPrimitiveCount(), 0, 0);
+      description.ComputeBounds();
+      xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
+      xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
+      description.Save(stream);
+      xiiResourceManager::UpdateResourceWithCustomLoader(reloadedMesh, std::move(loader));
+      xiiResourceLock<xiiMeshResource> resource(reloadedMesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      return XII_TEST_BOOL(resource.GetAcquireResult() == xiiResourceAcquireResult::Final);
+    };
+    if (!publish(1.0f))
+      return;
+    front.m_hMesh = reloadedMesh;
+    if (!XII_TEST_BOOL(world.TryGetComponent(frontComponent, component)))
+      return;
+    component->SetMesh(reloadedMesh);
+    if (!render() || !render())
+      return;
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+    XII_TEST_FLOAT(hit.m_vWorldPosition.x, -0.5f, 0.001f);
+    const auto oldGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(reloadedMesh);
+    if (!XII_TEST_BOOL(!oldGeometry.IsInvalidated()))
+      return;
+    bool releasedOld = false;
+    XII_SCOPE_EXIT(if (!releasedOld) xiiGeometryResidencyManager::ReleaseMeshGeometry(oldGeometry, nextFrame - 1));
+    xiiSceneDatabaseContext delayed;
+    if (!XII_TEST_RESULT(delayed.Initialize()) || !XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, nextFrame - 1)))
+      return;
+    if (!publish(2.0f))
+      return;
+    XII_TEST_BOOL(pass->Pick(*view, 24, 28, hit).Failed());
+    if (!render() || !render())
+      return;
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+    XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
+    XII_TEST_FLOAT(hit.m_vWorldPosition.x, -1.0f, 0.001f);
+    const auto currentGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(reloadedMesh);
+    if (!XII_TEST_BOOL(!currentGeometry.IsInvalidated()))
+      return;
+    XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(currentGeometry, nextFrame - 1));
+    XII_TEST_BOOL(currentGeometry != oldGeometry);
+    XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(oldGeometry) == xiiGeometryResidencyState::Resident);
+    const auto retained = xiiGeometryResidencyManager::GetGpuRecord(oldGeometry);
+    const auto current  = xiiGeometryResidencyManager::GetGpuRecord(currentGeometry);
+    if (XII_TEST_BOOL(retained && current))
+    {
+      XII_TEST_FLOAT(retained->m_BoundsExtents.x, 0.5f, 0.001f);
+      XII_TEST_FLOAT(current->m_BoundsExtents.x, 1.0f, 0.001f);
+      XII_TEST_BOOL(retained->m_Lods[0].m_uiMeshletMetadataOffset != current->m_Lods[0].m_uiMeshletMetadataOffset);
+      XII_TEST_BOOL(retained->m_Lods[0].m_uiVertexBufferIndex != current->m_Lods[0].m_uiVertexBufferIndex);
+      xiiGpuGeometryRecord uploaded;
+      const auto&          configuration = xiiGeometryResidencyManager::GetConfiguration();
+      const auto           index         = ((nextFrame - 1) % configuration.m_uiFramesInFlight) * configuration.m_uiMaxGeometries + currentGeometry.GetInternalID().m_InstanceIndex;
+      if (ReadBufferRecord(*environment.GetDevice(), xiiGeometryResidencyManager::GetMetadataBuffer().Borrow(), index * sizeof(uploaded), uploaded))
+        XII_TEST_BOOL(xiiMemoryUtils::RawByteCompare(&uploaded, current, sizeof(uploaded)) == 0);
+      auto&               graph = graphContext.GetGraph();
+      xiiGpuSceneInstance gpuInstance;
+      if (ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(graph.FindBuffer("GPU Scene Instances")).Borrow(), 0, gpuInstance))
+      {
+        XII_TEST_INT(gpuInstance.m_uiGeometryIndex, currentGeometry.GetInternalID().m_InstanceIndex);
+        XII_TEST_FLOAT(gpuInstance.m_BoundsExtents.x, 1.0f, 0.001f);
+      }
+      xiiUInt32 visibleInstances = 0, visibleMeshlets = 0;
+      ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(graph.FindBuffer("Query GPU Visible Instance Count")).Borrow(), 0, visibleInstances);
+      ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(graph.FindBuffer("Query GPU Visible Meshlet Count")).Borrow(), 0, visibleMeshlets);
+      XII_TEST_INT(visibleInstances, 2);
+      XII_TEST_INT(visibleMeshlets, 2);
+      xiiResourceLock<xiiMeshResource>       resource(reloadedMesh, xiiResourceAcquireMode::PointerOnly);
+      xiiResourceLock<xiiMeshBufferResource> meshBuffer(resource->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+      xiiMeshPackedVertex                    vertex;
+      if (ReadBufferRecord(*environment.GetDevice(), meshBuffer->GetVertexBuffer().Borrow(), 0, vertex))
+        XII_TEST_FLOAT(xiiMath::Abs(vertex.m_vPosition.x), 1.0f, 0.001f);
+      xiiMeshlet meshlet;
+      if (ReadBufferRecord(*environment.GetDevice(), xiiGeometryResidencyManager::GetMeshletMetadataBuffer().Borrow(), current->m_Lods[0].m_uiMeshletMetadataOffset * sizeof(meshlet), meshlet))
+      {
+        XII_TEST_BOOL(xiiMemoryUtils::RawByteCompare(&meshlet, meshBuffer->GetMeshlets().GetPtr(), sizeof(meshlet)) == 0);
+        XII_TEST_INT(meshlet.m_uiFirstPrimitive, 0);
+        XII_TEST_INT(meshlet.m_uiPrimitiveCount, 12);
+        XII_TEST_FLOAT(meshlet.m_Bounds.m_fRadius, xiiMath::Sqrt(3.0f), 0.001f);
+      }
+    }
+    bool delayedUsesOld = false;
+    for (const auto& entry : delayed.GetDatabase().GetGpuInstances())
+      delayedUsesOld |= entry.m_uiGeometryIndex == oldGeometry.GetInternalID().m_InstanceIndex;
+    XII_TEST_BOOL(delayedUsesOld);
+    XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, nextFrame - 1));
+    for (const auto& entry : delayed.GetDatabase().GetGpuInstances())
+      XII_TEST_BOOL(entry.m_uiGeometryIndex != oldGeometry.GetInternalID().m_InstanceIndex);
+    XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(oldGeometry) == xiiGeometryResidencyState::Resident);
+    xiiGeometryResidencyManager::ReleaseMeshGeometry(oldGeometry, nextFrame - 1);
+    releasedOld = true;
+    XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(oldGeometry) == xiiGeometryResidencyState::EvictPending);
+    xiiGeometryResidencyManager::ProcessStreaming(nextFrame, nextFrame - 2, xiiMath::MaxValue<xiiUInt64>());
+    XII_TEST_BOOL(xiiGeometryResidencyManager::IsValid(oldGeometry));
+    xiiGeometryResidencyManager::ProcessStreaming(nextFrame, nextFrame - 1, xiiMath::MaxValue<xiiUInt64>());
+    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsValid(oldGeometry));
+    XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(currentGeometry) == xiiGeometryResidencyState::Resident);
+    // Releasing the previous revision must not remove the current revision's shared lookup.
+    const auto shared = xiiGeometryResidencyManager::AcquireMeshGeometry(reloadedMesh);
+    XII_TEST_BOOL(shared == currentGeometry);
+    xiiGeometryResidencyManager::ReleaseMeshGeometry(shared, nextFrame - 1);
+    front.m_hMesh = mesh;
+    component->SetMesh(mesh);
     if (!render() || !render())
       return;
   }
