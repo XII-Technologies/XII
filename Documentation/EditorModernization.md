@@ -5,6 +5,51 @@ The authoritative objective is comprehensive Editor and tooling modernization,
 including integrated workflows and compatibility. Passing library builds alone
 does not satisfy it.
 
+## Native GPU mesh identity for SceneView picking
+
+- The native mesh-shader G-buffer now writes a context-local, generation-checked
+  scene identity. Zero denotes background; application render IDs remain separate
+  user data. This replaces the unused GPU object-index field without changing the
+  GPU record size. Scene hot storage retains handles in place of its alive byte,
+  adding three bytes per allocated object slot. Compaction preserves identity;
+  removal and clearing advance the existing Foundation ID-table generations.
+- Mesh synchronization keys packets by native object/component handles, source
+  render ID and section. Different components or sections with colliding source
+  IDs no longer overwrite one another. Shared geometry and material acquisition
+  remain with the existing managers. Clearing a database also causes stale
+  extraction entries to be retired and recreated on the next synchronization.
+- `xiiSceneMeshSource` and `ResolveExtractedMesh` resolve native GPU identities to
+  non-owning object/component handles and mesh sections in expected O(1), without
+  allocating query containers. Lookup state belongs to the scene context and is
+  retired with extraction entries. `xiiView::ResolveRenderedMesh` additionally
+  validates live, active owners and view include/exclude tags. Resolution returns
+  `xiiResult` and clears output on failure. Implementation is split between scene
+  synchronization, source resolution and view validation.
+- IDs are runtime identities, not asset identifiers. They must be paired with
+  the producing context/view. The existing 24/8-bit Foundation handle has finite
+  generation wraparound; asynchronous consumers must bound capture lifetime and
+  validate their view/capture state, camera and resource changes. Querying requires
+  a CPU frame boundary and world access; concurrent mutation is unsupported.
+- Windows Debug builds pass for GraphicsCoreTest, EditorEngineProcessFrameworkTest,
+  EditorEngineProcess and EditorFrameworkTest. All 18 GraphicsCore tests, all 40
+  Vulkan engine-process tests and all 6 EditorFramework tests pass. The new test
+  executes native geometry upload, visibility, depth and G-buffer rasterization,
+  reads back the actual R32UInt result, and resolves the visible mesh to its native
+  component. It also checks background zero, colliding component/section IDs,
+  packet retirement, database clearing, invalid contexts and non-extracted scene
+  objects. The raster test supplies the service's documented reversed-Z matrix.
+  Evidence: `Workspace/editor-scene-mesh-source-verified-build.log`,
+  `Workspace/editor-scene-mesh-source-tests.log`,
+  `Workspace/editor-scene-mesh-source-core-tests.log`,
+  `Workspace/editor-scene-mesh-source-editor-build.log` and
+  `Workspace/editor-scene-mesh-source-editor-tests.log`.
+- This checkpoint supplies the native identity path for geometry picking. It
+  does not complete SceneView's readback/IPC migration or establish a successful
+  full Scene plugin build. Transparent picking, selected-object click-through,
+  selection overlays, indexed-fallback picking, complete viewport projection/depth
+  integration and integrated Qt interaction still require verification/migration.
+  The existing SceneView compile blocker documented below remains outstanding.
+
 ## Native skeleton pose authoring and simulation pullback
 
 - Native `xiiSkeletonPoseComponent` now reflects a sparse `BoneTransforms` map of
