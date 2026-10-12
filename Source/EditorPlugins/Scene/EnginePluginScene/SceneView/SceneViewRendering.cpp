@@ -4,9 +4,16 @@
 
 #include <EnginePluginScene/SceneContext/SceneContext.h>
 #include <EnginePluginScene/SceneView/SceneView.h>
+#include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <SharedPluginScene/Scene/SceneCameraSettings.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
+
+namespace
+{
+  xiiCVarBool cvarSceneCullingCamera("Editor.Scene.UseCullingCamera", false, xiiCVarFlags::Default, "Cull Editor scene views using the active camera component whose usage is CullingOnly.");
+}
 
 xiiViewHandle xiiSceneViewContext::CreateView()
 {
@@ -48,4 +55,12 @@ void xiiSceneViewContext::SetInvisibleLayerTags(const xiiArrayPtr<xiiTag> remove
     for (const xiiTag& tag : addTags)
       view->m_ExcludeTags.Set(tag);
   }
+}
+
+void xiiSceneViewContext::UpdateCullingCamera()
+{
+  m_CullingCamera = m_Camera;
+  if (const xiiView* view = GetView())
+    if (xiiConfigureSceneCullingCamera(*view, cvarSceneCullingCamera, m_CullingCamera).Failed())
+      xiiLog::Warning("Invalid scene culling camera; using the viewport camera.");
 }

@@ -9,6 +9,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <SharedPluginScene/Scene/SceneCameraPreview.h>
+#include <SharedPluginScene/Scene/SceneCameraSettings.h>
 
 xiiSceneCameraPreview::xiiSceneCameraPreview(xiiWorld& world) : m_World(world) {}
 
@@ -82,37 +83,18 @@ xiiResult xiiSceneCameraPreview::Update(const xiiView& editorView, const xiiCame
   if (editorView.GetWorld() != &m_World || camera.GetWorld() != &m_World || !camera.IsActiveAndInitialized() || editorView.GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
     return XII_FAILURE;
 
-  xiiCameraMode::Enum mode      = camera.GetCameraMode();
-  float               dimension = camera.GetFieldOfView();
-  if (mode == xiiCameraMode::OrthoFixedHeight || mode == xiiCameraMode::OrthoFixedWidth)
-    dimension = camera.GetOrthoDimension();
-  else if (mode == xiiCameraMode::Stereo)
-  {
-    mode      = xiiCameraMode::PerspectiveFixedFovY;
-    dimension = 45.0f;
-  }
-  else if (mode != xiiCameraMode::PerspectiveFixedFovX && mode != xiiCameraMode::PerspectiveFixedFovY)
-    return XII_FAILURE;
-
-  if (!xiiMath::IsFinite(dimension) || dimension <= 0 || !xiiMath::IsFinite(camera.GetNearPlane()) || !xiiMath::IsFinite(camera.GetFarPlane()) ||
-      ((mode == xiiCameraMode::PerspectiveFixedFovX || mode == xiiCameraMode::PerspectiveFixedFovY) && (dimension >= 180 || camera.GetNearPlane() <= 0)))
-    return XII_FAILURE;
-  const float farPlane = xiiMath::Max(camera.GetNearPlane() + 0.00001f, camera.GetFarPlane());
-  const float exposure = camera.GetExposure();
-  if (farPlane <= camera.GetNearPlane() || !xiiMath::IsFinite(exposure) || exposure <= 0 || !editorView.GetRenderPipelineResource().IsValid())
+  xiiCamera configured = m_Camera;
+  XII_SUCCEED_OR_RETURN(xiiConfigureSceneCamera(camera, configured));
+  if (!editorView.GetRenderPipelineResource().IsValid())
     return XII_FAILURE;
 
   XII_SUCCEED_OR_RETURN(EnsureView());
   auto* view = GetView();
-  if (m_hCamera != camera.GetHandle() || m_Camera.GetCameraMode() != mode || m_Camera.GetFovOrDim() != dimension ||
-      m_Camera.GetNearPlane() != camera.GetNearPlane() || m_Camera.GetFarPlane() != farPlane)
+  if (m_hCamera != camera.GetHandle() || m_Camera.GetCameraMode() != configured.GetCameraMode() || m_Camera.GetFovOrDim() != configured.GetFovOrDim() ||
+      m_Camera.GetNearPlane() != configured.GetNearPlane() || m_Camera.GetFarPlane() != configured.GetFarPlane())
     view->InvalidateTemporalHistory();
-  m_hCamera = camera.GetHandle();
-  m_Camera.SetCameraMode(mode, dimension, camera.GetNearPlane(), farPlane);
-  const auto* owner    = camera.GetOwner();
-  const auto  position = owner->GetGlobalPosition();
-  m_Camera.LookAt(position, position + owner->GetGlobalDirForwards(), owner->GetGlobalDirUp());
-  m_Camera.SetExposure(exposure);
+  m_hCamera           = camera.GetHandle();
+  m_Camera            = configured;
   view->m_IncludeTags = camera.m_IncludeTags;
   view->m_ExcludeTags = camera.m_ExcludeTags;
   view->m_ExcludeTags.SetByName("Editor");

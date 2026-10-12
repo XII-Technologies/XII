@@ -17,6 +17,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/SceneCameraPreview.h>
+#include <SharedPluginScene/Scene/SceneCameraSettings.h>
 #include <Texture/Image/Image.h>
 
 namespace
@@ -116,6 +117,57 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneCameraPreview)
   editorTargetDescription.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
   auto editorTarget                   = environment.GetDevice()->CreateTexture(editorTargetDescription);
   editorView->SetRenderTargetView(editorTarget->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Authored culling cameras use validated settings and reset to the render camera")
+  {
+    xiiCamera culling;
+    XII_TEST_RESULT(xiiConfigureSceneCullingCamera(*editorView, true, culling));
+    XII_TEST_VEC3(culling.GetCenterPosition(), editorCamera.GetCenterPosition(), 0);
+    secondCamera->SetUsageHint(xiiCameraUsageHint::CullingOnly);
+    XII_TEST_RESULT(xiiConfigureSceneCullingCamera(*editorView, false, culling));
+    XII_TEST_BOOL(culling.GetCameraMode() == editorCamera.GetCameraMode());
+    XII_TEST_RESULT(xiiConfigureSceneCullingCamera(*editorView, true, culling));
+    XII_TEST_BOOL(culling.GetCameraMode() == xiiCameraMode::OrthoFixedHeight);
+    XII_TEST_FLOAT(culling.GetFovOrDim(), 24, 0);
+    XII_TEST_VEC3(culling.GetCenterPosition(), xiiVec3(4, 5, 6), 0.0001f);
+    XII_TEST_FLOAT(culling.GetExposure(), secondCamera->GetExposure(), 0.0001f);
+    editorView->SetCullingCamera(&culling);
+    xiiFrustum actual;
+    editorView->ComputeCullingFrustum(actual);
+    XII_TEST_BOOL(actual.IsValid());
+    const xiiVec3 inside(5, 5, 6), outsideWidth(5, 26, 6), outsideHeight(5, 5, 19);
+    XII_TEST_BOOL(actual.GetObjectPosition(&inside, 1) == xiiVolumePosition::Inside);
+    XII_TEST_BOOL(actual.GetObjectPosition(&outsideWidth, 1) == xiiVolumePosition::Outside);
+    XII_TEST_BOOL(actual.GetObjectPosition(&outsideHeight, 1) == xiiVolumePosition::Outside);
+    // Culling never mutates render projection, exposure, filters or per-view render scale.
+    XII_TEST_BOOL(editorCamera.GetCameraMode() == xiiCameraMode::PerspectiveFixedFovY);
+    XII_TEST_FLOAT(editorCamera.GetFovOrDim(), 60, 0);
+    XII_TEST_FLOAT(editorView->GetRenderScale(), 1, 0);
+    XII_TEST_BOOL(editorView->m_IncludeTags.IsEmpty());
+    XII_TEST_BOOL(xiiConfigureSceneCullingCamera(*editorView, true, editorCamera).Failed());
+    secondCamera->SetActiveFlag(false);
+    XII_TEST_RESULT(xiiConfigureSceneCullingCamera(*editorView, true, culling));
+    XII_TEST_VEC3(culling.GetCenterPosition(), editorCamera.GetCenterPosition(), 0);
+    secondCamera->SetActiveFlag(true);
+    secondCamera->SetOrthoDimension(xiiMath::NaN<float>());
+    XII_TEST_BOOL(xiiConfigureSceneCullingCamera(*editorView, true, culling).Failed());
+    XII_TEST_VEC3(culling.GetCenterPosition(), editorCamera.GetCenterPosition(), 0);
+    secondCamera->SetOrthoDimension(24);
+    secondCamera->SetUsageHint(xiiCameraUsageHint::None);
+    XII_TEST_RESULT(xiiConfigureSceneCullingCamera(*editorView, true, culling));
+    XII_TEST_BOOL(culling.GetCameraMode() == editorCamera.GetCameraMode());
+    xiiGameObject*      temporaryObject = nullptr;
+    const auto          temporaryHandle = world.CreateObject(objectDescription, temporaryObject);
+    xiiCameraComponent* temporaryCamera = nullptr;
+    manager->CreateComponent(temporaryObject, temporaryCamera);
+    temporaryCamera->SetUsageHint(xiiCameraUsageHint::CullingOnly);
+    world.Update();
+    XII_TEST_RESULT(xiiConfigureSceneCullingCamera(*editorView, true, culling));
+    XII_TEST_VEC3(culling.GetCenterPosition(), xiiVec3(4, 5, 6), 0.0001f);
+    world.DeleteObjectNow(temporaryHandle);
+    XII_TEST_RESULT(xiiConfigureSceneCullingCamera(*editorView, true, culling));
+    XII_TEST_VEC3(culling.GetCenterPosition(), editorCamera.GetCenterPosition(), 0);
+    editorView->SetCullingCamera(nullptr);
+  }
   xiiViewHandle destroyed;
   {
     xiiSceneCameraPreview first(world), second(world);

@@ -43,6 +43,7 @@ protected:
   void MarqueePickObjects(const xiiViewMarqueePickingMsgToEngine* pMsg);
 
 private:
+  void UpdateCullingCamera();
   void UpdateCameraPreview(bool bRenderEditorGizmos);
 
   xiiSceneContext* m_pSceneContext;

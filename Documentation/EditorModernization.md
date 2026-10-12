@@ -1255,3 +1255,43 @@ migration progresses; no requirement is waived because a subsystem is difficult.
 - Scene picking IPC, mesh/transparent picking and selection overlays still need
   migration. These icon queries establish real GPU coverage and identity handling;
   they do not establish an integrated Editor selection workflow or GUI behavior.
+
+- Scene culling uses the current `CullingOnly` camera usage and the Editor-owned
+  `Editor.Scene.UseCullingCamera` CVar instead of the removed render-pipeline CVar.
+  It copies validated component settings under World access and falls back to the
+  rendering camera when the authored camera is missing, inactive, deleted or
+  malformed. Camera pose/projection/exposure validation is shared with selected
+  camera previews; no component pointers persist between updates. Native primary
+  GPU visibility now uses `xiiView::ComputeCullingFrustum`, matching the indexed
+  visibility path's support for an explicit culling camera. Hi-Z, LOD and cone
+  facing retain their raster-camera inputs.
+- Camera view creation now skips invalidated identities in compact component
+  storage, which can contain deleted cameras until World cleanup. Creating a
+  preview before that cleanup previously queued an invalid handle and asserted
+  during the next camera-manager update. The regression test retains that exact
+  deletion/view-creation sequence. Camera tests also verify culling enable/disable,
+  missing/deactivated/deleted camera fallback, malformed settings, actual frustum
+  inclusion/exclusion and render-camera isolation, alongside real preview GPU
+  execution/readback. These checks do not establish a full native scene-shading
+  image with an alternate culling camera or an integrated Editor GUI workflow.
+- Windows Debug builds of EditorEngineProcessFrameworkTest, EditorFrameworkTest,
+  EditorEngineProcess, GraphicsCoreTest and GraphicsFoundationTest pass. All 18
+  GraphicsCore subtests, all 40 GraphicsFoundation Vulkan subtests, all 37 Vulkan
+  engine-process subtests and the Editor document-lifecycle test pass.
+  `SceneViewRendering.cpp` compiles with zero warnings/errors. Logs:
+  `Workspace/editor-scene-camera-settings-build.log`,
+  `Workspace/editor-scene-culling-core-build.log`,
+  `Workspace/editor-scene-culling-core-tests.log`,
+  `Workspace/editor-scene-culling-foundation-tests.log` and
+  `Workspace/editor-scene-culling-camera-compile.log`; final engine-process and
+  Editor logs are `Workspace/editor-scene-camera-settings-final-tests.log` and
+  `Workspace/editor-scene-camera-settings-editor-tests.log`. The full scene-plugin
+  migration and integrated GUI / other platform and backend verification remain
+  outstanding.
+- The current full scene-plugin build still stops at the removed
+  `GraphicsCore/AnimationSystem/Declarations.h` and
+  `GraphicsCore/RenderWorld/RenderWorld.h` includes
+  (`Workspace/editor-scene-camera-settings-scene-build.log`). Culling no longer
+  refers to the removed render-pipeline CVar; remaining scene picking/selection,
+  animation and lighting integrations must be migrated before claiming a linked
+  scene plugin or functional integrated Editor workflow.

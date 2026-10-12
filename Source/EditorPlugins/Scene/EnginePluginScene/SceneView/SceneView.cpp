@@ -127,47 +127,9 @@ void xiiSceneViewContext::Redraw(bool bRenderEditorGizmos)
 void xiiSceneViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 {
   xiiEngineProcessViewContext::SetCamera(pMsg);
-
-  xiiView* pView = nullptr;
-  xiiRenderWorld::TryGetView(m_hView, pView);
-
-  bool bDebugCulling = false;
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  bDebugCulling = xiiRenderPipeline::cvar_SpatialCullingVis;
-#endif
-
-  if (bDebugCulling && pView != nullptr)
-  {
-    if (const xiiCameraComponentManager* pCameraManager = pView->GetWorld()->GetComponentManager<xiiCameraComponentManager>())
-    {
-      if (const xiiCameraComponent* pCameraComponent = pCameraManager->GetCameraByUsageHint(xiiCameraUsageHint::Culling))
-      {
-        const xiiGameObject* pOwner    = pCameraComponent->GetOwner();
-        xiiVec3              vPosition = pOwner->GetGlobalPosition();
-        xiiVec3              vForward  = pOwner->GetGlobalDirForwards();
-        xiiVec3              vUp       = pOwner->GetGlobalDirUp();
-
-        m_CullingCamera.LookAt(vPosition, vPosition + vForward, vUp);
-
-        auto  cameraMode = pCameraComponent->GetCameraMode();
-        float fFovOrDim  = pCameraComponent->GetFieldOfView();
-        if (cameraMode == xiiCameraMode::OrthoFixedWidth || cameraMode == xiiCameraMode::OrthoFixedHeight)
-        {
-          fFovOrDim = pCameraComponent->GetOrthoDimension();
-        }
-
-        const float fNearPlane = pCameraComponent->GetNearPlane();
-        const float fFarPlane  = pCameraComponent->GetFarPlane();
-        m_CullingCamera.SetCameraMode(cameraMode, fFovOrDim, fNearPlane, xiiMath::Max(fNearPlane + 0.00001f, fFarPlane));
-      }
-    }
-  }
-  else
-  {
-    m_CullingCamera = m_Camera;
-  }
-
-  if (pView != nullptr)
+  XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  UpdateCullingCamera();
+  if (xiiView* pView = GetView())
   {
     pView->SetRenderPassProperty("EditorSelectionPass", "Active", m_pSceneContext->GetRenderSelectionOverlay());
     pView->SetPipelineParameter("Editor.ShapeIcons", m_pSceneContext->GetRenderShapeIcons());
