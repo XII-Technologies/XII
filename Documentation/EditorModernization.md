@@ -1696,3 +1696,59 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   or rendering parity for unsupported native deformation/indexed fallback paths.
   Same-handle mesh geometry reload handling and full Editor/plugin verification
   remain outstanding at this checkpoint. The overall modernization is incomplete.
+
+## Native mesh reload lifetime and scene authoring
+
+- Shared mesh residency now keys the current geometry by both mesh and buffer
+  content revisions. Reloading publishes a replacement generation; a delayed view
+  retains its exact previous geometry until it migrates. Releases name the acquired
+  geometry rather than a resource handle that can now identify newer content.
+  Last-use frames monotonically extend GPU retirement, and old LOD records reject
+  uploads from a changed source buffer. Mesh-buffer changes invalidate query captures
+  through the same resource epoch as mesh/material changes.
+- GPU readback tests exposed a native meshlet layout mismatch: C++ bounds started
+  at byte 24 while the portable shader float4 started at byte 32. Explicit alignment
+  fields now match the 64-byte GPU record. The portable serialized payload remains
+  56 bytes and resets transient padding when read. Degenerate meshoptimizer normal
+  cones retain the disabled sentinel instead of rejecting closed clusters.
+- The box drawing tool now authors native game objects and mesh components using
+  the bundled unit Box mesh asset, full extents and center transforms. Optional
+  materials use native `MaterialOverrides`. Creation is one undoable transaction;
+  invalid dimensions and accessor failures roll back all partial content. This
+  preserves the box drawing workflow without recreating the removed GreyBox
+  component. Existing GreyBox assets have not yet been migrated.
+- Material drag/drop uses native mesh components and override slots, rejects invalid
+  targets and malformed asset MIME, commits only successfully applied targets and
+  rolls cancelled previews back. Shared drag/drop identity decoding now handles
+  missing, empty and truncated payloads. Newly constructed drag/drop info initializes
+  its MIME pointer. A discovered command-history ownership bug is fixed: cancelled
+  nested transactions are removed from their parent; temporary updates that reuse
+  a transaction clear its work without destroying that shared transaction. Failed
+  resize commands propagate their status and clean up rolled-back child commands.
+- EditorFrameworkTest now links the complete production EditorPluginScene instead
+  of compiling selected scene implementation copies. Windows Debug builds of
+  EditorPluginScene, EditorFrameworkTest, ToolsFoundationTest, GraphicsCoreTest,
+  EditorEngineProcessFrameworkTest and EditorEngineProcess pass. All seven
+  EditorFramework tests, all seven ToolsFoundation DocumentObject tests, all 18
+  GraphicsCore tests and all 42 Vulkan engine-process tests pass. Coverage includes
+  native box asset identity and persistence, material drag undo/redo/cancel, nested
+  transaction cancellation, CPU/GPU mesh metadata, actual meshlet/vertex uploads,
+  same-handle mesh reloads and independent delayed-view geometry retirement.
+  Evidence: `Workspace/editor-native-lifetime-build.log`,
+  `Workspace/editor-native-lifetime-tools-tests.log`,
+  `Workspace/editor-native-lifetime-repair-build.log`,
+  `Workspace/editor-native-lifetime-repair-core-tests.log`,
+  `Workspace/editor-native-lifetime-final-engine-tests.log`,
+  `Workspace/editor-native-material-final-build.log` and
+  `Workspace/editor-native-material-final-tests.log`.
+- Full Editor/Assets/Processor integration and Qt scene interaction remain
+  outstanding. Property-animation authoring still references a removed runtime
+  resource, and no PropertyAnim engine document context is registered. The current
+  skeletal clip resource is not a general reflected-property animation replacement.
+  Native whole-mesh extraction also still needs section/material isolation before
+  arbitrary multi-material picking and material drag can claim parity; the native
+  box explicitly uses its single section and slot zero. Indexed fallback queries,
+  native deformation, legacy scene migrations, other backends/platforms and GUI
+  lifecycle workflows remain incomplete or unverified. Earlier compile blockers
+  for EnginePluginScene and EditorPluginScene are superseded by the builds above;
+  the comprehensive modernization goal remains active.
