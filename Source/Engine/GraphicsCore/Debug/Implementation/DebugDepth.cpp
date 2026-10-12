@@ -21,8 +21,9 @@ namespace xiiDebugRendererInternal
     if (!source || !target)
       return {};
     if (source->m_Size == target->m_Size)
-      return depth;
-    if (!source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || source->m_uiSampleCount != 1 || target->m_uiSampleCount != 1)
+      return source->m_uiSampleCount == target->m_uiSampleCount ? depth : xiiRenderGraphTextureHandle{};
+    if (source->m_Type != xiiGALResourceDimension::Texture2D || target->m_Type != xiiGALResourceDimension::Texture2D ||
+        !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || source->m_uiSampleCount != 1 || target->m_uiSampleCount != 1)
       return {};
 
     const auto shader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Debug/DebugDepth.xiiShader");
@@ -67,8 +68,9 @@ namespace xiiDebugRendererInternal
           return;
         }
         auto& commands = context.GetCommandList();
-        const auto& viewport = context.GetView()->GetViewport();
-        commands.SetViewport({viewport.x, viewport.y, viewport.width, viewport.height, 0, 1});
+        // Pipeline intermediates use local coordinates; the view origin belongs to final presentation.
+        const auto& size = context.GetTexture(data.m_Target)->GetDescription().m_Size;
+        commands.SetViewport({0, 0, static_cast<float>(size.width), static_cast<float>(size.height), 0, 1});
         commands.SetPipelineState(state.Borrow());
         commands.ResolveAndSetShaderResourceTextureView("SourceDepth", context.GetTexture(data.m_Source)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
         if (commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Succeeded())

@@ -145,17 +145,22 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     first->SetViewport({0, 0, 65, 63});
     first->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
-    clearDepth = 1.0f;
-    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
-    world.Update();
-    checkCenter(255, 0, 0);
-    clearDepth = 0.0f;
-    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
-    world.Update();
-    checkCenter(0, 0, 0);
-    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Blue, xiiDebugRendererDepthMode::Overlay);
-    world.Update();
-    checkCenter(0, 0, 255);
+    for (const auto& viewport : {xiiRectFloat(0, 0, 65, 63), xiiRectFloat(37, 19, 65, 63)})
+    {
+      // Intermediates remain view-local even when presentation uses an offset viewport.
+      first->SetViewport(viewport);
+      clearDepth = 1.0f;
+      xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
+      world.Update();
+      checkCenter(255, 0, 0);
+      clearDepth = 0.0f;
+      xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
+      world.Update();
+      checkCenter(0, 0, 0);
+      xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Blue, xiiDebugRendererDepthMode::Overlay);
+      world.Update();
+      checkCenter(0, 0, 255);
+    }
 
     environment.GetDevice()->WaitIdle();
     color         = originalColor;
