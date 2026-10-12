@@ -32,15 +32,17 @@ xiiVisualizerAdapterRegistry::xiiVisualizerAdapterRegistry() :
   m_SingletonRegistrar(this)
 {
   xiiVisualizerManager::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiVisualizerAdapterRegistry::VisualizerManagerEventHandler, this));
+  m_Factory.m_Events.AddEventHandler(xiiMakeDelegate(&xiiVisualizerAdapterRegistry::FactoryEventHandler, this));
 }
 
 xiiVisualizerAdapterRegistry::~xiiVisualizerAdapterRegistry()
 {
   xiiVisualizerManager::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiVisualizerAdapterRegistry::VisualizerManagerEventHandler, this));
+  m_Factory.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiVisualizerAdapterRegistry::FactoryEventHandler, this));
 
-  for (auto it = m_DocumentAdapters.GetIterator(); it.IsValid(); ++it)
+  while (!m_DocumentAdapters.IsEmpty())
   {
-    ClearAdapters(it.Key());
+    ClearAdapters(m_DocumentAdapters.GetIterator().Key());
   }
 }
 
@@ -72,7 +74,11 @@ void xiiVisualizerAdapterRegistry::VisualizerManagerEventHandler(const xiiVisual
 {
   ClearAdapters(e.m_pDocument);
 
-  for (const auto sel : *e.m_pSelection)
+  if (e.m_pSelection->IsEmpty())
+    return;
+  auto& data       = m_DocumentAdapters[e.m_pDocument];
+  data.m_Selection = *e.m_pSelection;
+  for (const auto sel : data.m_Selection)
   {
     CreateAdapters(e.m_pDocument, sel);
   }
@@ -80,10 +86,29 @@ void xiiVisualizerAdapterRegistry::VisualizerManagerEventHandler(const xiiVisual
 
 void xiiVisualizerAdapterRegistry::ClearAdapters(const xiiDocument* pDocument)
 {
-  for (auto& adapt : m_DocumentAdapters[pDocument].m_Adapters)
+  auto it = m_DocumentAdapters.Find(pDocument);
+  if (!it.IsValid())
+    return;
+  for (auto& adapt : it.Value().m_Adapters)
   {
     XII_DEFAULT_DELETE(adapt);
   }
 
-  m_DocumentAdapters[pDocument].m_Adapters.Clear();
+  m_DocumentAdapters.Remove(it);
+}
+
+void xiiVisualizerAdapterRegistry::FactoryEventHandler(const xiiRttiMappedObjectFactory<xiiVisualizerAdapter>::Event& e)
+{
+  XII_IGNORE_UNUSED(e);
+  // Registration can change the closest matching creator. Rebuild while the removed plugin's
+  // code is still loaded, so no adapter or synchronized handle survives its creator's unload.
+  for (auto it = m_DocumentAdapters.GetIterator(); it.IsValid(); ++it)
+  {
+    auto& data = it.Value();
+    for (auto* adapter : data.m_Adapters)
+      XII_DEFAULT_DELETE(adapter);
+    data.m_Adapters.Clear();
+    for (const auto* selected : data.m_Selection)
+      CreateAdapters(it.Key(), selected);
+  }
 }
