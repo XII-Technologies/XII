@@ -2556,3 +2556,69 @@ world submission clock. The comprehensive modernization goal remains active.
   Deformed geometry execution/picking, legacy sky/probe/GreyBox migration and broader
   manual Editor workflow parity remain outstanding. The modernization goal remains
   incomplete.
+
+## Native Skinning Evaluation And Spatial Pose Lifetime
+
+- The current renderer investigation confirms that extracted skinning matrices and
+  morph weights do not yet reach native vertex execution. Geometry residency shares
+  immutable mesh buffers; surface, depth, forward, shadow and emissive consumers
+  still read bind-pose vertices. The existing `Skinning.xiiShader` has no C++ caller
+  and describes a different vertex layout from `xiiMeshPackedVertex`. It cannot be
+  treated as an implemented deformation path. Morph target metadata also lacks a
+  dedicated retained delta interface; authoring and animation import need further
+  investigation before claiming morph support.
+- Added allocation-free `xiiMeshSkinning` operations in GraphicsCore, split into a
+  public header and implementation. Native ushort4 joint indices and byte4 weights
+  now have one CPU evaluator shared with scene geometry export. Positive influences
+  are normalized by their sum; zero-weight vertices and empty palettes preserve
+  bind pose. Invalid referenced joints, non-finite results and non-affine matrices
+  fail with `xiiResult` without modifying output. No exceptions or termination APIs
+  were introduced.
+- Conservative pose bounds enclose the bind box and every palette-transformed box.
+  Their union encloses positive normalized blends, including vertices without bone
+  influences. Using transformed boxes avoids relying on a transformed sphere under
+  shear. Work is O(palette size), with no CPU vertex retention or GPU readback;
+  bounds can be loose for large rigs. This establishes spatial bounds, not GPU
+  deformation, motion history or deformed meshlet cones.
+- `xiiSkinnedMeshComponent` now refreshes local spatial bounds after direct palette
+  updates, successful pose application, failed pose application and clearing. Its
+  palette setter returns `xiiResult`, rejects invalid input without replacing the
+  current pose, and accepts a subrange of its own palette without tail destruction
+  corrupting the input. Animation preview propagates the result, and generated mesh
+  palettes use the shared affine validation.
+- Tests verify normalized and zero-weight skinning, ignored invalid zero-weight
+  indices, invalid joints, non-finite and projective matrices, overflow, atomic
+  failure and aliasing. Bounds tests check every box corner across 256 blends of
+  sheared/reflected/singular and translated transforms. Native Editor tests verify
+  world bounds while simulation is disabled, palette clearing, failed application
+  and clip reload. Geometry export verifies matching CPU-retained and GPU-only
+  readback results and preserves the published file after invalid influences.
+- The first new export run exposed a test pointer retained across `world.Update()`;
+  the fixture now reacquires the component through its handle. A later full run
+  reported temporal allocation-continuity failures; the unmodified full rerun and
+  isolated temporal group passed. Inspection found that the identity fixture did
+  not enforce its stated fixed-resolution premise: the production PID can resize
+  under load. The fixture now pins and restores both resolution bounds, verifies
+  32-by-32 output, and keeps all nine identity checks. Its final focused run passes.
+- Windows Debug DLL builds pass for GraphicsCoreTest, EditorEngineProcessFrameworkTest,
+  Editor, EditorProcessor and EditorFrameworkTest. Evidence:
+  `Workspace/editor-skinning-core-build.log`,
+  `Workspace/editor-skinning-integration-build.log`, and
+  `Workspace/editor-skinning-final-build.log`.
+- Verified runs total 88 passing subtest executions: all 21 GraphicsCore tests,
+  all 54 native Editor tests with Vulkan synchronization validation, all ten Qt
+  Editor workflow tests, plus the three temporal tests after pinning the fixture.
+  Logs are `Workspace/editor-skinning-core-tests.log`,
+  `Workspace/editor-skinning-native-final-tests.log`,
+  `Workspace/editor-skinning-qt-tests.log`, and
+  `Workspace/editor-skinning-temporal-final-tests.log`. No Vulkan validation errors
+  or assertion artifact were observed in these final runs. The earlier failed run
+  remains recorded in `Workspace/editor-skinning-native-tests.log`.
+- Shared runtime GPU deformation and native picking remain incomplete. The next
+  integration must carry current and previous instance poses through graph-declared,
+  frame-safe uploads, preserve independent view/context state, update all native
+  vertex consumers, and provide posed bounds/cone behavior. CPU export is not an
+  alternative renderer. Legacy sky/probe/GreyBox migration and broader manual
+  workflow parity also remain outstanding. This checkpoint does not establish
+  Release, static GraphicsCore, D3D12, Linux or macOS behavior; the full modernization
+  goal remains active.
