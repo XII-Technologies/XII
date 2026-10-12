@@ -1752,3 +1752,72 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   lifecycle workflows remain incomplete or unverified. Earlier compile blockers
   for EnginePluginScene and EditorPluginScene are superseded by the builds above;
   the comprehensive modernization goal remains active.
+
+## Native section and material identity
+
+- Whole-mesh components now emit ordinary render packets per nonempty section of
+  the selected LOD. Each packet retains its owner, section primitive/meshlet range
+  and material overrides. Explicit section selection uses the selected LOD's
+  section list; an out-of-range section emits no geometry. Existing native scene
+  synchronization and rasterization consume these packets without an Editor-only
+  rendering path.
+- Native source records distinguish mesh section identity from the section's
+  material slot. Material selection and source metadata use the selected LOD and
+  refresh the slot during synchronization. SceneView publishes the material slot
+  through the existing picking part field consumed by material drag/drop, while
+  native query clients can still inspect the separate full-width section index.
+- Windows Debug dependent builds pass and all 42 Vulkan engine-process tests pass
+  in `Workspace/editor-native-sections-final-tests.log`. The added test sends real
+  extraction messages to a native mesh component and checks GPU hits on two
+  spatially separate sections whose material slots are 5 and 2. It also verifies
+  explicit section filtering and invalid-section rejection. All seven production
+  EditorFramework tests pass in `Workspace/editor-native-sections-editor-tests.log`.
+  Build evidence: `Workspace/editor-native-sections-final-build.log` and
+  `Workspace/editor-native-sections-repair-build.log`. This supersedes the previous
+  whole-mesh section/material isolation gap for the tested native meshlet path.
+- The accompanying GraphicsCore run exposed an intermittent pre-existing custom
+  loader reload race; its result is not recorded as green at this checkpoint.
+  Cross-LOD residency/range interactions, indexed fallback and deformation paths,
+  integrated Qt material dragging and the full Editor application remain outside
+  this checkpoint's verified coverage.
+
+## Busy resource reloads and failed command ownership
+
+- Resource loading now consumes a pending custom payload after the current update
+  and loader close finish. Requests arriving while the resource is in flight no
+  longer remain silently stranded in the custom-loader table. The existing table
+  coalesces requests to the latest payload; no second cache or reload queue was
+  introduced. Shutdown prevents scheduling further reloads. Existing content may
+  remain visible until the pending reload begins, so consumers continue to use
+  the existing content-updated events and resource revisions.
+- The pipeline test deterministically queues two replacement payloads from inside
+  the previous loader's close callback and verifies that the latest definition is
+  published. Shared signal ownership keeps the test safe even on a timeout. The
+  existing shared-definition test waits for replacement publication before checking
+  new instances and retained previous compilation snapshots. Both Core resource
+  manager tests and all 18 GraphicsCore tests pass:
+  `Workspace/editor-custom-reload-resources-tests.log` and
+  `Workspace/editor-custom-reload-graphics-tests.log`.
+- Failed composite commands clean up their successfully completed, rolled-back
+  children without invoking the failed parent's completed-command cleanup hook.
+  Tests verify one destruction for a created child and safe rejection of an invalid
+  parent before any object exists. This corrects the failure-cleanup addition in
+  the earlier command-history checkpoint. Extracted test packets are also released
+  after GPU completion and before resource-manager shutdown.
+- The final Windows Debug build passes for ToolsFoundationTest,
+  EditorFrameworkTest (including the production Scene plugin),
+  EditorEngineProcessFrameworkTest and EditorEngineProcess. All seven
+  ToolsFoundation DocumentObject tests, all seven EditorFramework tests and all 42
+  Vulkan engine-process tests pass. Evidence:
+  `Workspace/editor-command-cleanup-final-build.log`,
+  `Workspace/editor-command-cleanup-tools-tests.log`,
+  `Workspace/editor-command-cleanup-editor-tests.log` and
+  `Workspace/editor-command-cleanup-engine-tests.log`. This supersedes the
+  GraphicsCore reload-race failure noted in the section checkpoint.
+- The integrated Editor/Assets/Processor build still fails on the removed
+  `GameEngine/Animation/PropertyAnimResource.h` include in property-animation
+  authoring (`Workspace/editor-integrated-authoring-build.log`). No runtime
+  replacement, successful application startup or GUI workflow is claimed.
+  Other platforms/backends and the broader outstanding migrations above remain
+  unverified or incomplete; this is continued progress toward the comprehensive
+  modernization objective, not completion of that objective.

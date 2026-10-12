@@ -168,8 +168,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
-  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  XII_SCOPE_EXIT(xiiFrameAllocator::Reset()); // Destroy extracted packets before resource-manager shutdown.
+  // Destroy extracted packets after GPU completion and before resource-manager shutdown.
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
   if (!xiiGpuSceneRasterManager::IsSupported())
   {
     xiiTestFramework::Output(xiiTestOutput::Message, "Native mesh query pass requires mesh shaders; GPU queries were not exercised on this device.");
