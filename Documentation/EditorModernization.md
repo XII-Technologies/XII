@@ -2026,11 +2026,68 @@ world submission clock. The comprehensive modernization goal remains active.
   and all ten native Qt Editor tests pass: `Workspace/editor-native-lod-core-final-tests.log`
   and `Workspace/editor-native-lod-qt-tests.log`. Native Qt runs include viewport
   capture and real IPC picking. No assertion artifact is produced.
-- Automatic GPU LOD selection still needs per-LOD section/range/material mapping
-  when section layouts differ; the automatic-bias fixture deliberately uses a
-  whole-LOD range and does not establish that missing behavior. Indexed/deformed
+- The automatic-bias fixture at this checkpoint deliberately used a whole-LOD
+  range; cross-LOD authored section mapping is verified in the follow-up below. Indexed/deformed
   native queries, legacy sky/probe/GreyBox migration, additional static-link
   inventories, the ReFS case-only watcher limitation, manual-manager frame
   timeline and shared temporal-manager isolation remain outstanding. Manual UI
   workflow parity, D3D12, Release and other platforms remain unverified. The
   comprehensive modernization goal remains active.
+
+## Authored LOD sections, shared selection and picking invalidation
+
+- Component extraction explicitly distinguishes whole meshes, authored section
+  ordinals and custom primitive ranges. Native synchronization expands an authored
+  mesh into its nonempty LOD/section candidates, using each LOD's own primitive
+  range and material slot. Whole-mesh CPU section packets are deduplicated using
+  reusable scratch storage. Ordinary indexed packets retain their CPU-selected
+  ranges; a section absent from that CPU LOD emits no indexed work while remaining
+  available to native GPU selection. Entirely empty CPU LODs retain an authoring
+  packet for selection of other LODs. Custom packets preserve their prior exact
+  primitive-range contract.
+- Stable native keys and source metadata now include authored LOD identity.
+  Geometry residency remains shared across candidates and views. Resource reload
+  updates surviving ordinal keys and retires removed sections; a delayed scene
+  context retains its own immutable geometry revision and material metadata until
+  it synchronizes. No mesh asset format or Core graph dependency changes.
+- A candidate's draw LOD restricts its range/material to the selected authored LOD.
+  Section candidates share one generation-checked, non-owning LOD representative.
+  Dense indices are resolved before GPU records are emitted, including when a
+  representative follows its members or unrelated objects are removed. Destroyed
+  representatives cannot resolve to reused objects. Instance culling updates LOD
+  history once per instance before material routing, frustum or Hi-Z tests; meshlet
+  culling consumes that result. Filtered opaque/translucent sections therefore retain
+  coherent hysteresis. History uses native generation identities rather than
+  application IDs. Streaming feedback applies the same active-instance bounds.
+- Draw LOD and representative index reuse the GPU record's existing padding,
+  preserving its 256-byte stride. CPU storage adds a draw index and representative
+  handle per allocated scene object. Native candidate storage scales with authored
+  LOD sections (at most eight LODs), while immutable mesh buffers remain shared.
+  Emissive extraction admits only the finest resident authored LOD, or the explicitly
+  forced LOD, preserving its view-independent policy without duplicating emitters
+  from candidates whose primitive ranges overlap.
+- Empty authored LODs translate to an empty source meshlet range at the source end;
+  source count zero otherwise means "to end" and could incorrectly borrow the next
+  LOD's meshlets. Native resource reload tests verify CPU and uploaded GPU counts,
+  differing section layouts, retired IDs, and independently synchronized contexts.
+- Picking fingerprints include packet range semantics and coverage bias. Captured
+  owner validation also includes component section selection, forced LOD and bias,
+  rejecting occupied pixels immediately after component changes before a new graph
+  is built. Existing resource-event, transform, material and owner validation remains.
+- All 48 Vulkan engine-process subtests pass, including three native LOD tests and
+  the extended production picking fixture:
+  `Workspace/editor-lod-sections-integrated-tests.log`. The section fixture executes
+  15 frames with differing section counts, range/material orders, masked coverage,
+  transparent filtering, shared hysteresis, stable identities and forced controls.
+  All 18 GraphicsCore subtests pass:
+  `Workspace/editor-lod-sections-core-tests.log`. The final shader bounds guard also
+  passes all three native LOD tests: `Workspace/editor-lod-sections-final-tests.log`.
+- Windows Debug builds pass for Editor, EditorPluginVisualScript,
+  EditorFrameworkTest and EditorProcessor:
+  `Workspace/editor-lod-sections-editor-build.log`. All ten native Qt Editor tests
+  pass, including viewport capture and real engine-process IPC picking:
+  `Workspace/editor-lod-sections-qt-tests.log`. No assertion artifact is produced.
+  Indexed/deformed native picking, legacy sky/probe/GreyBox migrations, additional
+  static-link inventories, case-only ReFS watching, manager frame timelines, shared
+  temporal manager isolation and broader manual workflow parity remain outstanding.
+  D3D12, Release, Linux and macOS remain unverified; this migration remains active.
