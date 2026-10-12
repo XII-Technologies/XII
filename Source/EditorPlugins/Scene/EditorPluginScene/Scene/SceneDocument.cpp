@@ -94,9 +94,9 @@ void xiiSceneDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 
   EnsureSettingsObjectExist();
 
-  m_DocumentObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::DocumentObjectMetaDataEventHandler, this));
-  xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::ToolsProjectEventHandler, this));
-  xiiEditorEngineProcessConnection::GetSingleton()->s_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::EngineConnectionEventHandler, this));
+  m_DocumentObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::DocumentObjectMetaDataEventHandler, this), m_MetaDataEventSubscriber);
+  xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::ToolsProjectEventHandler, this), m_ProjectEventSubscriber);
+  xiiEditorEngineProcessConnection::GetSingleton()->s_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::EngineConnectionEventHandler, this), m_EngineEventSubscriber);
 
   m_ObjectMirror.InitSender(GetObjectManager());
   m_ObjectMirror.InitReceiver(&m_Context);
@@ -107,11 +107,9 @@ xiiSceneDocument::~xiiSceneDocument()
 {
   m_SelectionHandlerUnsubscriber.Unsubscribe();
 
-  m_DocumentObjectMetaData->m_DataModifiedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiSceneDocument::DocumentObjectMetaDataEventHandler, this));
-
-  xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiSceneDocument::ToolsProjectEventHandler, this));
-
-  xiiEditorEngineProcessConnection::GetSingleton()->s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiSceneDocument::EngineConnectionEventHandler, this));
+  m_MetaDataEventSubscriber.Unsubscribe();
+  m_ProjectEventSubscriber.Unsubscribe();
+  m_EngineEventSubscriber.Unsubscribe();
 
   m_ObjectMirror.Clear();
   m_ObjectMirror.DeInit();

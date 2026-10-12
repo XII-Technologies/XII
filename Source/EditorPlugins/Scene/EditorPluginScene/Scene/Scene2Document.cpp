@@ -81,6 +81,10 @@ xiiScene2Document::xiiScene2Document(xiiStringView sDocumentPath) :
 
 xiiScene2Document::~xiiScene2Document()
 {
+  // Factory or load failure can destroy the document before layer storage is installed.
+  if (m_pSceneObjectManager == nullptr)
+    return;
+
   m_SelectionHandlerUnsubscriber.Unsubscribe();
 
   SetActiveLayer(GetGuid()).LogFailure();

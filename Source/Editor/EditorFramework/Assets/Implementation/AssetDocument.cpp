@@ -35,7 +35,8 @@ xiiAssetDocument::xiiAssetDocument(xiiStringView sDocumentPath, xiiDocumentObjec
 
 xiiAssetDocument::~xiiAssetDocument()
 {
-  m_pMirror->DeInit();
+  if (m_pMirror != nullptr)
+    m_pMirror->DeInit();
 
   if (m_EngineConnectionType != xiiAssetDocEngineConnection::None)
   {

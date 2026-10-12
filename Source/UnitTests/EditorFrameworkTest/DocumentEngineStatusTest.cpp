@@ -4,6 +4,7 @@
 
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorFramework/Document/GameObjectDocument.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <TestFramework/Utilities/TestLogInterface.h>
 
@@ -12,13 +13,27 @@ namespace
   class StatusTestDocument : public xiiAssetDocument
   {
   public:
-    StatusTestDocument(xiiAssetDocEngineConnection connectionType) :
+    StatusTestDocument(xiiAssetDocEngineConnection connectionType, bool initialize = true) :
       xiiAssetDocument("DocumentEngineStatusTest.xiiAsset", XII_DEFAULT_NEW(xiiDocumentObjectManager), connectionType)
     {
       // Exercise IPC state without registering a project, opening a window, or launching an engine process.
-      m_pDocumentInfo = CreateDocumentInfo();
-      InitializeAfterLoading(false);
+      if (initialize)
+      {
+        m_pDocumentInfo = CreateDocumentInfo();
+        InitializeAfterLoading(false);
+      }
     }
+
+    xiiTransformStatus InternalTransformAsset(xiiStreamWriter&, xiiStringView, const xiiPlatformProfile*, const xiiAssetFileHeader&, xiiBitflags<xiiTransformFlags>) override
+    {
+      return xiiTransformStatus("This test document has no transform implementation.");
+    }
+  };
+
+  class PartialGameObjectDocument : public xiiGameObjectDocument
+  {
+  public:
+    PartialGameObjectDocument() : xiiGameObjectDocument("PartialScene.xiiScene", XII_DEFAULT_NEW(xiiDocumentObjectManager)) {}
 
     xiiTransformStatus InternalTransformAsset(xiiStreamWriter&, xiiStringView, const xiiPlatformProfile*, const xiiAssetFileHeader&, xiiBitflags<xiiTransformFlags>) override
     {
@@ -28,6 +43,28 @@ namespace
 } // namespace
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorDocuments);
+
+XII_CREATE_SIMPLE_TEST(EditorDocuments, PartialAssetLifetime)
+{
+  xiiEditorEngineProcessConnection connection;
+  for (auto type : {xiiAssetDocEngineConnection::None, xiiAssetDocEngineConnection::Simple, xiiAssetDocEngineConnection::FullObjectMirroring})
+  {
+    // Failed factories and loads are destroyed before either initialization hook runs.
+    {
+      StatusTestDocument partial(type, false);
+      XII_TEST_BOOL(!partial.HasWindowBeenRequested());
+    }
+    // A later engine event must not invoke a callback on the destroyed document.
+    xiiEditorEngineProcessConnection::Event event;
+    event.m_Type = xiiEditorEngineProcessConnection::Event::Type::ProcessStarted;
+    connection.s_Events.Broadcast(event);
+  }
+
+  {
+    PartialGameObjectDocument partial;
+    XII_TEST_BOOL(!partial.HasWindowBeenRequested());
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(EditorDocuments, EngineStatus)
 {
