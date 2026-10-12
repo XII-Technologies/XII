@@ -2232,3 +2232,78 @@ world submission clock. The comprehensive modernization goal remains active.
   shader compilation cost remain. No assertion artifact remains in the checkout; failed-run
   assertions are preserved alongside their Workspace diagnostic logs. Longer sample stability,
   view-specific temporal ownership and the comprehensive Editor migration remain unproven.
+
+### Temporal History Across Interleaved Views
+
+- Hi-Z history now imports the last pyramid recorded for its visibility context rather than
+  the image at global frame N-1. Its destination rotates after a recorded build, independently
+  of skipped global frames. Compilation without execution does not rotate or validate history.
+  Camera-cut invalidation keeps rotation separate from validity; resize clears both. Imports
+  reject the build's own frame and older indices. The existing caller-owned GPU lifetime and
+  one-build-per-context-per-frame contract remains unchanged.
+- Built-in AO, ray-traced shadows, ReSTIR DI/GI reservoirs, RT GI, RT reflections, SSR and fog
+  now have independent per-view write indices. Each producer captures its selected slot in
+  pass data and advances after recording its output, following the existing TAA pattern.
+  Global frame indices remain available for shader sampling and resource lifetime tracking.
+  DI history becomes valid in its spatial producer, rather than relying on the later emissive
+  visibility consumer executing. A culled producer cannot advance its effect's rotation.
+- Added the native `TemporalHistory` GPU test group. `InterleavedHiZ` alternates two contexts
+  with two- and three-image rings, abandons compiled frames, invalidates a history, and reads
+  every texel of every imported mip to verify the previous executed depth and view isolation.
+  `InterleavedDefaultPipelines` shares one default pipeline resource across two worlds and
+  checks nine actual previous/current GAL image bindings over six submissions, including TAA.
+  It verifies that previous inputs match the same view's last output, never its destination,
+  and that views own distinct history images. All producers are required to exist.
+- The new rendering test also exposed an invalid offscreen output transition: the default
+  final blit always exported shader-read state, even for render-only textures. It now exports
+  shader-read state when the texture supports sampling and render-target state otherwise.
+  The existing default-pipeline pixel-readback test now uses a render-only target to exercise
+  this supported caller configuration without changing swap-chain presentation.
+- Narrow Windows Debug/Vulkan verification passes:
+  `Workspace/editor-history-lighting-tests.log` (both temporal subtests), and
+  `Workspace/editor-history-output-tests.log` (default offscreen rendering and pixel readback).
+  The Hi-Z-only checkpoint also passes in `Workspace/editor-history-hiz-tests.log`.
+- Recording failure recovery also invalidates the view's built-in and resource-pass histories.
+  Framebuffer shape validation reports xiiResult diagnostics without asserting. The executor
+  closes its profiling scope and submits the valid command prefix before returning failure,
+  preserving GAL's tracked states for imported images whose barriers were already recorded.
+  Profiler `OnFrameAbort` discards incomplete timings and advances its query ring while keeping
+  potentially submitted query resources alive. The public execution contract documents partial
+  submission and the caller's completion/lifetime obligations on failure.
+  `FailedRecordingInvalidatesHistory` intentionally combines differently sized attachments
+  after a history-producing callback, reads back its persistent image, and renders subsequent
+  frames through multiple profiler-ring rotations to exercise recovery.
+- Synchronization validation exposed a further scheduling defect in the complete default
+  pipeline: readers of a depth version can require different layouts. Waiting for the version's
+  writer did not order a later reader against another reader's layout transition. Six view
+  submissions each reported READ_RACING_WRITE in `Workspace/editor-history-recovery-sync-tests.log`.
+  Barrier synthesis now tracks the pass establishing each state and the last access on each
+  queue. Same-state readers wait for the establishing transition while remaining independent
+  of one another; a state change or export joins all outstanding queues. A transition joining
+  parallel readers is immediate, so a split begin cannot run before other readers finish.
+  This bookkeeping is transient compile scratch; execution uses precomputed fence waits.
+  `ReaderStateScheduling` verifies reader fan-out, joining readers, export transitions, and
+  immediate barriers with split barriers explicitly enabled.
+- After the dependency repair, all 122 automated subtests pass on Windows Debug: 53 native
+  Editor engine-process and 41 graphics Foundation tests with Vulkan synchronization validation,
+  18 graphics Core tests, and ten native Qt tests including production viewport/IPC workflows.
+  Evidence: `Workspace/editor-history-final-integrated-tests.log`,
+  `Workspace/editor-history-final-foundation-tests.log`, `Workspace/editor-history-final-core-tests.log`,
+  and `Workspace/editor-history-final-qt-tests.log`. The targeted synchronization runs also pass
+  in `Workspace/editor-history-reader-sync-tests.log` and
+  `Workspace/editor-history-reader-scheduling-tests.log`.
+- This closes per-view image selection and rotation, not the separate shared GI ownership
+  issue. DDGI and sparse voxel radiance still use process-global CPU cells, camera origins,
+  update suppression and persistent GPU storage; RenderWorldModule selects one camera per
+  world update. Their context/lifetime migration remains active work. Deformed picking,
+  legacy sky/probe/GreyBox migration, longer GPU sample device loss, and the remaining Editor
+  inventory are also outstanding. D3D12, Release, Linux and macOS are unverified here.
+- Final dependent Windows Debug targets (Editor, VisualScript plugin, EditorProcessor,
+  native Qt/engine-process tests, both graphics suites and GpuDrivenScene) build successfully:
+  `Workspace/editor-history-verified-integration-build.log` and its exit-code file (zero).
+  A subsequent 64-frame 8x8 raster sample with Vulkan synchronization validation still fails
+  with ErrorDeviceLost while waiting for fence 57 (completed value 56). No synchronization
+  hazard precedes that failure in `Workspace/editor-history-sample-raster-sync.log`.
+  Its assertion is preserved as `Workspace/editor-history-sample-raster-sync-assert.txt`;
+  the recorded exit code is -2147483645. The reader-state repair does not establish longer
+  sample stability, and the cause of this device loss remains unresolved.
