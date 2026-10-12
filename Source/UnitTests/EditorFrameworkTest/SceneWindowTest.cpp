@@ -156,6 +156,46 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
             bVaried = image.pixel(x, y) != image.pixel(0, 0);
         XII_TEST_BOOL(bVaried);
       }
+
+      // Exercise production-size targets and continuous resize through the real Editor IPC and
+      // built-in pipeline. The small fixed startup target alone cannot expose retained VRAM growth.
+      QWidget* surface = nullptr;
+      for (QWidget* child : view->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly))
+        if (child->testAttribute(Qt::WA_PaintOnScreen) && child->testAttribute(Qt::WA_NativeWindow))
+          surface = child;
+      if (!XII_TEST_BOOL(surface != nullptr))
+        return;
+      for (xiiUInt32 iteration = 0; iteration < 160; ++iteration)
+      {
+        const xiiSizeU32 resolution              = iteration < 96 ? xiiSizeU32(768 + iteration * 8, 512 + (iteration % 24) * 8) : xiiSizeU32(1280, 720);
+        xiiQtEngineViewWidget::s_FixedResolution = resolution;
+        const qreal pixelRatio                   = view->devicePixelRatio();
+        surface->setFixedSize(static_cast<int>(xiiMath::Ceil(resolution.width / pixelRatio)), static_cast<int>(xiiMath::Ceil(resolution.height / pixelRatio)));
+        view->SetEnablePicking(true);
+        view->SyncToEngine();
+        xiiQtUiServices::TickEvent tick;
+        tick.m_Type    = xiiQtUiServices::TickEvent::Type::EndFrame;
+        tick.m_uiFrame = frame++;
+        tick.m_Time    = xiiTime::Now();
+        xiiQtUiServices::s_TickEvent.Broadcast(tick);
+        pick.m_uiPickPosX = resolution.width / 2;
+        pick.m_uiPickPosY = resolution.height / 2;
+        if (!XII_TEST_BOOL(scene->SendMessageToEngine(&pick)) ||
+            !XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID,
+                                                                                                      xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), xiiTime::MakeFromSeconds(2), &callback)))
+          return;
+        if (!XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed()))
+          return;
+      }
+      capture = sProjectDirectory;
+      capture.AppendPath("NativeViewportResized.png");
+      if (xiiOSFile::ExistsFile(capture))
+        XII_TEST_RESULT(xiiOSFile::DeleteFile(capture));
+      view->TakeScreenshot(capture);
+      image = QImage();
+      XII_TEST_BOOL(PumpUntil([&] { return image.load(QString::fromUtf8(capture.GetData())); }, 10000));
+      XII_TEST_INT(image.width(), 1280);
+      XII_TEST_INT(image.height(), 720);
     }
   }
   else

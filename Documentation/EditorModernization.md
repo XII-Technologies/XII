@@ -2713,3 +2713,59 @@ world submission clock. The comprehensive modernization goal remains active.
   assertions for those paths remain to be added. Legacy sky/probe/GreyBox migration
   and broader manual Editor workflow parity remain active work. Release, static
   GraphicsCore, D3D12, Linux and macOS have not been verified at this checkpoint.
+
+### Editor Launch GPU Memory Exhaustion
+
+The reported launch failure is recorded in the production Editor engine-process
+logs as Vulkan `ErrorOutOfDeviceMemory` from texture creation, followed by the
+fatal transient-allocation assertion in `xiiRenderGraphResourceCache`. The cache
+retired resources correctly behind GPU completion, but no renderer called its
+explicit stale-resource cleanup. Dynamic resolution and viewport resizing could
+therefore retain every previous texture size, and variable upload sizes could do
+the same for buffers.
+
+`BeginFrame()` now trims completed idle allocations after four unused frames and
+removes empty description buckets. Trimming precedes promotion of newly completed
+resources, giving those allocations a chance to be reused even when completion
+takes longer than the retention window. Active and retired GPU-in-flight resources
+remain protected. Cache shutdown also resets its frame bookkeeping.
+
+Allocation failure no longer asserts and then continues with null resources. The
+cache returns null; render-graph execution reports `XII_FAILURE` with the failing
+resource name and allocation dimensions or buffer size. Persistent allocations and
+command-list creation also propagate failure. If recording has already changed
+GAL's tracked states, execution closes and submits the valid prefix, aborts the
+profiler frame, and stops before issuing commands against the failed resource.
+The existing view failure path invalidates temporal history.
+
+Verification:
+
+- The new `RenderGraphResourceCacheTest.cpp` exercises two independent graph
+  contexts over 64 GPU frames with changing texture and buffer descriptions.
+  Disabling automatic eviction reproduces growth to 62 idle GPU resources per
+  view (`Workspace/editor-oom-baseline-tests.log`, expected failure). The repaired
+  cache peaks at two idle resources per view. Additional tests verify completion
+  before reuse or eviction, reuse after a long completion delay, and failure
+  propagation followed by successful execution. The failure test uses an
+  uninitialized cache to return null deterministically instead of exhausting the
+  test machine's physical memory.
+- All 60 native engine-process subtests pass with Vulkan synchronization
+  validation: `Workspace/editor-oom-native-tests.log`. The three new resource
+  regressions also pass with GPU-assisted validation:
+  `Workspace/editor-oom-gpuav-tests.log`.
+- All ten Qt subtests pass: `Workspace/editor-oom-qt-resize-tests.log`. The
+  production Editor integration test now drives 160 frames, including 96 distinct
+  native viewport sizes and 64 stable frames at 1280 by 720, and verifies a final
+  capture at that size. The fixture explicitly resizes the native child window;
+  changing the requested fixed resolution alone leaves the Windows surface at its
+  original size. The final engine-process log has no allocation, device-loss or
+  Vulkan validation errors. The capture is under
+  `Workspace/TestOutput/editor-oom-qt-resize/SourceWindowProject/NativeViewportResized.png`.
+- All 21 GraphicsCore subtests pass: `Workspace/editor-oom-core-tests.log`.
+  Debug builds of Editor, EditorProcessor and both Editor test applications pass
+  (`Workspace/editor-oom-fixed-build.log`, `Workspace/editor-oom-final-build.log`,
+  `Workspace/editor-oom-qt-build.log`). `git diff --check` passes.
+
+This verification uses an isolated production Editor test project. The existing
+user project and its preferences were left untouched. Release, other graphics
+backends and other operating systems have not been tested for this repair.
