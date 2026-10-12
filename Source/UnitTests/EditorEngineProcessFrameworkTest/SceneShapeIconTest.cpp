@@ -269,6 +269,16 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
       XII_TEST_INT(channel(56, 48, 1), 0);
       XII_TEST_INT(channel(56, 48, 2), 0);
       XII_TEST_INT(picking[12 * 96 + 12], 0);
+      xiiSceneShapeIconPass::PickingResult hit;
+      XII_TEST_RESULT(pass()->PickIcon(*view, 56, 48, hit));
+      XII_TEST_BOOL(hit.m_hObject == object->GetHandle());
+      XII_TEST_BOOL(hit.m_hComponent == component->GetHandle());
+      XII_TEST_VEC3(hit.m_vWorldPosition, xiiVec3::MakeZero(), 0);
+      XII_TEST_RESULT(pass()->PickIcon(*view, 40, 48, hit));
+      XII_TEST_BOOL(hit.m_hObject.IsInvalidated());
+      XII_TEST_BOOL(hit.m_hComponent.IsInvalidated());
+      XII_TEST_VEC3(hit.m_vWorldPosition, xiiVec3::MakeZero(), 0);
+      XII_TEST_BOOL(pass()->PickIcon(*view, 96, 48, hit).Failed());
     }
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Scene depth occludes both color and IDs at a different resolution")
@@ -303,6 +313,17 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
       XII_TEST_FLOAT(channel(40, 48, 1), 188, 1);
       XII_TEST_INT(picking[48 * 96 + 56], 2);
       XII_TEST_FLOAT(channel(56, 48, 0), 188, 1);
+      xiiDynamicArray<xiiSceneShapeIconPass::PickingResult> hits;
+      XII_TEST_RESULT(pass()->PickIconsInRect(*view, {32, 32, 32, 32}, hits));
+      if (XII_TEST_INT(hits.GetCount(), 2))
+      {
+        XII_TEST_BOOL(hits[0].m_hObject == behind->GetHandle());
+        XII_TEST_BOOL(hits[1].m_hObject == object->GetHandle());
+      }
+      XII_TEST_RESULT(pass()->PickIconsInRect(*view, {0, 0, 16, 16}, hits));
+      XII_TEST_INT(hits.GetCount(), 0);
+      XII_TEST_BOOL(pass()->PickIconsInRect(*view, {90, 0, 16, 16}, hits).Failed());
+      XII_TEST_INT(hits.GetCount(), 0);
     }
     world.DeleteObjectNow(behind->GetHandle());
     linearManager->DeleteComponent(extra->GetHandle());
@@ -400,9 +421,103 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneShapeIcons)
       XII_TEST_BOOL(other->GetRenderPipelineInstance().GetPipeline() == view->GetRenderPipelineInstance().GetPipeline());
       XII_TEST_INT(otherPass->GetIcons().GetCount(), 0);
       XII_TEST_BOOL(!other->GetRenderGraph()->FindTexture("Icons: Picking").IsValid());
+      environment.GetDevice()->WaitIdle();
+      xiiSceneShapeIconPass::PickingResult hit;
+      XII_TEST_RESULT(pass()->PickIcon(*view, 48, 48, hit));
+      XII_TEST_BOOL(hit.m_hObject == independentObject->GetHandle());
+      XII_TEST_BOOL(pass()->PickIcon(*other, 48, 48, hit).Failed());
+      XII_TEST_BOOL(hit.m_hObject.IsInvalidated());
     }
+    other->SetPipelineParameter("Editor.Picking", true);
+    other->SetPipelineParameter("Editor.ShapeIcons", true);
+    world.Update(); // Destroy a view with a freshly submitted picking capture; no CPU wait.
     module->DestroyView(handle);
     world.DeleteObjectNow(independentObject->GetHandle());
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Nonblocking snapshots reject camera changes, deleted identities and disabled captures")
+  {
+    xiiGameObject*      pickedObject    = nullptr;
+    const auto          pickedHandle    = world.CreateObject(xiiGameObjectDescription(), pickedObject);
+    IconGammaComponent* pickedComponent = nullptr;
+    gammaManager->CreateComponent(pickedObject, pickedComponent);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    // World object storage may compact when earlier blocks' deleted objects are reclaimed.
+    if (!XII_TEST_BOOL(world.TryGetObject(pickedHandle, pickedObject)))
+      return;
+    xiiSceneShapeIconPass::PickingResult hit;
+    XII_TEST_RESULT(pass()->PickIcon(*view, 56, 48, hit));
+    XII_TEST_BOOL(hit.m_hComponent == pickedComponent->GetHandle());
+    auto replacedOutput = environment.GetDevice()->CreateTexture(outputDescription);
+    view->SetRenderTargetView(replacedOutput->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    XII_TEST_BOOL(pass()->PickIcon(*view, 56, 48, hit).Failed());
+    view->SetRenderTargetView(output->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    camera.MoveGlobally(0, 0.25f, 0);
+    XII_TEST_BOOL(pass()->PickIcon(*view, 56, 48, hit).Failed());
+    XII_TEST_BOOL(hit.m_hObject.IsInvalidated());
+    camera.MoveGlobally(0, -0.25f, 0);
+    view->SetViewport({16, 8, 64, 64});
+    XII_TEST_BOOL(pass()->PickIcon(*view, 56, 48, hit).Failed());
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    XII_TEST_RESULT(pass()->PickIcon(*view, 56, 40, hit));
+    XII_TEST_BOOL(hit.m_hObject == pickedHandle);
+    XII_TEST_BOOL(pass()->PickIcon(*view, 0, 0, hit).Failed());
+    const auto oldHandle = pickedComponent->GetHandle();
+    gammaManager->DeleteComponent(oldHandle);
+    XII_TEST_RESULT(pass()->PickIcon(*view, 56, 40, hit));
+    XII_TEST_BOOL(hit.m_hComponent.IsInvalidated());
+    gammaManager->CreateComponent(pickedObject, pickedComponent);
+    XII_TEST_BOOL(pickedComponent->GetHandle() != oldHandle);
+    XII_TEST_RESULT(pass()->PickIcon(*view, 56, 40, hit));
+    XII_TEST_BOOL(hit.m_hComponent.IsInvalidated());
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    XII_TEST_INT(pass()->GetIcons().GetCount(), 1);
+    if (XII_TEST_BOOL(!pass()->GetIcons().IsEmpty()))
+      XII_TEST_BOOL(pass()->GetIcons()[0].m_hComponent == pickedComponent->GetHandle());
+    XII_TEST_RESULT(pass()->PickIcon(*view, 56, 40, hit));
+    XII_TEST_BOOL(hit.m_hComponent == pickedComponent->GetHandle());
+    pickedObject->SetTag(xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorHidden"));
+    XII_TEST_RESULT(pass()->PickIcon(*view, 56, 40, hit));
+    XII_TEST_BOOL(hit.m_hObject.IsInvalidated());
+    pickedObject->RemoveTag(xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorHidden"));
+    view->SetPipelineParameter("Editor.Picking", false);
+    world.Update();
+    XII_TEST_BOOL(pass()->PickIcon(*view, 56, 40, hit).Failed());
+    view->SetPipelineParameter("Editor.Picking", true);
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    XII_TEST_RESULT(pass()->PickIcon(*view, 56, 40, hit));
+    XII_TEST_BOOL(hit.m_hObject == pickedHandle);
+    world.DeleteObjectNow(pickedHandle);
+    XII_TEST_RESULT(pass()->PickIcon(*view, 56, 40, hit));
+    XII_TEST_BOOL(hit.m_hObject.IsInvalidated());
+    view->SetViewport({0, 0, 96, 96});
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Resize drains old captures and replaces the staging pool")
+  {
+    auto resizedDescription   = outputDescription;
+    resizedDescription.m_Size = {64, 64};
+    auto resized              = environment.GetDevice()->CreateTexture(resizedDescription);
+    view->SetRenderTargetView(resized->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    view->SetViewport({0, 0, 64, 64});
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    xiiSceneShapeIconPass::PickingResult hit;
+    XII_TEST_RESULT(pass()->PickIcon(*view, 32, 32, hit));
+    XII_TEST_BOOL(hit.m_hObject.IsInvalidated());
+    view->SetRenderTargetView(output->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    view->SetViewport({0, 0, 96, 96});
+    for (xiiUInt32 i = 0; i < 8; ++i)
+      world.Update();
+    environment.GetDevice()->WaitIdle();
+    world.Update();
+    environment.GetDevice()->WaitIdle();
+    XII_TEST_RESULT(pass()->PickIcon(*view, 48, 48, hit));
+    XII_TEST_BOOL(hit.m_hObject.IsInvalidated());
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid pass settings fail before emitting graph work")
   {

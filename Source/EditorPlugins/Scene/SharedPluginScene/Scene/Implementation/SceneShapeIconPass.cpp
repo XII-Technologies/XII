@@ -3,12 +3,14 @@
 #include <SharedPluginScene/SharedPluginScenePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Editor/SceneShapeIconData.h>
+#include <SharedPluginScene/Scene/Implementation/SceneShapeIconPicking.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
 // clang-format off
@@ -23,6 +25,21 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneShapeIconPass, 1, xiiRTTIDefaultAllocat
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+xiiSceneShapeIconPass::xiiSceneShapeIconPass()  = default;
+xiiSceneShapeIconPass::~xiiSceneShapeIconPass() = default;
+
+xiiResult xiiSceneShapeIconPass::PickIcon(const xiiView& view, xiiUInt32 x, xiiUInt32 y, PickingResult& out_hit) const
+{
+  out_hit = {};
+  return m_pPicking ? m_pPicking->Pick(view, x, y, out_hit) : XII_FAILURE;
+}
+
+xiiResult xiiSceneShapeIconPass::PickIconsInRect(const xiiView& view, const xiiRectU32& rectangle, xiiDynamicArray<PickingResult>& out_hits) const
+{
+  out_hits.Clear();
+  return m_pPicking ? m_pPicking->Marquee(view, rectangle, out_hits) : XII_FAILURE;
+}
 
 namespace
 {
@@ -54,10 +71,19 @@ void xiiSceneShapeIconPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins)
 
 xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
 {
+  bool captureValid = false;
+  XII_SCOPE_EXIT(if (!captureValid && m_pPicking) m_pPicking->Invalidate());
   m_Icons.Clear();
   if (!context.m_pView)
     return XII_FAILURE;
   bool enabled = true;
+  bool capture = true;
+  if (const auto* parameter = context.m_Parameters.GetValue("Editor.Picking"))
+  {
+    xiiResult result = XII_FAILURE;
+    capture          = parameter->ConvertTo<bool>(&result);
+    XII_SUCCEED_OR_RETURN(result);
+  }
   if (const auto* parameter = context.m_Parameters.GetValue("Editor.ShapeIcons"))
   {
     xiiResult result = XII_FAILURE;
@@ -201,5 +227,13 @@ xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
       } });
   }
   XII_SUCCEED_OR_RETURN(context.SetOutput("Color", color));
-  return context.SetOutput("Picking", picking);
+  XII_SUCCEED_OR_RETURN(context.SetOutput("Picking", picking));
+  if (capture)
+  {
+    if (!m_pPicking)
+      m_pPicking = XII_DEFAULT_NEW(xiiSceneShapeIconPicking);
+    XII_SUCCEED_OR_RETURN(m_pPicking->AddCapture(context, picking, m_Icons));
+    captureValid = true;
+  }
+  return XII_SUCCESS;
 }

@@ -1221,3 +1221,29 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-shape-icons-scene-build.log`. The modernization goal remains
   active, and integrated GUI / other backend and platform verification remains
   outstanding.
+
+- Shape-icon picking now exposes nonblocking point and marquee queries on the
+  native per-view pass. Each of three bounded capture slots pairs its GPU ID image
+  with compact generational object/component handles. Queries validate the World,
+  view, target, camera, viewport, live identities, visibility and object position;
+  unavailable or outdated images return failure, and background returns an empty
+  result. Marquee results contain unique objects in first visible pixel order.
+  `Editor.Picking` disables capture and invalidates pending results. Resizing drains
+  old captures without waiting before replacing the staging pool, so repeated
+  resizes cannot accumulate staging textures. Production code neither submits
+  command lists nor waits on the GPU for these queries. Captures may lag a frame.
+- The shared GAL readback helper now reports invalid requests and unavailable
+  staging/fence resources with `xiiResult`; thumbnail capture propagates enqueue
+  failure. Vulkan tests cover rejected regions/subresources followed by successful
+  pixel readback and staging reuse. Shape-icon tests cover point/marquee coverage,
+  independent views, camera/viewport/target changes, deleted/reused handles,
+  visibility changes, capture disable/re-enable, repeated resizes and destruction
+  with an outstanding capture. All 37 engine-process subtests and the focused GAL
+  readback test pass. Dependent EditorFrameworkTest and EditorEngineProcess builds
+  pass. Logs: `Workspace/editor-icon-picking-all-tests.log`,
+  `Workspace/editor-icon-picking-readback-tests.log`,
+  `Workspace/editor-icon-picking-build.log` and
+  `Workspace/editor-icon-picking-dependent-build.log`.
+- Scene picking IPC, mesh/transparent picking and selection overlays still need
+  migration. These icon queries establish real GPU coverage and identity handling;
+  they do not establish an integrated Editor selection workflow or GUI behavior.
