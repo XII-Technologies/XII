@@ -175,9 +175,15 @@ public:
   /// boundary while holding world access. Pass pointers/arrays are borrowed until the next build;
   /// resource replacement or a failed synchronization can destroy them. Empty before the first build.
   const xiiRenderPipelineInstance& GetRenderPipelineInstance() const;
-  void                                   SetPipelineParameter(xiiStringView name, const xiiVariant& value);
-  void                                   RemovePipelineParameter(xiiStringView name);
-  const xiiVariantDictionary&            GetPipelineParameters() const { return m_PipelineParameters; }
+
+  /// Resolves an object ID produced by this view's native GPU scene to a live mesh owner.
+  /// Call at a CPU frame boundary under world access. The ID must come from this view;
+  /// asynchronous callers must also retain/validate their view, camera and capture state.
+  /// Returns failure and clears output for background, retired packets or deleted owners.
+  [[nodiscard]] xiiResult     ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiSceneMeshSource& out_source) const;
+  void                        SetPipelineParameter(xiiStringView name, const xiiVariant& value);
+  void                        RemovePipelineParameter(xiiStringView name);
+  const xiiVariantDictionary& GetPipelineParameters() const { return m_PipelineParameters; }
 
   using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
   void                      SetRenderGraphBuilder(RenderGraphBuilder builder);

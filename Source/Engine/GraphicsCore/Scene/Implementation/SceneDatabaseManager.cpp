@@ -12,29 +12,7 @@
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Scene/SceneDatabaseManager.h>
 
-class xiiSceneDatabaseManagerState
-{
-public:
-  struct ExtractedMeshEntry
-  {
-    xiiSceneObjectHandle      m_hSceneObject;
-    xiiMeshResourceHandle     m_hMesh;
-    xiiGeometryHandle         m_hGeometry;
-    xiiMaterialResourceHandle m_hMaterial;
-    xiiMaterialGpuHandle      m_hGpuMaterial;
-    xiiUInt64                 m_uiLastSeenFrame = 0U;
-  };
-
-  struct Slot
-  {
-    xiiUniquePtr<xiiSceneDatabase>              m_pDatabase;
-    xiiHashTable<xiiUInt32, ExtractedMeshEntry> m_ExtractedMeshes;
-    xiiUInt64                                   m_uiLastSynchronizedFrame = 0U;
-  };
-
-  xiiIdTable<xiiSceneDatabaseContextId, Slot> m_Contexts;
-  bool                                        m_bEngineStarted = false;
-};
+#include <GraphicsCore/Scene/Implementation/SceneDatabaseManagerState.h>
 
 xiiUniquePtr<xiiSceneDatabaseManagerState> xiiSceneDatabaseManager::s_pState;
 
@@ -94,6 +72,7 @@ namespace
     }
 
     slot.m_ExtractedMeshes.Clear();
+    slot.m_MeshSources.Clear();
     slot.m_uiLastSynchronizedFrame = 0U;
   }
 
@@ -209,10 +188,22 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     if (!renderData.m_hMesh.IsValid())
       continue;
 
-    const xiiMaterialResourceHandle hMaterial = SelectMaterial(renderData);
+    const xiiMaterialResourceHandle             hMaterial = SelectMaterial(renderData);
+    const xiiSceneDatabaseManagerState::MeshKey key{renderData.m_hOwnerObject, renderData.m_hOwnerComponent, renderData.m_uiUniqueID, renderData.m_uiSectionIndex};
 
     xiiSceneDatabaseManagerState::ExtractedMeshEntry* pEntry = nullptr;
-    if (!pSlot->m_ExtractedMeshes.TryGetValue(renderData.m_uiUniqueID, pEntry))
+    pSlot->m_ExtractedMeshes.TryGetValue(key, pEntry);
+    // A consumer may clear its database between frames. Retire the extraction resources as well
+    // before recreating entries; stale scene handles must never update a newly reused slot.
+    if (pEntry != nullptr && !scene.IsAlive(pEntry->m_hSceneObject))
+    {
+      xiiGeometryResidencyManager::ReleaseMeshGeometry(pEntry->m_hMesh, uiFrameIndex);
+      xiiMaterialManager::ReleaseMaterialResource(pEntry->m_hMaterial);
+      pSlot->m_MeshSources.Remove(pEntry->m_hSceneObject.GetInternalID().m_Data + 1U);
+      pSlot->m_ExtractedMeshes.Remove(key);
+      pEntry = nullptr;
+    }
+    if (pEntry == nullptr)
     {
       const xiiGeometryHandle hGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(renderData.m_hMesh);
       if (hGeometry.IsInvalidated())
@@ -246,8 +237,15 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
         continue;
       }
 
-      pSlot->m_ExtractedMeshes.Insert(renderData.m_uiUniqueID, entry);
-      pSlot->m_ExtractedMeshes.TryGetValue(renderData.m_uiUniqueID, pEntry);
+      pSlot->m_ExtractedMeshes.Insert(key, entry);
+      pSlot->m_ExtractedMeshes.TryGetValue(key, pEntry);
+      xiiSceneMeshSource source;
+      source.m_hSceneObject    = entry.m_hSceneObject;
+      source.m_hOwnerObject    = key.m_hObject;
+      source.m_hOwnerComponent = key.m_hComponent;
+      source.m_uiSectionIndex  = key.m_uiSectionIndex;
+      source.m_uiRenderDataId  = key.m_uiRenderDataId;
+      pSlot->m_MeshSources.Insert(entry.m_hSceneObject.GetInternalID().m_Data + 1U, source);
     }
     else if (pEntry->m_hMesh != renderData.m_hMesh)
     {
@@ -293,6 +291,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
       continue;
     }
 
+    pSlot->m_MeshSources.Remove(it.Value().m_hSceneObject.GetInternalID().m_Data + 1U);
     scene.DestroyObject(it.Value().m_hSceneObject);
     xiiGeometryResidencyManager::ReleaseMeshGeometry(it.Value().m_hMesh, uiFrameIndex);
     xiiMaterialManager::ReleaseMaterialResource(it.Value().m_hMaterial);

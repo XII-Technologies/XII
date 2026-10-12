@@ -6,6 +6,7 @@
 #include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
+#include <GraphicsCore/Scene/SceneMeshSource.h>
 
 class xiiSceneDatabaseManagerState;
 class xiiExtractedRenderData;
@@ -48,6 +49,12 @@ public:
   /// render IDs preserve previous transforms, shared mesh resources reuse residency handles, and
   /// objects absent from the current extraction are retired after their last submitted frame.
   [[nodiscard]] static xiiResult SynchronizeExtractedMeshes(xiiSceneDatabaseContextHandle handle, const xiiExtractedRenderData& extractedData, xiiUInt64 uiFrameIndex);
+
+  /// Resolves a native GPU object identity to its latest extraction owner in expected O(1).
+  /// Zero, retired IDs, destroyed contexts and non-extracted scene objects fail and clear output.
+  /// Contexts and IDs are paired; call at a CPU frame boundary, never concurrently with mutation.
+  /// Owner handles are non-owning and require world validation before use.
+  [[nodiscard]] static xiiResult ResolveExtractedMesh(xiiSceneDatabaseContextHandle context, xiiUInt32 uiGpuObjectId, xiiSceneMeshSource& out_source);
 
 private:
   static void Startup();
