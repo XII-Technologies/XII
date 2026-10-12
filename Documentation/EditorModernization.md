@@ -1351,9 +1351,9 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   light components replace the removed skybox/skylight types; the light explicitly
   authors 10 lux. The procedural sky changes the new-scene default appearance.
   All edits form one undoable transaction and a rejected operation rolls back the
-  complete setup, preserving any existing content. The manager logs setup failure;
-  its underlying void document-factory API still needs status propagation so
-  callers cannot save a document whose initial setup failed.
+  complete setup, preserving any existing content. Setup failure propagates through
+  the status-returning document factory, preventing registration or saving when
+  initial content could not be created.
 - EditorFramework tests execute this production setup, verify native properties,
   undo/redo, serialize and reload its document graph, and mirror it into a native
   World. Mirrored undo/redo removes/recreates the actual objects. An injected final
@@ -1404,6 +1404,82 @@ migration progresses; no requirement is waived because a subsystem is difficult.
 - The full EditorPluginScene build remains blocked by EnginePluginScene's removed
   animation-declarations and global RenderWorld headers
   (`Workspace/editor-reflection-authoring-scene-build.log`). Native bone state
-  pullback/editing, scene picking/selection, document-factory failure propagation,
+  pullback/editing, scene picking/selection,
   integrated GUI workflows and other platform/backend configurations still need
   implementation or verification. The modernization goal remains incomplete.
+
+## Document startup and persistence failures
+
+- `xiiDocumentManager` now accepts `xiiStatus` from document factories. All 22
+  scene, asset and visual-script factory overrides use this contract. Native scene
+  setup errors reach the existing caller error dialogs. Unsupported types, denied
+  requests, missing files, null factory results, failed factories, failed loads and
+  synchronous initial-save failures consistently return a null document. Partial
+  documents are removed from the manager and destroyed through `BeforeClosing`;
+  unsuccessful startup never requests a window or broadcasts `DocumentOpened`.
+  Non-creatable document types may still be opened for reading.
+- Partial asset documents can be destroyed without an initialized IPC mirror.
+  Game-object documents initialize their subscription IDs and safely skip
+  unsubscription before initialization. Scene documents use owned event
+  subscriptions; layered scene teardown restores swapped storage only when that
+  storage was installed. These changes support actual failure cleanup instead of
+  invoking success initialization hooks just to make destruction possible.
+- Document reading rejects missing headers, missing object roots and absent,
+  mistyped or invalid document identities before native deserialization or clone
+  processing can assert. Legacy documents with embedded headers and no `Types`
+  block continue to use compiled-in RTTI. Reading such a document clears previous
+  type-graph output rather than retaining another document's types. Tests load a
+  legacy file, preserve identity and edited content, and save it in the current
+  format. No document format version or valid asset identity was changed.
+- Asynchronous initial creation continues to report scheduling success. If the
+  eventual save fails, the document stays modified and the existing error log and
+  document-status event report the failure. Tests exercise a real unwritable
+  destination and immediate close, verifying that pending work completes and
+  reports its result before document destruction.
+- Windows Debug builds of ToolsFoundationTest, EditorFrameworkTest,
+  EditorEngineProcessFrameworkTest and EditorEngineProcess pass. All seven
+  ToolsFoundation `DocumentObject` tests and all five EditorFramework tests pass;
+  the complete ToolsFoundation suite was not rerun in this checkpoint. All 38
+  Vulkan engine-process tests pass after the startup/load-validation changes.
+  The subsequent asynchronous-reporting addition rebuilt ToolsFoundationTest and
+  EditorFrameworkTest and passed their seven/five tests again. Evidence:
+  `Workspace/editor-document-validation-final-build.log`,
+  `Workspace/editor-document-validation-engine-tests.log`,
+  `Workspace/editor-document-async-failure-build.log`,
+  `Workspace/editor-document-async-failure-tools-tests.log` and
+  `Workspace/editor-document-async-failure-editor-tests.log`.
+- Production scene manager, scene document and layered scene document units
+  compile with zero warnings/errors. Nineteen of twenty asset factory units and
+  the visual-script factory unit also compile. The property-animation factory
+  remains blocked by its existing missing
+  `GameEngine/Animation/PropertyAnimResource.h` dependency. Evidence is in
+  `Workspace/editor-document-lifecycle-<UnitName>-compile.log`, including
+  `SceneDocumentManager`, `SceneDocument`, `Scene2Document`,
+  `VisualScriptClassAssetManager` and `PropertyAnimAssetManager`. These selected
+  compiles do not establish a successful full plugin link or integrated GUI
+  startup. Native animation/picking migration, complete plugin builds, actual
+  scene-window failure handling and other platforms/backends remain outstanding.
+
+## Native default scene selection
+
+- Removed the bundled `Editor/DocumentTemplates/Default.xiiScene` override. It
+  still authored removed skybox, skylight and sphere-probe components and obsolete
+  camera properties, so the normal template-aware creation path would bypass the
+  native scene factory. New scenes now use the native camera, mesh, atmosphere and
+  directional-light recipe described above. Generic document-template support
+  remains available for project configurations; existing authored scenes were not
+  modified or automatically migrated.
+- The scene-creation test mounts the shipped SDK data, exercises normal document
+  creation without `EmptyDocument`, verifies that no template clone occurs, and
+  saves/reloads the actual native content with stable identity and no unknown
+  object types. This uses a headless document-manager fixture and the production
+  scene-content helper, rather than claiming an integrated Scene2 window test.
+- This test exposed the shared long-operation listener's null RTTI dereference
+  when the optional scene plugin is absent. Opening and closing ordinary documents
+  now checks for that plugin's scene type before testing inheritance. No removed
+  scene type or compatibility alias was introduced.
+- EditorFrameworkTest rebuilds and all five tests pass, including this new
+  template-aware creation/load coverage. Evidence:
+  `Workspace/editor-native-scene-default-build.log` and
+  `Workspace/editor-native-scene-default-tests.log`. Full scene plugin linking,
+  viewport appearance and integrated GUI workflows remain unverified.
