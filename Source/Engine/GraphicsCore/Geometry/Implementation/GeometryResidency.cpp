@@ -99,8 +99,10 @@ namespace
     {
       xiiGeometryLodSource& source = out_description.m_Lods.ExpandAndGetRef();
       source.m_hMeshBuffer         = hMeshBuffer;
-      source.m_uiFirstMeshlet      = meshLod.m_uiFirstMeshlet;
-      source.m_uiMeshletCount      = meshLod.m_uiMeshletCount;
+      // Source count zero means "to the end". An authored empty LOD must therefore
+      // start at the source end, rather than accidentally borrowing the next LOD's meshlets.
+      source.m_uiFirstMeshlet = meshLod.m_uiMeshletCount == 0 ? mesh.GetMeshletCount() : meshLod.m_uiFirstMeshlet;
+      source.m_uiMeshletCount = meshLod.m_uiMeshletCount;
 
       if (mesh.GetLodMode() == xiiMeshLodSelectionMode::Distance && meshLod.m_fMaxDistance > 0.0f && bounds.IsValid())
       {
