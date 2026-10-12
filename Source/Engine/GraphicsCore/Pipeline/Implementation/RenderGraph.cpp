@@ -773,7 +773,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
     }
   }
 
-  XII_ASSERT_DEV(out_sortedIndices.GetCount() == uiPassCount, "Render graph has a dependency cycle ({} of {} passes sorted).", out_sortedIndices.GetCount(), uiPassCount);
+  // Compile reports cycles through xiiResult and its optional diagnostic string.
 
   if (!settings.m_bEnablePassCulling)
   {
