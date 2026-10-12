@@ -210,6 +210,7 @@ public:
       xiiSharedPtr<xiiGALTexture>                 m_pRayTracedShadowHistory[2];
       xiiUInt32                                   m_uiActiveCascadeCount                = 0U;
       xiiUInt32                                   m_uiRayTracedShadowShaderRecordStride = 0U;
+      xiiUInt32                                   m_uiRayTracedShadowHistoryWriteIndex  = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bRayTracedShadowHistoryValid        = false;
     } m_ShadowPasses;
 
@@ -250,6 +251,7 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState>         m_pAOTemporalDenoisePipeline;
       xiiUInt32                                        m_uiRTAOShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>                      m_pAmbientOcclusionHistory[2];
+      xiiUInt32                                        m_uiAmbientOcclusionHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                             m_bAmbientOcclusionHistoryValid = false;
       xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;
       xiiSharedPtr<xiiGALTexture>                      m_pFallbackReflectionProbeTexture;
@@ -305,25 +307,31 @@ public:
       xiiUInt32                                   m_uiRTReflectionShaderRecordStride               = 0U;
       xiiUInt32                                   m_uiReSTIRDIEmissiveVisibilityShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIHistory[2];
+      xiiUInt32                                   m_uiRTGIHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bRTGIHistoryValid       = false;
       bool                                        m_bRTGIAvailableThisFrame = false;
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirSampleHistory[2];
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirStateHistory[2];
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirSurfaceHistory[2];
+      xiiUInt32                                   m_uiRTGIReservoirHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bRTGIReservoirHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHistory[2];
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHitDistanceHistory[2]; ///< R16_FLOAT primary hit distance; zero denotes environment termination.
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionMomentsHistory[2];     ///< RG16_FLOAT log-luminance first and second moments.
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionIdentityHistory[2];    ///< RG32_UINT exact packed material signature and stable object identity.
+      xiiUInt32                                   m_uiRTReflectionHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
       xiiSharedPtr<xiiGALTexture>                 m_pSSRHistory[2];         ///< RGBA16_FLOAT temporally resolved radiance and confidence.
       xiiSharedPtr<xiiGALTexture>                 m_pSSRIdentityHistory[2]; ///< RG32_UINT packed material signature and stable object identity.
+      xiiUInt32                                   m_uiSSRHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bSSRHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: sample identity, weight, M, content revision, and quantized visibility.
       xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.
+      xiiUInt32                                   m_uiDirectReservoirHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bDirectReservoirHistoryValid = false;
       xiiSharedPtr<xiiGALTexture>                 m_pVolumetricHistory[2]; ///< Ping-pong integrated scattering history at render resolution.
+      xiiUInt32                                   m_uiVolumetricHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bVolumetricHistoryValid = false;
       xiiUInt32                                   m_uiFrameIndex            = 0U;
     } m_LightingPasses;

@@ -409,7 +409,8 @@ void xiiBuiltinRenderPipelineRuntime::SetupShadowDenoiseData(xiiShadowDenoiseDat
 {
   const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
   const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
-  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiCurrentSlot  = m_Resources.m_ShadowPasses.m_uiRayTracedShadowHistoryWriteIndex;
+  data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_ShadowPasses;
 
@@ -463,6 +464,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteShadowDenoiseData(const xiiShadowDe
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
     m_Resources.m_ShadowPasses.m_bRayTracedShadowHistoryValid = true;
+    m_Resources.m_ShadowPasses.m_uiRayTracedShadowHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
 }

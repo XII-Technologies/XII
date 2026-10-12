@@ -2,9 +2,14 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <Core/ResourceManager/ResourceManager.h>
+#include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Visibility/GpuHiZPyramid.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
@@ -153,4 +158,121 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedHiZ)
   render(0, 0.45f);
   XII_TEST_RESULT(histories[0].Resize(4, 4));
   XII_TEST_BOOL(!histories[0].HasValidHistory());
+}
+
+/// Test-only resource pass observes actual GAL bindings after every default pipeline stage.
+/// Each view owns its own instance, just like a production pass with temporal state.
+class xiiPipelineHistoryCheck : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiPipelineHistoryCheck, xiiRenderPipelinePass);
+
+public:
+  static constexpr xiiUInt32 s_uiHistoryCount               = 9;
+  xiiGALTexture*             m_LastOutput[s_uiHistoryCount] = {}; ///< Borrowed from the live view; this test never resizes it.
+  xiiUInt32                  m_uiExecutions                 = 0;
+  xiiUInt64                  m_uiLastFrame                  = 0;
+
+  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override { pins.PushBack({"Before", xiiRenderPipelinePin::Order, true}); }
+  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  {
+    static constexpr xiiStringView names[s_uiHistoryCount][2] = {
+      {"AO Previous History", "StableAO"},
+      {"RT Shadow Previous History", "RTFinalShadows"},
+      {"ReSTIRDIReservoirPrevious", "DirectLightReservoir"},
+      {"ReSTIR GI Previous Sample", "ReSTIR GI Current Sample"},
+      {"RTGI Previous History", "RTFinalGI"},
+      {"RT Reflection Previous History", "RTFinalReflections"},
+      {"SSR Previous History", "SSRTerm"},
+      {"Volumetric Scattering Previous", "VolumetricScattering"},
+      {"TAAHistory", "TAAResolved"},
+    };
+    struct Bindings
+    {
+      xiiRenderGraphTextureHandle m_Previous[s_uiHistoryCount];
+      xiiRenderGraphTextureHandle m_Current[s_uiHistoryCount];
+    };
+    // All names must exist. An absent producer is a test failure, not skipped coverage.
+    for (const auto& pair : names)
+      if (!context.m_Graph.FindTexture(pair[0]).IsValid() || !context.m_Graph.FindTexture(pair[1]).IsValid())
+        return XII_FAILURE;
+    context.m_Graph.AddPass<Bindings>("Check per-view temporal bindings", xiiGALCommandQueueFlags::Graphics, [&](Bindings& data, xiiRenderGraphBuilder& builder) {
+        for (xiiUInt32 i = 0; i < s_uiHistoryCount; ++i)
+        {
+          data.m_Previous[i] = builder.ReadTexture(context.m_Graph.FindTexture(names[i][0]), xiiGALResourceStateFlags::ShaderResource);
+          data.m_Current[i] = builder.ReadTexture(context.m_Graph.FindTexture(names[i][1]), xiiGALResourceStateFlags::ShaderResource);
+        } }, [this](const Bindings& data, xiiRenderGraphPassContext& execute) {
+        XII_TEST_BOOL(execute.GetFrameIndex() > m_uiLastFrame);
+        m_uiLastFrame = execute.GetFrameIndex();
+        for (xiiUInt32 i = 0; i < s_uiHistoryCount; ++i)
+        {
+          auto* previous = execute.GetTexture(data.m_Previous[i]);
+          auto* current = execute.GetTexture(data.m_Current[i]);
+          XII_TEST_BOOL(previous != current);
+          if (m_uiExecutions != 0)
+            XII_TEST_BOOL_MSG(previous == m_LastOutput[i], "History %u must read this view's last recorded output.", i);
+          m_LastOutput[i] = current;
+        }
+        ++m_uiExecutions; }, true);
+    return XII_SUCCESS;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineHistoryCheck, 1, xiiRTTIDefaultAllocator<xiiPipelineHistoryCheck>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  xiiRenderPipelineResourceDescriptor definition;
+  xiiRenderPipelineResource::GetDefaultDescriptor(definition);
+  const auto inspect = definition.AddPass("Temporal history check", "xiiPipelineHistoryCheck");
+  if (!XII_TEST_RESULT(definition.Connect(inspect - 1, "After", inspect, "Before")))
+    return;
+  const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Interleaved default pipeline history", std::move(definition));
+  xiiCamera  camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  xiiUniquePtr<xiiWorld> worlds[2];
+  xiiView*               views[2] = {};
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    xiiWorldDescription worldDescription("Independent temporal view");
+    worlds[i] = XII_DEFAULT_NEW(xiiWorld, worldDescription);
+    XII_LOCK(worlds[i]->GetWriteMarker());
+    worlds[i]->SetWorldSimulationEnabled(false);
+    worlds[i]->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Temporal view", views[i]);
+    xiiGALTextureCreationDescription target;
+    target.m_Type      = xiiGALResourceDimension::Texture2D;
+    target.m_Size      = {32, 32};
+    target.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
+    target.m_BindFlags = xiiGALBindFlags::RenderTarget;
+    auto texture       = environment.GetDevice()->CreateTexture(target);
+    if (!XII_TEST_BOOL(texture != nullptr))
+      return;
+    views[i]->SetRenderTargetView(texture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+    views[i]->SetViewport({0, 0, 32, 32});
+    views[i]->SetCamera(&camera);
+    views[i]->SetRenderPipelineResource(pipeline);
+  }
+  const xiiPipelineHistoryCheck* checks[2] = {};
+  for (xiiUInt32 iteration = 0; iteration < 3; ++iteration)
+  {
+    for (xiiUInt32 view = 0; view < 2; ++view)
+    {
+      XII_LOCK(worlds[view]->GetWriteMarker());
+      worlds[view]->Update();
+      environment.GetDevice()->WaitIdle();
+      checks[view] = xiiDynamicCast<const xiiPipelineHistoryCheck*>(views[view]->GetRenderPipelineInstance().GetPass(inspect));
+      if (!XII_TEST_BOOL(checks[view] != nullptr))
+        return;
+      XII_TEST_INT(checks[view]->m_uiExecutions, iteration + 1);
+    }
+    XII_TEST_BOOL(checks[0] != checks[1]);
+    for (xiiUInt32 history = 0; history < xiiPipelineHistoryCheck::s_uiHistoryCount; ++history)
+      XII_TEST_BOOL(checks[0]->m_LastOutput[history] != checks[1]->m_LastOutput[history]);
+  }
 }
