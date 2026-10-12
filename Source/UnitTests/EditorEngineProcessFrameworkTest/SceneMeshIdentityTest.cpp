@@ -9,6 +9,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Math/Float16.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
@@ -32,6 +33,14 @@
 
 namespace
 {
+  void SetTestSkinningPose(xiiMeshRenderData& packet, float offset)
+  {
+    // Two influences with a non-255 weight sum must normalize to the requested translation.
+    packet.m_SkinningMatrices.SetCount(2);
+    packet.m_SkinningMatrices[0] = xiiMat4::MakeTranslation(xiiVec3(0, offset - 0.5f, 0));
+    packet.m_SkinningMatrices[1] = xiiMat4::MakeTranslation(xiiVec3(0, offset + 0.25f, 0));
+  }
+
   bool ReadIds(xiiGALDevice& device, xiiGALTexture* texture, xiiDynamicArray<xiiUInt32>& pixels)
   {
     if (!XII_TEST_BOOL(texture != nullptr))
@@ -73,7 +82,7 @@ namespace
   }
 } // namespace
 
-static void RunSceneMeshIdentity(bool denseMeshlet)
+static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool meshPicking = true)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -94,6 +103,12 @@ static void RunSceneMeshIdentity(bool denseMeshlet)
   }
   else
     geometry.AddBox(xiiVec3(1), true);
+  if (skinned)
+    for (auto& vertex : geometry.GetVertices())
+    {
+      vertex.m_BoneIndices = xiiVec4U16(0, 1, 65000, 65000);
+      vertex.m_BoneWeights = xiiColorLinearUB(64, 128, 0, 0);
+    }
   xiiMeshResourceDescriptor descriptor;
   descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList);
   descriptor.AddSubMesh(descriptor.GetMeshBufferDescriptor().GetPrimitiveCount(), 0, 0);
@@ -136,6 +151,11 @@ static void RunSceneMeshIdentity(bool denseMeshlet)
   first.m_uiSectionIndex = second.m_uiSectionIndex = 0;
   first.m_uiPrimitiveCount = second.m_uiPrimitiveCount = loaded->GetSections()[0].m_uiPrimitiveCount;
   second.m_GlobalTransform.m_vPosition.x               = 3;
+  if (skinned)
+  {
+    SetTestSkinningPose(first, 2);
+    SetTestSkinningPose(second, -2);
+  }
   xiiExtractedRenderData extracted;
   extracted.AddRenderData(&first);
   extracted.AddRenderData(&second);
@@ -203,7 +223,8 @@ static void RunSceneMeshIdentity(bool denseMeshlet)
       const auto materials        = xiiMaterialManager::AddUploadPasses(graph);
       xiiCamera  camera;
       camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
-      camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
+      const float poseOffset = skinned ? 2.0f : 0.0f;
+      camera.LookAt(xiiVec3(-2, poseOffset, 0), xiiVec3(0, poseOffset, 0), xiiVec3::MakeAxisZ());
       auto*      worldRenderer = world.GetOrCreateModule<xiiRenderWorldModule>();
       xiiView*   view          = nullptr;
       const auto viewHandle    = worldRenderer->CreateView("Identity projection", view);
@@ -251,7 +272,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet)
       if (!XII_TEST_BOOL(outputs.IsValid()))
         return;
       xiiRenderGraphTextureHandle query;
-      if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Identity query", visibility, uploadedGeometry, materials, raster, query)))
+      if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Identity query", visibility, uploadedGeometry, materials, raster, query, meshPicking)))
         return;
       struct Export
       {
@@ -307,7 +328,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet)
             for (xiiUInt32 x = 8; x < 24; ++x)
               XII_TEST_INT(pixels[(y * 32 + x) * 4], firstId);
         XII_TEST_INT(pixels[0], 0);
-        const auto  surfaceClip = viewProjection * xiiVec4(-0.5f, 0, 0, 1);
+        const auto  surfaceClip = viewProjection * xiiVec4(-0.5f, poseOffset, 0, 1);
         const float depth       = std::bit_cast<float>(pixels[center + 1]);
         XII_TEST_FLOAT(depth, surfaceClip.z / surfaceClip.w, 0.0001f);
         XII_TEST_FLOAT(std::bit_cast<float>(pixels[center + 2]), 0.0f, 0.0001f);
@@ -331,10 +352,90 @@ static void RunSceneMeshIdentity(bool denseMeshlet)
       XII_TEST_BOOL(!asyncReadback.Matches(*view));
       XII_TEST_BOOL(asyncReadback.GetPixels().IsEmpty());
       cache.EndFrame();
+      if (skinned)
+      {
+        // Keep the world transform fixed: only vertex deformation moves in and out of
+        // the query. Both native raster routes must follow updates and clearing.
+        for (xiiUInt64 poseFrame = 2; poseFrame <= 6; ++poseFrame)
+        {
+          if (poseFrame == 4)
+            first.m_SkinningMatrices.Clear();
+          else
+          {
+            SetTestSkinningPose(first, poseFrame == 2 ? 0.0f : 2.0f);
+            if (poseFrame >= 5)
+              for (auto& matrix : first.m_SkinningMatrices)
+              {
+                matrix.Element(1, 0) = 0.25f;
+                matrix.Element(1, 1) = 2.0f;
+              }
+          }
+          const xiiUInt32 expectedId = poseFrame == 2 || poseFrame == 4 ? 0 : firstId;
+          XII_TEST_RESULT(context.SynchronizeExtractedMeshes(extracted, poseFrame));
+          xiiGpuVisibilityManager::BeginFrame(poseFrame, poseFrame - 1);
+          xiiMaterialManager::BeginFrame(poseFrame, poseFrame - 1);
+          xiiGeometryResidencyManager::ProcessStreaming(poseFrame, poseFrame - 1, xiiMath::MaxValue<xiiUInt64>());
+          cache.BeginFrame(poseFrame, poseFrame - 1);
+          graph.BeginSetup(poseFrame);
+          const auto poseGeometry               = xiiGeometryResidencyManager::AddUploadPass(graph, poseFrame);
+          const auto poseMaterials              = xiiMaterialManager::AddUploadPasses(graph);
+          visibilityDescription.m_bAsyncCompute = true;
+          const auto poseVisibility             = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, poseFrame,
+                                                                                     context.GetHandle(), visibilityView, poseGeometry, visibilityDescription);
+          const auto poseDepth                  = xiiGpuSceneRasterManager::AddDepthPrepass(graph, "Posed depth", poseVisibility, poseGeometry, poseMaterials, depthDescription);
+          auto       poseVelocity               = graph.AddPass<Velocity>("Posed velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
+            xiiGALTextureCreationDescription target;
+            target.m_Type = xiiGALResourceDimension::Texture2D;
+            target.m_Size = {32, 32};
+            target.m_Format = xiiGALResourceFormat::RG16Float;
+            target.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+            data.m_Target = builder.WriteTexture("Posed velocity", target, xiiGALResourceStateFlags::RenderTarget);
+            builder.SetPassRenderPassManaged(); }, [](const Velocity& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero()); });
+          const auto poseSurface                = xiiGpuSceneRasterManager::AddGBufferPass(graph, "Posed surface", poseDepth, poseVelocity.first->m_Target, poseVisibility, poseGeometry, poseMaterials, raster);
+          if (!XII_TEST_BOOL(poseSurface.IsValid()))
+            return;
+          xiiRenderGraphTextureHandle poseQuery;
+          XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Posed query", poseVisibility, poseGeometry, poseMaterials, raster, poseQuery, meshPicking));
+          graph.AddPass<Export>("Posed query export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
+            XII_IGNORE_UNUSED(builder.ReadTexture(poseQuery, xiiGALResourceStateFlags::ShaderResource));
+            builder.ExportTexture(poseQuery, xiiGALResourceStateFlags::ShaderResource);
+            XII_IGNORE_UNUSED(builder.ReadTexture(poseSurface.m_hVelocity, xiiGALResourceStateFlags::ShaderResource));
+            builder.ExportTexture(poseSurface.m_hVelocity, xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+          graph.EndSetup();
+          if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphContext.GetBlackboard(), &cache)))
+            return;
+          auto poseTexture = graph.GetExportedTexture(poseQuery);
+          if (ReadIds(*environment.GetDevice(), poseTexture.Borrow(), pixels))
+          {
+            XII_TEST_INT(pixels[(16 * 32 + 16) * 4], expectedId);
+            if (poseFrame >= 5)
+            {
+              // Inverse transpose of the sheared, nonuniform bone transform: (-1, 1/8, 0).
+              XII_TEST_FLOAT(std::bit_cast<float>(pixels[(16 * 32 + 16) * 4 + 2]), 1.0f / 18.0f, 0.0001f);
+              XII_TEST_FLOAT(std::bit_cast<float>(pixels[(16 * 32 + 16) * 4 + 3]), 5.0f / 9.0f, 0.0001f);
+            }
+          }
+          auto velocityTexture = graph.GetExportedTexture(poseSurface.m_hVelocity);
+          if (ReadIds(*environment.GetDevice(), velocityTexture.Borrow(), pixels) && (poseFrame == 3 || poseFrame == 6))
+          {
+            xiiFloat16 velocityX, velocityY;
+            velocityX.SetRawData(static_cast<xiiUInt16>(pixels[16 * 32 + 16]));
+            velocityY.SetRawData(static_cast<xiiUInt16>(pixels[16 * 32 + 16] >> 16));
+            const auto currentClip  = viewProjection * xiiVec4(-0.5f, 2, 0, 1);
+            const auto previousClip = viewProjection * xiiVec4(-0.5f, poseFrame == 3 ? 0.0f : 2.0f, 0, 1);
+            XII_TEST_FLOAT(static_cast<float>(velocityX), currentClip.x / currentClip.w - previousClip.x / previousClip.w, 0.003f);
+            XII_TEST_FLOAT(static_cast<float>(velocityY), 0.0f, 0.003f);
+          }
+          cache.EndFrame();
+        }
+      }
     }
     else
       xiiTestFramework::Output(xiiTestOutput::Message, "Mesh-shader raster identity was not exercised on this device.");
   }
+
+  if (skinned)
+    return;
 
   // These graphs execute directly, outside the registered-graph manager's frame timeline.
   xiiGpuFrameCompletionTracker completion;
@@ -525,4 +626,14 @@ XII_CREATE_SIMPLE_TEST_GROUP(MeshletRaster);
 XII_CREATE_SIMPLE_TEST(MeshletRaster, DensePrimitiveCoverage)
 {
   RunSceneMeshIdentity(true);
+}
+
+XII_CREATE_SIMPLE_TEST_GROUP(SkinningRaster);
+XII_CREATE_SIMPLE_TEST(SkinningRaster, MeshSurfaceAndQuery)
+{
+  RunSceneMeshIdentity(false, true, true);
+}
+XII_CREATE_SIMPLE_TEST(SkinningRaster, IndexedQuery)
+{
+  RunSceneMeshIdentity(false, true, false);
 }
