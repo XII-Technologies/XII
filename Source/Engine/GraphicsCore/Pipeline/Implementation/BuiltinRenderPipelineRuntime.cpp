@@ -72,8 +72,11 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
         xiiGpuVisibilityManager::InvalidateHiZHistory(m_View.m_hGpuVisibilityContext);
     }
 
-    const xiiMat4        viewProjection = m_View.GetViewProjectionMatrix(xiiCameraEye::Left);
-    const xiiFrustum     viewFrustum    = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+    const xiiMat4 viewProjection = m_View.GetViewProjectionMatrix(xiiCameraEye::Left);
+    xiiFrustum    viewFrustum;
+    m_View.ComputeCullingFrustum(viewFrustum);
+    // The raster camera still governs Hi-Z, LOD and cone-facing decisions; the explicit culling
+    // camera controls frustum rejection, just as it does in the indexed visibility path.
     xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
       viewProjection, viewFrustum, m_View.m_pCamera->GetPosition(), uiRenderWidth, uiRenderHeight,
       xiiGpuVisibilityManager::GetHiZMipLevelCount(m_View.m_hGpuVisibilityContext),
