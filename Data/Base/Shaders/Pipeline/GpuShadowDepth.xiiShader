@@ -84,7 +84,7 @@ void main(uint threadIndex : SV_GroupThreadID,
   const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
   const GpuMeshlet meshlet = g_Meshlets[visible.y];
   const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
-  if (lodIndex >= min(geometry.LodCount, 8u))
+  if (lodIndex >= min(geometry.LodCount, 8u) || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
   {
     SetMeshOutputCounts(0u, 0u);
     return;

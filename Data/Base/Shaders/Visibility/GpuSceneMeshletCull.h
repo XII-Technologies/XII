@@ -10,8 +10,7 @@ StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<GpuMeshlet>        g_Meshlets;
 StructuredBuffer<uint>              g_VisibleInstances;
 StructuredBuffer<uint>              g_VisibleInstanceCount;
-StructuredBuffer<uint4>             g_PreviousLodHistory;
-RWStructuredBuffer<uint4>           g_CurrentLodHistory;
+StructuredBuffer<uint4>             g_CurrentLodHistory;
 RWStructuredBuffer<GpuLodFeedback>  g_LodFeedback;
 RWStructuredBuffer<uint2>           g_VisibleMeshlets;
 RWStructuredBuffer<uint>            g_VisibleMeshletCount;
@@ -162,7 +161,6 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   uint meshletCount, meshletStride;
   uint visibleInstanceCapacity, visibleInstanceStride;
   uint visibleCountCapacity, visibleCountStride;
-  uint previousHistoryCapacity, previousHistoryStride;
   uint currentHistoryCapacity, currentHistoryStride;
   g_VisibilityView.GetDimensions(viewCount, viewStride);
   g_SceneInstances.GetDimensions(sceneCount, sceneStride);
@@ -170,7 +168,6 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   g_Meshlets.GetDimensions(meshletCount, meshletStride);
   g_VisibleInstances.GetDimensions(visibleInstanceCapacity, visibleInstanceStride);
   g_VisibleInstanceCount.GetDimensions(visibleCountCapacity, visibleCountStride);
-  g_PreviousLodHistory.GetDimensions(previousHistoryCapacity, previousHistoryStride);
   g_CurrentLodHistory.GetDimensions(currentHistoryCapacity, currentHistoryStride);
   if (viewCount == 0u || visibleCountCapacity == 0u)
     return;
@@ -189,20 +186,27 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex)
     return;
 
+  // Section/material candidates share one geometry-level selection. Read the same
+  // representative's history even when some candidates were filtered last frame.
+  uint selectionIndex = instanceIndex;
+  if (instance.LodSelectionIndex < sceneCount && g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex)
+    selectionIndex = instance.LodSelectionIndex;
+  const GpuSceneInstance selection = g_SceneInstances[selectionIndex];
   const GpuGeometryRecord geometry          = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
-  const float             distanceToCamera  = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
-  const float             projectedCoverage = GetInstanceLodRadius(instance) * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
-  const uint              desiredLod        = SelectInstanceDesiredLod(geometry, instance, distanceToCamera, view.ViewportAndHiZ.y);
-  const uint4             previousHistory   = instanceIndex < previousHistoryCapacity ? g_PreviousLodHistory[instanceIndex] : uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
-  const uint              lodIndex          = SelectInstanceResidentLod(geometry, instance, distanceToCamera, view.ViewportAndHiZ.y,
-                                                                        previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
+  const float             distanceToCamera  = length(selection.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
+  const float             projectedCoverage = GetInstanceLodRadius(selection) * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
+  const uint              desiredLod        = SelectInstanceDesiredLod(geometry, selection, distanceToCamera, view.ViewportAndHiZ.y);
+  const uint              lodIndex          = instanceIndex < currentHistoryCapacity ? g_CurrentLodHistory[instanceIndex].x : 0xFFFFFFFFu;
   if (dispatchThreadId.x == 0u)
   {
-    if (instanceIndex < currentHistoryCapacity)
-      g_CurrentLodHistory[instanceIndex] = uint4(lodIndex, geometry.Generation, instance.UserData, (uint)view.LodParameters.y);
     SubmitLodFeedback(instance.GeometryIndex, geometry, desiredLod, lodIndex, (uint)view.LodParameters.w, instance.UserData, projectedCoverage);
   }
   if (lodIndex == 0xFFFFFFFFu || lodIndex >= min(geometry.LodCount, 8u))
+    return;
+
+  // Section ranges and material routing belong to one authored LOD. All candidates make
+  // the same geometry-level selection, then only that LOD's candidates reach rasterization.
+  if (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex)
     return;
 
   const GpuGeometryLod lod = geometry.Lods[lodIndex];

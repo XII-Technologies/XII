@@ -76,6 +76,7 @@ struct XII_GRAPHICSCORE_DLL xiiSceneObjectDesc
   xiiUInt32                        m_uiFirstPrimitive = 0U;
   xiiUInt32                        m_uiPrimitiveCount = 0U;              ///< Zero means the complete selected LOD.
   xiiUInt32                        m_uiForcedLod      = xiiInvalidIndex; ///< Automatic selection when invalid; otherwise requires this resident LOD.
+  xiiUInt32                        m_uiDrawLod        = xiiInvalidIndex; ///< Candidate belongs to this LOD only; invalid admits any selected LOD.
   float                            m_fLodBias         = 0.0f;            ///< Octaves of projected coverage: +1 doubles coverage, favoring finer LODs.
 };
 
@@ -108,11 +109,13 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
   xiiUInt32 m_uiPrimitiveCount = 0U; ///< Zero means the complete selected LOD.
   xiiUInt32 m_uiForcedLod      = xiiInvalidIndex;
   float     m_fLodBias         = 0.0f;
-  xiiUInt32 m_uiLodPadding[2]  = {};
+  xiiUInt32 m_uiDrawLod        = xiiInvalidIndex;
+  /// Dense index of the object supplying geometry-level LOD controls and history. Invalid means self.
+  xiiUInt32 m_uiLodSelectionIndex = xiiInvalidIndex;
 };
 
 static_assert(sizeof(xiiGpuSceneInstance) == 256U, "GPU scene records must match GpuSceneCommon.h.");
-static_assert(offsetof(xiiGpuSceneInstance, m_uiForcedLod) == 240U && offsetof(xiiGpuSceneInstance, m_fLodBias) == 244U,
+static_assert(offsetof(xiiGpuSceneInstance, m_uiForcedLod) == 240U && offsetof(xiiGpuSceneInstance, m_fLodBias) == 244U && offsetof(xiiGpuSceneInstance, m_uiDrawLod) == 248U && offsetof(xiiGpuSceneInstance, m_uiLodSelectionIndex) == 252U,
               "GPU LOD controls must preserve the structured-buffer layout.");
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSceneInstance);

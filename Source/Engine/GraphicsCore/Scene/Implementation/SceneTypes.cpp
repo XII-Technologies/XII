@@ -14,7 +14,7 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectHandle, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiSceneObjectHandle>)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiSceneObjectDesc>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiSceneObjectDesc>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -31,12 +31,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneObjectDesc, xiiNoBase, 3, xiiRTTIDefault
       XII_MEMBER_PROPERTY("FirstPrimitive", m_uiFirstPrimitive),
       XII_MEMBER_PROPERTY("PrimitiveCount", m_uiPrimitiveCount),
       XII_MEMBER_PROPERTY("ForcedLod", m_uiForcedLod),
+      XII_MEMBER_PROPERTY("DrawLod", m_uiDrawLod),
       XII_MEMBER_PROPERTY("LodBias", m_fLodBias),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 5, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 6, xiiRTTIDefaultAllocator<xiiGpuSceneInstance>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -46,6 +47,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 5, xiiRTTIDefaul
       XII_MEMBER_PROPERTY("NormalTransformRow1", m_NormalTransformRow1),
       XII_MEMBER_PROPERTY("NormalTransformRow2", m_NormalTransformRow2),
       XII_MEMBER_PROPERTY("BoundsCenterRadius", m_BoundsCenterRadius),
+      XII_MEMBER_PROPERTY("LodSelectionIndex", m_uiLodSelectionIndex),
       XII_MEMBER_PROPERTY("BoundsExtents", m_BoundsExtents),
       XII_MEMBER_PROPERTY("GeometryIndex", m_uiGeometryIndex),
       XII_MEMBER_PROPERTY("MaterialIndex", m_uiMaterialIndex),
@@ -56,6 +58,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuSceneInstance, xiiNoBase, 5, xiiRTTIDefaul
       XII_MEMBER_PROPERTY("FirstPrimitive", m_uiFirstPrimitive),
       XII_MEMBER_PROPERTY("PrimitiveCount", m_uiPrimitiveCount),
       XII_MEMBER_PROPERTY("ForcedLod", m_uiForcedLod),
+      XII_MEMBER_PROPERTY("DrawLod", m_uiDrawLod),
       XII_MEMBER_PROPERTY("LodBias", m_fLodBias),
     } XII_END_PROPERTIES;
   }

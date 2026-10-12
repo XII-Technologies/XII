@@ -46,7 +46,16 @@ public:
   /// automatic selection. A forced LOD must be below eight; non-finite bias and stale handles fail
   /// without mutation. Bias is measured in coverage octaves, saturated to [-16, 16] on the GPU.
   /// Forced selection bypasses hysteresis and emits no geometry until the requested LOD is resident.
-  [[nodiscard]] xiiResult SetLodSelection(xiiSceneObjectHandle hObject, xiiUInt32 uiForcedLod, float fLodBias);
+  /// A draw LOD restricts this range/material candidate to one authored LOD without forcing the
+  /// mesh's LOD selection. Invalid admits any selected LOD. Both indices must be below eight.
+  [[nodiscard]] xiiResult SetLodSelection(xiiSceneObjectHandle hObject, xiiUInt32 uiForcedLod, float fLodBias, xiiUInt32 uiDrawLod = xiiInvalidIndex);
+  /// Shares LOD controls, bounds and temporal history with a representative object in this database.
+  /// Useful for material/section candidates of one mesh. The representative must use the same geometry;
+  /// otherwise selection falls back to self. This is a non-owning, single-hop link: invalid or self clears
+  /// it, stale arguments fail without mutation, and destroying the representative restores self selection.
+  /// Filtering individual sections cannot make members choose different LODs: visibility updates
+  /// history before material routing, frustum and temporal occlusion tests.
+  [[nodiscard]] xiiResult SetLodGroup(xiiSceneObjectHandle hObject, xiiSceneObjectHandle hRepresentative);
   bool                    SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags);
   bool                    SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask);
 
@@ -94,6 +103,8 @@ private:
   xiiDynamicArray<xiiUInt32>                        m_FirstPrimitives;
   xiiDynamicArray<xiiUInt32>                        m_PrimitiveCounts;
   xiiDynamicArray<xiiUInt32>                        m_ForcedLods;
+  xiiDynamicArray<xiiUInt32>                        m_DrawLods;
+  xiiDynamicArray<xiiSceneObjectHandle>             m_LodGroups;
   xiiDynamicArray<float>                            m_LodBiases;
   xiiDynamicArray<xiiUInt32>                        m_VisibilityMasks;
   xiiDynamicArray<xiiUInt32>                        m_UserData;

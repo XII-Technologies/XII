@@ -38,6 +38,8 @@ void xiiSceneDatabase::Clear()
   m_FirstPrimitives.Clear();
   m_PrimitiveCounts.Clear();
   m_ForcedLods.Clear();
+  m_DrawLods.Clear();
+  m_LodGroups.Clear();
   m_LodBiases.Clear();
   m_VisibilityMasks.Clear();
   m_UserData.Clear();
@@ -71,6 +73,8 @@ void xiiSceneDatabase::Reserve(xiiUInt32 uiObjectCapacity)
   m_FirstPrimitives.Reserve(uiObjectCapacity);
   m_PrimitiveCounts.Reserve(uiObjectCapacity);
   m_ForcedLods.Reserve(uiObjectCapacity);
+  m_DrawLods.Reserve(uiObjectCapacity);
+  m_LodGroups.Reserve(uiObjectCapacity);
   m_LodBiases.Reserve(uiObjectCapacity);
   m_VisibilityMasks.Reserve(uiObjectCapacity);
   m_UserData.Reserve(uiObjectCapacity);
@@ -83,7 +87,7 @@ void xiiSceneDatabase::Reserve(xiiUInt32 uiObjectCapacity)
 
 xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& desc)
 {
-  if ((desc.m_uiForcedLod != xiiInvalidIndex && desc.m_uiForcedLod >= 8U) || !xiiMath::IsFinite(desc.m_fLodBias))
+  if ((desc.m_uiForcedLod != xiiInvalidIndex && desc.m_uiForcedLod >= 8U) || (desc.m_uiDrawLod != xiiInvalidIndex && desc.m_uiDrawLod >= 8U) || !xiiMath::IsFinite(desc.m_fLodBias))
     return {};
 
   const xiiSceneObjectId id      = m_Objects.Insert(0U);
@@ -108,6 +112,8 @@ xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& de
     EnsureCount(m_FirstPrimitives, uiCount, 0U);
     EnsureCount(m_PrimitiveCounts, uiCount, 0U);
     EnsureCount(m_ForcedLods, uiCount, xiiInvalidIndex);
+    EnsureCount(m_DrawLods, uiCount, xiiInvalidIndex);
+    EnsureCount(m_LodGroups, uiCount, xiiSceneObjectHandle());
     EnsureCount(m_LodBiases, uiCount, 0.0f);
     EnsureCount(m_VisibilityMasks, uiCount, 0xFFFFFFFFU);
     EnsureCount(m_UserData, uiCount, 0U);
@@ -131,10 +137,12 @@ xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& de
   m_FirstPrimitives[uiIndex]          = desc.m_uiFirstPrimitive;
   m_PrimitiveCounts[uiIndex]          = desc.m_uiPrimitiveCount;
   m_ForcedLods[uiIndex]               = desc.m_uiForcedLod;
-  m_LodBiases[uiIndex]                = desc.m_fLodBias;
-  m_VisibilityMasks[uiIndex]          = desc.m_uiVisibilityMask;
-  m_UserData[uiIndex]                 = desc.m_uiUserData;
-  m_Flags[uiIndex]                    = desc.m_Flags;
+  m_DrawLods[uiIndex]                 = desc.m_uiDrawLod;
+  m_LodGroups[uiIndex].Invalidate();
+  m_LodBiases[uiIndex]       = desc.m_fLodBias;
+  m_VisibilityMasks[uiIndex] = desc.m_uiVisibilityMask;
+  m_UserData[uiIndex]        = desc.m_uiUserData;
+  m_Flags[uiIndex]           = desc.m_Flags;
 
   ++m_uiRevision;
 
@@ -315,17 +323,34 @@ bool xiiSceneDatabase::SetPrimitiveRange(xiiSceneObjectHandle hObject, xiiUInt32
   return true;
 }
 
-xiiResult xiiSceneDatabase::SetLodSelection(xiiSceneObjectHandle hObject, xiiUInt32 uiForcedLod, float fLodBias)
+xiiResult xiiSceneDatabase::SetLodSelection(xiiSceneObjectHandle hObject, xiiUInt32 uiForcedLod, float fLodBias, xiiUInt32 uiDrawLod)
 {
-  if (!IsAlive(hObject) || (uiForcedLod != xiiInvalidIndex && uiForcedLod >= 8U) || !xiiMath::IsFinite(fLodBias))
+  if (!IsAlive(hObject) || (uiForcedLod != xiiInvalidIndex && uiForcedLod >= 8U) || (uiDrawLod != xiiInvalidIndex && uiDrawLod >= 8U) || !xiiMath::IsFinite(fLodBias))
     return XII_FAILURE;
   const xiiUInt32 uiObject = hObject.GetInternalID().m_InstanceIndex;
-  if (m_ForcedLods[uiObject] == uiForcedLod && m_LodBiases[uiObject] == fLodBias)
+  if (m_ForcedLods[uiObject] == uiForcedLod && m_LodBiases[uiObject] == fLodBias && m_DrawLods[uiObject] == uiDrawLod)
     return XII_SUCCESS;
   m_ForcedLods[uiObject] = uiForcedLod;
+  m_DrawLods[uiObject]   = uiDrawLod;
   m_LodBiases[uiObject]  = fLodBias;
   m_GpuDirty[uiObject]   = 1U;
   ++m_uiRevision;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiSceneDatabase::SetLodGroup(xiiSceneObjectHandle hObject, xiiSceneObjectHandle hRepresentative)
+{
+  if (!IsAlive(hObject) || (!hRepresentative.IsInvalidated() && !IsAlive(hRepresentative)))
+    return XII_FAILURE;
+  if (hRepresentative == hObject)
+    hRepresentative.Invalidate();
+  const xiiUInt32 index = hObject.GetInternalID().m_InstanceIndex;
+  if (m_LodGroups[index] != hRepresentative)
+  {
+    m_LodGroups[index] = hRepresentative;
+    m_GpuDirty[index]  = 1;
+    ++m_uiRevision;
+  }
   return XII_SUCCESS;
 }
 
@@ -421,24 +446,36 @@ void xiiSceneDatabase::RebuildGpuInstances()
 {
   const xiiUInt32 uiPreviousCount = m_GpuInstances.GetCount();
   m_GpuToObjectIndex.Clear();
-  m_GpuInstances.Clear();
   m_GpuToObjectIndex.Reserve(m_Objects.GetCount());
-  m_GpuInstances.Reserve(m_Objects.GetCount());
+  m_GpuInstances.SetCount(m_Objects.GetCount());
   m_UploadRanges.Clear();
 
-  bool      bRangeOpen   = false;
-  xiiUInt32 uiRangeStart = 0U;
+  // Resolve all dense indices before emitting records: a LOD representative can occur
+  // after its members, and removing unrelated objects can compact either index.
   for (xiiUInt32 uiObject = 0; uiObject < m_ObjectHandles.GetCount(); ++uiObject)
   {
     if (m_ObjectHandles[uiObject].IsInvalidated())
       continue;
 
-    const xiiUInt32 uiGpuIndex   = m_GpuInstances.GetCount();
+    const xiiUInt32 uiGpuIndex   = m_GpuToObjectIndex.GetCount();
     const bool      bMoved       = m_ObjectToGpuIndex[uiObject] != uiGpuIndex;
     m_ObjectToGpuIndex[uiObject] = uiGpuIndex;
     m_GpuToObjectIndex.PushBack(uiObject);
+    if (bMoved || uiPreviousCount != m_Objects.GetCount())
+      m_GpuDirty[uiObject] = 1;
+  }
 
-    xiiGpuSceneInstance& instance      = m_GpuInstances.ExpandAndGetRef();
+  bool      bRangeOpen   = false;
+  xiiUInt32 uiRangeStart = 0U;
+  for (xiiUInt32 uiGpuIndex = 0; uiGpuIndex < m_GpuToObjectIndex.GetCount(); ++uiGpuIndex)
+  {
+    const xiiUInt32      uiObject        = m_GpuToObjectIndex[uiGpuIndex];
+    xiiGpuSceneInstance& instance        = m_GpuInstances[uiGpuIndex];
+    const auto           hRepresentative = m_LodGroups[uiObject];
+    const xiiUInt32      selectionIndex  = IsAlive(hRepresentative) ? m_ObjectToGpuIndex[hRepresentative.GetInternalID().m_InstanceIndex] : xiiInvalidIndex;
+    if (instance.m_uiLodSelectionIndex != selectionIndex)
+      m_GpuDirty[uiObject] = 1;
+    instance.m_uiLodSelectionIndex     = selectionIndex;
     instance.m_GlobalTransform         = m_GlobalTransforms[uiObject];
     instance.m_PreviousGlobalTransform = m_PreviousGlobalTransforms[uiObject];
     xiiMat3 normalTransform            = instance.m_GlobalTransform.GetRotationalPart();
@@ -470,9 +507,10 @@ void xiiSceneDatabase::RebuildGpuInstances()
     instance.m_uiFirstPrimitive        = m_FirstPrimitives[uiObject];
     instance.m_uiPrimitiveCount        = m_PrimitiveCounts[uiObject];
     instance.m_uiForcedLod             = m_ForcedLods[uiObject];
+    instance.m_uiDrawLod               = m_DrawLods[uiObject];
     instance.m_fLodBias                = m_LodBiases[uiObject];
 
-    const bool bDirty = m_GpuDirty[uiObject] != 0U || bMoved || uiPreviousCount != m_Objects.GetCount();
+    const bool bDirty = m_GpuDirty[uiObject] != 0U;
     if (bDirty && !bRangeOpen)
     {
       bRangeOpen   = true;

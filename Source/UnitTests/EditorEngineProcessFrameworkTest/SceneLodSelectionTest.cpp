@@ -111,6 +111,8 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     for (auto* data : extracted.GetAllRenderData())
     {
       auto* packet = xiiDynamicCast<xiiMeshRenderData*>(data);
+      // Exercise custom primitive-range semantics independently of authored section expansion.
+      packet->m_RangeMode = xiiMeshRenderData::RangeMode::PrimitiveRange;
       // Forced packets retain the actual extracted section range. Automatic coverage is
       // tested with a whole-LOD packet, independently of per-LOD section remapping.
       if (!packet->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD))
@@ -250,6 +252,9 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     invalid.m_fLodBias = 0;
     invalid.m_Flags.Add(xiiMeshRenderDataFlags::ForceLOD);
     invalid.m_uiLODIndex = 8;
+    XII_TEST_BOOL(sceneContext.SynchronizeExtractedMeshes(xiiMakeArrayPtr(packets), frame + 1).Failed());
+    invalid.m_Flags.Remove(xiiMeshRenderDataFlags::ForceLOD);
+    invalid.m_RangeMode = static_cast<xiiMeshRenderData::RangeMode>(255);
     XII_TEST_BOOL(sceneContext.SynchronizeExtractedMeshes(xiiMakeArrayPtr(packets), frame + 1).Failed());
     XII_TEST_INT(sceneContext.GetDatabase().GetRevision(), revision);
     XII_TEST_INT(sceneContext.GetDatabase().GetObjectCount(), 1);

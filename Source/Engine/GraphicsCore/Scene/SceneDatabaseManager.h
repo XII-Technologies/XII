@@ -49,6 +49,10 @@ public:
   /// Synchronizes ordinary xiiMeshRenderData packets into the subsystem-owned GPU scene. Stable
   /// render IDs preserve previous transforms, shared mesh resources reuse residency handles, and
   /// objects absent from the current extraction are retired after their last submitted frame.
+  /// Component-authored mesh/section packets expand to LOD-specific range/material candidates.
+  /// Geometry residency remains shared. GPU selection admits only candidates of the selected LOD;
+  /// CPU indexed packets remain unchanged. Custom PrimitiveRange packets retain their exact range.
+  /// Duplicate WholeMesh packets for one owner/component/render ID synchronize that group once.
   [[nodiscard]] static xiiResult SynchronizeExtractedMeshes(xiiSceneDatabaseContextHandle handle, const xiiExtractedRenderData& extractedData, xiiUInt64 uiFrameIndex);
   /// Synchronizes a borrowed, optionally filtered packet range without building or sorting another
   /// extraction container. Non-mesh/null packets are ignored. Pointers need only survive this call.

@@ -70,6 +70,18 @@ class XII_GRAPHICSCORE_DLL xiiMeshRenderData : public xiiRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshRenderData, xiiRenderData);
 
 public:
+  /// Meaning of the packet's range for residency-aware consumers. Indexed consumers continue to
+  /// use the extracted CPU LOD range. Custom packets default to an exact primitive range, which
+  /// must be meaningful in every LOD they allow. Component packets identify authored mesh sections
+  /// so native scenes can select each LOD's own ranges/materials without assuming matching layouts.
+  enum class RangeMode : xiiUInt8
+  {
+    PrimitiveRange,
+    MeshSection,
+    WholeMesh
+  };
+  RangeMode m_RangeMode = RangeMode::PrimitiveRange;
+
   xiiMeshResourceHandle                      m_hMesh;       ///< The mesh resource to render, containing the mesh buffer and materials.
   xiiMeshBufferResourceHandle                m_hMeshBuffer; ///< The mesh buffer resource containing the GPU buffers for this mesh, used for rendering and culling.
   xiiDynamicArray<xiiMaterialResourceHandle> m_hMaterials;  ///< The material resources for this mesh, used for rendering.

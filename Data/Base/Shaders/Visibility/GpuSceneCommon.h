@@ -21,7 +21,8 @@ struct GpuSceneInstance
   uint     PrimitiveCount;
   uint     ForcedLod;
   float    LodBias;
-  uint2    LodPadding;
+  uint     DrawLod;
+  uint     LodSelectionIndex;
 };
 
 struct GpuVisibilityView
@@ -176,7 +177,7 @@ uint SelectInstanceResidentLod(GpuGeometryRecord geometry, GpuSceneInstance inst
     return (geometry.ResidentLodMask & (1u << desired)) != 0u ? desired : 0xFFFFFFFFu;
   }
   return SelectResidentLodWithHistory(geometry, GetInstanceLodRadius(instance), distanceToCamera, viewportHeight,
-                                      instance.UserData, previousHistory, previousHistoryToken, hysteresis);
+                                      instance.ObjectId, previousHistory, previousHistoryToken, hysteresis);
 }
 
 bool SphereInsideFrustum(float3 center, float radius, GpuVisibilityView view)
