@@ -136,7 +136,10 @@ void xiiCameraComponentManager::OnViewCreated(const xiiViewEvent& viewEvent)
   // Mark all cameras as modified so the new view gets the proper settings
   for (auto it = GetComponents(); it.IsValid(); ++it)
   {
-    it->MarkAsModified(this);
+    // Compact storage retains deleted components until World cleanup. A view can be created
+    // before that cleanup (e.g. a camera preview); never queue an invalidated camera identity.
+    if (!it->GetHandle().IsInvalidated())
+      it->MarkAsModified(this);
   }
 }
 
