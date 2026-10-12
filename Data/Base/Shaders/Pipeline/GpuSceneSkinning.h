@@ -67,17 +67,14 @@ float3 xiiSkinningNormalize(float3 direction, float3 fallback)
   return magnitude > 1.0e-20f && isfinite(magnitude) ? direction * rsqrt(magnitude) : fallback;
 }
 
-bool xiiSkinSurface(GpuSceneInstance instance, GpuGeometryLod lod, uint sourceVertex,
-  inout float3 position, inout float3 normal, inout float4 tangent, out float3 previousPosition)
+bool xiiSkinCurrentSurface(GpuSceneInstance instance, GpuGeometryLod lod, uint sourceVertex,
+  inout float3 position, inout float3 normal, inout float4 tangent)
 {
-  float4x4 current, previous;
-  previousPosition = position;
-  if (instance.SkinningCount == 0u && instance.PreviousSkinningCount == 0u)
+  if (instance.SkinningCount == 0u)
     return all(isfinite(position));
-  if (!xiiSkinningMatrix(instance, lod, sourceVertex, false, current) ||
-      !xiiSkinningMatrix(instance, lod, sourceVertex, true, previous))
+  float4x4 current;
+  if (!xiiSkinningMatrix(instance, lod, sourceVertex, false, current))
     return false;
-  previousPosition = mul(previous, float4(position, 1)).xyz;
   position = mul(current, float4(position, 1)).xyz;
   const float3x3 skinLinear = (float3x3)current;
   const float3 row0 = cross(skinLinear[1], skinLinear[2]);
@@ -89,5 +86,20 @@ bool xiiSkinSurface(GpuSceneInstance instance, GpuGeometryLod lod, uint sourceVe
   tangent.xyz = xiiSkinningNormalize(mul(skinLinear, tangent.xyz), tangent.xyz);
   tangent.xyz = xiiSkinningNormalize(tangent.xyz - normal * dot(tangent.xyz, normal), tangent.xyz);
   tangent.w *= determinant < 0.0f ? -1.0f : 1.0f;
-  return all(isfinite(position)) && all(isfinite(previousPosition));
+  return all(isfinite(position));
+}
+
+bool xiiSkinSurface(GpuSceneInstance instance, GpuGeometryLod lod, uint sourceVertex,
+  inout float3 position, inout float3 normal, inout float4 tangent, out float3 previousPosition)
+{
+  previousPosition = position;
+  if (!xiiSkinCurrentSurface(instance, lod, sourceVertex, position, normal, tangent))
+    return false;
+  if (instance.PreviousSkinningCount == 0u)
+    return true;
+  float4x4 previous;
+  if (!xiiSkinningMatrix(instance, lod, sourceVertex, true, previous))
+    return false;
+  previousPosition = mul(previous, float4(previousPosition, 1)).xyz;
+  return all(isfinite(previousPosition));
 }

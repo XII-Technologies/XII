@@ -158,8 +158,7 @@ void main(uint threadIndex : SV_GroupThreadID,
     float4 localTangent = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset)) : float4(1.0f, 0.0f, 0.0f, 1.0f);
     const float2 texCoord = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset)) : 0.0f;
 
-    float3 previousLocalPosition;
-    const bool validSkin = vertexIsValid && xiiSkinSurface(instance, lod, sourceVertex, localPosition, localNormal, localTangent, previousLocalPosition);
+    const bool validSkin = vertexIsValid && xiiSkinCurrentSurface(instance, lod, sourceVertex, localPosition, localNormal, localTangent);
     const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
     float3 worldNormal = normalize(float3(dot(instance.NormalTransformRow0.xyz, localNormal), dot(instance.NormalTransformRow1.xyz, localNormal), dot(instance.NormalTransformRow2.xyz, localNormal)));
     float3 worldTangent = normalize(mul((float3x3)instance.GlobalTransform, localTangent.xyz));

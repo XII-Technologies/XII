@@ -70,8 +70,7 @@ void main(uint threadIndex : SV_GroupThreadID,
     float3 localPosition = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset));
     float3 localNormal = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + 12u));
     float4 tangent = float4(1, 0, 0, 1);
-    float3 previousPosition;
-    const bool validSkin = xiiSkinSurface(instance, lod, sourceVertex, localPosition, localNormal, tangent, previousPosition);
+    const bool validSkin = xiiSkinCurrentSurface(instance, lod, sourceVertex, localPosition, localNormal, tangent);
     const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
 
     MeshVertex output;
