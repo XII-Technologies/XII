@@ -171,7 +171,7 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     description.m_Type      = xiiGALResourceDimension::Texture2D;
     description.m_Size      = xiiSizeU32(32, 32);
     description.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
-    description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+    description.m_BindFlags = xiiGALBindFlags::RenderTarget;
     auto target             = environment.GetDevice()->CreateTexture(description);
     if (!XII_TEST_BOOL(target != nullptr))
       return;
