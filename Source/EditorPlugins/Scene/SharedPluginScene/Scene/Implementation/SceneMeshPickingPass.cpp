@@ -108,8 +108,9 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
     // transform or packet change invalidates both background and owner pixels before reuse.
     const xiiUInt64 fields[] = {mesh->m_hOwnerObject.GetInternalID().m_Data, mesh->m_hOwnerComponent.GetInternalID().m_Data,
                                 mesh->m_uiUniqueID, mesh->m_uiSectionIndex, mesh->m_hMesh.GetResourceIDHash(), mesh->m_uiLODIndex,
-                                mesh->m_uiFirstPrimitive, mesh->m_uiPrimitiveCount, mesh->m_Flags.GetValue()};
+                                mesh->m_uiFirstPrimitive, mesh->m_uiPrimitiveCount, mesh->m_Flags.GetValue(), static_cast<xiiUInt64>(mesh->m_RangeMode)};
     fingerprint              = xiiHashingUtils::xxHash64(fields, sizeof(fields), fingerprint);
+    fingerprint              = xiiHashingUtils::xxHash64(&mesh->m_fLodBias, sizeof(mesh->m_fLodBias), fingerprint);
     const auto transform     = mesh->m_GlobalTransform.GetAsMat4();
     fingerprint              = xiiHashingUtils::xxHash64(transform.m_fElementsCM, sizeof(transform.m_fElementsCM), fingerprint);
     for (const auto& material : mesh->m_hMaterials)

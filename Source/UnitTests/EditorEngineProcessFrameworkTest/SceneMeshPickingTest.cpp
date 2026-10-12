@@ -195,11 +195,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
   xiiGameObject* backObject    = nullptr;
   const auto     backOwner     = world.CreateObject(objectDescription, backObject);
   backObject->SetLocalPosition(xiiVec3(3, 0, 0));
-  xiiMeshComponent* component      = nullptr;
-  const auto        frontComponent = xiiMeshComponent::CreateComponent(frontObject, component);
-  component->SetMesh(mesh);
-  const auto backComponent = xiiMeshComponent::CreateComponent(backObject, component);
-  component->SetMesh(mesh);
+  xiiLODMeshComponent* frontLodComponent = nullptr;
+  const auto           frontComponent    = xiiLODMeshComponent::CreateComponent(frontObject, frontLodComponent);
+  frontLodComponent->SetMesh(mesh);
+  xiiMeshComponent* backMeshComponent = nullptr;
+  const auto        backComponent     = xiiMeshComponent::CreateComponent(backObject, backMeshComponent);
+  backMeshComponent->SetMesh(mesh);
+  xiiMeshComponentBase* component = nullptr;
   world.Update();
   xiiMeshRenderData front, back;
   front.m_hMesh                        = mesh;
@@ -304,6 +306,33 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneMeshPicking)
     XII_TEST_BOOL(objects.Contains(frontOwner));
     XII_TEST_BOOL(!objects.Contains(backOwner));
     XII_TEST_INT(objects.GetCount(), 1);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Component LOD controls and section selection invalidate captured picking images")
+  {
+    frontLodComponent->SetLodBias(1);
+    front.m_fLodBias = 1;
+    XII_TEST_BOOL(pass->Pick(*view, 24, 28, hit).Failed());
+    if (!render() || !render())
+      return;
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+    XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
+    frontLodComponent->SetForcedLOD(0);
+    front.m_Flags.Add(xiiMeshRenderDataFlags::ForceLOD);
+    XII_TEST_BOOL(pass->Pick(*view, 24, 28, hit).Failed());
+    if (!render() || !render())
+      return;
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+    frontLodComponent->SetSectionIndex(1);
+    XII_TEST_BOOL(pass->Pick(*view, 24, 28, hit).Failed());
+    frontLodComponent->SetSectionIndex(xiiInvalidIndex);
+    frontLodComponent->SetForcedLOD(xiiInvalidIndex);
+    frontLodComponent->SetLodBias(0);
+    front.m_Flags.Remove(xiiMeshRenderDataFlags::ForceLOD);
+    front.m_fLodBias = 0;
+    XII_TEST_BOOL(pass->Pick(*view, 24, 28, hit).Failed());
+    if (!render() || !render())
+      return;
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Material resource reload rejects old images and refreshes native coverage")
   {

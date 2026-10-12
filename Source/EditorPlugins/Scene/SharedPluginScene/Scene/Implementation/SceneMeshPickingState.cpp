@@ -33,9 +33,17 @@ void xiiSceneMeshPickingState::OnResourceEvent(const xiiResourceEvent& event)
     m_ResourceEpoch.Increment(); // Loader threads never mutate readback or owner storage.
 }
 
-xiiUInt64 xiiSceneMeshPickingState::MaterialSignature(const xiiMeshComponentBase& component)
+xiiUInt64 xiiSceneMeshPickingState::ConfigurationSignature(const xiiMeshComponentBase& component)
 {
-  xiiUInt64 signature = 0;
+  const auto section   = component.GetSectionIndex();
+  xiiUInt64  signature = xiiHashingUtils::xxHash64(&section, sizeof(section));
+  if (const auto* lod = xiiDynamicCast<const xiiLODMeshComponent*>(&component))
+  {
+    const auto forced = lod->GetForcedLOD();
+    const auto bias   = lod->GetLodBias();
+    signature         = xiiHashingUtils::xxHash64(&forced, sizeof(forced), signature);
+    signature         = xiiHashingUtils::xxHash64(&bias, sizeof(bias), signature);
+  }
   for (const auto& material : component.GetMaterialOverrides())
   {
     const auto id = material.GetResourceIDHash();
@@ -121,9 +129,9 @@ xiiResult xiiSceneMeshPickingState::Capture(xiiRenderPipelinePassContext& contex
     if (!context.m_pView->GetWorld()->TryGetObject(owner.m_Source.m_hOwnerObject, object) ||
         !context.m_pView->GetWorld()->TryGetComponent(owner.m_Source.m_hOwnerComponent, component) || component->GetOwner() != object)
       return XII_FAILURE;
-    owner.m_Transform   = object->GetGlobalTransform();
-    owner.m_hMesh       = component->GetMesh();
-    owner.m_uiMaterials = MaterialSignature(*component);
+    owner.m_Transform       = object->GetGlobalTransform();
+    owner.m_hMesh           = component->GetMesh();
+    owner.m_uiConfiguration = ConfigurationSignature(*component);
     owners.Insert(instance.m_uiObjectId, std::move(owner));
   }
   return XII_SUCCESS;
@@ -139,7 +147,7 @@ bool xiiSceneMeshPickingState::Resolve(const xiiView& view, xiiUInt32 id, const 
   if (!view.GetWorld()->TryGetObject(out_owner->m_Source.m_hOwnerObject, object) ||
       !view.GetWorld()->TryGetComponent(out_owner->m_Source.m_hOwnerComponent, component) || component->GetOwner() != object ||
       !object->IsActive() || !component->IsActive() || object->GetGlobalTransform() != out_owner->m_Transform ||
-      component->GetMesh() != out_owner->m_hMesh || MaterialSignature(*component) != out_owner->m_uiMaterials)
+      component->GetMesh() != out_owner->m_hMesh || ConfigurationSignature(*component) != out_owner->m_uiConfiguration)
     return false;
   const auto& tags = object->GetTags();
   return !tags.IsAnySet(view.m_ExcludeTags) && (view.m_IncludeTags.IsEmpty() || tags.IsAnySet(view.m_IncludeTags));

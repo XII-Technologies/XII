@@ -25,10 +25,10 @@ public:
     xiiSceneMeshSource    m_Source;
     xiiTransform          m_Transform;
     xiiMeshResourceHandle m_hMesh;
-    xiiUInt64             m_uiMaterials = 0;
+    xiiUInt64             m_uiConfiguration = 0;
   };
 
-  static xiiUInt64 MaterialSignature(const xiiMeshComponentBase& component);
+  static xiiUInt64 ConfigurationSignature(const xiiMeshComponentBase& component);
   void             Invalidate();
   xiiResult        Poll();
   xiiResult        ResizeVisibility(xiiUInt32 instances, xiiUInt64 meshletCount);
