@@ -66,7 +66,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     xiiView* view = nullptr;
     owner.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Debug rendering test", view);
     view->SetCamera(&camera);
-    view->SetViewport({0, 0, 64, 64});
+    const auto& size = color->GetDescription().m_Size;
+    view->SetViewport({0, 0, static_cast<float>(size.width), static_cast<float>(size.height)});
     view->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
     view->SetRenderGraphBuilder([&](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
       graph.AddPass<ClearData>("Debug test clear", xiiGALCommandQueueFlags::Graphics, [&](ClearData& data, xiiRenderGraphBuilder& builder) {
@@ -74,7 +75,16 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
           data.m_Depth = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, depth, depth->GetResourceState()), xiiGALResourceStateFlags::DepthWrite); }, [&](const ClearData& data, xiiRenderGraphPassContext& context) {
           auto& commandList = context.GetCommandList();
           commandList.ClearRenderTargetView(context.GetTexture(data.m_Color)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
-          commandList.ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, clearDepth, 0); }, true);
+          commandList.ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, clearDepth, 0);
+          // Out-of-render-pass clears may use transfers. Honor the states declared to the graph.
+          xiiGALStateTransitionDescription transitions[2];
+          transitions[0].m_pResource = context.GetTexture(data.m_Color);
+          transitions[0].m_NewState = xiiGALResourceStateFlags::RenderTarget;
+          transitions[0].m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+          transitions[1].m_pResource = context.GetTexture(data.m_Depth);
+          transitions[1].m_NewState = xiiGALResourceStateFlags::DepthWrite;
+          transitions[1].m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+          commandList.TransitionResourceStates(xiiMakeArrayPtr(transitions)); }, true);
       xiiDebugRenderer::AddRenderGraphPasses(graph);
       graph.AddPass<ClearData>("Debug test capture", xiiGALCommandQueueFlags::Graphics, [&](ClearData& data, xiiRenderGraphBuilder& builder) {
           data.m_Color = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::CopySource);
@@ -92,10 +102,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
   XII_TEST_BOOL(first->GetExtractedRenderData()->GetWorldDebugContext() == xiiDebugRendererContext(&world));
 
   auto checkCenter = [&](xiiUInt8 red, xiiUInt8 green, xiiUInt8 blue) {
-    xiiImage image;
-    if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, image)))
+    xiiImage    image;
+    const auto& size = capturedColor->GetDescription().m_Size;
+    if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, size, image)))
     {
-      const auto* pixel = image.GetPixelPointer<xiiUInt8>(0, 0, 0, 32, 32);
+      const auto* pixel = image.GetPixelPointer<xiiUInt8>(0, 0, 0, size.width / 2, size.height / 2);
       XII_TEST_INT(pixel[0], red);
       XII_TEST_INT(pixel[1], green);
       XII_TEST_INT(pixel[2], blue);
@@ -116,6 +127,44 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
   checkCenter(0, 0, 255);
   world.Update();
   checkCenter(0, 0, 0);
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Reduced-resolution depth preserves debug occlusion on an odd display target")
+  {
+    environment.GetDevice()->WaitIdle();
+    const auto originalColor   = color;
+    const auto originalCapture = capturedColor;
+    const auto originalDepth   = depth;
+    auto       display         = colorDescription;
+    display.m_Size             = {65, 63};
+    color                      = environment.GetDevice()->CreateTexture(display);
+    capturedColor              = environment.GetDevice()->CreateTexture(display);
+    auto sceneDepth            = depthDescription;
+    sceneDepth.m_Size          = {32, 30};
+    sceneDepth.m_BindFlags |= xiiGALBindFlags::ShaderResource;
+    depth = environment.GetDevice()->CreateTexture(sceneDepth);
+    first->SetViewport({0, 0, 65, 63});
+    first->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+
+    clearDepth = 1.0f;
+    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
+    world.Update();
+    checkCenter(255, 0, 0);
+    clearDepth = 0.0f;
+    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
+    world.Update();
+    checkCenter(0, 0, 0);
+    xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Blue, xiiDebugRendererDepthMode::Overlay);
+    world.Update();
+    checkCenter(0, 0, 255);
+
+    environment.GetDevice()->WaitIdle();
+    color         = originalColor;
+    capturedColor = originalCapture;
+    depth         = originalDepth;
+    clearDepth    = 1.0f;
+    first->SetViewport({0, 0, 64, 64});
+    first->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Skeleton preview geometry reaches the GPU through regular debug passes")
   {

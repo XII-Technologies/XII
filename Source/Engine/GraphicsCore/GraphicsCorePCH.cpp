@@ -52,6 +52,7 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Components_Implementation_SkyBoxComponent);
   XII_STATICLINK_REFERENCE(GraphicsCore_Components_Implementation_SpriteComponent);
   XII_STATICLINK_REFERENCE(GraphicsCore_Components_Implementation_SpriteRenderer);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Debug_Implementation_DebugDepth);
   XII_STATICLINK_REFERENCE(GraphicsCore_Debug_Implementation_DebugRenderer);
   XII_STATICLINK_REFERENCE(GraphicsCore_Debug_Implementation_DebugTextComponent);
   XII_STATICLINK_REFERENCE(GraphicsCore_Debug_Implementation_Inconsolata);

@@ -7,6 +7,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Debug/Implementation/DebugDepth.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -2559,7 +2560,7 @@ void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, 
 {
   data.m_hSyncToken  = builder.ReadBuffer("DebugUploadSyncToken", xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneColor = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-  data.m_hSceneDepth = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hSceneDepth = builder.ReadWriteTexture(data.m_hSceneDepth, xiiGALResourceStateFlags::DepthWrite);
   builder.SetPassRenderPassManaged();
 
   builder.SetPassAllowMerge(false);
@@ -2616,8 +2617,16 @@ void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData
 // static
 void xiiDebugRenderer::AddRenderGraphPasses(xiiRenderGraph& graph)
 {
+  const auto depth = xiiDebugRendererInternal::PrepareDepth(graph);
+  if (!depth.IsValid())
+  {
+    xiiLog::Error("Could not prepare scene depth for display-resolution debug drawing.");
+    return;
+  }
   graph.AddPass<xiiDebugUploadData>("DebugUpload", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugUpload), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugUpload));
-  graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugVisualization), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugVisualization));
+  graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, [depth](xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder) {
+    data.m_hSceneDepth = depth;
+    SetupDebugVisualization(data, builder); }, xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugVisualization));
 }
 
 void xiiDebugRenderer::ClearContext(const xiiDebugRendererContext& context)
