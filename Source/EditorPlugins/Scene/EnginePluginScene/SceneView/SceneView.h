@@ -11,15 +11,8 @@ class xiiView;
 class xiiViewRedrawMsgToEngine;
 class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
-class xiiEditorRenderPass;
 class xiiSceneContext;
 class xiiViewMarqueePickingMsgToEngine;
-
-struct ObjectData
-{
-  xiiMat4 m_ModelView;
-  float   m_PickingID[4];
-};
 
 class xiiSceneViewContext : public xiiEngineProcessViewContext
 {
@@ -47,8 +40,6 @@ private:
   void UpdateCameraPreview(bool bRenderEditorGizmos);
 
   xiiSceneContext* m_pSceneContext;
-
-  bool m_bUpdatePickingData;
 
   xiiCamera             m_CullingCamera;
   xiiSceneCameraPreview m_CameraPreview;

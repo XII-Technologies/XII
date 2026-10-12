@@ -1661,3 +1661,38 @@ migration progresses; no requirement is waived because a subsystem is difficult.
   `Workspace/editor-native-scene-default-build.log` and
   `Workspace/editor-native-scene-default-tests.log`. Full scene plugin linking,
   viewport appearance and integrated GUI workflows remain unverified.
+
+## Native scene picking and selection composition
+
+- Scene view composition now belongs to `xiiSceneRenderPipeline`, using the native
+  pipeline resource descriptor. Interactive mesh queries, selected-only surfaces,
+  selection color composition, shape icons and debug rendering remain separate
+  reflected passes. Query passes share native frame geometry/material tables and
+  own independent scene membership and visibility state. Selected-only surfaces
+  require no CPU readback and do not change interactive click-through filtering.
+- The selection compositor compares native reversed depth and renders visible and
+  occluded outlines plus configurable interior tint. It supports independent scene
+  depth/query resolutions and nonzero output viewport origins, preserves output
+  alpha and bypasses itself when selection is disabled or empty.
+- SceneView consumes native query results and pipeline parameters instead of
+  removed RenderWorld pass properties. Full native owner/component identities and
+  section indices reach the existing picking IPC, with GUID resolution across
+  scene/layer contexts. Overlay gizmos retain priority; ordinary gizmos require
+  available scene depth. Marquee queries deduplicate native owners and preserve
+  the request action identifier. Thumbnail cameras consume authored native camera
+  settings and disable interactive query work.
+- EnginePluginScene, EditorEngineProcess and EditorEngineProcessFrameworkTest now
+  build in Windows Debug. This supersedes earlier EnginePluginScene compile
+  blockers recorded above. All 42 Vulkan engine-process tests and all 18
+  GraphicsCore tests pass. GPU tests cover native identity and section 1024,
+  viewport/camera/transform/deletion invalidation, per-view capture isolation,
+  selected-object click-through, outline/interior/background pixels, visible and
+  occluded selection, disabled composition and same-handle material reloads.
+  Evidence: `Workspace/editor-scene-selection-build.log`,
+  `Workspace/editor-scene-selection-tests.log` and
+  `Workspace/editor-scene-selection-core-tests.log`.
+- These tests exercise real GPU graph execution and shared scene passes. They do
+  not establish integrated Qt scene-window IPC, layered editing, gizmo interaction
+  or rendering parity for unsupported native deformation/indexed fallback paths.
+  Same-handle mesh geometry reload handling and full Editor/plugin verification
+  remain outstanding at this checkpoint. The overall modernization is incomplete.
