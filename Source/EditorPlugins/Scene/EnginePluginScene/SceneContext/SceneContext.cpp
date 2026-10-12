@@ -590,6 +590,15 @@ xiiStatus xiiSceneContext::OnInitialize()
 
 void xiiSceneContext::OnDeinitialize()
 {
+  // A document can close before the asynchronous Stop Play request is processed.
+  // Deactivate while its borrowed world and render module still exist: the game state
+  // releases its main view and windows here, before the base context destroys the world.
+  if (m_pWorld != nullptr && s_pWorldLinkedWithGameState == m_pWorld)
+  {
+    xiiGameApplicationBase::GetGameApplicationBaseInstance()->DeactivateGameState();
+    s_pWorldLinkedWithGameState = nullptr;
+  }
+
   m_Selection.Clear();
   m_SelectionWithChildren.Clear();
   m_SelectionWithChildrenSet.Clear();

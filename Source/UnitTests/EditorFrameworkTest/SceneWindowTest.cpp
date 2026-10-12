@@ -202,6 +202,12 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       view->SyncToEngine();
       PumpUntil([] { return false; }, 200);
       XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed());
+
+      // Closing the document can precede processing the asynchronous request to stop Play.
+      // The engine context must release the game state's world references before world destruction.
+      scene->TriggerGameModePlay(false);
+      if (!XII_TEST_BOOL(PumpUntil([&] { return scene->GetGameMode() == GameMode::Play; }, 10000)))
+        return;
     }
   }
   else
@@ -226,4 +232,19 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
     XII_TEST_VEC3(position.Get<xiiVec3>(), xiiVec3(4, 0, 0), 0.001f);
   }
   XII_TEST_STATUS(scene->WaitForEngineStatusLoaded(xiiTime::MakeFromSeconds(10)));
+  PumpUntil([] { return false; }, 500);
+  XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed());
+  if (reopenedSphere != nullptr)
+  {
+    // Require a fresh reply after the game state has ticked. A crash handler may still be
+    // resolving symbols, so the child merely being alive is insufficient evidence.
+    scene->GetSelectionManager()->SetSelection(reopenedSphere);
+    scene->SendObjectSelection();
+    xiiQuerySelectionBBoxMsgToEngine query;
+    query.m_uiViewID = xiiInvalidIndex;
+    query.m_iPurpose = 2;
+    XII_TEST_BOOL(scene->SendMessageToEngine(&query));
+    XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID,
+                                                                                             xiiGetStaticRTTI<xiiQuerySelectionBBoxResultMsgToEditor>(), xiiTime::MakeFromSeconds(5)));
+  }
 }

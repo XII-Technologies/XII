@@ -2810,3 +2810,31 @@ mode and closing the scene. That evidence remains under
 `Workspace/TestOutput/editor-duplicate-native/Logs`; scene closure during Play is
 being investigated separately rather than treating the test runner as sufficient
 proof of child-process lifecycle correctness.
+
+### Closing A Scene During Play
+
+Explicitly entering Play mode and immediately closing the document reproduces a
+second, independent access violation. The game state borrows the scene context's
+world and owns a main render view and windows. Context teardown destroyed the world
+without deactivating that state; an asynchronous Stop Play request could not
+establish the required lifetime boundary. The next game-state update or teardown
+then accessed the deleted world. The deterministic baseline fails the integration
+test and logs `c0000005` and a lost IPC connection:
+`Workspace/editor-play-close-baseline-tests.log` and its corresponding engine log
+under `Workspace/TestOutput/editor-play-close-baseline/Logs`.
+
+The scene context now deactivates its linked game state before clearing the mirror,
+render views and world, using the existing game-application lifecycle. This releases
+the state's view and windows while their world is valid and clears the borrowed
+world link. Other documents' game states are unaffected. The integration fixture
+now starts Play explicitly, closes the scene, reopens it, and requires a fresh
+selection-bounds reply after another update interval. A child process which is
+still alive inside its crash handler cannot satisfy that check.
+
+Debug builds of EditorFrameworkTest and EditorEngineProcess pass
+(`Workspace/editor-play-close-fixed-build.log`). All eleven Qt subtests pass with
+Vulkan synchronization validation (`Workspace/editor-play-close-fixed-tests.log`),
+including the previously failing close-during-Play path and the fresh reply from the
+reopened world. The final engine log records Play startup and contains no access
+violation, allocation failure or Vulkan validation errors. This remains Windows
+Debug/Vulkan verification; other configurations have not been exercised.
