@@ -22,7 +22,7 @@
 #include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 
-XII_CREATE_SIMPLE_TEST(NativeSceneLod, Reload)
+static void RunSceneLodReload(bool skinned)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
@@ -67,8 +67,22 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Reload)
   auto*          renderer = world.GetOrCreateModule<xiiRenderWorldModule>();
   xiiGameObject* object   = nullptr;
   world.CreateObject(xiiGameObjectDescription(), object);
-  xiiLODMeshComponent* component = nullptr;
-  xiiLODMeshComponent::CreateComponent(object, component);
+  xiiMeshComponentBase*    component        = nullptr;
+  xiiLODMeshComponent*     lodComponent     = nullptr;
+  xiiSkinnedMeshComponent* skinnedComponent = nullptr;
+  xiiMat4                  palette          = xiiMat4::MakeTranslation(xiiVec3(0, 1, 0));
+  if (skinned)
+  {
+    object->MakeDynamic();
+    xiiSkinnedMeshComponent::CreateComponent(object, skinnedComponent);
+    XII_TEST_RESULT(skinnedComponent->SetSkinningMatrices(xiiMakeArrayPtr(&palette, 1)));
+    component = skinnedComponent;
+  }
+  else
+  {
+    xiiLODMeshComponent::CreateComponent(object, lodComponent);
+    component = lodComponent;
+  }
   component->SetMesh(mesh);
   world.Update();
   xiiCamera camera;
@@ -98,6 +112,22 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Reload)
   XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, 1));
   XII_TEST_INT(primary.GetDatabase().GetObjectCount(), 2);
   XII_TEST_INT(delayed.GetDatabase().GetObjectCount(), 2);
+  auto checkPose = [&](const xiiSceneDatabase& database, float offset) {
+    if (!skinned)
+      return;
+    // All sections/LODs share one current palette. Reload resets history in each
+    // context when that context adopts the new geometry, without changing its peers.
+    XII_TEST_INT(database.GetGpuSkinningMatrices().GetCount(), 1);
+    for (const auto& instance : database.GetGpuInstances())
+    {
+      XII_TEST_INT(instance.m_uiSkinningCount, 1);
+      XII_TEST_INT(instance.m_uiPreviousSkinningCount, 1);
+      XII_TEST_INT(instance.m_uiSkinningOffset, instance.m_uiPreviousSkinningOffset);
+      XII_TEST_FLOAT(database.GetGpuSkinningMatrices()[instance.m_uiSkinningOffset].GetTranslationVector().y, offset, 0);
+    }
+  };
+  checkPose(primary.GetDatabase(), 1);
+  checkPose(delayed.GetDatabase(), 1);
   xiiUInt32 retainedId = 0, retiredId = 0;
   for (const auto& instance : primary.GetDatabase().GetGpuInstances())
   {
@@ -149,7 +179,13 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Reload)
   }
   if (!publish(true))
     return;
-  component->SetLodBias(2);
+  if (lodComponent != nullptr)
+    lodComponent->SetLodBias(2);
+  if (skinnedComponent != nullptr)
+  {
+    palette = xiiMat4::MakeTranslation(xiiVec3(0, 3, 0));
+    XII_TEST_RESULT(skinnedComponent->SetSkinningMatrices(xiiMakeArrayPtr(&palette, 1)));
+  }
   extract();
   XII_TEST_RESULT(primary.SynchronizeExtractedMeshes(extracted, 2));
   XII_TEST_INT(primary.GetDatabase().GetObjectCount(), 3);
@@ -164,7 +200,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Reload)
   for (const auto& instance : primary.GetDatabase().GetGpuInstances())
   {
     XII_TEST_INT(instance.m_uiGeometryIndex, newGeometry.GetInternalID().m_InstanceIndex);
-    XII_TEST_FLOAT(instance.m_fLodBias, 2, 0);
+    XII_TEST_FLOAT(instance.m_fLodBias, skinned ? 0 : 2, 0);
   }
   for (const auto& instance : delayed.GetDatabase().GetGpuInstances())
   {
@@ -173,8 +209,21 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Reload)
     XII_TEST_RESULT(xiiSceneDatabaseManager::ResolveExtractedMesh(delayed.GetHandle(), instance.m_uiObjectId, source));
     XII_TEST_INT(source.m_uiMaterialIndex, source.m_uiSectionIndex + 1);
   }
+  checkPose(primary.GetDatabase(), 3);
+  checkPose(delayed.GetDatabase(), 1);
   XII_TEST_RESULT(delayed.SynchronizeExtractedMeshes(extracted, 3));
   XII_TEST_INT(delayed.GetDatabase().GetObjectCount(), 3);
   for (const auto& instance : delayed.GetDatabase().GetGpuInstances())
     XII_TEST_INT(instance.m_uiGeometryIndex, newGeometry.GetInternalID().m_InstanceIndex);
+  checkPose(delayed.GetDatabase(), 3);
+}
+
+XII_CREATE_SIMPLE_TEST(NativeSceneLod, Reload)
+{
+  RunSceneLodReload(false);
+}
+
+XII_CREATE_SIMPLE_TEST(SkinningRaster, ReloadAndContextIsolation)
+{
+  RunSceneLodReload(true);
 }

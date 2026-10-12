@@ -60,14 +60,10 @@ namespace
   }
   xiiResult SynchronizeMesh(xiiSceneDatabaseManagerState::Slot& slot, const xiiMeshRenderData& renderData,
                             const xiiSceneDatabaseManagerState::MeshKey& key, xiiUInt32 materialIndex,
-                            xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiUInt64 uiFrameIndex, xiiUInt64 synchronization, xiiSceneObjectHandle& inout_hLodRepresentative)
+                            xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, const xiiExtractedMeshSkinning& skinning,
+                            xiiUInt64 uiFrameIndex, xiiUInt64 synchronization, xiiSceneObjectHandle& inout_hLodRepresentative)
   {
-    auto&           scene     = *slot.m_pDatabase;
-    xiiResourceLock<xiiMeshResource> meshDefinition(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
-    if (meshDefinition.GetAcquireResult() != xiiResourceAcquireResult::Final)
-      return XII_SUCCESS;
-    xiiExtractedMeshSkinning skinning;
-    XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*meshDefinition.GetPointer(), renderData, skinning));
+    auto&           scene                = *slot.m_pDatabase;
     bool            resetSkinningHistory = true;
     const xiiUInt32 forcedLod = renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? renderData.m_uiLODIndex : xiiInvalidIndex;
     const auto      hMaterial = materialIndex < renderData.m_hMaterials.GetCount() ? renderData.m_hMaterials[materialIndex] : xiiMaterialResourceHandle{};
@@ -177,6 +173,10 @@ namespace
     if (inout_hLodRepresentative.IsInvalidated())
       XII_SUCCEED_OR_RETURN(scene.SetSkinningPalette(pEntry->m_hSceneObject, renderData.m_SkinningMatrices,
                                                      skinning.m_uiVertexStride, skinning.m_uiBoneIndicesOffset, skinning.m_uiBoneWeightsOffset, resetSkinningHistory));
+    else
+      // Reload can make a surviving representative a member of a new section group.
+      // Its private history is obsolete once it follows the new representative.
+      XII_SUCCEED_OR_RETURN(scene.SetSkinningPalette(pEntry->m_hSceneObject, {}, 0, 0, 0, true));
     scene.SetPrimitiveRange(pEntry->m_hSceneObject, uiFirstPrimitive, uiPrimitiveCount);
     XII_SUCCEED_OR_RETURN(scene.SetLodSelection(pEntry->m_hSceneObject, forcedLod, renderData.m_fLodBias, key.m_uiLodIndex));
     XII_SUCCEED_OR_RETURN(scene.SetLodGroup(pEntry->m_hSceneObject, inout_hLodRepresentative));
@@ -223,8 +223,13 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     xiiSceneDatabaseManagerState::MeshKey key{renderData.m_hOwnerObject, renderData.m_hOwnerComponent, renderData.m_uiUniqueID, renderData.m_uiSectionIndex};
     if (renderData.m_RangeMode == xiiMeshRenderData::RangeMode::PrimitiveRange)
     {
+      xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
+      if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+        continue;
+      xiiExtractedMeshSkinning skinning;
+      XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*mesh.GetPointer(), renderData, skinning));
       xiiSceneObjectHandle representative;
-      XII_SUCCEED_OR_RETURN(SynchronizeMesh(*pSlot, renderData, key, SelectMaterialIndex(renderData), renderData.m_uiFirstPrimitive, renderData.m_uiPrimitiveCount, uiFrameIndex, synchronization, representative));
+      XII_SUCCEED_OR_RETURN(SynchronizeMesh(*pSlot, renderData, key, SelectMaterialIndex(renderData), renderData.m_uiFirstPrimitive, renderData.m_uiPrimitiveCount, skinning, uiFrameIndex, synchronization, representative));
       continue;
     }
 
@@ -238,6 +243,9 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
     xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
     if (mesh->GetLoadingState() != xiiResourceState::Loaded)
       continue;
+    // Pose bounds and stream validation are shared by every candidate in this group.
+    xiiExtractedMeshSkinning skinning;
+    XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*mesh.GetPointer(), renderData, skinning));
     const auto           lods = mesh->GetLODs();
     xiiSceneObjectHandle representative;
     for (xiiUInt32 lodIndex = 0; lodIndex < lods.GetCount(); ++lodIndex)
@@ -254,7 +262,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
           continue;
         key.m_uiSectionIndex = sectionIndex;
         key.m_uiLodIndex     = lodIndex;
-        XII_SUCCEED_OR_RETURN(SynchronizeMesh(*pSlot, renderData, key, section.m_uiMaterialIndex, section.m_uiFirstPrimitive, section.m_uiPrimitiveCount, uiFrameIndex, synchronization, representative));
+        XII_SUCCEED_OR_RETURN(SynchronizeMesh(*pSlot, renderData, key, section.m_uiMaterialIndex, section.m_uiFirstPrimitive, section.m_uiPrimitiveCount, skinning, uiFrameIndex, synchronization, representative));
       }
     }
   }
