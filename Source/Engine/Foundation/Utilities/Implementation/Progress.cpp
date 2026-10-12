@@ -257,5 +257,3 @@ bool xiiProgressRange::WasCanceled() const
 
   return true;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_Progress);

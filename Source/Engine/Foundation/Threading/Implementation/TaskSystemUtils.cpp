@@ -161,5 +161,3 @@ void xiiTaskSystem::WriteStateSnapshotToFile(xiiStringView sPath /*= {}*/)
   xiiFileSystem::ResolvePath(sPathBuilder, &absPath, nullptr).IgnoreResult();
   xiiLog::Info("Task graph snapshot saved to '{}'", absPath);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystemUtils);

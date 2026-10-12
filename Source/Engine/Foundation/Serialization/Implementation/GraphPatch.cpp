@@ -28,5 +28,3 @@ xiiGraphPatch::PatchType xiiGraphPatch::GetPatchType() const
 {
   return m_PatchType;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_GraphPatch);

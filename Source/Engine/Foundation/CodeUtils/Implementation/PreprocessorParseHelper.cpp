@@ -71,5 +71,3 @@ xiiResult xiiPreprocessor::ExpectEndOfLine(const TokenStream& Tokens, xiiUInt32 
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_PreprocessorParseHelper);

@@ -166,5 +166,3 @@ void xiiMessageLoop_linux::WakeUp()
 }
 
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Linux_MessageLoop_linux);

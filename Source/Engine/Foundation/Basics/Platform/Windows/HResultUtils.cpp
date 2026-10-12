@@ -25,5 +25,3 @@ XII_FOUNDATION_DLL xiiString xiiHRESULTtoString(xiiMinWindows::HRESULT result)
 }
 
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Basics_Platform_Win_HResultUtils);

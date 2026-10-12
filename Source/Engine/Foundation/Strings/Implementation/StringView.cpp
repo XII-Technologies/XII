@@ -324,5 +324,3 @@ xiiStringView::operator std::string_view() const
   return GetAsStdView();
 }
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringView);

@@ -293,5 +293,3 @@ void xiiCommandLineUtils::InjectCustomArgument(xiiStringView sArgument)
 {
   m_Commands.PushBack(sArgument);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_CommandLineUtils);

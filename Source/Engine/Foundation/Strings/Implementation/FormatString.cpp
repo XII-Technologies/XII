@@ -482,5 +482,3 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode
   return xiiStringView(szTmp);
 }
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_FormatString);

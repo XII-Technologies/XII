@@ -15,3 +15,5 @@ xiiAbstractProperty ::~xiiAbstractProperty()
     delete pAttrib;
   }
 }
+
+XII_STATICLINK_FILE(Foundation, Foundation_Reflection_Implementation_AbstractProperty);

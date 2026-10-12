@@ -588,7 +588,3 @@ xiiResult xiiPreprocessor::ExpandMacroParam(const xiiToken& MacroToken, xiiUInt3
 
   return XII_SUCCESS;
 }
-
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Expand);

@@ -160,5 +160,3 @@ void xiiLogWriter::Console::SetTimestampMode(xiiLog::TimestampMode mode)
 {
   s_TimestampMode = mode;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_ConsoleWriter);

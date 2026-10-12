@@ -10,5 +10,3 @@ const xiiMap<size_t, xiiSingletonRegistry::SingletonEntry>& xiiSingletonRegistry
 {
   return s_Singletons;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Configuration_Implementation_Singleton);

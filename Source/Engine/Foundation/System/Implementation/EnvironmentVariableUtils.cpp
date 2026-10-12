@@ -70,5 +70,3 @@ xiiResult xiiEnvironmentVariableUtils::UnsetVariable(xiiStringView sName)
 #else
 #  include <Foundation/Platform/Implementation/Posix/EnvironmentVariableUtils_posix.h>
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_EnvironmentVariableUtils);

@@ -236,5 +236,3 @@ xiiResult xiiDGMLGraphWriter::WriteGraphToString(xiiStringBuilder& ref_sStringBu
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_DGMLWriter);

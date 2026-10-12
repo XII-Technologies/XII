@@ -467,5 +467,3 @@ xiiResult xiiArchiveUtils::ExtractTOC(const xiiMemoryMappedFile& memFile, xiiArc
 {
   return ExtractTOC(memFile.GetFileSize(), memFile.GetReadPointer(), ref_toc, uiArchiveVersion);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_ArchiveUtils);

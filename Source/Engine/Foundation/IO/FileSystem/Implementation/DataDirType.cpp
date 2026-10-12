@@ -41,5 +41,3 @@ void xiiDataDirectoryReaderWriterBase::Close()
 
   m_pDataDirType->OnReaderWriterClose(this);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_FileSystem_Implementation_DataDirType);

@@ -27,5 +27,3 @@ void xiiScreen::PrintScreenInfo(const xiiHybridArray<xiiScreenInfo, 2>& screens,
     xiiLog::Dev(pLog, "'{0}': Offset = ({1}, {2}), Resolution = ({3}, {4}){5}", screen.m_sDisplayName, screen.m_iOffsetX, screen.m_iOffsetY, screen.m_iResolutionX, screen.m_iResolutionY, screen.m_bIsPrimary ? " (primary)" : "");
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_Screen);

@@ -163,5 +163,3 @@ void xiiJSONReader::OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt3
 
   m_bParsingError = true;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_JSONReader);

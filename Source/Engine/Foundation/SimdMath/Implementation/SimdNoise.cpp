@@ -124,5 +124,3 @@ xiiSimdVec4f xiiSimdPerlinNoise::Noise(const xiiSimdVec4f& inX, const xiiSimdVec
 
   return Lerp(w, Lerp(v, c000_c100, c010_c110), Lerp(v, c001_c101, c011_c111));
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_SimdMath_Implementation_SimdNoise);

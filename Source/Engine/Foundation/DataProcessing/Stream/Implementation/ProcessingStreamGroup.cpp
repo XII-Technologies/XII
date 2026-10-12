@@ -289,5 +289,3 @@ void xiiProcessingStreamGroup::SortProcessorsByPriority()
   ProcessorComparer cmp;
   m_Processors.Sort(cmp);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_DataProcessing_Stream_Implementation_ProcessingStreamGroup);

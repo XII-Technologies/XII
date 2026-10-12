@@ -39,5 +39,3 @@ xiiETWProvider& xiiETWProvider::GetInstance()
   return instance;
 }
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_Linux_ETWProvider_linux);

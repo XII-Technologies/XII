@@ -352,5 +352,3 @@ xiiStringView xiiTranslatorMakeMoreReadable::Translate(xiiStringView sString, xi
 
   return xiiTranslatorStorage::Translate(sString, uiStringHash, usage);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_TranslationLookup);

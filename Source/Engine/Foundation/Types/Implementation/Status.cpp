@@ -53,5 +53,3 @@ void xiiStatus::AssertSuccess(const char* szMsg /*= nullptr*/) const
     XII_REPORT_FAILURE("An operation failed unexpectedly.", m_sMessage);
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Types_Implementation_Status);

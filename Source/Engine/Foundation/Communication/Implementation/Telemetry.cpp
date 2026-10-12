@@ -550,5 +550,3 @@ void xiiTelemetry::CloseConnection()
   }
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Telemetry);

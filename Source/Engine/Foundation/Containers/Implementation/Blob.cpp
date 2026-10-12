@@ -72,5 +72,3 @@ bool xiiBlob::IsEmpty() const
 {
   return 0 == m_uiSize;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Containers_Implementation_Blob);

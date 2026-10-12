@@ -151,5 +151,3 @@ xiiUInt64 xiiFileReader::ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead)
   // Return how much was read
   return uiBufferPosition;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_FileSystem_Implementation_FileReader);

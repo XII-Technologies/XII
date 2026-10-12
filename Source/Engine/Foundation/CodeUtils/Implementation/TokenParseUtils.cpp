@@ -259,5 +259,3 @@ namespace xiiTokenParseUtils
     }
   }
 } // namespace xiiTokenParseUtils
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_TokenParseUtils);

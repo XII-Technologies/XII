@@ -679,5 +679,3 @@ xiiResult xiiTokenizer::GetNextLine(xiiUInt32& ref_uiFirstToken, xiiHybridArray<
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Tokenizer);

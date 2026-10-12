@@ -96,6 +96,3 @@ void xiiLogWriter::VisualStudio::LogMessageHandler(const xiiLoggingEventData& ev
 void xiiLogWriter::VisualStudio::LogMessageHandler(const xiiLoggingEventData& eventData) {}
 
 #endif
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_VisualStudioWriter);

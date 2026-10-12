@@ -378,5 +378,3 @@ void xiiStringUtf32::operator=(const wchar_t* pWChar)
   // append terminator
   m_Data.PushBack('\0');
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringConversion);

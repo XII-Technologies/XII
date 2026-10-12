@@ -313,5 +313,3 @@ bool xiiPathUtils::IsSubPath_NoCase(xiiStringView sPrefixPath, xiiStringView sFu
 
   return false;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_PathUtils);

@@ -36,5 +36,3 @@ void xiiLogWriter::ETW::LogMessageHandler(const xiiLoggingEventData& eventData) 
 void xiiLogWriter::ETW::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, xiiStringView sText) {}
 
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_ETWWriter);

@@ -545,5 +545,3 @@ xiiResult xiiPreprocessor::HandleWarningDirective(const TokenStream& Tokens, xii
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Preprocessor);

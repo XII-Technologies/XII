@@ -2420,5 +2420,3 @@ XII_FOUNDATION_DLL void xiiOpenDdlUtils::StoreInvalid(xiiOpenDdlWriter& ref_writ
   ref_writer.BeginObject("Invalid", sName, bGlobalName, true);
   ref_writer.EndObject();
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OpenDdlUtils);

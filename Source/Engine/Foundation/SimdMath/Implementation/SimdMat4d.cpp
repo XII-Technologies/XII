@@ -19,5 +19,3 @@ xiiResult xiiSimdMat4d::Invert(const xiiSimdDouble& fEpsilon)
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_SimdMath_Implementation_SimdMat4d);

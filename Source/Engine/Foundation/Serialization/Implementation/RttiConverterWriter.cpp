@@ -456,5 +456,3 @@ void xiiRttiConverterWriter::AddProperties(xiiAbstractObjectNode* pNode, const x
     AddProperty(pNode, pProp, pObject);
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_RttiConverterWriter);

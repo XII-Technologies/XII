@@ -119,5 +119,3 @@ namespace xiiCompressionUtils
     }
   }
 } // namespace xiiCompressionUtils
-
-XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_Compression);

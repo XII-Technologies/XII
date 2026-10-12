@@ -413,13 +413,11 @@ xiiPlugin::Init::Init(xiiStringView sAddPluginDependency)
 }
 
 #if XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
-xiiPluginRegister::xiiPluginRegister(xiiStringView sAddPlugin)
+xiiPluginRegister::xiiPluginRegister(const char* szName)
 {
   if (g_pCurrentlyLoadingModule == nullptr)
   {
-    GetStaticPlugins().PushBack(sAddPlugin);
+    GetStaticPlugins().PushBack(szName);
   }
 }
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Configuration_Implementation_Plugin);

@@ -302,7 +302,3 @@ xiiResult xiiPreprocessor::HandleInclude(const TokenStream& Tokens0, xiiUInt32 u
 
   return XII_SUCCESS;
 }
-
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_FileHandling);

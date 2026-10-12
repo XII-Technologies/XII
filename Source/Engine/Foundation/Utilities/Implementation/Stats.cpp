@@ -45,5 +45,3 @@ void xiiStats::SetStat(xiiStringView sStatName, const xiiVariant& value)
 
   s_StatsEvents.Broadcast(e);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_Stats);

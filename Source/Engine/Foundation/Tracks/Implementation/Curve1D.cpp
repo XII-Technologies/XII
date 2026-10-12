@@ -567,5 +567,3 @@ void xiiCurve1D::MakeAutoTangentRight(xiiUInt32 uiCpIdx)
 
   tCP.m_RightTangent.Set((float)tangent.x, (float)tangent.y);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Tracks_Implementation_Curve1D);

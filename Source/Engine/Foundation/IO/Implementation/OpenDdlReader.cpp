@@ -381,5 +381,3 @@ const xiiOpenDdlReaderElement* xiiOpenDdlReaderElement::FindChildOfType(xiiStrin
 
   return nullptr;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OpenDdlReader);

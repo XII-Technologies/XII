@@ -32,5 +32,3 @@ xiiUuid xiiUuid::MakeStableUuidFromInt(xiiInt64 iInt)
 
   return NewUuid;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_UuidGenerator);

@@ -113,5 +113,3 @@ void xiiIpcChannelEnet::EnetEventHandler(const xiiRemoteEvent& e)
 }
 
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_IpcChannelEnet);

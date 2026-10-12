@@ -1099,5 +1099,3 @@ xiiUInt32 xiiStringUtils::CalculateLineNumber(const char* szString, const char* 
 
   return uiLine;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_snprintf);

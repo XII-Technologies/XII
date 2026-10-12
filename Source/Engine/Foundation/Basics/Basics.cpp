@@ -87,5 +87,3 @@ xiiAllocator* xiiFoundation::GetStaticAllocator()
 
   return pStaticAllocator;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Basics_Basics);

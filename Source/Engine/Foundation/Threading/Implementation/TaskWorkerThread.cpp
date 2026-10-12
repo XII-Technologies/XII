@@ -179,5 +179,3 @@ double xiiTaskWorkerThread::GetThreadUtilization(xiiUInt32* pNumTasksExecuted /*
 
   return m_fLastThreadUtilization;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskWorkerThread);

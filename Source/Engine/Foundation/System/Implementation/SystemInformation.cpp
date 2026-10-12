@@ -245,5 +245,3 @@ void xiiCpuFeatures::Detect()
 }
 
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_SystemInformation);

@@ -1375,6 +1375,3 @@ namespace xiiConversionUtils
 #undef Check
 
 } // namespace xiiConversionUtils
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_Utilities_Implementation_ConversionUtils);

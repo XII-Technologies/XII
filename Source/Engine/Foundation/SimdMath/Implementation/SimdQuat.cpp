@@ -102,5 +102,3 @@ bool xiiSimdQuat::IsEqualRotation(const xiiSimdQuat& qOther, const xiiSimdFloat&
 
   return false;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_SimdMath_Implementation_SimdQuat);

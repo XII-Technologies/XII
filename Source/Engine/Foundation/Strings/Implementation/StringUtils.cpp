@@ -878,5 +878,3 @@ bool xiiStringUtils::IsValidIdentifierName(const char* pString, const char* pStr
 
   return true;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringUtils);

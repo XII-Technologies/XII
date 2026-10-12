@@ -60,5 +60,3 @@ void xiiTask::Run(xiiUInt32 uiInvocation)
 
   m_iRemainingRuns.Decrement();
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_Task);

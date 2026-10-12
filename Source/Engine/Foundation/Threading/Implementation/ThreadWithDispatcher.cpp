@@ -32,5 +32,3 @@ void xiiThreadWithDispatcher::DispatchQueue()
 
   m_CurrentlyBeingDispatchedQueue.Clear();
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_ThreadWithDispatcher);

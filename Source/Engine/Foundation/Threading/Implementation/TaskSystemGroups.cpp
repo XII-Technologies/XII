@@ -355,5 +355,3 @@ void xiiTaskSystem::WaitForCondition(xiiDelegate<bool()> condition)
     }
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystemGroups);

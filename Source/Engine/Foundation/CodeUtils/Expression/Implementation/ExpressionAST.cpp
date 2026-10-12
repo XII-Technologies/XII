@@ -1287,5 +1287,3 @@ bool xiiExpressionAST::IsEqual(const Node* pNodeA, const Node* pNodeB)
   XII_ASSERT_NOT_IMPLEMENTED;
   return false;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionAST);

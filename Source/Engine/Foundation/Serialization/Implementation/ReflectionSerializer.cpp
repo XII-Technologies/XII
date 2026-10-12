@@ -423,5 +423,3 @@ void xiiReflectionSerializer::Clone(const void* pObject, void* pClone, const xii
 
   CloneProperties(pObject, pClone, pType);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_ReflectionSerializer);

@@ -11,5 +11,3 @@
 #else
 #  error "Mini-dump functions are not implemented on current platform"
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_MiniDumpUtils);

@@ -202,5 +202,3 @@ xiiResult xiiArchiveEntry::Deserialize(xiiStreamReader& ref_stream)
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_Archive);

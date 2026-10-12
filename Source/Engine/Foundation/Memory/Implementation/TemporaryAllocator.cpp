@@ -44,4 +44,4 @@ void xiiTemporaryAllocator::Shutdown()
   XII_DEFAULT_DELETE(s_pAllocator);
 }
 
-XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_TempAllocator);
+XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_TemporaryAllocator);

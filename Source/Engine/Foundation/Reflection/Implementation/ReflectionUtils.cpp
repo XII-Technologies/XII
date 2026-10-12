@@ -1814,5 +1814,3 @@ xiiResult xiiReflectionUtils::ClampValue(xiiVariant& value, const xiiClampValueA
   ClampVariantFunc func;
   return xiiVariant::DispatchTo(func, type, value, pAttrib);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Reflection_Implementation_ReflectionUtils);

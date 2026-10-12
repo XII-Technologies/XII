@@ -456,5 +456,3 @@ xiiResult xiiAbstractGraphDdlSerializer::ReadHeader(xiiStreamReader& ref_stream,
   }
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_DdlSerializer);

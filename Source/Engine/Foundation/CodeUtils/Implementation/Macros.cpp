@@ -192,7 +192,3 @@ void xiiPreprocessor::StringifyTokens(const TokenStream& Tokens, xiiStringBuilde
   if (bSurroundWithQuotes)
     sResult.Append("\"");
 }
-
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Macros);

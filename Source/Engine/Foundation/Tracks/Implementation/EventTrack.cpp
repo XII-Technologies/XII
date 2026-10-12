@@ -213,5 +213,3 @@ void xiiEventTrack::Load(xiiStreamReader& ref_stream)
     ref_stream >> cp.m_uiEvent;
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Tracks_Implementation_EventTrack);

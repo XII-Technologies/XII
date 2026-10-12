@@ -128,5 +128,3 @@ void xiiProcess::BuildFullCommandLineString(const xiiProcessOptions& opt, xiiStr
   opt.BuildCommandLineString(cmd);
 }
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_Process);

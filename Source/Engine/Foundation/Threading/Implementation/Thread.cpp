@@ -77,5 +77,3 @@ xiiUInt32 RunThread(xiiThread* pThread)
 #else
 #  error "Runnable thread entry functions are not implemented on current platform."
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_Thread);
