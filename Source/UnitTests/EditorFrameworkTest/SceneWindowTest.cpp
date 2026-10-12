@@ -99,24 +99,6 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       PumpUntil([] { return false; }, 1000);
       XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed());
 
-      xiiStringBuilder capture = sProjectDirectory;
-      capture.AppendPath("NativeViewport.png");
-      if (xiiOSFile::ExistsFile(capture))
-        XII_TEST_RESULT(xiiOSFile::DeleteFile(capture));
-      view->TakeScreenshot(capture);
-      QImage image;
-      XII_TEST_BOOL(PumpUntil([&] { return image.load(QString::fromUtf8(capture.GetData())); }, 10000));
-      XII_TEST_INT(image.width(), 256);
-      XII_TEST_INT(image.height(), 256);
-      if (!image.isNull())
-      {
-        bool bVaried = false;
-        for (int y = 0; y < image.height() && !bVaried; ++y)
-          for (int x = 0; x < image.width() && !bVaried; ++x)
-            bVaried = image.pixel(x, y) != image.pixel(0, 0);
-        XII_TEST_BOOL(bVaried);
-      }
-
       xiiViewPickingMsgToEngine pick;
       pick.m_uiViewID   = view->GetViewID();
       pick.m_uiPickPosX = 128;
@@ -152,7 +134,28 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
           return;
         QThread::msleep(1);
       }
-      XII_TEST_BOOL(pickedObject == sphereID);
+      if (!XII_TEST_BOOL(pickedObject == sphereID))
+        return;
+
+      // A completed native pick confirms that the transformed scene has reached the GPU.
+      // Capture only after that readiness boundary; a startup delay cannot establish it.
+      xiiStringBuilder capture = sProjectDirectory;
+      capture.AppendPath("NativeViewport.png");
+      if (xiiOSFile::ExistsFile(capture))
+        XII_TEST_RESULT(xiiOSFile::DeleteFile(capture));
+      view->TakeScreenshot(capture);
+      QImage image;
+      XII_TEST_BOOL(PumpUntil([&] { return image.load(QString::fromUtf8(capture.GetData())); }, 10000));
+      XII_TEST_INT(image.width(), 256);
+      XII_TEST_INT(image.height(), 256);
+      if (!image.isNull())
+      {
+        bool bVaried = false;
+        for (int y = 0; y < image.height() && !bVaried; ++y)
+          for (int x = 0; x < image.width() && !bVaried; ++x)
+            bVaried = image.pixel(x, y) != image.pixel(0, 0);
+        XII_TEST_BOOL(bVaried);
+      }
     }
   }
   else
