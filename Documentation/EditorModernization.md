@@ -2091,3 +2091,53 @@ world submission clock. The comprehensive modernization goal remains active.
   static-link inventories, case-only ReFS watching, manager frame timelines, shared
   temporal manager isolation and broader manual workflow parity remain outstanding.
   D3D12, Release, Linux and macOS remain unverified; this migration remains active.
+
+
+### Native Indexed Surface Queries And Dispatch Synchronization (2026-10-12)
+
+- Native surface queries now select mesh shading when available or a conventional vertex/pixel
+  pipeline otherwise. `xiiSceneMeshPickingPass.UseMeshShaders` is a reflected pipeline-resource
+  setting, defaulting to true; false explicitly selects vertex pulling. Views and Qt do not own
+  a second renderer. The native GPU visibility service now initializes without mesh-shader
+  features and omits mesh-dispatch command construction on those devices.
+- Both routes consume the same compact visible meshlets, resident geometry, native identities,
+  LOD selection, section ranges and canonical material coverage. Vertex attributes/transforms
+  and query pixel output are shared shader headers. The indexed route pulls meshlet primitive
+  indices and vertex remaps, preserving meshoptimizer's triangle ordering and culling bounds;
+  drawing the original source-buffer ranges would be incorrect after meshlet optimization.
+- A graph-owned compute pass emits one 16-byte DrawIndirect command per visible meshlet.
+  The existing GPU visibility counter controls drawing without CPU readback. Command storage is
+  16 bytes per visibility capacity slot and dispatch launches one thread per slot, rounded up
+  to 64 threads. The graph cache reuses allocations. Adapter dispatch/draw limits and indirect
+  counter capability are checked before adding passes; invalid descriptions clear the output
+  and return failure. This path still requires compute, bindless resources and indirect drawing.
+- Packed mesh GPU allocations are padded to complete four-byte words, covering both UInt16
+  source-index tails and byte-packed meshlet primitive tails. CPU descriptors retain logical
+  element counts. One-triangle UInt16/UInt32 fixtures verify allocations, owner identity, depth
+  and normals on both routes. Indirect argument validation now accepts the correct 16-byte
+  non-indexed draw record and measures the final record's extent rather than trailing stride.
+- GPU command readback exposed a Vulkan dispatch bug: explicit render-graph barriers remained
+  pending when shader resources were committed with Verify. Compute dispatch preparation now
+  flushes those barriers, for both direct and indirect dispatch. The query uses graph-managed
+  transitions and Verify bindings; it requires no manual barrier or queue-wait workaround.
+- All 50 Vulkan engine-process subtests pass, including production picking, selection overlays,
+  per-view capture isolation, owner/configuration invalidation, material and mesh reloads,
+  authored LOD section/material routing and shared hysteresis. The two new subtests create
+  devices with mesh shaders disabled; the LOD fixture additionally reads generated GPU commands,
+  tests an exact single-command allocation and verifies invalid-input output clearing.
+  Evidence: `Workspace/editor-indexed-picking-integrated-tests.log`.
+- All 40 GraphicsFoundation, 18 GraphicsCore and ten native Qt Editor subtests pass:
+  `Workspace/editor-indexed-picking-foundation-tests.log`,
+  `Workspace/editor-indexed-picking-core-tests.log`, and
+  `Workspace/editor-indexed-picking-qt-tests.log`. Qt verification includes real viewport capture
+  and engine-process IPC picking. Editor, EditorPluginVisualScript, EditorProcessor and all three
+  native test targets plus EditorFrameworkTest build in Windows VS2026 Debug x64:
+  `Workspace/editor-indexed-picking-dependent-build.log`. Final test-only input/settings checks
+  were built in `Workspace/editor-indexed-picking-validation-build.log`. No assertion artifact
+  was produced. Vulkan reports existing nonfatal unused vertex/fragment interface warnings.
+- Indexed native picking is now covered. Deformed geometry remains a distinct renderer gap:
+  component skinning matrices/morph data are not yet connected to a shared execution path, so
+  this change does not claim pose-correct queries. Legacy sky/probe/GreyBox migration, additional
+  static-link inventories, case-only ReFS watching, manager frame timelines, shared temporal
+  manager isolation and broader manual workflow parity remain active work. D3D12, Release,
+  Linux and macOS remain unverified.
