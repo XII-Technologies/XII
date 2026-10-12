@@ -6,6 +6,26 @@
 #include <ToolsFoundationTest/Object/TestObjectManager.h>
 #include <ToolsFoundationTest/Reflection/ReflectionTestClasses.h>
 
+class xiiFailingCompositeTestCommand : public xiiCommand
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiFailingCompositeTestCommand, xiiCommand);
+
+private:
+  xiiStatus DoInternal(bool bRedo) override
+  {
+    xiiAddObjectCommand child;
+    child.m_pType           = xiiGetStaticRTTI<xiiObjectTest>();
+    child.m_sParentProperty = "Children";
+    XII_SUCCEED_OR_RETURN(AddSubCommand(child));
+    return xiiStatus("Intentional failure after creating a child object.");
+  }
+  xiiStatus UndoInternal(bool bFireEvents) override { return XII_SUCCESS; }
+  void      CleanupInternal(CommandState state) override { XII_TEST_BOOL_MSG(false, "A failed parent command must not receive completed-command cleanup."); }
+};
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFailingCompositeTestCommand, 1, xiiRTTIDefaultAllocator<xiiFailingCompositeTestCommand>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
 {
   xiiTestDocument doc("Test", true);
@@ -114,6 +134,30 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
     command.m_NewValue  = 1.0;
     pAccessor->StartTransaction("Invalid resize");
     XII_TEST_BOOL(doc.GetCommandHistory()->AddCommand(command).Failed());
+    pAccessor->CancelTransaction();
+    XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiOriginalHistory);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Failed parents clean rolled-back children without assuming parent success")
+  {
+    const xiiUInt32                                       uiOriginalHistory = doc.GetCommandHistory()->GetUndoStackSize();
+    xiiUInt32                                             destroyed         = 0;
+    xiiEvent<const xiiDocumentObjectEvent&>::Unsubscriber subscription;
+    doc.GetObjectManager()->m_ObjectEvents.AddEventHandler([&](const xiiDocumentObjectEvent& event) {
+      if (event.m_EventType == xiiDocumentObjectEvent::Type::BeforeObjectDestroyed && event.m_pObject->GetType() == xiiGetStaticRTTI<xiiObjectTest>())
+        ++destroyed;
+    },
+                                                           subscription);
+    pAccessor->StartTransaction("Failed composite");
+    xiiFailingCompositeTestCommand composite;
+    XII_TEST_BOOL(doc.GetCommandHistory()->AddCommand(composite).Failed());
+    XII_TEST_INT(destroyed, 1);
+    xiiAddObjectCommand invalid;
+    invalid.m_pType           = xiiGetStaticRTTI<xiiObjectTest>();
+    invalid.m_Parent          = xiiUuid::MakeUuid();
+    invalid.m_sParentProperty = "Children";
+    XII_TEST_BOOL(doc.GetCommandHistory()->AddCommand(invalid).Failed());
+    XII_TEST_INT(destroyed, 1);
     pAccessor->CancelTransaction();
     XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiOriginalHistory);
   }
