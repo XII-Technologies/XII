@@ -2398,3 +2398,79 @@ world submission clock. The comprehensive modernization goal remains active.
 - Deformed geometry/picking, legacy sky/probe/GreyBox migrations, remaining
   registration inventories and broader Editor workflow parity remain active work.
   D3D12, Release, Linux and macOS remain unverified here.
+
+
+## Static Registration And Plugin Lifecycle Verification
+
+- Refreshed thirteen inventories with the repository's existing StaticLinkUtil:
+  Foundation, Core, GraphicsFoundation, Vulkan, D3D12, Texture, Utilities,
+  DearImgui, Fileserve, Inspector, VisualScript, RenderDoc and TestFramework.
+  GraphicsCore and GameEngine were already current. Removed obsolete references
+  and redundant file markers; added current graph reflection, shader compiler,
+  pipeline-state and plugin implementation registrations. Canonical source-path
+  names replace stale marker names without changing public type or asset identity.
+- The final independent source audit compares discovery rules, group references
+  and file definitions across all fifteen libraries: 312 references, no missing,
+  unresolved or unexpected points. Evidence:
+  `Workspace/editor-registration-generator-audit.json` and the local verification
+  helper `Workspace/verify-static-link-inventory.py`. Outside the lifecycle fixes
+  below, source review verifies registration-only edits with unchanged bodies.
+  StaticLinkUtil returns 1 for successful modifications, as documented by its own
+  return-code implementation; the regeneration logs contain no serious errors.
+- An isolated Windows Debug static build exposed a pre-existing mismatch between
+  the static plugin registrar's const-char declaration and string-view definition.
+  The implementation now matches the declared interface. This build uses separate
+  `Output/StaticLinkAudit` paths, Qt disabled and the UnitTestOnly filter, extended
+  locally for a small RenderDoc registration probe. The standard Editor remains a
+  separate DLL build.
+- The probe first crashed before main while registering RenderDoc into an
+  unconstructed global singleton map. SingletonRegistry now constructs its map on
+  first use with XII's static allocator, preserving storage through Core restarts
+  and ensuring registered global singletons are destroyed before their registry.
+  Foundation's singleton test now includes registration during global construction.
+  Public lookup/registration behavior is retained; concurrent mutation still needs
+  external synchronization.
+- A second startup trace found RenderDoc logging before Foundation's global log
+  event was constructed. RenderDoc now creates its capture service during normal
+  Core-system startup after Foundation/Core, and destroys it during Core-system
+  shutdown. The global object is removed. The subsystem marker makes registration
+  discoverable through StaticLinkUtil without a force marker or compatibility shim.
+  This also lets normal command-line setup precede capture initialization.
+- The final static probe explicitly retains Core and RenderDoc with the established
+  `XII_STATICLINK_PLUGIN` macros, discovers the capture interface and both graph
+  types without direct implementation-type references, and verifies release at
+  shutdown. It passes in `Workspace/editor-registration-static-capture-tests.log`.
+  Initial crash traces remain in `Workspace/editor-registration-static-probe-debug.log`
+  and `Workspace/editor-registration-static-probe-lifetime-debug.log`.
+- The final static build and tests pass: three Foundation configuration subtests,
+  all 21 Core subtests and all 19 tooling subtests on NTFS. Evidence:
+  `Workspace/editor-registration-static-final-build.log`,
+  `Workspace/editor-registration-static-configuration-final-tests.log`,
+  `Workspace/editor-registration-static-core-final2-tests.log`, and
+  `Workspace/editor-registration-static-tools-final-tests.log`.
+- The same tooling suite on the workspace ReFS volume still fails its case-only
+  folder rename scenario, followed by deletion/cache assertions:
+  `Workspace/editor-registration-static-tools-tests.log`. The fresh NTFS run passes;
+  this isolates the known notification limitation and does not resolve ReFS support.
+  Static graphics execution, D3D12 compilation/execution, Release, Linux and macOS
+  remain unverified. Capturing an actual RenderDoc GPU frame was not tested.
+
+- Final dependent Windows Debug DLL targets pass, including Editor,
+  EditorProcessor, native Qt/engine-process tests, both graphics suites,
+  GpuDrivenScene, FoundationTest and the affected runtime plugins:
+  `Workspace/editor-registration-lifetime-integration-build.log` (exit zero).
+  All 128 DLL subtests pass: 54 engine-process, 41 graphics Foundation, 20 graphics
+  Core, three Foundation configuration and ten Qt production workflows. Logs:
+  `Workspace/editor-registration-final-native-tests.log`,
+  `Workspace/editor-registration-final-foundation-tests.log`,
+  `Workspace/editor-registration-final-core-tests.log`,
+  `Workspace/editor-registration-final-configuration-tests.log`, and
+  `Workspace/editor-registration-final-qt-tests.log`. GPU suites use Vulkan
+  synchronization validation; Qt exercises native scene capture, picking, resource
+  transformation, document persistence and engine-process communication.
+- The final full default 24x16 GpuDrivenScene also completes 64 frames with ray
+  tracing, GPU-assisted safe-mode and synchronization validation, without validation
+  errors: `Workspace/editor-registration-final-sample-gpuav.log` (exit zero).
+  No new assertion artifact is produced. Deformed execution/picking, legacy
+  sky/probe/GreyBox migration, ReFS notifications and broader manual Editor workflow
+  parity remain outstanding; this checkpoint does not complete the modernization.
