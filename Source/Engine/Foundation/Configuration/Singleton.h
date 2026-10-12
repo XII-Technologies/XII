@@ -17,6 +17,9 @@
 /// get rid of unwanted library dependencies and use pure virtual interface classes, without singleton code
 /// (and thus link dependencies).
 ///
+/// Storage is initialized on first use, including registration by global constructors.
+/// Concurrent access requires external synchronization when any thread registers or unregisters.
+///
 /// See XII_DECLARE_SINGLETON and XII_DECLARE_SINGLETON_OF_INTERFACE for details.
 class XII_FOUNDATION_DLL xiiSingletonRegistry
 {
@@ -33,7 +36,7 @@ public:
   template <typename Interface>
   inline static Interface* GetSingletonInstance() // [tested]
   {
-    return static_cast<Interface*>(s_Singletons.GetValueOrDefault(GetHash<Interface>(), {"", nullptr}).m_pInstance);
+    return static_cast<Interface*>(GetSingletons().GetValueOrDefault(GetHash<Interface>(), {"", nullptr}).m_pInstance);
   }
 
   /// Retrieves a singleton instance by type name. Asserts if no singleton instance is available.
@@ -53,18 +56,18 @@ public:
   inline static void Register(Interface* pSingletonInstance) // [tested]
   {
     XII_ASSERT_DEV(pSingletonInstance != nullptr, "Invalid singleton instance pointer");
-    XII_ASSERT_DEV(s_Singletons[GetHash<Interface>()].m_pInstance == nullptr, "Singleton for type '{0}' has already been registered", typeid(Interface).name());
+    XII_ASSERT_DEV(GetSingletons()[GetHash<Interface>()].m_pInstance == nullptr, "Singleton for type '{0}' has already been registered", typeid(Interface).name());
 
-    s_Singletons[GetHash<Interface>()] = {typeid(Interface).name(), pSingletonInstance};
+    GetSingletons()[GetHash<Interface>()] = {typeid(Interface).name(), pSingletonInstance};
   }
 
   /// Unregisters a singleton instance. This is automatically called by xiiSingletonRegistrar.
   template <typename Interface>
   inline static void Unregister() // [tested]
   {
-    XII_ASSERT_DEV(s_Singletons[GetHash<Interface>()].m_pInstance != nullptr, "Singleton for type '{0}' is currently not registered", typeid(Interface).name());
+    XII_ASSERT_DEV(GetSingletons()[GetHash<Interface>()].m_pInstance != nullptr, "Singleton for type '{0}' is currently not registered", typeid(Interface).name());
 
-    s_Singletons.Remove(GetHash<Interface>());
+    GetSingletons().Remove(GetHash<Interface>());
   }
 
 private:
@@ -78,7 +81,7 @@ private:
     return hash;
   }
 
-  static xiiMap<size_t, SingletonEntry> s_Singletons;
+  static xiiMap<size_t, SingletonEntry>& GetSingletons();
 };
 
 

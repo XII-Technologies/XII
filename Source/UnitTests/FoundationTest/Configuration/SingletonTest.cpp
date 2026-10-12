@@ -41,8 +41,35 @@ public:
 XII_IMPLEMENT_SINGLETON(TestSingletonOfInterface);
 
 
+class GlobalTestSingleton
+{
+  XII_DECLARE_SINGLETON(GlobalTestSingleton);
+
+public:
+  GlobalTestSingleton() :
+    m_SingletonRegistrar(this)
+  {
+  }
+
+  xiiInt32 m_iValue = 17;
+};
+
+XII_IMPLEMENT_SINGLETON(GlobalTestSingleton);
+
+// Exercise registration before main, when another translation unit's dynamic
+// initialization may not have run yet in a static engine build.
+static GlobalTestSingleton g_GlobalSingleton;
+
 XII_CREATE_SIMPLE_TEST(Configuration, Singleton)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Registration before main")
+  {
+    auto* singleton = xiiSingletonRegistry::GetSingletonInstance<GlobalTestSingleton>();
+    if (XII_TEST_BOOL(singleton == &g_GlobalSingleton))
+      XII_TEST_INT(singleton->m_iValue, 17);
+    XII_TEST_BOOL(GlobalTestSingleton::GetSingleton() == &g_GlobalSingleton);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Singleton Registration")
   {
     {
