@@ -2356,3 +2356,45 @@ world submission clock. The comprehensive modernization goal remains active.
   migration does not establish sample stability. Deformed picking, legacy sky/probe/GreyBox
   migration and the remaining Editor inventory remain active work. D3D12, Release, Linux and
   macOS have not been validated here.
+
+
+### Complete Meshlet Primitive Emission
+
+- The remaining longer-sample device loss was reproduced before this repair: the
+  64-frame 8x8 raster run failed waiting for fence 60 (completed 59), while 2x2
+  completed. Evidence: `Workspace/editor-sample-device-loss-medium.log` and
+  `Workspace/editor-sample-device-loss-medium-assert.txt`.
+- All mesh shaders declared up to 126 output triangles but emitted only one per
+  64-lane thread. Engine meshlets can contain 124 triangles, leaving output indices
+  above 63 uninitialized. Depth, forward lighting, shared G-buffer/picking, shadow
+  depth and the GPU-driven sample now stride primitive emission by the workgroup
+  size. Vertex emission remains bounded by the 64-vertex meshlet limit.
+- `MeshletRaster.DensePrimitiveCoverage` constructs a 98-triangle meshlet, verifies
+  its retained mesh-buffer metadata, and reads back every central coverage pixel
+  from both native identity and packed picking targets. The old shaders fail 160
+  pixel assertions; the repaired shaders pass. Logs:
+  `Workspace/editor-dense-meshlet-baseline-tests.log` and
+  `Workspace/editor-dense-meshlet-fixed-tests.log`.
+- After repair the same 64-frame 8x8 run completes with synchronization validation:
+  `Workspace/editor-dense-meshlet-sample-medium.log`. The full default 24x16 scene
+  also completes 64 frames with ray tracing enabled, GPU-assisted safe-mode and
+  synchronization validation, without validation errors:
+  `Workspace/editor-dense-meshlet-sample-full-gpuav.log`. These runs include fine-LOD
+  streaming. This resolves the reproduced workloads; it does not establish all
+  backend or arbitrary-duration stability.
+- Windows Debug builds pass for engine-process and Qt tests. All 54 native
+  engine-process, 41 graphics Foundation and 20 graphics Core subtests pass:
+  `Workspace/editor-dense-meshlet-final-native-tests.log`,
+  `Workspace/editor-dense-meshlet-final-foundation-tests.log`, and
+  `Workspace/editor-dense-meshlet-final-core-tests.log`. Both GPU suites use Vulkan
+  synchronization validation.
+- The first Qt run captured a uniform startup image before a successful native
+  pick; retry passed. The workflow test now confirms transformed-mesh picking
+  before capturing the viewport instead of treating a startup delay as readiness.
+  All ten Qt subtests pass after rebuilding:
+  `Workspace/editor-scene-capture-readiness-build.log` and
+  `Workspace/editor-scene-capture-readiness-tests.log`. The original failure remains
+  recorded in `Workspace/editor-dense-meshlet-final-qt-tests.log`.
+- Deformed geometry/picking, legacy sky/probe/GreyBox migrations, remaining
+  registration inventories and broader Editor workflow parity remain active work.
+  D3D12, Release, Linux and macOS remain unverified here.
