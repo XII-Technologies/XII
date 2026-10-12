@@ -107,6 +107,8 @@ namespace
 {
   struct SceneUploadPassData
   {
+    xiiRenderGraphBufferHandle           m_hSkinning;
+    xiiDynamicArray<xiiMat4>             m_SkinningMatrices;
     xiiRenderGraphBufferHandle           m_hScene;
     xiiDynamicArray<xiiGpuSceneInstance> m_Instances;
     xiiDynamicArray<xiiSceneUploadRange> m_UploadRanges;
@@ -206,7 +208,7 @@ namespace
     xiiUInt32                                m_uiMaxGroupTotalCount = 0U;
   };
 
-  xiiGALBufferCreationDescription MakeBuffer(xiiUInt32 uiSize, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiEnum<xiiGALBufferMode> mode = xiiGALBufferMode::Structured)
+  xiiGALBufferCreationDescription MakeBuffer(xiiUInt64 uiSize, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiEnum<xiiGALBufferMode> mode = xiiGALBufferMode::Structured)
   {
     xiiGALBufferCreationDescription desc;
     desc.m_uiSize              = uiSize;
@@ -322,6 +324,7 @@ void xiiGpuVisibilitySystem::Shutdown()
   m_pPreparedScene                 = nullptr;
   m_uiPreparedFrame                = xiiMath::MaxValue<xiiUInt64>();
   m_hPreparedScene                 = {};
+  m_hPreparedSkinning              = {};
   m_uiLargestReportedInstanceCount = 0U;
   m_uiLargestReportedMeshletCount  = 0U;
   m_uiMeshDispatchGroupCountX      = 0U;
@@ -532,11 +535,15 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
   {
     auto sceneUpload = graph.AddPass<SceneUploadPassData>(
       "GPU Scene Upload", xiiGALCommandQueueFlags::Transfer,
-      [this, uiFrameSlot](SceneUploadPassData& data, xiiRenderGraphBuilder& builder) {
+      [this, uiFrameSlot, &scene](SceneUploadPassData& data, xiiRenderGraphBuilder& builder) {
         data.m_hScene = builder.WriteBuffer(builder.ImportBuffer("GPU Scene Instances", m_pSceneBuffers[uiFrameSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::CopyDestination);
+        const auto skinning = MakeBuffer(xiiUInt64(xiiMath::Max(scene.GetGpuSkinningMatrices().GetCount(), 1U)) * sizeof(xiiMat4), sizeof(xiiMat4), xiiGALBindFlags::ShaderResource);
+        data.m_hSkinning    = builder.WriteBuffer("GPU Scene Skinning Matrices", skinning, xiiGALResourceStateFlags::CopyDestination);
         builder.SetPassAllowMerge(false);
       },
       [this](const SceneUploadPassData& data, xiiRenderGraphPassContext& context) {
+        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hSkinning), 0,
+                                              xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SkinningMatrices.GetData()), data.m_SkinningMatrices.GetCount() * sizeof(xiiMat4)));
         for (const xiiSceneUploadRange& range : data.m_UploadRanges)
         {
           const xiiGpuSceneInstance* pFirstInstance = data.m_Instances.GetData() + range.m_uiFirstInstance;
@@ -551,6 +558,9 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
         m_SceneBufferMirrors[data.m_uiFrameSlot] = data.m_Instances;
       });
     sceneUpload.first->m_uiFrameSlot = uiFrameSlot;
+    sceneUpload.first->m_SkinningMatrices = scene.GetGpuSkinningMatrices();
+    if (sceneUpload.first->m_SkinningMatrices.IsEmpty())
+      sceneUpload.first->m_SkinningMatrices.PushBack(xiiMat4::MakeIdentity());
     // The GPU scene allocation is fixed-size. Keep the upload snapshot within the same bound as
     // every consumer so a release build cannot overwrite the imported buffer when a scene grows.
     const xiiUInt32 uiUploadedInstanceCount           = xiiMath::Min(uiSceneInstanceCount, m_Description.m_uiMaxInstances);
@@ -586,6 +596,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
     m_pPreparedScene  = &scene;
     m_uiPreparedFrame = uiFrameIndex;
     m_hPreparedScene  = sceneUpload.first->m_hScene;
+    m_hPreparedSkinning = sceneUpload.first->m_hSkinning;
   }
   else
   {
@@ -859,6 +870,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
 
   xiiGpuVisibilityOutputs outputs;
   outputs.m_hSceneInstances       = instanceCull.first->m_hScene;
+  outputs.m_hSkinningMatrices     = m_hPreparedSkinning;
   outputs.m_hVisibleInstances     = hVisibleInstances;
   outputs.m_hVisibleInstanceCount = hVisibleInstanceCount;
   outputs.m_hVisibleMeshlets      = meshletCull.first->m_hVisibleMeshlets;

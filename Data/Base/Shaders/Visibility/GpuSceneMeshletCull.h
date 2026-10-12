@@ -233,8 +233,9 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
       return;
   }
 
-  const float3 center = mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
-  const float  radius = meshlet.Bounds.w * maxScale;
+  const bool   posed  = instance.SkinningCount != 0u;
+  const float3 center = posed ? instance.BoundsCenterRadius.xyz : mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
+  const float  radius = posed ? instance.BoundsCenterRadius.w : meshlet.Bounds.w * maxScale;
   if (!SphereInsideFrustum(center, radius, view))
     return;
 
@@ -243,7 +244,7 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   // transforms distort the cone, so conservatively disable this test for those instances.
   const float minScale       = min(scale.x, min(scale.y, scale.z));
   const bool  isUniformScale = maxScale - minScale <= max(maxScale, 0.0001f) * 0.001f;
-  if (meshlet.Cone.w >= 0.0f && isUniformScale)
+  if (!posed && meshlet.Cone.w >= 0.0f && isUniformScale)
   {
     const float3 coneAxis     = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
     const float3 toCamera     = normalize(view.CameraPosition.xyz - center);
@@ -260,7 +261,7 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
     dot(abs(instance.GlobalTransform[1] - instance.PreviousGlobalTransform[1]), 1.0f.xxxx) +
     dot(abs(instance.GlobalTransform[2] - instance.PreviousGlobalTransform[2]), 1.0f.xxxx) +
     dot(abs(instance.GlobalTransform[3] - instance.PreviousGlobalTransform[3]), 1.0f.xxxx);
-  if (transformDelta <= 1.0e-5f && !MeshletVisibleInHiZ(center, radius, view))
+  if (!posed && instance.PreviousSkinningCount == 0u && transformDelta <= 1.0e-5f && !MeshletVisibleInHiZ(center, radius, view))
     return;
 #endif
 

@@ -1,5 +1,6 @@
 // XII Engine - canonical surface attributes and transforms for mesh and indexed rasterization.
 #pragma once
+#include <Shaders/Pipeline/GpuSceneSkinning.h>
 
 GBufferVertex xiiInvalidSceneSurfaceVertex()
 {
@@ -17,13 +18,16 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
       vertexBufferBytes < lastAttributeEnd || sourceVertex > (vertexBufferBytes - lastAttributeEnd) / VertexStride)
     return xiiInvalidSceneSurfaceVertex();
   const uint   vertexOffset  = sourceVertex * VertexStride;
-  const float3 localPosition = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset));
-  const float3 localNormal   = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + NormalOffset));
-  const float4 localTangent  = asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset));
+  float3       localPosition = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset));
+  float3       localNormal   = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + NormalOffset));
+  float4       localTangent  = asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset));
   const float2 texCoord      = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset));
+  float3       previousLocalPosition;
+  if (!xiiSkinSurface(instance, lod, sourceVertex, localPosition, localNormal, localTangent, previousLocalPosition))
+    return xiiInvalidSceneSurfaceVertex();
 
   const float3 worldPosition         = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
-  const float3 previousWorldPosition = mul(instance.PreviousGlobalTransform, float4(localPosition, 1.0f)).xyz;
+  const float3 previousWorldPosition = mul(instance.PreviousGlobalTransform, float4(previousLocalPosition, 1.0f)).xyz;
   float3       worldNormal           = normalize(float3(dot(instance.NormalTransformRow0.xyz, localNormal), dot(instance.NormalTransformRow1.xyz, localNormal), dot(instance.NormalTransformRow2.xyz, localNormal)));
   float3       worldTangent          = normalize(mul((float3x3)instance.GlobalTransform, localTangent.xyz));
   worldTangent                       = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));

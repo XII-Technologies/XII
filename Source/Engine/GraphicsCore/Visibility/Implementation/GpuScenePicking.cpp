@@ -23,7 +23,7 @@ namespace
   struct Raster
   {
     xiiRenderGraphTextureHandle        m_Target, m_Depth;
-    xiiRenderGraphBufferHandle         m_Constants, m_Instances, m_Geometry, m_Meshlets, m_Visible, m_Count, m_Commands, m_CommandCount, m_Materials;
+    xiiRenderGraphBufferHandle         m_Constants, m_Instances, m_Geometry, m_Meshlets, m_Visible, m_Count, m_Commands, m_CommandCount, m_Materials, m_Skinning;
     xiiUInt32                          m_uiWidth = 0, m_uiHeight = 0;
     xiiUInt32                          m_uiMaxDrawCount = 1U;
     bool                               m_bIndexed       = false;
@@ -43,7 +43,7 @@ xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStr
 {
   out_hSurface       = {};
   const bool indexed = !bUseMeshShaders || !IsSupported();
-  if (!IsPickingSupported() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() ||
+  if (!IsPickingSupported() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hSkinningMatrices.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() ||
       !visibility.m_hVisibleMeshletCount.IsValid() ||
       (!indexed && (!visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || description.m_uiMeshDispatchGroupCountX == 0 || description.m_uiMeshDispatchGroupCountY == 0)) ||
       (indexed && (visibility.m_uiMaxVisibleMeshlets == 0U || visibility.m_uiMaxVisibleMeshlets > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiVec4U32))) ||
@@ -144,6 +144,7 @@ xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStr
   auto pass                    = graph.AddPass<Raster>(name, xiiGALCommandQueueFlags::Graphics, [&](Raster& data, xiiRenderGraphBuilder& builder) {
       data.m_Constants = builder.ReadBuffer(constantsHandle, xiiGALResourceStateFlags::ConstantBuffer);
       data.m_Instances = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
+      data.m_Skinning  = builder.ReadBuffer(visibility.m_hSkinningMatrices, xiiGALResourceStateFlags::ShaderResource);
       data.m_Geometry = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
       data.m_Meshlets = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
       data.m_Visible = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
@@ -200,6 +201,7 @@ xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStr
       const xiiGALShaderType::Enum geometryStage = data.m_bIndexed ? xiiGALShaderType::Vertex : xiiGALShaderType::Mesh;
       commands.ResolveAndSetConstantBuffer("xiiGpuSceneGBufferConstants", execution.GetBuffer(data.m_Constants), geometryStage | xiiGALShaderType::Pixel);
       commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execution.GetBuffer(data.m_Instances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), geometryStage);
+      commands.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices", execution.GetBuffer(data.m_Skinning)->GetDefaultView(xiiGALBufferViewType::ShaderResource), geometryStage);
       commands.ResolveAndSetShaderResourceBufferView("g_Geometry", execution.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), geometryStage);
       commands.ResolveAndSetShaderResourceBufferView("g_Meshlets", execution.GetBuffer(data.m_Meshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), geometryStage);
       commands.ResolveAndSetShaderResourceBufferView("g_VisibleMeshlets", execution.GetBuffer(data.m_Visible)->GetDefaultView(xiiGALBufferViewType::ShaderResource), geometryStage);

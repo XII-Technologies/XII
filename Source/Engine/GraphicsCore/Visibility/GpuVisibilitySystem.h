@@ -126,6 +126,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityStreamingStat
 
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityOutputs
 {
+  /// Current/previous pose snapshot shared by all native vertex consumers in this graph.
+  xiiRenderGraphBufferHandle m_hSkinningMatrices;
   xiiRenderGraphBufferHandle m_hSceneInstances;
   xiiRenderGraphBufferHandle m_hVisibleInstances;
   xiiRenderGraphBufferHandle m_hVisibleInstanceCount;
@@ -196,6 +198,7 @@ private:
   const xiiSceneDatabase*                               m_pPreparedScene  = nullptr;
   xiiUInt64                                             m_uiPreparedFrame = xiiMath::MaxValue<xiiUInt64>();
   xiiRenderGraphBufferHandle                            m_hPreparedScene;
+  xiiRenderGraphBufferHandle                            m_hPreparedSkinning;
   xiiHashTable<xiiHashedString, xiiUInt32>              m_VisibilitySetIndices;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pInstanceCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pHiZOcclusionPipeline;

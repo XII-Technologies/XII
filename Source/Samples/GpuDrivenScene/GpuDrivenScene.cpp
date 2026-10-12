@@ -113,6 +113,7 @@ namespace
     xiiRenderGraphBufferHandle         m_hVirtualShadowConstants;
     xiiRenderGraphBufferHandle         m_hConstants;
     xiiRenderGraphBufferHandle         m_hSceneInstances;
+    xiiRenderGraphBufferHandle         m_hSkinningMatrices;
     xiiRenderGraphBufferHandle         m_hGeometry;
     xiiRenderGraphBufferHandle         m_hMeshlets;
     xiiRenderGraphBufferHandle         m_hVisibleMeshlets;
@@ -587,6 +588,7 @@ private:
         data.m_hVirtualShadowAtlas     = builder.ReadTexture(virtualShadowUpload.m_hPhysicalAtlas, xiiGALResourceStateFlags::ShaderResource);
         data.m_hVirtualShadowPageTable = builder.ReadBuffer(virtualShadowUpload.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
         data.m_hSceneInstances         = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hSkinningMatrices       = builder.ReadBuffer(visibility.m_hSkinningMatrices, xiiGALResourceStateFlags::ShaderResource);
         data.m_hGeometry               = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
         data.m_hMeshlets               = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
         data.m_hVisibleMeshlets        = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
@@ -889,6 +891,7 @@ private:
     commandList.ResolveAndSetConstantBuffer("xiiGpuDrivenSceneConstants", context.GetBuffer(data.m_hConstants));
     commandList.ResolveAndSetConstantBuffer("xiiVirtualShadowSamplingConstants", context.GetBuffer(data.m_hVirtualShadowConstants), xiiGALShaderType::Pixel);
     commandList.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
+    commandList.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices", context.GetBuffer(data.m_hSkinningMatrices)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_Meshlets", context.GetBuffer(data.m_hMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_VisibleMeshlets", context.GetBuffer(data.m_hVisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);

@@ -22,6 +22,7 @@ namespace
   struct EmissiveLightBuildPassData
   {
     xiiRenderGraphBufferHandle                m_hSceneInstances;
+    xiiRenderGraphBufferHandle                m_hSkinningMatrices;
     xiiRenderGraphBufferHandle                m_hGeometry;
     xiiRenderGraphBufferHandle                m_hMeshlets;
     xiiRenderGraphBufferHandle                m_hSurfaceMaterials;
@@ -306,7 +307,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
 
   XII_LOCK(s_pState->m_Mutex);
 
-  const bool bExtract = description.m_Visibility.m_hSceneInstances.IsValid() &&
+  const bool bExtract = description.m_Visibility.m_hSceneInstances.IsValid() && description.m_Visibility.m_hSkinningMatrices.IsValid() &&
     description.m_Geometry.m_hGeometryMetadata.IsValid() && description.m_Geometry.m_hMeshletMetadata.IsValid() &&
     description.m_Materials.m_hSurfaceData.IsValid() && description.m_uiInstanceCount > 0U &&
     description.m_Geometry.m_uiMaximumResidentMeshletCount > 0U && description.m_uiVertexStride >= 12U;
@@ -337,6 +338,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       if (bExtract)
       {
         data.m_hSceneInstances   = builder.ReadBuffer(description.m_Visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hSkinningMatrices = builder.ReadBuffer(description.m_Visibility.m_hSkinningMatrices, xiiGALResourceStateFlags::ShaderResource);
         data.m_hGeometry         = builder.ReadBuffer(description.m_Geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
         data.m_hMeshlets         = builder.ReadBuffer(description.m_Geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
         data.m_hSurfaceMaterials = builder.ReadBuffer(description.m_Materials.m_hSurfaceData, xiiGALResourceStateFlags::ShaderResource);
@@ -391,6 +393,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       cmd.SetPipelineState(xiiEmissiveLightManager::s_pState->m_pBuildPipeline);
       cmd.ResolveAndSetConstantBuffer("xiiEmissiveLightBuildConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices", context.GetBuffer(data.m_hSkinningMatrices)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_Meshlets", context.GetBuffer(data.m_hMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetShaderResourceBufferView("g_SurfaceMaterials", context.GetBuffer(data.m_hSurfaceMaterials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
