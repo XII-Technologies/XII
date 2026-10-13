@@ -511,6 +511,8 @@ void xiiBuiltinRenderPipelineRuntime::BeginFrame(const xiiVirtualShadowMapManage
 xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   XII_SUCCEED_OR_RETURN(PrepareTemporalResources(stage));
+  if (stage == "ScreenEffects")
+    XII_SUCCEED_OR_RETURN(PrepareSensorOutput());
   if (stage == "PrepareFrame")
   {
     BuildPrepareFrame(graph, blackboard);

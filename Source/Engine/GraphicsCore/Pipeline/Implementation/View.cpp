@@ -145,11 +145,8 @@ xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)
   if (outputPasses.m_hSensorProfile == hProfile)
     return XII_SUCCESS;
 
-  outputPasses.m_hSensorProfile = hProfile;
-  if (outputPasses.m_pSensorOutputTexture != nullptr)
-  {
-    outputPasses.m_RetiredSensorOutputTextures.PushBack(std::move(outputPasses.m_pSensorOutputTexture));
-  }
+  outputPasses.m_hSensorProfile       = hProfile;
+  outputPasses.m_pSensorOutputTexture = nullptr;
   return XII_SUCCESS;
 }
 

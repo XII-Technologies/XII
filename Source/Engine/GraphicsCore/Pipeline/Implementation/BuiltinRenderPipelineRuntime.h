@@ -155,6 +155,7 @@ public:
   xiiSharedPtr<xiiGALSampler> m_CommonSamplers[5];
   xiiResult                   BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                   PrepareTemporalResources(xiiStringView stage);
+  xiiResult                   PrepareSensorOutput();
   xiiRenderPipelineInstance   m_Instance;
   xiiDisplayOutputSettings    m_DisplayOutputSettings;
   struct Resources
@@ -417,13 +418,12 @@ public:
     //  Stage 12 - Final Output
     struct OutputPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pHDRtoSDRPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pFinalResolvePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState>    m_pFinalBlitPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pSensorOutputPipeline;
-      xiiSharedPtr<xiiGALTexture>                  m_pSensorOutputTexture;
-      xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_RetiredSensorOutputTextures; ///< Kept alive until the view is destroyed so profile changes cannot race in-flight GPU work.
-      xiiSensorProfileHandle                       m_hSensorProfile;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pHDRtoSDRPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pFinalResolvePipeline;
+      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pFinalBlitPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pSensorOutputPipeline;
+      xiiSharedPtr<xiiGALTexture>               m_pSensorOutputTexture;
+      xiiSensorProfileHandle                    m_hSensorProfile;
     } m_OutputPasses;
   };
   Resources m_Resources;

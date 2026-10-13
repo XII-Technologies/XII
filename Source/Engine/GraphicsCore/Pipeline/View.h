@@ -98,8 +98,11 @@ public:
   xiiEnum<xiiRenderPath> GetRenderPath() const;
 
   /// Enables calibrated sensor output for this view. Passing an invalid handle disables it.
-  [[nodiscard]] xiiResult                   SetSensorProfile(xiiSensorProfileHandle hProfile);
-  [[nodiscard]] xiiSensorProfileHandle      GetSensorProfile() const;
+  [[nodiscard]] xiiResult              SetSensorProfile(xiiSensorProfileHandle hProfile);
+  [[nodiscard]] xiiSensorProfileHandle GetSensorProfile() const;
+  /// Returns shared ownership of the last allocated sensor output. Empty after profile changes or
+  /// disabling output, until the next successful pipeline build. Retain this pointer for asynchronous
+  /// readback; synchronize GPU completion through GAL before accessing the image contents.
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> GetSensorOutputTexture() const;
 
   /// Applies validated, view-local exposure, tone-mapping and display calibration.

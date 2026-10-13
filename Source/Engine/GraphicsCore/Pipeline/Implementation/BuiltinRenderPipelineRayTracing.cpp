@@ -1057,35 +1057,6 @@ void xiiBuiltinRenderPipelineRuntime::SetupSensorOutput(xiiSensorOutputData& dat
   if (xiiSensorRenderingManager::GetProfile(resources.m_hSensorProfile, data.m_Profile).Failed())
     return;
 
-  const auto MatchesProfile = [&data](const xiiSharedPtr<xiiGALTexture>& pTexture) {
-    return pTexture != nullptr && pTexture->GetDescription().m_Size.width == data.m_Profile.m_uiResolutionX &&
-      pTexture->GetDescription().m_Size.height == data.m_Profile.m_uiResolutionY;
-  };
-
-  if (!MatchesProfile(resources.m_pSensorOutputTexture))
-  {
-    if (resources.m_pSensorOutputTexture != nullptr)
-      resources.m_RetiredSensorOutputTextures.PushBack(std::move(resources.m_pSensorOutputTexture));
-
-    xiiGALTextureCreationDescription description;
-    description.m_Type        = xiiGALResourceDimension::Texture2D;
-    description.m_Format      = xiiGALResourceFormat::RGBA32Float;
-    description.m_Size.width  = data.m_Profile.m_uiResolutionX;
-    description.m_Size.height = data.m_Profile.m_uiResolutionY;
-    description.m_uiMipLevels = 1U;
-    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage       = xiiGALResourceUsage::Default;
-
-    const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-    if (pDevice == nullptr)
-      return;
-
-    resources.m_pSensorOutputTexture = pDevice->CreateTexture(description);
-    if (resources.m_pSensorOutputTexture == nullptr)
-      return;
-    resources.m_pSensorOutputTexture->SetDebugName("Calibrated Sensor Output");
-  }
-
   data.m_hSceneRadiance = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);

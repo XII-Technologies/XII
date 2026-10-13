@@ -6,6 +6,38 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 
+xiiResult xiiBuiltinRenderPipelineRuntime::PrepareSensorOutput()
+{
+  auto& resources = m_Resources.m_OutputPasses;
+  if (resources.m_hSensorProfile.IsInvalidated())
+    return XII_SUCCESS;
+  xiiSensorProfile profile;
+  if (xiiSensorRenderingManager::GetProfile(resources.m_hSensorProfile, profile).Failed())
+  {
+    xiiLog::Error("Could not resolve calibrated sensor profile.");
+    return XII_FAILURE;
+  }
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA32Float;
+  description.m_Size        = {profile.m_uiResolutionX, profile.m_uiResolutionY};
+  description.m_uiMipLevels = 1;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  if (resources.m_pSensorOutputTexture != nullptr && resources.m_pSensorOutputTexture->GetDescription() == description)
+    return XII_SUCCESS;
+  resources.m_pSensorOutputTexture = nullptr;
+  if (xiiGALDevice::HasDefaultDevice())
+    resources.m_pSensorOutputTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+  if (resources.m_pSensorOutputTexture == nullptr)
+  {
+    xiiLog::Error("Failed to allocate calibrated sensor output ({} x {}, format {}).", profile.m_uiResolutionX, profile.m_uiResolutionY, description.m_Format.GetValue());
+    return XII_FAILURE;
+  }
+  resources.m_pSensorOutputTexture->SetDebugName("Calibrated Sensor Output");
+  return XII_SUCCESS;
+}
+
 xiiResult xiiBuiltinRenderPipelineRuntime::PrepareTemporalResources(xiiStringView stage)
 {
   if (stage != "Lighting" && stage != "OpaqueComposition" && stage != "TemporalAntiAliasing" && stage != "AutoExposure")
@@ -18,7 +50,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::PrepareTemporalResources(xiiStringVie
     return XII_FAILURE;
   }
   const auto device = xiiGALDevice::GetDefaultDevice();
-  auto ensure = [&](xiiSharedPtr<xiiGALTexture>(&textures)[2], xiiGALResourceFormat::Enum format, bool& valid, xiiStringView name) -> xiiResult {
+  auto       ensure = [&](xiiSharedPtr<xiiGALTexture>(&textures)[2], xiiGALResourceFormat::Enum format, bool& valid, xiiStringView name) -> xiiResult {
     xiiGALTextureCreationDescription description;
     description.m_Type        = xiiGALResourceDimension::Texture2D;
     description.m_Format      = format;
