@@ -2838,3 +2838,49 @@ including the previously failing close-during-Play path and the fresh reply from
 reopened world. The final engine log records Play startup and contains no access
 violation, allocation failure or Vulkan validation errors. This remains Windows
 Debug/Vulkan verification; other configurations have not been exercised.
+
+### Asset References In Maps And Exposed Parameters
+
+The common asset document scanner checked the map's dictionary for string type
+instead of examining its entries, so map-based resource and file dependencies
+were silently omitted. Its string-only property filter also skipped explicitly
+annotated variant collections and the native prefab/script parameter maps. This
+could omit required transform inputs, thumbnail inputs and packaged resources.
+The document regression fails against the old implementation:
+`Workspace/editor-dependencies-baseline-tests.log` (exit one).
+
+Dependency collection now has a dedicated `AssetDocumentDependencies.cpp`. One
+collection path reads individual array, set and map elements through the existing
+type accessor. Asset/file attributes determine dependency flags; nested variant
+collections are scanned only when explicitly annotated. Empty strings, numeric
+values, ordinary labels, temporary properties and temporary subtrees are excluded.
+Existing prefab-default providers continue to exclude inherited references, whose
+dependencies belong to the source prefab.
+
+Authored exposed parameter overrides resolve their source asset through the
+existing curator and use its saved `xiiExposedParameters` metadata. Per-parameter
+asset/file flags are copied under the curator lock, without retaining metadata
+pointers or introducing another cache. Unknown parameter names and unresolved
+metadata do not become inferred resource references. Source resource dependencies
+continue to be collected independently. Changes to source metadata affect the
+next collection immediately.
+
+Debug builds of EditorFrameworkTest, EditorProcessor and Editor pass
+(`Workspace/editor-dependencies-final-build.log`). All twelve Qt subtests pass
+(`Workspace/editor-dependencies-native-tests.log`), with a clean child-engine log.
+The new tests cover all dependency flags, maps, arrays, sets, annotated variants,
+nested collections, string views, duplicate references, temporary subtrees and
+command undo/redo. Integrated coverage authors and saves a real prefab, exposes
+native mesh/material properties, edits a native prefab-reference component's
+parameters, instantiates the prefab through the production command, saves inherited
+and overridden dependency metadata, and removes source parameter metadata. The
+source prefab also completes its regular resource transform and thumbnail workflow.
+The existing viewport resize and Play-close-reopen regressions run in the same
+suite. Verification remains Windows Debug/Vulkan; broader asset compatibility and
+other configurations remain part of the active modernization effort.
+
+The final unresolved-source case also passes: the source resource remains a
+dependency, and unresolvable parameter metadata adds no guessed references.
+Undo restores collection from the current source metadata. The final integration
+rerun is `Workspace/editor-dependencies-final-check-tests.log` (exit zero), with
+the incremental test build in `Workspace/editor-dependencies-final-check-build.log`.
