@@ -82,7 +82,8 @@ public:
 
         if (uiPlatform == xiiInvalidIndex)
         {
-          xiiLog::Error("Asset platform config '{0}' is unknown", pMsg->m_sPlatform);
+          msg.m_Status = xiiTransformStatus(xiiFmt("Asset platform config '{}' is unknown.", pMsg->m_sPlatform));
+          xiiLog::Error("{}", msg.m_Status.m_sMessage);
         }
         else
         {
@@ -312,6 +313,7 @@ public:
       else
       {
         xiiLog::Error("Failed to connect with host process");
+        SetReturnCode(1);
       }
     }
 
