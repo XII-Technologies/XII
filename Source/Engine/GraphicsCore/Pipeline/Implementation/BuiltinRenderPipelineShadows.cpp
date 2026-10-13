@@ -407,17 +407,10 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedShadowData(const xiiRayTra
 
 void xiiBuiltinRenderPipelineRuntime::SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
-  const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_Resources.m_ShadowPasses.m_uiRayTracedShadowHistoryWriteIndex;
   data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_ShadowPasses;
-
-  if (EnsureTemporalHistoryTextures(resources.m_pRayTracedShadowHistory, xiiGALResourceFormat::R8UNormalized, uiWidth, uiHeight))
-  {
-    resources.m_bRayTracedShadowHistoryValid = false;
-  }
 
   data.m_bHistoryValid       = resources.m_bRayTracedShadowHistoryValid;
   data.m_hRTRawShadowMask    = builder.ReadTexture(xiiRGBlackboardKeys::k_RTRawShadowMask, xiiGALResourceStateFlags::ShaderResource);
@@ -463,7 +456,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteShadowDenoiseData(const xiiShadowDe
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DenoisedOutput", context.GetTexture(data.m_hRTFinalShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
-    m_Resources.m_ShadowPasses.m_bRayTracedShadowHistoryValid = true;
+    m_Resources.m_ShadowPasses.m_bRayTracedShadowHistoryValid       = true;
     m_Resources.m_ShadowPasses.m_uiRayTracedShadowHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();

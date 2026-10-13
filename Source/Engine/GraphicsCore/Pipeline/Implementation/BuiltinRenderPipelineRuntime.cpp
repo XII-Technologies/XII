@@ -510,6 +510,7 @@ void xiiBuiltinRenderPipelineRuntime::BeginFrame(const xiiVirtualShadowMapManage
 
 xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
+  XII_SUCCEED_OR_RETURN(PrepareTemporalResources(stage));
   if (stage == "PrepareFrame")
   {
     BuildPrepareFrame(graph, blackboard);

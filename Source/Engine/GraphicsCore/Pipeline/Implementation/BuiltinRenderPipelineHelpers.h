@@ -139,30 +139,6 @@ namespace xiiBuiltinPipelineUtils
 
 
 
-  inline bool EnsureTemporalHistoryTextures(xiiSharedPtr<xiiGALTexture> (&textures)[2], xiiGALResourceFormat::Enum format, xiiUInt32 uiWidth, xiiUInt32 uiHeight)
-  {
-    auto MatchesResolution = [uiWidth, uiHeight](const xiiSharedPtr<xiiGALTexture>& pTexture) {
-      return pTexture != nullptr && pTexture->GetDescription().m_Size.width == uiWidth && pTexture->GetDescription().m_Size.height == uiHeight;
-    };
-
-    if (MatchesResolution(textures[0]) && MatchesResolution(textures[1]))
-      return false;
-
-    xiiGALTextureCreationDescription description;
-    description.m_Type        = xiiGALResourceDimension::Texture2D;
-    description.m_Format      = format;
-    description.m_Size.width  = uiWidth;
-    description.m_Size.height = uiHeight;
-    description.m_uiMipLevels = 1U;
-    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage       = xiiGALResourceUsage::Default;
-
-    textures[0] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    textures[1] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    XII_ASSERT_DEV(textures[0] != nullptr && textures[1] != nullptr, "Failed to allocate temporal lighting history textures.");
-    return true;
-  }
-
   inline xiiRenderGraphBufferHandle CreateTemporalDenoiseConstants(xiiRenderGraphBuilder& builder, xiiStringView sName)
   {
     xiiGALBufferCreationDescription description;
