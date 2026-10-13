@@ -7,5 +7,7 @@ xii_create_target(APPLICATION ${PROJECT_NAME})
 
 # Exercise the production scene plugin instead of compiling copies of selected implementation units.
 target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorFramework SharedPluginScene SharedPluginAssets EditorPluginScene EditorPluginAssets)
+# Native test widgets need the same Qt Debug RTTI settings as production widgets.
+xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets)
 add_dependencies(${PROJECT_NAME} EditorProcessor)
 xii_ci_add_test(${PROJECT_NAME})
