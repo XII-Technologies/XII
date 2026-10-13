@@ -3521,3 +3521,65 @@ physical sensor calibration accuracy across scene geometries or backends.
 Deliberate physical GPU exhaustion was not performed. Release, other backends and
 other operating systems remain untested. Broader editor workflow verification,
 legacy scene migration and the deformation work recorded above remain outstanding.
+
+
+### Shadow Atlas Allocation Follows Demand
+
+A further audit of scene-independent GPU memory found that every view reserved
+both a four-layer 4096 x 4096 D32 directional atlas and a 4096 x 4096 D32 local
+atlas, even without any shadow-casting lights. Their uncompressed texture storage
+alone totals 320 MiB per view, excluding backend allocation alignment and overhead.
+The inspected user project at `D:/trmp/FeatureLab` has directional shadows disabled
+in `Scenes/Main.xiiScene`; neither its source nor its configuration was changed.
+
+Shadow allocation now runs after cascade setup and before graph callbacks import
+or dereference the images. With no directional cascades, the array keeps its four
+shader-compatible layers at 1 x 1. With no allocated local shadow faces, the local
+atlas is also 1 x 1. The local decision uses allocated face statistics, since the
+per-light descriptor array also contains lights without shadows. Active shadows
+retain their existing 4096 resolution and configured local atlas size.
+
+Matching textures are reused. Turning shadows off releases obsolete textures and
+single-cascade views; graph imports and external shared owners retain only their
+actual uses, while GAL handles deferred native destruction. Allocation and cascade
+view failures return `XII_FAILURE` through Shadows stage construction rather than
+asserting or dereferencing a null texture. The no-cascade execution path clears all
+fallback array slices to reversed-Z far depth so shader reads are deterministic.
+
+`ShadowMemoryTest.cpp` runs the resource-backed default pipeline and checks empty
+views, non-shadowing lights, full allocation on demand, fallback reuse, and release
+of both full atlases after shadows are disabled. It seeds fallback images with
+nonzero depth before a second frame, then maps GPU readbacks of all five fallback
+slices to verify that execution clears them to zero. A separate fixture rejects
+allocation with the default device temporarily unavailable and subsequently builds
+the normal pipeline successfully.
+
+The two focused regressions pass with Vulkan synchronization validation in
+`Workspace/editor-shadow-memory-final-tests.log`. Temporarily restoring the old
+unconditional atlas sizes produces the expected allocation-size failure in
+`Workspace/editor-shadow-memory-control-tests.log`; the command restores the fixed
+source automatically. The final Debug build of Editor, its processor/player
+consumers, GraphicsCoreTest, EditorFrameworkTest and the native engine-process
+tests passes in `Workspace/editor-shadow-memory-restored-build.log`.
+
+
+Final verification on October 13, 2026:
+
+- All 67 native engine-process subtests pass with synchronization validation:
+  `Workspace/editor-shadow-memory-native-final-tests.log`.
+- All 21 GraphicsCore subtests pass: `Workspace/editor-shadow-memory-core-tests.log`.
+- Both shadow-memory regressions pass with GPU-assisted and synchronization
+  validation: `Workspace/editor-shadow-memory-gpuav-tests.log`. There are no
+  Vulkan validation errors; instrumentation emits performance warnings.
+- All twelve editor subtests pass: `Workspace/editor-shadow-memory-editor-tests.log`.
+  The real engine process survives 160 viewport frames, including 96 size changes,
+  captures the final 1280 x 720 output, and supports Play/close/reopen. Its engine
+  logs contain no device-memory exhaustion, device-loss or Vulkan validation errors.
+- The restored production translation unit was explicitly rebuilt after the
+  negative-control run, before the final focused and full-suite runs.
+
+These tests establish the removed unconditional storage cost and preserved active
+shadow allocation, lifecycle and execution. They do not measure total renderer
+residency in the user's RenderDoc capture or reproduce that exact live-project
+crash. Physical GPU exhaustion, Release, other backends and operating systems were
+not exercised. Other rendering resources retain their existing quality and budgets.
