@@ -112,8 +112,10 @@ public:
   xiiAssetProcessor();
   ~xiiAssetProcessor();
 
-  void             StartProcessTask();
-  void             StopProcessTask(bool bForce);
+  void StartProcessTask();
+  /// Stops dispatching jobs. Force cancels running processes; wait joins the processor thread
+  /// after outstanding jobs finish. Waiting must not hold the asset-curator mutex.
+  void             StopProcessTask(bool bForce, bool bWait = false);
   ProcessTaskState GetProcessTaskState() const
   {
     return m_ProcessTaskState;

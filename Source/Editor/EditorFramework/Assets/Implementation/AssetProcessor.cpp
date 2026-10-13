@@ -115,7 +115,7 @@ void xiiAssetProcessor::StartProcessTask()
   }
 }
 
-void xiiAssetProcessor::StopProcessTask(bool bForce)
+void xiiAssetProcessor::StopProcessTask(bool bForce, bool bWait)
 {
   {
     XII_LOCK(m_ProcessorMutex);
@@ -132,18 +132,21 @@ void xiiAssetProcessor::StopProcessTask(bool bForce)
       }
       break;
       case ProcessTaskState::Stopping:
-        if (!bForce)
+        if (!bForce && !bWait)
           return;
         break;
       default:
       case ProcessTaskState::Stopped:
-        return;
+        if (!bWait)
+          return;
+        break;
     }
   }
 
   if (bForce)
-  {
     m_bForceStop = true;
+  if ((bForce || bWait) && m_pThread)
+  {
     m_pThread->Join();
     m_pThread.Clear();
     XII_ASSERT_DEV(m_ProcessTaskState == ProcessTaskState::Stopped, "Process task shoul have set the state to stopped.");
