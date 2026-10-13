@@ -14,7 +14,7 @@ namespace
 {
   using namespace xiiModelImportInternal;
 
-  struct PendingNode
+  struct PendingSkeletonNode
   {
     XII_DECLARE_POD_TYPE();
     const aiNode* m_pNode;
@@ -60,11 +60,11 @@ xiiResult xiiModelSkeletonImport::ReadFile(xiiStringView sSourceFile, xiiModelSk
   if (scene == nullptr || scene->mRootNode == nullptr)
     return fail(importer.GetErrorString());
 
-  xiiModelSkeletonImport             result;
-  xiiDynamicArray<PendingNode>       pending;
-  xiiDynamicArray<const aiNode*>     nodes;
-  xiiHashSet<const aiNode*>          visited;
-  xiiHashTable<xiiString, xiiUInt16> joints;
+  xiiModelSkeletonImport               result;
+  xiiDynamicArray<PendingSkeletonNode> pending;
+  xiiDynamicArray<const aiNode*>       nodes;
+  xiiHashSet<const aiNode*>            visited;
+  xiiHashTable<xiiString, xiiUInt16>   joints;
   pending.PushBack({scene->mRootNode, xiiMath::MaxValue<xiiUInt16>()});
   while (!pending.IsEmpty())
   {
