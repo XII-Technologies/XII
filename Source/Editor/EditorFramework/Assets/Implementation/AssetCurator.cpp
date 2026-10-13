@@ -120,8 +120,8 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
       xiiLog::Warning("Asset profiles file does not exist or contains invalid data. Setting up default profiles.");
       if (!xiiStartup::HasApplicationTag("editorprocessor") && !xiiFileSystem::ExistsFile(":project/Editor/AssetProfiles.ddl"))
       {
-        SaveAssetProfiles().IgnoreResult();
-        SaveRuntimeProfiles();
+        if (SaveAssetProfiles().Failed() || SaveRuntimeProfiles().Failed())
+          xiiLog::Error("Could not save the initial asset profile configuration.");
       }
     }
   }

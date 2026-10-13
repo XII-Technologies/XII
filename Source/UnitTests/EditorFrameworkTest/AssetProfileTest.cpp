@@ -30,8 +30,8 @@ void TestAssetProfiles(xiiQtEditorApp& editor, xiiStringView projectDirectory)
   other->AddMissingConfigs();
   other->GetTypeConfig<xiiTextureAssetProfileConfig>()->m_uiRenderTargetResolution1 = 768;
   const auto otherIndex                                                             = curator->GetNumAssetProfiles() - 1;
-  curator->SaveRuntimeProfiles();
-  XII_SCOPE_EXIT(texture->m_uiRenderTargetResolution1 = originalResolution; curator->SaveRuntimeProfiles(); curator->SetActiveAssetProfileByIndex(originalIndex, true); XII_TEST_RESULT(curator->DeleteAssetProfile(other)););
+  XII_TEST_RESULT(curator->SaveRuntimeProfiles());
+  XII_SCOPE_EXIT(texture->m_uiRenderTargetResolution1 = originalResolution; XII_TEST_RESULT(curator->SaveRuntimeProfiles()); curator->SetActiveAssetProfileByIndex(originalIndex, true); XII_TEST_RESULT(curator->DeleteAssetProfile(other)););
 
   xiiStringBuilder path(projectDirectory);
   path.AppendPath("ProfileTarget.xiiRenderTargetAsset");
@@ -72,7 +72,7 @@ void TestAssetProfiles(xiiQtEditorApp& editor, xiiStringView projectDirectory)
     return;
   // Force reevaluation after editing the active profile, as the real profile dialog does.
   texture->m_uiRenderTargetResolution1 = 512;
-  curator->SaveRuntimeProfiles();
+  XII_TEST_RESULT(curator->SaveRuntimeProfiles());
   curator->SetActiveAssetProfileByIndex(originalIndex, true);
   xiiUInt64  editedHash  = 0;
   const auto editedState = curator->IsAssetUpToDate(asset->GetGuid(), original, type, editedHash, thumb, package);

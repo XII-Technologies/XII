@@ -5,7 +5,6 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Algorithm/HashingUtils.h>
-#include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OpenDdlReader.h>
@@ -130,7 +129,7 @@ void xiiAssetCurator::SetActiveAssetProfileByIndex(xiiUInt32 uiIndex, bool bForc
   }
 }
 
-void xiiAssetCurator::SaveRuntimeProfiles()
+xiiResult xiiAssetCurator::SaveRuntimeProfiles()
 {
   for (xiiUInt32 i = 0; i < GetNumAssetProfiles(); ++i)
   {
@@ -140,35 +139,9 @@ void xiiAssetCurator::SaveRuntimeProfiles()
 
     sProfileRuntimeDataFile.Set(":project/RuntimeConfigs/", pProfile->GetConfigName(), ".xiiProfile");
 
-    pProfile->SaveForRuntime(sProfileRuntimeDataFile).IgnoreResult();
+    XII_SUCCEED_OR_RETURN(pProfile->SaveForRuntime(sProfileRuntimeDataFile));
   }
-}
-
-xiiResult xiiAssetCurator::SaveAssetProfiles()
-{
-  xiiDeferredFileWriter file;
-  file.SetOutput(":project/Editor/AssetProfiles.ddl");
-
-  xiiOpenDdlWriter ddl;
-  ddl.SetOutputStream(&file);
-
-  ddl.BeginObject("AssetProfiles");
-
-  for (const auto* pCfg : m_AssetProfiles)
-  {
-    ddl.BeginObject("Config", pCfg->GetConfigName());
-
-    // make sure to create the same GUID every time, otherwise the serialized file changes all the time
-    const xiiUuid guid = xiiUuid::MakeStableUuidFromString(pCfg->GetConfigName());
-
-    xiiReflectionSerializer::WriteObjectToDDL(ddl, pCfg->GetDynamicRTTI(), pCfg, guid);
-
-    ddl.EndObject();
-  }
-
-  ddl.EndObject();
-
-  return file.Close();
+  return XII_SUCCESS;
 }
 
 xiiResult xiiAssetCurator::ReloadAssetProfiles()
@@ -244,7 +217,7 @@ xiiResult xiiAssetCurator::ReloadAssetProfiles()
         return XII_FAILURE;
       profiles.PushBack(pProfile);
       converter.ApplyPropertiesToObject(root, xiiGetStaticRTTI<xiiPlatformProfile>(), pProfile);
-      if (pProfile->GetConfigName().IsEmpty())
+      if (!xiiStringUtils::IsValidIdentifierName(pProfile->GetConfigName().GetStartPointer(), pProfile->GetConfigName().GetEndPointer()))
         return XII_FAILURE;
       for (xiiUInt32 i = 0; i + 1 < profiles.GetCount(); ++i)
       {
@@ -282,30 +255,12 @@ xiiResult xiiAssetCurator::ReloadAssetProfiles()
     profiles.InsertAt(0, profile);
   }
 
-  // Initialization loads definitions before the curator tasks exist. A running curator must
-  // finish hashing before destroying the profile objects used outside the mutex by that task.
-  const bool initialized = m_pAssetTableWriter != nullptr;
-  if (initialized)
-    ShutdownUpdateTask();
-  {
-    XII_LOCK(m_CuratorMutex);
-    const xiiString activeName = m_AssetProfiles.IsEmpty() ? xiiString() : xiiString(GetActiveAssetProfile()->GetConfigName());
-    ClearAssetProfiles();
-    m_AssetProfiles        = std::move(profiles);
-    m_uiActiveAssetProfile = 0;
-    for (xiiUInt32 i = 0; i < m_AssetProfiles.GetCount(); ++i)
-    {
-      if (m_AssetProfiles[i]->GetConfigName().IsEqual_NoCase(activeName))
-      {
-        m_uiActiveAssetProfile = i;
-        break;
-      }
-    }
-    m_uiLoadedAssetProfilesHash = hash;
-    m_bAssetProfilesLoaded      = true;
-  }
-  if (initialized)
-    SetActiveAssetProfileByIndex(m_uiActiveAssetProfile, true);
+  xiiUInt32       activeIndex = 0;
+  const xiiString activeName  = m_AssetProfiles.IsEmpty() ? xiiString() : xiiString(GetActiveAssetProfile()->GetConfigName());
+  for (xiiUInt32 i = 0; i < profiles.GetCount(); ++i)
+    if (profiles[i]->GetConfigName().IsEqual_NoCase(activeName))
+      activeIndex = i;
+  PublishAssetProfiles(profiles, hash, activeIndex);
 
   return XII_SUCCESS;
 }

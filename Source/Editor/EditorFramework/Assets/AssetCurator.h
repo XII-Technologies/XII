@@ -210,11 +210,21 @@ public:
   /// Invalid input leaves the current definitions and active profile unchanged.
   xiiResult ReloadAssetProfiles();
 
-  void SaveRuntimeProfiles();
+  /// Persists and publishes a complete profile collection in the supplied order. Index zero must
+  /// be Default. The input is cloned; ownership is retained by the caller. Must be called on the
+  /// main thread between asset operations. Stops processor jobs and hashing during publication.
+  /// A failed file installation rolls back previously installed files and leaves live profiles
+  /// unchanged. Rollback failures are reported with retained backup paths. This is not a crash-safe
+  /// transaction across files. Successful publication invalidates all existing profile pointers.
+  xiiStatus ApplyAssetProfiles(xiiArrayPtr<const xiiPlatformProfile* const> profiles, xiiUInt32 uiActiveProfile);
+
+  /// Saves all runtime profile files, stopping at the first write failure.
+  xiiResult SaveRuntimeProfiles();
 
 private:
   void ClearAssetProfiles();
   void SetupDefaultAssetProfiles();
+  void PublishAssetProfiles(xiiHybridArray<xiiPlatformProfile*, 8>& profiles, xiiUInt64 uiHash, xiiUInt32 uiActiveProfile);
 
   xiiHybridArray<xiiPlatformProfile*, 8> m_AssetProfiles;
   xiiUInt64                              m_uiLoadedAssetProfilesHash = 0;

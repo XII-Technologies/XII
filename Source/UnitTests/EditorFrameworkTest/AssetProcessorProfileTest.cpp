@@ -34,7 +34,7 @@ void TestAssetProcessorProfileReload(xiiQtEditorApp& editor, xiiStringView proje
   XII_SCOPE_EXIT(texture->m_uiRenderTargetResolution1 = originalResolution;
                  curator->SetActiveAssetProfileByIndex(originalIndex, true);
                  if (added != nullptr) XII_TEST_RESULT(curator->DeleteAssetProfile(added));
-                 curator->SaveRuntimeProfiles(); XII_TEST_RESULT(curator->SaveAssetProfiles()));
+                 XII_TEST_RESULT(curator->SaveRuntimeProfiles()); XII_TEST_RESULT(curator->SaveAssetProfiles()));
 
   xiiStringBuilder path(projectDirectory), profilePath(projectDirectory);
   path.AppendPath("Processor/ProfileTarget.xiiRenderTargetAsset");
@@ -79,7 +79,7 @@ void TestAssetProcessorProfileReload(xiiQtEditorApp& editor, xiiStringView proje
 
   // The same processor has already handled jobs before this definition is edited and saved.
   texture->m_uiRenderTargetResolution1 = 640;
-  curator->SaveRuntimeProfiles();
+  XII_TEST_RESULT(curator->SaveRuntimeProfiles());
   if (!XII_TEST_RESULT(curator->SaveAssetProfiles()))
     return;
   curator->SetActiveAssetProfileByIndex(originalIndex, true);
@@ -100,7 +100,7 @@ void TestAssetProcessorProfileReload(xiiQtEditorApp& editor, xiiStringView proje
   }
 #endif
   texture->m_uiRenderTargetResolution1 = 896;
-  curator->SaveRuntimeProfiles();
+  XII_TEST_RESULT(curator->SaveRuntimeProfiles());
   if (!XII_TEST_RESULT(curator->SaveAssetProfiles()))
     return;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -126,7 +126,7 @@ void TestAssetProcessorProfileReload(xiiQtEditorApp& editor, xiiStringView proje
   added->SetConfigName("ProcessorReloadProfile");
   added->AddMissingConfigs();
   added->GetTypeConfig<xiiTextureAssetProfileConfig>()->m_uiRenderTargetResolution1 = 768;
-  curator->SaveRuntimeProfiles();
+  XII_TEST_RESULT(curator->SaveRuntimeProfiles());
   if (!XII_TEST_RESULT(curator->SaveAssetProfiles()))
     return;
   curator->SetActiveAssetProfileByIndex(curator->GetNumAssetProfiles() - 1, true);
