@@ -183,6 +183,9 @@ public:
       m_pDevice->EndFrame();
     }
 
+    // Make sure telemetry is sent out regularly.
+    xiiTelemetry::PerFrameUpdate();
+
     // Needs to be called once per frame
     xiiResourceManager::PerFrameUpdate();
 
@@ -213,6 +216,18 @@ public:
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    xiiTelemetry::SetServerName("Procedural Triangle");
+
+    // Activate xiiTelemetry such that the inspector plugin can use the network connection.
+    xiiTelemetry::CreateServer();
+
+    // Load the inspector plugin.
+    // The plugin contains automatic configuration code (through the xiiStartup system), so it will configure itself properly when the engine is initialized by calling xiiStartup::StartupCore().
+    // When you are using xiiApplication, this is done automatically.
+    xiiPlugin::LoadPlugin("xiiInspectorPlugin", xiiPluginLoadFlags::PluginIsOptional).IgnoreResult();
+#endif
 
     // Register Input
     {
@@ -308,6 +323,8 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+    xiiTelemetry::CloseConnection();
+
 #if XII_ENABLED(USE_DIRECTORY_WATCHER)
     m_pDirectoryWatcher->CloseDirectory();
     m_pDirectoryWatcher.Clear();

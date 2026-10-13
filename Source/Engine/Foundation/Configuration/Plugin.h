@@ -11,9 +11,9 @@
 /// The data that is broadcast whenever a plugin is (un-) loaded.
 struct xiiPluginEvent
 {
-  enum Type
+  enum Type : xiiUInt8
   {
-    BeforeLoading,          ///< Sent shortly before a new plugin is loaded.
+    BeforeLoading = 0U,     ///< Sent shortly before a new plugin is loaded.
     AfterLoadingBeforeInit, ///< Sent immediately after a new plugin has been loaded, even before it is initialized (which might trigger loading of other plugins).
     AfterLoading,           ///< Sent after a new plugin has been loaded and initialized.
     BeforeUnloading,        ///< Sent before a plugin is going to be unloaded.
@@ -33,19 +33,20 @@ struct xiiPluginLoadFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     LoadCopy         = XII_BIT(0), ///< Don't load a DLL directly, but create a copy of the file and load that instead. This allows to continue working on (and compiling) the DLL in parallel.
     PluginIsOptional = XII_BIT(1), ///< When an optional plugin can't be loaded (missing file usually), no error is logged. LoadPlugin() will still return XII_FAILURE though.
     CustomDependency = XII_BIT(2), ///< The plugin is an injected dependency (usually for the editor), and thus might get treated differently (this is just a tag)
 
-    Default = 0,
+    Default = 0U,
   };
 
   struct Bits
   {
     StorageType LoadCopy : 1;
     StorageType PluginIsOptional : 1;
+    StorageType CustomDependency : 1;
   };
 };
 
