@@ -3228,3 +3228,70 @@ Profile objects must remain alive and unchanged during an evaluation. Atomic liv
 editing, profile-definition reload in already-running processors and save-failure
 handling in the profile dialog still need work. Release, other platforms, manual
 UI parity and legacy scene migration remain unverified or incomplete.
+
+### Saved Profile Reload In Running Asset Processors
+
+Background processors previously loaded `Editor/AssetProfiles.ddl` only during
+startup. Editing an existing profile left a running processor with stale settings;
+adding a profile left it unknown. The processor could generate a render target with
+the wrong dimensions and disagree with the editor's requested hashes. Curator
+shutdown also wrote its profile objects back to disk, allowing a stale processor
+or an initialization fallback to overwrite definitions it did not author.
+
+`ReloadAssetProfiles()` is now the curator's single profile-loading path. It reads
+and fingerprints the file contents, independently of cached timestamps. Unchanged
+contents preserve the existing objects and avoid a curator rescan. Changed contents
+are parsed into an owned temporary collection. Validation checks reflected roots,
+owned configuration references and types, duplicate configuration types, empty
+names and case-insensitive duplicate names before publishing anything. The default
+profile is placed at index zero. Missing defaults are constructed with existing
+configuration defaults. Reload preserves the active profile by name, falling back
+to Default if it was removed.
+
+On a successful change, background hashing is stopped before replacing objects.
+Replacement occurs under the curator mutex, followed by active-state reevaluation
+and the existing engine-process platform notification. The task wait occurs
+outside the mutex. The API is for the main thread between asset operations; a
+successful changed reload invalidates previously acquired profile pointers.
+Rejected definitions leave the live collection, active selection and loaded-file
+fingerprint unchanged. This is not a concurrent profile-editing API.
+
+The processor reloads before selecting a job's named profile. Invalid definitions
+produce an explicit failed response. Standalone transformation also validates
+definitions and now exits with code one for an invalid file or unknown profile;
+unknown profiles previously logged an error and exited zero. Profile persistence
+is confined to explicit saves and initial default creation. Shutdown no longer
+rewrites profiles. Startup retains an existing invalid file, and processors do not
+create fallback definitions on disk. The reflected asset/profile formats are
+unchanged, and no alternate configuration cache or compatibility path was added.
+
+Verification on October 13, 2026:
+
+- Debug builds of EditorFrameworkTest, EditorProcessor and Editor pass:
+  `Workspace/editor-profile-reload-final-build.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-profile-reload-final-tests.log`. One running production
+  processor generates native render targets at 640, 896 and 768 pixels with exact
+  header hashes. The Windows fixture restores the profile file's exact modification
+  timestamp between two distinct configurations. It exercises added and removed
+  profiles, eight invalid-definition cases, metadata retention and recovery.
+- Temporarily disabling only the processor's reload call causes nine regression
+  failures, including wrong dimensions, mismatched hashes and rejection of the new
+  profile: `Workspace/editor-profile-reload-control-tests.log`. The command restores
+  the source automatically; final builds and tests use the production implementation.
+- Real standalone processor launches verify error text and exit code one for an
+  unknown profile and an invalid definition. The invalid input survives startup and
+  shutdown unchanged. The pre-fix unknown-profile run exits zero:
+  `Workspace/editor-profile-reload-cli-baseline.exit` and its stdout log.
+- The first integrated run exposed a fixture reader retaining a generated surface
+  output across a curator refresh. Closing it before the profile test fixes the
+  pending transform's write failure; the failed run is retained in
+  `Workspace/editor-profile-reload-tests.log`. Final native engine logs contain no
+  GPU allocation, device-loss or Vulkan validation errors. `git diff --check` passes.
+
+Profile-dialog edits still need an atomic publication/persistence boundary, correct
+selection mapping after multiple insertions/deletions and surfaced save failures.
+These changes do not establish arbitrary concurrent profile editing or resolve the
+other outstanding editor workflows, legacy scene migrations and deformation paths
+recorded above. Release, other backends and other operating systems remain untested
+for this checkpoint. Existing user projects and assets were not rewritten.
