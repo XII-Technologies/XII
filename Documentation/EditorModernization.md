@@ -3449,3 +3449,75 @@ exhaustion was not performed. Pair-allocation null results and missing-device
 failures are deterministic fixture inputs. Release, other backends and other
 operating systems remain untested, and the broader editor modernization goal
 remains incomplete.
+
+### Calibrated Sensor Output Lifetime
+
+The remaining pipeline-owned retirement array retained every replaced calibrated
+sensor output until view destruction. Profile switching and sensor resolution
+changes could therefore grow memory independently of the graph cache and TAA.
+`m_RetiredSensorOutputTextures` and both append sites have been removed. A profile
+change clears the view's current output. Existing graph imports and caller-owned
+shared pointers retain images for their actual uses, with GAL deferring native
+destruction behind submitted GPU work.
+
+`PrepareSensorOutput()` now runs before ScreenEffects setup. It resolves the
+immutable sensor profile and allocates the exact RGBA32Float output description,
+reusing an existing matching texture. Invalid profiles or allocation failure
+return `XII_FAILURE` before setup imports or execution. Allocation failures report
+the requested dimensions and format. The old void callback could return silently
+after failure and leave sensor execution absent from an otherwise successful
+pipeline. The output accessor documents shared ownership and GPU synchronization
+for asynchronous readback. No new cache, retirement queue or Qt dependency was
+introduced.
+
+The native regression uses the real default pipeline and two views sharing one
+resource definition. It switches one view through 64 sensor sizes while preserving
+the other view's output, and covers unchanged selection, disabling, retained
+readback ownership and re-enabling. It explicitly seeds nonzero texture contents
+before rendering the empty scene, then maps the GPU result to distinguish actual
+sensor dispatch from zero-filled fresh memory. A resource-backed failure fixture
+checks rejection before setup and subsequent successful pipeline execution.
+
+The current folder-unity build also exposed an existing ModelImporter collision:
+MeshImport.cpp and SkeletonImport.cpp both declared anonymous `PendingNode`
+records with different layouts. The skeleton record now has the specific internal
+name `PendingSkeletonNode`, preserving the algorithm and serialized formats.
+This build integration fix is committed separately. The initial compiler evidence
+is retained in `Workspace/editor-sensor-memory-build.log`; the later test-compile
+run records explicit shared-pointer borrowing corrections in
+`Workspace/editor-sensor-memory-unity-build.log`.
+
+Verification on October 13, 2026:
+
+- Debug EditorEngineProcessFrameworkTest, GraphicsCoreTest, EditorFrameworkTest,
+  EditorProcessor and Editor builds pass with folder unity enabled:
+  `Workspace/editor-sensor-memory-final-build.log`.
+- Both SensorMemory regressions pass:
+  `Workspace/editor-sensor-memory-tests.log`. GPU readback first verifies every
+  channel of the seeded image is 0.75, then verifies the same allocation is fully
+  overwritten with the empty scene's zero/invalid output. A retained output remains
+  readable after disabling the sensor.
+- Both regressions also pass with Vulkan GPU-assisted and synchronization
+  validation: `Workspace/editor-sensor-memory-gpuav-tests.log`. The validation layer
+  reports instrumentation performance warnings, with no allocation, device-loss
+  or Vulkan validation errors.
+- Temporarily restoring the original sensor retirement behavior causes 65
+  ownership failures: 64 profile changes and disabling the current output.
+  `Workspace/editor-sensor-memory-control-tests.log` retains that expected failure.
+  The command restores both production files byte-for-byte before the final build.
+- All 65 native engine-process subtests pass with Vulkan synchronization validation:
+  `Workspace/editor-sensor-memory-native-tests.log`. This includes the ModelImporter
+  skeleton-import regression and the existing graph-cache and temporal-memory tests.
+- All 21 GraphicsCore subtests pass:
+  `Workspace/editor-sensor-memory-core-tests.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-sensor-memory-editor-tests.log`, including the production
+  viewport's resize stress, capture and Play/close/reopen. Its engine logs contain
+  no allocation, device-loss or Vulkan validation errors. `git diff --check` passes.
+
+Existing user projects, assets and preferences were not rewritten. This verifies
+sensor-output lifetime and empty-scene dispatch/readback; it does not establish
+physical sensor calibration accuracy across scene geometries or backends.
+Deliberate physical GPU exhaustion was not performed. Release, other backends and
+other operating systems remain untested. Broader editor workflow verification,
+legacy scene migration and the deformation work recorded above remain outstanding.
