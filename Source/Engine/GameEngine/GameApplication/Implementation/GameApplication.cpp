@@ -106,7 +106,7 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
   {
     xiiWorld* pWorld = xiiWorld::GetWorld(i);
 
-    if (pWorld->GetWorldSimulationEnabled())
+    if (pWorld != nullptr && pWorld->GetWorldSimulationEnabled())
     {
       xiiTaskSystem::AddTaskToGroup(updateWorldsTaskID, pWorld->GetUpdateTask());
     }
@@ -195,19 +195,19 @@ void xiiGameApplication::RenderFps()
         {
           if (uiFPS >= 60)
           {
-            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Green);
+            xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Green);
           }
           else if (uiFPS >= 30)
           {
-            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::LightGreen);
+            xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::LightGreen);
           }
           else if (uiFPS >= 15)
           {
-            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Yellow);
+            xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Yellow);
           }
           else
           {
-            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Red);
+            xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Red);
           }
         }
       }
@@ -230,8 +230,6 @@ void xiiGameApplication::RenderConsole()
 
       if (const xiiView* pView = pRenderWorldModule->GetViewByUsageHint(xiiCameraUsageHint::MainView))
       {
-        xiiViewHandle hView = pView->GetHandle();
-
         const float fViewWidth             = pView->GetViewport().width;
         const float fViewHeight            = pView->GetViewport().height;
         const float fGlyphWidth            = xiiDebugRenderer::GetTextGlyphWidth();
@@ -245,11 +243,11 @@ void xiiGameApplication::RenderConsole()
 
         {
           xiiColor backgroundColor(0.0f, 0.0f, 0.0f, 0.7f);
-          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(0.0f, 0.0f, fViewWidth, fConsoleHeight), 0.0f, backgroundColor);
+          xiiDebugRenderer::Draw2DRectangle(*pView, xiiRectFloat(0.0f, 0.0f, fViewWidth, fConsoleHeight), 0.0f, backgroundColor);
 
           xiiColor foregroundColor(0.0f, 0.0f, 0.0f, 0.8f);
-          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, 0.0f, fViewWidth - (2.0f * fBorderWidth), fConsoleTextAreaHeight), 0.0f, foregroundColor);
-          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, fConsoleTextAreaHeight + fBorderWidth, fViewWidth - (2.0f * fBorderWidth), fLineHeight), 0.0f, foregroundColor);
+          xiiDebugRenderer::Draw2DRectangle(*pView, xiiRectFloat(fBorderWidth, 0.0f, fViewWidth - (2.0f * fBorderWidth), fConsoleTextAreaHeight), 0.0f, foregroundColor);
+          xiiDebugRenderer::Draw2DRectangle(*pView, xiiRectFloat(fBorderWidth, fConsoleTextAreaHeight + fBorderWidth, fViewWidth - (2.0f * fBorderWidth), fLineHeight), 0.0f, foregroundColor);
         }
 
         {
@@ -265,10 +263,10 @@ void xiiGameApplication::RenderConsole()
           for (xiiUInt32 i = uiSkippedLines; i < uiNumConsoleLines; ++i)
           {
             auto& consoleString = consoleStrings[uiFirstLine - i];
-            xiiDebugRenderer::Draw2DText(hView, consoleString.m_sText.GetData(), xiiVec2I32(iTextLeft, iFirstLinePos + i * iTextHeight), consoleString.GetColor());
+            xiiDebugRenderer::Draw2DText(*pView, consoleString.m_sText.GetData(), xiiVec2I32(iTextLeft, iFirstLinePos + i * iTextHeight), consoleString.GetColor());
           }
 
-          xiiDebugRenderer::Draw2DText(hView, m_pConsole->GetInputLine(), xiiVec2I32(iTextLeft, (xiiInt32)(fConsoleTextAreaHeight + fBorderWidth + (fLineHeight * 0.5f))), xiiColor::White, 16, xiiDebugTextHAlign::Default, xiiDebugTextVAlign::Center);
+          xiiDebugRenderer::Draw2DText(*pView, m_pConsole->GetInputLine(), xiiVec2I32(iTextLeft, (xiiInt32)(fConsoleTextAreaHeight + fBorderWidth + (fLineHeight * 0.5f))), xiiColor::White, 16, xiiDebugTextHAlign::Default, xiiDebugTextVAlign::Center);
 
           if (xiiMath::Fraction(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds()) > 0.5)
           {
@@ -276,7 +274,7 @@ void xiiGameApplication::RenderConsole()
             const float fCaretX        = fBorderWidth + (fCaretPosition + 0.5f) * fGlyphWidth;
             const float fCaretY        = fConsoleTextAreaHeight + fBorderWidth + 1.0f;
             xiiColor    caretColor(1.0f, 1.0f, 1.0f, 0.5f);
-            xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fCaretX, fCaretY, 2.0f, fLineHeight - 2.0f), 0.0f, caretColor);
+            xiiDebugRenderer::Draw2DRectangle(*pView, xiiRectFloat(fCaretX, fCaretY, 2.0f, fLineHeight - 2.0f), 0.0f, caretColor);
           }
         }
       }

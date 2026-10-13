@@ -10,7 +10,7 @@
 #include <EditorFramework/Preferences/ScenePreferences.h>
 #include <EditorPluginScene/EditTools/GreyBoxEditTool.h>
 #include <GuiFoundation/PropertyGrid/ManipulatorManager.h>
-#include <ToolsFoundation/Command/TreeCommands.h>
+#include <SharedPluginScene/Scene/SceneCreation.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGreyBoxEditTool, 1, xiiRTTIDefaultAllocator<xiiGreyBoxEditTool>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -23,6 +23,11 @@ xiiGreyBoxEditTool::xiiGreyBoxEditTool()
 xiiGreyBoxEditTool::~xiiGreyBoxEditTool()
 {
   m_DrawBoxGizmo.m_GizmoEvents.RemoveEventHandler(xiiMakeDelegate(&xiiGreyBoxEditTool::GizmoEventHandler, this));
+  if (GetDocument())
+  {
+    GetDocument()->m_GameObjectEvents.RemoveEventHandler(xiiMakeDelegate(&xiiGreyBoxEditTool::GameObjectEventHandler, this));
+    xiiManipulatorManager::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiGreyBoxEditTool::ManipulatorManagerEventHandler, this));
+  }
 }
 
 xiiEditorInputContext* xiiGreyBoxEditTool::GetEditorInputContextOverride()
@@ -149,8 +154,7 @@ void xiiGreyBoxEditTool::GizmoEventHandler(const xiiGizmoEvent& e)
     float   negx, posx, negy, posy, negz, posz;
     m_DrawBoxGizmo.GetResult(vCenter, negx, posx, negy, posy, negz, posz);
 
-    auto* pDoc     = GetDocument();
-    auto* pHistory = pDoc->GetCommandHistory();
+    auto* pDoc = GetDocument();
 
     xiiUuid materialGuid;
 
@@ -169,75 +173,14 @@ void xiiGreyBoxEditTool::GizmoEventHandler(const xiiGizmoEvent& e)
       }
     }
 
-    pHistory->StartTransaction("Add Grey-Box");
-
-    xiiUuid objGuid, compGuid;
-    objGuid  = xiiUuid::MakeUuid();
-    compGuid = xiiUuid::MakeUuid();
-
+    const auto bounds = xiiBoundingBox::MakeFromMinMax(vCenter - xiiVec3(negx, negy, negz), vCenter + xiiVec3(posx, posy, posz));
+    xiiUuid    object;
+    const auto status = xiiCreateSceneBox(*pDoc->GetObjectAccessor(), bounds, materialGuid, object);
+    if (status.Failed())
     {
-      xiiAddObjectCommand cmdAdd;
-      cmdAdd.m_NewObjectGuid   = objGuid;
-      cmdAdd.m_pType           = xiiGetStaticRTTI<xiiGameObject>();
-      cmdAdd.m_sParentProperty = "Children";
-      pHistory->AddCommand(cmdAdd).AssertSuccess();
+      pDoc->ShowDocumentStatus(xiiFmt("Could not create box: {}", status.GetMessageString()));
+      return;
     }
-    {
-      xiiSetObjectPropertyCommand cmdPos;
-      cmdPos.m_NewValue  = vCenter;
-      cmdPos.m_Object    = objGuid;
-      cmdPos.m_sProperty = "LocalPosition";
-      pHistory->AddCommand(cmdPos).AssertSuccess();
-    }
-    {
-      xiiAddObjectCommand cmdComp;
-      cmdComp.m_NewObjectGuid   = compGuid;
-      cmdComp.m_pType           = xiiRTTI::FindTypeByName("xiiGreyBoxComponent");
-      cmdComp.m_sParentProperty = "Components";
-      cmdComp.m_Parent          = objGuid;
-      cmdComp.m_Index           = -1;
-      pHistory->AddCommand(cmdComp).AssertSuccess();
-    }
-    if (materialGuid.IsValid())
-    {
-      xiiStringBuilder            tmp;
-      xiiSetObjectPropertyCommand cmdMat;
-      cmdMat.m_NewValue  = xiiConversionUtils::ToString(materialGuid, tmp).GetData();
-      cmdMat.m_Object    = compGuid;
-      cmdMat.m_sProperty = "Material";
-      pHistory->AddCommand(cmdMat).AssertSuccess();
-    }
-    {
-      xiiSetObjectPropertyCommand cmdSize;
-      cmdSize.m_Object = compGuid;
-
-      cmdSize.m_NewValue  = negx;
-      cmdSize.m_sProperty = "SizeNegX";
-      pHistory->AddCommand(cmdSize).AssertSuccess();
-
-      cmdSize.m_NewValue  = posx;
-      cmdSize.m_sProperty = "SizePosX";
-      pHistory->AddCommand(cmdSize).AssertSuccess();
-
-      cmdSize.m_NewValue  = negy;
-      cmdSize.m_sProperty = "SizeNegY";
-      pHistory->AddCommand(cmdSize).AssertSuccess();
-
-      cmdSize.m_NewValue  = posy;
-      cmdSize.m_sProperty = "SizePosY";
-      pHistory->AddCommand(cmdSize).AssertSuccess();
-
-      cmdSize.m_NewValue  = negz;
-      cmdSize.m_sProperty = "SizeNegZ";
-      pHistory->AddCommand(cmdSize).AssertSuccess();
-
-      cmdSize.m_NewValue  = posz;
-      cmdSize.m_sProperty = "SizePosZ";
-      pHistory->AddCommand(cmdSize).AssertSuccess();
-    }
-
-    pHistory->FinishTransaction();
-
-    pDoc->GetSelectionManager()->SetSelection(pDoc->GetObjectManager()->GetObject(objGuid));
+    pDoc->GetSelectionManager()->SetSelection(pDoc->GetObjectManager()->GetObject(object));
   }
 }

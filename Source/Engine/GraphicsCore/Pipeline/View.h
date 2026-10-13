@@ -28,6 +28,7 @@
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 class xiiBuiltinRenderPipelineRuntime;
+class xiiRenderPipelineInstance;
 class xiiFrustum;
 class xiiWorld;
 class xiiRenderGraph;
@@ -68,7 +69,8 @@ public:
   void          SetName(xiiStringView sName);
 
   xiiGALTextureView* GetRenderTargetView() const;
-  void               SetRenderTargetView(xiiGALTextureView* pRenderTargetView);
+  /// Retains the offscreen output view and its texture until replaced or this view is destroyed.
+  void SetRenderTargetView(xiiGALTextureView* pRenderTargetView);
 
   /// Sets the swapchain that this view will be rendering into.
   const xiiGALSwapChain* GetSwapChain() const;
@@ -130,6 +132,13 @@ public:
 
   bool IsValid() const;
 
+  /// Controls render-data extraction and graph execution by the owning world module.
+  /// Disabled views retain their camera, targets, pipeline instance, and cached resources.
+  /// This does not change IsValid(). Call InvalidateTemporalHistory() when resuming after a camera cut.
+  /// Like other view mutations, this requires exclusive access to the owning world.
+  void SetRenderEnabled(bool bEnabled) { m_bRenderEnabled = bEnabled; }
+  bool IsRenderEnabled() const { return m_bRenderEnabled; }
+
   /// Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
   ///
   /// fNormalizedScreenPosX and fNormalizedScreenPosY are expected to be in [0; 1] range (normalized screen coordinates).
@@ -141,7 +150,7 @@ public:
   /// Returns XII_FAILURE, if the point could not be projected into screen-space.
   xiiResult ComputeScreenSpacePos(const xiiVec3& vWorldPos, xiiVec3& out_vScreenPosNormalized) const;
 
-  /// Calculates the world-space position that the given normalized screen-space coordinate maps to
+  /// Calculates the near-plane world position at the normalized screen coordinates.
   xiiResult ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos) const;
 
   /// Converts a screen-space position from pixel coordinates to normalized coordinates.
@@ -150,6 +159,7 @@ public:
   /// Converts a screen-space position from normalized coordinates to pixel coordinates.
   void ConvertScreenNormalizedPosToPixelPos(xiiVec3& inout_vNormalizedPos);
 
+  /// Native projections use ZeroToOne reversed Z (near=1, far=0), unlike Core camera projections.
   const xiiMat4& GetProjectionMatrix(xiiCameraEye eye) const;
   const xiiMat4& GetInverseProjectionMatrix(xiiCameraEye eye) const;
   const xiiMat4& GetViewMatrix(xiiCameraEye eye) const;
@@ -161,16 +171,31 @@ public:
 
   void                                   SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& pipeline);
   const xiiRenderPipelineResourceHandle& GetRenderPipelineResource() const { return m_hRenderPipeline; }
-  void                                   SetPipelineParameter(xiiStringView name, const xiiVariant& value);
-  void                                   RemovePipelineParameter(xiiStringView name);
-  const xiiVariantDictionary&            GetPipelineParameters() const { return m_PipelineParameters; }
+
+  /// Read-only view-local pass state from the most recent pipeline build. Call only at a CPU frame
+  /// boundary while holding world access. Pass pointers/arrays are borrowed until the next build;
+  /// resource replacement or a failed synchronization can destroy them. Empty before the first build.
+  const xiiRenderPipelineInstance& GetRenderPipelineInstance() const;
+
+  /// Resolves an object ID produced by this view's native GPU scene to a live mesh owner.
+  /// Call at a CPU frame boundary under world access. The ID must come from this view;
+  /// asynchronous callers must also retain/validate their view, camera and capture state.
+  /// Returns failure and clears output for background, retired packets or deleted owners.
+  [[nodiscard]] xiiResult     ResolveRenderedMesh(xiiUInt32 uiGpuObjectId, xiiSceneMeshSource& out_source) const;
+  void                        SetPipelineParameter(xiiStringView name, const xiiVariant& value);
+  void                        RemovePipelineParameter(xiiStringView name);
+  const xiiVariantDictionary& GetPipelineParameters() const { return m_PipelineParameters; }
 
   using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
   void                      SetRenderGraphBuilder(RenderGraphBuilder builder);
   const RenderGraphBuilder& GetRenderGraphBuilder() const;
   xiiUInt32                 GetRenderGraphBuilderVersion() const;
 
+  /// Extract active objects with any of these tags. An empty set includes all active objects.
+  /// Tags apply to each object independently; parent tags are not inherited.
   xiiTagSet m_IncludeTags;
+  /// Exclude objects with any of these tags, even if they also match m_IncludeTags.
+  /// Both filters are evaluated each extraction, including for cached static render data.
   xiiTagSet m_ExcludeTags;
 
   xiiRenderGraph*       GetRenderGraph() { return &m_RenderGraphContext.GetGraph(); }
@@ -219,6 +244,7 @@ private:
   xiiHashedString m_sName;
 
   xiiUInt32          m_uiRenderGraphBuilderVersion = 0;
+  bool               m_bRenderEnabled              = true;
   xiiCamera*         m_pCamera                     = nullptr;
   const xiiCamera*   m_pCullingCamera              = nullptr;
   const xiiCamera*   m_pLodCamera                  = nullptr;
@@ -239,8 +265,8 @@ private:
 
   /// Non-owning pointer to the swapchain this view renders into.
   /// Set via SetSwapChain(); may be nullptr for off-screen views.
-  const xiiGALSwapChain* m_pSwapChain        = nullptr;
-  xiiGALTextureView*     m_pRenderTargetView = nullptr;
+  const xiiGALSwapChain*          m_pSwapChain = nullptr;
+  xiiSharedPtr<xiiGALTextureView> m_pRenderTargetView;
 
   xiiViewRenderResourceContextHandle m_hPipelineRuntime;
   xiiRenderPipelineResourceHandle    m_hRenderPipeline;

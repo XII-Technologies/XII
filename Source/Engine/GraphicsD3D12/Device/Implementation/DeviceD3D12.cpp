@@ -719,7 +719,7 @@ xiiGALCommandQueue* xiiGALDeviceD3D12::GetCommandQueue(xiiBitflags<xiiGALCommand
 
 xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceD3D12::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALSwapChainD3D12> pSwapChainD3D12 = XII_NEW(&m_Allocator, xiiGALSwapChainD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALSwapChainD3D12> pSwapChainD3D12 = XII_NEW(GetAllocator(), xiiGALSwapChainD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pSwapChainD3D12->InitPlatform().Failed())
   {
@@ -732,7 +732,7 @@ xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceD3D12::CreateSwapChainPlat
 
 xiiInternal::NewInstance<xiiGALCommandList> xiiGALDeviceD3D12::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALCommandListD3D12> pCommandListD3D12 = XII_NEW(&m_Allocator, xiiGALCommandListD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALCommandListD3D12> pCommandListD3D12 = XII_NEW(GetAllocator(), xiiGALCommandListD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pCommandListD3D12->InitPlatform().Failed())
   {
@@ -745,7 +745,7 @@ xiiInternal::NewInstance<xiiGALCommandList> xiiGALDeviceD3D12::CreateCommandList
 
 xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceD3D12::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALBlendStateD3D12> pBlendStateD3D12 = XII_NEW(&m_Allocator, xiiGALBlendStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBlendStateD3D12> pBlendStateD3D12 = XII_NEW(GetAllocator(), xiiGALBlendStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pBlendStateD3D12->InitPlatform().Failed())
   {
@@ -758,7 +758,7 @@ xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceD3D12::CreateBlendStatePl
 
 xiiInternal::NewInstance<xiiGALDepthStencilState> xiiGALDeviceD3D12::CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALDepthStencilStateD3D12> pDepthStencilStateD3D12 = XII_NEW(&m_Allocator, xiiGALDepthStencilStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALDepthStencilStateD3D12> pDepthStencilStateD3D12 = XII_NEW(GetAllocator(), xiiGALDepthStencilStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pDepthStencilStateD3D12->InitPlatform().Failed())
   {
@@ -771,7 +771,7 @@ xiiInternal::NewInstance<xiiGALDepthStencilState> xiiGALDeviceD3D12::CreateDepth
 
 xiiInternal::NewInstance<xiiGALRasterizerState> xiiGALDeviceD3D12::CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALRasterizerStateD3D12> pRasterizerStateD3D12 = XII_NEW(&m_Allocator, xiiGALRasterizerStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALRasterizerStateD3D12> pRasterizerStateD3D12 = XII_NEW(GetAllocator(), xiiGALRasterizerStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pRasterizerStateD3D12->InitPlatform().Failed())
   {
@@ -784,7 +784,7 @@ xiiInternal::NewInstance<xiiGALRasterizerState> xiiGALDeviceD3D12::CreateRasteri
 
 xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceD3D12::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALShaderD3D12> pShaderD3D12 = XII_NEW(&m_Allocator, xiiGALShaderD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALShaderD3D12> pShaderD3D12 = XII_NEW(GetAllocator(), xiiGALShaderD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pShaderD3D12->InitPlatform().Failed())
   {
@@ -797,7 +797,7 @@ xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceD3D12::CreateShaderPlatform(c
 
 xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceD3D12::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  xiiInternal::NewInstance<xiiGALBufferD3D12> pBufferD3D12 = XII_NEW(&m_Allocator, xiiGALBufferD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBufferD3D12> pBufferD3D12 = XII_NEW(GetAllocator(), xiiGALBufferD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pBufferD3D12->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
@@ -810,7 +810,7 @@ xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceD3D12::CreateBufferPlatform(c
 
 xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceD3D12::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  xiiInternal::NewInstance<xiiGALTextureD3D12> pTextureD3D12 = XII_NEW(&m_Allocator, xiiGALTextureD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALTextureD3D12> pTextureD3D12 = XII_NEW(GetAllocator(), xiiGALTextureD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pTextureD3D12->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
@@ -823,7 +823,7 @@ xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceD3D12::CreateTexturePlatform
 
 xiiInternal::NewInstance<xiiGALSampler> xiiGALDeviceD3D12::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALSamplerD3D12> pSamplerD3D12 = XII_NEW(&m_Allocator, xiiGALSamplerD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALSamplerD3D12> pSamplerD3D12 = XII_NEW(GetAllocator(), xiiGALSamplerD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pSamplerD3D12->InitPlatform().Failed())
   {
@@ -836,7 +836,7 @@ xiiInternal::NewInstance<xiiGALSampler> xiiGALDeviceD3D12::CreateSamplerPlatform
 
 xiiInternal::NewInstance<xiiGALQuery> xiiGALDeviceD3D12::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALQueryD3D12> pQueryD3D12 = XII_NEW(&m_Allocator, xiiGALQueryD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALQueryD3D12> pQueryD3D12 = XII_NEW(GetAllocator(), xiiGALQueryD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pQueryD3D12->InitPlatform().Failed())
   {
@@ -849,7 +849,7 @@ xiiInternal::NewInstance<xiiGALQuery> xiiGALDeviceD3D12::CreateQueryPlatform(con
 
 xiiInternal::NewInstance<xiiGALFence> xiiGALDeviceD3D12::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALFenceD3D12> pFenceD3D12 = XII_NEW(&m_Allocator, xiiGALFenceD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALFenceD3D12> pFenceD3D12 = XII_NEW(GetAllocator(), xiiGALFenceD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pFenceD3D12->InitPlatform().Failed())
   {
@@ -862,7 +862,7 @@ xiiInternal::NewInstance<xiiGALFence> xiiGALDeviceD3D12::CreateFencePlatform(con
 
 xiiInternal::NewInstance<xiiGALRenderPass> xiiGALDeviceD3D12::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALRenderPassD3D12> pRenderPassD3D12 = XII_NEW(&m_Allocator, xiiGALRenderPassD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALRenderPassD3D12> pRenderPassD3D12 = XII_NEW(GetAllocator(), xiiGALRenderPassD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pRenderPassD3D12->InitPlatform().Failed())
   {
@@ -875,7 +875,7 @@ xiiInternal::NewInstance<xiiGALRenderPass> xiiGALDeviceD3D12::CreateRenderPassPl
 
 xiiInternal::NewInstance<xiiGALFramebuffer> xiiGALDeviceD3D12::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALFramebufferD3D12> pFramebufferD3D12 = XII_NEW(&m_Allocator, xiiGALFramebufferD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALFramebufferD3D12> pFramebufferD3D12 = XII_NEW(GetAllocator(), xiiGALFramebufferD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pFramebufferD3D12->InitPlatform().Failed())
   {
@@ -888,7 +888,7 @@ xiiInternal::NewInstance<xiiGALFramebuffer> xiiGALDeviceD3D12::CreateFramebuffer
 
 xiiInternal::NewInstance<xiiGALBottomLevelAS> xiiGALDeviceD3D12::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALBottomLevelASD3D12> pBottomLevelASD3D12 = XII_NEW(&m_Allocator, xiiGALBottomLevelASD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBottomLevelASD3D12> pBottomLevelASD3D12 = XII_NEW(GetAllocator(), xiiGALBottomLevelASD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pBottomLevelASD3D12->InitPlatform().Failed())
   {
@@ -901,7 +901,7 @@ xiiInternal::NewInstance<xiiGALBottomLevelAS> xiiGALDeviceD3D12::CreateBottomLev
 
 xiiInternal::NewInstance<xiiGALTopLevelAS> xiiGALDeviceD3D12::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALTopLevelASD3D12> pTopLevelASD3D12 = XII_NEW(&m_Allocator, xiiGALTopLevelASD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALTopLevelASD3D12> pTopLevelASD3D12 = XII_NEW(GetAllocator(), xiiGALTopLevelASD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pTopLevelASD3D12->InitPlatform().Failed())
   {
@@ -914,7 +914,7 @@ xiiInternal::NewInstance<xiiGALTopLevelAS> xiiGALDeviceD3D12::CreateTopLevelASPl
 
 xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceD3D12::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALPipelineResourceSignatureD3D12> pPipelineResourceSignatureD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALPipelineResourceSignatureD3D12> pPipelineResourceSignatureD3D12 = XII_NEW(GetAllocator(), xiiGALPipelineResourceSignatureD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pPipelineResourceSignatureD3D12->InitPlatform().Failed())
   {
@@ -927,7 +927,7 @@ xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceD3D12::Cre
 
 xiiInternal::NewInstance<xiiGALGraphicsPipelineState> xiiGALDeviceD3D12::CreateGraphicsPipelineStatePlatform(const xiiGALGraphicsPipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALGraphicsPipelineStateD3D12> pGraphicsPipelineStateD3D12 = XII_NEW(&m_Allocator, xiiGALGraphicsPipelineStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALGraphicsPipelineStateD3D12> pGraphicsPipelineStateD3D12 = XII_NEW(GetAllocator(), xiiGALGraphicsPipelineStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pGraphicsPipelineStateD3D12->InitPlatform().Failed())
   {
@@ -940,7 +940,7 @@ xiiInternal::NewInstance<xiiGALGraphicsPipelineState> xiiGALDeviceD3D12::CreateG
 
 xiiInternal::NewInstance<xiiGALComputePipelineState> xiiGALDeviceD3D12::CreateComputePipelineStatePlatform(const xiiGALComputePipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALComputePipelineStateD3D12> pComputePipelineStateD3D12 = XII_NEW(&m_Allocator, xiiGALComputePipelineStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALComputePipelineStateD3D12> pComputePipelineStateD3D12 = XII_NEW(GetAllocator(), xiiGALComputePipelineStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pComputePipelineStateD3D12->InitPlatform().Failed())
   {
@@ -953,7 +953,7 @@ xiiInternal::NewInstance<xiiGALComputePipelineState> xiiGALDeviceD3D12::CreateCo
 
 xiiInternal::NewInstance<xiiGALRayTracingPipelineState> xiiGALDeviceD3D12::CreateRayTracingPipelineStatePlatform(const xiiGALRayTracingPipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALRayTracingPipelineStateD3D12> pRayTracingPipelineStateD3D12 = XII_NEW(&m_Allocator, xiiGALRayTracingPipelineStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALRayTracingPipelineStateD3D12> pRayTracingPipelineStateD3D12 = XII_NEW(GetAllocator(), xiiGALRayTracingPipelineStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pRayTracingPipelineStateD3D12->InitPlatform().Failed())
   {
@@ -966,7 +966,7 @@ xiiInternal::NewInstance<xiiGALRayTracingPipelineState> xiiGALDeviceD3D12::Creat
 
 xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceD3D12::CreateTilePipelineStatePlatform(const xiiGALTilePipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALTilePipelineStateD3D12> pTilePipelineStateD3D12 = XII_NEW(&m_Allocator, xiiGALTilePipelineStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALTilePipelineStateD3D12> pTilePipelineStateD3D12 = XII_NEW(GetAllocator(), xiiGALTilePipelineStateD3D12, xiiSharedPtr<xiiGALDeviceD3D12>(this, m_Allocator.GetParent()), description);
 
   if (pTilePipelineStateD3D12->InitPlatform().Failed())
   {

@@ -19,10 +19,9 @@ xiiPropertyAnimAssetDocumentManager::xiiPropertyAnimAssetDocumentManager()
   m_DocTypeDesc.m_sAssetCategory    = "Animation";
   m_DocTypeDesc.m_pDocumentType     = xiiGetStaticRTTI<xiiPropertyAnimAssetDocument>();
   m_DocTypeDesc.m_pManager          = this;
-  m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Property_Animation");
+  m_DocTypeDesc.m_bCanCreate        = false; // Retain existing source documents; there is no runtime consumer.
 
-  m_DocTypeDesc.m_sResourceFileExtension = "xiiBinPropertyAnim";
-  m_DocTypeDesc.m_AssetDocumentFlags     = xiiAssetDocumentFlags::AutoTransformOnSave;
+  m_DocTypeDesc.m_AssetDocumentFlags = xiiAssetDocumentFlags::DisableTransform;
 
   xiiQtImageCache::GetSingleton()->RegisterTypeImage("PropertyAnim", QPixmap(":/AssetIcons/PropertyAnim.svg"));
 }
@@ -50,9 +49,13 @@ void xiiPropertyAnimAssetDocumentManager::OnDocumentManagerEvent(const xiiDocume
   }
 }
 
-void xiiPropertyAnimAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiPropertyAnimAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
+  if (bCreateNewDocument)
+    return xiiStatus("New property-animation assets are unsupported because the Engine has no runtime consumer. Existing source files can still be edited.");
+
   out_pDocument = new xiiPropertyAnimAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiPropertyAnimAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

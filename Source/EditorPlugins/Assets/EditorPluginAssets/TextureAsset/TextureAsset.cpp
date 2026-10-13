@@ -8,7 +8,7 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 6, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 10, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -36,52 +36,44 @@ xiiTextureAssetDocument::xiiTextureAssetDocument(xiiStringView sDocumentPath) :
 {
 }
 
-static const char* ToWrapMode(xiiImageAddressMode::Enum mode)
+static const char* ToWrapMode(xiiGALTextureAddressMode::Enum mode)
 {
   switch (mode)
   {
-    case xiiImageAddressMode::Repeat:
+    case xiiGALTextureAddressMode::Wrap:
       return "Repeat";
-    case xiiImageAddressMode::Clamp:
+    case xiiGALTextureAddressMode::Clamp:
       return "Clamp";
-    case xiiImageAddressMode::ClampBorder:
+    case xiiGALTextureAddressMode::Border:
       return "ClampBorder";
-    case xiiImageAddressMode::Mirror:
+    case xiiGALTextureAddressMode::Mirror:
       return "Mirror";
+    case xiiGALTextureAddressMode::MirrorOnce:
+      return "MirrorOnce";
     default:
       XII_ASSERT_NOT_IMPLEMENTED;
       return "";
   }
 }
 
-const char* ToFilterMode(xiiTextureFilterSetting::Enum mode)
+const char* ToFilterMode(xiiTextureConverterSamplerPreset::Enum mode)
 {
   switch (mode)
   {
-    case xiiTextureFilterSetting::FixedNearest:
+    case xiiTextureConverterSamplerPreset::Nearest:
       return "Nearest";
-    case xiiTextureFilterSetting::FixedBilinear:
-      return "Bilinear";
-    case xiiTextureFilterSetting::FixedTrilinear:
+    case xiiTextureConverterSamplerPreset::Linear:
+      return "Linear";
+    case xiiTextureConverterSamplerPreset::Trilinear:
       return "Trilinear";
-    case xiiTextureFilterSetting::FixedAnisotropic2x:
+    case xiiTextureConverterSamplerPreset::Aniso2x:
       return "Aniso2x";
-    case xiiTextureFilterSetting::FixedAnisotropic4x:
+    case xiiTextureConverterSamplerPreset::Aniso4x:
       return "Aniso4x";
-    case xiiTextureFilterSetting::FixedAnisotropic8x:
+    case xiiTextureConverterSamplerPreset::Aniso8x:
       return "Aniso8x";
-    case xiiTextureFilterSetting::FixedAnisotropic16x:
+    case xiiTextureConverterSamplerPreset::Aniso16x:
       return "Aniso16x";
-    case xiiTextureFilterSetting::LowestQuality:
-      return "Lowest";
-    case xiiTextureFilterSetting::LowQuality:
-      return "Low";
-    case xiiTextureFilterSetting::DefaultQuality:
-      return "Default";
-    case xiiTextureFilterSetting::HighQuality:
-      return "High";
-    case xiiTextureFilterSetting::HighestQuality:
-      return "Highest";
   }
 
   XII_ASSERT_NOT_IMPLEMENTED;
@@ -147,6 +139,9 @@ const char* ToCompressionMode(xiiTextureConverterCompressionMode::Enum mode)
 xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail, const xiiTextureAssetProfileConfig* pAssetConfig)
 {
   const xiiTextureAssetProperties* pProp = GetProperties();
+  xiiGALSamplerCreationDescription sampler;
+  if (pProp->GetSamplerDescription(sampler).Failed())
+    return xiiStatus("Invalid texture sampler filtering, anisotropy, LOD bounds or address mode.");
 
   QStringList      arguments;
   xiiStringBuilder temp;
@@ -245,7 +240,19 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
   arguments << "-addressU" << ToWrapMode(pProp->m_AddressModeU);
   arguments << "-addressV" << ToWrapMode(pProp->m_AddressModeV);
   arguments << "-addressW" << ToWrapMode(pProp->m_AddressModeW);
-  arguments << "-filter" << ToFilterMode(pProp->m_TextureFilter);
+  if (pProp->m_bUseCustomFiltering)
+  {
+    // Full float precision preserves imported mip limits and bias across the converter process.
+    arguments << "-minFilter" << QString::number(sampler.m_MinFilter.GetValue());
+    arguments << "-magFilter" << QString::number(sampler.m_MagFilter.GetValue());
+    arguments << "-mipFilter" << QString::number(sampler.m_MipFilter.GetValue());
+    arguments << "-maxAnisotropy" << QString::number(sampler.m_uiMaxAnisotropy);
+    arguments << "-mipLODBias" << QString::number(sampler.m_fMipLODBias, 'g', 9);
+    arguments << "-minLOD" << QString::number(sampler.m_fMinLOD, 'g', 9);
+    arguments << "-maxLOD" << QString::number(sampler.m_fMaxLOD, 'g', 9);
+  }
+  else
+    arguments << "-filter" << ToFilterMode(pProp->m_SamplerPreset);
 
   const xiiInt32 iNumInputFiles = pProp->GetNumInputFiles();
   for (xiiInt32 i = 0; i < iNumInputFiles; ++i)
@@ -256,7 +263,7 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
       break;
 
     arguments << temp.GetData();
-    arguments << QString(pProp->GetAbsoluteInputFilePath(i).GetData());
+    arguments << QString::fromUtf8(pProp->GetAbsoluteInputFilePath(i).GetData());
   }
 
   switch (pProp->GetChannelMapping())
@@ -326,6 +333,16 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
       arguments << "in1.r";
     }
     break;
+
+    case xiiTexture2DChannelMappingEnum::WHITE_R1_R2:
+      arguments << "-r" << "white" << "-g" << "in0.r" << "-b" << "in1.r";
+      break;
+    case xiiTexture2DChannelMappingEnum::WHITE_R1_WHITE:
+      arguments << "-r" << "white" << "-g" << "in0.r" << "-b" << "white";
+      break;
+    case xiiTexture2DChannelMappingEnum::WHITE_WHITE_R1:
+      arguments << "-r" << "white" << "-g" << "white" << "-b" << "in0.r";
+      break;
 
     case xiiTexture2DChannelMappingEnum::R1_G2_B3_A4:
     {
@@ -401,98 +418,9 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(xiiStringView
 
   const auto* pAssetConfig = pAssetProfile->GetTypeConfig<xiiTextureAssetProfileConfig>();
 
-  const auto props = GetProperties();
-
   if (m_bIsRenderTarget)
   {
-    xiiDeferredFileWriter file;
-    file.SetOutput(sTargetFile);
-
-    XII_SUCCEED_OR_RETURN(AssetHeader.Write(file));
-
-    // TODO: move this into a shared location, reuse in xiiTextureConverter::WriteTexHeader
-    const xiiUInt8 uiTexFileFormatVersion = 5;
-    file << uiTexFileFormatVersion;
-
-    xiiGALResourceFormat::Enum format  = xiiGALResourceFormat::Unknown;
-    bool                       bIsSRGB = false;
-
-    switch (props->m_RtFormat)
-    {
-      case xiiRenderTargetFormat::RGBA8:
-        format = xiiGALResourceFormat::RGBA8UNormalized;
-        break;
-
-      case xiiRenderTargetFormat::RGBA8sRgb:
-        format  = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-        bIsSRGB = true;
-        break;
-
-      case xiiRenderTargetFormat::RGB10:
-        format = xiiGALResourceFormat::RG11B10Float;
-        break;
-
-      case xiiRenderTargetFormat::RGBA16:
-        format = xiiGALResourceFormat::RGBA16Float;
-        break;
-    }
-
-    file << bIsSRGB;
-    file << (xiiUInt8)props->m_AddressModeU;
-    file << (xiiUInt8)props->m_AddressModeV;
-    file << (xiiUInt8)props->m_AddressModeW;
-    file << (xiiUInt8)props->m_TextureFilter;
-
-    xiiInt16 resX = 0, resY = 0;
-
-    switch (props->m_Resolution)
-    {
-      case xiiTexture2DResolution::Fixed64x64:
-        resX = 64;
-        resY = 64;
-        break;
-      case xiiTexture2DResolution::Fixed128x128:
-        resX = 128;
-        resY = 128;
-        break;
-      case xiiTexture2DResolution::Fixed256x256:
-        resX = 256;
-        resY = 256;
-        break;
-      case xiiTexture2DResolution::Fixed512x512:
-        resX = 512;
-        resY = 512;
-        break;
-      case xiiTexture2DResolution::Fixed1024x1024:
-        resX = 1024;
-        resY = 1024;
-        break;
-      case xiiTexture2DResolution::Fixed2048x2048:
-        resX = 2048;
-        resY = 2048;
-        break;
-      case xiiTexture2DResolution::CVarRtResolution1:
-        resX = -1;
-        resY = 1;
-        break;
-      case xiiTexture2DResolution::CVarRtResolution2:
-        resX = -1;
-        resY = 2;
-        break;
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-
-    file << resX;
-    file << resY;
-    file << props->m_fCVarResolutionScale;
-    file << (int)format;
-
-
-    if (file.Close().Failed())
-      return xiiTransformStatus(xiiFmt("Writing to target file failed: '{0}'", sTargetFile));
-
-    return xiiTransformStatus();
+    return WriteRenderTargetAsset(sTargetFile, AssetHeader, pAssetConfig);
   }
   else
   {
@@ -851,27 +779,27 @@ xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs
   else if (sMode == "TextureImport.Occlusion")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::R1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowestQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Nearest);
   }
   else if (sMode == "TextureImport.Height")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::R1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Linear);
   }
   else if (sMode == "TextureImport.Roughness")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::R1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Linear);
   }
   else if (sMode == "TextureImport.Metalness")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::R1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Linear);
   }
   else if (sMode == "TextureImport.ORM")
   {
     accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::RGB1);
-    accessor.SetValue("TextureFilter", (int)xiiTextureFilterSetting::LowQuality);
+    accessor.SetValue("SamplerPreset", (int)xiiTextureConverterSamplerPreset::Linear);
   }
 
   return XII_SUCCESS;

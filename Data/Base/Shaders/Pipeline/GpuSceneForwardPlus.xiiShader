@@ -60,6 +60,7 @@ StructuredBuffer<GpuMeshlet> g_Meshlets;
 StructuredBuffer<uint2> g_VisibleMeshlets;
 StructuredBuffer<uint> g_VisibleMeshletCount;
 ByteAddressBuffer g_Buffers[];
+#include <Shaders/Pipeline/GpuSceneSkinning.h>
 
 [outputtopology("triangle")]
 [numthreads(64, 1, 1)]
@@ -105,7 +106,7 @@ void main(uint threadIndex : SV_GroupThreadID,
   const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
   const GpuMeshlet meshlet = g_Meshlets[visible.y];
   const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
-  if (lodIndex >= min(geometry.LodCount, 8u))
+  if (lodIndex >= min(geometry.LodCount, 8u) || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
   {
     SetMeshOutputCounts(0u, 0u);
     return;
@@ -152,18 +153,19 @@ void main(uint threadIndex : SV_GroupThreadID,
     const uint sourceVertex = g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + threadIndex) * 4u);
     const uint vertexOffset = sourceVertex * VertexStride;
     const bool vertexIsValid = vertexOffset <= vertexBufferBytes && lastAttributeEnd <= vertexBufferBytes - vertexOffset;
-    const float3 localPosition = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset)) : 0.0f;
-    const float3 localNormal = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + NormalOffset)) : float3(0.0f, 0.0f, 1.0f);
-    const float4 localTangent = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset)) : float4(1.0f, 0.0f, 0.0f, 1.0f);
+    float3 localPosition = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset)) : 0.0f;
+    float3 localNormal = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + NormalOffset)) : float3(0.0f, 0.0f, 1.0f);
+    float4 localTangent = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset)) : float4(1.0f, 0.0f, 0.0f, 1.0f);
     const float2 texCoord = vertexIsValid ? asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffset + TexCoordOffset)) : 0.0f;
 
+    const bool validSkin = vertexIsValid && xiiSkinCurrentSurface(instance, lod, sourceVertex, localPosition, localNormal, localTangent);
     const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
     float3 worldNormal = normalize(float3(dot(instance.NormalTransformRow0.xyz, localNormal), dot(instance.NormalTransformRow1.xyz, localNormal), dot(instance.NormalTransformRow2.xyz, localNormal)));
     float3 worldTangent = normalize(mul((float3x3)instance.GlobalTransform, localTangent.xyz));
     worldTangent = normalize(worldTangent - worldNormal * dot(worldTangent, worldNormal));
 
     ForwardVertex output;
-    output.Position = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
+    output.Position = validSkin ? mul(ViewProjectionMatrix, float4(worldPosition, 1.0f)) : float4(0, 0, -1, 1);
     output.WorldPosition = worldPosition;
     output.WorldNormal = worldNormal;
     output.WorldTangent = worldTangent;
@@ -173,17 +175,18 @@ void main(uint threadIndex : SV_GroupThreadID,
     vertices[threadIndex] = output;
   }
 
-  if (threadIndex < primitiveCount)
+  // A meshlet can contain more primitives than the 64 lanes in this workgroup.
+  for (uint primitiveIndex = threadIndex; primitiveIndex < primitiveCount; primitiveIndex += 64u)
   {
-    const uint sourcePrimitive = meshlet.Header.x + threadIndex;
-    const uint primitiveOffset = meshlet.Header.z + threadIndex * 3u;
+    const uint sourcePrimitive = meshlet.Header.x + primitiveIndex;
+    const uint primitiveOffset = meshlet.Header.z + primitiveIndex * 3u;
     const uint3 primitiveIndices = uint3(
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 0u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
     const bool primitiveSelected = instance.PrimitiveCount == 0u ||
       (sourcePrimitive >= instance.FirstPrimitive && sourcePrimitive - instance.FirstPrimitive < instance.PrimitiveCount);
-    triangles[threadIndex] = primitiveSelected && all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);
+    triangles[primitiveIndex] = primitiveSelected && all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);
   }
 }
 

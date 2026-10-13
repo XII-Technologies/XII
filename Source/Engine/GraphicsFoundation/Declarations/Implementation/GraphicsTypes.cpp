@@ -726,3 +726,5 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALExternalMemoryFlags, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Declarations_Implementation_GraphicsTypes);

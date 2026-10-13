@@ -119,4 +119,4 @@ public:
 
 xiiTimedDeathComponentPatch_1_2 g_xiiTimedDeathComponentPatch_1_2;
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_TimedDeathComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_TimedDeathComponent);

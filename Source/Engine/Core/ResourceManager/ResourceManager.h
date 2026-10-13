@@ -157,6 +157,8 @@ public:
   ///
   /// Use this e.g. with a xiiResourceLoaderFromMemory to replace an existing resource with new data that was created on-the-fly.
   /// Using this function will set the 'PreventFileReload' flag on the resource and thus prevent further reload actions.
+  /// If loading is already in progress, the latest custom payload is queued for a subsequent reload.
+  /// Acquisitions may still return the previous content before that reload begins; consumers should respond to ResourceContentUpdated.
   ///
   /// \sa RestoreResource()
   static void UpdateResourceWithCustomLoader(const xiiTypelessResourceHandle& hResource, xiiUniquePtr<xiiResourceTypeLoader>&& pLoader);

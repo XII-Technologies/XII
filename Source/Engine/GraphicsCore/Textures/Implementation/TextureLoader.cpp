@@ -50,7 +50,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* pResource)
 {
-  LoadedData* pData = XII_DEFAULT_NEW(LoadedData);
+  xiiUniquePtr<LoadedData> pData = XII_DEFAULT_NEW(LoadedData);
 
   xiiResourceLoadData res;
 
@@ -128,7 +128,7 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
   WriteTextureLoadStream(w, *pData);
 
   res.m_pDataStream       = &pData->m_Reader;
-  res.m_pCustomLoaderData = pData;
+  res.m_pCustomLoaderData = pData.Release();
 
   if (cvar_StreamingTextureLoadDelay > 0)
   {
@@ -174,6 +174,7 @@ bool xiiTextureResourceLoader::IsResourceOutdated(const xiiResource* pResource) 
 
 xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& inout_stream, LoadedData& ref_data)
 {
+  ref_data.m_Image.Clear();
   // read the hash, ignore it
   xiiAssetFileHeader AssetHash;
   XII_SUCCEED_OR_RETURN(AssetHash.Read(inout_stream));
@@ -188,7 +189,12 @@ xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& inout_stream, L
   }
   else
   {
-    return XII_SUCCESS;
+    const auto& description = ref_data.m_TextureDescription;
+    return description.Is2D() && description.m_Size.HasNonZeroArea() && description.m_Format != xiiGALResourceFormat::Unknown &&
+        description.m_Usage == xiiGALResourceUsage::Mutable && description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) &&
+        description.m_uiArraySizeOrDepth > 0 && description.m_uiMipLevels > 0 ?
+      XII_SUCCESS :
+      XII_FAILURE;
   }
 }
 
@@ -202,4 +208,4 @@ void xiiTextureResourceLoader::WriteTextureLoadStream(xiiStreamWriter& w, const 
   w.WriteBytes(&pImage, sizeof(xiiImage*)).IgnoreResult();
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_TextureLoader);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Implementation_TextureLoader);

@@ -195,5 +195,3 @@ xiiUInt32 xiiGALDescriptorSetPoolD3D12::GetDefaultHeapSize(D3D12_DESCRIPTOR_HEAP
 
   return m_uiBaseHeapSize;
 }
-
-XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Pools_Implementation_DescriptorSetPoolD3D12);

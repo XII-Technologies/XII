@@ -834,3 +834,5 @@ xiiEnum<xiiGALResourceFormat> xiiImageConversion::FindClosestCompatibleFormat(xi
 
   return bestFormat;
 }
+
+XII_STATICLINK_FILE(Texture, Texture_Image_Implementation_ImageConversion);

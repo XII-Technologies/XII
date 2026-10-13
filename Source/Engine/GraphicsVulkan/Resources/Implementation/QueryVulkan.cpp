@@ -59,12 +59,7 @@ bool xiiGALQueryVulkan::OnEndQuery(xiiGALCommandListVulkan* pCommandListVulkan)
 
   XII_ASSERT_DEV(m_pQueryPoolVulkan != nullptr, "");
 
-  xiiSharedPtr<xiiGALDeviceVulkan>            pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const xiiGALCommandListCreationDescription& description   = pCommandListVulkan->GetDescription();
-
-  m_uiQueryEndFenceValue = pDeviceVulkan->GetCommandQueue(description.m_QueueFlags)->GetNextFenceValue();
-
-  return false;
+  return true;
 }
 
 bool xiiGALQueryVulkan::AllocateQueries()
@@ -89,9 +84,10 @@ bool xiiGALQueryVulkan::AllocateQueries()
 
     uiQueryPoolIndex = m_pQueryPoolVulkan->AllocateQuery(m_Description.m_Type);
 
-    if (uiQueryPoolIndex == xiiInvalidIndex)
+    if (uiQueryPoolIndex == xiiInvalidIndex ||
+        static_cast<xiiGALCommandListVulkan*>(m_pCommandList)->RecordQueryReset(m_pQueryPoolVulkan, m_Description.m_Type, uiQueryPoolIndex).Failed())
     {
-      xiiLog::Error("Failed to allocate Vulkan query for type {}. Increase the query pool size.", xiiArgEnum(m_Description.m_Type));
+      xiiLog::Error("Failed to allocate or reset Vulkan query for type {}.", xiiArgEnum(m_Description.m_Type));
 
       DiscardQueries();
 
@@ -116,8 +112,7 @@ void xiiGALQueryVulkan::DiscardQueries()
     }
   }
 
-  m_pQueryPoolVulkan     = nullptr;
-  m_uiQueryEndFenceValue = xiiInvalidIndex;
+  m_pQueryPoolVulkan = nullptr;
 }
 
 namespace
@@ -221,7 +216,7 @@ namespace
     return bIsDataAvailable;
   }
 
-  inline bool GetDurationQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, vk::QueryPool vkQueryPool, const xiiStaticArray<xiiUInt32, 2>& queryIndex, xiiUInt64 uiCounterFrequency, void* pData, xiiUInt32 uiDataSize)
+  inline bool GetDurationQueryData(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALQueryPoolVulkan* pPool, const xiiStaticArray<xiiUInt32, 2>& queryIndex, xiiUInt64 uiCounterFrequency, void* pData, xiiUInt32 uiDataSize)
   {
     XII_IGNORE_UNUSED(uiDataSize);
 
@@ -234,7 +229,7 @@ namespace
       xiiStaticArray<xiiUInt64, 2U> results;
       results.SetCount(2U, 0ULL);
 
-      if (!GetQueryResults(pDeviceVulkan, vkQueryPool, queryIndex[i], results))
+      if (!GetQueryResults(pDeviceVulkan, pPool->GetQueryPool(xiiGALQueryType::Duration, queryIndex[i]), pPool->GetLocalQueryIndex(xiiGALQueryType::Duration, queryIndex[i]), results))
         bIsDataAvailable = false;
 
       (i == 0 ? uiStartCounter : uiEndCounter) = results[0];
@@ -311,41 +306,46 @@ bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInv
 {
   CheckQueryDataPtr(pData, uiDataSize);
 
+  if (m_pQueryPoolVulkan == nullptr || m_QueryPoolIndex[0] == xiiInvalidIndex ||
+      (m_Description.m_Type == xiiGALQueryType::Duration && m_QueryPoolIndex[1] == xiiInvalidIndex))
+    return false;
+
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   const xiiGALQueueInformationVulkan& queueInformation      = m_pQueryPoolVulkan->GetQueueInformation();
   const xiiUInt64                     uiCompletedFenceValue = m_pQueryPoolVulkan->GetCommandQueue()->GetCompletedFenceValue();
   bool                                bIsDataAvailable      = false;
 
-  if (uiCompletedFenceValue >= m_uiQueryEndFenceValue)
+  if (uiCompletedFenceValue >= m_pQueryPoolVulkan->GetQueryFenceValue(m_Description.m_Type, m_QueryPoolIndex[0]))
   {
-    vk::QueryPool vkQueryPool = m_pQueryPoolVulkan->GetQueryPool(m_Description.m_Type);
+    vk::QueryPool   vkQueryPool  = m_pQueryPoolVulkan->GetQueryPool(m_Description.m_Type, m_QueryPoolIndex[0]);
+    const xiiUInt32 uiLocalIndex = m_pQueryPoolVulkan->GetLocalQueryIndex(m_Description.m_Type, m_QueryPoolIndex[0]);
 
     switch (m_Description.m_Type)
     {
       case xiiGALQueryType::Occlusion:
       {
-        bIsDataAvailable = GetOcclusionQueryData(pDeviceVulkan, vkQueryPool, m_QueryPoolIndex[0], pData, uiDataSize);
+        bIsDataAvailable = GetOcclusionQueryData(pDeviceVulkan, vkQueryPool, uiLocalIndex, pData, uiDataSize);
       }
       break;
       case xiiGALQueryType::BinaryOcclusion:
       {
-        bIsDataAvailable = GetBinaryOcclusionQueryData(pDeviceVulkan, vkQueryPool, m_QueryPoolIndex[0], pData, uiDataSize);
+        bIsDataAvailable = GetBinaryOcclusionQueryData(pDeviceVulkan, vkQueryPool, uiLocalIndex, pData, uiDataSize);
       }
       break;
       case xiiGALQueryType::Timestamp:
       {
-        bIsDataAvailable = GetTimestampQueryData(pDeviceVulkan, vkQueryPool, m_QueryPoolIndex[0], m_pQueryPoolVulkan->GetCounterFrequency(), pData, uiDataSize);
+        bIsDataAvailable = GetTimestampQueryData(pDeviceVulkan, vkQueryPool, uiLocalIndex, m_pQueryPoolVulkan->GetCounterFrequency(), pData, uiDataSize);
       }
       break;
       case xiiGALQueryType::PipelineStatistics:
       {
-        bIsDataAvailable = GetStatisticsQueryData(pDeviceVulkan, vkQueryPool, m_QueryPoolIndex[0], queueInformation, pData, uiDataSize);
+        bIsDataAvailable = GetStatisticsQueryData(pDeviceVulkan, vkQueryPool, uiLocalIndex, queueInformation, pData, uiDataSize);
       }
       break;
       case xiiGALQueryType::Duration:
       {
-        bIsDataAvailable = GetDurationQueryData(pDeviceVulkan, vkQueryPool, m_QueryPoolIndex, m_pQueryPoolVulkan->GetCounterFrequency(), pData, uiDataSize);
+        bIsDataAvailable = GetDurationQueryData(pDeviceVulkan, m_pQueryPoolVulkan, m_QueryPoolIndex, m_pQueryPoolVulkan->GetCounterFrequency(), pData, uiDataSize);
       }
       break;
 

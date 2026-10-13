@@ -1072,5 +1072,3 @@ xiiResult xiiExpressionAST::ScalarizeOutputs()
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionASTTransforms);

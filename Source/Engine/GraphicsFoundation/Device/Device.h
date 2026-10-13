@@ -230,6 +230,10 @@ public:
   /// Returns the creation description for this device.
   [[nodiscard]] const xiiGALDeviceCreationDescription& GetDescription() const;
 
+  /// Allocator used for independently reference-counted GAL objects. It must outlive this device.
+  /// Device-owned helpers use the internal tracking allocator instead.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator* GetAllocator() const { return m_Allocator.GetParent(); }
+
   /// Retrieves a pointer to the compute queue if available, null otherwise.
   ///
   /// \param queueType - The queue type that has the required feature.
@@ -321,10 +325,6 @@ protected:
   virtual xiiResult FillCapabilitiesPlatform() = 0;
 
   /// \endcond
-
-protected:
-  void FinalizeTextureInternal(const xiiGALTextureCreationDescription& description, xiiSharedPtr<xiiGALTexture>& pTexture);
-  void FinalizeBufferInternal(const xiiGALBufferCreationDescription& description, xiiSharedPtr<xiiGALBuffer>& pBuffer);
 
 private:
   void UnregisterSampler(xiiUInt32 uiDescriptionHash, const xiiGALSampler* pSampler);

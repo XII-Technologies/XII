@@ -7,7 +7,8 @@
 XII_CREATE_SIMPLE_TEST(Resources, TopLevelAS)
 {
   xiiGPUTestingEnvironment environment;
-  XII_TEST_BOOL(environment.Initialize().Succeeded());
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Descriptor defaults")
   {
@@ -55,7 +56,8 @@ XII_CREATE_SIMPLE_TEST(Resources, TopLevelAS)
     description.m_Flags              = xiiGALRayTracingBuildASFlags::PreferFastBuild | xiiGALRayTracingBuildASFlags::AllowUpdate;
 
     xiiSharedPtr<xiiGALTopLevelAS> pAccelerationStructure = environment.GetDevice()->CreateTopLevelAS(description);
-    XII_TEST_BOOL(pAccelerationStructure != nullptr);
+    if (!XII_TEST_BOOL(pAccelerationStructure != nullptr))
+      return;
 
     XII_TEST_BOOL(pAccelerationStructure->GetDescription() == description);
     XII_TEST_BOOL(pAccelerationStructure->GetScratchBufferSizeDescription().m_uiBuild > 0U);

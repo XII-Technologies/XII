@@ -1104,5 +1104,3 @@ namespace xiiMath
     return result;
   }
 } // namespace xiiMath
-
-XII_STATICLINK_FILE(Foundation, Foundation_Types_Implementation_Variant);

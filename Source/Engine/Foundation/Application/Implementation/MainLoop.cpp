@@ -68,5 +68,3 @@ void xiiRun(xiiApplication* pApplicationInstance)
   }
   xiiRun_Shutdown(pApplicationInstance);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Application_Implementation_MainLoop);

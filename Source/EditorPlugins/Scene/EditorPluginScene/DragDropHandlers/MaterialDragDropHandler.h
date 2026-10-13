@@ -3,8 +3,9 @@
 #pragma once
 
 #include <EditorFramework/DragDrop/AssetDragDropHandler.h>
+#include <EditorPluginScene/EditorPluginSceneDLL.h>
 
-class xiiMaterialDragDropHandler : public xiiAssetDragDropHandler
+class XII_EDITORPLUGINSCENE_DLL xiiMaterialDragDropHandler : public xiiAssetDragDropHandler
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMaterialDragDropHandler, xiiAssetDragDropHandler);
 
@@ -18,5 +19,5 @@ protected:
   virtual void  OnDrop(const xiiDragDropInfo* pInfo) override;
 
   xiiUuid  m_AppliedToComponent;
-  xiiInt32 m_iAppliedToSlot;
+  xiiInt32 m_iAppliedToSlot = -1;
 };

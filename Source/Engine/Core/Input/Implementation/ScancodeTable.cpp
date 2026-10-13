@@ -253,5 +253,3 @@ xiiStringView xiiInputManager::ConvertScanCodeToEngineName(xiiUInt8 uiScanCode, 
 
   return "unknown_key";
 }
-
-XII_STATICLINK_FILE(Core, Core_Input_Implementation_ScancodeTable);

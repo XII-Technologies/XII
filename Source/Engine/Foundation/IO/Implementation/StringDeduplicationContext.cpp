@@ -117,5 +117,3 @@ xiiStringView xiiStringDeduplicationReadContext::DeserializeString(xiiStreamRead
 
   return m_DeduplicatedStrings[uiIndex].GetView();
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StringDeduplicationContext);

@@ -104,5 +104,3 @@ void xiiAbstractGraphBinarySerializer::Read(xiiStreamReader& ref_stream, xiiAbst
     xiiGraphVersioning::GetSingleton()->PatchGraph(pGraph, pTypesGraph);
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_BinarySerializer);

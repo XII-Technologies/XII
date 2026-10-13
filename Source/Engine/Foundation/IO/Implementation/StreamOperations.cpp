@@ -38,5 +38,3 @@ xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiStringBuilder& ref_s
   ref_stream.ReadString(ref_sValue).AssertSuccess();
   return ref_stream;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StreamOperations);

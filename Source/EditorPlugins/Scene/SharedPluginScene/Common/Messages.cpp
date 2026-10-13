@@ -40,10 +40,22 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportSceneGeometryMsgToEngine, 1, xiiRTTIDe
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportSceneGeometryResultMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiExportSceneGeometryResultMsgToEditor>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Succeeded", m_bSucceeded),
+    XII_MEMBER_PROPERTY("File", m_sOutputFile),
+    XII_MEMBER_PROPERTY("Failure", m_sFailure),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPullObjectStateMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiPullObjectStateMsgToEngine>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiPushObjectStateData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiPushObjectStateData>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiPushObjectStateData, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiPushObjectStateData>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -52,6 +64,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiPushObjectStateData, xiiNoBase, 1, xiiRTTIDef
     XII_MEMBER_PROPERTY("Pos", m_vPosition),
     XII_MEMBER_PROPERTY("Rot", m_qRotation),
     XII_MAP_MEMBER_PROPERTY("Bones", m_BoneTransforms),
+    XII_MEMBER_PROPERTY("SkeletonResource", m_sSkeletonResource),
   }
   XII_END_PROPERTIES;
 }

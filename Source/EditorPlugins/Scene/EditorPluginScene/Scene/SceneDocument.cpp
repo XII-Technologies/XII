@@ -10,13 +10,12 @@
 #include <EditorFramework/PropertyGrid/ExposedParametersPropertyWidget.moc.h>
 #include <EditorPluginScene/Commands/SceneCommands.h>
 #include <EditorPluginScene/Dialogs/DeltaTransformDlg.moc.h>
-#include <EditorPluginScene/Dialogs/DuplicateDlg.moc.h>
 #include <EditorPluginScene/Objects/SceneObjectManager.h>
 #include <EditorPluginScene/Scene/Scene2Document.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
-#include <GraphicsCore/Components/CameraComponent.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/Widgets/SearchableTypeMenu.moc.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
@@ -94,9 +93,9 @@ void xiiSceneDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 
   EnsureSettingsObjectExist();
 
-  m_DocumentObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::DocumentObjectMetaDataEventHandler, this));
-  xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::ToolsProjectEventHandler, this));
-  xiiEditorEngineProcessConnection::GetSingleton()->s_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::EngineConnectionEventHandler, this));
+  m_DocumentObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::DocumentObjectMetaDataEventHandler, this), m_MetaDataEventSubscriber);
+  xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::ToolsProjectEventHandler, this), m_ProjectEventSubscriber);
+  xiiEditorEngineProcessConnection::GetSingleton()->s_Events.AddEventHandler(xiiMakeDelegate(&xiiSceneDocument::EngineConnectionEventHandler, this), m_EngineEventSubscriber);
 
   m_ObjectMirror.InitSender(GetObjectManager());
   m_ObjectMirror.InitReceiver(&m_Context);
@@ -107,11 +106,9 @@ xiiSceneDocument::~xiiSceneDocument()
 {
   m_SelectionHandlerUnsubscriber.Unsubscribe();
 
-  m_DocumentObjectMetaData->m_DataModifiedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiSceneDocument::DocumentObjectMetaDataEventHandler, this));
-
-  xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiSceneDocument::ToolsProjectEventHandler, this));
-
-  xiiEditorEngineProcessConnection::GetSingleton()->s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiSceneDocument::EngineConnectionEventHandler, this));
+  m_MetaDataEventSubscriber.Unsubscribe();
+  m_ProjectEventSubscriber.Unsubscribe();
+  m_EngineEventSubscriber.Unsubscribe();
 
   m_ObjectMirror.Clear();
   m_ObjectMirror.DeInit();
@@ -226,58 +223,6 @@ void xiiSceneDocument::ClearActiveParent()
 {
   SetActiveParent(xiiUuid::MakeInvalid());
 }
-
-void xiiSceneDocument::DuplicateSpecial()
-{
-  if (GetSelectionManager()->IsSelectionEmpty())
-    return;
-
-  xiiQtDuplicateDlg dlg(nullptr);
-  if (dlg.exec() == QDialog::Rejected)
-    return;
-
-  xiiMap<xiiUuid, xiiUuid> parents;
-
-  xiiAbstractObjectGraph graph;
-  CopySelectedObjects(graph, &parents);
-
-  xiiStringBuilder temp, tmp1, tmp2;
-  for (auto it = parents.GetIterator(); it.IsValid(); ++it)
-  {
-    temp.AppendFormat("{0}={1};", xiiConversionUtils::ToString(it.Key(), tmp1), xiiConversionUtils::ToString(it.Value(), tmp2));
-  }
-
-  // Serialize to string
-  xiiContiguousMemoryStreamStorage streamStorage;
-  xiiMemoryStreamWriter            memoryWriter(&streamStorage);
-
-  xiiAbstractGraphDdlSerializer::Write(memoryWriter, &graph);
-  memoryWriter.WriteBytes("\0", 1).IgnoreResult(); // null terminate
-
-  xiiDuplicateObjectsCommand cmd;
-  cmd.m_sGraphTextFormat         = (const char*)streamStorage.GetData();
-  cmd.m_sParentNodes             = temp;
-  cmd.m_uiNumberOfCopies         = dlg.s_uiNumberOfCopies;
-  cmd.m_vAccumulativeTranslation = dlg.s_vTranslationStep;
-  cmd.m_vAccumulativeRotation    = dlg.s_vRotationStep;
-  cmd.m_vRandomRotation          = dlg.s_vRandomRotation;
-  cmd.m_vRandomTranslation       = dlg.s_vRandomTranslation;
-  cmd.m_bGroupDuplicates         = dlg.s_bGroupCopies;
-  cmd.m_iRevolveAxis             = dlg.s_iRevolveAxis;
-  cmd.m_fRevolveRadius           = dlg.s_fRevolveRadius;
-  cmd.m_RevolveStartAngle        = xiiAngle::MakeFromDegree(dlg.s_iRevolveStartAngle);
-  cmd.m_RevolveAngleStep         = xiiAngle::MakeFromDegree(dlg.s_iRevolveAngleStep);
-
-  auto history = GetCommandHistory();
-
-  history->StartTransaction("Duplicate Special");
-
-  if (history->AddCommand(cmd).Failed())
-    history->CancelTransaction();
-  else
-    history->FinishTransaction();
-}
-
 
 void xiiSceneDocument::DeltaTransform()
 {
@@ -1778,14 +1723,22 @@ void xiiSceneDocument::ExportSceneGeometry(xiiStringView sFile, bool bOnlySelect
   msg.m_iExtractionMode = iExtractionMode;
   msg.m_Transform       = mTransform;
 
-  SendMessageToEngine(&msg);
-
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", sFile), xiiTime::MakeFromSeconds(5.0f));
+  if (!SendMessageToEngine(&msg))
+    xiiQtUiServices::MessageBoxStatus(xiiStatus("The engine process is unavailable."), "Geometry export failed.");
 }
 
 void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
   xiiGameObjectDocument::HandleEngineMessage(pMsg);
+
+  if (const auto* result = xiiDynamicCast<const xiiExportSceneGeometryResultMsgToEditor*>(pMsg))
+  {
+    if (result->m_bSucceeded)
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{}'", result->m_sOutputFile), xiiTime::MakeFromSeconds(5));
+    else
+      xiiQtUiServices::MessageBoxStatus(xiiStatus(result->m_sFailure.GetData()), "Geometry export failed.");
+    return;
+  }
 
   if (const xiiGameModeMsgToEditor* msg = xiiDynamicCast<const xiiGameModeMsgToEditor*>(pMsg))
   {
@@ -1795,7 +1748,8 @@ void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMs
 
   if (const xiiDocumentOpenResponseMsgToEditor* msg = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(pMsg))
   {
-    SyncObjectHiddenState();
+    if (msg->m_bSucceeded)
+      SyncObjectHiddenState();
   }
 
   if (const xiiPushObjectStateMsgToEditor* msg = xiiDynamicCast<const xiiPushObjectStateMsgToEditor*>(pMsg))

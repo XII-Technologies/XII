@@ -163,6 +163,3 @@ void RemoveStatsEventHandler()
 
   xiiStats::RemoveEventHandler(StatsEventHandler);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Stats);

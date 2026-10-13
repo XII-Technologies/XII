@@ -220,5 +220,3 @@ xiiUInt64 xiiHashingUtils::xxHash64(const void* pKey, size_t uiSizeInByte, xiiUI
 {
   return XXH64(pKey, uiSizeInByte, uiSeed);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Algorithm_Implementation_HashingUtils);

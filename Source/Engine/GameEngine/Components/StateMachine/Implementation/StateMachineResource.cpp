@@ -83,4 +83,4 @@ void xiiStateMachineResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
   out_NewMemoryUsage.m_uiMemoryGPU = 0;
 }
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachineResource);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_StateMachine_Implementation_StateMachineResource);

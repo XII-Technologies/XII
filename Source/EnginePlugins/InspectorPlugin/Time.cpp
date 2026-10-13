@@ -29,6 +29,3 @@ void RemoveTimeEventHandler()
 {
   xiiClock::RemoveEventHandler(TimeEventHandler);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Time);

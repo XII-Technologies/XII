@@ -7,6 +7,7 @@
 #include <Core/Graphics/Camera.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <GraphicsCore/Pipeline/Declarations.h>
 
 struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSceneViewPerspective
 {
@@ -40,15 +41,10 @@ struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewLightSettingsEvent
 {
   enum class Type
   {
-    SkyBoxChanged,
-    SkyLightChanged,
-    SkyLightCubeMapChanged,
-    SkyLightIntensityChanged,
     DirectionalLightChanged,
     DirectionalLightAngleChanged,
     DirectionalLightShadowsChanged,
     DirectionalLightIntensityChanged,
-    FogChanged,
     DefaultValuesChanged,
   };
 
@@ -63,18 +59,6 @@ public:
   xiiEngineViewLightSettings(bool bEnable = true);
   ~xiiEngineViewLightSettings();
 
-  bool GetSkyBox() const;
-  void SetSkyBox(bool bVal);
-
-  bool GetSkyLight() const;
-  void SetSkyLight(bool bVal);
-
-  const char* GetSkyLightCubeMap() const;
-  void        SetSkyLightCubeMap(const char* szVal);
-
-  float GetSkyLightIntensity() const;
-  void  SetSkyLightIntensity(float fVal);
-
   bool GetDirectionalLight() const;
   void SetDirectionalLight(bool bVal);
 
@@ -87,9 +71,6 @@ public:
   float GetDirectionalLightIntensity() const;
   void  SetDirectionalLightIntensity(float fVal);
 
-  bool GetFog() const;
-  void SetFog(bool bVal);
-
   mutable xiiEvent<const xiiEngineViewLightSettingsEvent&> m_EngineViewLightSettingsEvents;
 
   virtual bool SetupForEngine(xiiWorld* pWorld, xiiUInt32 uiNextComponentPickingID) override;
@@ -98,24 +79,13 @@ public:
 private:
   void SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type type);
 
-  bool      m_bSkyBox            = true;
-  bool      m_bSkyLight          = true;
-  xiiString m_sSkyLightCubeMap   = "{ 0b202e08-a64f-465d-b38e-15b81d161822 }";
-  float     m_fSkyLightIntensity = 1.0f;
-
   bool     m_bDirectionalLight          = true;
   xiiAngle m_DirectionalLightAngle      = xiiAngle::MakeFromDegree(70.0f);
   bool     m_bDirectionalLightShadows   = false;
   float    m_fDirectionalLightIntensity = 10.0f;
 
-  bool m_bFog = false;
-
   // Engine side data
   xiiWorld*           m_pWorld = nullptr;
-  xiiGameObjectHandle m_hSkyBoxObject;
-  xiiComponentHandle  m_hSkyBox;
   xiiGameObjectHandle m_hGameObject;
   xiiComponentHandle  m_hDirLight;
-  xiiComponentHandle  m_hSkyLight;
-  xiiComponentHandle  m_hFog;
 };

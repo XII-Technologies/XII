@@ -4,7 +4,6 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Algorithm/Sorting.h>
-#include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/LightingSystem.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
@@ -26,6 +25,7 @@ namespace
   {
     const xiiUInt64 uiProbeCount = static_cast<xiiUInt64>(settings.m_uiProbeCountX) * settings.m_uiProbeCountY * settings.m_uiProbeCountZ;
     return settings.m_uiProbeCountX > 0U && settings.m_uiProbeCountY > 0U && settings.m_uiProbeCountZ > 0U &&
+      settings.m_uiProbeCountX <= 1048576U && settings.m_uiProbeCountY <= 1048576U && settings.m_uiProbeCountZ <= 1048576U &&
       uiProbeCount <= 1048576U && xiiMath::IsFinite(settings.m_fProbeSpacing) && settings.m_fProbeSpacing > 0.0f &&
       settings.m_uiProbeUpdateBudget > 0U && xiiMath::IsFinite(settings.m_fTemporalHysteresis) &&
       settings.m_fTemporalHysteresis >= 0.0f && settings.m_fTemporalHysteresis < 1.0f &&
@@ -40,7 +40,7 @@ namespace
   }
 } // namespace
 
-class xiiDDGIManager::State
+class xiiDDGIContext::State
 {
 public:
   xiiDDGISettings                          m_Settings;
@@ -56,37 +56,8 @@ public:
   xiiSharedPtr<xiiGALComputePipelineState> m_pUpdatePipeline;
   xiiUInt32                                m_uiAtlasWidth   = 0U;
   xiiUInt32                                m_uiAtlasHeight  = 0U;
-  bool                                     m_bEngineStarted = false;
-  bool                                     m_bInitialized   = false;
+  xiiSharedPtr<xiiGALDevice>               m_pDevice;
 };
-
-xiiUniquePtr<xiiDDGIManager::State> xiiDDGIManager::s_pState;
-
-XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DDGIManager)
-  BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation"
-  END_SUBSYSTEM_DEPENDENCIES
-
-  ON_CORESYSTEMS_STARTUP
-  {
-    xiiDDGIManager::Startup();
-  }
-
-  ON_CORESYSTEMS_SHUTDOWN
-  {
-    xiiDDGIManager::Shutdown();
-  }
-
-  ON_HIGHLEVELSYSTEMS_STARTUP
-  {
-    xiiDDGIManager::EngineStartup();
-  }
-
-  ON_HIGHLEVELSYSTEMS_SHUTDOWN
-  {
-    xiiDDGIManager::EngineShutdown();
-  }
-XII_END_SUBSYSTEM_DECLARATION;
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDDGISettings, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiDDGISettings>)
@@ -173,52 +144,34 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDDGIProbeUpdate, xiiNoBase, 1, xiiRTTIDefa
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-void xiiDDGIManager::Startup()
+xiiDDGIContext::xiiDDGIContext() = default;
+
+xiiDDGIContext::~xiiDDGIContext()
 {
-  s_pState = XII_DEFAULT_NEW(State);
-  Configure(xiiDDGISettings()).IgnoreResult();
+  Shutdown();
 }
 
-void xiiDDGIManager::EngineStartup()
+void xiiDDGIContext::Shutdown()
 {
-  if (s_pState == nullptr)
-    return;
-  s_pState->m_bEngineStarted = true;
-  CreateGpuResources().IgnoreResult();
+  m_pState.Clear();
 }
 
-void xiiDDGIManager::EngineShutdown()
+xiiResult xiiDDGIContext::CreateGpuResources()
 {
-  if (s_pState == nullptr)
-    return;
-  s_pState->m_pUpdatePipeline.Clear();
-  s_pState->m_pDistanceAtlas.Clear();
-  s_pState->m_pIrradianceAtlas.Clear();
-  s_pState->m_bEngineStarted = false;
-}
-
-void xiiDDGIManager::Shutdown()
-{
-  EngineShutdown();
-  s_pState.Clear();
-}
-
-xiiResult xiiDDGIManager::CreateGpuResources()
-{
-  if (s_pState == nullptr || !s_pState->m_bEngineStarted || s_pState->m_uiAtlasWidth == 0U || s_pState->m_uiAtlasHeight == 0U)
+  if (m_pState == nullptr || m_pState->m_pDevice == nullptr || m_pState->m_uiAtlasWidth == 0U || m_pState->m_uiAtlasHeight == 0U)
     return XII_FAILURE;
 
-  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  const xiiSharedPtr<xiiGALDevice>& pDevice = m_pState->m_pDevice;
   if (pDevice == nullptr)
     return XII_FAILURE;
   const xiiUInt32 uiMaximumDimension = pDevice->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_uiMaxTexture2DDimension;
-  if (s_pState->m_uiAtlasWidth > uiMaximumDimension || s_pState->m_uiAtlasHeight > uiMaximumDimension)
+  if (m_pState->m_uiAtlasWidth > uiMaximumDimension || m_pState->m_uiAtlasHeight > uiMaximumDimension)
     return XII_FAILURE;
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
-  description.m_Size.width  = s_pState->m_uiAtlasWidth;
-  description.m_Size.height = s_pState->m_uiAtlasHeight;
+  description.m_Size.width  = m_pState->m_uiAtlasWidth;
+  description.m_Size.height = m_pState->m_uiAtlasHeight;
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -235,59 +188,85 @@ xiiResult xiiDDGIManager::CreateGpuResources()
     return XII_FAILURE;
   pDistanceAtlas->SetDebugName("DDGI Probe Distance Atlas");
 
-  s_pState->m_pIrradianceAtlas = std::move(pIrradianceAtlas);
-  s_pState->m_pDistanceAtlas   = std::move(pDistanceAtlas);
+  m_pState->m_pIrradianceAtlas = std::move(pIrradianceAtlas);
+  m_pState->m_pDistanceAtlas   = std::move(pDistanceAtlas);
   return XII_SUCCESS;
 }
 
-xiiResult xiiDDGIManager::Configure(const xiiDDGISettings& settings)
+xiiResult xiiDDGIContext::Initialize(const xiiDDGISettings& settings, xiiSharedPtr<xiiGALDevice> pDevice)
 {
-  if (s_pState == nullptr || !IsConfigurationValid(settings))
+  if (!IsConfigurationValid(settings))
     return XII_FAILURE;
 
-  s_pState->m_Settings         = settings;
+  auto previous       = std::move(m_pState);
+  m_pState            = XII_DEFAULT_NEW(State);
+  m_pState->m_pDevice = std::move(pDevice);
+
+  m_pState->m_Settings         = settings;
   const xiiUInt32 uiProbeCount = settings.m_uiProbeCountX * settings.m_uiProbeCountY * settings.m_uiProbeCountZ;
-  s_pState->m_Probes.Clear();
-  s_pState->m_Probes.SetCount(uiProbeCount);
-  s_pState->m_ScheduledUpdates.Clear();
-  s_pState->m_vMinimumCell         = xiiVec3I32(xiiMath::MaxValue<xiiInt32>());
-  s_pState->m_Stats                = {};
-  s_pState->m_Stats.m_uiProbeCount = uiProbeCount;
-  s_pState->m_uiAtlasWidth         = xiiMath::Max(static_cast<xiiUInt32>(xiiMath::Ceil(xiiMath::Sqrt(static_cast<float>(uiProbeCount)))), 1U);
-  s_pState->m_uiAtlasHeight        = (uiProbeCount + s_pState->m_uiAtlasWidth - 1U) / s_pState->m_uiAtlasWidth;
-  s_pState->m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
-  s_pState->m_bInitialized         = true;
-  if (s_pState->m_bEngineStarted)
-    return CreateGpuResources();
+  m_pState->m_Probes.Clear();
+  m_pState->m_Probes.SetCount(uiProbeCount);
+  m_pState->m_ScheduledUpdates.Clear();
+  m_pState->m_vMinimumCell         = xiiVec3I32(xiiMath::MaxValue<xiiInt32>());
+  m_pState->m_Stats                = {};
+  m_pState->m_Stats.m_uiProbeCount = uiProbeCount;
+  m_pState->m_uiAtlasWidth         = xiiMath::Max(static_cast<xiiUInt32>(xiiMath::Ceil(xiiMath::Sqrt(static_cast<float>(uiProbeCount)))), 1U);
+  m_pState->m_uiAtlasHeight        = (uiProbeCount + m_pState->m_uiAtlasWidth - 1U) / m_pState->m_uiAtlasWidth;
+  m_pState->m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
+  if (m_pState->m_pDevice != nullptr && CreateGpuResources().Failed())
+  {
+    m_pState = std::move(previous);
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 
-bool xiiDDGIManager::IsSubsystemInitialized()
+bool xiiDDGIContext::IsInitialized() const
 {
-  return s_pState != nullptr;
+  return m_pState != nullptr;
 }
 
-bool xiiDDGIManager::IsInitialized()
-{
-  return s_pState != nullptr && s_pState->m_bInitialized;
-}
-
-void xiiDDGIManager::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex)
+void xiiDDGIContext::InvalidateHistory()
 {
   if (!IsInitialized())
     return;
+  for (auto& probe : m_pState->m_Probes)
+  {
+    probe.m_Flags.Remove(xiiDDGIProbeFlags::Valid | xiiDDGIProbeFlags::Relocated | xiiDDGIProbeFlags::InsideGeometry);
+    probe.m_Flags.Add(xiiDDGIProbeFlags::NeedsUpdate);
+    probe.m_vRelocationOffset.SetZero();
+    probe.m_uiLastUpdatedFrame = 0;
+  }
+  for (auto& update : m_pState->m_ScheduledUpdates)
+    update.m_fHistoryWeight = 0.0f;
+  m_pState->m_uiLastGpuUpdateFrame = xiiMath::MaxValue<xiiUInt64>();
+}
 
-  const xiiDDGISettings& settings = s_pState->m_Settings;
-  s_pState->m_uiFrameIndex        = uiFrameIndex;
-  s_pState->m_vCameraPosition     = vCameraPosition;
-  s_pState->m_ScheduledUpdates.Clear();
-  s_pState->m_Stats.m_uiInvalidProbeCount  = 0U;
-  s_pState->m_Stats.m_uiScrolledProbeCount = 0U;
+xiiResult xiiDDGIContext::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex)
+{
+  if (!IsInitialized() || uiFrameIndex == 0 || uiFrameIndex <= m_pState->m_uiFrameIndex ||
+      !xiiMath::IsFinite(vCameraPosition.x) || !xiiMath::IsFinite(vCameraPosition.y) || !xiiMath::IsFinite(vCameraPosition.z))
+    return XII_FAILURE;
+
+  const xiiDDGISettings& settings     = m_pState->m_Settings;
+  const xiiVec3          cellPosition = vCameraPosition / settings.m_fProbeSpacing;
+  const xiiUInt32        counts[]     = {settings.m_uiProbeCountX, settings.m_uiProbeCountY, settings.m_uiProbeCountZ};
+  for (xiiUInt32 axis = 0; axis < 3; ++axis)
+  {
+    const double minimum = static_cast<double>(xiiMath::Floor(cellPosition.GetData()[axis])) - counts[axis] / 2U;
+    if (!xiiMath::IsFinite(minimum) || minimum < xiiMath::MinValue<xiiInt32>() || minimum + counts[axis] - 1.0 > xiiMath::MaxValue<xiiInt32>())
+      return XII_FAILURE;
+  }
+  m_pState->m_uiFrameIndex    = uiFrameIndex;
+  m_pState->m_vCameraPosition = vCameraPosition;
+  m_pState->m_ScheduledUpdates.Clear();
+  m_pState->m_Stats.m_uiInvalidProbeCount  = 0U;
+  m_pState->m_Stats.m_uiScrolledProbeCount = 0U;
 
   const xiiVec3    vCellPosition = vCameraPosition / settings.m_fProbeSpacing;
   const xiiVec3I32 vCenterCell(static_cast<xiiInt32>(xiiMath::Floor(vCellPosition.x)), static_cast<xiiInt32>(xiiMath::Floor(vCellPosition.y)), static_cast<xiiInt32>(xiiMath::Floor(vCellPosition.z)));
   const xiiVec3I32 vMinimumCell = vCenterCell - xiiVec3I32(static_cast<xiiInt32>(settings.m_uiProbeCountX / 2U), static_cast<xiiInt32>(settings.m_uiProbeCountY / 2U), static_cast<xiiInt32>(settings.m_uiProbeCountZ / 2U));
-  s_pState->m_vMinimumCell      = vMinimumCell;
+  m_pState->m_vMinimumCell      = vMinimumCell;
 
   struct Candidate
   {
@@ -299,7 +278,7 @@ void xiiDDGIManager::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFram
     bool      m_bNeedsUpdate;
   };
   xiiDynamicArray<Candidate> candidates;
-  candidates.Reserve(s_pState->m_Probes.GetCount());
+  candidates.Reserve(m_pState->m_Probes.GetCount());
 
   for (xiiUInt32 z = 0U; z < settings.m_uiProbeCountZ; ++z)
   {
@@ -312,7 +291,7 @@ void xiiDDGIManager::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFram
         const xiiUInt32    uiSlotY         = static_cast<xiiUInt32>(PositiveModulo(vCell.y, settings.m_uiProbeCountY));
         const xiiUInt32    uiSlotZ         = static_cast<xiiUInt32>(PositiveModulo(vCell.z, settings.m_uiProbeCountZ));
         const xiiUInt32    uiPhysicalProbe = (uiSlotZ * settings.m_uiProbeCountY + uiSlotY) * settings.m_uiProbeCountX + uiSlotX;
-        xiiDDGIProbeState& probe           = s_pState->m_Probes[uiPhysicalProbe];
+        xiiDDGIProbeState& probe           = m_pState->m_Probes[uiPhysicalProbe];
 
         if (probe.m_iCellX != vCell.x || probe.m_iCellY != vCell.y || probe.m_iCellZ != vCell.z)
         {
@@ -322,12 +301,12 @@ void xiiDDGIManager::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFram
           probe.m_iCellZ         = vCell.z;
           probe.m_vWorldPosition = (xiiVec3(static_cast<float>(vCell.x), static_cast<float>(vCell.y), static_cast<float>(vCell.z)) + xiiVec3(0.5f)) * settings.m_fProbeSpacing;
           probe.m_Flags          = xiiDDGIProbeFlags::NeedsUpdate;
-          ++s_pState->m_Stats.m_uiScrolledProbeCount;
+          ++m_pState->m_Stats.m_uiScrolledProbeCount;
         }
 
         const bool bNeedsUpdate = probe.m_Flags.IsSet(xiiDDGIProbeFlags::NeedsUpdate) || !probe.m_Flags.IsSet(xiiDDGIProbeFlags::Valid);
         if (bNeedsUpdate)
-          ++s_pState->m_Stats.m_uiInvalidProbeCount;
+          ++m_pState->m_Stats.m_uiInvalidProbeCount;
 
         candidates.PushBack({uiPhysicalProbe, (probe.m_vWorldPosition + probe.m_vRelocationOffset - vCameraPosition).GetLengthSquared(), probe.m_uiLastUpdatedFrame, bNeedsUpdate});
       }
@@ -345,83 +324,86 @@ void xiiDDGIManager::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFram
   });
 
   const xiiUInt32 uiUpdateCount = xiiMath::Min(settings.m_uiProbeUpdateBudget, candidates.GetCount());
-  s_pState->m_ScheduledUpdates.Reserve(uiUpdateCount);
+  m_pState->m_ScheduledUpdates.Reserve(uiUpdateCount);
   for (xiiUInt32 i = 0U; i < uiUpdateCount; ++i)
   {
     const Candidate&         candidate = candidates[i];
-    const xiiDDGIProbeState& probe     = s_pState->m_Probes[candidate.m_uiPhysicalProbe];
-    s_pState->m_ScheduledUpdates.PushBack({candidate.m_uiPhysicalProbe, probe.m_vWorldPosition + probe.m_vRelocationOffset,
+    const xiiDDGIProbeState& probe     = m_pState->m_Probes[candidate.m_uiPhysicalProbe];
+    m_pState->m_ScheduledUpdates.PushBack({candidate.m_uiPhysicalProbe, probe.m_vWorldPosition + probe.m_vRelocationOffset,
                                            probe.m_Flags.IsSet(xiiDDGIProbeFlags::Valid) ? settings.m_fTemporalHysteresis : 0.0f});
   }
-  s_pState->m_Stats.m_uiScheduledUpdateCount = uiUpdateCount;
+  m_pState->m_Stats.m_uiScheduledUpdateCount = uiUpdateCount;
+  return XII_SUCCESS;
 }
 
-void xiiDDGIManager::CommitProbeUpdate(xiiUInt32 uiPhysicalProbe, const xiiVec3& vRelocationOffset, bool bValid, bool bInsideGeometry)
+void xiiDDGIContext::CommitProbeUpdate(xiiUInt32 uiPhysicalProbe, const xiiVec3& vRelocationOffset, bool bValid, bool bInsideGeometry)
 {
-  if (!IsInitialized() || uiPhysicalProbe >= s_pState->m_Probes.GetCount())
+  if (!IsInitialized() || uiPhysicalProbe >= m_pState->m_Probes.GetCount())
     return;
 
-  xiiDDGIProbeState& probe            = s_pState->m_Probes[uiPhysicalProbe];
+  xiiDDGIProbeState& probe            = m_pState->m_Probes[uiPhysicalProbe];
   xiiVec3            vClampedOffset   = vRelocationOffset;
-  const float        fMaximumDistance = s_pState->m_Settings.m_fMaximumRelocationDistance;
+  const float        fMaximumDistance = m_pState->m_Settings.m_fMaximumRelocationDistance;
   if (vClampedOffset.GetLengthSquared() > fMaximumDistance * fMaximumDistance && vClampedOffset.NormalizeIfNotZero(xiiVec3::MakeZero()).Succeeded())
     vClampedOffset *= fMaximumDistance;
 
   probe.m_vRelocationOffset  = vClampedOffset;
-  probe.m_uiLastUpdatedFrame = s_pState->m_uiFrameIndex;
+  probe.m_uiLastUpdatedFrame = m_pState->m_uiFrameIndex;
   probe.m_Flags.Remove(xiiDDGIProbeFlags::NeedsUpdate | xiiDDGIProbeFlags::Valid | xiiDDGIProbeFlags::Relocated | xiiDDGIProbeFlags::InsideGeometry);
   probe.m_Flags.AddOrRemove(xiiDDGIProbeFlags::Valid, bValid);
   probe.m_Flags.AddOrRemove(xiiDDGIProbeFlags::Relocated, !vClampedOffset.IsZero(0.0001f));
   probe.m_Flags.AddOrRemove(xiiDDGIProbeFlags::InsideGeometry, bInsideGeometry);
 }
 
-xiiArrayPtr<const xiiDDGIProbeState> xiiDDGIManager::GetProbes()
+xiiArrayPtr<const xiiDDGIProbeState> xiiDDGIContext::GetProbes() const
 {
   if (!IsInitialized())
     return {};
-  return xiiArrayPtr<const xiiDDGIProbeState>(s_pState->m_Probes.GetData(), s_pState->m_Probes.GetCount());
+  return xiiArrayPtr<const xiiDDGIProbeState>(m_pState->m_Probes.GetData(), m_pState->m_Probes.GetCount());
 }
 
-xiiArrayPtr<const xiiDDGIProbeUpdate> xiiDDGIManager::GetScheduledUpdates()
+xiiArrayPtr<const xiiDDGIProbeUpdate> xiiDDGIContext::GetScheduledUpdates() const
 {
   if (!IsInitialized())
     return {};
-  return xiiArrayPtr<const xiiDDGIProbeUpdate>(s_pState->m_ScheduledUpdates.GetData(), s_pState->m_ScheduledUpdates.GetCount());
+  return xiiArrayPtr<const xiiDDGIProbeUpdate>(m_pState->m_ScheduledUpdates.GetData(), m_pState->m_ScheduledUpdates.GetCount());
 }
 
-xiiDDGIFrameStats xiiDDGIManager::GetFrameStats()
+xiiDDGIFrameStats xiiDDGIContext::GetFrameStats() const
 {
-  return IsInitialized() ? s_pState->m_Stats : xiiDDGIFrameStats();
+  return IsInitialized() ? m_pState->m_Stats : xiiDDGIFrameStats();
 }
 
-const xiiDDGISettings& xiiDDGIManager::GetConfiguration()
+const xiiDDGISettings& xiiDDGIContext::GetConfiguration() const
 {
-  XII_ASSERT_RELEASE(IsInitialized(), "DDGI manager is not initialized.");
-  return s_pState->m_Settings;
+  XII_ASSERT_RELEASE(IsInitialized(), "DDGI context is not initialized.");
+  return m_pState->m_Settings;
 }
 
-xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem)
+xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem)
 {
   UpdateHandles result;
-  if (!IsInitialized() || pLightingSystem == nullptr)
+  if (!IsInitialized() || m_pState->m_uiFrameIndex == 0 || pLightingSystem == nullptr)
     return result;
-  if ((s_pState->m_pIrradianceAtlas == nullptr || s_pState->m_pDistanceAtlas == nullptr) && CreateGpuResources().Failed())
+  if ((m_pState->m_pIrradianceAtlas == nullptr || m_pState->m_pDistanceAtlas == nullptr) && CreateGpuResources().Failed())
     return result;
 
-  if (s_pState->m_pUpdatePipeline == nullptr)
+  if (m_pState->m_pUpdatePipeline == nullptr)
   {
     const xiiShaderResourceHandle                  hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/DDGIProbeUpdate.xiiShader");
     xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables(xiiTemporaryAllocator::Get());
-    const xiiShaderPermutationResourceHandle       hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-    xiiResourceLock<xiiShaderPermutationResource>  permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+    const xiiShaderPermutationResourceHandle       hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+    if (!hPermutation.IsValid())
+      return result;
+    xiiResourceLock<xiiShaderPermutationResource> permutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
     if (!permutation.IsValid())
       return result;
 
     xiiGALComputePipelineStateCreationDescription pipelineDescription;
     pipelineDescription.m_pComputeShader             = permutation->GetGALShader(xiiGALShaderType::Compute);
     pipelineDescription.m_pPipelineResourceSignature = permutation->GetPipelineResourceSignature();
-    s_pState->m_pUpdatePipeline                      = xiiGALPipelineCache::GetPipeline(pipelineDescription);
-    if (s_pState->m_pUpdatePipeline == nullptr)
+    m_pState->m_pUpdatePipeline                      = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+    if (m_pState->m_pUpdatePipeline == nullptr)
       return result;
   }
 
@@ -438,13 +420,13 @@ xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& grap
     const xiiLightingSystem*                                           m_pLightingSystem = nullptr;
   };
 
-  const bool bPerformUpdates = s_pState->m_uiLastGpuUpdateFrame != s_pState->m_uiFrameIndex;
+  const bool bPerformUpdates = m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex;
 
   auto pass = graph.AddPass<UpdatePassData>(
     "DDGI Probe Update", xiiGALCommandQueueFlags::Compute,
-    [bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+    [this, bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
       xiiGALBufferCreationDescription bufferDescription;
-      bufferDescription.m_uiSize              = xiiMath::Max(s_pState->m_Probes.GetCount(), 1U) * sizeof(xiiGpuDDGIProbeState);
+      bufferDescription.m_uiSize              = xiiMath::Max(m_pState->m_Probes.GetCount(), 1U) * sizeof(xiiGpuDDGIProbeState);
       bufferDescription.m_uiElementByteStride = sizeof(xiiGpuDDGIProbeState);
       bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
       bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
@@ -452,7 +434,7 @@ xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& grap
       bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
       data.m_hProbeStates                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_DDGIProbeStates, bufferDescription, xiiGALResourceStateFlags::ShaderResource);
 
-      bufferDescription.m_uiSize              = xiiMath::Max(bPerformUpdates ? s_pState->m_ScheduledUpdates.GetCount() : 0U, 1U) * sizeof(xiiGpuDDGIProbeUpdate);
+      bufferDescription.m_uiSize              = xiiMath::Max(bPerformUpdates ? m_pState->m_ScheduledUpdates.GetCount() : 0U, 1U) * sizeof(xiiGpuDDGIProbeUpdate);
       bufferDescription.m_uiElementByteStride = sizeof(xiiGpuDDGIProbeUpdate);
       data.m_hProbeUpdates                    = builder.WriteBuffer("DDGIProbeUpdates", bufferDescription, xiiGALResourceStateFlags::ShaderResource);
 
@@ -463,8 +445,8 @@ xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& grap
       bufferDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       data.m_hConstants                  = builder.WriteBuffer(xiiRGBlackboardKeys::k_DDGIProbeConstants, bufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
 
-      data.m_hIrradianceAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DDGIProbeIrradianceAtlas, s_pState->m_pIrradianceAtlas, s_pState->m_pIrradianceAtlas->GetResourceState());
-      data.m_hDistanceAtlas   = builder.ImportTexture(xiiRGBlackboardKeys::k_DDGIProbeDistanceAtlas, s_pState->m_pDistanceAtlas, s_pState->m_pDistanceAtlas->GetResourceState());
+      data.m_hIrradianceAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DDGIProbeIrradianceAtlas, m_pState->m_pIrradianceAtlas, m_pState->m_pIrradianceAtlas->GetResourceState());
+      data.m_hDistanceAtlas   = builder.ImportTexture(xiiRGBlackboardKeys::k_DDGIProbeDistanceAtlas, m_pState->m_pDistanceAtlas, m_pState->m_pDistanceAtlas->GetResourceState());
       if (bPerformUpdates)
       {
         data.m_hIrradianceAtlas = builder.WriteTexture(data.m_hIrradianceAtlas, xiiGALResourceStateFlags::UnorderedAccess);
@@ -480,7 +462,7 @@ xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& grap
       builder.SetPassSideEffects(bPerformUpdates);
       builder.SetPassAllowMerge(false);
     },
-    [](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
+    [this](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd = context.GetCommandList();
       {
         xiiGALMapHelper<xiiUInt8> mapped(cmd, context.GetBuffer(data.m_hProbeStates), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -493,15 +475,15 @@ xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& grap
       }
       {
         xiiGALMapHelper<xiiDDGIProbeConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-        constants->MinimumCellAndAtlasWidth  = xiiVec4I32(data.m_vMinimumCell.x, data.m_vMinimumCell.y, data.m_vMinimumCell.z, static_cast<xiiInt32>(s_pState->m_uiAtlasWidth));
-        constants->ProbeCountsAndUpdateCount = xiiVec4U32(s_pState->m_Settings.m_uiProbeCountX, s_pState->m_Settings.m_uiProbeCountY, s_pState->m_Settings.m_uiProbeCountZ, data.m_ProbeUpdates.GetCount());
-        constants->SpacingHysteresisDistance = xiiVec4(s_pState->m_Settings.m_fProbeSpacing, s_pState->m_Settings.m_fTemporalHysteresis,
-                                                       s_pState->m_Settings.m_fProbeSpacing * 4.0f, 0.0f);
+        constants->MinimumCellAndAtlasWidth  = xiiVec4I32(data.m_vMinimumCell.x, data.m_vMinimumCell.y, data.m_vMinimumCell.z, static_cast<xiiInt32>(m_pState->m_uiAtlasWidth));
+        constants->ProbeCountsAndUpdateCount = xiiVec4U32(m_pState->m_Settings.m_uiProbeCountX, m_pState->m_Settings.m_uiProbeCountY, m_pState->m_Settings.m_uiProbeCountZ, data.m_ProbeUpdates.GetCount());
+        constants->SpacingHysteresisDistance = xiiVec4(m_pState->m_Settings.m_fProbeSpacing, m_pState->m_Settings.m_fTemporalHysteresis,
+                                                       m_pState->m_Settings.m_fProbeSpacing * 4.0f, 0.0f);
       }
 
       if (!data.m_ProbeUpdates.IsEmpty())
       {
-        cmd.SetPipelineState(s_pState->m_pUpdatePipeline);
+        cmd.SetPipelineState(m_pState->m_pUpdatePipeline);
         if (data.m_pLightingSystem != nullptr)
           data.m_pLightingSystem->BindFrameConstants(cmd, xiiGALShaderType::Compute);
         cmd.ResolveAndSetConstantBuffer("xiiDDGIProbeConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
@@ -514,16 +496,16 @@ xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& grap
         for (const xiiGpuDDGIProbeUpdate& update : data.m_ProbeUpdates)
           CommitProbeUpdate(update.m_vMetadata.x, xiiVec3::MakeZero(), true);
       }
-      if (s_pState->m_uiLastGpuUpdateFrame != s_pState->m_uiFrameIndex)
-        s_pState->m_uiLastGpuUpdateFrame = s_pState->m_uiFrameIndex;
+      if (m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex)
+        m_pState->m_uiLastGpuUpdateFrame = m_pState->m_uiFrameIndex;
     });
 
-  pass.first->m_vMinimumCell    = s_pState->m_vMinimumCell;
+  pass.first->m_vMinimumCell    = m_pState->m_vMinimumCell;
   pass.first->m_pLightingSystem = pLightingSystem;
-  pass.first->m_ProbeStates.SetCount(s_pState->m_Probes.GetCount());
-  for (xiiUInt32 i = 0U; i < s_pState->m_Probes.GetCount(); ++i)
+  pass.first->m_ProbeStates.SetCount(m_pState->m_Probes.GetCount());
+  for (xiiUInt32 i = 0U; i < m_pState->m_Probes.GetCount(); ++i)
   {
-    const xiiDDGIProbeState& probe    = s_pState->m_Probes[i];
+    const xiiDDGIProbeState& probe    = m_pState->m_Probes[i];
     xiiGpuDDGIProbeState&    gpuProbe = pass.first->m_ProbeStates[i];
     gpuProbe.m_vPositionAndLastUpdate = xiiVec4(probe.m_vWorldPosition + probe.m_vRelocationOffset, static_cast<float>(probe.m_uiLastUpdatedFrame));
     gpuProbe.m_vCellAndFlags          = xiiVec4I32(probe.m_iCellX, probe.m_iCellY, probe.m_iCellZ, static_cast<xiiInt32>(probe.m_Flags.GetValue()));
@@ -531,8 +513,8 @@ xiiDDGIManager::UpdateHandles xiiDDGIManager::AddUpdatePass(xiiRenderGraph& grap
 
   if (bPerformUpdates)
   {
-    pass.first->m_ProbeUpdates.Reserve(s_pState->m_ScheduledUpdates.GetCount());
-    for (const xiiDDGIProbeUpdate& update : s_pState->m_ScheduledUpdates)
+    pass.first->m_ProbeUpdates.Reserve(m_pState->m_ScheduledUpdates.GetCount());
+    for (const xiiDDGIProbeUpdate& update : m_pState->m_ScheduledUpdates)
     {
       xiiGpuDDGIProbeUpdate& gpuUpdate      = pass.first->m_ProbeUpdates.ExpandAndGetRef();
       gpuUpdate.m_vPositionAndHistoryWeight = xiiVec4(update.m_vWorldPosition, update.m_fHistoryWeight);

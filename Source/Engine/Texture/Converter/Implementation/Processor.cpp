@@ -332,4 +332,4 @@ xiiResult xiiTextureConverterProcessor::GenerateLowResOutput(const xiiImage& src
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(Texture, Texture_TextureConverter_Implementation_Processor);
+XII_STATICLINK_FILE(Texture, Texture_Converter_Implementation_Processor);

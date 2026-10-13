@@ -50,9 +50,10 @@ void xiiBlackboardTemplateAssetDocumentManager::OnDocumentManagerEvent(const xii
   }
 }
 
-void xiiBlackboardTemplateAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiBlackboardTemplateAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiBlackboardTemplateAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiBlackboardTemplateAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

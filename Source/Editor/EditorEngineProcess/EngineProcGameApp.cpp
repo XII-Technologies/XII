@@ -19,10 +19,11 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
-#include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
+#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Pipeline/RenderDataManager.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <shellscalingapi.h>
@@ -161,21 +162,27 @@ void xiiEngineProcessGameApplication::RemoveEditorAssertHandler()
   g_PreviousAssertHandler = nullptr;
 }
 
+void xiiEngineProcessGameApplication::BeforeHighLevelSystemsShutdown()
+{
+  m_LongOpWorkerManager.Shutdown();
+  m_IPC.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEngineProcessGameApplication::EventHandlerIPC, this));
+  DeactivateGameState();
+  xiiEngineProcessDocumentContext::DestroyAllDocumentContexts();
+  m_pApp = nullptr;
+  SUPER::BeforeHighLevelSystemsShutdown();
+}
+
 void xiiEngineProcessGameApplication::BeforeCoreSystemsShutdown()
 {
   RemoveEditorAssertHandler();
-
-  m_pApp = nullptr;
-
-  m_LongOpWorkerManager.Shutdown();
-
-  m_IPC.m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEngineProcessGameApplication::EventHandlerIPC, this));
 
   SUPER::BeforeCoreSystemsShutdown();
 }
 
 xiiApplication::Execution xiiEngineProcessGameApplication::Run()
 {
+  if (WasQuitRequested())
+    return xiiApplication::Execution::Quit;
   bool bPendingOpInProgress = false;
   do
   {
@@ -185,17 +192,94 @@ xiiApplication::Execution xiiEngineProcessGameApplication::Run()
     {
       xiiEngineProcessDocumentContext::UpdateDocumentContexts();
     }
-  } while (!bPendingOpInProgress && m_uiRedrawCountExecuted == m_uiRedrawCountReceived);
+  } while (!WasQuitRequested() && !bPendingOpInProgress && m_uiRedrawCountExecuted == m_uiRedrawCountReceived);
 
   // If the editor enqueues a frame to be rendered, the loop above will break due to m_uiRedrawCountExecuted != m_uiRedrawCountReceived, and we will render a frame.
   // Alternatively, a pending operations is active at which point we render as fast as we can, ignoring the editor lock step.
-  // Note there are two other cases in which we render a frame: when "FreeGalResources" or "FreeAllResources" messages are sent we must render a frame to clear pending deletions and free memory.
   xiiApplication::Execution res = SUPER::Run();
-  xiiRenderWorld::ClearMainViews();
 
   m_uiRedrawCountExecuted = m_uiRedrawCountReceived;
 
   return res;
+}
+
+void xiiEngineProcessGameApplication::Run_WorldUpdateAndRender()
+{
+  XII_PROFILE_SCOPE("EditorWorldUpdateAndRender");
+  xiiGALDevice::GetDefaultDevice()->BeginFrame();
+  Run_BeforeWorldUpdate();
+
+  // Paused Editor worlds must still initialize components and render. Individual
+  // world update functions declare whether they require simulation.
+  const auto group = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
+  for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
+  {
+    if (auto* world = xiiWorld::GetWorld(i))
+      xiiTaskSystem::AddTaskToGroup(group, world->GetUpdateTask());
+  }
+  xiiTaskSystem::StartTaskGroup(group);
+  xiiTaskSystem::WaitForGroup(group);
+
+  Run_AfterWorldUpdate();
+  Run_UpdatePlugins();
+}
+
+void xiiEngineProcessGameApplication::Run_PresentImage()
+{
+  auto*                                                 manager = xiiWindowManager::GetSingleton();
+  xiiTemporaryHybridArray<xiiRegisteredWindowHandle, 8> windows;
+  manager->GetRegistered(windows);
+  bool captured = false;
+  for (const auto window : windows)
+  {
+    bool redraw = false;
+    if (xiiEngineProcessDocumentContext::TryGetWindowRedrawState(window, redraw) && !redraw)
+      continue;
+    auto* nativeWindow = manager->GetWindow(window);
+    auto* output       = nativeWindow ? nativeWindow->GetOutputTarget() : nullptr;
+    if (!output)
+      continue;
+    xiiStringBuilder context;
+    if (windows.GetCount() > 1)
+      context.Set(" - ", manager->GetName(window));
+    ExecuteTakeScreenshot(output, context);
+    if (!captured)
+    {
+      ExecuteFrameCapture(nativeWindow->GetNativeWindowHandle(), context);
+      captured = true;
+    }
+    output->PresentImage();
+  }
+}
+
+void xiiEngineProcessGameApplication::Run_FinishFrame()
+{
+  xiiEngineProcessDocumentContext::FinishFrame();
+  xiiGALDevice::GetDefaultDevice()->EndFrame();
+  SUPER::Run_FinishFrame();
+}
+
+void xiiEngineProcessGameApplication::InvalidateRenderData()
+{
+  for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
+  {
+    auto* world = xiiWorld::GetWorld(i);
+    if (!world)
+      continue;
+    XII_LOCK(world->GetWriteMarker());
+    if (auto* module = world->GetModule<xiiRenderWorldModule>())
+      module->DeleteAllCachedRenderData();
+  }
+}
+
+void xiiEngineProcessGameApplication::FreeGalResources()
+{
+  if (!xiiGALDevice::HasDefaultDevice())
+    return;
+  auto device = xiiGALDevice::GetDefaultDevice();
+  device->WaitIdle();
+  device->BeginFrame();
+  device->EndFrame();
 }
 
 void xiiEngineProcessGameApplication::LogWriter(const xiiLoggingEventData& e)
@@ -408,13 +492,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       Init_PlatformProfile_LoadForRuntime();
 
       xiiResourceManager::ReloadAllResources(false);
-      for (xiiUInt32 uiWorldIndex = 0; uiWorldIndex < xiiWorld::GetWorldCount(); ++uiWorldIndex)
-      {
-        if (xiiWorld* pWorld = xiiWorld::GetWorld(uiWorldIndex))
-        {
-          pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
-        }
-      }
+      InvalidateRenderData();
     }
     else if (pMsg1->m_sWhatToDo == "ReloadAssetLUT")
     {
@@ -422,16 +500,12 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     }
     else if (pMsg1->m_sWhatToDo == "FreeGalResources")
     {
-      xiiRenderWorld::ClearMainViews();
-      RunOneFrame();
-      xiiGALDevice::GetDefaultDevice()->WaitIdle();
+      FreeGalResources();
     }
     else if (pMsg1->m_sWhatToDo == "FreeAllResources")
     {
       xiiResourceManager::FreeAllUnusedResources();
-      xiiRenderWorld::ClearMainViews();
-      RunOneFrame();
-      xiiGALDevice::GetDefaultDevice()->WaitIdle();
+      FreeGalResources();
     }
     else if (pMsg1->m_sWhatToDo == "ReloadResources")
     {
@@ -439,13 +513,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       {
         xiiResourceManager::ReloadAllResources(false);
       }
-      for (xiiUInt32 uiWorldIndex = 0; uiWorldIndex < xiiWorld::GetWorldCount(); ++uiWorldIndex)
-      {
-        if (xiiWorld* pWorld = xiiWorld::GetWorld(uiWorldIndex))
-        {
-          pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
-        }
-      }
+      InvalidateRenderData();
     }
     else if (pMsg1->m_sWhatToDo == "SaveProfiling")
     {
@@ -474,7 +542,8 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
   }
   else if (const auto* pMsg2b = xiiDynamicCast<const xiiGlobalSettingsMsgToEngine*>(e.m_pMessage))
   {
-    xiiGizmoRenderer::s_fGizmoScale = pMsg2b->m_fGizmoScale;
+    if (xiiEngineGizmoHandle::SetGizmoScale(pMsg2b->m_fGizmoScale).Failed())
+      xiiLog::Warning("Ignoring invalid Editor gizmo scale {0}.", pMsg2b->m_fGizmoScale);
   }
   else if (const auto* pMsg3 = xiiDynamicCast<const xiiChangeCVarMsgToEngine*>(e.m_pMessage))
   {
@@ -550,7 +619,6 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     if (pMsg5->m_bDocumentOpen)
     {
       pDocumentContext = CreateDocumentContext(pMsg5);
-      XII_ASSERT_DEV(pDocumentContext != nullptr, "Could not create a document context for document type '{0}'", pMsg5->m_sDocumentType);
     }
     else
     {
@@ -585,48 +653,45 @@ xiiEngineProcessDocumentContext* xiiEngineProcessGameApplication::CreateDocument
 
   if (pDocumentContext == nullptr)
   {
-    xiiRTTI::ForEachDerivedType<xiiEngineProcessDocumentContext>([&](const xiiRTTI* pRtti) {
-      auto* pProp = pRtti->FindPropertyByName("DocumentType");
-      if (pProp && pProp->GetCategory() == xiiPropertyCategory::Constant)
+    const xiiStatus status = xiiEngineProcessDocumentContext::AllocateDocumentContext(*pMsg, pDocumentContext);
+    if (status.Failed())
+    {
+      m.m_sFailure = status.GetMessageString();
+      xiiLog::Error("Could not open document '{}': {}", pMsg->m_sDocumentType, m.m_sFailure);
+    }
+    else
+    {
+      const xiiStatus initialized = xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
+      if (initialized.Failed())
       {
-        const xiiStringBuilder sDocTypes(";", static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant().ConvertTo<xiiString>(), ";");
-        const xiiStringBuilder sRequestedType(";", pMsg->m_sDocumentType, ";");
-
-        if (sDocTypes.FindSubString(sRequestedType) != nullptr)
-        {
-          xiiLog::Dev("Created Context of type '{0}' for '{1}'", pRtti->GetTypeName(), pMsg->m_sDocumentType);
-          for (auto pFunc : pRtti->GetFunctions())
-          {
-            if (pFunc->GetPropertyName() == "AllocateContext")
-            {
-              xiiVariant                    res;
-              xiiHybridArray<xiiVariant, 1> params;
-              params.PushBack(pMsg);
-              pFunc->Execute(nullptr, params, res);
-              if (res.IsA<xiiEngineProcessDocumentContext*>())
-              {
-                pDocumentContext = res.Get<xiiEngineProcessDocumentContext*>();
-              }
-              else
-              {
-                xiiLog::Error("Failed to call custom allocator '{}::{}'.", pRtti->GetTypeName(), pFunc->GetPropertyName());
-              }
-            }
-          }
-
-          if (!pDocumentContext)
-          {
-            pDocumentContext = pRtti->GetAllocator()->Allocate<xiiEngineProcessDocumentContext>();
-          }
-
-          xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
-        }
+        m.m_sFailure = initialized.GetMessageString();
+        pDocumentContext->GetDynamicRTTI()->GetAllocator()->Deallocate(pDocumentContext);
+        pDocumentContext = nullptr;
+        xiiLog::Error("Could not initialize document '{}': {}", pMsg->m_sDocumentType, m.m_sFailure);
       }
-    });
+      else
+      {
+        m.m_bSucceeded = true;
+        xiiLog::Dev("Created context of type '{}' for '{}'.", pDocumentContext->GetDynamicRTTI()->GetTypeName(), pMsg->m_sDocumentType);
+      }
+    }
+  }
+  else if (pDocumentContext->GetDocumentType() != pMsg->m_sDocumentType)
+  {
+    m.m_sFailure     = "The document GUID is already registered for a different document type.";
+    pDocumentContext = nullptr;
   }
   else
   {
-    pDocumentContext->Reset();
+    const xiiStatus reset = pDocumentContext->Reset();
+    if (reset.Failed())
+    {
+      m.m_sFailure = reset.GetMessageString();
+      xiiEngineProcessDocumentContext::DestroyDocumentContext(pMsg->m_DocumentGuid);
+      pDocumentContext = nullptr;
+    }
+    else
+      m.m_bSucceeded = true;
   }
 
   m_IPC.SendMessage(&m);
@@ -702,7 +767,7 @@ bool xiiEngineProcessGameApplication::Run_ProcessApplicationInput()
   {
     if (m_pGameState)
     {
-      m_pGameState->RequestQuit();
+      m_pGameState->RequestQuit("editor-esc");
     }
   }
   else

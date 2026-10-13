@@ -528,7 +528,3 @@ void xiiGridNavmesh::CreateGraphEdges(ConvexArea& Area)
     }
   }
 }
-
-
-
-XII_STATICLINK_FILE(Utilities, Utilities_PathFinding_Implementation_GridNavmesh);

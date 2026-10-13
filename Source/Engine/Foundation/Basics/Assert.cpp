@@ -124,5 +124,3 @@ bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFu
   xiiStringBuilder tmp;
   return xiiFailedCheck(szSourceFile, uiLine, szFunction, szExpression, msg.GetTextCStr(tmp));
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Basics_Assert);

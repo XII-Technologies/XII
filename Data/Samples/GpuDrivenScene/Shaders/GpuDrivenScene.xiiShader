@@ -19,6 +19,7 @@ StructuredBuffer<GpuMeshlet> g_Meshlets;
 StructuredBuffer<uint2> g_VisibleMeshlets;
 StructuredBuffer<uint> g_VisibleMeshletCount;
 ByteAddressBuffer g_Buffers[];
+#include <Shaders/Pipeline/GpuSceneSkinning.h>
 
 struct MeshVertex
 {
@@ -26,7 +27,7 @@ struct MeshVertex
   float3 WorldNormal : NORMAL0;
   float3 WorldPosition : TEXCOORD2;
   nointerpolation uint MaterialIndex : TEXCOORD0;
-  nointerpolation uint ObjectIndex : TEXCOORD1;
+  nointerpolation uint ObjectUserData : TEXCOORD1;
 };
 
 uint LoadByte(ByteAddressBuffer source, uint byteOffset)
@@ -66,26 +67,29 @@ void main(uint threadIndex : SV_GroupThreadID,
   {
     const uint sourceVertex = g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + threadIndex) * 4u);
     const uint vertexOffset = sourceVertex * VertexStride;
-    const float3 localPosition = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset));
-    const float3 localNormal = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + 12u));
+    float3 localPosition = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset));
+    float3 localNormal = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + 12u));
+    float4 tangent = float4(1, 0, 0, 1);
+    const bool validSkin = xiiSkinCurrentSurface(instance, lod, sourceVertex, localPosition, localNormal, tangent);
     const float3 worldPosition = mul(instance.GlobalTransform, float4(localPosition, 1.0f)).xyz;
 
     MeshVertex output;
-    output.Position = mul(ViewProjectionMatrix, float4(worldPosition, 1.0f));
+    output.Position = validSkin ? mul(ViewProjectionMatrix, float4(worldPosition, 1.0f)) : float4(0, 0, -1, 1);
     output.WorldNormal = normalize(float3(
       dot(instance.NormalTransformRow0.xyz, localNormal),
       dot(instance.NormalTransformRow1.xyz, localNormal),
       dot(instance.NormalTransformRow2.xyz, localNormal)));
     output.WorldPosition = worldPosition;
     output.MaterialIndex = instance.MaterialIndex;
-    output.ObjectIndex = instance.ObjectIndex;
+    output.ObjectUserData = instance.UserData;
     vertices[threadIndex] = output;
   }
 
-  if (threadIndex < primitiveCount)
+  // A meshlet can contain more primitives than the 64 lanes in this workgroup.
+  for (uint primitiveIndex = threadIndex; primitiveIndex < primitiveCount; primitiveIndex += 64u)
   {
-    const uint primitiveOffset = meshlet.Header.z + threadIndex * 3u;
-    triangles[threadIndex] = uint3(
+    const uint primitiveOffset = meshlet.Header.z + primitiveIndex * 3u;
+    triangles[primitiveIndex] = uint3(
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 0u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
       LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
@@ -108,7 +112,7 @@ struct MeshVertex
   float3 WorldNormal : NORMAL0;
   float3 WorldPosition : TEXCOORD2;
   nointerpolation uint MaterialIndex : TEXCOORD0;
-  nointerpolation uint ObjectIndex : TEXCOORD1;
+  nointerpolation uint ObjectUserData : TEXCOORD1;
 };
 
 float EvaluateSunShadow(float3 worldPosition, float3 worldNormal, float3 directionToSun)
@@ -151,6 +155,6 @@ float4 main(MeshVertex input) : SV_Target0
   const float diffuse = saturate(dot(normalize(input.WorldNormal), lightDirection));
   const float shadow = EvaluateSunShadow(input.WorldPosition, normalize(input.WorldNormal), lightDirection);
   const float3 lighting = AmbientColor.rgb + diffuse * SunDirectionIntensity.w * shadow;
-  const float selectionPulse = 0.04f * sin((float)input.ObjectIndex * 0.6180339f);
+  const float selectionPulse = 0.04f * sin((float)input.ObjectUserData * 0.6180339f);
   return float4(saturate(baseColor.rgb * lighting + selectionPulse), baseColor.a);
 }

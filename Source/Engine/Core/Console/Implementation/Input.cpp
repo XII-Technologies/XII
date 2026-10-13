@@ -243,5 +243,3 @@ void xiiQuakeConsole::DoDefaultInputHandling(bool bConsoleOpen)
       ExecuteCommand(GetInputHistory()[1]);
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_Console_Implementation_Input);

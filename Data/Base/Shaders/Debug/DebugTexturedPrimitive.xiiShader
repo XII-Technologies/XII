@@ -22,7 +22,7 @@ DepthEnable = true
   DepthWriteEnable = true
 #endif
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #define USE_COLOR0
 #define USE_TEXCOORD0
@@ -53,20 +53,22 @@ VS_OUT main(VS_IN Input)
   return RetVal;
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #define USE_COLOR0
 #define USE_TEXCOORD0
 
 #include <Shaders/Materials/MaterialInterpolator.h>
 
-DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(BaseTexture, Texture2D);
+#include <Shaders/Common/Common.h>
+
+Texture2D BaseTexture;
 
 float4 main(PS_IN Input) : SV_Target
 {
 #if MONOCHROME
-  return float4(BaseTexture.Sample(BaseTexture_AutoSampler, Input.TexCoord0.xy).rrr, 1) * Input.Color0;
+  return float4(BaseTexture.Sample(LinearClampSampler, Input.TexCoord0.xy).rrr, 1) * Input.Color0;
 #else
-  return BaseTexture.Sample(BaseTexture_AutoSampler, Input.TexCoord0.xy) * Input.Color0;
+  return BaseTexture.Sample(LinearClampSampler, Input.TexCoord0.xy) * Input.Color0;
 #endif
 }

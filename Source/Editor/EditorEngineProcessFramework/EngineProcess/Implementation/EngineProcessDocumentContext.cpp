@@ -8,18 +8,16 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/RemoteViewContext.h>
+#include <EditorEngineProcessFramework/EngineProcess/ThumbnailCapture.h>
+#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/ImageUtils.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiEngineProcessDocumentContextFlags)
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiEngineProcessDocumentContextFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiEngineProcessDocumentContextFlags::None),
   XII_BITFLAGS_CONSTANT(xiiEngineProcessDocumentContextFlags::CreateWorld),
 XII_END_STATIC_REFLECTED_BITFLAGS;
@@ -37,12 +35,21 @@ xiiEngineProcessDocumentContext* xiiEngineProcessDocumentContext::GetDocumentCon
   return pResult;
 }
 
-void xiiEngineProcessDocumentContext::AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pContext, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
+xiiStatus xiiEngineProcessDocumentContext::AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pContext, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
 {
-  XII_ASSERT_DEV(!s_DocumentContexts.Contains(guid), "Cannot add a view with an index that already exists");
-  s_DocumentContexts[guid] = pContext;
+  if (!pContext || !guid.IsValid() || sDocumentType.IsEmpty())
+    return xiiStatus("Document registration requires a context, a valid GUID and a document type.");
+  if (s_DocumentContexts.Contains(guid))
+    return xiiStatus("A context is already registered for this document GUID.");
+  if (pContext->m_bInitializationStarted)
+    return xiiStatus("The context is already initialized and cannot be registered again.");
 
-  pContext->Initialize(guid, metaData, pIPC, sDocumentType);
+  // Initialization hooks may resolve their own context or a parent through the registry.
+  s_DocumentContexts[guid] = pContext;
+  const xiiStatus status   = pContext->Initialize(guid, metaData, pIPC, sDocumentType);
+  if (status.Failed())
+    s_DocumentContexts.Remove(guid);
+  return status;
 }
 
 bool xiiEngineProcessDocumentContext::PendingOperationsInProgress()
@@ -64,6 +71,47 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContexts()
   }
 }
 
+void xiiEngineProcessDocumentContext::FinishFrame()
+{
+  for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
+  {
+    auto& context = *it.Value();
+    for (auto* view : context.m_ViewContexts)
+      if (view)
+        view->SuspendRendering();
+    if (context.m_pThumbnailViewContext)
+      context.m_pThumbnailViewContext->SuspendRendering();
+  }
+}
+
+bool xiiEngineProcessDocumentContext::TryGetWindowRedrawState(xiiRegisteredWindowHandle hWindow, bool& out_bRedrawRequested)
+{
+  out_bRedrawRequested = false;
+  if (hWindow.IsInvalidated())
+    return false;
+
+  bool found = false;
+  for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
+  {
+    auto& context = *it.Value();
+    for (auto* viewContext : context.m_ViewContexts)
+    {
+      if (!viewContext || viewContext->GetWindowHandle() != hWindow)
+        continue;
+      found = true;
+      if (auto* world = context.GetWorld())
+      {
+        XII_LOCK(world->GetReadMarker());
+        const auto* module = static_cast<const xiiWorld*>(world)->GetModule<xiiRenderWorldModule>();
+        xiiView*    view   = nullptr;
+        if (module && module->TryGetView(viewContext->GetViewHandle(), view))
+          out_bRedrawRequested |= view->IsRenderEnabled() && view->IsValid();
+      }
+    }
+  }
+  return found;
+}
+
 void xiiEngineProcessDocumentContext::DestroyDocumentContext(xiiUuid guid)
 {
   xiiEngineProcessDocumentContext* pContext = nullptr;
@@ -72,6 +120,18 @@ void xiiEngineProcessDocumentContext::DestroyDocumentContext(xiiUuid guid)
     pContext->Deinitialize();
     pContext->GetDynamicRTTI()->GetAllocator()->Deallocate(pContext);
   }
+}
+
+void xiiEngineProcessDocumentContext::DestroyAllDocumentContexts()
+{
+  xiiDynamicArray<xiiUuid> borrowedWorldContexts;
+  for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
+    if (!it.Value()->m_Flags.IsSet(xiiEngineProcessDocumentContextFlags::CreateWorld))
+      borrowedWorldContexts.PushBack(it.Key());
+  for (const auto& guid : borrowedWorldContexts)
+    DestroyDocumentContext(guid);
+  while (!s_DocumentContexts.IsEmpty())
+    DestroyDocumentContext(s_DocumentContexts.GetIterator().Key());
 }
 
 xiiBoundingBoxSphere xiiEngineProcessDocumentContext::GetWorldBounds(xiiWorld* pWorld)
@@ -113,16 +173,23 @@ xiiEngineProcessDocumentContext::xiiEngineProcessDocumentContext(xiiBitflags<xii
 
 xiiEngineProcessDocumentContext::~xiiEngineProcessDocumentContext()
 {
+  XII_ASSERT_DEV(!m_bInitializationStarted, "Context has not been deinitialized.");
   XII_ASSERT_DEV(m_pWorld == nullptr, "World has not been deleted! Call 'xiiEngineProcessDocumentContext::DestroyDocumentContext'");
 
   GetContext().m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiEngineProcessDocumentContext::WorldRttiConverterContextEventHandler, this));
 }
 
-void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
+xiiStatus xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType)
 {
-  m_DocumentGuid = documentGuid;
-  m_MetaData     = metaData;
-  m_pIPC         = pIPC;
+  if (m_bInitializationStarted)
+    return xiiStatus("The document context is already initialized. Reset or deinitialize it before initializing again.");
+  if (!documentGuid.IsValid() || sDocumentType.IsEmpty())
+    return xiiStatus("Context initialization requires a valid document GUID and type.");
+
+  m_bInitializationStarted = true;
+  m_DocumentGuid           = documentGuid;
+  m_MetaData               = metaData;
+  m_pIPC                   = pIPC;
 
   if (m_sDocumentType != sDocumentType)
   {
@@ -141,11 +208,19 @@ void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, co
     GetContext().m_pWorld = m_pWorld;
     m_Mirror.InitReceiver(&GetContext());
   }
-  OnInitialize();
+  const xiiStatus status = OnInitialize();
+  if (status.Failed())
+    Deinitialize();
+  return status;
 }
 
 void xiiEngineProcessDocumentContext::Deinitialize()
 {
+  if (!m_bInitializationStarted)
+    return;
+  if (m_pThumbnailViewContext)
+    DestroyThumbnailViewContext();
+
   OnDeinitialize();
 
   ClearViewContexts();
@@ -158,7 +233,8 @@ void xiiEngineProcessDocumentContext::Deinitialize()
   {
     XII_DEFAULT_DELETE(m_pWorld);
   }
-  m_pWorld = nullptr;
+  m_pWorld                 = nullptr;
+  m_bInitializationStarted = false;
 }
 
 void xiiEngineProcessDocumentContext::SendProcessMessage(xiiProcessMessage* pMsg)
@@ -327,6 +403,14 @@ void xiiEngineProcessDocumentContext::AddSyncObject(xiiEditorEngineSyncObject* p
 
 void xiiEngineProcessDocumentContext::RemoveSyncObject(xiiEditorEngineSyncObject* pSync)
 {
+  auto&           context     = GetContext();
+  const xiiUInt32 uiPickingID = context.m_OtherPickingMap.GetHandle(pSync->GetGuid());
+  if (uiPickingID != 0)
+  {
+    context.m_OtherPickingMap.UnregisterObject(pSync->GetGuid());
+    if (context.m_uiHighlightID == uiPickingID)
+      context.m_uiHighlightID = 0;
+  }
   m_SyncObjects.Remove(pSync->GetGuid());
 }
 
@@ -406,14 +490,18 @@ void xiiEngineProcessDocumentContext::ProcessEditorEngineSyncObjectMsg(const xii
   pSyncObject->SetModified(true);
 }
 
-void xiiEngineProcessDocumentContext::Reset()
+xiiStatus xiiEngineProcessDocumentContext::Reset()
 {
-  xiiUuid guid = m_DocumentGuid;
-  auto    ipc  = m_pIPC;
+  if (!m_bInitializationStarted)
+    return xiiStatus("Cannot reset a document context which is not initialized.");
+  xiiUuid          guid         = m_DocumentGuid;
+  auto             ipc          = m_pIPC;
+  const xiiVariant metaData     = m_MetaData;
+  const xiiString  documentType = m_sDocumentType;
 
   Deinitialize();
 
-  Initialize(guid, m_MetaData, ipc, m_sDocumentType);
+  return Initialize(guid, metaData, ipc, documentType);
 }
 
 void xiiEngineProcessDocumentContext::ClearExistingObjects()
@@ -421,8 +509,8 @@ void xiiEngineProcessDocumentContext::ClearExistingObjects()
   GetContext().DeleteExistingObjects();
 }
 
-void xiiEngineProcessDocumentContext::OnInitialize() {}
-void xiiEngineProcessDocumentContext::OnDeinitialize() {}
+xiiStatus xiiEngineProcessDocumentContext::OnInitialize() { return XII_SUCCESS; }
+void      xiiEngineProcessDocumentContext::OnDeinitialize() {}
 
 bool xiiEngineProcessDocumentContext::PendingOperationInProgress() const
 {
@@ -459,97 +547,15 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
       xiiCreateThumbnailMsgToEditor ret;
       ret.m_DocumentGuid = GetDocumentGuid();
 
-      // Download image
+      xiiImage image;
+      if (xiiCaptureThumbnail(m_pThumbnailColorRT.Borrow(), {m_uiThumbnailWidth / static_cast<xiiUInt32>(ThumbnailSuperscaleFactor), m_uiThumbnailHeight / static_cast<xiiUInt32>(ThumbnailSuperscaleFactor)}, image).Succeeded())
       {
-        xiiSharedPtr<xiiGALDevice> pDevice        = xiiGALDevice::GetDefaultDevice();
-        auto                       pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
-
-        xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-        XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
-
-        pCommandList->Begin();
-        {
-          pCommandList->BeginDebugGroup("Thumbnail Readback");
-          {
-            pCommandList->CopyTexture(m_pThumbnailColorRT, m_pThumbnailColorRTStaging);
-          }
-          pCommandList->EndDebugGroup();
-        }
-        pCommandList->End();
-        pGraphicsQueue->Submit(pCommandList);
-
-        const xiiEnum<xiiGALResourceFormat> format = m_pThumbnailColorRT->GetDescription().m_Format;
-
-        xiiImageHeader header;
-        header.SetImageFormat(xiiTextureUtils::GalFormatToImageFormat(format, true));
-        header.SetWidth(m_uiThumbnailWidth);
-        header.SetHeight(m_uiThumbnailHeight);
-        xiiImage image;
-        image.ResetAndAlloc(header);
-        XII_ASSERT_DEV(static_cast<xiiUInt64>(m_uiThumbnailWidth) * static_cast<xiiUInt64>(m_uiThumbnailHeight) * 4 == header.ComputeDataSize(), "Thumbnail xiiImage has different size than data buffer!");
-
-        const xiiUInt32 uiStride      = 4U * m_uiThumbnailWidth;
-        const xiiUInt32 uiDepthStride = 4U * m_uiThumbnailWidth * m_uiThumbnailHeight;
-        auto*           pImageData    = image.GetPixelPointer<xiiUInt8>();
-
-        pCommandList->Begin();
-        {
-          pCommandList->BeginDebugGroup("Thumbnail Readback Download");
-          {
-            xiiGALTextureMipLevelData      sourceSubResource;
-            xiiGALMappedTextureSubresource mappedSubResource;
-            if (pCommandList->MapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
-            {
-              const auto& textureDescription = m_pThumbnailColorRTStaging->GetDescription();
-              const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-
-              if (mappedSubResource.m_pData)
-              {
-                /// \todo Support depth pitch.
-                if (mappedSubResource.m_uiStride == uiStride)
-                {
-                  const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-                  memcpy(pImageData, mappedSubResource.m_pData, uiMemorySize);
-                }
-                else
-                {
-                  // Copy row by row.
-                  const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-                  for (xiiUInt32 y = 0; y < uiHeight; ++y)
-                  {
-                    const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
-                    void*       pDestination = xiiMemoryUtils::AddByteOffset(pImageData, y * uiStride);
-
-                    memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
-                  }
-                }
-              }
-              else
-              {
-                xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
-              }
-
-              pCommandList->UnmapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource).IgnoreResult();
-            }
-          }
-          pCommandList->EndDebugGroup();
-        }
-        pCommandList->End();
-        pGraphicsQueue->Submit(pCommandList);
-
-        xiiImage  imageSwap;
-        xiiImage* pImage     = &image;
-        xiiImage* pImageSwap = &imageSwap;
-        for (xiiUInt32 uiSuperscaleFactor = ThumbnailSuperscaleFactor; uiSuperscaleFactor > 1; uiSuperscaleFactor /= 2)
-        {
-          xiiImageUtils::Scale(*pImage, *pImageSwap, pImage->GetWidth() / 2, pImage->GetHeight() / 2).IgnoreResult();
-          xiiMath::Swap(pImage, pImageSwap);
-        }
-
-        ret.m_ThumbnailData.SetCountUninitialized((m_uiThumbnailWidth / ThumbnailSuperscaleFactor) * (m_uiThumbnailHeight / ThumbnailSuperscaleFactor) * 4);
-        xiiMemoryUtils::Copy(ret.m_ThumbnailData.GetData(), pImage->GetPixelPointer<xiiUInt8>(), ret.m_ThumbnailData.GetCount());
+        ret.m_ThumbnailData.SetCountUninitialized(static_cast<xiiUInt32>(image.GetByteBlobPtr().GetCount()));
+        xiiMemoryUtils::Copy(ret.m_ThumbnailData.GetData(), image.GetPixelPointer<xiiUInt8>(), ret.m_ThumbnailData.GetCount());
+      }
+      else
+      {
+        xiiLog::Error("Failed to capture thumbnail for document '{0}'.", GetDocumentGuid());
       }
 
       DestroyThumbnailViewContext();
@@ -574,6 +580,17 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
   XII_ASSERT_DEV(!xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode(), "Wrong mode for thumbnail creation");
   XII_ASSERT_DEV(m_pThumbnailViewContext == nullptr, "Thumbnail rendering already in progress.");
   static_assert((ThumbnailSuperscaleFactor & (ThumbnailSuperscaleFactor - 1)) == 0, "ThumbnailSuperscaleFactor must be power of 2.");
+  if (pMsg->m_uiWidth == 0 || pMsg->m_uiHeight == 0 ||
+      pMsg->m_uiWidth > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor ||
+      pMsg->m_uiHeight > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor)
+  {
+    xiiLog::Error("Invalid thumbnail dimensions: {0}x{1}.", pMsg->m_uiWidth, pMsg->m_uiHeight);
+    xiiCreateThumbnailMsgToEditor response;
+    response.m_DocumentGuid = GetDocumentGuid();
+    SendProcessMessage(&response);
+    return;
+  }
+
   m_uiThumbnailConvergenceFrames = 0;
   m_uiThumbnailWidth             = pMsg->m_uiWidth * ThumbnailSuperscaleFactor;
   m_uiThumbnailHeight            = pMsg->m_uiHeight * ThumbnailSuperscaleFactor;
@@ -588,7 +605,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  // Create render target for picking
+  // Create the offscreen pipeline output target.
   xiiGALTextureCreationDescription tcd;
   tcd.m_Type        = xiiGALResourceDimension::Texture2D;
   tcd.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
@@ -598,22 +615,18 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   m_pThumbnailColorRT = pDevice->CreateTexture(tcd);
 
-  tcd.m_BindFlags      = {};
-  tcd.m_Usage          = xiiGALResourceUsage::Staging;
-  tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+  if (!m_pThumbnailColorRT)
+  {
+    xiiLog::Error("Failed to create thumbnail render target.");
+    DestroyThumbnailViewContext();
+    xiiCreateThumbnailMsgToEditor response;
+    response.m_DocumentGuid = GetDocumentGuid();
+    SendProcessMessage(&response);
+    return;
+  }
 
-  m_pThumbnailColorRTStaging = pDevice->CreateTexture(tcd);
-
-  tcd.m_Format         = xiiGALResourceFormat::D32Float;
-  tcd.m_CPUAccessFlags = {};
-  tcd.m_Usage          = xiiGALResourceUsage::Mutable;
-  tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-
-  m_pThumbnailDepthRT = pDevice->CreateTexture(tcd);
-
-  m_ThumbnailRenderTargets.m_pRTs[0]   = m_pThumbnailColorRT->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  m_ThumbnailRenderTargets.m_pDSTarget = m_pThumbnailDepthRT->GetDefaultView(xiiGALTextureViewType::DepthStencil);
-  m_pThumbnailViewContext->SetupRenderTarget({}, &m_ThumbnailRenderTargets, m_uiThumbnailWidth, m_uiThumbnailHeight);
+  // Depth and intermediate attachments belong to the selected render pipeline.
+  m_pThumbnailViewContext->SetupRenderTarget({}, m_pThumbnailColorRT->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow(), m_uiThumbnailWidth, m_uiThumbnailHeight);
 
   xiiResourceManager::ForceNoFallbackAcquisition(3);
   OnThumbnailViewContextRequested();
@@ -628,15 +641,12 @@ void xiiEngineProcessDocumentContext::DestroyThumbnailViewContext()
 {
   OnDestroyThumbnailViewContext();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   DestroyViewContext(m_pThumbnailViewContext);
   m_pThumbnailViewContext = nullptr;
 
-  m_pThumbnailColorRTStaging.Clear();
   m_pThumbnailColorRT.Clear();
-  m_pThumbnailDepthRT.Clear();
 
+  XII_LOCK(m_pWorld->GetWriteMarker());
   m_pWorld->SetWorldSimulationEnabled(m_bWorldSimStateBeforeThumbnail);
 }
 
@@ -971,6 +981,8 @@ ref_to_is_updated:
 
 void xiiEngineProcessDocumentContext::UpdateSyncObjects()
 {
+  if (!m_pWorld)
+    return;
   for (auto it : m_SyncObjects)
   {
     auto pSyncObject = it.Value();
@@ -992,4 +1004,47 @@ void xiiEngineProcessDocumentContext::UpdateSyncObjects()
       pSyncObject->UpdateForEngine(m_pWorld);
     }
   }
+}
+
+xiiResult xiiEngineProcessDocumentContext::DrawGizmos(const xiiView& view)
+{
+  if (!m_pWorld || view.GetWorld() != m_pWorld)
+    return XII_FAILURE;
+  xiiResult result = XII_SUCCESS;
+  for (auto it : m_SyncObjects)
+    if (auto* handle = xiiDynamicCast<xiiEngineGizmoHandle*>(it.Value()))
+      if (handle->Draw(view, GetContext().m_uiHighlightID).Failed())
+        result = XII_FAILURE;
+  return result;
+}
+
+xiiResult xiiEngineProcessDocumentContext::PickGizmo(const xiiView& view, float fNormalizedX, float fNormalizedY, xiiEditorGizmoPickResult& out_result)
+{
+  if (!m_pWorld || view.GetWorld() != m_pWorld || !view.IsValid() || view.GetCamera()->GetCameraMode() == xiiCameraMode::None ||
+      !xiiMath::IsFinite(fNormalizedX) || !xiiMath::IsFinite(fNormalizedY) || fNormalizedX < 0 || fNormalizedX > 1 || fNormalizedY < 0 || fNormalizedY > 1)
+    return XII_FAILURE;
+  xiiVec3 start, direction;
+  XII_SUCCEED_OR_RETURN(view.ComputePickingRay(fNormalizedX, fNormalizedY, start, direction));
+  bool                     found = false;
+  xiiEditorGizmoPickResult closest;
+  for (auto it : m_SyncObjects)
+  {
+    auto* handle = xiiDynamicCast<xiiEngineGizmoHandle*>(it.Value());
+    float fTime;
+    if (!handle || handle->PickRay(view, start, direction, fTime).Failed())
+      continue;
+    const bool bOnTop = handle->IsAlwaysOnTop();
+    if (found && ((!bOnTop && closest.m_bAlwaysOnTop) || (bOnTop == closest.m_bAlwaysOnTop && fTime >= closest.m_fRayTime)))
+      continue;
+    closest.m_HandleGuid        = it.Key();
+    closest.m_vRayStartPosition = start;
+    closest.m_fRayTime          = fTime;
+    closest.m_vPosition         = start + direction * fTime;
+    closest.m_bAlwaysOnTop      = bOnTop;
+    found                       = true;
+  }
+  if (!found)
+    return XII_FAILURE;
+  out_result = closest;
+  return XII_SUCCESS;
 }

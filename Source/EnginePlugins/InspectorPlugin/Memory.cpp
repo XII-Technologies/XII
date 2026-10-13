@@ -92,6 +92,3 @@ void RemoveMemoryEventHandler()
     xiiGameApplicationBase::GetGameApplicationBaseInstance()->m_ExecutionEvents.RemoveEventHandler(MemoryDetail::PerframeUpdateHandler);
   }
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Memory);

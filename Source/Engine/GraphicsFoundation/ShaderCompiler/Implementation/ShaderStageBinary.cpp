@@ -330,5 +330,3 @@ void xiiGALShaderStageBinary::OnEngineShutdown()
 {
   s_pCacheState.Clear();
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_ShaderStageBinary);

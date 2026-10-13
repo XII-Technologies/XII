@@ -219,4 +219,4 @@ xiiUniquePtr<xiiScriptInstance> xiiVisualScriptClassResource::Instantiate(xiiRef
   return XII_SCRIPT_NEW(xiiVisualScriptInstance, inout_owner, pWorld, m_pConstantDataStorage, m_pInstanceDataDesc, m_pInstanceDataMapping);
 }
 
-XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Resources_VisualScriptClassResource);
+XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Resources_Implementation_VisualScriptClassResource);

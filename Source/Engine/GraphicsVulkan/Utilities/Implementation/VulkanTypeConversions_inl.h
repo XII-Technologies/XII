@@ -1270,9 +1270,11 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
     vkAccessFlags |= vk::AccessFlagBits::eInputAttachmentRead;
   if (e.IsSet(xiiGALResourceStateFlags::Present))
     vkAccessFlags |= static_cast<vk::AccessFlagBits>(0);
+  // AS build input buffers (vertices, indices, transforms, AABBs and instances) are
+  // shader reads at the AS-build stage; acceleration-structure reads alone do not cover them.
   if (e.IsSet(xiiGALResourceStateFlags::BuildASRead))
-    vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR;
-  if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))                                                                       // for vertex, index, transform, AABB, instance buffers
+    vkAccessFlags |= vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eAccelerationStructureReadKHR;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))
     vkAccessFlags |= vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureWriteKHR; // for scratch buffer
   if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
     vkAccessFlags |= vk::AccessFlagBits::eShaderRead; // for SBT

@@ -125,6 +125,3 @@ void RemoveOSFileEventHandler()
 {
   xiiOSFile::RemoveEventHandler(OSFileEventHandler);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_OSFile);

@@ -52,4 +52,4 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(FileservePlugin, FileservePluginMain)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-XII_STATICLINK_FILE(FileservePlugin, FileservePlugin_Main);
+XII_STATICLINK_FILE(FileservePlugin, FileservePlugin_Implementation_FileservePlugin);

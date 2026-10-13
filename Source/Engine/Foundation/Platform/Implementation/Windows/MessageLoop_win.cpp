@@ -111,5 +111,3 @@ void xiiMessageLoop_win::WakeUp()
 }
 
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Win_MessageLoop_win);

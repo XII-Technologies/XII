@@ -380,3 +380,5 @@ void xiiVolumeBoxComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg
 {
   ref_msg.AddBounds(xiiBoundingBoxSphere(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f)), m_SpatialCategory);
 }
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_Volumes_Implementation_VolumeComponent);

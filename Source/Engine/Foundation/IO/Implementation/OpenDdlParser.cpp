@@ -1217,5 +1217,3 @@ xiiUInt64 xiiOpenDdlParser::ReadDecimalLiteral()
 
   return value;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OpenDdlParser);

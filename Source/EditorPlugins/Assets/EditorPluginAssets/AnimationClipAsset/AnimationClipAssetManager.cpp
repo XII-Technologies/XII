@@ -53,9 +53,10 @@ void xiiAnimationClipAssetDocumentManager::OnDocumentManagerEvent(const xiiDocum
   }
 }
 
-void xiiAnimationClipAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiAnimationClipAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiAnimationClipAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiAnimationClipAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

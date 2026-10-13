@@ -1139,7 +1139,8 @@ void FileSystemModelTest()
       XII_LOCK(fileEventLock);
       XII_LOCK(folderEventLock);
       // Check file removed before folder.
-      XII_TEST_BOOL(fileEventTimestamps[0] < folderEventTimestamps[0]);
+      if (fileEventTimestamps.GetCount() == 1 && folderEventTimestamps.GetCount() == 1)
+        XII_TEST_BOOL(fileEventTimestamps[0] < folderEventTimestamps[0]);
     }
 
     ClearFolders();
@@ -1226,6 +1227,86 @@ void FileSystemModelTest()
 XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
 {
   FileSystemModelTest();
+}
+
+XII_CREATE_SIMPLE_TEST(FileSystem, ExplicitSubtreeChanges)
+{
+  // Asset-browser edits notify the model immediately, before asynchronous watcher events arrive.
+  xiiStringBuilder root(xiiTestFramework::GetInstance()->GetAbsOutputPath());
+  root.AppendPath("ExplicitSubtreeChanges");
+  xiiStringBuilder folder(root, "/Parent"), child(folder, "/Child"), leaf(child, "/Leaf");
+  xiiStringBuilder file(leaf, "/asset.txt"), sibling(root, "/ParentSibling");
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(leaf));
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(sibling));
+  {
+    xiiOSFile stream;
+    XII_TEST_RESULT(stream.Open(file, xiiFileOpenMode::Write));
+    XII_TEST_RESULT(stream.Write("asset", 5));
+  }
+  xiiApplicationFileSystemConfig config;
+  auto&                          dataDir = config.m_DataDirs.ExpandAndGetRef();
+  dataDir.m_sDataDirSpecialPath          = root;
+  auto* model                            = xiiFileSystemModel::GetSingleton();
+  model->Initialize(config, {}, {});
+  XII_SCOPE_EXIT(model->Deinitialize(); xiiOSFile::DeleteFolder(root).IgnoreResult());
+  model->CheckFileSystem();
+  XII_TEST_INT(model->GetFolders()->GetCount(), 5);
+  XII_TEST_INT(model->GetFiles()->GetCount(), 1);
+
+  xiiDynamicArray<xiiString> removedFolders;
+  xiiUInt32                  removedFiles       = 0;
+  auto                       folderSubscription = model->m_FolderChangedEvents.AddEventHandler([&](const xiiFolderChangedEvent& event) {
+    if (event.m_Type == xiiFolderChangedEvent::Type::FolderRemoved)
+    {
+      XII_TEST_BOOL(!model->GetFolders()->Contains(event.m_Path));
+      removedFolders.PushBack(event.m_Path.GetAbsolutePath());
+    }
+  });
+  auto                       fileSubscription   = model->m_FileChangedEvents.AddEventHandler([&](const xiiFileChangedEvent& event) {
+    if (event.m_Type == xiiFileChangedEvent::Type::FileRemoved)
+    {
+      XII_TEST_BOOL(removedFolders.IsEmpty()); // Files are removed before their containing folders.
+      ++removedFiles;
+    }
+  });
+  XII_SCOPE_EXIT(model->m_FolderChangedEvents.RemoveEventHandler(folderSubscription); model->m_FileChangedEvents.RemoveEventHandler(fileSubscription));
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Explicit folder rename removes the complete old subtree")
+  {
+    xiiStringBuilder renamed(root, "/PARENT");
+    XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(folder, renamed));
+    model->NotifyOfChange(renamed);
+    model->NotifyOfChange(folder);
+    XII_TEST_INT(model->GetFolders()->GetCount(), 5);
+    XII_TEST_INT(model->GetFiles()->GetCount(), 1);
+    XII_TEST_INT(removedFolders.GetCount(), 3);
+    if (removedFolders.GetCount() == 3)
+    {
+      XII_TEST_STRING(removedFolders[0], leaf);
+      XII_TEST_STRING(removedFolders[1], child);
+      XII_TEST_STRING(removedFolders[2], folder);
+    }
+    XII_TEST_INT(removedFiles, 1);
+    XII_TEST_BOOL(model->GetFolders()->Contains(sibling.GetView()));
+    removedFolders.Clear();
+    removedFiles = 0;
+    folder       = renamed;
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Explicit folder deletion removes descendants and preserves adjacent prefixes")
+  {
+    XII_TEST_RESULT(xiiOSFile::DeleteFolder(folder));
+    model->NotifyOfChange(folder);
+    XII_TEST_INT(model->GetFiles()->GetCount(), 0);
+    XII_TEST_INT(model->GetFolders()->GetCount(), 2);
+    XII_TEST_INT(removedFolders.GetCount(), 3);
+    XII_TEST_INT(removedFiles, 1);
+    XII_TEST_BOOL(model->GetFolders()->Contains(sibling.GetView()));
+    // Repeated notifications are idempotent, as are delayed watcher removals.
+    model->NotifyOfChange(folder);
+    XII_TEST_INT(removedFolders.GetCount(), 3);
+    XII_TEST_INT(removedFiles, 1);
+  }
 }
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)

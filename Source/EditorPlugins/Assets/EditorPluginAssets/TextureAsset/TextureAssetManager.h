@@ -2,17 +2,9 @@
 
 #pragma once
 
-#include <Core/Configuration/PlatformProfile.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorPluginAssets/EditorPluginAssetsDLL.h>
-
-class XII_EDITORPLUGINASSETS_DLL xiiTextureAssetProfileConfig : public xiiProfileConfigData
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiTextureAssetProfileConfig, xiiProfileConfigData);
-
-public:
-  xiiUInt16 m_uiMaxResolution = 1024 * 16;
-};
+#include <SharedPluginAssets/TextureAsset/TextureAssetProfile.h>
 
 class xiiTextureAssetDocumentManager : public xiiAssetDocumentManager
 {
@@ -29,7 +21,7 @@ private:
 
   virtual xiiUInt64 ComputeAssetProfileHashImpl(const xiiPlatformProfile* pAssetProfile) const override;
 
-  virtual void InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) override;
+  virtual xiiStatus InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) override;
   virtual void InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const override;
 
   virtual bool GeneratesProfileSpecificAssets() const override { return true; }

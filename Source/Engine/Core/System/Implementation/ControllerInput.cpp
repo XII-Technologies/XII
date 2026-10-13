@@ -23,5 +23,3 @@ void xiiControllerInput::SetDevice(xiiInputDeviceController* pDevice)
 {
   g_pInputDeviceController = pDevice;
 }
-
-XII_STATICLINK_FILE(Core, Core_System_Implementation_ControllerInput);

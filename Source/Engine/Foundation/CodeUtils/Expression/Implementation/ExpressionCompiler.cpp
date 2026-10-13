@@ -693,5 +693,3 @@ void xiiExpressionCompiler::DumpAST(const xiiExpressionAST& ast, xiiStringView s
     xiiLog::Error("Failed to dump AST to: {}", sFullPath);
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionCompiler);

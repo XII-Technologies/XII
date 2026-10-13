@@ -15,8 +15,6 @@ target_link_libraries(${PROJECT_NAME}
   GraphicsCore
 
   PRIVATE
-  mikktspace
-  ozz
-  meshoptimizer
   assimp
+  meshoptimizer
 )

@@ -2,50 +2,33 @@
 
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
-#include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
-#include <EditorFramework/DocumentWindow/GameObjectViewWidget.moc.h>
-#include <EditorFramework/DocumentWindow/QuadViewWidget.moc.h>
-#include <EditorFramework/InputContexts/EditorInputContext.h>
-#include <EditorFramework/Panels/GameObjectPanel/GameObjectModel.moc.h>
-#include <EditorFramework/Panels/GameObjectPanel/GameObjectPanel.moc.h>
 #include <EditorPluginAssets/PropertyAnimAsset/PropertyAnimAsset.h>
 #include <EditorPluginAssets/PropertyAnimAsset/PropertyAnimAssetWindow.moc.h>
 #include <EditorPluginAssets/PropertyAnimAsset/PropertyAnimModel.moc.h>
-#include <EditorPluginAssets/PropertyAnimAsset/PropertyAnimObjectManager.h>
 #include <GuiFoundation/ActionViews/MenuBarActionMapView.moc.h>
 #include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
+#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
+#include <GuiFoundation/DockPanels/DocumentPanel.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/Widgets/ColorGradientEditorWidget.moc.h>
 #include <GuiFoundation/Widgets/Curve1DEditorWidget.moc.h>
 #include <GuiFoundation/Widgets/EventTrackEditorWidget.moc.h>
 #include <GuiFoundation/Widgets/TimeScrubberWidget.moc.h>
+#include <QLabel>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 
 xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPropertyAnimAssetDocument* pDocument) :
-  xiiQtGameObjectDocumentWindow(pDocument)
+  xiiQtDocumentWindow(pDocument)
 {
-  auto ViewFactory = [](xiiQtEngineDocumentWindow* pWindow, xiiEngineViewConfig* pConfig) -> xiiQtEngineViewWidget* {
-    xiiQtGameObjectViewWidget* pWidget = new xiiQtGameObjectViewWidget(nullptr, static_cast<xiiQtPropertyAnimAssetDocumentWindow*>(pWindow), pConfig);
-    pWindow->AddViewWidget(pWidget);
-    return pWidget;
-  };
-  m_pQuadViewWidget = new xiiQtQuadViewWidget(pDocument, this, ViewFactory, "PropertyAnimAssetViewToolBar");
-
-  pDocument->SetEditToolConfigDelegate(
-    [this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
-
   pDocument->m_PropertyAnimEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyAnimAssetEventHandler, this));
 
-  {
-    xiiQtDocumentPanel* pViewPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
-    pViewPanel->setObjectName("xiiQtDocumentPanel");
-    pViewPanel->setWindowTitle("3D View");
-    pViewPanel->setWidget(m_pQuadViewWidget);
-
-    m_pDockManager->setCentralWidget(pViewPanel);
-  }
-
-  SetTargetFrameRate(25);
+  auto* pNoticePanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
+  pNoticePanel->setObjectName("PropertyAnimationSourceNotice");
+  pNoticePanel->setWindowTitle("Property Animation Source");
+  auto* pNotice = new QLabel("Existing source data can be edited and saved. Runtime export and 3D preview are unavailable because the Engine no longer supports property animation.", pNoticePanel);
+  pNotice->setWordWrap(true);
+  pNoticePanel->setWidget(pNotice);
+  m_pDockManager->setCentralWidget(pNoticePanel);
 
   // Menu Bar
   {
@@ -69,21 +52,11 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     addToolBar(pToolBar);
   }
 
-  // Game Object Graph
-  {
-    std::unique_ptr<xiiQtDocumentTreeModel> pModel(new xiiQtGameObjectModel(pDocument->GetObjectManager()));
-    pModel->AddAdapter(new xiiQtDummyAdapter(pDocument->GetObjectManager(), xiiGetStaticRTTI<xiiDocumentRoot>(), "TempObjects"));
-    pModel->AddAdapter(new xiiQtGameObjectAdapter(pDocument->GetObjectManager()));
-
-    xiiQtDocumentPanel* pGameObjectPanel = new xiiQtGameObjectPanel(GetContainerWindow()->GetDockManager(), this, pDocument, "PropertyAnimAsset_ScenegraphContextMenu", std::move(pModel));
-    m_pDockManager->addDockWidgetTab(ads::LeftDockWidgetArea, pGameObjectPanel);
-  }
-
   // Property Grid
   {
     xiiQtDocumentPanel* pPanel = new xiiQtDocumentPanel(GetContainerWindow()->GetDockManager(), this, pDocument);
     pPanel->setObjectName("PropertyAnimAssetDockWidget");
-    pPanel->setWindowTitle("Object Properties");
+    pPanel->setWindowTitle("Source Properties");
     pPanel->show();
 
     xiiQtPropertyGridWidget* pPropertyGrid = new xiiQtPropertyGridWidget(pPanel, pDocument);
@@ -94,7 +67,6 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     pWidget->setContentsMargins(0, 0, 0, 0);
 
     pWidget->layout()->setContentsMargins(0, 0, 0, 0);
-    pWidget->layout()->addWidget(new xiiQtAssetStatusIndicator(GetDocument()));
     pWidget->layout()->addWidget(pPropertyGrid);
 
     pPanel->setWidget(pWidget, ads::CDockWidget::ForceNoScrollArea);
@@ -195,8 +167,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     addToolBar(Qt::ToolBarArea::BottomToolBarArea, m_pScrubberToolbar);
   }
 
-  // this would show the document properties
-  // pDocument->GetSelectionManager()->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
+  pDocument->GetSelectionManager()->SetSelection(pDocument->GetPropertyObject());
 
   // Curve editor events
   {
@@ -249,10 +220,7 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
     connect(m_pEventTrackEditor, &xiiQtEventTrackEditorWidget::EndCpChangesEvent, this, &xiiQtPropertyAnimAssetDocumentWindow::onEventTrackEndCpChanges);
   }
 
-  // GetDocument()->GetObjectManager()->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyEventHandler,
-  // this));
   GetDocument()->GetObjectManager()->m_StructureEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler, this));
-  GetDocument()->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::SelectionEventHandler, this));
   GetDocument()->GetCommandHistory()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler, this));
 
   FinishWindowCreation();
@@ -270,66 +238,8 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
 xiiQtPropertyAnimAssetDocumentWindow::~xiiQtPropertyAnimAssetDocumentWindow()
 {
   GetPropertyAnimDocument()->m_PropertyAnimEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyAnimAssetEventHandler, this));
-  // GetDocument()->GetObjectManager()->m_PropertyEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyEventHandler, this));
   GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler, this));
-  GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::SelectionEventHandler, this));
   GetDocument()->GetCommandHistory()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler, this));
-}
-
-void xiiQtPropertyAnimAssetDocumentWindow::ToggleViews(QWidget* pView)
-{
-  m_pQuadViewWidget->ToggleViews(pView);
-}
-
-xiiObjectAccessorBase* xiiQtPropertyAnimAssetDocumentWindow::GetObjectAccessor()
-{
-  return GetPropertyAnimDocument()->GetObjectAccessor();
-}
-
-bool xiiQtPropertyAnimAssetDocumentWindow::CanDuplicateSelection() const
-{
-  return false;
-}
-
-void xiiQtPropertyAnimAssetDocumentWindow::DuplicateSelection()
-{
-  XII_ASSERT_NOT_IMPLEMENTED;
-}
-
-void xiiQtPropertyAnimAssetDocumentWindow::InternalRedraw()
-{
-  xiiEditorInputContext::UpdateActiveInputContext();
-  {
-    // do not try to redraw while the process is crashed, it is obviously futile
-    if (xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed())
-      return;
-
-    {
-      xiiSimulationSettingsMsgToEngine msg;
-      msg.m_bSimulateWorld = false;
-      GetEditorEngineConnection()->SendMessage(&msg);
-    }
-    {
-      xiiGridSettingsMsgToEngine msg = GetGridSettings();
-      GetEditorEngineConnection()->SendMessage(&msg);
-    }
-    {
-      xiiWorldSettingsMsgToEngine msg = GetWorldSettings();
-      GetEditorEngineConnection()->SendMessage(&msg);
-    }
-
-    GetGameObjectDocument()->SendObjectSelection();
-
-    auto pHoveredView = GetHoveredViewWidget();
-
-    for (auto pView : m_ViewWidgets)
-    {
-      pView->SetEnablePicking(pView == pHoveredView);
-      pView->UpdateCameraInterpolation();
-      pView->SyncToEngine();
-    }
-  }
-  xiiQtEngineDocumentWindow::InternalRedraw();
 }
 
 void xiiQtPropertyAnimAssetDocumentWindow::PropertyAnimAssetEventHandler(const xiiPropertyAnimAssetDocumentEvent& e)
@@ -378,7 +288,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::UpdateSelectionData()
   m_CurvesToDisplay.m_bOwnsData         = false;
   m_CurvesToDisplay.m_uiFramesPerSecond = pDoc->GetProperties()->m_uiFramesPerSecond;
 
-  xiiSet<xiiInt32> tracks;
+  xiiSet<xiiUuid> tracks;
 
   for (const QModelIndex& selIdx : m_pSelectionModel->selection().indexes())
   {
@@ -387,8 +297,8 @@ void xiiQtPropertyAnimAssetDocumentWindow::UpdateSelectionData()
     xiiQtPropertyAnimModel* pModel = m_pPropertiesModel;
 
     auto addRecursive = [&tracks, pModel](auto& ref_self, const xiiQtPropertyAnimModelTreeEntry* pTreeItem) -> void {
-      if (pTreeItem->m_pTrack != nullptr)
-        tracks.Insert(pTreeItem->m_iTrackIdx);
+      if (pTreeItem->m_TrackGuid.IsValid())
+        tracks.Insert(pTreeItem->m_TrackGuid);
 
       for (xiiInt32 iChild : pTreeItem->m_Children)
       {
@@ -397,19 +307,19 @@ void xiiQtPropertyAnimAssetDocumentWindow::UpdateSelectionData()
       }
     };
 
-    addRecursive(addRecursive, pTreeItem);
+    if (pTreeItem != nullptr)
+      addRecursive(addRecursive, pTreeItem);
   }
 
   auto& trackArray = pDoc->GetProperties()->m_Tracks;
-  for (auto it = tracks.GetIterator(); it.IsValid(); ++it)
+  for (xiiUInt32 iTrackIdx = 0; iTrackIdx < trackArray.GetCount(); ++iTrackIdx)
   {
-    const xiiInt32 iTrackIdx = it.Key();
-
-    // this can happen during undo/redo when the selection still names data that has just been removed
-    if (iTrackIdx >= (xiiInt32)trackArray.GetCount())
+    // A queued model rebuild can still contain removed tracks or obsolete array indices.
+    const auto guid = pDoc->GetPropertyObject()->GetTypeAccessor().GetValue("Tracks", iTrackIdx).Get<xiiUuid>();
+    if (!tracks.Contains(guid))
       continue;
 
-    if (trackArray[iTrackIdx]->m_Target != xiiPropertyAnimTarget::Color)
+    if (trackArray[iTrackIdx]->m_Target != xiiPropertyAnimationChannel::Color)
     {
       m_MapSelectionToTrack.PushBack(iTrackIdx);
 
@@ -582,9 +492,12 @@ void xiiQtPropertyAnimAssetDocumentWindow::onTreeItemDoubleClicked(const QModelI
   xiiQtPropertyAnimModelTreeEntry* pTreeItem =
     reinterpret_cast<xiiQtPropertyAnimModelTreeEntry*>(m_pPropertiesModel->data(index, xiiQtPropertyAnimModel::UserRoles::TreeItem).value<void*>());
 
-  if (pTreeItem != nullptr && pTreeItem->m_pTrack != nullptr)
+  if (pTreeItem != nullptr && pTreeItem->m_TrackGuid.IsValid())
   {
-    if (pTreeItem->m_pTrack->m_Target == xiiPropertyAnimTarget::Color)
+    const auto* object = GetDocument()->GetObjectManager()->GetObject(pTreeItem->m_TrackGuid);
+    if (object == nullptr)
+      return;
+    if (object->GetTypeAccessor().GetValue("Target").ConvertTo<xiiInt64>() == xiiPropertyAnimationChannel::Color)
     {
       m_pGradientEditor->FrameGradient();
       m_pColorGradientPanel->raise();
@@ -629,27 +542,8 @@ xiiPropertyAnimAssetDocument* xiiQtPropertyAnimAssetDocumentWindow::GetPropertyA
   return static_cast<xiiPropertyAnimAssetDocument*>(GetDocument());
 }
 
-// void xiiQtPropertyAnimAssetDocumentWindow::PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e)
-//{
-//  if (static_cast<xiiPropertyAnimObjectManager*>(GetDocument()->GetObjectManager())->IsTemporary(e.m_pObject, e.m_sProperty))
-//    return;
-//
-//  // TODO: only update what needs to be updated
-//
-//  //m_bUpdateEventTrackEditor = true;
-//  //m_bUpdateCurveEditor = true;
-//  //m_bUpdateGradientEditor = true;
-//}
-
 void xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler(const xiiDocumentObjectStructureEvent& e)
 {
-  if (e.m_pNewParent &&
-      static_cast<xiiPropertyAnimObjectManager*>(GetDocument()->GetObjectManager())->IsTemporary(e.m_pNewParent, e.m_sParentProperty))
-    return;
-  if (e.m_pPreviousParent &&
-      static_cast<xiiPropertyAnimObjectManager*>(GetDocument()->GetObjectManager())->IsTemporary(e.m_pPreviousParent, e.m_sParentProperty))
-    return;
-
   switch (e.m_EventType)
   {
     case xiiDocumentObjectStructureEvent::Type::AfterObjectAdded:
@@ -664,27 +558,12 @@ void xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler(const xiiDocume
 }
 
 
-void xiiQtPropertyAnimAssetDocumentWindow::SelectionEventHandler(const xiiSelectionManagerEvent& e)
-{
-  // this would show the document properties
-  // if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
-  //{
-  //  // delayed execution
-  //  QTimer::singleShot(1, [this]()
-  //  {
-  //    GetDocument()->GetSelectionManager()->SetSelection(GetPropertyAnimDocument()->GetPropertyObject());
-  //  });
-  //}
-}
-
-
 void xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler(const xiiCommandHistoryEvent& e)
 {
   if (e.m_Type == xiiCommandHistoryEvent::Type::TransactionEnded || e.m_Type == xiiCommandHistoryEvent::Type::UndoEnded ||
       e.m_Type == xiiCommandHistoryEvent::Type::RedoEnded)
   {
-    UpdateCurveEditor();
-    UpdateGradientEditor();
+    UpdateSelectionData();
     UpdateEventTrackEditor();
   }
 }

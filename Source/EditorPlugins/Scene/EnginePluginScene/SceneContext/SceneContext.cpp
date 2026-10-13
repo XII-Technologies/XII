@@ -9,18 +9,15 @@
 #include <Core/Prefabs/PrefabResource.h>
 #include <Core/World/EventMessageHandlerComponent.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
-#include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
 #include <EditorEngineProcessFramework/SceneExport/SceneExportModifier.h>
 #include <EnginePluginScene/SceneContext/LayerContext.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GameEngine/GameApplication/GameApplication.h>
-#include <GraphicsCore/AnimationSystem/Declarations.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Lights/DirectionalLightComponent.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
-#include <GraphicsCore/Lights/SkyLightComponent.h>
-#include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <SharedPluginScene/Scene/ScenePreviewLighting.h>
+#include <SharedPluginScene/Scene/SceneSkeletonPose.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneContext, 1, xiiRTTIDefaultAllocator<xiiSceneContext>)
@@ -57,6 +54,10 @@ void xiiSceneContext::DrawSelectionBounds(const xiiViewHandle& hView)
 
   XII_LOCK(m_pWorld->GetWriteMarker());
 
+  xiiView* pView = nullptr;
+  if (!m_pWorld->GetOrCreateModule<xiiRenderWorldModule>()->TryGetView(hView, pView))
+    return;
+
   for (const auto& obj : m_Selection)
   {
     xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
@@ -69,7 +70,7 @@ void xiiSceneContext::DrawSelectionBounds(const xiiViewHandle& hView)
 
     if (bounds.IsValid())
     {
-      xiiDebugRenderer::DrawLineBoxCorners(hView, bounds.GetBox(), 0.25f, xiiColorScheme::LightUI(xiiColorScheme::Yellow));
+      xiiDebugRenderer::DrawLineBoxCorners(*pView, bounds.GetBox(), 0.25f, xiiColorScheme::LightUI(xiiColorScheme::Yellow));
     }
   }
 }
@@ -528,6 +529,9 @@ xiiUInt32 xiiSceneContext::RegisterLayer(xiiLayerContext* pLayer)
 
 void xiiSceneContext::UnregisterLayer(xiiLayerContext* pLayer)
 {
+  m_bInvisibleLayersDirty = true;
+  if (m_ActiveLayer == pLayer->GetDocumentGuid())
+    m_ActiveLayer = GetDocumentGuid();
   m_Contexts.RemoveAndSwap(&pLayer->m_Context);
 
   for (xiiUInt32 i = 0; i < m_Layers.GetCount(); ++i)
@@ -546,11 +550,11 @@ void xiiSceneContext::UnregisterLayer(xiiLayerContext* pLayer)
 
 void xiiSceneContext::AddLayerIndexTag(const xiiEntityMsgToEngine& msg, xiiWorldRttiConverterContext& ref_context, const xiiTag& layerTag)
 {
-  if (msg.m_change.m_Change.m_Operation == xiiObjectChangeType::NodeAdded)
+  if (msg.m_Change.m_Change.m_Operation == xiiObjectChangeType::NodeAdded)
   {
-    if ((msg.m_change.m_Change.m_sProperty == "Children" || msg.m_change.m_Change.m_sProperty.IsEmpty()) && msg.m_change.m_Change.m_Value.IsA<xiiUuid>())
+    if ((msg.m_Change.m_Change.m_sProperty == "Children" || msg.m_Change.m_Change.m_sProperty.IsEmpty()) && msg.m_Change.m_Change.m_Value.IsA<xiiUuid>())
     {
-      const xiiUuid&         object = msg.m_change.m_Change.m_Value.Get<xiiUuid>();
+      const xiiUuid&         object = msg.m_Change.m_Change.m_Value.Get<xiiUuid>();
       xiiRttiConverterObject target = ref_context.GetObjectByGUID(object);
 
       if (target.m_pType == xiiGetStaticRTTI<xiiGameObject>() && target.m_pObject != nullptr)
@@ -569,7 +573,7 @@ const xiiArrayPtr<const xiiTag> xiiSceneContext::GetInvisibleLayerTags() const
   return m_InvisibleLayerTags.GetArrayPtr();
 }
 
-void xiiSceneContext::OnInitialize()
+xiiStatus xiiSceneContext::OnInitialize()
 {
   XII_LOCK(m_pWorld->GetWriteMarker());
 
@@ -581,16 +585,24 @@ void xiiSceneContext::OnInitialize()
 
   m_LayerTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Layer_Scene");
 
-  xiiShadowPool::AddExcludeTagToWhiteList(m_LayerTag);
+  return XII_SUCCESS;
 }
 
 void xiiSceneContext::OnDeinitialize()
 {
+  // A document can close before the asynchronous Stop Play request is processed.
+  // Deactivate while its borrowed world and render module still exist: the game state
+  // releases its main view and windows here, before the base context destroys the world.
+  if (m_pWorld != nullptr && s_pWorldLinkedWithGameState == m_pWorld)
+  {
+    xiiGameApplicationBase::GetGameApplicationBaseInstance()->DeactivateGameState();
+    s_pWorldLinkedWithGameState = nullptr;
+  }
+
   m_Selection.Clear();
   m_SelectionWithChildren.Clear();
   m_SelectionWithChildrenSet.Clear();
-  m_hSkyLight.Invalidate();
-  m_hDirectionalLight.Invalidate();
+  RemoveAmbientLight();
 
   m_LayerTag = xiiTag();
 
@@ -601,6 +613,12 @@ void xiiSceneContext::OnDeinitialize()
       pLayer->SceneDeinitialized();
     }
   }
+  m_Layers.Clear();
+  m_Contexts.Clear();
+  m_ActiveLayer = {};
+  m_ObjectsToTag.Clear();
+  m_InvisibleLayerTags.Clear();
+  m_bInvisibleLayersDirty = true;
 }
 
 xiiEngineProcessViewContext* xiiSceneContext::CreateViewContext()
@@ -766,7 +784,7 @@ void xiiSceneContext::HandleGameModeMsg(const xiiGameModeMsgToEngine* pMsg)
       return;
 
     xiiLog::Info("Attempting to stop Play-the-Game mode");
-    pState->RequestQuit();
+    pState->RequestQuit("editor-force");
   }
 }
 
@@ -953,9 +971,7 @@ void xiiSceneContext::UpdateDocumentContext()
 
   if (xiiGameStateBase* pState = GetGameState())
   {
-    // If we have a running game state we always want to render it (e.g. play the game).
-    pState->AddMainViewsToRender();
-
+    // The world's render module executes its registered views during world update.
     if (pState->WasQuitRequested())
     {
       xiiGameApplicationBase::GetGameApplicationBaseInstance()->DeactivateGameState();
@@ -1042,81 +1058,6 @@ bool xiiSceneContext::UpdateThumbnailViewContext(xiiEngineProcessViewContext* pT
   return result;
 }
 
-void xiiSceneContext::AddAmbientLight(bool bSetEditorTag, bool bForce)
-{
-  if (!m_hSkyLight.IsInvalidated() || !m_hDirectionalLight.IsInvalidated())
-    return;
-
-  XII_LOCK(GetWorld()->GetWriteMarker());
-
-  // delay adding ambient light until the scene isn't empty, to prevent adding two skylights
-  if (!bForce && GetWorld()->GetObjectCount() == 0)
-    return;
-
-  xiiSkyLightComponentManager* pSkyMan = GetWorld()->GetComponentManager<xiiSkyLightComponentManager>();
-  if (pSkyMan == nullptr || pSkyMan->GetSingletonComponent() == nullptr)
-  {
-    // only create a skylight, if there is none yet
-
-    xiiGameObjectDescription obj;
-    obj.m_sName.Assign("Sky Light");
-
-    if (bSetEditorTag)
-    {
-      const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
-      obj.m_Tags.Set(tagEditor); // to prevent it from being exported
-    }
-
-    xiiGameObject* pObj;
-    m_hSkyLight = GetWorld()->CreateObject(obj, pObj);
-
-
-    xiiSkyLightComponent* pSkyLight = nullptr;
-    xiiSkyLightComponent::CreateComponent(pObj, pSkyLight);
-    pSkyLight->SetCubeMapFile("{ 0b202e08-a64f-465d-b38e-15b81d161822 }");
-    pSkyLight->SetReflectionProbeMode(xiiReflectionProbeMode::Static);
-  }
-
-  {
-    xiiGameObjectDescription obj;
-    obj.m_sName.Assign("Ambient Light");
-
-    obj.m_LocalRotation = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(-14.510815f), xiiAngle::MakeFromDegree(43.07951f), xiiAngle::MakeFromDegree(93.223808f));
-
-    if (bSetEditorTag)
-    {
-      const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
-      obj.m_Tags.Set(tagEditor); // to prevent it from being exported
-    }
-
-    xiiGameObject* pLight;
-    m_hDirectionalLight = GetWorld()->CreateObject(obj, pLight);
-
-    xiiDirectionalLightComponent* pDirLight = nullptr;
-    xiiDirectionalLightComponent::CreateComponent(pLight, pDirLight);
-    pDirLight->SetIntensity(10.0f);
-  }
-}
-
-void xiiSceneContext::RemoveAmbientLight()
-{
-  XII_LOCK(GetWorld()->GetWriteMarker());
-
-  if (!m_hSkyLight.IsInvalidated())
-  {
-    // make sure to remove the object RIGHT NOW, otherwise it may still exist during scene export (without the "Editor" tag)
-    GetWorld()->DeleteObjectNow(m_hSkyLight);
-    m_hSkyLight.Invalidate();
-  }
-
-  if (!m_hDirectionalLight.IsInvalidated())
-  {
-    // make sure to remove the object RIGHT NOW, otherwise it may still exist during scene export (without the "Editor" tag)
-    GetWorld()->DeleteObjectNow(m_hDirectionalLight);
-    m_hDirectionalLight.Invalidate();
-  }
-}
-
 const xiiEngineProcessDocumentContext* xiiSceneContext::GetActiveDocumentContext() const
 {
   if (m_ActiveLayer == GetDocumentGuid())
@@ -1174,25 +1115,6 @@ xiiArrayPtr<xiiWorldRttiConverterContext*> xiiSceneContext::GetAllContexts()
 void xiiSceneContext::HandleExposedPropertiesMsg(const xiiExposedDocumentObjectPropertiesMsgToEngine* pMsg)
 {
   m_ExposedSceneProperties = pMsg->m_Properties;
-}
-
-void xiiSceneContext::HandleSceneGeometryMsg(const xiiExportSceneGeometryMsgToEngine* pMsg)
-{
-  xiiWorldGeoExtractionUtil::MeshObjectList objects;
-
-  xiiTagSet excludeTags;
-  excludeTags.SetByName("Editor");
-
-  if (pMsg->m_bSelectionOnly)
-  {
-    xiiWorldGeoExtractionUtil::ExtractWorldGeometry(objects, *m_pWorld, static_cast<xiiWorldGeoExtractionUtil::ExtractionMode>(pMsg->m_iExtractionMode), m_SelectionWithChildren);
-  }
-  else
-  {
-    xiiWorldGeoExtractionUtil::ExtractWorldGeometry(objects, *m_pWorld, static_cast<xiiWorldGeoExtractionUtil::ExtractionMode>(pMsg->m_iExtractionMode), &excludeTags);
-  }
-
-  xiiWorldGeoExtractionUtil::WriteWorldGeometryToOBJ(pMsg->m_sOutputFile, objects, pMsg->m_Transform);
 }
 
 void xiiSceneContext::HandlePullObjectStateMsg(const xiiPullObjectStateMsgToEngine* pMsg)
@@ -1256,10 +1178,8 @@ void xiiSceneContext::HandlePullObjectStateMsg(const xiiPullObjectStateMsgToEngi
       state.m_vPosition                  = pObject->GetGlobalPosition();
       state.m_qRotation                  = pObject->GetGlobalRotation();
 
-      xiiMsgRetrieveBoneState msg;
-      pObject->SendMessage(msg);
-
-      state.m_BoneTransforms = msg.m_BoneTransforms;
+      // A missing or unevaluated pose does not prevent pulling the object's world transform.
+      xiiCollectSceneSkeletonPose(*pObject, state.m_sSkeletonResource, state.m_BoneTransforms).IgnoreResult();
     }
   }
 

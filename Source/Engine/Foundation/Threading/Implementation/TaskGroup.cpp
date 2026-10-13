@@ -48,5 +48,3 @@ void xiiTaskGroup::DebugCheckTaskGroup(xiiTaskGroupID groupID, xiiMutex& mutex)
   XII_ASSERT_DEV(pGroup->m_iNumActiveDependencies == 0, "Invalid active dependenices");
 }
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskGroup);

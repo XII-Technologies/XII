@@ -106,3 +106,5 @@ xiiResult xiiMaterialSystem::CreateRuntimeMaterial(const xiiMaterialSchemaDescri
   out_pInstance = std::move(pInstance);
   return XII_SUCCESS;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Material_Implementation_MaterialSystem);

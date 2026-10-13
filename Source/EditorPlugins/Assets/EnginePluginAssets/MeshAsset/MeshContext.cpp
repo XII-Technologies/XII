@@ -29,9 +29,11 @@ void xiiMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg)
 {
   if (auto* pMsg = xiiDynamicCast<const xiiEditorEngineSetMaterialsMsg*>(pDocMsg))
   {
+    XII_LOCK(m_pWorld->GetWriteMarker());
     xiiMeshComponent* pMesh;
     if (m_pMeshObject && m_pMeshObject->TryGetComponentOfBaseType(pMesh))
     {
+      pMesh->ClearMaterialOverrides();
       for (xiiUInt32 i = 0; i < pMsg->m_Materials.GetCount(); ++i)
       {
         xiiMaterialResourceHandle hMat;
@@ -41,7 +43,7 @@ void xiiMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg)
           hMat = xiiResourceManager::LoadResource<xiiMaterialResource>(pMsg->m_Materials[i]);
         }
 
-        pMesh->SetMaterial(i, hMat);
+        pMesh->SetMaterialOverride(i, hMat);
       }
     }
 
@@ -69,7 +71,7 @@ void xiiMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDocMsg)
   xiiEngineProcessDocumentContext::HandleMessage(pDocMsg);
 }
 
-void xiiMeshContext::OnInitialize()
+xiiStatus xiiMeshContext::OnInitialize()
 {
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
@@ -96,6 +98,7 @@ void xiiMeshContext::OnInitialize()
       pMeshRes->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiMeshContext::OnResourceEvent, this), m_MeshResourceEventSubscriber);
     }
   }
+  return XII_SUCCESS;
 }
 
 xiiEngineProcessViewContext* xiiMeshContext::CreateViewContext()

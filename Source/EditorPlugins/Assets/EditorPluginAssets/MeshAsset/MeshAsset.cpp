@@ -5,12 +5,13 @@
 #include <Core/Graphics/Geometry.h>
 #include <EditorPluginAssets/MeshAsset/MeshAsset.h>
 #include <EditorPluginAssets/Util/MeshImportUtils.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Utilities/Progress.h>
-#include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
-#include <ModelImporter/ModelImporter.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
+#include <ModelImporter/MeshImport.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 12, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 13, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -49,13 +50,13 @@ xiiTransformStatus xiiMeshAssetDocument::InternalTransformAsset(xiiStreamWriter&
   }
   else
   {
-    CreateMeshFromGeom(pProp, desc);
+    XII_SUCCEED_OR_RETURN(CreateMeshFromGeom(pProp, desc, !transformFlags.IsSet(xiiTransformFlags::BackgroundProcessing)));
   }
 
   // if there is no material set for a slot, use the "Pattern" material as a fallback
   for (xiiUInt32 matIdx = 0; matIdx < desc.GetMaterials().GetCount(); ++matIdx)
   {
-    if (desc.GetMaterials()[matIdx].m_sPath.IsEmpty())
+    if (desc.GetMaterials()[matIdx].IsEmpty())
     {
       // Data/Base/Materials/Common/Pattern.xiiMaterialAsset
       desc.SetMaterial(matIdx, "{ 1c47ee4c-0379-4280-85f5-b8cda61941d2 }");
@@ -63,18 +64,18 @@ xiiTransformStatus xiiMeshAssetDocument::InternalTransformAsset(xiiStreamWriter&
   }
 
   range.BeginNextStep("Writing Result");
-  desc.Save(stream);
-
-  return XII_SUCCESS;
+  xiiDefaultMemoryStreamStorage storage;
+  xiiMemoryStreamWriter         writer(&storage);
+  desc.Save(writer);
+  return storage.CopyToStream(stream);
 }
 
 
-void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xiiMeshResourceDescriptor& desc)
+xiiTransformStatus xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xiiMeshResourceDescriptor& desc, bool bAllowMaterialImport)
 {
   const xiiMat3 mTransformation = CalculateTransformationMatrix(pProp);
 
   xiiGeometry geom;
-  // const xiiMat4 mTrans(mTransformation, xiiVec3::MakeZero());
 
   xiiGeometry::GeoOptions opt;
   opt.m_Transform = xiiMat4(mTransformation, xiiVec3::MakeZero());
@@ -172,40 +173,27 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
   geom.TriangulatePolygons(4);
   geom.ComputeTangents();
 
-  // Material setup.
+  xiiHybridArray<xiiMaterialResourceSlot, 8> materialSlots = pProp->m_Slots;
+  const xiiStringView                        labels[]      = {"Default"};
+  xiiMeshMaterialSlots::Reconcile(labels, materialSlots);
+  if (!bAllowMaterialImport && !xiiMeshMaterialSlots::Equal(materialSlots, pProp->m_Slots))
+    return xiiTransformStatus(xiiTransformResult::NeedsImport);
+  auto& buffer = desc.GetMeshBufferDescriptor();
+  buffer.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList, false);
+  if (buffer.GetPrimitiveCount() == 0)
+    return xiiStatus("Procedural mesh contains no triangles.");
+  desc.AddMaterialSlot(materialSlots[0].m_sResource);
+  desc.AddSection(buffer.GetPrimitiveCount(), 0, 0);
+  desc.ComputeBounds();
+  XII_SUCCEED_OR_RETURN(desc.BuildMeshlets());
+  if (!xiiMeshMaterialSlots::Equal(materialSlots, pProp->m_Slots))
   {
-    // Ensure there is just one slot.
-    if (pProp->m_Slots.GetCount() != 1)
-    {
-      GetObjectAccessor()->StartTransaction("Update Mesh Material Info");
-
-      pProp->m_Slots.SetCount(1);
-      pProp->m_Slots[0].m_sLabel = "Default";
-
-      ApplyNativePropertyChangesToObjectManager();
-      GetObjectAccessor()->FinishTransaction();
-
-      // Need to reacquire pProp pointer since it might be reallocated.
-      pProp = GetProperties();
-    }
-
-    // Set material for mesh.
-    if (!pProp->m_Slots.IsEmpty())
-      desc.SetMaterial(0, pProp->m_Slots[0].m_sResource);
-    else
-      desc.SetMaterial(0, "");
+    GetObjectAccessor()->StartTransaction("Update Mesh Material Info");
+    pProp->m_Slots = materialSlots;
+    ApplyNativePropertyChangesToObjectManager();
+    GetObjectAccessor()->FinishTransaction();
   }
-
-  // the the procedurally generated geometry we can always use fixed, low precision data, because we know that the geometry isn't detailed enough to run into problems
-  // and then we can unclutter the UI a little by not showing those options at all
-  auto& mbd = desc.MeshBufferDesc();
-  mbd.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALResourceFormat::RGB32Float);
-  mbd.AddStream(xiiGALInputLayoutSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::_16Bit /*pProp->m_TexCoordPrecision*/));
-  mbd.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_10Bit /*pProp->m_NormalPrecision*/));
-  mbd.AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_10Bit /*pProp->m_NormalPrecision*/));
-
-  mbd.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
-  desc.AddSubMesh(mbd.GetPrimitiveCount(), 0, 0);
+  return XII_SUCCESS;
 }
 
 xiiTransformStatus xiiMeshAssetDocument::CreateMeshFromFile(xiiMeshAssetProperties* pProp, xiiMeshResourceDescriptor& desc, bool bAllowMaterialImport)
@@ -221,59 +209,34 @@ xiiTransformStatus xiiMeshAssetDocument::CreateMeshFromFile(xiiMeshAssetProperti
     return xiiStatus(xiiFmt("Couldn't make path absolute: '{0};", sAbsFilename));
   }
 
-  xiiUniquePtr<xiiModelImporter::Importer> pImporter = xiiModelImporter::RequestImporterForFileType(sAbsFilename);
-  if (pImporter == nullptr)
-    return xiiStatus("No known importer for this file type.");
-
-  xiiModelImporter::ImportOptions opt;
-  opt.m_sSourceFile               = sAbsFilename;
-  opt.m_bRecomputeNormals         = pProp->m_bRecalculateNormals;
-  opt.m_bRecomputeTangents        = pProp->m_bRecalculateTrangents;
-  opt.m_pMeshOutput               = &desc;
-  opt.m_MeshNormalsPrecision      = pProp->m_NormalPrecision;
-  opt.m_MeshTexCoordsPrecision    = pProp->m_TexCoordPrecision;
-  opt.m_MeshVertexColorConversion = pProp->m_VertexColorConversion;
-  opt.m_RootTransform             = CalculateTransformationMatrix(pProp);
-
+  xiiModelMeshImportOptions options;
+  options.m_bRecalculateNormals   = pProp->m_bRecalculateNormals;
+  options.m_bRecalculateTangents  = pProp->m_bRecalculateTangents;
+  options.m_VertexColorConversion = pProp->m_VertexColorConversion;
+  options.m_RootTransform         = xiiMat4(CalculateTransformationMatrix(pProp), xiiVec3::MakeZero());
   if (pProp->m_bSimplifyMesh)
   {
-    opt.m_uiMeshSimplification      = pProp->m_uiMeshSimplification;
-    opt.m_uiMaxSimplificationError  = pProp->m_uiMaxSimplificationError;
-    opt.m_bAggressiveSimplification = pProp->m_bAggressiveSimplification;
+    // Authored 100% previously meant maximum simplification, not an empty mesh.
+    options.m_fSimplification           = xiiMath::Min<xiiUInt32>(pProp->m_uiMeshSimplification, 99) / 100.0f;
+    options.m_fMaxSimplificationError   = pProp->m_uiMaxSimplificationError / 100.0f;
+    options.m_bAggressiveSimplification = pProp->m_bAggressiveSimplification;
   }
-
-  if (pImporter->Import(opt).Failed())
-    return xiiStatus("Model importer was unable to read this asset.");
-
+  xiiModelMeshImport imported;
+  xiiStringBuilder   error;
+  if (xiiModelMeshImport::ReadFile(sAbsFilename, options, imported, &error).Failed())
+    return xiiStatus(error.GetView());
   range.BeginNextStep("Importing Materials");
-
-  // correct the number of material slots
-  bool bSlotCountMissmatch = pProp->m_Slots.GetCount() != desc.GetSubMeshes().GetCount();
-  if (pProp->m_bImportMaterials || bSlotCountMissmatch)
+  auto materialSlots = pProp->m_Slots;
+  XII_SUCCEED_OR_RETURN(xiiMeshImportUtils::PrepareMaterialSlots(materialSlots, pProp->m_bImportMaterials, bAllowMaterialImport, GetDocumentPath(), sAbsFilename, imported));
+  XII_SUCCEED_OR_RETURN(xiiMeshImportUtils::CopyMeshAssetMaterialSlotToResource(imported.m_Mesh, materialSlots));
+  if (!xiiMeshMaterialSlots::Equal(materialSlots, pProp->m_Slots))
   {
-    if (!bAllowMaterialImport && bSlotCountMissmatch)
-    {
-      return xiiTransformStatus(xiiTransformResult::NeedsImport);
-    }
-
     GetObjectAccessor()->StartTransaction("Update Mesh Materials");
-
-    xiiMeshImportUtils::SetMeshAssetMaterialSlots(pProp->m_Slots, pImporter.Borrow());
-
-    if (pProp->m_bImportMaterials)
-    {
-      xiiMeshImportUtils::ImportMeshAssetMaterials(pProp->m_Slots, GetDocumentPath(), pImporter.Borrow());
-    }
-
+    pProp->m_Slots = std::move(materialSlots);
     ApplyNativePropertyChangesToObjectManager();
     GetObjectAccessor()->FinishTransaction();
-
-    // Need to reacquire pProp pointer since it might be reallocated.
-    pProp = GetProperties();
   }
-
-  xiiMeshImportUtils::CopyMeshAssetMaterialSlotToResource(desc, pProp->m_Slots);
-
+  desc = std::move(imported.m_Mesh);
   return XII_SUCCESS;
 }
 

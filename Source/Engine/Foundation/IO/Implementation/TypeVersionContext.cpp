@@ -106,5 +106,3 @@ xiiUInt32 xiiTypeVersionReadContext::GetTypeVersion(const xiiRTTI* pRtti) const
 
   return uiVersion;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_TypeVersionContext);

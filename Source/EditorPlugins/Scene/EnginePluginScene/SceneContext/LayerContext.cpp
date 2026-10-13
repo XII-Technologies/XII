@@ -4,7 +4,6 @@
 
 #include <EnginePluginScene/SceneContext/LayerContext.h>
 #include <EnginePluginScene/SceneContext/SceneContext.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
 
 
 // clang-format off
@@ -45,6 +44,8 @@ xiiLayerContext::~xiiLayerContext() = default;
 
 void xiiLayerContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
+  if (!m_pWorld || !m_pParentSceneContext)
+    return;
   // Everything in the picking buffer needs a unique ID. As layers and scene share the same world we need to make sure no id is used twice.
   // To achieve this the scene's next ID is retrieved on every change and written back in base new IDs were used up.
   m_Context.m_uiNextComponentPickingID = m_pParentSceneContext->m_Context.m_uiNextComponentPickingID;
@@ -61,7 +62,8 @@ void xiiLayerContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
 void xiiLayerContext::SceneDeinitialized()
 {
   // If the scene is deinitialized the world is destroyed so there is no use tracking anything further.
-  m_pWorld = nullptr;
+  m_pWorld              = nullptr;
+  m_pParentSceneContext = nullptr;
   m_Context.Clear();
 }
 
@@ -70,11 +72,14 @@ const xiiTag& xiiLayerContext::GetLayerTag() const
   return m_LayerTag;
 }
 
-void xiiLayerContext::OnInitialize()
+xiiStatus xiiLayerContext::OnInitialize()
 {
-  xiiUuid                          parentScene = m_MetaData.Get<xiiUuid>();
-  xiiEngineProcessDocumentContext* pContext    = GetDocumentContext(parentScene);
-  m_pParentSceneContext                        = xiiDynamicCast<xiiSceneContext*>(pContext);
+  if (!m_MetaData.IsA<xiiUuid>())
+    return xiiStatus("A scene layer requires its parent scene GUID as metadata.");
+  auto* parent = xiiDynamicCast<xiiSceneContext*>(GetDocumentContext(m_MetaData.Get<xiiUuid>()));
+  if (!parent || !parent->GetWorld())
+    return xiiStatus("The layer's parent scene is not loaded or does not own a world.");
+  m_pParentSceneContext = parent;
 
   m_pWorld           = m_pParentSceneContext->GetWorld();
   m_Context.m_pWorld = m_pWorld;
@@ -85,7 +90,7 @@ void xiiLayerContext::OnInitialize()
   sVisibilityTag.SetFormat("Layer_{}", uiLayerID);
   m_LayerTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag(sVisibilityTag);
 
-  xiiShadowPool::AddExcludeTagToWhiteList(m_LayerTag);
+  return XII_SUCCESS;
 }
 
 void xiiLayerContext::OnDeinitialize()
@@ -98,7 +103,8 @@ void xiiLayerContext::OnDeinitialize()
   }
 
   m_LayerTag = xiiTag();
-  m_pParentSceneContext->UnregisterLayer(this);
+  if (m_pParentSceneContext)
+    m_pParentSceneContext->UnregisterLayer(this);
   m_pParentSceneContext = nullptr;
 }
 

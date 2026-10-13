@@ -51,3 +51,5 @@ void xiiMsgExtractRenderData::AddRenderDataBatch(const xiiRenderDataBatch& batch
     AddRenderData(pRenderData, caching);
   }
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_MsgExtractRenderData);

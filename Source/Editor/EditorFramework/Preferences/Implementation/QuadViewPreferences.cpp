@@ -6,7 +6,7 @@
 #include <Foundation/Serialization/GraphPatch.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiEngineViewPreferences, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiEngineViewPreferences>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiEngineViewPreferences, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiEngineViewPreferences>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -38,6 +38,21 @@ namespace
     }
   };
   xiiSceneViewPreferencesPatch_1_2 g_xiiSceneViewPreferencesPatch_1_2;
+  class xiiEngineViewPreferencesPatch_2_3 : public xiiGraphPatch
+  {
+  public:
+    xiiEngineViewPreferencesPatch_2_3() : xiiGraphPatch("xiiEngineViewPreferences", 3) {}
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* pNode) const override
+    {
+      if (const auto* property = pNode->FindProperty("RenderMode"); property && property->m_Value.IsA<xiiString>())
+      {
+        const auto& value = property->m_Value.Get<xiiString>();
+        if (value == "xiiViewRenderMode::WireframeMonochrome" || value == "xiiViewRenderMode::WireframeColor")
+          pNode->ChangeProperty("RenderMode", xiiString("xiiViewRenderMode::Wireframe"));
+      }
+    }
+  };
+  xiiEngineViewPreferencesPatch_2_3 g_xiiEngineViewPreferencesPatch_2_3;
 } // namespace
 
 // clang-format off
@@ -76,7 +91,7 @@ xiiQuadViewPreferencesUser::xiiQuadViewPreferencesUser() :
   m_ViewQuad0.m_vCamDir.Set(0, 0, -1);
   m_ViewQuad0.m_vCamUp.Set(1, 0, 0);
   m_ViewQuad0.m_PerspectiveMode = xiiSceneViewPerspective::Orthogonal_Top;
-  m_ViewQuad0.m_RenderMode      = xiiViewRenderMode::WireframeMonochrome;
+  m_ViewQuad0.m_RenderMode      = xiiViewRenderMode::Wireframe;
   m_ViewQuad0.m_fFov            = 20.0f;
 
   // Top Right: Perspective
@@ -92,7 +107,7 @@ xiiQuadViewPreferencesUser::xiiQuadViewPreferencesUser() :
   m_ViewQuad2.m_vCamDir.Set(-1, 0, 0);
   m_ViewQuad2.m_vCamUp.Set(0, 0, 1);
   m_ViewQuad2.m_PerspectiveMode = xiiSceneViewPerspective::Orthogonal_Front;
-  m_ViewQuad2.m_RenderMode      = xiiViewRenderMode::WireframeMonochrome;
+  m_ViewQuad2.m_RenderMode      = xiiViewRenderMode::Wireframe;
   m_ViewQuad2.m_fFov            = 20.0f;
 
   // Bottom Right: Right to Left
@@ -100,6 +115,6 @@ xiiQuadViewPreferencesUser::xiiQuadViewPreferencesUser() :
   m_ViewQuad3.m_vCamDir.Set(0, -1, 0);
   m_ViewQuad3.m_vCamUp.Set(0, 0, 1);
   m_ViewQuad3.m_PerspectiveMode = xiiSceneViewPerspective::Orthogonal_Right;
-  m_ViewQuad3.m_RenderMode      = xiiViewRenderMode::WireframeMonochrome;
+  m_ViewQuad3.m_RenderMode      = xiiViewRenderMode::Wireframe;
   m_ViewQuad3.m_fFov            = 20.0f;
 }

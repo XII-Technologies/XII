@@ -71,7 +71,8 @@ xiiLightingContextHandle xiiLightingManager::CreateContext(const xiiLightingSyst
     return {};
 
   xiiUniquePtr<xiiLightingSystem> pSystem = XII_DEFAULT_NEW(xiiLightingSystem);
-  pSystem->Initialize(xiiGALDevice::GetDefaultDevice(), settings);
+  if (pSystem->Initialize(xiiGALDevice::GetDefaultDevice(), settings).Failed())
+    return {};
 
   return xiiLightingContextHandle(s_pState->m_Contexts.Insert(std::move(pSystem)));
 }

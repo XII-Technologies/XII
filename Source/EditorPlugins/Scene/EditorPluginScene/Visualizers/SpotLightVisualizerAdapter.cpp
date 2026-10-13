@@ -4,7 +4,7 @@
 
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorPluginScene/Visualizers/SpotLightVisualizerAdapter.h>
-#include <GraphicsCore/Lights/SpotLightComponent.h>
+#include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 xiiSpotLightVisualizerAdapter::xiiSpotLightVisualizerAdapter() = default;

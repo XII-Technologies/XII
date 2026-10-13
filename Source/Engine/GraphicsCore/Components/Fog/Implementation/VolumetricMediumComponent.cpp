@@ -236,4 +236,4 @@ void xiiVolumetricMediumComponent::ReleaseMedium()
   m_hMedium = {};
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Fog_Implementation_VolumetricMediumComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Fog_Implementation_VolumetricMediumComponent);

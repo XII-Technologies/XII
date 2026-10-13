@@ -307,5 +307,3 @@ xiiResult xiiCompressedStreamWriterZstd::WriteBytes(const void* pWriteBuffer, xi
 }
 
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_CompressedStreamZstd);

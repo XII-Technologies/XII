@@ -343,5 +343,3 @@ xiiUInt32 xiiGALQueryPoolD3D12::QueryPoolInformation::ResetStaleQueries(xiiUInt6
 
   return uiResetCount;
 }
-
-XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Pools_Implementation_QueryPoolD3D12);

@@ -14,6 +14,7 @@ void xiiWorldRttiConverterContext::Clear()
 
   m_OtherPickingMap.Clear();
   m_ComponentPickingMap.Clear();
+  m_uiHighlightID = 0;
 
   m_UnknownTypes.Clear();
 }

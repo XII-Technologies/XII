@@ -2,6 +2,7 @@
 
 #include <EditorFramework/EditorFrameworkPCH.h>
 
+#include <Core/World/GameObject.h>
 #include <EditorFramework/DocumentWindow/GameObjectDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/GameObjectViewWidget.moc.h>
 #include <EditorFramework/EditTools/EditTool.h>
@@ -239,7 +240,7 @@ void xiiQtGameObjectDocumentWindow::HandleFocusOnSelection(const xiiQuerySelecti
     }
   }
 
-  pSceneView->m_pCameraMoveContext->SetOrbitDistance(vPivotPoint.Distance(vNewCameraPosition));
+  pSceneView->m_pCameraMoveContext->SetOrbitDistance(vPivotPoint.GetDistanceTo(vNewCameraPosition));
   pSceneView->InterpolateCameraTo(vNewCameraPosition, vNewCameraDirection, fNewFovOrDim);
 }
 

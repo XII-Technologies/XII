@@ -133,6 +133,8 @@ public:
 
   /// Force checking the filesystem for changes to the given file or folder.
   /// This function will handle file add/remove/change as well as folder add/remove. If an existing folder should be checked for changes, use CheckFolder instead.
+  /// Removed folders discard their complete tracked subtree. File removal events precede folder
+  /// removal events, and descendant folders are reported before their parents.
   /// \param sAbsolutePath File or folder to check for changes.
   void NotifyOfChange(xiiStringView sAbsolutePath);
 

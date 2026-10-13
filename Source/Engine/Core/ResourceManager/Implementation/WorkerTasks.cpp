@@ -116,8 +116,9 @@ xiiResourceManagerWorkerUpdateContent::~xiiResourceManagerWorkerUpdateContent() 
 void xiiResourceManagerWorkerUpdateContent::Execute()
 {
   if (!m_LoaderData.m_sResourceDescription.IsEmpty())
+  {
     m_pResourceToLoad->SetResourceDescription(m_LoaderData.m_sResourceDescription);
-
+  }
   m_pResourceToLoad->CallUpdateContent(m_LoaderData.m_pDataStream);
 
   if (m_pResourceToLoad->m_uiQualityLevelsLoadable > 0)
@@ -128,7 +129,9 @@ void xiiResourceManagerWorkerUpdateContent::Execute()
 
   // update the file modification date, if available
   if (m_LoaderData.m_LoadedFileModificationDate.IsValid())
+  {
     m_pResourceToLoad->m_LoadedFileModificationTime = m_LoaderData.m_LoadedFileModificationDate;
+  }
 
   XII_ASSERT_DEV(m_pResourceToLoad->GetLoadingState() != xiiResourceState::Unloaded, "The resource should have changed its loading state.");
 
@@ -149,13 +152,20 @@ void xiiResourceManagerWorkerUpdateContent::Execute()
 
   {
     XII_LOCK(xiiResourceManager::s_ResourceMutex);
+
     XII_ASSERT_DEV(xiiResourceManager::IsQueuedForLoading(m_pResourceToLoad), "Multi-threaded access detected");
+
     m_pResourceToLoad->m_Flags.Remove(xiiResourceFlags::IsQueuedForLoading);
     m_pResourceToLoad->m_LastAcquire = xiiResourceManager::GetLastFrameUpdate();
+
+    // A newer custom payload can arrive while this loader is updating or closing.
+    // ReloadResource cannot unload an in-flight resource, so publish that pending request once the current update no longer owns it. The latest loader wins.
+    if (!xiiResourceManager::s_pState->m_bShutdown && m_pResourceToLoad->m_Flags.IsSet(xiiResourceFlags::HasCustomDataLoader))
+    {
+      xiiResourceManager::ReloadResource(m_pResourceToLoad, true);
+    }
   }
 
   m_pLoader         = nullptr;
   m_pResourceToLoad = nullptr;
 }
-
-XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_WorkerTasks);

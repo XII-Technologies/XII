@@ -17,45 +17,30 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewLightSliderAction, 1, xiiRTTINoAllocator
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiActionDescriptorHandle xiiViewLightActions::s_hLightMenu;
-xiiActionDescriptorHandle xiiViewLightActions::s_hSkyBox;
-xiiActionDescriptorHandle xiiViewLightActions::s_hSkyLight;
-xiiActionDescriptorHandle xiiViewLightActions::s_hSkyLightCubeMap;
-xiiActionDescriptorHandle xiiViewLightActions::s_hSkyLightIntensity;
 xiiActionDescriptorHandle xiiViewLightActions::s_hDirLight;
 xiiActionDescriptorHandle xiiViewLightActions::s_hDirLightAngle;
 xiiActionDescriptorHandle xiiViewLightActions::s_hDirLightShadows;
 xiiActionDescriptorHandle xiiViewLightActions::s_hDirLightIntensity;
-xiiActionDescriptorHandle xiiViewLightActions::s_hFog;
 xiiActionDescriptorHandle xiiViewLightActions::s_hSetAsDefault;
 
 void xiiViewLightActions::RegisterActions()
 {
-  s_hLightMenu         = XII_REGISTER_MENU_WITH_ICON("View.LightMenu", ":/EditorFramework/Icons/ViewLightMenu.svg");
-  s_hSkyBox            = XII_REGISTER_ACTION_1("View.SkyBox", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyBoxChanged);
-  s_hSkyLight          = XII_REGISTER_ACTION_1("View.SkyLight", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyLightChanged);
-  s_hSkyLightCubeMap   = XII_REGISTER_ACTION_1("View.SkyLightCubeMap", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::SkyLightCubeMapChanged);
-  s_hSkyLightIntensity = XII_REGISTER_ACTION_1("View.SkyLightIntensity", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::SkyLightIntensityChanged);
+  s_hLightMenu = XII_REGISTER_MENU_WITH_ICON("View.LightMenu", ":/EditorFramework/Icons/ViewLightMenu.svg");
 
   s_hDirLight          = XII_REGISTER_ACTION_1("View.DirectionalLight", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightChanged);
   s_hDirLightAngle     = XII_REGISTER_ACTION_1("View.DirLightAngle", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged);
   s_hDirLightShadows   = XII_REGISTER_ACTION_1("View.DirectionalLightShadows", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightShadowsChanged);
   s_hDirLightIntensity = XII_REGISTER_ACTION_1("View.DirLightIntensity", xiiActionScope::Document, "View", "", xiiViewLightSliderAction, xiiEngineViewLightSettingsEvent::Type::DirectionalLightIntensityChanged);
-  s_hFog               = XII_REGISTER_ACTION_1("View.Fog", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::FogChanged);
   s_hSetAsDefault      = XII_REGISTER_ACTION_1("View.SetAsDefault", xiiActionScope::Document, "View", "", xiiViewLightButtonAction, xiiEngineViewLightSettingsEvent::Type::DefaultValuesChanged);
 }
 
 void xiiViewLightActions::UnregisterActions()
 {
   xiiActionManager::UnregisterAction(s_hLightMenu);
-  xiiActionManager::UnregisterAction(s_hSkyBox);
-  xiiActionManager::UnregisterAction(s_hSkyLight);
-  xiiActionManager::UnregisterAction(s_hSkyLightCubeMap);
-  xiiActionManager::UnregisterAction(s_hSkyLightIntensity);
   xiiActionManager::UnregisterAction(s_hDirLight);
   xiiActionManager::UnregisterAction(s_hDirLightAngle);
   xiiActionManager::UnregisterAction(s_hDirLightShadows);
   xiiActionManager::UnregisterAction(s_hDirLightIntensity);
-  xiiActionManager::UnregisterAction(s_hFog);
   xiiActionManager::UnregisterAction(s_hSetAsDefault);
 }
 
@@ -66,15 +51,10 @@ void xiiViewLightActions::MapToolbarActions(xiiStringView sMapping)
 
   pMap->MapAction(s_hLightMenu, "", 2.5f);
   const xiiStringView sSubPath = "View.LightMenu";
-  pMap->MapAction(s_hSkyBox, sSubPath, 1.0f);
-  pMap->MapAction(s_hSkyLight, sSubPath, 1.0f);
-  pMap->MapAction(s_hSkyLightCubeMap, sSubPath, 2.0f);
-  pMap->MapAction(s_hSkyLightIntensity, sSubPath, 3.0f);
   pMap->MapAction(s_hDirLight, sSubPath, 4.0f);
   pMap->MapAction(s_hDirLightAngle, sSubPath, 5.0f);
   pMap->MapAction(s_hDirLightShadows, sSubPath, 6.0f);
   pMap->MapAction(s_hDirLightIntensity, sSubPath, 7.0f);
-  pMap->MapAction(s_hFog, sSubPath, 8.0f);
   pMap->MapAction(s_hSetAsDefault, sSubPath, 9.0f);
 }
 
@@ -91,17 +71,6 @@ xiiViewLightButtonAction::xiiViewLightButtonAction(const xiiActionContext& conte
 
   switch (m_ButtonType)
   {
-    case xiiEngineViewLightSettingsEvent::Type::SkyBoxChanged:
-      SetCheckable(true);
-      SetIconPath(":/TypeIcons/xiiSkyBoxComponent.svg");
-      break;
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightChanged:
-      SetCheckable(true);
-      SetIconPath(":/TypeIcons/xiiSkyLightComponent.svg");
-      break;
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightCubeMapChanged:
-      SetIconPath(":/TypeIcons/xiiSkyLightComponent.svg");
-      break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightChanged:
       SetCheckable(true);
       SetIconPath(":/TypeIcons/xiiDirectionalLightComponent.svg");
@@ -109,10 +78,6 @@ xiiViewLightButtonAction::xiiViewLightButtonAction(const xiiActionContext& conte
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightShadowsChanged:
       SetCheckable(true);
       SetIconPath(":/TypeIcons/xiiDirectionalLightComponent.svg");
-      break;
-    case xiiEngineViewLightSettingsEvent::Type::FogChanged:
-      SetCheckable(true);
-      SetIconPath(":/TypeIcons/xiiFogComponent.svg");
       break;
     case xiiEngineViewLightSettingsEvent::Type::DefaultValuesChanged:
       SetCheckable(false);
@@ -132,51 +97,8 @@ xiiViewLightButtonAction::~xiiViewLightButtonAction()
 
 void xiiViewLightButtonAction::Execute(const xiiVariant& value)
 {
-  xiiQtEngineViewWidget* pView = qobject_cast<xiiQtEngineViewWidget*>(m_Context.m_pWindow);
-
   switch (m_ButtonType)
   {
-    case xiiEngineViewLightSettingsEvent::Type::SkyBoxChanged:
-    {
-      m_pSettings->SetSkyBox(value.ConvertTo<bool>());
-    }
-    break;
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightChanged:
-    {
-      m_pSettings->SetSkyLight(value.ConvertTo<bool>());
-    }
-    break;
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightCubeMapChanged:
-    {
-      xiiStringBuilder sFile     = m_pSettings->GetSkyLightCubeMap();
-      xiiUuid          assetGuid = xiiConversionUtils::ConvertStringToUuid(sFile);
-
-      xiiQtAssetBrowserDlg dlg(pView, assetGuid, "CompatibleAsset_Texture_Cube");
-      if (dlg.exec() == 0)
-        return;
-
-      assetGuid = dlg.GetSelectedAssetGuid();
-      if (assetGuid.IsValid())
-        xiiConversionUtils::ToString(assetGuid, sFile);
-
-      if (sFile.IsEmpty())
-      {
-        sFile = dlg.GetSelectedAssetPathRelative();
-
-        if (sFile.IsEmpty())
-        {
-          sFile = dlg.GetSelectedAssetPathAbsolute();
-
-          xiiQtEditorApp::GetSingleton()->MakePathDataDirectoryRelative(sFile);
-        }
-      }
-
-      if (sFile.IsEmpty())
-        return;
-
-      m_pSettings->SetSkyLightCubeMap(sFile);
-    }
-    break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightChanged:
     {
       m_pSettings->SetDirectionalLight(value.ConvertTo<bool>());
@@ -185,11 +107,6 @@ void xiiViewLightButtonAction::Execute(const xiiVariant& value)
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightShadowsChanged:
     {
       m_pSettings->SetDirectionalLightShadows(value.ConvertTo<bool>());
-    }
-    break;
-    case xiiEngineViewLightSettingsEvent::Type::FogChanged:
-    {
-      m_pSettings->SetFog(value.ConvertTo<bool>());
     }
     break;
     case xiiEngineViewLightSettingsEvent::Type::DefaultValuesChanged:
@@ -218,20 +135,6 @@ void xiiViewLightButtonAction::UpdateAction()
 {
   switch (m_ButtonType)
   {
-    case xiiEngineViewLightSettingsEvent::Type::SkyBoxChanged:
-    {
-      SetChecked(m_pSettings->GetSkyBox());
-    }
-    break;
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightChanged:
-    {
-      SetChecked(m_pSettings->GetSkyLight());
-    }
-    break;
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightCubeMapChanged:
-    {
-    }
-    break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightChanged:
     {
       SetChecked(m_pSettings->GetDirectionalLight());
@@ -240,11 +143,6 @@ void xiiViewLightButtonAction::UpdateAction()
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightShadowsChanged:
     {
       SetChecked(m_pSettings->GetDirectionalLightShadows());
-    }
-    break;
-    case xiiEngineViewLightSettingsEvent::Type::FogChanged:
-    {
-      SetChecked(m_pSettings->GetFog());
     }
     break;
     default:
@@ -264,10 +162,6 @@ xiiViewLightSliderAction::xiiViewLightSliderAction(const xiiActionContext& conte
 
   switch (m_ButtonType)
   {
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightIntensityChanged:
-      SetIconPath(":/TypeIcons/xiiSkyLightComponent.svg");
-      SetRange(0, 20);
-      break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged:
       SetIconPath(":/TypeIcons/xiiDirectionalLightComponent.svg");
       SetRange(0, 360);
@@ -292,11 +186,6 @@ void xiiViewLightSliderAction::Execute(const xiiVariant& value)
 {
   switch (m_ButtonType)
   {
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightIntensityChanged:
-    {
-      m_pSettings->SetSkyLightIntensity(value.ConvertTo<float>() / 10.0f);
-    }
-    break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged:
     {
       m_pSettings->SetDirectionalLightAngle(xiiAngle::MakeFromDegree(value.ConvertTo<float>()));
@@ -324,11 +213,6 @@ void xiiViewLightSliderAction::UpdateAction()
 {
   switch (m_ButtonType)
   {
-    case xiiEngineViewLightSettingsEvent::Type::SkyLightIntensityChanged:
-    {
-      SetValue(xiiMath::Clamp((xiiInt32)(m_pSettings->GetSkyLightIntensity() * 10.0f), 0, 20));
-    }
-    break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged:
     {
       SetValue(xiiMath::Clamp((xiiInt32)(m_pSettings->GetDirectionalLightAngle().GetDegree()), 0, 360));

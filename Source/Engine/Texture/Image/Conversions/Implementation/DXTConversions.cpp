@@ -3280,4 +3280,4 @@ static xiiImageConversion_BC5_RG   s_conversion_BC5_RG;
 static xiiImageConversion_BC6_RGB  s_conversion_BC6_RGB;
 static xiiImageConversion_BC7_RGBA s_conversion_BC7_RGBA;
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_DXTConversions);
+XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_Implementation_DXTConversions);

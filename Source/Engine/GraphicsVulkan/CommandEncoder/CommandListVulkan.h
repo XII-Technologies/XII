@@ -32,6 +32,9 @@ public:
 
   XII_ALWAYS_INLINE vk::AccessFlags GetVulkanCommandBufferSupportedAccessFlags() const { return m_PipelineBarrier.m_vkSupportedAccessFlags; }
 
+  /// Resets a newly allocated slot outside every render pass, including slots used by secondary command lists.
+  xiiResult RecordQueryReset(xiiGALQueryPoolVulkan* pPool, xiiGALQueryType::Enum type, xiiUInt32 uiIndex);
+
   void TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags);
 
   void MemoryBarrier(vk::AccessFlags vkSourceAccessFlags, vk::AccessFlags vkDestinationAccessFlags, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags);
@@ -326,6 +329,9 @@ private:
 
   xiiGALCommandBufferPoolVulkan::AutoCommandBuffer m_CommandBufferAllocation;
   vk::CommandBuffer                                m_vkCommandBuffer;
+  xiiUInt64                                        m_uiSubmittedFenceValue = 0U;
+  xiiGALCommandBufferPoolVulkan::AutoCommandBuffer m_QueryResetAllocation;
+  xiiDynamicArray<vk::CommandBuffer>               m_QueryResetCommandBuffers;
   xiiBitflags<CommandListFlags>                    m_CommandListFlags;
   CommandListState                                 m_CommandListState;
   xiiGALCommandListDataVulkan                      m_CommandListData;

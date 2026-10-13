@@ -4,7 +4,7 @@
 
 #include <SharedPluginAssets/StateMachineAsset/StateMachineGraphTypes.h>
 
-#include <GameEngine/StateMachine/StateMachine.h>
+#include <GameEngine/Components/StateMachine/StateMachine.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineConnection, 1, xiiRTTIDefaultAllocator<xiiStateMachineConnection>)

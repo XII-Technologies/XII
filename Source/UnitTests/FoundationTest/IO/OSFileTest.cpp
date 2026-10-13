@@ -3,6 +3,7 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Types/ScopeExit.h>
 
 XII_CREATE_SIMPLE_TEST(IO, OSFile)
 {
@@ -164,53 +165,52 @@ Only concrete and clocks.\n\
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "File Iterator")
   {
-    // It is not really possible to test this stuff (with a guaranteed result), as long as we do not have
-    // a test data folder with deterministic content
-    // Therefore I tested it manually, and leave the code in, such that it is at least a 'does it compile and link' test.
-
-    xiiStringBuilder sOutputFolder = xiiOSFile::GetApplicationDirectory();
-    sOutputFolder.AppendPath("*");
-
-    xiiStringBuilder sFullPath;
-
-    xiiUInt32 uiFolders = 0;
-    xiiUInt32 uiFiles   = 0;
-
-    bool bSkipFolder = true;
-
-    xiiFileSystemIterator it;
-    for (it.StartSearch(sOutputFolder.GetData(), xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive); it.IsValid();)
+    xiiStringBuilder root(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/IO/Iterator");
+    XII_TEST_RESULT(xiiOSFile::DeleteFolder(root));
+    XII_SCOPE_EXIT(xiiOSFile::DeleteFolder(root).IgnoreResult());
+    XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(xiiStringBuilder(root, "/Keep/Nested")));
+    XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(xiiStringBuilder(root, "/Skip/Nested")));
+    for (xiiStringView relative : {"root.bin", "Keep/child.bin", "Keep/Nested/deep.bin", "Skip/Nested/hidden.bin"})
     {
-      sFullPath = it.GetCurrentPath();
-      sFullPath.AppendPath(it.GetStats().m_sName.GetData());
-
-      it.GetStats();
-      it.GetCurrentPath();
-
-      if (it.GetStats().m_bIsDirectory)
+      xiiOSFile file;
+      XII_TEST_RESULT(file.Open(xiiStringBuilder(root, "/", relative), xiiFileOpenMode::Write));
+    }
+    xiiUInt32             folders = 0, files = 0;
+    xiiFileSystemIterator iterator;
+    for (iterator.StartSearch(root, xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive); iterator.IsValid();)
+    {
+      const auto&      stats = iterator.GetStats();
+      xiiStringBuilder fullPath;
+      stats.GetFullPath(fullPath);
+      XII_TEST_BOOL(fullPath.StartsWith(root));
+      if (stats.m_bIsDirectory)
       {
-        ++uiFolders;
-        bSkipFolder = !bSkipFolder;
-
-        if (bSkipFolder)
+        ++folders;
+        if (stats.m_sName == "Skip")
         {
-          it.SkipFolder(); // replaces the 'Next' call
+          iterator.SkipFolder();
           continue;
         }
       }
       else
       {
-        ++uiFiles;
+        ++files;
+        XII_TEST_BOOL(stats.m_sName != "hidden.bin");
       }
-
-      it.Next();
+      iterator.Next();
     }
-
-// The binary folder will only have subdirectories on windows desktop
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    XII_TEST_BOOL(uiFolders > 0);
-#  endif
-    XII_TEST_BOOL(uiFiles > 0);
+    XII_TEST_INT(folders, 3);
+    XII_TEST_INT(files, 3);
+    folders = files = 0;
+    for (iterator.StartSearch(root, xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive); iterator.IsValid(); iterator.Next())
+    {
+      if (iterator.GetStats().m_bIsDirectory)
+        ++folders;
+      else
+        ++files;
+    }
+    XII_TEST_INT(folders, 4);
+    XII_TEST_INT(files, 4);
   }
 
 #endif

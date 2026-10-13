@@ -105,7 +105,11 @@ xiiStatus xiiCommand::Undo(bool bFireEvents)
 void xiiCommand::Cleanup(CommandState state)
 {
   CleanupInternal(state);
+  CleanupChildActions(state);
+}
 
+void xiiCommand::CleanupChildActions(CommandState state)
+{
   for (xiiCommand* pCommand : m_ChildActions)
   {
     pCommand->Cleanup(state);
@@ -131,6 +135,9 @@ xiiStatus xiiCommand::AddSubCommand(xiiCommand& command)
   if (ret.Failed())
   {
     m_ChildActions.PopBack();
+    // Do() rolled back successful children. The parent itself never completed,
+    // so its CleanupInternal() must not assume it owns a successfully created object.
+    pCommand->CleanupChildActions(CommandState::WasUndone);
     pCommand->GetDynamicRTTI()->GetAllocator()->Deallocate(pCommand);
     return ret;
   }

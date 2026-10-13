@@ -6,9 +6,11 @@
 #include <Foundation/Types/Id.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
+#include <GraphicsCore/Scene/SceneMeshSource.h>
 
 class xiiSceneDatabaseManagerState;
 class xiiExtractedRenderData;
+class xiiRenderData;
 
 /// Generation-checked reference to one subsystem-owned render scene.
 using xiiSceneDatabaseContextId = xiiGenericId<24, 8>;
@@ -47,7 +49,25 @@ public:
   /// Synchronizes ordinary xiiMeshRenderData packets into the subsystem-owned GPU scene. Stable
   /// render IDs preserve previous transforms, shared mesh resources reuse residency handles, and
   /// objects absent from the current extraction are retired after their last submitted frame.
+  /// Component-authored mesh/section packets expand to LOD-specific range/material candidates.
+  /// Geometry residency remains shared. GPU selection admits only candidates of the selected LOD;
+  /// CPU indexed packets remain unchanged. Custom PrimitiveRange packets retain their exact range.
+  /// Duplicate WholeMesh packets for one owner/component/render ID synchronize that group once.
   [[nodiscard]] static xiiResult SynchronizeExtractedMeshes(xiiSceneDatabaseContextHandle handle, const xiiExtractedRenderData& extractedData, xiiUInt64 uiFrameIndex);
+  /// Synchronizes a borrowed, optionally filtered packet range without building or sorting another
+  /// extraction container. Non-mesh/null packets are ignored. Pointers need only survive this call.
+  [[nodiscard]] static xiiResult SynchronizeExtractedMeshes(xiiSceneDatabaseContextHandle handle, xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 uiFrameIndex);
+
+  /// Resolves a native GPU object identity to its latest extraction owner in expected O(1).
+  /// Zero, retired IDs, destroyed contexts and non-extracted scene objects fail and clear output.
+  /// Contexts and IDs are paired; call at a CPU frame boundary, never concurrently with mutation.
+  /// Owner handles are non-owning and require world validation before use.
+  [[nodiscard]] static xiiResult ResolveExtractedMesh(xiiSceneDatabaseContextHandle context, xiiUInt32 uiGpuObjectId, xiiSceneMeshSource& out_source);
+
+  /// Sums the largest currently resident LOD for every extracted instance, in O(V * max LODs).
+  /// Use after streaming and before graph setup to size a visibility stream without truncation
+  /// or multiplying the scene count by an unrelated global geometry maximum. Clears on failure.
+  [[nodiscard]] static xiiResult GetExtractedMeshletCapacity(xiiSceneDatabaseContextHandle context, xiiUInt64& out_uiMeshlets);
 
 private:
   static void Startup();
@@ -76,6 +96,7 @@ public:
   [[nodiscard]] xiiSceneDatabaseContextHandle GetHandle() const { return m_Handle; }
 
   [[nodiscard]] xiiResult SynchronizeExtractedMeshes(const xiiExtractedRenderData& extractedData, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] xiiResult SynchronizeExtractedMeshes(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 uiFrameIndex);
 
 private:
   xiiSceneDatabaseContextHandle m_Handle;

@@ -56,9 +56,10 @@ void xiiCollectionAssetDocumentManager::OnDocumentManagerEvent(const xiiDocument
   }
 }
 
-void xiiCollectionAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiCollectionAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiCollectionAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiCollectionAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

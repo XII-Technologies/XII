@@ -17,6 +17,8 @@ public:
   /// Destroys the view context and the associated window and view.
   ~xiiRemoteEngineProcessViewContext();
 
+  void Redraw(bool bRenderEditorGizmos) override;
+
 protected:
   /// Handles view messages from the editor process. This is used to update the camera and render target of the view based on the messages received from the editor process.
   virtual void HandleViewMessage(const xiiEditorEngineViewMsg* pMsg) override;

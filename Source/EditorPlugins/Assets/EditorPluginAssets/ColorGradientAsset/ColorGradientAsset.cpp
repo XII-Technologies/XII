@@ -190,12 +190,12 @@ xiiTransformStatus xiiColorGradientAssetDocument::InternalCreateThumbnail(const 
 {
   const xiiColorGradientAssetData* pProp = GetProperties();
 
-  xiiImageHeader imgHeader;
-  imgHeader.SetWidth(256);
-  imgHeader.SetHeight(256);
-  imgHeader.SetImageFormat(xiiImageFormat::R8G8B8A8_UNORM);
+  xiiGALTextureCreationDescription description;
+  description.m_Type   = xiiGALResourceDimension::Texture2D;
+  description.m_Size   = {256, 256};
+  description.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
   xiiImage img;
-  img.ResetAndAlloc(imgHeader);
+  img.ResetAndAlloc(description);
 
   xiiColorGradient gradient;
   pProp->FillGradientData(gradient);

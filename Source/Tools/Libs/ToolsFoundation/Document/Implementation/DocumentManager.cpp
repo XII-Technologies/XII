@@ -9,6 +9,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Document/DocumentUtils.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
@@ -182,6 +183,8 @@ void xiiDocumentManager::EnsureWindowRequested(xiiDocument* pDocument, const xii
 
 xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView sDocumentTypeName, xiiStringView sPath2, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext /*= nullptr*/)
 {
+  out_pDocument = nullptr;
+
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
   xiiFileStats     fs;
   xiiStringBuilder sPath = sPath2;
@@ -201,10 +204,6 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
   if (r.m_RequestStatus.Failed())
     return r.m_RequestStatus;
 
-  out_pDocument = nullptr;
-
-  xiiStatus status(XII_SUCCESS);
-
   xiiHybridArray<const xiiDocumentTypeDescriptor*, 4> DocumentTypes;
   GetSupportedDocumentTypes(DocumentTypes);
 
@@ -212,6 +211,9 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
   {
     if (DocumentTypes[i]->m_sDocumentTypeName == sDocumentTypeName)
     {
+      if (bCreate && !DocumentTypes[i]->m_bCanCreate)
+        return xiiStatus(xiiFmt("This document manager cannot create the document type '{}'.", sDocumentTypeName));
+
       // See if there is a default asset document registered for the type, if so clone
       // it and use that as the new document instead of creating one from scratch.
       if (bCreate && !flags.IsSet(xiiDocumentFlags::EmptyDocument))
@@ -234,67 +236,78 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
         }
       }
 
-      XII_ASSERT_DEV(DocumentTypes[i]->m_bCanCreate, "This document manager cannot create the document type '{0}'", sDocumentTypeName);
+      bool bOpened = false;
+      XII_SCOPE_EXIT(
+        if (!bOpened && out_pDocument != nullptr) {
+          m_AllOpenDocuments.RemoveAndCopy(out_pDocument);
+          out_pDocument->BeforeClosing();
+          delete out_pDocument;
+          out_pDocument = nullptr;
+        });
 
       {
         XII_PROFILE_SCOPE(sDocumentTypeName);
-        status = xiiStatus(XII_SUCCESS);
-        InternalCreateDocument(sDocumentTypeName, sPath, bCreate, out_pDocument, pOpenContext);
+        XII_SUCCEED_OR_RETURN(InternalCreateDocument(sDocumentTypeName, sPath, bCreate, out_pDocument, pOpenContext));
       }
+
+      if (out_pDocument == nullptr)
+        return xiiStatus("The document factory did not return a document.");
+
       out_pDocument->SetAddToResetFilesList(flags.IsSet(xiiDocumentFlags::AddToRecentFilesList));
+      out_pDocument->SetupDocumentInfo(DocumentTypes[i]);
 
-      if (status.Succeeded())
+      out_pDocument->m_pDocumentManager = this;
+      m_AllOpenDocuments.PushBack(out_pDocument);
+
+      if (!bCreate)
       {
-        out_pDocument->SetupDocumentInfo(DocumentTypes[i]);
-
-        out_pDocument->m_pDocumentManager = this;
-        m_AllOpenDocuments.PushBack(out_pDocument);
-
-        if (!bCreate)
-        {
-          status = out_pDocument->LoadDocument();
-        }
-
-        {
-          XII_PROFILE_SCOPE("InitializeAfterLoading");
-          out_pDocument->InitializeAfterLoading(bCreate);
-        }
-
-        if (bCreate)
-        {
-          out_pDocument->SetModified(true);
-          if (flags.IsSet(xiiDocumentFlags::AsyncSave))
-          {
-            out_pDocument->SaveDocumentAsync({});
-            status = xiiStatus(XII_SUCCESS);
-          }
-          else
-          {
-            status = out_pDocument->SaveDocument();
-          }
-        }
-
-        {
-          XII_PROFILE_SCOPE("InitializeAfterLoadingAndSaving");
-          out_pDocument->InitializeAfterLoadingAndSaving();
-        }
-
-        Event e;
-        e.m_pDocument = out_pDocument;
-        e.m_Type      = Event::Type::DocumentOpened;
-
-        s_Events.Broadcast(e);
-
-        if (flags.IsSet(xiiDocumentFlags::RequestWindow))
-          EnsureWindowRequested(out_pDocument, pOpenContext);
+        XII_SUCCEED_OR_RETURN(out_pDocument->LoadDocument());
       }
 
-      return status;
+      {
+        XII_PROFILE_SCOPE("InitializeAfterLoading");
+        out_pDocument->InitializeAfterLoading(bCreate);
+      }
+
+      if (bCreate)
+      {
+        out_pDocument->SetModified(true);
+        if (flags.IsSet(xiiDocumentFlags::AsyncSave))
+        {
+          out_pDocument->SaveDocumentAsync([](xiiDocument* pDocument, xiiStatus status) {
+            if (status.Failed())
+            {
+              xiiLog::Error("Failed to save new document '{}': {}", pDocument->GetDocumentPath(), status.GetMessageString());
+              pDocument->ShowDocumentStatus(xiiFmt("Failed to save document: {}", status.GetMessageString()));
+            }
+          });
+        }
+        else
+        {
+          XII_SUCCEED_OR_RETURN(out_pDocument->SaveDocument());
+        }
+      }
+
+      {
+        XII_PROFILE_SCOPE("InitializeAfterLoadingAndSaving");
+        out_pDocument->InitializeAfterLoadingAndSaving();
+      }
+
+      bOpened = true;
+      Event e;
+      e.m_pDocument = out_pDocument;
+      e.m_Type      = Event::Type::DocumentOpened;
+
+      s_Events.Broadcast(e);
+
+      if (flags.IsSet(xiiDocumentFlags::RequestWindow))
+        EnsureWindowRequested(out_pDocument, pOpenContext);
+
+      return XII_SUCCESS;
     }
   }
 
-  XII_REPORT_FAILURE("This document manager does not support the document type '{0}'", sDocumentTypeName);
-  return status;
+  return xiiStatus(xiiFmt("This document manager does not support the document type '{}'.", sDocumentTypeName));
 #else
   XII_ASSERT_NOT_IMPLEMENTED;
   return xiiStatus("Not implemented");

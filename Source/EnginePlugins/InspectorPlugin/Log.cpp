@@ -45,6 +45,3 @@ void RemoveLogWriter()
 {
   xiiGlobalLog::RemoveLogWriter(&xiiLogWriter::Telemetry::LogMessageHandler);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Log);

@@ -432,5 +432,3 @@ bool xiiLog::Flush(xiiUInt32 uiNumNewMsgThreshold, xiiTime timeIntervalThreshold
 
   return true;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_Log);

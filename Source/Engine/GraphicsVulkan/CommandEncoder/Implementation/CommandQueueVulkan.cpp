@@ -79,15 +79,17 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandLi
   XII_ASSERT_DEV(pCommandListVulkan->m_vkSignalSemaphores.GetCount() == pCommandListVulkan->m_vkSignalSemaphoreValues.GetCount(), "The signal semaphores and signal semaphore values must have the same count.");
   XII_ASSERT_DEV(pCommandListVulkan->m_vkWaitDestinationStageFlags.GetCount() == pCommandListVulkan->m_vkWaitSemaphores.GetCount(), "The wait semaphores and wait destination stage flags must have the same count.");
 
-  vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
+  xiiHybridArray<vk::CommandBuffer, 4U> commandBuffers;
+  commandBuffers.PushBackRange(pCommandListVulkan->m_QueryResetCommandBuffers);
+  commandBuffers.PushBack(pCommandListVulkan->GetVulkanCommandBuffer());
 
   vk::SubmitInfo vkSubmitInformation       = {};
   vkSubmitInformation.pNext                = nullptr;
   vkSubmitInformation.waitSemaphoreCount   = pCommandListVulkan->m_vkWaitSemaphores.GetCount();
   vkSubmitInformation.pWaitSemaphores      = pCommandListVulkan->m_vkWaitSemaphores.IsEmpty() ? nullptr : pCommandListVulkan->m_vkWaitSemaphores.GetData();
   vkSubmitInformation.pWaitDstStageMask    = pCommandListVulkan->m_vkWaitDestinationStageFlags.IsEmpty() ? nullptr : pCommandListVulkan->m_vkWaitDestinationStageFlags.GetData();
-  vkSubmitInformation.pCommandBuffers      = &vkCommandBuffer;
-  vkSubmitInformation.commandBufferCount   = 1U;
+  vkSubmitInformation.pCommandBuffers      = commandBuffers.GetData();
+  vkSubmitInformation.commandBufferCount   = commandBuffers.GetCount();
   vkSubmitInformation.signalSemaphoreCount = pCommandListVulkan->m_vkSignalSemaphores.GetCount();
   vkSubmitInformation.pSignalSemaphores    = pCommandListVulkan->m_vkSignalSemaphores.IsEmpty() ? nullptr : pCommandListVulkan->m_vkSignalSemaphores.GetData();
 
@@ -107,6 +109,15 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandLi
   pDeviceVulkan->LockCommandQueueAndRun(m_Description.m_QueueFlags, [&](const vk::Queue& vkQueue) -> void {
     uiFenceValue          = m_uiNextFenceValue.PostIncrement();
     const auto& syncPoint = m_pQueueFence->CreateSyncPoint(uiFenceValue);
+
+    auto StampQueries = [uiFenceValue](xiiGALCommandListVulkan& list) {
+      list.m_uiSubmittedFenceValue = uiFenceValue;
+      for (const auto& reference : list.m_CommandListData.m_QueryReferences)
+        reference.m_pPool->SetQueryFenceValue(reference.m_Type, reference.m_uiIndex, uiFenceValue);
+    };
+    StampQueries(*pCommandListVulkan);
+    for (const auto& secondary : pCommandListVulkan->m_CommandListData.m_SecondaryCommandLists)
+      StampQueries(*static_cast<xiiGALCommandListVulkan*>(secondary.Borrow()));
 
     VK_ASSERT_DEV(vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 

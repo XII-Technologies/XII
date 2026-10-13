@@ -214,8 +214,10 @@ void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(AutoCommandBuffer&& comma
   pOwner->PushInFlight(vkCommandBuffer, std::move(commandListData), bIsSecondary, uiFenceValue);
 }
 
-void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
+xiiUInt32 xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
 {
+  // Destroy retained secondary lists after releasing pool locks. Their destructors can retire buffers into this pool.
+  xiiDynamicArray<xiiGALCommandListDataVulkan> completedData;
   XII_LOCK(m_PoolMutex);
 
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
@@ -255,6 +257,7 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
           threadPool.m_PrimaryFreeCommandBuffers.PushBack(inFlightCommandBuffer.m_vkCommandBuffer);
         }
 
+        completedData.PushBack(std::move(inFlightCommandBuffer.m_CommandListData));
         threadPool.m_InFlightCommandBuffers.RemoveAtAndSwap(i);
       }
       else
@@ -263,6 +266,7 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
       }
     }
   }
+  return completedData.GetCount();
 }
 
 void xiiGALCommandBufferPoolVulkan::ResetPools()

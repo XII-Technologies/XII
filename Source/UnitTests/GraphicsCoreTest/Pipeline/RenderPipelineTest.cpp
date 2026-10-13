@@ -3,6 +3,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
@@ -10,6 +11,29 @@
 
 namespace PipelineResourceTest
 {
+  class MemoryLoader : public xiiResourceLoaderFromMemory
+  {
+  public:
+    xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>> m_pClosed;
+    xiiRenderPipelineResourceHandle                       m_Target;
+    xiiUniquePtr<xiiResourceTypeLoader>                   m_Next;
+    xiiUniquePtr<xiiResourceTypeLoader>                   m_Latest;
+
+    void CloseDataStream(const xiiResource* resource, const xiiResourceLoadData& data) override
+    {
+      xiiResourceLoaderFromMemory::CloseDataStream(resource, data);
+      // Submit from the previous loader's closing phase to deterministically exercise
+      // the loaded-but-still-busy window, without sleeps or scheduler timing assumptions.
+      if (m_Next)
+        xiiResourceManager::UpdateResourceWithCustomLoader(m_Target, std::move(m_Next));
+      if (m_Latest)
+        xiiResourceManager::UpdateResourceWithCustomLoader(m_Target, std::move(m_Latest));
+      m_Target.Invalidate();
+      if (m_pClosed)
+        m_pClosed->m_Content.RaiseSignal();
+    }
+  };
+
   struct PassData
   {
     xiiRenderGraphBufferHandle  m_hBuffer;
@@ -289,13 +313,17 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     const auto* original    = a.GetPipeline();
     auto        replacement = PipelineResourceTest::MakeDefinition();
     replacement.m_Passes[1].m_Properties.Insert("Value", 9U);
-    xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
-    xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
+    xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>> replacementClosed = XII_DEFAULT_NEW(xiiRefCountedContainer<xiiThreadSignal>);
+    xiiUniquePtr<PipelineResourceTest::MemoryLoader>      loader            = XII_DEFAULT_NEW(PipelineResourceTest::MemoryLoader);
+    loader->m_pClosed                                                       = replacementClosed;
+    xiiMemoryStreamWriter stream(&loader->m_CustomData);
     stream << "PipelineTest.xiiBinRenderPipeline";
     XII_TEST_RESULT(header.Write(stream));
     stream << static_cast<xiiUInt8>(3);
     XII_TEST_RESULT(replacement.Serialize(stream));
     xiiResourceManager::UpdateResourceWithCustomLoader(resource, std::move(loader));
+    if (!XII_TEST_BOOL(replacementClosed->m_Content.WaitForSignal(xiiTime::MakeFromSeconds(5)) == xiiThreadSignal::WaitResult::Signaled))
+      return;
     bool changed = false;
     XII_TEST_RESULT(a.Synchronize(resource, &changed));
     XII_TEST_BOOL(changed && a.GetPipeline() != original);
@@ -306,6 +334,42 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderPipelineResource)
     XII_TEST_BOOL(a.Synchronize({}, &changed).Failed());
     XII_TEST_BOOL(changed && a.GetPipeline() == nullptr);
     b.Clear();
+    resource.Invalidate();
+    xiiResourceManager::FreeAllUnusedResources();
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Latest custom pipeline payload survives an in-flight loader")
+  {
+    auto resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>("PipelineBusyReloadTest");
+    auto initial  = XII_DEFAULT_NEW(PipelineResourceTest::MemoryLoader);
+    auto next     = XII_DEFAULT_NEW(PipelineResourceTest::MemoryLoader);
+    auto latest   = XII_DEFAULT_NEW(PipelineResourceTest::MemoryLoader);
+    auto write    = [](PipelineResourceTest::MemoryLoader& loader, xiiUInt32 value) -> xiiResult {
+      auto definition = PipelineResourceTest::MakeDefinition();
+      definition.m_Passes[1].m_Properties.Insert("Value", value);
+      xiiMemoryStreamWriter writer(&loader.m_CustomData);
+      writer << "PipelineBusyReloadTest.xiiBinRenderPipeline";
+      xiiAssetFileHeader header;
+      XII_SUCCEED_OR_RETURN(header.Write(writer));
+      writer << static_cast<xiiUInt8>(3);
+      return definition.Serialize(writer);
+    };
+    XII_TEST_RESULT(write(*initial, 4));
+    XII_TEST_RESULT(write(*next, 9));
+    XII_TEST_RESULT(write(*latest, 17));
+    xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>> latestClosed = XII_DEFAULT_NEW(xiiRefCountedContainer<xiiThreadSignal>);
+    latest->m_pClosed                                                  = latestClosed;
+    initial->m_Target                                                  = resource;
+    initial->m_Next                                                    = std::move(next);
+    initial->m_Latest                                                  = std::move(latest);
+    xiiResourceManager::UpdateResourceWithCustomLoader(resource, std::move(initial));
+    xiiResourceManager::PreloadResource(resource);
+    if (!XII_TEST_BOOL(latestClosed->m_Content.WaitForSignal(xiiTime::MakeFromSeconds(5)) == xiiThreadSignal::WaitResult::Signaled))
+      return;
+    xiiRenderPipelineInstance instance;
+    XII_TEST_RESULT(instance.Synchronize(resource));
+    if (XII_TEST_BOOL(instance.GetPipeline() != nullptr))
+      XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(instance.GetPass(1))->m_uiValue, 17);
+    instance.Clear();
     resource.Invalidate();
     xiiResourceManager::FreeAllUnusedResources();
   }

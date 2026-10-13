@@ -99,5 +99,3 @@ xiiUniquePtr<xiiProcessMessage> xiiIpcProcessMessageProtocol::PopMessage()
   m_IncomingQueue.PopFront();
   return pFront;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_IpcProcessMessageProtocol);

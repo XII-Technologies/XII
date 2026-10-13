@@ -11,6 +11,8 @@ ALL
 StructuredBuffer<GpuSceneInstance> g_SceneInstances;
 StructuredBuffer<GpuVisibilityView> g_VisibilityView;
 StructuredBuffer<GpuGeometryRecord> g_Geometry;
+StructuredBuffer<uint4> g_PreviousLodHistory;
+RWStructuredBuffer<uint4> g_CurrentLodHistory;
 RWStructuredBuffer<uint> g_VisibleInstances;
 RWStructuredBuffer<uint> g_VisibleInstanceCount;
 
@@ -65,8 +67,6 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     return;
 
   GpuSceneInstance instance = g_SceneInstances[instanceIndex];
-  if ((instance.Flags & view.RequiredFlags) != view.RequiredFlags || (instance.Flags & view.ExcludedFlags) != 0u || (instance.VisibilityMask & view.VisibilityMask) == 0u)
-    return;
   if (instance.GeometryIndex == 0xFFFFFFFFu)
     return;
 
@@ -74,6 +74,23 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     return;
 
   const GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
+  // Update history before flags, frustum and Hi-Z tests. Material routing must never
+  // leave section candidates of one mesh with different temporal LOD decisions.
+  uint selectionIndex = instanceIndex;
+  if (instance.LodSelectionIndex < min(view.InstanceCount, sceneCount) && g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex)
+    selectionIndex = instance.LodSelectionIndex;
+  const GpuSceneInstance selection = g_SceneInstances[selectionIndex];
+  uint previousCapacity, previousStride, currentCapacity, currentStride;
+  g_PreviousLodHistory.GetDimensions(previousCapacity, previousStride);
+  g_CurrentLodHistory.GetDimensions(currentCapacity, currentStride);
+  const uint4 previousHistory = selectionIndex < previousCapacity ? g_PreviousLodHistory[selectionIndex] : uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
+  const float distanceToCamera = length(selection.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
+  const uint lod = SelectInstanceResidentLod(geometry, selection, distanceToCamera, view.ViewportAndHiZ.y,
+                                             previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
+  if (instanceIndex < currentCapacity)
+    g_CurrentLodHistory[instanceIndex] = uint4(lod, geometry.Generation, selection.ObjectId, (uint)view.LodParameters.y);
+  if ((instance.Flags & view.RequiredFlags) != view.RequiredFlags || (instance.Flags & view.ExcludedFlags) != 0u || (instance.VisibilityMask & view.VisibilityMask) == 0u)
+    return;
   if (geometry.ResidentLodMask == 0u || !SphereInsideFrustum(instance.BoundsCenterRadius.xyz, instance.BoundsCenterRadius.w, view))
     return;
 

@@ -4,6 +4,7 @@
 
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
 
+#include <Core/System/WindowManager.h>
 #include <EditorEngineProcessFramework/EngineProcess/WorldRttiConverterContext.h>
 #include <Foundation/Types/Uuid.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
@@ -16,7 +17,18 @@ class xiiEngineProcessCommunicationChannel;
 class xiiProcessMessage;
 class xiiExportDocumentMsgToEngine;
 class xiiCreateThumbnailMsgToEngine;
+class xiiDocumentOpenMsgToEngine;
 struct xiiResourceEvent;
+class xiiView;
+
+struct xiiEditorGizmoPickResult
+{
+  xiiUuid m_HandleGuid;
+  xiiVec3 m_vRayStartPosition = xiiVec3::MakeZero();
+  xiiVec3 m_vPosition         = xiiVec3::MakeZero();
+  float   m_fRayTime          = 0.0f;
+  bool    m_bAlwaysOnTop      = false;
+};
 
 struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessDocumentContextFlags
 {
@@ -51,8 +63,10 @@ public:
   xiiEngineProcessDocumentContext(xiiBitflags<xiiEngineProcessDocumentContextFlags> flags);
   virtual ~xiiEngineProcessDocumentContext();
 
-  virtual void Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
-  void         Deinitialize();
+  /// Initializes the context and rolls back partially initialized state on failure.
+  virtual xiiStatus Initialize(const xiiUuid& documentGuid, const xiiVariant& metaData, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
+  /// Releases initialized or partially initialized state. Repeated calls are safe.
+  void Deinitialize();
 
   /// Returns the document type for which this context was created. Useful in case a context may be used for multiple document types.
   xiiStringView GetDocumentType() const { return m_sDocumentType; }
@@ -61,10 +75,22 @@ public:
   virtual void HandleMessage(const xiiEditorEngineDocumentMsg* pMsg);
 
   static xiiEngineProcessDocumentContext* GetDocumentContext(xiiUuid guid);
-  static void                             AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
-  static bool                             PendingOperationsInProgress();
-  static void                             UpdateDocumentContexts();
-  static void                             DestroyDocumentContext(xiiUuid guid);
+  /// Allocates the unique reflected context registered for the requested document type.
+  /// A custom static AllocateContext(const xiiDocumentOpenMsgToEngine*) may reject the request by returning null.
+  /// On success the caller owns the uninitialized context and must register it or deallocate it through its RTTI allocator.
+  /// On failure out_pContext is null. Does not modify the document registry.
+  static xiiStatus AllocateDocumentContext(const xiiDocumentOpenMsgToEngine& request, xiiEngineProcessDocumentContext*& out_pContext);
+  /// Takes ownership on success. Failure leaves ownership unchanged and rolls back any initialization begun here.
+  static xiiStatus AddDocumentContext(xiiUuid guid, const xiiVariant& metaData, xiiEngineProcessDocumentContext* pView, xiiEngineProcessCommunicationChannel* pIPC, xiiStringView sDocumentType);
+  static bool      PendingOperationsInProgress();
+  static void      UpdateDocumentContexts();
+  /// Consumes redraw requests after presentation; thumbnails request another frame on their next tick.
+  static void FinishFrame();
+  /// Returns whether a window belongs to document views and combines their presentation requests.
+  static bool TryGetWindowRedrawState(xiiRegisteredWindowHandle hWindow, bool& out_bRedrawRequested);
+  static void DestroyDocumentContext(xiiUuid guid);
+  /// Releases borrowed-world contexts before contexts which own their world.
+  static void DestroyAllDocumentContexts();
 
   // Returns the bounding box of the objects in the world.
   xiiBoundingBoxSphere GetWorldBounds(xiiWorld* pWorld);
@@ -73,8 +99,8 @@ public:
 
   const xiiUuid& GetDocumentGuid() const { return m_DocumentGuid; }
 
-  virtual void Reset();
-  void         ClearExistingObjects();
+  virtual xiiStatus Reset();
+  void              ClearExistingObjects();
 
   xiiIPCObjectMirrorEngine                    m_Mirror;
   xiiWorldRttiConverterContext                m_Context; // TODO: Move actual context into the EngineProcessDocumentContext
@@ -83,12 +109,21 @@ public:
 
   xiiWorld* GetWorld() const { return m_pWorld; }
 
+  /// Submits this document's synchronized handles to the view's normal debug-render graph passes.
+  /// Requires exclusive document/world access. A view from another world is rejected.
+  xiiResult DrawGizmos(const xiiView& view);
+  /// Picks document handles at normalized viewport coordinates. Overlay handles take priority, then
+  /// nearest forward ray time; equal hits follow sync GUID order. Misses leave the output unchanged.
+  /// Scene geometry occlusion is evaluated by the scene picking consumer using the returned ray time.
+  xiiResult PickGizmo(const xiiView& view, float fNormalizedX, float fNormalizedY, xiiEditorGizmoPickResult& out_result);
+
   /// Tries to resolve a 'reference' (given in pData) to a xiiGameObject.
   virtual xiiGameObjectHandle ResolveStringToGameObjectHandle(const void* pString, xiiComponentHandle hThis, xiiStringView sProperty) const;
 
 protected:
-  virtual void OnInitialize();
-  virtual void OnDeinitialize();
+  /// OnDeinitialize must release any state acquired before this hook returns failure.
+  virtual xiiStatus OnInitialize();
+  virtual void      OnDeinitialize();
 
   /// Needs to be implemented to create a view context used for windows and thumbnails rendering.
   virtual xiiEngineProcessViewContext* CreateViewContext() = 0;
@@ -186,12 +221,10 @@ private:
   xiiUInt16                    m_uiThumbnailWidth             = 0;
   xiiUInt16                    m_uiThumbnailHeight            = 0;
   xiiEngineProcessViewContext* m_pThumbnailViewContext        = nullptr;
-  xiiRenderTargets             m_ThumbnailRenderTargets;
   xiiSharedPtr<xiiGALTexture>  m_pThumbnailColorRT;
-  xiiSharedPtr<xiiGALTexture>  m_pThumbnailColorRTStaging;
-  xiiSharedPtr<xiiGALTexture>  m_pThumbnailDepthRT;
   bool                         m_bWorldSimStateBeforeThumbnail = false;
   xiiString                    m_sDocumentType;
+  bool                         m_bInitializationStarted = false;
 
   //////////////////////////////////////////////////////////////////////////
   // GameObject reference resolution

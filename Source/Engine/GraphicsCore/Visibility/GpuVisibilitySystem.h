@@ -126,6 +126,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuVisibilityStreamingStat
 
 struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityOutputs
 {
+  /// Current/previous pose snapshot shared by all native vertex consumers in this graph.
+  xiiRenderGraphBufferHandle m_hSkinningMatrices;
   xiiRenderGraphBufferHandle m_hSceneInstances;
   xiiRenderGraphBufferHandle m_hVisibleInstances;
   xiiRenderGraphBufferHandle m_hVisibleInstanceCount;
@@ -133,6 +135,8 @@ struct XII_GRAPHICSCORE_DLL xiiGpuVisibilityOutputs
   xiiRenderGraphBufferHandle m_hVisibleMeshletCount;
   xiiRenderGraphBufferHandle m_hIndirectCommands;
   xiiRenderGraphBufferHandle m_hIndirectCommandCount;
+  /// Capacity of the compact visible-meshlet stream, shared by mesh and indexed consumers.
+  xiiUInt32 m_uiMaxVisibleMeshlets = 0U;
 };
 
 /// GPU-driven visibility pipeline shared by scene, shadow, sensor, and editor views.
@@ -194,6 +198,7 @@ private:
   const xiiSceneDatabase*                               m_pPreparedScene  = nullptr;
   xiiUInt64                                             m_uiPreparedFrame = xiiMath::MaxValue<xiiUInt64>();
   xiiRenderGraphBufferHandle                            m_hPreparedScene;
+  xiiRenderGraphBufferHandle                            m_hPreparedSkinning;
   xiiHashTable<xiiHashedString, xiiUInt32>              m_VisibilitySetIndices;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pInstanceCullPipeline;
   xiiSharedPtr<xiiGALComputePipelineState>              m_pHiZOcclusionPipeline;

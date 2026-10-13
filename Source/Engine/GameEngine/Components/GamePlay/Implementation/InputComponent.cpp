@@ -179,4 +179,4 @@ xiiInputComponentPatch_1_2 g_xiiInputComponentPatch_1_2;
 
 
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_InputComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_InputComponent);

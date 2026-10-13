@@ -3,7 +3,9 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <Texture/TextureConverter/TextureConverterEnums.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
+#include <SharedPluginAssets/TextureAsset/TextureAssetProfile.h>
+#include <Texture/Converter/TextureConverterEnums.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
 struct xiiPropertyMetaStateEvent;
@@ -27,32 +29,16 @@ struct xiiTexture2DChannelMappingEnum
     RGB1_ABLACK,
     R1_G2_B3_A4,
 
+    // Linear channel packing with a neutral white channel for absent source data.
+    WHITE_R1_R2,
+    WHITE_R1_WHITE,
+    WHITE_WHITE_R1,
+
     Default = RGB1,
   };
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiTexture2DChannelMappingEnum);
-
-struct xiiTexture2DResolution
-{
-  using StorageType = xiiInt8;
-
-  enum Enum
-  {
-    Fixed64x64,
-    Fixed128x128,
-    Fixed256x256,
-    Fixed512x512,
-    Fixed1024x1024,
-    Fixed2048x2048,
-    CVarRtResolution1,
-    CVarRtResolution2,
-
-    Default = Fixed256x256
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiTexture2DResolution);
 
 struct xiiRenderTargetFormat
 {
@@ -95,22 +81,33 @@ public:
 
   xiiInt32 GetNumInputFiles() const;
 
+  /// Builds the persistent native sampler. Failure leaves the destination unchanged.
+  xiiResult GetSamplerDescription(xiiGALSamplerCreationDescription& out_description) const;
+
   bool  m_bIsRenderTarget        = false;
   bool  m_bPremultipliedAlpha    = false;
   bool  m_bFlipHorizontal        = false;
   bool  m_bDilateColor           = false;
   bool  m_bPreserveAlphaCoverage = false;
-  float m_fCVarResolutionScale   = 1.0f;
+  float m_fResolutionScale       = 1.0f;
   float m_fHdrExposureBias       = 0;
   float m_fAlphaThreshold        = 0.5f;
 
-  xiiEnum<xiiTextureFilterSetting>  m_TextureFilter;
-  xiiEnum<xiiImageAddressMode>      m_AddressModeU;
-  xiiEnum<xiiImageAddressMode>      m_AddressModeV;
-  xiiEnum<xiiImageAddressMode>      m_AddressModeW;
-  xiiEnum<xiiTexture2DResolution>   m_Resolution;
-  xiiEnum<xiiTextureConverterUsage> m_TextureUsage;
-  xiiEnum<xiiRenderTargetFormat>    m_RtFormat;
+  xiiEnum<xiiTextureConverterSamplerPreset> m_SamplerPreset;
+  bool                                      m_bUseCustomFiltering = false;
+  xiiEnum<xiiGALFilterType>                 m_MinFilter           = xiiGALFilterType::Linear;
+  xiiEnum<xiiGALFilterType>                 m_MagFilter           = xiiGALFilterType::Linear;
+  xiiEnum<xiiGALFilterType>                 m_MipFilter           = xiiGALFilterType::Linear;
+  xiiUInt32                                 m_uiMaxAnisotropy     = 0;
+  float                                     m_fMipLODBias         = 0;
+  float                                     m_fMinLOD             = 0;
+  float                                     m_fMaxLOD             = xiiMath::MaxValue<float>();
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeU        = xiiGALTextureAddressMode::Wrap;
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeV        = xiiGALTextureAddressMode::Wrap;
+  xiiEnum<xiiGALTextureAddressMode>         m_AddressModeW        = xiiGALTextureAddressMode::Wrap;
+  xiiEnum<xiiTexture2DResolution>           m_Resolution;
+  xiiEnum<xiiTextureConverterUsage>         m_TextureUsage;
+  xiiEnum<xiiRenderTargetFormat>            m_RtFormat;
 
   xiiEnum<xiiTextureConverterCompressionMode> m_CompressionMode;
   xiiEnum<xiiTextureConverterMipmapMode>      m_MipmapMode;

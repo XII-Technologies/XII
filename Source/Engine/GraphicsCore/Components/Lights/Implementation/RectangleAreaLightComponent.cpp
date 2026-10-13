@@ -137,3 +137,5 @@ xiiRectangleAreaLightVisualizerAttribute::xiiRectangleAreaLightVisualizerAttribu
   xiiVisualizerAttribute(sExtentsProperty, sColorProperty, sIntensityProperty)
 {
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Lights_Implementation_RectangleAreaLightComponent);

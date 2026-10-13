@@ -235,7 +235,7 @@ xiiSharedPtr<xiiGALSwapChain> xiiGALDevice::CreateSwapChain(const xiiGALSwapChai
   XII_GAL_DEVICE_CHECK(description.m_pWindow != nullptr, "Swap chain creation failed: Window handle (m_pWindow) is null. A valid window reference is required.");
   XII_GAL_DEVICE_CHECK(description.m_ColorBufferFormat != xiiGALResourceFormat::Unknown, "Swap chain creation failed: Color buffer format is 'Unknown'. Specify a valid format for rendering output.");
   XII_GAL_DEVICE_CHECK(!description.m_UsageFlags.IsNoFlagSet(), "Swap chain creation failed: No usage flags specified. Define at least one usage via m_UsageFlags.");
-  XII_GAL_DEVICE_CHECK(description.m_fDefaultDepthValue > 0.0f, "Swap chain creation failed: Default depth value must be greater than zero. Check m_fDefaultDepthValue.");
+  XII_GAL_DEVICE_CHECK(description.m_fDefaultDepthValue >= 0.0f && description.m_fDefaultDepthValue <= 1.0f, "Swap chain creation failed: Default depth value must be in [0, 1]. Check m_fDefaultDepthValue.");
 
   return CreateSwapChainPlatform(description);
 }
@@ -511,19 +511,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
 
   xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData, externalMemoryKind);
 
-  FinalizeBufferInternal(description, pBuffer);
-
   return pBuffer;
-}
-
-void xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription& description, xiiSharedPtr<xiiGALBuffer>& pBuffer)
-{
-  XII_IGNORE_UNUSED(description);
-
-  if (pBuffer != nullptr)
-  {
-    pBuffer->CreateDefaultResourceViews();
-  }
 }
 
 xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
@@ -751,25 +739,13 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
       const xiiUInt32 uiRequiredSlicePitch = xiiGALTextureUtilities::GetRequiredSlicePitch(description, uiMipLevel);
       XII_GAL_DEVICE_CHECK(subResource.m_uiDepthStride >= uiRequiredSlicePitch, "The sub-resource slice pitch ({0}) is smaller than the required slice pitch ({1}).", subResource.m_uiDepthStride, uiRequiredSlicePitch);
 
-      ++uiMipLevel;
+      uiMipLevel = (uiMipLevel + 1U) % description.m_uiMipLevels;
     }
   }
 
   xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData, externalMemoryKind);
 
-  FinalizeTextureInternal(description, pTexture);
-
   return pTexture;
-}
-
-void xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCreationDescription& description, xiiSharedPtr<xiiGALTexture>& pTexture)
-{
-  XII_IGNORE_UNUSED(description);
-
-  if (pTexture != nullptr)
-  {
-    pTexture->CreateDefaultResourceViews();
-  }
 }
 
 xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescription& description)
@@ -781,9 +757,11 @@ xiiSharedPtr<xiiGALSampler> xiiGALDevice::CreateSampler(const xiiGALSamplerCreat
   {
     for (xiiGALSampler* pCachedSampler : it.Value())
     {
-      if (pCachedSampler->GetDescription() == description)
+      if (pCachedSampler->GetDescription() == description && pCachedSampler->TryAddRef())
       {
-        return xiiSharedPtr<xiiGALSampler>(pCachedSampler, &m_Allocator);
+        xiiSharedPtr<xiiGALSampler> sampler(pCachedSampler, GetAllocator());
+        pCachedSampler->ReleaseRef();
+        return sampler;
       }
     }
   }
@@ -1481,7 +1459,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
 
     if (resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
     {
-      XII_GAL_DEVICE_CHECK(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", i);
+      XII_GAL_DEVICE_CHECK(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource '{}' (at index '{}') specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", resource.m_sName, i);
     }
     if (resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure)
     {

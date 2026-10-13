@@ -4,7 +4,8 @@
 
 #include <EnginePluginAssets/DecalAsset/DecalContext.h>
 #include <EnginePluginAssets/DecalAsset/DecalView.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 xiiDecalViewContext::xiiDecalViewContext(xiiDecalContext* pDecalContext) :
   xiiEngineProcessViewContext(pDecalContext)
@@ -17,13 +18,10 @@ xiiDecalViewContext::~xiiDecalViewContext() = default;
 xiiViewHandle xiiDecalViewContext::CreateView()
 {
   xiiView* pView = nullptr;
-  xiiRenderWorld::CreateView("Decal Editor - View", pView);
+  GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Decal Editor - View", pView);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
 
-  pView->SetRenderPipelineResource(CreateDefaultRenderPipeline());
 
-  xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext();
-  pView->SetWorld(pDocumentContext->GetWorld());
   pView->SetCamera(&m_Camera);
   return pView->GetHandle();
 }

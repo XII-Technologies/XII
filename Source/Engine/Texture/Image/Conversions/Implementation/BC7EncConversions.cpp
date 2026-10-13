@@ -81,4 +81,4 @@ XII_STATICLINK_FORCE static xiiImageConversion_CompressBC7Enc s_conversion_compr
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_BC7EncConversions);
+XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_Implementation_BC7EncConversions);

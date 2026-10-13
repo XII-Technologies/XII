@@ -31,5 +31,3 @@ bool xiiMessageLoop_NoImpl::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pF
 
   return false;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Null_MessageLoop_NoImpl);

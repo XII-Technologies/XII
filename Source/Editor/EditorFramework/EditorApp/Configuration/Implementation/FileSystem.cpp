@@ -63,7 +63,22 @@ void xiiQtEditorApp::SetupDataDirectories()
   m_Events.Broadcast(e);
 
   xiiQtEditorApp::GetSingleton()->AddPluginDataDirDependency(">sdk/Data/Base", "base", false);
-  xiiQtEditorApp::GetSingleton()->AddPluginDataDirDependency(">sdk/Data/Plugins", "plugins", false);
+  // Match the runtime's optional plugin-data mount. A clean SDK checkout need not contain this directory.
+  xiiStringBuilder pluginData;
+  if (xiiFileSystem::ResolveSpecialDirectory(">sdk/Data/Plugins", pluginData).Succeeded() && xiiOSFile::ExistsDirectory(pluginData))
+  {
+    xiiQtEditorApp::GetSingleton()->AddPluginDataDirDependency(">sdk/Data/Plugins", "plugins", false);
+  }
+  else
+  {
+    // Older default project configurations listed this optional directory unconditionally.
+    for (xiiUInt32 i = m_FileSystemConfig.m_DataDirs.GetCount(); i > 0; --i)
+    {
+      const auto& dataDir = m_FileSystemConfig.m_DataDirs[i - 1];
+      if (dataDir.m_sRootName.IsEqual_NoCase("plugins") && dataDir.m_sDataDirSpecialPath == ">sdk/Data/Plugins")
+        m_FileSystemConfig.m_DataDirs.RemoveAtAndCopy(i - 1);
+    }
+  }
   xiiQtEditorApp::GetSingleton()->AddPluginDataDirDependency(">project/", "project", true);
 
   // Tell the tools project that all data directories are ok to put documents in

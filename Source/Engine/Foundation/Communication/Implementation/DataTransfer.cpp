@@ -198,5 +198,3 @@ void xiiDataTransfer::SendAllDataTransfers()
     it.Key()->SendStatus();
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_DataTransfer);

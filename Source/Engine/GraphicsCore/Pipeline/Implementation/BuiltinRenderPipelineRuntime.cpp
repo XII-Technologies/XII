@@ -45,14 +45,16 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
 
   // CPU dynamic resolution PID (pre-graph). View owns scale/resolution state.
 
-  bool bResult = blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
-  XII_IGNORE_UNUSED(bResult);
+  uiFrameIndex = graph.GetFrameIndex();
 
   // Geometry residency and visibility are process services. The view keeps only generation-
   // checked context handles, so their allocator-backed state is guaranteed to be constructed and
   // destroyed by the GraphicsCore subsystem while the Foundation allocator and GAL device exist.
   geometry  = xiiGeometryResidencyManager::AddUploadPass(graph, uiFrameIndex);
   materials = xiiMaterialManager::AddUploadPasses(graph);
+  blackboard.Set(xiiRGBlackboardKeys::k_GpuGeometryBaseIndex, geometry.m_uiGeometryBaseIndex);
+  blackboard.Set(xiiRGBlackboardKeys::k_GpuMaximumResidentMeshlets, geometry.m_uiMaximumResidentMeshletCount);
+  blackboard.Set(xiiRGBlackboardKeys::k_GpuSurfaceMaterialBaseIndex, materials.m_uiSurfaceBaseIndex);
 
   // Build the primary view's compact meshlet stream from the subsystem-owned scene. Frustum and
   // LOD culling are refined by the previous frame's subsystem-owned Hi-Z history when valid; the
@@ -72,8 +74,11 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
         xiiGpuVisibilityManager::InvalidateHiZHistory(m_View.m_hGpuVisibilityContext);
     }
 
-    const xiiMat4        viewProjection = m_View.GetViewProjectionMatrix(xiiCameraEye::Left);
-    const xiiFrustum     viewFrustum    = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
+    const xiiMat4 viewProjection = m_View.GetViewProjectionMatrix(xiiCameraEye::Left);
+    xiiFrustum    viewFrustum;
+    m_View.ComputeCullingFrustum(viewFrustum);
+    // The raster camera still governs Hi-Z, LOD and cone-facing decisions; the explicit culling
+    // camera controls frustum rejection, just as it does in the indexed visibility path.
     xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
       viewProjection, viewFrustum, m_View.m_pCamera->GetPosition(), uiRenderWidth, uiRenderHeight,
       xiiGpuVisibilityManager::GetHiZMipLevelCount(m_View.m_hGpuVisibilityContext),
@@ -98,7 +103,9 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
 
   if (m_View.m_pExtractedData != nullptr)
   {
-    m_Resources.m_LightingSystem.BuildFrameData(m_View, *m_View.m_pExtractedData, uiFrameIndex);
+    // Lighting's shader sampling token is intentionally 32-bit; residency and capture lifetimes
+    // above retain the complete render-graph frame identity.
+    m_Resources.m_LightingSystem.BuildFrameData(m_View, *m_View.m_pExtractedData, static_cast<xiiUInt32>(uiFrameIndex));
   }
 
   xiiEmissiveLightManager::BuildDescription emissiveBuildDescription;
@@ -144,7 +151,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
     }
   }
   m_Resources.m_LightingSystem.WriteBlackboard(blackboard);
-  m_Resources.m_LightingPasses.m_uiFrameIndex = uiFrameIndex;
+  m_Resources.m_LightingPasses.m_uiFrameIndex = static_cast<xiiUInt32>(uiFrameIndex);
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
@@ -352,7 +359,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildDepthAndGeometry(xiiRenderGraph& grap
   m_Frame.contactShadowPass = graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupContactShadowData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteContactShadowData, this));
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // Lighting preparation passes, which generate lookup textures and lighting auxiliaries.
   graph.AddPass<xiiBRDFLutGenerationData>("BRDFLUTGenerate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupBRDFLutGeneration, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteBRDFLutGeneration, this));
@@ -360,11 +367,21 @@ void xiiBuiltinRenderPipelineRuntime::BuildLightingPreparation(xiiRenderGraph& g
   graph.AddPass<xiiAtmosphereMultiScatterData>("AtmosphereMultiScatterLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupAtmosphereMultiScatter, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteAtmosphereMultiScatter, this));
   graph.AddPass<xiiSkyIrradianceConvolutionData>("SkyIrradianceConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSkyIrradianceConvolution, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSkyIrradianceConvolution, this));
   graph.AddPass<xiiVolumetricFogInitializationData>("VolumetricFogInitialization", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupVolumetricFogInitialization, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteVolumetricFogInitialization, this));
-  XII_IGNORE_UNUSED(xiiSparseVoxelRadianceManager::AddUpdatePass(graph, m_Resources.m_LightingSystem.BorrowSystem()));
+  auto* lighting = m_Resources.m_LightingSystem.BorrowSystem();
+  if (m_View.GetCamera() == nullptr)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(lighting->GetDDGIContext().BeginFrame(m_View.GetCamera()->GetPosition(), graph.GetFrameIndex()));
+  XII_SUCCEED_OR_RETURN(lighting->GetSparseVoxelRadianceContext().BeginFrame(m_View.GetCamera()->GetPosition(), graph.GetFrameIndex()));
+  const auto sparse = lighting->GetSparseVoxelRadianceContext().AddUpdatePass(graph, lighting);
+  if (!sparse.m_hRadiancePool.IsValid() || !sparse.m_hPageTable.IsValid() || !sparse.m_hLevelData.IsValid() || !sparse.m_hConstants.IsValid())
+    return XII_FAILURE;
   graph.AddPass<xiiSparseVoxelRadianceGatherData>("SparseVoxelRadianceGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSparseVoxelRadianceGather, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSparseVoxelRadianceGather, this));
-  XII_IGNORE_UNUSED(xiiDDGIManager::AddUpdatePass(graph, m_Resources.m_LightingSystem.BorrowSystem()));
+  const auto ddgi = lighting->GetDDGIContext().AddUpdatePass(graph, lighting);
+  if (!ddgi.m_hIrradianceAtlas.IsValid() || !ddgi.m_hDistanceAtlas.IsValid() || !ddgi.m_hProbeStates.IsValid() || !ddgi.m_hProbeConstants.IsValid())
+    return XII_FAILURE;
   graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteDDGIProbeSampling, this));
   graph.AddPass<xiiGroundTruthAmbientOcclusionData>("GroundTruthAmbientOcclusion", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupGroundTruthAmbientOcclusion, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusion, this));
+  return XII_SUCCESS;
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
@@ -514,10 +531,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
     return XII_SUCCESS;
   }
   if (stage == "LightingPreparation")
-  {
-    BuildLightingPreparation(graph, blackboard);
-    return XII_SUCCESS;
-  }
+    return BuildLightingPreparation(graph, blackboard);
   if (stage == "Lighting")
   {
     BuildLighting(graph, blackboard);
@@ -588,6 +602,8 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
 
 void xiiBuiltinRenderPipelineRuntime::InvalidateTemporalHistory()
 {
+  if (m_Resources.m_LightingSystem.IsInitialized())
+    m_Resources.m_LightingSystem.BorrowSystem()->InvalidateGlobalIlluminationHistory();
   m_Resources.m_DepthPasses.m_bMotionHistoryValid                  = false;
   m_Resources.m_ShadowPasses.m_bRayTracedShadowHistoryValid        = false;
   m_Resources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = false;

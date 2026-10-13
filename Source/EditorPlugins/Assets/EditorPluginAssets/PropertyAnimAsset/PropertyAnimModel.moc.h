@@ -16,18 +16,18 @@ class xiiPropertyAnimationTrack;
 
 struct xiiQtPropertyAnimModelTreeEntry
 {
-  xiiString                  m_sPathToItem;
-  xiiInt32                   m_iParent       = -1;
-  xiiUInt16                  m_uiOwnRowIndex = 0;
-  xiiPropertyAnimationTrack* m_pTrack        = nullptr;
-  xiiInt32                   m_iTrackIdx     = -1;
-  xiiString                  m_sDisplay;
-  xiiDynamicArray<xiiInt32>  m_Children;
-  QIcon                      m_Icon;
+  xiiString                 m_sPathToItem;
+  xiiInt32                  m_iParent       = -1;
+  xiiUInt16                 m_uiOwnRowIndex = 0;
+  xiiUuid                   m_TrackGuid;
+  xiiInt32                  m_iTrackIdx = -1;
+  xiiString                 m_sDisplay;
+  xiiDynamicArray<xiiInt32> m_Children;
+  QIcon                     m_Icon;
 
   bool operator==(const xiiQtPropertyAnimModelTreeEntry& rhs) const
   {
-    return (m_iParent == rhs.m_iParent) && (m_uiOwnRowIndex == rhs.m_uiOwnRowIndex) && (m_pTrack == rhs.m_pTrack) && (m_iTrackIdx == rhs.m_iTrackIdx) && (m_sDisplay == rhs.m_sDisplay) && (m_Children == rhs.m_Children);
+    return (m_iParent == rhs.m_iParent) && (m_uiOwnRowIndex == rhs.m_uiOwnRowIndex) && (m_TrackGuid == rhs.m_TrackGuid) && (m_iTrackIdx == rhs.m_iTrackIdx) && (m_sDisplay == rhs.m_sDisplay) && (m_Children == rhs.m_Children);
   }
 };
 
@@ -40,7 +40,6 @@ public:
 
   enum UserRoles
   {
-    TrackPtr = Qt::UserRole + 1,
     TreeItem = Qt::UserRole + 2,
     TrackIdx = Qt::UserRole + 3,
     Path     = Qt::UserRole + 4,

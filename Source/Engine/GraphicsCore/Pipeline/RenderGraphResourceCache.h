@@ -29,8 +29,9 @@
 /// mutex and are safe to call concurrently from parallel pass execution threads.
 ///
 /// ## Stale eviction
-/// Call ReleaseStaleResources() periodically (e.g. once per frame) to destroy pooled resources
-/// that have not been used for more than the configured number of frames.
+/// BeginFrame() evicts completed pooled resources unused for at least four frames. This bounds
+/// retention when viewport dimensions or upload sizes change continuously. ReleaseStaleResources()
+/// can additionally trim idle resources; it never releases active or GPU-in-flight resources.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphResourceCache
 {
 public:
@@ -47,7 +48,8 @@ public:
   /// retirement window for callers that do not expose an exact completed-frame index.
   void BeginFrame(xiiUInt64 uiFrameIndex);
 
-  /// Starts a frame and promotes only resources whose last GPU frame is known to be complete.
+  /// Starts a frame, promotes resources whose last GPU frame is known to be complete, and evicts
+  /// idle allocations unused for at least four frames.
   /// This overload is preferred by render loops with explicit frame fences.
   void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrameIndex);
 
@@ -57,6 +59,7 @@ public:
   // Texture
 
   /// Returns a texture matching the given description, creating one if no pool entry exists.
+  /// Returns null if allocation fails or the cache is uninitialized. The caller must handle failure.
   [[nodiscard]] xiiSharedPtr<xiiGALTexture> AcquireTexture(const xiiGALTextureCreationDescription& description);
 
   /// Returns a texture to the pool for potential reuse in subsequent frames.
@@ -65,6 +68,7 @@ public:
   // Buffer
 
   /// Returns a buffer matching the given description, creating one if no pool entry exists.
+  /// Returns null if allocation fails or the cache is uninitialized. The caller must handle failure.
   [[nodiscard]] xiiSharedPtr<xiiGALBuffer> AcquireBuffer(const xiiGALBufferCreationDescription& description);
 
   /// Returns a buffer to the pool for potential reuse in subsequent frames.
@@ -84,6 +88,8 @@ public:
   [[nodiscard]] xiiUInt32 GetPooledResourceCount() const;
 
 private:
+  void ReleaseStaleResourcesLocked(xiiUInt32 uiMinAgeFrames);
+
   struct PooledTexture
   {
     xiiSharedPtr<xiiGALTexture> m_pTexture;

@@ -40,6 +40,10 @@ xiiString xiiApplicationServices::GetApplicationDataFolder() const
 
 xiiString xiiApplicationServices::GetApplicationPreferencesFolder() const
 {
+  // Honor the application's configured user-data mount, including isolated Editor sessions.
+  xiiStringBuilder path;
+  if (xiiFileSystem::ResolvePath(":appdata/", &path, nullptr).Succeeded())
+    return path;
   return GetApplicationUserDataFolder();
 }
 
@@ -50,7 +54,7 @@ xiiString xiiApplicationServices::GetProjectPreferencesFolder() const
 
 xiiString xiiApplicationServices::GetProjectPreferencesFolder(xiiStringView sProjectFilePath) const
 {
-  xiiStringBuilder path = GetApplicationUserDataFolder();
+  xiiStringBuilder path = GetApplicationPreferencesFolder();
 
   sProjectFilePath.TrimWordEnd("xiiProject");
   sProjectFilePath.TrimWordEnd("xiiRemoteProject");

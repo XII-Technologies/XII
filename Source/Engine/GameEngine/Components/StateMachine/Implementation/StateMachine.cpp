@@ -528,4 +528,4 @@ xiiUInt32 xiiStateMachineInstance::FindNewStateToTransitionTo()
 }
 
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachine);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_StateMachine_Implementation_StateMachine);

@@ -783,3 +783,5 @@ void xiiStandardInputDevice::RegisterInputSlots()
 }
 
 #endif
+
+XII_STATICLINK_FILE(Core, Core_Platform_SDL_InputDevice_SDL);

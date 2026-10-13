@@ -67,6 +67,31 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphContextHandle
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphContextHandle);
 
+/// Serializes device-wide frame preparation and submission across worlds and registered graphs.
+/// Begin acquires the rendering lock, waits for reusable frame slots, and advances the shared
+/// material/visibility/shadow/bindless timeline. End snapshots all queues, including failed or
+/// empty frames, then releases the lock. Destruction calls End. Use on one thread; nesting fails.
+class XII_GRAPHICSCORE_DLL xiiRenderGraphFrame
+{
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphFrame);
+
+public:
+  xiiRenderGraphFrame() = default;
+  ~xiiRenderGraphFrame();
+  /// The requested submission window is bounded by the smallest live material, geometry,
+  /// visibility, shadow or ray-tracing buffer ring. Zero, an already active scope, or nested frames return failure.
+  [[nodiscard]] xiiResult Begin(xiiUInt32 uiFramesInFlight = 3U);
+  void                    End();
+  [[nodiscard]] bool      IsActive() const { return m_uiFrameIndex != 0U; }
+  [[nodiscard]] xiiUInt64 GetFrameIndex() const { return m_uiFrameIndex; }
+  [[nodiscard]] xiiUInt64 GetCompletedFrame() const { return m_uiCompletedFrame; }
+
+private:
+  friend class xiiRenderGraphManager;
+  xiiUInt64 m_uiFrameIndex     = 0U;
+  xiiUInt64 m_uiCompletedFrame = 0U;
+};
+
 /// Process-wide deterministic scheduler for multiple render graphs in a frame.
 ///
 /// The manager's state is created by the GraphicsCore startup system after Foundation allocators
@@ -105,19 +130,20 @@ public:
   [[nodiscard]] static xiiRenderGraphResourceCache*     GetResourceCache();
   [[nodiscard]] static xiiRenderGraphTimestampProfiler* GetProfiler();
 
-  /// Waits for a reusable frame slot, advances frame-scoped rendering subsystems and deferred
-  /// bindless descriptor collection, then returns the latest completed GPU frame. Frame indices
-  /// start at one; zero is reserved as the conservative "none completed" sentinel.
-  [[nodiscard]] static xiiUInt64 PrepareFrame(xiiUInt64 uiFrameIndex, xiiUInt32 uiFramesInFlight);
+  /// Executes eligible graphs in a newly allocated shared GPU frame. Frequency decisions use
+  /// the device-wide frame index, including world submissions. Failed frames are captured too.
+  [[nodiscard]] static xiiResult ExecuteFrame(const xiiView* pView, xiiUInt32 uiFramesInFlight = 3U, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
 
-  /// Executes eligible graphs using the default GAL device and subsystem-owned cache/profiler.
-  /// The completed frame is used to retire transient resources without reusing in-flight memory.
-  [[nodiscard]] static xiiResult ExecuteFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame, const xiiView* pView, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
-
-  /// Builds, compiles and executes all graphs eligible for this frame in deterministic order.
-  [[nodiscard]] static xiiResult ExecuteFrame(xiiUInt64 uiFrameIndex, xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
+  /// Executes registered graphs within an active frame supplied by the caller, which may also
+  /// submit other graphs before End. The frame owns preparation, completion capture and locking.
+  [[nodiscard]] static xiiResult ExecuteFrame(const xiiRenderGraphFrame& frame, const xiiView* pView, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
 
 private:
+  friend class xiiRenderGraphFrame;
+  [[nodiscard]] static xiiResult BeginFrame(xiiRenderGraphFrame& frame, xiiUInt32 uiFramesInFlight);
+  static void                    EndFrame(xiiRenderGraphFrame& frame);
+  [[nodiscard]] static xiiResult ExecuteFrame(xiiUInt64 uiFrameIndex, xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError);
+
   static void Startup();
   static void EngineStartup();
   static void EngineShutdown();

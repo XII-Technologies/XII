@@ -244,7 +244,15 @@ namespace xiiInternal
   {
     struct Helper
     {
-      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData) { return (*static_cast<VisitorFunc*>(pUserData))(pData->m_pObject); }
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData)
+      {
+        // Transformation storage is reclaimed during world cleanup, after identities are invalidated.
+        if (pData->m_pObject->GetHandle().IsInvalidated())
+        {
+          return xiiVisitorExecution::Continue;
+        }
+        return (*static_cast<VisitorFunc*>(pUserData))(pData->m_pObject);
+      }
     };
 
     const xiiUInt32 uiMaxHierarchyLevel = xiiMath::Max(m_Hierarchies[HierarchyType::Static].m_Data.GetCount(), m_Hierarchies[HierarchyType::Dynamic].m_Data.GetCount());
@@ -258,6 +266,7 @@ namespace xiiInternal
         {
           xiiVisitorExecution::Enum execution = TraverseHierarchyLevel<Helper>(*hierarchy.m_Data[uiHierarchyLevel], &func);
           XII_ASSERT_DEV(execution != xiiVisitorExecution::Skip, "Skip is not supported when using breadth first traversal");
+
           if (execution == xiiVisitorExecution::Stop)
             return;
         }
@@ -286,6 +295,9 @@ namespace xiiInternal
   // static
   xiiVisitorExecution::Enum WorldData::TraverseObjectDepthFirst(xiiGameObject* pObject, VisitorFunc& func)
   {
+    if (pObject->GetHandle().IsInvalidated())
+      return xiiVisitorExecution::Continue;
+
     xiiVisitorExecution::Enum execution = func(pObject);
     if (execution == xiiVisitorExecution::Stop)
       return xiiVisitorExecution::Stop;
@@ -395,5 +407,3 @@ namespace xiiInternal
   }
 
 } // namespace xiiInternal
-
-XII_STATICLINK_FILE(Core, Core_World_Implementation_WorldData);

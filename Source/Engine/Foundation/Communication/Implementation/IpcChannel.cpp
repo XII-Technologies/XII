@@ -205,5 +205,3 @@ void xiiIpcChannel::FlushPendingOperations()
 {
   m_pOwner->WaitForMessages(-1, this);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_IpcChannel);

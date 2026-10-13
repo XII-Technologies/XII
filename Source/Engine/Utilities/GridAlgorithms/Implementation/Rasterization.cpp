@@ -470,7 +470,3 @@ void xii2DGridUtils::ComputeVisibleAreaInCone(xiiInt32 iPosX, xiiInt32 iPosY, xi
 
   xii2DGridUtils::ComputePointsOnCircle(iPosX, iPosY, uiRadius, MarkPointsInConeVisible, &ld);
 }
-
-
-
-XII_STATICLINK_FILE(Utilities, Utilities_GridAlgorithms_Implementation_Rasterization);

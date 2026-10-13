@@ -451,5 +451,3 @@ void xiiDefaultMemoryStreamStorage::AddChunk(xiiUInt32 uiMinimumSize)
   chunk.m_uiStartOffset = prevChunk.m_uiStartOffset + prevChunk.m_Bytes.GetCount();
   m_uiCapacity += chunk.m_Bytes.GetCount();
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_MemoryStream);

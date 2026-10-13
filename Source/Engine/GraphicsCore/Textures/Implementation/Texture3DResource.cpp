@@ -68,7 +68,7 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
   ref_td.m_TextureDescription.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
   xiiUInt32 uiDepth = pImage->GetDepth(uiHighestMipLevel);
-  if (uiDepth > 1)
+  if (pImage->GetDescription().Is3D())
   {
     ref_td.m_TextureDescription.m_Type               = xiiGALResourceDimension::Texture3D;
     ref_td.m_TextureDescription.m_uiArraySizeOrDepth = uiDepth;
@@ -107,7 +107,7 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 
         id.m_uiDepthStride = pImage->GetDepthPitch(mip);
 
-        out_uiMemoryUsed += static_cast<xiiUInt32>(id.m_uiDepthStride);
+        out_uiMemoryUsed += static_cast<xiiUInt32>(id.m_pData.GetCount());
       }
     }
   }
@@ -246,4 +246,4 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDesc
   return ret;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Texture3DResource);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Implementation_Texture3DResource);

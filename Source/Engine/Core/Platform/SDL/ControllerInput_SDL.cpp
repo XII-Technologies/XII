@@ -338,3 +338,5 @@ void xiiControllerInputSDL::ApplyVibration(xiiUInt8 uiPhysicalController, Motor:
 }
 
 #endif
+
+XII_STATICLINK_FILE(Core, Core_Platform_SDL_ControllerInput_SDL);

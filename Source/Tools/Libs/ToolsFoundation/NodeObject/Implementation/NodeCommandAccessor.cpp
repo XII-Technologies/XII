@@ -123,6 +123,14 @@ xiiStatus xiiNodeCommandAccessor::AddObject(const xiiDocumentObject* pParent, co
 
 xiiStatus xiiNodeCommandAccessor::RemoveObject(const xiiDocumentObject* pObject)
 {
+  if (pObject == nullptr)
+    return xiiStatus("Cannot remove a null document object.");
+  if (IsNode(pObject))
+  {
+    xiiRemoveNodeCommand command;
+    command.m_Object = pObject->GetGuid();
+    return m_pHistory->AddCommand(command);
+  }
   if (const xiiDocumentObject* pParent = pObject->GetParent())
   {
     const xiiAbstractProperty* pProp = pParent->GetType()->FindPropertyByName(pObject->GetParentProperty());
@@ -145,6 +153,8 @@ xiiStatus xiiNodeCommandAccessor::RemoveObject(const xiiDocumentObject* pObject)
 
 bool xiiNodeCommandAccessor::IsNode(const xiiDocumentObject* pObject) const
 {
+  if (pObject == nullptr)
+    return false;
   auto pManager = static_cast<const xiiDocumentNodeManager*>(pObject->GetDocumentObjectManager());
 
   return pManager->IsNode(pObject);
@@ -152,6 +162,8 @@ bool xiiNodeCommandAccessor::IsNode(const xiiDocumentObject* pObject) const
 
 bool xiiNodeCommandAccessor::IsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const
 {
+  if (pObject == nullptr || pProp == nullptr)
+    return false;
   auto pManager = static_cast<const xiiDocumentNodeManager*>(pObject->GetDocumentObjectManager());
 
   return pManager->IsDynamicPinProperty(pObject, pProp);

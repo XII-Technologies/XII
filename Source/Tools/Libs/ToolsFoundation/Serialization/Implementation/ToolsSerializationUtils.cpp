@@ -28,10 +28,10 @@ void xiiToolsSerializationUtils::SerializeTypes(const xiiSet<const xiiRTTI*>& ty
   }
 }
 
-void xiiToolsSerializationUtils::CopyProperties(const xiiDocumentObject* pSource, const xiiDocumentObjectManager* pSourceManager, void* pTarget, const xiiRTTI* pTargetType, FilterFunction propertFilter)
+void xiiToolsSerializationUtils::CopyProperties(const xiiDocumentObject* pSource, const xiiDocumentObjectManager* pSourceManager, void* pTarget, const xiiRTTI* pTargetType, FilterFunction propertyFilter)
 {
   xiiAbstractObjectGraph           graph;
-  xiiDocumentObjectConverterWriter writer(&graph, pSourceManager, [](const xiiDocumentObject*, const xiiAbstractProperty* p) { return p->GetAttributeByType<xiiHiddenAttribute>() == nullptr; });
+  xiiDocumentObjectConverterWriter writer(&graph, pSourceManager, [&](const xiiDocumentObject*, const xiiAbstractProperty* p) { return propertyFilter.IsValid() ? propertyFilter(p) : p->GetAttributeByType<xiiHiddenAttribute>() == nullptr; });
   xiiAbstractObjectNode*           pAbstractObj = writer.AddObjectToGraph(pSource);
 
   xiiRttiConverterContext context;

@@ -417,5 +417,3 @@ void xiiRttiConverterReader::CallOnObjectCreated(const xiiAbstractObjectNode* pN
     }
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_RttiConverterReader);

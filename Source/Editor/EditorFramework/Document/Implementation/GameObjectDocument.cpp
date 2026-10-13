@@ -39,6 +39,11 @@ xiiGameObjectDocument::xiiGameObjectDocument(xiiStringView sDocumentPath, xiiDoc
   using Meta           = xiiObjectMetaData<xiiUuid, xiiGameObjectMetaData>;
   m_GameObjectMetaData = XII_DEFAULT_NEW(Meta);
 
+  m_SelectionManagerEventHandlerID = 0;
+  m_ObjectPropertyEventHandlerID   = 0;
+  m_ObjectStructureEventHandlerID  = 0;
+  m_ObjectEventHandlerID           = 0;
+
   XII_ASSERT_DEV(engineConnectionType == xiiAssetDocEngineConnection::FullObjectMirroring, "xiiGameObjectDocument only supports full mirroring engine connection types. The parameter only exists for interface compatibility.");
 
   m_CurrentMode.m_bRenderSelectionOverlay = true;
@@ -64,6 +69,9 @@ void xiiGameObjectDocument::SubscribeGameObjectEventHandlers()
 
 void xiiGameObjectDocument::UnsubscribeGameObjectEventHandlers()
 {
+  if (m_SelectionManagerEventHandlerID == 0)
+    return;
+
   GetSelectionManager()->m_Events.RemoveEventHandler(m_SelectionManagerEventHandlerID);
   GetObjectManager()->m_PropertyEvents.RemoveEventHandler(m_ObjectPropertyEventHandlerID);
   GetObjectManager()->m_StructureEvents.RemoveEventHandler(m_ObjectStructureEventHandlerID);
@@ -1042,7 +1050,7 @@ void xiiGameObjectDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg
 {
   SUPER::HandleEngineMessage(pMsg);
 
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentOpenResponseMsgToEditor>())
+  if (const auto* response = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(pMsg); response && response->m_bSucceeded)
   {
     ScheduleSendObjectSelection();
   }

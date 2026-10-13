@@ -426,7 +426,3 @@ xiiResult xiiPreprocessor::ParseCondition(const TokenStream& Tokens, xiiUInt32& 
 
   return XII_FAILURE;
 }
-
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Conditions);

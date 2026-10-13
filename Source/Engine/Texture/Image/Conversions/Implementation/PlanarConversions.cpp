@@ -150,4 +150,4 @@ struct xiiImageConversion_sRGB_NV12 : public xiiImageConversionStepPlanarize
 XII_STATICLINK_FORCE static xiiImageConversion_NV12_sRGB s_conversion_NV12_sRGB;
 XII_STATICLINK_FORCE static xiiImageConversion_sRGB_NV12 s_conversion_sRGB_NV12;
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_PlanarConversions);
+XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_Implementation_PlanarConversions);

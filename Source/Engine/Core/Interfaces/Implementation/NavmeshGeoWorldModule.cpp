@@ -6,3 +6,5 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNavmeshGeoWorldModuleInterface, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+XII_STATICLINK_FILE(Core, Core_Interfaces_Implementation_NavmeshGeoWorldModule);

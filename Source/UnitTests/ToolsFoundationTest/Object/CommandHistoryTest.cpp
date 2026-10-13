@@ -2,8 +2,29 @@
 
 #include <ToolsFoundationTest/ToolsFoundationTestPCH.h>
 
+#include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundationTest/Object/TestObjectManager.h>
 #include <ToolsFoundationTest/Reflection/ReflectionTestClasses.h>
+
+class xiiFailingCompositeTestCommand : public xiiCommand
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiFailingCompositeTestCommand, xiiCommand);
+
+private:
+  xiiStatus DoInternal(bool bRedo) override
+  {
+    xiiAddObjectCommand child;
+    child.m_pType           = xiiGetStaticRTTI<xiiObjectTest>();
+    child.m_sParentProperty = "Children";
+    XII_SUCCEED_OR_RETURN(AddSubCommand(child));
+    return xiiStatus("Intentional failure after creating a child object.");
+  }
+  xiiStatus UndoInternal(bool bFireEvents) override { return XII_SUCCESS; }
+  void      CleanupInternal(CommandState state) override { XII_TEST_BOOL_MSG(false, "A failed parent command must not receive completed-command cleanup."); }
+};
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFailingCompositeTestCommand, 1, xiiRTTIDefaultAllocator<xiiFailingCompositeTestCommand>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
 {
@@ -41,6 +62,105 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
 
   const xiiDocumentObject* pMath       = pAccessor->GetObject(mathGuid);
   const xiiDocumentObject* pObjectTest = pAccessor->GetObject(objectGuid);
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Cancelled nested transactions are removed from parent history")
+  {
+    const xiiInt32  iOriginalCount    = pAccessor->GetCountByName(pObjectTest, "StandardTypeArray");
+    const xiiUInt32 uiOriginalHistory = doc.GetCommandHistory()->GetUndoStackSize();
+    for (bool bCancelParent : {true, false})
+    {
+      pAccessor->StartTransaction("Outer array edit");
+      XII_TEST_STATUS(pAccessor->InsertValueByName(pObjectTest, "StandardTypeArray", 1.0, iOriginalCount));
+      pAccessor->StartTransaction("Cancelled inner array edit");
+      XII_TEST_STATUS(pAccessor->InsertValueByName(pObjectTest, "StandardTypeArray", 2.0, iOriginalCount + 1));
+      pAccessor->CancelTransaction();
+      XII_TEST_INT(pAccessor->GetCountByName(pObjectTest, "StandardTypeArray"), iOriginalCount + 1);
+      if (bCancelParent)
+      {
+        pAccessor->CancelTransaction();
+      }
+      else
+      {
+        pAccessor->FinishTransaction();
+        XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
+        XII_TEST_STATUS(doc.GetCommandHistory()->Redo());
+        XII_TEST_INT(pAccessor->GetCountByName(pObjectTest, "StandardTypeArray"), iOriginalCount + 1);
+        XII_TEST_STATUS(doc.GetCommandHistory()->Undo());
+      }
+      XII_TEST_INT(pAccessor->GetCountByName(pObjectTest, "StandardTypeArray"), iOriginalCount);
+      XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiOriginalHistory);
+    }
+    doc.GetCommandHistory()->ClearRedoHistory();
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Cancelled temporary updates can be replaced and committed")
+  {
+    auto*           pHistory          = doc.GetCommandHistory();
+    const xiiInt32  iOriginalCount    = pAccessor->GetCountByName(pObjectTest, "StandardTypeArray");
+    const xiiUInt32 uiOriginalHistory = pHistory->GetUndoStackSize();
+    pHistory->BeginTemporaryCommands("Drag array value", true);
+    pAccessor->StartTransaction("Cancelled update");
+    XII_TEST_STATUS(pAccessor->InsertValueByName(pObjectTest, "StandardTypeArray", 1.0, iOriginalCount));
+    pAccessor->CancelTransaction();
+    XII_TEST_INT(pAccessor->GetCountByName(pObjectTest, "StandardTypeArray"), iOriginalCount);
+    pAccessor->StartTransaction("Replacement update");
+    XII_TEST_STATUS(pAccessor->InsertValueByName(pObjectTest, "StandardTypeArray", 2.0, iOriginalCount));
+    pAccessor->FinishTransaction();
+    pHistory->FinishTemporaryCommands();
+    XII_TEST_INT(pHistory->GetUndoStackSize(), uiOriginalHistory + 1);
+    XII_TEST_STATUS(pHistory->Undo());
+    XII_TEST_INT(pAccessor->GetCountByName(pObjectTest, "StandardTypeArray"), iOriginalCount);
+    XII_TEST_STATUS(pHistory->Redo());
+    XII_TEST_FLOAT(pAccessor->GetByName<double>(pObjectTest, "StandardTypeArray", iOriginalCount), 2.0, 0.0);
+    XII_TEST_STATUS(pHistory->Undo());
+    pHistory->ClearRedoHistory();
+
+    pHistory->BeginTemporaryCommands("Cancelled drag", true);
+    pAccessor->StartTransaction("Array growth");
+    XII_TEST_STATUS(pAccessor->InsertValueByName(pObjectTest, "StandardTypeArray", 3.0, iOriginalCount));
+    pAccessor->FinishTransaction();
+    pHistory->CancelTemporaryCommands();
+    XII_TEST_INT(pAccessor->GetCountByName(pObjectTest, "StandardTypeArray"), iOriginalCount);
+    XII_TEST_INT(pHistory->GetUndoStackSize(), uiOriginalHistory);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Resize failures return status without modifying history")
+  {
+    const xiiUInt32                      uiOriginalHistory = doc.GetCommandHistory()->GetUndoStackSize();
+    xiiResizeAndSetObjectPropertyCommand command;
+    command.m_Object    = pObjectTest->GetGuid();
+    command.m_sProperty = "MissingProperty";
+    command.m_Index     = 2;
+    command.m_NewValue  = 1.0;
+    pAccessor->StartTransaction("Invalid resize");
+    XII_TEST_BOOL(doc.GetCommandHistory()->AddCommand(command).Failed());
+    pAccessor->CancelTransaction();
+    XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiOriginalHistory);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Failed parents clean rolled-back children without assuming parent success")
+  {
+    const xiiUInt32                                       uiOriginalHistory = doc.GetCommandHistory()->GetUndoStackSize();
+    xiiUInt32                                             destroyed         = 0;
+    xiiEvent<const xiiDocumentObjectEvent&>::Unsubscriber subscription;
+    doc.GetObjectManager()->m_ObjectEvents.AddEventHandler([&](const xiiDocumentObjectEvent& event) {
+      if (event.m_EventType == xiiDocumentObjectEvent::Type::BeforeObjectDestroyed && event.m_pObject->GetType() == xiiGetStaticRTTI<xiiObjectTest>())
+        ++destroyed;
+    },
+                                                           subscription);
+    pAccessor->StartTransaction("Failed composite");
+    xiiFailingCompositeTestCommand composite;
+    XII_TEST_BOOL(doc.GetCommandHistory()->AddCommand(composite).Failed());
+    XII_TEST_INT(destroyed, 1);
+    xiiAddObjectCommand invalid;
+    invalid.m_pType           = xiiGetStaticRTTI<xiiObjectTest>();
+    invalid.m_Parent          = xiiUuid::MakeUuid();
+    invalid.m_sParentProperty = "Children";
+    XII_TEST_BOOL(doc.GetCommandHistory()->AddCommand(invalid).Failed());
+    XII_TEST_INT(destroyed, 1);
+    pAccessor->CancelTransaction();
+    XII_TEST_INT(doc.GetCommandHistory()->GetUndoStackSize(), uiOriginalHistory);
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetValue")
   {

@@ -50,9 +50,10 @@ void xiiAnimationGraphAssetManager::OnDocumentManagerEvent(const xiiDocumentMana
   }
 }
 
-void xiiAnimationGraphAssetManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiAnimationGraphAssetManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiAnimationGraphAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiAnimationGraphAssetManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

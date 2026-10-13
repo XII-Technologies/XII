@@ -4,7 +4,7 @@
 
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorPluginScene/Visualizers/PointLightVisualizerAdapter.h>
-#include <GraphicsCore/Lights/PointLightComponent.h>
+#include <GraphicsCore/Components/Lights/PointLightComponent.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 xiiPointLightVisualizerAdapter::xiiPointLightVisualizerAdapter() = default;

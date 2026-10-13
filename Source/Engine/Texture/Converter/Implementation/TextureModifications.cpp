@@ -53,9 +53,9 @@ xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32
       break;
   }
 
-  opt.m_AddressModeU = m_Descriptor.m_AddressModeU;
-  opt.m_AddressModeV = m_Descriptor.m_AddressModeV;
-  opt.m_AddressModeW = m_Descriptor.m_AddressModeW;
+  opt.m_AddressModeU = m_Descriptor.m_SamplerDescription.m_AddressU;
+  opt.m_AddressModeV = m_Descriptor.m_SamplerDescription.m_AddressV;
+  opt.m_AddressModeW = m_Descriptor.m_SamplerDescription.m_AddressW;
 
   opt.m_bPreserveCoverage = m_Descriptor.m_bPreserveMipmapCoverage;
   opt.m_fAlphaThreshold   = m_Descriptor.m_fMipmapAlphaThreshold;

@@ -35,7 +35,8 @@ xiiAssetDocument::xiiAssetDocument(xiiStringView sDocumentPath, xiiDocumentObjec
 
 xiiAssetDocument::~xiiAssetDocument()
 {
-  m_pMirror->DeInit();
+  if (m_pMirror != nullptr)
+    m_pMirror->DeInit();
 
   if (m_EngineConnectionType != xiiAssetDocEngineConnection::None)
   {
@@ -421,13 +422,14 @@ void xiiAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) cons
 
 void xiiAssetDocument::EngineConnectionEventHandler(const xiiEditorEngineProcessConnection::Event& e)
 {
-  if (e.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessCrashed)
+  if (e.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessCrashed || e.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessShutdown)
   {
     m_EngineStatus = EngineStatus::Disconnected;
   }
   else if (e.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessStarted)
   {
     m_EngineStatus = EngineStatus::Initializing;
+    m_sEngineFailure.Clear();
   }
 }
 
@@ -629,9 +631,7 @@ xiiStatus xiiAssetDocument::SaveThumbnail(const xiiImage& img, const ThumbnailIn
 
   // make sure the thumbnail is in a format that Qt understands
 
-  /// \todo A conversion to B8G8R8X8_UNORM currently fails
-
-  if (xiiImageConversion::Convert(img, converted, xiiImageFormat::R8G8B8A8_UNORM).Failed())
+  if (xiiImageConversion::Convert(img, converted, xiiGALResourceFormat::RGBA8UNormalizedSRGB).Failed())
   {
     const xiiStringBuilder sResourceFile = GetThumbnailFilePath();
 
@@ -639,7 +639,7 @@ xiiStatus xiiAssetDocument::SaveThumbnail(const xiiImage& img, const ThumbnailIn
     return xiiStatus(xiiFmt("Could not convert asset thumbnail to target format: '{0}'", sResourceFile));
   }
 
-  QImage qimg(converted.GetPixelPointer<xiiUInt8>(), converted.GetWidth(), converted.GetHeight(), QImage::Format_RGBA8888);
+  QImage qimg(converted.GetPixelPointer<xiiUInt8>(), converted.GetWidth(), converted.GetHeight(), static_cast<qsizetype>(converted.GetRowPitch()), QImage::Format_RGBA8888);
 
   return SaveThumbnail(qimg, thumbnailInfo);
 }
@@ -781,18 +781,7 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
 
   xiiLog::Info("Create {0} thumbnail for \"{1}\"", GetDocumentTypeName(), GetDocumentPath());
 
-  if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Disconnected)
-  {
-    return xiiStatus(xiiFmt("Create {0} thumbnail for \"{1}\" failed, engine not started or crashed.", GetDocumentTypeName(), GetDocumentPath()));
-  }
-  else if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Initializing)
-  {
-    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), xiiTime::MakeFromSeconds(10)).Failed())
-    {
-      return xiiStatus(xiiFmt("Create {0} thumbnail for \"{1}\" failed, document initialization timed out.", GetDocumentTypeName(), GetDocumentPath()));
-    }
-    XII_ASSERT_DEV(GetEngineStatus() == xiiAssetDocument::EngineStatus::Loaded, "After receiving xiiDocumentOpenResponseMsgToEditor, the document should be in loaded state.");
-  }
+  XII_SUCCEED_OR_RETURN(WaitForEngineStatusLoaded(xiiTime::MakeFromSeconds(10)));
 
   SyncObjectsToEngine();
   xiiCreateThumbnailMsgToEngine msg;
@@ -819,19 +808,19 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
   {
     if (data.GetCount() != msg.m_uiWidth * msg.m_uiHeight * 4)
     {
-      return xiiStatus(xiiFmt("Thumbnail generation for {0} failed, thumbnail data is empty.", GetDocumentTypeName()));
+      return xiiStatus(xiiFmt("Thumbnail generation for {0} failed, unexpected thumbnail data size.", GetDocumentTypeName()));
     }
 
-    xiiImageHeader imgHeader;
-    imgHeader.SetImageFormat(xiiImageFormat::R8G8B8A8_UNORM);
-    imgHeader.SetWidth(msg.m_uiWidth);
-    imgHeader.SetHeight(msg.m_uiHeight);
+    xiiGALTextureCreationDescription description;
+    description.m_Type   = xiiGALResourceDimension::Texture2D;
+    description.m_Format = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+    description.m_Size   = {msg.m_uiWidth, msg.m_uiHeight};
 
     xiiImage image;
-    image.ResetAndAlloc(imgHeader);
-    XII_ASSERT_DEV(data.GetCount() == imgHeader.ComputeDataSize(), "Thumbnail xiiImage has different size than data buffer!");
+    image.ResetAndAlloc(description);
+    XII_ASSERT_DEV(data.GetCount() == image.ComputeDataSize(), "Thumbnail xiiImage has different size than data buffer!");
     xiiMemoryUtils::Copy(image.GetPixelPointer<xiiUInt8>(), data.GetData(), msg.m_uiWidth * msg.m_uiHeight * 4);
-    SaveThumbnail(image, thumbnailInfo).LogFailure();
+    XII_SUCCEED_OR_RETURN(SaveThumbnail(image, thumbnailInfo));
 
     xiiLog::Success("{0} thumbnail for \"{1}\" has been exported.", GetDocumentTypeName(), GetDocumentPath());
 
@@ -846,46 +835,53 @@ xiiUInt16 xiiAssetDocument::GetAssetTypeVersion() const
   return (xiiUInt16)GetDynamicRTTI()->GetTypeVersion();
 }
 
-xiiStatus xiiAssetDocument::WaitForEngineStatusLoaded() const
+xiiStatus xiiAssetDocument::WaitForEngineStatusLoaded(xiiTime timeout) const
 {
-  if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Disconnected)
+  if (GetEngineStatus() == EngineStatus::Initializing)
   {
-    return xiiStatus(xiiFmt("Loading {0} document '{1}' failed, engine not started or crashed.", GetDocumentTypeName(), GetDocumentPath()));
+    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), timeout).Failed())
+      return xiiStatus(xiiFmt("Loading {} document '{}' failed, document initialization timed out or engine crashed.", GetDocumentTypeName(), GetDocumentPath()));
   }
-  else if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Initializing)
-  {
-    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), {}).Failed())
-    {
-      return xiiStatus(xiiFmt("Loading {0} document '{1}' failed, document initialization timed out or engine crashed.", GetDocumentTypeName(), GetDocumentPath()));
-    }
-    XII_ASSERT_DEV(GetEngineStatus() == xiiAssetDocument::EngineStatus::Loaded, "After receiving xiiDocumentOpenResponseMsgToEditor, the document should be in loaded state.");
-  }
-  return XII_SUCCESS;
+
+  if (GetEngineStatus() == EngineStatus::Loaded)
+    return XII_SUCCESS;
+  if (GetEngineStatus() == EngineStatus::Failed)
+    return xiiStatus(xiiFmt("Loading {} document '{}' failed: {}", GetDocumentTypeName(), GetDocumentPath(), m_sEngineFailure));
+  if (GetEngineStatus() == EngineStatus::Unsupported)
+    return xiiStatus("This document does not support engine IPC.");
+  return xiiStatus(xiiFmt("Loading {} document '{}' failed, engine not started or crashed.", GetDocumentTypeName(), GetDocumentPath()));
 }
 
 bool xiiAssetDocument::SendMessageToEngine(xiiEditorEngineDocumentMsg* pMessage /*= false*/) const
 {
-  return GetEditorEngineConnection()->SendMessage(pMessage);
+  return GetEditorEngineConnection() && GetEditorEngineConnection()->SendMessage(pMessage);
 }
 
 void xiiAssetDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg)
 {
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiDocumentOpenResponseMsgToEditor>())
+  if (const auto* response = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(pMsg))
   {
-    if (m_EngineConnectionType == xiiAssetDocEngineConnection::FullObjectMirroring)
+    if (!response->m_bSucceeded)
     {
-      // make sure the engine clears the document first
-      xiiDocumentClearMsgToEngine msgClear;
-      msgClear.m_DocumentGuid = GetGuid();
-      SendMessageToEngine(&msgClear);
-
-      m_pMirror->SendDocument();
+      m_EngineStatus   = EngineStatus::Failed;
+      m_sEngineFailure = response->m_sFailure;
+      xiiLog::Error("Engine rejected document '{}': {}", GetDocumentPath(), m_sEngineFailure);
+      ShowDocumentStatus(xiiFmt("Engine could not open this document: {}", m_sEngineFailure));
     }
-    m_EngineStatus = EngineStatus::Loaded;
-    // make sure all sync objects are 'modified' so that they will get resent as well
-    for (auto* pObject : m_SyncObjects)
+    else
     {
-      pObject->SetModified();
+      m_sEngineFailure.Clear();
+      if (m_EngineConnectionType == xiiAssetDocEngineConnection::FullObjectMirroring)
+      {
+        // Clear the successfully created context before sending the full document state.
+        xiiDocumentClearMsgToEngine msgClear;
+        msgClear.m_DocumentGuid = GetGuid();
+        SendMessageToEngine(&msgClear);
+        m_pMirror->SendDocument();
+      }
+      m_EngineStatus = EngineStatus::Loaded;
+      for (auto* pObject : m_SyncObjects)
+        pObject->SetModified();
     }
   }
 
@@ -970,7 +966,8 @@ void xiiAssetDocument::SendDocumentOpenMessage(bool bOpen)
   // load resources, and if the file redirection does not happen correctly, derived resource types may not be created as they should
   xiiAssetCurator::GetSingleton()->WriteAssetTables().IgnoreResult();
 
-  m_EngineStatus = EngineStatus::Initializing;
+  m_EngineStatus = bOpen ? EngineStatus::Initializing : EngineStatus::Disconnected;
+  m_sEngineFailure.Clear();
 
   xiiDocumentOpenMsgToEngine m;
   m.m_DocumentGuid     = GetGuid();
@@ -980,6 +977,7 @@ void xiiAssetDocument::SendDocumentOpenMessage(bool bOpen)
 
   if (!xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&m))
   {
+    m_EngineStatus = EngineStatus::Disconnected;
     xiiLog::Error("Failed to send DocumentOpenMessage");
   }
 }

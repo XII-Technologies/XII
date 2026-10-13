@@ -9,7 +9,7 @@
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <EditorPluginScene/Scene/SceneDocumentManager.h>
 #include <Foundation/Strings/PathUtils.h>
-#include <ToolsFoundation/Command/TreeCommands.h>
+#include <SharedPluginScene/Scene/SceneCreation.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneDocumentManager, 1, xiiRTTIDefaultAllocator<xiiSceneDocumentManager>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -66,7 +66,7 @@ xiiSceneDocumentManager::xiiSceneDocumentManager()
   }
 }
 
-void xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   if (sDocumentTypeName.IsEqual("Scene"))
   {
@@ -74,7 +74,7 @@ void xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumentType
 
     if (bCreateNewDocument)
     {
-      SetupDefaultScene(out_pDocument);
+      XII_SUCCEED_OR_RETURN(xiiCreateDefaultScene(*out_pDocument->GetObjectAccessor()));
     }
   }
   else if (sDocumentTypeName.IsEqual("Prefab"))
@@ -92,9 +92,17 @@ void xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumentType
     {
       // Opened via a parent scene document
       xiiScene2Document* pDoc = const_cast<xiiScene2Document*>(xiiDynamicCast<const xiiScene2Document*>(pOpenContext->GetDocumentObjectManager()->GetDocument()));
+      if (pDoc == nullptr)
+        return xiiStatus("A scene layer requires a parent scene document.");
+
       out_pDocument           = new xiiLayerDocument(sPath, pDoc);
     }
   }
+  else
+  {
+    return xiiStatus("Unsupported scene document type.");
+  }
+  return XII_SUCCESS;
 }
 
 void xiiSceneDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const
@@ -162,212 +170,4 @@ void xiiSceneDocumentManager::InternalCloneDocument(xiiStringView sPath, xiiStri
       }
     }
   });
-}
-
-void xiiSceneDocumentManager::SetupDefaultScene(xiiDocument* pDocument)
-{
-  auto history = pDocument->GetCommandHistory();
-  history->StartTransaction("Initial Scene Setup");
-
-  const xiiUuid skyObjectGuid   = xiiUuid::MakeUuid();
-  const xiiUuid lightObjectGuid = xiiUuid::MakeUuid();
-  const xiiUuid meshObjectGuid  = xiiUuid::MakeUuid();
-
-  // Thumbnail Camera
-  {
-    const xiiUuid objectGuid = xiiUuid::MakeUuid();
-
-    xiiAddObjectCommand cmd;
-    cmd.m_Index = -1;
-    cmd.SetType("xiiGameObject");
-    cmd.m_NewObjectGuid   = objectGuid;
-    cmd.m_sParentProperty = "Children";
-    XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-
-    // object name
-    {
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "Name";
-      propCmd.m_NewValue  = "Scene Thumbnail Camera";
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-
-    // camera position
-    {
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "LocalPosition";
-      propCmd.m_NewValue  = xiiVec3(0, 0, 0);
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-
-    // camera component
-    {
-      xiiAddObjectCommand cmd;
-      cmd.m_Index = -1;
-      cmd.SetType("xiiCameraComponent");
-      cmd.m_Parent          = objectGuid;
-      cmd.m_sParentProperty = "Components";
-      XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-
-      // camera shortcut
-      {
-        xiiSetObjectPropertyCommand propCmd;
-        propCmd.m_Object    = cmd.m_NewObjectGuid;
-        propCmd.m_sProperty = "EditorShortcut";
-        propCmd.m_NewValue  = 1;
-        XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-      }
-
-      // camera usage hint
-      {
-        xiiSetObjectPropertyCommand propCmd;
-        propCmd.m_Object    = cmd.m_NewObjectGuid;
-        propCmd.m_sProperty = "UsageHint";
-        propCmd.m_NewValue  = (int)xiiCameraUsageHint::Thumbnail;
-        XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-      }
-    }
-  }
-
-  {
-    xiiAddObjectCommand cmd;
-    cmd.m_Index = -1;
-    cmd.SetType("xiiGameObject");
-    cmd.m_NewObjectGuid   = meshObjectGuid;
-    cmd.m_sParentProperty = "Children";
-    XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-
-    {
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "LocalPosition";
-      propCmd.m_NewValue  = xiiVec3(3, 0, 0);
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-  }
-
-  {
-    xiiAddObjectCommand cmd;
-    cmd.m_Index = -1;
-    cmd.SetType("xiiGameObject");
-    cmd.m_NewObjectGuid   = skyObjectGuid;
-    cmd.m_sParentProperty = "Children";
-    XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-
-    {
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "LocalPosition";
-      propCmd.m_NewValue  = xiiVec3(0, 0, 1);
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-
-    {
-      xiiRemoveObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "Tags";
-      propCmd.m_Index     = 0; // There is only one value in the set, CastShadow.
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-
-    {
-      xiiInsertObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "Tags";
-      propCmd.m_Index     = 0;
-      propCmd.m_NewValue  = "SkyLight";
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-  }
-
-  {
-    xiiAddObjectCommand cmd;
-    cmd.m_Index = -1;
-    cmd.SetType("xiiGameObject");
-    cmd.m_NewObjectGuid   = lightObjectGuid;
-    cmd.m_sParentProperty = "Children";
-    XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-
-    {
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "LocalPosition";
-      propCmd.m_NewValue  = xiiVec3(0, 0, 2);
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-
-    {
-      xiiQuat qRot = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(55), xiiAngle::MakeFromDegree(90));
-
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "LocalRotation";
-      propCmd.m_NewValue  = qRot;
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-  }
-
-  {
-    xiiAddObjectCommand cmd;
-    cmd.m_Index = -1;
-    cmd.SetType("xiiSkyBoxComponent");
-    cmd.m_Parent          = skyObjectGuid;
-    cmd.m_sParentProperty = "Components";
-    XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-
-    {
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "CubeMap";
-      propCmd.m_NewValue  = "{ 0b202e08-a64f-465d-b38e-15b81d161822 }";
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-
-    {
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "ExposureBias";
-      propCmd.m_NewValue  = 1.0f;
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-  }
-
-  {
-    xiiAddObjectCommand cmd;
-    cmd.m_Index = -1;
-    cmd.SetType("xiiSkyLightComponent");
-    cmd.m_Parent          = lightObjectGuid;
-    cmd.m_sParentProperty = "Components";
-    XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-  }
-
-  {
-    xiiAddObjectCommand cmd;
-    cmd.m_Index = -1;
-    cmd.SetType("xiiDirectionalLightComponent");
-    cmd.m_Parent          = lightObjectGuid;
-    cmd.m_sParentProperty = "Components";
-    XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-  }
-
-  {
-    xiiAddObjectCommand cmd;
-    cmd.m_Index = -1;
-    cmd.SetType("xiiMeshComponent");
-    cmd.m_Parent          = meshObjectGuid;
-    cmd.m_sParentProperty = "Components";
-    XII_VERIFY(history->AddCommand(cmd).Succeeded(), "AddCommand failed");
-
-    {
-      xiiSetObjectPropertyCommand propCmd;
-      propCmd.m_Object    = cmd.m_NewObjectGuid;
-      propCmd.m_sProperty = "Mesh";
-      propCmd.m_NewValue  = "{ 618ee743-ed04-4fac-bf5f-572939db2f1d }"; // Base/Meshes/Sphere.xiiMeshAsset
-      XII_VERIFY(history->AddCommand(propCmd).Succeeded(), "AddCommand failed");
-    }
-  }
-
-  history->FinishTransaction();
 }

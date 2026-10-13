@@ -75,6 +75,3 @@ void RemovePluginEventHandler()
   xiiPlugin::Events().RemoveEventHandler(PluginsDetail::PluginEventHandler);
   xiiTelemetry::RemoveEventHandler(PluginsDetail::TelemetryEventsHandler);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Plugins);

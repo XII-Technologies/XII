@@ -75,5 +75,3 @@ float xiiMathExpression::Evaluate(xiiArrayPtr<Input> inputs)
 
   return fOutput;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_MathExpression);

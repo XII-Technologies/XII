@@ -710,7 +710,7 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
 
       m_vLastMousePos = UpdateMouseMode(e);
 
-      m_fOrbitPointDistance = vOrbitPoint.Distance(m_pCamera->GetCenterPosition());
+      m_fOrbitPointDistance = (vOrbitPoint - m_pCamera->GetCenterPosition()).GetLength();
 
       return xiiEditorInput::WasExclusivelyHandled;
     }

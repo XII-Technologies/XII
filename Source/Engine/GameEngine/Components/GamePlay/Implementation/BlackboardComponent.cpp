@@ -260,7 +260,7 @@ void xiiBlackboardComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) c
     sb.AppendFormat("{}: {}\n", it.Key(), it.Value().m_Value);
   }
 
-  xiiDebugRenderer::Draw3DText(msg.m_pView->GetHandle(), sb, GetOwner()->GetGlobalPosition(), xiiColor::Orange);
+  xiiDebugRenderer::Draw3DText(*msg.m_pView, sb, GetOwner()->GetGlobalPosition(), xiiColor::Orange);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -665,4 +665,4 @@ public:
 xiiBlackboardComponent_2_3 g_xiiBlackboardComponent_2_3;
 
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_BlackboardComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_BlackboardComponent);

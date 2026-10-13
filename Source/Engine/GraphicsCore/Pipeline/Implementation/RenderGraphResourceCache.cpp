@@ -31,6 +31,8 @@ void xiiRenderGraphResourceCache::Shutdown()
   m_TexturePool.Clear();
   m_BufferPool.Clear();
   m_pDevice = nullptr;
+  m_uiCurrentFrame   = 0;
+  m_uiCompletedFrame = 0;
 }
 
 void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex)
@@ -45,6 +47,10 @@ void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 u
 
   m_uiCurrentFrame   = uiFrameIndex;
   m_uiCompletedFrame = xiiMath::Min(uiCompletedFrameIndex, uiFrameIndex);
+
+  // Trim idle sizes before promoting newly completed allocations. The latter must get a chance
+  // to be reused even when GPU completion itself took longer than the retention window.
+  ReleaseStaleResourcesLocked(4U);
 
   for (xiiUInt32 i = m_RetiredTextures.GetCount(); i > 0U; --i)
   {
@@ -104,8 +110,9 @@ void xiiRenderGraphResourceCache::EndFrame()
 
 xiiSharedPtr<xiiGALTexture> xiiRenderGraphResourceCache::AcquireTexture(const xiiGALTextureCreationDescription& description)
 {
-  XII_ASSERT_DEV(m_pDevice != nullptr, "RenderGraphResourceCache has not been initialized.");
   XII_LOCK(m_Mutex);
+  if (m_pDevice == nullptr)
+    return nullptr;
 
   const xiiUInt32 uiHash = description.CalculateHash();
 
@@ -121,8 +128,8 @@ xiiSharedPtr<xiiGALTexture> xiiRenderGraphResourceCache::AcquireTexture(const xi
   }
 
   xiiSharedPtr<xiiGALTexture> pTexture = m_pDevice->CreateTexture(description);
-  XII_ASSERT_ALWAYS(pTexture != nullptr, "Failed to create transient texture.");
-  m_ActiveTextures.PushBack(pTexture);
+  if (pTexture != nullptr)
+    m_ActiveTextures.PushBack(pTexture);
 
   return pTexture;
 }
@@ -143,8 +150,9 @@ void xiiRenderGraphResourceCache::ReturnTexture(xiiSharedPtr<xiiGALTexture> pTex
 
 xiiSharedPtr<xiiGALBuffer> xiiRenderGraphResourceCache::AcquireBuffer(const xiiGALBufferCreationDescription& description)
 {
-  XII_ASSERT_DEV(m_pDevice != nullptr, "RenderGraphResourceCache has not been initialized.");
   XII_LOCK(m_Mutex);
+  if (m_pDevice == nullptr)
+    return nullptr;
 
   const xiiUInt32 uiHash = description.CalculateHash();
 
@@ -160,8 +168,8 @@ xiiSharedPtr<xiiGALBuffer> xiiRenderGraphResourceCache::AcquireBuffer(const xiiG
   }
 
   xiiSharedPtr<xiiGALBuffer> pBuffer = m_pDevice->CreateBuffer(description);
-  XII_ASSERT_ALWAYS(pBuffer != nullptr, "Failed to create transient buffer.");
-  m_ActiveBuffers.PushBack(pBuffer);
+  if (pBuffer != nullptr)
+    m_ActiveBuffers.PushBack(pBuffer);
 
   return pBuffer;
 }
@@ -184,12 +192,17 @@ void xiiRenderGraphResourceCache::ReleaseStaleResources(xiiUInt32 uiMinAgeFrames
 {
   XII_LOCK(m_Mutex);
 
+  ReleaseStaleResourcesLocked(uiMinAgeFrames);
+}
+
+void xiiRenderGraphResourceCache::ReleaseStaleResourcesLocked(xiiUInt32 uiMinAgeFrames)
+{
   if (m_uiCurrentFrame < static_cast<xiiUInt64>(uiMinAgeFrames))
     return;
 
   const xiiUInt64 uiStaleThreshold = m_uiCurrentFrame - static_cast<xiiUInt64>(uiMinAgeFrames);
 
-  for (auto it = m_TexturePool.GetIterator(); it.IsValid(); ++it)
+  for (auto it = m_TexturePool.GetIterator(); it.IsValid();)
   {
     xiiDynamicArray<PooledTexture>& pool = it.Value();
 
@@ -200,9 +213,13 @@ void xiiRenderGraphResourceCache::ReleaseStaleResources(xiiUInt32 uiMinAgeFrames
         pool.RemoveAtAndSwap(i - 1U);
       }
     }
+    if (pool.IsEmpty())
+      it = m_TexturePool.Remove(it);
+    else
+      ++it;
   }
 
-  for (auto it = m_BufferPool.GetIterator(); it.IsValid(); ++it)
+  for (auto it = m_BufferPool.GetIterator(); it.IsValid();)
   {
     xiiDynamicArray<PooledBuffer>& pool = it.Value();
 
@@ -213,6 +230,10 @@ void xiiRenderGraphResourceCache::ReleaseStaleResources(xiiUInt32 uiMinAgeFrames
         pool.RemoveAtAndSwap(i - 1U);
       }
     }
+    if (pool.IsEmpty())
+      it = m_BufferPool.Remove(it);
+    else
+      ++it;
   }
 }
 

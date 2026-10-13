@@ -17,30 +17,22 @@ int       xiiQtDuplicateDlg::s_iRevolveAngleStep  = 0;
 float     xiiQtDuplicateDlg::s_fRevolveRadius     = 1.0f;
 
 
-xiiQtDuplicateDlg::xiiQtDuplicateDlg(QWidget* pParent) :
+xiiQtDuplicateDlg::xiiQtDuplicateDlg(QWidget* pParent, const xiiVec3& selectionSize) :
   QDialog(pParent)
 {
   setupUi(this);
 
-  /// \todo Boundingbox helper not implemented yet (get bbox size from selection)
-  {
-    m_vBoundingBoxSize.SetZero();
-
-    toolButtonTransX->setVisible(false);
-    toolButtonTransY->setVisible(false);
-    toolButtonTransZ->setVisible(false);
-  }
+  m_vBoundingBoxSize = selectionSize.IsValid() ? selectionSize.CompMax(xiiVec3::MakeZero()) : xiiVec3::MakeZero();
 
   m_vBoundingBoxSize.x = xiiMath::RoundToMultiple(m_vBoundingBoxSize.x, 0.01f);
   m_vBoundingBoxSize.y = xiiMath::RoundToMultiple(m_vBoundingBoxSize.y, 0.01f);
   m_vBoundingBoxSize.z = xiiMath::RoundToMultiple(m_vBoundingBoxSize.z, 0.01f);
+  toolButtonTransX->setEnabled(m_vBoundingBoxSize.x > 0);
+  toolButtonTransY->setEnabled(m_vBoundingBoxSize.y > 0);
+  toolButtonTransZ->setEnabled(m_vBoundingBoxSize.z > 0);
 
   CheckBoxGroupCopies->setChecked(s_bGroupCopies);
-
-  /// \todo Grouping of duplicates not implemented yet
-  {
-    CheckBoxGroupCopies->setVisible(false);
-  }
+  CheckBoxGroupCopies->setToolTip("Create one group for each copy of the selected objects.");
 
   spinBoxCopies->setValue(s_uiNumberOfCopies);
 

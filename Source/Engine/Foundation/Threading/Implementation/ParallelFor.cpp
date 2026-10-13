@@ -137,5 +137,3 @@ void xiiTaskSystem::ParallelForIndexed(xiiUInt64 uiStartIndex, xiiUInt64 uiNumIt
 {
   ParallelForIndexedInternal<xiiUInt64, xiiParallelForIndexedFunction64>(uiStartIndex, uiNumItems, std::move(taskCallback), sTaskName, params, taskNesting);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_ParallelFor);

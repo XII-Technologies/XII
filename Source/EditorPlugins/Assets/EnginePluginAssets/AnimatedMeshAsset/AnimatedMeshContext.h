@@ -4,6 +4,7 @@
 
 #include <EnginePluginAssets/EnginePluginAssetsDLL.h>
 
+#include <EditorEngineProcessFramework/Animation/AnimationPreview.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -24,7 +25,7 @@ public:
   bool m_bDisplayGrid = true;
 
 protected:
-  virtual void OnInitialize() override;
+  virtual xiiStatus OnInitialize() override;
 
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
@@ -35,4 +36,5 @@ private:
 
   xiiGameObject*        m_pAnimatedMeshObject;
   xiiMeshResourceHandle m_hAnimatedMesh;
+  xiiAnimationPreview   m_Preview;
 };

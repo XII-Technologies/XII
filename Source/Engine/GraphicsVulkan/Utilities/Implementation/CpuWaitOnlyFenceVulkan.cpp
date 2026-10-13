@@ -129,5 +129,3 @@ void xiiGALCpuWaitOnlyFenceVulkan::Wait(xiiUInt64 uiValue)
     m_SyncPoints.PopFront();
   }
 }
-
-XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Utilities_Implementation_CpuWaitOnlyFenceVulkan);

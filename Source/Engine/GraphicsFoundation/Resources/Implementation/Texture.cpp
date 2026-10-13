@@ -38,11 +38,49 @@ xiiGALTexture::~xiiGALTexture() = default;
 
 xiiSharedPtr<xiiGALTextureView> xiiGALTexture::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
 {
-  XII_ASSERT_DEV(viewType > xiiGALTextureViewType::Undefined && viewType < xiiGALTextureViewType::ENUM_COUNT, "Invalid view type.");
+  XII_GAL_TEXTURE_CHECK(viewType > xiiGALTextureViewType::Undefined && viewType < xiiGALTextureViewType::ENUM_COUNT, "Invalid view type.");
 
-  XII_ASSERT_DEV(m_DefaultTextureViews[viewType.GetValue()] != nullptr, "Texture view handle is invalid!");
+  XII_LOCK(m_pDevice->GetMutex());
+  auto*& cached = m_DefaultTextureViews[viewType.GetValue()];
+  if (cached != nullptr && cached->TryAddRef())
+  {
+    xiiSharedPtr<xiiGALTextureView> view(cached, m_pDevice->GetAllocator());
+    cached->ReleaseRef(); // Transfer the temporary pin to the returned shared pointer.
+    return view;
+  }
 
-  return m_DefaultTextureViews[viewType.GetValue()];
+  xiiBitflags<xiiGALBindFlags> required;
+  switch (viewType.GetValue())
+  {
+    case xiiGALTextureViewType::ShaderResource:
+      required = xiiGALBindFlags::ShaderResource;
+      break;
+    case xiiGALTextureViewType::RenderTarget:
+      required = xiiGALBindFlags::RenderTarget;
+      break;
+    case xiiGALTextureViewType::DepthStencil:
+    case xiiGALTextureViewType::ReadOnlyDepthStencil:
+      required = xiiGALBindFlags::DepthStencil;
+      break;
+    case xiiGALTextureViewType::UnorderedAccess:
+      required = xiiGALBindFlags::UnorderedAccess;
+      break;
+    case xiiGALTextureViewType::ShadingRate:
+      required = xiiGALBindFlags::ShadingRate;
+      break;
+    default:
+      return {};
+  }
+  XII_GAL_TEXTURE_CHECK(m_Description.m_BindFlags.AreAllSet(required), "Texture does not support this default view type.");
+  xiiGALTextureViewCreationDescription description;
+  description.m_ViewType                  = viewType;
+  description.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
+  description.m_uiArrayOrDepthSlicesCount = XII_GAL_REMAINING_ARRAY_SLICES;
+  if (viewType == xiiGALTextureViewType::ShaderResource && m_Description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
+    description.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);
+  auto view = CreateView(description);
+  cached    = view.Borrow();
+  return view;
 }
 
 xiiSharedPtr<xiiGALTextureView> xiiGALTexture::CreateView(xiiGALTextureViewCreationDescription& description)
@@ -244,72 +282,12 @@ xiiSharedPtr<xiiGALTextureView> xiiGALTexture::CreateView(xiiGALTextureViewCreat
   return CreateViewPlatform(description);
 }
 
-void xiiGALTexture::CreateDefaultResourceViews()
+void xiiGALTexture::UnregisterDefaultView(const xiiGALTextureView* pView)
 {
-  // For texture cubes and texture cube arrays, we only address a single texture view per texture cube.
-  xiiUInt32 uiArraySize = XII_GAL_REMAINING_ARRAY_SLICES;
-
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-  {
-    xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
-    viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
-    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
-
-    if (m_Description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
-      viewDescription.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);
-
-    m_DefaultTextureViews[xiiGALTextureViewType::ShaderResource] = CreateView(viewDescription);
-  }
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
-  {
-    xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
-    viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
-    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
-
-    m_DefaultTextureViews[xiiGALTextureViewType::RenderTarget] = CreateView(viewDescription);
-  }
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
-  {
-    xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_ViewType                  = xiiGALTextureViewType::DepthStencil;
-    viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
-    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
-
-    m_DefaultTextureViews[xiiGALTextureViewType::DepthStencil] = CreateView(viewDescription);
-
-    viewDescription.m_ViewType                                         = xiiGALTextureViewType::ReadOnlyDepthStencil;
-    m_DefaultTextureViews[xiiGALTextureViewType::ReadOnlyDepthStencil] = CreateView(viewDescription);
-  }
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
-  {
-    xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_ViewType                  = xiiGALTextureViewType::UnorderedAccess;
-    viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
-    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
-
-    m_DefaultTextureViews[xiiGALTextureViewType::UnorderedAccess] = CreateView(viewDescription);
-  }
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShadingRate))
-  {
-    xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_ViewType                  = xiiGALTextureViewType::ShadingRate;
-    viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
-    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
-
-    m_DefaultTextureViews[xiiGALTextureViewType::ShadingRate] = CreateView(viewDescription);
-  }
+  XII_LOCK(m_pDevice->GetMutex());
+  auto*& cached = m_DefaultTextureViews[pView->GetDescription().m_ViewType.GetValue()];
+  if (cached == pView)
+    cached = nullptr;
 }
 
 xiiUInt64 xiiGALTexture::GetMemoryConsumption() const

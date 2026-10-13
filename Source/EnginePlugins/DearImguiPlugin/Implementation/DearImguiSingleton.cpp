@@ -307,4 +307,4 @@ void xiiImguiSingleton::GameApplicationEventHandler(const xiiGameApplicationExec
   }
 }
 
-XII_STATICLINK_FILE(DearImguiPlugin, DearImguiPlugin_Implementation_DearImgui);
+XII_STATICLINK_FILE(DearImguiPlugin, DearImguiPlugin_Implementation_DearImguiSingleton);

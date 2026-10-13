@@ -753,6 +753,3 @@ double xiiJSONParser::ReadNumber()
 
   return fResult;
 }
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_JSONParser);

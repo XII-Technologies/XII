@@ -4,7 +4,8 @@
 
 #include <EnginePluginAssets/MaterialAsset/MaterialContext.h>
 #include <EnginePluginAssets/MaterialAsset/MaterialView.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 xiiMaterialViewContext::xiiMaterialViewContext(xiiMaterialContext* pMaterialContext) :
   xiiEngineProcessViewContext(pMaterialContext)
@@ -23,14 +24,10 @@ void xiiMaterialViewContext::PositionThumbnailCamera()
 xiiViewHandle xiiMaterialViewContext::CreateView()
 {
   xiiView* pView = nullptr;
-  xiiRenderWorld::CreateView("Material Editor - View", pView);
+  GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Material Editor - View", pView);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
 
-  pView->SetRenderPipelineResource(CreateDefaultRenderPipeline());
-  pView->SetShaderPermutationVariable("MATERIAL_PREVIEW", "TRUE");
 
-  xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext();
-  pView->SetWorld(pDocumentContext->GetWorld());
   pView->SetCamera(&m_Camera);
   return pView->GetHandle();
 }

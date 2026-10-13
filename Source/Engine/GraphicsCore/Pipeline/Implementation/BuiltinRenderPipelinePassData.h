@@ -309,6 +309,7 @@ struct xiiRayTracedShadowData
 
 struct xiiShadowDenoiseData
 {
+  xiiUInt32                   m_uiHistoryWriteIndex = 0U;
   xiiRenderGraphTextureHandle m_hRTRawShadowMask;
   xiiRenderGraphTextureHandle m_hPreviousShadowMask;
   xiiRenderGraphTextureHandle m_hSceneDepth;
@@ -492,6 +493,7 @@ struct xiiGroundTruthAmbientOcclusionData
 
 struct xiiGroundTruthAmbientOcclusionDenoiseData
 {
+  xiiUInt32                   m_uiHistoryWriteIndex = 0U;
   xiiRenderGraphTextureHandle m_hRawAmbientOcclusion;      ///< ShaderResource in (raw ambient visibility).
   xiiRenderGraphTextureHandle m_hPreviousAmbientOcclusion; ///< ShaderResource in (previous temporally accumulated visibility).
   xiiRenderGraphTextureHandle m_hSceneDepth;               ///< ShaderResource in (current reversed-Z depth).
@@ -530,6 +532,7 @@ struct xiiReSTIRDITemporalData
 
 struct xiiReSTIRDISpatialData
 {
+  xiiUInt32 m_uiHistoryWriteIndex = 0U;
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hSceneDepth;
@@ -682,6 +685,7 @@ struct xiiReSTIRGITemporalData
 
 struct xiiReSTIRGISpatialData
 {
+  xiiUInt32 m_uiHistoryWriteIndex = 0U;
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hSceneDepth;
@@ -698,6 +702,7 @@ struct xiiReSTIRGISpatialData
 
 struct xiiRayTracedGlobalIlluminationDenoiseData
 {
+  xiiUInt32                   m_uiHistoryWriteIndex = 0U;
   xiiRenderGraphTextureHandle m_hRawGlobalIllumination;
   xiiRenderGraphTextureHandle m_hPreviousGlobalIllumination;
   xiiRenderGraphTextureHandle m_hSceneDepth;
@@ -745,6 +750,7 @@ struct xiiRayTracedReflectionsData
 
 struct xiiRayTracedReflectionsDenoiseData
 {
+  xiiUInt32                   m_uiHistoryWriteIndex = 0U;
   xiiRenderGraphTextureHandle m_hRawReflections;
   xiiRenderGraphTextureHandle m_hRawHitDistance;
   xiiRenderGraphTextureHandle m_hPreviousReflections;
@@ -785,6 +791,7 @@ struct xiiScreenSpaceReflectionsData
 
 struct xiiScreenSpaceReflectionsTemporalData
 {
+  xiiUInt32 m_uiHistoryWriteIndex = 0U;
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hCurrentReflection;
@@ -846,6 +853,7 @@ struct xiiVolumetricFogResolveData
 
 struct xiiVolumetricFogTemporalReprojectionData
 {
+  xiiUInt32 m_uiHistoryWriteIndex = 0U;
   XII_DECLARE_POD_TYPE();
 
   xiiRenderGraphTextureHandle m_hCurrentScattering;  ///< ShaderResource in (current integrated scattering).

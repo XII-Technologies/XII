@@ -136,5 +136,3 @@ void xiiGameAppInputConfig::ApplyAll(const xiiArrayPtr<xiiGameAppInputConfig>& a
     config.Apply();
   }
 }
-
-XII_STATICLINK_FILE(GameEngine, GameEngine_Configuration_Implementation_InputConfig);

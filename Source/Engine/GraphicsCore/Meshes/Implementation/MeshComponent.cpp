@@ -5,10 +5,12 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
+#include <GraphicsCore/AnimationSystem/AnimationPose.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Meshes/MeshSkinning.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
@@ -331,7 +333,52 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_m
   if (pRenderData->m_uiInstanceCount == 0U)
     return;
 
-  ref_msg.AddRenderData(pRenderData, GetRenderDataCaching());
+  const auto                              lods     = pMesh->GetLODs();
+  const xiiArrayPtr<const xiiMeshSection> sections = lods.IsEmpty() ? pMesh->GetSections() : lods[ClampLODIndex(*pMesh.GetPointer(), pRenderData->m_uiLODIndex)].m_Sections;
+  if (m_uiSectionIndex != xiiInvalidIndex || sections.IsEmpty())
+  {
+    if (m_uiSectionIndex == xiiInvalidIndex || m_uiSectionIndex < sections.GetCount())
+      ref_msg.AddRenderData(pRenderData, GetRenderDataCaching());
+    else if (!pRenderData->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD))
+    {
+      for (const auto& lod : lods)
+      {
+        if (m_uiSectionIndex < lod.m_Sections.GetCount())
+        {
+          // This section exists only in another LOD. Keep an authoring packet for native
+          // selection, with no indexed work in the CPU-selected LOD.
+          pRenderData->m_uiPrimitiveCount = pRenderData->m_uiMeshletCount = 0;
+          ref_msg.AddRenderData(pRenderData, GetRenderDataCaching());
+          break;
+        }
+      }
+    }
+    return;
+  }
+
+  // A section owns a primitive range and material slot. Keep those boundaries in
+  // ordinary extraction so native scene consumers never shade the entire mesh
+  // with slot zero or lose the section identity needed by editor queries.
+  bool hasDraw = false;
+  for (xiiUInt32 section = 0; section < sections.GetCount(); ++section)
+  {
+    if (sections[section].m_uiPrimitiveCount == 0)
+      continue;
+    auto* packet = section == 0 ? pRenderData : pWorldModule->CreateRenderDataForThisFrame<xiiMeshRenderData>(this);
+    if (packet != pRenderData)
+      *packet = *pRenderData;
+    packet->m_uiSectionIndex = section;
+    FillRangeFromSection(*packet, sections[section]);
+    ref_msg.AddRenderData(packet, GetRenderDataCaching());
+    hasDraw = true;
+  }
+  // An empty CPU-selected LOD must still carry whole-mesh authoring information to
+  // GPU selection. Its zero primitive count produces no ordinary indexed work.
+  if (!hasDraw && !pRenderData->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD))
+  {
+    pRenderData->m_uiPrimitiveCount = pRenderData->m_uiMeshletCount = 0;
+    ref_msg.AddRenderData(pRenderData, GetRenderDataCaching());
+  }
 }
 
 void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const
@@ -341,6 +388,7 @@ void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, con
   ref_renderData.m_uiUniqueID     = GetUniqueIdForRendering();
   ref_renderData.m_uiLODIndex     = SelectLOD(mesh);
   ref_renderData.m_uiSectionIndex = m_uiSectionIndex;
+  ref_renderData.m_RangeMode      = m_uiSectionIndex == xiiInvalidIndex ? xiiMeshRenderData::RangeMode::WholeMesh : xiiMeshRenderData::RangeMode::MeshSection;
   ref_renderData.m_Flags          = GetMeshRenderFlags();
 
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::PreferMeshShader, m_bPreferMeshShaders);
@@ -357,7 +405,7 @@ void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, con
     FillRangeFromLOD(ref_renderData, pLODs[ClampLODIndex(mesh, ref_renderData.m_uiLODIndex)]);
   }
 
-  const xiiArrayPtr<const xiiMeshSection> pSections = mesh.GetSections();
+  const xiiArrayPtr<const xiiMeshSection> pSections = pLODs.IsEmpty() ? mesh.GetSections() : pLODs[ClampLODIndex(mesh, ref_renderData.m_uiLODIndex)].m_Sections;
   if (m_uiSectionIndex < pSections.GetCount())
   {
     FillRangeFromSection(ref_renderData, pSections[m_uiSectionIndex]);
@@ -481,15 +529,40 @@ const xiiSkeletonResourceHandle& xiiSkinnedMeshComponent::GetSkeleton() const
   return m_hSkeleton;
 }
 
-void xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices)
+xiiResult xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices)
 {
-  m_SkinningMatrices.SetCount(pMatrices.GetCount());
+  XII_SUCCEED_OR_RETURN(xiiMeshSkinning::ValidatePalette(pMatrices));
+  // A subrange of our palette can only shrink the array. Copy forwards before destroying
+  // its tail; non-aliased input may grow and needs its destination elements constructed first.
+  if (pMatrices.GetCount() > m_SkinningMatrices.GetCount())
+    m_SkinningMatrices.SetCount(pMatrices.GetCount());
   for (xiiUInt32 i = 0; i < pMatrices.GetCount(); ++i)
   {
     m_SkinningMatrices[i] = pMatrices[i];
   }
+  m_SkinningMatrices.SetCount(pMatrices.GetCount());
 
+  TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
+  return XII_SUCCESS;
+}
+
+xiiResult xiiSkinnedMeshComponent::SetAnimationPose(const xiiSkeletonResourceHandle& hSkeleton, const xiiAnimationPose& pose)
+{
+  bool success = false;
+  XII_SCOPE_EXIT(if (!success) { m_SkinningMatrices.Clear(); TriggerLocalBoundsUpdate(); InvalidateCachedRenderData(); });
+  if (!hSkeleton.IsValid() || !GetMesh().IsValid())
+    return XII_FAILURE;
+  xiiResourceLock<xiiSkeletonResource> skeleton(hSkeleton, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+  xiiResourceLock<xiiMeshResource>     mesh(GetMesh(), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+  if (!skeleton || !mesh || skeleton.GetAcquireResult() != xiiResourceAcquireResult::Final || mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(pose.BuildMeshSkinningPalette(*skeleton.GetPointer(), mesh->GetDescriptor(), m_SkinningMatrices, m_UsedPaletteSlots));
+  SetSkeleton(hSkeleton);
+  TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
+  success = true;
+  return XII_SUCCESS;
 }
 
 xiiArrayPtr<const xiiMat4> xiiSkinnedMeshComponent::GetSkinningMatrices() const
@@ -546,6 +619,12 @@ void xiiSkinnedMeshComponent::FillRenderData(xiiMeshRenderData& ref_renderData, 
 
   ref_renderData.m_Flags.Add(xiiMeshRenderDataFlags::Skinned);
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::MorphTargets, !m_MorphWeights.IsEmpty());
+}
+
+xiiResult xiiSkinnedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
+{
+  XII_SUCCEED_OR_RETURN(SUPER::GetLocalBounds(ref_bounds, ref_bAlwaysVisible, ref_msg));
+  return xiiMeshSkinning::ComputeBounds(ref_bounds, m_SkinningMatrices, ref_bounds);
 }
 
 xiiBitflags<xiiMeshRenderDataFlags> xiiSkinnedMeshComponent::GetMeshRenderFlags() const

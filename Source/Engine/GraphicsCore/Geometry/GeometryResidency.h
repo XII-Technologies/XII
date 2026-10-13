@@ -147,12 +147,14 @@ public:
   static void                            UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
 
   /// Acquires a shared residency record for an engine mesh resource. Multiple scene objects using
-  /// the same resource receive the same generation-checked geometry handle. Mesh LODs packed into
-  /// one buffer are translated into reflected meshlet ranges by the subsystem.
+  /// the same content revision receive the same generation-checked geometry handle. Reloading
+  /// publishes a new record; outstanding references retain the previous revision. Mesh LODs packed
+  /// into one buffer are translated into reflected meshlet ranges by the subsystem. Call on the
+  /// render thread, as with other residency mutations. Returns an invalid handle for unloaded data.
   [[nodiscard]] static xiiGeometryHandle AcquireMeshGeometry(const xiiMeshResourceHandle& hMesh);
-  /// Releases one reference acquired through AcquireMeshGeometry(). The residency record remains
-  /// valid until uiFrameIndex has completed on the GPU.
-  static void ReleaseMeshGeometry(const xiiMeshResourceHandle& hMesh, xiiUInt64 uiFrameIndex);
+  /// Releases the exact revision acquired through AcquireMeshGeometry(). After its last reference,
+  /// the record and its GPU allocations remain valid until its last-use frame has completed.
+  static void ReleaseMeshGeometry(xiiGeometryHandle hGeometry, xiiUInt64 uiFrameIndex);
 
   /// Requests the finest required LOD. Concurrent view requests are merged toward the lowest
   /// LOD index and retain the strongest visibility priority until the missing range is resident.

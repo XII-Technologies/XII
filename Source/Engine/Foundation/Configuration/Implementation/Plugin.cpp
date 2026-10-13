@@ -393,33 +393,31 @@ const xiiCopyOnBroadcastEvent<const xiiPluginEvent&>& xiiPlugin::Events()
 
 xiiPlugin::Init::Init(xiiPluginInitCallback onLoadOrUnloadCB, bool bOnLoad)
 {
-  ModuleData* pMD = g_pCurrentlyLoadingModule ? g_pCurrentlyLoadingModule : &g_StaticModule;
+  ModuleData* pModuleData = g_pCurrentlyLoadingModule ? g_pCurrentlyLoadingModule : &g_StaticModule;
 
   if (bOnLoad)
   {
-    pMD->m_OnLoadCB.PushBack(onLoadOrUnloadCB);
+    pModuleData->m_OnLoadCB.PushBack(onLoadOrUnloadCB);
   }
   else
   {
-    pMD->m_OnUnloadCB.PushBack(onLoadOrUnloadCB);
+    pModuleData->m_OnUnloadCB.PushBack(onLoadOrUnloadCB);
   }
 }
 
 xiiPlugin::Init::Init(xiiStringView sAddPluginDependency)
 {
-  ModuleData* pMD = g_pCurrentlyLoadingModule ? g_pCurrentlyLoadingModule : &g_StaticModule;
+  ModuleData* pModuleData = g_pCurrentlyLoadingModule ? g_pCurrentlyLoadingModule : &g_StaticModule;
 
-  pMD->m_sPluginDependencies.PushBack(sAddPluginDependency);
+  pModuleData->m_sPluginDependencies.PushBack(sAddPluginDependency);
 }
 
 #if XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
-xiiPluginRegister::xiiPluginRegister(xiiStringView sAddPlugin)
+xiiPluginRegister::xiiPluginRegister(xiiStringView sName)
 {
   if (g_pCurrentlyLoadingModule == nullptr)
   {
-    GetStaticPlugins().PushBack(sAddPlugin);
+    GetStaticPlugins().PushBack(sName);
   }
 }
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Configuration_Implementation_Plugin);

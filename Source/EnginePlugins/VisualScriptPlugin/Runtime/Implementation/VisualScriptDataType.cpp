@@ -397,4 +397,4 @@ xiiComponent* xiiVisualScriptComponentHandle::GetPtr(xiiUInt32 uiExecutionCounte
   return m_Ptr;
 }
 
-XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Runtime_VisualScriptDataType);
+XII_STATICLINK_FILE(VisualScriptPlugin, VisualScriptPlugin_Runtime_Implementation_VisualScriptDataType);

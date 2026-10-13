@@ -41,7 +41,6 @@ private:
 
   xiiStaticArray<xiiUInt32, 2U> m_QueryPoolIndex;
 
-  xiiUInt64 m_uiQueryEndFenceValue = xiiInvalidIndex;
 
   xiiGALQueryPoolVulkan* m_pQueryPoolVulkan = nullptr;
 };

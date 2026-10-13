@@ -69,5 +69,3 @@ void xiiApplication::RequestQuit()
 }
 
 xiiApplication* xiiApplication::s_pApplicationInstance = nullptr;
-
-XII_STATICLINK_FILE(Foundation, Foundation_Application_Implementation_Application);

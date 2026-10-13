@@ -13,6 +13,9 @@ xiiGALBufferView::xiiGALBufferView(xiiSharedPtr<xiiGALDevice> pDevice, xiiShared
   XII_ASSERT_DEBUG(m_pBuffer != nullptr, "The given buffer must not be nullptr.");
 }
 
-xiiGALBufferView::~xiiGALBufferView() = default;
+xiiGALBufferView::~xiiGALBufferView()
+{
+  m_pBuffer->UnregisterDefaultView(this);
+}
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_BufferView);

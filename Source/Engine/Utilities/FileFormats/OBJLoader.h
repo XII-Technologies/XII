@@ -82,7 +82,7 @@ public:
 
   /// Loads an OBJ file into this object. Adds all information to the existing data, so multiple OBJ files can be merged.
   ///
-  /// Returns XII_FAILURE if the given file could not be found.
+  /// Returns XII_FAILURE if the file cannot be opened or a face references an invalid vertex, normal, or texture coordinate.
   xiiResult LoadOBJ(const char* szFile, bool bIgnoreMaterials = false);
 
   /// Loads and MTL file for material information.

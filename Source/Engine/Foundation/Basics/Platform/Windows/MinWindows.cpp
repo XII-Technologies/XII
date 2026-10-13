@@ -45,6 +45,3 @@ void xiiCheckWindowsTypeSizes()
 #  endif
 }
 #endif
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_Basics_Platform_Win_MinWindows);

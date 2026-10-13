@@ -85,5 +85,3 @@ void xiiDeferredFileWriter::Discard()
 {
   m_sOutputFile.Clear();
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_FileSystem_Implementation_DeferredFileWriter);

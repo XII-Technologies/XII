@@ -218,6 +218,3 @@ void RemoveCVarEventHandler()
   xiiTelemetry::RemoveEventHandler(CVarsDetail::TelemetryEventsHandler);
   xiiTelemetry::AcceptMessagesForSystem('SVAR', false);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_CVars);

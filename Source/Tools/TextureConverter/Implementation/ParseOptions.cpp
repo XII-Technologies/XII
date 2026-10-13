@@ -98,11 +98,11 @@ xiiCommandLineOptionEnum opt_Usage("_TextureConverter", "-usage", "What type of 
 
 xiiCommandLineOptionEnum opt_Mipmaps("_TextureConverter", "-mipmaps", "Whether to generate mipmaps and with which algorithm.", "None = 0 |Linear = 1 | Kaiser = 2", 1);
 
-xiiCommandLineOptionEnum opt_AddressU("_TextureConverter", "-addressU", "Which texture address mode to use along U. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2", 1);
-xiiCommandLineOptionEnum opt_AddressV("_TextureConverter", "-addressV", "Which texture address mode to use along V. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2", 1);
-xiiCommandLineOptionEnum opt_AddressW("_TextureConverter", "-addressW", "Which texture address mode to use along W. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2", 1);
+xiiCommandLineOptionEnum opt_AddressU("_TextureConverter", "-addressU", "Which texture address mode to use along U. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2 | MirrorOnce = 5", 1);
+xiiCommandLineOptionEnum opt_AddressV("_TextureConverter", "-addressV", "Which texture address mode to use along V. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2 | MirrorOnce = 5", 1);
+xiiCommandLineOptionEnum opt_AddressW("_TextureConverter", "-addressW", "Which texture address mode to use along W. Only supported by XII specific output formats.", "Repeat = 1 | Clamp = 3 | ClampBorder = 4 | Mirror = 2 | MirrorOnce = 5", 1);
 
-xiiCommandLineOptionEnum opt_Filter("_TextureConverter", "-filter", "Which texture filter mode to use at runtime. Only supported by XII specific output formats.", "Default = 9 | Lowest = 7 | Low = 8 | High = 10 | Highest = 11 | Nearest = 0 | Linear = 1 | Trilinear = 2 | Aniso2x = 3 | Aniso4x = 4 | Aniso8x = 5 | Aniso16x = 6", 9);
+xiiCommandLineOptionEnum opt_Filter("_TextureConverter", "-filter", "Sampler preset stored in XII output formats. Lowest/Low/Default use point/bilinear/trilinear filtering; High/Highest use 4x/16x anisotropy.", "Default = 9 | Lowest = 7 | Low = 8 | High = 10 | Highest = 11 | Nearest = 0 | Linear = 1 | Trilinear = 2 | Aniso2x = 3 | Aniso4x = 4 | Aniso8x = 5 | Aniso16x = 6", 9);
 
 xiiCommandLineOptionEnum opt_BumpMapFilter("_TextureConverter", "-bumpMapFilter", "Filter used to approximate the x/y bump map gradients.", "Finite = 0 | Sobel = 1 | Scharr = 2", 0);
 
@@ -425,18 +425,23 @@ xiiResult xiiTextureConverter::ParseWrapModes()
     return XII_SUCCESS;
 
   {
-    xiiInt32 iValue                         = opt_AddressU.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    m_Processor.m_Descriptor.m_AddressModeU = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
+    xiiInt32 iValue = opt_AddressU.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+    if (iValue <= xiiGALTextureAddressMode::Unknown || iValue >= xiiGALTextureAddressMode::ENUM_COUNT)
+      return XII_FAILURE;
+    m_Processor.m_Descriptor.m_SamplerDescription.m_AddressU = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
   {
-    xiiInt32 iValue                         = opt_AddressV.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    m_Processor.m_Descriptor.m_AddressModeV = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
+    xiiInt32 iValue = opt_AddressV.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+    if (iValue <= xiiGALTextureAddressMode::Unknown || iValue >= xiiGALTextureAddressMode::ENUM_COUNT)
+      return XII_FAILURE;
+    m_Processor.m_Descriptor.m_SamplerDescription.m_AddressV = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
 
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
   {
-    xiiInt32 iValue                         = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    m_Processor.m_Descriptor.m_AddressModeW = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
+    xiiInt32 iValue = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    if (iValue <= xiiGALTextureAddressMode::Unknown || iValue >= xiiGALTextureAddressMode::ENUM_COUNT)
+      return XII_FAILURE;
+    m_Processor.m_Descriptor.m_SamplerDescription.m_AddressW = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
 
   return XII_SUCCESS;
@@ -450,9 +455,17 @@ xiiResult xiiTextureConverter::ParseFilterModes()
     return XII_SUCCESS;
   }
 
-  xiiInt32 iValue                       = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-  m_Processor.m_Descriptor.m_FilterMode = static_cast<xiiGALFilterType::Enum>(iValue);
-  return XII_SUCCESS;
+  const xiiInt32 option = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+  // CLI quality names are authoring conveniences and resolve to fixed sampler settings.
+  const xiiTextureConverterSamplerPreset::Enum presets[] = {
+    xiiTextureConverterSamplerPreset::Nearest, xiiTextureConverterSamplerPreset::Linear, xiiTextureConverterSamplerPreset::Trilinear,
+    xiiTextureConverterSamplerPreset::Aniso2x, xiiTextureConverterSamplerPreset::Aniso4x, xiiTextureConverterSamplerPreset::Aniso8x, xiiTextureConverterSamplerPreset::Aniso16x,
+    xiiTextureConverterSamplerPreset::Nearest, xiiTextureConverterSamplerPreset::Linear, xiiTextureConverterSamplerPreset::Trilinear,
+    xiiTextureConverterSamplerPreset::Aniso4x, xiiTextureConverterSamplerPreset::Aniso16x};
+  if (option < 0 || option >= XII_ARRAY_SIZE(presets))
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(xiiTextureConverterSamplerPreset::ConfigureSampler(presets[option], m_Processor.m_Descriptor.m_SamplerDescription));
+  return ParseSamplerOverrides();
 }
 
 xiiResult xiiTextureConverter::ParseResolutionModifiers()

@@ -308,4 +308,4 @@ public:
 
 xiiSpawnComponentPatch_1_2 g_xiiSpawnComponentPatch_1_2;
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_SpawnComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_SpawnComponent);

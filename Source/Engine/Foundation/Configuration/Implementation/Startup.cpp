@@ -485,5 +485,3 @@ void xiiStartup::ReinitToCurrentState()
   if (s_CurrentState != xiiStartupStage::None)
     Startup(s_CurrentState);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Configuration_Implementation_Startup);

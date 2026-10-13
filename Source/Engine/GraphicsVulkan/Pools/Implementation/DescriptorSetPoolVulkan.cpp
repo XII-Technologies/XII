@@ -181,5 +181,3 @@ float xiiGALDescriptorSetPoolVulkan::GetDescriptorTypeWeight(vk::DescriptorType 
   }
   return 0.0f;
 }
-
-XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Pools_Implementation_DescriptorSetPoolVulkan);

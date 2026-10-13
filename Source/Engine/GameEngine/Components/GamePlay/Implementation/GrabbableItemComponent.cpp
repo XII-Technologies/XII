@@ -142,4 +142,4 @@ void xiiGrabbableItemComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg
   }
 }
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_GrabbableItemComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_GrabbableItemComponent);

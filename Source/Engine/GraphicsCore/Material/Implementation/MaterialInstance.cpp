@@ -209,3 +209,5 @@ void xiiMaterialInstance::CreateSnapshotLocked(xiiMaterialInstanceSnapshot& out_
   out_snapshot.m_DirtyFlags       = m_DirtyFlags;
   out_snapshot.m_uiRevision       = m_uiRevision;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Material_Implementation_MaterialInstance);

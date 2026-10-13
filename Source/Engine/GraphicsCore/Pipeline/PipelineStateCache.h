@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/States/PipelineState.h>
 
 /// A cache from pipeline descriptor to handle which holds a reference to each pipeline that is never freed until shutdown.
+/// Concurrent requests share one creation. Callers must finish all requests before subsystem shutdown.
 class XII_GRAPHICSCORE_DLL xiiGALPipelineCache
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALPipelineCache);

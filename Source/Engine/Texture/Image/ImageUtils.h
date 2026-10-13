@@ -46,7 +46,9 @@ public:
   /// If the target location leaves not enough room for the source image to be copied, bad stuff will happen.
   static xiiResult Copy(const xiiImageView& srcImg, const xiiRectU32& srcRect, xiiImage& ref_dstImg, const xiiVec3U32& vDstOffset, xiiUInt32 uiDstMipLevel = 0, xiiUInt32 uiDstFace = 0, xiiUInt32 uiDstArrayIndex = 0);
 
-  /// Copies the lower uiNumMips data of a 2D image into another one.
+  /// Copies up to uiNumMips stored lower mip levels of a 2D image into another one.
+  /// Compressed images may include extra levels to obtain a block-aligned base size.
+  /// Invalid sources, zero requested levels and unsupported layouts fail without changing the destination.
   static xiiResult ExtractLowerMipChain(const xiiImageView& src, xiiImage& ref_dst, xiiUInt32 uiNumMips);
 
   /// Mip map generation options.

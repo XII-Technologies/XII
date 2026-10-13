@@ -2,7 +2,6 @@
 
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
-#include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorFramework/DocumentWindow/OrbitCamViewWidget.moc.h>
 #include <EditorFramework/InputContexts/OrbitCameraContext.h>
@@ -188,8 +187,6 @@ void xiiQtSkeletonAssetDocumentWindow::QueryObjectBBox(xiiInt32 iPurpose /*= 0*/
 
 void xiiQtSkeletonAssetDocumentWindow::SelectionEventHandler(const xiiSelectionManagerEvent& e)
 {
-  xiiStringBuilder filter;
-
   switch (e.m_Type)
   {
     case xiiSelectionManagerEvent::Type::SelectionCleared:
@@ -197,22 +194,7 @@ void xiiQtSkeletonAssetDocumentWindow::SelectionEventHandler(const xiiSelectionM
     case xiiSelectionManagerEvent::Type::ObjectAdded:
     case xiiSelectionManagerEvent::Type::ObjectRemoved:
     {
-      const auto& sel = GetDocument()->GetSelectionManager()->GetSelection();
-
-      for (auto pObj : sel)
-      {
-        xiiVariant name = pObj->GetTypeAccessor().GetValue("Name");
-        if (name.IsValid() && name.CanConvertTo<xiiString>())
-        {
-          filter.Append(name.ConvertTo<xiiString>(), ";");
-        }
-      }
-
-      xiiSimpleDocumentConfigMsgToEngine msg;
-      msg.m_sWhatToDo = "HighlightBones";
-      msg.m_sPayload  = filter;
-
-      GetDocument()->SendMessageToEngine(&msg);
+      SendSelectionHighlights();
     }
     break;
 
@@ -220,6 +202,21 @@ void xiiQtSkeletonAssetDocumentWindow::SelectionEventHandler(const xiiSelectionM
       // ignore
       break;
   }
+}
+
+void xiiQtSkeletonAssetDocumentWindow::SendSelectionHighlights()
+{
+  xiiStringBuilder filter;
+  for (const auto* object : GetDocument()->GetSelectionManager()->GetSelection())
+  {
+    const auto name = object->GetTypeAccessor().GetValue("Name");
+    if (name.IsValid() && name.CanConvertTo<xiiString>())
+      filter.Append(name.ConvertTo<xiiString>(), ";");
+  }
+  xiiSimpleDocumentConfigMsgToEngine message;
+  message.m_sWhatToDo = "HighlightBones";
+  message.m_sPayload  = filter;
+  GetDocument()->SendMessageToEngine(&message);
 }
 
 void xiiQtSkeletonAssetDocumentWindow::SkeletonAssetEventHandler(const xiiSkeletonAssetEvent& e)
@@ -272,22 +269,20 @@ void xiiQtSkeletonAssetDocumentWindow::SendLiveResourcePreview()
   xiiMemoryStreamWriter            memoryWriter(&streamStorage);
 
 
-  // Write Path
-  xiiStringBuilder sAbsFilePath = pDoc->GetDocumentPath();
-  sAbsFilePath.ChangeFileExtension("xiiSkeleton");
-
-  // Write Header
-  memoryWriter << sAbsFilePath;
-  const xiiUInt64    uiHash = xiiAssetCurator::GetSingleton()->GetAssetDependencyHash(pDoc->GetGuid());
-  xiiAssetFileHeader AssetHeader;
-  AssetHeader.SetFileHashAndVersion(uiHash, pDoc->GetAssetTypeVersion());
-  AssetHeader.Write(memoryWriter).IgnoreResult();
-
+  // Native skeleton UpdateContent consumes the descriptor directly.
   // Write Asset Data
-  pDoc->WriteResource(memoryWriter, *pDoc->GetProperties()).AssertSuccess();
+  const auto result = pDoc->WriteResource(memoryWriter, *pDoc->GetProperties());
+  if (result.Failed())
+  {
+    xiiLog::Warning("Could not update skeleton preview: {}", result.GetMessageString());
+    return;
+  }
   msg.m_Data = xiiArrayPtr<const xiiUInt8>(streamStorage.GetData(), streamStorage.GetStorageSize32());
 
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
+  const auto configuration = pDoc->SendPreviewConfiguration();
+  if (configuration.Failed())
+    xiiLog::Warning("Could not update skeleton preview metadata: {}", configuration.GetMessageString());
 }
 
 void xiiQtSkeletonAssetDocumentWindow::RestoreResource()
@@ -310,6 +305,12 @@ void xiiQtSkeletonAssetDocumentWindow::InternalRedraw()
 
 void xiiQtSkeletonAssetDocumentWindow::ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg)
 {
+  if (const auto* response = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(pMsg); response && response->m_bSucceeded)
+  {
+    // Initial opening and engine-process reconnect both recreate the per-document context.
+    SendLiveResourcePreview();
+    SendSelectionHighlights();
+  }
   if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiQuerySelectionBBoxResultMsgToEditor>())
   {
     const xiiQuerySelectionBBoxResultMsgToEditor* pMessage = static_cast<const xiiQuerySelectionBBoxResultMsgToEditor*>(pMsg);

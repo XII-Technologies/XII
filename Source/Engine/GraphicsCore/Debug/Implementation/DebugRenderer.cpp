@@ -7,6 +7,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Debug/Implementation/DebugDepth.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
@@ -21,6 +22,7 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Shader/Types.h>
+#include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
@@ -30,13 +32,14 @@ xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "G
 //////////////////////////////////////////////////////////////////////////
 
 xiiDebugRendererContext::xiiDebugRendererContext(const xiiWorld* pWorld) :
-  m_uiId(pWorld != nullptr ? pWorld->GetIndex() : 0)
+  m_uiId(pWorld != nullptr ? (static_cast<xiiUInt64>(pWorld->GetIndex()) + 1U) << 32U : 0)
 {
 }
 
-xiiDebugRendererContext::xiiDebugRendererContext(const xiiViewHandle& hView) :
-  m_uiId(hView.GetInternalID().m_Data)
+xiiDebugRendererContext::xiiDebugRendererContext(const xiiView& view)
 {
+  if (view.GetWorld() != nullptr && !view.GetHandle().IsInvalidated())
+    m_uiId = ((static_cast<xiiUInt64>(view.GetWorld()->GetIndex()) + 1U) << 32U) | (static_cast<xiiUInt64>(view.GetHandle().GetInternalID().m_Data) + 1U);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -120,11 +123,14 @@ namespace
   {
     xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_LineVertices;
     xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_TriangleVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_OverlayLineVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_OverlayTriangleVertices;
     xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_Triangle2DVertices;
     xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                             m_Line2DVertices;
     xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                            m_LineBoxes;
     xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                            m_SolidBoxes;
     xiiMap<xiiSharedPtr<xiiGALTextureView>, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_TexturedTriangle2DVertices;
+    xiiMap<xiiSharedPtr<xiiGALTextureView>, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_OverlayTexturedTriangle2DVertices;
     xiiMap<xiiSharedPtr<xiiGALTextureView>, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_TexturedTriangle3DVertices;
 
     xiiDynamicArray<InfoTextData>                          m_InfoTextData[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT];
@@ -136,6 +142,8 @@ namespace
   struct DoubleBufferedPerContextData
   {
     xiiUInt32                    m_uiCurrentDataIndex = 0U;
+    xiiUInt64                    m_uiRenderingFrame   = 0U;
+    bool                         m_bHasRenderingFrame = false;
     xiiUniquePtr<PerContextData> m_pData[2];
   };
 
@@ -145,12 +153,15 @@ namespace
   static void ClearPerContextData(PerContextData& data)
   {
     data.m_LineVertices.Clear();
+    data.m_OverlayLineVertices.Clear();
+    data.m_OverlayTriangleVertices.Clear();
     data.m_Line2DVertices.Clear();
     data.m_LineBoxes.Clear();
     data.m_SolidBoxes.Clear();
     data.m_TriangleVertices.Clear();
     data.m_Triangle2DVertices.Clear();
     data.m_TexturedTriangle2DVertices.Clear();
+    data.m_OverlayTexturedTriangle2DVertices.Clear();
     data.m_TexturedTriangle3DVertices.Clear();
     data.m_sTextLines2D.Clear();
     data.m_sTextLines3D.Clear();
@@ -187,7 +198,7 @@ namespace
     };
   };
 
-  struct DynamicMeshBufferKind
+  struct DynamicVertexBufferKind
   {
     enum Enum
     {
@@ -199,12 +210,12 @@ namespace
     };
   };
 
-  static xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>  s_DataBufferPages[BufferType::Count];
-  static xiiDynamicArray<xiiMeshBufferResourceHandle> s_DynamicMeshBufferPages[DynamicMeshBufferKind::Count];
-  static xiiMeshBufferResourceHandle                  s_hLineBoxMeshBuffer;
-  static xiiMeshBufferResourceHandle                  s_hSolidBoxMeshBuffer;
-  static xiiTexture2DResourceHandle                   s_hDebugFontTexture;
-  static xiiSharedPtr<xiiGALBuffer>                   s_pGlobalConstantsBuffer;
+  static xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> s_DataBufferPages[BufferType::Count];
+  static xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> s_DynamicVertexBufferPages[DynamicVertexBufferKind::Count];
+  static xiiMeshBufferResourceHandle                 s_hLineBoxMeshBuffer;
+  static xiiMeshBufferResourceHandle                 s_hSolidBoxMeshBuffer;
+  static xiiTexture2DResourceHandle                  s_hDebugFontTexture;
+  static xiiSharedPtr<xiiGALBuffer>                  s_pGlobalConstantsBuffer;
 
   static xiiSharedPtr<xiiGALInputLayout> s_pPositionOnlyInputLayout;
   static xiiSharedPtr<xiiGALInputLayout> s_pVertexInputLayout;
@@ -214,30 +225,6 @@ namespace
   static xiiShaderResourceHandle s_hDebugPrimitiveShader;
   static xiiShaderResourceHandle s_hDebugTexturedPrimitiveShader;
   static xiiShaderResourceHandle s_hDebugTextShader;
-
-  struct DebugRenderPassKey
-  {
-    xiiEnum<xiiGALResourceFormat> m_ColorFormat       = xiiGALResourceFormat::Unknown;
-    xiiEnum<xiiGALResourceFormat> m_DepthFormat       = xiiGALResourceFormat::Unknown;
-    xiiUInt8                      m_uiSampleCount     = 1U;
-    xiiUInt8                      m_uiArraySliceCount = 1U;
-
-    XII_ALWAYS_INLINE bool operator<(const DebugRenderPassKey& rhs) const
-    {
-      if (m_ColorFormat != rhs.m_ColorFormat)
-        return m_ColorFormat < rhs.m_ColorFormat;
-      if (m_DepthFormat != rhs.m_DepthFormat)
-        return m_DepthFormat < rhs.m_DepthFormat;
-      if (m_uiSampleCount != rhs.m_uiSampleCount)
-        return m_uiSampleCount < rhs.m_uiSampleCount;
-      return m_uiArraySliceCount < rhs.m_uiArraySliceCount;
-    }
-
-    XII_ALWAYS_INLINE bool operator==(const DebugRenderPassKey& rhs) const
-    {
-      return m_ColorFormat == rhs.m_ColorFormat && m_DepthFormat == rhs.m_DepthFormat && m_uiSampleCount == rhs.m_uiSampleCount && m_uiArraySliceCount == rhs.m_uiArraySliceCount;
-    }
-  };
 
   enum class DebugPipelineKind : xiiUInt8
   {
@@ -261,6 +248,7 @@ namespace
     xiiEnum<xiiGALPrimitiveTopology> m_Topology        = xiiGALPrimitiveTopology::TriangleList;
     bool                             m_bPreTransformed = false;
     bool                             m_bMonochrome     = false;
+    bool                             m_bOverlay        = false;
     xiiGALRenderPass*                m_pRenderPass     = nullptr;
 
     XII_ALWAYS_INLINE bool operator<(const DebugPipelineKey& rhs) const
@@ -275,17 +263,20 @@ namespace
         return m_bPreTransformed < rhs.m_bPreTransformed;
       if (m_bMonochrome != rhs.m_bMonochrome)
         return m_bMonochrome < rhs.m_bMonochrome;
+      if (m_bOverlay != rhs.m_bOverlay)
+        return m_bOverlay < rhs.m_bOverlay;
       return m_pRenderPass < rhs.m_pRenderPass;
     }
 
     XII_ALWAYS_INLINE bool operator==(const DebugPipelineKey& rhs) const
     {
-      return m_Kind == rhs.m_Kind && m_CameraMode == rhs.m_CameraMode && m_Topology == rhs.m_Topology && m_bPreTransformed == rhs.m_bPreTransformed && m_bMonochrome == rhs.m_bMonochrome && m_pRenderPass == rhs.m_pRenderPass;
+      return m_Kind == rhs.m_Kind && m_CameraMode == rhs.m_CameraMode && m_Topology == rhs.m_Topology && m_bPreTransformed == rhs.m_bPreTransformed && m_bMonochrome == rhs.m_bMonochrome && m_bOverlay == rhs.m_bOverlay && m_pRenderPass == rhs.m_pRenderPass;
     }
   };
 
-  static xiiMap<DebugRenderPassKey, xiiSharedPtr<xiiGALRenderPass>>          s_RenderPassCache;
   static xiiMap<DebugPipelineKey, xiiSharedPtr<xiiGALGraphicsPipelineState>> s_GraphicsPipelineCache;
+
+  static xiiSharedPtr<xiiGALDepthStencilState> s_pOverlayDepthState;
 
   enum
   {
@@ -323,60 +314,33 @@ namespace
     s_DataBufferPages[bufferType].Clear();
   }
 
-  static xiiMeshBufferResourceHandle EnsureDynamicMeshBufferPage(DynamicMeshBufferKind::Enum kind, xiiUInt32 uiPageIndex)
+  static xiiSharedPtr<xiiGALBuffer> EnsureDynamicVertexBufferPage(DynamicVertexBufferKind::Enum kind, xiiUInt32 uiPageIndex)
   {
-    auto& meshBufferPages = s_DynamicMeshBufferPages[kind];
-    meshBufferPages.EnsureCount(uiPageIndex + 1U);
+    auto& pages = s_DynamicVertexBufferPages[kind];
+    pages.EnsureCount(uiPageIndex + 1U);
+    if (pages[uiPageIndex] != nullptr)
+      return pages[uiPageIndex];
 
-    if (meshBufferPages[uiPageIndex].IsValid())
-      return meshBufferPages[uiPageIndex];
-
-    xiiMeshBufferResourceDescriptor desc;
-    desc.Clear();
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Mutable;
-    desc.m_bAllowGpuDrivenDraw = false;
-
-    xiiStringView sBaseName;
-
-    switch (kind)
+    const bool                      bTextured     = kind == DynamicVertexBufferKind::TexturedTriangle;
+    const xiiUInt32                 uiVertexCount = kind == DynamicVertexBufferKind::Line ? LINE_VERTICES_PER_BATCH : (bTextured ? TEX_TRIANGLE_VERTICES_PER_BATCH : TRIANGLE_VERTICES_PER_BATCH);
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride = bTextured ? sizeof(TexVertex) : sizeof(Vertex);
+    description.m_uiSize              = description.m_uiElementByteStride * uiVertexCount;
+    description.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
+    description.m_Usage               = xiiGALResourceUsage::Dynamic;
+    description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    pages[uiPageIndex]                = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+    if (pages[uiPageIndex] != nullptr)
     {
-      case DynamicMeshBufferKind::Line:
-        desc.m_Topology = xiiGALPrimitiveTopology::LineList;
-        desc.AddStream(xiiMeshVertexSemantic::Position, xiiMeshVertexStreamFormat::Float3, static_cast<xiiUInt16>(offsetof(Vertex, m_vPosition)), static_cast<xiiUInt16>(sizeof(Vertex)));
-        desc.AddStream(xiiMeshVertexSemantic::Color0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(Vertex, m_Color)), static_cast<xiiUInt16>(sizeof(Vertex)));
-        desc.AllocateStreams(LINE_VERTICES_PER_BATCH, 0U, false);
-        sBaseName = "DebugDynamicLines"_xiisv;
-        break;
-
-      case DynamicMeshBufferKind::Triangle:
-        desc.m_Topology = xiiGALPrimitiveTopology::TriangleList;
-        desc.AddStream(xiiMeshVertexSemantic::Position, xiiMeshVertexStreamFormat::Float3, static_cast<xiiUInt16>(offsetof(Vertex, m_vPosition)), static_cast<xiiUInt16>(sizeof(Vertex)));
-        desc.AddStream(xiiMeshVertexSemantic::Color0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(Vertex, m_Color)), static_cast<xiiUInt16>(sizeof(Vertex)));
-        desc.AllocateStreams(TRIANGLE_VERTICES_PER_BATCH, 0U, false);
-        sBaseName = "DebugDynamicTriangles"_xiisv;
-        break;
-
-      case DynamicMeshBufferKind::TexturedTriangle:
-        desc.m_Topology = xiiGALPrimitiveTopology::TriangleList;
-        desc.AddStream(xiiMeshVertexSemantic::Position, xiiMeshVertexStreamFormat::Float3, static_cast<xiiUInt16>(offsetof(TexVertex, m_vPosition)), static_cast<xiiUInt16>(sizeof(TexVertex)));
-        desc.AddStream(xiiMeshVertexSemantic::Color0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(TexVertex, m_Color)), static_cast<xiiUInt16>(sizeof(TexVertex)));
-        desc.AddStream(xiiMeshVertexSemantic::TexCoord0, xiiMeshVertexStreamFormat::Float2, static_cast<xiiUInt16>(offsetof(TexVertex, m_fTexCoord)), static_cast<xiiUInt16>(sizeof(TexVertex)));
-        desc.AllocateStreams(TEX_TRIANGLE_VERTICES_PER_BATCH, 0U, false);
-        sBaseName = "DebugDynamicTexturedTriangles"_xiisv;
-        break;
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      xiiStringBuilder name;
+      name.SetFormat("Debug vertices {} page {}", static_cast<xiiUInt32>(kind), uiPageIndex);
+      pages[uiPageIndex]->SetDebugName(name);
     }
-
-    xiiStringBuilder resourceName;
-    resourceName.SetFormat("{}_{}", sBaseName, uiPageIndex);
-
-    meshBufferPages[uiPageIndex] = xiiResourceManager::CreateResource<xiiMeshBufferResource>(resourceName.GetView(), std::move(desc), resourceName.GetView());
-    return meshBufferPages[uiPageIndex];
+    return pages[uiPageIndex];
   }
 
   template <typename AddFunc>
-  static xiiUInt32 AddTextLines(const xiiDebugRendererContext& context, const xiiFormatString& text0, const xiiVec2I32& vPositionInPixel, xiiUInt32 uiSizeInPixel, xiiDebugTextHAlign::Enum horizontalAlignment, xiiDebugTextVAlign::Enum verticalAlignment, AddFunc func)
+  static xiiUInt32 AddTextLines(const xiiFormatString& text0, const xiiVec2I32& vPositionInPixel, xiiUInt32 uiSizeInPixel, xiiDebugTextHAlign::Enum horizontalAlignment, xiiDebugTextVAlign::Enum verticalAlignment, AddFunc func)
   {
     if (text0.IsEmpty())
       return 0;
@@ -447,10 +411,6 @@ namespace
       screenPosY -= lines.GetCount() * fLineHeight - fLineSpacing;
 
     {
-      XII_LOCK(s_Mutex);
-
-      auto& data = GetDataForExtraction(context);
-
       xiiVec2 currentPos(screenPosX, screenPosY);
 
       for (xiiStringView line : lines)
@@ -470,7 +430,7 @@ namespace
           while (const char* colPtrNext = line.FindSubString("\t", colPtrCur))
           {
             const xiiVec2 tabOff(addWidth * fGlyphWidth, 0);
-            func(data, xiiStringView(colPtrCur, colPtrNext), currentPos + tabOff);
+            func(xiiStringView(colPtrCur, colPtrNext), currentPos + tabOff);
 
             addWidth += maxColumWidth[uiColIdx];
 
@@ -481,12 +441,12 @@ namespace
           // last column
           {
             const xiiVec2 tabOff(addWidth * fGlyphWidth, 0);
-            func(data, xiiStringView(colPtrCur, line.GetEndPointer()), currentPos + tabOff);
+            func(xiiStringView(colPtrCur, line.GetEndPointer()), currentPos + tabOff);
           }
         }
         else
         {
-          func(data, line, currentPos);
+          func(line, currentPos);
         }
 
         currentPos.y += fLineHeight;
@@ -592,7 +552,57 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 // static
-void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform /*= xiiMat4::MakeIdentity()*/)
+xiiResult xiiDebugRenderer::DrawGeometry(const xiiDebugRendererContext& context, const xiiGeometry& geometry, const xiiColor& color, xiiMatOrTransform transform, xiiDebugRendererDepthMode depthMode)
+{
+  const auto& vertices = geometry.GetVertices();
+  if (!color.IsValid() || !transform.m_Mat4.IsValid() || !transform.m_Mat4.GetRow(3).IsEqual(xiiVec4(0, 0, 0, 1), 0.0f) ||
+      (depthMode != xiiDebugRendererDepthMode::DepthTested && depthMode != xiiDebugRendererDepthMode::Overlay))
+    return XII_FAILURE;
+
+  // Validate before modifying the context, including overflow in transformed positions/colors.
+  for (const auto& vertex : vertices)
+  {
+    if (!vertex.m_vPosition.IsValid() || !vertex.m_Color.IsValid() || !transform.m_Mat4.TransformPosition(vertex.m_vPosition).IsValid() || !(vertex.m_Color * color).IsValid())
+      return XII_FAILURE;
+  }
+  for (const auto& polygon : geometry.GetPolygons())
+  {
+    if (polygon.m_Vertices.GetCount() != 3)
+      return XII_FAILURE;
+    for (xiiUInt32 index : polygon.m_Vertices)
+      if (index >= vertices.GetCount())
+        return XII_FAILURE;
+  }
+  for (const auto& line : geometry.GetLines())
+    if (line.m_uiStartVertex >= vertices.GetCount() || line.m_uiEndVertex >= vertices.GetCount())
+      return XII_FAILURE;
+
+  XII_LOCK(s_Mutex);
+  auto& data         = GetDataForExtraction(context);
+  auto& triangles    = depthMode == xiiDebugRendererDepthMode::Overlay ? data.m_OverlayTriangleVertices : data.m_TriangleVertices;
+  auto& lines        = depthMode == xiiDebugRendererDepthMode::Overlay ? data.m_OverlayLineVertices : data.m_LineVertices;
+  auto  appendVertex = [&](auto& target, xiiUInt32 index) {
+    auto& output       = target.ExpandAndGetRef();
+    output.m_vPosition = transform.m_Mat4.TransformPosition(vertices[index].m_vPosition);
+    output.m_Color     = vertices[index].m_Color * color;
+  };
+  const bool bFlipWinding = transform.m_Mat4.GetRotationalPart().GetDeterminant() < 0.0f;
+  for (const auto& polygon : geometry.GetPolygons())
+  {
+    appendVertex(triangles, polygon.m_Vertices[0]);
+    appendVertex(triangles, polygon.m_Vertices[bFlipWinding ? 2 : 1]);
+    appendVertex(triangles, polygon.m_Vertices[bFlipWinding ? 1 : 2]);
+  }
+  for (const auto& line : geometry.GetLines())
+  {
+    appendVertex(lines, line.m_uiStartVertex);
+    appendVertex(lines, line.m_uiEndVertex);
+  }
+  return XII_SUCCESS;
+}
+
+// static
+void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform /*= xiiMat4::MakeIdentity()*/, xiiDebugRendererDepthMode depthMode)
 {
   if (lines.IsEmpty())
     return;
@@ -601,6 +611,7 @@ void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArra
 
   auto& data = GetDataForExtraction(context);
 
+  auto& vertices = depthMode == xiiDebugRendererDepthMode::Overlay ? data.m_OverlayLineVertices : data.m_LineVertices;
   for (auto& line : lines)
   {
     const xiiVec3*  pPositions = &line.m_vStart;
@@ -608,7 +619,7 @@ void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArra
 
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
-      auto& vertex       = data.m_LineVertices.ExpandAndGetRef();
+      auto& vertex       = vertices.ExpandAndGetRef();
       vertex.m_vPosition = mTransform.m_Mat4.TransformPosition(pPositions[i]);
       vertex.m_Color     = pColors[i] * color;
     }
@@ -1013,7 +1024,7 @@ void xiiDebugRenderer::DrawSolidBox(const xiiDebugRendererContext& context, cons
 }
 
 // static
-void xiiDebugRenderer::DrawSolidTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<xiiDebugRendererTriangle> triangles, const xiiColor& color)
+void xiiDebugRenderer::DrawSolidTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<xiiDebugRendererTriangle> triangles, const xiiColor& color, xiiDebugRendererDepthMode depthMode)
 {
   if (triangles.IsEmpty())
     return;
@@ -1022,13 +1033,14 @@ void xiiDebugRenderer::DrawSolidTriangles(const xiiDebugRendererContext& context
 
   auto& data = GetDataForExtraction(context);
 
+  auto& vertices = depthMode == xiiDebugRendererDepthMode::Overlay ? data.m_OverlayTriangleVertices : data.m_TriangleVertices;
   for (auto& triangle : triangles)
   {
     const xiiColorLinearUB col = triangle.m_Color * color;
 
     for (xiiUInt32 i = 0; i < 3; ++i)
     {
-      auto& vertex       = data.m_TriangleVertices.ExpandAndGetRef();
+      auto& vertex       = vertices.ExpandAndGetRef();
       vertex.m_vPosition = triangle.m_vPosition[i];
       vertex.m_Color     = col;
     }
@@ -1084,13 +1096,13 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
   data.m_Triangle2DVertices.PushBackRange(xiiMakeArrayPtr(vertices));
 }
 
-void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale)
+void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale, xiiDebugRendererDepthMode depthMode)
 {
   xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, xiiResourceAcquireMode::AllowLoadingFallback);
-  Draw2DRectangle(context, rectInPixel, fDepth, color, pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource), vScale);
+  Draw2DRectangle(context, rectInPixel, fDepth, color, pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource), vScale, depthMode);
 }
 
-void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale)
+void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale, xiiDebugRendererDepthMode depthMode)
 {
   TexVertex vertices[6];
 
@@ -1116,7 +1128,8 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
 
   auto& data = GetDataForExtraction(context);
 
-  data.m_TexturedTriangle2DVertices[pTextureView].PushBackRange(xiiMakeArrayPtr(vertices));
+  auto& groups = depthMode == xiiDebugRendererDepthMode::Overlay ? data.m_OverlayTexturedTriangle2DVertices : data.m_TexturedTriangle2DVertices;
+  groups[pTextureView].PushBackRange(xiiMakeArrayPtr(vertices));
 }
 
 void xiiDebugRenderer::Draw2DLineRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color)
@@ -1140,7 +1153,9 @@ void xiiDebugRenderer::Draw2DLineRectangle(const xiiDebugRendererContext& contex
 
 xiiUInt32 xiiDebugRenderer::Draw2DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec2I32& vPositionInPixel, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Left*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Top*/)
 {
-  return AddTextLines(context, text, vPositionInPixel, uiSizeInPixel, horizontalAlignment, verticalAlignment, [=](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
+  XII_LOCK(s_Mutex);
+  auto& ref_data = GetDataForExtraction(context);
+  return AddTextLines(text, vPositionInPixel, uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](xiiStringView sLine, xiiVec2 vTopLeftCorner) {
     auto& textLine            = ref_data.m_sTextLines2D.ExpandAndGetRef();
     textLine.m_sText          = sLine;
     textLine.m_vTopLeftCorner = vTopLeftCorner;
@@ -1179,7 +1194,9 @@ void xiiDebugRenderer::AddPersistentInfoText(const xiiDebugRendererContext& cont
 
 xiiUInt32 xiiDebugRenderer::Draw3DText(const xiiDebugRendererContext& context, const xiiFormatString& text, const xiiVec3& vGlobalPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel /*= 16*/, xiiDebugTextHAlign::Enum horizontalAlignment /*= xiiDebugTextHAlign::Center*/, xiiDebugTextVAlign::Enum verticalAlignment /*= xiiDebugTextVAlign::Bottom*/)
 {
-  return AddTextLines(context, text, xiiVec2I32(0), uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](PerContextData& ref_data, xiiStringView sLine, xiiVec2 vTopLeftCorner) {
+  XII_LOCK(s_Mutex);
+  auto& ref_data = GetDataForExtraction(context);
+  return AddTextLines(text, xiiVec2I32(0), uiSizeInPixel, horizontalAlignment, verticalAlignment, [&](xiiStringView sLine, xiiVec2 vTopLeftCorner) {
     auto& textLine            = ref_data.m_sTextLines3D.ExpandAndGetRef();
     textLine.m_sText          = sLine;
     textLine.m_vTopLeftCorner = vTopLeftCorner;
@@ -1564,8 +1581,8 @@ namespace
 
   struct DebugUploadAllocator
   {
-    xiiUInt32 m_uiNextDynamicMeshPage[DynamicMeshBufferKind::Count] = {};
-    xiiUInt32 m_uiNextDataBufferPage[BufferType::Count]             = {};
+    xiiUInt32 m_uiNextDynamicVertexPage[DynamicVertexBufferKind::Count] = {};
+    xiiUInt32 m_uiNextDataBufferPage[BufferType::Count]                 = {};
   };
 
   struct PreparedVertexBatch
@@ -1608,6 +1625,8 @@ namespace
   {
     xiiDynamicArray<PreparedBoxBatch>            m_SolidBoxes;
     xiiDynamicArray<PreparedVertexBatch>         m_Triangles3D;
+    xiiDynamicArray<PreparedVertexBatch>         m_OverlayTriangles;
+    xiiDynamicArray<PreparedVertexBatch>         m_OverlayLines;
     xiiDynamicArray<PreparedTexturedVertexBatch> m_TexturedTriangles3D;
     xiiDynamicArray<PreparedVertexBatch>         m_Lines3D;
     xiiDynamicArray<PreparedBoxBatch>            m_LineBoxes;
@@ -1615,6 +1634,7 @@ namespace
 
     xiiDynamicArray<PreparedVertexBatch>         m_Triangles2D;
     xiiDynamicArray<PreparedTexturedVertexBatch> m_TexturedTriangles2D;
+    xiiDynamicArray<PreparedTexturedVertexBatch> m_OverlayTexturedTriangles2D;
     xiiDynamicArray<PreparedVertexBatch>         m_Lines2D;
     xiiDynamicArray<PreparedGlyphBatch>          m_Text2D;
   };
@@ -1631,7 +1651,7 @@ namespace
     xiiHashTable<xiiGALResource*, xiiBitflags<xiiGALResourceStateFlags>> m_LastRequestedState;
   };
 
-  static xiiHashTable<xiiUInt32, PreparedDebugViewData> s_PreparedViewData;
+  static xiiHashTable<xiiDebugRendererContext, PreparedDebugViewData> s_PreparedViewData;
 
   struct DebugUploadState
   {
@@ -1639,6 +1659,7 @@ namespace
     xiiGALCommandList& m_CommandList;
     xiiUInt32          m_uiViewportWidth  = 1U;
     xiiUInt32          m_uiViewportHeight = 1U;
+    xiiUInt64          m_uiFrameIndex     = 0U;
   };
 
   struct DebugDrawState
@@ -1755,7 +1776,8 @@ namespace
   {
     if (s_pGlobalConstantsBuffer != nullptr)
     {
-      commandList.ResolveAndSetConstantBuffer("xiiGlobalConstants", s_pGlobalConstantsBuffer.Borrow(), xiiGALShaderType::Vertex | xiiGALShaderType::Pixel);
+      // Reflection may retain the buffer only in the stages that actually use it.
+      commandList.ResolveAndSetConstantBuffer("xiiGlobalConstants", s_pGlobalConstantsBuffer.Borrow());
     }
   }
 
@@ -1818,53 +1840,7 @@ namespace
     return s_pTexVertexInputLayout;
   }
 
-  static xiiSharedPtr<xiiGALRenderPass> GetOrCreateRenderPass(const xiiGALTexture& sceneColor, const xiiGALTexture& sceneDepth)
-  {
-    const xiiGALTextureCreationDescription& colorDescription = sceneColor.GetDescription();
-    const xiiGALTextureCreationDescription& depthDescription = sceneDepth.GetDescription();
-
-    DebugRenderPassKey key;
-    key.m_ColorFormat       = colorDescription.m_Format;
-    key.m_DepthFormat       = depthDescription.m_Format;
-    key.m_uiSampleCount     = static_cast<xiiUInt8>(xiiMath::Max(1U, colorDescription.m_uiSampleCount));
-    key.m_uiArraySliceCount = static_cast<xiiUInt8>(xiiMath::Max(colorDescription.m_uiArraySizeOrDepth, depthDescription.m_uiArraySizeOrDepth));
-
-    auto it = s_RenderPassCache.Find(key);
-    if (it.IsValid())
-      return it.Value();
-
-    xiiGALRenderPassCreationDescription renderPassDescription;
-
-    xiiGALRenderPassAttachmentDescription& colorAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-    colorAttachment.m_Format                               = colorDescription.m_Format;
-    colorAttachment.m_uiSampleCount                        = static_cast<xiiUInt8>(xiiMath::Max(1U, colorDescription.m_uiSampleCount));
-    colorAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
-    colorAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
-    colorAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
-    colorAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
-
-    xiiGALRenderPassAttachmentDescription& depthAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-    depthAttachment.m_Format                               = depthDescription.m_Format;
-    depthAttachment.m_uiSampleCount                        = static_cast<xiiUInt8>(xiiMath::Max(1U, depthDescription.m_uiSampleCount));
-    depthAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
-    depthAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
-    depthAttachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
-    depthAttachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
-    depthAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::DepthWrite;
-    depthAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::DepthWrite;
-
-    xiiGALSubPassDescription& subPass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
-    subPass.m_RenderTargetAttachments.PushBack({0U, xiiGALResourceStateFlags::RenderTarget});
-    subPass.m_DepthStencilAttachment.PushBack({1U, xiiGALResourceStateFlags::DepthWrite});
-
-    xiiSharedPtr<xiiGALRenderPass> pRenderPass = xiiGALDevice::GetDefaultDevice()->CreateRenderPass(renderPassDescription);
-    XII_ASSERT_DEV(pRenderPass != nullptr, "Failed to create render pass for the debug renderer.");
-
-    s_RenderPassCache.Insert(key, pRenderPass);
-    return pRenderPass;
-  }
-
-  static xiiSharedPtr<xiiGALGraphicsPipelineState> GetOrCreatePipeline(const DebugDrawState& drawState, DebugPipelineKind pipelineKind, xiiGALPrimitiveTopology::Enum topology, bool bPreTransformed, bool bMonochrome)
+  static xiiSharedPtr<xiiGALGraphicsPipelineState> GetOrCreatePipeline(const DebugDrawState& drawState, DebugPipelineKind pipelineKind, xiiGALPrimitiveTopology::Enum topology, bool bPreTransformed, bool bMonochrome, bool bOverlay = false)
   {
     DebugPipelineKey key;
     key.m_Kind            = pipelineKind;
@@ -1872,6 +1848,7 @@ namespace
     key.m_Topology        = topology;
     key.m_bPreTransformed = bPreTransformed;
     key.m_bMonochrome     = bMonochrome;
+    key.m_bOverlay        = bOverlay;
     key.m_pRenderPass     = drawState.m_pRenderPass.Borrow();
 
     auto it = s_GraphicsPipelineCache.Find(key);
@@ -1921,16 +1898,36 @@ namespace
       permutationVariables.Insert(permutationName, permutationValue);
     }
 
-    xiiShaderPermutationResourceHandle            hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+    xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, false);
+    if (!hPermutation.IsValid())
+      return nullptr;
     xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-    XII_ASSERT_DEV(pPermutation.IsValid(), "Failed to load the required debug shader permutation.");
+    if (!pPermutation.IsValid() || !pPermutation->IsShaderValid() || pPermutation->GetGALShader(xiiGALShaderType::Vertex) == nullptr || pPermutation->GetGALShader(xiiGALShaderType::Pixel) == nullptr)
+    {
+      xiiLog::Error("Failed to load the required debug shader permutation.");
+      return nullptr;
+    }
 
     xiiGALGraphicsPipelineStateCreationDescription pipelineDescription;
-    pipelineDescription.m_pPipelineResourceSignature                     = pPermutation->GetPipelineResourceSignature();
-    pipelineDescription.m_pVertexShader                                  = pPermutation->GetGALShader(xiiGALShaderType::Vertex);
-    pipelineDescription.m_pPixelShader                                   = pPermutation->GetGALShader(xiiGALShaderType::Pixel);
-    pipelineDescription.m_GraphicsPipeline.m_pBlendState                 = pPermutation->GetBlendState();
-    pipelineDescription.m_GraphicsPipeline.m_pDepthStencilState          = pPermutation->GetDepthStencilState();
+    pipelineDescription.m_pPipelineResourceSignature            = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pVertexShader                         = pPermutation->GetGALShader(xiiGALShaderType::Vertex);
+    pipelineDescription.m_pPixelShader                          = pPermutation->GetGALShader(xiiGALShaderType::Pixel);
+    pipelineDescription.m_GraphicsPipeline.m_pBlendState        = pPermutation->GetBlendState();
+    pipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = pPermutation->GetDepthStencilState();
+    if (bOverlay)
+    {
+      if (s_pOverlayDepthState == nullptr)
+      {
+        xiiGALDepthStencilStateCreationDescription depth;
+        depth.m_bDepthEnable      = false;
+        depth.m_bDepthWriteEnable = false;
+        depth.m_bStencilEnable    = false;
+        s_pOverlayDepthState      = xiiGALDevice::GetDefaultDevice()->CreateDepthStencilState(depth);
+      }
+      if (s_pOverlayDepthState == nullptr)
+        return nullptr;
+      pipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = s_pOverlayDepthState;
+    }
     pipelineDescription.m_GraphicsPipeline.m_pRasterizerState            = pPermutation->GetRasterizerState();
     pipelineDescription.m_GraphicsPipeline.m_pRenderPass                 = drawState.m_pRenderPass;
     pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology           = topology;
@@ -1957,18 +1954,19 @@ namespace
     xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = xiiGALPipelineCache::GetPipeline(pipelineDescription);
     XII_ASSERT_DEV(pPipeline != nullptr, "Failed to create a graphics pipeline for the debug renderer.");
 
-    s_GraphicsPipelineCache.Insert(key, pPipeline);
+    if (pPipeline != nullptr)
+      s_GraphicsPipelineCache.Insert(key, pPipeline);
     return pPipeline;
   }
 
-  static xiiUInt32 GetViewStorageKey(const xiiView& view)
+  static xiiDebugRendererContext GetViewStorageKey(const xiiView& view)
   {
-    return view.GetHandle().GetInternalID().m_Data;
+    return xiiDebugRendererContext(view);
   }
 
-  static xiiMeshBufferResourceHandle AcquireDynamicMeshBufferPage(DebugUploadAllocator& allocator, DynamicMeshBufferKind::Enum kind)
+  static xiiSharedPtr<xiiGALBuffer> AcquireDynamicVertexBufferPage(DebugUploadAllocator& allocator, DynamicVertexBufferKind::Enum kind)
   {
-    return EnsureDynamicMeshBufferPage(kind, allocator.m_uiNextDynamicMeshPage[kind]++);
+    return EnsureDynamicVertexBufferPage(kind, allocator.m_uiNextDynamicVertexPage[kind]++);
   }
 
   static xiiSharedPtr<xiiGALBuffer> AcquireDataBufferPage(DebugUploadAllocator& allocator, BufferType::Enum bufferType, xiiUInt32 uiStructSize)
@@ -2007,15 +2005,6 @@ namespace
     collector.m_LastRequestedState.Clear();
   }
 
-  static PerContextData* GetRenderingData(const xiiDebugRendererContext& context)
-  {
-    DoubleBufferedPerContextData* pDoubleBufferedContextData = nullptr;
-    if (!s_PerContextData.TryGetValue(context, pDoubleBufferedContextData))
-      return nullptr;
-
-    return pDoubleBufferedContextData->m_pData[pDoubleBufferedContextData->m_uiCurrentDataIndex].Borrow();
-  }
-
   static void AdvanceToNextExtractionBuffer(const xiiDebugRendererContext& context)
   {
     XII_LOCK(s_Mutex);
@@ -2036,7 +2025,7 @@ namespace
     pDoubleBufferedContextData->m_uiCurrentDataIndex = uiNextDataIndex;
   }
 
-  static PerContextData* PrepareWorldSpaceData(const xiiDebugRendererContext& context)
+  static void PrepareWorldSpaceData(const xiiDebugRendererContext& context)
   {
     {
       XII_LOCK(s_Mutex);
@@ -2104,11 +2093,9 @@ namespace
         ++i;
       }
     }
-
-    return GetRenderingData(context);
   }
 
-  static PerContextData* PrepareScreenSpaceData(const xiiDebugRendererContext& context, xiiUInt32 uiViewportWidth, xiiUInt32 uiViewportHeight)
+  static void PreparePersistentInfoText(const xiiDebugRendererContext& context)
   {
     {
       XII_LOCK(s_Mutex);
@@ -2131,62 +2118,27 @@ namespace
         ++i;
       }
     }
+  }
 
-    PerContextData* pData = GetRenderingData(context);
-    if (pData == nullptr)
-      return nullptr;
+  // Freeze once per graph frame. All views of a world see the same immutable
+  // snapshot; extraction can immediately start filling the other buffer.
+  static const PerContextData* PrepareFrameData(const xiiDebugRendererContext& context, xiiUInt64 uiFrame)
+  {
+    XII_LOCK(s_Mutex);
+    auto& buffered = s_PerContextData[context];
+    if (buffered.m_bHasRenderingFrame && buffered.m_uiRenderingFrame == uiFrame)
+      return buffered.m_pData[1U - buffered.m_uiCurrentDataIndex].Borrow();
 
-    static_assert(static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT) == 6U);
+    PrepareWorldSpaceData(context);
+    PreparePersistentInfoText(context);
+    PerContextData& data = GetDataForExtraction(context);
+    for (auto& corner : data.m_InfoTextData)
+      xiiSorting::InsertionSort(corner, [](const InfoTextData& lhs, const InfoTextData& rhs) { return lhs.m_sGroup < rhs.m_sGroup; });
 
-    constexpr xiiDebugTextHAlign::Enum horizontalAlignment[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
-      xiiDebugTextHAlign::Left,
-      xiiDebugTextHAlign::Center,
-      xiiDebugTextHAlign::Right,
-      xiiDebugTextHAlign::Left,
-      xiiDebugTextHAlign::Center,
-      xiiDebugTextHAlign::Right,
-    };
-
-    constexpr xiiDebugTextVAlign::Enum verticalAlignment[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Bottom,
-      xiiDebugTextVAlign::Bottom,
-      xiiDebugTextVAlign::Bottom,
-    };
-
-    const xiiInt32 lineHeight                                                       = static_cast<xiiInt32>(xiiDebugRenderer::GetTextLineHeight());
-    xiiVec2I32     anchor[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
-      xiiVec2I32(10, 10),
-      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), 10),
-      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth) - 10, 10),
-      xiiVec2I32(10, static_cast<xiiInt32>(uiViewportHeight) - 10),
-      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), static_cast<xiiInt32>(uiViewportHeight) - 10),
-      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth) - 10, static_cast<xiiInt32>(uiViewportHeight) - 10),
-    };
-
-    for (xiiUInt32 uiCorner = 0; uiCorner < static_cast<xiiUInt32>(xiiDebugTextPlacement::ENUM_COUNT); ++uiCorner)
-    {
-      auto& cornerData = pData->m_InfoTextData[uiCorner];
-      xiiSorting::InsertionSort(cornerData, [](const InfoTextData& lhs, const InfoTextData& rhs) -> bool { return lhs.m_sGroup < rhs.m_sGroup; });
-
-      xiiVec2I32     currentPosition = anchor[uiCorner];
-      const xiiInt32 offset          = verticalAlignment[uiCorner] == xiiDebugTextVAlign::Top ? lineHeight : -lineHeight;
-
-      for (xiiUInt32 i = 0; i < cornerData.GetCount(); ++i)
-      {
-        if (i > 0U && cornerData[i - 1U].m_sGroup != cornerData[i].m_sGroup)
-        {
-          currentPosition.y += offset;
-        }
-
-        currentPosition.y += offset * xiiDebugRenderer::Draw2DText(context, cornerData[i].m_sText.GetData(), currentPosition, cornerData[i].m_Color, 16U, horizontalAlignment[uiCorner], verticalAlignment[uiCorner]);
-      }
-    }
-
+    buffered.m_uiRenderingFrame   = uiFrame;
+    buffered.m_bHasRenderingFrame = true;
     AdvanceToNextExtractionBuffer(context);
-    return pData;
+    return &data;
   }
 
   static void UploadVertexArray(const DebugUploadState& uploadState, DebugUploadAllocator& allocator, DebugTransitionCollector& transitions, xiiArrayPtr<const Vertex> vertices, xiiGALPrimitiveTopology::Enum topology, xiiDynamicArray<PreparedVertexBatch>& out_batches)
@@ -2194,21 +2146,20 @@ namespace
     if (vertices.IsEmpty())
       return;
 
-    const DynamicMeshBufferKind::Enum bufferKind  = topology == xiiGALPrimitiveTopology::LineList ? DynamicMeshBufferKind::Line : DynamicMeshBufferKind::Triangle;
-    const xiiUInt32                   uiBatchSize = topology == xiiGALPrimitiveTopology::LineList ? LINE_VERTICES_PER_BATCH : TRIANGLE_VERTICES_PER_BATCH;
+    const DynamicVertexBufferKind::Enum bufferKind  = topology == xiiGALPrimitiveTopology::LineList ? DynamicVertexBufferKind::Line : DynamicVertexBufferKind::Triangle;
+    const xiiUInt32                     uiBatchSize = topology == xiiGALPrimitiveTopology::LineList ? LINE_VERTICES_PER_BATCH : TRIANGLE_VERTICES_PER_BATCH;
 
     for (xiiUInt32 uiOffset = 0; uiOffset < vertices.GetCount(); uiOffset += uiBatchSize)
     {
-      const xiiUInt32                        uiBatchCount = xiiMath::Min(vertices.GetCount() - uiOffset, uiBatchSize);
-      const xiiMeshBufferResourceHandle      hMeshBuffer  = AcquireDynamicMeshBufferPage(allocator, bufferKind);
-      xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
-      if (!pMeshBuffer.IsValid() || pMeshBuffer->GetVertexBuffer() == nullptr)
+      const xiiUInt32 uiBatchCount  = xiiMath::Min(vertices.GetCount() - uiOffset, uiBatchSize);
+      const auto      pVertexBuffer = AcquireDynamicVertexBufferPage(allocator, bufferKind);
+      if (pVertexBuffer == nullptr)
         continue;
 
-      xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pMeshBuffer->GetVertexBuffer(), 0U, xiiMakeArrayPtr(vertices.GetPtr() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pVertexBuffer, 0U, xiiMakeArrayPtr(vertices.GetPtr() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
 
       PreparedVertexBatch& batch = out_batches.ExpandAndGetRef();
-      batch.m_pVertexBuffer      = pMeshBuffer->GetVertexBuffer().Borrow();
+      batch.m_pVertexBuffer      = pVertexBuffer.Borrow();
       batch.m_uiVertexCount      = uiBatchCount;
 
       QueueTransition(transitions, batch.m_pVertexBuffer, xiiGALResourceStateFlags::VertexBuffer);
@@ -2228,16 +2179,15 @@ namespace
 
       for (xiiUInt32 uiOffset = 0; uiOffset < vertices.GetCount(); uiOffset += TEX_TRIANGLE_VERTICES_PER_BATCH)
       {
-        const xiiUInt32                        uiBatchCount = xiiMath::Min(vertices.GetCount() - uiOffset, xiiUInt32{TEX_TRIANGLE_VERTICES_PER_BATCH});
-        const xiiMeshBufferResourceHandle      hMeshBuffer  = AcquireDynamicMeshBufferPage(allocator, DynamicMeshBufferKind::TexturedTriangle);
-        xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
-        if (!pMeshBuffer.IsValid() || pMeshBuffer->GetVertexBuffer() == nullptr)
+        const xiiUInt32 uiBatchCount  = xiiMath::Min(vertices.GetCount() - uiOffset, xiiUInt32{TEX_TRIANGLE_VERTICES_PER_BATCH});
+        const auto      pVertexBuffer = AcquireDynamicVertexBufferPage(allocator, DynamicVertexBufferKind::TexturedTriangle);
+        if (pVertexBuffer == nullptr)
           continue;
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pMeshBuffer->GetVertexBuffer(), 0U, xiiMakeArrayPtr(vertices.GetData() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pVertexBuffer, 0U, xiiMakeArrayPtr(vertices.GetData() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
 
         PreparedTexturedVertexBatch& batch = out_batches.ExpandAndGetRef();
-        batch.m_pVertexBuffer              = pMeshBuffer->GetVertexBuffer().Borrow();
+        batch.m_pVertexBuffer              = pVertexBuffer.Borrow();
         batch.m_uiVertexCount              = uiBatchCount;
         batch.m_bMonochrome                = formatProperties.m_uiComponentCount == 1U;
         batch.m_pTextureView               = pTextureView;
@@ -2341,12 +2291,70 @@ namespace
       AppendGlyphs(glyphs, textLine);
     }
 
+    const auto uiViewportWidth  = uploadState.m_uiViewportWidth;
+    const auto uiViewportHeight = uploadState.m_uiViewportHeight;
+    static_assert(static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT) == 6U);
+
+    constexpr xiiDebugTextHAlign::Enum horizontalAlignment[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
+      xiiDebugTextHAlign::Left,
+      xiiDebugTextHAlign::Center,
+      xiiDebugTextHAlign::Right,
+      xiiDebugTextHAlign::Left,
+      xiiDebugTextHAlign::Center,
+      xiiDebugTextHAlign::Right,
+    };
+
+    constexpr xiiDebugTextVAlign::Enum verticalAlignment[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Bottom,
+      xiiDebugTextVAlign::Bottom,
+      xiiDebugTextVAlign::Bottom,
+    };
+
+    const xiiInt32 lineHeight                                                       = static_cast<xiiInt32>(xiiDebugRenderer::GetTextLineHeight());
+    xiiVec2I32     anchor[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
+      xiiVec2I32(10, 10),
+      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), 10),
+      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth) - 10, 10),
+      xiiVec2I32(10, static_cast<xiiInt32>(uiViewportHeight) - 10),
+      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), static_cast<xiiInt32>(uiViewportHeight) - 10),
+      xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth) - 10, static_cast<xiiInt32>(uiViewportHeight) - 10),
+    };
+
+    for (xiiUInt32 uiCorner = 0; uiCorner < static_cast<xiiUInt32>(xiiDebugTextPlacement::ENUM_COUNT); ++uiCorner)
+    {
+      const auto& cornerData = data.m_InfoTextData[uiCorner];
+
+      xiiVec2I32     currentPosition = anchor[uiCorner];
+      const xiiInt32 offset          = verticalAlignment[uiCorner] == xiiDebugTextVAlign::Top ? lineHeight : -lineHeight;
+
+      for (xiiUInt32 i = 0; i < cornerData.GetCount(); ++i)
+      {
+        if (i > 0U && cornerData[i - 1U].m_sGroup != cornerData[i].m_sGroup)
+        {
+          currentPosition.y += offset;
+        }
+
+        currentPosition.y += offset * AddTextLines(cornerData[i].m_sText.GetData(), currentPosition, 16U, horizontalAlignment[uiCorner], verticalAlignment[uiCorner], [&](xiiStringView line, xiiVec2 position) {
+                               TextLineData2D textLine;
+                               textLine.m_sText          = line;
+                               textLine.m_vTopLeftCorner = position;
+                               textLine.m_Color          = cornerData[i].m_Color;
+                               textLine.m_uiSizeInPixel  = 16U;
+                               AppendGlyphs(glyphs, textLine);
+                             });
+      }
+    }
+
     UploadGlyphs(uploadState, allocator, transitions, glyphs, out_batches);
   }
 
   static void UploadContextData(const xiiDebugRendererContext& context, const DebugUploadState& uploadState, DebugUploadAllocator& allocator, DebugTransitionCollector& transitions, PreparedContextData& out_preparedData)
   {
-    if (const PerContextData* pWorldSpaceData = PrepareWorldSpaceData(context); pWorldSpaceData != nullptr)
+    const PerContextData* pWorldSpaceData = PrepareFrameData(context, uploadState.m_uiFrameIndex);
+    if (pWorldSpaceData != nullptr)
     {
       UploadBoxInstances(uploadState, allocator, transitions, pWorldSpaceData->m_SolidBoxes, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_SolidBoxes);
       UploadVertexArray(uploadState, allocator, transitions, pWorldSpaceData->m_TriangleVertices, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_Triangles3D);
@@ -2354,23 +2362,28 @@ namespace
       UploadVertexArray(uploadState, allocator, transitions, pWorldSpaceData->m_LineVertices, xiiGALPrimitiveTopology::LineList, out_preparedData.m_Lines3D);
       UploadBoxInstances(uploadState, allocator, transitions, pWorldSpaceData->m_LineBoxes, xiiGALPrimitiveTopology::LineList, out_preparedData.m_LineBoxes);
       Upload3DText(uploadState, allocator, transitions, *pWorldSpaceData, out_preparedData.m_Text3D);
+      UploadVertexArray(uploadState, allocator, transitions, pWorldSpaceData->m_OverlayTriangleVertices, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_OverlayTriangles);
+      UploadVertexArray(uploadState, allocator, transitions, pWorldSpaceData->m_OverlayLineVertices, xiiGALPrimitiveTopology::LineList, out_preparedData.m_OverlayLines);
     }
 
-    if (const PerContextData* pScreenSpaceData = PrepareScreenSpaceData(context, uploadState.m_uiViewportWidth, uploadState.m_uiViewportHeight); pScreenSpaceData != nullptr)
+    if (const PerContextData* pScreenSpaceData = pWorldSpaceData; pScreenSpaceData != nullptr)
     {
       UploadVertexArray(uploadState, allocator, transitions, pScreenSpaceData->m_Triangle2DVertices, xiiGALPrimitiveTopology::TriangleList, out_preparedData.m_Triangles2D);
       UploadTexturedVertexBatches(uploadState, allocator, transitions, pScreenSpaceData->m_TexturedTriangle2DVertices, out_preparedData.m_TexturedTriangles2D);
+      UploadTexturedVertexBatches(uploadState, allocator, transitions, pScreenSpaceData->m_OverlayTexturedTriangle2DVertices, out_preparedData.m_OverlayTexturedTriangles2D);
       UploadVertexArray(uploadState, allocator, transitions, pScreenSpaceData->m_Line2DVertices, xiiGALPrimitiveTopology::LineList, out_preparedData.m_Lines2D);
       Upload2DText(uploadState, allocator, transitions, *pScreenSpaceData, out_preparedData.m_Text2D);
     }
   }
 
-  static void DrawVertexBatches(const DebugDrawState& drawState, xiiArrayPtr<const PreparedVertexBatch> batches, xiiGALPrimitiveTopology::Enum topology, bool bPreTransformed)
+  static void DrawVertexBatches(const DebugDrawState& drawState, xiiArrayPtr<const PreparedVertexBatch> batches, xiiGALPrimitiveTopology::Enum topology, bool bPreTransformed, bool bOverlay = false)
   {
     if (batches.IsEmpty())
       return;
 
-    xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::Primitive, topology, bPreTransformed, false);
+    xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::Primitive, topology, bPreTransformed, false, bOverlay);
+    if (pPipeline == nullptr)
+      return;
 
     for (const PreparedVertexBatch& batch : batches)
     {
@@ -2382,19 +2395,22 @@ namespace
 
       xiiGALBuffer* pVertexBuffers[] = {batch.m_pVertexBuffer};
       drawState.m_CommandList.SetVertexBuffers(0U, xiiMakeArrayPtr(pVertexBuffers), xiiArrayPtr<xiiUInt64>(), xiiGALSetVertexBufferFlags::Reset, xiiGALStateTransitionMode::None);
-      drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).IgnoreResult();
+      if (drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        continue;
       drawState.m_CommandList.Draw({batch.m_uiVertexCount, drawState.m_uiEyeCount});
     }
   }
 
-  static void DrawTexturedVertexBatches(const DebugDrawState& drawState, xiiArrayPtr<const PreparedTexturedVertexBatch> batches, bool bPreTransformed)
+  static void DrawTexturedVertexBatches(const DebugDrawState& drawState, xiiArrayPtr<const PreparedTexturedVertexBatch> batches, bool bPreTransformed, bool bOverlay = false)
   {
     for (const PreparedTexturedVertexBatch& batch : batches)
     {
       if (batch.m_pVertexBuffer == nullptr || batch.m_uiVertexCount == 0U || batch.m_pTextureView == nullptr)
         continue;
 
-      xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::TexturedPrimitive, xiiGALPrimitiveTopology::TriangleList, bPreTransformed, batch.m_bMonochrome);
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::TexturedPrimitive, xiiGALPrimitiveTopology::TriangleList, bPreTransformed, batch.m_bMonochrome, bOverlay);
+      if (pPipeline == nullptr)
+        continue;
 
       drawState.m_CommandList.SetPipelineState(pPipeline);
       BindGlobalConstants(drawState.m_CommandList);
@@ -2402,7 +2418,8 @@ namespace
 
       xiiGALBuffer* pVertexBuffers[] = {batch.m_pVertexBuffer};
       drawState.m_CommandList.SetVertexBuffers(0U, xiiMakeArrayPtr(pVertexBuffers), xiiArrayPtr<xiiUInt64>(), xiiGALSetVertexBufferFlags::Reset, xiiGALStateTransitionMode::None);
-      drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).IgnoreResult();
+      if (drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        continue;
       drawState.m_CommandList.Draw({batch.m_uiVertexCount, drawState.m_uiEyeCount});
     }
   }
@@ -2413,6 +2430,8 @@ namespace
       return;
 
     xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::Geometry, topology, false, false);
+    if (pPipeline == nullptr)
+      return;
 
     for (const PreparedBoxBatch& batch : batches)
     {
@@ -2426,7 +2445,8 @@ namespace
       xiiGALBuffer* pVertexBuffers[] = {batch.m_pVertexBuffer};
       drawState.m_CommandList.SetVertexBuffers(0U, xiiMakeArrayPtr(pVertexBuffers), xiiArrayPtr<xiiUInt64>(), xiiGALSetVertexBufferFlags::Reset, xiiGALStateTransitionMode::None);
       drawState.m_CommandList.SetIndexBuffer(batch.m_pIndexBuffer, 0U, xiiGALStateTransitionMode::None);
-      drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).IgnoreResult();
+      if (drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        continue;
       drawState.m_CommandList.DrawIndexed({batch.m_uiIndexCount, batch.m_IndexType, batch.m_uiInstanceCount * drawState.m_uiEyeCount});
     }
   }
@@ -2440,8 +2460,10 @@ namespace
     if (!pFontTexture.IsValid() || pFontTexture->GetGALTexture() == nullptr)
       return;
 
-    xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline        = GetOrCreatePipeline(drawState, DebugPipelineKind::Text, xiiGALPrimitiveTopology::TriangleList, true, false);
-    xiiGALTextureView*                        pFontTextureView = pFontTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource).Borrow();
+    xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::Text, xiiGALPrimitiveTopology::TriangleList, true, false);
+    if (pPipeline == nullptr)
+      return;
+    auto pFontTextureView = pFontTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     for (const PreparedGlyphBatch& batch : batches)
     {
@@ -2452,7 +2474,8 @@ namespace
       BindGlobalConstants(drawState.m_CommandList);
       drawState.m_CommandList.ResolveAndSetShaderResourceBufferView("glyphData", batch.m_pGlyphDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource).Borrow(), xiiGALShaderType::Vertex);
       drawState.m_CommandList.ResolveAndSetShaderResourceTextureView("FontTexture", pFontTextureView, xiiGALShaderType::Pixel);
-      drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).IgnoreResult();
+      if (drawState.m_CommandList.CommitShaderResources(xiiGALStateTransitionMode::None).Failed())
+        continue;
       drawState.m_CommandList.Draw({batch.m_uiGlyphCount * 6U, drawState.m_uiEyeCount});
     }
   }
@@ -2467,10 +2490,17 @@ namespace
     DrawGlyphBatches(drawState, preparedData.m_Text3D);
   }
 
+  static void DrawOverlayContext(const DebugDrawState& drawState, const PreparedContextData& data)
+  {
+    DrawVertexBatches(drawState, data.m_OverlayTriangles, xiiGALPrimitiveTopology::TriangleList, false, true);
+    DrawVertexBatches(drawState, data.m_OverlayLines, xiiGALPrimitiveTopology::LineList, false, true);
+  }
+
   static void DrawScreenSpaceContext(const DebugDrawState& drawState, const PreparedContextData& preparedData)
   {
     DrawVertexBatches(drawState, preparedData.m_Triangles2D, xiiGALPrimitiveTopology::TriangleList, true);
     DrawTexturedVertexBatches(drawState, preparedData.m_TexturedTriangles2D, true);
+    DrawTexturedVertexBatches(drawState, preparedData.m_OverlayTexturedTriangles2D, true, true);
     DrawVertexBatches(drawState, preparedData.m_Lines2D, xiiGALPrimitiveTopology::LineList, true);
     DrawGlyphBatches(drawState, preparedData.m_Text2D);
   }
@@ -2499,7 +2529,7 @@ void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRen
     return;
 
   const xiiExtractedRenderData* pExtractedData = pView->GetExtractedRenderData();
-  const xiiUInt32               uiViewKey      = GetViewStorageKey(*pView);
+  const xiiDebugRendererContext uiViewKey      = GetViewStorageKey(*pView);
   s_PreparedViewData.Remove(uiViewKey);
 
   if (pExtractedData == nullptr || !data.m_hSyncToken.IsValid())
@@ -2510,7 +2540,7 @@ void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRen
   const xiiUInt32 uiViewportWidth  = xiiMath::Max(1U, static_cast<xiiUInt32>(xiiMath::Round(pView->GetViewport().width)));
   const xiiUInt32 uiViewportHeight = xiiMath::Max(1U, static_cast<xiiUInt32>(xiiMath::Round(pView->GetViewport().height)));
 
-  DebugUploadState         uploadState{*pView, cmd, uiViewportWidth, uiViewportHeight};
+  DebugUploadState         uploadState{*pView, cmd, uiViewportWidth, uiViewportHeight, context.GetFrameIndex()};
   DebugUploadAllocator     allocator;
   DebugTransitionCollector transitionCollector;
   PreparedDebugViewData    preparedViewData;
@@ -2530,7 +2560,8 @@ void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, 
 {
   data.m_hSyncToken  = builder.ReadBuffer("DebugUploadSyncToken", xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneColor = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-  data.m_hSceneDepth = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hSceneDepth = builder.ReadWriteTexture(data.m_hSceneDepth, xiiGALResourceStateFlags::DepthWrite);
+  builder.SetPassRenderPassManaged();
 
   builder.SetPassAllowMerge(false);
 }
@@ -2561,7 +2592,7 @@ void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData
   DebugDrawState drawState{
     *pView,
     cmd,
-    GetOrCreateRenderPass(*pSceneColor, *pSceneDepth),
+    context.GetRenderPass(),
     GetCameraMode(*pView),
     GetEyeCount(*pView),
     uiViewportWidth,
@@ -2573,6 +2604,8 @@ void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData
     cmd.SetViewport({0.0f, 0.0f, static_cast<float>(uiViewportWidth), static_cast<float>(uiViewportHeight), 0.0f, 1.0f});
     DrawWorldSpaceContext(drawState, pPreparedViewData->m_WorldContext);
     DrawWorldSpaceContext(drawState, pPreparedViewData->m_ViewContext);
+    DrawOverlayContext(drawState, pPreparedViewData->m_WorldContext);
+    DrawOverlayContext(drawState, pPreparedViewData->m_ViewContext);
     DrawScreenSpaceContext(drawState, pPreparedViewData->m_WorldContext);
     DrawScreenSpaceContext(drawState, pPreparedViewData->m_ViewContext);
   }
@@ -2584,8 +2617,24 @@ void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData
 // static
 void xiiDebugRenderer::AddRenderGraphPasses(xiiRenderGraph& graph)
 {
+  const auto depth = xiiDebugRendererInternal::PrepareDepth(graph);
+  if (!depth.IsValid())
+  {
+    xiiLog::Error("Could not prepare scene depth for display-resolution debug drawing.");
+    return;
+  }
   graph.AddPass<xiiDebugUploadData>("DebugUpload", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugUpload), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugUpload));
-  graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugVisualization), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugVisualization));
+  graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, [depth](xiiDebugVisualizationData& data, xiiRenderGraphBuilder& builder) {
+    data.m_hSceneDepth = depth;
+    SetupDebugVisualization(data, builder); }, xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugVisualization));
+}
+
+void xiiDebugRenderer::ClearContext(const xiiDebugRendererContext& context)
+{
+  XII_LOCK(s_Mutex);
+  s_PerContextData.Remove(context);
+  s_PersistentPerContextData.Remove(context);
+  s_PreparedViewData.Remove(context);
 }
 
 void xiiDebugRenderer::OnEngineStartup()
@@ -2611,9 +2660,9 @@ void xiiDebugRenderer::OnEngineStartup()
   }
 
   {
-    EnsureDynamicMeshBufferPage(DynamicMeshBufferKind::Line, 0U);
-    EnsureDynamicMeshBufferPage(DynamicMeshBufferKind::Triangle, 0U);
-    EnsureDynamicMeshBufferPage(DynamicMeshBufferKind::TexturedTriangle, 0U);
+    EnsureDynamicVertexBufferPage(DynamicVertexBufferKind::Line, 0U);
+    EnsureDynamicVertexBufferPage(DynamicVertexBufferKind::Triangle, 0U);
+    EnsureDynamicVertexBufferPage(DynamicVertexBufferKind::TexturedTriangle, 0U);
   }
 
   {
@@ -2649,9 +2698,9 @@ void xiiDebugRenderer::OnEngineShutdown()
     DestroyDataBuffers(static_cast<BufferType::Enum>(i));
   }
 
-  for (xiiUInt32 i = 0; i < DynamicMeshBufferKind::Count; ++i)
+  for (xiiUInt32 i = 0; i < DynamicVertexBufferKind::Count; ++i)
   {
-    s_DynamicMeshBufferPages[i].Clear();
+    s_DynamicVertexBufferPages[i].Clear();
   }
 
   s_hLineBoxMeshBuffer.Invalidate();
@@ -2661,8 +2710,8 @@ void xiiDebugRenderer::OnEngineShutdown()
   s_pPositionOnlyInputLayout.Clear();
   s_pVertexInputLayout.Clear();
   s_pTexVertexInputLayout.Clear();
-  s_RenderPassCache.Clear();
   s_GraphicsPipelineCache.Clear();
+  s_pOverlayDepthState.Clear();
 
   s_hDebugGeometryShader.Invalidate();
   s_hDebugPrimitiveShader.Invalidate();

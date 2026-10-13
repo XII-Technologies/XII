@@ -870,5 +870,3 @@ void xiiStandardJSONWriter::WriteBinaryData(xiiStringView sDataType, const void*
   else
     OutputString("\" }");
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StandardJSONWriter);

@@ -8,15 +8,15 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Geometry/GeometryResidency.h>
-#include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
-#include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -79,6 +79,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderWorldEvents)
     xiiRenderWorldModule::ShutdownRenderEvents();
   }
 
+
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
@@ -121,23 +122,18 @@ void xiiRenderWorldModule::Initialize()
 
 void xiiRenderWorldModule::Deinitialize()
 {
+  // Removing entries invalidates ID-table iterators. Snapshot the handles before
+  // destruction, which also lets deletion listeners observe already-invalid handles.
+  xiiDynamicArray<xiiViewHandle> views;
+  views.Reserve(m_ViewIdTable.GetCount());
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
-    ViewDetail viewDetail;
-
-    if (m_ViewIdTable.Remove(it.Id(), &viewDetail))
-    {
-      xiiViewEvent viewEvent;
-      viewEvent.m_Type  = xiiViewEventType::Deleted;
-      viewEvent.m_pView = viewDetail.m_pView.Borrow();
-
-      m_ViewEvents.Broadcast(viewEvent);
-    }
+    views.PushBack(it.Value().m_pView->GetHandle());
   }
+  for (const auto& view : views)
+    DestroyView(view);
 
-  m_uiRenderFrameIndex = 0;
-  m_FrameCompletionTracker.Reset();
-  m_bFrameCompletionTrackerInitialized = false;
+  xiiDebugRenderer::ClearContext(GetWorld());
 }
 
 void xiiRenderWorldModule::OnSimulationStarted()
@@ -147,8 +143,7 @@ void xiiRenderWorldModule::OnSimulationStarted()
 xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)
 {
   ViewDetail viewDetail;
-  viewDetail.m_pView          = XII_DEFAULT_NEW(xiiView, m_pWorld);
-  viewDetail.m_pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
+  viewDetail.m_pView = XII_DEFAULT_NEW(xiiView, m_pWorld);
 
   viewDetail.m_pView->SetName(sName);
 
@@ -157,6 +152,7 @@ xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& ou
   XII_VERIFY(m_ViewIdTable.TryGetValue(viewId, pViewDetail), "Failed to retrieve view detail after valid insert.");
 
   pViewDetail->m_pView->m_InternalId = viewId;
+  pViewDetail->m_pExtractedData      = XII_DEFAULT_NEW(xiiExtractedRenderData, *pViewDetail->m_pView);
   pViewDetail->m_pView->SetExtractedRenderData(pViewDetail->m_pExtractedData.Borrow());
 
   xiiViewEvent viewEvent;
@@ -182,6 +178,7 @@ void xiiRenderWorldModule::DestroyView(const xiiViewHandle& hView)
   viewEvent.m_Type  = xiiViewEventType::Deleted;
   viewEvent.m_pView = viewDetail.m_pView.Borrow();
   m_ViewEvents.Broadcast(viewEvent);
+  xiiDebugRenderer::ClearContext(*viewDetail.m_pView);
 }
 
 bool xiiRenderWorldModule::TryGetView(const xiiViewHandle& hView, xiiView*& out_pView) const
@@ -490,7 +487,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
   {
     auto& viewDetail = it.Value();
 
-    if (!viewDetail.m_pView->IsValid())
+    if (!viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
 
     XII_ASSERT_DEV(viewDetail.m_pExtractedData != nullptr, "xiiRenderWorldModule view cache entry must always have extracted render data.");
@@ -517,7 +514,13 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
       const xiiWorld* world = GetWorld();
       for (auto it = world->GetObjects(); it.IsValid(); ++it)
       {
-        const xiiGameObject*      pObject = it;
+        const xiiGameObject* pObject = it;
+        // Filter before cache reuse as tags and activation can change without invalidating static render data.
+        const xiiTagSet& tags = pObject->GetTags();
+        const xiiView&   view = *viewDetail.m_pView;
+        if (!pObject->IsActive() || tags.IsAnySet(view.m_ExcludeTags) || (!view.m_IncludeTags.IsEmpty() && !tags.IsAnySet(view.m_IncludeTags)))
+          continue;
+
         const xiiGameObjectHandle hObject = pObject->GetHandle();
 
         msg.m_hCurrentObject    = hObject;
@@ -569,32 +572,26 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (!pDevice)
     return;
 
-  if (!m_bFrameCompletionTrackerInitialized)
-  {
-    m_FrameCompletionTracker.Initialize(pDevice.Borrow());
-    m_bFrameCompletionTrackerInitialized = true;
-  }
+  if (m_ViewIdTable.IsEmpty())
+    return;
 
-  // Frame zero is the conservative "nothing has completed" sentinel used by all deferred
-  // resource managers. Real submissions therefore start at one.
-  const xiiUInt64     uiFrameIndex     = ++m_uiRenderFrameIndex;
-  constexpr xiiUInt32 uiFramesInFlight = 3U;
-  if (uiFrameIndex > uiFramesInFlight)
-    m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
-  const xiiUInt64 uiCompletedFrame = m_FrameCompletionTracker.PollCompletedFrames();
-  if (xiiGALBindlessResourceTable::IsInitialized())
-    xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
-  if (xiiMaterialManager::IsInitialized())
-    xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
-  if (xiiGpuVisibilityManager::IsInitialized())
-    xiiGpuVisibilityManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
+  // Device-global frame slices and retirement share one clock with registered graphs.
+  // Extraction remains parallel; the frame scope serializes recording and captures all queues.
+  xiiRenderGraphFrame frame;
+  if (frame.Begin().Failed())
+  {
+    xiiLog::Error("Could not begin the world rendering frame.");
+    return;
+  }
+  const xiiUInt64 uiFrameIndex     = frame.GetFrameIndex();
+  const xiiUInt64 uiCompletedFrame = frame.GetCompletedFrame();
 
   // Convert extracted engine meshes into persistent, subsystem-owned GPU scene records before
   // residency streaming runs. Stable render IDs retain previous transforms across frames.
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     ViewDetail& viewDetail = it.Value();
-    if (viewDetail.m_pView->IsValid())
+    if (viewDetail.m_pView->IsRenderEnabled() && viewDetail.m_pView->IsValid())
       XII_IGNORE_UNUSED(viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex));
   }
 
@@ -608,22 +605,13 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
     xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
   }
-  xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
-  bool bGlobalIlluminationFrameStarted = false;
 
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     auto& viewDetail = it.Value();
 
-    if (!viewDetail.m_pView->IsValid())
+    if (!viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
-
-    if (!bGlobalIlluminationFrameStarted && viewDetail.m_pView->GetCamera() != nullptr)
-    {
-      xiiDDGIManager::BeginFrame(viewDetail.m_pView->GetCamera()->GetPosition(), uiFrameIndex);
-      xiiSparseVoxelRadianceManager::BeginFrame(viewDetail.m_pView->GetCamera()->GetPosition(), uiFrameIndex);
-      bGlobalIlluminationFrameStarted = true;
-    }
 
     xiiRenderGraph*              pGraph        = viewDetail.m_pView->GetRenderGraph();
     xiiRenderGraphBlackboard&    blackboard    = viewDetail.m_pView->GetBlackboard();
@@ -673,14 +661,24 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     compileSettings.m_bEnableAsyncQueues  = true;
     compileSettings.m_bEnableCompileCache = true;
 
-    if (pGraph->Compile(compileSettings).Succeeded())
+    xiiStringBuilder graphError;
+    if (pGraph->Compile(compileSettings, &graphError).Succeeded())
     {
       // Pass the view's per-view profiler into the executor so every pass gets Duration bracketed.
-      const xiiResult executeResult = pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler());
-      XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", viewDetail.m_pView->GetName());
+      if (pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler(), &graphError).Failed())
+      {
+        // Earlier callbacks may have recorded/promoted history before a later submission fails.
+        // That state cannot be used as completed temporal input on the next view update.
+        viewDetail.m_pView->InvalidateTemporalHistory();
+        xiiLog::Error("Failed to execute render graph for view '{}': {}", viewDetail.m_pView->GetName(), graphError);
+      }
+    }
+    else
+    {
+      xiiLog::Error("Failed to compile render graph for view '{}': {}", viewDetail.m_pView->GetName(), graphError);
     }
     resourceCache.EndFrame();
   }
-
-  m_FrameCompletionTracker.CaptureSubmittedFrame(uiFrameIndex);
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderWorldModule);

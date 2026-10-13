@@ -115,5 +115,3 @@ void xiiWorldModuleConfig::RemoveInterfaceImplementation(xiiStringView sInterfac
     }
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_World_Implementation_WorldModuleConfig);

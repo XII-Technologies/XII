@@ -200,5 +200,3 @@ xiiResult xiiDependencyFile::ReadDependencyFile(xiiStringView sFile)
 
   return ReadDependencyFile(file);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_DependencyFile);

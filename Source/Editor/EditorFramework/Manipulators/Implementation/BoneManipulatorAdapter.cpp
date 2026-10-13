@@ -2,43 +2,56 @@
 
 #include <EditorFramework/EditorFrameworkPCH.h>
 
+#include <EditorFramework/Animation/SkeletonPoseAuthoring.h>
+#include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
+#include <EditorFramework/GUI/ExposedParameters.h>
 #include <EditorFramework/Manipulators/BoneManipulatorAdapter.h>
-#include <EditorFramework/PropertyGrid/ExposedParametersPropertyWidget.moc.h>
-#include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 xiiString xiiBoneManipulatorAdapter::s_sLastSelectedBone;
 
-xiiBoneManipulatorAdapter::xiiBoneManipulatorAdapter()  = default;
+xiiBoneManipulatorAdapter::xiiBoneManipulatorAdapter()
+{
+  if (auto* curator = xiiAssetCurator::GetSingleton())
+    curator->m_Events.AddEventHandler(xiiMakeDelegate(&xiiBoneManipulatorAdapter::AssetCuratorEventHandler, this), m_AssetEventsUnsubscriber);
+}
 xiiBoneManipulatorAdapter::~xiiBoneManipulatorAdapter() = default;
 
 void xiiBoneManipulatorAdapter::Finalize()
 {
-  RetrieveBones();
+  if (RetrieveBones().Failed())
+    return;
   ConfigureGizmos();
-  MigrateSelection();
-}
-
-void xiiBoneManipulatorAdapter::MigrateSelection()
-{
-  for (xiiUInt32 i = 0; i < m_Bones.GetCount(); ++i)
-  {
-    if (m_Bones[i].m_sName == s_sLastSelectedBone)
-    {
-      m_Gizmos[i].m_RotateGizmo.SetVisible(true);
-      m_Gizmos[i].m_ClickGizmo.SetVisible(false);
-      return;
-    }
-  }
-
-  // keep the last selection, even if it can't be migrated, until something else gets selected
 }
 
 void xiiBoneManipulatorAdapter::Update()
 {
-  RetrieveBones();
+  m_bSkeletonMetadataDirty           = false;
+  const xiiVariantArray previousKeys = m_Keys;
+  if (RetrieveBones().Failed())
+  {
+    m_Gizmos.Clear();
+    return;
+  }
+
+  if (previousKeys != m_Keys || m_Gizmos.GetCount() != m_Bones.GetCount())
+  {
+    m_Gizmos.Clear();
+    ConfigureGizmos();
+    return;
+  }
   UpdateGizmoTransform();
+}
+
+void xiiBoneManipulatorAdapter::AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
+{
+  // Curator events arrive during its main-thread tick. Defer rebuilding window-owned gizmos until redraw.
+  if (e.m_Type == xiiAssetCuratorEvent::Type::AssetListReset ||
+      ((e.m_Type == xiiAssetCuratorEvent::Type::AssetAdded || e.m_Type == xiiAssetCuratorEvent::Type::AssetRemoved ||
+        e.m_Type == xiiAssetCuratorEvent::Type::AssetUpdated || e.m_Type == xiiAssetCuratorEvent::Type::AssetMoved) &&
+       (!m_SkeletonAssetGuid.IsValid() || e.m_AssetGuid == m_SkeletonAssetGuid)))
+    m_bSkeletonMetadataDirty = true;
 }
 
 void xiiBoneManipulatorAdapter::RotateGizmoEventHandler(const xiiGizmoEvent& e)
@@ -77,10 +90,11 @@ void xiiBoneManipulatorAdapter::RotateGizmoEventHandler(const xiiGizmoEvent& e)
       xiiTransform globalGizmo = static_cast<const xiiGizmo*>(e.m_pGizmo)->GetTransformation();
       globalGizmo.m_vScale.Set(1);
 
-      xiiMat4 mGizmo = globalGizmo.GetAsMat4();
-      mGizmo         = GetObjectTransform().GetAsMat4().GetInverse() * mGizmo;
-
-      mGizmo = m_RootTransform.GetAsMat4().GetInverse() * mGizmo;
+      xiiMat4 mGizmo       = globalGizmo.GetAsMat4();
+      xiiMat4 inverseOwner = GetObjectTransform().GetAsMat4();
+      if (inverseOwner.Invert().Failed())
+        return;
+      mGizmo = inverseOwner * mGizmo;
 
       mGizmo = m_Gizmos[uiGizmo].m_InverseOffset * mGizmo;
 
@@ -116,14 +130,7 @@ void xiiBoneManipulatorAdapter::ClickGizmoEventHandler(const xiiGizmoEvent& e)
   {
     case xiiGizmoEvent::Type::Interaction:
     {
-      for (xiiUInt32 i = 0; i < m_Gizmos.GetCount(); ++i)
-      {
-        m_Gizmos[i].m_RotateGizmo.SetVisible(false);
-        m_Gizmos[i].m_ClickGizmo.SetVisible(true);
-      }
-
-      m_Gizmos[uiGizmo].m_RotateGizmo.SetVisible(true);
-      m_Gizmos[uiGizmo].m_ClickGizmo.SetVisible(false);
+      UpdateGizmoTransform();
     }
     break;
     default:
@@ -131,73 +138,101 @@ void xiiBoneManipulatorAdapter::ClickGizmoEventHandler(const xiiGizmoEvent& e)
   }
 }
 
-void xiiBoneManipulatorAdapter::RetrieveBones()
+xiiResult xiiBoneManipulatorAdapter::RetrieveBones()
 {
-  xiiObjectAccessorBase* pObjectAccessor = GetObjectAccessor();
-
-  const xiiBoneManipulatorAttribute* pAttr = static_cast<const xiiBoneManipulatorAttribute*>(m_pManipulatorAttr);
-
-  if (pAttr->GetTransformProperty().IsEmpty())
-    return;
-
-  xiiVariantArray values;
-
-  // Exposed parameters are only stored as diffs in the component. Thus, requesting the exposed parameters only returns those that have been modified. To get all, you need to use the xiiExposedParameterCommandAccessor which gives you all exposed parameters from the source asset.
-  auto pProperty = GetProperty(pAttr->GetTransformProperty());
-  if (const xiiExposedParametersAttribute* pAttrib = pProperty->GetAttributeByType<xiiExposedParametersAttribute>())
-  {
-    const xiiAbstractProperty* pParameterSourceProp = m_pObject->GetType()->FindPropertyByName(pAttrib->GetParametersSource());
-    XII_ASSERT_DEV(pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", pAttrib->GetParametersSource(), m_pObject->GetType()->GetTypeName());
-
-    xiiExposedParameterCommandAccessor proxy(pObjectAccessor, pProperty, pParameterSourceProp);
-    proxy.GetValues(m_pObject, pProperty, values).AssertSuccess();
-    proxy.GetKeys(m_pObject, pProperty, m_Keys).AssertSuccess();
-  }
-  else
-  {
-    pObjectAccessor->GetKeys(m_pObject, pProperty, m_Keys).AssertSuccess();
-    pObjectAccessor->GetValues(m_pObject, pProperty, values).AssertSuccess();
-  }
-
-  m_RootTransform.SetIdentity();
-
+  m_SkeletonAssetGuid = {};
   m_Bones.Clear();
-  m_Bones.SetCount(values.GetCount());
+  m_Keys.Clear();
+  m_ParentTransforms.Clear();
+  auto*       accessor         = GetObjectAccessor();
+  const auto* attribute        = static_cast<const xiiBoneManipulatorAttribute*>(m_pManipulatorAttr);
+  const auto* property         = GetProperty(attribute->GetTransformProperty());
+  const auto* skeletonProperty = GetProperty(attribute->m_sProperty2);
+  if (property == nullptr || skeletonProperty == nullptr || property->GetCategory() != xiiPropertyCategory::Map ||
+      property->GetSpecificType() != xiiGetStaticRTTI<xiiTransform>())
+    return XII_FAILURE;
 
-  for (xiiUInt32 i = 0; i < m_Bones.GetCount(); ++i)
+  xiiVariant skeleton;
+  XII_SUCCEED_OR_RETURN(accessor->GetValue(m_pObject, skeletonProperty, skeleton).GetResult());
+  if (!skeleton.IsA<xiiString>() || xiiAssetCurator::GetSingleton() == nullptr)
+    return XII_FAILURE;
+
+  xiiDynamicArray<xiiExposedBone> metadata;
   {
-    if (values[i].GetReflectedType() == xiiGetStaticRTTI<xiiExposedBone>())
+    const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(skeleton.Get<xiiString>());
+    if (!asset)
+      return XII_FAILURE;
+    m_SkeletonAssetGuid    = asset->m_Data.m_Guid;
+    const auto* parameters = asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiExposedParameters>();
+    if (parameters == nullptr)
+      return XII_FAILURE;
+    for (const auto* parameter : parameters->m_Parameters)
     {
-      const xiiExposedBone* pBone = reinterpret_cast<const xiiExposedBone*>(values[i].GetData());
-
-      if (pBone->m_sName == "<root-transform>")
-      {
-        m_RootTransform = pBone->m_Transform;
-      }
-
-      m_Bones[i] = *pBone;
-    }
-    else
-    {
-      // XII_REPORT_FAILURE("Property is not a xiiExposedBone");
-      m_Bones.Clear();
-      return;
+      if (parameter == nullptr || parameter->m_DefaultValue.GetReflectedType() != xiiGetStaticRTTI<xiiExposedBone>())
+        return XII_FAILURE;
+      metadata.PushBack(*static_cast<const xiiExposedBone*>(parameter->m_DefaultValue.GetData()));
     }
   }
+
+  xiiVariantArray keys, values;
+  XII_SUCCEED_OR_RETURN(accessor->GetKeys(m_pObject, property, keys).GetResult());
+  XII_SUCCEED_OR_RETURN(accessor->GetValues(m_pObject, property, values).GetResult());
+  if (keys.GetCount() != values.GetCount())
+    return XII_FAILURE;
+  xiiMap<xiiString, xiiTransform> overrides;
+  for (xiiUInt32 i = 0; i < keys.GetCount(); ++i)
+  {
+    if (!keys[i].IsA<xiiString>() || !values[i].IsA<xiiTransform>())
+      return XII_FAILURE;
+    overrides.Insert(keys[i].Get<xiiString>(), values[i].Get<xiiTransform>());
+  }
+  XII_SUCCEED_OR_RETURN(xiiResolveSkeletonPoseForAuthoring(metadata, overrides, m_Bones));
+  XII_SUCCEED_OR_RETURN(xiiExposedBone::ComputeParentTransforms(m_Bones, m_ParentTransforms));
+  for (const auto& bone : m_Bones)
+    m_Keys.PushBack(bone.m_sName);
+  return XII_SUCCESS;
 }
 
 void xiiBoneManipulatorAdapter::UpdateGizmoTransform()
 {
-  const xiiMat4 ownerTransform = GetObjectTransform().GetAsMat4();
+  if (m_bSkeletonMetadataDirty)
+  {
+    m_bSkeletonMetadataDirty = false;
+    Update();
+    return;
+  }
+  if (m_ParentTransforms.GetCount() != m_Gizmos.GetCount() || m_Bones.GetCount() != m_Gizmos.GetCount())
+    return;
+
+  const xiiMat4 ownerTransform   = GetObjectTransform().GetAsMat4();
+  xiiMat4       inverseOwner     = ownerTransform;
+  const bool    bOwnerInvertible = inverseOwner.Invert().Succeeded();
 
   for (xiiUInt32 i = 0; i < m_Gizmos.GetCount(); ++i)
   {
     auto& gizmo = m_Gizmos[i];
 
-    gizmo.m_Offset        = ComputeParentTransform(i);
-    gizmo.m_InverseOffset = gizmo.m_Offset.GetInverse();
+    gizmo.m_Offset        = m_ParentTransforms[i];
+    gizmo.m_InverseOffset = gizmo.m_Offset;
+    if (!bOwnerInvertible || gizmo.m_InverseOffset.Invert().Failed())
+    {
+      gizmo.m_RotateGizmo.SetVisible(false);
+      gizmo.m_ClickGizmo.SetVisible(false);
+      continue;
+    }
 
-    xiiMat4 mGizmo = ownerTransform * m_RootTransform.GetAsMat4() * gizmo.m_Offset * m_Bones[i].m_Transform.GetAsMat4();
+    xiiMat4 mGizmo       = ownerTransform * gizmo.m_Offset * m_Bones[i].m_Transform.GetAsMat4();
+    xiiMat4 inverseGizmo = mGizmo;
+    if (inverseGizmo.Invert().Failed())
+    {
+      gizmo.m_RotateGizmo.SetVisible(false);
+      gizmo.m_ClickGizmo.SetVisible(false);
+      continue;
+    }
+
+    const bool bSelected = m_Bones[i].m_sName == s_sLastSelectedBone;
+    gizmo.m_RotateGizmo.SetVisible(m_bManipulatorIsVisible && bSelected);
+    gizmo.m_ClickGizmo.SetVisible(m_bManipulatorIsVisible && !bSelected);
 
     xiiQuat rotOnly;
     rotOnly.ReconstructFromMat4(mGizmo);
@@ -220,6 +255,8 @@ void xiiBoneManipulatorAdapter::ConfigureGizmos()
   auto*                      pWindow       = xiiQtDocumentWindow::FindWindowByDocument(pDoc);
   xiiQtEngineDocumentWindow* pEngineWindow = qobject_cast<xiiQtEngineDocumentWindow*>(pWindow);
   XII_ASSERT_DEV(pEngineWindow != nullptr, "Manipulators are only supported in engine document windows");
+  if (pEngineWindow == nullptr)
+    return;
 
   m_Gizmos.SetCount(m_Bones.GetCount());
 
@@ -227,7 +264,7 @@ void xiiBoneManipulatorAdapter::ConfigureGizmos()
   {
     auto& gizmo = m_Gizmos[i];
 
-    gizmo.m_Offset = ComputeParentTransform(i);
+    gizmo.m_Offset = m_ParentTransforms[i];
 
     auto& rot = gizmo.m_RotateGizmo;
     rot.SetOwner(pEngineWindow, nullptr);
@@ -246,61 +283,15 @@ void xiiBoneManipulatorAdapter::ConfigureGizmos()
 
 void xiiBoneManipulatorAdapter::SetTransform(xiiUInt32 uiBone, const xiiTransform& value)
 {
-  xiiExposedBone* pBone = &m_Bones[uiBone];
-
-  pBone->m_Transform.m_qRotation = value.m_qRotation;
-  pBone->m_Transform             = value;
-
-  xiiExposedBone bone;
-  bone.m_sName     = pBone->m_sName;
-  bone.m_sParent   = pBone->m_sParent;
-  bone.m_Transform = value;
-
-  xiiVariant var;
-  var.CopyTypedObject(&bone, xiiGetStaticRTTI<xiiExposedBone>());
-
-  xiiObjectAccessorBase* pObjectAccessor = GetObjectAccessor();
-
-  const xiiBoneManipulatorAttribute* pAttr = static_cast<const xiiBoneManipulatorAttribute*>(m_pManipulatorAttr);
-
-  if (pAttr->GetTransformProperty().IsEmpty())
+  if (uiBone >= m_Bones.GetCount())
     return;
-
-  auto                                 pProperty = GetProperty(pAttr->GetTransformProperty());
-  const xiiExposedParametersAttribute* pAttrib   = pProperty->GetAttributeByType<xiiExposedParametersAttribute>();
-
-  const xiiAbstractProperty* pParameterSourceProp = m_pObject->GetType()->FindPropertyByName(pAttrib->GetParametersSource());
-  XII_ASSERT_DEV(pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", pAttrib->GetParametersSource(), m_pObject->GetType()->GetTypeName());
-
-  xiiExposedParameterCommandAccessor proxy(pObjectAccessor, pProperty, pParameterSourceProp);
-
-  // for some reason the first command in xiiExposedParameterCommandAccessor returns failure 'the property X does not exist' and the insert
-  // command than fails with 'the property X already exists' ???
-
-  proxy.SetValue(m_pObject, pProperty, var, m_Keys[uiBone]).AssertSuccess();
-}
-
-xiiMat4 xiiBoneManipulatorAdapter::ComputeFullTransform(xiiUInt32 uiBone) const
-{
-  const xiiMat4 tParent = ComputeParentTransform(uiBone);
-
-  return tParent * m_Bones[uiBone].m_Transform.GetAsMat4();
-}
-
-xiiMat4 xiiBoneManipulatorAdapter::ComputeParentTransform(xiiUInt32 uiBone) const
-{
-  const xiiString& parent = m_Bones[uiBone].m_sParent;
-
-  if (!parent.IsEmpty())
-  {
-    for (xiiUInt32 b = 0; b < m_Bones.GetCount(); ++b)
-    {
-      if (m_Bones[b].m_sName == parent)
-      {
-        return ComputeFullTransform(b);
-      }
-    }
-  }
-
-  return xiiMat4::MakeIdentity();
+  // Rotation handles must preserve the authored translation and non-uniform scale.
+  auto       transform  = m_Bones[uiBone].m_Transform;
+  const auto name       = m_Bones[uiBone].m_sName;
+  transform.m_qRotation = value.m_qRotation;
+  xiiMap<xiiString, xiiTransform> transforms;
+  transforms.Insert(name, transform);
+  const auto result = xiiApplySkeletonPoseForAuthoring(*GetObjectAccessor(), m_pObject, transforms);
+  if (result.Failed())
+    xiiLog::Error("Could not edit bone '{}': {}", name, result.GetMessageString());
 }

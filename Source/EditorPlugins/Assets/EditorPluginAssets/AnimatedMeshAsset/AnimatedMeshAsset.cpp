@@ -4,12 +4,14 @@
 
 #include <EditorPluginAssets/AnimatedMeshAsset/AnimatedMeshAsset.h>
 #include <EditorPluginAssets/Util/MeshImportUtils.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Utilities/Progress.h>
-#include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
-#include <ModelImporter/ModelImporter.h>
+#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
+#include <ModelImporter/MeshImport.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetDocument, 8, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetDocument, 9, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -34,7 +36,7 @@ xiiTransformStatus xiiAnimatedMeshAssetDocument::InternalTransformAsset(xiiStrea
   range.SetStepWeighting(0, 0.9f);
   range.BeginNextStep("Importing Mesh");
 
-  XII_SUCCEED_OR_RETURN(CreateMeshFromFile(pProp, desc));
+  XII_SUCCEED_OR_RETURN(CreateMeshFromFile(pProp, desc, !transformFlags.IsSet(xiiTransformFlags::BackgroundProcessing)));
 
   // the properties object can get invalidated by the CreateMeshFromFile() call
   pProp = GetProperties();
@@ -46,12 +48,13 @@ xiiTransformStatus xiiAnimatedMeshAssetDocument::InternalTransformAsset(xiiStrea
     desc.m_hDefaultSkeleton = xiiResourceManager::LoadResource<xiiSkeletonResource>(pProp->m_sDefaultSkeleton);
   }
 
-  desc.Save(stream);
-
-  return XII_SUCCESS;
+  xiiDefaultMemoryStreamStorage storage;
+  xiiMemoryStreamWriter         writer(&storage);
+  desc.Save(writer);
+  return storage.CopyToStream(stream);
 }
 
-xiiStatus xiiAnimatedMeshAssetDocument::CreateMeshFromFile(xiiAnimatedMeshAssetProperties* pProp, xiiMeshResourceDescriptor& desc)
+xiiTransformStatus xiiAnimatedMeshAssetDocument::CreateMeshFromFile(xiiAnimatedMeshAssetProperties* pProp, xiiMeshResourceDescriptor& desc, bool bAllowMaterialImport)
 {
   xiiProgressRange range("Mesh Import", 5, false);
 
@@ -64,56 +67,34 @@ xiiStatus xiiAnimatedMeshAssetDocument::CreateMeshFromFile(xiiAnimatedMeshAssetP
     return xiiStatus(xiiFmt("Couldn't make path absolute: '{0};", sAbsFilename));
   }
 
-  xiiUniquePtr<xiiModelImporter::Importer> pImporter = xiiModelImporter::RequestImporterForFileType(sAbsFilename);
-  if (pImporter == nullptr)
-    return xiiStatus("No known importer for this file type.");
-
-  xiiModelImporter::ImportOptions opt;
-  opt.m_sSourceFile               = sAbsFilename;
-  opt.m_bImportSkinningData       = true;
-  opt.m_bRecomputeNormals         = pProp->m_bRecalculateNormals;
-  opt.m_bRecomputeTangents        = pProp->m_bRecalculateTrangents;
-  opt.m_pMeshOutput               = &desc;
-  opt.m_MeshNormalsPrecision      = pProp->m_NormalPrecision;
-  opt.m_MeshTexCoordsPrecision    = pProp->m_TexCoordPrecision;
-  opt.m_MeshVertexColorConversion = pProp->m_VertexColorConversion;
-  opt.m_MeshBoneWeightPrecision   = pProp->m_BoneWeightPrecision;
-  opt.m_bNormalizeWeights         = pProp->m_bNormalizeWeights;
-  // opt.m_RootTransform = CalculateTransformationMatrix(pProp);
-
+  xiiModelMeshImportOptions options;
+  options.m_bImportSkinning       = true;
+  options.m_bNormalizeWeights     = pProp->m_bNormalizeWeights;
+  options.m_bRecalculateNormals   = pProp->m_bRecalculateNormals;
+  options.m_bRecalculateTangents  = pProp->m_bRecalculateTangents;
+  options.m_VertexColorConversion = pProp->m_VertexColorConversion;
   if (pProp->m_bSimplifyMesh)
   {
-    opt.m_uiMeshSimplification      = pProp->m_uiMeshSimplification;
-    opt.m_uiMaxSimplificationError  = pProp->m_uiMaxSimplificationError;
-    opt.m_bAggressiveSimplification = pProp->m_bAggressiveSimplification;
+    options.m_fSimplification           = xiiMath::Min<xiiUInt32>(pProp->m_uiMeshSimplification, 99) / 100.0f;
+    options.m_fMaxSimplificationError   = pProp->m_uiMaxSimplificationError / 100.0f;
+    options.m_bAggressiveSimplification = pProp->m_bAggressiveSimplification;
   }
-
-  if (pImporter->Import(opt).Failed())
-    return xiiStatus("Model importer was unable to read this asset.");
-
+  xiiModelMeshImport imported;
+  xiiStringBuilder   error;
+  if (xiiModelMeshImport::ReadFile(sAbsFilename, options, imported, &error).Failed())
+    return xiiStatus(error.GetView());
   range.BeginNextStep("Importing Materials");
-
-  // correct the number of material slots
-  if (pProp->m_bImportMaterials || pProp->m_Slots.GetCount() != desc.GetSubMeshes().GetCount())
+  auto materialSlots = pProp->m_Slots;
+  XII_SUCCEED_OR_RETURN(xiiMeshImportUtils::PrepareMaterialSlots(materialSlots, pProp->m_bImportMaterials, bAllowMaterialImport, GetDocumentPath(), sAbsFilename, imported));
+  XII_SUCCEED_OR_RETURN(xiiMeshImportUtils::CopyMeshAssetMaterialSlotToResource(imported.m_Mesh, materialSlots));
+  if (!xiiMeshMaterialSlots::Equal(materialSlots, pProp->m_Slots))
   {
     GetObjectAccessor()->StartTransaction("Update Mesh Materials");
-
-    xiiMeshImportUtils::SetMeshAssetMaterialSlots(pProp->m_Slots, pImporter.Borrow());
-
-    if (pProp->m_bImportMaterials)
-    {
-      xiiMeshImportUtils::ImportMeshAssetMaterials(pProp->m_Slots, GetDocumentPath(), pImporter.Borrow());
-    }
-
+    pProp->m_Slots = std::move(materialSlots);
     ApplyNativePropertyChangesToObjectManager();
     GetObjectAccessor()->FinishTransaction();
-
-    // Need to reacquire pProp pointer since it might be reallocated.
-    pProp = GetProperties();
   }
-
-  xiiMeshImportUtils::CopyMeshAssetMaterialSlotToResource(desc, pProp->m_Slots);
-
+  desc = std::move(imported.m_Mesh);
   return XII_SUCCESS;
 }
 

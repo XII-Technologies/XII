@@ -257,8 +257,24 @@ xiiStatus xiiDocument::ReadDocument(xiiStringView sDocumentPath, xiiUniquePtr<xi
     {
       XII_PROFILE_SCOPE("parse DDL graph");
       xiiStopwatch sw;
+      ref_pTypes = nullptr;
       if (xiiAbstractGraphDdlSerializer::ReadDocument(memreader, ref_pHeader, ref_pObjects, ref_pTypes, true).Failed())
         return xiiStatus("Failed to parse DDL graph");
+
+      const auto* pHeaderNode = ref_pHeader != nullptr ? ref_pHeader->GetNodeByName("Header") : nullptr;
+      if (pHeaderNode == nullptr)
+        return xiiStatus("The document header is missing.");
+
+      const auto* pDocumentId = pHeaderNode->FindProperty("DocumentID");
+      if (pDocumentId == nullptr || !pDocumentId->m_Value.IsA<xiiUuid>() || !pDocumentId->m_Value.Get<xiiUuid>().IsValid())
+        return xiiStatus("The document identity is missing or invalid.");
+
+      if (ref_pObjects == nullptr || ref_pObjects->GetNodeByName("ObjectTree") == nullptr)
+        return xiiStatus("The document object tree is missing.");
+
+      // Older documents may use only compiled-in RTTI and omit the Types block.
+      if (ref_pTypes == nullptr)
+        ref_pTypes = XII_DEFAULT_NEW(xiiAbstractObjectGraph);
 
       xiiTime t = sw.GetRunningTotal();
       xiiLog::Debug("DDL parsing time: {0} msec", xiiArgF(t.GetMilliseconds(), 1));

@@ -10,8 +10,7 @@ StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<GpuMeshlet>        g_Meshlets;
 StructuredBuffer<uint>              g_VisibleInstances;
 StructuredBuffer<uint>              g_VisibleInstanceCount;
-StructuredBuffer<uint4>             g_PreviousLodHistory;
-RWStructuredBuffer<uint4>           g_CurrentLodHistory;
+StructuredBuffer<uint4>             g_CurrentLodHistory;
 RWStructuredBuffer<GpuLodFeedback>  g_LodFeedback;
 RWStructuredBuffer<uint2>           g_VisibleMeshlets;
 RWStructuredBuffer<uint>            g_VisibleMeshletCount;
@@ -162,7 +161,6 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   uint meshletCount, meshletStride;
   uint visibleInstanceCapacity, visibleInstanceStride;
   uint visibleCountCapacity, visibleCountStride;
-  uint previousHistoryCapacity, previousHistoryStride;
   uint currentHistoryCapacity, currentHistoryStride;
   g_VisibilityView.GetDimensions(viewCount, viewStride);
   g_SceneInstances.GetDimensions(sceneCount, sceneStride);
@@ -170,7 +168,6 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   g_Meshlets.GetDimensions(meshletCount, meshletStride);
   g_VisibleInstances.GetDimensions(visibleInstanceCapacity, visibleInstanceStride);
   g_VisibleInstanceCount.GetDimensions(visibleCountCapacity, visibleCountStride);
-  g_PreviousLodHistory.GetDimensions(previousHistoryCapacity, previousHistoryStride);
   g_CurrentLodHistory.GetDimensions(currentHistoryCapacity, currentHistoryStride);
   if (viewCount == 0u || visibleCountCapacity == 0u)
     return;
@@ -189,20 +186,27 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex)
     return;
 
+  // Instance culling already selected the LOD before routing and occlusion tests.
+  // Streaming feedback uses the same representative and active-instance bounds.
+  uint selectionIndex = instanceIndex;
+  if (instance.LodSelectionIndex < min(view.InstanceCount, sceneCount) && g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex)
+    selectionIndex = instance.LodSelectionIndex;
+  const GpuSceneInstance  selection         = g_SceneInstances[selectionIndex];
   const GpuGeometryRecord geometry          = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
-  const float             distanceToCamera  = length(instance.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
-  const float             projectedCoverage = instance.BoundsCenterRadius.w * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
-  const uint              desiredLod        = SelectDesiredLod(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y);
-  const uint4             previousHistory   = instanceIndex < previousHistoryCapacity ? g_PreviousLodHistory[instanceIndex] : uint4(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu);
-  const uint              lodIndex          = SelectResidentLodWithHistory(geometry, instance.BoundsCenterRadius.w, distanceToCamera, view.ViewportAndHiZ.y,
-                                                                           instance.UserData, previousHistory, (uint)view.LodParameters.z, view.LodParameters.x);
+  const float             distanceToCamera  = length(selection.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
+  const float             projectedCoverage = GetInstanceLodRadius(selection) * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);
+  const uint              desiredLod        = SelectInstanceDesiredLod(geometry, selection, distanceToCamera, view.ViewportAndHiZ.y);
+  const uint              lodIndex          = instanceIndex < currentHistoryCapacity ? g_CurrentLodHistory[instanceIndex].x : 0xFFFFFFFFu;
   if (dispatchThreadId.x == 0u)
   {
-    if (instanceIndex < currentHistoryCapacity)
-      g_CurrentLodHistory[instanceIndex] = uint4(lodIndex, geometry.Generation, instance.UserData, (uint)view.LodParameters.y);
     SubmitLodFeedback(instance.GeometryIndex, geometry, desiredLod, lodIndex, (uint)view.LodParameters.w, instance.UserData, projectedCoverage);
   }
   if (lodIndex == 0xFFFFFFFFu || lodIndex >= min(geometry.LodCount, 8u))
+    return;
+
+  // Section ranges and material routing belong to one authored LOD. All candidates make
+  // the same geometry-level selection, then only that LOD's candidates reach rasterization.
+  if (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex)
     return;
 
   const GpuGeometryLod lod = geometry.Lods[lodIndex];
@@ -229,8 +233,9 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
       return;
   }
 
-  const float3 center = mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
-  const float  radius = meshlet.Bounds.w * maxScale;
+  const bool   posed  = instance.SkinningCount != 0u;
+  const float3 center = posed ? instance.BoundsCenterRadius.xyz : mul(instance.GlobalTransform, float4(meshlet.Bounds.xyz, 1.0f)).xyz;
+  const float  radius = posed ? instance.BoundsCenterRadius.w : meshlet.Bounds.w * maxScale;
   if (!SphereInsideFrustum(center, radius, view))
     return;
 
@@ -239,7 +244,7 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   // transforms distort the cone, so conservatively disable this test for those instances.
   const float minScale       = min(scale.x, min(scale.y, scale.z));
   const bool  isUniformScale = maxScale - minScale <= max(maxScale, 0.0001f) * 0.001f;
-  if (meshlet.Cone.w >= 0.0f && isUniformScale)
+  if (!posed && meshlet.Cone.w >= 0.0f && isUniformScale)
   {
     const float3 coneAxis     = normalize(mul((float3x3)instance.GlobalTransform, meshlet.Cone.xyz));
     const float3 toCamera     = normalize(view.CameraPosition.xyz - center);
@@ -256,7 +261,7 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
     dot(abs(instance.GlobalTransform[1] - instance.PreviousGlobalTransform[1]), 1.0f.xxxx) +
     dot(abs(instance.GlobalTransform[2] - instance.PreviousGlobalTransform[2]), 1.0f.xxxx) +
     dot(abs(instance.GlobalTransform[3] - instance.PreviousGlobalTransform[3]), 1.0f.xxxx);
-  if (transformDelta <= 1.0e-5f && !MeshletVisibleInHiZ(center, radius, view))
+  if (!posed && instance.PreviousSkinningCount == 0u && transformDelta <= 1.0e-5f && !MeshletVisibleInHiZ(center, radius, view))
     return;
 #endif
 

@@ -103,6 +103,19 @@ struct XII_GRAPHICSCORE_DLL xiiMeshPackedVertex
   xiiColorLinearUB m_BoneWeights0  = xiiColorLinearUB(255, 0, 0, 0);       ///< The bone weights for skinning this vertex, where each component represents the weight of the corresponding bone index in m_vBoneIndices0, normalized to the [0, 1] range and packed into an unsigned byte format for compact storage.
 };
 
+/// One primitive range to cluster independently. Ranges may overlap (for shared LOD geometry),
+/// but clusters never cross a range boundary. Metadata is copied into every generated meshlet.
+struct XII_GRAPHICSCORE_DLL xiiMeshletBuildRange
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiFirstPrimitive = 0;
+  xiiUInt32 m_uiPrimitiveCount = 0;
+  xiiUInt32 m_uiMaterialIndex  = 0;
+  xiiUInt16 m_uiSectionIndex   = 0;
+  xiiUInt16 m_uiLodIndex       = 0;
+};
+
 /// GPU-visible meshlet header.
 ///
 /// The first four fields are laid out for compact structured-buffer consumption. The bounds and cone
@@ -124,6 +137,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
   xiiUInt16         m_uiVertexCount          = 0U;                            ///< The number of unique vertices in this meshlet, used to identify how many unique vertices are referenced by the primitives in this meshlet for rendering and culling purposes.
   xiiUInt16         m_uiLodIndex             = 0U;                            ///< The index of the LOD this meshlet belongs to, used to identify which level of detail this meshlet is part of for LOD-based rendering and culling.
   xiiUInt16         m_uiSectionIndex         = 0U;                            ///< The index of the section this meshlet belongs to, used to identify which section of the mesh this meshlet is part of for rendering and culling purposes.
+  xiiUInt32         m_uiGpuPadding[2]        = {};                            ///< Aligns Bounds and Cone to the float4 members in the portable GPU record. Not serialized.
   xiiBoundingSphere m_Bounds                 = xiiBoundingSphere::MakeZero(); ///< The bounding sphere of this meshlet, used for frustum culling and other spatial queries during rendering.
   xiiVec3           m_vConeAxis              = xiiVec3(0.0f, 0.0f, 1.0f);     ///< The axis of the normal cone for this meshlet, used for backface culling and other orientation-based culling techniques during rendering.
   float             m_fConeCutoff            = -1.0f;                         ///< The cutoff angle for the normal cone of this meshlet, where values in the range [-1, 1] represent the cosine of the cutoff angle and are used for backface culling and other orientation-based culling techniques during rendering. A value of -1 means no normal cone culling, while a value of 0 means a 90-degree cutoff angle.
@@ -132,7 +146,8 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-static_assert(sizeof(xiiMeshlet) % 16U == 0U, "Meshlet records must preserve structured-buffer alignment.");
+static_assert(sizeof(xiiMeshlet) == 64U && offsetof(xiiMeshlet, m_Bounds) == 32U && offsetof(xiiMeshlet, m_vConeAxis) == 48U && offsetof(xiiMeshlet, m_fConeCutoff) == 60U,
+              "Meshlet records must match GpuMeshlet's structured-buffer member offsets, including the aligned float4 bounds and cone.");
 
 /// DrawMeshIndirect-compatible command payload.
 struct XII_GRAPHICSCORE_DLL xiiMeshDrawCommand
@@ -249,7 +264,14 @@ public:
   ///
   /// \param uiMaxVertices The maximum number of unique vertices allowed in each meshlet, used to control the size of the meshlets and to ensure that the vertex remapping data for each meshlet can fit within the specified limits for efficient GPU processing. A common value for this parameter is 64, which allows for efficient GPU processing while still providing good culling granularity.
   /// \param uiMaxPrimitives The maximum number of primitives (triangles, lines, etc.) allowed in each meshlet, used to control the size of the meshlets and to ensure that the primitive index data for each meshlet can fit within the specified limits for efficient GPU processing. A common value for this parameter is 124, which allows for efficient GPU processing while still providing good culling granularity. The specific values for these parameters may need to be adjusted based on the target hardware capabilities and the complexity of the geometry being processed to achieve optimal rendering performance.
-  void BuildMeshlets(xiiUInt32 uiMaxVertices = 64U, xiiUInt32 uiMaxPrimitives = 124U);
+  xiiResult BuildMeshlets(xiiUInt32 uiMaxVertices = 64U, xiiUInt32 uiMaxPrimitives = 124U);
+
+  /// Builds independent clusters for the supplied ranges, preserving material, section and LOD metadata.
+  /// Reads vertices once and reuses scratch storage between ranges. Invalid topology, layout, indices,
+  /// positions or ranges return failure and clear all generated meshlet data. Source geometry is unchanged.
+  /// An empty range list succeeds with empty output. Limits are clamped to the native meshlet limits.
+  xiiResult BuildMeshlets(xiiArrayPtr<const xiiMeshletBuildRange> ranges, xiiUInt32 uiMaxVertices = 64U, xiiUInt32 uiMaxPrimitives = 124U);
+
 
   /// Computes the bounding box sphere for this mesh buffer resource descriptor based on the vertex positions in the vertex data and the vertex stream layout specified in this descriptor. The bounding box sphere is typically calculated by iterating through the vertex positions in the vertex data, applying any necessary transformations based on the vertex stream layout, and computing the minimum enclosing sphere that contains all the vertex positions. This bounding box sphere can then be used for efficient frustum culling, collision detection, and other spatial queries during rendering.
   void ComputeBounds();

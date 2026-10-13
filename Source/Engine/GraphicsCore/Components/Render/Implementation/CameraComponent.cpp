@@ -27,14 +27,16 @@ void xiiCameraComponentManager::Initialize()
 
   auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
 
-  pRenderWorldModule->GetViewEvents().AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
+  m_ViewEventSubscription = pRenderWorldModule->GetViewEvents().AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
 }
 
 void xiiCameraComponentManager::Deinitialize()
 {
-  auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
-
-  pRenderWorldModule->GetViewEvents().RemoveEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
+  // The event takes its value by copy, so the converted const-reference delegate is not comparable.
+  // Use the subscription identity and never create a render module during world teardown.
+  if (auto* module = GetWorld()->GetModule<xiiRenderWorldModule>())
+    module->GetViewEvents().RemoveEventHandler(m_ViewEventSubscription);
+  m_ViewEventSubscription = 0;
 
   SUPER::Deinitialize();
 }
@@ -134,7 +136,10 @@ void xiiCameraComponentManager::OnViewCreated(const xiiViewEvent& viewEvent)
   // Mark all cameras as modified so the new view gets the proper settings
   for (auto it = GetComponents(); it.IsValid(); ++it)
   {
-    it->MarkAsModified(this);
+    // Compact storage retains deleted components until World cleanup. A view can be created
+    // before that cleanup (e.g. a camera preview); never queue an invalidated camera identity.
+    if (!it->GetHandle().IsInvalidated())
+      it->MarkAsModified(this);
   }
 }
 
@@ -572,4 +577,4 @@ void xiiCameraComponent::OnDeactivated()
   SUPER::OnDeactivated();
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_CameraComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Render_Implementation_CameraComponent);

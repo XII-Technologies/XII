@@ -32,5 +32,3 @@ xiiTelemetryMessage::~xiiTelemetryMessage()
   m_Reader.SetStorage(nullptr);
   m_Writer.SetStorage(nullptr);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_TelemetryMessage);

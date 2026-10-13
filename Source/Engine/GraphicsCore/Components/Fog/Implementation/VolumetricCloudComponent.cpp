@@ -141,4 +141,4 @@ void xiiVolumetricCloudComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData
   ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Fog_Implementation_VolumetricCloudComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Fog_Implementation_VolumetricCloudComponent);

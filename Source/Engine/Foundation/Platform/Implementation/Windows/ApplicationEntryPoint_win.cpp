@@ -22,6 +22,3 @@ namespace xiiApplicationDetails
 
 } // namespace xiiApplicationDetails
 #endif
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_Application_Implementation_Win_ApplicationEntryPoint_win);

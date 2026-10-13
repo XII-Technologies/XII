@@ -40,9 +40,11 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 xiiShaderPermutationResourceHandle xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, bool bAllowFallback)
 {
+  if (!hShader.IsValid())
+    return {};
   xiiResourceLock<xiiShaderResource> pShader(hShader, bAllowFallback ? xiiResourceAcquireMode::AllowLoadingFallback : xiiResourceAcquireMode::BlockTillLoaded);
 
-  if (!pShader->IsShaderValid())
+  if (!pShader.IsValid() || !pShader->IsShaderValid())
     return xiiShaderPermutationResourceHandle();
 
   xiiTemporaryHybridArray<xiiGALPermutationVariable, 32> filteredPermutationVariables;
@@ -109,3 +111,5 @@ void xiiShaderPermutationUtilities::Shutdown()
 {
   s_pState.Clear();
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ShaderPermutationUtilities);

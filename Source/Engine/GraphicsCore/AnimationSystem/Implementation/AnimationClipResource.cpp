@@ -209,11 +209,12 @@ void xiiAnimationClipResourceDescriptor::ComputeRuntimeHash()
   {
     hashWriter << track.m_sJointName.GetHash();
     hashWriter << track.m_uiJointIndex;
-    hashWriter << track.m_PositionKeys.GetCount();
-    hashWriter << track.m_RotationKeys.GetCount();
-    hashWriter << track.m_ScaleKeys.GetCount();
+    hashWriter.WriteArray(track.m_PositionKeys).IgnoreResult();
+    hashWriter.WriteArray(track.m_RotationKeys).IgnoreResult();
+    hashWriter.WriteArray(track.m_ScaleKeys).IgnoreResult();
   }
 
+  hashWriter.WriteArray(m_Events).IgnoreResult();
   hashWriter << m_OzzAnimationData.GetCount();
   if (!m_OzzAnimationData.IsEmpty())
   {
@@ -306,6 +307,11 @@ const xiiAnimationClipResourceDescriptor& xiiAnimationClipResource::GetDescripto
 void xiiAnimationClipResource::SampleLocalPose(const xiiSkeletonResource& skeleton, xiiTime sampleTime, xiiAnimationPose& ref_pose) const
 {
   ref_pose.ResetToRestPose(skeleton);
+  if (m_Descriptor.m_bAdditive)
+  {
+    for (auto& transform : ref_pose.m_LocalTransforms)
+      transform = xiiTransform::MakeIdentity();
+  }
 
 #if defined(BUILDSYSTEM_ENABLE_OZZ_SUPPORT)
   const ozz::animation::Animation* pOzzAnimation = GetOzzAnimation();

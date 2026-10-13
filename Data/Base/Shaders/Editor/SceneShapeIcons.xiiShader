@@ -1,0 +1,77 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[RENDERSTATE]
+IndependentBlend = true
+BlendEnable0 = true
+SourceBlend0 = BlendFactor_SourceAlpha
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
+BlendEnable1 = false
+DepthEnable = false
+DepthWriteEnable = false
+CullMode = CullMode_None
+
+[VERTEX_SHADER]
+#include <Shaders/Editor/SceneShapeIconData.h>
+DECLARE_STRUCTURED_BUFFER_AUTO(IconData, xiiSceneShapeIconData);
+
+struct VS_OUT
+{
+  float4 Position : SV_Position;
+  float2 UV : TEXCOORD0;
+  float4 Color : COLOR0;
+  nointerpolation uint PickingID : TEXCOORD1;
+  float2 DepthUV : TEXCOORD2;
+};
+
+VS_OUT main(uint vertex : SV_VertexID, uint instance : SV_InstanceID)
+{
+  float2 corners[6] = {float2(0, 0), float2(1, 1), float2(0, 1), float2(0, 0), float2(1, 0), float2(1, 1)};
+  xiiSceneShapeIconData data = IconData[instance];
+  VS_OUT result;
+  float2 clipPos = data.ClipRect.xy + corners[vertex] * data.ClipRect.zw;
+  result.Position = float4(clipPos, data.Depth, 1);
+  result.UV = corners[vertex];
+  result.DepthUV = clipPos * float2(0.5, -0.5) + 0.5;
+  result.Color = data.Color;
+  result.PickingID = data.PickingID;
+  return result;
+}
+
+[PIXEL_SHADER]
+Texture2D<float4> IconTexture;
+Texture2D<float> SceneDepth;
+SamplerState IconSampler;
+
+struct PS_IN
+{
+  float4 Position : SV_Position;
+  float2 UV : TEXCOORD0;
+  float4 Color : COLOR0;
+  nointerpolation uint PickingID : TEXCOORD1;
+  float2 DepthUV : TEXCOORD2;
+};
+struct PS_OUT
+{
+  float4 Color : SV_Target0;
+  uint PickingID : SV_Target1;
+};
+
+PS_OUT main(PS_IN input)
+{
+  float4 texel = IconTexture.Sample(IconSampler, input.UV);
+  if (texel.a <= 0) discard;
+  uint width, height;
+  SceneDepth.GetDimensions(width, height);
+  uint2 depthPixel = min(uint2(saturate(input.DepthUV) * float2(width, height)), uint2(width - 1, height - 1));
+  if (input.Position.z < SceneDepth.Load(int3(depthPixel, 0))) discard;
+  float3 tinted = saturate(texel.rgb * input.Color.rgb * 2);
+  float whitening = saturate(dot(texel.rgb, float3(0.2126, 0.7152, 0.0722)) * 3 - 2);
+  PS_OUT output;
+  output.Color = float4(lerp(tinted, float3(1, 1, 1), whitening), texel.a);
+  output.PickingID = input.PickingID;
+  return output;
+}

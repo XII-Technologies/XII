@@ -343,5 +343,3 @@ bool xiiIntersectionUtils::IsPointOnLine(const xiiVec3d& vLineStart, const xiiVe
 
   return (fClosestDistSqr <= fMaxDist * fMaxDist);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_Intersection);

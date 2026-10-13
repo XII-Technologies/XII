@@ -41,3 +41,5 @@ void xiiRenderWorldSettingsComponent::DeserializeComponent(xiiWorldReader& inout
 
   s >> m_ShadingQualityLevel;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Render_Implementation_RenderWorldSettingsComponent);

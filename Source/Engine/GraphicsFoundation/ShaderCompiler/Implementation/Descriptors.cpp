@@ -26,3 +26,5 @@ xiiUInt32 xiiGALPermutationVariable::CalculateHash(const xiiArrayPtr<xiiGALPermu
   xiiByteArrayPtr pBytes = buffer.GetByteArrayPtr();
   return xiiHashingUtils::xxHash32(pBytes.GetPtr(), pBytes.GetCount());
 }
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_ShaderCompiler_Implementation_Descriptors);

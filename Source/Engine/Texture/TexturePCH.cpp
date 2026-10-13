@@ -7,18 +7,18 @@ XII_STATICLINK_LIBRARY(Texture)
   if (bReturn)
     return;
 
-  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_BC7EncConversions);
-  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_DXTConversions);
-  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_DXTextureConverterersions);
-  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_DXTexCpuConversions);
-  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_PixelConversions);
-  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_PlanarConversions);
-  XII_STATICLINK_REFERENCE(Texture_Image_Formats_BmpFileFormat);
-  XII_STATICLINK_REFERENCE(Texture_Image_Formats_DdsFileFormat);
-  XII_STATICLINK_REFERENCE(Texture_Image_Formats_ExrFileFormat);
-  XII_STATICLINK_REFERENCE(Texture_Image_Formats_StbImageFileFormats);
-  XII_STATICLINK_REFERENCE(Texture_Image_Formats_TgaFileFormat);
-  XII_STATICLINK_REFERENCE(Texture_Image_Formats_WicFileFormat);
-  XII_STATICLINK_REFERENCE(Texture_Image_Implementation_ImageFormat);
-  XII_STATICLINK_REFERENCE(Texture_TextureConverter_Implementation_Processor);
+  XII_STATICLINK_REFERENCE(Texture_Converter_Implementation_Processor);
+  XII_STATICLINK_REFERENCE(Texture_Converter_Implementation_SamplerPreset);
+  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_Implementation_BC7EncConversions);
+  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_Implementation_DXTConversions);
+  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_Implementation_DirectXTextureConversions);
+  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_Implementation_DirectXTextureCpuConversions);
+  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_Implementation_PixelConversions);
+  XII_STATICLINK_REFERENCE(Texture_Image_Conversions_Implementation_PlanarConversions);
+  XII_STATICLINK_REFERENCE(Texture_Image_Formats_Implementation_DdsFileFormat);
+  XII_STATICLINK_REFERENCE(Texture_Image_Formats_Implementation_ExrFileFormat);
+  XII_STATICLINK_REFERENCE(Texture_Image_Formats_Implementation_StbImageFileFormats);
+  XII_STATICLINK_REFERENCE(Texture_Image_Formats_Implementation_TgaFileFormat);
+  XII_STATICLINK_REFERENCE(Texture_Image_Formats_Implementation_WicFileFormat);
+  XII_STATICLINK_REFERENCE(Texture_Image_Implementation_ImageConversion);
 }

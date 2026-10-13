@@ -23,3 +23,5 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGraph, xiiNoBase, 1, xiiRTTINoAllocator)
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
+
+XII_STATICLINK_FILE(Core, Core_Graph_Implementation_GraphReflection);

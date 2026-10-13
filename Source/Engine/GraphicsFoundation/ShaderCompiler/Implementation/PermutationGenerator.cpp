@@ -57,5 +57,3 @@ void xiiGALPermutationGenerator::GetPermutation(xiiUInt32 uiPerm, xiiHybridArray
     pv.m_sValue                   = itValue.Key();
   }
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_ShaderCompiler_Implementation_PermutationGenerator);

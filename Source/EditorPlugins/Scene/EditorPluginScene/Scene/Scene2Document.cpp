@@ -2,14 +2,13 @@
 
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
+#include <EditorFramework/Animation/SkeletonPoseAuthoring.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/PropertyGrid/ExposedParametersPropertyWidget.moc.h>
 #include <EditorPluginScene/Objects/SceneObjectManager.h>
 #include <EditorPluginScene/Scene/LayerDocument.h>
 #include <EditorPluginScene/Scene/Scene2Document.h>
 #include <Foundation/IO/OSFile.h>
-#include <GraphicsCore/AnimationSystem/SkeletonPoseComponent.h>
 #include <GuiFoundation/PropertyGrid/ManipulatorManager.h>
 #include <GuiFoundation/PropertyGrid/VisualizerManager.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
@@ -81,6 +80,10 @@ xiiScene2Document::xiiScene2Document(xiiStringView sDocumentPath) :
 
 xiiScene2Document::~xiiScene2Document()
 {
+  // Factory or load failure can destroy the document before layer storage is installed.
+  if (m_pSceneObjectManager == nullptr)
+    return;
+
   m_SelectionHandlerUnsubscriber.Unsubscribe();
 
   SetActiveLayer(GetGuid()).LogFailure();
@@ -394,6 +397,7 @@ void xiiScene2Document::HandleObjectStateFromEngineMsg2(const xiiPushObjectState
     auto pHistory = GetCommandHistory();
 
     pHistory->StartTransaction("Pull Object State");
+    bool failed = false;
 
     for (const xiiPushObjectStateData* pState : it.Value())
     {
@@ -409,64 +413,33 @@ void xiiScene2Document::HandleObjectStateFromEngineMsg2(const xiiPushObjectState
       if (pState->m_BoneTransforms.IsEmpty())
         continue;
 
-      auto pAccessor = GetObjectAccessor();
-
-      // check all components
-      for (auto pComponent : pObject->GetChildren())
+      for (const auto* component : pObject->GetChildren())
       {
-        auto pComponentType = pComponent->GetType();
-
-        const auto* pBoneManipAttr = pComponentType->GetAttributeByType<xiiBoneManipulatorAttribute>();
-
-        // we can only apply bone transforms on components that have the xiiBoneManipulatorAttribute attribute
-        if (pBoneManipAttr == nullptr)
+        const auto* attribute = component->GetType()->GetAttributeByType<xiiBoneManipulatorAttribute>();
+        if (attribute == nullptr || attribute->m_sProperty2.IsEmpty())
+          continue;
+        const auto* skeletonProperty = component->GetType()->FindPropertyByName(attribute->m_sProperty2);
+        xiiVariant  skeleton;
+        if (skeletonProperty == nullptr || GetObjectAccessor()->GetValue(component, skeletonProperty, skeleton).Failed() ||
+            !skeleton.IsA<xiiString>() || skeleton.Get<xiiString>() != pState->m_sSkeletonResource)
           continue;
 
-        auto pBonesProperty = pComponentType->FindPropertyByName(pBoneManipAttr->GetTransformProperty());
-        XII_ASSERT_DEBUG(pBonesProperty, "Invalid transform property set on xiiBoneManipulatorAttribute");
-
-        const xiiExposedParametersAttribute* pExposedParamsAttr = pBonesProperty->GetAttributeByType<xiiExposedParametersAttribute>();
-        XII_ASSERT_DEBUG(pExposedParamsAttr, "Expected exposed parameters on xiiBoneManipulatorAttribute property");
-
-        const xiiAbstractProperty* pParameterSourceProp = pComponentType->FindPropertyByName(pExposedParamsAttr->GetParametersSource());
-        XII_ASSERT_DEBUG(pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", pExposedParamsAttr->GetParametersSource(), pComponentType->GetTypeName());
-
-        // retrieve all the bone keys and values, these will contain the exposed default values, in case a bone has never been overridden before
-        xiiVariantArray                    boneValues, boneKeys;
-        xiiExposedParameterCommandAccessor proxy(pAccessor, pBonesProperty, pParameterSourceProp);
-        proxy.GetValues(pComponent, pBonesProperty, boneValues).AssertSuccess();
-        proxy.GetKeys(pComponent, pBonesProperty, boneKeys).AssertSuccess();
-
-        // apply all the new bone transforms
-        for (const auto& bone : pState->m_BoneTransforms)
+        const auto result = xiiApplySkeletonPoseForAuthoring(*GetObjectAccessor(), component, pState->m_BoneTransforms);
+        if (result.Failed())
         {
-          // ignore bones that are unknown (not exposed somehow)
-          xiiUInt32 idx = boneKeys.IndexOf(bone.Key());
-          if (idx == xiiInvalidIndex)
-            continue;
-
-          XII_ASSERT_DEBUG(boneValues[idx].GetReflectedType() == xiiGetStaticRTTI<xiiExposedBone>(), "Expected a xiiExposedBone in variant");
-
-          // retrieve the default/previous value of the bone
-          const xiiExposedBone* pDefVal = reinterpret_cast<const xiiExposedBone*>(boneValues[idx].GetData());
-
-          xiiExposedBone b;
-          b.m_sName     = pDefVal->m_sName;   // same as the key
-          b.m_sParent   = pDefVal->m_sParent; // this is what we don't have and therefore needed to retrieve the default values
-          b.m_Transform = bone.Value();
-
-          xiiVariant var;
-          var.CopyTypedObject(&b, xiiGetStaticRTTI<xiiExposedBone>());
-
-          proxy.SetValue(pComponent, pBonesProperty, var, bone.Key()).AssertSuccess();
+          xiiLog::Error("Could not pull skeleton pose: {}", result.GetMessageString());
+          failed = true;
         }
-
-        // found a component/property to apply bones to, so we can stop
         break;
       }
+      if (failed)
+        break;
     }
 
-    pHistory->FinishTransaction();
+    if (failed)
+      pHistory->CancelTransaction();
+    else
+      pHistory->FinishTransaction();
   }
   SetActiveLayer(activeLayer).LogFailure();
 }

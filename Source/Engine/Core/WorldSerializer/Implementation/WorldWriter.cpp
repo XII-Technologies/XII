@@ -377,5 +377,3 @@ void xiiWorldWriter::WriteComponentSerializationData(const xiiDeque<const xiiCom
     storage.CopyToStream(s).IgnoreResult();
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_WorldSerializer_Implementation_WorldWriter);

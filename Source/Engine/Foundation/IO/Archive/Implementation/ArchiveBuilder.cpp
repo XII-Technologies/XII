@@ -152,5 +152,3 @@ bool xiiArchiveBuilder::WriteFileProgressCallback(xiiUInt64 bytesWritten, xiiUIn
   XII_IGNORE_UNUSED(bytesTotal);
   return true;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_ArchiveBuilder);

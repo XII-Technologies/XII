@@ -97,7 +97,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedGlobalIllumination(const x
       cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", context.GetBuffer(data.m_hReflectionProbeData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayMiss);
       xiiHybridArray<xiiGALTextureView*, XII_MAX_REFLECTION_PROBES> reflectionProbeViews;
       reflectionProbeViews.SetCount(XII_MAX_REFLECTION_PROBES);
-      xiiGALTextureView* pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+      xiiSharedPtr<xiiGALTextureView> pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
       for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < XII_MAX_REFLECTION_PROBES; ++uiProbeIndex)
       {
         reflectionProbeViews[uiProbeIndex] = uiProbeIndex < data.m_hReflectionProbeTextures.GetCount() ?
@@ -154,7 +154,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRGITemporal(xiiReSTIRGITemporalD
 {
   const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
   const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
-  const xiiUInt32 uiPreviousSlot = (m_Resources.m_LightingPasses.m_uiFrameIndex + 1U) & 1U;
+  const xiiUInt32 uiPreviousSlot = 1U - m_Resources.m_LightingPasses.m_uiRTGIReservoirHistoryWriteIndex;
   auto&           resources      = m_Resources.m_LightingPasses;
 
   const bool bSampleHistoryRecreated  = EnsureTemporalHistoryTextures(resources.m_pRTGIReservoirSampleHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight);
@@ -239,7 +239,8 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRGISpatial(xiiReSTIRGISpatialDat
 {
   const xiiUInt32 uiWidth       = m_View.GetRenderResolutionWidth();
   const xiiUInt32 uiHeight      = m_View.GetRenderResolutionHeight();
-  const xiiUInt32 uiCurrentSlot = m_Resources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiCurrentSlot = m_Resources.m_LightingPasses.m_uiRTGIReservoirHistoryWriteIndex;
+  data.m_uiHistoryWriteIndex    = uiCurrentSlot;
   auto&           resources     = m_Resources.m_LightingPasses;
 
   data.m_hSceneDepth       = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
@@ -303,6 +304,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRGISpatial(const xiiReSTIRGISp
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
     m_Resources.m_LightingPasses.m_bRTGIReservoirHistoryValid = m_Resources.m_LightingPasses.m_bRTGIAvailableThisFrame;
+    m_Resources.m_LightingPasses.m_uiRTGIReservoirHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
 }
@@ -313,7 +315,8 @@ void xiiBuiltinRenderPipelineRuntime::SetupRayTracedGlobalIlluminationDenoise(xi
 {
   const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
   const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
-  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiRTGIHistoryWriteIndex;
+  data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPasses;
 
@@ -369,6 +372,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedGlobalIlluminationDenoise(
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
     m_Resources.m_LightingPasses.m_bRTGIHistoryValid = data.m_bSignalValid;
+    m_Resources.m_LightingPasses.m_uiRTGIHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
 }
@@ -478,7 +482,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedReflections(const xiiRayTr
       cmd.ResolveAndSetShaderResourceBufferView("g_ReflectionProbeData", context.GetBuffer(data.m_hReflectionProbeData)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayMiss);
       xiiHybridArray<xiiGALTextureView*, XII_MAX_REFLECTION_PROBES> reflectionProbeViews;
       reflectionProbeViews.SetCount(XII_MAX_REFLECTION_PROBES);
-      xiiGALTextureView* pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+      xiiSharedPtr<xiiGALTextureView> pFallbackProbeView = context.GetTexture(data.m_hFallbackReflectionProbe)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
       for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < XII_MAX_REFLECTION_PROBES; ++uiProbeIndex)
       {
         reflectionProbeViews[uiProbeIndex] = uiProbeIndex < data.m_hReflectionProbeTextures.GetCount() ?
@@ -537,7 +541,8 @@ void xiiBuiltinRenderPipelineRuntime::SetupRayTracedReflectionsDenoise(xiiRayTra
 {
   const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
   const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
-  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiRTReflectionHistoryWriteIndex;
+  data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPasses;
 
@@ -624,6 +629,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedReflectionsDenoise(const x
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
     m_Resources.m_LightingPasses.m_bRTReflectionHistoryValid = data.m_bSignalValid;
+    m_Resources.m_LightingPasses.m_uiRTReflectionHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
 }
@@ -726,7 +732,8 @@ void xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceReflectionsTemporal(xiiScr
 
   const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
   const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
-  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiSSRHistoryWriteIndex;
+  data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPasses;
 
@@ -793,6 +800,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceReflectionsTemporal(cons
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
     m_Resources.m_LightingPasses.m_bSSRHistoryValid = true;
+    m_Resources.m_LightingPasses.m_uiSSRHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
 }
@@ -967,7 +975,8 @@ void xiiBuiltinRenderPipelineRuntime::SetupVolumetricFogTemporalReprojection(xii
 {
   const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
   const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
-  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiFrameIndex & 1U;
+  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiVolumetricHistoryWriteIndex;
+  data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPasses;
 
@@ -1029,6 +1038,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteVolumetricFogTemporalReprojection(c
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
     m_Resources.m_LightingPasses.m_bVolumetricHistoryValid = true;
+    m_Resources.m_LightingPasses.m_uiVolumetricHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
 }

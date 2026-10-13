@@ -12,5 +12,3 @@
 #else
 #  error "Thread functions are not implemented on current platform"
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_OSThread);

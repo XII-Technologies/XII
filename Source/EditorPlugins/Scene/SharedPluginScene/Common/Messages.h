@@ -31,8 +31,18 @@ class XII_SHAREDPLUGINSCENE_DLL xiiExportSceneGeometryMsgToEngine : public xiiEd
 public:
   bool      m_bSelectionOnly = false;
   xiiString m_sOutputFile;
-  int       m_iExtractionMode; // xiiWorldGeoExtractionUtil::ExtractionMode
+  int       m_iExtractionMode = 0; // xiiSceneGeometryExportMode
   xiiMat3   m_Transform;
+};
+
+class XII_SHAREDPLUGINSCENE_DLL xiiExportSceneGeometryResultMsgToEditor : public xiiEditorEngineDocumentMsg
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiExportSceneGeometryResultMsgToEditor, xiiEditorEngineDocumentMsg);
+
+public:
+  bool      m_bSucceeded = false;
+  xiiString m_sOutputFile;
+  xiiString m_sFailure;
 };
 
 class XII_SHAREDPLUGINSCENE_DLL xiiPullObjectStateMsgToEngine : public xiiEditorEngineDocumentMsg
@@ -48,6 +58,7 @@ struct xiiPushObjectStateData
   xiiQuat                         m_qRotation;
   bool                            m_bAdjustFromPrefabRootChild = false; // only used internally, not synchronized
   xiiMap<xiiString, xiiTransform> m_BoneTransforms;
+  xiiString                       m_sSkeletonResource;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_SHAREDPLUGINSCENE_DLL, xiiPushObjectStateData);

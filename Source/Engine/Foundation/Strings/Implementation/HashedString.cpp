@@ -141,5 +141,3 @@ void xiiHashedString::Clear()
   m_Data = s_pHSData->m_Empty;
 #endif
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_HashedString);

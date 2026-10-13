@@ -188,7 +188,3 @@ void xiiDataDirectory::FileserveType::FinishedWriting(FolderWriter* pWriter)
 
   xiiFileserveClient::GetSingleton()->UploadFile(m_uiDataDirID, pWriter->GetFilePath(), content);
 }
-
-
-
-XII_STATICLINK_FILE(FileservePlugin, FileservePlugin_Client_FileserveDataDir);

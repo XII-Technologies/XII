@@ -152,6 +152,94 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ResourceExecution)
 }
 
 XII_CREATE_SIMPLE_TEST_GROUP(PipelineDefault);
+XII_CREATE_SIMPLE_TEST(PipelineDefault, ReaderStateScheduling)
+{
+  for (bool exportAfterReaders : {false, true})
+  {
+    xiiRenderGraph graph;
+    graph.BeginSetup(1);
+    struct Texture
+    {
+      xiiRenderGraphTextureHandle m_Texture;
+    };
+    const auto producer = graph.AddPass<Texture>("Depth producer", xiiGALCommandQueueFlags::Graphics, [](Texture& data, xiiRenderGraphBuilder& builder) {
+        xiiGALTextureCreationDescription texture;
+        texture.m_Type = xiiGALResourceDimension::Texture2D;
+        texture.m_Size = {8, 8};
+        texture.m_Format = xiiGALResourceFormat::D32Float;
+        texture.m_BindFlags = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+        data.m_Texture = builder.WriteTexture("Shared reader depth", texture, xiiGALResourceStateFlags::DepthWrite); }, [](const Texture&, xiiRenderGraphPassContext&) {});
+    const auto read     = [&](xiiStringView name, xiiGALCommandQueueFlags::Enum queue, xiiGALResourceStateFlags::Enum state, bool exportResult = false) {
+      graph.AddPass<Texture>(name, queue, [&](Texture& data, xiiRenderGraphBuilder& builder) {
+        data.m_Texture = builder.ReadTexture(producer.first->m_Texture, state);
+        if (exportResult)
+          builder.ExportTexture(data.m_Texture, xiiGALResourceStateFlags::CopySource); }, [](const Texture&, xiiRenderGraphPassContext&) {}, true);
+    };
+    read("Establish sampled layout", xiiGALCommandQueueFlags::Compute, xiiGALResourceStateFlags::ShaderResource);
+    read("Graphics reader", xiiGALCommandQueueFlags::Graphics, xiiGALResourceStateFlags::ShaderResource);
+    read("Parallel compute reader", xiiGALCommandQueueFlags::Compute, xiiGALResourceStateFlags::ShaderResource, exportAfterReaders);
+    if (!exportAfterReaders)
+      read("Transition after readers", xiiGALCommandQueueFlags::Transfer, xiiGALResourceStateFlags::CopySource);
+    graph.EndSetup();
+    xiiRenderGraphCompileSettings settings;
+    settings.m_bEnableSplitBarriers = true;
+    if (!XII_TEST_RESULT(graph.Compile(settings)))
+      return;
+    const auto compiled    = graph.GetCompiledPasses();
+    const auto submissions = graph.GetQueueSubmissions();
+    const auto findPass    = [&](xiiUInt32 pass) -> const xiiRenderGraphCompiledPass* {
+      for (const auto& entry : compiled)
+        if (entry.m_uiPassIndex == pass)
+          return &entry;
+      return nullptr;
+    };
+    const auto findSubmission = [&](xiiUInt32 pass) {
+      for (xiiUInt32 i = 0; i < submissions.GetCount(); ++i)
+        for (xiiUInt32 index : submissions[i].m_PassOrder)
+          if (compiled[index].m_uiPassIndex == pass)
+            return i;
+      return xiiInvalidIndex;
+    };
+    const auto* graphics = findPass(2);
+    const auto* compute  = findPass(3);
+    if (!XII_TEST_BOOL(graphics && compute))
+      return;
+    // Both readers use the original depth version, but the graphics reader must additionally
+    // wait for the compute reader that performs its first sampled-layout transition.
+    XII_TEST_BOOL(graphics->m_DependencyPassIndices.Contains(1));
+    XII_TEST_BOOL(submissions[findSubmission(2)].m_WaitSubmissionIndices.Contains(findSubmission(1)));
+    if (exportAfterReaders)
+    {
+      // The export transition runs after the final reader and must join the other reader too.
+      XII_TEST_BOOL(compute->m_DependencyPassIndices.Contains(2));
+      XII_TEST_BOOL(submissions[findSubmission(3)].m_WaitSubmissionIndices.Contains(findSubmission(2)));
+    }
+    else
+    {
+      // Readers in an already-established state remain independent across queues.
+      XII_TEST_BOOL(!compute->m_DependencyPassIndices.Contains(2));
+      XII_TEST_BOOL(!submissions[findSubmission(3)].m_WaitSubmissionIndices.Contains(findSubmission(2)));
+      const auto* transition = findPass(4);
+      if (!XII_TEST_BOOL(transition != nullptr))
+        return;
+      XII_TEST_BOOL(transition->m_DependencyPassIndices.Contains(2));
+      XII_TEST_BOOL(transition->m_DependencyPassIndices.Contains(3));
+      XII_TEST_BOOL(submissions[findSubmission(4)].m_WaitSubmissionIndices.Contains(findSubmission(2)));
+      XII_TEST_BOOL(submissions[findSubmission(4)].m_WaitSubmissionIndices.Contains(findSubmission(3)));
+    }
+    xiiUInt32 transitionCount = 0;
+    for (const auto& barrier : graph.GetBarriers())
+    {
+      if (barrier.m_BeforeState == xiiGALResourceStateFlags::ShaderResource && barrier.m_AfterState == xiiGALResourceStateFlags::CopySource)
+      {
+        ++transitionCount;
+        XII_TEST_INT(barrier.m_TransitionType, xiiGALStateTransitionType::Immediate);
+      }
+    }
+    XII_TEST_INT(transitionCount, 1);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
 {
   xiiGPUTestingEnvironment environment;
@@ -171,7 +259,7 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
     description.m_Type      = xiiGALResourceDimension::Texture2D;
     description.m_Size      = xiiSizeU32(32, 32);
     description.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
-    description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+    description.m_BindFlags = xiiGALBindFlags::RenderTarget;
     auto target             = environment.GetDevice()->CreateTexture(description);
     if (!XII_TEST_BOOL(target != nullptr))
       return;
@@ -212,7 +300,7 @@ XII_CREATE_SIMPLE_TEST(PipelineDefault, OffscreenRendering)
       commandList->Begin();
       xiiGALTextureReadback::ReadbackRequest request;
       request.m_pTexture = target.Borrow();
-      readback.Enqueue(commandList.Borrow(), request);
+      XII_TEST_RESULT(readback.Enqueue(commandList.Borrow(), request));
       commandList->End();
       auto* queue = environment.GetDevice()->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
       queue->WaitForFenceValue(queue->Submit(commandList.Borrow()));

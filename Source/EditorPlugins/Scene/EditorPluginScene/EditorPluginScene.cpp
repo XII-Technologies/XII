@@ -9,7 +9,6 @@
 #include <EditorFramework/Actions/QuadViewActions.h>
 #include <EditorFramework/Actions/TransformGizmoActions.h>
 #include <EditorFramework/Actions/ViewActions.h>
-#include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Visualizers/VisualizerAdapterRegistry.h>
 #include <EditorPluginScene/Actions/LayerActions.h>
@@ -17,16 +16,15 @@
 #include <EditorPluginScene/Actions/SelectionActions.h>
 #include <EditorPluginScene/Scene/Scene2Document.h>
 #include <EditorPluginScene/Scene/Scene2DocumentWindow.moc.h>
+#include <EditorPluginScene/Scene/SceneComponentPropertyMetaState.h>
 #include <EditorPluginScene/Scene/SceneDocumentManager.h>
 #include <EditorPluginScene/Scene/SceneDocumentWindow.moc.h>
-#include <EditorPluginScene/Visualizers/BoxReflectionProbeVisualizerAdapter.h>
 #include <EditorPluginScene/Visualizers/PointLightVisualizerAdapter.h>
+#include <EditorPluginScene/Visualizers/ReflectionCaptureVisualizerAdapter.h>
 #include <EditorPluginScene/Visualizers/SpotLightVisualizerAdapter.h>
-#include <GameEngine/Configuration/RendererProfileConfigs.h>
-#include <GameEngine/Gameplay/GreyBoxComponent.h>
-#include <GraphicsCore/Lights/BoxReflectionProbeComponent.h>
-#include <GraphicsCore/Lights/PointLightComponent.h>
-#include <GraphicsCore/Lights/SpotLightComponent.h>
+#include <GraphicsCore/Components/Lights/PointLightComponent.h>
+#include <GraphicsCore/Components/Lights/ReflectionCaptureComponent.h>
+#include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <GuiFoundation/Action/ActionMapManager.h>
 #include <GuiFoundation/Action/CommandHistoryActions.h>
 #include <GuiFoundation/Action/DocumentActions.h>
@@ -34,7 +32,6 @@
 #include <GuiFoundation/Action/StandardMenus.h>
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
-#include <GuiFoundation/UIServices/DynamicStringEnum.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 #include <ToolsFoundation/Settings/ToolsTagRegistry.h>
 
@@ -84,32 +81,6 @@ void ToolsProjectEventHandler(const xiiToolsProjectEvent& e)
   }
 }
 
-void AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
-{
-  if (e.m_Type == xiiAssetCuratorEvent::Type::ActivePlatformChanged)
-  {
-    xiiSet<xiiString> allCamPipes;
-
-    auto& dynEnum = xiiDynamicStringEnum::CreateDynamicEnum("CameraPipelines");
-
-    for (xiiUInt32 profileIdx = 0; profileIdx < xiiAssetCurator::GetSingleton()->GetNumAssetProfiles(); ++profileIdx)
-    {
-      const xiiPlatformProfile* pProfile = xiiAssetCurator::GetSingleton()->GetAssetProfile(profileIdx);
-
-      const xiiRenderPipelineProfileConfig* pConfig = pProfile->GetTypeConfig<xiiRenderPipelineProfileConfig>();
-
-      for (auto it = pConfig->m_CameraPipelines.GetIterator(); it.IsValid(); ++it)
-      {
-        dynEnum.AddValidValue(it.Key(), true);
-      }
-    }
-  }
-}
-
-void xiiCameraComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
-void xiiSkyLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
-void xiiGreyBoxComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
-void xiiLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 void xiiSceneDocument_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 
 QImage SliderImageGenerator_LightTemperature(xiiUInt32 uiWidth, xiiUInt32 uiHeight, double fMinValue, double fMaxValue)
@@ -137,7 +108,6 @@ void OnLoadPlugin()
 
   xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(OnDocumentManagerEvent));
 
-  xiiAssetCurator::GetSingleton()->m_Events.AddEventHandler(AssetCuratorEventHandler);
 
   // Add built in tags
   {
@@ -206,7 +176,7 @@ void OnLoadPlugin()
   // Visualizers
   xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiPointLightVisualizerAttribute>(), [](const xiiRTTI* pRtti) -> xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiPointLightVisualizerAdapter); });
   xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiSpotLightVisualizerAttribute>(), [](const xiiRTTI* pRtti) -> xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiSpotLightVisualizerAdapter); });
-  xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiBoxReflectionProbeVisualizerAttribute>(), [](const xiiRTTI* pRtti) -> xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiBoxReflectionProbeVisualizerAdapter); });
+  xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiReflectionCaptureVisualizerAttribute>(), [](const xiiRTTI* pRtti) -> xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiReflectionCaptureVisualizerAdapter); });
 
   // SceneGraph Context Menu
   xiiActionMapManager::RegisterActionMap("EditorPluginScene_ScenegraphContextMenu");
@@ -223,21 +193,23 @@ void OnLoadPlugin()
 
   // component property meta states
   xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiCameraComponent_PropertyMetaStateEventHandler);
-  xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiSkyLightComponent_PropertyMetaStateEventHandler);
-  xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiGreyBoxComponent_PropertyMetaStateEventHandler);
+  xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiReflectionCaptureComponent_PropertyMetaStateEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(xiiLightComponent_PropertyMetaStateEventHandler);
 }
 
 void OnUnloadPlugin()
 {
+  auto& visualizers = xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory;
+  visualizers.UnregisterCreator(xiiGetStaticRTTI<xiiReflectionCaptureVisualizerAttribute>());
+  visualizers.UnregisterCreator(xiiGetStaticRTTI<xiiSpotLightVisualizerAttribute>());
+  visualizers.UnregisterCreator(xiiGetStaticRTTI<xiiPointLightVisualizerAttribute>());
+
   xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiSceneDocument_PropertyMetaStateEventHandler);
 
   xiiToolsProject::GetSingleton()->s_Events.RemoveEventHandler(ToolsProjectEventHandler);
   xiiDocumentManager::s_Events.RemoveEventHandler(xiiMakeDelegate(OnDocumentManagerEvent));
-  xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(AssetCuratorEventHandler);
-  xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiGreyBoxComponent_PropertyMetaStateEventHandler);
-  xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiSkyLightComponent_PropertyMetaStateEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiCameraComponent_PropertyMetaStateEventHandler);
+  xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiReflectionCaptureComponent_PropertyMetaStateEventHandler);
   xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(xiiLightComponent_PropertyMetaStateEventHandler);
 
 
@@ -255,124 +227,4 @@ XII_PLUGIN_ON_LOADED()
 XII_PLUGIN_ON_UNLOADED()
 {
   OnUnloadPlugin();
-}
-
-void xiiCameraComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
-{
-  static const xiiRTTI* pRtti = xiiRTTI::FindTypeByName("xiiCameraComponent");
-  XII_ASSERT_DEBUG(pRtti != nullptr, "Did the typename change?");
-
-  if (e.m_pObject->GetTypeAccessor().GetType() != pRtti)
-    return;
-
-  const xiiInt64 usage          = e.m_pObject->GetTypeAccessor().GetValue("UsageHint").ConvertTo<xiiInt64>();
-  const bool     isRenderTarget = (usage == 3); // xiiCameraUsageHint::RenderTarget
-
-  auto& props = *e.m_pPropertyStates;
-
-  props["RenderTarget"].m_Visibility       = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Disabled;
-  props["RenderTargetOffset"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-  props["RenderTargetSize"].m_Visibility   = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-}
-
-void xiiSkyLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
-{
-  static const xiiRTTI* pRtti = xiiRTTI::FindTypeByName("xiiSkyLightComponent");
-  XII_ASSERT_DEBUG(pRtti != nullptr, "Did the typename change?");
-
-  if (e.m_pObject->GetTypeAccessor().GetType() != pRtti)
-    return;
-
-  const xiiInt64 iReflectionProbeMode = e.m_pObject->GetTypeAccessor().GetValue("ReflectionProbeMode").ConvertTo<xiiInt64>();
-  const bool     bIsStatic            = (iReflectionProbeMode == 0); // xiiReflectionProbeMode::Static
-
-  auto& props = *e.m_pPropertyStates;
-
-  props["CubeMap"].m_Visibility = bIsStatic ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-  // props["RenderTargetOffset"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-  // props["RenderTargetSize"].m_Visibility = isRenderTarget ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-}
-
-void xiiGreyBoxComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
-{
-  static const xiiRTTI* pRtti = xiiRTTI::FindTypeByName("xiiGreyBoxComponent");
-  XII_ASSERT_DEBUG(pRtti != nullptr, "Did the typename change?");
-
-  if (e.m_pObject->GetTypeAccessor().GetType() != pRtti)
-    return;
-
-  auto& props = *e.m_pPropertyStates;
-
-  const xiiInt64 iShapeType = e.m_pObject->GetTypeAccessor().GetValue("Shape").ConvertTo<xiiInt64>();
-
-  props["Detail"].m_Visibility       = xiiPropertyUiState::Invisible;
-  props["Detail"].m_sNewLabelText    = "Detail";
-  props["Curvature"].m_Visibility    = xiiPropertyUiState::Invisible;
-  props["Thickness"].m_Visibility    = xiiPropertyUiState::Invisible;
-  props["SlopedTop"].m_Visibility    = xiiPropertyUiState::Invisible;
-  props["SlopedBottom"].m_Visibility = xiiPropertyUiState::Invisible;
-
-  switch (iShapeType)
-  {
-    case xiiGreyBoxShape::Box:
-      break;
-    case xiiGreyBoxShape::RampX:
-    case xiiGreyBoxShape::RampY:
-      break;
-    case xiiGreyBoxShape::Column:
-      props["Detail"].m_Visibility = xiiPropertyUiState::Default;
-      break;
-    case xiiGreyBoxShape::StairsX:
-    case xiiGreyBoxShape::StairsY:
-      props["Detail"].m_Visibility    = xiiPropertyUiState::Default;
-      props["Curvature"].m_Visibility = xiiPropertyUiState::Default;
-      props["SlopedTop"].m_Visibility = xiiPropertyUiState::Default;
-      props["Detail"].m_sNewLabelText = "Steps";
-      break;
-    case xiiGreyBoxShape::ArchX:
-    case xiiGreyBoxShape::ArchY:
-      props["Detail"].m_Visibility    = xiiPropertyUiState::Default;
-      props["Curvature"].m_Visibility = xiiPropertyUiState::Default;
-      props["Thickness"].m_Visibility = xiiPropertyUiState::Default;
-      break;
-    case xiiGreyBoxShape::SpiralStairs:
-      props["Detail"].m_Visibility       = xiiPropertyUiState::Default;
-      props["Curvature"].m_Visibility    = xiiPropertyUiState::Default;
-      props["Thickness"].m_Visibility    = xiiPropertyUiState::Default;
-      props["SlopedTop"].m_Visibility    = xiiPropertyUiState::Default;
-      props["SlopedBottom"].m_Visibility = xiiPropertyUiState::Default;
-      props["Detail"].m_sNewLabelText    = "Steps";
-      break;
-  }
-}
-
-void xiiLightComponent_PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e)
-{
-  static const xiiRTTI* pLightComponentRtti = xiiRTTI::FindTypeByName("xiiLightComponent");
-  XII_ASSERT_DEBUG(pLightComponentRtti != nullptr, "Did the typename change?");
-
-  auto& props = *e.m_pPropertyStates;
-
-  const xiiRTTI* pObjectType = e.m_pObject->GetTypeAccessor().GetType();
-  const bool     bIsLight    = pObjectType->IsDerivedFrom(pLightComponentRtti);
-
-  if (bIsLight)
-  {
-    props["LightColor"].m_Visibility = xiiPropertyUiState::Default;
-  }
-
-  if (bIsLight)
-  {
-    const bool bCastShadows            = e.m_pObject->GetTypeAccessor().GetValue("CastShadows").ConvertTo<bool>();
-    props["PenumbraSize"].m_Visibility = bCastShadows ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["SlopeBias"].m_Visibility    = bCastShadows ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["ConstantBias"].m_Visibility = bCastShadows ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-
-    // Directional light
-    props["NumCascades"].m_Visibility     = bCastShadows ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["MinShadowRange"].m_Visibility  = bCastShadows ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["FadeOutStart"].m_Visibility    = bCastShadows ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["SplitModeWeight"].m_Visibility = bCastShadows ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["NearPlaneOffset"].m_Visibility = bCastShadows ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-  }
 }

@@ -8,6 +8,7 @@
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineRuntime.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/TextureView.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
 xiiCVarFloat cvar_DynamicRenderingMinScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
@@ -45,11 +46,22 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 2, xiiRTTINoAllocator)
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
+{
+  m_pRenderTargetView = pRenderTargetView == nullptr ? xiiSharedPtr<xiiGALTextureView>() :
+                                                       xiiSharedPtr<xiiGALTextureView>(pRenderTargetView, pRenderTargetView->GetDevice()->GetAllocator());
+}
+
 xiiBuiltinRenderPipelineRuntime* xiiView::GetBuiltinRuntime() const
 {
   auto* runtime = static_cast<xiiBuiltinRenderPipelineRuntime*>(xiiViewRenderResourceManager::GetContext(m_hPipelineRuntime));
   XII_ASSERT_DEV(runtime != nullptr, "View pipeline runtime is unavailable after subsystem shutdown.");
   return runtime;
+}
+
+const xiiRenderPipelineInstance& xiiView::GetRenderPipelineInstance() const
+{
+  return GetBuiltinRuntime()->m_Instance;
 }
 
 xiiView::xiiView(xiiWorld* pWorld) :
@@ -196,11 +208,15 @@ void xiiView::UpdateCachedMatrices() const
     m_fLastViewportAspectRatio         = fViewportAspectRatio;
 
 
-    m_pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[0], xiiCameraEye::Left);
-    m_Data.m_InverseProjectionMatrix[0] = m_Data.m_ProjectionMatrix[0].GetInverse(0.0f);
-
-    m_pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[1], xiiCameraEye::Right);
-    m_Data.m_InverseProjectionMatrix[1] = m_Data.m_ProjectionMatrix[1].GetInverse(0.0f);
+    for (xiiUInt32 i = 0; i < 2; ++i)
+    {
+      auto& projection = m_Data.m_ProjectionMatrix[i];
+      m_pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, projection, static_cast<xiiCameraEye>(i), xiiClipSpaceDepthRange::ZeroToOne);
+      // Cameras retain their general-purpose near=0 / far=1 convention. Native rendering uses
+      // reversed Z (near=1 / far=0), including supplied asymmetric stereo projections.
+      projection.SetRow(2, projection.GetRow(3) - projection.GetRow(2));
+      m_Data.m_InverseProjectionMatrix[i] = projection.GetInverse(0.0f);
+    }
   }
 
   if (bUpdateVP)
@@ -376,3 +392,5 @@ void xiiView::RemovePipelineParameter(xiiStringView name)
   if (m_PipelineParameters.Remove(name))
     InvalidateTemporalHistory();
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_View);

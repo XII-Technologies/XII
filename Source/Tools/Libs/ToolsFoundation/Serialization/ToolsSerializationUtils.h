@@ -20,6 +20,7 @@ public:
   /// Serializes the given set of types into the provided object graph.
   static void SerializeTypes(const xiiSet<const xiiRTTI*>& types, xiiAbstractObjectGraph& ref_typesGraph);
 
-  /// Copies properties from a source document object to a target object, optionally filtering properties.
-  static void CopyProperties(const xiiDocumentObject* pSource, const xiiDocumentObjectManager* pSourceManager, void* pTarget, const xiiRTTI* pTargetType, FilterFunction propertFilter = nullptr);
+  /// Copies properties from a source document object to a target object. By default hidden properties
+  /// are excluded; an explicit filter determines which properties are copied instead.
+  static void CopyProperties(const xiiDocumentObject* pSource, const xiiDocumentObjectManager* pSourceManager, void* pTarget, const xiiRTTI* pTargetType, FilterFunction propertyFilter = {});
 };

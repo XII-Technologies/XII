@@ -75,6 +75,17 @@ void xiiGpuVisibilityManager::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCom
     it.Value()->BeginFrame(uiFrameIndex, uiCompletedFrame);
 }
 
+xiiUInt32 xiiGpuVisibilityManager::GetMinimumFramesInFlight()
+{
+  if (!IsInitialized() || s_pState->m_Contexts.IsEmpty())
+    return 0U;
+
+  xiiUInt32 uiMinimum = xiiMath::MaxValue<xiiUInt32>();
+  for (auto it = s_pState->m_Contexts.GetIterator(); it.IsValid(); ++it)
+    uiMinimum = xiiMath::Min(uiMinimum, it.Value()->m_Description.m_uiFramesInFlight);
+  return uiMinimum;
+}
+
 xiiGpuVisibilityContextHandle xiiGpuVisibilityManager::CreateContext(const xiiGpuVisibilityDescription& description)
 {
   XII_ASSERT_DEV(IsInitialized(), "The GPU visibility manager is not initialized.");

@@ -7,11 +7,11 @@
 #include <EditorPluginAssets/LUTAsset/AdobeCUBEReader.h>
 #include <EditorPluginAssets/LUTAsset/LUTAsset.h>
 
-#include <Texture/Image/Formats/DdsFileFormat.h>
-#include <Texture/Utilities/TextureFormat.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
+#include <Texture/Utilities/TextureAssetFile.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLUTAssetDocument, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLUTAssetDocument, 2, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -42,14 +42,14 @@ xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(xiiStringView sTa
   const xiiUInt32 lutSize = cubeReader.GetLUTSize();
 
   // Build a xiiImage from the data
-  xiiImageHeader imgHeader;
-  imgHeader.SetImageFormat(xiiImageFormat::R8G8B8A8_UNORM_SRGB);
-  imgHeader.SetWidth(lutSize);
-  imgHeader.SetHeight(lutSize);
-  imgHeader.SetDepth(lutSize);
+  xiiGALTextureCreationDescription description;
+  description.m_Type               = xiiGALResourceDimension::Texture3D;
+  description.m_Format             = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+  description.m_Size               = {lutSize, lutSize};
+  description.m_uiArraySizeOrDepth = lutSize;
 
   xiiImage img;
-  img.ResetAndAlloc(imgHeader);
+  img.ResetAndAlloc(description);
 
   if (!img.IsValid())
   {
@@ -76,19 +76,9 @@ xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(xiiStringView sTa
 
   xiiDeferredFileWriter file;
   file.SetOutput(sTargetFile);
-  XII_SUCCEED_OR_RETURN(AssetHeader.Write(file));
-
-  xiiTexFormat texFormat;
-  texFormat.m_bSRGB         = true;
-  texFormat.m_AddressModeU  = xiiImageAddressMode::Clamp;
-  texFormat.m_AddressModeV  = xiiImageAddressMode::Clamp;
-  texFormat.m_AddressModeW  = xiiImageAddressMode::Clamp;
-  texFormat.m_TextureFilter = xiiTextureFilterSetting::FixedBilinear;
-
-  texFormat.WriteTextureHeader(file);
-
-  xiiDdsFileFormat fmt;
-  if (fmt.WriteImage(file, img, "dds").Failed())
+  xiiGALSamplerCreationDescription sampler;
+  sampler.m_MipFilter = xiiGALFilterType::Point;
+  if (xiiTextureAssetFile::WriteImage(file, img, sampler, AssetHeader).Failed())
     return xiiStatus(xiiFmt("Writing image to target file failed: '{0}'", sTargetFile));
 
   if (file.Close().Failed())

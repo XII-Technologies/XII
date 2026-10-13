@@ -1119,6 +1119,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
   ExtensionFeatures enabledExtensionFeatures = {};
 
+  // MirrorOnce is a native GAL address mode. This extension has no feature structure.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME))
+  {
+    deviceExtensions.PushBack(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
+    enabledExtensionFeatures.m_bSamplerMirrorClampToEdge = true;
+  }
+
   // To enable some device extensions you must enable instance extension VK_KHR_get_physical_device_properties2 and add feature description to DeviceCreateInfo.pNext.
   const bool bSupportsDeviceFeatures2 = IsExtensionEnabled(m_EnabledExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   if (bSupportsDeviceFeatures2)
@@ -1779,7 +1786,7 @@ void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName) const
 
 xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceVulkan::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALSwapChainVulkan> pSwapChainVulkan = XII_NEW(&m_Allocator, xiiGALSwapChainVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALSwapChainVulkan> pSwapChainVulkan = XII_NEW(GetAllocator(), xiiGALSwapChainVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pSwapChainVulkan->InitPlatform().Failed())
   {
@@ -1792,7 +1799,7 @@ xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceVulkan::CreateSwapChainPla
 
 xiiInternal::NewInstance<xiiGALCommandList> xiiGALDeviceVulkan::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALCommandListVulkan> pCommandListVulkan = XII_NEW(&m_Allocator, xiiGALCommandListVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALCommandListVulkan> pCommandListVulkan = XII_NEW(GetAllocator(), xiiGALCommandListVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pCommandListVulkan->InitPlatform().Failed())
   {
@@ -1805,7 +1812,7 @@ xiiInternal::NewInstance<xiiGALCommandList> xiiGALDeviceVulkan::CreateCommandLis
 
 xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceVulkan::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALBlendStateVulkan> pBlendStateVulkan = XII_NEW(&m_Allocator, xiiGALBlendStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBlendStateVulkan> pBlendStateVulkan = XII_NEW(GetAllocator(), xiiGALBlendStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pBlendStateVulkan->InitPlatform().Failed())
   {
@@ -1818,7 +1825,7 @@ xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceVulkan::CreateBlendStateP
 
 xiiInternal::NewInstance<xiiGALDepthStencilState> xiiGALDeviceVulkan::CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALDepthStencilStateVulkan> pDepthStencilStateVulkan = XII_NEW(&m_Allocator, xiiGALDepthStencilStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALDepthStencilStateVulkan> pDepthStencilStateVulkan = XII_NEW(GetAllocator(), xiiGALDepthStencilStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pDepthStencilStateVulkan->InitPlatform().Failed())
   {
@@ -1831,7 +1838,7 @@ xiiInternal::NewInstance<xiiGALDepthStencilState> xiiGALDeviceVulkan::CreateDept
 
 xiiInternal::NewInstance<xiiGALRasterizerState> xiiGALDeviceVulkan::CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALRasterizerStateVulkan> pRasterizerStateVulkan = XII_NEW(&m_Allocator, xiiGALRasterizerStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALRasterizerStateVulkan> pRasterizerStateVulkan = XII_NEW(GetAllocator(), xiiGALRasterizerStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pRasterizerStateVulkan->InitPlatform().Failed())
   {
@@ -1844,7 +1851,7 @@ xiiInternal::NewInstance<xiiGALRasterizerState> xiiGALDeviceVulkan::CreateRaster
 
 xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceVulkan::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALShaderVulkan> pShaderVulkan = XII_NEW(&m_Allocator, xiiGALShaderVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALShaderVulkan> pShaderVulkan = XII_NEW(GetAllocator(), xiiGALShaderVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pShaderVulkan->InitPlatform().Failed())
   {
@@ -1857,7 +1864,7 @@ xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceVulkan::CreateShaderPlatform(
 
 xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  xiiInternal::NewInstance<xiiGALBufferVulkan> pBufferVulkan = XII_NEW(&m_Allocator, xiiGALBufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBufferVulkan> pBufferVulkan = XII_NEW(GetAllocator(), xiiGALBufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pBufferVulkan->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
@@ -1870,7 +1877,7 @@ xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(
 
 xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  xiiInternal::NewInstance<xiiGALTextureVulkan> pTextureVulkan = XII_NEW(&m_Allocator, xiiGALTextureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALTextureVulkan> pTextureVulkan = XII_NEW(GetAllocator(), xiiGALTextureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pTextureVulkan->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
@@ -1883,7 +1890,7 @@ xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatfor
 
 xiiInternal::NewInstance<xiiGALSampler> xiiGALDeviceVulkan::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALSamplerVulkan> pSamplerVulkan = XII_NEW(&m_Allocator, xiiGALSamplerVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALSamplerVulkan> pSamplerVulkan = XII_NEW(GetAllocator(), xiiGALSamplerVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pSamplerVulkan->InitPlatform().Failed())
   {
@@ -1896,7 +1903,7 @@ xiiInternal::NewInstance<xiiGALSampler> xiiGALDeviceVulkan::CreateSamplerPlatfor
 
 xiiInternal::NewInstance<xiiGALQuery> xiiGALDeviceVulkan::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALQueryVulkan> pQueryVulkan = XII_NEW(&m_Allocator, xiiGALQueryVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALQueryVulkan> pQueryVulkan = XII_NEW(GetAllocator(), xiiGALQueryVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pQueryVulkan->InitPlatform().Failed())
   {
@@ -1909,7 +1916,7 @@ xiiInternal::NewInstance<xiiGALQuery> xiiGALDeviceVulkan::CreateQueryPlatform(co
 
 xiiInternal::NewInstance<xiiGALFence> xiiGALDeviceVulkan::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALFenceVulkan> pFenceVulkan = XII_NEW(&m_Allocator, xiiGALFenceVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALFenceVulkan> pFenceVulkan = XII_NEW(GetAllocator(), xiiGALFenceVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pFenceVulkan->InitPlatform().Failed())
   {
@@ -1922,7 +1929,7 @@ xiiInternal::NewInstance<xiiGALFence> xiiGALDeviceVulkan::CreateFencePlatform(co
 
 xiiInternal::NewInstance<xiiGALRenderPass> xiiGALDeviceVulkan::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALRenderPassVulkan> pRenderPassVulkan = XII_NEW(&m_Allocator, xiiGALRenderPassVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALRenderPassVulkan> pRenderPassVulkan = XII_NEW(GetAllocator(), xiiGALRenderPassVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pRenderPassVulkan->InitPlatform().Failed())
   {
@@ -1935,7 +1942,7 @@ xiiInternal::NewInstance<xiiGALRenderPass> xiiGALDeviceVulkan::CreateRenderPassP
 
 xiiInternal::NewInstance<xiiGALFramebuffer> xiiGALDeviceVulkan::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALFramebufferVulkan> pFramebufferVulkan = XII_NEW(&m_Allocator, xiiGALFramebufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALFramebufferVulkan> pFramebufferVulkan = XII_NEW(GetAllocator(), xiiGALFramebufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pFramebufferVulkan->InitPlatform().Failed())
   {
@@ -1948,7 +1955,7 @@ xiiInternal::NewInstance<xiiGALFramebuffer> xiiGALDeviceVulkan::CreateFramebuffe
 
 xiiInternal::NewInstance<xiiGALBottomLevelAS> xiiGALDeviceVulkan::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALBottomLevelASVulkan> pBottomLevelASVulkan = XII_NEW(&m_Allocator, xiiGALBottomLevelASVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALBottomLevelASVulkan> pBottomLevelASVulkan = XII_NEW(GetAllocator(), xiiGALBottomLevelASVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pBottomLevelASVulkan->InitPlatform().Failed())
   {
@@ -1961,7 +1968,7 @@ xiiInternal::NewInstance<xiiGALBottomLevelAS> xiiGALDeviceVulkan::CreateBottomLe
 
 xiiInternal::NewInstance<xiiGALTopLevelAS> xiiGALDeviceVulkan::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALTopLevelASVulkan> pTopLevelASVulkan = XII_NEW(&m_Allocator, xiiGALTopLevelASVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALTopLevelASVulkan> pTopLevelASVulkan = XII_NEW(GetAllocator(), xiiGALTopLevelASVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pTopLevelASVulkan->InitPlatform().Failed())
   {
@@ -1974,7 +1981,7 @@ xiiInternal::NewInstance<xiiGALTopLevelAS> xiiGALDeviceVulkan::CreateTopLevelASP
 
 xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceVulkan::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALPipelineResourceSignatureVulkan> pPipelineResourceSignatureVulkan = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALPipelineResourceSignatureVulkan> pPipelineResourceSignatureVulkan = XII_NEW(GetAllocator(), xiiGALPipelineResourceSignatureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pPipelineResourceSignatureVulkan->InitPlatform().Failed())
   {
@@ -1987,7 +1994,7 @@ xiiInternal::NewInstance<xiiGALPipelineResourceSignature> xiiGALDeviceVulkan::Cr
 
 xiiInternal::NewInstance<xiiGALGraphicsPipelineState> xiiGALDeviceVulkan::CreateGraphicsPipelineStatePlatform(const xiiGALGraphicsPipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALGraphicsPipelineStateVulkan> pGraphicsPipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALGraphicsPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALGraphicsPipelineStateVulkan> pGraphicsPipelineStateVulkan = XII_NEW(GetAllocator(), xiiGALGraphicsPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pGraphicsPipelineStateVulkan->InitPlatform().Failed())
   {
@@ -2000,7 +2007,7 @@ xiiInternal::NewInstance<xiiGALGraphicsPipelineState> xiiGALDeviceVulkan::Create
 
 xiiInternal::NewInstance<xiiGALComputePipelineState> xiiGALDeviceVulkan::CreateComputePipelineStatePlatform(const xiiGALComputePipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALComputePipelineStateVulkan> pComputePipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALComputePipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALComputePipelineStateVulkan> pComputePipelineStateVulkan = XII_NEW(GetAllocator(), xiiGALComputePipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pComputePipelineStateVulkan->InitPlatform().Failed())
   {
@@ -2013,7 +2020,7 @@ xiiInternal::NewInstance<xiiGALComputePipelineState> xiiGALDeviceVulkan::CreateC
 
 xiiInternal::NewInstance<xiiGALRayTracingPipelineState> xiiGALDeviceVulkan::CreateRayTracingPipelineStatePlatform(const xiiGALRayTracingPipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALRayTracingPipelineStateVulkan> pRayTracingPipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALRayTracingPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALRayTracingPipelineStateVulkan> pRayTracingPipelineStateVulkan = XII_NEW(GetAllocator(), xiiGALRayTracingPipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pRayTracingPipelineStateVulkan->InitPlatform().Failed())
   {
@@ -2026,7 +2033,7 @@ xiiInternal::NewInstance<xiiGALRayTracingPipelineState> xiiGALDeviceVulkan::Crea
 
 xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceVulkan::CreateTilePipelineStatePlatform(const xiiGALTilePipelineStateCreationDescription& description)
 {
-  xiiInternal::NewInstance<xiiGALTilePipelineStateVulkan> pTilePipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALTilePipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+  xiiInternal::NewInstance<xiiGALTilePipelineStateVulkan> pTilePipelineStateVulkan = XII_NEW(GetAllocator(), xiiGALTilePipelineStateVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
   if (pTilePipelineStateVulkan->InitPlatform().Failed())
   {
@@ -2051,6 +2058,15 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
   VK_ASSERT_DEV(m_LogicalDevice.waitIdle(m_InstanceDispatchLoader));
 
+  // Releasing completed primary lists can retire their retained secondary lists. Drain both
+  // before destroying query pools or command queues during device shutdown.
+  for (auto* pool : {m_pTransferCommandBufferPool.Borrow(), m_pComputeCommandBufferPool.Borrow(), m_pGraphicsCommandBufferPool.Borrow()})
+  {
+    if (pool)
+      while (pool->ReclaimCompleted() != 0U)
+      {
+      }
+  }
   m_pDeferredDeletionQueue->ReleaseResources(true);
 }
 

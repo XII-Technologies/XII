@@ -40,6 +40,8 @@ protected:
   xiiDocument* GetDocument() { return m_pDocument; };
 
 private:
+  void CleanupChildActions(CommandState state);
+
   virtual bool      HasReturnValues() const { return false; }
   virtual xiiStatus DoInternal(bool bRedo)              = 0;
   virtual xiiStatus UndoInternal(bool bFireEvents)      = 0;

@@ -43,10 +43,11 @@
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 #include <Shaders/Pipeline/Passes/VirtualShadowMap/VirtualShadowMapConstants.h>
 
-xiiCommandLineOptionInt opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
-xiiCommandLineOptionInt opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after rendering this many frames (zero runs until closed).", 0U);
-xiiCommandLineOptionInt opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
-xiiCommandLineOptionInt opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
+xiiCommandLineOptionInt  opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the GPU-driven scene sample.", 0U);
+xiiCommandLineOptionInt  opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after rendering this many frames (zero runs until closed).", 0U);
+xiiCommandLineOptionBool opt_GpuDrivenRayTracing("GpuDrivenScene", "-ray-tracing", "Enable optional hardware ray tracing scene builds and validation dispatch.", true);
+xiiCommandLineOptionInt  opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
+xiiCommandLineOptionInt  opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
 
 namespace
 {
@@ -112,6 +113,7 @@ namespace
     xiiRenderGraphBufferHandle         m_hVirtualShadowConstants;
     xiiRenderGraphBufferHandle         m_hConstants;
     xiiRenderGraphBufferHandle         m_hSceneInstances;
+    xiiRenderGraphBufferHandle         m_hSkinningMatrices;
     xiiRenderGraphBufferHandle         m_hGeometry;
     xiiRenderGraphBufferHandle         m_hMeshlets;
     xiiRenderGraphBufferHandle         m_hVisibleMeshlets;
@@ -174,7 +176,10 @@ public:
   {
     const xiiInt32 iFrameLimit = opt_GpuDrivenFrameCount.GetOptionValue(xiiCommandLineOption::LogMode::Never);
     if (iFrameLimit > 0 && m_uiFrameIndex >= static_cast<xiiUInt64>(iFrameLimit))
+    {
+      xiiLog::Info("Completed {} GPU-driven frames.", m_uiFrameIndex);
       return Execution::Quit;
+    }
 
     m_pWindow->ProcessWindowMessages();
     if (!m_pWindow->IsVisible())
@@ -194,12 +199,34 @@ public:
     xiiClock::GetGlobalClock()->Update();
     xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
+    if (!m_hShaderPermutation.IsValid())
+    {
+      xiiLog::Error("The GPU-driven draw shader could not be loaded.");
+      SetReturnCode(1);
+      return Execution::Quit;
+    }
+    // Keep the validated permutation acquired while recording this frame.
+    xiiResourceLock<xiiShaderPermutationResource> drawShader(m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+    if (!drawShader.IsValid() || !drawShader->IsShaderValid())
+    {
+      xiiLog::Error("The GPU-driven draw shader failed to compile; stopping rendering.");
+      SetReturnCode(1);
+      return Execution::Quit;
+    }
+
     m_pDevice->BeginFrame();
     const bool bCanRender = m_pSwapChain != nullptr && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture() != nullptr;
     if (bCanRender)
     {
-      ++m_uiFrameIndex;
-      const xiiUInt64 uiCompletedFrame = xiiRenderGraphManager::PrepareFrame(m_uiFrameIndex, m_Configuration.m_uiFramesInFlight);
+      xiiRenderGraphFrame frame;
+      if (frame.Begin(m_Configuration.m_uiFramesInFlight).Failed())
+      {
+        xiiLog::Error("Could not begin the GPU-driven rendering frame.");
+        SetReturnCode(1);
+        m_pDevice->EndFrame();
+        return Execution::Quit;
+      }
+      m_uiFrameIndex = frame.GetFrameIndex();
       m_World.Update(m_uiFrameIndex, xiiClock::GetGlobalClock()->GetTimeDiff());
 
       m_TargetSize       = m_pWindow->GetClientAreaSize();
@@ -216,7 +243,7 @@ public:
       settings.m_bEnableAsyncQueues   = false;
       settings.m_bEnableSplitBarriers = false;
       settings.m_bEnableGPUProfiling  = true;
-      if (xiiRenderGraphManager::ExecuteFrame(m_uiFrameIndex, uiCompletedFrame, nullptr, settings, &error).Succeeded())
+      if (xiiRenderGraphManager::ExecuteFrame(frame, nullptr, settings, &error).Succeeded())
       {
         if (m_uiFrameIndex == 1U)
         {
@@ -227,7 +254,13 @@ public:
         }
       }
       else
-        xiiLog::Error("GPU-driven render graph compile failed: {0}", error);
+      {
+        xiiLog::Error("GPU-driven render graph execution failed: {0}", error);
+        SetReturnCode(1);
+        frame.End();
+        m_pDevice->EndFrame();
+        return Execution::Quit;
+      }
       m_pSwapChain->Present();
     }
     else if (m_pSwapChain)
@@ -280,7 +313,7 @@ public:
     deviceDescription.m_DeviceFeatures.m_TimestampQueries              = xiiGALDeviceFeatureState::Optional;
     deviceDescription.m_DeviceFeatures.m_DurationQueries               = xiiGALDeviceFeatureState::Optional;
     deviceDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Optional;
-    deviceDescription.m_DeviceFeatures.m_RayTracing                    = xiiGALDeviceFeatureState::Optional;
+    deviceDescription.m_DeviceFeatures.m_RayTracing                    = opt_GpuDrivenRayTracing.GetOptionValue(xiiCommandLineOption::LogMode::Always) ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
     // Timeline fences are required for GPU-side synchronization between the
     // graphics, asynchronous-compute, and transfer queues.
     deviceDescription.m_DeviceFeatures.m_NativeFence = xiiGALDeviceFeatureState::Optional;
@@ -555,6 +588,7 @@ private:
         data.m_hVirtualShadowAtlas     = builder.ReadTexture(virtualShadowUpload.m_hPhysicalAtlas, xiiGALResourceStateFlags::ShaderResource);
         data.m_hVirtualShadowPageTable = builder.ReadBuffer(virtualShadowUpload.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
         data.m_hSceneInstances         = builder.ReadBuffer(visibility.m_hSceneInstances, xiiGALResourceStateFlags::ShaderResource);
+        data.m_hSkinningMatrices       = builder.ReadBuffer(visibility.m_hSkinningMatrices, xiiGALResourceStateFlags::ShaderResource);
         data.m_hGeometry               = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
         data.m_hMeshlets               = builder.ReadBuffer(geometry.m_hMeshletMetadata, xiiGALResourceStateFlags::ShaderResource);
         data.m_hVisibleMeshlets        = builder.ReadBuffer(visibility.m_hVisibleMeshlets, xiiGALResourceStateFlags::ShaderResource);
@@ -857,6 +891,7 @@ private:
     commandList.ResolveAndSetConstantBuffer("xiiGpuDrivenSceneConstants", context.GetBuffer(data.m_hConstants));
     commandList.ResolveAndSetConstantBuffer("xiiVirtualShadowSamplingConstants", context.GetBuffer(data.m_hVirtualShadowConstants), xiiGALShaderType::Pixel);
     commandList.ResolveAndSetShaderResourceBufferView("g_SceneInstances", context.GetBuffer(data.m_hSceneInstances)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
+    commandList.ResolveAndSetShaderResourceBufferView("g_SkinningMatrices", context.GetBuffer(data.m_hSkinningMatrices)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_Geometry", context.GetBuffer(data.m_hGeometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_Meshlets", context.GetBuffer(data.m_hMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);
     commandList.ResolveAndSetShaderResourceBufferView("g_VisibleMeshlets", context.GetBuffer(data.m_hVisibleMeshlets)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Mesh);

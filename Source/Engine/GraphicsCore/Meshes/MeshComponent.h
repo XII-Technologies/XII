@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <Foundation/Containers/Bitfield.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
@@ -12,6 +13,7 @@ class xiiMaterialResource;
 using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 
 struct xiiMsgExtractRenderData;
+struct xiiAnimationPose;
 
 using xiiStaticMeshComponentManager    = xiiComponentManager<class xiiStaticMeshComponent, xiiBlockStorageType::Compact>;
 using xiiMeshComponentManager          = xiiComponentManager<class xiiMeshComponent, xiiBlockStorageType::Compact>;
@@ -68,6 +70,18 @@ class XII_GRAPHICSCORE_DLL xiiMeshRenderData : public xiiRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshRenderData, xiiRenderData);
 
 public:
+  /// Meaning of the packet's range for residency-aware consumers. Indexed consumers continue to
+  /// use the extracted CPU LOD range. Custom packets default to an exact primitive range, which
+  /// must be meaningful in every LOD they allow. Component packets identify authored mesh sections
+  /// so native scenes can select each LOD's own ranges/materials without assuming matching layouts.
+  enum class RangeMode : xiiUInt8
+  {
+    PrimitiveRange,
+    MeshSection,
+    WholeMesh
+  };
+  RangeMode m_RangeMode = RangeMode::PrimitiveRange;
+
   xiiMeshResourceHandle                      m_hMesh;       ///< The mesh resource to render, containing the mesh buffer and materials.
   xiiMeshBufferResourceHandle                m_hMeshBuffer; ///< The mesh buffer resource containing the GPU buffers for this mesh, used for rendering and culling.
   xiiDynamicArray<xiiMaterialResourceHandle> m_hMaterials;  ///< The material resources for this mesh, used for rendering.
@@ -81,7 +95,7 @@ public:
   xiiUInt32 m_uiSectionIndex   = xiiInvalidIndex; ///< The section index to render, used to select a specific section of the mesh for rendering.
   xiiUInt32 m_uiInstanceCount  = 1U;              ///< The number of instances to render, used for instanced rendering.
 
-  float m_fLodBias = 0.0f; ///< LOD bias to apply when selecting the LOD level to render, used to adjust LOD selection based on distance or performance requirements.
+  float m_fLodBias = 0.0f; ///< Projected-coverage octaves for automatic GPU LOD selection; +1 doubles coverage and favors finer LODs.
 
   xiiBitflags<xiiMeshRenderDataFlags> m_Flags = xiiMeshRenderDataFlags::Default; ///< Flags specifying various properties of the mesh render data, used to determine how the mesh should be rendered.
 
@@ -268,6 +282,7 @@ public:
   // xiiMeshComponentBase
 
 protected:
+  virtual xiiResult                           GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
   virtual void                                FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const override;
   virtual xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
 
@@ -284,8 +299,13 @@ public:
   /// Returns a handle to the skeleton resource for this skinned mesh component, used to access the skeleton for skinning this mesh.
   const xiiSkeletonResourceHandle& GetSkeleton() const; // [ property ]
 
-  /// Sets the skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
-  void SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
+  /// Sets finite affine mesh-space skinning matrices and refreshes spatial bounds. Empty restores
+  /// bind pose. Invalid palettes fail without changing the current pose. Input may alias the current palette.
+  [[nodiscard]] xiiResult SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
+
+  /// Applies an evaluated skeleton pose in this mesh's bone palette order. Acquires current mesh/skeleton definitions.
+  /// Failure clears stale skinning matrices without changing morph weights. Scratch capacity is reused.
+  xiiResult SetAnimationPose(const xiiSkeletonResourceHandle& hSkeleton, const xiiAnimationPose& pose);
 
   /// Returns a reference to the array of skinning matrices for this skinned mesh component, used to access the skinning transformation data for rendering this mesh.
   xiiArrayPtr<const xiiMat4> GetSkinningMatrices() const;
@@ -302,7 +322,8 @@ public:
 protected:
   xiiSkeletonResourceHandle m_hSkeleton;        ///< The skeleton resource for this skinned mesh component, used to specify the skeleton for skinning this mesh.
   xiiDynamicArray<xiiMat4>  m_SkinningMatrices; ///< Array of skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
-  xiiDynamicArray<float>    m_MorphWeights;     ///< Array of morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
+  xiiDynamicBitfield        m_UsedPaletteSlots;
+  xiiDynamicArray<float>    m_MorphWeights; ///< Array of morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
 };
 
 /// Instanced mesh component for many local-space instances of one mesh resource.

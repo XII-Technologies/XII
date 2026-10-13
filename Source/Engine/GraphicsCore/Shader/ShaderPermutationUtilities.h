@@ -24,6 +24,8 @@ class XII_GRAPHICSCORE_DLL xiiShaderPermutationUtilities
 public:
   xiiShaderPermutationUtilities() = delete;
 
+  /// Returns an invalid handle when the shader is unavailable or invalid. Validate before acquiring the permutation.
+  /// Set bAllowFallback to false when constructing a required pipeline: a loading fallback does not describe the requested shader.
   static xiiShaderPermutationResourceHandle PreloadSinglePermutation(xiiShaderResourceHandle hShader, const xiiHashTable<xiiHashedString, xiiHashedString>& permVars, bool bAllowFallback);
 
 private:

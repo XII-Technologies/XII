@@ -122,5 +122,3 @@ void xiiGALFenceD3D12::SetDebugNamePlatform(xiiStringView sName) const
     }
   }
 }
-
-XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_FenceD3D12);

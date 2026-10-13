@@ -237,6 +237,8 @@ static const xiiUInt32 xiiDdsDxt10FourCc = 0x30315844;
 
 static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_imageHeader, xiiDdsHeader& ref_ddsHeader)
 {
+  ref_imageHeader        = {};
+  ref_imageHeader.m_Type = xiiGALResourceDimension::Texture2D;
   if (inout_stream.ReadBytes(&ref_ddsHeader, sizeof(xiiDdsHeader)) != sizeof(xiiDdsHeader))
   {
     xiiLog::Error("Failed to read file header.");
@@ -278,7 +280,8 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiGALTextureCreat
     return XII_FAILURE;
   }
 
-  xiiDdsHeaderDxt10 headerDxt10;
+  xiiDdsHeaderDxt10 headerDxt10     = {};
+  bool              bHasDxt10Header = false;
 
   xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::Unknown;
 
@@ -312,7 +315,8 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiGALTextureCreat
         return XII_FAILURE;
       }
 
-      format = xiiImageFormatMappings::FromDxgiFormat(headerDxt10.m_uiDxgiFormat);
+      format          = xiiImageFormatMappings::FromDxgiFormat(headerDxt10.m_uiDxgiFormat);
+      bHasDxt10Header = true;
 
       if (format == xiiGALResourceFormat::Unknown)
       {
@@ -357,12 +361,47 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiGALTextureCreat
 
   if (bCubeMap)
   {
+    ref_imageHeader.m_Type               = xiiGALResourceDimension::TextureCube;
     ref_imageHeader.m_uiArraySizeOrDepth = 6;
   }
   else if (bVolume)
   {
+    ref_imageHeader.m_Type               = xiiGALResourceDimension::Texture3D;
     ref_imageHeader.m_uiArraySizeOrDepth = ref_ddsHeader.m_uiDepth;
   }
+
+  if (bHasDxt10Header)
+  {
+    const bool bDxt10Cube = (headerDxt10.m_uiMiscFlag & xiiDdsResourceMiscFlags::TEXTURECUBE) != 0;
+    if (headerDxt10.m_uiArraySize == 0 || (bDxt10Cube && headerDxt10.m_uiResourceDimension != xiiDdsResourceDimension::TEXTURE2D))
+      return XII_FAILURE;
+
+    switch (headerDxt10.m_uiResourceDimension)
+    {
+      case xiiDdsResourceDimension::TEXTURE1D:
+        if (bVolume || bCubeMap || ref_imageHeader.m_Size.height != 1)
+          return XII_FAILURE;
+        ref_imageHeader.m_Type               = headerDxt10.m_uiArraySize > 1 ? xiiGALResourceDimension::Texture1DArray : xiiGALResourceDimension::Texture1D;
+        ref_imageHeader.m_uiArraySizeOrDepth = headerDxt10.m_uiArraySize;
+        break;
+      case xiiDdsResourceDimension::TEXTURE2D:
+        if (bVolume || (bCubeMap && !bDxt10Cube) || (bDxt10Cube && headerDxt10.m_uiArraySize > xiiMath::MaxValue<xiiUInt32>() / 6U))
+          return XII_FAILURE;
+        ref_imageHeader.m_Type               = bDxt10Cube ? (headerDxt10.m_uiArraySize > 1 ? xiiGALResourceDimension::TextureCubeArray : xiiGALResourceDimension::TextureCube) :
+                                                            (headerDxt10.m_uiArraySize > 1 ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D);
+        ref_imageHeader.m_uiArraySizeOrDepth = headerDxt10.m_uiArraySize * (bDxt10Cube ? 6U : 1U);
+        break;
+      case xiiDdsResourceDimension::TEXTURE3D:
+        if (!bVolume || bCubeMap || headerDxt10.m_uiArraySize != 1)
+          return XII_FAILURE;
+        break;
+      default:
+        return XII_FAILURE;
+    }
+  }
+
+  if (ref_imageHeader.m_Size.width == 0 || ref_imageHeader.m_Size.height == 0 || ref_imageHeader.m_uiArraySizeOrDepth == 0 || ref_imageHeader.m_uiMipLevels == 0)
+    return XII_FAILURE;
 
   return XII_SUCCESS;
 }
@@ -425,11 +464,11 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   const xiiUInt32 uiDepth  = image.GetDepth(0);
 
   bool bHasMipMaps = uiNumMipLevels > 1;
-  bool bVolume     = uiDepth > 1;
+  bool bVolume     = image.GetDescription().Is3D();
   bool bCubeMap    = uiNumFaces > 1;
   bool bArray      = uiNumArrayIndices > 1;
 
-  bool bDxt10 = false;
+  bool bDxt10 = image.GetDescription().Is1D();
 
   xiiDdsHeader      fileHeader;
   xiiDdsHeaderDxt10 headerDxt10;
@@ -570,7 +609,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     {
       headerDxt10.m_uiResourceDimension = xiiDdsResourceDimension::TEXTURE3D;
     }
-    else if (uiHeight > 1)
+    else if (!image.GetDescription().Is1D())
     {
       headerDxt10.m_uiResourceDimension = xiiDdsResourceDimension::TEXTURE2D;
     }
@@ -625,4 +664,4 @@ bool xiiDdsFileFormat::CanWriteFileType(xiiStringView sExtension) const
   return CanReadFileType(sExtension);
 }
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Formats_DdsFileFormat);
+XII_STATICLINK_FILE(Texture, Texture_Image_Formats_Implementation_DdsFileFormat);

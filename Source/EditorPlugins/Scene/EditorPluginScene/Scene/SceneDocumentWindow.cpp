@@ -2,6 +2,8 @@
 
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
+#include <Core/World/GameObject.h>
+
 #include <EditorFramework/DocumentWindow/QuadViewWidget.moc.h>
 #include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>

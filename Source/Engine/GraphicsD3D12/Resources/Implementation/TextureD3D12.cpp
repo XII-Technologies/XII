@@ -448,7 +448,7 @@ xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureD3D12::CreateViewPlatfo
 
   XII_DELETE(pTextureViewD3D12.m_pAllocator, pTextureViewD3D12.m_pInstance);
 
-  return pTextureViewD3D12;
+  return nullptr;
 }
 
 void xiiGALTextureD3D12::SetDebugNamePlatform(xiiStringView sName) const

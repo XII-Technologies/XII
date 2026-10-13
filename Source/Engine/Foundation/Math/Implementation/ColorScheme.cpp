@@ -326,5 +326,3 @@ xiiColor xiiColorScheme::GetCategoryColor(xiiStringView sCategory, CategoryColor
   xiiLog::Warning("Color for category '{}' is undefined.", sCategory);
   return xiiColor::MakeZero();
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_ColorScheme);

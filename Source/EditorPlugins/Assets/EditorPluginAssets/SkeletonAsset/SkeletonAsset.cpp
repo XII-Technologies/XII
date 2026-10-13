@@ -4,70 +4,19 @@
 
 #include <EditorFramework/GUI/ExposedParameters.h>
 #include <EditorPluginAssets/SkeletonAsset/SkeletonAsset.h>
-#include <Foundation/Utilities/Progress.h>
+#include <Foundation/Containers/HashSet.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Declarations.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
-#include <ModelImporter/ModelImporter.h>
+#include <SharedPluginAssets/SkeletonAsset/SkeletonPreviewMessages.h>
+#include <ToolsFoundation/Animation/ExposedBone.h>
 
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkeletonAssetDocument, 10, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkeletonAssetDocument, 11, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-
-static xiiTransform CalculateTransformationMatrix(const xiiEditableSkeleton* pProp)
-{
-  const float us = xiiMath::Clamp(pProp->m_fUniformScaling, 0.0001f, 10000.0f);
-
-  auto rightDir = xiiMeshImportTransform::GetRightDir(pProp->m_ImportTransform, pProp->m_RightDir);
-  auto upDir    = xiiMeshImportTransform::GetUpDir(pProp->m_ImportTransform, pProp->m_UpDir);
-  auto flipFwd  = xiiMeshImportTransform::GetFlipForward(pProp->m_ImportTransform, pProp->m_bFlipForwardDir);
-
-  xiiBasisAxis::Enum forwardDir = xiiBasisAxis::GetOrthogonalAxis(rightDir, upDir, !flipFwd);
-
-  xiiTransform t;
-  t.SetIdentity();
-  t.m_vScale.Set(us);
-
-  // prevent mirroring in the rotation matrix, because we can't generate a quaternion from that
-  if (!flipFwd)
-  {
-    switch (forwardDir)
-    {
-      case xiiBasisAxis::PositiveX:
-        forwardDir = xiiBasisAxis::NegativeX;
-        t.m_vScale.x *= -1;
-        break;
-      case xiiBasisAxis::PositiveY:
-        forwardDir = xiiBasisAxis::NegativeY;
-        t.m_vScale.y *= -1;
-        break;
-      case xiiBasisAxis::PositiveZ:
-        forwardDir = xiiBasisAxis::NegativeZ;
-        t.m_vScale.z *= -1;
-        break;
-      case xiiBasisAxis::NegativeX:
-        forwardDir = xiiBasisAxis::PositiveX;
-        t.m_vScale.x *= -1;
-        break;
-      case xiiBasisAxis::NegativeY:
-        forwardDir = xiiBasisAxis::PositiveY;
-        t.m_vScale.y *= -1;
-        break;
-      case xiiBasisAxis::NegativeZ:
-        forwardDir = xiiBasisAxis::PositiveZ;
-        t.m_vScale.z *= -1;
-        break;
-    }
-  }
-
-  xiiMat3 rot   = xiiBasisAxis::CalculateTransformationMatrix(forwardDir, rightDir, upDir, 1.0f);
-  t.m_qRotation = xiiQuat::MakeFromMat3(rot);
-
-  return t;
-}
 
 xiiSkeletonAssetDocument::xiiSkeletonAssetDocument(xiiStringView sDocumentPath) :
   xiiSimpleAssetDocument<xiiEditableSkeleton>(sDocumentPath, xiiAssetDocEngineConnection::Simple, true)
@@ -162,11 +111,21 @@ void xiiSkeletonAssetDocument::PropertyMetaStateEventHandler(xiiPropertyMetaStat
 xiiStatus xiiSkeletonAssetDocument::WriteResource(xiiStreamWriter& inout_stream, const xiiEditableSkeleton& skeleton) const
 {
   xiiSkeletonResourceDescriptor desc;
-  desc.m_RootTransform = CalculateTransformationMatrix(&skeleton);
-  skeleton.FillResourceDescriptor(desc);
+  if (skeleton.FillResourceDescriptor(desc).Failed())
+    return xiiStatus("Skeleton hierarchy, joint names or import/rest transforms are invalid.");
 
   XII_SUCCEED_OR_RETURN(desc.Serialize(inout_stream));
 
+  return XII_SUCCESS;
+}
+
+xiiStatus xiiSkeletonAssetDocument::SendPreviewConfiguration() const
+{
+  xiiEditorEngineSkeletonPreviewMsg message;
+  if (message.SetSkeleton(*GetProperties()).Failed())
+    return xiiStatus("Cannot preview an invalid skeleton hierarchy or rest pose.");
+  if (!SendMessageToEngine(&message))
+    return xiiStatus("Could not send skeleton preview configuration to the engine process.");
   return XII_SUCCESS;
 }
 
@@ -261,8 +220,13 @@ void xiiSkeletonAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
 
   {
     xiiExposedBone bone;
-    bone.m_sName     = "<root-transform>";
-    bone.m_Transform = CalculateTransformationMatrix(desc);
+    bone.m_sName = "<root-transform>";
+    if (desc->GetRootTransform(bone.m_Transform).Failed())
+    {
+      XII_DEFAULT_DELETE(pExposedParams);
+      xiiLog::Warning("Cannot expose bones with invalid skeleton import coordinates.");
+      return;
+    }
 
     xiiExposedParameter* param = XII_DEFAULT_NEW(xiiExposedParameter);
     param->m_sName             = "<root-transform>";
@@ -271,95 +235,47 @@ void xiiSkeletonAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
     pExposedParams->m_Parameters.PushBack(param);
   }
 
-  auto Traverse = [&](xiiEditableSkeletonJoint* pJoint, const char* szParent, auto recurse) -> void {
+  struct Entry
+  {
+    XII_DECLARE_POD_TYPE();
+    const xiiEditableSkeletonJoint* m_pJoint;
+    const xiiEditableSkeletonJoint* m_pParent;
+  };
+  xiiDynamicArray<Entry>                      pending;
+  xiiHashSet<const xiiEditableSkeletonJoint*> visited;
+  for (xiiUInt32 i = desc->m_Children.GetCount(); i > 0; --i)
+    pending.PushBack({desc->m_Children[i - 1], nullptr});
+  while (!pending.IsEmpty())
+  {
+    const auto entry = pending.PeekBack();
+    pending.PopBack();
+    const auto* pJoint = entry.m_pJoint;
+    if (pJoint == nullptr || visited.Insert(pJoint))
+    {
+      XII_DEFAULT_DELETE(pExposedParams);
+      xiiLog::Warning("Cannot expose bones with invalid skeleton ownership.");
+      return;
+    }
     xiiExposedBone bone;
-    bone.m_sName     = pJoint->GetName();
-    bone.m_sParent   = szParent;
-    bone.m_Transform = pJoint->m_LocalTransform;
-
+    bone.m_sName               = pJoint->GetName();
+    bone.m_sParent             = entry.m_pParent != nullptr ? entry.m_pParent->GetName() : "";
+    bone.m_Transform           = pJoint->m_LocalTransform;
     xiiExposedParameter* param = XII_DEFAULT_NEW(xiiExposedParameter);
     param->m_sName             = pJoint->GetName();
     param->m_DefaultValue.CopyTypedObject(&bone, xiiGetStaticRTTI<xiiExposedBone>());
-
     pExposedParams->m_Parameters.PushBack(param);
-
-    for (auto pChild : pJoint->m_Children)
-    {
-      recurse(pChild, pJoint->GetName(), recurse);
-    }
-  };
-
-  for (auto ptr : desc->m_Children)
-  {
-    Traverse(ptr, "", Traverse);
+    for (xiiUInt32 i = pJoint->m_Children.GetCount(); i > 0; --i)
+      pending.PushBack({pJoint->m_Children[i - 1], pJoint});
   }
 
   // Info takes ownership of meta data.
   pInfo->m_MetaInfo.PushBack(pExposedParams);
 }
 
-xiiTransformStatus xiiSkeletonAssetDocument::InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
-{
-  {
-    m_bIsTransforming = true;
-    XII_SCOPE_EXIT(m_bIsTransforming = false);
-
-    xiiProgressRange range("Transforming Asset", 3, false);
-
-    xiiEditableSkeleton* pProp = GetProperties();
-
-    xiiStringBuilder sAbsFilename = pProp->m_sSourceFile;
-
-    if (sAbsFilename.IsEmpty())
-    {
-      range.BeginNextStep("Writing Result");
-      XII_SUCCEED_OR_RETURN(WriteResource(stream, *GetProperties()));
-    }
-    else
-    {
-      if (!xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(sAbsFilename))
-      {
-        return xiiStatus(xiiFmt("Couldn't make path absolute: '{0};", sAbsFilename));
-      }
-
-      xiiUniquePtr<xiiModelImporter::Importer> pImporter = xiiModelImporter::RequestImporterForFileType(sAbsFilename);
-      if (pImporter == nullptr)
-        return xiiStatus("No known importer for this file type.");
-
-      range.BeginNextStep("Importing Source File");
-
-      xiiEditableSkeleton newSkeleton;
-
-      xiiModelImporter::ImportOptions opt;
-      opt.m_sSourceFile     = sAbsFilename;
-      opt.m_pSkeletonOutput = &newSkeleton;
-
-      if (pImporter->Import(opt).Failed())
-        return xiiStatus("Model importer was unable to read this asset.");
-
-      range.BeginNextStep("Importing Skeleton Data");
-
-      // synchronize the old data (collision geometry etc.) with the new hierarchy
-      const xiiEditableSkeleton* pFinalSkeleton = MergeWithNewSkeleton(newSkeleton);
-
-      range.BeginNextStep("Writing Result");
-      XII_SUCCEED_OR_RETURN(WriteResource(stream, *pFinalSkeleton));
-
-      // merge the new data with the actual asset document
-      ApplyNativePropertyChangesToObjectManager(true);
-    }
-  }
-
-  xiiSkeletonAssetEvent e;
-  e.m_pDocument = this;
-  e.m_Type      = xiiSkeletonAssetEvent::Transformed;
-  m_Events.Broadcast(e);
-
-  return XII_SUCCESS;
-}
-
 xiiTransformStatus xiiSkeletonAssetDocument::InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo)
 {
+  XII_SUCCEED_OR_RETURN(SendPreviewConfiguration());
+
   // the preview mesh is an editor side only option, so the thumbnail context doesn't know anything about this
   // until we explicitly tell it about the mesh
   // without sending this here, thumbnails wouldn't look as desired, for assets transformed in the background
@@ -374,68 +290,6 @@ xiiTransformStatus xiiSkeletonAssetDocument::InternalCreateThumbnail(const Thumb
   xiiStatus status = xiiAssetDocument::RemoteCreateThumbnail(ThumbnailInfo);
   return status;
 }
-
-const xiiEditableSkeleton* xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEditableSkeleton& newSkeleton)
-{
-  xiiEditableSkeleton*                               pOldSkeleton = GetProperties();
-  xiiMap<xiiString, const xiiEditableSkeletonJoint*> prevJoints;
-
-  // map all old joints by name
-  {
-    auto TraverseJoints = [&prevJoints](const auto& self, xiiEditableSkeletonJoint* pJoint) -> void {
-      prevJoints[pJoint->GetName()] = pJoint;
-
-      for (xiiEditableSkeletonJoint* pChild : pJoint->m_Children)
-      {
-        self(self, pChild);
-      }
-    };
-
-    for (xiiEditableSkeletonJoint* pChild : pOldSkeleton->m_Children)
-    {
-      TraverseJoints(TraverseJoints, pChild);
-    }
-  }
-
-  // copy old properties to new skeleton
-  {
-    auto TraverseJoints = [&prevJoints](const auto& self, xiiEditableSkeletonJoint* pJoint, const xiiTransform& root, xiiTransform origin) -> void {
-      auto it = prevJoints.Find(pJoint->GetName());
-      if (it.IsValid())
-      {
-        pJoint->CopyPropertiesFrom(it.Value());
-      }
-
-      // use the parent rotation as the gizmo base rotation
-      xiiMat4 modelTransform, fullTransform;
-      modelTransform = origin.GetAsMat4();
-      xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(root.GetAsMat4(), modelTransform, fullTransform, pJoint->m_qGizmoOffsetRotationRO);
-
-      origin                           = xiiTransform::MakeGlobalTransform(origin, pJoint->m_LocalTransform);
-      pJoint->m_vGizmoOffsetPositionRO = root.TransformPosition(origin.m_vPosition);
-
-      for (xiiEditableSkeletonJoint* pChild : pJoint->m_Children)
-      {
-        self(self, pChild, root, origin);
-      }
-    };
-
-    for (xiiEditableSkeletonJoint* pChild : newSkeleton.m_Children)
-    {
-      TraverseJoints(TraverseJoints, pChild, CalculateTransformationMatrix(pOldSkeleton), xiiTransform::MakeIdentity());
-    }
-  }
-
-  // get rid of all old joints
-  pOldSkeleton->ClearJoints();
-
-  // move the new top level joints over to our own skeleton
-  pOldSkeleton->m_Children = newSkeleton.m_Children;
-  newSkeleton.m_Children.Clear(); // prevent this skeleton from deallocating the joints
-
-  return pOldSkeleton;
-}
-
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -181,5 +181,3 @@ xiiResult xiiPreprocessor::AddCustomDefine(xiiStringView sDefinition)
   xiiUInt32 uiCurToken = 0;
   return HandleDefine(Tokens, uiCurToken);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Defines);

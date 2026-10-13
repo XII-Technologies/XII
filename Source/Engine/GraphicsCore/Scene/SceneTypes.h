@@ -74,7 +74,10 @@ struct XII_GRAPHICSCORE_DLL xiiSceneObjectDesc
   xiiUInt32                        m_uiVisibilityMask = 0xFFFFFFFFU;
   xiiUInt32                        m_uiUserData       = 0U;
   xiiUInt32                        m_uiFirstPrimitive = 0U;
-  xiiUInt32                        m_uiPrimitiveCount = 0U; ///< Zero means the complete selected LOD.
+  xiiUInt32                        m_uiPrimitiveCount = 0U;              ///< Zero means the complete selected LOD.
+  xiiUInt32                        m_uiForcedLod      = xiiInvalidIndex; ///< Automatic selection when invalid; otherwise requires this resident LOD.
+  xiiUInt32                        m_uiDrawLod        = xiiInvalidIndex; ///< Candidate belongs to this LOD only; invalid admits any selected LOD.
+  float                            m_fLodBias         = 0.0f;            ///< Octaves of projected coverage: +1 doubles coverage, favoring finer LODs.
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneObjectDesc);
@@ -96,15 +99,33 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
   xiiVec4   m_BoundsExtents       = xiiVec4::MakeZero();
   xiiUInt32 m_uiGeometryIndex     = xiiInvalidIndex;
   xiiUInt32 m_uiMaterialIndex     = xiiInvalidIndex;
-  xiiUInt32 m_uiObjectIndex       = xiiInvalidIndex;
-  xiiUInt32 m_uiFlags             = 0U;
-  xiiUInt32 m_uiVisibilityMask    = 0xFFFFFFFFU;
-  xiiUInt32 m_uiUserData          = 0U;
-  xiiUInt32 m_uiFirstPrimitive    = 0U;
-  xiiUInt32 m_uiPrimitiveCount    = 0U; ///< Zero means the complete selected LOD.
+  /// Context-local, generation-checked identity. Zero denotes background; application user data
+  /// remains independent. Resolve through the database that produced this record.
+  xiiUInt32 m_uiObjectId       = 0U;
+  xiiUInt32 m_uiFlags          = 0U;
+  xiiUInt32 m_uiVisibilityMask = 0xFFFFFFFFU;
+  xiiUInt32 m_uiUserData       = 0U;
+  xiiUInt32 m_uiFirstPrimitive = 0U;
+  xiiUInt32 m_uiPrimitiveCount = 0U; ///< Zero means the complete selected LOD.
+  xiiUInt32 m_uiForcedLod      = xiiInvalidIndex;
+  float     m_fLodBias         = 0.0f;
+  xiiUInt32 m_uiDrawLod        = xiiInvalidIndex;
+  /// Dense index of the object supplying geometry-level LOD controls and history. Invalid means self.
+  xiiUInt32 m_uiLodSelectionIndex = xiiInvalidIndex;
+  /// Matrix indices in the scene's frame snapshot. Counts of zero select bind pose.
+  xiiUInt32 m_uiSkinningOffset         = 0U;
+  xiiUInt32 m_uiSkinningCount          = 0U;
+  xiiUInt32 m_uiPreviousSkinningOffset = 0U;
+  xiiUInt32 m_uiPreviousSkinningCount  = 0U;
+  xiiUInt32 m_uiBoneIndicesOffset      = 0U;
+  xiiUInt32 m_uiBoneWeightsOffset      = 0U;
+  xiiUInt32 m_uiSkinningVertexStride   = 0U;
+  xiiUInt32 m_uiSkinningPadding        = 0U;
 };
 
-static_assert(sizeof(xiiGpuSceneInstance) % 16U == 0U, "GPU scene records must preserve structured-buffer alignment.");
+static_assert(sizeof(xiiGpuSceneInstance) == 288U && offsetof(xiiGpuSceneInstance, m_uiSkinningOffset) == 256U, "GPU scene records must match GpuSceneCommon.h.");
+static_assert(offsetof(xiiGpuSceneInstance, m_uiForcedLod) == 240U && offsetof(xiiGpuSceneInstance, m_fLodBias) == 244U && offsetof(xiiGpuSceneInstance, m_uiDrawLod) == 248U && offsetof(xiiGpuSceneInstance, m_uiLodSelectionIndex) == 252U,
+              "GPU LOD controls must preserve the structured-buffer layout.");
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuSceneInstance);
 

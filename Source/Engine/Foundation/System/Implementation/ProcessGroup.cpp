@@ -16,5 +16,3 @@ const xiiHybridArray<xiiProcess, 8>& xiiProcessGroup::GetProcesses() const
 }
 
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_ProcessGroup);

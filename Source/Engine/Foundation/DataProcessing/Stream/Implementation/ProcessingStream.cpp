@@ -163,5 +163,3 @@ xiiStringView xiiProcessingStream::GetDataTypeName(DataType type)
 {
   return s_TypeName[(xiiUInt32)type];
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_DataProcessing_Stream_Implementation_ProcessingStream);

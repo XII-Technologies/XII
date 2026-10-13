@@ -160,6 +160,3 @@ void RemoveReflectionEventHandler()
 
   xiiTelemetry::RemoveEventHandler(ReflectionDetail::TelemetryEventsHandler);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Reflection);

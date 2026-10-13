@@ -1611,4 +1611,4 @@ static xiiImageConversion_R11G11B10_to_FLOAT s_conversion_R11G11B10_to_FLOAT;
 static xiiImageConversion_R11G11B10_to_HALF  s_conversion_R11G11B10_to_HALF;
 static xiiImageConversion_FLOAT_to_R11G11B10 s_conversion_FLOAT_to_R11G11B10;
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_PixelConversions);
+XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_Implementation_PixelConversions);

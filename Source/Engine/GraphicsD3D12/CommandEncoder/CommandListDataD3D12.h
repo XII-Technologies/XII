@@ -31,13 +31,13 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
       m_pBoundSamplerStates                       = std::move(other.m_pBoundSamplerStates);
     }
 
-    xiiDynamicArray<xiiGALBufferD3D12*>      m_pBoundConstantBuffers;
-    xiiDynamicArray<xiiGALBufferViewD3D12*>  m_pBoundBufferResourceViews;
-    xiiDynamicArray<xiiGALTextureViewD3D12*> m_pBoundTextureResourceViews;
-    xiiDynamicArray<xiiGALTopLevelASD3D12*>  m_pBoundAccelerationStructures;
-    xiiDynamicArray<xiiGALBufferViewD3D12*>  m_pBoundUnorderedAccessBufferResourceViews;
-    xiiDynamicArray<xiiGALTextureViewD3D12*> m_pBoundUnorderedAccessTextureResourceViews;
-    xiiDynamicArray<xiiGALSamplerD3D12*>     m_pBoundSamplerStates;
+    xiiDynamicArray<xiiGALBufferD3D12*>                   m_pBoundConstantBuffers;
+    xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewD3D12>>  m_pBoundBufferResourceViews;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewD3D12>> m_pBoundTextureResourceViews;
+    xiiDynamicArray<xiiGALTopLevelASD3D12*>               m_pBoundAccelerationStructures;
+    xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewD3D12>>  m_pBoundUnorderedAccessBufferResourceViews;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewD3D12>> m_pBoundUnorderedAccessTextureResourceViews;
+    xiiDynamicArray<xiiGALSamplerD3D12*>                  m_pBoundSamplerStates;
   };
 
   XII_ALWAYS_INLINE xiiGALCommandListDataD3D12()  = default;

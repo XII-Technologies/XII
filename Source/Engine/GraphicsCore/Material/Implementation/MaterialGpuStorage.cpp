@@ -443,3 +443,5 @@ bool xiiMaterialGpuStorage::IsValidHandleLocked(xiiMaterialGpuHandle handle) con
 {
   return m_MaterialIds.Contains(handle.GetInternalID()) && m_Slots[handle.GetInternalID().m_InstanceIndex].m_pInstance != nullptr;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Material_Implementation_MaterialGpuStorage);

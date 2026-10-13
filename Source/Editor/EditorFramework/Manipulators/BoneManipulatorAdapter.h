@@ -10,14 +10,15 @@
 #include <EditorFramework/Gizmos/TranslateGizmo.h>
 #include <EditorFramework/Manipulators/ManipulatorAdapter.h>
 #include <Foundation/Containers/DynamicArray.h>
-#include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
+#include <ToolsFoundation/Animation/ExposedBone.h>
 
 struct xiiGizmoEvent;
+struct xiiAssetCuratorEvent;
 
-/// Makes an array of xiiExposedBone properties editable in the viewport
+/// Edits native named bone transforms using skeleton asset metadata for the hierarchy.
 ///
 /// Enabled by attaching the xiiBoneManipulatorAttribute.
-class xiiBoneManipulatorAdapter : public xiiManipulatorAdapter
+class XII_EDITORFRAMEWORK_DLL xiiBoneManipulatorAdapter : public xiiManipulatorAdapter
 {
 public:
   xiiBoneManipulatorAdapter();
@@ -26,11 +27,10 @@ public:
 protected:
   virtual void Finalize() override;
 
-  void MigrateSelection();
-
   virtual void Update() override;
   void         RotateGizmoEventHandler(const xiiGizmoEvent& e);
   void         ClickGizmoEventHandler(const xiiGizmoEvent& e);
+  void         AssetCuratorEventHandler(const xiiAssetCuratorEvent& e);
 
   virtual void UpdateGizmoTransform() override;
 
@@ -45,13 +45,15 @@ protected:
   xiiVariantArray                 m_Keys;
   xiiDynamicArray<xiiExposedBone> m_Bones;
   xiiDeque<ElementGizmo>          m_Gizmos;
-  xiiTransform                    m_RootTransform = xiiTransform::MakeIdentity();
 
-  void    RetrieveBones();
-  void    ConfigureGizmos();
-  void    SetTransform(xiiUInt32 uiBone, const xiiTransform& value);
-  xiiMat4 ComputeFullTransform(xiiUInt32 uiBone) const;
-  xiiMat4 ComputeParentTransform(xiiUInt32 uiBone) const;
+  xiiDynamicArray<xiiMat4>                            m_ParentTransforms;
+  xiiUuid                                             m_SkeletonAssetGuid;
+  bool                                                m_bSkeletonMetadataDirty = false;
+  xiiEvent<const xiiAssetCuratorEvent&>::Unsubscriber m_AssetEventsUnsubscriber;
+
+  xiiResult RetrieveBones();
+  void      ConfigureGizmos();
+  void      SetTransform(xiiUInt32 uiBone, const xiiTransform& value);
 
   static xiiString s_sLastSelectedBone;
 };

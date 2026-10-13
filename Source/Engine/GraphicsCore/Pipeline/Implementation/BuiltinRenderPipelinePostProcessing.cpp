@@ -467,7 +467,9 @@ void xiiBuiltinRenderPipelineRuntime::SetupFinalBlit(xiiFinalBlitData& data, xii
     data.m_hBackbuffer        = builder.ImportTexture("ViewOutput", texture, texture->GetResourceState());
     data.m_hBackbuffer        = builder.WriteTexture(data.m_hBackbuffer, xiiGALResourceStateFlags::RenderTarget);
     data.m_bApplySRGBTransfer = !xiiGALResourceFormat::IsSrgb(texture->GetDescription().m_Format);
-    builder.ExportTexture(data.m_hBackbuffer, xiiGALResourceStateFlags::ShaderResource);
+    // Offscreen targets need not be sampleable. Preserve the useful sampled-output state when
+    // supported, but do not request a layout excluded by the caller's texture bind flags.
+    builder.ExportTexture(data.m_hBackbuffer, texture->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) ? xiiGALResourceStateFlags::ShaderResource : xiiGALResourceStateFlags::RenderTarget);
   }
 
   xiiGALBufferCreationDescription constantsDescription;

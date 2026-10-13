@@ -350,5 +350,3 @@ void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfe
   }
 }
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Win_PipeChannel_win);

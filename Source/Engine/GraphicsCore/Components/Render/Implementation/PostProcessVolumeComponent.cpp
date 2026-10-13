@@ -41,3 +41,5 @@ void xiiPostProcessVolumeComponent::DeserializeComponent(xiiWorldReader& inout_s
 
   s >> m_ColourTint;
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Render_Implementation_PostProcessVolumeComponent);

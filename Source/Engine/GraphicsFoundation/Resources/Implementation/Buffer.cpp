@@ -40,15 +40,31 @@ xiiGALBuffer::~xiiGALBuffer() = default;
 
 xiiSharedPtr<xiiGALBufferView> xiiGALBuffer::GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType)
 {
-  XII_ASSERT_DEV(viewType > xiiGALBufferViewType::Undefined && viewType < xiiGALBufferViewType::ENUM_COUNT, "Invalid view type.");
+  XII_GAL_BUFFER_CHECK(viewType > xiiGALBufferViewType::Undefined && viewType < xiiGALBufferViewType::ENUM_COUNT, "Invalid view type.");
 
-  XII_ASSERT_DEV(m_DefaultBufferViews[viewType.GetValue()] != nullptr, "Buffer view handle is invalid!");
+  XII_LOCK(m_pDevice->GetMutex());
+  auto*& cached = m_DefaultBufferViews[viewType.GetValue()];
+  if (cached != nullptr && cached->TryAddRef())
+  {
+    xiiSharedPtr<xiiGALBufferView> view(cached, m_pDevice->GetAllocator());
+    cached->ReleaseRef();
+    return view;
+  }
 
-  return m_DefaultBufferViews[viewType.GetValue()];
+  XII_GAL_BUFFER_CHECK(m_Description.m_Mode != xiiGALBufferMode::Formatted, "Formatted buffers require an explicit view format.");
+  const auto required = viewType == xiiGALBufferViewType::ShaderResource ? xiiGALBindFlags::ShaderResource : xiiGALBindFlags::UnorderedAccess;
+  XII_GAL_BUFFER_CHECK(m_Description.m_BindFlags.IsSet(required), "Buffer does not support this default view type.");
+  xiiGALBufferViewCreationDescription description;
+  description.m_ViewType = viewType;
+  auto view              = CreateView(description);
+  cached                 = view.Borrow();
+  return view;
 }
 
 xiiSharedPtr<xiiGALBufferView> xiiGALBuffer::CreateView(xiiGALBufferViewCreationDescription& description)
 {
+  XII_GAL_BUFFER_CHECK(description.m_ViewType > xiiGALBufferViewType::Undefined && description.m_ViewType < xiiGALBufferViewType::ENUM_COUNT, "The buffer view type is invalid.");
+
   if (description.m_uiByteWidth == 0U)
   {
     XII_GAL_BUFFER_CHECK(m_Description.m_uiSize > description.m_uiByteOffset, "The byte offset ({0}) exceeds the buffer size ({1}).", description.m_uiByteOffset, m_Description.m_uiSize);
@@ -95,26 +111,12 @@ xiiSharedPtr<xiiGALBufferView> xiiGALBuffer::CreateView(xiiGALBufferViewCreation
   return CreateViewPlatform(description);
 }
 
-void xiiGALBuffer::CreateDefaultResourceViews()
+void xiiGALBuffer::UnregisterDefaultView(const xiiGALBufferView* pView)
 {
-  // Cannot create default views for formatted buffers, since the view format is unknown at creation time.
-  if (m_Description.m_Mode == xiiGALBufferMode::Formatted)
-    return;
-
-  xiiGALBufferViewCreationDescription viewDescription;
-  viewDescription.m_ViewType     = xiiGALBufferViewType::ShaderResource;
-  viewDescription.m_uiByteOffset = 0;
-  viewDescription.m_uiByteWidth  = 0;
-
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-  {
-    m_DefaultBufferViews[xiiGALBufferViewType::ShaderResource] = CreateView(viewDescription);
-  }
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
-  {
-    viewDescription.m_ViewType                                  = xiiGALBufferViewType::UnorderedAccess;
-    m_DefaultBufferViews[xiiGALBufferViewType::UnorderedAccess] = CreateView(viewDescription);
-  }
+  XII_LOCK(m_pDevice->GetMutex());
+  auto*& cached = m_DefaultBufferViews[pView->GetDescription().m_ViewType.GetValue()];
+  if (cached == pView)
+    cached = nullptr;
 }
 
 void xiiGALBuffer::VerifyFlushMappedRangeArguments(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) const

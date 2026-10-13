@@ -889,5 +889,3 @@ void xiiGALShaderParser::ApplyShaderResourceBindings(xiiStringView sPlatform, xi
     out_sShaderStageSource.Append(sPart);
   }
 }
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_ShaderCompiler_Implementation_ShaderParser);

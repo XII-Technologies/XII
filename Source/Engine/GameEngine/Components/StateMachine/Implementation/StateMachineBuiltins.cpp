@@ -467,4 +467,4 @@ xiiResult xiiStateMachineTransition_TransitionEvent::Deserialize(xiiStreamReader
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachineBuiltins);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_StateMachine_Implementation_StateMachineBuiltins);

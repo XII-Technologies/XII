@@ -2,11 +2,12 @@
 
 #include <EnginePluginAssets/EnginePluginAssetsPCH.h>
 
+#include <Core/World/World.h>
 #include <EnginePluginAssets/AnimatedMeshAsset/AnimatedMeshContext.h>
 #include <EnginePluginAssets/AnimatedMeshAsset/AnimatedMeshView.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 xiiAnimatedMeshViewContext::xiiAnimatedMeshViewContext(xiiAnimatedMeshContext* pAnimatedMeshContext) :
   xiiEngineProcessViewContext(pAnimatedMeshContext)
@@ -28,25 +29,22 @@ bool xiiAnimatedMeshViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSpher
 xiiViewHandle xiiAnimatedMeshViewContext::CreateView()
 {
   xiiView* pView = nullptr;
-  xiiRenderWorld::CreateView("AnimatedMesh Editor - View", pView);
+  GetDocumentContext()->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("AnimatedMesh Editor - View", pView);
   pView->SetCameraUsageHint(xiiCameraUsageHint::EditorView);
 
-  pView->SetRenderPipelineResource(CreateDefaultRenderPipeline());
-
-  xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext();
-  pView->SetWorld(pDocumentContext->GetWorld());
   pView->SetCamera(&m_Camera);
   return pView->GetHandle();
 }
 
 void xiiAnimatedMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 {
+  XII_LOCK(GetDocumentContext()->GetWorld()->GetWriteMarker());
+  xiiEngineProcessViewContext::SetCamera(pMsg);
   if (m_pContext->m_bDisplayGrid)
   {
-    xiiEngineProcessViewContext::DrawSimpleGrid();
+    if (DrawGrid(0.25f).Failed())
+      xiiLog::Warning("Could not build the animated mesh preview grid.");
   }
-
-  xiiEngineProcessViewContext::SetCamera(pMsg);
 
   auto hAnimatedMesh = m_pContext->GetAnimatedMesh();
   if (hAnimatedMesh.IsValid())
@@ -54,35 +52,34 @@ void xiiAnimatedMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     xiiResourceLock<xiiMeshResource>       pAnimatedMesh(hAnimatedMesh, xiiResourceAcquireMode::AllowLoadingFallback);
     xiiResourceLock<xiiMeshBufferResource> pAnimatedMeshBuffer(pAnimatedMesh->GetMeshBuffer(), xiiResourceAcquireMode::AllowLoadingFallback);
 
-    auto& bufferDescription = pAnimatedMeshBuffer->GetVertexBuffer()->GetDescription();
-
-    xiiUInt32             uiNumVertices  = static_cast<xiiUInt32>(bufferDescription.m_uiSize / bufferDescription.m_uiElementByteStride);
+    xiiUInt32             uiNumVertices  = pAnimatedMeshBuffer->GetVertexCount();
     xiiUInt32             uiNumTriangles = pAnimatedMeshBuffer->GetPrimitiveCount();
     const xiiBoundingBox& bbox           = pAnimatedMeshBuffer->GetBounds().GetBox();
 
     xiiUInt32 uiNumUVs    = 0;
     xiiUInt32 uiNumColors = 0;
-    for (auto& vertexStream : pAnimatedMeshBuffer->GetInputLayout().m_VertexStreams)
+    for (const auto& vertexStream : pAnimatedMeshBuffer->GetVertexStreams())
     {
-      if (vertexStream.m_Semantic >= xiiGALInputLayoutSemantic::TexCoord0 && vertexStream.m_Semantic <= xiiGALInputLayoutSemantic::TexCoord9)
+      if (vertexStream.m_Semantic == xiiMeshVertexSemantic::TexCoord0 || vertexStream.m_Semantic == xiiMeshVertexSemantic::TexCoord1)
       {
         ++uiNumUVs;
       }
-      else if (vertexStream.m_Semantic >= xiiGALInputLayoutSemantic::Color0 && vertexStream.m_Semantic <= xiiGALInputLayoutSemantic::Color7)
+      else if (vertexStream.m_Semantic == xiiMeshVertexSemantic::Color0)
       {
         ++uiNumColors;
       }
     }
 
     xiiStringBuilder sText;
-    sText.AppendFormat("Bones: \t{}\n", pAnimatedMesh->m_Bones.GetCount());
+    sText.AppendFormat("Bones: \t{}\n", pAnimatedMesh->GetDescriptor().m_Bones.GetCount());
     sText.AppendFormat("Triangles: \t{}\n", uiNumTriangles);
     sText.AppendFormat("Vertices: \t{}\n", uiNumVertices);
     sText.AppendFormat("UV Channels: \t{}\n", uiNumUVs);
     sText.AppendFormat("Color Channels: \t{}\n", uiNumColors);
-    sText.AppendFormat("Bytes Per Vertex: \t{}\n", bufferDescription.m_uiElementByteStride);
+    sText.AppendFormat("Bytes Per Vertex: \t{}\n", pAnimatedMeshBuffer->GetVertexStride());
     sText.AppendFormat("Bounding Box: \twidth={0}, depth={1}, height={2}", xiiArgF(bbox.GetHalfExtents().x * 2, 2), xiiArgF(bbox.GetHalfExtents().y * 2, 2), xiiArgF(bbox.GetHalfExtents().z * 2, 2));
 
-    xiiDebugRenderer::DrawInfoText(m_hView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
+    if (const xiiView* pView = GetView())
+      xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
   }
 }

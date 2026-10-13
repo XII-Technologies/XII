@@ -1098,7 +1098,8 @@ void xiiGALCommandList::DrawIndirect(const xiiGALDrawIndirectDescription& descri
     XII_ASSERT_DEV((description.m_uiDrawArgumentStride % 4U) == 0U, "DrawIndirect command arguments are invalid. Stride must be greater a multiple of 4.");
   }
 
-  const xiiUInt64 uiRequiredArgumentBufferSize = description.m_uiDrawArgumentOffset + (description.m_uiDrawCount > 1U ? description.m_uiDrawCount * description.m_uiDrawArgumentStride : xiiUInt32{sizeof(xiiUInt32)} * 5U);
+  const xiiUInt64 uiRequiredArgumentBufferSize = description.m_uiDrawArgumentOffset +
+    (description.m_uiDrawCount > 1U ? static_cast<xiiUInt64>(description.m_uiDrawCount - 1U) * description.m_uiDrawArgumentStride : 0U) + sizeof(xiiUInt32) * 4U;
   XII_ASSERT_DEV(uiRequiredArgumentBufferSize <= argumentsBufferDescription.m_uiSize, "DrawIndirect command arguments are invalid. Indirect draw arguments buffer ({}) size must be at least {} bytes.", description.m_pBuffer->GetDebugName(), uiRequiredArgumentBufferSize);
 
   if (description.m_pCounterBuffer != nullptr)

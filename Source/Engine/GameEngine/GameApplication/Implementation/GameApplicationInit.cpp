@@ -328,5 +328,3 @@ void xiiGameApplication::Deinit_ShutdownGraphicsDevice()
   xiiGALDevice::SetDefaultDevice(nullptr);
   pDevice.Clear();
 }
-
-XII_STATICLINK_FILE(GameEngine, GameEngine_GameApplication_Implementation_GameApplicationInit);

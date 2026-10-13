@@ -7,6 +7,3 @@
 #  include <Foundation/Basics/Platform/Windows/WinRTUtils.h>
 
 #endif
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_Basics_Platform_Win_WinRTUtils);

@@ -3,10 +3,7 @@
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
 
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
-#include <GraphicsCore/Components/FogComponent.h>
-#include <GraphicsCore/Components/SkyBoxComponent.h>
-#include <GraphicsCore/Lights/DirectionalLightComponent.h>
-#include <GraphicsCore/Lights/SkyLightComponent.h>
+#include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSceneViewPerspective, 1)
@@ -18,15 +15,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEngineViewLightSettings, 1, xiiRTTIDefaultAl
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("SkyBox", m_bSkyBox),
-      XII_MEMBER_PROPERTY("SkyLight", m_bSkyLight),
-      XII_MEMBER_PROPERTY("SkyLightCubeMap", m_sSkyLightCubeMap),
-      XII_MEMBER_PROPERTY("SkyLightIntensity", m_fSkyLightIntensity),
       XII_MEMBER_PROPERTY("DirectionalLight", m_bDirectionalLight),
       XII_MEMBER_PROPERTY("DirectionalLightAngle", m_DirectionalLightAngle),
       XII_MEMBER_PROPERTY("DirectionalLightShadows", m_bDirectionalLightShadows),
-      XII_MEMBER_PROPERTY("DirectionalLightIntensity", m_fDirectionalLightIntensity),
-      XII_MEMBER_PROPERTY("Fog", m_bFog)
+      XII_MEMBER_PROPERTY("DirectionalLightIntensity", m_fDirectionalLightIntensity)
     }
     XII_END_PROPERTIES;
   }
@@ -72,10 +64,7 @@ xiiEngineViewLightSettings::xiiEngineViewLightSettings(bool bEnable)
 {
   if (!bEnable)
   {
-    m_bSkyBox           = false;
-    m_bSkyLight         = false;
     m_bDirectionalLight = false;
-    m_bFog              = false;
   }
 }
 
@@ -84,51 +73,8 @@ xiiEngineViewLightSettings::~xiiEngineViewLightSettings()
   if (m_hGameObject.IsInvalidated())
     return;
 
-  m_pWorld->DeleteObjectDelayed(m_hGameObject);
-}
-
-bool xiiEngineViewLightSettings::GetSkyBox() const
-{
-  return m_bSkyBox;
-}
-
-void xiiEngineViewLightSettings::SetSkyBox(bool bVal)
-{
-  m_bSkyBox = bVal;
-  SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type::SkyBoxChanged);
-}
-
-bool xiiEngineViewLightSettings::GetSkyLight() const
-{
-  return m_bSkyLight;
-}
-
-void xiiEngineViewLightSettings::SetSkyLight(bool bVal)
-{
-  m_bSkyLight = bVal;
-  SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type::SkyLightChanged);
-}
-
-const char* xiiEngineViewLightSettings::GetSkyLightCubeMap() const
-{
-  return m_sSkyLightCubeMap;
-}
-
-void xiiEngineViewLightSettings::SetSkyLightCubeMap(const char* szVal)
-{
-  m_sSkyLightCubeMap = szVal;
-  SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type::SkyLightCubeMapChanged);
-}
-
-float xiiEngineViewLightSettings::GetSkyLightIntensity() const
-{
-  return m_fSkyLightIntensity;
-}
-
-void xiiEngineViewLightSettings::SetSkyLightIntensity(float fVal)
-{
-  m_fSkyLightIntensity = fVal;
-  SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type::SkyLightIntensityChanged);
+  XII_LOCK(m_pWorld->GetWriteMarker());
+  m_pWorld->DeleteObjectNow(m_hGameObject);
 }
 
 bool xiiEngineViewLightSettings::GetDirectionalLight() const
@@ -175,17 +121,6 @@ void xiiEngineViewLightSettings::SetDirectionalLightIntensity(float fVal)
   SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type::DirectionalLightIntensityChanged);
 }
 
-bool xiiEngineViewLightSettings::GetFog() const
-{
-  return m_bFog;
-}
-
-void xiiEngineViewLightSettings::SetFog(bool bVal)
-{
-  m_bFog = bVal;
-  SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type::FogChanged);
-}
-
 bool xiiEngineViewLightSettings::SetupForEngine(xiiWorld* pWorld, xiiUInt32 uiNextComponentPickingID)
 {
   m_pWorld = pWorld;
@@ -193,101 +128,36 @@ bool xiiEngineViewLightSettings::SetupForEngine(xiiWorld* pWorld, xiiUInt32 uiNe
   return false;
 }
 
-namespace
-{
-  template <typename T>
-  T* SyncComponent(xiiWorld* pWorld, xiiGameObject* pParent, xiiComponentHandle& inout_hHandle, bool bShouldExist)
-  {
-    if (bShouldExist)
-    {
-      T* pComp = nullptr;
-      if (inout_hHandle.IsInvalidated() || !pWorld->TryGetComponent(inout_hHandle, pComp))
-      {
-        inout_hHandle = T::CreateComponent(pParent, pComp);
-      }
-      return pComp;
-    }
-    else
-    {
-      if (!inout_hHandle.IsInvalidated())
-      {
-        T* pComp = nullptr;
-        if (pWorld->TryGetComponent(inout_hHandle, pComp))
-        {
-          pComp->DeleteComponent();
-          inout_hHandle.Invalidate();
-        }
-      }
-      return nullptr;
-    }
-  }
-
-  xiiGameObject* SyncGameObject(xiiWorld* pWorld, xiiGameObjectHandle& inout_hHandle, bool bShouldExist)
-  {
-    if (bShouldExist)
-    {
-      xiiGameObject* pObj = nullptr;
-      if (inout_hHandle.IsInvalidated() || !pWorld->TryGetObject(inout_hHandle, pObj))
-      {
-        xiiGameObjectDescription obj;
-        obj.m_sName.Assign("ViewLightSettings");
-        inout_hHandle = pWorld->CreateObject(obj, pObj);
-        pObj->MakeDynamic();
-      }
-      return pObj;
-    }
-    else
-    {
-      if (!inout_hHandle.IsInvalidated())
-      {
-        pWorld->DeleteObjectDelayed(inout_hHandle);
-      }
-      return nullptr;
-    }
-  }
-} // namespace
-
 void xiiEngineViewLightSettings::UpdateForEngine(xiiWorld* pWorld)
 {
-  if (xiiGameObject* pParent = SyncGameObject(m_pWorld, m_hSkyBoxObject, m_bSkyBox))
+  XII_ASSERT_DEV(pWorld == m_pWorld, "Preview lighting cannot move between worlds.");
+  XII_LOCK(pWorld->GetWriteMarker());
+  if (!m_bDirectionalLight)
   {
-    pParent->SetTag(xiiTagRegistry::GetGlobalRegistry().RegisterTag("SkyLight"));
-
-    if (xiiSkyBoxComponent* pSkyBox = SyncComponent<xiiSkyBoxComponent>(m_pWorld, pParent, m_hSkyBox, m_bSkyBox))
-    {
-      pSkyBox->SetCubeMapFile(m_sSkyLightCubeMap);
-    }
+    pWorld->DeleteObjectNow(m_hGameObject);
+    m_hGameObject.Invalidate();
+    m_hDirLight.Invalidate();
+    return;
   }
 
-  const bool bNeedGameObject = m_bDirectionalLight || m_bSkyLight;
-  if (xiiGameObject* pParent = SyncGameObject(m_pWorld, m_hGameObject, bNeedGameObject))
+  xiiGameObject* pObject = nullptr;
+  if (!pWorld->TryGetObject(m_hGameObject, pObject))
   {
-    xiiQuat rotY = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::MakeFromDegree(120.0));
-    xiiQuat rotZ = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), m_DirectionalLightAngle);
-    pParent->SetLocalRotation(rotZ * rotY);
-
-    if (xiiDirectionalLightComponent* pDirLight = SyncComponent<xiiDirectionalLightComponent>(m_pWorld, pParent, m_hDirLight, m_bDirectionalLight))
-    {
-      pDirLight->SetCastShadows(m_bDirectionalLightShadows);
-      pDirLight->SetIntensity(m_fDirectionalLightIntensity);
-    }
-
-    if (xiiSkyLightComponent* pSkyLight = SyncComponent<xiiSkyLightComponent>(m_pWorld, pParent, m_hSkyLight, m_bSkyLight))
-    {
-      pSkyLight->SetIntensity(m_fSkyLightIntensity);
-      pSkyLight->SetReflectionProbeMode(xiiReflectionProbeMode::Static);
-      pSkyLight->SetCubeMapFile(m_sSkyLightCubeMap);
-    }
-
-    if (xiiFogComponent* pFog = SyncComponent<xiiFogComponent>(m_pWorld, pParent, m_hFog, m_bFog))
-    {
-      // pFog->SetColor(xiiColor(0.1f, 0.1f, 0.1f));
-      pFog->SetDensity(5.0f);
-      pFog->SetHeightFalloff(0);
-      pFog->SetModulateWithSkyColor(m_bSkyBox);
-      pFog->SetSkyDistance(100.0f);
-    }
+    xiiGameObjectDescription description;
+    description.m_sName.Assign("ViewLightSettings");
+    description.m_bDynamic = true;
+    m_hGameObject          = pWorld->CreateObject(description, pObject);
   }
+
+  const xiiQuat rotY = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::MakeFromDegree(120.0));
+  const xiiQuat rotZ = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), m_DirectionalLightAngle);
+  pObject->SetLocalRotation(rotZ * rotY);
+
+  xiiDirectionalLightComponent* pLight = nullptr;
+  if (!pWorld->TryGetComponent(m_hDirLight, pLight))
+    m_hDirLight = xiiDirectionalLightComponent::CreateComponent(pObject, pLight);
+  pLight->SetCastShadows(m_bDirectionalLightShadows);
+  pLight->SetIntensity(m_fDirectionalLightIntensity);
 }
 
 void xiiEngineViewLightSettings::SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type type)

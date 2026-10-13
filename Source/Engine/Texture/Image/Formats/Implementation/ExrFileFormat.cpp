@@ -329,4 +329,4 @@ bool xiiExrFileFormat::CanWriteFileType(xiiStringView sExtension) const
 
 #endif
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Formats_ExrFileFormat);
+XII_STATICLINK_FILE(Texture, Texture_Image_Formats_Implementation_ExrFileFormat);

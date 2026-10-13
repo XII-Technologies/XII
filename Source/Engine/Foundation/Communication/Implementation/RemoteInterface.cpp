@@ -423,5 +423,3 @@ xiiUInt32 xiiRemoteThread::Run()
 
   return 0;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_RemoteInterface);

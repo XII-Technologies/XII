@@ -9,5 +9,3 @@ bool xiiReflectedClass::IsInstanceOf(const xiiRTTI* pType) const
 {
   return GetDynamicRTTI()->IsDerivedFrom(pType);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Reflection_Implementation_DynamicRTTI);

@@ -181,6 +181,15 @@ xiiResult xiiOBJLoader::LoadOBJ(const char* szFile, bool bIgnoreMaterials)
       // only allow faces with at least 3 vertices
       if (face.m_Vertices.GetCount() >= 3)
       {
+        // Reject malformed references before computing the face normal or exposing indices to consumers.
+        for (const auto& vertex : face.m_Vertices)
+        {
+          if (vertex.m_uiPositionID < uiPositionOffset || vertex.m_uiPositionID >= m_Positions.GetCount() ||
+              (bContainsTexCoords && (vertex.m_uiTexCoordID < uiTexCoordOffset || vertex.m_uiTexCoordID >= m_TexCoords.GetCount())) ||
+              (bContainsNormals && (vertex.m_uiNormalID < uiNormalOffset || vertex.m_uiNormalID >= m_Normals.GetCount())))
+            return XII_FAILURE;
+        }
+
         xiiVec3 v1, v2, v3;
         v1 = m_Positions[face.m_Vertices[0].m_uiPositionID];
         v2 = m_Positions[face.m_Vertices[1].m_uiPositionID];
@@ -308,7 +317,3 @@ xiiResult xiiOBJLoader::LoadMTL(const char* szFile, const char* szMaterialBasePa
 
   return XII_SUCCESS;
 }
-
-
-
-XII_STATICLINK_FILE(Utilities, Utilities_FileFormats_Implementation_OBJLoader);

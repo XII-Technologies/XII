@@ -25,7 +25,7 @@ xiiEngineProcessViewContext::~xiiEngineProcessViewContext()
   {
     if (xiiWorld* pWorld = pDocumentContext->GetWorld())
     {
-      XII_LOCK(pWorld->GetReadMarker());
+      XII_LOCK(pWorld->GetWriteMarker());
 
       if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
       {
@@ -36,7 +36,8 @@ xiiEngineProcessViewContext::~xiiEngineProcessViewContext()
     }
   }
 
-  xiiWindowManager::GetSingleton()->CloseAll(this);
+  if (auto* manager = xiiWindowManager::GetSingleton())
+    manager->CloseAll(this);
 }
 
 void xiiEngineProcessViewContext::SetViewID(xiiUInt32 uiId)
@@ -51,8 +52,6 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
 #if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
   if (const xiiViewRedrawMsgToEngine* pViewRedrawMsg = xiiDynamicCast<const xiiViewRedrawMsgToEngine*>(pMsg))
   {
-    SetCamera(pViewRedrawMsg);
-
     if (pViewRedrawMsg->m_uiWindowWidth > 0 && pViewRedrawMsg->m_uiWindowHeight > 0)
     {
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -64,15 +63,20 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
       windowHandle.xcbWindow.m_pConnection = nullptr;
       HandleWindowUpdate(windowHandle, pViewRedrawMsg->m_uiWindowWidth, pViewRedrawMsg->m_uiWindowHeight);
 #  endif
-      Redraw(true);
     }
+    // The first redraw creates the view; apply the message camera to that new view as well.
+    SetCamera(pViewRedrawMsg);
+    if (pViewRedrawMsg->m_uiWindowWidth > 0 && pViewRedrawMsg->m_uiWindowHeight > 0)
+      Redraw(true);
   }
   else if (const xiiViewScreenshotMsgToEngine* pViewScreenshotMsg = xiiDynamicCast<const xiiViewScreenshotMsgToEngine*>(pMsg))
   {
     xiiImage img;
-    if (xiiWindowManager::GetSingleton()->GetWindow(m_hEditorWindow)->GetOutputTarget()->CaptureImage(img).Succeeded())
+    auto*    window = xiiWindowManager::GetSingleton()->GetWindow(m_hEditorWindow);
+    if (window && window->GetOutputTarget() && window->GetOutputTarget()->CaptureImage(img).Succeeded())
     {
-      img.SaveTo(pViewScreenshotMsg->m_sOutputFile).IgnoreResult();
+      if (img.SaveTo(pViewScreenshotMsg->m_sOutputFile).Failed())
+        xiiLog::Error("Failed to save view screenshot to '{0}'.", pViewScreenshotMsg->m_sOutputFile);
     }
   }
 #else
@@ -92,83 +96,45 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
 {
   XII_LOG_BLOCK("xiiEngineProcessViewContext::HandleWindowUpdate");
 
-  if (m_pEditorWndActor != nullptr)
+  auto* manager = xiiWindowManager::GetSingleton();
+  if (auto* window = static_cast<xiiEditorProcessViewWindow*>(manager->GetWindow(m_hEditorWindow)))
   {
-    // Update window size
-    xiiActorPluginWindow* pWindowPlugin = m_pEditorWndActor->GetPlugin<xiiActorPluginWindow>();
-
-    auto*            pWindow    = static_cast<xiiEditorProcessViewWindow*>(pWindowPlugin->GetWindow());
-    const xiiSizeU32 windowSize = pWindow->GetClientAreaSize();
-
-    XII_ASSERT_DEV(pWindow->GetNativeWindowHandle() == hWnd, "Editor view handle must never change. View needs to be destroyed and recreated.");
-
-    if (windowSize.width == uiWidth && windowSize.height == uiHeight)
+    if (window->GetClientAreaSize() == xiiSizeU32(uiWidth, uiHeight))
       return;
-
-    if (pWindow->UpdateWindow(hWnd, uiWidth, uiHeight).Failed())
+    if (window->UpdateWindow(hWnd, uiWidth, uiHeight).Failed())
     {
-      xiiLog::Error("Failed to update Editor Process View Window");
+      xiiLog::Error("Failed to resize Editor Process View Window.");
+      return;
     }
+    window->GetOutputTarget()->Resize(window->GetClientAreaSize());
     return;
   }
 
+  xiiUniquePtr<xiiEditorProcessViewWindow> window = XII_DEFAULT_NEW(xiiEditorProcessViewWindow);
+  if (window->UpdateWindow(hWnd, uiWidth, uiHeight).Failed())
   {
-    // Create new actor
-    xiiUniquePtr<xiiActor>                  pActor        = XII_DEFAULT_NEW(xiiActor, "EditorView", this);
-    xiiUniquePtr<xiiActorPluginWindowOwner> pWindowPlugin = XII_DEFAULT_NEW(xiiActorPluginWindowOwner);
-
-    // create window
-    {
-      xiiUniquePtr<xiiEditorProcessViewWindow> pWindow = XII_DEFAULT_NEW(xiiEditorProcessViewWindow);
-      if (pWindow->UpdateWindow(hWnd, uiWidth, uiHeight).Succeeded())
-      {
-        pWindowPlugin->m_pWindow = std::move(pWindow);
-      }
-      else
-      {
-        xiiLog::Error("Failed to create Editor Process View Window.");
-        return;
-      }
-    }
-
-    // create output target
-    {
-      xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, [this](xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size) {
-        OnSwapChainChanged(pSwapChain, size);
-      });
-
-      xiiGALSwapChainCreationDescription swapChainDescription;
-      swapChainDescription.m_pWindow               = pWindowPlugin->m_pWindow.Borrow();
-      swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
-      swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-      swapChainDescription.m_uiBufferCount         = 2U;
-      swapChainDescription.m_fDefaultDepthValue    = 1.0f;
-      swapChainDescription.m_uiDefaultStencilValue = 0U;
-
-      pOutput->CreateSwapchain(swapChainDescription);
-
-      if (!pOutput->m_pSwapChain)
-      {
-        xiiLog::Error("Failed to create swapchain for Editor Process View Window.");
-        return;
-      }
-
-      pWindowPlugin->m_pWindowOutputTarget = std::move(pOutput);
-    }
-
-    // setup render target
-    {
-      xiiWindowOutputTargetGAL* pOutput = static_cast<xiiWindowOutputTargetGAL*>(pWindowPlugin->m_pWindowOutputTarget.Borrow());
-
-      const xiiSizeU32 windowSize = pWindowPlugin->m_pWindow->GetClientAreaSize();
-      SetupRenderTarget(pOutput->m_pSwapChain, nullptr, static_cast<xiiUInt16>(windowSize.width), static_cast<xiiUInt16>(windowSize.height));
-    }
-
-    pActor->AddPlugin(std::move(pWindowPlugin));
-    m_pEditorWndActor = pActor.Borrow();
-    xiiActorManager::GetSingleton()->AddActor(std::move(pActor));
+    xiiLog::Error("Failed to create Editor Process View Window.");
+    return;
   }
+
+  xiiGALSwapChainCreationDescription description;
+  description.m_pWindow                         = window.Borrow();
+  description.m_ColorBufferFormat               = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+  description.m_UsageFlags                      = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
+  description.m_PreTransform                    = xiiGALSurfaceTransform::Optimal;
+  description.m_uiBufferCount                   = 2U;
+  description.m_fDefaultDepthValue              = 0.0f;
+  description.m_uiDefaultStencilValue           = 0U;
+  xiiUniquePtr<xiiWindowOutputTargetGAL> output = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, description,
+                                                                  [this](xiiSharedPtr<xiiGALSwapChain> swapChain, xiiSizeU32 size) { OnSwapChainChanged(swapChain, size); });
+  if (!output->GetSwapChain())
+  {
+    xiiLog::Error("Failed to create swapchain for Editor Process View Window.");
+    return;
+  }
+  SetupRenderTarget(output->m_pSwapChain, nullptr, uiWidth, uiHeight);
+  window->SetOutputTarget(std::move(output));
+  m_hEditorWindow = manager->Register("Editor View", this, std::move(window));
 }
 
 void xiiEngineProcessViewContext::OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size)
@@ -177,7 +143,7 @@ void xiiEngineProcessViewContext::OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChai
   {
     if (xiiWorld* pWorld = pDocumentContext->GetWorld())
     {
-      XII_LOCK(pWorld->GetReadMarker());
+      XII_LOCK(pWorld->GetWriteMarker());
 
       if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
       {
@@ -185,38 +151,43 @@ void xiiEngineProcessViewContext::OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChai
         if (!pRenderWorldModule->TryGetView(m_hView, pView))
           return;
 
+        pView->SetSwapChain(pSwapChain.Borrow());
         pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)size.width, (float)size.height));
       }
     }
   }
 }
 
-void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
+xiiView* xiiEngineProcessViewContext::GetView() const
 {
-  XII_LOG_BLOCK("xiiEngineProcessViewContext::SetupRenderTarget");
-  XII_ASSERT_DEV((pSwapChain != nullptr && pRenderTargets == nullptr) || (pSwapChain == nullptr && pRenderTargets != nullptr), "hSwapChain and pRenderTargets are mutually exclusive.");
+  auto* world = GetDocumentContext()->GetWorld();
+  if (!world)
+    return nullptr;
+  const auto* module = static_cast<const xiiWorld*>(world)->GetModule<xiiRenderWorldModule>();
+  xiiView*    view   = nullptr;
+  if (module)
+    module->TryGetView(m_hView, view);
+  return view;
+}
 
-  // setup view
+void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiGALTextureView* pRenderTargetView, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
+{
+  XII_ASSERT_DEV((pSwapChain != nullptr) != (pRenderTargetView != nullptr), "Supply exactly one swapchain or offscreen target.");
+  auto* world = GetDocumentContext()->GetWorld();
+  if (!world)
+    return;
+  XII_LOCK(world->GetWriteMarker());
+  if (m_hView.IsInvalidated())
   {
-    if (m_hView.IsInvalidated())
-    {
-      m_hView = CreateView();
-    }
-
-    xiiView* pView = nullptr;
-    if (xiiRenderWorld::TryGetView(m_hView, pView))
-    {
-      if (pSwapChain != nullptr)
-      {
-        pView->SetSwapChain(pSwapChain);
-      }
-      else
-      {
-        pView->SetRenderTargets(*pRenderTargets);
-      }
-
-      pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)uiWidth, (float)uiHeight));
-    }
+    m_hView = CreateView();
+    if (auto* view = GetView())
+      view->SetRenderEnabled(false);
+  }
+  if (auto* view = GetView())
+  {
+    view->SetSwapChain(pSwapChain.Borrow());
+    view->SetRenderTargetView(pRenderTargetView);
+    view->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(uiWidth), static_cast<float>(uiHeight)));
   }
 }
 
@@ -226,7 +197,7 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
   {
     if (xiiWorld* pWorld = pDocumentContext->GetWorld())
     {
-      XII_LOCK(pWorld->GetReadMarker());
+      XII_LOCK(pWorld->GetWriteMarker());
 
       if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
       {
@@ -234,11 +205,14 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
         if (!pRenderWorldModule->TryGetView(m_hView, pView))
           return;
 
+        pView->SetRenderEnabled(true);
         const xiiTag& editorTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
 
         if (bRenderEditorGizmos)
         {
           pView->m_ExcludeTags.Remove(editorTag);
+          if (pDocumentContext->DrawGizmos(*pView).Failed())
+            xiiLog::Warning("Could not draw one or more Editor handles for this view.");
         }
         else
         {
@@ -247,6 +221,61 @@ void xiiEngineProcessViewContext::Redraw(bool bRenderEditorGizmos)
       }
     }
   }
+}
+
+void xiiEngineProcessViewContext::SuspendRendering()
+{
+  if (auto* world = GetDocumentContext()->GetWorld())
+  {
+    XII_LOCK(world->GetWriteMarker());
+    if (auto* view = GetView())
+      view->SetRenderEnabled(false);
+  }
+}
+
+xiiResult xiiEngineProcessViewContext::DrawGrid(float fSpacing, const xiiTransform& transform, bool bGlobal)
+{
+  auto* world = GetDocumentContext()->GetWorld();
+  if (!world)
+    return XII_FAILURE;
+  XII_LOCK(world->GetWriteMarker());
+  auto* view = GetView();
+  if (!view)
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(m_Grid.Build(*view, fSpacing, transform, bGlobal));
+  xiiDebugRenderer::DrawLines(*view, m_Grid.GetLines(), xiiColor::White);
+  return XII_SUCCESS;
+}
+
+xiiResult xiiEngineProcessViewContext::PickGizmoAtPixel(xiiUInt32 x, xiiUInt32 y, xiiViewPickingResultMsgToEditor& out_result) const
+{
+  out_result.m_ObjectGuid    = xiiUuid();
+  out_result.m_ComponentGuid = xiiUuid();
+  out_result.m_OtherGuid     = xiiUuid();
+  out_result.m_uiPartIndex   = 0;
+  out_result.m_vPickedNormal.SetZero();
+  out_result.m_vPickedPosition.SetZero();
+  out_result.m_vPickingRayStartPosition.SetZero();
+
+  auto* world = GetDocumentContext()->GetWorld();
+  if (!world)
+    return XII_FAILURE;
+  XII_LOCK(world->GetWriteMarker());
+  const auto* view = GetView();
+  if (!view || !view->IsValid())
+    return XII_FAILURE;
+  const auto& viewport = view->GetViewport();
+  if (!xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) ||
+      !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0)
+    return XII_FAILURE;
+
+  xiiEditorGizmoPickResult hit;
+  XII_SUCCEED_OR_RETURN(GetDocumentContext()->PickGizmo(*view, (static_cast<float>(x) + 0.5f - viewport.x) / viewport.width,
+                                                        (static_cast<float>(y) + 0.5f - viewport.y) / viewport.height, hit));
+  out_result.m_OtherGuid                = hit.m_HandleGuid;
+  out_result.m_vPickedPosition          = hit.m_vPosition;
+  out_result.m_vPickingRayStartPosition = hit.m_vRayStartPosition;
+  return XII_SUCCESS;
 }
 
 bool xiiEngineProcessViewContext::FocusCameraOnObject(xiiCamera& inout_camera, const xiiBoundingBoxSphere& objectBounds, float fFov, const xiiVec3& vViewDir)
@@ -284,7 +313,7 @@ void xiiEngineProcessViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg
   {
     if (xiiWorld* pWorld = pDocumentContext->GetWorld())
     {
-      XII_LOCK(pWorld->GetReadMarker());
+      XII_LOCK(pWorld->GetWriteMarker());
 
       if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
       {
@@ -296,16 +325,16 @@ void xiiEngineProcessViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg
 
         if (m_Camera.GetCameraMode() != xiiCameraMode::Stereo)
         {
-          if (xiiCameraComponentManager* pCameraManager = pWorld->GetModule<xiiCameraComponentManager>())
-          {
-            xiiCameraComponent* pCameraComponent = pCameraManager->GetCameraByUsageHint(pView->GetCameraUsageHint());
+          xiiCameraComponentManager* pCameraManager   = pWorld->GetModule<xiiCameraComponentManager>();
+          xiiCameraComponent*        pCameraComponent = pCameraManager ? pCameraManager->GetCameraByUsageHint(pView->GetCameraUsageHint()) : nullptr;
 
-            // Camera mode should be controlled by a matching camera component if one exists.
-            if (pCameraComponent == nullptr || !pCameraComponent->IsActive())
-            {
-              m_Camera.SetCameraMode(pMsg->m_CameraMode, pMsg->m_fFovOrDim, pMsg->m_fNearPlane, pMsg->m_fFarPlane);
-            }
+          // Camera mode should be controlled by a matching camera component if one exists.
+          if (pCameraComponent == nullptr || !pCameraComponent->IsActive())
+          {
+            m_Camera.SetCameraMode(pMsg->m_CameraMode, pMsg->m_fFovOrDim, pMsg->m_fNearPlane, pMsg->m_fFarPlane);
           }
+          if (pMsg->m_bUseCameraTransformOnDevice)
+            m_Camera.LookAt(pMsg->m_vPosition, pMsg->m_vPosition + pMsg->m_vDirForwards, pMsg->m_vDirUp);
         }
       }
     }

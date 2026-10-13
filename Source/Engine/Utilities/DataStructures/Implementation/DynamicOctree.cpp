@@ -476,7 +476,3 @@ bool xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, 
 
   return true;
 }
-
-
-
-XII_STATICLINK_FILE(Utilities, Utilities_DataStructures_Implementation_DynamicOctree);

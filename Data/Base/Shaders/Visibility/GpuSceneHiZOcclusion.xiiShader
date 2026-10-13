@@ -116,7 +116,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     dot(abs(instance.GlobalTransform[1] - instance.PreviousGlobalTransform[1]), 1.0f.xxxx) +
     dot(abs(instance.GlobalTransform[2] - instance.PreviousGlobalTransform[2]), 1.0f.xxxx) +
     dot(abs(instance.GlobalTransform[3] - instance.PreviousGlobalTransform[3]), 1.0f.xxxx);
-  if (transformDelta > 1.0e-5f)
+  if (instance.SkinningCount != 0u || instance.PreviousSkinningCount != 0u || transformDelta > 1.0e-5f)
   {
     uint movedDestination;
     if (ReserveVisibleInstance(movedDestination))

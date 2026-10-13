@@ -51,10 +51,11 @@ void xiiImageDataAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentM
   }
 }
 
-void xiiImageDataAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiImageDataAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   xiiImageDataAssetDocument* pDoc = new xiiImageDataAssetDocument(sPath);
   out_pDocument                   = pDoc;
+  return XII_SUCCESS;
 }
 
 void xiiImageDataAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

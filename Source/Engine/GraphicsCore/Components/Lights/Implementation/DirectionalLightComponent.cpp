@@ -116,3 +116,5 @@ xiiDirectionalLightVisualizerAttribute::xiiDirectionalLightVisualizerAttribute(x
   xiiVisualizerAttribute(sAngleProperty, sColorProperty)
 {
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Lights_Implementation_DirectionalLightComponent);

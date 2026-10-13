@@ -365,5 +365,3 @@ __metatable = \"Access Denied\",\n\
 }
 
 #endif // BUILDSYSTEM_ENABLE_LUA_SUPPORT
-
-XII_STATICLINK_FILE(Core, Core_Console_Implementation_LuaInterpreter);

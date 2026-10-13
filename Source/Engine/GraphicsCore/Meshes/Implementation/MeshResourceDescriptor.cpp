@@ -32,6 +32,24 @@ namespace
 {
   static constexpr xiiUInt32 s_uiMeshResourceDescriptorVersion = 1U;
 
+  struct SectionKey
+  {
+    XII_DECLARE_POD_TYPE();
+    xiiUInt32 m_uiFirstPrimitive;
+    xiiUInt32 m_uiPrimitiveCount;
+    xiiUInt32 m_uiMaterialIndex;
+  };
+
+  struct SectionKeyHash
+  {
+    static xiiUInt32 Hash(const SectionKey& key) { return xiiHashingUtils::xxHash32(&key, sizeof(key)); }
+    static bool      Equal(const SectionKey& a, const SectionKey& b)
+    {
+      return a.m_uiFirstPrimitive == b.m_uiFirstPrimitive && a.m_uiPrimitiveCount == b.m_uiPrimitiveCount && a.m_uiMaterialIndex == b.m_uiMaterialIndex;
+    }
+  };
+
+
   static xiiBoundingBoxSphere MergeBounds(xiiArrayPtr<const xiiMeshSection> pSections, const xiiBoundingBoxSphere& fallbackBounds)
   {
     xiiBoundingBoxSphere result = xiiBoundingBoxSphere::MakeInvalid();
@@ -340,80 +358,98 @@ void xiiMeshResourceDescriptor::ComputeBounds()
   m_uiRuntimeHash = hashWriter.GetHashValue();
 }
 
-void xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives)
+xiiResult xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives)
 {
-  if (!m_hMeshBuffer.IsValid())
+  // Existing buffers already own their clusters. Preserve explicitly supplied section ranges.
+  if (m_hMeshBuffer.IsValid())
+    return XII_SUCCESS;
+
+  m_UsageFlags.Remove(xiiMeshResourceUsageFlags::MeshShaderReady);
+  for (auto& section : m_Sections)
   {
-    m_MeshBufferDescriptor.BuildMeshlets(uiMaxVertices, uiMaxPrimitives);
+    section.m_uiFirstMeshlet = 0;
+    section.m_uiMeshletCount = 0;
   }
-
-  xiiArrayPtr<const xiiMeshlet> meshlets = m_MeshBufferDescriptor.m_Meshlets;
-
-  for (xiiMeshSection& section : m_Sections)
+  for (auto& lod : m_LODs)
   {
-    section.m_uiFirstMeshlet = xiiMath::MaxValue<xiiUInt32>();
-    section.m_uiMeshletCount = 0U;
-
-    const xiiUInt32 uiSectionEnd = section.m_uiFirstPrimitive + section.m_uiPrimitiveCount;
-    for (xiiUInt32 i = 0; i < meshlets.GetCount(); ++i)
+    lod.m_uiFirstMeshlet = 0;
+    lod.m_uiMeshletCount = 0;
+    for (auto& section : lod.m_Sections)
     {
-      const xiiMeshlet& meshlet = meshlets[i];
-
-      if (meshlet.m_uiFirstPrimitive >= section.m_uiFirstPrimitive && meshlet.m_uiFirstPrimitive < uiSectionEnd)
-      {
-        section.m_uiFirstMeshlet = xiiMath::Min(section.m_uiFirstMeshlet, i);
-
-        ++section.m_uiMeshletCount;
-      }
-    }
-
-    if (section.m_uiFirstMeshlet == xiiMath::MaxValue<xiiUInt32>())
-    {
-      section.m_uiFirstMeshlet = 0U;
+      section.m_uiFirstMeshlet = 0;
+      section.m_uiMeshletCount = 0;
     }
   }
+  // Clear old clusters before validating the section topology as well.
+  XII_SUCCEED_OR_RETURN(m_MeshBufferDescriptor.BuildMeshlets(xiiArrayPtr<const xiiMeshletBuildRange>()));
+  if (m_Sections.GetCount() > xiiMath::MaxValue<xiiUInt16>() || m_LODs.GetCount() > xiiMath::MaxValue<xiiUInt16>())
+    return XII_FAILURE;
 
-  for (xiiMeshLOD& lod : m_LODs)
+  if (m_MeshBufferDescriptor.m_Topology != xiiGALPrimitiveTopology::TriangleList)
+    return XII_SUCCESS; // Valid line/point meshes use the traditional geometry path.
+
+  xiiDynamicArray<xiiMeshletBuildRange> ranges;
+  ranges.Reserve(m_Sections.GetCount());
+  xiiHashTable<SectionKey, xiiUInt32, SectionKeyHash> firstSection;
+  xiiDynamicArray<xiiUInt32>                          nextSection;
+  nextSection.SetCount(m_Sections.GetCount(), xiiInvalidIndex);
+  firstSection.Reserve(m_Sections.GetCount());
+  // Linked buckets match repeated geometry to distinct section identities without quadratic scans.
+  for (xiiUInt32 i = m_Sections.GetCount(); i > 0; --i)
   {
-    lod.m_uiFirstMeshlet = xiiMath::MaxValue<xiiUInt32>();
-    lod.m_uiMeshletCount = 0U;
-
-    for (xiiMeshSection& section : lod.m_Sections)
+    const auto&      section = m_Sections[i - 1];
+    const SectionKey key{section.m_uiFirstPrimitive, section.m_uiPrimitiveCount, section.m_uiMaterialIndex};
+    firstSection.TryGetValue(key, nextSection[i - 1]);
+    firstSection.Insert(key, i - 1);
+  }
+  // Build in LOD order so each LOD occupies a contiguous span even when sections were added interleaved.
+  for (xiiUInt32 l = 0; l < m_LODs.GetCount(); ++l)
+  {
+    for (const auto& section : m_LODs[l].m_Sections)
     {
-      const xiiUInt32 uiSectionEnd = section.m_uiFirstPrimitive + section.m_uiPrimitiveCount;
-      section.m_uiFirstMeshlet     = xiiMath::MaxValue<xiiUInt32>();
-      section.m_uiMeshletCount     = 0U;
-
-      for (xiiUInt32 i = 0; i < meshlets.GetCount(); ++i)
-      {
-        const xiiMeshlet& meshlet = meshlets[i];
-
-        if (meshlet.m_uiFirstPrimitive >= section.m_uiFirstPrimitive && meshlet.m_uiFirstPrimitive < uiSectionEnd)
-        {
-          section.m_uiFirstMeshlet = xiiMath::Min(section.m_uiFirstMeshlet, i);
-
-          ++section.m_uiMeshletCount;
-        }
-      }
-
-      if (section.m_uiFirstMeshlet != xiiMath::MaxValue<xiiUInt32>())
-      {
-        lod.m_uiFirstMeshlet = xiiMath::Min(lod.m_uiFirstMeshlet, section.m_uiFirstMeshlet);
-        lod.m_uiMeshletCount += section.m_uiMeshletCount;
-      }
-      else
-      {
-        section.m_uiFirstMeshlet = 0U;
-      }
-    }
-
-    if (lod.m_uiFirstMeshlet == xiiMath::MaxValue<xiiUInt32>())
-    {
-      lod.m_uiFirstMeshlet = 0U;
+      const SectionKey key{section.m_uiFirstPrimitive, section.m_uiPrimitiveCount, section.m_uiMaterialIndex};
+      xiiUInt32        index;
+      if (!firstSection.TryGetValue(key, index) || index == xiiInvalidIndex)
+        return XII_FAILURE;
+      firstSection.Insert(key, nextSection[index]);
+      ranges.PushBack({section.m_uiFirstPrimitive, section.m_uiPrimitiveCount, section.m_uiMaterialIndex,
+                       static_cast<xiiUInt16>(index), static_cast<xiiUInt16>(l)});
     }
   }
-
-  m_UsageFlags.Add(xiiMeshResourceUsageFlags::MeshShaderReady);
+  if (ranges.GetCount() != m_Sections.GetCount())
+    return XII_FAILURE;
+  if (ranges.IsEmpty())
+  {
+    XII_SUCCEED_OR_RETURN(m_MeshBufferDescriptor.BuildMeshlets(uiMaxVertices, uiMaxPrimitives));
+    if (!m_LODs.IsEmpty())
+      m_LODs[0].m_uiMeshletCount = m_MeshBufferDescriptor.m_Meshlets.GetCount();
+  }
+  else
+  {
+    XII_SUCCEED_OR_RETURN(m_MeshBufferDescriptor.BuildMeshlets(ranges, uiMaxVertices, uiMaxPrimitives));
+    xiiUInt32 cursor     = 0;
+    xiiUInt32 rangeIndex = 0;
+    for (auto& lod : m_LODs)
+    {
+      lod.m_uiFirstMeshlet = cursor;
+      for (auto& section : lod.m_Sections)
+      {
+        const auto& range        = ranges[rangeIndex++];
+        section.m_uiFirstMeshlet = cursor;
+        while (cursor < m_MeshBufferDescriptor.m_Meshlets.GetCount() &&
+               m_MeshBufferDescriptor.m_Meshlets[cursor].m_uiSectionIndex == range.m_uiSectionIndex)
+          ++cursor;
+        section.m_uiMeshletCount       = cursor - section.m_uiFirstMeshlet;
+        auto& globalSection            = m_Sections[range.m_uiSectionIndex];
+        globalSection.m_uiFirstMeshlet = section.m_uiFirstMeshlet;
+        globalSection.m_uiMeshletCount = section.m_uiMeshletCount;
+      }
+      lod.m_uiMeshletCount = cursor - lod.m_uiFirstMeshlet;
+    }
+  }
+  if (!m_MeshBufferDescriptor.m_Meshlets.IsEmpty())
+    m_UsageFlags.Add(xiiMeshResourceUsageFlags::MeshShaderReady);
+  return XII_SUCCESS;
 }
 
 const xiiBoundingBoxSphere& xiiMeshResourceDescriptor::GetBounds() const

@@ -1,0 +1,20 @@
+// XII Engine - native surface queries from resident indexed GPU-scene geometry.
+
+[PLATFORMS]
+ALL
+
+[RENDERSTATE]
+DepthEnable = true
+DepthWriteEnable = true
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
+CullMode = CullMode_None
+
+[SHADER]
+#include <Shaders/Pipeline/GpuSceneSurfaceVertex.h>
+
+[VERTEX_SHADER]
+#define XII_SCENE_SURFACE_CURRENT_ONLY
+#include <Shaders/Pipeline/GpuSceneSurfaceIndexed.h>
+
+[PIXEL_SHADER]
+#include <Shaders/Pipeline/GpuScenePickingPixel.h>

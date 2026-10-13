@@ -73,5 +73,3 @@ void xiiTelemetry::StopTelemetryThread()
     XII_DEFAULT_DELETE(g_pBroadcastThread);
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_TelemetryThread);

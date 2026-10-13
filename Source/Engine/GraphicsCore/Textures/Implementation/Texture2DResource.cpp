@@ -146,8 +146,23 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
     *pStream >> td.m_SamplerDescription;
     *pStream >> bIsFallback;
 
-    pStream->ReadBytes(&pImage, sizeof(xiiImage*));
+    if (pStream->ReadBytes(&pImage, sizeof(xiiImage*)) != sizeof(xiiImage*) || pImage == nullptr)
+      return {xiiResourceState::LoadedResourceMissing, 0, 0};
   }
+
+  if (td.m_TextureDescription.m_Size.width > 0)
+  {
+    // Definition-backed render targets have no image or streaming quality levels.
+    if (!td.m_TextureDescription.Is2D() || !td.m_TextureDescription.m_Size.HasNonZeroArea() ||
+        td.m_TextureDescription.m_Usage != xiiGALResourceUsage::Mutable ||
+        !td.m_TextureDescription.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
+      return {xiiResourceState::LoadedResourceMissing, 0, 0};
+    td.m_uiQualityLevelsDiscardable = 0;
+    td.m_uiQualityLevelsLoadable    = 0;
+    return CreateResource(std::move(td));
+  }
+  if (!pImage->IsValid())
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
 
   {
     const xiiUInt32 uiNumMipmapsLowRes   = xiiMath::Min(pImage->GetMipLevelCount(), 6U);
@@ -199,8 +214,9 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
       xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 32> initData;
       FillOutDescriptor(td, pImage, uiUploadNumMipLevels, m_uiMemoryGPU[m_uiLoadedTextures], initData);
 
-      // ignore its return value here, we build our own
-      CreateResource(std::move(td));
+      const auto result = CreateResource(std::move(td));
+      if (result.m_State != xiiResourceState::Loaded)
+        return result;
     }
 
     {
@@ -229,30 +245,40 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
+  if (pDevice == nullptr || m_uiLoadedTextures >= XII_ARRAY_SIZE(m_pGALTexture))
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
+
+  descriptor.m_TextureDescription.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+
+  xiiGALTextureData textureData(descriptor.m_InitialContent);
+  auto              texture = pDevice->CreateTexture(descriptor.m_TextureDescription, descriptor.m_InitialContent.IsEmpty() ? nullptr : &textureData);
+  if (texture == nullptr)
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
+  auto sampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);
+  if (sampler == nullptr)
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
+
   m_Type     = descriptor.m_TextureDescription.m_Type;
   m_Format   = descriptor.m_TextureDescription.m_Format;
   m_uiWidth  = descriptor.m_TextureDescription.m_Size.width;
   m_uiHeight = descriptor.m_TextureDescription.m_Size.height;
 
-  descriptor.m_TextureDescription.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
-
-  xiiGALTextureData textureData(descriptor.m_InitialContent);
-  m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_TextureDescription, &textureData);
-
-  XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture Data could not be uploaded to the GPU");
-
   xiiStringBuilder sDebugName;
   sDebugName.SetFormat("{} ([{}] - {}x{})", GetResourceIdOrDescription(), m_uiLoadedTextures, m_uiWidth, m_uiHeight);
-  m_pGALTexture[m_uiLoadedTextures]->SetDebugName(sDebugName);
+  texture->SetDebugName(sDebugName);
+  m_pGALTexture[m_uiLoadedTextures] = std::move(texture);
+  m_pSampler                        = std::move(sampler);
 
-  m_pSampler.Clear();
-  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);
-
-  XII_ASSERT_DEV(m_pSampler != nullptr, "Sampler state error");
+  xiiUInt64   memory      = 0;
+  const auto& description = m_pGALTexture[m_uiLoadedTextures]->GetDescription();
+  for (xiiUInt32 mip = 0; mip < description.m_uiMipLevels; ++mip)
+    memory += xiiGALTextureUtilities::GetMipLevelProperties(description, mip).m_uiMipSize;
+  memory *= static_cast<xiiUInt64>(description.Is3D() ? 1U : description.m_uiArraySizeOrDepth) * description.m_uiSampleCount;
+  m_uiMemoryGPU[m_uiLoadedTextures] = static_cast<xiiUInt32>(xiiMath::Min(memory, static_cast<xiiUInt64>(xiiMath::MaxValue<xiiUInt32>())));
 
   ++m_uiLoadedTextures;
 
   return ret;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Texture2DResource);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Implementation_Texture2DResource);

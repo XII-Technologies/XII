@@ -173,6 +173,3 @@ void xiiLogWriter::HTML::WriteString(xiiStringView sText, xiiUInt32 uiColor)
 
   m_File.WriteBytes(sTemp.GetData(), sizeof(char) * sTemp.GetElementCount()).IgnoreResult();
 }
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_HTMLWriter);

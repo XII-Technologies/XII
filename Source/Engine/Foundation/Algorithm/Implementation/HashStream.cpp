@@ -73,5 +73,3 @@ xiiUInt64 xiiHashStreamWriter64::GetHashValue() const
 {
   return XXH64_digest((XXH64_state_t*)m_pState);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Algorithm_Implementation_HashStream);

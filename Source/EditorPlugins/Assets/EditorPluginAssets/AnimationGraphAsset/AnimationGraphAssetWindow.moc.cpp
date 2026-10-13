@@ -95,7 +95,7 @@ void xiiQtAnimationGraphAssetDocumentWindow::SelectionEventHandler(const xiiSele
   if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
   {
     // delayed execution
-    QTimer::singleShot(1, [this]() {
+    QTimer::singleShot(1, this, [this]() {
       // Check again if the selection is empty. This could have changed due to the delayed execution.
       if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
       {

@@ -16,12 +16,21 @@ using xiiRectFloat = xiiRectTemplate<float>;
 
 class xiiFormatString;
 class xiiFrustum;
+class xiiGeometry;
 class xiiRenderGraph;
 class xiiRenderGraphBuilder;
 class xiiRenderGraphPassContext;
 
 struct xiiDebugUploadData;
 struct xiiDebugVisualizationData;
+
+/// Depth policy for world-space debug primitives. Overlay draws run after depth-tested
+/// world/view primitives and neither test nor modify the scene depth buffer.
+enum class xiiDebugRendererDepthMode : xiiUInt8
+{
+  DepthTested,
+  Overlay,
+};
 
 /// Horizontal alignment of debug text.
 struct xiiDebugTextHAlign
@@ -141,11 +150,23 @@ struct XII_GRAPHICSCORE_DLL xiiMatOrTransform
 /// Shapes can be rendered for a single frame, or 'persistent' for a certain duration.
 /// The 'context' specifies whether shapes are generally visible in a scene, from all views,
 /// or specific to a single view. See the xiiDebugRendererContext constructors for what can be implicitly used as a context.
+/// Draws submitted before the first debug upload of a world frame are visible in all applicable views of that frame.
+/// Later submissions enter the next frame's extraction buffer. Graphs rendering the same world frame must use the same frame index.
 class XII_GRAPHICSCORE_DLL xiiDebugRenderer
 {
 public:
+  /// Releases transient and persistent data for a destroyed view/world. Requires exclusive use of the context;
+  /// it must not race extraction or rendering. RenderWorldModule calls this during view and world teardown.
+  static void ClearContext(const xiiDebugRendererContext& context);
+
   /// Renders the given set of lines for one frame.
-  static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
+  static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity(), xiiDebugRendererDepthMode depthMode = xiiDebugRendererDepthMode::DepthTested);
+
+  /// Submits triangulated Core geometry and lines using its vertex colors multiplied by color.
+  /// Copies vertices into the existing debug batches; no intermediate mesh or resource is created.
+  /// Rejects invalid indices, non-triangle polygons, non-finite positions/colors/transforms,
+  /// or a non-affine transform with XII_FAILURE before submitting any primitives.
+  static xiiResult DrawGeometry(const xiiDebugRendererContext& context, const xiiGeometry& geometry, const xiiColor& color, xiiMatOrTransform transform = xiiMat4::MakeIdentity(), xiiDebugRendererDepthMode depthMode = xiiDebugRendererDepthMode::DepthTested);
 
   /// Renders the given set of lines in 2D (screen-space) for one frame.
   static void Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const xiiDebugRendererLine> lines, const xiiColor& color);
@@ -175,7 +196,7 @@ public:
   static void DrawSolidBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, xiiMatOrTransform mTransform = xiiMat4::MakeIdentity());
 
   /// Renders the set of filled triangles for one frame.
-  static void DrawSolidTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<xiiDebugRendererTriangle> triangles, const xiiColor& color);
+  static void DrawSolidTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<xiiDebugRendererTriangle> triangles, const xiiColor& color, xiiDebugRendererDepthMode depthMode = xiiDebugRendererDepthMode::DepthTested);
 
   /// Renders the set of textured triangles for one frame.
   static void DrawTexturedTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<xiiDebugRendererTexturedTriangle> triangles, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture);
@@ -184,10 +205,10 @@ public:
   static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color);
 
   /// Renders a textured 2D rectangle in screen-space for one frame.
-  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale = xiiVec2(1, 1));
+  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale = xiiVec2(1, 1), xiiDebugRendererDepthMode depthMode = xiiDebugRendererDepthMode::DepthTested);
 
-  /// Renders a textured 2D rectangle in screen-space for one frame.
-  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale = xiiVec2(1, 1));
+  /// Renders a textured 2D rectangle in screen-space for one frame. Overlay ignores scene depth.
+  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiVec2 vScale = xiiVec2(1, 1), xiiDebugRendererDepthMode depthMode = xiiDebugRendererDepthMode::DepthTested);
 
   /// Renders a wireframe 2D rectangle in screen-space for one frame.
   static void Draw2DLineRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color);

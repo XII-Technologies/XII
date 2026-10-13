@@ -1,0 +1,42 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Core/ResourceManager/ResourceManager.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Meshes/MeshSkinning.h>
+#include <GraphicsCore/Scene/Implementation/SceneExtractedSkinning.h>
+
+xiiResult xiiPrepareExtractedMeshSkinning(const xiiMeshResource& mesh, const xiiMeshRenderData& packet, xiiExtractedMeshSkinning& out_skinning)
+{
+  xiiExtractedMeshSkinning result;
+  XII_SUCCEED_OR_RETURN(xiiMeshSkinning::ComputeBounds(mesh.GetBounds(), packet.m_SkinningMatrices, result.m_Bounds));
+  if (!packet.m_SkinningMatrices.IsEmpty())
+  {
+    xiiResourceLock<xiiMeshBufferResource> buffer(mesh.GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+    if (buffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
+      return XII_FAILURE;
+    const auto& descriptor  = buffer->GetDescriptor();
+    result.m_uiVertexStride = descriptor.GetVertexStride();
+    bool indicesFound = false, weightsFound = false;
+    for (const auto& stream : descriptor.m_VertexStreams)
+    {
+      if (stream.m_Semantic == xiiMeshVertexSemantic::BoneIndices0 && stream.m_Format == xiiMeshVertexStreamFormat::UShort4)
+      {
+        result.m_uiBoneIndicesOffset = stream.m_uiOffset;
+        indicesFound                 = true;
+      }
+      if (stream.m_Semantic == xiiMeshVertexSemantic::BoneWeights0 && stream.m_Format == xiiMeshVertexStreamFormat::UByte4Normalized)
+      {
+        result.m_uiBoneWeightsOffset = stream.m_uiOffset;
+        weightsFound                 = true;
+      }
+    }
+    if (!indicesFound || !weightsFound || result.m_uiVertexStride < 8 || (result.m_uiVertexStride & 3) != 0 ||
+        result.m_uiBoneIndicesOffset > result.m_uiVertexStride - 8 || (result.m_uiBoneIndicesOffset & 1) != 0 ||
+        result.m_uiBoneWeightsOffset > result.m_uiVertexStride - 4)
+      return XII_FAILURE;
+  }
+  out_skinning = result;
+  return XII_SUCCESS;
+}

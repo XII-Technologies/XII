@@ -21,7 +21,7 @@ DepthEnable = true
   DepthWriteEnable = true
 #endif
 
-[VERTEXSHADER]
+[VERTEX_SHADER]
 
 #define USE_COLOR0
 
@@ -50,7 +50,7 @@ VS_OUT main(VS_IN Input)
   return RetVal;
 }
 
-[PIXELSHADER]
+[PIXEL_SHADER]
 
 #define USE_COLOR0
 

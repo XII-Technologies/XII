@@ -895,5 +895,3 @@ const xiiUInt8 g_FontFilePNG[] = {
 };
 
 #endif
-
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Debug_Implementation_Inconsolata);

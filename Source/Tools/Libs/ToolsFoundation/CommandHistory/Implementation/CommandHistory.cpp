@@ -345,11 +345,21 @@ void xiiCommandHistory::EndTransaction(bool bCancel)
     m_pHistoryStorage->m_TransactionStack.PopBack();
     m_pHistoryStorage->m_ActiveCommandStack.PopBack();
 
-    if (m_pHistoryStorage->m_TransactionStack.IsEmpty())
+    const bool bSharedTemporaryTransaction = !m_pHistoryStorage->m_TransactionStack.IsEmpty() && m_pHistoryStorage->m_TransactionStack.PeekBack() == pTransaction;
+    if (!m_pHistoryStorage->m_TransactionStack.IsEmpty() && !bSharedTemporaryTransaction)
     {
-      pTransaction->Cleanup(xiiCommand::CommandState::WasUndone);
-      pTransaction->GetDynamicRTTI()->GetAllocator()->Deallocate(pTransaction);
+      // The child has already been undone. Keeping it owned by the parent would undo
+      // it a second time when cancelling or undoing that parent (notably array growth
+      // inside temporary drag transactions). Cancelled work is not part of its history.
+      auto*      parent  = m_pHistoryStorage->m_TransactionStack.PeekBack();
+      const bool removed = parent->m_ChildActions.RemoveAndCopy(pTransaction);
+      XII_ASSERT_DEV(removed, "Cancelled transaction is missing from its parent's command list.");
     }
+    pTransaction->Cleanup(xiiCommand::CommandState::WasUndone);
+    // Temporary updates reuse the same transaction at successive stack depths.
+    // Clear a cancelled update, but retain that transaction for the next update.
+    if (!bSharedTemporaryTransaction)
+      pTransaction->GetDynamicRTTI()->GetAllocator()->Deallocate(pTransaction);
   }
 
   if (m_pHistoryStorage->m_TransactionStack.IsEmpty())

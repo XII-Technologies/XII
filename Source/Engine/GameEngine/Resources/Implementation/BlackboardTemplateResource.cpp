@@ -92,3 +92,5 @@ xiiResult xiiBlackboardTemplateResourceDescriptor::Deserialize(xiiStreamReader& 
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_Entries));
   return XII_SUCCESS;
 }
+
+XII_STATICLINK_FILE(GameEngine, GameEngine_Resources_Implementation_BlackboardTemplateResource);

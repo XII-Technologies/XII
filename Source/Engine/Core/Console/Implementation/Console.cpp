@@ -433,5 +433,3 @@ void xiiConsole::LoadInputHistory(xiiStringView sFile)
     AddToInputHistory(lines[lines.GetCount() - 1 - i]);
   }
 }
-
-XII_STATICLINK_FILE(Core, Core_Console_Implementation_Console);

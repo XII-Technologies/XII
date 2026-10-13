@@ -22,12 +22,7 @@ XII_ALWAYS_INLINE void xiiView::SetName(xiiStringView sName)
 
 XII_ALWAYS_INLINE xiiGALTextureView* xiiView::GetRenderTargetView() const
 {
-  return m_pRenderTargetView;
-}
-
-XII_ALWAYS_INLINE void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
-{
-  m_pRenderTargetView = pRenderTargetView;
+  return m_pRenderTargetView.Borrow();
 }
 
 XII_ALWAYS_INLINE const xiiGALSwapChain* xiiView::GetSwapChain() const
@@ -46,6 +41,10 @@ XII_ALWAYS_INLINE void xiiView::SetCamera(xiiCamera* pCamera)
     return;
 
   m_pCamera = pCamera;
+  // Modification counters belong to a camera, so equal counters on a replacement camera must
+  // not reuse matrices from the previous one. Unsigned subtraction also handles counter wrap.
+  m_uiLastCameraOrientationModification = pCamera ? pCamera->GetOrientationModificationCounter() - 1U : 0U;
+  m_uiLastCameraSettingsModification    = pCamera ? pCamera->GetSettingsModificationCounter() - 1U : 0U;
   InvalidateTemporalHistory();
 }
 
@@ -153,6 +152,8 @@ XII_FORCE_INLINE bool xiiView::IsValid() const
 
 XII_FORCE_INLINE xiiResult xiiView::ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const
 {
+  if (m_pCamera == nullptr)
+    return XII_FAILURE;
   UpdateCachedMatrices();
 
   return m_Data.ComputePickingRay(fScreenPosX, fScreenPosY, out_vRayStartPos, out_vRayDir);
@@ -167,6 +168,8 @@ XII_FORCE_INLINE xiiResult xiiView::ComputeScreenSpacePos(const xiiVec3& vPoint,
 
 XII_FORCE_INLINE xiiResult xiiView::ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos) const
 {
+  if (m_pCamera == nullptr)
+    return XII_FAILURE;
   UpdateCachedMatrices();
 
   return m_Data.ComputeWorldSpacePos(fNormalizedScreenPosX, fNormalizedScreenPosY, out_vWorldPos);

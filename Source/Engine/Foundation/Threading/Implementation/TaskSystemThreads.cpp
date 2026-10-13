@@ -239,5 +239,3 @@ void xiiTaskSystem::DetermineTasksToExecuteOnThread(xiiTaskPriority::Enum& out_F
     }
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystemThreads);

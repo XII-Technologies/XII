@@ -4,9 +4,11 @@
 
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
 #include <Texture/Image/ImageUtils.h>
+#include <Texture/Utilities/TextureAssetFile.h>
 #include <TextureConverter/TextureConverter.h>
 
 xiiTextureConverter::xiiTextureConverter() :
@@ -143,22 +145,7 @@ xiiResult xiiTextureConverter::WriteTexFile(xiiStreamWriter& inout_stream, const
   xiiAssetFileHeader asset;
   asset.SetFileHashAndVersion(m_Processor.m_Descriptor.m_uiAssetHash, m_Processor.m_Descriptor.m_uiAssetVersion);
 
-  XII_SUCCEED_OR_RETURN(asset.Write(inout_stream));
-
-  inout_stream << image.GetImageFormat();
-  inout_stream << m_Processor.m_Descriptor.m_AddressModeU;
-  inout_stream << m_Processor.m_Descriptor.m_AddressModeV;
-  inout_stream << m_Processor.m_Descriptor.m_AddressModeW;
-  inout_stream << m_Processor.m_Descriptor.m_FilterMode;
-
-  xiiDdsFileFormat ddsWriter;
-  if (ddsWriter.WriteImage(inout_stream, image, "dds").Failed())
-  {
-    xiiLog::Error("Failed to write DDS image chunk to xiiTex file.");
-    return XII_FAILURE;
-  }
-
-  return XII_SUCCESS;
+  return xiiTextureAssetFile::WriteImage(inout_stream, image, m_Processor.m_Descriptor.m_SamplerDescription, asset);
 }
 
 xiiResult xiiTextureConverter::WriteOutputFile(xiiStringView sFile, const xiiImage& image)

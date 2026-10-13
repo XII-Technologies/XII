@@ -167,6 +167,19 @@ void xiiRenderGraphTimestampProfiler::OnFrameEnd(xiiUInt64 uiFrameIndex)
   }
 }
 
+void xiiRenderGraphTimestampProfiler::OnFrameAbort()
+{
+  FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
+  for (PassQueries& pass : frame.m_PassQueries)
+    pass.m_bActive = false;
+  for (xiiUInt32 i = 0; i < frame.m_SubmissionQueryActive.GetCount(); ++i)
+    frame.m_SubmissionQueryActive[i] = false;
+
+  // Earlier submissions may still use these queries. Advance through the normal ring without
+  // publishing an incomplete frame or immediately recycling its GPU resources.
+  OnFrameEnd(xiiInvalidIndex);
+}
+
 void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
 {
   XII_LOCK(m_ResultMutex);

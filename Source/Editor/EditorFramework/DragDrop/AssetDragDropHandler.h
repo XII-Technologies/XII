@@ -16,11 +16,15 @@ protected:
 
   xiiString GetAssetGuidString(const xiiDragDropInfo* pInfo) const;
 
-  xiiUuid GetAssetGuid(const xiiDragDropInfo* pInfo) const { return xiiConversionUtils::ConvertStringToUuid(GetAssetGuidString(pInfo)); }
+  xiiUuid GetAssetGuid(const xiiDragDropInfo* pInfo) const
+  {
+    const auto guid = GetAssetGuidString(pInfo);
+    return xiiConversionUtils::IsStringUuid(guid) ? xiiConversionUtils::ConvertStringToUuid(guid) : xiiUuid::MakeInvalid();
+  }
 
   xiiString GetAssetsDocumentTypeName(const xiiUuid& assetTypeGuid) const;
 
   bool IsSpecificAssetType(const xiiDragDropInfo* pInfo, const char* szType) const;
 
-  xiiDocument* m_pDocument;
+  xiiDocument* m_pDocument = nullptr;
 };

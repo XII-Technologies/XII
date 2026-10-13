@@ -115,4 +115,4 @@ void xiiMarkerComponent::OnDeactivated()
   GetOwner()->UpdateLocalBounds();
 }
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_MarkerComponent);
+XII_STATICLINK_FILE(GameEngine, GameEngine_Components_GamePlay_Implementation_MarkerComponent);

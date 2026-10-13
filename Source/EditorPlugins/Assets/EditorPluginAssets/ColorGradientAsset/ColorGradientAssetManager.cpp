@@ -48,9 +48,10 @@ void xiiColorGradientAssetDocumentManager::OnDocumentManagerEvent(const xiiDocum
   }
 }
 
-void xiiColorGradientAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiColorGradientAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiColorGradientAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiColorGradientAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

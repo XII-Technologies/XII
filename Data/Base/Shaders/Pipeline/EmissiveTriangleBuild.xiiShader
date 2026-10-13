@@ -19,6 +19,7 @@ StructuredBuffer<GpuGeometryRecord>     g_Geometry;
 StructuredBuffer<GpuMeshlet>            g_Meshlets;
 StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
 ByteAddressBuffer                       g_Buffers[];
+#include <Shaders/Pipeline/GpuSceneSkinning.h>
 Texture2D<float4>                       g_Textures[];
 RWStructuredBuffer<xiiGpuEmissiveTriangle> g_EmissiveTriangles;
 RWStructuredBuffer<xiiGpuEmissiveLightHeader> g_EmissiveHeader;
@@ -124,7 +125,15 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
       break;
     }
   }
-  if (lodIndex == 0xFFFFFFFFu)
+  // Emissive sampling uses the finest resident geometry independently of per-view LOD.
+  // Forced selection still applies, and only candidates authored for that LOD contribute.
+  if (instance.ForcedLod != 0xFFFFFFFFu)
+  {
+    lodIndex = instance.ForcedLod;
+    if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.ResidentLodMask & (1u << lodIndex)) == 0u)
+      return;
+  }
+  if (lodIndex == 0xFFFFFFFFu || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     return;
 
   const GpuGeometryLod lod = geometry.Lods[lodIndex];
@@ -170,9 +179,16 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
       any(lastAttributeEnd > vertexBufferBytes - vertexOffsets))
     return;
 
-  const float3 p0 = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.x)), 1.0f)).xyz;
-  const float3 p1 = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.y)), 1.0f)).xyz;
-  const float3 p2 = mul(instance.GlobalTransform, float4(asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.z)), 1.0f)).xyz;
+  float3 local0 = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.x));
+  float3 local1 = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.y));
+  float3 local2 = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffsets.z));
+  if (!xiiSkinPosition(instance, lod, sourceVertices.x, local0) ||
+      !xiiSkinPosition(instance, lod, sourceVertices.y, local1) ||
+      !xiiSkinPosition(instance, lod, sourceVertices.z, local2))
+    return;
+  const float3 p0 = mul(instance.GlobalTransform, float4(local0, 1)).xyz;
+  const float3 p1 = mul(instance.GlobalTransform, float4(local1, 1)).xyz;
+  const float3 p2 = mul(instance.GlobalTransform, float4(local2, 1)).xyz;
   const float3 areaVector = cross(p1 - p0, p2 - p0);
   const float doubleArea = length(areaVector);
   const float area = 0.5f * doubleArea;

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Reflection/Reflection.h>
@@ -11,6 +10,7 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
 class xiiLightingSystem;
+class xiiGALDevice;
 
 /// Runtime controls for the camera-centred mid-field DDGI clipmap.
 struct XII_GRAPHICSCORE_DLL xiiDDGISettings
@@ -109,31 +109,35 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuDDGIProbeUpdate
 static_assert(sizeof(xiiGpuDDGIProbeUpdate) == 32U);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuDDGIProbeUpdate);
 
-/// Process-wide DDGI clipmap scheduler.
-///
-/// The state is allocated during GraphicsCore subsystem startup, never from a
-/// global constructor. Logical world cells map to stable toroidal physical
-/// slots, preserving temporal history for the overlapping region when the
-/// camera moves and invalidating only newly exposed probe slabs.
-class XII_GRAPHICSCORE_DLL xiiDDGIManager
+/// Camera-centred GI state owned by one lighting context. CPU scheduling can be used without a device.
+/// GPU storage is private to the context; settings and algorithm state are never process global.
+/// This object is not thread-safe. It must outlive graphs capturing it. Before reinitialization,
+/// shutdown or destruction, discard those graphs and wait for their submitted GPU work to finish.
+class XII_GRAPHICSCORE_DLL xiiDDGIContext
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiDDGIManager);
-  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, DDGIManager);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiDDGIContext);
 
 public:
-  xiiDDGIManager() = delete;
+  xiiDDGIContext();
+  ~xiiDDGIContext();
 
-  [[nodiscard]] static xiiResult Configure(const xiiDDGISettings& settings);
-  [[nodiscard]] static bool      IsSubsystemInitialized();
-  [[nodiscard]] static bool      IsInitialized();
+  /// Initialize CPU scheduling and, when a device is supplied, persistent GPU storage.
+  /// Failure preserves an existing configuration. A null device selects CPU-only scheduling.
+  [[nodiscard]] xiiResult Initialize(const xiiDDGISettings& settings = {}, xiiSharedPtr<xiiGALDevice> pDevice = nullptr);
+  void                    Shutdown();
+  [[nodiscard]] bool      IsInitialized() const;
+  /// Discard accumulated lighting without reallocating storage or disturbing another view.
+  void InvalidateHistory();
 
-  static void BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);
-  static void CommitProbeUpdate(xiiUInt32 uiPhysicalProbe, const xiiVec3& vRelocationOffset, bool bValid, bool bInsideGeometry = false);
+  /// Frames must be nonzero and strictly increasing; the entire clipmap must fit its cell coordinates.
+  /// Non-finite or out-of-range positions and invalid frames fail without changing state.
+  [[nodiscard]] xiiResult BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex);
+  void                    CommitProbeUpdate(xiiUInt32 uiPhysicalProbe, const xiiVec3& vRelocationOffset, bool bValid, bool bInsideGeometry = false);
 
-  [[nodiscard]] static xiiArrayPtr<const xiiDDGIProbeState>  GetProbes();
-  [[nodiscard]] static xiiArrayPtr<const xiiDDGIProbeUpdate> GetScheduledUpdates();
-  [[nodiscard]] static xiiDDGIFrameStats                     GetFrameStats();
-  [[nodiscard]] static const xiiDDGISettings&                GetConfiguration();
+  [[nodiscard]] xiiArrayPtr<const xiiDDGIProbeState>  GetProbes() const;
+  [[nodiscard]] xiiArrayPtr<const xiiDDGIProbeUpdate> GetScheduledUpdates() const;
+  [[nodiscard]] xiiDDGIFrameStats                     GetFrameStats() const;
+  [[nodiscard]] const xiiDDGISettings&                GetConfiguration() const;
 
   struct UpdateHandles
   {
@@ -145,15 +149,10 @@ public:
 
   /// Adds the temporally accumulated probe update pass and publishes resources
   /// consumed by the per-pixel DDGI final gather.
-  [[nodiscard]] static UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
+  [[nodiscard]] UpdateHandles AddUpdatePass(xiiRenderGraph& graph, const xiiLightingSystem* pLightingSystem);
 
 private:
-  static void                    Startup();
-  static void                    EngineStartup();
-  static void                    EngineShutdown();
-  static void                    Shutdown();
-  [[nodiscard]] static xiiResult CreateGpuResources();
-
+  [[nodiscard]] xiiResult CreateGpuResources();
   class State;
-  static xiiUniquePtr<State> s_pState;
+  xiiUniquePtr<State> m_pState;
 };

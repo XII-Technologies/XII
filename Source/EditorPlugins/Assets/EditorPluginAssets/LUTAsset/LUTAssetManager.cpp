@@ -59,10 +59,11 @@ void xiiLUTAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentManager
   }
 }
 
-void xiiLUTAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiLUTAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   xiiLUTAssetDocument* pDoc = new xiiLUTAssetDocument(sPath);
   out_pDocument             = pDoc;
+  return XII_SUCCESS;
 }
 
 void xiiLUTAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const

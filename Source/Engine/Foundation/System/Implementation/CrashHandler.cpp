@@ -121,6 +121,3 @@ void xiiCrashHandler_WriteMiniDump::HandleCrash(void* pOsSpecificData)
 #else
 #  error "xiiCrashHandler is not implemented on current platform"
 #endif
-
-
-XII_STATICLINK_FILE(Foundation, Foundation_System_Implementation_CrashHandler);

@@ -3,7 +3,6 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/PropertyGrid/ExposedBoneWidget.moc.h>
-#include <Foundation/Serialization/ReflectionSerializer.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
@@ -65,23 +64,22 @@ void xiiQtExposedBoneWidget::onEndTemporary()
 
 void xiiQtExposedBoneWidget::SlotValueChanged()
 {
+  if (m_OldValue.GetReflectedType() != xiiGetStaticRTTI<xiiExposedBone>())
+    return;
+
   onBeginTemporary();
 
-  auto            obj   = m_OldValue.Get<xiiTypedObject>();
-  xiiExposedBone* pCopy = reinterpret_cast<xiiExposedBone*>(xiiReflectionSerializer::Clone(obj.m_pObject, obj.m_pType));
+  xiiExposedBone bone = m_OldValue.Get<xiiExposedBone>();
 
   {
     xiiAngle x = xiiAngle::MakeFromDegree(m_pRotWidget[0]->value());
     xiiAngle y = xiiAngle::MakeFromDegree(m_pRotWidget[1]->value());
     xiiAngle z = xiiAngle::MakeFromDegree(m_pRotWidget[2]->value());
 
-    pCopy->m_Transform.m_qRotation = xiiQuat::MakeFromEulerAngles(x, y, z);
+    bone.m_Transform.m_qRotation = xiiQuat::MakeFromEulerAngles(x, y, z);
   }
 
-  xiiVariant newValue;
-  newValue.MoveTypedObject(pCopy, obj.m_pType);
-
-  BroadcastValueChanged(newValue);
+  BroadcastValueChanged(xiiVariant(bone));
 }
 
 void xiiQtExposedBoneWidget::OnInit()
@@ -90,18 +88,14 @@ void xiiQtExposedBoneWidget::OnInit()
 
 void xiiQtExposedBoneWidget::InternalSetValue(const xiiVariant& value)
 {
-  if (value.GetReflectedType() != xiiGetStaticRTTI<xiiExposedBone>())
-    return;
-
-  const xiiExposedBone* pBone = reinterpret_cast<const xiiExposedBone*>(value.GetData());
-
   xiiQtScopedBlockSignals b0(m_pRotWidget[0]);
   xiiQtScopedBlockSignals b1(m_pRotWidget[1]);
   xiiQtScopedBlockSignals b2(m_pRotWidget[2]);
 
-  if (value.IsValid())
+  if (value.GetReflectedType() == xiiGetStaticRTTI<xiiExposedBone>())
   {
-    xiiAngle x, y, z;
+    const xiiExposedBone* pBone = static_cast<const xiiExposedBone*>(value.GetData());
+    xiiAngle              x, y, z;
     pBone->m_Transform.m_qRotation.GetAsEulerAngles(x, y, z);
 
     m_pRotWidget[0]->setValue(x.GetDegree());

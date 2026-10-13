@@ -3,16 +3,32 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <EditorPluginAssets/DecalAsset/DecalAsset.h>
 #include <EditorPluginAssets/DecalAsset/DecalAssetManager.h>
 #include <EditorPluginAssets/DecalAsset/DecalAssetWindow.moc.h>
-#include <Texture/Utils/TextureAtlasDesc.h>
+#include <Foundation/Algorithm/HashStream.h>
+#include <Foundation/IO/FileSystem/DeferredFileWriter.h>
+#include <SharedPluginAssets/DecalAsset/DecalAtlasBuilder.h>
+#include <SharedPluginAssets/TextureAsset/TextureAssetProfile.h>
 #include <ToolsFoundation/Assets/AssetFileExtensionWhitelist.h>
 
-#include <GraphicsCore/../../../Data/Base/Shaders/Common/LightData.h>
+namespace
+{
+  xiiDecalAtlasBuildSettings GetBuildSettings(const xiiPlatformProfile* profile)
+  {
+    xiiDecalAtlasBuildSettings settings;
+    if (const auto* textures = profile->GetTypeConfig<xiiTextureAssetProfileConfig>())
+      settings.m_uiMaxEntrySize = xiiMath::Min(settings.m_uiMaxEntrySize, xiiUInt32(textures->m_uiMaxResolution));
+    return settings;
+  }
 
-const char* ToCompressionMode(xiiTextureConverterCompressionMode::Enum mode);
-const char* ToMipmapMode(xiiTextureConverterMipmapMode::Enum mode);
+  xiiUInt16 GetAtlasAssetVersion()
+  {
+    return (xiiGetStaticRTTI<xiiDecalAssetDocument>()->GetTypeVersion() & 0xFF) |
+      ((xiiGetStaticRTTI<xiiDecalAssetProperties>()->GetTypeVersion() & 0xFF) << 8);
+  }
+} // namespace
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalAssetDocumentManager, 1, xiiRTTIDefaultAllocator<xiiDecalAssetDocumentManager>)
@@ -52,14 +68,8 @@ void xiiDecalAssetDocumentManager::AddEntriesToAssetTable(xiiStringView sDataDir
 
   if (projectDir.StartsWith_NoCase(sDataDirectory))
   {
-    addEntry("{ ProjectDecalAtlas }", "Default/Decals.xiiBinTextureAtlas", "Decal Atlas");
+    addEntry("{ ProjectDecalAtlas }", GetDecalTexturePath(pAssetProfile), "Decal Atlas");
   }
-}
-
-xiiString xiiDecalAssetDocumentManager::GetAssetTableEntry(const xiiSubAsset* pSubAsset, xiiStringView sDataDirectory, const xiiPlatformProfile* pAssetProfile) const
-{
-  // means NO table entry will be written, because for decals we don't need a redirection
-  return xiiString();
 }
 
 void xiiDecalAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentManager::Event& e)
@@ -80,9 +90,10 @@ void xiiDecalAssetDocumentManager::OnDocumentManagerEvent(const xiiDocumentManag
   }
 }
 
-void xiiDecalAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
+xiiStatus xiiDecalAssetDocumentManager::InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext)
 {
   out_pDocument = new xiiDecalAssetDocument(sPath);
+  return XII_SUCCESS;
 }
 
 void xiiDecalAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const
@@ -92,195 +103,152 @@ void xiiDecalAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynamicA
 
 xiiUInt64 xiiDecalAssetDocumentManager::ComputeAssetProfileHashImpl(const xiiPlatformProfile* pAssetProfile) const
 {
-  // don't have any settings yet, but assets that generate profile specific output must not return 0 here
-  return 1;
+  const auto            settings = GetBuildSettings(DetermineFinalTargetProfile(pAssetProfile));
+  xiiHashStreamWriter64 hash(2); // Native packed atlas descriptor version.
+  hash << settings.m_uiMaxEntrySize;
+  hash << settings.m_uiMaxAtlasSize;
+  hash << settings.m_uiMaxSourceSize;
+  hash << settings.m_uiPadding;
+  hash << settings.m_bGenerateMipMaps;
+  return hash.GetHashValue();
 }
 
 xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformProfile* pAssetProfile)
 {
-  xiiAssetCurator* pCurator  = xiiAssetCurator::GetSingleton();
-  const auto&      allAssets = pCurator->GetKnownSubAssets();
-
-  xiiUInt64 uiAssetHash = 1;
-
-  for (auto it = allAssets->GetIterator(); it.IsValid(); ++it)
+  pAssetProfile = DetermineFinalTargetProfile(pAssetProfile);
+  auto* curator = xiiAssetCurator::GetSingleton();
+  struct Candidate
   {
-    const auto& asset = it.Value();
-
-    if (asset.m_pAssetInfo->GetManager() != this)
-      continue;
-
-    uiAssetHash += pCurator->GetAssetDependencyHash(it.Key());
+    xiiUuid   m_Guid;
+    xiiString m_sPath;
+  };
+  xiiDynamicArray<Candidate> candidates;
+  {
+    // Release the curator's inventory lock before opening documents or querying dependencies.
+    const auto assets = curator->GetKnownSubAssets();
+    for (auto it = assets->GetIterator(); it.IsValid(); ++it)
+      if (it.Value().m_pAssetInfo->GetManager() == this)
+        candidates.PushBack({it.Key(), it.Value().m_pAssetInfo->m_Path.GetAbsolutePath()});
   }
-
-  xiiStringBuilder sDecalFile = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sDecalFile.AppendPath("AssetCache", GetDecalTexturePath(pAssetProfile));
-
-  if (IsDecalTextureUpToDate(sDecalFile, uiAssetHash))
+  candidates.Sort([](const Candidate& a, const Candidate& b) { return a.m_Guid < b.m_Guid; });
+  xiiHashStreamWriter64 hash(ComputeAssetProfileHashImpl(pAssetProfile));
+  for (const auto& candidate : candidates)
+  {
+    const auto dependencyHash = curator->GetAssetDependencyHash(candidate.m_Guid);
+    if (dependencyHash == 0)
+      return xiiStatus(xiiFmt("Cannot compute decal dependencies for '{}'.", candidate.m_sPath));
+    hash << candidate.m_Guid;
+    hash << dependencyHash;
+  }
+  xiiStringBuilder outputPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  outputPath.AppendPath("AssetCache", GetDecalTexturePath(pAssetProfile));
+  if (IsDecalTextureUpToDate(outputPath, hash.GetHashValue()))
     return XII_SUCCESS;
 
-  xiiTextureAtlasCreationDescription atlasDesc;
-
-  // find all decal assets, extract their file information to pass it along to TextureConverter
+  xiiDynamicArray<xiiDecalAtlasSource> sources;
+  auto*                                editor = xiiQtEditorApp::GetSingleton();
+  for (const auto& candidate : candidates)
   {
-    atlasDesc.m_Layers.SetCount(3);
-    atlasDesc.m_Layers[0].m_Usage         = xiiTextureConverterUsage::Color;
-    atlasDesc.m_Layers[1].m_Usage         = xiiTextureConverterUsage::NormalMap;
-    atlasDesc.m_Layers[2].m_Usage         = xiiTextureConverterUsage::Linear;
-    atlasDesc.m_Layers[2].m_uiNumChannels = 3;
-
-    atlasDesc.m_Items.Reserve(64);
-
-    xiiQtEditorApp*  pEditorApp = xiiQtEditorApp::GetSingleton();
-    xiiStringBuilder sAbsPath;
-
-    for (auto it = allAssets->GetIterator(); it.IsValid(); ++it)
+    xiiDocument* document = GetDocumentByPath(candidate.m_sPath);
+    const bool   wasOpen  = document != nullptr;
+    if (!document)
+      document = editor->OpenDocument(candidate.m_sPath, xiiDocumentFlags::None);
+    if (!document)
+      return xiiStatus(xiiFmt("Cannot open decal document '{}'.", candidate.m_sPath));
+    XII_SCOPE_EXIT(if (!wasOpen && !document->HasWindowBeenRequested()) document->GetDocumentManager()->CloseDocument(document));
+    auto*       decal      = static_cast<xiiDecalAssetDocument*>(document);
+    const auto* properties = decal->GetProperties();
+    if (properties->m_Mode < xiiDecalMode::BaseColor || properties->m_Mode > xiiDecalMode::BaseColorEmissive)
+      return xiiStatus(xiiFmt("Decal '{}' uses an invalid mode.", candidate.m_sPath));
+    if (properties->m_bBlendModeColorize)
+      return xiiStatus(xiiFmt("Decal '{}' uses legacy colorize blending, which has no native rendering path. Its authored setting is preserved.", candidate.m_sPath));
+    auto&            source = sources.ExpandAndGetRef();
+    xiiStringBuilder id;
+    xiiConversionUtils::ToString(decal->GetGuid(), id);
+    source.m_sDecalId.Assign(id);
+    auto resolve = [&](const xiiString& path, xiiString& absolute, bool required) -> xiiStatus {
+      if (path.IsEmpty())
+        return required ? xiiStatus(xiiFmt("Decal '{}' is missing a required image.", candidate.m_sPath)) : xiiStatus(XII_SUCCESS);
+      xiiStringBuilder resolved = path;
+      if (!editor->MakeDataDirectoryRelativePathAbsolute(resolved))
+        return xiiStatus(xiiFmt("Cannot resolve decal image '{}'.", path));
+      absolute = resolved;
+      return XII_SUCCESS;
+    };
+    XII_SUCCEED_OR_RETURN(resolve(properties->m_sBaseColor, source.m_sAlbedo, true));
+    XII_SUCCEED_OR_RETURN(resolve(properties->m_sAlphaMask, source.m_sAlphaMask, false));
+    if (properties->NeedsNormal())
     {
-      const auto& asset = it.Value();
-
-      if (asset.m_pAssetInfo->GetManager() != this)
-        continue;
-
-      XII_LOG_BLOCK("Decal", asset.m_pAssetInfo->m_Path.GetDataDirParentRelativePath());
-
-      // does the document already exist and is it open ?
-      bool         bWasOpen = false;
-      xiiDocument* pDoc     = GetDocumentByPath(asset.m_pAssetInfo->m_Path.GetAbsolutePath());
-      if (pDoc)
-        bWasOpen = true;
-      else
-        pDoc = pEditorApp->OpenDocument(asset.m_pAssetInfo->m_Path.GetAbsolutePath(), xiiDocumentFlags::None);
-
-      if (pDoc == nullptr)
-        return xiiStatus(xiiFmt("Could not open asset document '{0}'", asset.m_pAssetInfo->m_Path.GetDataDirParentRelativePath()));
-
-      xiiDecalAssetDocument* pDecalAsset = static_cast<xiiDecalAssetDocument*>(pDoc);
-
-      {
-        auto& item = atlasDesc.m_Items.ExpandAndGetRef();
-
-        // store the GUID as the decal identifier
-        xiiConversionUtils::ToString(pDecalAsset->GetGuid(), sAbsPath);
-        item.m_uiUniqueID = xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(sAbsPath));
-
-        auto pDecalProps = pDecalAsset->GetProperties();
-        item.m_uiFlags   = 0;
-        item.m_uiFlags |= pDecalProps->NeedsNormal() ? DECAL_USE_NORMAL : 0;
-        item.m_uiFlags |= pDecalProps->NeedsORM() ? DECAL_USE_ORM : 0;
-        item.m_uiFlags |= pDecalProps->NeedsEmissive() ? DECAL_USE_EMISSIVE : 0;
-        item.m_uiFlags |= pDecalProps->m_bBlendModeColorize ? DECAL_BLEND_MODE_COLORIZE : 0;
-
-        if (!pDecalProps->m_sAlphaMask.IsEmpty())
-        {
-          sAbsPath = pDecalAsset->GetProperties()->m_sAlphaMask;
-          if (sAbsPath.IsEmpty() || !pEditorApp->MakeDataDirectoryRelativePathAbsolute(sAbsPath))
-          {
-            return xiiStatus(xiiFmt("Invalid alpha mask texture path '{0}'", sAbsPath));
-          }
-
-          item.m_sAlphaInput = sAbsPath;
-        }
-
-        if (pDecalProps->NeedsBaseColor())
-        {
-          sAbsPath = pDecalAsset->GetProperties()->m_sBaseColor;
-          if (sAbsPath.IsEmpty() || !pEditorApp->MakeDataDirectoryRelativePathAbsolute(sAbsPath))
-          {
-            return xiiStatus(xiiFmt("Invalid base color texture path '{0}'", sAbsPath));
-          }
-
-          item.m_sLayerInput[0] = sAbsPath;
-        }
-
-        if (pDecalProps->NeedsNormal())
-        {
-          sAbsPath = pDecalAsset->GetProperties()->m_sNormal;
-          if (sAbsPath.IsEmpty() || !pEditorApp->MakeDataDirectoryRelativePathAbsolute(sAbsPath))
-          {
-            return xiiStatus(xiiFmt("Invalid normal texture path '{0}'", sAbsPath));
-          }
-
-          item.m_sLayerInput[1] = sAbsPath;
-        }
-
-        if (pDecalProps->NeedsORM())
-        {
-          sAbsPath = pDecalAsset->GetProperties()->m_sORM;
-          if (sAbsPath.IsEmpty() || !pEditorApp->MakeDataDirectoryRelativePathAbsolute(sAbsPath))
-          {
-            return xiiStatus(xiiFmt("Invalid ORM texture path '{0}'", sAbsPath));
-          }
-
-          item.m_sLayerInput[2] = sAbsPath;
-        }
-
-        if (pDecalProps->NeedsEmissive())
-        {
-          sAbsPath = pDecalAsset->GetProperties()->m_sEmissive;
-          if (sAbsPath.IsEmpty() || !pEditorApp->MakeDataDirectoryRelativePathAbsolute(sAbsPath))
-          {
-            return xiiStatus(xiiFmt("Invalid emissive texture path '{0}'", sAbsPath));
-          }
-
-          item.m_sLayerInput[2] = sAbsPath;
-        }
-      }
-
-
-      if (!pDoc->HasWindowBeenRequested() && !bWasOpen)
-        pDoc->GetDocumentManager()->CloseDocument(pDoc);
+      source.m_ChannelMask.Add(xiiDecalChannelMask::Normal);
+      XII_SUCCEED_OR_RETURN(resolve(properties->m_sNormal, source.m_sNormal, true));
+    }
+    if (properties->NeedsORM())
+    {
+      source.m_ChannelMask.Add(xiiDecalChannelMask::Material);
+      XII_SUCCEED_OR_RETURN(resolve(properties->m_sORM, source.m_sORM, true));
+    }
+    if (properties->NeedsEmissive())
+    {
+      source.m_ChannelMask.Add(xiiDecalChannelMask::Emissive);
+      XII_SUCCEED_OR_RETURN(resolve(properties->m_sEmissive, source.m_sEmissive, true));
     }
   }
-
+  xiiDecalAtlasResourceDescriptor atlas;
+  XII_SUCCEED_OR_RETURN(xiiDecalAtlasBuilder::Build(sources, GetBuildSettings(pAssetProfile), atlas));
+  xiiDeferredFileWriter writer;
+  writer.SetOutput(outputPath, true);
+  bool published = false;
+  XII_SCOPE_EXIT(if (!published) writer.Discard());
   xiiAssetFileHeader header;
-  {
-    xiiUInt16 uiVersion = xiiGetStaticRTTI<xiiDecalAssetDocument>()->GetTypeVersion() & 0xFF;
-    uiVersion |= (xiiGetStaticRTTI<xiiDecalAssetProperties>()->GetTypeVersion() & 0xFF) << 8;
-
-    header.SetFileHashAndVersion(uiAssetHash, uiVersion);
-  }
-
-  xiiStatus result(XII_SUCCESS);
-
-  // Send information to TextureConverter to do all the work
-  {
-    xiiStringBuilder texGroupFile = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-    texGroupFile.AppendPath("AssetCache", GetDecalTexturePath(pAssetProfile));
-    texGroupFile.ChangeFileExtension("xiiDecalAtlasDesc");
-
-    if (atlasDesc.Save(texGroupFile).Failed())
-      return xiiStatus(xiiFmt("Failed to save texture atlas descriptor file '{0}'", texGroupFile));
-
-    result = RunTextureConverter(sDecalFile, texGroupFile, header);
-  }
-
-  xiiFileStats stat;
-  if (xiiOSFile::GetFileStats(sDecalFile, stat).Succeeded() && stat.m_uiFileSize == 0)
-  {
-    // if the file was touched, but nothing written to it, delete the file
-    // might happen if TextureConverter crashed or had an error
-    xiiOSFile::DeleteFile(sDecalFile).IgnoreResult();
-
-    result = xiiStatus(xiiFmt("File does not exist: '{}'.", sDecalFile));
-  }
-
-  return result;
+  header.SetFileHashAndVersion(hash.GetHashValue(), GetAtlasAssetVersion());
+  header.SetGenerator("Native Decal Atlas");
+  XII_SUCCEED_OR_RETURN(header.Write(writer));
+  XII_SUCCEED_OR_RETURN(atlas.Serialize(writer));
+  XII_SUCCEED_OR_RETURN(writer.Close());
+  published = true;
+  // Individual decals now have their own asset table entries; reload the shared
+  // manager resource explicitly when its active-profile pixels change.
+  if (pAssetProfile == curator->GetActiveAssetProfile())
+    if (auto* connection = xiiEditorEngineProcessConnection::GetSingleton())
+    {
+      xiiReloadResourceMsgToEngine reload;
+      reload.m_sResourceID   = "{ ProjectDecalAtlas }";
+      reload.m_sResourceType = "Decal Atlas";
+      connection->SendMessage(&reload);
+    }
+  return XII_SUCCESS;
 }
 
 bool xiiDecalAssetDocumentManager::IsDecalTextureUpToDate(const char* szDecalFile, xiiUInt64 uiAssetHash) const
 {
   xiiFileReader file;
-  if (file.Open(szDecalFile).Succeeded())
-  {
-    xiiAssetFileHeader header;
-    header.Read(file).IgnoreResult();
-
-    // file still valid
-    if (header.GetFileHash() == uiAssetHash)
-      return true;
-  }
-
-  return false;
+  if (file.Open(szDecalFile).Failed() || file.GetFileSize() < 25)
+    return false;
+  char      tag[8]        = {};
+  xiiUInt8  headerVersion = 0;
+  xiiUInt64 hash          = 0;
+  xiiUInt16 assetVersion = 0, descriptorVersion = 0;
+  xiiUInt32 generatorLength = 0;
+  if (file.ReadBytes(tag, sizeof(tag)) != sizeof(tag) || !xiiMemoryUtils::IsEqual(tag, "xiiAsset", sizeof(tag)) ||
+      file.ReadBytes(&headerVersion, 1) != 1 || headerVersion != 3 ||
+      file.ReadQWordValue(&hash).Failed() || file.ReadWordValue(&assetVersion).Failed() ||
+      file.ReadDWordValue(&generatorLength).Failed() || generatorLength > file.GetFileSize() - 25 ||
+      file.SkipBytes(generatorLength) != generatorLength || file.ReadWordValue(&descriptorVersion).Failed())
+    return false;
+  if (hash != uiAssetHash || assetVersion != GetAtlasAssetVersion() || descriptorVersion != 2)
+    return false;
+  // A failed previous disk write may have left a valid header and partial pixels.
+  // Seek to the format's final marker instead of accepting that truncated cache.
+  xiiOSFile raw;
+  if (raw.Open(szDecalFile, xiiFileOpenMode::Read).Failed() || raw.GetFileSize() < 4)
+    return false;
+  raw.SetFilePosition(-4, xiiFileSeekMode::FromEnd);
+  xiiUInt8 footer[4] = {};
+  if (raw.Read(footer, sizeof(footer)) != sizeof(footer))
+    return false;
+  xiiRawMemoryStreamReader footerReader(footer, sizeof(footer));
+  xiiUInt32                marker = 0;
+  return footerReader.ReadDWordValue(&marker).Succeeded() && marker == 0xDECADA7A;
 }
 
 xiiString xiiDecalAssetDocumentManager::GetDecalTexturePath(const xiiPlatformProfile* pAssetProfile0) const
@@ -290,51 +258,4 @@ xiiString xiiDecalAssetDocumentManager::GetDecalTexturePath(const xiiPlatformPro
   GenerateOutputFilename(result, pAssetProfile, "xiiBinTextureAtlas", true);
 
   return result;
-}
-
-xiiStatus xiiDecalAssetDocumentManager::RunTextureConverter(const char* szTargetFile, const char* szInputFile, const xiiAssetFileHeader& AssetHeader)
-{
-  QStringList      arguments;
-  xiiStringBuilder temp;
-
-  // Asset Version
-  {
-    arguments << "-assetVersion";
-    arguments << xiiConversionUtils::ToString(AssetHeader.GetFileVersion(), temp).GetData();
-  }
-
-  // Asset Hash
-  {
-    const xiiUInt64 uiHash64     = AssetHeader.GetFileHash();
-    const xiiUInt32 uiHashLow32  = uiHash64 & 0xFFFFFFFF;
-    const xiiUInt32 uiHashHigh32 = (uiHash64 >> 32) & 0xFFFFFFFF;
-
-    temp.SetFormat("{0}", xiiArgU(uiHashLow32, 8, true, 16, true));
-    arguments << "-assetHashLow";
-    arguments << temp.GetData();
-
-    temp.SetFormat("{0}", xiiArgU(uiHashHigh32, 8, true, 16, true));
-    arguments << "-assetHashHigh";
-    arguments << temp.GetData();
-  }
-
-
-  arguments << "-out";
-  arguments << szTargetFile;
-
-  arguments << "-type";
-  arguments << "Atlas";
-
-  arguments << "-compression";
-  arguments << ToCompressionMode(xiiTextureConverterCompressionMode::High);
-
-  arguments << "-mipmaps";
-  arguments << ToMipmapMode(xiiTextureConverterMipmapMode::Linear);
-
-  arguments << "-atlasDesc";
-  arguments << QString(szInputFile);
-
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTextureConverter", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
-
-  return XII_SUCCESS;
 }

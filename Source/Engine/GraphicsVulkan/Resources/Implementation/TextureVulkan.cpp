@@ -238,7 +238,7 @@ xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureVulkan::CreateViewPlatf
 
   XII_DELETE(pTextureViewVulkan.m_pAllocator, pTextureViewVulkan.m_pInstance);
 
-  return pTextureViewVulkan;
+  return nullptr;
 }
 
 void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName) const

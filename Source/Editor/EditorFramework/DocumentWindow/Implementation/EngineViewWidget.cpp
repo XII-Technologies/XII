@@ -114,7 +114,7 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
 void xiiQtEngineViewWidget::SyncToEngine()
 {
   xiiViewRedrawMsgToEngine cam;
-  cam.m_uiRenderMode = m_pViewConfig->m_RenderMode;
+  cam.m_RenderMode = m_pViewConfig->m_RenderMode;
 
   float fFov = m_pViewConfig->m_Camera.GetFovOrDim();
   if (m_pViewConfig->m_Camera.IsPerspective())
@@ -126,7 +126,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
   cam.m_uiViewID                    = GetViewID();
   cam.m_fNearPlane                  = m_pViewConfig->m_Camera.GetNearPlane();
   cam.m_fFarPlane                   = m_pViewConfig->m_Camera.GetFarPlane();
-  cam.m_iCameraMode                 = (xiiInt8)m_pViewConfig->m_Camera.GetCameraMode();
+  cam.m_CameraMode                  = m_pViewConfig->m_Camera.GetCameraMode();
   cam.m_bUseCameraTransformOnDevice = m_pViewConfig->m_bUseCameraTransformOnDevice;
   cam.m_fFovOrDim                   = fFov;
   cam.m_vDirForwards                = m_pViewConfig->m_Camera.GetCenterDirForwards();

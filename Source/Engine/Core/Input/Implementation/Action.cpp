@@ -349,5 +349,3 @@ void xiiInputManager::GetAllInputActions(xiiStringView sInputSetName, xiiDynamic
   for (xiiActionMap::ConstIterator it = map.GetIterator(); it.IsValid(); ++it)
     out_inputActions.PushBack(it.Key());
 }
-
-XII_STATICLINK_FILE(Core, Core_Input_Implementation_Action);

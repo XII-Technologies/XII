@@ -799,7 +799,7 @@ xiiStatus xiiResizeAndSetObjectPropertyCommand::DoInternal(bool bRedo)
       ins.m_Index     = i;
       ins.m_NewValue  = xiiReflectionUtils::GetDefaultVariantFromType(m_NewValue.GetType());
 
-      AddSubCommand(ins).AssertSuccess();
+      XII_SUCCEED_OR_RETURN(AddSubCommand(ins));
     }
 
     xiiSetObjectPropertyCommand set;
@@ -808,7 +808,7 @@ xiiStatus xiiResizeAndSetObjectPropertyCommand::DoInternal(bool bRedo)
     set.m_NewValue  = m_NewValue;
     set.m_Object    = m_Object;
 
-    AddSubCommand(set).AssertSuccess();
+    XII_SUCCEED_OR_RETURN(AddSubCommand(set));
   }
 
   return XII_SUCCESS;

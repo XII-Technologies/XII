@@ -4,340 +4,99 @@
 
 #include <EditorPluginAssets/AnimationGraphAsset/AnimationGraphAsset.h>
 #include <EditorPluginAssets/AnimationGraphAsset/AnimationGraphQt.h>
-#include <Foundation/Math/ColorScheme.h>
-#include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraph.h>
-#include <GraphicsCore/AnimationSystem/AnimGraph/AnimNodes2/PoseResultAnimNode.h>
-#include <GraphicsCore/AnimationSystem/AnimGraph/AnimNodes2/SampleFrameAnimNode.h>
+#include <Foundation/IO/MemoryStream.h>
+#include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
+#include <SharedPluginAssets/AnimationGraphAsset/AnimationGraphAssetCompiler.h>
 #include <ToolsFoundation/NodeObject/NodeCommandAccessor.h>
-#include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
-#include <ToolsFoundation/Serialization/ToolsSerializationUtils.h>
+
+namespace
+{
+  void NodePropertyMetaState(xiiPropertyMetaStateEvent& event)
+  {
+    if (!event.m_pObject->GetType()->IsDerivedFrom<xiiAnimationGraphEditorNode>())
+      return;
+    const auto kind    = event.m_pObject->GetTypeAccessor().GetValue("Kind").ConvertTo<xiiInt64>();
+    auto&      states  = *event.m_pPropertyStates;
+    auto       visible = [&](const char* property, bool show) {
+      states[property].m_Visibility = show ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
+    };
+    visible("Clip", kind == xiiAnimationGraphNodeKind::Clip);
+    visible("PlaybackSpeed", kind == xiiAnimationGraphNodeKind::Clip);
+    visible("Parameter", kind == xiiAnimationGraphNodeKind::Blend1D || kind == xiiAnimationGraphNodeKind::LayeredBlend);
+    visible("Weight", kind == xiiAnimationGraphNodeKind::Additive || kind == xiiAnimationGraphNodeKind::LayeredBlend);
+    visible("TargetJoint", kind == xiiAnimationGraphNodeKind::LayeredBlend);
+    visible("StateCount", kind == xiiAnimationGraphNodeKind::StateMachine);
+    visible("BlendThresholds", kind == xiiAnimationGraphNodeKind::Blend1D);
+  }
+} // namespace
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationGraphAssetDocument, 5, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationGraphAssetDocument, 6, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationGraphNodePin, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationGraphAssetProperties, 1, xiiRTTIDefaultAllocator<xiiAnimationGraphAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationGraphAssetProperties, 2, xiiRTTIDefaultAllocator<xiiAnimationGraphAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ARRAY_MEMBER_PROPERTY("IncludeGraphs", m_IncludeGraphs)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Keyframe_Graph")),
-    XII_ARRAY_MEMBER_PROPERTY("AnimationClipMapping", m_AnimationClipMapping),
+    XII_ARRAY_MEMBER_PROPERTY("Transitions", m_Transitions),
   }
-    XII_END_PROPERTIES;
+  XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_SUBSYSTEM_DECLARATION(EditorPluginAssets, AnimationGraph)
-
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Core"
+    "Core",
+    "PropertyMetaState"
   END_SUBSYSTEM_DEPENDENCIES
-
   ON_CORESYSTEMS_STARTUP
   {
-    xiiQtNodeScene::GetNodeFactory().RegisterCreator(xiiGetStaticRTTI<xiiAnimGraphNode>(), [](const xiiRTTI* pRtti)->xiiQtNode* { return new xiiQtAnimationGraphNode(); });
+    xiiQtNodeScene::GetNodeFactory().RegisterCreator(xiiGetStaticRTTI<xiiAnimationGraphEditorNode>(), [](const xiiRTTI*) -> xiiQtNode* { return new xiiQtAnimationGraphNode(); });
+    xiiPropertyMetaState::GetSingleton()->m_Events.AddEventHandler(NodePropertyMetaState);
   }
-
   ON_CORESYSTEMS_SHUTDOWN
   {
-    xiiQtNodeScene::GetNodeFactory().UnregisterCreator(xiiGetStaticRTTI<xiiAnimGraphNode>());
+    xiiPropertyMetaState::GetSingleton()->m_Events.RemoveEventHandler(NodePropertyMetaState);
+    xiiQtNodeScene::GetNodeFactory().UnregisterCreator(xiiGetStaticRTTI<xiiAnimationGraphEditorNode>());
   }
-
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-bool xiiAnimationGraphNodeManager::InternalIsNode(const xiiDocumentObject* pObject) const
-{
-  auto pType = pObject->GetTypeAccessor().GetType();
-  return pType->IsDerivedFrom<xiiAnimGraphNode>();
-}
-
-void xiiAnimationGraphNodeManager::InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node)
-{
-  auto pType = pObject->GetTypeAccessor().GetType();
-  if (!pType->IsDerivedFrom<xiiAnimGraphNode>())
-    return;
-
-  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
-  pType->GetAllProperties(properties);
-
-  const xiiColor triggerPinColor   = xiiColorScheme::DarkUI(xiiColorScheme::Yellow);
-  const xiiColor numberPinColor    = xiiColorScheme::DarkUI(xiiColorScheme::Lime);
-  const xiiColor boolPinColor      = xiiColorScheme::LightUI(xiiColorScheme::Lime);
-  const xiiColor weightPinColor    = xiiColorScheme::DarkUI(xiiColorScheme::Teal);
-  const xiiColor localPosePinColor = xiiColorScheme::DarkUI(xiiColorScheme::Blue);
-  const xiiColor modelPosePinColor = xiiColorScheme::DarkUI(xiiColorScheme::Grape);
-  // EXTEND THIS if a new type is introduced
-
-  xiiHybridArray<xiiString, 16> pinNames;
-
-  for (auto pProp : properties)
-  {
-    if (!pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphPin>())
-      continue;
-
-    pinNames.Clear();
-
-    if (pProp->GetCategory() == xiiPropertyCategory::Array)
-    {
-      if (const xiiDynamicPinAttribute* pDynPin = pProp->GetAttributeByType<xiiDynamicPinAttribute>())
-      {
-        GetDynamicPinNames(pObject, pDynPin->GetProperty(), pProp->GetPropertyName(), pinNames);
-      }
-    }
-    else if (pProp->GetCategory() == xiiPropertyCategory::Member)
-    {
-      pinNames.PushBack(pProp->GetPropertyName());
-    }
-
-    for (xiiUInt32 i = 0; i < pinNames.GetCount(); ++i)
-    {
-      const auto& pinName = pinNames[i];
-
-      if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphTriggerInputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Input, pinName, triggerPinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::Trigger;
-        ref_node.m_Inputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphTriggerOutputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Output, pinName, triggerPinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::Trigger;
-        ref_node.m_Outputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphNumberInputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Input, pinName, numberPinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::Number;
-        ref_node.m_Inputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphNumberOutputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Output, pinName, numberPinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::Number;
-        ref_node.m_Outputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphBoolInputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Input, pinName, boolPinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::Bool;
-        ref_node.m_Inputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphBoolOutputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Output, pinName, boolPinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::Bool;
-        ref_node.m_Outputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphBoneWeightsInputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Input, pinName, weightPinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::BoneWeights;
-        ref_node.m_Inputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphBoneWeightsOutputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Output, pinName, weightPinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::BoneWeights;
-        ref_node.m_Outputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphLocalPoseInputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Input, pinName, localPosePinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::LocalPose;
-        ref_node.m_Inputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphLocalPoseMultiInputPin>())
-      {
-        auto pPin              = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Input, pinName, localPosePinColor, pObject);
-        pPin->m_DataType       = xiiAnimGraphPin::LocalPose;
-        pPin->m_bMultiInputPin = true;
-        pPin->m_Shape          = xiiPin::Shape::RoundRect;
-        ref_node.m_Inputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphLocalPoseOutputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Output, pinName, localPosePinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::LocalPose;
-        ref_node.m_Outputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphModelPoseInputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Input, pinName, modelPosePinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::ModelPose;
-        ref_node.m_Inputs.PushBack(pPin);
-      }
-      else if (pProp->GetSpecificType()->IsDerivedFrom<xiiAnimGraphModelPoseOutputPin>())
-      {
-        auto pPin        = XII_DEFAULT_NEW(xiiAnimationGraphNodePin, xiiPin::Type::Output, pinName, modelPosePinColor, pObject);
-        pPin->m_DataType = xiiAnimGraphPin::ModelPose;
-        ref_node.m_Outputs.PushBack(pPin);
-      }
-      else
-      {
-        // EXTEND THIS if a new type is introduced
-        XII_ASSERT_NOT_IMPLEMENTED;
-      }
-    }
-  }
-}
-
-void xiiAnimationGraphNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const
-{
-  xiiSet<const xiiRTTI*> typeSet;
-  xiiReflectionUtils::GatherTypesDerivedFromClass(xiiGetStaticRTTI<xiiAnimGraphNode>(), typeSet);
-
-  ref_types.Clear();
-  for (auto pType : typeSet)
-  {
-    if (pType->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract))
-      continue;
-
-    ref_types.PushBack(pType);
-  }
-}
-
-xiiStatus xiiAnimationGraphNodeManager::InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const
-{
-  const xiiAnimationGraphNodePin& sourcePin = xiiStaticCast<const xiiAnimationGraphNodePin&>(source);
-  const xiiAnimationGraphNodePin& targetPin = xiiStaticCast<const xiiAnimationGraphNodePin&>(target);
-
-  out_result = CanConnectResult::ConnectNever;
-
-  if (sourcePin.m_DataType != targetPin.m_DataType)
-    return xiiStatus("Can't connect pins of different data types");
-
-  if (sourcePin.GetType() == targetPin.GetType())
-    return xiiStatus("Can only connect input pins with output pins.");
-
-  switch (sourcePin.m_DataType)
-  {
-    case xiiAnimGraphPin::Trigger:
-      out_result = CanConnectResult::ConnectNtoN;
-      break;
-
-    case xiiAnimGraphPin::Number:
-      out_result = CanConnectResult::ConnectNto1;
-      break;
-
-    case xiiAnimGraphPin::Bool:
-      out_result = CanConnectResult::ConnectNto1;
-      break;
-
-    case xiiAnimGraphPin::BoneWeights:
-      out_result = CanConnectResult::ConnectNto1;
-      break;
-
-    case xiiAnimGraphPin::LocalPose:
-      if (targetPin.m_bMultiInputPin)
-        out_result = CanConnectResult::ConnectNtoN;
-      else
-        out_result = CanConnectResult::ConnectNto1;
-      break;
-
-    case xiiAnimGraphPin::ModelPose:
-      out_result = CanConnectResult::ConnectNto1;
-      break;
-
-      // EXTEND THIS if a new type is introduced
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-
-  if (out_result != CanConnectResult::ConnectNever && WouldConnectionCreateCircle(source, target))
-  {
-    out_result = CanConnectResult::ConnectNever;
-    return xiiStatus("Connecting these pins would create a circle in the graph.");
-  }
-
-  return XII_SUCCESS;
-}
-
-bool xiiAnimationGraphNodeManager::InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const
-{
-  return pProp->GetAttributeByType<xiiDynamicPinAttribute>() != nullptr;
-}
-
-xiiAnimationGraphAssetDocument::xiiAnimationGraphAssetDocument(xiiStringView sDocumentPath) :
-  xiiSimpleAssetDocument<xiiAnimationGraphAssetProperties>(XII_DEFAULT_NEW(xiiAnimationGraphNodeManager), sDocumentPath, xiiAssetDocEngineConnection::None)
+xiiAnimationGraphAssetDocument::xiiAnimationGraphAssetDocument(xiiStringView path) :
+  xiiSimpleAssetDocument<xiiAnimationGraphAssetProperties>(XII_DEFAULT_NEW(xiiAnimationGraphNodeManager), path, xiiAssetDocEngineConnection::None)
 {
   m_pObjectAccessor = XII_DEFAULT_NEW(xiiNodeCommandAccessor, GetCommandHistory());
 }
 
+xiiStatus xiiAnimationGraphAssetDocument::InternalLoadDocument()
+{
+  // Reject the removed trigger/number/bone-mask graph format before phantom type
+  // registration can load it as a partially functional document. The source file
+  // remains intact; unsupported semantics must not be silently stripped on save.
+  xiiUniquePtr<xiiAbstractObjectGraph> header, objects, types;
+  XII_SUCCEED_OR_RETURN(ReadDocument(GetDocumentPath(), header, objects, types));
+  for (auto it = objects->GetAllNodes().GetIterator(); it.IsValid(); ++it)
+  {
+    const auto* node = it.Value();
+    if (node->GetType() == "xiiAnimationGraphAssetProperties" && node->GetTypeVersion() < 2)
+      return xiiStatus("This animation graph uses the removed pin-based runtime. Its source file is unchanged. Migrate supported pose operations to a native graph; trigger, numeric and included-graph semantics have no native replacement.");
+  }
+  return SUPER::InternalLoadDocument();
+}
+
 xiiTransformStatus xiiAnimationGraphAssetDocument::InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
-  const auto* pNodeManager = static_cast<const xiiDocumentNodeManager*>(GetObjectManager());
-
-  auto pProp = GetProperties();
-
-  {
-    stream.WriteVersion(2);
-    stream.WriteArray(pProp->m_IncludeGraphs).AssertSuccess();
-
-    const xiiUInt32 uiNum = pProp->m_AnimationClipMapping.GetCount();
-    stream << uiNum;
-
-    for (xiiUInt32 i = 0; i < uiNum; ++i)
-    {
-      stream << pProp->m_AnimationClipMapping[i].m_sClipName;
-      stream << pProp->m_AnimationClipMapping[i].m_hClip;
-    }
-  }
-
-  // find all 'nodes'
-  xiiDynamicArray<const xiiDocumentObject*> allNodes;
-  for (auto pNode : pNodeManager->GetRootObject()->GetChildren())
-  {
-    if (!pNodeManager->IsNode(pNode))
-      continue;
-
-    allNodes.PushBack(pNode);
-  }
-
-  xiiAnimGraph animGraph;
-
-  xiiMap<const xiiDocumentObject*, xiiAnimGraphNode*> docNodeToRuntimeNode;
-
-  // create all nodes in the xiiAnimGraph
-  {
-    for (const xiiDocumentObject* pNode : allNodes)
-    {
-      xiiAnimGraphNode* pNewNode = animGraph.AddNode(pNode->GetType()->GetAllocator()->Allocate<xiiAnimGraphNode>());
-
-      // copy all the non-hidden properties
-      xiiToolsSerializationUtils::CopyProperties(pNode, GetObjectManager(), pNewNode, pNewNode->GetDynamicRTTI(), [](const xiiAbstractProperty* p) { return p->GetAttributeByType<xiiHiddenAttribute>() == nullptr; });
-
-      docNodeToRuntimeNode[pNode] = pNewNode;
-    }
-  }
-
-  // add all node connections to the xiiAnimGraph
-  {
-    for (xiiUInt32 nodeIdx = 0; nodeIdx < allNodes.GetCount(); ++nodeIdx)
-    {
-      const xiiDocumentObject* pNode = allNodes[nodeIdx];
-
-      const auto outputPins = pNodeManager->GetOutputPins(pNode);
-
-      for (auto& pPin : outputPins)
-      {
-        for (const xiiConnection* pCon : pNodeManager->GetConnections(*pPin))
-        {
-          const xiiAnimGraphNode* pSrcNode = docNodeToRuntimeNode[pCon->GetSourcePin().GetParent()];
-          xiiAnimGraphNode*       pDstNode = docNodeToRuntimeNode[pCon->GetTargetPin().GetParent()];
-
-          animGraph.AddConnection(pSrcNode, pCon->GetSourcePin().GetName(), pDstNode, pCon->GetTargetPin().GetName());
-        }
-      }
-    }
-  }
-
-  XII_SUCCEED_OR_RETURN(animGraph.Serialize(stream));
-
-  return xiiTransformStatus(XII_SUCCESS);
+  const auto* manager = static_cast<const xiiDocumentNodeManager*>(GetObjectManager());
+  if (GetUnknownObjectTypeInstances() != 0)
+    return xiiStatus("Animation graph contains unknown object types.");
+  xiiAnimGraphResourceDescriptor compiled;
+  xiiStringBuilder               error;
+  if (xiiAnimationGraphAssetCompiler::CompileDocument(*manager, GetProperties()->m_Transitions, compiled, &error).Failed())
+    return xiiStatus(error.GetView());
+  xiiDefaultMemoryStreamStorage storage;
+  xiiMemoryStreamWriter         writer(&storage);
+  XII_SUCCEED_OR_RETURN(compiled.Serialize(writer));
+  return storage.CopyToStream(stream);
 }
 
 void xiiAnimationGraphAssetDocument::InternalGetMetaDataHash(const xiiDocumentObject* pObject, xiiUInt64& inout_uiHash) const
@@ -382,10 +141,3 @@ bool xiiAnimationGraphAssetDocument::Paste(const xiiArrayPtr<PasteInfo>& info, c
   xiiDocumentNodeManager* pManager = static_cast<xiiDocumentNodeManager*>(GetObjectManager());
   return pManager->PasteObjects(info, objectGraph, xiiQtNodeScene::GetLastMouseInteractionPos(), bAllowPickedPosition);
 }
-
-xiiAnimationGraphNodePin::xiiAnimationGraphNodePin(Type type, const char* szName, const xiiColorGammaUB& color, const xiiDocumentObject* pObject) :
-  xiiPin(type, szName, color, pObject)
-{
-}
-
-xiiAnimationGraphNodePin::~xiiAnimationGraphNodePin() = default;

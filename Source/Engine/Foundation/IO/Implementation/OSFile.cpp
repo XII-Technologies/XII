@@ -801,5 +801,3 @@ void xiiFileSystemIterator::SkipFolder()
 #else
 #  error "Unknown Platform."
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OSFile);

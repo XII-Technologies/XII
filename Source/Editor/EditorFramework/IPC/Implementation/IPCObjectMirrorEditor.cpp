@@ -40,7 +40,7 @@ void xiiIPCObjectMirrorEditor::SendOp(xiiObjectChange& change)
   XII_ASSERT_DEBUG(m_pIPC != nullptr, "Need to call SetIPC before SetReceiver");
 
   xiiEntityMsgToEngine msg;
-  msg.m_change = std::move(change);
+  msg.m_Change = std::move(change);
 
   m_pIPC->SendMessage(&msg);
 }

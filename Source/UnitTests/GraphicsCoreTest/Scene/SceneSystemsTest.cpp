@@ -9,6 +9,207 @@ XII_CREATE_SIMPLE_TEST_GROUP(Scene);
 
 XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pose snapshots share section palettes and preserve one frame of vertex motion")
+  {
+    xiiSceneDatabaseContext context;
+    XII_TEST_RESULT(context.Initialize());
+    auto&      scene  = context.GetDatabase();
+    const auto member = scene.CreateObject({});
+    const auto owner  = scene.CreateObject({});
+    XII_TEST_RESULT(scene.SetLodGroup(member, owner));
+    const xiiMat4 first[]  = {xiiMat4::MakeTranslation(xiiVec3(1, 2, 3))};
+    const xiiMat4 second[] = {xiiMat4::MakeTranslation(xiiVec3(4, 5, 6)), xiiMat4::MakeIdentity()};
+    auto          setPose  = [&](xiiArrayPtr<const xiiMat4> matrices, bool reset = false) {
+      return scene.SetSkinningPalette(owner, matrices, 72, 60, 68, reset);
+    };
+    XII_TEST_RESULT(setPose(first));
+    scene.CommitFrame(1);
+    auto current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningCount, 1);
+    XII_TEST_INT(current.m_uiPreviousSkinningCount, 1);
+    XII_TEST_INT(current.m_uiSkinningOffset, current.m_uiPreviousSkinningOffset);
+    XII_TEST_INT(scene.GetGpuSkinningMatrices().GetCount(), 1);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices()[current.m_uiSkinningOffset] == first[0]);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiSkinningOffset, current.m_uiSkinningOffset);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiSkinningCount, 1);
+    const auto revision = scene.GetRevision();
+    XII_TEST_BOOL(scene.SetSkinningPalette({}, first, 72, 60, 68).Failed());
+    XII_TEST_BOOL(scene.SetSkinningPalette(owner, first, 72, 66, 68).Failed());
+    XII_TEST_BOOL(scene.SetSkinningPalette(owner, first, 72, 60, 69).Failed());
+    XII_TEST_BOOL(scene.SetSkinningPalette(owner, first, 71, 60, 67).Failed());
+    auto invalid          = xiiMat4::MakeIdentity();
+    invalid.Element(0, 3) = 1;
+    XII_TEST_BOOL(setPose(xiiMakeArrayPtr(&invalid, 1)).Failed());
+    XII_TEST_INT(scene.GetRevision(), revision);
+    XII_TEST_RESULT(setPose(second));
+    scene.CommitFrame(2);
+    current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningCount, 2);
+    XII_TEST_INT(current.m_uiPreviousSkinningCount, 1);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices()[current.m_uiSkinningOffset] == second[0]);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices()[current.m_uiPreviousSkinningOffset] == first[0]);
+    XII_TEST_INT(scene.GetGpuSkinningMatrices().GetCount(), 3);
+    scene.CommitFrame(3);
+    current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningOffset, current.m_uiPreviousSkinningOffset);
+    XII_TEST_INT(scene.GetGpuSkinningMatrices().GetCount(), 2);
+    XII_TEST_RESULT(setPose({}));
+    scene.CommitFrame(4);
+    current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningCount, 0);
+    XII_TEST_INT(current.m_uiPreviousSkinningCount, 2);
+    XII_TEST_INT(current.m_uiBoneIndicesOffset, 60);
+    XII_TEST_INT(current.m_uiBoneWeightsOffset, 68);
+    scene.CommitFrame(5);
+    XII_TEST_INT(scene.GetGpuInstances()[1].m_uiPreviousSkinningCount, 0);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices().IsEmpty());
+    XII_TEST_BOOL(!scene.GetUploadRanges().IsEmpty());
+    XII_TEST_RESULT(setPose(first));
+    scene.CommitFrame(6);
+    XII_TEST_RESULT(setPose(second, true));
+    scene.CommitFrame(7);
+    current = scene.GetGpuInstances()[1];
+    XII_TEST_INT(current.m_uiSkinningOffset, current.m_uiPreviousSkinningOffset);
+    XII_TEST_BOOL(scene.DestroyObject(owner));
+    scene.CommitFrame(8);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices().IsEmpty());
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiSkinningCount, 0);
+    XII_TEST_BOOL(scene.SetSkinningPalette(owner, first, 72, 60, 68).Failed());
+    scene.Clear();
+    const auto reused = scene.CreateObject({});
+    XII_TEST_BOOL(reused != owner);
+    scene.CommitFrame(9);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiSkinningCount, 0);
+    XII_TEST_BOOL(scene.GetGpuSkinningMatrices().IsEmpty());
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "LOD controls preserve identity and reject invalid mutations")
+  {
+    xiiSceneDatabaseContext context;
+    XII_TEST_RESULT(context.Initialize());
+    auto&              scene = context.GetDatabase();
+    xiiSceneObjectDesc description;
+    description.m_uiForcedLod = 3;
+    description.m_uiDrawLod   = 2;
+    description.m_fLodBias    = 1.5f;
+    const auto object         = scene.CreateObject(description);
+    scene.CommitFrame(1);
+    const auto id = scene.GetGpuInstances()[0].m_uiObjectId;
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiForcedLod, 3);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiDrawLod, 2);
+    XII_TEST_FLOAT(scene.GetGpuInstances()[0].m_fLodBias, 1.5f, 0);
+    const auto revision = scene.GetRevision();
+    XII_TEST_RESULT(scene.SetLodSelection(object, 3, 1.5f, 2));
+    XII_TEST_INT(scene.GetRevision(), revision);
+    XII_TEST_BOOL(scene.SetLodSelection({}, 0, 0).Failed());
+    XII_TEST_BOOL(scene.SetLodSelection(object, 8, 0).Failed());
+    XII_TEST_BOOL(scene.SetLodSelection(object, 0, 0, 8).Failed());
+    XII_TEST_BOOL(scene.SetLodSelection(object, 0, xiiMath::NaN<float>()).Failed());
+    XII_TEST_BOOL(scene.SetLodSelection(object, 0, xiiMath::Infinity<float>()).Failed());
+    XII_TEST_INT(scene.GetRevision(), revision);
+    description.m_uiDrawLod = 8;
+    XII_TEST_BOOL(scene.CreateObject(description).IsInvalidated());
+    description.m_uiDrawLod   = 2;
+    description.m_uiForcedLod = 8;
+    XII_TEST_BOOL(scene.CreateObject(description).IsInvalidated());
+    description.m_uiForcedLod = 0;
+    description.m_fLodBias    = xiiMath::NaN<float>();
+    XII_TEST_BOOL(scene.CreateObject(description).IsInvalidated());
+    XII_TEST_INT(scene.GetObjectCount(), 1);
+    XII_TEST_RESULT(scene.SetLodSelection(object, xiiInvalidIndex, -2));
+    scene.CommitFrame(2);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiObjectId, id);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiForcedLod, xiiInvalidIndex);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiDrawLod, xiiInvalidIndex);
+    XII_TEST_FLOAT(scene.GetGpuInstances()[0].m_fLodBias, -2, 0);
+    XII_TEST_BOOL(!scene.GetUploadRanges().IsEmpty());
+    XII_TEST_BOOL(scene.DestroyObject(object));
+    XII_TEST_BOOL(scene.SetLodSelection(object, 0, 0).Failed());
+    scene.Clear();
+    const auto replacement = scene.CreateObject(xiiSceneObjectDesc{});
+    scene.CommitFrame(3);
+    XII_TEST_BOOL(!replacement.IsInvalidated());
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiForcedLod, xiiInvalidIndex);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiDrawLod, xiiInvalidIndex);
+    XII_TEST_FLOAT(scene.GetGpuInstances()[0].m_fLodBias, 0, 0);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "LOD groups follow dense compaction and never reuse a destroyed representative")
+  {
+    xiiSceneDatabaseContext context;
+    XII_TEST_RESULT(context.Initialize());
+    auto&      scene          = context.GetDatabase();
+    const auto unrelated      = scene.CreateObject({});
+    const auto member         = scene.CreateObject({});
+    const auto representative = scene.CreateObject({}); // Deliberately follows the member.
+    XII_TEST_RESULT(scene.SetLodGroup(member, representative));
+    scene.CommitFrame(1);
+    XII_TEST_INT(scene.GetGpuInstances()[1].m_uiLodSelectionIndex, 2);
+    const auto revision = scene.GetRevision();
+    XII_TEST_RESULT(scene.SetLodGroup(member, representative));
+    XII_TEST_INT(scene.GetRevision(), revision);
+    XII_TEST_BOOL(scene.SetLodGroup({}, representative).Failed());
+    XII_TEST_BOOL(scene.DestroyObject(unrelated));
+    scene.CommitFrame(2);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiLodSelectionIndex, 1);
+    scene.CommitFrame(3);
+    XII_TEST_BOOL(scene.GetUploadRanges().IsEmpty());
+    XII_TEST_BOOL(scene.DestroyObject(representative));
+    scene.CommitFrame(4);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiLodSelectionIndex, xiiInvalidIndex);
+    const auto replacement = scene.CreateObject({});
+    XII_TEST_BOOL(replacement != representative);
+    XII_TEST_BOOL(scene.SetLodGroup(member, representative).Failed());
+    auto gpuIndex = [&](xiiSceneObjectHandle handle) {
+      const auto instances = scene.GetGpuInstances();
+      for (xiiUInt32 i = 0; i < instances.GetCount(); ++i)
+        if (instances[i].m_uiObjectId == handle.GetInternalID().m_Data + 1U)
+          return i;
+      return xiiInvalidIndex;
+    };
+    scene.CommitFrame(5);
+    XII_TEST_INT(scene.GetGpuInstances()[gpuIndex(member)].m_uiLodSelectionIndex, xiiInvalidIndex);
+    XII_TEST_RESULT(scene.SetLodGroup(member, replacement));
+    scene.CommitFrame(6);
+    XII_TEST_INT(scene.GetGpuInstances()[gpuIndex(member)].m_uiLodSelectionIndex, gpuIndex(replacement));
+    XII_TEST_RESULT(scene.SetLodGroup(member, member));
+    scene.CommitFrame(7);
+    XII_TEST_INT(scene.GetGpuInstances()[gpuIndex(member)].m_uiLodSelectionIndex, xiiInvalidIndex);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GPU identity survives compaction and rejects retired generations")
+  {
+    xiiSceneDatabaseContext context;
+    XII_TEST_RESULT(context.Initialize());
+    auto&              scene = context.GetDatabase();
+    xiiSceneObjectDesc description;
+    description.m_uiUserData = 0U; // Legal application data, independent of the background ID.
+    auto first               = scene.CreateObject(description);
+    auto second              = scene.CreateObject(description);
+    scene.CommitFrame(1);
+    const auto firstId  = scene.GetGpuInstances()[0].m_uiObjectId;
+    const auto secondId = scene.GetGpuInstances()[1].m_uiObjectId;
+    XII_TEST_BOOL(firstId != 0 && firstId != secondId);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(firstId) == first);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(secondId) == second);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(0).IsInvalidated());
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(xiiInvalidIndex).IsInvalidated());
+    XII_TEST_BOOL(scene.DestroyObject(first));
+    scene.CommitFrame(2);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiObjectId, secondId);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(firstId).IsInvalidated());
+    // Clear retains the ID table's generations even when the hot arrays are rebuilt.
+    scene.Clear();
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(secondId).IsInvalidated());
+    auto replacement = scene.CreateObject(description);
+    scene.CommitFrame(3);
+    XII_TEST_BOOL(replacement.GetInternalID().m_InstanceIndex == first.GetInternalID().m_InstanceIndex);
+    XII_TEST_BOOL(scene.GetGpuInstances()[0].m_uiObjectId != firstId);
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(firstId).IsInvalidated());
+    XII_TEST_BOOL(scene.ResolveGpuObjectId(scene.GetGpuInstances()[0].m_uiObjectId) == replacement);
+    XII_TEST_INT(scene.GetGpuInstances()[0].m_uiUserData, 0U);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Hierarchy transforms and previous frame state")
   {
     xiiSceneDatabaseContext sceneContext;
@@ -43,7 +244,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     const xiiGpuSceneInstance* pChildInstance = nullptr;
     for (const xiiGpuSceneInstance& instance : scene.GetGpuInstances())
     {
-      if (instance.m_uiObjectIndex == child.GetInternalID().m_InstanceIndex)
+      if (scene.ResolveGpuObjectId(instance.m_uiObjectId) == child)
       {
         pChildInstance = &instance;
         break;

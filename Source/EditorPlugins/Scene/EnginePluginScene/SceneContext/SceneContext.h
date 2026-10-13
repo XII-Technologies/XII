@@ -22,6 +22,7 @@ class xiiWorldWriter;
 class xiiDeferredFileWriter;
 class xiiLayerContext;
 struct xiiGameApplicationExecutionEvent;
+class xiiScenePreviewLighting;
 
 class XII_ENGINEPLUGINSCENE_DLL xiiSceneContext : public xiiEngineProcessDocumentContext
 {
@@ -58,8 +59,8 @@ public:
   xiiArrayPtr<xiiWorldRttiConverterContext*> GetAllContexts();
 
 protected:
-  virtual void OnInitialize() override;
-  virtual void OnDeinitialize() override;
+  virtual xiiStatus OnInitialize() override;
+  virtual void      OnDeinitialize() override;
 
   virtual xiiEngineProcessViewContext* CreateViewContext() override;
   virtual void                         DestroyViewContext(xiiEngineProcessViewContext* pContext) override;
@@ -120,8 +121,7 @@ private:
   xiiDeque<xiiGameObjectHandle>            m_Selection;
   xiiDeque<xiiGameObjectHandle>            m_SelectionWithChildren;
   xiiSet<xiiGameObjectHandle>              m_SelectionWithChildrenSet;
-  xiiGameObjectHandle                      m_hSkyLight;
-  xiiGameObjectHandle                      m_hDirectionalLight;
+  xiiUniquePtr<xiiScenePreviewLighting>    m_pPreviewLighting;
   xiiDynamicArray<xiiExposedSceneProperty> m_ExposedSceneProperties;
 
   xiiPushObjectStateMsgToEditor m_PushObjectStateMsg;

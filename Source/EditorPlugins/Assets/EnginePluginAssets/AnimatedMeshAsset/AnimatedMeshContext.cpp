@@ -5,7 +5,7 @@
 #include <EnginePluginAssets/AnimatedMeshAsset/AnimatedMeshContext.h>
 #include <EnginePluginAssets/AnimatedMeshAsset/AnimatedMeshView.h>
 
-#include <GameEngine/Animation/Skeletal/AnimatedMeshComponent.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshContext, 1, xiiRTTIDefaultAllocator<xiiAnimatedMeshContext>)
@@ -29,9 +29,11 @@ void xiiAnimatedMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDo
 {
   if (auto* pMsg = xiiDynamicCast<const xiiEditorEngineSetMaterialsMsg*>(pDocMsg))
   {
-    xiiAnimatedMeshComponent* pAnimatedMesh;
+    XII_LOCK(m_pWorld->GetWriteMarker());
+    xiiSkinnedMeshComponent* pAnimatedMesh;
     if (m_pAnimatedMeshObject && m_pAnimatedMeshObject->TryGetComponentOfBaseType(pAnimatedMesh))
     {
+      pAnimatedMesh->ClearMaterialOverrides();
       for (xiiUInt32 i = 0; i < pMsg->m_Materials.GetCount(); ++i)
       {
         xiiMaterialResourceHandle hMat;
@@ -41,7 +43,7 @@ void xiiAnimatedMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDo
           hMat = xiiResourceManager::LoadResource<xiiMaterialResource>(pMsg->m_Materials[i]);
         }
 
-        pAnimatedMesh->SetMaterial(i, hMat);
+        pAnimatedMesh->SetMaterialOverride(i, hMat);
       }
     }
 
@@ -66,15 +68,23 @@ void xiiAnimatedMeshContext::HandleMessage(const xiiEditorEngineDocumentMsg* pDo
     }
   }
 
+  if (xiiDynamicCast<const xiiViewRedrawMsgToEngine*>(pDocMsg))
+  {
+    XII_LOCK(m_pWorld->GetWriteMarker());
+    xiiSkinnedMeshComponent* component = nullptr;
+    if (m_pAnimatedMeshObject && m_pAnimatedMeshObject->TryGetComponentOfBaseType(component))
+      m_Preview.UpdateMesh(*component).IgnoreResult(); // Retry while the resource is loading or reloading.
+  }
+
   xiiEngineProcessDocumentContext::HandleMessage(pDocMsg);
 }
 
-void xiiAnimatedMeshContext::OnInitialize()
+xiiStatus xiiAnimatedMeshContext::OnInitialize()
 {
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
 
-  xiiAnimatedMeshComponent* pAnimatedMesh;
+  xiiSkinnedMeshComponent* pAnimatedMesh;
 
   // Preview AnimatedMesh
   {
@@ -86,12 +96,13 @@ void xiiAnimatedMeshContext::OnInitialize()
     const xiiTag& tagCastShadows = xiiTagRegistry::GetGlobalRegistry().RegisterTag("CastShadow");
     m_pAnimatedMeshObject->SetTag(tagCastShadows);
 
-    xiiAnimatedMeshComponent::CreateComponent(m_pAnimatedMeshObject, pAnimatedMesh);
+    xiiSkinnedMeshComponent::CreateComponent(m_pAnimatedMeshObject, pAnimatedMesh);
     xiiStringBuilder sAnimatedMeshGuid;
     xiiConversionUtils::ToString(GetDocumentGuid(), sAnimatedMeshGuid);
     m_hAnimatedMesh = xiiResourceManager::LoadResource<xiiMeshResource>(sAnimatedMeshGuid);
     pAnimatedMesh->SetMesh(m_hAnimatedMesh);
   }
+  return XII_SUCCESS;
 }
 
 xiiEngineProcessViewContext* xiiAnimatedMeshContext::CreateViewContext()
@@ -106,6 +117,13 @@ void xiiAnimatedMeshContext::DestroyViewContext(xiiEngineProcessViewContext* pCo
 
 bool xiiAnimatedMeshContext::UpdateThumbnailViewContext(xiiEngineProcessViewContext* pThumbnailViewContext)
 {
+  {
+    XII_LOCK(m_pWorld->GetWriteMarker());
+    xiiSkinnedMeshComponent* component = nullptr;
+    if (m_pAnimatedMeshObject && m_pAnimatedMeshObject->TryGetComponentOfBaseType(component))
+      if (m_Preview.UpdateMesh(*component).Failed())
+        return false;
+  }
   xiiBoundingBoxSphere bounds = GetWorldBounds(m_pWorld);
 
   xiiAnimatedMeshViewContext* pAnimatedMeshViewContext = static_cast<xiiAnimatedMeshViewContext*>(pThumbnailViewContext);

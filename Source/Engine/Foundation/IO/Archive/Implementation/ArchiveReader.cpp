@@ -162,5 +162,3 @@ bool xiiArchiveReader::ExtractFileProgressCallback(xiiUInt64 uiBytesWritten, xii
   XII_IGNORE_UNUSED(uiTotalBytes);
   return true;
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_ArchiveReader);

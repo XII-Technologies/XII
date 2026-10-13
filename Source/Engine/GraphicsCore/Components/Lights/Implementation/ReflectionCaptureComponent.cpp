@@ -17,6 +17,9 @@ XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiReflectionCaptureRenderData, 1, xiiRTTIDefaultAllocator<xiiReflectionCaptureRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiReflectionCaptureVisualizerAttribute, 1, xiiRTTIDefaultAllocator<xiiReflectionCaptureVisualizerAttribute>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_COMPONENT_TYPE(xiiReflectionCaptureComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
@@ -40,6 +43,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiReflectionCaptureComponent, 1, xiiComponentMode::Sta
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("RenderWorld/Lighting/Reflections"),
+    new xiiReflectionCaptureVisualizerAttribute("InfluenceShape", "HalfExtents", "SphereRadius", "BlendDistance"),
   }
   XII_END_ATTRIBUTES;
 }
@@ -48,6 +52,13 @@ XII_END_COMPONENT_TYPE
 
 xiiReflectionCaptureComponent::xiiReflectionCaptureComponent()  = default;
 xiiReflectionCaptureComponent::~xiiReflectionCaptureComponent() = default;
+
+xiiReflectionCaptureVisualizerAttribute::xiiReflectionCaptureVisualizerAttribute() : xiiVisualizerAttribute({}) {}
+
+xiiReflectionCaptureVisualizerAttribute::xiiReflectionCaptureVisualizerAttribute(xiiStringView sShapeProperty, xiiStringView sHalfExtentsProperty, xiiStringView sRadiusProperty, xiiStringView sBlendDistanceProperty) :
+  xiiVisualizerAttribute(sShapeProperty, sHalfExtentsProperty, sRadiusProperty, sBlendDistanceProperty)
+{
+}
 
 void xiiReflectionCaptureComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
@@ -253,4 +264,4 @@ void xiiReflectionCaptureComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDa
   ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::IfStatic);
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionCaptureComponent);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Lights_Implementation_ReflectionCaptureComponent);
