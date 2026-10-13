@@ -51,7 +51,7 @@ void DirectoryWatcherTest()
 
   auto CheckExpectedEvents = [&](xiiDirectoryWatcher& ref_watcher, xiiArrayPtr<ExpectedEvent> events) {
     xiiDynamicArray<ExpectedEventStorage> firedEvents;
-    xiiUInt32                             i = 0;
+    xiiUInt32                             i        = 0;
     const xiiTime                         deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(3);
     do
     {
@@ -978,6 +978,60 @@ XII_CREATE_SIMPLE_TEST(DirectoryRecovery, CoalescedCaseChanges)
   XII_TEST_INT(removedFolders, 2);
   XII_TEST_INT(oldNames, 3);
   XII_TEST_INT(newNames, 3);
+}
+
+XII_CREATE_SIMPLE_TEST(DirectoryRecovery, ReplacementAndRollback)
+{
+  using namespace DirectoryWatcherTestHelpers;
+  xiiStringBuilder root(xiiTestFramework::GetInstance()->GetAbsOutputPath(), "/DirectoryReplacementRollback");
+  XII_TEST_RESULT(xiiOSFile::DeleteFolder(root));
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(root));
+  xiiStringBuilder original(root, "/Settings.profile"), staged(root, "/Settings.staged"), backup(root, "/Settings.backup");
+  {
+    xiiOSFile file;
+    XII_TEST_RESULT(file.Open(original, xiiFileOpenMode::Write));
+    XII_TEST_RESULT(file.Write("original", 8));
+  }
+  xiiDirectoryWatcher watcher;
+  XII_SCOPE_EXIT(watcher.CloseDirectory(); xiiOSFile::DeleteFolder(root).IgnoreResult());
+  if (!XII_TEST_RESULT(watcher.OpenDirectory(root, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes)))
+    return;
+  {
+    xiiOSFile file;
+    XII_TEST_RESULT(file.Open(staged, xiiFileOpenMode::Write));
+    XII_TEST_RESULT(file.Write("proposed", 8));
+  }
+  // The original path exists again before any native notification is consumed. This must
+  // retain normal rename pairs rather than reconcile them as delayed case-only changes.
+  XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(original, backup));
+  XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(staged, original));
+  XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(original, staged));
+  XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(backup, original));
+  XII_TEST_RESULT(xiiOSFile::DeleteFile(staged));
+  xiiDynamicArray<ExpectedEventStorage> events;
+  auto                                  pump = [&]() {
+    watcher.EnumerateChanges([&](xiiStringView path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) { events.PushBack({path, action, type}); }, xiiTime::MakeFromMilliseconds(20));
+  };
+  const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(3);
+  xiiUInt32  oldNames = 0, newNames = 0;
+  do
+  {
+    pump();
+    oldNames = newNames = 0;
+    for (const auto& event : events)
+    {
+      oldNames += event.action == xiiDirectoryWatcherAction::RenamedOldName;
+      newNames += event.action == xiiDirectoryWatcherAction::RenamedNewName;
+    }
+  } while (newNames < 4 && xiiTime::Now() < deadline);
+  XII_TEST_INT(oldNames, 4);
+  XII_TEST_INT(newNames, 4);
+  xiiOSFile file;
+  XII_TEST_RESULT(file.Open(original, xiiFileOpenMode::Read));
+  char bytes[8];
+  XII_TEST_INT(file.Read(bytes, sizeof(bytes)), sizeof(bytes));
+  XII_TEST_BOOL(xiiMemoryUtils::RawByteCompare(bytes, "original", sizeof(bytes)) == 0);
+  file.Close();
 }
 
 XII_CREATE_SIMPLE_TEST(DirectoryRecovery, DeleteBeforePolling)
