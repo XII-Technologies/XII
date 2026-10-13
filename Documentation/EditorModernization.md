@@ -2918,3 +2918,88 @@ Debug/Vulkan verification. Older stored asset dependency headers are refreshed
 when their documents are saved; this change does not silently rewrite every
 existing project asset. Legacy scene migration and broad workflow parity remain
 active work.
+
+### Graph-Based Asset Resaving And Metadata Refresh
+
+Bulk resaving previously used a repeated dependency scan with an arbitrary
+dead-end fallback. It considered transform dependencies alone, treated dependencies
+outside a selected subtree as unresolved ordering constraints, and retained asset
+info pointers and the curator lock across document saves and progress callbacks.
+Failures were only logged, so the processor's resave command could report success
+after failed writes.
+
+`AssetResave.cpp` now snapshots the selected asset documents into Core's directed
+graph. Transform, thumbnail and package references resolve through the existing
+curator, including paths and sub-assets mapped to their owning documents. Only
+selected documents become vertices. Stable path/UUID input ordering makes plans
+deterministic. Core topological sorting orders dependencies first; Core strongly
+connected components identify actual cycle participants without confusing a
+blocked downstream asset with a cycle member. Cycles fail before any document
+write. Graph algorithms take O(V + E), with O(V log V) input sorting and the
+normal curator reference-resolution cost.
+
+The public read-only `GetAssetResaveOrder()` permits preflight. `ResaveAllAssets()`
+returns `xiiStatus`, rejects reentry and non-main-thread saves, and reports
+cancellation or aggregated write failures. Saving resolves each stable UUID again
+after progress events, validates document identity, keeps already-open documents
+open and closes documents opened by the batch. Read-only and partially understood
+documents are rejected to avoid destructive resaves. Curator locking covers
+snapshots and lookups, rather than document creation, saving or event pumping.
+The asset browser handles the result and the processor sets a failing exit code.
+
+The integration tests exposed stale dependency metadata after a cycle was removed
+and saved rapidly. The file model relied on modification timestamps even for
+explicit known-write notifications. It now supports forced file-change detection;
+hash invalidation and notification selection occur together under its lock.
+Explicit curator write notifications invalidate cached headers, and watcher
+modification events use the same forced path. Header-cache reuse also requires a
+nonzero matching content hash. Ordinary filesystem checks retain their timestamp
+fast path. No second cache or asset format is introduced.
+
+The native resave fixture uses real registered document managers, saved source
+files, curator sub-assets and document save notifications. It covers all dependency
+categories, external dependencies, parallel references by path and sub-asset UUID,
+deterministic ordering, open/closed document ownership, empty scopes, cancellation,
+reentry, read-only and unknown-type protection, self/multiple-asset cycles and
+recovery. A worker snapshots the curator during a progress callback, proving that
+the operation does not retain its global lock there. The Windows regression edits
+dependency bytes while deliberately restoring the original file timestamp,
+verifies both tracked and physical timestamps are unchanged, and checks immediate
+cycle detection and recovery after explicit notification.
+
+Deleting the current asset during a progress callback is reported as failure and
+does not recreate the deleted source from an open document. The Editor's normal
+removal handling can close that document, so the fixture restores source bytes and
+reacquires the document by its preserved UUID. File mutation tests wait for short
+background-reader locks; the timestamp test acquires an exclusive file handle
+before locking the model, avoiding a reader blocked on that model lock.
+
+Verification:
+
+- Debug builds of EditorFrameworkTest, ToolsFoundationTest, EditorProcessor and
+  Editor pass: `Workspace/editor-asset-resave-restored-build.log`. The final fixture
+  build is `Workspace/editor-asset-resave-access-build.log`.
+- All twenty ToolsFoundation subtests pass with the final shared library:
+  `Workspace/editor-asset-resave-restored-tools-tests.log`.
+- All twelve Qt subtests pass: `Workspace/editor-asset-resave-access-tests.log`.
+  The child engine log has no allocation, access-violation or Vulkan validation
+  errors. Native picking, 160 viewport resize/stable frames, capture,
+  Play-close-reopen, prefab metadata and all new resave cases execute in that run.
+- Disabling forced notification in a reversible comparison reproduces stale-cycle
+  recovery and unchanged-timestamp failures:
+  `Workspace/editor-asset-resave-timestamp-baseline-tests.log` (expected exit one).
+  Forced notification is restored in both source and the final built library.
+- Two intermediate runs exposed the viewport fixture aborting after a two-second
+  IPC observation timeout while an initial native frame took about 8.5 seconds.
+  Picking now polls the same outstanding request within its existing ten-second
+  readiness deadline, retaining the exact expected-owner check. The final full run
+  verifies this behavior. Diagnostic logs remain under
+  `Workspace/editor-asset-resave-restored-tests.log` and
+  `Workspace/editor-asset-resave-lifetime-tests.log`.
+
+This verification remains Windows Debug/Vulkan. Processor failure routing is
+implemented and built; an unrestricted processor resave against an existing user
+project and manual browser-menu interaction were not run. Existing project assets
+were not rewritten by these tests. Resaving refreshes compatible source metadata;
+it does not convert obsolete scene component semantics. Legacy scene migration and
+broader workflow parity remain active work.
