@@ -77,17 +77,6 @@ xiiResult xiiQtModifiedDocumentsDlg::SaveDocument(xiiDocument* pDoc)
   if (!pDoc->IsModified())
     return XII_SUCCESS;
 
-  {
-    if (pDoc->GetUnknownObjectTypeInstances() > 0)
-    {
-      if (xiiQtUiServices::MessageBoxQuestion("Warning! This document contained unknown object types that could not be loaded. Saving the "
-                                              "document means those objects will get lost permanently.\n\nDo you really want to save this "
-                                              "document?",
-                                              QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)
-        return XII_SUCCESS; // failed successfully
-    }
-  }
-
   auto res = pDoc->SaveDocument();
 
   if (res.Failed())
