@@ -237,11 +237,19 @@ public:
 
           bTransform = false;
 
-          const xiiUInt32 uiPlatform = xiiAssetCurator::GetSingleton()->FindAssetProfileByName(sTransformProfile);
+          auto*           curator    = xiiAssetCurator::GetSingleton();
+          const xiiResult profiles   = curator->ReloadAssetProfiles();
+          const xiiUInt32 uiPlatform = profiles.Succeeded() ? curator->FindAssetProfileByName(sTransformProfile) : xiiInvalidIndex;
 
-          if (uiPlatform == xiiInvalidIndex)
+          if (profiles.Failed())
+          {
+            xiiLog::Error("Could not reload asset platform configurations.");
+            SetReturnCode(1);
+          }
+          else if (uiPlatform == xiiInvalidIndex)
           {
             xiiLog::Error("Asset platform config '{0}' is unknown", sTransformProfile);
+            SetReturnCode(1);
           }
           else
           {
