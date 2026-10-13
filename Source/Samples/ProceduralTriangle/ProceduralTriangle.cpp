@@ -258,6 +258,7 @@ public:
 
     {
       xiiGALDeviceCreationDescription deviceCreationDescription;
+      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Enabled;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
