@@ -286,9 +286,7 @@ public:
   ///   File name (may include a path) to search for. Will be modified both on success and failure to give a 'reasonable' result.
   xiiResult FindBestMatchForFile(xiiStringBuilder& ref_sFile, xiiArrayPtr<xiiString> allowedFileExtensions) const;
 
-  /// Finds all uses, either as references or dependencies to a given asset.
-  ///
-  /// Technically this finds all references and dependencies to this asset but in practice there are no uses of transform dependencies between assets right now so the result is a list of references and can be referred to as such.
+  /// Finds all transform, thumbnail and package uses of an asset or sub-asset.
   ///
   /// \param assetGuid
   ///   The asset to find use cases for.
@@ -336,7 +334,7 @@ public:
   void GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>& inout_deps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
 
   /// Generates one inverse transitive hull for all the types dependencies that are enabled. The set will contain inverse dependencies that can reach the given asset (pAssetInfo) via any combination of the enabled reference types. As only assets can have dependencies, the inverse hull is always just asset GUIDs.
-  void GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false) const;
+  void GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
 
   /// Generates a DGML graph of all transform and thumbnail dependencies.
   void WriteDependencyDGML(const xiiUuid& guid, xiiStringView sOutputFile) const;
@@ -441,8 +439,10 @@ private:
   // Derived dependency lookup tables
   xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseTransformDeps;    // [Absolute path -> asset Guid]
   xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseThumbnailDeps;    // [Absolute path -> asset Guid]
+  xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InversePackageDeps;      // [Absolute path -> asset Guid]
   xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedTransformDeps; ///< If a dependency wasn't known yet when an asset info was loaded, it is put in here.
   xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedThumbnailDeps;
+  xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedPackageDeps;
 
   // State caches
   xiiHashSet<xiiUuid> m_TransformState[xiiAssetInfo::TransformState::COUNT];

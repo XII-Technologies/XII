@@ -225,6 +225,12 @@ void xiiAssetCurator::Deinitialize()
     m_KnownSubAssets.Clear();
     m_KnownAssets.Clear();
     m_TransformStateStale.Clear();
+    m_InverseTransformDeps.Clear();
+    m_InverseThumbnailDeps.Clear();
+    m_InversePackageDeps.Clear();
+    m_UnresolvedTransformDeps.Clear();
+    m_UnresolvedThumbnailDeps.Clear();
+    m_UnresolvedPackageDeps.Clear();
 
     for (int i = 0; i < xiiAssetInfo::TransformState::COUNT; i++)
     {
@@ -1017,6 +1023,7 @@ void xiiAssetCurator::FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, 
 
   xiiSet<xiiUuid> todoList;
   todoList.Insert(assetGuid);
+  xiiSet<xiiUuid> visited;
 
   auto GatherReferences = [&](const xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>>& inverseTracker, const xiiStringBuilder& sAsset) {
     auto it = inverseTracker.Find(sAsset);
@@ -1024,7 +1031,7 @@ void xiiAssetCurator::FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, 
     {
       for (const xiiUuid& guid : it.Value())
       {
-        if (!ref_uses.Contains(guid))
+        if (!visited.Contains(guid))
           todoList.Insert(guid);
 
         ref_uses.Insert(guid);
@@ -1037,6 +1044,7 @@ void xiiAssetCurator::FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, 
   {
     auto                itFirst = todoList.GetIterator();
     const xiiAssetInfo* pInfo   = GetAssetInfo(itFirst.Key());
+    visited.Insert(itFirst.Key());
     todoList.Remove(itFirst);
 
     if (pInfo)
@@ -1044,6 +1052,7 @@ void xiiAssetCurator::FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, 
       sCurrentAsset = pInfo->m_Path;
       GatherReferences(m_InverseThumbnailDeps, sCurrentAsset);
       GatherReferences(m_InverseTransformDeps, sCurrentAsset);
+      GatherReferences(m_InversePackageDeps, sCurrentAsset);
     }
   } while (bTransitive && !todoList.IsEmpty());
 }
@@ -1201,7 +1210,7 @@ void xiiAssetCurator::GenerateTransitiveHull(const xiiStringView sAssetOrPath, x
   }
 }
 
-void xiiAssetCurator::GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDebs, bool bIncludeThumbnailDebs) const
+void xiiAssetCurator::GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDeps, bool bIncludeThumbnailDeps, bool bIncludePackageDeps) const
 {
   XII_LOCK(m_CuratorMutex);
 
@@ -1214,9 +1223,8 @@ void xiiAssetCurator::GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetIn
     const xiiAssetInfo* currentAsset = toDoList.PeekBack();
     toDoList.PopBack();
 
-    if (bIncludeTransformDebs)
-    {
-      if (auto it = m_InverseTransformDeps.Find(currentAsset->m_Path.GetAbsolutePath()); it.IsValid())
+    auto GatherDependencies = [&](const xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>>& tracker) {
+      if (auto it = tracker.Find(currentAsset->m_Path.GetAbsolutePath()); it.IsValid())
       {
         for (const xiiUuid& asset : it.Value())
         {
@@ -1231,26 +1239,13 @@ void xiiAssetCurator::GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetIn
           }
         }
       }
-    }
-
-    if (bIncludeThumbnailDebs)
-    {
-      if (auto it = m_InverseThumbnailDeps.Find(currentAsset->m_Path.GetAbsolutePath()); it.IsValid())
-      {
-        for (const xiiUuid& asset : it.Value())
-        {
-          if (!inout_inverseDeps.Contains(asset))
-          {
-            xiiAssetInfo* pAssetInfo = nullptr;
-            if (m_KnownAssets.TryGetValue(asset, pAssetInfo))
-            {
-              toDoList.PushBack(pAssetInfo);
-              inout_inverseDeps.Insert(asset);
-            }
-          }
-        }
-      }
-    }
+    };
+    if (bIncludeTransformDeps)
+      GatherDependencies(m_InverseTransformDeps);
+    if (bIncludeThumbnailDeps)
+      GatherDependencies(m_InverseThumbnailDeps);
+    if (bIncludePackageDeps)
+      GatherDependencies(m_InversePackageDeps);
   }
 }
 
@@ -1505,6 +1500,8 @@ xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiUuid& assetGuid)
   xiiAssetInfo* pAssetInfo = nullptr;
   if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo))
     return pAssetInfo;
+  if (auto it = m_KnownSubAssets.Find(assetGuid); it.IsValid())
+    return it.Value().m_pAssetInfo;
   return nullptr;
 }
 
@@ -1513,6 +1510,8 @@ const xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiUuid& assetGuid) cons
   xiiAssetInfo* pAssetInfo = nullptr;
   if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo))
     return pAssetInfo;
+  if (auto it = m_KnownSubAssets.Find(assetGuid); it.IsValid())
+    return it.Value().m_pAssetInfo;
   return nullptr;
 }
 
@@ -1525,9 +1524,7 @@ xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiString& sAssetGuid)
   {
     const xiiUuid guid = xiiConversionUtils::ConvertStringToUuid(sAssetGuid);
 
-    xiiAssetInfo* pInfo = nullptr;
-    if (m_KnownAssets.TryGetValue(guid, pInfo))
-      return pInfo;
+    return GetAssetInfo(guid);
   }
 
   return nullptr;
@@ -1581,8 +1578,7 @@ void xiiAssetCurator::OnFileChangedEvent(const xiiFileChangedEvent& e)
     case xiiFileChangedEvent::Type::FileAdded:
     case xiiFileChangedEvent::Type::FileChanged:
     {
-      // If the asset was just added it is not tracked and thus no need to invalidate anything.
-      if (e.m_Type == xiiFileChangedEvent::Type::FileChanged)
+      // An added file may satisfy an already tracked missing dependency.
       {
         XII_LOCK(m_CuratorMutex);
         xiiUuid guid0 = e.m_Status.m_DocumentID;
@@ -1605,6 +1601,11 @@ void xiiAssetCurator::OnFileChangedEvent(const xiiFileChangedEvent& e)
           {
             InvalidateAssetTransformState(guid);
           }
+        }
+        if (auto it = m_InversePackageDeps.Find(e.m_Path); it.IsValid())
+        {
+          for (const xiiUuid& guid : it.Value())
+            InvalidateAssetTransformState(guid);
         }
       }
 
@@ -1656,6 +1657,11 @@ void xiiAssetCurator::OnFileChangedEvent(const xiiFileChangedEvent& e)
         {
           InvalidateAssetTransformState(guid);
         }
+      }
+      if (auto it = m_InversePackageDeps.Find(e.m_Path); it.IsValid())
+      {
+        for (const xiiUuid& guid : it.Value())
+          InvalidateAssetTransformState(guid);
       }
     }
     break;

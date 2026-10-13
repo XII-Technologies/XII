@@ -124,6 +124,7 @@ bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt6
 
   // Thumbs hash is affected by both transform dependencies and references.
   out_ThumbHash += fileStatus.m_uiHash;
+  out_PackageHash += fileStatus.m_uiHash;
   if (!bIsReference)
   {
     // References do not affect the asset hash.
@@ -251,12 +252,17 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
   }
 
   TrackDependencies(pCurrentAssetInfo);
-  CheckForCircularDependencies(pCurrentAssetInfo).IgnoreResult();
   UpdateAssetTransformState(newGuid, xiiAssetInfo::TransformState::Unknown);
   // Don't call SetAssetExistanceState on newly created assets as their data structure is initialized in UpdateSubAssets for the first time.
   if (newExistanceState != xiiAssetExistanceState::FileAdded)
     SetAssetExistanceState(*pCurrentAssetInfo, newExistanceState);
   UpdateSubAssets(*pCurrentAssetInfo);
+
+  // Sub-asset UUIDs only become resolvable after the owner's sub-assets have been updated.
+  UpdateUnresolvedTrackedFiles(m_InverseTransformDeps, m_UnresolvedTransformDeps);
+  UpdateUnresolvedTrackedFiles(m_InverseThumbnailDeps, m_UnresolvedThumbnailDeps);
+  UpdateUnresolvedTrackedFiles(m_InversePackageDeps, m_UnresolvedPackageDeps);
+  CheckForCircularDependencies(pCurrentAssetInfo).IgnoreResult();
 
   InvalidateAssetTransformState(newGuid);
   pFiles->LinkDocument(absFilePath, pCurrentAssetInfo->m_Info->m_DocumentID).AssertSuccess("Failed to link document in file system model");
@@ -267,6 +273,7 @@ void xiiAssetCurator::TrackDependencies(xiiAssetInfo* pAssetInfo)
 {
   UpdateTrackedFiles(pAssetInfo->m_Info->m_DocumentID, pAssetInfo->m_Info->m_TransformDependencies, m_InverseTransformDeps, m_UnresolvedTransformDeps, true);
   UpdateTrackedFiles(pAssetInfo->m_Info->m_DocumentID, pAssetInfo->m_Info->m_ThumbnailDependencies, m_InverseThumbnailDeps, m_UnresolvedThumbnailDeps, true);
+  UpdateTrackedFiles(pAssetInfo->m_Info->m_DocumentID, pAssetInfo->m_Info->m_PackageDependencies, m_InversePackageDeps, m_UnresolvedPackageDeps, true);
 
   const xiiString sTargetFile = pAssetInfo->GetManager()->GetAbsoluteOutputFileName(pAssetInfo->m_pDocumentTypeDescriptor, pAssetInfo->m_Path, "");
   auto            it          = m_InverseThumbnailDeps.FindOrAdd(sTargetFile);
@@ -277,17 +284,13 @@ void xiiAssetCurator::TrackDependencies(xiiAssetInfo* pAssetInfo)
     it                           = m_InverseThumbnailDeps.FindOrAdd(sTargetFile2);
     it.Value().PushBack(pAssetInfo->m_Info->m_DocumentID);
   }
-
-  // Depending on the order of loading, dependencies might be unresolved until the dependency itself is loaded into the curator.
-  // If pAssetInfo was previously an unresolved dependency, these two calls will update the inverse dep tables now that it can be resolved.
-  UpdateUnresolvedTrackedFiles(m_InverseTransformDeps, m_UnresolvedTransformDeps);
-  UpdateUnresolvedTrackedFiles(m_InverseThumbnailDeps, m_UnresolvedThumbnailDeps);
 }
 
 void xiiAssetCurator::UntrackDependencies(xiiAssetInfo* pAssetInfo)
 {
   UpdateTrackedFiles(pAssetInfo->m_Info->m_DocumentID, pAssetInfo->m_Info->m_TransformDependencies, m_InverseTransformDeps, m_UnresolvedTransformDeps, false);
   UpdateTrackedFiles(pAssetInfo->m_Info->m_DocumentID, pAssetInfo->m_Info->m_ThumbnailDependencies, m_InverseThumbnailDeps, m_UnresolvedThumbnailDeps, false);
+  UpdateTrackedFiles(pAssetInfo->m_Info->m_DocumentID, pAssetInfo->m_Info->m_PackageDependencies, m_InversePackageDeps, m_UnresolvedPackageDeps, false);
 
   const xiiString sTargetFile = pAssetInfo->GetManager()->GetAbsoluteOutputFileName(pAssetInfo->m_pDocumentTypeDescriptor, pAssetInfo->m_Path, "");
   auto            it          = m_InverseThumbnailDeps.FindOrAdd(sTargetFile);
@@ -303,28 +306,15 @@ void xiiAssetCurator::UntrackDependencies(xiiAssetInfo* pAssetInfo)
 xiiResult xiiAssetCurator::CheckForCircularDependencies(xiiAssetInfo* pAssetInfo)
 {
   xiiSet<xiiUuid> inverseHull;
-  GenerateInverseTransitiveHull(pAssetInfo, inverseHull, true, true);
+  GenerateInverseTransitiveHull(pAssetInfo, inverseHull, true, true, true);
 
   xiiResult res = XII_SUCCESS;
-  for (const auto& sDep : pAssetInfo->m_Info->m_TransformDependencies)
+  for (const auto* dependencies : {&pAssetInfo->m_Info->m_TransformDependencies, &pAssetInfo->m_Info->m_ThumbnailDependencies, &pAssetInfo->m_Info->m_PackageDependencies})
   {
-    if (xiiConversionUtils::IsStringUuid(sDep))
+    for (const auto& sDep : *dependencies)
     {
-      const xiiUuid guid = xiiConversionUtils::ConvertStringToUuid(sDep);
-      if (inverseHull.Contains(guid))
-      {
-        pAssetInfo->m_CircularDependencies.Insert(sDep);
-        res = XII_FAILURE;
-      }
-    }
-  }
-
-  for (const auto& sDep : pAssetInfo->m_Info->m_ThumbnailDependencies)
-  {
-    if (xiiConversionUtils::IsStringUuid(sDep))
-    {
-      const xiiUuid guid = xiiConversionUtils::ConvertStringToUuid(sDep);
-      if (inverseHull.Contains(guid))
+      const auto dependency = FindSubAsset(sDep);
+      if (dependency && inverseHull.Contains(dependency->m_pAssetInfo->m_Info->m_DocumentID))
       {
         pAssetInfo->m_CircularDependencies.Insert(sDep);
         res = XII_FAILURE;
@@ -350,9 +340,26 @@ void xiiAssetCurator::UpdateTrackedFiles(const xiiUuid& assetGuid, const xiiSet<
 
       if (!bAdd)
       {
-        unresolved.Remove(std::tuple<xiiUuid, xiiUuid>(assetGuid, guid));
+        const bool wasUnresolved = unresolved.Remove(std::tuple<xiiUuid, xiiUuid>(assetGuid, guid));
         if (pInfo == nullptr)
+        {
+          // The referenced asset/sub-asset may have disappeared since tracking. Untracking
+          // removes this owner's entire dependency set, so discard any remaining aliases.
+          if (!wasUnresolved)
+          {
+            for (auto it = inverseTracker.GetIterator(); it.IsValid();)
+            {
+              while (it.Value().RemoveAndCopy(assetGuid))
+              {
+              }
+              if (it.Value().IsEmpty())
+                it = inverseTracker.Remove(it);
+              else
+                ++it;
+            }
+          }
           continue;
+        }
       }
 
       if (pInfo == nullptr && bAdd)
@@ -370,14 +377,15 @@ void xiiAssetCurator::UpdateTrackedFiles(const xiiUuid& assetGuid, const xiiSet<
         continue;
       }
     }
-    auto it = inverseTracker.FindOrAdd(sPath);
     if (bAdd)
     {
-      it.Value().PushBack(assetGuid);
+      inverseTracker.FindOrAdd(sPath).Value().PushBack(assetGuid);
     }
-    else
+    else if (auto it = inverseTracker.Find(sPath); it.IsValid())
     {
       it.Value().RemoveAndCopy(assetGuid);
+      if (it.Value().IsEmpty())
+        inverseTracker.Remove(it);
     }
   }
 }
@@ -551,7 +559,7 @@ void xiiAssetCurator::InvalidateAssetTransformState(const xiiUuid& assetGuid)
     xiiAssetInfo* pAssetInfo = nullptr;
     if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo))
     {
-      GenerateInverseTransitiveHull(pAssetInfo, hull, true, true);
+      GenerateInverseTransitiveHull(pAssetInfo, hull, true, true, true);
     }
   }
 
@@ -622,6 +630,12 @@ void xiiAssetCurator::UpdateAssetTransformState(const xiiUuid& assetGuid, xiiAss
           {
             InvalidateAssetTransformState(guid);
           }
+        }
+
+        if (auto it = m_InversePackageDeps.Find(pAssetInfo->m_Path); it.IsValid())
+        {
+          for (const xiiUuid& guid : it.Value())
+            InvalidateAssetTransformState(guid);
         }
 
         break;
