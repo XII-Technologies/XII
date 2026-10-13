@@ -1,3 +1,9 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+// The Infinite Triangle
+// Entire scene: one draw call, three vertices, zero vertex buffers, zero textures.
+// Geometry, materials, lighting, reflection and atmosphere are analytic.
+
 [PLATFORMS]
 ALL
 
@@ -8,171 +14,543 @@ CullMode    = CullMode_None
 
 [VERTEX_SHADER]
 
-#include "ProceduralTriangleConstants.h"
-
 struct VSOut
 {
   float4 Position : SV_POSITION;
-  float3 Color    : COLOR0;
-  float3 Bary     : TEXCOORD0;
-  float3 Normal   : TEXCOORD1;
-  float2 ScreenUV : TEXCOORD2;
+  float2 UV       : TEXCOORD0;
 };
 
-// triangle defined in normalized screen-space extents (-0.5..0.5)
-static const float3 gPositions[3] =
-{
-  float3(-0.5, -0.5, 0.0),
-  float3( 0.0,  0.5, 0.0),
-  float3( 0.5, -0.5, 0.0)
-};
-
-static const float3 gColors[3] =
-{
-  float3(1.0, 0.2, 0.15),
-  float3(0.15, 1.0, 0.2),
-  float3(0.2, 0.3, 1.0)
-};
-
-static const float3 gBary[3] =
-{
-  float3(1,0,0),
-  float3(0,1,0),
-  float3(0,0,1)
-};
-
+// Oversized fullscreen triangle: eliminates diagonal seams and unused geometry.
 void main(in uint uiVertexID : SV_VertexID, out VSOut OUT)
 {
-  // Local positions in -0.5..0.5 range
-  float2 pos = gPositions[uiVertexID].xy;
-
-  // Inverse-aspect correction so the triangle preserves shape across window sizes.
-  // Use height/width to scale X down on wide windows (prevents the triangle from overflowing).
-  float aspectInv = (vResolution.x > 0.0) ? (vResolution.y / vResolution.x) : 1.0;
-  float2 clipPos = float2(pos.x * 2.0 * aspectInv, pos.y * 2.0); // map -0.5..0.5 -> -1..1
-
-  OUT.Position = float4(clipPos, 0.0, 1.0);
-  OUT.Color    = gColors[uiVertexID];
-  OUT.Bary     = gBary[uiVertexID];
-
-  // flat normal (kept for compatibility with existing PS)
-  float3 p0 = gPositions[0];
-  float3 p1 = gPositions[1];
-  float3 p2 = gPositions[2];
-  OUT.Normal = normalize(cross(p1 - p0, p2 - p0));
-
-  // ScreenUV in 0..1 for screen-space effects
-  float2 ndc = OUT.Position.xy / OUT.Position.w;
-  OUT.ScreenUV = ndc * 0.5 + 0.5;
+  float2 uv    = float2((uiVertexID << 1) & 2, uiVertexID & 2);
+  OUT.UV       = uv;
+  OUT.Position = float4(uv * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
 }
 
 [PIXEL_SHADER]
 
 #include "ProceduralTriangleConstants.h"
 
+static const float PI  = 3.14159265358979323846;
+static const float TAU = 6.28318530717958647692;
+
 struct PSIn
 {
   float4 Position : SV_POSITION;
-  float3 Color    : COLOR0;
-  float3 Bary     : TEXCOORD0;
-  float3 Normal   : TEXCOORD1;
-  float2 ScreenUV : TEXCOORD2;
+  float2 UV       : TEXCOORD0;
 };
 
-// cheap hash / value noise for grain and micro-variation
-float hash21(float2 p)
+struct MarchResult
 {
-  p  = frac(p * float2(123.34, 456.21));
-  p += dot(p, p + 45.32);
+  float t;
+  float material;
+  float glow;
+  float steps;
+};
+
+float2 Rotate(float2 p, float a)
+{
+  float s = sin(a), c = cos(a);
+  return float2(c * p.x - s * p.y, s * p.x + c * p.y);
+}
+
+float Hash21(float2 p)
+{
+  p  = frac(p * float2(123.34, 345.45));
+  p += dot(p, p + 34.345);
   return frac(p.x * p.y);
 }
 
-float noise(float2 uv)
+float Noise2(float2 p)
 {
-  float2 i = floor(uv);
-  float2 f = frac(uv);
-  float a  = hash21(i);
-  float b  = hash21(i + float2(1,0));
-  float c  = hash21(i + float2(0,1));
-  float d  = hash21(i + float2(1,1));
-  float2 u = f * f * (3.0 - 2.0 * f);
-  return lerp(lerp(a,b,u.x), lerp(c,d,u.x), u.y);
+  float2 i = floor(p), f = frac(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return lerp(lerp(Hash21(i), Hash21(i + float2(1, 0)), f.x),
+              lerp(Hash21(i + float2(0, 1)), Hash21(i + float2(1, 1)), f.x), f.y);
 }
 
-// Utility: simple saturation
-float3 SaturateColor(float3 c, float sat)
+float Fbm(float2 p)
 {
-  float lum = dot(c, float3(0.2126, 0.7152, 0.0722));
-  return lerp(float3(lum,lum,lum), c, sat);
+  float value = 0.0;
+  float amp   = 0.5;
+
+  [unroll]
+  for (int i = 0; i < 4; ++i)
+  {
+    value += amp * Noise2(p);
+    p = Rotate(p * 2.04, 0.55) + 13.7;
+    amp *= 0.49;
+  }
+  return value;
 }
 
-// Main pixel shader: boosted neon / bloom-like effect
+// IQ-style exact equilateral-triangle 2D signed distance (radius parameter is half the triangle side length).
+float SdTriangle(float2 p, float r)
+{
+  const float k = 1.7320508075688772;
+  p.x           = abs(p.x) - r;
+  p.y          += r / k;
+
+  if (p.x + k * p.y > 0.0)
+    p = float2(p.x - k * p.y, -k * p.x - p.y) * 0.5;
+
+  p.x -= clamp(p.x, -2.0 * r, 0.0);
+
+  return -length(p) * sign(p.y);
+}
+
+float SdTrianglePrism(float3 p, float radius, float halfDepth)
+{
+  float2 d = float2(SdTriangle(p.xy, radius), abs(p.z) - halfDepth);
+  return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+}
+
+float SdTriangleFrame(float3 p, float radius, float stroke, float halfDepth)
+{
+  // A subtractive extrusion makes a genuine through-opening, not a wire overlay.
+  float outer = SdTrianglePrism(p, radius, halfDepth);
+  float inner = SdTrianglePrism(p, radius - stroke, halfDepth + 0.07);
+  return max(outer, -inner);
+}
+
+float SdTorus(float3 p, float radius, float tube)
+{
+  return length(float2(length(p.xy) - radius, p.z)) - tube;
+}
+
+float SdOctahedron(float3 p, float s)
+{
+  // Planar lower-bound distance with sharp crystalline facets.
+  p = abs(p);
+  return (p.x + p.y + p.z - s) * 0.57735027;
+}
+
+// Six-stage Sierpinski tetrahedron distance estimator: a finite fractal IFS.
+// It transforms the nearest of four tetrahedral corners to the parent domain.
+float SdTetrahedralFractal(float3 p, int iterations)
+{
+  const float3 a = float3( 1.0,  1.0,  1.0);
+  const float3 b = float3(-1.0, -1.0,  1.0);
+  const float3 c = float3(-1.0,  1.0, -1.0);
+  const float3 d = float3( 1.0, -1.0, -1.0);
+  float scale    = 1.0;
+
+  [loop]
+  for (int i = 0; i < 6; ++i)
+  {
+    if (i >= iterations)
+      break;
+
+    float3 nearest = a;
+    float closest = dot(p - a, p - a);
+    float candidate = dot(p - b, p - b);
+
+    if (candidate < closest)
+    {
+      closest = candidate;
+      nearest = b;
+    }
+
+    candidate = dot(p - c, p - c);
+
+    if (candidate < closest)
+    {
+      closest = candidate;
+      nearest = c;
+    }
+
+    candidate = dot(p - d, p - d);
+
+    if (candidate < closest)
+    {
+      nearest = d;
+    }
+
+    p      = p * 2.0 - nearest;
+    scale *= 2.0;
+  }
+  return (length(p) - 0.47) / scale;
+}
+
+float2 Closest(float2 a, float2 b)
+{
+  return (b.x < a.x) ? b : a;
+}
+
+// Geometry field. The low-cost bounding sphere avoids the detailed model in empty space.
+// Material: 1=champagne alloy, 2=cyan circuitry, 3=purple plasma,
+//           4=core gemstone, 5=orbiting shards, 6=halos, 7=floor.
+float2 SceneMap(float3 p, bool includeFloor)
+{
+  float2 result = float2(100.0, 0.0);
+
+  float bound = length(p) - 3.15;
+  if (bound > 0.30)
+  {
+    result = float2(bound, 0.0);
+
+    if (includeFloor)
+      result = Closest(result, float2(p.y + 2.30, 7.0));
+
+    return result;
+  }
+
+  float t = fTime;
+
+  // Counter-rotating, independently floating triangular architectural ribs.
+  [unroll]
+  for (int i = 0; i < 7; ++i)
+  {
+    float fi        = (float)i;
+    float3 q        = p;
+    float direction = ((i & 1) == 0) ? 1.0 : -1.0;
+
+    q.xy        = Rotate(q.xy, 0.14 * fi + direction * t * (0.055 + fi * 0.011));
+    q.z        -= -0.58 + fi * 0.19 + 0.055 * sin(t * 0.8 + fi * 1.4);
+    float r     = 1.78 - fi * 0.215;
+    float frame = SdTriangleFrame(q, r, (0.070 + 0.008 * sin(t + fi)) * max(0.2, fWireWidth), 0.042);
+    result      = Closest(result, float2(frame, 1.0 + (float)(i % 3)));
+  }
+
+  // Two intersecting gyroscopic axes and a delicate equatorial orbit.
+  float3 ringP = p;
+  ringP.xy     = Rotate(ringP.xy, t * 0.095);
+  ringP.yz     = Rotate(ringP.yz, 0.82 + 0.24 * sin(t * 0.23));
+  result       = Closest(result, float2(SdTorus(ringP, 2.10, 0.023), 6.0));
+  ringP        = p;
+  ringP.xz     = Rotate(ringP.xz, -0.77 + t * 0.12);
+  ringP.yz     = Rotate(ringP.yz, 0.45);
+  result       = Closest(result, float2(SdTorus(ringP, 1.96, 0.016), 6.0));
+
+  // Nine independently orbiting multifaceted crystal fragments.
+  [unroll]
+  for (int j = 0; j < 9; ++j)
+  {
+    float fj      = (float)j;
+    float orbit   = fj * 2.39996323 + t * (0.16 + 0.012 * (float)(j % 3));
+    float layer   = fj * 2.09439510;
+    float3 center = float3(1.86 * cos(orbit), 1.51 * sin(orbit), 0.68 * sin(layer + t * 0.42));
+    float3 q      = p - center;
+    q.xy          = Rotate(q.xy, t * 0.28 + fj * 0.7);
+    q.xz          = Rotate(q.xz, fj + t * 0.19);
+    float crystal = SdOctahedron(q, 0.20 + 0.055 * sin(fj * 2.7 + t));
+    result        = Closest(result, float2(crystal, 5.0));
+  }
+
+  // Pulsating central diamond inside an actual tetrahedral IFS fractal.
+  float3 core = p;
+  core.xy     = Rotate(core.xy, 0.2 - t * 0.24);
+  core.yz     = Rotate(core.yz, t * 0.13);
+  result      = Closest(result, float2(SdOctahedron(core, 0.33 + 0.025 * sin(t * 1.7)), 4.0));
+
+  if (length(core) < 0.91)
+  {
+    float3 crystal = core / 0.37;
+    crystal.xz     = Rotate(crystal.xz, -t * 0.12);
+    int iterations = ((int)vSceneParameters.y == 2) ? 6 : 5;
+    float fractal  = SdTetrahedralFractal(crystal, iterations) * 0.37;
+    result         = Closest(result, float2(fractal, 4.0));
+  }
+
+  // Lower float-shadows, floor and horizon make the hero object feel grounded.
+  if (includeFloor)
+    result = Closest(result, float2(p.y + 2.30, 7.0));
+
+  return result;
+}
+
+MarchResult Trace(float3 ro, float3 rd, float maxDistance, int maxSteps, bool includeFloor)
+{
+  MarchResult result;
+  result.t        = maxDistance;
+  result.material = 0.0;
+  result.glow     = 0.0;
+  result.steps    = 0.0;
+
+  float dTravel         = 0.0;
+  float accumulatedGlow = 0.0;
+
+  [loop]
+  for (int i = 0; i < 112; ++i)
+  {
+    if (i >= maxSteps || dTravel > maxDistance)
+      break;
+
+    float3 p        = ro + rd * dTravel;
+    float2 field    = SceneMap(p, includeFloor);
+    float threshold = max(0.00065, dTravel * 0.00034);
+
+    if (field.x < threshold)
+    {
+      result.t        = dTravel;
+      result.material = field.y;
+      result.glow     = accumulatedGlow;
+      result.steps    = (float)i;
+      return result;
+    }
+
+    float travelStep = max(0.008, field.x * 0.75);
+    if (field.y > 0.5 && field.y < 6.5)
+      accumulatedGlow += 0.0045 * travelStep / (0.018 + field.x * field.x * 7.5);
+
+    dTravel += travelStep;
+  }
+
+  result.glow = min(accumulatedGlow, 2.6);
+  result.steps = (float)maxSteps;
+  return result;
+}
+
+// Four samples, instead of six, to keep normals affordable at high resolution.
+float3 EstimateNormal(float3 p)
+{
+  float h   = 0.0016;
+  float3 e1 = float3( 1.0, -1.0, -1.0);
+  float3 e2 = float3(-1.0, -1.0,  1.0);
+  float3 e3 = float3(-1.0,  1.0, -1.0);
+  float3 e4 = float3( 1.0,  1.0,  1.0);
+  float3 n  = e1 * SceneMap(p + e1 * h, false).x
+            + e2 * SceneMap(p + e2 * h, false).x
+            + e3 * SceneMap(p + e3 * h, false).x
+            + e4 * SceneMap(p + e4 * h, false).x;
+  return normalize(n);
+}
+
+float3 Palette(int palette, float phase)
+{
+  // Four coordinated art directions, interpolated with a periodic color ramp.
+  float3 a, b, c;
+  if (palette == 1)
+  {
+    a = float3(0.31, 0.055, 0.23);
+    b = float3(0.65, 0.20, 0.53);
+    c = float3(0.52, 0.49, 0.89);
+  }
+  else if (palette == 2)
+  {
+    a = float3(0.28, 0.19, 0.055);
+    b = float3(0.52, 0.31, 0.075);
+    c = float3(0.92, 0.60, 0.26);
+  }
+  else if (palette == 3)
+  {
+    a = float3(0.14, 0.24, 0.31);
+    b = float3(0.22, 0.39, 0.54);
+    c = float3(0.66, 0.78, 0.86);
+  }
+  else
+  {
+    a = float3(0.12, 0.21, 0.27);
+    b = float3(0.19, 0.48, 0.53);
+    c = float3(0.80, 0.67, 0.39);
+  }
+  return max(float3(0.0, 0.0, 0.0), a + b * cos(TAU * (c + phase)));
+}
+
+float3 MaterialColor(float material, float3 p)
+{
+  int palette = (int)vSceneParameters.x;
+  if (material < 1.5)
+    return Palette(palette, 0.08);
+  if (material < 2.5)
+    return Palette(palette, 0.36);
+  if (material < 3.5)
+    return Palette(palette, 0.69);
+  if (material < 4.5)
+    return Palette(palette, 0.95) * 1.25;
+  if (material < 5.5)
+    return Palette(palette, 0.22 + 0.09 * sin(p.z * 4.0));
+  return Palette(palette, 0.55) * 1.5;
+}
+
+float3 Background(float3 rd)
+{
+  // Three-frequency ink-and-nebula backdrop (no textures or cubemaps).
+  float2 sky = float2(atan2(rd.z, rd.x) * 1.1, rd.y * 2.8);
+  float n1   = Fbm(sky * 2.5 + float2(fTime * 0.012, -fTime * 0.006));
+  float n2   = Fbm(Rotate(sky * 4.7, 0.48) - fTime * 0.008);
+  float veil = pow(saturate(n1 * 1.1 + n2 * 0.37 - 0.52), 2.2);
+
+  float3 col = float3(0.0045, 0.0075, 0.019);
+  col       += float3(0.042, 0.022, 0.094) * veil * 1.3;
+  col       += Palette((int)vSceneParameters.x, 0.52) * veil * 0.12;
+
+  // Hash-generated discrete stars, with soft bright centres.
+  float2 starsUV = sky * 76.0;
+  float2 cell    = floor(starsUV);
+  float2 local   = frac(starsUV) - 0.5;
+  float h        = Hash21(cell);
+  float star     = step(0.995, h) * pow(saturate(1.0 - length(local) * 2.0), 10.0);
+  col           += float3(0.7, 0.85, 1.0) * star * (0.6 + h * 1.3);
+  return col;
+}
+
+float3 ShadeObject(float3 p, float3 rd, float material, float highQuality)
+{
+  float3 n        = EstimateNormal(p);
+  float3 v        = -rd;
+  float3 key      = normalize(float3(-0.57, 0.76, 0.55));
+  float3 rimLight = normalize(float3(0.68, 0.18, -0.71));
+
+  float ndotl   = saturate(dot(n, key));
+  float back    = saturate(dot(n, rimLight));
+  float fresnel = pow(1.0 - saturate(dot(n, v)), 4.0);
+  float gloss   = pow(saturate(dot(reflect(-key, n), v)), 58.0);
+  float gloss2  = pow(saturate(dot(reflect(-rimLight, n), v)), 28.0);
+  float facet   = 0.75 + 0.25 * cos(17.0 * dot(n, float3(0.36, 0.6, 0.72)));
+  float3 base   = MaterialColor(material, p) * facet;
+
+  float3 col = base * (0.11 + 0.69 * ndotl + 0.28 * back);
+  col       += float3(1.0, 0.88, 0.68) * gloss * 1.95;
+  col       += Palette((int)vSceneParameters.x, 0.46) * gloss2 * 1.4;
+  col       += base * fresnel * 1.65;
+
+  float flow     = 0.5 + 0.5 * sin(24.0 * atan2(p.y, p.x) - fTime * 2.2 + p.z * 16.0);
+  float filigree = pow(flow, 20.0);
+  if (material < 4.0 || material > 5.9)
+    col += base * (0.28 + 0.75 * filigree);
+  if (material > 3.5 && material < 4.5)
+    col += base * (1.2 + 0.8 * sin(fTime * 2.0));
+  if (material > 5.5)
+    col += base * 1.6;
+
+  // Short ambient occlusion along the SDF normal, only in premium mode.
+  if (highQuality > 1.5)
+  {
+    float ao = 0.0;
+
+    [unroll]
+    for (int i = 1; i <= 3; ++i)
+    {
+      float h = (float)i * 0.075;
+      ao     += max(0.0, h - SceneMap(p + n * h, false).x) / h;
+    }
+    col *= 1.0 - min(0.30, ao * 0.15);
+  }
+  return col;
+}
+
+float3 ShadeFloor(float3 p, float3 rd)
+{
+  float2 grid    = abs(frac(p.xz * 0.32) - 0.5);
+  float gridLine = 1.0 - smoothstep(0.004, 0.026, min(grid.x, grid.y));
+  float fine     = 1.0 - smoothstep(0.002, 0.010, min(abs(frac(p.x * 1.6) - 0.5), abs(frac(p.z * 1.6) - 0.5)));
+  float circular = abs(length(p.xz) - 2.85);
+  float orbit    = 1.0 - smoothstep(0.015, 0.050, circular);
+
+  float3 floorBase = float3(0.006, 0.012, 0.020);
+  floorBase       += Palette((int)vSceneParameters.x, 0.41) * (gridLine * 0.12 + fine * 0.022 + orbit * 0.35);
+  floorBase       *= 0.6 + 0.4 * exp(-length(p.xz) * 0.18);
+
+  // Luminous pool beneath the floating figure.
+  floorBase += Palette((int)vSceneParameters.x, 0.5) * 0.11 * exp(-dot(p.xz, p.xz) * 0.24);
+
+  return floorBase;
+}
+
+float3 Filmic(float3 c)
+{
+  // ACES-fit performed in linear light. The RGBA8 sRGB render target encodes it.
+  c = max(float3(0.0, 0.0, 0.0), c);
+  return saturate((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14));
+}
+
+float3 CameraRay(float2 uv, float3 ro, float3 target)
+{
+  float3 forward = normalize(target - ro);
+  float3 right   = normalize(cross(forward, float3(0.0, 1.0, 0.0)));
+  float3 up      = cross(right, forward);
+  return normalize(forward * 1.95 + uv.x * right + uv.y * up);
+}
+
+float3 Overlay(float3 color, float2 uv)
+{
+  if (vSceneParameters.w < 0.5)
+    return color;
+
+  float r       = length(uv);
+  float a       = atan2(uv.y, uv.x);
+  float tick    = step(0.73, frac(a * 29.0 / TAU + 0.5));
+  float outer   = (1.0 - smoothstep(0.0025, 0.007, abs(r - 1.33))) * tick;
+  float inner   = (1.0 - smoothstep(0.0025, 0.006, abs(r - 0.89)));
+  float reticle = (1.0 - smoothstep(0.0, 0.005, abs(uv.y))) *
+                  (1.0 - smoothstep(0.0, 0.018, abs(abs(uv.x) - 1.44)));
+  float3 tint   = Palette((int)vSceneParameters.x, 0.42);
+  color        += tint * (outer * 0.08 + inner * 0.045 + reticle * 0.2);
+  return color;
+}
+
 float4 main(PSIn IN) : SV_TARGET
 {
-  // --- Base palette (vertex-driven via barycentric interpolation)
-  float3 c0 = float3(1.0, 0.12, 0.05); // warm red
-  float3 c1 = float3(0.05, 1.0, 0.12); // neon green
-  float3 c2 = float3(0.12, 0.18, 1.0); // electric blue
-  float3 baseColor = IN.Bary.x * c0 + IN.Bary.y * c1 + IN.Bary.z * c2;
+  float2 safeResolution = max(vResolution, float2(1.0, 1.0));
+  float2 uv             = (IN.Position.xy - 0.5 * safeResolution) / safeResolution.y;
+  uv.y                  = -uv.y;
 
-  // --- Strong animated pulse (boost amplitude and frequency)
-  float pulseFreq = 3.6;            // higher frequency
-  float pulseAmp  = 1.2;            // stronger amplitude
-  float pulse = 0.45 + 0.55 * sin(fTime * pulseFreq + IN.ScreenUV.x * 10.0 + IN.ScreenUV.y * 6.0);
-  baseColor *= (1.0 + pulseAmp * (pulse - 0.5)); // center the pulse and amplify
+  // Gently drifting cinematic orbit, also manually adjustable from the keyboard.
+  float yaw     = 0.30 + fTime * 0.065 + vCameraParameters.x;
+  float pitch   = vCameraParameters.y;
+  float radius  = max(3.5, vCameraParameters.z);
+  float3 ro     = float3(radius * sin(yaw), 1.12 + pitch * 2.1 + 0.19 * sin(fTime * 0.19), radius * cos(yaw));
+  float3 target = float3(0.0, -0.12 + 0.07 * sin(fTime * 0.30), 0.0);
+  float3 rd     = CameraRay(uv * 2.0, ro, target);
 
-  // --- Screen-space rim / vignette (punchy)
-  float2 center = float2(0.5, 0.5);
-  float2 d = IN.ScreenUV - center;
-  float rim = pow(1.0 - saturate(length(d) * 1.1), 3.0); // sharper falloff
-  float3 rimCol = float3(1.0, 0.9, 0.7) * rim * 1.25;    // stronger rim color
+  int quality     = (int)vSceneParameters.y;
+  int steps       = (quality == 0) ? 44 : ((quality == 1) ? 68 : 104);
+  MarchResult hit = Trace(ro, rd, 24.0, steps, true);
 
-  // --- Edge / wire detection (barycentric)
-  float minB = min(min(IN.Bary.x, IN.Bary.y), IN.Bary.z);
-  float px = length(ddx(IN.Position.xy)) + length(ddy(IN.Position.xy));
-  float edgePx = max(1.0, fWireWidth) * 0.5 * px;
-  float edgeFade = smoothstep(0.0, edgePx * 0.9, minB);
-  float wire = smoothstep(0.0, edgePx * 0.5, minB);
-  float3 wireColor = float3(0.02, 0.02, 0.02);
+  float3 color        = Background(rd);
+  float3 contactColor = Palette((int)vSceneParameters.x, 0.58);
+  color              += contactColor * (hit.glow * 0.19);
 
-  // --- Micro detail / grain (resolution-aware)
-  float n = noise(IN.ScreenUV * vResolution * 0.6 + fTime * 1.6);
-  float grain = (n - 0.5) * 0.06; // stronger grain to break midtones
+  if (hit.material > 0.5)
+  {
+    float3 p  = ro + rd * hit.t;
+    float fog = exp(-hit.t * 0.030);
 
-  // --- Chromatic offset for subtle fringing (adds perceived saturation)
-  float2 uv = IN.ScreenUV;
-  float2 chromaOffset = float2(0.0025, -0.0015) * (1.0 - rim); // less offset near rim
-  float3 chromaSampleR = baseColor; // baseColor is procedural; we fake chroma by tinting
-  float3 chromaSampleB = baseColor;
-  chromaSampleR.r += 0.12; // push red channel
-  chromaSampleB.b += 0.12; // push blue channel
+    if (hit.material > 6.5)
+    {
+      float3 floorColor = ShadeFloor(p, rd);
 
-  // --- Combine base + rim + chroma
-  float3 col = baseColor + rimCol;
-  // apply chroma tinting as an additive boost (cheap approximation)
-  col.r = lerp(col.r, chromaSampleR.r, 0.12);
-  col.b = lerp(col.b, chromaSampleB.b, 0.12);
+      if (quality > 0)
+      {
+        // One glossy reflection bounce, raymarched independently without floor.
+        // Restrict to near-field pixels to keep high-resolution frame time stable.
+        float2 xz       = p.xz;
+        float proximity = exp(-dot(xz, xz) * 0.035);
 
-  // --- Edge blending and wire overlay
-  col = lerp(wireColor, col, saturate(edgeFade));
-  col += grain;
+        if (proximity > 0.05)
+        {
+          float3 rn        = normalize(float3(0.012 * sin(p.x * 3.0), 1.0, 0.012 * cos(p.z * 3.0)));
+          float3 rr        = reflect(rd, rn);
+          MarchResult refl = Trace(p + rn * 0.025, rr, 9.0, (quality == 2) ? 42 : 25, false);
 
-  // --- Additive highlight / bloom simulation (aggressive)
-  // amplify bright areas non-linearly to simulate bloom without extra passes
-  float3 bright = max(col - 0.55, 0.0);
-  col += pow(bright, float3(1.8, 1.8, 1.8)) * 1.6; // strong additive boost
+          if (refl.material > 0.5)
+          {
+            float3 reflectionPos = p + rn * 0.025 + rr * refl.t;
+            float3 reflection    = ShadeObject(reflectionPos, rr, refl.material, 0.0);
+            float fres           = pow(1.0 - saturate(dot(-rd, rn)), 3.0);
+            floorColor          += reflection * (0.13 + 0.48 * fres) * proximity;
+          }
+          floorColor += contactColor * refl.glow * 0.07 * proximity;
+        }
+      }
+      color = lerp(color, floorColor, fog);
+    }
+    else
+    {
+      color = lerp(color, ShadeObject(p, rd, hit.material, vSceneParameters.y), fog);
+    }
+  }
 
-  // --- Contrast and saturation boost
-  col = SaturateColor(col, 1.35); // increase saturation
-  float lum = dot(col, float3(0.2126, 0.7152, 0.0722));
-  col = lerp(float3(lum,lum,lum), col, 1.12); // slight contrast boost
+  // Artistic post-processing: halation, restrained edge falloff and soft film grain.
+  float halo     = exp(-12.0 * abs(length(uv) - 0.90));
+  color         += Palette((int)vSceneParameters.x, 0.36) * halo * 0.020;
+  float vignette = 1.0 - 0.29 * smoothstep(0.35, 1.70, length(uv));
+  color         *= vignette;
+  color         *= max(0.25, vSceneParameters.z);
+  color          = Overlay(color, uv);
+  color         += (Hash21(IN.Position.xy + floor(fTime * 13.0)) - 0.5) * 0.005;
 
-  // --- Soft tonemap (milder than ACES to preserve highlights)
-  col = col / (col + 0.9);
-
-  // --- Final clamp and gamma
-  col = saturate(col);
-  col = pow(col, 1.0 / 2.2);
-
-  return float4(col, 1.0);
+  return float4(Filmic(color), 1.0);
 }
