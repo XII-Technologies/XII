@@ -3583,3 +3583,82 @@ shadow allocation, lifecycle and execution. They do not measure total renderer
 residency in the user's RenderDoc capture or reproduce that exact live-project
 crash. Physical GPU exhaustion, Release, other backends and operating systems were
 not exercised. Other rendering resources retain their existing quality and budgets.
+
+
+### Document Save Validation And Missing-Type Compatibility
+
+The document loader can reconstruct absent plugin types from embedded phantom RTTI
+schemas. Truly unknown objects without usable schemas are different: the converter
+skips them and records their type names and instance count. The document retains no
+editable object for those instances, so serializing its live tree would drop their
+original payloads from disk. Previously, programmatic and forced saves could do
+exactly that; successful completion then erased the unknown-type diagnostics.
+The document-window and modified-documents dialog also returned success when a
+user declined the warning about permanently dropping these objects.
+
+`xiiDocument` now validates every actual synchronous or asynchronous save before
+serialization, asset-metadata preparation or scene-layer switching. Read-only
+and partially loaded documents return a failure. Force bypasses only the dirty
+check. A rejected asynchronous request invokes its valid callback immediately,
+returns an invalid task ID, and leaves any already active save untouched. It does
+not overwrite the pending save result or clear the missing-type diagnostics.
+The header documents rejection and no-work callback semantics.
+
+The two Qt save paths rely on this one validation result instead of asking whether
+to discard unknown data. Save-before-close reports the existing save error once
+and refuses closure. Explicitly choosing the dialog's discard action remains a
+separate user decision. The asset-curator resave and scene-export checks remain
+valid domain-specific guards; this change closes direct callers' bypass.
+
+Three ToolsFoundation persistence regressions use real document-manager ownership,
+command transactions and serialized files. They cover sync/async and forced saves,
+modified and unmodified documents, unchanged disk bytes, dirty state, unknown-type
+diagnostics, absence of save events/hooks, immediate rejection callbacks, rejection
+while an earlier valid save is active, read-only recovery, and reopening saved
+properties. A separate roundtrip unregisters an embedded phantom type before
+loading, verifies reconstruction of its schema and payload, edits it, saves it,
+unregisters it again and verifies the edited property after reopening. Thus absent
+native plugin code alone does not incorrectly forbid safely representable data.
+
+The baseline run, `Workspace/editor-document-save-baseline-tests.log`, reproduces
+real writes that remove skipped data and incorrectly allow read-only saves. After
+the fix, all 23 ToolsFoundation subtests pass in
+`Workspace/editor-document-save-all-tools-tests.log`.
+
+The native Qt fixture creates a real docked document window and drives Save,
+Save-before-close, and the modified-documents dialog. Initial execution exposed a
+test build mismatch: `EditorFrameworkTest` compiled its derived widget without
+C++ RTTI, while Qt Debug callbacks in GuiFoundation dynamically cast receivers.
+The local stack trace resolves to Qt's receiver type assertion during a status-bar
+signal. The test target now uses `xii_link_target_qt`, the same existing helper used
+by production Qt modules, to obtain the required Debug RTTI settings. Temporary
+Windows fault tracing was removed from the source before verification.
+
+
+Final verification on October 13, 2026:
+
+- ToolsFoundationTest, EditorFrameworkTest and Editor build successfully, including
+  the editor plugins, engine process, processor and player dependencies:
+  `Workspace/editor-document-save-integration-build.log`.
+- The Qt test target rebuilds with the standard Debug RTTI settings:
+  `Workspace/editor-document-save-qt-build.log` and
+  `Workspace/editor-document-save-final-test-build.log`.
+- All 23 ToolsFoundation subtests pass:
+  `Workspace/editor-document-save-all-tools-tests.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-document-save-editor-final-tests.log`. The new native fixture
+  verifies unchanged source bytes and dirty state after direct Save, Save-before-
+  close and modified-documents save rejection; one error per failed operation;
+  refused closure; explicit discard without writing; and successful save after
+  clearing the simulated missing-type condition. The existing viewport resize,
+  Play, close/reopen, asset processor and profile workflows still pass.
+- `git diff --check` passes. No Qt dependency, exception header, termination call,
+  compatibility alias or new serialization format was introduced into runtime.
+
+The save guard preserves the original file; it does not reconstruct objects for
+which no usable type schema exists. Users must restore type support and reload or
+perform a faithful migration before writing those documents. The native UI fixture
+simulates that missing-type state on a real asset document; the ToolsFoundation
+fixture separately exercises actual skipped-object loading from DDL. Legacy scene
+component migrations and the broader modernization objective remain incomplete.
+Release, Linux and macOS configurations were not executed for this slice.
