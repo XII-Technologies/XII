@@ -3013,3 +3013,73 @@ project and manual browser-menu interaction were not run. Existing project asset
 were not rewritten by these tests. Resaving refreshes compatible source metadata;
 it does not convert obsolete scene component semantics. Legacy scene migration and
 broader workflow parity remain active work.
+
+### Package Dependencies, Dependency Inspection And Graph Export
+
+The curator hashed package references but omitted them from reverse tracking. Native
+mesh and material references marked solely `Package` were therefore absent from
+usage searches and transitive invalidation. UUID tracking also looked only in the
+main-asset table, leaving sub-asset dependencies unresolved indefinitely. Raw file
+content contributed to thumbnail hashes but was omitted from package hashes.
+
+The existing curator now tracks transform, thumbnail and package categories
+independently, resolves sub-assets to their owning documents, and resolves pending
+references after updating the owner's sub-asset list. Changes, additions, removals
+and transform errors invalidate package consumers transitively. Adding a file can
+repair a cached missing-dependency state. Reference removal handles targets that
+have already disappeared; that uncommon case scans the category's reverse map to
+discard the owner's remaining aliases. Normal untracking removes empty buckets.
+Project shutdown clears all reverse trackers and unresolved-reference sets.
+
+Package references participate in the curator's existing acyclic hashing
+contract, with sub-asset identities normalized for cycle checks and property
+selection validation. This restriction belongs to asset hashing; Core's generic
+graph still permits cycles. Runtime file changes update package and thumbnail
+hashes while leaving the containing asset's transform hash unchanged. Usage
+searches traverse independently of prefilled output sets. The file-import queries
+retain their documented transform-only meaning.
+
+Dependency inspection and reverse queries now live in the cohesive
+`AssetDependencyGraph.cpp`. Forward traversal resolves UUIDs and asset paths,
+visits each owner once, preserves unresolved references as leaves, and continues
+through references already present in the output. The asset processor's refresh
+hull includes package dependencies. DGML export includes package edges, preserves
+missing UUID nodes, and returns `xiiResult` to the existing status dialog.
+
+The shared Foundation DGML writer also discarded direct-write failures and
+buffered flush failures. It now checks both results before reporting success.
+`DGMLWriterTest.cpp` mounts a test-only write-failing data directory to exercise
+successful output, failed opening, failed buffered flushing and failed writes
+larger than the file writer's cache. It does not exhaust disk space or alter file
+permissions. The unchanged writer fails both injected write cases in
+`Workspace/dgml-write-failure-baseline-tests.log`; the repaired Utility suite passes
+all seven subtests in `Workspace/dgml-write-failure-fixed-tests.log`.
+
+`AssetDependencyTrackingTest.cpp` exercises real saved test documents through the
+production curator. Coverage includes consumer-first loading of sub-asset
+references, direct/transitive usage, prefilled output, category-specific reverse
+hulls, cached hash invalidation, runtime-file changes/removal/restoration, package
+cycle detection/recovery, category overlap, reference removal, owner deletion and
+restoration with stable identity, unresolved forward queries, cyclic traversal,
+and real DGML contents and failed export. The saved test document and its manager
+are shared with resave tests in `AssetTestDocument.h/.cpp`.
+
+Verification on October 13, 2026:
+
+- Debug builds of FoundationTest, EditorFrameworkTest, EditorProcessor and Editor
+  pass: `Workspace/dgml-write-failure-fixed-build.log`.
+- All twelve editor subtests pass against the final Foundation DLL:
+  `Workspace/editor-dependency-final-tests.log`. This includes the native viewport
+  stress, picking, Play/close/reopen, duplication, exposed dependencies and resave
+  workflows. Child-engine logs contain no allocation, device-loss or Vulkan
+  validation errors.
+- Earlier stage builds and passing runs remain in
+  `Workspace/editor-package-tracking-lifetime-*` and
+  `Workspace/editor-dependency-graph-*`. The initial tracking run's only error was
+  the deliberate missing-file diagnostic, which the fixture now explicitly expects.
+- `git diff --check` passes. User project assets were not rewritten.
+
+Verification remains Windows Debug/Vulkan. A dedicated external EditorProcessor
+cache-refresh round trip, manual dependency-export dialog interaction, other
+platforms and Release remain unverified. Legacy scene migration and broader
+workflow parity remain active work.
