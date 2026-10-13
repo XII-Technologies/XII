@@ -227,7 +227,13 @@ public:
   xiiTransformStatus TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus CreateThumbnail(const xiiUuid& assetGuid);
 
-  void ResaveAllAssets(xiiStringView sPrefixPath);
+  /// Plans a deterministic dependency-first resave of the selected path subtree. Empty prefix selects
+  /// all assets. Includes transform, thumbnail and package references; external dependencies are already
+  /// supplied by their existing metadata. Cycles fail with an empty output and no document writes.
+  xiiStatus GetAssetResaveOrder(xiiStringView sPrefixPath, xiiDynamicArray<xiiUuid>& out_order) const;
+  /// Main-thread operation. Reports cancellation and save failures. Keeps existing documents open;
+  /// opens and closes other documents through their managers. Does not hold the curator lock while saving.
+  xiiStatus ResaveAllAssets(xiiStringView sPrefixPath);
 
   /// Some assets are not automatically updated by the asset dependency detection (mainly Collections) because of their transitive data dependencies.
   /// So we must update them when the user does something 'significant' like doing TransformAllAssets or a scene export.
@@ -345,7 +351,7 @@ private:
   ///@{
 
   xiiTransformStatus ProcessAsset(xiiAssetInfo* pAssetInfo, const xiiPlatformProfile* pAssetProfile, xiiBitflags<xiiTransformFlags> transformFlags);
-  xiiStatus          ResaveAsset(xiiAssetInfo* pAssetInfo);
+  xiiStatus          ResaveAsset(const xiiUuid& assetGuid);
   /// Returns the asset info for the asset with the given GUID or nullptr if no such asset exists.
   xiiAssetInfo*       GetAssetInfo(const xiiUuid& assetGuid);
   const xiiAssetInfo* GetAssetInfo(const xiiUuid& assetGuid) const;
@@ -443,6 +449,7 @@ private:
   xiiHashSet<xiiUuid> m_SubAssetChanged; ///< Flushed in main thread tick
   xiiHashSet<xiiUuid> m_TransformStateStale;
   xiiHashSet<xiiUuid> m_Updating;
+  bool m_bResavingAssets = false;
 
   // Serialized cache
   mutable xiiCuratorMutex                               m_CachedAssetsMutex; ///< Only locks m_CachedAssets

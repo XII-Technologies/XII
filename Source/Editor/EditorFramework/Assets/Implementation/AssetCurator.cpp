@@ -441,85 +441,6 @@ xiiStatus xiiAssetCurator::TransformAllAssets(xiiBitflags<xiiTransformFlags> tra
   return XII_SUCCESS;
 }
 
-void xiiAssetCurator::ResaveAllAssets(xiiStringView sPrefixPath)
-{
-  xiiHashTable<xiiUuid, xiiAssetInfo*> resaveAssets;
-  resaveAssets.Reserve(m_KnownAssets.GetCount());
-
-  for (auto itAsset = m_KnownAssets.GetIterator(); itAsset.IsValid(); ++itAsset)
-  {
-    if (xiiPathUtils::IsSubPath(sPrefixPath, itAsset.Value()->m_Path.GetAbsolutePath()))
-    {
-      resaveAssets.Insert(itAsset.Key(), itAsset.Value());
-    }
-  }
-
-  xiiProgressRange range("Re-saving Assets", 1 + resaveAssets.GetCount(), true);
-
-  XII_LOCK(m_CuratorMutex);
-
-  xiiDynamicArray<xiiUuid> sortedAssets;
-  sortedAssets.Reserve(resaveAssets.GetCount());
-
-  xiiMap<xiiUuid, xiiSet<xiiUuid>> dependencies;
-
-  xiiSet<xiiUuid> accu;
-
-  for (auto itAsset = resaveAssets.GetIterator(); itAsset.IsValid(); ++itAsset)
-  {
-    auto it2 = dependencies.Insert(itAsset.Key(), xiiSet<xiiUuid>());
-    for (const xiiString& dep : itAsset.Value()->m_Info->m_TransformDependencies)
-    {
-      if (xiiConversionUtils::IsStringUuid(dep))
-      {
-        it2.Value().Insert(xiiConversionUtils::ConvertStringToUuid(dep));
-      }
-    }
-  }
-
-  while (!dependencies.IsEmpty())
-  {
-    bool bDeadEnd = true;
-    for (auto it = dependencies.GetIterator(); it.IsValid(); ++it)
-    {
-      // Are the types dependencies met?
-      if (accu.ContainsSet(it.Value()))
-      {
-        sortedAssets.PushBack(it.Key());
-        accu.Insert(it.Key());
-        dependencies.Remove(it);
-        bDeadEnd = false;
-        break;
-      }
-    }
-
-    if (bDeadEnd)
-    {
-      // Just take the next one in and hope for the best.
-      auto it = dependencies.GetIterator();
-      sortedAssets.PushBack(it.Key());
-      accu.Insert(it.Key());
-      dependencies.Remove(it);
-    }
-  }
-
-  for (xiiUInt32 i = 0; i < sortedAssets.GetCount(); i++)
-  {
-    if (range.WasCanceled())
-      break;
-
-    xiiAssetInfo* pAssetInfo = GetAssetInfo(sortedAssets[i]);
-    XII_ASSERT_DEBUG(pAssetInfo, "Should not happen as data was derived from known assets list.");
-    range.BeginNextStep(xiiPathUtils::GetFileNameAndExtension(pAssetInfo->m_Path.GetDataDirParentRelativePath()));
-
-    auto res = ResaveAsset(pAssetInfo);
-    if (res.Failed())
-    {
-      xiiLog::Error("{0} ({1})", res.GetMessageString(), pAssetInfo->m_Path.GetDataDirParentRelativePath());
-    }
-  }
-}
-
 xiiTransformStatus xiiAssetCurator::TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
 {
   xiiTransformStatus                    res;
@@ -1578,26 +1499,6 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
   return ret;
 }
 
-
-xiiStatus xiiAssetCurator::ResaveAsset(xiiAssetInfo* pAssetInfo)
-{
-  bool         bWasOpen = false;
-  xiiDocument* pDoc     = pAssetInfo->GetManager()->GetDocumentByPath(pAssetInfo->m_Path);
-  if (pDoc)
-    bWasOpen = true;
-  else
-    pDoc = xiiQtEditorApp::GetSingleton()->OpenDocument(pAssetInfo->m_Path.GetAbsolutePath(), xiiDocumentFlags::None);
-
-  if (pDoc == nullptr)
-    return xiiStatus(xiiFmt("Could not open asset document '{0}'", pAssetInfo->m_Path.GetDataDirParentRelativePath()));
-
-  xiiStatus ret = pDoc->SaveDocument(true);
-
-  if (!pDoc->HasWindowBeenRequested() && !bWasOpen)
-    pDoc->GetDocumentManager()->CloseDocument(pDoc);
-
-  return ret;
-}
 
 xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiUuid& assetGuid)
 {

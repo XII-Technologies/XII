@@ -269,7 +269,8 @@ public:
     else if (opt_Resave.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified))
     {
       xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
-        xiiAssetCurator::GetSingleton()->ResaveAllAssets({});
+        if (xiiAssetCurator::GetSingleton()->ResaveAllAssets({}).LogFailure())
+          SetReturnCode(1);
 
         if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
         {
