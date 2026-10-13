@@ -3083,3 +3083,71 @@ Verification remains Windows Debug/Vulkan. A dedicated external EditorProcessor
 cache-refresh round trip, manual dependency-export dialog interaction, other
 platforms and Release remain unverified. Legacy scene migration and broader
 workflow parity remain active work.
+
+### Production Asset Processor Requests And Failure Responses
+
+The dedicated EditorProcessor round trip previously listed as unverified is now
+covered by `AssetProcessorTest.cpp`, using the production executable, IPC channel,
+document managers and resource serialization. Its native surface asset references
+a prefab through the package-only `SlideReaction` property. No test-only asset
+type or alternate processor implementation is loaded into the child process.
+
+`xiiAssetProcessor::PrepareAssetRequest()` assembles the owner identity, document
+path, three hashes, active profile name and all dependency categories through the
+curator. Failed preparation leaves the output unchanged. The worker keeps that
+complete message through process startup and sends it directly; it no longer
+combines previously computed hashes with a profile name queried later at dispatch.
+Request assembly lives in `AssetProcessing.cpp`. Separate hash/hull bookkeeping
+and unused process-task connection/crash wrappers and a dead running flag were
+removed. The removed crash wrapper incorrectly returned client-alive state.
+
+An unknown profile previously logged an error but returned the response's default
+successful `xiiTransformStatus`. The processor now returns a failure with the
+profile name in its message. Failed host setup also sets exit code one, including
+failure to parse the supplied host PID.
+
+The native IPC fixture verifies:
+
+- A warm request and package-only dependency membership through the same request
+  preparation function used by the background worker.
+- An invalid preparation preserving the existing request.
+- A changed prefab updating package hashes without changing the surface's
+  transform hash. On Windows the source's exact original native write timestamp
+  is restored and read back before the second request. Valid processor replies
+  contain no parent/child hash-disagreement warning.
+- Unknown-profile and unknown-asset failures, followed by a successful valid job
+  in the same processor.
+- Deletion of the surface output followed by real child-process transformation.
+  The generated file's asset header hash, changed restitution value and serialized
+  prefab reference are read back and compared with the request and source values.
+
+The test target now depends on EditorProcessor, which already depends on its
+engine process, plugins and converter. A build of the test target therefore also
+builds the production tools it launches. The Startup test's PCH remains the first
+include in its own block.
+
+Verification on October 13, 2026:
+
+- The original processor fails exactly the two unknown-profile assertions in
+  `Workspace/editor-processor-request-baseline-tests.log`. Other new IPC assertions
+  pass in that run.
+- All twelve editor subtests pass with the corrected processor in
+  `Workspace/editor-processor-request-fixed-tests.log`, including the existing
+  native viewport and document workflows.
+- Debug builds of EditorFrameworkTest, its EditorProcessor dependency and Editor
+  pass: `Workspace/editor-processor-request-fixed-build.log`.
+- An explicit hidden process wait captures exit zero for invalid host PID input
+  before the fix (`Workspace/editor-processor-host-baseline-waited.exit`) and exit
+  one afterward (`Workspace/editor-processor-host-fixed.exit`). Both production
+  logs record the expected host-connection failure. A direct PowerShell GUI launch
+  without that wait did not provide a usable exit code and is not exit-code evidence.
+- Engine-process logs contain no GPU allocation, device-loss or Vulkan validation
+  failures. Invalid-profile/asset diagnostics in the processor are intentional.
+  `git diff --check` passes; existing user project assets remain untouched.
+
+Profile switching remains under review: `SetActiveAssetProfileByIndex()` scans the
+filesystem but does not call `ComputeAllDocumentManagerAssetProfileHashes()`, while
+document managers return cached profile hashes. Profile edits and background
+request synchronization need dedicated regression coverage. This checkpoint does
+not claim to resolve that separate issue, legacy scene migration, manual UI parity,
+Release or other platforms.
