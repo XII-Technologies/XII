@@ -136,7 +136,9 @@ public:
   /// Removed folders discard their complete tracked subtree. File removal events precede folder
   /// removal events, and descendant folders are reported before their parents.
   /// \param sAbsolutePath File or folder to check for changes.
-  void NotifyOfChange(xiiStringView sAbsolutePath);
+  /// \param bForceFileChanged Set after a known write to invalidate the content hash and notify
+  /// listeners even if the filesystem reports the same modification timestamp.
+  void NotifyOfChange(xiiStringView sAbsolutePath, bool bForceFileChanged = false);
 
   /// Check an existing folder recursively for changes.
   /// \param sAbsolutePath Absolute path to an existing folder in the model.
@@ -183,8 +185,8 @@ private:
   void RemoveStaleFileInfos();
 
   void          OnAssetWatcherEvent(const xiiFileSystemWatcherEvent& e);
-  xiiFileStatus HandleSingleFile(xiiDataDirPath absolutePath, bool bRecurseIntoFolders);
-  xiiFileStatus HandleSingleFile(xiiDataDirPath absolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders);
+  xiiFileStatus HandleSingleFile(xiiDataDirPath absolutePath, bool bRecurseIntoFolders, bool bForceFileChanged = false);
+  xiiFileStatus HandleSingleFile(xiiDataDirPath absolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders, bool bForceFileChanged = false);
 
   void RemoveFileOrFolder(const xiiDataDirPath& absolutePath, bool bRecurseIntoFolders);
 

@@ -198,7 +198,7 @@ const xiiFileSystemModel::LockedFolders xiiFileSystemModel::GetFolders() const
   return LockedFolders(m_FilesMutex, &m_ReferencedFolders);
 }
 
-void xiiFileSystemModel::NotifyOfChange(xiiStringView sAbsolutePath)
+void xiiFileSystemModel::NotifyOfChange(xiiStringView sAbsolutePath, bool bForceFileChanged)
 {
   if (!m_bInitialized)
     return;
@@ -216,7 +216,7 @@ void xiiFileSystemModel::NotifyOfChange(xiiStringView sAbsolutePath)
   if (!folder.IsValid())
     return;
 
-  HandleSingleFile(std::move(folder), true);
+  HandleSingleFile(std::move(folder), true, bForceFileChanged);
 }
 
 void xiiFileSystemModel::CheckFileSystem()
@@ -747,9 +747,11 @@ void xiiFileSystemModel::OnAssetWatcherEvent(const xiiFileSystemWatcherEvent& e)
 {
   switch (e.m_Type)
   {
+    case xiiFileSystemWatcherEvent::Type::FileChanged:
+      NotifyOfChange(e.m_sPath, true);
+      break;
     case xiiFileSystemWatcherEvent::Type::FileAdded:
     case xiiFileSystemWatcherEvent::Type::FileRemoved:
-    case xiiFileSystemWatcherEvent::Type::FileChanged:
     case xiiFileSystemWatcherEvent::Type::DirectoryAdded:
     case xiiFileSystemWatcherEvent::Type::DirectoryRemoved:
       NotifyOfChange(e.m_sPath);
@@ -757,7 +759,7 @@ void xiiFileSystemModel::OnAssetWatcherEvent(const xiiFileSystemWatcherEvent& e)
   }
 }
 
-xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, bool bRecurseIntoFolders)
+xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, bool bRecurseIntoFolders, bool bForceFileChanged)
 {
   FILESYSTEM_PROFILE("HandleSingleFile");
 
@@ -772,7 +774,7 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, 
     sCorrectCasingPath.ChangeFileNameAndExtension(Stats.m_sName);
     xiiDataDirPath correctCasingPath(sCorrectCasingPath.GetView(), m_DataDirRoots, absolutePath.GetDataDirIndex());
     // Add new casing
-    xiiFileStatus res = HandleSingleFile(std::move(correctCasingPath), Stats, bRecurseIntoFolders);
+    xiiFileStatus res = HandleSingleFile(std::move(correctCasingPath), Stats, bRecurseIntoFolders, bForceFileChanged);
     // Remove old casing
     RemoveFileOrFolder(absolutePath, bRecurseIntoFolders);
     return res;
@@ -785,11 +787,11 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, 
     return {};
   }
 
-  return HandleSingleFile(std::move(absolutePath), Stats, bRecurseIntoFolders);
+  return HandleSingleFile(std::move(absolutePath), Stats, bRecurseIntoFolders, bForceFileChanged);
 }
 
 
-xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders)
+xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders, bool bForceFileChanged)
 {
   FILESYSTEM_PROFILE("HandleSingleFile2");
 
@@ -823,7 +825,7 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, 
       XII_LOCK(m_FilesMutex);
       auto           it    = m_ReferencedFiles.FindOrAdd(absolutePath, &bExisted);
       xiiFileStatus& value = it.Value();
-      bFileChanged         = !value.m_LastModified.Compare(FileStat.m_LastModificationTime, xiiTimestamp::CompareMode::Identical);
+      bFileChanged         = bForceFileChanged || !value.m_LastModified.Compare(FileStat.m_LastModificationTime, xiiTimestamp::CompareMode::Identical);
       if (bFileChanged)
       {
         value.m_uiHash = 0;
