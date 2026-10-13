@@ -78,11 +78,12 @@ xiiResult xiiDGMLGraphWriter::WriteGraphToFile(xiiStringView sFileName, const xi
     if (!fileWriter.Open(sFileName.GetData(sTemp)).Succeeded())
       return XII_FAILURE;
 
-    fileWriter.WriteBytes(sGraph.GetData(), sGraph.GetElementCount()).IgnoreResult();
+    XII_SUCCEED_OR_RETURN(fileWriter.WriteBytes(sGraph.GetData(), sGraph.GetElementCount()));
 
+    const xiiResult result = fileWriter.Flush();
     fileWriter.Close();
 
-    return XII_SUCCESS;
+    return result;
   }
 
   return XII_FAILURE;
