@@ -127,10 +127,27 @@ void xiiDocument::SetReadOnly(bool b)
   s_EventsAny.Broadcast(e);
 }
 
+xiiStatus xiiDocument::ValidateSaveDocument() const
+{
+  if (IsReadOnly())
+    return xiiStatus("Cannot save a read-only document.");
+
+  if (m_uiUnknownObjectTypeInstances > 0U)
+  {
+    xiiStringBuilder types;
+    for (const auto& type : m_UnknownObjectTypes)
+      types.AppendWithSeparator(", ", type);
+    return xiiStatus(xiiFmt("Cannot save: {} objects of unknown types could not be loaded ({}). Restore the required plugins or migrate the document before saving.", m_uiUnknownObjectTypeInstances, types));
+  }
+  return XII_SUCCESS;
+}
+
 xiiStatus xiiDocument::SaveDocument(bool bForce)
 {
   if (!IsModified() && !bForce)
     return XII_SUCCESS;
+
+  XII_SUCCEED_OR_RETURN(ValidateSaveDocument());
 
   // In the unlikely event that we manage to edit a doc and call save again while
   // an async save is already in progress we block on the first save to ensure
@@ -156,6 +173,14 @@ xiiTaskGroupID xiiDocument::SaveDocumentAsync(AfterSaveCallback callback, bool b
 {
   if (!IsModified() && !bForce)
     return xiiTaskGroupID();
+
+  const auto status = ValidateSaveDocument();
+  if (status.Failed())
+  {
+    if (callback.IsValid())
+      callback(this, status);
+    return xiiTaskGroupID();
+  }
 
   m_ActiveSaveTask = InternalSaveDocument(callback);
   return m_ActiveSaveTask;

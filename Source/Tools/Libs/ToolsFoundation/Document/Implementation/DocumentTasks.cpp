@@ -44,10 +44,6 @@ void xiiAfterSaveDocumentTask::Execute()
     m_document->s_EventsAny.Broadcast(e);
 
     m_document->SetModified(false);
-
-    // after saving once, this information is pointless
-    m_document->m_uiUnknownObjectTypeInstances = 0;
-    m_document->m_UnknownObjectTypes.Clear();
   }
 
   if (m_document->m_LastSaveResult.Succeeded())

@@ -109,11 +109,14 @@ public:
   xiiStringView GetDocumentPath() const { return m_sDocumentPath; }
 
   /// Saves the document, if it is modified.
-  /// If bForce is true, the document will be written, even if it is not considered modified.
+  /// Read-only documents and documents with objects skipped during loading cannot be written.
+  /// bForce bypasses only the modified-state check, never these validation failures.
   xiiStatus SaveDocument(bool bForce = false);
   /// Callback type for asynchronous save operations.
   using AfterSaveCallback = xiiDelegate<void(xiiDocument*, xiiStatus)>;
-  /// Saves the document asynchronously. Calls the callback when done.
+  /// Saves asynchronously and calls the callback on the main thread when done.
+  /// If validation fails, calls a valid callback immediately with failure and returns an invalid task ID.
+  /// If no save is needed, returns an invalid task ID without invoking the callback.
   xiiTaskGroupID SaveDocumentAsync(AfterSaveCallback callback, bool bForce = false);
   /// Updates the document path after a rename operation.
   void DocumentRenamed(xiiStringView sNewDocumentPath);
@@ -318,6 +321,7 @@ private:
   friend class xiiSaveDocumentTask;
   friend class xiiAfterSaveDocumentTask;
 
+  xiiStatus ValidateSaveDocument() const;
   void SetupDocumentInfo(const xiiDocumentTypeDescriptor* pTypeDescriptor);
 
   /// The document manager that owns this document.
