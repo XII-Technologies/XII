@@ -371,12 +371,18 @@ xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlac
   auto* runtime = GetBuiltinRuntime();
   bool  changed = false;
   if (runtime->m_Instance.Synchronize(m_hRenderPipeline, &changed).Failed())
+  {
+    InvalidateTemporalHistory();
     return XII_FAILURE;
+  }
   if (changed)
     InvalidateTemporalHistory();
   RunDynamicResolutionPID();
   runtime->BeginFrame(shadows);
-  return runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);
+  const xiiResult result = runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);
+  if (result.Failed())
+    InvalidateTemporalHistory();
+  return result;
 }
 
 void xiiView::SetPipelineParameter(xiiStringView name, const xiiVariant& value)
