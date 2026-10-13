@@ -2,8 +2,23 @@
 
 #include <ToolsFoundation/ToolsFoundationPCH.h>
 
+#include <Foundation/Math/Math.h>
 #include <Foundation/Types/Status.h>
 #include <ToolsFoundation/Reflection/VariantStorageAccessor.h>
+
+namespace
+{
+  bool TryGetArrayIndex(const xiiVariant& index, xiiUInt32& out_index)
+  {
+    if (!index.IsNumber())
+      return false;
+    const double value = index.ConvertTo<double>();
+    if (!xiiMath::IsFinite(value) || value < 0 || value > xiiMath::MaxValue<xiiUInt32>() || value != xiiMath::Floor(value))
+      return false;
+    out_index = static_cast<xiiUInt32>(value);
+    return true;
+  }
+} // namespace
 
 xiiVariantStorageAccessor::xiiVariantStorageAccessor(xiiStringView sProperty, xiiVariant& value) :
   m_sProperty(sProperty), m_Value(value)
@@ -17,6 +32,8 @@ xiiVariantStorageAccessor::xiiVariantStorageAccessor(xiiStringView sProperty, co
 
 xiiVariant xiiVariantStorageAccessor::GetValue(xiiVariant index, xiiStatus* pRes) const
 {
+  if (pRes)
+    *pRes = XII_SUCCESS;
   if (!index.IsValid())
     return m_Value;
 
@@ -28,9 +45,9 @@ xiiVariant xiiVariantStorageAccessor::GetValue(xiiVariant index, xiiStatus* pRes
         *pRes = xiiStatus(xiiFmt("Index '{0}' for property '{1}' is invalid as the property is not an array.", index, m_sProperty));
       return xiiVariant();
     }
-    const xiiVariantArray& values  = m_Value.Get<xiiVariantArray>();
-    xiiUInt32              uiIndex = index.ConvertTo<xiiUInt32>();
-    if (uiIndex < values.GetCount())
+    const xiiVariantArray& values = m_Value.Get<xiiVariantArray>();
+    xiiUInt32              uiIndex;
+    if (TryGetArrayIndex(index, uiIndex) && uiIndex < values.GetCount())
     {
       return values[uiIndex];
     }
@@ -66,13 +83,13 @@ xiiStatus xiiVariantStorageAccessor::SetValue(const xiiVariant& value, xiiVarian
 
   if (index.IsNumber() && m_Value.IsA<xiiVariantArray>())
   {
-    xiiVariantArray& values  = m_Value.GetWritable<xiiVariantArray>();
-    xiiUInt32        uiIndex = index.ConvertTo<xiiUInt32>();
-    if (uiIndex >= values.GetCount())
+    xiiUInt32 uiIndex;
+    if (!TryGetArrayIndex(index, uiIndex) || uiIndex >= m_Value.Get<xiiVariantArray>().GetCount())
     {
-      return xiiStatus(xiiFmt("Index '{0}' for property '{1}' is out of bounds.", uiIndex, m_sProperty));
+      return xiiStatus(xiiFmt("Index '{0}' for property '{1}' is out of bounds.", index, m_sProperty));
     }
-    values[uiIndex] = value;
+    xiiVariantArray& values = m_Value.GetWritable<xiiVariantArray>();
+    values[uiIndex]         = value;
     return XII_SUCCESS;
   }
   else if (index.IsA<xiiString>() && m_Value.IsA<xiiVariantDictionary>())
@@ -100,6 +117,7 @@ xiiInt32 xiiVariantStorageAccessor::GetCount() const
 
 xiiStatus xiiVariantStorageAccessor::GetKeys(xiiDynamicArray<xiiVariant>& out_keys) const
 {
+  out_keys.Clear();
   if (m_Value.IsA<xiiVariantArray>())
   {
     const xiiVariantArray& values = m_Value.Get<xiiVariantArray>();
@@ -127,17 +145,13 @@ xiiStatus xiiVariantStorageAccessor::InsertValue(const xiiVariant& index, const 
 {
   if (index.IsNumber() && m_Value.IsA<xiiVariantArray>())
   {
-    xiiVariantArray& values = m_Value.GetWritable<xiiVariantArray>();
-    xiiInt32         iIndex = index.ConvertTo<xiiInt32>();
-    const xiiInt32   iCount = (xiiInt32)values.GetCount();
-    if (iIndex == -1)
-    {
-      iIndex = iCount;
-    }
-    if (iIndex > iCount)
-      return xiiStatus(xiiFmt("InsertValue: index '{0}' for property '{1}' is out of bounds.", iIndex, m_sProperty));
-
-    values.InsertAt(iIndex, value);
+    const auto count   = m_Value.Get<xiiVariantArray>().GetCount();
+    xiiUInt32  uiIndex = count;
+    // -1 is the established append sentinel. Other negatives, fractions and narrowing overflow
+    // must not wrap or truncate into valid positions.
+    if (index.ConvertTo<double>() != -1.0 && (!TryGetArrayIndex(index, uiIndex) || uiIndex > count))
+      return xiiStatus(xiiFmt("InsertValue: index '{0}' for property '{1}' is out of bounds.", index, m_sProperty));
+    m_Value.GetWritable<xiiVariantArray>().InsertAt(uiIndex, value);
     return XII_SUCCESS;
   }
   else if (index.IsA<xiiString>() && m_Value.IsA<xiiVariantDictionary>())
@@ -157,12 +171,10 @@ xiiStatus xiiVariantStorageAccessor::RemoveValue(const xiiVariant& index)
 {
   if (index.IsNumber() && m_Value.IsA<xiiVariantArray>())
   {
-    xiiVariantArray& values  = m_Value.GetWritable<xiiVariantArray>();
-    const xiiUInt32  uiIndex = index.ConvertTo<xiiUInt32>();
-    if (uiIndex > values.GetCount())
-      return xiiStatus(xiiFmt("RemoveValue: index '{0}' for property '{1}' is out of bounds.", uiIndex, m_sProperty));
-
-    values.RemoveAtAndCopy(uiIndex);
+    xiiUInt32 uiIndex;
+    if (!TryGetArrayIndex(index, uiIndex) || uiIndex >= m_Value.Get<xiiVariantArray>().GetCount())
+      return xiiStatus(xiiFmt("RemoveValue: index '{0}' for property '{1}' is out of bounds.", index, m_sProperty));
+    m_Value.GetWritable<xiiVariantArray>().RemoveAtAndCopy(uiIndex);
     return XII_SUCCESS;
   }
   else if (index.IsA<xiiString>() && m_Value.IsA<xiiVariantDictionary>())
@@ -182,12 +194,12 @@ xiiStatus xiiVariantStorageAccessor::MoveValue(const xiiVariant& oldIndex, const
 {
   if (m_Value.IsA<xiiVariantArray>() && oldIndex.IsNumber() && newIndex.IsNumber())
   {
-    xiiVariantArray& values     = m_Value.GetWritable<xiiVariantArray>();
-    xiiUInt32        uiOldIndex = oldIndex.ConvertTo<xiiUInt32>();
-    xiiUInt32        uiNewIndex = newIndex.ConvertTo<xiiUInt32>();
-    if (uiOldIndex < values.GetCount() && uiNewIndex <= values.GetCount())
+    const auto count = m_Value.Get<xiiVariantArray>().GetCount();
+    xiiUInt32  uiOldIndex, uiNewIndex;
+    if (TryGetArrayIndex(oldIndex, uiOldIndex) && TryGetArrayIndex(newIndex, uiNewIndex) && uiOldIndex < count && uiNewIndex <= count)
     {
-      xiiVariant value = values[uiOldIndex];
+      xiiVariantArray& values = m_Value.GetWritable<xiiVariantArray>();
+      xiiVariant       value  = values[uiOldIndex];
       values.RemoveAtAndCopy(uiOldIndex);
       if (uiNewIndex > uiOldIndex)
       {
@@ -198,7 +210,7 @@ xiiStatus xiiVariantStorageAccessor::MoveValue(const xiiVariant& oldIndex, const
     }
     else
     {
-      return xiiStatus(xiiFmt("MoveValue: index '{0}' or '{1}' for property '{2}' is out of bounds.", uiOldIndex, uiNewIndex, m_sProperty));
+      return xiiStatus(xiiFmt("MoveValue: index '{0}' or '{1}' for property '{2}' is out of bounds.", oldIndex, newIndex, m_sProperty));
     }
   }
   else if (m_Value.IsA<xiiVariantDictionary>() && oldIndex.IsA<xiiString>() && newIndex.IsA<xiiString>())
@@ -208,9 +220,9 @@ xiiStatus xiiVariantStorageAccessor::MoveValue(const xiiVariant& oldIndex, const
     const xiiString&      sNewIndex = newIndex.Get<xiiString>();
 
     if (!values.Contains(sOldIndex))
-      return xiiStatus(xiiFmt("MoveValue: old index '{0}' for property '{2}' does not exist.", sOldIndex, m_sProperty));
+      return xiiStatus(xiiFmt("MoveValue: old index '{0}' for property '{1}' does not exist.", sOldIndex, m_sProperty));
     else if (values.Contains(sNewIndex))
-      return xiiStatus(xiiFmt("MoveValue: new index '{0}' for property '{2}' already exists.", sNewIndex, m_sProperty));
+      return xiiStatus(xiiFmt("MoveValue: new index '{0}' for property '{1}' already exists.", sNewIndex, m_sProperty));
 
     values.Insert(sNewIndex, values[sOldIndex]);
     values.Remove(sOldIndex);
