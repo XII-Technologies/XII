@@ -2770,6 +2770,16 @@ This verification uses an isolated production Editor test project. The existing
 user project and its preferences were left untouched. Release, other graphics
 backends and other operating systems have not been tested for this repair.
 
+The repair was reverified against the current Debug binaries on October 13, 2026.
+All three `RenderGraphResources` regressions pass with Vulkan GPU-assisted
+validation (`Workspace/editor-oom-current-gpu-tests.log`); the changing-resolution
+test retains at most two idle allocations per view. The production Qt
+`EditorIntegration` test also passes (`Workspace/editor-oom-current-editor-tests.log`),
+including 160 native viewport frames with 96 changing sizes, the final 1280 by 720
+capture, and Play/close/reopen. Its child-engine logs contain no out-of-device-memory,
+device-loss, allocation-failure or Vulkan validation errors. Both commands return
+zero. No further implementation change was required for this verification.
+
 ### Scene Hierarchy Duplication
 
 Duplicate Special's grouping option previously reached an unimplemented assertion,
