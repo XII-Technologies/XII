@@ -3379,3 +3379,73 @@ not deliberately hold a long-running managed job open during commit. Release,
 other backends and other operating systems remain untested. Broader workflow
 verification, legacy scene migration and the deformation paths recorded above
 remain outstanding; this checkpoint does not establish full goal completion.
+
+### Temporal History Allocation And TAA Resize Retention
+
+The follow-up allocation audit found a second unbounded retention path outside the
+render-graph cache. TAA appended both replaced history textures to a per-view
+`m_RetiredTAAHistoryBuffers` array on every resolution change and never released
+them until the view was destroyed. The earlier graph-cache retention regression
+did not cover this separately owned state. The array and its append path have now
+been removed. Graph imports retain textures while required by the current graph;
+GAL releases native images through its existing queue-completion-aware deferred
+deletion. No additional retirement queue was introduced.
+
+History texture allocation previously happened in void graph-setup callbacks.
+The shared helper asserted on failure, and several direct allocation loops then
+dereferenced the result without a failure path. Allocation is now prepared before
+the relevant built-in stage registers callbacks. `BuiltinRenderPipelineMemory.cpp`
+owns the stage-specific preparation for sixteen ping-pong texture pairs and the
+exposure buffer. Screen-space reflection histories are prepared in their actual
+producer stage, OpaqueComposition. The pass setup callbacks only import the
+successfully prepared objects.
+
+The small private memory helper reuses a pair only when both full descriptions
+match. It allocates replacements locally and publishes them together after both
+succeed. The internal factory parameter permits deterministic failure tests with
+real GAL textures without exhausting physical GPU memory. On failure, stage
+preparation releases its obsolete pair, invalidates that history, logs its name,
+dimensions and format, and returns `XII_FAILURE`. The view invalidates all built-in
+and resource-pass histories when synchronization or pipeline construction fails.
+The existing render-world failure path stops before graph execution. Missing
+devices are queried through `HasDefaultDevice()` before the asserting getter.
+
+Verification on October 13, 2026:
+
+- Debug builds of EditorEngineProcessFrameworkTest, GraphicsCoreTest,
+  EditorFrameworkTest, EditorProcessor and Editor pass:
+  `Workspace/editor-temporal-memory-final-build.log`.
+- All 63 native engine-process subtests pass with Vulkan synchronization validation:
+  `Workspace/editor-temporal-memory-native-tests.log`. The rendered history tests
+  also pass with GPU-assisted validation in `Workspace/editor-temporal-memory-tests.log`;
+  that earlier run subsequently fails the new missing-device fixture because its
+  initial implementation called the asserting getter before checking availability.
+- All three new TemporalMemory regressions pass with GPU-assisted validation on
+  final production binaries: `Workspace/editor-temporal-memory-final-tests.log`.
+  They check exact pair reuse without allocation, failures of either allocation,
+  partial replacement release, resize and format changes, and recovery. A 64-size
+  TAA fixture uses exported graph textures to verify the original allocation loses
+  its runtime ownership. Resource-backed failure fixtures drive `world.Update()`
+  and check history invalidation for Lighting, OpaqueComposition, AutoExposure and
+  TAA, followed by a successful TAA build.
+- Temporarily reinstating the old lifetime-long TAA retention produces 63 ownership
+  failures, one per changed size:
+  `Workspace/editor-temporal-memory-control-tests.log`. The command automatically
+  restores both production source files byte-for-byte. The final build and focused
+  tests use the restored implementation.
+- All 21 GraphicsCore subtests pass:
+  `Workspace/editor-temporal-memory-core-tests.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-temporal-memory-editor-tests.log`, including the production
+  viewport's 160-frame resize stress, capture and Play/close/reopen. Its engine logs
+  contain no allocation, device-loss or Vulkan validation errors. `git diff --check`
+  passes. Existing user assets and preferences were not rewritten.
+
+This corrects TAA retention and temporal allocation propagation, not every
+persistent renderer allocation. The audit also identified lifetime-long retention
+of replaced calibrated sensor outputs in `m_RetiredSensorOutputTextures`; that
+separate path still needs migration and native coverage. Deliberate physical GPU
+exhaustion was not performed. Pair-allocation null results and missing-device
+failures are deterministic fixture inputs. Release, other backends and other
+operating systems remain untested, and the broader editor modernization goal
+remains incomplete.
