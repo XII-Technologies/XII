@@ -538,6 +538,10 @@ xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xi
   xiiFileReader file;
   if (file.Open(sAbsolutePath2) == XII_FAILURE)
   {
+    // A watcher/stat snapshot can outlive a file removed by the user. That is a normal read
+    // failure, not a locked/corrupt document, and must not recreate its model entry.
+    if (!xiiOSFile::ExistsFile(sAbsolutePath2))
+      return XII_FAILURE;
     MarkFileLocked(sAbsolutePath2);
     xiiLog::Error("Failed to open file '{0}'", sAbsolutePath2);
     return XII_FAILURE;

@@ -83,7 +83,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, DataDirPath)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Path to DataDir Itself")
   {
-    xiiString                    sDataDirView = (const char*)u8"/Source/XII/Data/Sämples/Testing Chämbers";
+    xiiString                    sDataDirView = (const char*)u8"/Source/XII/Data/SÃ¤mples/Testing ChÃ¤mbers";
     xiiHybridArray<xiiString, 2> rootFolders;
     rootFolders.PushBack(sDataDirView);
 
@@ -94,7 +94,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, DataDirPath)
     xiiStringView sDD = path.GetDataDir();
     XII_TEST_STRING(sDD, sDataDirView);
     xiiStringView sPR = path.GetDataDirParentRelativePath();
-    XII_TEST_STRING(sPR, (const char*)u8"Testing Chämbers");
+    XII_TEST_STRING(sPR, (const char*)u8"Testing ChÃ¤mbers");
     xiiStringView sR = path.GetDataDirRelativePath();
     XII_TEST_STRING(sR, "");
     xiiUInt32 uiIndex = path.GetDataDirIndex();
@@ -982,6 +982,13 @@ void FileSystemModelTest()
     xiiFileChangedEvent expected[] = {xiiFileChangedEvent(MakePath(sFilePathNew), stat, xiiFileChangedEvent::Type::DocumentLinked)};
     CompareFiles(xiiMakeArrayPtr(expected));
     ClearFiles();
+    xiiStringBuilder missing(sOutputFolder);
+    missing.AppendPath("RemovedBeforeRead.txt");
+    bool       called = false;
+    const auto before = xiiFileSystemModel::GetSingleton()->GetFiles()->GetCount();
+    XII_TEST_BOOL(xiiFileSystemModel::GetSingleton()->ReadDocument(missing, [&](const xiiFileStatus&, xiiStreamReader&) { called = true; }).Failed());
+    XII_TEST_BOOL(!called);
+    XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFiles()->GetCount(), before);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "LinkDocument")
