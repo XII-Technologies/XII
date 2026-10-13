@@ -6,3 +6,4 @@
 
 class xiiQtEditorApp;
 void TestAssetProfiles(xiiQtEditorApp& editor, xiiStringView projectDirectory);
+void TestAssetProfileDialog(xiiStringView projectDirectory);

@@ -10,6 +10,7 @@
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
 
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
@@ -47,6 +48,18 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
   editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
   XII_SCOPE_EXIT(editor->ShutdownEditor());
   XII_TEST_BOOL(editor->IsRunning());
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Graceful processor stop and restart")
+  {
+    auto* processor = xiiAssetProcessor::GetSingleton();
+    processor->StartProcessTask();
+    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running);
+    processor->StopProcessTask(false);
+    processor->StopProcessTask(false, true);
+    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+    processor->StartProcessTask();
+    processor->StopProcessTask(false, true);
+    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+  }
   xiiStringBuilder preferenceRoot = xiiApplicationServices::GetSingleton()->GetApplicationPreferencesFolder();
   preferenceRoot.Trim("/\\");
   preferences.Trim("/\\");
@@ -153,6 +166,7 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native asset profile evaluation and switching")
     {
       TestAssetProfiles(*editor, project.GetFileDirectory());
+      TestAssetProfileDialog(project.GetFileDirectory());
     }
     editor->CloseProject();
     pump();
