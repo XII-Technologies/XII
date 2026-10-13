@@ -130,8 +130,23 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         xiiQtUiServices::s_TickEvent.Broadcast(tick);
         if (!XII_TEST_BOOL(scene->SendMessageToEngine(&pick)))
           return;
-        if (!XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID,
-                                                                                                      xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), xiiTime::MakeFromSeconds(2), &callback)))
+        // A cold first frame can spend several seconds compiling native pipeline state. A short
+        // IPC observation timeout does not mean that this outstanding request has failed. Poll it
+        // against the existing overall readiness deadline before submitting another frame/request.
+        xiiResult reply = XII_FAILURE;
+        auto* connection = xiiEditorEngineProcessConnection::GetSingleton();
+        while (reply.Failed() && elapsed.elapsed() < 10000)
+        {
+          const auto timeout = xiiTime::MakeFromMilliseconds(xiiMath::Min<xiiInt64>(2000, 10000 - elapsed.elapsed()));
+          reply = connection->WaitForDocumentMessage(sceneID, xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), timeout, &callback);
+          if (reply.Failed())
+          {
+            connection->Update();
+            if (connection->IsProcessCrashed())
+              break;
+          }
+        }
+        if (!XII_TEST_RESULT(reply))
           return;
         QThread::msleep(1);
       }

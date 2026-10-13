@@ -2,6 +2,7 @@
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 #include <EditorFrameworkTest/AssetDependenciesTest.h>
+#include <EditorFrameworkTest/AssetResaveTest.h>
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
 
@@ -139,6 +140,7 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     XII_TEST_BOOL(closedWindow.isNull());
     TestSceneWindow(*editor, project.GetFileDirectory());
     TestExposedAssetDependencies(*editor, project.GetFileDirectory());
+    TestAssetResave(*editor, project.GetFileDirectory());
     editor->CloseProject();
     pump();
     XII_TEST_BOOL(!xiiToolsProject::IsProjectOpen());
