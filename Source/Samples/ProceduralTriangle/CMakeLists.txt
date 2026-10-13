@@ -14,6 +14,10 @@ target_link_libraries(${PROJECT_NAME}
   GraphicsCore
 )
 
+add_dependencies(${PROJECT_NAME}
+  InspectorPlugin
+)
+
 set(PROCEDURAL_TRIANGLE_DATA_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/../../../Data/Samples/ProceduralTriangle")
 file(GLOB_RECURSE PROCEDURAL_TRIANGLE_DATA "${CMAKE_CURRENT_SOURCE_DIR}/../../../Data/Samples/ProceduralTriangle/*")
 

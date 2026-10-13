@@ -5,6 +5,7 @@
 
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/DirectoryWatcher.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Logging/ConsoleWriter.h>
@@ -40,6 +41,12 @@
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 #include <Shaders/ProceduralTriangleConstants.h>
+
+#if XII_ENABLED(XII_SUPPORTS_DIRECTORY_WATCHER)
+#  define USE_DIRECTORY_WATCHER XII_ON
+#else
+#  define USE_DIRECTORY_WATCHER XII_OFF
+#endif
 
 xiiCommandLineOptionInt opt_MonitorId("ProceduralTriangle", "-monitor", "The monitor to launch the application winodw.", 0U);
 
@@ -102,6 +109,20 @@ public:
       m_pWindow->GetInputDevice()->SetShowMouseCursor(true);
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
     }
+
+    // Reload resources if modified
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    {
+      m_bFileModified = false;
+
+      m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiProceduralTriangleApp::OnFileChanged, this));
+
+      if (m_bFileModified)
+      {
+        xiiResourceManager::ReloadAllResources(false);
+      }
+    }
+#endif
 
     // Perform rendering.
     {
@@ -176,9 +197,15 @@ public:
   virtual void AfterCoreSystemsStartup() override
   {
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/ProceduralTriangle";
+
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
+    m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
+#endif
 
     xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
@@ -280,6 +307,11 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    m_pDirectoryWatcher->CloseDirectory();
+    m_pDirectoryWatcher.Clear();
+#endif
+
     m_RenderGraphContext.Shutdown();
 
     m_pSwapChain.Clear();
@@ -504,6 +536,18 @@ private:
     cmd.EndDebugGroup();
   }
 
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+  void OnFileChanged(xiiStringView sFileName, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type)
+  {
+    if (action == xiiDirectoryWatcherAction::Modified && type == xiiDirectoryWatcherType::File)
+    {
+      xiiLog::Info("File modified: '{0}'.", sFileName);
+
+      m_bFileModified = true;
+    }
+  }
+#endif
+
 private:
   xiiSharedPtr<xiiGALDevice>    m_pDevice;
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
@@ -511,6 +555,11 @@ private:
   xiiRenderGraphContext   m_RenderGraphContext;
   xiiUInt64               m_uiFrameIndex = 0ULL;
   xiiUniquePtr<xiiWindow> m_pWindow;
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+  xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
+  bool                              m_bFileModified = false;
+#endif
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiProceduralTriangleApp);
