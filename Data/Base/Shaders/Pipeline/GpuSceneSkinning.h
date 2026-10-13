@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // XII Engine - native mesh-space palette evaluation shared by all GPU-scene vertex consumers.
 #pragma once
 

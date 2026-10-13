@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // XII Engine - canonical surface attributes and transforms for mesh and indexed rasterization.
 #pragma once
 #include <Shaders/Pipeline/GpuSceneSkinning.h>

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // XII Engine - common canonical surface loading and alpha coverage.
 
 #pragma once

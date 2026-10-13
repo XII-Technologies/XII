@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // XII Engine - canonical surface vertices pulled from resident meshlet indices.
 #pragma once
 

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // XII Engine - shared canonical GPU-scene surface vertex interface.
 
 #pragma once
