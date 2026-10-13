@@ -3295,3 +3295,87 @@ These changes do not establish arbitrary concurrent profile editing or resolve t
 other outstanding editor workflows, legacy scene migrations and deformation paths
 recorded above. Release, other backends and other operating systems remain untested
 for this checkpoint. Existing user projects and assets were not rewritten.
+
+### Staged Profile Editing And Persistence
+
+The profile dialog previously applied UUID-sorted bindings directly to live native
+objects before saving. Multiple additions could therefore disagree with the
+selected document row. Deleting the active profile failed silently, property
+updates could overlap background hashing, and failed writes still closed the
+dialog. An unused property-change handler retained another path to those raw
+native pointers.
+
+The dialog now owns only its document draft and profile UUIDs. It derives the
+complete proposed native collection in document order when committing. Selection
+and the original active label follow document identities through insertion and
+deletion. Removing the selected target falls back to Default. Cancellation does
+not change native objects or files. The binding map and unused live-edit handler
+were removed. Case-only renaming excludes the object being renamed from the
+uniqueness check. The project action no longer performs a second reevaluation.
+
+`ApplyAssetProfiles()` validates names, uniqueness, Default and the active index,
+clones the caller-owned input, and writes fully flushed staged runtime files and
+DDL definitions. It stops dispatch and gracefully joins outstanding processor
+work, then stops background hashing outside the curator mutex. Files are installed
+with originals retained as uniquely named backups; definitions are installed last.
+Removed profiles' runtime files participate in the same rollback. Live definitions
+are replaced under the mutex only after installation succeeds. The loaded-file
+fingerprint is updated and the existing platform notification reevaluates assets
+and updates the engine process. Previously running processing is restarted.
+
+If installation fails, installed files are rolled back in reverse order. The
+dialog reports the failing path and retains its draft for retry. Failed recovery
+reports retained backup paths. Successful saves remove backups; staged-file cleanup
+failures are logged. Runtime cleanup never derives a removal path from an invalid
+old native profile name. The private persistence implementation is separated into
+`AssetProfilePersistence.cpp`; no generic transaction framework was introduced.
+
+`xiiPlatformProfile::SaveForRuntime()` previously ignored writes made by the chunk
+writer and the file writer's destructor. It now serializes through existing memory
+streams, then checks the actual file copy and final flush. The curator's runtime
+save API returns `xiiResult`, and its callers check that result. Initial default
+save failures are logged. Runtime chunk and reflected DDL formats are unchanged.
+
+The integrated rollback test exposed a Windows watcher defect. Casing reconciliation
+treated an unchanged leaf at a rapidly replaced path as proof of a case-only rename,
+discarded its old-name event, then asserted on the new-name event. An unchanged
+leaf now follows normal rename pairing. The dedicated replacement/rollback fixture
+verifies four complete pairs and preservation of the original bytes, alongside
+the existing case-change and forced non-NTFS coverage.
+
+Verification on October 13, 2026:
+
+- Debug FoundationTest, CoreTest, EditorFrameworkTest, EditorProcessor and Editor
+  builds pass (`Workspace/editor-profile-publication-fixed-build.log` and the final
+  `Workspace/editor-profile-publication-graceful-build.log`).
+- All twelve editor subtests pass:
+  `Workspace/editor-profile-publication-graceful-tests.log`. The native Qt dialog
+  fixture adds two profiles, selects the second, deletes the original active
+  profile, and verifies exact native order and selection after accepting.
+- A Windows handle denies replacement of the last definitions file. The fixture
+  verifies the error dialog, unchanged native pointers, exact original file bytes,
+  restoration of the deleted runtime profile, removal of newly installed runtime
+  files, retained draft edits and successful retry after unlocking. Cancellation
+  and unchanged reload also preserve their required state. Idle processor stop,
+  graceful join and restart are exercised before opening the test project.
+- All forty Foundation subtests selected by the IO filter and all six
+  DirectoryRecovery subtests pass (`Workspace/editor-profile-publication-io-tests.log`
+  and `Workspace/editor-profile-publication-watcher-tests.log`). This includes
+  ordinary and forced non-NTFS watchers.
+- The Core Configuration regression passes:
+  `Workspace/editor-profile-publication-core-final-tests.log`. A fault-injection
+  mount verifies successful 18-byte output, open denial and buffered flush failure.
+- The first integrated run records both the watcher assertions and a fixture
+  confirmation that ended the message box without clicking its Yes button:
+  `Workspace/editor-profile-publication-tests.log`. The fixture now clicks the
+  actual standard button. Final logs contain no GPU allocation, device-loss or
+  Vulkan validation errors. No staged files or backups remain, and `git diff --check`
+  passes. Existing user projects and assets were not rewritten.
+
+Publication is coordinated within the editor, not a crash-safe filesystem
+transaction across several files or a concurrent multi-editor editing protocol.
+Graceful publication can wait for active transforms. The controlled fixture does
+not deliberately hold a long-running managed job open during commit. Release,
+other backends and other operating systems remain untested. Broader workflow
+verification, legacy scene migration and the deformation paths recorded above
+remain outstanding; this checkpoint does not establish full goal completion.
