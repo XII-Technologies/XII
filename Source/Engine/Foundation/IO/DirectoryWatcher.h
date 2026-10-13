@@ -14,9 +14,9 @@
 struct xiiDirectoryWatcherImpl;
 
 /// Which action has been performed on a file.
-enum class xiiDirectoryWatcherAction
+enum class xiiDirectoryWatcherAction : xiiUInt8
 {
-  None,           ///< No operation occurred.
+  None = 0U,      ///< No operation occurred.
   Added,          ///< A file or directory was added
   Removed,        ///< A file or directory was removed
   Modified,       ///< A file was modified. Both Reads and Writes can 'modify' the timestamps of a file.
@@ -24,18 +24,16 @@ enum class xiiDirectoryWatcherAction
   RenamedNewName, ///< A file or directory was renamed. The new name is provided second.
 };
 
-enum class xiiDirectoryWatcherType
+enum class xiiDirectoryWatcherType : xiiUInt8
 {
-  File,
+  File = 0U,
   Directory
 };
 
-/// \brief
-///   Watches file actions in a directory. Changes need to be polled.
+/// Watches file actions in a directory. Changes need to be polled.
 ///
 /// Serialize access to each instance externally. Sequential calls may use different threads.
-/// Windows ReFS repairs delayed case changes and removals through bounded metadata checks
-/// while polling. Intermediate filesystem states can be coalesced.
+/// Windows ReFS repairs delayed case changes and removals through bounded metadata checks while polling. Intermediate filesystem states can be coalesced.
 class XII_FOUNDATION_DLL xiiDirectoryWatcher
 {
 public:

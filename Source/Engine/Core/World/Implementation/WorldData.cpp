@@ -248,7 +248,9 @@ namespace xiiInternal
       {
         // Transformation storage is reclaimed during world cleanup, after identities are invalidated.
         if (pData->m_pObject->GetHandle().IsInvalidated())
+        {
           return xiiVisitorExecution::Continue;
+        }
         return (*static_cast<VisitorFunc*>(pUserData))(pData->m_pObject);
       }
     };
@@ -264,6 +266,7 @@ namespace xiiInternal
         {
           xiiVisitorExecution::Enum execution = TraverseHierarchyLevel<Helper>(*hierarchy.m_Data[uiHierarchyLevel], &func);
           XII_ASSERT_DEV(execution != xiiVisitorExecution::Skip, "Skip is not supported when using breadth first traversal");
+
           if (execution == xiiVisitorExecution::Stop)
             return;
         }

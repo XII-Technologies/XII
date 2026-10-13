@@ -98,7 +98,7 @@ struct xiiStaticLinkHelper
 /// Implemented in Plugin.cpp.
 struct XII_FOUNDATION_DLL xiiPluginRegister
 {
-  xiiPluginRegister(const char* szName);
+  xiiPluginRegister(xiiStringView sName);
 };
 
 /// The tool 'StaticLinkUtil' inserts this macro into each file in a library.

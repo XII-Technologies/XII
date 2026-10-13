@@ -28,26 +28,26 @@ namespace
 
   struct MoveEvent
   {
-    xiiString path;
-    bool      isDirectory = false;
+    xiiString m_sPath;
+    bool      m_bIsDirectory = false;
 
     void Clear()
     {
-      path.Clear();
+      m_sPath.Clear();
     }
 
-    bool IsEmpty()
+    bool IsEmpty() const
     {
-      return path.IsEmpty();
+      return m_sPath.IsEmpty();
     }
   };
 
   struct Change
   {
-    xiiStringBuilder eventFilePath;
-    bool             isFile;
-    DWORD            Action;
-    LARGE_INTEGER    LastModificationTime;
+    xiiStringBuilder m_sEventFilePath;
+    bool             m_bIsFile;
+    DWORD            m_uiAction;
+    LARGE_INTEGER    m_LastModificationTime;
   };
 
   using xiiFileSystemMirrorType = xiiFileSystemMirror<bool>;
@@ -55,81 +55,92 @@ namespace
   void GetChangesNTFS(xiiStringView sDirectoryPath, const xiiHybridArray<xiiUInt8, 4096>& buffer, xiiDynamicArray<Change>& ref_changes)
   {
     xiiUInt32 uiChanges = 1;
-    auto      info      = (const FILE_NOTIFY_EXTENDED_INFORMATION*)buffer.GetData();
-    while (info->NextEntryOffset != 0)
+    auto      pInfo     = (const FILE_NOTIFY_EXTENDED_INFORMATION*)buffer.GetData();
+
+    while (pInfo->NextEntryOffset != 0)
     {
-      uiChanges++;
-      info = (const FILE_NOTIFY_EXTENDED_INFORMATION*)(((xiiUInt8*)info) + info->NextEntryOffset);
+      ++uiChanges;
+
+      pInfo = (const FILE_NOTIFY_EXTENDED_INFORMATION*)(((xiiUInt8*)pInfo) + pInfo->NextEntryOffset);
     }
+
     ref_changes.Reserve(uiChanges);
-    info = (const FILE_NOTIFY_EXTENDED_INFORMATION*)buffer.GetData();
+
+    pInfo = (const FILE_NOTIFY_EXTENDED_INFORMATION*)buffer.GetData();
 
     while (true)
     {
-      auto directory   = xiiArrayPtr<const WCHAR>(info->FileName, info->FileNameLength / sizeof(WCHAR));
-      int  bytesNeeded = WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), nullptr, 0, nullptr, nullptr);
-      if (bytesNeeded > 0)
+      auto pDirectory   = xiiArrayPtr<const WCHAR>(pInfo->FileName, pInfo->FileNameLength / sizeof(WCHAR));
+      int  iBytesNeeded = WideCharToMultiByte(CP_UTF8, 0, pDirectory.GetPtr(), pDirectory.GetCount(), nullptr, 0, nullptr, nullptr);
+      if (iBytesNeeded > 0)
       {
-        xiiTemporaryHybridArray<char, 1024> dir;
-        dir.SetCountUninitialized(bytesNeeded);
-        WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), dir.GetData(), dir.GetCount(), nullptr, nullptr);
+        xiiTemporaryHybridArray<char, 1024> directory;
+        directory.SetCountUninitialized(iBytesNeeded);
+        WideCharToMultiByte(CP_UTF8, 0, pDirectory.GetPtr(), pDirectory.GetCount(), directory.GetData(), directory.GetCount(), nullptr, nullptr);
 
-        Change& currentChange       = ref_changes.ExpandAndGetRef();
-        currentChange.eventFilePath = sDirectoryPath;
-        currentChange.eventFilePath.AppendPath(xiiStringView(dir.GetData(), dir.GetCount()));
-        currentChange.eventFilePath.MakeCleanPath();
-        currentChange.Action               = info->Action;
-        currentChange.LastModificationTime = info->LastModificationTime;
-        currentChange.isFile               = (info->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
+        Change& currentChange                = ref_changes.ExpandAndGetRef();
+        currentChange.m_uiAction             = pInfo->Action;
+        currentChange.m_LastModificationTime = pInfo->LastModificationTime;
+        currentChange.m_bIsFile              = (pInfo->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
+        currentChange.m_sEventFilePath       = sDirectoryPath;
+        currentChange.m_sEventFilePath.AppendPath(xiiStringView(directory.GetData(), directory.GetCount()));
+        currentChange.m_sEventFilePath.MakeCleanPath();
       }
 
-      if (info->NextEntryOffset == 0)
+      if (pInfo->NextEntryOffset == 0)
       {
         break;
       }
       else
-        info = (const FILE_NOTIFY_EXTENDED_INFORMATION*)(((xiiUInt8*)info) + info->NextEntryOffset);
+      {
+        pInfo = (const FILE_NOTIFY_EXTENDED_INFORMATION*)(((xiiUInt8*)pInfo) + pInfo->NextEntryOffset);
+      }
     }
   }
 
   void GetChangesNonNTFS(xiiStringView sDirectoryPath, const xiiHybridArray<xiiUInt8, 4096>& buffer, xiiDynamicArray<Change>& ref_changes)
   {
     xiiUInt32 uiChanges = 1;
-    auto      info      = (const FILE_NOTIFY_INFORMATION*)buffer.GetData();
-    while (info->NextEntryOffset != 0)
+    auto      pInfo     = (const FILE_NOTIFY_INFORMATION*)buffer.GetData();
+
+    while (pInfo->NextEntryOffset != 0)
     {
-      uiChanges++;
-      info = (const FILE_NOTIFY_INFORMATION*)(((xiiUInt8*)info) + info->NextEntryOffset);
+      ++uiChanges;
+
+      pInfo = (const FILE_NOTIFY_INFORMATION*)(((xiiUInt8*)pInfo) + pInfo->NextEntryOffset);
     }
+
     ref_changes.Reserve(ref_changes.GetCount() + uiChanges);
-    info = (const FILE_NOTIFY_INFORMATION*)buffer.GetData();
+
+    pInfo = (const FILE_NOTIFY_INFORMATION*)buffer.GetData();
 
     while (true)
     {
-      auto directory   = xiiArrayPtr<const WCHAR>(info->FileName, info->FileNameLength / sizeof(WCHAR));
-      int  bytesNeeded = WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), nullptr, 0, nullptr, nullptr);
-      if (bytesNeeded > 0)
-      {
-        xiiTemporaryHybridArray<char, 1024> dir;
-        dir.SetCountUninitialized(bytesNeeded);
-        WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), dir.GetData(), dir.GetCount(), nullptr, nullptr);
+      auto pDirectory   = xiiArrayPtr<const WCHAR>(pInfo->FileName, pInfo->FileNameLength / sizeof(WCHAR));
+      int  iBytesNeeded = WideCharToMultiByte(CP_UTF8, 0, pDirectory.GetPtr(), pDirectory.GetCount(), nullptr, 0, nullptr, nullptr);
 
-        Change& currentChange       = ref_changes.ExpandAndGetRef();
-        currentChange.eventFilePath = sDirectoryPath;
-        currentChange.eventFilePath.AppendPath(xiiStringView(dir.GetData(), dir.GetCount()));
-        currentChange.eventFilePath.MakeCleanPath();
-        currentChange.Action               = info->Action;
-        currentChange.LastModificationTime = {};
-        currentChange.isFile               = true; // Pretend it's a file for now.
+      if (iBytesNeeded > 0)
+      {
+        xiiTemporaryHybridArray<char, 1024> directory;
+        directory.SetCountUninitialized(iBytesNeeded);
+        WideCharToMultiByte(CP_UTF8, 0, pDirectory.GetPtr(), pDirectory.GetCount(), directory.GetData(), directory.GetCount(), nullptr, nullptr);
+
+        Change& currentChange                = ref_changes.ExpandAndGetRef();
+        currentChange.m_uiAction             = pInfo->Action;
+        currentChange.m_LastModificationTime = {};
+        currentChange.m_bIsFile              = true; // Pretend it's a file for now.
+        currentChange.m_sEventFilePath       = sDirectoryPath;
+        currentChange.m_sEventFilePath.AppendPath(xiiStringView(directory.GetData(), directory.GetCount()));
+        currentChange.m_sEventFilePath.MakeCleanPath();
       }
 
-      if (info->NextEntryOffset == 0)
+      if (pInfo->NextEntryOffset == 0)
       {
         break;
       }
       else
       {
-        info = (const FILE_NOTIFY_INFORMATION*)(((xiiUInt8*)info) + info->NextEntryOffset);
+        pInfo = (const FILE_NOTIFY_INFORMATION*)(((xiiUInt8*)pInfo) + pInfo->NextEntryOffset);
       }
     }
   }
@@ -143,85 +154,92 @@ namespace
       xiiMap<xiiStringView, xiiUInt32> lastChangeAtPath;
       nextOp.SetCount(ref_changes.GetCount(), -1);
 
-      xiiInt32 pendingRemoveOrRename = -1;
-      xiiInt32 lastMoveFrom          = -1;
-      bool     pendingRenameAvailable = !pendingRename.path.IsEmpty();
+      xiiInt32 uiPendingRemoveOrRename = -1;
+      xiiInt32 uiLastMoveFrom          = -1;
+      bool     bPendingRenameAvailable = !pendingRename.m_sPath.IsEmpty();
 
       for (xiiUInt32 i = 0; i < ref_changes.GetCount(); i++)
       {
-        const auto& currentChange = ref_changes[i];
-        if (pendingRemoveOrRename != -1 && (currentChange.Action == FILE_ACTION_RENAMED_OLD_NAME) && (ref_changes[pendingRemoveOrRename].eventFilePath == currentChange.eventFilePath))
+        const Change& currentChange = ref_changes[i];
+
+        if (uiPendingRemoveOrRename != -1 && (currentChange.m_uiAction == FILE_ACTION_RENAMED_OLD_NAME) && (ref_changes[uiPendingRemoveOrRename].m_sEventFilePath == currentChange.m_sEventFilePath))
         {
           // This is the bogus removed event because we changed the casing of a file / directory, ignore.
-          lastChangeAtPath.Insert(ref_changes[pendingRemoveOrRename].eventFilePath, pendingRemoveOrRename);
-          pendingRemoveOrRename = -1;
+          lastChangeAtPath.Insert(ref_changes[uiPendingRemoveOrRename].m_sEventFilePath, uiPendingRemoveOrRename);
+
+          uiPendingRemoveOrRename = -1;
         }
 
-        if (pendingRemoveOrRename != -1)
+        if (uiPendingRemoveOrRename != -1)
         {
           // An actual remove: Stop tracking the change.
-          lastChangeAtPath.Remove(ref_changes[pendingRemoveOrRename].eventFilePath);
-          pendingRemoveOrRename = -1;
+          lastChangeAtPath.Remove(ref_changes[uiPendingRemoveOrRename].m_sEventFilePath);
+
+          uiPendingRemoveOrRename = -1;
         }
 
         xiiUInt32* uiUniqueItemIndex = nullptr;
-        switch (currentChange.Action)
+        switch (currentChange.m_uiAction)
         {
           case FILE_ACTION_ADDED:
           {
-            lastChangeAtPath.Insert(currentChange.eventFilePath, i);
+            lastChangeAtPath.Insert(currentChange.m_sEventFilePath, i);
           }
           break;
           case FILE_ACTION_REMOVED:
           {
-            if (lastChangeAtPath.TryGetValue(currentChange.eventFilePath, uiUniqueItemIndex))
+            if (lastChangeAtPath.TryGetValue(currentChange.m_sEventFilePath, uiUniqueItemIndex))
             {
               nextOp[*uiUniqueItemIndex] = i;
               *uiUniqueItemIndex         = i;
             }
-            pendingRemoveOrRename = i;
+            uiPendingRemoveOrRename = i;
           }
           break;
           case FILE_ACTION_MODIFIED:
           {
-            if (lastChangeAtPath.TryGetValue(currentChange.eventFilePath, uiUniqueItemIndex))
+            if (lastChangeAtPath.TryGetValue(currentChange.m_sEventFilePath, uiUniqueItemIndex))
             {
               nextOp[*uiUniqueItemIndex] = i;
               *uiUniqueItemIndex         = i;
             }
             else
             {
-              lastChangeAtPath[currentChange.eventFilePath] = i;
+              lastChangeAtPath[currentChange.m_sEventFilePath] = i;
             }
           }
           break;
           case FILE_ACTION_RENAMED_OLD_NAME:
           {
-            if (lastChangeAtPath.TryGetValue(currentChange.eventFilePath, uiUniqueItemIndex))
+            if (lastChangeAtPath.TryGetValue(currentChange.m_sEventFilePath, uiUniqueItemIndex))
             {
               nextOp[*uiUniqueItemIndex] = i;
               *uiUniqueItemIndex         = i;
             }
             else
             {
-              lastChangeAtPath[currentChange.eventFilePath] = i;
+              lastChangeAtPath[currentChange.m_sEventFilePath] = i;
             }
-            lastMoveFrom = i;
-            pendingRenameAvailable = false;
+            uiLastMoveFrom          = i;
+            bPendingRenameAvailable = false;
           }
           break;
           case FILE_ACTION_RENAMED_NEW_NAME:
           {
-            if (lastMoveFrom != -1)
+            if (uiLastMoveFrom != -1)
             {
-              nextOp[lastMoveFrom] = i;
-              lastChangeAtPath.Remove(ref_changes[lastMoveFrom].eventFilePath);
+              nextOp[uiLastMoveFrom] = i;
+
+              lastChangeAtPath.Remove(ref_changes[uiLastMoveFrom].m_sEventFilePath);
             }
-            if (lastMoveFrom == -1 && pendingRenameAvailable)
+            if (uiLastMoveFrom == -1 && bPendingRenameAvailable)
+            {
               pendingNewName = i;
-            pendingRenameAvailable = false;
-            lastMoveFrom           = -1;
-            lastChangeAtPath.Insert(currentChange.eventFilePath, i);
+            }
+            bPendingRenameAvailable = false;
+            uiLastMoveFrom          = -1;
+
+            lastChangeAtPath.Insert(currentChange.m_sEventFilePath, i);
           }
           break;
         }
@@ -241,14 +259,18 @@ namespace
       // Flatten the changes for one object into a list for easier processing.
       {
         objectChanges.Clear();
-        xiiUInt32 currentIndex = it.Value();
-        objectChanges.PushBack(&ref_changes[currentIndex]);
-        pendingChanges.ClearBit(currentIndex);
-        while (nextOp[currentIndex] != -1)
+
+        xiiUInt32 uiCurrentIndex = it.Value();
+        objectChanges.PushBack(&ref_changes[uiCurrentIndex]);
+
+        pendingChanges.ClearBit(uiCurrentIndex);
+
+        while (nextOp[uiCurrentIndex] != -1)
         {
-          currentIndex = nextOp[currentIndex];
-          pendingChanges.ClearBit(currentIndex);
-          objectChanges.PushBack(&ref_changes[currentIndex]);
+          uiCurrentIndex = nextOp[uiCurrentIndex];
+
+          pendingChanges.ClearBit(uiCurrentIndex);
+          objectChanges.PushBack(&ref_changes[uiCurrentIndex]);
         }
       }
 
@@ -257,42 +279,42 @@ namespace
       // 2. If object still exists, we can query its stats on disk to determine its type. In rare cases, this can be wrong but you would need to create a case where a file is replaced with a folder of the same name or something.
       // 3. If the object was created and deleted in the same enumeration, we cannot know what type it was, so we take a guess.
       {
-        bool                          isFile = true;
+        bool                          bIsFile = true;
         xiiFileSystemMirrorType::Type type;
         xiiStringBuilder              cachedPath;
+
         if (pendingNewName >= 0 && objectChanges[0] == &ref_changes[pendingNewName])
         {
-          isFile = !pendingRename.isDirectory;
+          bIsFile = !pendingRename.m_bIsDirectory;
         }
-        else if (pMirror->GetType(objectChanges[0]->eventFilePath, type).Succeeded() ||
-                 (bResolveCasing && pMirror->GetPathCasing(objectChanges[0]->eventFilePath, cachedPath, type).Succeeded()))
+        else if (pMirror->GetType(objectChanges[0]->m_sEventFilePath, type).Succeeded() || (bResolveCasing && pMirror->GetPathCasing(objectChanges[0]->m_sEventFilePath, cachedPath, type).Succeeded()))
         {
-          isFile = type == xiiFileSystemMirrorType::Type::File;
+          bIsFile = type == xiiFileSystemMirrorType::Type::File;
         }
         else
         {
-          bool typeFound = false;
+          bool bIsFileFound = false;
           for (Change* pCurrentChange : objectChanges)
           {
             xiiFileStats stats;
-            if (xiiOSFile::GetFileStats(pCurrentChange->eventFilePath, stats).Succeeded())
+            if (xiiOSFile::GetFileStats(pCurrentChange->m_sEventFilePath, stats).Succeeded())
             {
-              isFile    = !stats.m_bIsDirectory;
-              typeFound = true;
+              bIsFile      = !stats.m_bIsDirectory;
+              bIsFileFound = true;
               break;
             }
           }
-          if (!typeFound)
+          if (!bIsFileFound)
           {
             // No stats and no entry in mirror: It's guessing time!
-            isFile = objectChanges[0]->eventFilePath.FindSubString(".") != nullptr;
+            bIsFile = objectChanges[0]->m_sEventFilePath.FindSubString(".") != nullptr;
           }
         }
 
         // Apply type to all objects in the chain.
         for (Change* pCurrentChange : objectChanges)
         {
-          pCurrentChange->isFile = isFile;
+          pCurrentChange->m_bIsFile = bIsFile;
         }
       }
 
@@ -308,7 +330,7 @@ struct xiiDirectoryWatcherImpl
   void DoRead();
   void EnumerateChangesImpl(xiiStringView sDirectoryPath, xiiTime waitUpTo, const xiiDelegate<void(const Change&)>& callback);
 
-  bool                                    m_bNTFS = false;
+  bool                                    m_bNTFS               = false;
   bool                                    m_bValidatePathCasing = false;
   xiiTime                                 m_LastCasingCheck;
   xiiUInt32                               m_uiNextCasingEntry = 0;
@@ -331,7 +353,7 @@ xiiDirectoryWatcher::xiiDirectoryWatcher() :
 
 xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBitflags<Watch> whatToWatch)
 {
-  m_pImpl->m_bNTFS = false;
+  m_pImpl->m_bNTFS               = false;
   m_pImpl->m_bValidatePathCasing = false;
   m_pImpl->m_LastCasingCheck     = xiiTime::MakeZero();
   m_pImpl->m_uiNextCasingEntry   = 0;
@@ -341,17 +363,19 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
     // Get drive root:
     xiiStringBuilder sTemp = sAbsolutePath;
     sTemp.MakeCleanPath();
+
     const char* szFirst = sTemp.FindSubString("/");
     XII_ASSERT_DEV(szFirst != nullptr, "The path '{}' is not absolute", sTemp);
     xiiStringView sRoot = sAbsolutePath.GetSubString(0, static_cast<xiiUInt32>(szFirst - sTemp.GetData()) + 1);
 
     WCHAR szFileSystemName[8];
-    BOOL  res        = GetVolumeInformationW(xiiStringWChar(sRoot), nullptr, 0, nullptr, nullptr, nullptr, szFileSystemName, XII_ARRAY_SIZE(szFileSystemName));
-    m_pImpl->m_bNTFS = res == TRUE && xiiStringUtf8(szFileSystemName).GetView() == "NTFS" && !cvar_ForceNonNTFS.GetValue();
-    m_pImpl->m_bValidatePathCasing = res == TRUE && xiiStringUtf8(szFileSystemName).GetView() == "ReFS";
+    BOOL  result                   = GetVolumeInformationW(xiiStringWChar(sRoot), nullptr, 0, nullptr, nullptr, nullptr, szFileSystemName, XII_ARRAY_SIZE(szFileSystemName));
+    m_pImpl->m_bNTFS               = result == TRUE && xiiStringUtf8(szFileSystemName).GetView() == "NTFS" && !cvar_ForceNonNTFS.GetValue();
+    m_pImpl->m_bValidatePathCasing = result == TRUE && xiiStringUtf8(szFileSystemName).GetView() == "ReFS";
   }
 
   XII_ASSERT_DEV(m_sDirectoryPath.IsEmpty(), "Directory already open, call CloseDirectory first!");
+
   xiiStringBuilder sPath(sAbsolutePath);
   sPath.MakeCleanPath();
   sPath.Trim("/");
@@ -400,13 +424,15 @@ void xiiDirectoryWatcher::CloseDirectory()
 {
   if (!m_sDirectoryPath.IsEmpty())
   {
-    // Reads can be issued by a worker thread. CancelIo only cancels reads from
-    // this thread, and cancellation itself does not wait for buffer writes to end.
+    // Reads can be issued by a worker thread. CancelIo only cancels reads from this thread, and cancellation itself does not wait for buffer writes to end.
     CancelIoEx(m_pImpl->m_DirectoryHandle, &m_pImpl->m_Overlapped);
-    DWORD transferred = 0;
-    GetOverlappedResult(m_pImpl->m_DirectoryHandle, &m_pImpl->m_Overlapped, &transferred, TRUE);
+
+    DWORD uiTransferred = 0;
+    GetOverlappedResult(m_pImpl->m_DirectoryHandle, &m_pImpl->m_Overlapped, &uiTransferred, TRUE);
+
     CloseHandle(m_pImpl->m_OverlappedEvent);
     CloseHandle(m_pImpl->m_DirectoryHandle);
+
     m_sDirectoryPath.Clear();
     m_pImpl->m_FileSystemMirror.Clear();
     m_pImpl->m_PendingRename.Clear();
@@ -417,6 +443,7 @@ void xiiDirectoryWatcher::CloseDirectory()
 xiiDirectoryWatcher::~xiiDirectoryWatcher()
 {
   CloseDirectory();
+
   XII_DEFAULT_DELETE(m_pImpl);
 }
 
@@ -468,6 +495,7 @@ void xiiDirectoryWatcherImpl::EnumerateChangesImpl(xiiStringView sDirectoryPath,
     if (m_bNTFS)
     {
       GetChangesNTFS(sDirectoryPath, buffer, changes);
+
       for (const Change& change : changes)
       {
         callback(change);
@@ -484,6 +512,7 @@ void xiiDirectoryWatcherImpl::EnumerateChangesImpl(xiiStringView sDirectoryPath,
   if (!m_bNTFS)
   {
     PostProcessNonNTFSChanges(changes, m_FileSystemMirror.Borrow(), m_PendingRename, m_bValidatePathCasing);
+
     for (const Change& change : changes)
     {
       callback(change);
@@ -493,40 +522,40 @@ void xiiDirectoryWatcherImpl::EnumerateChangesImpl(xiiStringView sDirectoryPath,
 
 void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTime waitUpTo)
 {
-  xiiFileSystemMirrorType* mirror = m_pImpl->m_FileSystemMirror.Borrow();
+  xiiFileSystemMirrorType* pMirror = m_pImpl->m_FileSystemMirror.Borrow();
   XII_ASSERT_DEV(!m_sDirectoryPath.IsEmpty(), "No directory opened!");
 
   MoveEvent                                     pendingRemoveOrRename;
   const xiiBitflags<xiiDirectoryWatcher::Watch> whatToWatch = m_pImpl->m_WatchFlags;
   // Renaming a file to the same filename with different casing triggers the events REMOVED (old casing) -> RENAMED_OLD_NAME -> _RENAMED_NEW_NAME.
   // Thus, we need to cache every remove event to make sure the very next event is not a rename of the exact same file.
-  auto FirePendingRemove = [&]() {
+  auto FirePendingRemove = [&]() -> void {
     if (!pendingRemoveOrRename.IsEmpty())
     {
-      if (pendingRemoveOrRename.isDirectory)
+      if (pendingRemoveOrRename.m_bIsDirectory)
       {
         if (whatToWatch.IsSet(Watch::Deletes))
         {
-          if (mirror && whatToWatch.IsSet(Watch::Subdirectories))
+          if (pMirror && whatToWatch.IsSet(Watch::Subdirectories))
           {
-            mirror->Enumerate(pendingRemoveOrRename.path, [&](const xiiStringBuilder& sPath, xiiFileSystemMirrorType::Type type) { func(sPath, xiiDirectoryWatcherAction::Removed, (type == xiiFileSystemMirrorType::Type::File) ? xiiDirectoryWatcherType::File : xiiDirectoryWatcherType::Directory); }).AssertSuccess();
+            pMirror->Enumerate(pendingRemoveOrRename.m_sPath, [&](const xiiStringBuilder& sPath, xiiFileSystemMirrorType::Type type) { func(sPath, xiiDirectoryWatcherAction::Removed, (type == xiiFileSystemMirrorType::Type::File) ? xiiDirectoryWatcherType::File : xiiDirectoryWatcherType::Directory); }).AssertSuccess();
           }
-          func(pendingRemoveOrRename.path, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory);
+          func(pendingRemoveOrRename.m_sPath, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory);
         }
-        if (mirror)
+        if (pMirror)
         {
-          mirror->RemoveDirectory(pendingRemoveOrRename.path).AssertSuccess();
+          pMirror->RemoveDirectory(pendingRemoveOrRename.m_sPath).AssertSuccess();
         }
       }
       else
       {
-        if (mirror)
+        if (pMirror)
         {
-          mirror->RemoveFile(pendingRemoveOrRename.path).AssertSuccess();
+          pMirror->RemoveFile(pendingRemoveOrRename.m_sPath).AssertSuccess();
         }
         if (whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Deletes))
         {
-          func(pendingRemoveOrRename.path, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File);
+          func(pendingRemoveOrRename.m_sPath, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File);
         }
       }
       pendingRemoveOrRename.Clear();
@@ -538,74 +567,91 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
   MoveEvent& lastMoveFrom = m_pImpl->m_PendingRename;
 
   // Process the messages
-  m_pImpl->EnumerateChangesImpl(m_sDirectoryPath, waitUpTo, [&](const Change& nativeInfo) {
+  m_pImpl->EnumerateChangesImpl(m_sDirectoryPath, waitUpTo, [&](const Change& nativeInfo) -> void {
     Change        normalizedInfo;
     const Change* pInfo = &nativeInfo;
-    if (m_pImpl->m_bValidatePathCasing && mirror && nativeInfo.Action == FILE_ACTION_REMOVED)
+
+    if (m_pImpl->m_bValidatePathCasing && pMirror && nativeInfo.m_uiAction == FILE_ACTION_REMOVED)
     {
       normalizedInfo = nativeInfo;
       pInfo          = &normalizedInfo;
     }
+
     const Change& info = *pInfo;
-    if (m_pImpl->m_bValidatePathCasing && mirror && info.Action == FILE_ACTION_REMOVED)
+    if (m_pImpl->m_bValidatePathCasing && pMirror && info.m_uiAction == FILE_ACTION_REMOVED)
     {
-      xiiStringBuilder              cachedPath;
+      xiiStringBuilder              sCachedPath;
       xiiFileSystemMirrorType::Type type;
-      if (!lastMoveFrom.IsEmpty() && lastMoveFrom.path.IsEqual_NoCase(info.eventFilePath))
+
+      if (!lastMoveFrom.IsEmpty() && lastMoveFrom.m_sPath.IsEqual_NoCase(info.m_sEventFilePath))
+      {
         lastMoveFrom.Clear();
-      if (mirror->GetPathCasing(info.eventFilePath, cachedPath, type).Failed())
+      }
+
+      if (pMirror->GetPathCasing(info.m_sEventFilePath, sCachedPath, type).Failed())
         return; // A delayed native removal already reconciled from the mirror.
-      normalizedInfo.eventFilePath = cachedPath;
+
+      normalizedInfo.m_sEventFilePath = sCachedPath;
     }
+
     xiiDirectoryWatcherAction action    = xiiDirectoryWatcherAction::None;
     bool                      fireEvent = false;
 
-    if (!pendingRemoveOrRename.IsEmpty() && info.isFile == !pendingRemoveOrRename.isDirectory && info.Action == FILE_ACTION_RENAMED_OLD_NAME && pendingRemoveOrRename.path == info.eventFilePath)
+    if (!pendingRemoveOrRename.IsEmpty() && info.m_bIsFile == !pendingRemoveOrRename.m_bIsDirectory && info.m_uiAction == FILE_ACTION_RENAMED_OLD_NAME && pendingRemoveOrRename.m_sPath == info.m_sEventFilePath)
     {
       // This is the bogus removed event because we changed the casing of a file / directory, ignore.
       pendingRemoveOrRename.Clear();
     }
     FirePendingRemove();
 
-    if (info.Action == FILE_ACTION_RENAMED_OLD_NAME && m_pImpl->m_bValidatePathCasing && mirror)
+    if (info.m_uiAction == FILE_ACTION_RENAMED_OLD_NAME && m_pImpl->m_bValidatePathCasing && pMirror)
     {
-      // ReFS may omit NEW_NAME. A later OLD_NAME starts another rename, so the
-      // earlier unpaired record cannot supply its source (including after deletion).
+      // ReFS may omit NEW_NAME. A later OLD_NAME starts another rename, so the earlier unpaired record cannot supply its source (including after deletion).
       lastMoveFrom.Clear();
-      xiiStringBuilder              cachedPath;
+
+      xiiStringBuilder              sCachedPath;
       xiiFileSystemMirrorType::Type cachedType;
-      if (mirror->GetPathCasing(info.eventFilePath, cachedPath, cachedType).Failed())
+
+      if (pMirror->GetPathCasing(info.m_sEventFilePath, sCachedPath, cachedType).Failed())
         return; // The source was already reconciled and removed.
-      if (ReconcileCaseRename(*mirror, info.eventFilePath, m_pImpl->m_sReconciledRename,
-                              [&](xiiStringView path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-                                if (whatToWatch.IsSet(Watch::Renames))
-                                  func(path, action, type);
-                              }))
+
+      if (ReconcileCaseRename(*pMirror, info.m_sEventFilePath, m_pImpl->m_sReconciledRename, [&](xiiStringView path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) -> void {
+            if (whatToWatch.IsSet(Watch::Renames))
+            {
+              func(path, action, type);
+            }
+          }))
         return;
     }
-    if (info.Action == FILE_ACTION_RENAMED_NEW_NAME && !m_pImpl->m_sReconciledRename.IsEmpty() &&
-        info.eventFilePath.IsEqual_NoCase(m_pImpl->m_sReconciledRename))
+
+    if (info.m_uiAction == FILE_ACTION_RENAMED_NEW_NAME && !m_pImpl->m_sReconciledRename.IsEmpty() && info.m_sEventFilePath.IsEqual_NoCase(m_pImpl->m_sReconciledRename))
     {
       m_pImpl->m_sReconciledRename.Clear();
       return;
     }
-    if (info.Action == FILE_ACTION_RENAMED_OLD_NAME)
-      m_pImpl->m_sReconciledRename.Clear();
 
-    if (info.isFile)
+    if (info.m_uiAction == FILE_ACTION_RENAMED_OLD_NAME)
     {
-      switch (info.Action)
+      m_pImpl->m_sReconciledRename.Clear();
+    }
+
+    if (info.m_bIsFile)
+    {
+      switch (info.m_uiAction)
       {
         case FILE_ACTION_ADDED:
         {
-          DEBUG_LOG("FILE_ACTION_ADDED {} ({})", info.eventFilePath, info.LastModificationTime.QuadPart);
+          DEBUG_LOG("FILE_ACTION_ADDED {} ({})", info.m_sEventFilePath, info.m_LastModificationTime.QuadPart);
+
           action    = xiiDirectoryWatcherAction::Added;
           fireEvent = whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Creates);
-          if (mirror)
+
+          if (pMirror)
           {
-            bool fileAlreadyExists = false;
-            mirror->AddFile(info.eventFilePath, true, &fileAlreadyExists, nullptr).AssertSuccess();
-            if (fileAlreadyExists)
+            bool bFileAlreadyExists = false;
+            pMirror->AddFile(info.m_sEventFilePath, true, &bFileAlreadyExists, nullptr).AssertSuccess();
+
+            if (bFileAlreadyExists)
             {
               fireEvent = false;
             }
@@ -614,24 +660,27 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
         break;
         case FILE_ACTION_REMOVED:
         {
-          DEBUG_LOG("FILE_ACTION_REMOVED {} ({})", info.eventFilePath, info.LastModificationTime.QuadPart);
+          DEBUG_LOG("FILE_ACTION_REMOVED {} ({})", info.m_sEventFilePath, info.m_LastModificationTime.QuadPart);
+
           action                = xiiDirectoryWatcherAction::Removed;
           fireEvent             = false;
-          pendingRemoveOrRename = {info.eventFilePath, false};
+          pendingRemoveOrRename = {info.m_sEventFilePath, false};
         }
         break;
         case FILE_ACTION_MODIFIED:
         {
-          DEBUG_LOG("FILE_ACTION_MODIFIED {} ({})", info.eventFilePath, info.LastModificationTime.QuadPart);
-          action               = xiiDirectoryWatcherAction::Modified;
-          fireEvent            = whatToWatch.IsAnySet(xiiDirectoryWatcher::Watch::Writes);
-          bool fileAreadyKnown = false;
-          bool addPending      = false;
-          if (mirror)
+          DEBUG_LOG("FILE_ACTION_MODIFIED {} ({})", info.m_sEventFilePath, info.m_LastModificationTime.QuadPart);
+
+          action                   = xiiDirectoryWatcherAction::Modified;
+          fireEvent                = whatToWatch.IsAnySet(xiiDirectoryWatcher::Watch::Writes);
+          bool bIsFileAlreadyKnown = false;
+          bool bAddPending         = false;
+
+          if (pMirror)
           {
-            mirror->AddFile(info.eventFilePath, false, &fileAreadyKnown, &addPending).AssertSuccess();
+            pMirror->AddFile(info.m_sEventFilePath, false, &bIsFileAlreadyKnown, &bAddPending).AssertSuccess();
           }
-          if (fileAreadyKnown && addPending)
+          if (bIsFileAlreadyKnown && bAddPending)
           {
             fireEvent = false;
           }
@@ -639,24 +688,30 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
         break;
         case FILE_ACTION_RENAMED_OLD_NAME:
         {
-          DEBUG_LOG("FILE_ACTION_RENAMED_OLD_NAME {} ({})", info.eventFilePath, info.LastModificationTime.QuadPart);
-          XII_ASSERT_DEV(lastMoveFrom.IsEmpty(), "Pending rename from '{0}' before old name '{1}'", lastMoveFrom.path, info.eventFilePath);
+          DEBUG_LOG("FILE_ACTION_RENAMED_OLD_NAME {} ({})", info.m_sEventFilePath, info.m_LastModificationTime.QuadPart);
+
+          XII_ASSERT_DEV(lastMoveFrom.IsEmpty(), "Pending rename from '{0}' before old name '{1}'", lastMoveFrom.m_sPath, info.m_sEventFilePath);
+
           action    = xiiDirectoryWatcherAction::RenamedOldName;
           fireEvent = whatToWatch.IsAnySet(xiiDirectoryWatcher::Watch::Renames);
+
           XII_ASSERT_DEV(lastMoveFrom.IsEmpty(), "there should be no pending last move from");
-          lastMoveFrom = {info.eventFilePath, false};
+          lastMoveFrom = {info.m_sEventFilePath, false};
         }
         break;
         case FILE_ACTION_RENAMED_NEW_NAME:
         {
-          DEBUG_LOG("FILE_ACTION_RENAMED_NEW_NAME {} ({})", info.eventFilePath, info.LastModificationTime.QuadPart);
+          DEBUG_LOG("FILE_ACTION_RENAMED_NEW_NAME {} ({})", info.m_sEventFilePath, info.m_LastModificationTime.QuadPart);
+
           action    = xiiDirectoryWatcherAction::RenamedNewName;
           fireEvent = whatToWatch.IsAnySet(xiiDirectoryWatcher::Watch::Renames);
-          XII_ASSERT_DEV(!lastMoveFrom.IsEmpty() && !lastMoveFrom.isDirectory, "last move from doesn't match");
-          if (mirror)
+
+          XII_ASSERT_DEV(!lastMoveFrom.IsEmpty() && !lastMoveFrom.m_bIsDirectory, "last move from doesn't match");
+
+          if (pMirror)
           {
-            mirror->RemoveFile(lastMoveFrom.path).AssertSuccess();
-            mirror->AddFile(info.eventFilePath, false, nullptr, nullptr).AssertSuccess();
+            pMirror->RemoveFile(lastMoveFrom.m_sPath).AssertSuccess();
+            pMirror->AddFile(info.m_sEventFilePath, false, nullptr, nullptr).AssertSuccess();
           }
           lastMoveFrom.Clear();
         }
@@ -665,88 +720,103 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
 
       if (fireEvent)
       {
-        func(info.eventFilePath, action, xiiDirectoryWatcherType::File);
+        func(info.m_sEventFilePath, action, xiiDirectoryWatcherType::File);
       }
     }
     else
     {
-      switch (info.Action)
+      switch (info.m_uiAction)
       {
         case FILE_ACTION_ADDED:
         {
-          DEBUG_LOG("DIR_ACTION_ADDED {}", info.eventFilePath);
-          bool directoryAlreadyKnown = false;
-          if (mirror)
+          DEBUG_LOG("DIR_ACTION_ADDED {}", info.m_sEventFilePath);
+
+          bool bIsDirectoryAlreadyKnown = false;
+          if (pMirror)
           {
-            mirror->AddDirectory(info.eventFilePath, &directoryAlreadyKnown).AssertSuccess();
+            pMirror->AddDirectory(info.m_sEventFilePath, &bIsDirectoryAlreadyKnown).AssertSuccess();
           }
 
-          if (whatToWatch.IsSet(Watch::Creates) && !directoryAlreadyKnown)
+          if (whatToWatch.IsSet(Watch::Creates) && !bIsDirectoryAlreadyKnown)
           {
-            func(info.eventFilePath, xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory);
+            func(info.m_sEventFilePath, xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory);
           }
 
           // Whenever we add a directory we might be "to late" to see changes inside it.
-          // So iterate the file system and make sure we track all files / subdirectories
+          // So iterate the file system and make sure we track all files / subdirectories.
           xiiFileSystemIterator subdirIt;
 
-          subdirIt.StartSearch(info.eventFilePath.GetView(), whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories) ? xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive : xiiFileSystemIteratorFlags::ReportFiles);
+          subdirIt.StartSearch(info.m_sEventFilePath.GetView(), whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories) ? xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive : xiiFileSystemIteratorFlags::ReportFiles);
 
-          xiiStringBuilder tmpPath2;
+          xiiStringBuilder sTmpPath2;
           for (; subdirIt.IsValid(); subdirIt.Next())
           {
             const xiiFileStats& stats = subdirIt.GetStats();
-            stats.GetFullPath(tmpPath2);
+            stats.GetFullPath(sTmpPath2);
+
             if (stats.m_bIsDirectory)
             {
-              directoryAlreadyKnown = false;
-              if (mirror)
+              bIsDirectoryAlreadyKnown = false;
+
+              if (pMirror)
               {
-                mirror->AddDirectory(tmpPath2, &directoryAlreadyKnown).AssertSuccess();
+                pMirror->AddDirectory(sTmpPath2, &bIsDirectoryAlreadyKnown).AssertSuccess();
               }
-              if (whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Creates) && !directoryAlreadyKnown)
+              if (whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Creates) && !bIsDirectoryAlreadyKnown)
               {
-                func(tmpPath2, xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory);
+                func(sTmpPath2, xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory);
               }
             }
             else
             {
-              bool fileExistsAlready = false;
-              if (mirror)
+              bool bFileExistsAlready = false;
+
+              if (pMirror)
               {
-                mirror->AddFile(tmpPath2, false, &fileExistsAlready, nullptr).AssertSuccess();
+                pMirror->AddFile(sTmpPath2, false, &bFileExistsAlready, nullptr).AssertSuccess();
               }
-              if (whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Creates) && !fileExistsAlready)
+              if (whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Creates) && !bFileExistsAlready)
               {
-                func(tmpPath2, xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File);
+                func(sTmpPath2, xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File);
               }
             }
           }
         }
         break;
         case FILE_ACTION_REMOVED:
-          DEBUG_LOG("DIR_ACTION_REMOVED {}", info.eventFilePath);
-          pendingRemoveOrRename = {info.eventFilePath, true};
-          break;
+        {
+          DEBUG_LOG("DIR_ACTION_REMOVED {}", info.m_sEventFilePath);
+
+          pendingRemoveOrRename = {info.m_sEventFilePath, true};
+        }
+        break;
         case FILE_ACTION_RENAMED_OLD_NAME:
-          DEBUG_LOG("DIR_ACTION_OLD_NAME {}", info.eventFilePath);
-          XII_ASSERT_DEV(lastMoveFrom.IsEmpty(), "Pending rename from '{0}' before old name '{1}'", lastMoveFrom.path, info.eventFilePath);
-          lastMoveFrom = {info.eventFilePath, true};
-          break;
+        {
+          DEBUG_LOG("DIR_ACTION_OLD_NAME {}", info.m_sEventFilePath);
+
+          XII_ASSERT_DEV(lastMoveFrom.IsEmpty(), "Pending rename from '{0}' before old name '{1}'", lastMoveFrom.m_sPath, info.m_sEventFilePath);
+
+          lastMoveFrom = {info.m_sEventFilePath, true};
+        }
+        break;
         case FILE_ACTION_RENAMED_NEW_NAME:
-          DEBUG_LOG("DIR_ACTION_NEW_NAME {}", info.eventFilePath);
+        {
+          DEBUG_LOG("DIR_ACTION_NEW_NAME {}", info.m_sEventFilePath);
+
           XII_ASSERT_DEV(!lastMoveFrom.IsEmpty(), "rename old name and rename new name should always appear in pairs");
-          if (mirror)
+
+          if (pMirror)
           {
-            mirror->MoveDirectory(lastMoveFrom.path, info.eventFilePath).AssertSuccess();
+            pMirror->MoveDirectory(lastMoveFrom.m_sPath, info.m_sEventFilePath).AssertSuccess();
           }
           if (whatToWatch.IsSet(Watch::Renames))
           {
-            func(lastMoveFrom.path, xiiDirectoryWatcherAction::RenamedOldName, xiiDirectoryWatcherType::Directory);
-            func(info.eventFilePath, xiiDirectoryWatcherAction::RenamedNewName, xiiDirectoryWatcherType::Directory);
+            func(lastMoveFrom.m_sPath, xiiDirectoryWatcherAction::RenamedOldName, xiiDirectoryWatcherType::Directory);
+            func(info.m_sEventFilePath, xiiDirectoryWatcherAction::RenamedNewName, xiiDirectoryWatcherType::Directory);
           }
           lastMoveFrom.Clear();
-          break;
+        }
+        break;
         default:
           break;
       }
@@ -754,18 +824,20 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
   });
 
   FirePendingRemove();
+
   const xiiTime now = xiiTime::Now();
-  if (m_pImpl->m_bValidatePathCasing && mirror && now - m_pImpl->m_LastCasingCheck >= xiiTime::MakeFromMilliseconds(100))
+  if (m_pImpl->m_bValidatePathCasing && pMirror && now - m_pImpl->m_LastCasingCheck >= xiiTime::MakeFromMilliseconds(100))
   {
     m_pImpl->m_LastCasingCheck = now;
-    ReconcileMirrorPaths(*mirror, m_sDirectoryPath, m_pImpl->m_uiNextCasingEntry, whatToWatch.IsSet(Watch::Subdirectories),
-                         [&](xiiStringView path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-                           if (whatToWatch.IsSet(action == xiiDirectoryWatcherAction::Removed ? Watch::Deletes : Watch::Renames))
-                             func(path, action, type);
-                         });
+
+    ReconcileMirrorPaths(*pMirror, m_sDirectoryPath, m_pImpl->m_uiNextCasingEntry, whatToWatch.IsSet(Watch::Subdirectories), [&](xiiStringView path, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) -> void {
+      if (whatToWatch.IsSet(action == xiiDirectoryWatcherAction::Removed ? Watch::Deletes : Watch::Renames))
+      {
+        func(path, action, type);
+      }
+    });
   }
 }
-
 
 void xiiDirectoryWatcher::EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo)
 {
@@ -779,11 +851,13 @@ void xiiDirectoryWatcher::EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> wat
 
   // Wait for any of the watchers to have some data ready
   if (!events.IsEmpty())
+  {
     WaitForMultipleObjects(events.GetCount(), events.GetData(), FALSE, static_cast<DWORD>(waitUpTo.GetMilliseconds()));
+  }
 
   // Iterate all of them to make sure we report all changes up to this point.
-  for (xiiDirectoryWatcher* watcher : watchers)
+  for (xiiDirectoryWatcher* pWatcher : watchers)
   {
-    watcher->EnumerateChanges(func);
+    pWatcher->EnumerateChanges(func);
   }
 }
