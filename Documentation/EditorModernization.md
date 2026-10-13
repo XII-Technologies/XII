@@ -2884,3 +2884,37 @@ dependency, and unresolvable parameter metadata adds no guessed references.
 Undo restores collection from the current source metadata. The final integration
 rerun is `Workspace/editor-dependencies-final-check-tests.log` (exit zero), with
 the incremental test build in `Workspace/editor-dependencies-final-check-build.log`.
+
+### Property Collection Failure Boundaries
+
+The shared variant storage accessor accepted array removal at `index == count`,
+including removal at zero from an empty array, and then called out-of-bounds
+container removal. Direct conversion of numeric indices could also wrap oversized
+integers or truncate fractional values into unrelated valid elements. Insertion
+accepted negative values other than the documented append sentinel. These paths
+underlie reflected document properties and exposed parameter editing.
+
+One checked numeric-index conversion now rejects negative, fractional, non-finite
+and narrowing-overflow inputs before accessing writable storage. Removal and reads
+require an existing position; insertion and movement retain their existing end
+position semantics, and insertion retains `-1` append. Failed operations preserve
+values. Successful reads reset the supplied status, key queries replace their
+output and clear it on failure, and dictionary move errors now name the property
+without an invalid format argument. All failures use the established `xiiStatus`
+wrapper around `xiiResult`.
+
+The new ToolsFoundation reflection regression covers empty and nonempty bounds,
+oversized integers, fractional values, NaN/infinity, append, end-position moves,
+failure atomicity, dictionary collisions, repeated key queries and status reuse.
+All twenty ToolsFoundation subtests pass:
+`Workspace/editor-variant-accessor-tools-tests.log`. Debug builds of
+ToolsFoundationTest, EditorFrameworkTest, EditorProcessor and Editor pass:
+`Workspace/editor-variant-accessor-fixed-build.log`.
+
+All twelve native Qt subtests also pass with the repaired shared accessor:
+`Workspace/editor-variant-accessor-native-tests.log`. The child engine log has no
+allocation, access-violation or Vulkan validation errors. This remains Windows
+Debug/Vulkan verification. Older stored asset dependency headers are refreshed
+when their documents are saved; this change does not silently rewrite every
+existing project asset. Legacy scene migration and broad workflow parity remain
+active work.
