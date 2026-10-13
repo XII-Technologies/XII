@@ -818,10 +818,6 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       xiiQtAssetProfilesDlg dlg(nullptr);
       if (dlg.exec() == QDialog::Accepted)
       {
-        // we need to force the asset status reevaluation because when the profile settings have changed,
-        // we need to figure out which assets are now out of date
-        xiiAssetCurator::GetSingleton()->SetActiveAssetProfileByIndex(dlg.m_uiActiveConfig, true);
-
         // makes the scene re-select the current objects, which updates which enum values are shown in the property grid
         xiiToolsProject::BroadcastConfigChanged();
       }
