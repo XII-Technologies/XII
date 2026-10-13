@@ -14,7 +14,7 @@
 // xiiAssetCurator Asset Hashing and Status Updates
 ////////////////////////////////////////////////////////////////////////
 
-xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDeps, const xiiHybridArray<xiiString, 16>& assetThumbnailDeps, const xiiHybridArray<xiiString, 16>& assetPackageDeps, xiiSet<xiiString>& missingTransformDeps, xiiSet<xiiString>& missingThumbnailDeps, xiiSet<xiiString>& missingPackageDeps, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce)
+xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDeps, const xiiHybridArray<xiiString, 16>& assetThumbnailDeps, const xiiHybridArray<xiiString, 16>& assetPackageDeps, xiiSet<xiiString>& missingTransformDeps, xiiSet<xiiString>& missingThumbnailDeps, xiiSet<xiiString>& missingPackageDeps, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce, const xiiPlatformProfile* pAssetProfile, AssetHashContext* pContext)
 {
   CURATOR_PROFILE("HashAsset");
   xiiStringBuilder             tmp;
@@ -29,7 +29,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash
     for (const auto& dep : assetTransformDeps)
     {
       xiiString sPath = dep;
-      if (!AddAssetHash(sPath, false, out_AssetHash, out_ThumbHash, out_PackageHash, bForce))
+      if (!AddAssetHash(sPath, false, out_AssetHash, out_ThumbHash, out_PackageHash, bForce, pAssetProfile, pContext))
       {
         missingTransformDeps.Insert(sPath);
       }
@@ -38,7 +38,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash
     for (const auto& dep : assetThumbnailDeps)
     {
       xiiString sPath = dep;
-      if (!AddAssetHash(sPath, true, out_AssetHash, out_ThumbHash, out_PackageHash, bForce))
+      if (!AddAssetHash(sPath, true, out_AssetHash, out_ThumbHash, out_PackageHash, bForce, pAssetProfile, pContext))
       {
         missingThumbnailDeps.Insert(sPath);
       }
@@ -47,7 +47,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash
     for (const auto& dep : assetPackageDeps)
     {
       xiiString sPath = dep;
-      if (!AddAssetHash(sPath, true, out_AssetHash, out_ThumbHash, out_PackageHash, bForce))
+      if (!AddAssetHash(sPath, true, out_AssetHash, out_ThumbHash, out_PackageHash, bForce, pAssetProfile, pContext))
       {
         missingPackageDeps.Insert(sPath);
       }
@@ -75,7 +75,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::HashAsset(xiiUInt64 uiSettingsHash
   return state;
 }
 
-bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce)
+bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce, const xiiPlatformProfile* pAssetProfile, AssetHashContext* pContext)
 {
   if (sPath.IsEmpty())
     return true;
@@ -86,7 +86,7 @@ bool xiiAssetCurator::AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt6
     xiiUInt64                    assetHash   = 0;
     xiiUInt64                    thumbHash   = 0;
     xiiUInt64                    packageHash = 0;
-    xiiAssetInfo::TransformState state       = UpdateAssetTransformState(guid, assetHash, thumbHash, packageHash, bForce);
+    xiiAssetInfo::TransformState state       = UpdateAssetTransformState(guid, assetHash, thumbHash, packageHash, bForce, pAssetProfile, pContext);
     if (state == xiiAssetInfo::Unknown || state == xiiAssetInfo::MissingTransformDependency || state == xiiAssetInfo::MissingThumbnailDependency || state == xiiAssetInfo::MissingPackageDependency || state == xiiAssetInfo::CircularDependency)
     {
       xiiLog::Error("Failed to hash dependency asset '{0}'", sPath);

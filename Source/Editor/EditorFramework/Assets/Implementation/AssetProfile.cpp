@@ -238,14 +238,3 @@ void xiiAssetCurator::SetupDefaultAssetProfiles()
     m_AssetProfiles.PushBack(pCfg);
   }
 }
-
-void xiiAssetCurator::ComputeAllDocumentManagerAssetProfileHashes()
-{
-  for (auto pDocumentManager : xiiDocumentManager::GetAllDocumentManagers())
-  {
-    if (auto pAssetDocumentManager = xiiDynamicCast<xiiAssetDocumentManager*>(pDocumentManager))
-    {
-      pAssetDocumentManager->ComputeAssetProfileHash(GetActiveAssetProfile());
-    }
-  }
-}

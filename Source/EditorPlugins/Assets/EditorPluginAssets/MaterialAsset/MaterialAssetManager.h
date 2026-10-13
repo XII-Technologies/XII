@@ -14,7 +14,7 @@ public:
   ~xiiMaterialAssetDocumentManager();
 
   virtual xiiString GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiStringView sDataDirectory, xiiStringView sDocumentPath, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile) const override;
-  virtual bool      IsOutputUpToDate(xiiStringView sDocumentPath, xiiStringView sOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor) override;
+  virtual bool      IsOutputUpToDate(xiiStringView sDocumentPath, xiiStringView sOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, const xiiPlatformProfile* pAssetProfile = nullptr) override;
 
   static const char* const s_szShaderOutputTag;
 

@@ -122,7 +122,6 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
     }
   }
 
-  ComputeAllDocumentManagerAssetProfileHashes();
   BuildFileExtensionSet(m_ValidAssetExtensions);
 
   m_bRunUpdateTask   = true;
@@ -719,9 +718,9 @@ xiiUInt64 xiiAssetCurator::GetAssetReferenceHash(xiiUuid assetGuid)
   return thumbHash;
 }
 
-xiiAssetInfo::TransformState xiiAssetCurator::IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile*, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, xiiUInt64& out_uiPackageHash, bool bForce)
+xiiAssetInfo::TransformState xiiAssetCurator::IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, xiiUInt64& out_uiPackageHash, bool bForce)
 {
-  return xiiAssetCurator::UpdateAssetTransformState(assetGuid, out_uiAssetHash, out_uiThumbHash, out_uiPackageHash, bForce);
+  return xiiAssetCurator::UpdateAssetTransformState(assetGuid, out_uiAssetHash, out_uiThumbHash, out_uiPackageHash, bForce, pAssetProfile);
 }
 
 void xiiAssetCurator::InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState state)
@@ -736,12 +735,24 @@ void xiiAssetCurator::InvalidateAssetsWithTransformState(xiiAssetInfo::Transform
   }
 }
 
-xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce)
+xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce, const xiiPlatformProfile* pAssetProfile, AssetHashContext* pContext)
 {
   CURATOR_PROFILE("UpdateAssetTransformState");
   xiiStringBuilder sAbsAssetPath;
+  out_AssetHash = out_ThumbHash = out_PackageHash = 0;
+  bool             bCacheActiveProfile            = false;
+  AssetHashContext context;
   {
     XII_LOCK(m_CuratorMutex);
+    pAssetProfile       = xiiAssetDocumentManager::DetermineFinalTargetProfile(pAssetProfile);
+    bCacheActiveProfile = pAssetProfile == GetActiveAssetProfile();
+    if (pContext != nullptr)
+      bCacheActiveProfile &= pContext->m_bCacheActiveProfile;
+    else if (bForce || !bCacheActiveProfile)
+    {
+      context.m_bCacheActiveProfile = bCacheActiveProfile;
+      pContext                      = &context;
+    }
     // If assetGuid is a sub-asset, redirect to main asset.
     auto it = m_KnownSubAssets.Find(assetGuid);
     if (!it.IsValid())
@@ -751,17 +762,32 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     xiiAssetInfo* pAssetInfo = it.Value().m_pAssetInfo;
     assetGuid                = pAssetInfo->m_Info->m_DocumentID;
     sAbsAssetPath            = pAssetInfo->m_Path;
+    AssetHashResult cached;
+    if (pContext != nullptr && pContext->m_Results.TryGetValue(assetGuid, cached))
+    {
+      out_AssetHash   = cached.m_uiAssetHash;
+      out_ThumbHash   = cached.m_uiThumbnailHash;
+      out_PackageHash = cached.m_uiPackageHash;
+      return cached.m_State;
+    }
 
     // Circular dependencies can change if any asset in the circle has changed (and potentially broken the circle). Thus, we need to call CheckForCircularDependencies again for every asset.
-    if (!pAssetInfo->m_CircularDependencies.IsEmpty() && m_TransformStateStale.Contains(assetGuid))
+    if (!pAssetInfo->m_CircularDependencies.IsEmpty())
     {
-      pAssetInfo->m_CircularDependencies.Clear();
-      if (CheckForCircularDependencies(pAssetInfo).Failed())
+      if (m_TransformStateStale.Contains(assetGuid))
       {
-        UpdateAssetTransformState(assetGuid, xiiAssetInfo::CircularDependency);
+        pAssetInfo->m_CircularDependencies.Clear();
+        CheckForCircularDependencies(pAssetInfo).IgnoreResult();
+      }
+      if (!pAssetInfo->m_CircularDependencies.IsEmpty())
+      {
+        if (bCacheActiveProfile)
+          UpdateAssetTransformState(assetGuid, xiiAssetInfo::CircularDependency);
         out_AssetHash   = 0;
         out_ThumbHash   = 0;
         out_PackageHash = 0;
+        if (pContext != nullptr)
+          pContext->m_Results.Insert(assetGuid, AssetHashResult{xiiAssetInfo::CircularDependency, 0, 0, 0});
         return xiiAssetInfo::CircularDependency;
       }
     }
@@ -769,7 +795,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     // Setting an asset to unknown actually does not change the m_TransformState but merely adds it to the m_TransformStateStale list.
     // This is to prevent the user facing state to constantly fluctuate if something is tagged as modified but not actually changed (E.g. saving a
     // file without modifying the content). Thus we need to check for m_TransformStateStale as well as for the set state.
-    if (!bForce && pAssetInfo->m_TransformState != xiiAssetInfo::Unknown && !m_TransformStateStale.Contains(assetGuid))
+    if (bCacheActiveProfile && !bForce && pAssetInfo->m_TransformState != xiiAssetInfo::Unknown && !m_TransformStateStale.Contains(assetGuid))
     {
       out_AssetHash   = pAssetInfo->m_AssetHash;
       out_ThumbHash   = pAssetInfo->m_ThumbHash;
@@ -808,7 +834,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     sAssetFile        = pAssetInfo->m_Path;
     uiLastStateUpdate = pAssetInfo->m_LastStateUpdate;
     // The settings has combines both the file settings and the global profile settings.
-    uiSettingsHash = pAssetInfo->m_Info->m_uiSettingsHash + pManager->GetAssetProfileHash();
+    uiSettingsHash = pAssetInfo->m_Info->m_uiSettingsHash + pManager->GetAssetProfileHash(pAssetProfile);
     for (const xiiString& dep : pAssetInfo->m_Info->m_TransformDependencies)
     {
       transformDeps.PushBack(dep);
@@ -840,12 +866,13 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
   xiiSet<xiiString>            missingPackageDeps;
   // Compute final state and hashes.
   {
-    state = HashAsset(uiSettingsHash, transformDeps, thumbnailDeps, packageDeps, missingTransformDeps, missingThumbnailDeps, missingPackageDeps, out_AssetHash, out_ThumbHash, out_PackageHash, bForce);
+    state = HashAsset(uiSettingsHash, transformDeps, thumbnailDeps, packageDeps, missingTransformDeps, missingThumbnailDeps, missingPackageDeps, out_AssetHash, out_ThumbHash, out_PackageHash, bForce, pAssetProfile, pContext);
     XII_ASSERT_DEV(state == xiiAssetInfo::Unknown || state == xiiAssetInfo::MissingTransformDependency || state == xiiAssetInfo::MissingThumbnailDependency || state == xiiAssetInfo::MissingPackageDependency, "Unhandled case of HashAsset return value.");
 
     if (state == xiiAssetInfo::Unknown)
     {
-      if (pManager->IsOutputUpToDate(sAssetFile, outputs, out_AssetHash, pTypeDescriptor))
+      XII_LOCK(m_CuratorMutex);
+      if (pManager->IsOutputUpToDate(sAssetFile, outputs, out_AssetHash, pTypeDescriptor, pAssetProfile))
       {
         state = xiiAssetInfo::TransformState::UpToDate;
         if (pTypeDescriptor->m_AssetDocumentFlags.IsAnySet(xiiAssetDocumentFlags::SupportsThumbnail | xiiAssetDocumentFlags::AutoThumbnailOnTransform))
@@ -884,7 +911,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
       // instead of waiting for a new computation as the case in which the value has actually changed
       // is very rare (asset modified between the two locks) in which case we will just create
       // an already stale transform / thumbnail which will be immediately replaced again.
-      if (pAssetInfo->m_LastStateUpdate == uiLastStateUpdate)
+      if (bCacheActiveProfile && pAssetProfile == GetActiveAssetProfile() && pAssetInfo->m_LastStateUpdate == uiLastStateUpdate)
       {
         UpdateAssetTransformState(assetGuid, state);
         pAssetInfo->m_AssetHash            = out_AssetHash;
@@ -905,6 +932,8 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
       xiiLog::Error("Asset with GUID {0} is unknown", xiiConversionUtils::ToString(assetGuid, tmp));
       return xiiAssetInfo::TransformState::Unknown;
     }
+    if (pContext != nullptr)
+      pContext->m_Results.Insert(assetGuid, AssetHashResult{state, out_AssetHash, out_ThumbHash, out_PackageHash});
     return state;
   }
 }

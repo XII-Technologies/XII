@@ -50,11 +50,11 @@ xiiString xiiMaterialAssetDocumentManager::GetRelativeOutputFileName(const xiiAs
 }
 
 
-bool xiiMaterialAssetDocumentManager::IsOutputUpToDate(xiiStringView sDocumentPath, xiiStringView sOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor)
+bool xiiMaterialAssetDocumentManager::IsOutputUpToDate(xiiStringView sDocumentPath, xiiStringView sOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, const xiiPlatformProfile* pAssetProfile)
 {
   if (sOutputTag.IsEqual(s_szShaderOutputTag))
   {
-    const xiiString sTargetFile = GetAbsoluteOutputFileName(pTypeDescriptor, sDocumentPath, sOutputTag);
+    const xiiString sTargetFile = GetAbsoluteOutputFileName(pTypeDescriptor, sDocumentPath, sOutputTag, pAssetProfile);
 
     xiiStringBuilder sExpectedHeader;
     sExpectedHeader.SetFormat("//{0}|{1}\n", uiHash, pTypeDescriptor->m_pDocumentType->GetTypeVersion());
@@ -74,7 +74,7 @@ bool xiiMaterialAssetDocumentManager::IsOutputUpToDate(xiiStringView sDocumentPa
     return sFileHeader.IsEqual(sExpectedHeader);
   }
 
-  return xiiAssetDocumentManager::IsOutputUpToDate(sDocumentPath, sOutputTag, uiHash, pTypeDescriptor);
+  return xiiAssetDocumentManager::IsOutputUpToDate(sDocumentPath, sOutputTag, uiHash, pTypeDescriptor, pAssetProfile);
 }
 
 

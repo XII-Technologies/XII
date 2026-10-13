@@ -35,24 +35,15 @@ public:
   /// \name Asset Profile Functions
   ///@{
 public:
-  /// Called by the xiiAssetCurator when the active asset profile changes to re-compute m_uiAssetProfileHash.
-  void ComputeAssetProfileHash(const xiiPlatformProfile* pAssetProfile);
-
-  /// Returns the hash that was previously computed through ComputeAssetProfileHash().
-  XII_ALWAYS_INLINE xiiUInt64 GetAssetProfileHash() const { return m_uiAssetProfileHash; }
+  /// Computes the transform settings hash for the requested profile (or the active profile).
+  /// Profile-independent managers return zero. No profile hash is retained in the manager.
+  xiiUInt64 GetAssetProfileHash(const xiiPlatformProfile* pAssetProfile = nullptr) const;
 
   /// Returns pAssetProfile, or if that is null, xiiAssetCurator::GetSingleton()->GetActiveAssetProfile().
   static const xiiPlatformProfile* DetermineFinalTargetProfile(const xiiPlatformProfile* pAssetProfile);
 
 private:
   virtual xiiUInt64 ComputeAssetProfileHashImpl(const xiiPlatformProfile* pAssetProfile) const;
-
-  // The hash that is combined with the asset document hash to determine whether the document output is up to date.
-  // This hash needs to be computed in ComputeAssetProfileHash() and should reflect all important settings from the givne asset profile that
-  // affect the asset output for this manager.
-  // However, if GeneratesProfileSpecificAssets() return false, the hash must be zero, as then all outputs must be identical in all
-  // profiles.
-  xiiUInt64 m_uiAssetProfileHash = 0;
 
   ///@}
   /// \name Thumbnail Functions
@@ -76,8 +67,8 @@ public:
   virtual xiiString GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDesc, xiiStringView sDataDirectory, xiiStringView sDocumentPath, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile = nullptr) const;
   virtual bool      GeneratesProfileSpecificAssets() const = 0;
 
-  bool         IsOutputUpToDate(xiiStringView sDocumentPath, const xiiDynamicArray<xiiString>& outputs, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor);
-  virtual bool IsOutputUpToDate(xiiStringView sDocumentPath, xiiStringView sOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor);
+  bool         IsOutputUpToDate(xiiStringView sDocumentPath, const xiiDynamicArray<xiiString>& outputs, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, const xiiPlatformProfile* pAssetProfile = nullptr);
+  virtual bool IsOutputUpToDate(xiiStringView sDocumentPath, xiiStringView sOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, const xiiPlatformProfile* pAssetProfile = nullptr);
 
   /// Describes how likely it is that a generated file is 'corrupted', due to dependency issues and such.
   /// For example a prefab may not work correctly, if it was written with a very different C++ plugin state, but this can't be detected later.
