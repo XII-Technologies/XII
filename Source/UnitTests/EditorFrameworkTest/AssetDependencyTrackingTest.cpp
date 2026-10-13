@@ -130,6 +130,11 @@ void TestAssetDependencyTracking(xiiQtEditorApp& editor, xiiStringView projectDi
   // A package edge closing a cycle must be diagnosed before recursive hashing starts.
   set(0, "Package", indirect);
   XII_TEST_BOOL(hash(0, after[0]) == xiiAssetInfo::CircularDependency);
+  {
+    xiiSet<xiiString> cycle;
+    curator->GenerateTransitiveHull(indirect, cycle, true, true, true);
+    XII_TEST_INT(cycle.GetCount(), 3);
+  }
   set(0, "Package", "");
   XII_TEST_BOOL(hash(0, after[0]) != xiiAssetInfo::CircularDependency);
   // Retargeting and removing aliases must leave no stale reverse references.
@@ -200,4 +205,44 @@ void TestAssetDependencyTracking(xiiQtEditorApp& editor, xiiStringView projectDi
   uses.Clear();
   curator->FindAllUses(ids[0], uses, true);
   XII_TEST_BOOL(uses.IsEmpty());
+
+  // Dependency inspection keeps missing UUIDs as leaves and traverses asset paths.
+  xiiStringBuilder missing;
+  xiiConversionUtils::ToString(xiiUuid::MakeUuid(), missing);
+  set(0, "Package", missing);
+  set(1, "Package", paths[0]);
+  set(1, "Thumbnail", paths[0]);
+  xiiSet<xiiString> dependencies;
+  dependencies.Insert(paths[0]);
+  curator->GenerateTransitiveHull(indirect, dependencies, true, true, true);
+  XII_TEST_INT(dependencies.GetCount(), 4);
+  XII_TEST_BOOL(dependencies.Contains(indirect) && dependencies.Contains(consumer));
+  XII_TEST_BOOL(dependencies.Contains(paths[0]) && dependencies.Contains(missing));
+  dependencies.Clear();
+  curator->GenerateTransitiveHull(indirect, dependencies, true, true, false);
+  XII_TEST_INT(dependencies.GetCount(), 1);
+  dependencies.Clear();
+  curator->GenerateTransitiveHull(missing, dependencies, true, true, true);
+  XII_TEST_INT(dependencies.GetCount(), 1);
+  XII_TEST_BOOL(dependencies.Contains(missing));
+  xiiStringBuilder graphPath(directory);
+  graphPath.AppendPath("Dependencies.dgml");
+  if (!XII_TEST_RESULT(curator->WriteDependencyDGML(ids[2], graphPath)))
+    return;
+  XII_TEST_BOOL(curator->WriteDependencyDGML(ids[2], directory).Failed());
+  {
+    xiiOSFile file;
+    if (!XII_TEST_RESULT(file.Open(graphPath, xiiFileOpenMode::Read)))
+      return;
+    xiiDynamicArray<xiiUInt8> bytes;
+    file.ReadAll(bytes);
+    bytes.PushBack(0);
+    const xiiStringView graph(reinterpret_cast<const char*>(bytes.GetData()));
+    XII_TEST_BOOL(graph.FindSubString("Thumbnail | Package") != nullptr);
+    XII_TEST_BOOL(graph.FindSubString(missing) != nullptr);
+    XII_TEST_BOOL(graph.FindSubString("Source.xiiResaveTest") != nullptr);
+  }
+  set(0, "Package", "");
+  set(1, "Thumbnail", "");
+  set(1, "Package", "");
 }
