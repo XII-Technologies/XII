@@ -6,6 +6,6 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 xii_create_target(APPLICATION ${PROJECT_NAME})
 
 # Exercise the production scene plugin instead of compiling copies of selected implementation units.
-target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorFramework SharedPluginScene EditorPluginScene EditorPluginAssets)
+target_link_libraries(${PROJECT_NAME} PUBLIC TestFramework EditorFramework SharedPluginScene SharedPluginAssets EditorPluginScene EditorPluginAssets)
 add_dependencies(${PROJECT_NAME} EditorProcessor)
 xii_ci_add_test(${PROJECT_NAME})

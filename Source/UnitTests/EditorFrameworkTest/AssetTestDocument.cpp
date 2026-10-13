@@ -2,7 +2,17 @@
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 
+#include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFrameworkTest/AssetTestDocument.h>
+
+xiiAtomicInteger32 ResaveTestManager::s_NonActiveOutputChecks;
+
+bool ResaveTestManager::IsOutputUpToDate(xiiStringView path, xiiStringView tag, xiiUInt64 hash, const xiiAssetDocumentTypeDescriptor* type, const xiiPlatformProfile* profile)
+{
+  if (profile != nullptr && profile != xiiAssetCurator::GetSingleton()->GetActiveAssetProfile())
+    s_NonActiveOutputChecks.Increment();
+  return xiiAssetDocumentManager::IsOutputUpToDate(path, tag, hash, type, profile);
+}
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(ResaveTestProperties, 1, xiiRTTIDefaultAllocator<ResaveTestProperties>)

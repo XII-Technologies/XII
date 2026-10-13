@@ -5,6 +5,7 @@
 #include <EditorFrameworkTest/AssetDependenciesTest.h>
 #include <EditorFrameworkTest/AssetDependencyTrackingTest.h>
 #include <EditorFrameworkTest/AssetProcessorTest.h>
+#include <EditorFrameworkTest/AssetProfileTest.h>
 #include <EditorFrameworkTest/AssetResaveTest.h>
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
@@ -148,6 +149,10 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Production asset processor IPC")
     {
       TestAssetProcessor(*editor, project.GetFileDirectory());
+    }
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native asset profile evaluation and switching")
+    {
+      TestAssetProfiles(*editor, project.GetFileDirectory());
     }
     editor->CloseProject();
     pump();
