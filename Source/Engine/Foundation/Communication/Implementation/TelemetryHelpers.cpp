@@ -110,7 +110,9 @@ void xiiTelemetry::PerFrameUpdate()
   for (auto it = s_SystemMessages.GetIterator(); it.IsValid(); ++it)
   {
     if (!it.Value().m_IncomingQueue.IsEmpty() && it.Value().m_Callback)
+    {
       it.Value().m_Callback(it.Value().m_pPassThrough);
+    }
   }
 
   TelemetryEventData e;

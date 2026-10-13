@@ -1459,22 +1459,22 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
 
     if (resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
     {
-      XII_GAL_DEVICE_CHECK(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource '{}' (at index '{}') specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", resource.m_sName, i);
+      XII_GAL_DEVICE_CHECK(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Enabled, "The pipeline resource '{}' (at index {}) specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", resource.m_sName, i);
     }
     if (resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure)
     {
-      XII_GAL_DEVICE_CHECK(resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
-      XII_GAL_DEVICE_CHECK(resource.m_uiArraySize == 1U, "The acceleration structure resource at index '{}' must have an array size of one because acceleration-structure descriptor arrays are not supported.", i);
+      XII_GAL_DEVICE_CHECK(resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "The pipeline resource '{}' (at index {0}) specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", resource.m_sName, i);
+      XII_GAL_DEVICE_CHECK(resource.m_uiArraySize == 1U, "The acceleration structure resource '{}' at index '{}' must have an array size of one because acceleration-structure descriptor arrays are not supported.", resource.m_sName, i);
     }
     if (resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment)
     {
-      XII_GAL_DEVICE_CHECK(resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages == xiiGALShaderType::Pixel, "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
+      XII_GAL_DEVICE_CHECK(resource.m_ResourceType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages == xiiGALShaderType::Pixel, "The pipeline resource '{}' (at index {}) specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", resource.m_sName, i);
     }
 
     xiiBitflags<xiiGALPipelineResourceFlags> allowedResourceFlags = xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_ResourceType);
-    XII_GAL_DEVICE_CHECK(resource.m_PipelineResourceFlags.IsStrictlyAnySet(allowedResourceFlags) || resource.m_PipelineResourceFlags.IsNoFlagSet(), "The pipeline resource at index '{0}' contains flags that are not allowed for the shader resource type.", i);
+    XII_GAL_DEVICE_CHECK(resource.m_PipelineResourceFlags.IsStrictlyAnySet(allowedResourceFlags) || resource.m_PipelineResourceFlags.IsNoFlagSet(), "The pipeline resource '{}' (at index {}) contains flags that are not allowed for the shader resource type.", resource.m_sName, i);
 
-    XII_GAL_DEVICE_CHECK(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment) && m_Description.m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Vulkan), "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::GeneralInputAttachment flag, which is only valid on a Vulkan graphics implementation.", i);
+    XII_GAL_DEVICE_CHECK(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment) && m_Description.m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Vulkan), "The pipeline resource '{}' (at index {}) specifies the xiiGALPipelineResourceFlags::GeneralInputAttachment flag, which is only valid on a Vulkan graphics implementation.", resource.m_sName, i);
   }
 
   // Ensure that immutable samplers do not have conflicting shader stages.
@@ -1484,8 +1484,8 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
   {
     xiiGALImmutableSamplerDescription& samplerDescription = description.m_ImmutableSamplers[i];
 
-    XII_GAL_DEVICE_CHECK(!samplerDescription.m_SamplerOrTextureName.IsEmpty(), "The immutable sampler at index '{0}' requires a non-empty name.", i);
-    XII_GAL_DEVICE_CHECK(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler at index '{0}' requires a valid shader stage, and must not be xiiGALShaderType::Unknown.", i);
+    XII_GAL_DEVICE_CHECK(!samplerDescription.m_SamplerOrTextureName.IsEmpty(), "The immutable sampler '{}' (at index '{}') requires a non-empty name.", samplerDescription.m_SamplerOrTextureName, i);
+    XII_GAL_DEVICE_CHECK(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler '{}' (at index '{}') requires a valid shader stage, and must not be xiiGALShaderType::Unknown.", samplerDescription.m_SamplerOrTextureName, i);
 
     // Use anisotropic filtering if any of Anisotropic is set.
     if (samplerDescription.m_SamplerDescription.m_MagFilter == xiiGALFilterType::Anisotropic || samplerDescription.m_SamplerDescription.m_MinFilter == xiiGALFilterType::Anisotropic || samplerDescription.m_SamplerDescription.m_MipFilter == xiiGALFilterType::Anisotropic)

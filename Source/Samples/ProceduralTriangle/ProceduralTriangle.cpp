@@ -5,6 +5,7 @@
 
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/IO/DirectoryWatcher.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Logging/ConsoleWriter.h>
@@ -41,7 +42,13 @@
 
 #include <Shaders/ProceduralTriangleConstants.h>
 
-xiiCommandLineOptionInt opt_MonitorId("ProceduralTriangle", "-monitor", "The monitor to launch the application winodw.", 0U);
+#if XII_ENABLED(XII_SUPPORTS_DIRECTORY_WATCHER)
+#  define USE_DIRECTORY_WATCHER XII_ON
+#else
+#  define USE_DIRECTORY_WATCHER XII_OFF
+#endif
+
+xiiCommandLineOptionInt opt_MonitorId("ProceduralTriangle", "-monitor", "The monitor to launch the application window.", 0U);
 
 static bool g_bWindowResized = false;
 
@@ -82,33 +89,88 @@ public:
       UpdateSwapChain();
     }
 
+    // Advance the engine clock, then sample the *current* frame's input states.
+    xiiClock::GetGlobalClock()->Update();
+
+    const float fFrameDelta = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
+    xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
+
     if (WasQuitRequested() || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
       return Execution::Quit;
 
-    // Make sure time goes on
-    xiiClock::GetGlobalClock()->Update();
-
-    // Update all input state
-    xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
-
-    // Engage mouse look
-    if (xiiInputManager::GetInputActionState("Main", "Look") == xiiKeyState::Down)
+    if (xiiInputManager::GetInputActionState("Main", "Pause") == xiiKeyState::Pressed)
     {
-      m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
-      m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
+      m_SceneState.m_bPaused = !m_SceneState.m_bPaused;
     }
-    else
+    if (xiiInputManager::GetInputActionState("Main", "Palette") == xiiKeyState::Pressed)
     {
-      m_pWindow->GetInputDevice()->SetShowMouseCursor(true);
-      m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
+      m_SceneState.m_uiPalette = (m_SceneState.m_uiPalette + 1U) % 4U;
     }
+    if (xiiInputManager::GetInputActionState("Main", "Quality") == xiiKeyState::Pressed)
+    {
+      m_SceneState.m_uiQuality = (m_SceneState.m_uiQuality + 1U) % 3U;
+    }
+    if (xiiInputManager::GetInputActionState("Main", "HUD") == xiiKeyState::Pressed)
+    {
+      m_SceneState.m_bHUD = !m_SceneState.m_bHUD;
+    }
+    if (xiiInputManager::GetInputActionState("Main", "ResetCamera") == xiiKeyState::Pressed)
+    {
+      m_SceneState.m_fCameraYaw   = 0.0f;
+      m_SceneState.m_fCameraPitch = 0.0f;
+    }
+
+    // Clamp giant debugging/resize deltas so a single stalled frame cannot jump the scene across several animation phases.
+    const float fDelta = (fFrameDelta < 0.1f) ? fFrameDelta : 0.1f;
+    if (!m_SceneState.m_bPaused)
+    {
+      m_SceneState.m_fSceneTime += fDelta;
+    }
+    if (xiiInputManager::GetInputActionState("Main", "OrbitLeft") == xiiKeyState::Down)
+    {
+      m_SceneState.m_fCameraYaw -= fDelta * 0.85f;
+    }
+    if (xiiInputManager::GetInputActionState("Main", "OrbitRight") == xiiKeyState::Down)
+    {
+      m_SceneState.m_fCameraYaw += fDelta * 0.85f;
+    }
+    if (xiiInputManager::GetInputActionState("Main", "OrbitUp") == xiiKeyState::Down)
+    {
+      m_SceneState.m_fCameraPitch += fDelta * 0.40f;
+    }
+    if (xiiInputManager::GetInputActionState("Main", "OrbitDown") == xiiKeyState::Down)
+    {
+      m_SceneState.m_fCameraPitch -= fDelta * 0.40f;
+    }
+    if (m_SceneState.m_fCameraPitch > 0.9f)
+    {
+      m_SceneState.m_fCameraPitch = 0.9f;
+    }
+    if (m_SceneState.m_fCameraPitch < -0.9f)
+    {
+      m_SceneState.m_fCameraPitch = -0.9f;
+    }
+
+    // Reload resources if modified
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    {
+      m_bFileModified = false;
+
+      m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiProceduralTriangleApp::OnFileChanged, this));
+
+      if (m_bFileModified)
+      {
+        xiiResourceManager::ReloadAllResources(false);
+      }
+    }
+#endif
 
     // Perform rendering.
     {
       // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      // If swap chain or its back buffer (or depth/rederpass) are not available we must skip rendering.
+      // Skip rendering if the swap chain or its back buffer is unavailable.
       bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr);
 
       if (bCanRender)
@@ -122,9 +184,9 @@ public:
 
         renderGraph.BeginSetup(m_uiFrameIndex);
         {
-          renderGraph.AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteOffscreenPass, this));
-          renderGraph.AddPass<ProceduralTrianglePassData>("ProceduralTrianglePass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteProceduralTrianglePass, this));
-          renderGraph.AddPass<BlitPassData>("BlitPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupBlitPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
+          renderGraph.AddPass<OffscreenPassData>("PRISMATIC.Clear", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteOffscreenPass, this));
+          renderGraph.AddPass<ProceduralTrianglePassData>("PRISMATIC.Crystal", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteProceduralTrianglePass, this));
+          renderGraph.AddPass<BlitPassData>("PRISMATIC.Present", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupBlitPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
         }
         renderGraph.EndSetup();
 
@@ -162,6 +224,9 @@ public:
       m_pDevice->EndFrame();
     }
 
+    // Make sure telemetry is sent out regularly.
+    xiiTelemetry::PerFrameUpdate();
+
     // Needs to be called once per frame
     xiiResourceManager::PerFrameUpdate();
 
@@ -176,9 +241,15 @@ public:
   virtual void AfterCoreSystemsStartup() override
   {
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/ProceduralTriangle";
+
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
+    m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
+#endif
 
     xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
@@ -186,6 +257,18 @@ public:
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    xiiTelemetry::SetServerName("Procedural Triangle");
+
+    // Activate xiiTelemetry such that the inspector plugin can use the network connection.
+    xiiTelemetry::CreateServer();
+
+    // Load the inspector plugin.
+    // The plugin contains automatic configuration code (through the xiiStartup system), so it will configure itself properly when the engine is initialized by calling xiiStartup::StartupCore().
+    // When you are using xiiApplication, this is done automatically.
+    xiiPlugin::LoadPlugin("xiiInspectorPlugin", xiiPluginLoadFlags::PluginIsOptional).IgnoreResult();
+#endif
 
     // Register Input
     {
@@ -195,10 +278,55 @@ public:
       cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyEscape;
       xiiInputManager::SetInputActionConfig("Main", "CloseApp", cfg, true);
 
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "Look");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseButton0;
+      // Keyboard controls use standard xiiInputSlot names from XII's input manager.
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "Pause");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeySpace;
       cfg.m_bApplyTimeScaling    = false;
-      xiiInputManager::SetInputActionConfig("Main", "Look", cfg, true);
+      xiiInputManager::SetInputActionConfig("Main", "Pause", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "Palette");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyC;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "Palette", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "Quality");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyQ;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "Quality", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "HUD");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyH;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "HUD", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "ResetCamera");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyR;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "ResetCamera", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "OrbitLeft");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyA;
+      cfg.m_sInputSlotTrigger[1] = xiiInputSlot_KeyLeft;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "OrbitLeft", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "OrbitRight");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyD;
+      cfg.m_sInputSlotTrigger[1] = xiiInputSlot_KeyRight;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "OrbitRight", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "OrbitUp");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyW;
+      cfg.m_sInputSlotTrigger[1] = xiiInputSlot_KeyUp;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "OrbitUp", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "OrbitDown");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyS;
+      cfg.m_sInputSlotTrigger[1] = xiiInputSlot_KeyDown;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "OrbitDown", cfg, true);
     }
 
     // Create a window for rendering
@@ -231,6 +359,7 @@ public:
 
     {
       xiiGALDeviceCreationDescription deviceCreationDescription;
+      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Enabled;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
@@ -280,6 +409,13 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+    xiiTelemetry::CloseConnection();
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    m_pDirectoryWatcher->CloseDirectory();
+    m_pDirectoryWatcher.Clear();
+#endif
+
     m_RenderGraphContext.Shutdown();
 
     m_pSwapChain.Clear();
@@ -332,7 +468,6 @@ private:
   struct OffscreenPassData
   {
     xiiRenderGraphTextureHandle m_hOffScreenTexture;
-    float                       m_fGlobalTime = 0.0f;
   };
 
   void SetupOffscreenPass(OffscreenPassData& data, xiiRenderGraphBuilder& builder)
@@ -346,8 +481,6 @@ private:
     // This declares a new texture resource for the render graph and registers that we will write to it in this pass.
     // The returned handle references the texture at its new version, so store and use this handle for all future reads/writes.
     data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::RenderTarget);
-
-    data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
   }
 
   void ExecuteOffscreenPass(const OffscreenPassData& data, xiiRenderGraphPassContext& context)
@@ -396,12 +529,12 @@ private:
         colorAttachmentReferenceDescription.m_uiAttachmentIndex                   = 0U;
       }
 
-      xiiGALSubPassDependencyDescription& dependencyDesc = renderPassDescription.m_Dependencies.ExpandAndGetRef();
-      dependencyDesc.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
-      dependencyDesc.m_uiDestinationSubPass              = 0U;
-      dependencyDesc.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
+      xiiGALSubPassDependencyDescription& dependencyDescription = renderPassDescription.m_Dependencies.ExpandAndGetRef();
+      dependencyDescription.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
+      dependencyDescription.m_uiDestinationSubPass              = 0U;
+      dependencyDescription.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+      dependencyDescription.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+      dependencyDescription.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
     }
     data.m_pRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
 
@@ -422,17 +555,20 @@ private:
     {
       xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
 
-      xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
-      graphicsPipelineStateDescription.m_pPipelineResourceSignature            = pShaderPermutation->GetPipelineResourceSignature();
-      graphicsPipelineStateDescription.m_pVertexShader                         = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
-      graphicsPipelineStateDescription.m_pPixelShader                          = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass        = data.m_pRenderPass;
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
+      if (pShaderPermutation->IsShaderValid())
+      {
+        xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
+        graphicsPipelineStateDescription.m_pPipelineResourceSignature            = pShaderPermutation->GetPipelineResourceSignature();
+        graphicsPipelineStateDescription.m_pVertexShader                         = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
+        graphicsPipelineStateDescription.m_pPixelShader                          = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass        = data.m_pRenderPass;
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
 
-      pPipelineState = xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+        pPipelineState = xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+      }
     }
 
     xiiSharedPtr<xiiGALFramebuffer> pFramebuffer;
@@ -456,17 +592,23 @@ private:
         // Map the constant buffer and write the data for this frame. The render graph will ensure proper synchronization so that the GPU is not still reading from it when we write to it.
         xiiGALMapHelper<xiiProceduralTriangleConstants> pConstants(cmd, context.GetBuffer(data.m_hTriangleConstantBuffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-        pConstants->fTime       = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 1000.0);
-        pConstants->vResolution = xiiVec2::Make((float)framebufferSize.width, (float)framebufferSize.height);
-        pConstants->fWireWidth  = 1.0f;
+        pConstants->fTime             = xiiMath::Mod(m_SceneState.m_fSceneTime, 1000.0f);
+        pConstants->vResolution       = xiiVec2::Make((float)framebufferSize.width, (float)framebufferSize.height);
+        pConstants->fWireWidth        = 1.15f;
+        pConstants->vSceneParameters  = xiiVec4((float)m_SceneState.m_uiPalette, (float)m_SceneState.m_uiQuality, 1.20f, m_SceneState.m_bHUD ? 1.0f : 0.0f);
+        pConstants->vCameraParameters = xiiVec4(m_SceneState.m_fCameraYaw, m_SceneState.m_fCameraPitch, 5.4f, 0.0f);
       }
       cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
       {
-        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height));                               // Set the viewport to cover the entire render target.
-        cmd.SetPipelineState(pPipelineState);                                                                                                 // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
-        cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiProceduralTriangleConstants), context.GetBuffer(data.m_hTriangleConstantBuffer)); // This will bind the constant buffer to the correct slot based on the shader reflection data, and also ensure proper resource state transitions.
-        cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).IgnoreResult();                                                          // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
-        cmd.Draw({3});                                                                                                                        // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
+        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height)); // Set the viewport to cover the entire render target.
+
+        if (pPipelineState)
+        {
+          cmd.SetPipelineState(pPipelineState);                                                                                                 // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
+          cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiProceduralTriangleConstants), context.GetBuffer(data.m_hTriangleConstantBuffer)); // This will bind the constant buffer to the correct slot based on the shader reflection data, and also ensure proper resource state transitions.
+          cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).IgnoreResult();                                                          // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
+          cmd.Draw({3});                                                                                                                        // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
+        }
       }
       cmd.EndRenderPass(); // End the render pass, which will also perform necessary resource transitions to make the offscreen texture available for reading in the next pass.
     }
@@ -504,6 +646,18 @@ private:
     cmd.EndDebugGroup();
   }
 
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+  void OnFileChanged(xiiStringView sFileName, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type)
+  {
+    if (action == xiiDirectoryWatcherAction::Modified && type == xiiDirectoryWatcherType::File)
+    {
+      xiiLog::Info("File modified: '{0}'.", sFileName);
+
+      m_bFileModified = true;
+    }
+  }
+#endif
+
 private:
   xiiSharedPtr<xiiGALDevice>    m_pDevice;
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
@@ -511,6 +665,22 @@ private:
   xiiRenderGraphContext   m_RenderGraphContext;
   xiiUInt64               m_uiFrameIndex = 0ULL;
   xiiUniquePtr<xiiWindow> m_pWindow;
+
+  struct
+  {
+    float     m_fSceneTime   = 0.0f;  ///< The scene time is used to animate the procedural triangle shader. It is updated every frame based on the delta time and can be paused with the space bar.
+    float     m_fCameraYaw   = 0.0f;  ///< The camera yaw is used to orbit the camera around the procedural triangle. It is updated every frame based on the input from the WASD keys and can be reset with the R key.
+    float     m_fCameraPitch = 0.0f;  ///< The camera pitch is used to orbit the camera around the procedural triangle. It is updated every frame based on the input from the WASD keys and can be reset with the R key.
+    xiiUInt32 m_uiPalette    = 0U;    ///< The palette index is used to select the color palette for the procedural triangle shader. It can be changed with the C key.
+    xiiUInt32 m_uiQuality    = 1U;    ///< The quality index is used to select the quality level for the procedural triangle shader. It can be changed with the Q key.
+    bool      m_bPaused      = false; ///< The paused flag is used to pause the scene time and the camera orbiting. It can be toggled with the space bar.
+    bool      m_bHUD         = true;  ///< The HUD flag is used to toggle the display of the heads-up display (HUD) that shows the current palette and quality settings. It can be toggled with the H key.
+  } m_SceneState;
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+  xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
+  bool                              m_bFileModified = false;
+#endif
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiProceduralTriangleApp);
