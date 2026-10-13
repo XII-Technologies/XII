@@ -191,7 +191,7 @@ bool ReserveVisibleMeshlet(uint maximumCount, out uint destination)
   uint selectionIndex = instanceIndex;
   if (instance.LodSelectionIndex < min(view.InstanceCount, sceneCount) && g_SceneInstances[instance.LodSelectionIndex].GeometryIndex == instance.GeometryIndex)
     selectionIndex = instance.LodSelectionIndex;
-  const GpuSceneInstance selection = g_SceneInstances[selectionIndex];
+  const GpuSceneInstance  selection         = g_SceneInstances[selectionIndex];
   const GpuGeometryRecord geometry          = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
   const float             distanceToCamera  = length(selection.BoundsCenterRadius.xyz - view.CameraPosition.xyz);
   const float             projectedCoverage = GetInstanceLodRadius(selection) * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f);

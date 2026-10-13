@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <SharedPluginAssets/Common/MeshMaterialSlots.h>
 #include <ModelImporter/MeshImport.h>
+#include <SharedPluginAssets/Common/MeshMaterialSlots.h>
 
 struct xiiPropertyMetaStateEvent;
 

@@ -76,13 +76,13 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Additive clips sample neutral missing joints and preview over rest pose")
   {
     xiiAnimationClipResourceDescriptor additive;
-    additive.m_Duration = xiiTime::MakeFromSeconds(2);
+    additive.m_Duration  = xiiTime::MakeFromSeconds(2);
     additive.m_bAdditive = true;
-    additive.m_bLooping = false;
-    auto& delta = additive.AddJointTrack("Child");
+    additive.m_bLooping  = false;
+    auto& delta          = additive.AddJointTrack("Child");
     delta.m_PositionKeys.PushBack({0, xiiVec3::MakeZero()});
     delta.m_PositionKeys.PushBack({2, xiiVec3(2, 0, 0)});
-    const auto handle = xiiResourceManager::CreateResource<xiiAnimationClipResource>("EditorAdditivePreviewClip", std::move(additive));
+    const auto                                handle = xiiResourceManager::CreateResource<xiiAnimationClipResource>("EditorAdditivePreviewClip", std::move(additive));
     xiiResourceLock<xiiAnimationClipResource> resource(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!XII_TEST_BOOL(resource.GetPointer() != nullptr))
       return;

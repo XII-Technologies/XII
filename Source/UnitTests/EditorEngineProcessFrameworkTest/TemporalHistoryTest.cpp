@@ -286,7 +286,7 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
   const auto inspect = definition.AddPass("Temporal history check", "xiiPipelineHistoryCheck");
   if (!XII_TEST_RESULT(definition.Connect(inspect - 1, "After", inspect, "Before")))
     return;
-  const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Interleaved default pipeline history", std::move(definition));
+  const auto             pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Interleaved default pipeline history", std::move(definition));
   xiiCamera              cameras[2];
   xiiUniquePtr<xiiWorld> worlds[2];
   xiiView*               views[2] = {};

@@ -157,7 +157,7 @@ static void RunSceneLodReload(bool skinned)
   auto& cache = uploadContext.GetResourceCache();
   cache.BeginFrame(1, 0);
   graph.BeginSetup(1);
-  const auto uploaded = xiiGeometryResidencyManager::AddUploadPass(graph, 1);
+  const auto                   uploaded = xiiGeometryResidencyManager::AddUploadPass(graph, 1);
   xiiGpuFrameCompletionTracker completion;
   completion.Initialize(environment.GetDevice());
   struct Export

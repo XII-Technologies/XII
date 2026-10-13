@@ -2063,7 +2063,9 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
   for (auto* pool : {m_pTransferCommandBufferPool.Borrow(), m_pComputeCommandBufferPool.Borrow(), m_pGraphicsCommandBufferPool.Borrow()})
   {
     if (pool)
-      while (pool->ReclaimCompleted() != 0U) {}
+      while (pool->ReclaimCompleted() != 0U)
+      {
+      }
   }
   m_pDeferredDeletionQueue->ReleaseResources(true);
 }

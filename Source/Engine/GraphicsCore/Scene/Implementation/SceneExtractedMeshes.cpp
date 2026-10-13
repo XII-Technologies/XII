@@ -65,8 +65,8 @@ namespace
   {
     auto&           scene                = *slot.m_pDatabase;
     bool            resetSkinningHistory = true;
-    const xiiUInt32 forcedLod = renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? renderData.m_uiLODIndex : xiiInvalidIndex;
-    const auto      hMaterial = materialIndex < renderData.m_hMaterials.GetCount() ? renderData.m_hMaterials[materialIndex] : xiiMaterialResourceHandle{};
+    const xiiUInt32 forcedLod            = renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? renderData.m_uiLODIndex : xiiInvalidIndex;
+    const auto      hMaterial            = materialIndex < renderData.m_hMaterials.GetCount() ? renderData.m_hMaterials[materialIndex] : xiiMaterialResourceHandle{};
 
     xiiSceneDatabaseManagerState::ExtractedMeshEntry* pEntry = nullptr;
     slot.m_ExtractedMeshes.TryGetValue(key, pEntry);
@@ -138,10 +138,10 @@ namespace
         return XII_SUCCESS;
 
       xiiGeometryResidencyManager::ReleaseMeshGeometry(pEntry->m_hGeometry, uiFrameIndex);
-      const bool changed  = pEntry->m_hGeometry != hGeometry;
+      const bool changed   = pEntry->m_hGeometry != hGeometry;
       resetSkinningHistory = changed;
-      pEntry->m_hMesh     = renderData.m_hMesh;
-      pEntry->m_hGeometry = hGeometry;
+      pEntry->m_hMesh      = renderData.m_hMesh;
+      pEntry->m_hGeometry  = hGeometry;
       if (changed)
       {
         scene.SetGeometry(pEntry->m_hSceneObject, hGeometry.GetInternalID().m_InstanceIndex);

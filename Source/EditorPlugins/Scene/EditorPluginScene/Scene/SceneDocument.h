@@ -236,8 +236,8 @@ protected:
   xiiRttiConverterContext m_Context;
 
   xiiEvent<const xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>::EventData&>::Unsubscriber m_MetaDataEventSubscriber;
-  xiiEvent<const xiiToolsProjectEvent&, xiiMutex>::Unsubscriber m_ProjectEventSubscriber;
-  xiiEvent<const xiiEditorEngineProcessConnection::Event&>::Unsubscriber m_EngineEventSubscriber;
+  xiiEvent<const xiiToolsProjectEvent&, xiiMutex>::Unsubscriber                                   m_ProjectEventSubscriber;
+  xiiEvent<const xiiEditorEngineProcessConnection::Event&>::Unsubscriber                          m_EngineEventSubscriber;
 
   //////////////////////////////////////////////////////////////////////////
 protected:

@@ -5,7 +5,7 @@
 #pragma once
 
 StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
-Texture2D<float4> g_Textures[];
+Texture2D<float4>                       g_Textures[];
 
 xiiGpuSurfaceMaterial xiiLoadSceneSurfaceMaterial(uint materialIndex, uint materialBaseIndex)
 {
@@ -13,14 +13,14 @@ xiiGpuSurfaceMaterial xiiLoadSceneSurfaceMaterial(uint materialIndex, uint mater
   g_SurfaceMaterials.GetDimensions(materialCount, materialStride);
   const bool materialIsValid = materialIndex != 0xFFFFFFFFu && materialBaseIndex < materialCount && materialIndex < materialCount - materialBaseIndex;
 
-  xiiGpuSurfaceMaterial material = (xiiGpuSurfaceMaterial)0;
-  material.BaseColorOpacity = 1.0f;
+  xiiGpuSurfaceMaterial material       = (xiiGpuSurfaceMaterial)0;
+  material.BaseColorOpacity            = 1.0f;
   material.EmissiveColorAndRoughness.w = 0.5f;
-  material.SurfaceParameters = float4(0.0f, 0.5f, 0.0f, 1.0f);
-  material.LayerParameters = float4(0.5f, 1.0f, 0.0f, 0.1f);
-  material.TextureIndices0 = 0xFFFFFFFFu;
-  material.TextureIndices1 = 0xFFFFFFFFu;
-  material.Metadata.y = 0xF000u;
+  material.SurfaceParameters           = float4(0.0f, 0.5f, 0.0f, 1.0f);
+  material.LayerParameters             = float4(0.5f, 1.0f, 0.0f, 0.1f);
+  material.TextureIndices0             = 0xFFFFFFFFu;
+  material.TextureIndices1             = 0xFFFFFFFFu;
+  material.Metadata.y                  = 0xF000u;
   if (materialIsValid)
     material = g_SurfaceMaterials[materialBaseIndex + materialIndex];
 

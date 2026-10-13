@@ -126,7 +126,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
   cam.m_uiViewID                    = GetViewID();
   cam.m_fNearPlane                  = m_pViewConfig->m_Camera.GetNearPlane();
   cam.m_fFarPlane                   = m_pViewConfig->m_Camera.GetFarPlane();
-  cam.m_CameraMode                 = m_pViewConfig->m_Camera.GetCameraMode();
+  cam.m_CameraMode                  = m_pViewConfig->m_Camera.GetCameraMode();
   cam.m_bUseCameraTransformOnDevice = m_pViewConfig->m_bUseCameraTransformOnDevice;
   cam.m_fFovOrDim                   = fFov;
   cam.m_vDirForwards                = m_pViewConfig->m_Camera.GetCenterDirForwards();

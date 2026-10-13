@@ -8,8 +8,8 @@
 namespace xiiRGBlackboardKeys
 {
   // Native frame-table addressing, published by PrepareFrame alongside its buffer outputs.
-  constexpr xiiStringView k_GpuGeometryBaseIndex = "GpuGeometryBaseIndex"_xiisv; ///< UInt32 - geometry table frame slice.
-  constexpr xiiStringView k_GpuMaximumResidentMeshlets = "GpuMaximumResidentMeshlets"_xiisv; ///< UInt32 - complete resident LOD dispatch bound.
+  constexpr xiiStringView k_GpuGeometryBaseIndex        = "GpuGeometryBaseIndex"_xiisv;        ///< UInt32 - geometry table frame slice.
+  constexpr xiiStringView k_GpuMaximumResidentMeshlets  = "GpuMaximumResidentMeshlets"_xiisv;  ///< UInt32 - complete resident LOD dispatch bound.
   constexpr xiiStringView k_GpuSurfaceMaterialBaseIndex = "GpuSurfaceMaterialBaseIndex"_xiisv; ///< UInt32 - material table frame slice.
   // Stage 1 - Visibility & Setup.
 

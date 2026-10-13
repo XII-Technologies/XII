@@ -48,7 +48,7 @@ XII_CREATE_SIMPLE_TEST(ImageDimensions, StoredLowerMipChain)
 
       xiiImage result;
       result.ResetAndCopy(source);
-      const xiiImageView& original = source;
+      const xiiImageView& original  = source;
       const xiiImageView& unchanged = result;
       XII_TEST_BOOL(xiiImageUtils::ExtractLowerMipChain(source, result, 0).Failed());
       XII_TEST_BOOL(unchanged.GetByteBlobPtr() == original.GetByteBlobPtr());

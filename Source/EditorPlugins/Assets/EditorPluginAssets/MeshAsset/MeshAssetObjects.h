@@ -3,10 +3,10 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <SharedPluginAssets/Common/MeshMaterialSlots.h>
 #include <GraphicsCore/Declarations.h>
 #include <ModelImporter/MeshImport.h>
 #include <SharedPluginAssets/Common/MeshImportTransform.h>
+#include <SharedPluginAssets/Common/MeshMaterialSlots.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
 struct xiiPropertyMetaStateEvent;

@@ -90,8 +90,8 @@ XII_CREATE_SIMPLE_TEST(Resources, Texture)
     // On devices without concurrent creation, retain the initial view so both
     // workers exercise cache acquisition without creating platform objects.
     auto                     retained = environment.GetDevice()->GetFeatures().m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled ?
-      xiiSharedPtr<xiiGALTextureView>() :
-      texture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+                          xiiSharedPtr<xiiGALTextureView>() :
+                          texture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
     DefaultTextureViewThread first(texture), second(texture);
     first.Start();
     second.Start();

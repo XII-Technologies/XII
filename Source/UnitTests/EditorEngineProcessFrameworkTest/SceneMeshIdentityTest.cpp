@@ -479,7 +479,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         xiiMaterialResourceDescriptor materialDescription;
         materialDescription.m_AlphaMode   = alphaMode;
         materialDescription.m_BlendMode   = alphaMode == xiiMaterialAlphaMode::Blend ? xiiMaterialBlendMode::Translucent :
-          alphaMode == xiiMaterialAlphaMode::Mask                                    ? xiiMaterialBlendMode::Masked :
+            alphaMode == xiiMaterialAlphaMode::Mask                                  ? xiiMaterialBlendMode::Masked :
                                                                                        xiiMaterialBlendMode::Opaque;
         materialDescription.m_BaseColor.a = opacity;
         xiiStringBuilder materialName;

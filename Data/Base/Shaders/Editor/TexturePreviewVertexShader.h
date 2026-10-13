@@ -20,7 +20,7 @@ VS_OUT main(VS_IN input)
 {
   VS_OUT output;
   output.Position = mul(ViewProjection, float4(input.Position, 1));
-  output.Normal = input.Normal;
-  output.UV = input.UV;
+  output.Normal   = input.Normal;
+  output.UV       = input.UV;
   return output;
 }

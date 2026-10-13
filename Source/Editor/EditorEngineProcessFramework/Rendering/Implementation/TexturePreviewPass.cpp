@@ -150,8 +150,8 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
   xiiResourceLock<xiiMeshBufferResource> geometry(m_hGeometry, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!geometry || !geometry->GetVertexBuffer() || !geometry->GetIndexBuffer())
     return XII_FAILURE;
-  auto                                          shader      = xiiResourceManager::LoadResource<xiiShaderResource>(m_bCube ? "Shaders/Editor/TextureCubePreview.xiiShader" : "Shaders/Editor/TexturePreview.xiiShader");
-  auto                                          permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
+  auto shader      = xiiResourceManager::LoadResource<xiiShaderResource>(m_bCube ? "Shaders/Editor/TextureCubePreview.xiiShader" : "Shaders/Editor/TexturePreview.xiiShader");
+  auto permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
   if (!permutation.IsValid())
     return XII_FAILURE;
   xiiResourceLock<xiiShaderPermutationResource> program(permutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);

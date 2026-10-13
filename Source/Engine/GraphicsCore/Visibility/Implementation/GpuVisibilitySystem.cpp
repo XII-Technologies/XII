@@ -447,7 +447,7 @@ void xiiGpuVisibilitySystem::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiComp
       const xiiUInt32 uiMainOrSensorMask       = XII_BIT(xiiGpuVisibilityPurpose::MainView) | XII_BIT(xiiGpuVisibilityPurpose::Sensor);
       const xiiUInt32 uiReflectionOrEditorMask = XII_BIT(xiiGpuVisibilityPurpose::Reflection) | XII_BIT(xiiGpuVisibilityPurpose::Editor);
       const xiiUInt32 uiPurposeTier            = (feedback.m_uiPurposeMask & uiMainOrSensorMask) != 0U ? 3U :
-        (feedback.m_uiPurposeMask & uiReflectionOrEditorMask) != 0U                                    ? 2U :
+                   (feedback.m_uiPurposeMask & uiReflectionOrEditorMask) != 0U                         ? 2U :
                                                                                                          1U;
       const xiiUInt32 uiPriority               = (uiPurposeTier << 30U) | xiiMath::Min(feedback.m_uiPriority, 0x3FFFFFFFU);
       xiiGeometryResidencyManager::RequestResidency(hGeometry, uiDesiredLod, uiFeedbackFrame, uiPriority);

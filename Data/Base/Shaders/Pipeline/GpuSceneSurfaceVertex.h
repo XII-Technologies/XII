@@ -5,19 +5,19 @@
 #pragma once
 
 #include <Shaders/Materials/GpuSurfaceMaterial.h>
-#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Visibility/GpuSceneCommon.h>
 
 struct GBufferVertex
 {
-  float4 Position : SV_Position;
-  float3 WorldNormal : TEXCOORD0;
-  float3 WorldTangent : TEXCOORD1;
-  float TangentSign : TEXCOORD2;
-  float2 TexCoord : TEXCOORD3;
+  float4               Position : SV_Position;
+  float3               WorldNormal : TEXCOORD0;
+  float3               WorldTangent : TEXCOORD1;
+  float                TangentSign : TEXCOORD2;
+  float2               TexCoord : TEXCOORD3;
   nointerpolation uint MaterialIndex : TEXCOORD4;
-  float4 PreviousClipPosition : TEXCOORD5;
+  float4               PreviousClipPosition : TEXCOORD5;
   nointerpolation uint ObjectId : TEXCOORD6;
 };
 
