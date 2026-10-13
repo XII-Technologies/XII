@@ -4,6 +4,7 @@
 
 #include <EditorFramework/Actions/AssetActions.h>
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <GuiFoundation/UIServices/UIServices.moc.h>
 
 xiiActionDescriptorHandle xiiAssetActions::s_hAssetCategory;
 xiiActionDescriptorHandle xiiAssetActions::s_hTransformAsset;
@@ -150,7 +151,8 @@ void xiiAssetAction::Execute(const xiiVariant& value)
       if (sOutput.IsEmpty())
         return;
 
-      xiiAssetCurator::GetSingleton()->WriteDependencyDGML(m_Context.m_pDocument->GetGuid(), sOutput);
+      const xiiResult result = xiiAssetCurator::GetSingleton()->WriteDependencyDGML(m_Context.m_pDocument->GetGuid(), sOutput);
+      xiiQtUiServices::MessageBoxStatus(result, "Writing the dependency graph failed.");
     }
     break;
   }

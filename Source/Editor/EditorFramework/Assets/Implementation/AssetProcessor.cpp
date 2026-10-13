@@ -434,7 +434,7 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
 
           xiiSet<xiiString> dependencies;
           xiiStringBuilder  sTemp;
-          xiiAssetCurator::GetSingleton()->GenerateTransitiveHull(xiiConversionUtils::ToString(m_AssetGuid, sTemp), dependencies, true, true);
+          xiiAssetCurator::GetSingleton()->GenerateTransitiveHull(xiiConversionUtils::ToString(m_AssetGuid, sTemp), dependencies, true, true, true);
 
           m_TransitiveHull.Reserve(dependencies.GetCount());
           for (const xiiString& str : dependencies)
