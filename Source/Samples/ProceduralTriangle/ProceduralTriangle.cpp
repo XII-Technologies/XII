@@ -428,12 +428,12 @@ private:
         colorAttachmentReferenceDescription.m_uiAttachmentIndex                   = 0U;
       }
 
-      xiiGALSubPassDependencyDescription& dependencyDesc = renderPassDescription.m_Dependencies.ExpandAndGetRef();
-      dependencyDesc.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
-      dependencyDesc.m_uiDestinationSubPass              = 0U;
-      dependencyDesc.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
+      xiiGALSubPassDependencyDescription& dependencyDescription = renderPassDescription.m_Dependencies.ExpandAndGetRef();
+      dependencyDescription.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
+      dependencyDescription.m_uiDestinationSubPass              = 0U;
+      dependencyDescription.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+      dependencyDescription.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+      dependencyDescription.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
     }
     data.m_pRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
 
@@ -454,17 +454,20 @@ private:
     {
       xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
 
-      xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
-      graphicsPipelineStateDescription.m_pPipelineResourceSignature            = pShaderPermutation->GetPipelineResourceSignature();
-      graphicsPipelineStateDescription.m_pVertexShader                         = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
-      graphicsPipelineStateDescription.m_pPixelShader                          = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass        = data.m_pRenderPass;
-      graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
+      if (pShaderPermutation->IsShaderValid())
+      {
+        xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
+        graphicsPipelineStateDescription.m_pPipelineResourceSignature            = pShaderPermutation->GetPipelineResourceSignature();
+        graphicsPipelineStateDescription.m_pVertexShader                         = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
+        graphicsPipelineStateDescription.m_pPixelShader                          = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass        = data.m_pRenderPass;
+        graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
 
-      pPipelineState = xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+        pPipelineState = xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+      }
     }
 
     xiiSharedPtr<xiiGALFramebuffer> pFramebuffer;
@@ -494,11 +497,15 @@ private:
       }
       cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
       {
-        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height));                               // Set the viewport to cover the entire render target.
-        cmd.SetPipelineState(pPipelineState);                                                                                                 // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
-        cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiProceduralTriangleConstants), context.GetBuffer(data.m_hTriangleConstantBuffer)); // This will bind the constant buffer to the correct slot based on the shader reflection data, and also ensure proper resource state transitions.
-        cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).IgnoreResult();                                                          // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
-        cmd.Draw({3});                                                                                                                        // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
+        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height)); // Set the viewport to cover the entire render target.
+
+        if (pPipelineState)
+        {
+          cmd.SetPipelineState(pPipelineState);                                                                                                 // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
+          cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiProceduralTriangleConstants), context.GetBuffer(data.m_hTriangleConstantBuffer)); // This will bind the constant buffer to the correct slot based on the shader reflection data, and also ensure proper resource state transitions.
+          cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).IgnoreResult();                                                          // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
+          cmd.Draw({3});                                                                                                                        // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
+        }
       }
       cmd.EndRenderPass(); // End the render pass, which will also perform necessary resource transitions to make the offscreen texture available for reading in the next pass.
     }
