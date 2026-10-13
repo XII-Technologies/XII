@@ -4,10 +4,15 @@
 
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OpenDdlReader.h>
+#include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
+#include <Foundation/Serialization/RttiConverter.h>
+#include <Foundation/Types/ScopeExit.h>
 
 const xiiPlatformProfile* xiiAssetCurator::GetDevelopmentAssetProfile() const
 {
@@ -166,16 +171,29 @@ xiiResult xiiAssetCurator::SaveAssetProfiles()
   return file.Close();
 }
 
-xiiResult xiiAssetCurator::LoadAssetProfiles()
+xiiResult xiiAssetCurator::ReloadAssetProfiles()
 {
-  XII_LOG_BLOCK("LoadAssetProfiles", ":project/Editor/PlatformProfiles.ddl");
+  XII_LOG_BLOCK("ReloadAssetProfiles", ":project/Editor/AssetProfiles.ddl");
 
   xiiFileReader file;
   if (file.Open(":project/Editor/AssetProfiles.ddl").Failed())
     return XII_FAILURE;
 
-  xiiOpenDdlReader ddl;
-  if (ddl.ParseDocument(file).Failed())
+  if (file.GetFileSize() > xiiMath::MaxValue<xiiUInt32>())
+    return XII_FAILURE;
+  xiiContiguousMemoryStreamStorage contents;
+  contents.ReadAll(file, file.GetFileSize());
+  if (contents.GetStorageSize64() != file.GetFileSize())
+    return XII_FAILURE;
+  file.Close();
+
+  const xiiUInt64 hash = xiiHashingUtils::xxHash64(contents.GetData(), contents.GetStorageSize64());
+  if (m_bAssetProfilesLoaded && hash == m_uiLoadedAssetProfilesHash)
+    return XII_SUCCESS;
+
+  xiiMemoryStreamReader reader(&contents);
+  xiiOpenDdlReader      ddl;
+  if (ddl.ParseDocument(reader).Failed())
     return XII_FAILURE;
 
   const xiiOpenDdlReaderElement* pRootElement = ddl.GetRootElement()->FindChildOfType("AssetProfiles");
@@ -186,32 +204,108 @@ xiiResult xiiAssetCurator::LoadAssetProfiles()
   if (pRootElement->FindChildOfType("Config") == nullptr)
     return XII_FAILURE;
 
-  ClearAssetProfiles();
+  xiiHybridArray<xiiPlatformProfile*, 8> profiles;
+  XII_SCOPE_EXIT(for (auto* profile : profiles) profile->GetDynamicRTTI()->GetAllocator()->Deallocate(profile));
 
   for (auto pChild = pRootElement->GetFirstChild(); pChild != nullptr; pChild = pChild->GetSibling())
   {
     if (pChild->IsCustomType("Config"))
     {
-      const xiiRTTI* pRtti      = nullptr;
-      void*          pConfigObj = xiiReflectionSerializer::ReadObjectFromDDL(pChild, pRtti);
+      if (pChild->FindChildOfType("Objects") == nullptr)
+        return XII_FAILURE;
+      xiiAbstractObjectGraph graph;
+      XII_SUCCEED_OR_RETURN(xiiAbstractGraphDdlSerializer::Read(pChild, &graph));
+      const auto* root = graph.GetNodeByName("root");
+      if (root == nullptr || root->GetType() != xiiGetStaticRTTI<xiiPlatformProfile>()->GetTypeName())
+        return XII_FAILURE;
 
-      auto pProfile = static_cast<xiiPlatformProfile*>(pConfigObj);
+      // Validate owned configuration types before the reflection reader constructs them.
+      if (const auto* configs = root->FindProperty("Configs"))
+      {
+        if (!configs->m_Value.IsA<xiiVariantArray>())
+          return XII_FAILURE;
+        xiiSet<const xiiRTTI*> types;
+        for (const auto& id : configs->m_Value.Get<xiiVariantArray>())
+        {
+          if (!id.IsA<xiiUuid>())
+            return XII_FAILURE;
+          const auto* node = graph.GetNode(id.Get<xiiUuid>());
+          const auto* type = node != nullptr ? xiiRTTI::FindTypeByName(node->GetType()) : nullptr;
+          if (type == nullptr || !type->IsDerivedFrom<xiiProfileConfigData>() || !type->GetAllocator()->CanAllocate() || types.Contains(type))
+            return XII_FAILURE;
+          types.Insert(type);
+        }
+      }
+
+      xiiRttiConverterContext context;
+      xiiRttiConverterReader  converter(&graph, &context);
+      xiiPlatformProfile*     pProfile = context.CreateObject(root->GetGuid(), xiiGetStaticRTTI<xiiPlatformProfile>()).Cast<xiiPlatformProfile>();
+      if (pProfile == nullptr)
+        return XII_FAILURE;
+      profiles.PushBack(pProfile);
+      converter.ApplyPropertiesToObject(root, xiiGetStaticRTTI<xiiPlatformProfile>(), pProfile);
+      if (pProfile->GetConfigName().IsEmpty())
+        return XII_FAILURE;
+      for (xiiUInt32 i = 0; i + 1 < profiles.GetCount(); ++i)
+      {
+        if (profiles[i]->GetConfigName().IsEqual_NoCase(pProfile->GetConfigName()))
+          return XII_FAILURE;
+      }
 
       pProfile->AddMissingConfigs();
-
-      m_AssetProfiles.PushBack(pProfile);
     }
   }
 
-  if (m_AssetProfiles.IsEmpty() || m_AssetProfiles[0]->GetConfigName() != "Default")
+  xiiUInt32 defaultIndex = xiiInvalidIndex;
+  for (xiiUInt32 i = 0; i < profiles.GetCount(); ++i)
+  {
+    if (profiles[i]->GetConfigName().IsEqual_NoCase("Default"))
+    {
+      profiles[i]->SetConfigName("Default");
+      defaultIndex = i;
+      break;
+    }
+  }
+  if (defaultIndex == xiiInvalidIndex)
   {
     xiiPlatformProfile* pCfg = XII_DEFAULT_NEW(xiiPlatformProfile);
     pCfg->SetConfigName("Default");
     pCfg->SetTargetPlatform("Windows");
 
     pCfg->AddMissingConfigs();
-    m_AssetProfiles.InsertAt(0, pCfg);
+    profiles.InsertAt(0, pCfg);
   }
+  else if (defaultIndex != 0)
+  {
+    auto* profile = profiles[defaultIndex];
+    profiles.RemoveAtAndCopy(defaultIndex);
+    profiles.InsertAt(0, profile);
+  }
+
+  // Initialization loads definitions before the curator tasks exist. A running curator must
+  // finish hashing before destroying the profile objects used outside the mutex by that task.
+  const bool initialized = m_pAssetTableWriter != nullptr;
+  if (initialized)
+    ShutdownUpdateTask();
+  {
+    XII_LOCK(m_CuratorMutex);
+    const xiiString activeName = m_AssetProfiles.IsEmpty() ? xiiString() : xiiString(GetActiveAssetProfile()->GetConfigName());
+    ClearAssetProfiles();
+    m_AssetProfiles        = std::move(profiles);
+    m_uiActiveAssetProfile = 0;
+    for (xiiUInt32 i = 0; i < m_AssetProfiles.GetCount(); ++i)
+    {
+      if (m_AssetProfiles[i]->GetConfigName().IsEqual_NoCase(activeName))
+      {
+        m_uiActiveAssetProfile = i;
+        break;
+      }
+    }
+    m_uiLoadedAssetProfilesHash = hash;
+    m_bAssetProfilesLoaded      = true;
+  }
+  if (initialized)
+    SetActiveAssetProfileByIndex(m_uiActiveAssetProfile, true);
 
   return XII_SUCCESS;
 }
@@ -224,6 +318,9 @@ void xiiAssetCurator::ClearAssetProfiles()
   }
 
   m_AssetProfiles.Clear();
+  m_uiActiveAssetProfile      = 0;
+  m_uiLoadedAssetProfilesHash = 0;
+  m_bAssetProfilesLoaded      = false;
 }
 
 void xiiAssetCurator::SetupDefaultAssetProfiles()

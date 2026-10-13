@@ -204,14 +204,21 @@ public:
   /// Saves the current asset configurations. Returns failure if the output file could not be written to.
   xiiResult SaveAssetProfiles();
 
+  /// Reloads changed profile definitions from disk, preserving the active profile by name.
+  /// Must be called between asset operations on the main thread. Stops background hashing before
+  /// replacing profiles; all previously obtained profile pointers are invalidated on change.
+  /// Invalid input leaves the current definitions and active profile unchanged.
+  xiiResult ReloadAssetProfiles();
+
   void SaveRuntimeProfiles();
 
 private:
-  void      ClearAssetProfiles();
-  void      SetupDefaultAssetProfiles();
-  xiiResult LoadAssetProfiles();
+  void ClearAssetProfiles();
+  void SetupDefaultAssetProfiles();
 
   xiiHybridArray<xiiPlatformProfile*, 8> m_AssetProfiles;
+  xiiUInt64                              m_uiLoadedAssetProfilesHash = 0;
+  bool                                   m_bAssetProfilesLoaded      = false;
 
   ///@}
   /// \name High Level Functions
@@ -466,7 +473,7 @@ private:
   xiiHashSet<xiiUuid> m_SubAssetChanged; ///< Flushed in main thread tick
   xiiHashSet<xiiUuid> m_TransformStateStale;
   xiiHashSet<xiiUuid> m_Updating;
-  bool m_bResavingAssets = false;
+  bool                m_bResavingAssets = false;
 
   // Serialized cache
   mutable xiiCuratorMutex                               m_CachedAssetsMutex; ///< Only locks m_CachedAssets

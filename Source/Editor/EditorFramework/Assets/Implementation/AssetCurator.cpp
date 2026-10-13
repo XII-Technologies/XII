@@ -7,6 +7,7 @@
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/Assets/AssetTableWriter.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Configuration/SubSystem.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -114,11 +115,14 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
     XII_LOG_BLOCK("SetupAssetProfiles");
 
     SetupDefaultAssetProfiles();
-    if (LoadAssetProfiles().Failed())
+    if (ReloadAssetProfiles().Failed())
     {
       xiiLog::Warning("Asset profiles file does not exist or contains invalid data. Setting up default profiles.");
-      SaveAssetProfiles().IgnoreResult();
-      SaveRuntimeProfiles();
+      if (!xiiStartup::HasApplicationTag("editorprocessor") && !xiiFileSystem::ExistsFile(":project/Editor/AssetProfiles.ddl"))
+      {
+        SaveAssetProfiles().IgnoreResult();
+        SaveRuntimeProfiles();
+      }
     }
   }
 
@@ -200,8 +204,6 @@ void xiiAssetCurator::WaitForInitialize()
 void xiiAssetCurator::Deinitialize()
 {
   XII_PROFILE_SCOPE("Deinitialize");
-
-  SaveAssetProfiles().IgnoreResult();
 
   ShutdownUpdateTask();
   xiiAssetProcessor::GetSingleton()->StopProcessTask(true);
