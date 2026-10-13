@@ -463,6 +463,7 @@ xiiResult xiiAssetCurator::ReadAssetDocumentInfo(const xiiDataDirPath& absFilePa
   xiiResult res = pFiles->ReadDocument(absFilePath, [&out_assetInfo, &infoStatus](const xiiFileStatus& stat, xiiStreamReader& ref_reader) -> void {
     infoStatus = out_assetInfo->GetManager()->ReadAssetDocumentInfo(out_assetInfo->m_Info, ref_reader);
   });
+  XII_SUCCEED_OR_RETURN(res);
 
   if (infoStatus.Failed())
   {
@@ -470,8 +471,9 @@ xiiResult xiiAssetCurator::ReadAssetDocumentInfo(const xiiDataDirPath& absFilePa
     return XII_FAILURE;
   }
 
-  XII_ASSERT_DEV(out_assetInfo->m_Info != nullptr, "Info should be valid on suceess.");
-  return res;
+  if (out_assetInfo->m_Info == nullptr)
+    return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 void xiiAssetCurator::UpdateSubAssets(xiiAssetInfo& assetInfo)

@@ -6,6 +6,7 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFrameworkTest/AssetResaveTest.h>
 #include <EditorFrameworkTest/AssetTestDocument.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Threading/TaskSystem.h>
@@ -326,6 +327,32 @@ void TestAssetResave(xiiQtEditorApp& editor, xiiStringView projectDirectory)
     return;
   curator->NotifyOfFileChange(paths[0]);
   restored = true;
+  XII_TEST_STATUS(curator->GetAssetResaveOrder(directory, repeated));
+  XII_TEST_BOOL(repeated == order);
+  // A file can be statted successfully but become unreadable before header acquisition.
+  // Preserve known metadata and report the open failure without asserting on a null result.
+  HANDLE     locked       = INVALID_HANDLE_VALUE;
+  const auto lockDeadline = xiiTime::Now() + xiiTime::MakeFromSeconds(2);
+  do
+  {
+    locked = CreateFileW(xiiStringWChar(paths[0]).GetData(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (locked == INVALID_HANDLE_VALUE)
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  } while (locked == INVALID_HANDLE_VALUE && xiiTime::Now() < lockDeadline);
+  if (!XII_TEST_BOOL(locked != INVALID_HANDLE_VALUE))
+    return;
+  {
+    XII_SCOPE_EXIT(CloseHandle(locked));
+    xiiTestLogInterface   log;
+    xiiTestLogSystemScope scope(&log);
+    xiiFileReader probe;
+    XII_TEST_BOOL(probe.Open(paths[0]).Failed());
+    log.ExpectMessage("Failed to open file", xiiLogMsgType::ErrorMsg);
+    curator->NotifyOfFileChange(paths[0]);
+    const auto known = curator->GetSubAsset(ids[0]);
+    XII_TEST_BOOL(static_cast<bool>(known));
+  }
+  curator->NotifyOfFileChange(paths[0]);
   XII_TEST_STATUS(curator->GetAssetResaveOrder(directory, repeated));
   XII_TEST_BOOL(repeated == order);
 #endif
