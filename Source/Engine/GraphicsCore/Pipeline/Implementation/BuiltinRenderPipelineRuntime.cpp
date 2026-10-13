@@ -176,7 +176,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildVisibility(xiiRenderGraph& graph, xii
   graph.AddPass<xiiFroxelAllocationData>("VolumetricGridAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupFroxelAllocation, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteFroxelAllocation, this));
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   auto& uiFrameIndex         = m_Frame.uiFrameIndex;
   auto& geometry             = m_Frame.geometry;
@@ -185,6 +185,8 @@ void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRen
   auto& shadowCascadePass    = m_Frame.shadowCascadePass;
   // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
   shadowCascadePass = graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteShadowCascadeSetup, this));
+
+  XII_SUCCEED_OR_RETURN(PrepareShadowResources());
 
   // Feed the subsystem-owned GPU scene through the same meshlet visibility path used by samples.
   // The farthest directional cascade encloses the useful caster range for every nearer virtual
@@ -234,40 +236,25 @@ void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRen
       geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid() && materials.m_hSurfaceData.IsValid())
   {
     const xiiUInt32 uiAtlasSize = m_Resources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
-    if (!m_Resources.m_ShadowPasses.m_pLocalShadowAtlas)
-    {
-      xiiGALTextureCreationDescription description;
-      description.m_Type                             = xiiGALResourceDimension::Texture2D;
-      description.m_Format                           = xiiGALResourceFormat::D32Float;
-      description.m_Size.width                       = uiAtlasSize;
-      description.m_Size.height                      = uiAtlasSize;
-      description.m_uiMipLevels                      = 1U;
-      description.m_BindFlags                        = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-      description.m_Usage                            = xiiGALResourceUsage::Default;
-      m_Resources.m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    }
 
-    if (m_Resources.m_ShadowPasses.m_pLocalShadowAtlas != nullptr)
-    {
-      auto atlasClear = graph.AddPass<xiiLocalShadowAtlasClearData>(
-        "GPU Local Shadow Atlas Clear", xiiGALCommandQueueFlags::Graphics,
-        [pAtlas = m_Resources.m_ShadowPasses.m_pLocalShadowAtlas](xiiLocalShadowAtlasClearData& data, xiiRenderGraphBuilder& builder) {
-          data.m_hLocalShadowAtlas = builder.WriteTexture(
-            builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, pAtlas, pAtlas->GetResourceState()),
-            xiiGALResourceStateFlags::DepthWrite);
-          builder.SetPassAllowMerge(false);
-        },
-        [](const xiiLocalShadowAtlasClearData& data, xiiRenderGraphPassContext& context) {
-          ClearDepthPreservingState(context.GetCommandList(),
-                                    context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
-        });
+    auto atlasClear = graph.AddPass<xiiLocalShadowAtlasClearData>(
+      "GPU Local Shadow Atlas Clear", xiiGALCommandQueueFlags::Graphics,
+      [pAtlas = m_Resources.m_ShadowPasses.m_pLocalShadowAtlas](xiiLocalShadowAtlasClearData& data, xiiRenderGraphBuilder& builder) {
+        data.m_hLocalShadowAtlas = builder.WriteTexture(
+          builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, pAtlas, pAtlas->GetResourceState()),
+          xiiGALResourceStateFlags::DepthWrite);
+        builder.SetPassAllowMerge(false);
+      },
+      [](const xiiLocalShadowAtlasClearData& data, xiiRenderGraphPassContext& context) {
+        ClearDepthPreservingState(context.GetCommandList(),
+                                  context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
+      });
 
-      XII_IGNORE_UNUSED(xiiGpuShadowRasterManager::AddLocalLightPasses(
-        graph, uiFrameIndex, m_View.m_hGpuVisibilityContext, m_View.m_GpuSceneContext.GetHandle(), atlasClear.first->m_hLocalShadowAtlas,
-        m_Resources.m_LightingSystem.GetLocalShadowData(), uiAtlasSize, geometry, materials,
-        sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0))));
-      bGpuLocalShadows = true;
-    }
+    XII_IGNORE_UNUSED(xiiGpuShadowRasterManager::AddLocalLightPasses(
+      graph, uiFrameIndex, m_View.m_hGpuVisibilityContext, m_View.m_GpuSceneContext.GetHandle(), atlasClear.first->m_hLocalShadowAtlas,
+      m_Resources.m_LightingSystem.GetLocalShadowData(), uiAtlasSize, geometry, materials,
+      sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0))));
+    bGpuLocalShadows = true;
   }
 
   if (!bGpuLocalShadows)
@@ -275,6 +262,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRen
     graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSpotShadowData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSpotShadowData, this));
     graph.AddPass<xiiPointShadowData>("PointShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupPointShadowData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecutePointShadowData, this));
   }
+  return XII_SUCCESS;
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
@@ -525,8 +513,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
   }
   if (stage == "Shadows")
   {
-    BuildShadows(graph, blackboard);
-    return XII_SUCCESS;
+    return BuildShadows(graph, blackboard);
   }
   if (stage == "DepthAndGeometry")
   {

@@ -139,7 +139,7 @@ public:
   explicit xiiBuiltinRenderPipelineRuntime(xiiView& view) : m_View(view) {}
   void                        BuildPrepareFrame(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                   BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                   BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
@@ -155,6 +155,7 @@ public:
   xiiSharedPtr<xiiGALSampler> m_CommonSamplers[5];
   xiiResult                   BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                   PrepareTemporalResources(xiiStringView stage);
+  xiiResult                   PrepareShadowResources();
   xiiResult                   PrepareSensorOutput();
   xiiRenderPipelineInstance   m_Instance;
   xiiDisplayOutputSettings    m_DisplayOutputSettings;

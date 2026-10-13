@@ -115,33 +115,6 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLocalShadowAtlasAllocation(const xi
 
 void xiiBuiltinRenderPipelineRuntime::SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRenderGraphBuilder& builder)
 {
-  // Persistent directional shadow atlas (D32 float array of 4 slices).
-  if (!m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas)
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type                                   = xiiGALResourceDimension::Texture2DArray;
-    description.m_Format                                 = xiiGALResourceFormat::D32Float;
-    description.m_Size.width                             = k_uiDirectionalShadowAtlasWidth;
-    description.m_Size.height                            = k_uiDirectionalShadowAtlasHeight;
-    description.m_uiArraySizeOrDepth                     = 4U;
-    description.m_uiMipLevels                            = 1U;
-    description.m_BindFlags                              = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                                  = xiiGALResourceUsage::Default;
-    m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-
-    XII_ASSERT_DEV(m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas != nullptr, "Failed to create the directional shadow atlas.");
-    for (xiiUInt32 uiCascade = 0U; uiCascade < 4U; ++uiCascade)
-    {
-      xiiGALTextureViewCreationDescription viewDescription;
-      viewDescription.m_ViewType                  = xiiGALTextureViewType::DepthStencil;
-      viewDescription.m_uiFirstArrayOrDepthSlice  = uiCascade;
-      viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
-
-      m_Resources.m_ShadowPasses.m_pDirectionalShadowCascadeViews[uiCascade] = m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas->CreateView(viewDescription);
-      XII_ASSERT_DEV(m_Resources.m_ShadowPasses.m_pDirectionalShadowCascadeViews[uiCascade] != nullptr, "Failed to create directional shadow cascade view {}.", uiCascade);
-    }
-  }
-
   data.m_hCascadeMatrices        = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ConstantBuffer);
   data.m_hShadowCasterCommands   = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hDirectionalShadowAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas, m_Resources.m_ShadowPasses.m_pDirectionalShadowAtlas->GetResourceState());
@@ -154,6 +127,13 @@ void xiiBuiltinRenderPipelineRuntime::SetupDirectionalShadowData(xiiDirectionalS
 void xiiBuiltinRenderPipelineRuntime::ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data, xiiRenderGraphPassContext& context)
 {
   xiiGALCommandList& cmd = context.GetCommandList();
+
+  if (data.m_uiActiveCascades == 0U)
+  {
+    // Keep the shader-compatible fallback deterministic without reserving a full atlas.
+    ClearDepthPreservingState(cmd, context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
+    return;
+  }
 
   cmd.BeginDebugGroup("DirectionalShadowMaps");
   {
@@ -199,20 +179,6 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDirectionalShadowData(const xiiDire
 
 void xiiBuiltinRenderPipelineRuntime::SetupSpotShadowData(xiiSpotShadowData& data, xiiRenderGraphBuilder& builder)
 {
-  if (!m_Resources.m_ShadowPasses.m_pLocalShadowAtlas)
-  {
-    const xiiUInt32                  uiAtlasSize = m_Resources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
-    xiiGALTextureCreationDescription description;
-    description.m_Type                             = xiiGALResourceDimension::Texture2D;
-    description.m_Format                           = xiiGALResourceFormat::D32Float;
-    description.m_Size.width                       = uiAtlasSize;
-    description.m_Size.height                      = uiAtlasSize;
-    description.m_uiMipLevels                      = 1U;
-    description.m_BindFlags                        = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                            = xiiGALResourceUsage::Default;
-    m_Resources.m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-  }
-
   data.m_hShadowCasterCommands        = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLocalShadowAtlas            = builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, m_Resources.m_ShadowPasses.m_pLocalShadowAtlas, m_Resources.m_ShadowPasses.m_pLocalShadowAtlas->GetResourceState());
@@ -256,20 +222,6 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteSpotShadowData(const xiiSpotShadowD
 
 void xiiBuiltinRenderPipelineRuntime::SetupPointShadowData(xiiPointShadowData& data, xiiRenderGraphBuilder& builder)
 {
-  if (!m_Resources.m_ShadowPasses.m_pLocalShadowAtlas)
-  {
-    const xiiUInt32                  uiAtlasSize = m_Resources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
-    xiiGALTextureCreationDescription description;
-    description.m_Type                             = xiiGALResourceDimension::Texture2D;
-    description.m_Format                           = xiiGALResourceFormat::D32Float;
-    description.m_Size.width                       = uiAtlasSize;
-    description.m_Size.height                      = uiAtlasSize;
-    description.m_uiMipLevels                      = 1U;
-    description.m_BindFlags                        = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    description.m_Usage                            = xiiGALResourceUsage::Default;
-    m_Resources.m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-  }
-
   data.m_hShadowCasterCommands        = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLocalShadowAtlas            = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
