@@ -3151,3 +3151,80 @@ document managers return cached profile hashes. Profile edits and background
 request synchronization need dedicated regression coverage. This checkpoint does
 not claim to resolve that separate issue, legacy scene migration, manual UI parity,
 Release or other platforms.
+
+### Profile-Aware Asset Evaluation And Header Read Failure Recovery
+
+Document managers retained a single profile hash computed during curator startup.
+Profile switching and edits did not refresh it. `IsAssetUpToDate()` also discarded
+its profile argument, and output checks resolved the active profile's paths even
+when a caller requested another profile. A valid existing active-profile output
+could therefore suppress generation of an explicitly requested target.
+
+The manager hash cache and its startup-only initialization API were removed.
+`GetAssetProfileHash(profile)` calculates the existing type-specific transform hash
+from the requested settings. Texture, cubemap and decal implementations already
+derive these hashes from small configuration records. Dependency hashing forwards
+the same profile throughout the query, and all output checks, including material
+shader outputs, use that profile's paths. Non-active queries bypass the shared
+active-profile cache and do not replace its state or hashes. Active results are
+published only while the profile and asset revision still match the calculation.
+These are Editor SDK signature/layout changes; repository consumers and plugins
+were rebuilt, with no compatibility alias or new asset format.
+
+Forced and non-active evaluations share transient results by owning asset UUID
+within one query. Shared dependencies are not repeatedly recalculated through
+diamond-shaped graphs. No per-profile persistent cache was added. Known cycles
+return `CircularDependency` even for forced queries or another profile, instead
+of bypassing the cached cycle result and recursing into it. Unknown identities
+start with zero output hashes.
+
+The first native test exposed another authoring defect: reflection initialized
+new texture address modes to the native enum's `Unknown` value, despite the C++
+members defaulting to `Wrap`. Explicit default attributes now match the C++ values
+for U, V and W. This repairs new render-target transformation without coercing
+persisted explicit invalid sampler settings.
+
+`AssetProfileTest.cpp` verifies native render-target creation and file contents,
+active-profile edits, distinct target hashes and serialized dimensions, package
+hash propagation, active-cache isolation, switching in both directions, and forced
+cycle rejection. Five fixture assets in a shared dependency graph each perform
+exactly one output check per ordinary or forced non-active query. A pending
+automatic transform may complete during the profile switch; the test accepts that
+valid timing while retaining exact hash, header and dimension checks.
+
+Verification also exposed a real file-removal race in header acquisition. The
+curator asserted that header data existed even when `ReadDocument()` had failed
+before invoking its callback. It now propagates `XII_FAILURE` and preserves the
+known asset metadata. The file model treats a missing file as an ordinary failure
+without logging it as locked/corrupt. Tools tests verify that no callback or model
+entry is created. The resave fixture additionally holds a Windows read handle that
+actually denies other readers, checks that a probe is blocked, expects the open
+failure, and verifies metadata retention and recovery after unlocking.
+
+Verification on October 13, 2026:
+
+- Debug builds of ToolsFoundationTest, EditorFrameworkTest, EditorProcessor and
+  Editor pass (`Workspace/editor-profile-evaluation-read-build.log` and the final
+  fixture build `Workspace/editor-profile-evaluation-lock-build.log`).
+- All twenty ToolsFoundation subtests pass:
+  `Workspace/editor-profile-read-tools-tests.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-profile-lock-final-tests.log`. Native engine logs contain no
+  GPU allocation, device-loss or Vulkan validation failures.
+- Temporarily disabling only explicit-profile forwarding fails four checks,
+  including package hashes and the requested target output:
+  `Workspace/editor-profile-evaluation-control-tests.log`. The command restored
+  the source byte-for-byte afterward, followed by final production builds/tests.
+- The initial run records invalid new sampler defaults in
+  `Workspace/editor-profile-evaluation-baseline-tests.log`. The first full memoized
+  run records the deletion/read assertion in
+  `Workspace/editor-profile-evaluation-final-tests.log`. The intermediate lock
+  fixture used metadata-only access and did not deny reads; its corrected version
+  explicitly verifies that precondition.
+- `git diff --check` passes. Existing user assets were not rewritten.
+
+This resolves profile hash evaluation, not the entire profile editing lifecycle.
+Profile objects must remain alive and unchanged during an evaluation. Atomic live
+editing, profile-definition reload in already-running processors and save-failure
+handling in the profile dialog still need work. Release, other platforms, manual
+UI parity and legacy scene migration remain unverified or incomplete.
