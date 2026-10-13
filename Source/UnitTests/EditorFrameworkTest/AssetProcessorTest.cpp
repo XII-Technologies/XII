@@ -23,6 +23,23 @@
 #  include <Foundation/Strings/StringConversion.h>
 #endif
 
+bool SendAssetProcessorRequest(xiiEditorProcessCommunicationChannel& processor, xiiProcessAssetMsg& request,
+                               xiiTransformStatus& out_response, xiiDynamicArray<xiiLogEntry>& out_logs)
+{
+  out_response = xiiTransformStatus("No processor response received.");
+  out_logs.Clear();
+  auto receive = [&](xiiProcessMessage* message) {
+    const auto* reply = static_cast<const xiiProcessAssetResponseMsg*>(message);
+    out_response      = reply->m_Status;
+    out_logs          = reply->m_LogEntries;
+    return true;
+  };
+  xiiProcessCommunicationChannel::WaitForMessageCallback callback = receive;
+  if (!XII_TEST_BOOL(processor.SendMessage(&request)))
+    return false;
+  return XII_TEST_RESULT(processor.WaitForMessage(xiiGetStaticRTTI<xiiProcessAssetResponseMsg>(), xiiTime::MakeFromSeconds(30), &callback));
+}
+
 void TestAssetProcessor(xiiQtEditorApp& editor, xiiStringView projectDirectory)
 {
   xiiStringBuilder directory(projectDirectory);
@@ -86,18 +103,7 @@ void TestAssetProcessor(xiiQtEditorApp& editor, xiiStringView projectDirectory)
   xiiTransformStatus           response;
   xiiDynamicArray<xiiLogEntry> logs;
   auto                         send = [&](xiiProcessAssetMsg& request) {
-    response = xiiTransformStatus("No processor response received.");
-    logs.Clear();
-    auto receive = [&](xiiProcessMessage* message) {
-      const auto* reply = static_cast<const xiiProcessAssetResponseMsg*>(message);
-      response          = reply->m_Status;
-      logs              = reply->m_LogEntries;
-      return true;
-    };
-    xiiProcessCommunicationChannel::WaitForMessageCallback callback = receive;
-    if (!XII_TEST_BOOL(processor.SendMessage(&request)))
-      return false;
-    return XII_TEST_RESULT(processor.WaitForMessage(xiiGetStaticRTTI<xiiProcessAssetResponseMsg>(), xiiTime::MakeFromSeconds(30), &callback));
+    return SendAssetProcessorRequest(processor, request, response, logs);
   };
   auto verifyHashes = [&]() {
     for (const auto& entry : logs)
@@ -206,4 +212,7 @@ void TestAssetProcessor(xiiQtEditorApp& editor, xiiStringView projectDirectory)
   surface.Load(reader);
   XII_TEST_FLOAT(surface.m_fPhysicsRestitution, 0.75f, 0.0001f);
   XII_TEST_STRING(surface.GetSlideReactionPrefabFile(), sourceId);
+  reader.Close();
+
+  TestAssetProcessorProfileReload(editor, projectDirectory, processor);
 }
