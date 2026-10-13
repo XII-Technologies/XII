@@ -1154,7 +1154,14 @@ void xiiAssetCurator::NotifyOfFileChange(xiiStringView sAbsolutePath)
 {
   xiiStringBuilder sPath(sAbsolutePath);
   sPath.MakeCleanPath();
-  xiiFileSystemModel::GetSingleton()->NotifyOfChange(sPath);
+  {
+    // Explicit notifications follow a known write. A preserved/coarse timestamp must not reuse
+    // the startup header cache or suppress dependency refresh after rapid successive saves.
+    XII_LOCK(m_CachedAssetsMutex);
+    m_CachedAssets.Remove(sPath);
+    m_CachedFiles.Remove(sPath);
+  }
+  xiiFileSystemModel::GetSingleton()->NotifyOfChange(sPath, true);
 }
 
 void xiiAssetCurator::NotifyOfAssetChange(const xiiUuid& assetGuid)
