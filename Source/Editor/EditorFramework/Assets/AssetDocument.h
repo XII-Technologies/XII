@@ -277,8 +277,9 @@ protected:
   /// Adds all prefab dependencies to the xiiAssetDocumentInfo object. Called automatically by UpdateAssetDocumentInfo()
   void AddPrefabDependencies(const xiiDocumentObject* pObject, xiiAssetDocumentInfo* pInfo) const;
 
-  /// Crawls through all asset properties of pObject and adds all string properties that have a xiiAssetBrowserAttribute as a dependency to
-  /// pInfo. Automatically called by UpdateAssetDocumentInfo()
+  /// Collects asset/file references from reflected values and collections, including authored exposed
+  /// parameter overrides. Inherited prefab defaults remain dependencies of their source prefab.
+  /// Automatically called by UpdateAssetDocumentInfo().
   void AddReferences(const xiiDocumentObject* pObject, xiiAssetDocumentInfo* pInfo, bool bInsidePrefab) const;
 
 protected:
