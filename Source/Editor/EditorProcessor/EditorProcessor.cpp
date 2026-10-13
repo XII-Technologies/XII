@@ -78,9 +78,16 @@ public:
         xiiLogEntryDelegate logger([&msg](xiiLogEntry& ref_entry) -> void { msg.m_LogEntries.PushBack(std::move(ref_entry)); }, xiiLogMsgType::WarningMsg);
         xiiLogSystemScope   logScope(&logger);
 
-        const xiiUInt32 uiPlatform = xiiAssetCurator::GetSingleton()->FindAssetProfileByName(pMsg->m_sPlatform);
+        auto*           curator    = xiiAssetCurator::GetSingleton();
+        const xiiResult profiles   = curator->ReloadAssetProfiles();
+        const xiiUInt32 uiPlatform = profiles.Succeeded() ? curator->FindAssetProfileByName(pMsg->m_sPlatform) : xiiInvalidIndex;
 
-        if (uiPlatform == xiiInvalidIndex)
+        if (profiles.Failed())
+        {
+          msg.m_Status = xiiTransformStatus("Could not reload asset platform configurations.");
+          xiiLog::Error("{}", msg.m_Status.m_sMessage);
+        }
+        else if (uiPlatform == xiiInvalidIndex)
         {
           msg.m_Status = xiiTransformStatus(xiiFmt("Asset platform config '{}' is unknown.", pMsg->m_sPlatform));
           xiiLog::Error("{}", msg.m_Status.m_sMessage);
@@ -91,7 +98,6 @@ public:
           xiiUInt64 uiThumbHash   = 0;
           xiiUInt64 uiPackageHash = 0;
 
-          // TODO: there is currently no 'nice' way to switch the active platform for the asset processors it is also not clear whether this is actually safe to execute here
           xiiAssetCurator::GetSingleton()->SetActiveAssetProfileByIndex(uiPlatform);
           // First, force checking for file system changes for the asset and the transitive hull of all dependencies and runtime references. This needs to be done as this EditorProcessor instance might not know all the files yet as some might just have been written. We can't rely on the filesystem watcher as it is not instant and also might just miss some events.
           for (const xiiString& sDepOrRef : pMsg->m_DepRefHull)
