@@ -215,4 +215,5 @@ void TestAssetProcessor(xiiQtEditorApp& editor, xiiStringView projectDirectory)
   reader.Close();
 
   TestAssetProcessorProfileReload(editor, projectDirectory, processor);
+  TestAssetProcessorCommandLine(projectDirectory);
 }

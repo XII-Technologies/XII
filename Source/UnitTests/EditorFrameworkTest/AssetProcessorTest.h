@@ -14,3 +14,4 @@ void TestAssetProcessor(xiiQtEditorApp& editor, xiiStringView projectDirectory);
 bool SendAssetProcessorRequest(xiiEditorProcessCommunicationChannel& processor, xiiProcessAssetMsg& request,
                                xiiTransformStatus& out_response, xiiDynamicArray<xiiLogEntry>& out_logs);
 void TestAssetProcessorProfileReload(xiiQtEditorApp& editor, xiiStringView projectDirectory, xiiEditorProcessCommunicationChannel& processor);
+void TestAssetProcessorCommandLine(xiiStringView projectDirectory);
