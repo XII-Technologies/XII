@@ -4,6 +4,7 @@
 
 #include <EditorFramework/EditorFrameworkDLL.h>
 
+#include <EditorFramework/Assets/AssetProcessorMessages.h>
 #include <EditorFramework/Assets/Declarations.h>
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
 #include <Foundation/Configuration/Singleton.h>
@@ -74,10 +75,6 @@ public:
 
   bool Tick(bool bStartNewWork); // returns false, if all processing is done, otherwise call Tick again.
 
-  bool IsConnected();
-
-  bool HasProcessCrashed();
-
   xiiResult StartProcess();
 
   void ShutdownProcess();
@@ -91,15 +88,11 @@ private:
 
   State                                 m_State = State::LookingForWork;
   xiiUuid                               m_AssetGuid;
-  xiiUInt64                             m_uiAssetHash   = 0;
-  xiiUInt64                             m_uiThumbHash   = 0;
-  xiiUInt64                             m_uiPackageHash = 0;
+  xiiProcessAssetMsg                    m_Request;
   xiiDataDirPath                        m_AssetPath;
   xiiEditorProcessCommunicationChannel* m_pIPC;
-  bool                                  m_bProcessShouldBeRunning = false;
   xiiTransformStatus                    m_Status;
   xiiDynamicArray<xiiLogEntry>          m_LogEntries;
-  xiiDynamicArray<xiiString>            m_TransitiveHull;
 };
 
 /// Background asset processing is handled by this class.
@@ -128,6 +121,11 @@ public:
 
   void AddLogWriter(xiiLoggingEvent::Handler handler);
   void RemoveLogWriter(xiiLoggingEvent::Handler handler);
+
+  /// Captures a known asset's owner, hashes, active profile and all dependency categories for IPC.
+  /// The output is unchanged on failure. The processor independently validates the transform state.
+  /// The captured profile remains associated with the request if the editor later changes profiles.
+  static xiiResult PrepareAssetRequest(xiiUuid assetGuid, xiiProcessAssetMsg& out_request);
 
 public:
   // Can be called from worker threads!
