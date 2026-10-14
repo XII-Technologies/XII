@@ -10,6 +10,7 @@ ALL
 
 #include <Shaders/Pipeline/PipelineCommon.xiiShader>
 #include <Shaders/Common/Common.h>
+#include <Shaders/Common/StorageImageFormat.h>
 #include <Shaders/Pipeline/SurfaceLighting.h>
 
 StructuredBuffer<xiiGpuLightData> g_Lights;
@@ -34,7 +35,7 @@ StructuredBuffer<uint2>                   g_LightGrid;
 StructuredBuffer<uint>                    g_LightIndex;
 StructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs;
 Texture2D<uint4>                          g_DirectLightReservoir;
-RWTexture2D<float4>                       g_DirectOut;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_DirectOut;
 
 #include <Shaders/Pipeline/SurfaceShadowLighting.h>
 
