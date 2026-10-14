@@ -53,7 +53,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiDecalComponent, 1, xiiComponentMode::Static)
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Decals"),
+    new xiiCategoryAttribute("Graphics/Decals"),
     new xiiBoxManipulatorAttribute("Extents", 2.0f, true),
     new xiiBoxVisualizerAttribute("Extents", 2.0f, xiiColorScheme::LightUI(xiiColorScheme::Cyan), "Tint"),
     new xiiDirectionVisualizerAttribute(xiiBasisAxis::PositiveX, 0.5f, xiiColorScheme::LightUI(xiiColorScheme::Cyan)),

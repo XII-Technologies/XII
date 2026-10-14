@@ -21,7 +21,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonComponent, 1, xiiComponentMode::Dynamic)
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Animation"),
+    new xiiCategoryAttribute("Graphics/Animation"),
   }
   XII_END_ATTRIBUTES;
 }

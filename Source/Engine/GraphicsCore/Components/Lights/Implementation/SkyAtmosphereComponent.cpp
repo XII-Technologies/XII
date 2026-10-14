@@ -55,7 +55,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkyAtmosphereComponent, 3, xiiComponentMode::Static)
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Lighting"),
+    new xiiCategoryAttribute("Graphics/Lighting"),
   }
   XII_END_ATTRIBUTES;
   XII_BEGIN_MESSAGEHANDLERS

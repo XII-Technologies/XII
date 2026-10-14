@@ -117,8 +117,8 @@ namespace
 XII_CREATE_SIMPLE_TEST_GROUP(SensorMemory);
 XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
 {
-  auto* minimumCVar = xiiCVar::FindCVarByName("Rendering.DynamicResolution.MinimumRenderScale");
-  auto* maximumCVar = xiiCVar::FindCVarByName("Rendering.DynamicResolution.MaximumRenderScale");
+  auto* minimumCVar = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MinimumRenderScale");
+  auto* maximumCVar = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MaximumRenderScale");
   if (!XII_TEST_BOOL(minimumCVar != nullptr && maximumCVar != nullptr) ||
       !XII_TEST_BOOL(minimumCVar->GetType() == xiiCVarType::Float && maximumCVar->GetType() == xiiCVarType::Float))
     return;

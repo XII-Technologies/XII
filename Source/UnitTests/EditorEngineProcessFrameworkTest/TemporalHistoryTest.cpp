@@ -261,8 +261,8 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
   // This fixture checks allocation continuity at a fixed resolution. The production PID
   // changes resolution under load and correctly recreates all nine temporal histories.
   // Pin both bounds so shader compilation, validation and other tests cannot resize it.
-  auto* minimum = xiiCVar::FindCVarByName("Rendering.DynamicResolution.MinimumRenderScale");
-  auto* maximum = xiiCVar::FindCVarByName("Rendering.DynamicResolution.MaximumRenderScale");
+  auto* minimum = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MinimumRenderScale");
+  auto* maximum = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MaximumRenderScale");
   if (!XII_TEST_BOOL(minimum && maximum) ||
       !XII_TEST_BOOL(minimum->GetType() == xiiCVarType::Float && maximum->GetType() == xiiCVarType::Float))
     return;

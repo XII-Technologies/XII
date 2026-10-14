@@ -21,7 +21,7 @@ xiiMeshAssetDocumentManager::xiiMeshAssetDocumentManager()
   m_DocTypeDesc.m_sDocumentTypeName = "Mesh";
   m_DocTypeDesc.m_sFileExtension    = "xiiMeshAsset";
   m_DocTypeDesc.m_sIcon             = ":/AssetIcons/Mesh.svg";
-  m_DocTypeDesc.m_sAssetCategory    = "Rendering";
+  m_DocTypeDesc.m_sAssetCategory    = "Graphics";
   m_DocTypeDesc.m_pDocumentType     = xiiGetStaticRTTI<xiiMeshAssetDocument>();
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Mesh_Static");

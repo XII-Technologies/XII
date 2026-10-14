@@ -16,7 +16,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiRenderWorldSettingsComponent, 1, xiiComponentMode::S
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld"),
+    new xiiCategoryAttribute("Graphics"),
   }
   XII_END_ATTRIBUTES;
 }

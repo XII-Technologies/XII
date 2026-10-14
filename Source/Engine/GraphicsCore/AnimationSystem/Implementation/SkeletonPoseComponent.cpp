@@ -19,7 +19,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonPoseComponent, 2, xiiComponentMode::Dynamic)
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Animation"),
+    new xiiCategoryAttribute("Graphics/Animation"),
     new xiiBoneManipulatorAttribute("BoneTransforms", "Skeleton"),
   }
   XII_END_ATTRIBUTES;

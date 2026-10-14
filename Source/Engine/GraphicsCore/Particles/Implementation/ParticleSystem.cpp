@@ -74,7 +74,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleSystemComponent, 1, xiiComponentMode::Dynami
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Particles"),
+    new xiiCategoryAttribute("Graphics/Particles"),
   }
   XII_END_ATTRIBUTES;
 }

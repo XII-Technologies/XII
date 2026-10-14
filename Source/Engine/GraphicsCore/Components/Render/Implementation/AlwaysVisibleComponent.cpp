@@ -11,7 +11,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiAlwaysVisibleComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("Rendering"),
+    new xiiCategoryAttribute("Graphics"),
   }
   XII_END_ATTRIBUTES;
 }

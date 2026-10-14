@@ -20,7 +20,7 @@ xiiTextureCubeAssetDocumentManager::xiiTextureCubeAssetDocumentManager()
   m_DocTypeDesc.m_sDocumentTypeName = "Texture Cube";
   m_DocTypeDesc.m_sFileExtension    = "xiiTextureCubeAsset";
   m_DocTypeDesc.m_sIcon             = ":/AssetIcons/Texture_Cube.svg";
-  m_DocTypeDesc.m_sAssetCategory    = "Rendering";
+  m_DocTypeDesc.m_sAssetCategory    = "Graphics";
   m_DocTypeDesc.m_pDocumentType     = xiiGetStaticRTTI<xiiTextureCubeAssetDocument>();
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Texture_Cube");

@@ -24,7 +24,7 @@ xiiLUTAssetDocumentManager::xiiLUTAssetDocumentManager()
   m_DocTypeDesc.m_sDocumentTypeName      = "LUT";
   m_DocTypeDesc.m_sFileExtension         = "xiiLUTAsset";
   m_DocTypeDesc.m_sIcon                  = ":/AssetIcons/LUT.svg";
-  m_DocTypeDesc.m_sAssetCategory         = "Rendering";
+  m_DocTypeDesc.m_sAssetCategory         = "Graphics";
   m_DocTypeDesc.m_pDocumentType          = xiiGetStaticRTTI<xiiLUTAssetDocument>();
   m_DocTypeDesc.m_pManager               = this;
   m_DocTypeDesc.m_sResourceFileExtension = "xiiBinLUT";

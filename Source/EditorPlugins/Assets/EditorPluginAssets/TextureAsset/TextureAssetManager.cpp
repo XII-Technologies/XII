@@ -29,7 +29,7 @@ xiiTextureAssetDocumentManager::xiiTextureAssetDocumentManager()
   m_DocTypeDesc.m_sDocumentTypeName      = "Texture 2D";
   m_DocTypeDesc.m_sFileExtension         = "xiiTextureAsset";
   m_DocTypeDesc.m_sIcon                  = ":/AssetIcons/Texture_2D.svg";
-  m_DocTypeDesc.m_sAssetCategory         = "Rendering";
+  m_DocTypeDesc.m_sAssetCategory         = "Graphics";
   m_DocTypeDesc.m_pDocumentType          = xiiGetStaticRTTI<xiiTextureAssetDocument>();
   m_DocTypeDesc.m_pManager               = this;
   m_DocTypeDesc.m_sResourceFileExtension = "xiiBinTexture2D";
@@ -39,7 +39,7 @@ xiiTextureAssetDocumentManager::xiiTextureAssetDocumentManager()
   m_DocTypeDesc2.m_sDocumentTypeName      = "Render Target";
   m_DocTypeDesc2.m_sFileExtension         = "xiiRenderTargetAsset";
   m_DocTypeDesc2.m_sIcon                  = ":/AssetIcons/Render_Target.svg";
-  m_DocTypeDesc2.m_sAssetCategory         = "Rendering";
+  m_DocTypeDesc2.m_sAssetCategory         = "Graphics";
   m_DocTypeDesc2.m_pDocumentType          = xiiGetStaticRTTI<xiiTextureAssetDocument>();
   m_DocTypeDesc2.m_pManager               = this;
   m_DocTypeDesc2.m_sResourceFileExtension = "xiiBinRenderTarget";

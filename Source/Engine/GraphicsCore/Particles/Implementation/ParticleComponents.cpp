@@ -144,7 +144,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleEmitterComponent, 1, xiiComponentMode::Dynam
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Particles"),
+    new xiiCategoryAttribute("Graphics/Particles"),
     new xiiSphereManipulatorAttribute("Radius"),
     new xiiBoxManipulatorAttribute("BoxExtents", 1.0f, true),
   }
@@ -176,7 +176,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleForceFieldComponent, 1, xiiComponentMode::Dy
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Particles"),
+    new xiiCategoryAttribute("Graphics/Particles"),
     new xiiSphereManipulatorAttribute("Radius"),
   }
   XII_END_ATTRIBUTES;
@@ -209,7 +209,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleColliderComponent, 1, xiiComponentMode::Dyna
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Particles"),
+    new xiiCategoryAttribute("Graphics/Particles"),
     new xiiSphereManipulatorAttribute("Radius"),
     new xiiBoxManipulatorAttribute("Extents", 1.0f, true),
   }
@@ -238,7 +238,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleRendererComponent, 1, xiiComponentMode::Stat
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Particles"),
+    new xiiCategoryAttribute("Graphics/Particles"),
   }
   XII_END_ATTRIBUTES;
 }
@@ -266,7 +266,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleSimulationDomainComponent, 1, xiiComponentMo
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Particles"),
+    new xiiCategoryAttribute("Graphics/Particles"),
     new xiiSphereManipulatorAttribute("Radius"),
     new xiiBoxManipulatorAttribute("Extents", 1.0f, true),
   }
@@ -299,7 +299,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleMolecularDynamicsComponent, 1, xiiComponentM
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Particles"),
+    new xiiCategoryAttribute("Graphics/Particles"),
   }
   XII_END_ATTRIBUTES;
 }

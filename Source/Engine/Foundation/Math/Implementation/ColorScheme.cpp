@@ -305,7 +305,7 @@ xiiColor xiiColorScheme::GetCategoryColor(xiiStringView sCategory, CategoryColor
   if (sCategory.IsEqual_NoCase("Prefabs"))
     return xiiColorScheme::GetColor(xiiColorScheme::Orange, uiBrightness, fSaturation) * DarkUIFactor;
 
-  if (sCategory.IsEqual_NoCase("Rendering"))
+  if (sCategory.IsEqual_NoCase("Graphics"))
     return xiiColorScheme::GetColor(xiiColorScheme::Lime, uiBrightness, fSaturation) * DarkUIFactor;
 
   if (sCategory.IsEqual_NoCase("Terrain"))

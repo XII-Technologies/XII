@@ -16,7 +16,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPostProcessVolumeComponent, 1, xiiComponentMode::Sta
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/PostProcess"),
+    new xiiCategoryAttribute("Graphics/PostProcess"),
   }
   XII_END_ATTRIBUTES;
 }

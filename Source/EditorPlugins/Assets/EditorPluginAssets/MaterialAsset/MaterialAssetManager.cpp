@@ -22,7 +22,7 @@ xiiMaterialAssetDocumentManager::xiiMaterialAssetDocumentManager()
   m_DocTypeDesc.m_sDocumentTypeName = "Material";
   m_DocTypeDesc.m_sFileExtension    = "xiiMaterialAsset";
   m_DocTypeDesc.m_sIcon             = ":/AssetIcons/Material.svg";
-  m_DocTypeDesc.m_sAssetCategory    = "Rendering";
+  m_DocTypeDesc.m_sAssetCategory    = "Graphics";
   m_DocTypeDesc.m_pDocumentType     = xiiGetStaticRTTI<xiiMaterialAssetDocument>();
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_Material");

@@ -10,7 +10,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiRenderComponent, 1)
 {
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("Rendering"),
+    new xiiCategoryAttribute("Graphics"),
   }
   XII_END_ATTRIBUTES;
   XII_BEGIN_MESSAGEHANDLERS

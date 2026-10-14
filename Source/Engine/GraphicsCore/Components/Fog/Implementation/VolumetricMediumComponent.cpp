@@ -51,7 +51,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiVolumetricMediumComponent, 1, xiiComponentMode::Stat
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Lighting/Volumetrics"),
+    new xiiCategoryAttribute("Graphics/Lighting/Volumetrics"),
   }
   XII_END_ATTRIBUTES;
 }

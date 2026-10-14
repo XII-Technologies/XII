@@ -40,7 +40,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiVolumetricCloudComponent, 1, xiiComponentMode::Stati
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Lighting"),
+    new xiiCategoryAttribute("Graphics/Lighting"),
   }
   XII_END_ATTRIBUTES;
   XII_BEGIN_MESSAGEHANDLERS
