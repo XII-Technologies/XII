@@ -64,9 +64,10 @@ public:
   /// Owner handles are non-owning and require world validation before use.
   [[nodiscard]] static xiiResult ResolveExtractedMesh(xiiSceneDatabaseContextHandle context, xiiUInt32 uiGpuObjectId, xiiSceneMeshSource& out_source);
 
-  /// Sums the largest currently resident LOD for every extracted instance, in O(V * max LODs).
-  /// Use after streaming and before graph setup to size a visibility stream without truncation
-  /// or multiplying the scene count by an unrelated global geometry maximum. Clears on failure.
+  /// Sums each extracted instance's largest primitive-range meshlet count, in O(V * max LODs).
+  /// Includes authored LODs not yet resident so subsequent streaming cannot exceed the bound.
+  /// Section candidates count only overlapping meshlets, rather than the entire geometry LOD.
+  /// Use after synchronization to size a visibility stream without truncation. Clears on failure.
   [[nodiscard]] static xiiResult GetExtractedMeshletCapacity(xiiSceneDatabaseContextHandle context, xiiUInt64& out_uiMeshlets);
 
 private:

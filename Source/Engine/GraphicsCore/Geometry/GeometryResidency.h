@@ -165,9 +165,15 @@ public:
   [[nodiscard]] static bool                               IsValid(xiiGeometryHandle handle);
   [[nodiscard]] static xiiEnum<xiiGeometryResidencyState> GetState(xiiGeometryHandle handle);
   [[nodiscard]] static const xiiGpuGeometryRecord*        GetGpuRecord(xiiGeometryHandle handle);
-  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer>         GetMetadataBuffer();
-  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer>         GetMeshletMetadataBuffer();
-  [[nodiscard]] static xiiGeometryResidencyStats          GetStats();
+  /// Counts meshlets overlapping a primitive range in each authored LOD, including unloaded LODs.
+  /// A zero primitive count selects the entire LOD, matching GPU visibility. The output must have
+  /// s_uiMaxLods entries and is cleared on failure. Reads source metadata in O(total meshlets);
+  /// cache the result until the geometry handle or primitive range changes. Rejects reloaded
+  /// source buffers belonging to a different revision. Call on the render thread.
+  [[nodiscard]] static xiiResult                  GetPrimitiveRangeMeshletCounts(xiiGeometryHandle handle, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiUInt32> out_counts);
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> GetMetadataBuffer();
+  [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> GetMeshletMetadataBuffer();
+  [[nodiscard]] static xiiGeometryResidencyStats  GetStats();
 
   struct UploadHandles
   {

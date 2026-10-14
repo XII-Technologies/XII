@@ -86,6 +86,29 @@ static void TestLodSections(bool enableMeshShaders)
   descriptor.ComputeBounds();
   const auto mesh = xiiResourceManager::CreateResource<xiiMeshResource>("NativeLodSections", std::move(descriptor));
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Primitive-range capacity includes unloaded LODs without counting unrelated sections")
+  {
+    const auto geometryHandle = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
+    XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(geometryHandle, 0));
+    xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 0, 0, xiiMakeArrayPtr(counts)));
+    XII_TEST_INT(counts[0], 2);
+    XII_TEST_INT(counts[1], 3);
+    XII_TEST_INT(counts[2], 1);
+    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 12, 1, xiiMakeArrayPtr(counts)));
+    XII_TEST_INT(counts[0], 1);
+    XII_TEST_INT(counts[1], 0);
+    XII_TEST_INT(counts[2], 0);
+    // A custom range may cross a meshlet boundary or overlap reused geometry in another LOD.
+    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 11, 2, xiiMakeArrayPtr(counts)));
+    XII_TEST_INT(counts[0], 2);
+    XII_TEST_INT(counts[2], 1);
+    XII_TEST_BOOL(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts({}, 0, 0, xiiMakeArrayPtr(counts)).Failed());
+    for (const auto count : counts)
+      XII_TEST_INT(count, 0);
+    XII_TEST_BOOL(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, xiiMath::MaxValue<xiiUInt32>(), 1, xiiMakeArrayPtr(counts)).Failed());
+  }
+
   xiiWorldDescription worldDescription("LOD section ownership");
   xiiWorld            world(worldDescription);
   XII_LOCK(world.GetWriteMarker());
@@ -153,6 +176,11 @@ static void TestLodSections(bool enableMeshShaders)
     }
     if (!XII_TEST_RESULT(scene.SynchronizeExtractedMeshes(extracted, frame)) || !XII_TEST_INT(scene.GetDatabase().GetObjectCount(), expectedCandidates))
       return;
+    xiiUInt64 meshletCapacity = 0;
+    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(scene.GetHandle(), meshletCapacity));
+    // Each candidate owns one box meshlet. Whole-LOD accounting would report fourteen
+    // rather than six for the unfiltered mesh, and grows quadratically with section count.
+    XII_TEST_INT(meshletCapacity, expectedCandidates);
     for (const auto& instance : scene.GetDatabase().GetGpuInstances())
     {
       xiiSceneMeshSource source;
@@ -173,6 +201,8 @@ static void TestLodSections(bool enableMeshShaders)
     xiiMaterialManager::BeginFrame(frame, completed);
     xiiGpuVisibilityManager::BeginFrame(frame, completed);
     xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
+    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(scene.GetHandle(), meshletCapacity));
+    XII_TEST_INT(meshletCapacity, expectedCandidates);
     auto& graph = graphContext.GetGraph();
     auto& cache = graphContext.GetResourceCache();
     cache.BeginFrame(frame, completed);

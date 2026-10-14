@@ -144,6 +144,7 @@ namespace
       pEntry->m_hGeometry  = hGeometry;
       if (changed)
       {
+        pEntry->m_bMeshletCountsValid = false;
         scene.SetGeometry(pEntry->m_hSceneObject, hGeometry.GetInternalID().m_InstanceIndex);
         xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
         if (mesh->GetLoadingState() == xiiResourceState::Loaded)
@@ -162,6 +163,15 @@ namespace
 
     if (pEntry == nullptr)
       return XII_SUCCESS;
+
+    if (!pEntry->m_bMeshletCountsValid || pEntry->m_uiFirstPrimitive != uiFirstPrimitive || pEntry->m_uiPrimitiveCount != uiPrimitiveCount)
+    {
+      pEntry->m_bMeshletCountsValid = false;
+      XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(pEntry->m_hGeometry, uiFirstPrimitive, uiPrimitiveCount, xiiMakeArrayPtr(pEntry->m_uiMeshletCounts)));
+      pEntry->m_uiFirstPrimitive    = uiFirstPrimitive;
+      pEntry->m_uiPrimitiveCount    = uiPrimitiveCount;
+      pEntry->m_bMeshletCountsValid = true;
+    }
 
     auto& source                = slot.m_MeshSources[pEntry->m_hSceneObject.GetInternalID().m_Data + 1U];
     source.m_uiMaterialIndex    = materialIndex;
