@@ -15,6 +15,7 @@ SourceBlend0 = BlendFactor_SourceAlpha
 DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 
 DepthEnable = true
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
 #if PRE_TRANSFORMED_VERTICES
   DepthWriteEnable = false
 #else

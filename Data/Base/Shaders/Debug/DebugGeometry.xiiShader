@@ -14,6 +14,7 @@ SourceBlend0 = BlendFactor_SourceAlpha
 DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 
 DepthEnable = true
+ComparisonDepthFunction = ComparisonFunction_GreaterEqual
 DepthWriteEnable = true
 
 [VERTEX_SHADER]
