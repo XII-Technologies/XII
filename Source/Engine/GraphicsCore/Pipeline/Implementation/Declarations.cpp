@@ -9,6 +9,7 @@ bool xiiViewRenderMode::IsSupportedByDefaultPipeline(Enum mode)
   switch (mode)
   {
     case Default:
+    case Wireframe:
     case InstanceID:
     case BaseColor:
     case Metallic:

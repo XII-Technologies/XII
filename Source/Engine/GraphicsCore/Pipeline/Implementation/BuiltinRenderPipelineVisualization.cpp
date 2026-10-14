@@ -7,7 +7,7 @@
 using namespace xiiBuiltinPipelineUtils;
 
 // The shader dispatches on the serialized public mode values.
-static_assert(xiiViewRenderMode::InstanceID == 14 && xiiViewRenderMode::BaseColor == 19 && xiiViewRenderMode::Metallic == 20 &&
+static_assert(xiiViewRenderMode::Wireframe == 1 && xiiViewRenderMode::InstanceID == 14 && xiiViewRenderMode::BaseColor == 19 && xiiViewRenderMode::Metallic == 20 &&
               xiiViewRenderMode::Roughness == 21 && xiiViewRenderMode::Specular == 22 && xiiViewRenderMode::Emissive == 23 &&
               xiiViewRenderMode::AmbientOcclusion == 24 && xiiViewRenderMode::NormalMap == 25 && xiiViewRenderMode::DepthLinear == 26 &&
               xiiViewRenderMode::DepthNonLinear == 27 && xiiViewRenderMode::MotionVectors == 28 &&
@@ -72,10 +72,20 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildViewRenderMode(xiiRenderGraph& g
 
   if (!EnsureComputePipeline(m_Resources.m_PostProcessPasses.m_pViewRenderModePipeline, "Shaders/Pipeline/ViewRenderMode.xiiShader"))
     return XII_FAILURE;
-  auto setup = [source](ViewRenderModeData& data, xiiRenderGraphBuilder& builder) {
+  xiiRenderGraphTextureHandle wireframeSurface;
+  if (mode == xiiViewRenderMode::Wireframe)
+  {
+    auto description       = m_Frame.gpuRasterDescription;
+    description.m_uiWidth  = static_cast<xiiUInt32>(m_View.GetViewport().width);
+    description.m_uiHeight = static_cast<xiiUInt32>(m_View.GetViewport().height);
+    XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(graph, "Wireframe surface", m_Frame.mainVisibility,
+                                                                   m_Frame.geometry, m_Frame.materials, description, wireframeSurface, true, xiiGALFillMode::Wireframe));
+  }
+  auto setup = [source, wireframeSurface](ViewRenderModeData& data, xiiRenderGraphBuilder& builder) {
     data.m_hSource    = builder.ReadTexture(source, xiiGALResourceStateFlags::ShaderResource);
     data.m_hDepth     = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-    data.m_hObjectIds = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferObjectId, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hObjectIds = wireframeSurface.IsValid() ? builder.ReadTexture(wireframeSurface, xiiGALResourceStateFlags::ShaderResource) :
+                                                     builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferObjectId, xiiGALResourceStateFlags::ShaderResource);
     data.m_hOutput    = builder.ReadWriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
     xiiGALBufferCreationDescription constants;
     constants.m_uiSize         = sizeof(xiiViewRenderModeConstants);
