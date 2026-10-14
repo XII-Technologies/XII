@@ -111,22 +111,22 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 3, xiiRTTIDefa
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("PlanetRadiusKm", m_fPlanetRadiusKm)->AddAttributes(new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" km")),
-    XII_MEMBER_PROPERTY("AtmosphereRadiusKm", m_fAtmosphereRadiusKm)->AddAttributes(new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" km")),
-    XII_MEMBER_PROPERTY("RayleighScaleHeightKm", m_fRayleighScaleHeightKm)->AddAttributes(new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" km")),
-    XII_MEMBER_PROPERTY("MieScaleHeightKm", m_fMieScaleHeightKm)->AddAttributes(new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" km")),
-    XII_MEMBER_PROPERTY("RayleighScattering", m_vRayleighScattering),
-    XII_MEMBER_PROPERTY("MieScattering", m_vMieScattering),
-    XII_MEMBER_PROPERTY("MieAbsorption", m_vMieAbsorption),
-    XII_MEMBER_PROPERTY("OzoneAbsorption", m_vOzoneAbsorption),
-    XII_MEMBER_PROPERTY("PlanetUpDirection", m_vPlanetUpDirection),
-    XII_MEMBER_PROPERTY("GroundAltitudeMeters", m_fGroundAltitudeMeters)->AddAttributes(new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("MiePhaseG", m_fMiePhaseG)->AddAttributes(new xiiClampValueAttribute(-0.999f, 0.999f)),
-    XII_MEMBER_PROPERTY("SunLimbDarkening", m_fSunLimbDarkening)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_MEMBER_PROPERTY("TransmittanceIntegrationSteps", m_uiTransmittanceIntegrationSteps)->AddAttributes(new xiiClampValueAttribute(1U, 1024U)),
-    XII_MEMBER_PROPERTY("MultiScatterSqrtSamples", m_uiMultiScatterSqrtSamples)->AddAttributes(new xiiClampValueAttribute(1U, 64U)),
-    XII_MEMBER_PROPERTY("SkyViewIntegrationSteps", m_uiSkyViewIntegrationSteps)->AddAttributes(new xiiClampValueAttribute(1U, 64U)),
-    XII_MEMBER_PROPERTY("AerialPerspectiveSteps", m_uiAerialPerspectiveSteps)->AddAttributes(new xiiClampValueAttribute(1U, 64U)),
+    XII_MEMBER_PROPERTY("PlanetRadiusKm", m_fPlanetRadiusKm)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_fPlanetRadiusKm), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" km")),
+    XII_MEMBER_PROPERTY("AtmosphereRadiusKm", m_fAtmosphereRadiusKm)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_fAtmosphereRadiusKm), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" km")),
+    XII_MEMBER_PROPERTY("RayleighScaleHeightKm", m_fRayleighScaleHeightKm)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_fRayleighScaleHeightKm), new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" km")),
+    XII_MEMBER_PROPERTY("MieScaleHeightKm", m_fMieScaleHeightKm)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_fMieScaleHeightKm), new xiiClampValueAttribute(0.001f, xiiVariant()), new xiiSuffixAttribute(" km")),
+    XII_MEMBER_PROPERTY("RayleighScattering", m_vRayleighScattering)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_vRayleighScattering)),
+    XII_MEMBER_PROPERTY("MieScattering", m_vMieScattering)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_vMieScattering)),
+    XII_MEMBER_PROPERTY("MieAbsorption", m_vMieAbsorption)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_vMieAbsorption)),
+    XII_MEMBER_PROPERTY("OzoneAbsorption", m_vOzoneAbsorption)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_vOzoneAbsorption)),
+    XII_MEMBER_PROPERTY("PlanetUpDirection", m_vPlanetUpDirection)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_vPlanetUpDirection)),
+    XII_MEMBER_PROPERTY("GroundAltitudeMeters", m_fGroundAltitudeMeters)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_fGroundAltitudeMeters), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("MiePhaseG", m_fMiePhaseG)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_fMiePhaseG), new xiiClampValueAttribute(-0.999f, 0.999f)),
+    XII_MEMBER_PROPERTY("SunLimbDarkening", m_fSunLimbDarkening)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_fSunLimbDarkening), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("TransmittanceIntegrationSteps", m_uiTransmittanceIntegrationSteps)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_uiTransmittanceIntegrationSteps), new xiiClampValueAttribute(1U, 1024U)),
+    XII_MEMBER_PROPERTY("MultiScatterSqrtSamples", m_uiMultiScatterSqrtSamples)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_uiMultiScatterSqrtSamples), new xiiClampValueAttribute(1U, 64U)),
+    XII_MEMBER_PROPERTY("SkyViewIntegrationSteps", m_uiSkyViewIntegrationSteps)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_uiSkyViewIntegrationSteps), new xiiClampValueAttribute(1U, 64U)),
+    XII_MEMBER_PROPERTY("AerialPerspectiveSteps", m_uiAerialPerspectiveSteps)->AddAttributes(new xiiDefaultValueAttribute(xiiAtmosphereSettings().m_uiAerialPerspectiveSteps), new xiiClampValueAttribute(1U, 64U)),
   }
   XII_END_PROPERTIES;
 }

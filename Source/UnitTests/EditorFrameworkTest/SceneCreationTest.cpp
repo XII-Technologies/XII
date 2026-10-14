@@ -123,6 +123,16 @@ namespace
     XII_TEST_VEC3(accessor->GetByName<xiiVec3>(mesh->GetParent(), "LocalPosition"), xiiVec3(3, 0, 0), 0);
     XII_TEST_INT(accessor->GetCountByName(sky->GetParent(), "Tags"), 1);
     XII_TEST_STRING(accessor->GetByName<xiiString>(sky->GetParent(), "Tags", 0), "SkyLight");
+    const auto* atmosphere = accessor->GetObject(accessor->GetByName<xiiUuid>(sky, "Atmosphere"));
+    if (XII_TEST_BOOL(atmosphere != nullptr))
+    {
+      const xiiAtmosphereSettings defaults;
+      XII_TEST_FLOAT(accessor->GetByName<float>(atmosphere, "PlanetRadiusKm"), defaults.m_fPlanetRadiusKm, 0);
+      XII_TEST_FLOAT(accessor->GetByName<float>(atmosphere, "AtmosphereRadiusKm"), defaults.m_fAtmosphereRadiusKm, 0);
+      XII_TEST_VEC3(accessor->GetByName<xiiVec3>(atmosphere, "RayleighScattering"), defaults.m_vRayleighScattering, 0);
+      XII_TEST_VEC3(accessor->GetByName<xiiVec3>(atmosphere, "PlanetUpDirection"), defaults.m_vPlanetUpDirection, 0);
+      XII_TEST_INT(accessor->GetByName<xiiUInt32>(atmosphere, "SkyViewIntegrationSteps"), defaults.m_uiSkyViewIntegrationSteps);
+    }
     XII_TEST_INT(accessor->GetByName<xiiInt64>(light, "IntensityUnit"), xiiPhotometricUnit::Lux);
     XII_TEST_FLOAT(accessor->GetByName<float>(light, "Intensity"), 10.0f, 0.0f);
   }
