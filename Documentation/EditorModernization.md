@@ -3932,3 +3932,47 @@ existing editor is required to use the rebuilt binaries. Verification covers
 Windows Debug/Vulkan with WireframeFill available; HDR swapchains, other graphics
 backends, Release, and other operating systems remain unverified. The broader
 modernization inventory remains open.
+
+### Built-In Compute Shader Failures Reject Execution
+
+The rendering follow-up reproduced a crash after a compute shader failed to
+compile: setup left a null pipeline, reported a successful built-in stage, and
+execution reached null shader-resource bindings. The shared compute-pipeline
+creation helper now records failure in a per-stage `xiiResult` and reports the
+shader path. The public stage boundary returns that failure through the existing
+pipeline instance and view build path. RenderWorld then skips graph execution,
+and the existing view failure handling invalidates temporal history. The result
+resets at each stage build so subsequent frames can retry after resource reload.
+No exception handling, termination, alternate resource manager, or execution
+fallback was added. Cached successful pipeline lookup retains its existing fast
+path; the failure state adds no allocations.
+
+`BuiltinShaderFailureTest.cpp` exercises public built-in pass construction with
+a loaded invalid shader resource, then restores the same file-backed identity
+through the resource manager's loader API. Integrated fixtures cover both the
+original deferred-direct-lighting path and late Bloom-stage creation. Each checks
+two failed frames of a resource-backed default pipeline: there are no scheduled
+graph submissions and no later display-color output. The same view subsequently
+builds, submits, and captures its final output after reload. Test sources and
+user assets are not rewritten. The first fixture was corrected to retain a
+file-backed resource's reloadability rather than trying to reload a purely
+procedural resource.
+
+Both focused Vulkan regressions pass in
+`Workspace/editor-shader-failure-reload-tests.log` (exit 0). Temporarily bypassing
+the stage result propagation makes the non-executing setup regression fail in
+`Workspace/editor-shader-failure-control-tests.log` (exit 1). Its order file
+excludes the integrated execution fixture, preventing a deliberate null-pipeline
+dispatch. The command restores the exact production source in a finally block;
+the restored translation unit and dependent editor targets were rebuilt in
+`Workspace/editor-shader-failure-final-build.log` (exit 0).
+
+Final verification passes all 72 native Vulkan subtests, including all three
+failure/recovery cases, in
+`Workspace/editor-shader-failure-deferred-native-tests.log` (exit 0). All 12 native
+editor subtests pass in `Workspace/editor-shader-failure-final-editor-tests.log`
+(exit 0), including atmosphere/grid/render-mode screenshots, resize stress,
+Play, asset processing, document save/reopen, and shutdown. The logs report no
+Vulkan validation, device-loss, or device-memory errors. Verification is Windows
+Debug/Vulkan; other platforms, backends, and Release remain unverified. The
+broader modernization objective remains active.
