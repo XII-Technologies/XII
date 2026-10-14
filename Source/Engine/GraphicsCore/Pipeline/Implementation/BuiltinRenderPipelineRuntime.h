@@ -433,6 +433,10 @@ public:
 
 private:
   xiiView& m_View;
+  // Render-graph setup callbacks are void. Accumulate pipeline creation failures
+  // during one stage so its resource-backed Build() can reject GPU execution.
+  xiiResult m_StageSetupResult = XII_SUCCESS;
+  xiiResult BuildStageInternal(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   struct Frame
   {
     xiiUInt64                                                       uiFrameIndex = 0;
@@ -707,7 +711,7 @@ private:
 
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
-  static xiiSharedPtr<xiiGALComputePipelineState>  EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
+  xiiSharedPtr<xiiGALComputePipelineState>         EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
   static xiiSharedPtr<xiiGALGraphicsPipelineState> EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex);
   bool                                             EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
   bool                                             EnsureRayTracingShadowResources();

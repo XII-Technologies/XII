@@ -500,6 +500,13 @@ void xiiBuiltinRenderPipelineRuntime::BeginFrame(const xiiVirtualShadowMapManage
 
 xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
+  m_StageSetupResult = XII_SUCCESS;
+  XII_SUCCEED_OR_RETURN(BuildStageInternal(stage, graph, blackboard));
+  return m_StageSetupResult;
+}
+
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+{
   XII_SUCCEED_OR_RETURN(PrepareTemporalResources(stage));
   if (stage == "ScreenEffects")
     XII_SUCCEED_OR_RETURN(PrepareSensorOutput());

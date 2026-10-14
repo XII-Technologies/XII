@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/Implementation/BuiltinRenderPipelineHelpers.h>
 
@@ -436,11 +437,17 @@ bool xiiBuiltinRenderPipelineRuntime::EnsureRayTracingReflectionResources()
   return true;
 }
 
-// static
 xiiSharedPtr<xiiGALComputePipelineState> xiiBuiltinRenderPipelineRuntime::EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath)
 {
   if (inout_pPipeline != nullptr)
     return inout_pPipeline;
+
+  XII_SCOPE_EXIT(if (inout_pPipeline == nullptr) {
+    m_StageSetupResult = XII_FAILURE;
+    xiiLog::Error("Failed to create built-in compute pipeline '{}'.", sShaderPath);
+  });
+  if (!xiiGALDevice::HasDefaultDevice())
+    return nullptr;
 
   xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
 
@@ -458,8 +465,6 @@ xiiSharedPtr<xiiGALComputePipelineState> xiiBuiltinRenderPipelineRuntime::Ensure
   description.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
 
   inout_pPipeline = xiiGALPipelineCache::GetPipeline(description);
-  XII_ASSERT_DEV(inout_pPipeline != nullptr, "Failed to create compute pipeline: '{}'.", sShaderPath);
-
   return inout_pPipeline;
 }
 
