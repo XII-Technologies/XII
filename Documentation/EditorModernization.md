@@ -3976,3 +3976,38 @@ Play, asset processing, document save/reopen, and shutdown. The logs report no
 Vulkan validation, device-loss, or device-memory errors. Verification is Windows
 Debug/Vulkan; other platforms, backends, and Release remain unverified. The
 broader modernization objective remains active.
+
+The shader preload utility's documented unavailable-resource contract also had
+an assertion gap: acquiring a genuinely missing shader used the strict resource
+mode before its invalid-handle check could run. Both loading-fallback and blocking
+paths now use the existing non-asserting acquisition modes. Required callers
+still receive invalid handles, and built-in stages return `XII_FAILURE`; missing
+resources retain the resource manager's normal diagnostic warning.
+
+The three regressions now install a loader returning no content, verify actual
+missing-resource acquisition, and check both preload modes before stage failure
+and recovery. This replaces the earlier loaded-invalid descriptor fixture and
+does not delete shader source files or manually invalidate shared cache entries.
+All three pass in
+`Workspace/editor-missing-shader-verified-tests.log` (exit 0); all 21 Core subtests
+pass in `Workspace/editor-missing-shader-core-tests.log` (exit 0). Restoring strict
+acquisition temporarily produces three missing-resource assertion failures in
+the isolated non-executing fixture
+(`Workspace/editor-missing-shader-control-tests.log`, exit 1). The control command
+restores the exact production source before the final dependent rebuild.
+
+The restored Debug build of GraphicsCoreTest, both editor test targets, Editor,
+processor/player, and plugin consumers passes in
+`Workspace/editor-missing-shader-restored-build.log` (exit 0). All 72 native
+Vulkan subtests pass again with the real missing-content fixtures in
+`Workspace/editor-missing-shader-final-native-tests.log` (exit 0), with no Vulkan
+validation or device-memory errors. The code and updated fixtures are committed
+as `4bb8f4ac3`; the preceding stage guard is `363c7cac9`.
+
+All 12 native editor subtests also pass with the corrected preload contract in
+`Workspace/editor-missing-shader-final-editor-tests.log` (exit 0). This includes
+production viewport screenshots, mode changes, atmosphere/grid checks, resize
+stress, asset processing, save/reopen, Play, and shutdown. The engine logs contain
+no Vulkan validation, device-loss, or device-memory errors. Existing Qt checkbox
+compatibility-signal warnings remain visible and require a separate UI migration.
+The user's FeatureLab files and running editor session remain untouched.
