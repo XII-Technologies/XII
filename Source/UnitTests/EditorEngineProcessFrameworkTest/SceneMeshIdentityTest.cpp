@@ -274,6 +274,21 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       xiiRenderGraphTextureHandle query;
       if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Identity query", visibility, uploadedGeometry, materials, raster, query, meshPicking)))
         return;
+      xiiRenderGraphTextureHandle wireframe;
+      const bool                  wireframeSupported = environment.GetDevice()->GetFeatures().m_WireframeFill == xiiGALDeviceFeatureState::Enabled;
+      if (!denseMeshlet && wireframeSupported)
+      {
+        if (!XII_TEST_RESULT(xiiGpuSceneRasterManager::AddPickingPass(graph, "Wireframe identity query", visibility, uploadedGeometry, materials, raster, wireframe, meshPicking, xiiGALFillMode::Wireframe)))
+          return;
+      }
+      xiiRenderGraphTextureHandle invalidFill = query;
+      XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Invalid query fill", visibility, uploadedGeometry, materials, raster, invalidFill, meshPicking, xiiGALFillMode::Undefined).Failed());
+      XII_TEST_BOOL(!invalidFill.IsValid());
+      if (!wireframeSupported)
+      {
+        XII_TEST_BOOL(xiiGpuSceneRasterManager::AddPickingPass(graph, "Unsupported wireframe", visibility, uploadedGeometry, materials, raster, invalidFill, meshPicking, xiiGALFillMode::Wireframe).Failed());
+        XII_TEST_BOOL(!invalidFill.IsValid());
+      }
       struct Export
       {
         XII_DECLARE_POD_TYPE();
@@ -282,7 +297,9 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         XII_IGNORE_UNUSED(builder.ReadTexture(outputs.m_hObjectId, xiiGALResourceStateFlags::ShaderResource));
         builder.ExportTexture(outputs.m_hObjectId, xiiGALResourceStateFlags::ShaderResource);
         XII_IGNORE_UNUSED(builder.ReadTexture(query, xiiGALResourceStateFlags::ShaderResource));
-        builder.ExportTexture(query, xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
+        builder.ExportTexture(query, xiiGALResourceStateFlags::ShaderResource);
+        if (wireframe.IsValid())
+          builder.ExportTexture(builder.ReadTexture(wireframe, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
       xiiScenePickingReadback asyncReadback;
       xiiUInt32               completedSlot, reservedSlot;
       XII_TEST_RESULT(asyncReadback.Poll(completedSlot));
@@ -351,6 +368,23 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       asyncReadback.Invalidate();
       XII_TEST_BOOL(!asyncReadback.Matches(*view));
       XII_TEST_BOOL(asyncReadback.GetPixels().IsEmpty());
+      if (wireframe.IsValid())
+      {
+        xiiDynamicArray<xiiUInt32> edgePixels;
+        if (ReadIds(*environment.GetDevice(), graph.GetExportedTexture(wireframe).Borrow(), edgePixels))
+        {
+          xiiUInt32 solidCount = 0, wireCount = 0;
+          for (xiiUInt32 pixel = 0; pixel < 32 * 32; ++pixel)
+          {
+            solidCount += pixels[pixel * 4] != 0;
+            wireCount += edgePixels[pixel * 4] != 0;
+            if (edgePixels[pixel * 4] != 0)
+              XII_TEST_BOOL(edgePixels[pixel * 4] == firstId || edgePixels[pixel * 4] == secondId);
+          }
+          XII_TEST_BOOL(wireCount > 0 && wireCount < solidCount);
+          XII_TEST_INT(edgePixels[0], 0);
+        }
+      }
       cache.EndFrame();
       if (skinned)
       {
@@ -479,7 +513,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         xiiMaterialResourceDescriptor materialDescription;
         materialDescription.m_AlphaMode   = alphaMode;
         materialDescription.m_BlendMode   = alphaMode == xiiMaterialAlphaMode::Blend ? xiiMaterialBlendMode::Translucent :
-            alphaMode == xiiMaterialAlphaMode::Mask                                  ? xiiMaterialBlendMode::Masked :
+          alphaMode == xiiMaterialAlphaMode::Mask                                    ? xiiMaterialBlendMode::Masked :
                                                                                        xiiMaterialBlendMode::Opaque;
         materialDescription.m_BaseColor.a = opacity;
         xiiStringBuilder materialName;

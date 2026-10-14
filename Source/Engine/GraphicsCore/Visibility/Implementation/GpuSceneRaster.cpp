@@ -669,19 +669,31 @@ void xiiGpuSceneRasterManager::EngineStartup()
   samplerDescription.m_uiMaxAnisotropy = 8;
   s_pState->m_pMaterialSampler         = pDevice->CreateSampler(samplerDescription);
 
-  const auto hIndexedPickingShader                     = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuScenePickingIndexed.xiiShader");
-  s_pState->m_hIndexedPickingShaderPermutation         = xiiShaderPermutationUtilities::PreloadSinglePermutation(hIndexedPickingShader, {}, false);
+  xiiHashTable<xiiHashedString, xiiHashedString> solidVariables, wireframeVariables;
+  xiiHashedString                                name, value;
+  name.Assign("RENDER_PASS");
+  value.Assign("RENDER_PASS_PICKING");
+  solidVariables.Insert(name, value);
+  value.Assign("RENDER_PASS_PICKING_WIREFRAME");
+  wireframeVariables.Insert(name, value);
+  const bool wireframeSupported                = pDevice->GetFeatures().m_WireframeFill == xiiGALDeviceFeatureState::Enabled;
+  const auto hIndexedPickingShader             = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuScenePickingIndexed.xiiShader");
+  s_pState->m_hIndexedPickingShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hIndexedPickingShader, solidVariables, false);
+  if (wireframeSupported)
+    s_pState->m_hIndexedWireframePickingShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hIndexedPickingShader, wireframeVariables, false);
   const auto hIndexedCommandsShader                    = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Visibility/GpuSceneIndexedCommandBuild.xiiShader");
   s_pState->m_hIndexedPickingCommandsShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hIndexedCommandsShader, {}, false);
   if (!s_pState->m_bMeshShadersSupported)
     return;
 
-  const xiiShaderResourceHandle hShader            = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneDepth.xiiShader");
-  s_pState->m_hDepthShaderPermutation              = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, false);
-  const xiiShaderResourceHandle hGBufferShader     = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneGBuffer.xiiShader");
-  s_pState->m_hGBufferShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hGBufferShader, {}, false);
-  const auto hPickingShader                        = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuScenePicking.xiiShader");
-  s_pState->m_hPickingShaderPermutation            = xiiShaderPermutationUtilities::PreloadSinglePermutation(hPickingShader, {}, false);
+  const xiiShaderResourceHandle hShader        = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneDepth.xiiShader");
+  s_pState->m_hDepthShaderPermutation          = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, {}, false);
+  const xiiShaderResourceHandle hGBufferShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneGBuffer.xiiShader");
+  s_pState->m_hGBufferShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hGBufferShader, {}, false);
+  const auto hPickingShader                    = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuScenePicking.xiiShader");
+  s_pState->m_hPickingShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hPickingShader, solidVariables, false);
+  if (wireframeSupported)
+    s_pState->m_hWireframePickingShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hPickingShader, wireframeVariables, false);
   const xiiShaderResourceHandle hForwardPlusShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/GpuSceneForwardPlus.xiiShader");
   s_pState->m_hForwardPlusShaderPermutation        = xiiShaderPermutationUtilities::PreloadSinglePermutation(hForwardPlusShader, {}, false);
 }
@@ -696,6 +708,8 @@ void xiiGpuSceneRasterManager::EngineShutdown()
   s_pState->m_hGBufferShaderPermutation.Invalidate();
   s_pState->m_hPickingShaderPermutation.Invalidate();
   s_pState->m_hIndexedPickingShaderPermutation.Invalidate();
+  s_pState->m_hWireframePickingShaderPermutation.Invalidate();
+  s_pState->m_hIndexedWireframePickingShaderPermutation.Invalidate();
   s_pState->m_hIndexedPickingCommandsShaderPermutation.Invalidate();
   s_pState->m_hForwardPlusShaderPermutation.Invalidate();
   s_pState->m_bMeshShadersSupported = false;

@@ -39,9 +39,14 @@ namespace
 
 xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStringView name,
                                                    const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                   const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders)
+                                                   const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders, xiiGALFillMode::Enum fillMode)
 {
-  out_hSurface       = {};
+  out_hSurface = {};
+  if (fillMode != xiiGALFillMode::Solid && fillMode != xiiGALFillMode::Wireframe)
+    return XII_FAILURE;
+  if (fillMode == xiiGALFillMode::Wireframe &&
+      (!xiiGALDevice::HasDefaultDevice() || xiiGALDevice::GetDefaultDevice()->GetFeatures().m_WireframeFill != xiiGALDeviceFeatureState::Enabled))
+    return XII_FAILURE;
   const bool indexed = !bUseMeshShaders || !IsSupported();
   if (!IsPickingSupported() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hSkinningMatrices.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() ||
       !visibility.m_hVisibleMeshletCount.IsValid() ||
@@ -53,7 +58,9 @@ xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStr
       description.m_uiTangentOffset > description.m_uiVertexStride - 16 ||
       description.m_uiTexCoordOffset > description.m_uiVertexStride - 8 || !description.m_ViewProjectionMatrix.IsValid())
     return XII_FAILURE;
-  const auto                                    hShader = indexed ? s_pState->m_hIndexedPickingShaderPermutation : s_pState->m_hPickingShaderPermutation;
+  const auto                                    hShader = fillMode == xiiGALFillMode::Wireframe ?
+    (indexed ? s_pState->m_hIndexedWireframePickingShaderPermutation : s_pState->m_hWireframePickingShaderPermutation) :
+    (indexed ? s_pState->m_hIndexedPickingShaderPermutation : s_pState->m_hPickingShaderPermutation);
   xiiResourceLock<xiiShaderPermutationResource> permutation(hShader, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
     return XII_FAILURE;

@@ -10,6 +10,7 @@
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Visibility/GpuVisibilitySystem.h>
+#include <GraphicsFoundation/States/RasterizerState.h>
 
 class xiiLightingSystem;
 
@@ -91,9 +92,11 @@ public:
   /// same resident geometry. Both routes use the same LOD selection, identity and material coverage.
   /// Invalid inputs fail and clear the output handle. Indexed queries consume the same visible meshlets;
   /// their transient command storage is O(visible-meshlet capacity).
+  /// Wireframe fill queries actual triangle edges for inspection views and requires the device's
+  /// WireframeFill feature. Unsupported fill modes fail before adding passes.
   [[nodiscard]] static xiiResult AddPickingPass(xiiRenderGraph& graph, xiiStringView sName,
                                                 const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders = true);
+                                                const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders = true, xiiGALFillMode::Enum fillMode = xiiGALFillMode::Solid);
 
   /// Adds a reversed-Z depth prepass and returns the produced depth version. Invalid input or a
   /// device without mesh shaders returns an invalid handle so callers can select an indexed fallback.
