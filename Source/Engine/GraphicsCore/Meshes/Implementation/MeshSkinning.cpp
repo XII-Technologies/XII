@@ -20,8 +20,7 @@ xiiResult xiiMeshSkinning::ValidatePalette(xiiArrayPtr<const xiiMat4> palette)
   return XII_SUCCESS;
 }
 
-xiiResult xiiMeshSkinning::TransformPosition(const xiiVec3& position, const xiiVec4U16& indices,
-                                             const xiiColorLinearUB& weights, xiiArrayPtr<const xiiMat4> palette, xiiVec3& out_position)
+xiiResult xiiMeshSkinning::TransformPosition(const xiiVec3& position, const xiiVec4U16& indices, const xiiColorLinearUB& weights, xiiArrayPtr<const xiiMat4> palette, xiiVec3& out_position)
 {
   if (!position.IsValid())
     return XII_FAILURE;
@@ -47,8 +46,7 @@ xiiResult xiiMeshSkinning::TransformPosition(const xiiVec3& position, const xiiV
   return XII_SUCCESS;
 }
 
-xiiResult xiiMeshSkinning::ComputeBounds(const xiiBoundingBoxSphere& bindBounds,
-                                         xiiArrayPtr<const xiiMat4> palette, xiiBoundingBoxSphere& out_bounds)
+xiiResult xiiMeshSkinning::ComputeBounds(const xiiBoundingBoxSphere& bindBounds, xiiArrayPtr<const xiiMat4> palette, xiiBoundingBoxSphere& out_bounds)
 {
   if (!bindBounds.IsValid() || !xiiMath::IsFinite(bindBounds.m_fSphereRadius))
     return XII_FAILURE;

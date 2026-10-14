@@ -289,8 +289,7 @@ void xiiInputManager::UpdateInputActions(xiiStringView sInputSet, xiiActionMap& 
         // we check whether this is either a fresh click (inside the area) or the action is already active
         // if it is already active, the mouse is most likely held clicked at the moment
 
-        if (bFreshClick || (itBestAction.Value().m_fValue > 0.0f) || (itBestAction.Value().m_State == xiiKeyState::Pressed) ||
-            (itBestAction.Value().m_State == xiiKeyState::Down))
+        if (bFreshClick || (itBestAction.Value().m_fValue > 0.0f) || (itBestAction.Value().m_State == xiiKeyState::Pressed) || (itBestAction.Value().m_State == xiiKeyState::Down))
           itBestAction.Value().m_fValue = fNewValue;
       }
       else

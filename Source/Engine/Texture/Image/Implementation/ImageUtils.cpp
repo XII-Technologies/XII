@@ -575,7 +575,7 @@ xiiResult xiiImageUtils::ExtractLowerMipChain(const xiiImageView& srcImg, xiiIma
 
   // A valid image may store a partial chain or have mip generation disabled.
   const xiiUInt32 uiTotalMips = srcImg.GetMipLevelCount();
-  uiNumMips             = xiiMath::Min(uiNumMips, uiTotalMips);
+  uiNumMips                   = xiiMath::Min(uiNumMips, uiTotalMips);
 
   const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(srcImgHeader.m_Format);
   xiiUInt32                              uiStartMipLevel  = uiTotalMips - uiNumMips;
@@ -934,8 +934,7 @@ xiiResult xiiImageUtils::Scale3D(const xiiImageView& source, xiiImage& ref_targe
   const xiiUInt32 downScaleFactorX = originalWidth / uiWidth;
   const xiiUInt32 downScaleFactorY = originalHeight / uiHeight;
 
-  if (pFilter == nullptr && (format == xiiGALResourceFormat::RGBA8UNormalized || format == xiiGALResourceFormat::BGRA8UNormalized || format == xiiGALResourceFormat::BGRA8UNormalized) && downScaleFactorX * uiWidth == originalWidth && downScaleFactorY * uiHeight == originalHeight && uiDepth == 1 && originalDepth == 1 &&
-      xiiMath::IsPowerOf2(downScaleFactorX) && xiiMath::IsPowerOf2(downScaleFactorY))
+  if (pFilter == nullptr && (format == xiiGALResourceFormat::RGBA8UNormalized || format == xiiGALResourceFormat::BGRA8UNormalized || format == xiiGALResourceFormat::BGRA8UNormalized) && downScaleFactorX * uiWidth == originalWidth && downScaleFactorY * uiHeight == originalHeight && uiDepth == 1 && originalDepth == 1 && xiiMath::IsPowerOf2(downScaleFactorX) && xiiMath::IsPowerOf2(downScaleFactorY))
   {
     DownScaleFast(source, ref_target, uiWidth, uiHeight);
     return XII_SUCCESS;
@@ -1954,7 +1953,6 @@ void xiiImageUtils::CreateImageDiffHtml(xiiStringBuilder& out_sHtml, xiiStringVi
   output.AppendFormat("<div style=\"width:{}px;display: inline-block;\">\n", capturedImgRgb.GetWidth());
 
   output.Append("<p id=\"image_caption_rgb\">Displaying: Current Image RGB</p>\n"
-
                 "<div style=\"block;\" onmouseover=\"imageover()\" onmouseout=\"imageout()\">\n"
                 "<img id=\"image_current_rgb\" alt=\"Captured Image RGB\" src=\"");
   EmbedImageData(output, capturedImgRgb);

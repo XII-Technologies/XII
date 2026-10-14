@@ -20,7 +20,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiScenePreferencesUser::xiiScenePreferencesUser() :
   xiiPreferences(Domain::Document, "Scene")
 {
-  m_bShowGrid = true;
+  m_bShowGrid    = true;
   m_iCameraSpeed = 9;
 }
 

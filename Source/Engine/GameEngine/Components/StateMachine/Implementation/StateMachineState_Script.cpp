@@ -52,10 +52,9 @@ namespace
 
       if (xiiWorld* pWorld = m_pStateMachineInstance->GetOwnerWorld())
       {
-        pWorld->AddResourceReloadFunction(m_hScriptClass, xiiComponentHandle(), this,
-                                          [](xiiWorld::ResourceReloadContext& context) {
-                                            static_cast<ScriptInstanceData*>(context.m_pUserData)->ReloadScript();
-                                          });
+        pWorld->AddResourceReloadFunction(m_hScriptClass, xiiComponentHandle(), this, [](xiiWorld::ResourceReloadContext& context) {
+          static_cast<ScriptInstanceData*>(context.m_pUserData)->ReloadScript();
+        });
       }
 
       CallOnEnter(pFromState);
@@ -243,10 +242,7 @@ xiiStringView xiiStateMachineState_Script::GetScriptClassFile() const
 
 const xiiRangeView<xiiStringView, xiiUInt32> xiiStateMachineState_Script::GetParameters() const
 {
-  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                                [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString().GetView(); });
+  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString().GetView(); });
 }
 
 void xiiStateMachineState_Script::SetParameter(xiiStringView sKey, const xiiVariant& value)

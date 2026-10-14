@@ -25,10 +25,7 @@ xiiResult xiiConfigureSceneCamera(const xiiCameraComponent& component, xiiCamera
   const float nearPlane = component.GetNearPlane();
   const float farPlane  = xiiMath::Max(nearPlane + 0.00001f, component.GetFarPlane());
   const float exposure  = component.GetExposure();
-  if (!xiiMath::IsFinite(dimension) || dimension <= 0 || !xiiMath::IsFinite(nearPlane) ||
-      !xiiMath::IsFinite(component.GetFarPlane()) || !xiiMath::IsFinite(farPlane) || farPlane <= nearPlane ||
-      !xiiMath::IsFinite(exposure) || exposure <= 0 ||
-      ((mode == xiiCameraMode::PerspectiveFixedFovX || mode == xiiCameraMode::PerspectiveFixedFovY) && (dimension >= 180 || nearPlane <= 0)))
+  if (!xiiMath::IsFinite(dimension) || dimension <= 0 || !xiiMath::IsFinite(nearPlane) || !xiiMath::IsFinite(component.GetFarPlane()) || !xiiMath::IsFinite(farPlane) || farPlane <= nearPlane || !xiiMath::IsFinite(exposure) || exposure <= 0 || ((mode == xiiCameraMode::PerspectiveFixedFovX || mode == xiiCameraMode::PerspectiveFixedFovY) && (dimension >= 180 || nearPlane <= 0)))
     return XII_FAILURE;
 
   const auto* owner    = component.GetOwner();

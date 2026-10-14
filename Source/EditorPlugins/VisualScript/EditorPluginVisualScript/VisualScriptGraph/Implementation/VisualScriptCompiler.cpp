@@ -779,10 +779,7 @@ xiiResult xiiVisualScriptCompiler::BuildInstanceDataMapping()
   {
     auto dataType = variable.m_TypeDecl.GetDataType();
 
-    XII_ASSERT_DEV(dataType == xiiVisualScriptDataType::Variant ||
-                     ((dataType == xiiVisualScriptDataType::GameObject || dataType == xiiVisualScriptDataType::Component || dataType == xiiVisualScriptDataType::TypedPointer) && variable.m_DefaultValue.IsValid() == false) ||
-                     dataType == xiiVisualScriptDataType::FromVariantType(variable.m_DefaultValue.GetType()),
-                   "Data type mismatch");
+    XII_ASSERT_DEV(dataType == xiiVisualScriptDataType::Variant || ((dataType == xiiVisualScriptDataType::GameObject || dataType == xiiVisualScriptDataType::Component || dataType == xiiVisualScriptDataType::TypedPointer) && variable.m_DefaultValue.IsValid() == false) || dataType == xiiVisualScriptDataType::FromVariantType(variable.m_DefaultValue.GetType()), "Data type mismatch");
 
     auto& offsetAndCount = m_Module.m_InstanceDataDesc.m_PerTypeInfo[dataType];
 
@@ -1124,24 +1121,23 @@ xiiResult xiiVisualScriptCompiler::BuildDataStack(AstNode* pEntryAstNode, AstNod
 
 xiiResult xiiVisualScriptCompiler::BuildDataExecutions(AstNode* pEntryAstNode)
 {
-  return TraverseAstDepthFirst(pEntryAstNode,
-                               [&](AstNode*& pAstNode) {
-                                 if (pAstNode->m_bImplicitExecution)
-                                   return VisitorResult::Continue;
+  return TraverseAstDepthFirst(pEntryAstNode, [&](AstNode*& pAstNode) {
+    if (pAstNode->m_bImplicitExecution)
+      return VisitorResult::Continue;
 
-                                 AstNode* pFirstDataNode = nullptr;
-                                 AstNode* pLastDataNode  = nullptr;
-                                 if (BuildDataStack(pAstNode, pFirstDataNode, pLastDataNode).Failed())
-                                   return VisitorResult::Error;
+    AstNode* pFirstDataNode = nullptr;
+    AstNode* pLastDataNode  = nullptr;
+    if (BuildDataStack(pAstNode, pFirstDataNode, pLastDataNode).Failed())
+      return VisitorResult::Error;
 
-                                 if (pFirstDataNode == nullptr || pLastDataNode == nullptr)
-                                   return VisitorResult::Continue;
+    if (pFirstDataNode == nullptr || pLastDataNode == nullptr)
+      return VisitorResult::Continue;
 
-                                 // Connect data stack
-                                 ExecuteBefore(*pAstNode, *pFirstDataNode, *pLastDataNode);
+    // Connect data stack
+    ExecuteBefore(*pAstNode, *pFirstDataNode, *pLastDataNode);
 
-                                 return VisitorResult::Continue;
-                               });
+    return VisitorResult::Continue;
+  });
 }
 
 xiiResult xiiVisualScriptCompiler::InsertTypeConversions(AstNode* pEntryAstNode)
@@ -1161,76 +1157,75 @@ xiiResult xiiVisualScriptCompiler::InsertTypeConversions(AstNode* pEntryAstNode)
     return conversionNode;
   };
 
-  return TraverseAstDepthFirst(pEntryAstNode,
-                               [&](AstNode*& pAstNode) {
-                                 for (auto& dataInput : pAstNode->m_DataInputs)
-                                 {
-                                   if (dataInput.IsConnected() == false)
-                                     continue;
+  return TraverseAstDepthFirst(pEntryAstNode, [&](AstNode*& pAstNode) {
+    for (auto& dataInput : pAstNode->m_DataInputs)
+    {
+      if (dataInput.IsConnected() == false)
+        continue;
 
-                                   auto& dataOutput = GetDataOutputFromInput(dataInput);
+      auto& dataOutput = GetDataOutputFromInput(dataInput);
 
-                                   auto inputDataType  = dataInput.m_DataOffset.GetType();
-                                   auto outputDataType = dataOutput.m_DataOffset.GetType();
+      auto inputDataType  = dataInput.m_DataOffset.GetType();
+      auto outputDataType = dataOutput.m_DataOffset.GetType();
 
-                                   if (dataOutput.m_DataOffset.GetType() != inputDataType)
-                                   {
-                                     if (xiiVisualScriptDataType::IsNumberOrBool(outputDataType) && inputDataType == xiiVisualScriptDataType::Vector3)
-                                     {
-                                       AstNode*  pSourceNode      = dataInput.m_pSourceNode;
-                                       xiiUInt32 uiSourcePinIndex = dataInput.m_uiSourcePinIndex;
-                                       if (outputDataType != xiiVisualScriptDataType::Float)
-                                       {
-                                         auto& conversionNode = InsertBuiltinTypeConversion(*pAstNode, dataInput, xiiVisualScriptDataType::Float, outputDataType);
-                                         pSourceNode          = &conversionNode;
-                                         uiSourcePinIndex     = 0;
-                                       }
+      if (dataOutput.m_DataOffset.GetType() != inputDataType)
+      {
+        if (xiiVisualScriptDataType::IsNumberOrBool(outputDataType) && inputDataType == xiiVisualScriptDataType::Vector3)
+        {
+          AstNode*  pSourceNode      = dataInput.m_pSourceNode;
+          xiiUInt32 uiSourcePinIndex = dataInput.m_uiSourcePinIndex;
+          if (outputDataType != xiiVisualScriptDataType::Float)
+          {
+            auto& conversionNode = InsertBuiltinTypeConversion(*pAstNode, dataInput, xiiVisualScriptDataType::Float, outputDataType);
+            pSourceNode          = &conversionNode;
+            uiSourcePinIndex     = 0;
+          }
 
-                                       auto& makeVec3Node = CreateAstNode(xiiVisualScriptNodeDescription::Type::ReflectedFunction, inputDataType, true);
-                                       makeVec3Node.m_sTargetTypeName.Assign("xiiVec3");
+          auto& makeVec3Node = CreateAstNode(xiiVisualScriptNodeDescription::Type::ReflectedFunction, inputDataType, true);
+          makeVec3Node.m_sTargetTypeName.Assign("xiiVec3");
 
-                                       xiiVariantArray a;
-                                       a.PushBack(xiiMakeHashedString("Make"));
-                                       makeVec3Node.m_Value = a;
+          xiiVariantArray a;
+          a.PushBack(xiiMakeHashedString("Make"));
+          makeVec3Node.m_Value = a;
 
-                                       AddDataInput(makeVec3Node, pSourceNode, uiSourcePinIndex, xiiVisualScriptDataType::Float);
-                                       AddDataInput(makeVec3Node, pSourceNode, uiSourcePinIndex, xiiVisualScriptDataType::Float);
-                                       AddDataInput(makeVec3Node, pSourceNode, uiSourcePinIndex, xiiVisualScriptDataType::Float);
-                                       AddDataOutput(makeVec3Node, xiiVisualScriptDataType::Vector3);
+          AddDataInput(makeVec3Node, pSourceNode, uiSourcePinIndex, xiiVisualScriptDataType::Float);
+          AddDataInput(makeVec3Node, pSourceNode, uiSourcePinIndex, xiiVisualScriptDataType::Float);
+          AddDataInput(makeVec3Node, pSourceNode, uiSourcePinIndex, xiiVisualScriptDataType::Float);
+          AddDataOutput(makeVec3Node, xiiVisualScriptDataType::Vector3);
 
-                                       dataInput.m_pSourceNode      = &makeVec3Node;
-                                       dataInput.m_uiSourcePinIndex = 0;
+          dataInput.m_pSourceNode      = &makeVec3Node;
+          dataInput.m_uiSourcePinIndex = 0;
 
-                                       ExecuteBefore(*pAstNode, makeVec3Node, makeVec3Node);
-                                     }
-                                     else if (outputDataType == xiiVisualScriptDataType::Vector3 && inputDataType == xiiVisualScriptDataType::Transform)
-                                     {
-                                       auto& makeTransformNode = CreateAstNode(xiiVisualScriptNodeDescription::Type::ReflectedFunction, inputDataType, true);
-                                       makeTransformNode.m_sTargetTypeName.Assign("xiiTransform");
+          ExecuteBefore(*pAstNode, makeVec3Node, makeVec3Node);
+        }
+        else if (outputDataType == xiiVisualScriptDataType::Vector3 && inputDataType == xiiVisualScriptDataType::Transform)
+        {
+          auto& makeTransformNode = CreateAstNode(xiiVisualScriptNodeDescription::Type::ReflectedFunction, inputDataType, true);
+          makeTransformNode.m_sTargetTypeName.Assign("xiiTransform");
 
-                                       xiiVariantArray a;
-                                       a.PushBack(xiiMakeHashedString("Make"));
-                                       makeTransformNode.m_Value = a;
+          xiiVariantArray a;
+          a.PushBack(xiiMakeHashedString("Make"));
+          makeTransformNode.m_Value = a;
 
-                                       AddDataInput(makeTransformNode, dataInput.m_pSourceNode, dataInput.m_uiSourcePinIndex, xiiVisualScriptDataType::Vector3);
-                                       AddConstantDataInput(makeTransformNode, xiiQuat::MakeIdentity());
-                                       AddConstantDataInput(makeTransformNode, xiiVec3(1));
-                                       AddDataOutput(makeTransformNode, xiiVisualScriptDataType::Transform);
+          AddDataInput(makeTransformNode, dataInput.m_pSourceNode, dataInput.m_uiSourcePinIndex, xiiVisualScriptDataType::Vector3);
+          AddConstantDataInput(makeTransformNode, xiiQuat::MakeIdentity());
+          AddConstantDataInput(makeTransformNode, xiiVec3(1));
+          AddDataOutput(makeTransformNode, xiiVisualScriptDataType::Transform);
 
-                                       dataInput.m_pSourceNode      = &makeTransformNode;
-                                       dataInput.m_uiSourcePinIndex = 0;
+          dataInput.m_pSourceNode      = &makeTransformNode;
+          dataInput.m_uiSourcePinIndex = 0;
 
-                                       ExecuteBefore(*pAstNode, makeTransformNode, makeTransformNode);
-                                     }
-                                     else
-                                     {
-                                       InsertBuiltinTypeConversion(*pAstNode, dataInput, inputDataType, outputDataType);
-                                     }
-                                   }
-                                 }
+          ExecuteBefore(*pAstNode, makeTransformNode, makeTransformNode);
+        }
+        else
+        {
+          InsertBuiltinTypeConversion(*pAstNode, dataInput, inputDataType, outputDataType);
+        }
+      }
+    }
 
-                                 return VisitorResult::Continue;
-                               });
+    return VisitorResult::Continue;
+  });
 }
 
 xiiResult xiiVisualScriptCompiler::ReplaceLoop(AstNode* pLoopNode)
@@ -1310,8 +1305,7 @@ xiiResult xiiVisualScriptCompiler::ReplaceLoop(AstNode* pLoopNode)
       dataOutput.m_DataOffset = pLoopIndex->m_DataOutputs[0].m_DataOffset;
     }
   }
-  else if (loopType == xiiVisualScriptNodeDescription::Type::Builtin_ForEachLoop ||
-           loopType == xiiVisualScriptNodeDescription::Type::Builtin_ReverseForEachLoop)
+  else if (loopType == xiiVisualScriptNodeDescription::Type::Builtin_ForEachLoop || loopType == xiiVisualScriptNodeDescription::Type::Builtin_ReverseForEachLoop)
   {
     const bool isReverse  = (loopType == xiiVisualScriptNodeDescription::Type::Builtin_ReverseForEachLoop);
     auto&      arrayInput = pLoopNode->m_DataInputs[0];
@@ -1435,51 +1429,48 @@ xiiResult xiiVisualScriptCompiler::ReplaceLoop(AstNode* pLoopNode)
 
   xiiHybridArray<AstNode*, 8> nodesConnectedToBreak;
 
-  if (TraverseAstDepthFirst(pLoopBody,
-                            [&](AstNode*& pAstNode) {
-                              XII_ASSERT_DEV(xiiVisualScriptNodeDescription::Type::IsLoop(pAstNode->m_Type) == false, "Nested Loops should have been resolved already");
+  if (TraverseAstDepthFirst(pLoopBody, [&](AstNode*& pAstNode) {
+        XII_ASSERT_DEV(xiiVisualScriptNodeDescription::Type::IsLoop(pAstNode->m_Type) == false, "Nested Loops should have been resolved already");
 
-                              for (xiiUInt32 i = 0; i < pAstNode->m_ExecOutputs.GetCount(); ++i)
-                              {
-                                auto& execOutput = pAstNode->m_ExecOutputs[i];
-                                if (execOutput.m_pTargetNode == nullptr)
-                                {
-                                  ConnectExecution(*pAstNode, *pJumpNode, i);
-                                }
-                                else if (execOutput.m_pTargetNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_Break)
-                                {
-                                  // handle breaks after this traversal, otherwise we could end up traversing to nodes outside the loop
-                                  nodesConnectedToBreak.PushBack(pAstNode);
-                                }
-                              }
+        for (xiiUInt32 i = 0; i < pAstNode->m_ExecOutputs.GetCount(); ++i)
+        {
+          auto& execOutput = pAstNode->m_ExecOutputs[i];
+          if (execOutput.m_pTargetNode == nullptr)
+          {
+            ConnectExecution(*pAstNode, *pJumpNode, i);
+          }
+          else if (execOutput.m_pTargetNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_Break)
+          {
+            // handle breaks after this traversal, otherwise we could end up traversing to nodes outside the loop
+            nodesConnectedToBreak.PushBack(pAstNode);
+          }
+        }
 
-                              for (auto& dataInput : pAstNode->m_DataInputs)
-                              {
-                                if (loopType == xiiVisualScriptNodeDescription::Type::Builtin_ForEachLoop ||
-                                    loopType == xiiVisualScriptNodeDescription::Type::Builtin_ReverseForEachLoop)
-                                {
-                                  if (dataInput.m_pSourceNode == pLoopNode && dataInput.m_uiSourcePinIndex == 0)
-                                  {
-                                    dataInput.m_pSourceNode = pLoopElement;
-                                  }
-                                  else if (dataInput.m_pSourceNode == pLoopNode && dataInput.m_uiSourcePinIndex == 1)
-                                  {
-                                    dataInput.m_pSourceNode      = pLoopIndex;
-                                    dataInput.m_uiSourcePinIndex = 0;
-                                  }
-                                }
-                                else
-                                {
-                                  if (dataInput.m_pSourceNode == pLoopNode && dataInput.m_uiSourcePinIndex == 0)
-                                  {
-                                    dataInput.m_pSourceNode = pLoopIndex;
-                                  }
-                                }
-                              }
+        for (auto& dataInput : pAstNode->m_DataInputs)
+        {
+          if (loopType == xiiVisualScriptNodeDescription::Type::Builtin_ForEachLoop || loopType == xiiVisualScriptNodeDescription::Type::Builtin_ReverseForEachLoop)
+          {
+            if (dataInput.m_pSourceNode == pLoopNode && dataInput.m_uiSourcePinIndex == 0)
+            {
+              dataInput.m_pSourceNode = pLoopElement;
+            }
+            else if (dataInput.m_pSourceNode == pLoopNode && dataInput.m_uiSourcePinIndex == 1)
+            {
+              dataInput.m_pSourceNode      = pLoopIndex;
+              dataInput.m_uiSourcePinIndex = 0;
+            }
+          }
+          else
+          {
+            if (dataInput.m_pSourceNode == pLoopNode && dataInput.m_uiSourcePinIndex == 0)
+            {
+              dataInput.m_pSourceNode = pLoopIndex;
+            }
+          }
+        }
 
-                              return VisitorResult::Continue;
-                            })
-        .Failed())
+        return VisitorResult::Continue;
+      }).Failed())
   {
     return XII_FAILURE;
   }
@@ -1529,17 +1520,15 @@ xiiResult xiiVisualScriptCompiler::ReplaceUnsupportedNodes(AstNode* pEntryAstNod
 {
   xiiHybridArray<AstNode*, 64> unsupportedNodes;
 
-  if (TraverseAstDepthFirst(pEntryAstNode,
-                            [&](AstNode*& pAstNode) {
-                              if (xiiVisualScriptNodeDescription::Type::IsLoop(pAstNode->m_Type) || pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_CompareExec)
-                              {
-                                XII_ASSERT_DEBUG(unsupportedNodes.Contains(pAstNode) == false, "");
-                                unsupportedNodes.PushBack(pAstNode);
-                              }
+  if (TraverseAstDepthFirst(pEntryAstNode, [&](AstNode*& pAstNode) {
+        if (xiiVisualScriptNodeDescription::Type::IsLoop(pAstNode->m_Type) || pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_CompareExec)
+        {
+          XII_ASSERT_DEBUG(unsupportedNodes.Contains(pAstNode) == false, "");
+          unsupportedNodes.PushBack(pAstNode);
+        }
 
-                              return VisitorResult::Continue;
-                            })
-        .Failed())
+        return VisitorResult::Continue;
+      }).Failed())
   {
     return XII_FAILURE;
   }
@@ -1577,69 +1566,66 @@ xiiResult xiiVisualScriptCompiler::ReplaceUnsupportedNodes(AstNode* pEntryAstNod
 
 xiiResult xiiVisualScriptCompiler::AssignInstanceVariables(AstNode* pEntryAstNode)
 {
-  return TraverseAstDepthFirst(pEntryAstNode,
-                               [&](AstNode*& pAstNode) {
-                                 for (auto& dataInput : pAstNode->m_DataInputs)
-                                 {
-                                   if (dataInput.IsConnectedAndLocal() == false)
-                                     continue;
+  return TraverseAstDepthFirst(pEntryAstNode, [&](AstNode*& pAstNode) {
+    for (auto& dataInput : pAstNode->m_DataInputs)
+    {
+      if (dataInput.IsConnectedAndLocal() == false)
+        continue;
 
-                                   auto pSourceNode = dataInput.m_pSourceNode;
-                                   XII_ASSERT_DEBUG(pSourceNode != nullptr, "Data input source node should be always valid for local inputs");
+      auto pSourceNode = dataInput.m_pSourceNode;
+      XII_ASSERT_DEBUG(pSourceNode != nullptr, "Data input source node should be always valid for local inputs");
 
-                                   if (pSourceNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_GetVariable)
-                                   {
-                                     auto& dataOutput = GetDataOutputFromInput(dataInput);
+      if (pSourceNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_GetVariable)
+      {
+        auto& dataOutput = GetDataOutputFromInput(dataInput);
 
-                                     xiiHashedString sName;
-                                     sName.Assign(pSourceNode->m_Value.Get<xiiString>());
+        xiiHashedString sName;
+        sName.Assign(pSourceNode->m_Value.Get<xiiString>());
 
-                                     dataInput.m_pSourceNode      = nullptr;
-                                     dataInput.m_uiSourcePinIndex = 0;
-                                     dataInput.m_DataOffset       = GetInstanceDataOffset(sName, dataOutput.m_DataOffset.GetType());
+        dataInput.m_pSourceNode      = nullptr;
+        dataInput.m_uiSourcePinIndex = 0;
+        dataInput.m_DataOffset       = GetInstanceDataOffset(sName, dataOutput.m_DataOffset.GetType());
 
-                                     // Remove the GetVariable node from the execution flow
-                                     if (pSourceNode->m_ExecOutputs.IsEmpty() == false)
-                                     {
-                                       AstNode* pNodeAfterGetVariable = pSourceNode->m_ExecOutputs[0].m_pTargetNode;
-                                       pNodeAfterGetVariable->m_ExecInputs.Clear();
+        // Remove the GetVariable node from the execution flow
+        if (pSourceNode->m_ExecOutputs.IsEmpty() == false)
+        {
+          AstNode* pNodeAfterGetVariable = pSourceNode->m_ExecOutputs[0].m_pTargetNode;
+          pNodeAfterGetVariable->m_ExecInputs.Clear();
 
-                                       for (auto& execInput : pSourceNode->m_ExecInputs)
-                                       {
-                                         ConnectExecution(*execInput.m_pSourceNode, *pNodeAfterGetVariable, execInput.m_uiSourcePinIndex);
-                                       }
+          for (auto& execInput : pSourceNode->m_ExecInputs)
+          {
+            ConnectExecution(*execInput.m_pSourceNode, *pNodeAfterGetVariable, execInput.m_uiSourcePinIndex);
+          }
 
-                                       pSourceNode->m_ExecInputs.Clear();
-                                       pSourceNode->m_ExecOutputs.Clear();
-                                     }
-                                   }
-                                 }
+          pSourceNode->m_ExecInputs.Clear();
+          pSourceNode->m_ExecOutputs.Clear();
+        }
+      }
+    }
 
-                                 if (pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_SetVariable ||
-                                     pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_IncVariable ||
-                                     pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_DecVariable)
-                                 {
-                                   xiiHashedString sName;
-                                   sName.Assign(pAstNode->m_Value.Get<xiiString>());
+    if (pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_SetVariable || pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_IncVariable || pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_DecVariable)
+    {
+      xiiHashedString sName;
+      sName.Assign(pAstNode->m_Value.Get<xiiString>());
 
-                                   DataOffset dataOffset = GetInstanceDataOffset(sName, pAstNode->m_DeductedDataType);
+      DataOffset dataOffset = GetInstanceDataOffset(sName, pAstNode->m_DeductedDataType);
 
-                                   if (pAstNode->m_Type != xiiVisualScriptNodeDescription::Type::Builtin_SetVariable)
-                                   {
-                                     if (pAstNode->m_DataInputs.IsEmpty())
-                                     {
-                                       auto& dataInput        = pAstNode->m_DataInputs.ExpandAndGetRef();
-                                       dataInput.m_DataOffset = dataOffset;
-                                     }
-                                   }
+      if (pAstNode->m_Type != xiiVisualScriptNodeDescription::Type::Builtin_SetVariable)
+      {
+        if (pAstNode->m_DataInputs.IsEmpty())
+        {
+          auto& dataInput        = pAstNode->m_DataInputs.ExpandAndGetRef();
+          dataInput.m_DataOffset = dataOffset;
+        }
+      }
 
-                                   XII_ASSERT_DEBUG(pAstNode->m_DataOutputs.GetCount() > 0, "");
-                                   auto& dataOutput        = pAstNode->m_DataOutputs[0];
-                                   dataOutput.m_DataOffset = dataOffset;
-                                 }
+      XII_ASSERT_DEBUG(pAstNode->m_DataOutputs.GetCount() > 0, "");
+      auto& dataOutput        = pAstNode->m_DataOutputs[0];
+      dataOutput.m_DataOffset = dataOffset;
+    }
 
-                                 return VisitorResult::Continue;
-                               });
+    return VisitorResult::Continue;
+  });
 }
 
 xiiResult xiiVisualScriptCompiler::AssignLocalVariables(AstNode* pEntryAstNode, xiiVisualScriptDataDescription& inout_localDataDesc)
@@ -1653,35 +1639,34 @@ xiiResult xiiVisualScriptCompiler::AssignLocalVariables(AstNode* pEntryAstNode, 
 
   xiiUInt32 uiNodeIndex = 0;
 
-  xiiResult r = TraverseAstTopologicalOrder(pEntryAstNode,
-                                            [&](const AstNode* pAstNode) {
-                                              for (auto& dataInput : pAstNode->m_DataInputs)
-                                              {
-                                                if (dataInput.IsConnectedAndLocal() == false)
-                                                  continue;
+  xiiResult r = TraverseAstTopologicalOrder(pEntryAstNode, [&](const AstNode* pAstNode) {
+    for (auto& dataInput : pAstNode->m_DataInputs)
+    {
+      if (dataInput.IsConnectedAndLocal() == false)
+        continue;
 
-                                                const xiiUInt32 id           = dataInput.m_DataOffset.m_uiByteOffset;
-                                                auto&           liveLocalVar = m_CompilationState.m_LiveLocalVars[id];
+      const xiiUInt32 id           = dataInput.m_DataOffset.m_uiByteOffset;
+      auto&           liveLocalVar = m_CompilationState.m_LiveLocalVars[id];
 
-                                                liveLocalVar.m_uiEnd = xiiMath::Max(liveLocalVar.m_uiEnd, uiNodeIndex);
-                                              }
+      liveLocalVar.m_uiEnd = xiiMath::Max(liveLocalVar.m_uiEnd, uiNodeIndex);
+    }
 
-                                              for (auto& dataOutput : pAstNode->m_DataOutputs)
-                                              {
-                                                if (dataOutput.IsValidAndLocal() == false)
-                                                  continue;
+    for (auto& dataOutput : pAstNode->m_DataOutputs)
+    {
+      if (dataOutput.IsValidAndLocal() == false)
+        continue;
 
-                                                const xiiUInt32 id           = dataOutput.m_DataOffset.m_uiByteOffset;
-                                                auto&           liveLocalVar = m_CompilationState.m_LiveLocalVars[id];
+      const xiiUInt32 id           = dataOutput.m_DataOffset.m_uiByteOffset;
+      auto&           liveLocalVar = m_CompilationState.m_LiveLocalVars[id];
 
-                                                liveLocalVar.m_uiId       = id;
-                                                liveLocalVar.m_DataOffset = dataOutput.m_DataOffset;
-                                                liveLocalVar.m_uiStart    = xiiMath::Min(liveLocalVar.m_uiStart, uiNodeIndex);
-                                              }
+      liveLocalVar.m_uiId       = id;
+      liveLocalVar.m_DataOffset = dataOutput.m_DataOffset;
+      liveLocalVar.m_uiStart    = xiiMath::Min(liveLocalVar.m_uiStart, uiNodeIndex);
+    }
 
-                                              ++uiNodeIndex;
-                                              return VisitorResult::Continue;
-                                            });
+    ++uiNodeIndex;
+    return VisitorResult::Continue;
+  });
   if (r.Failed())
     return XII_FAILURE;
 
@@ -1689,13 +1674,12 @@ xiiResult xiiVisualScriptCompiler::AssignLocalVariables(AstNode* pEntryAstNode, 
   // https://www2.seas.gwu.edu/~hchoi/teaching/cs160d/linearscan.pdf
 
   // Sort lifetime by start index
-  m_CompilationState.m_LiveLocalVars.Sort(
-    [](const LiveLocalVar& a, const LiveLocalVar& b) {
-      if (a.m_uiStart != b.m_uiStart)
-        return a.m_uiStart < b.m_uiStart;
+  m_CompilationState.m_LiveLocalVars.Sort([](const LiveLocalVar& a, const LiveLocalVar& b) {
+    if (a.m_uiStart != b.m_uiStart)
+      return a.m_uiStart < b.m_uiStart;
 
-      return a.m_uiId < b.m_uiId;
-    });
+    return a.m_uiId < b.m_uiId;
+  });
 
   // Assign local vars
   xiiHybridArray<LiveLocalVar, 64> activeIntervals;
@@ -1755,49 +1739,47 @@ xiiResult xiiVisualScriptCompiler::AssignLocalVariables(AstNode* pEntryAstNode, 
   // Sort by id and copy back to outputs and inputs
   m_CompilationState.m_LiveLocalVars.Sort([](const LiveLocalVar& a, const LiveLocalVar& b) { return a.m_uiId < b.m_uiId; });
 
-  return TraverseAstDepthFirst(pEntryAstNode,
-                               [&](AstNode*& pAstNode) {
-                                 for (auto& dataInput : pAstNode->m_DataInputs)
-                                 {
-                                   if (dataInput.IsConnectedAndLocal() == false)
-                                     continue;
+  return TraverseAstDepthFirst(pEntryAstNode, [&](AstNode*& pAstNode) {
+    for (auto& dataInput : pAstNode->m_DataInputs)
+    {
+      if (dataInput.IsConnectedAndLocal() == false)
+        continue;
 
-                                   const xiiUInt32 id = dataInput.m_DataOffset.m_uiByteOffset;
-                                   XII_ASSERT_DEBUG(m_CompilationState.m_LiveLocalVars[id].m_uiId == id, "");
-                                   dataInput.m_DataOffset = m_CompilationState.m_LiveLocalVars[id].m_DataOffset;
-                                 }
+      const xiiUInt32 id = dataInput.m_DataOffset.m_uiByteOffset;
+      XII_ASSERT_DEBUG(m_CompilationState.m_LiveLocalVars[id].m_uiId == id, "");
+      dataInput.m_DataOffset = m_CompilationState.m_LiveLocalVars[id].m_DataOffset;
+    }
 
-                                 for (auto& dataOutput : pAstNode->m_DataOutputs)
-                                 {
-                                   if (dataOutput.IsValidAndLocal() == false)
-                                     continue;
+    for (auto& dataOutput : pAstNode->m_DataOutputs)
+    {
+      if (dataOutput.IsValidAndLocal() == false)
+        continue;
 
-                                   const xiiUInt32 id = dataOutput.m_DataOffset.m_uiByteOffset;
-                                   XII_ASSERT_DEBUG(m_CompilationState.m_LiveLocalVars[id].m_uiId == id, "");
-                                   dataOutput.m_DataOffset = m_CompilationState.m_LiveLocalVars[id].m_DataOffset;
-                                 }
+      const xiiUInt32 id = dataOutput.m_DataOffset.m_uiByteOffset;
+      XII_ASSERT_DEBUG(m_CompilationState.m_LiveLocalVars[id].m_uiId == id, "");
+      dataOutput.m_DataOffset = m_CompilationState.m_LiveLocalVars[id].m_DataOffset;
+    }
 
-                                 return VisitorResult::Continue;
-                               });
+    return VisitorResult::Continue;
+  });
 }
 
 xiiResult xiiVisualScriptCompiler::CopyOutputsToInputs(AstNode* pEntryAstNode)
 {
-  return TraverseAstDepthFirst(pEntryAstNode,
-                               [&](AstNode*& pAstNode) {
-                                 for (auto& dataInput : pAstNode->m_DataInputs)
-                                 {
-                                   if (dataInput.IsConnected() == false)
-                                     continue;
+  return TraverseAstDepthFirst(pEntryAstNode, [&](AstNode*& pAstNode) {
+    for (auto& dataInput : pAstNode->m_DataInputs)
+    {
+      if (dataInput.IsConnected() == false)
+        continue;
 
-                                   auto& dataOutput                      = GetDataOutputFromInput(dataInput);
-                                   dataInput.m_DataOffset.m_uiByteOffset = dataOutput.m_DataOffset.m_uiByteOffset;
-                                   dataInput.m_DataOffset.m_uiSource     = dataOutput.m_DataOffset.m_uiSource;
-                                   XII_ASSERT_DEBUG(dataInput.m_DataOffset.GetType() == xiiVisualScriptDataType::Variant || dataInput.m_DataOffset.GetType() == dataOutput.m_DataOffset.GetType(), "");
-                                 }
+      auto& dataOutput                      = GetDataOutputFromInput(dataInput);
+      dataInput.m_DataOffset.m_uiByteOffset = dataOutput.m_DataOffset.m_uiByteOffset;
+      dataInput.m_DataOffset.m_uiSource     = dataOutput.m_DataOffset.m_uiSource;
+      XII_ASSERT_DEBUG(dataInput.m_DataOffset.GetType() == xiiVisualScriptDataType::Variant || dataInput.m_DataOffset.GetType() == dataOutput.m_DataOffset.GetType(), "");
+    }
 
-                                 return VisitorResult::Continue;
-                               });
+    return VisitorResult::Continue;
+  });
 }
 
 xiiResult xiiVisualScriptCompiler::BuildNodeDescriptions(AstNode* pEntryAstNode, xiiDynamicArray<xiiVisualScriptNodeDescription>& out_NodeDescriptions)
@@ -1830,39 +1812,38 @@ xiiResult xiiVisualScriptCompiler::BuildNodeDescriptions(AstNode* pEntryAstNode,
     return XII_SUCCESS;
   };
 
-  return TraverseAstTopologicalOrder(pEntryAstNode,
-                                     [&](const AstNode* pAstNode) {
-                                       xiiUInt32 uiTargetIndex = 0;
+  return TraverseAstTopologicalOrder(pEntryAstNode, [&](const AstNode* pAstNode) {
+    xiiUInt32 uiTargetIndex = 0;
 
-                                       // Jump nodes should not end up in the final node descriptions
-                                       if (pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_Jump)
-                                       {
-                                         xiiUInt64      uiPtr          = pAstNode->m_Value.Get<xiiUInt64>();
-                                         const AstNode* pTargetAstNode = *reinterpret_cast<const AstNode**>(&uiPtr);
+    // Jump nodes should not end up in the final node descriptions
+    if (pAstNode->m_Type == xiiVisualScriptNodeDescription::Type::Builtin_Jump)
+    {
+      xiiUInt64      uiPtr          = pAstNode->m_Value.Get<xiiUInt64>();
+      const AstNode* pTargetAstNode = *reinterpret_cast<const AstNode**>(&uiPtr);
 
-                                         if (astNodeToNodeDescIndices.TryGetValue(pTargetAstNode, uiTargetIndex) == false)
-                                           return VisitorResult::Error;
-                                       }
-                                       else
-                                       {
-                                         if (CreateNodeDesc(*pAstNode, uiTargetIndex).Failed())
-                                           return VisitorResult::Error;
-                                       }
+      if (astNodeToNodeDescIndices.TryGetValue(pTargetAstNode, uiTargetIndex) == false)
+        return VisitorResult::Error;
+    }
+    else
+    {
+      if (CreateNodeDesc(*pAstNode, uiTargetIndex).Failed())
+        return VisitorResult::Error;
+    }
 
-                                       for (auto& execInput : pAstNode->m_ExecInputs)
-                                       {
-                                         if (execInput.m_pSourceNode == nullptr)
-                                           continue;
+    for (auto& execInput : pAstNode->m_ExecInputs)
+    {
+      if (execInput.m_pSourceNode == nullptr)
+        continue;
 
-                                         xiiUInt32 uiSourceIndex = 0;
-                                         XII_VERIFY(astNodeToNodeDescIndices.TryGetValue(execInput.m_pSourceNode, uiSourceIndex), "Topological sort failed");
+      xiiUInt32 uiSourceIndex = 0;
+      XII_VERIFY(astNodeToNodeDescIndices.TryGetValue(execInput.m_pSourceNode, uiSourceIndex), "Topological sort failed");
 
-                                         auto pSourceNodeDesc                                              = &out_NodeDescriptions[uiSourceIndex];
-                                         pSourceNodeDesc->m_ExecutionIndices[execInput.m_uiSourcePinIndex] = uiTargetIndex;
-                                       }
+      auto pSourceNodeDesc                                              = &out_NodeDescriptions[uiSourceIndex];
+      pSourceNodeDesc->m_ExecutionIndices[execInput.m_uiSourcePinIndex] = uiTargetIndex;
+    }
 
-                                       return VisitorResult::Continue;
-                                     });
+    return VisitorResult::Continue;
+  });
 }
 
 xiiResult xiiVisualScriptCompiler::FinalizeConstantData()
@@ -2027,35 +2008,33 @@ void xiiVisualScriptCompiler::DumpAST(AstNode* pEntryAstNode, xiiStringView sOut
     xiiUInt32                               uiNodeIndex = 0;
 
     // First build all the dgml graph nodes
-    TraverseAstTopologicalOrder(pEntryAstNode,
-                                [&](const AstNode* pAstNode) {
-                                  xiiStringView sTypeName = xiiVisualScriptNodeDescription::Type::GetName(pAstNode->m_Type);
-                                  sb.SetFormat("{} (id: {})", sTypeName, uiNodeIndex);
-                                  if (pAstNode->m_sTargetTypeName.IsEmpty() == false)
-                                  {
-                                    sb.Append("\n", pAstNode->m_sTargetTypeName);
-                                  }
-                                  if (pAstNode->m_DeductedDataType != xiiVisualScriptDataType::Invalid)
-                                  {
-                                    sb.Append("\nDataType: ", xiiVisualScriptDataType::GetName(pAstNode->m_DeductedDataType));
-                                  }
-                                  sb.AppendFormat("\nImplicitExec: {}", pAstNode->m_bImplicitExecution);
-                                  if (pAstNode->m_Value.IsValid())
-                                  {
-                                    sb.AppendFormat("\nValue: {}", pAstNode->m_Value);
-                                  }
+    TraverseAstTopologicalOrder(pEntryAstNode, [&](const AstNode* pAstNode) {
+      xiiStringView sTypeName = xiiVisualScriptNodeDescription::Type::GetName(pAstNode->m_Type);
+      sb.SetFormat("{} (id: {})", sTypeName, uiNodeIndex);
+      if (pAstNode->m_sTargetTypeName.IsEmpty() == false)
+      {
+        sb.Append("\n", pAstNode->m_sTargetTypeName);
+      }
+      if (pAstNode->m_DeductedDataType != xiiVisualScriptDataType::Invalid)
+      {
+        sb.Append("\nDataType: ", xiiVisualScriptDataType::GetName(pAstNode->m_DeductedDataType));
+      }
+      sb.AppendFormat("\nImplicitExec: {}", pAstNode->m_bImplicitExecution);
+      if (pAstNode->m_Value.IsValid())
+      {
+        sb.AppendFormat("\nValue: {}", pAstNode->m_Value);
+      }
 
-                                  float colorX = xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(xiiHashingUtils::StringHash(sTypeName))).x();
+      float colorX = xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(xiiHashingUtils::StringHash(sTypeName))).x();
 
-                                  xiiDGMLGraph::NodeDesc nd;
-                                  nd.m_Color            = xiiColorScheme::LightUI(colorX);
-                                  xiiUInt32 uiGraphNode = dgmlGraph.AddNode(sb, &nd);
-                                  XII_VERIFY(nodeCache.Insert(pAstNode, uiGraphNode) == false, "");
+      xiiDGMLGraph::NodeDesc nd;
+      nd.m_Color            = xiiColorScheme::LightUI(colorX);
+      xiiUInt32 uiGraphNode = dgmlGraph.AddNode(sb, &nd);
+      XII_VERIFY(nodeCache.Insert(pAstNode, uiGraphNode) == false, "");
 
-                                  ++uiNodeIndex;
-                                  return VisitorResult::Continue;
-                                })
-      .IgnoreResult();
+      ++uiNodeIndex;
+      return VisitorResult::Continue;
+    }).IgnoreResult();
 
     // Then build all the connections
     for (auto it : nodeCache)

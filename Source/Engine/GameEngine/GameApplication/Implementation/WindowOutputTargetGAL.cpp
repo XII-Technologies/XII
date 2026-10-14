@@ -134,8 +134,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
       if (pCommandList->MapTextureSubresource(capture.m_pTexture, mipLevelData, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).Succeeded() && mappedSubResource.m_pData)
       {
         const auto bytes = out_image.GetByteBlobPtr();
-        xiiGALTextureUtilities::CopySubresourceToMemory(textureDescription, mappedSubResource, mipLevelData,
-                                                        xiiMakeArrayPtr(bytes.GetPtr(), static_cast<xiiUInt32>(bytes.GetCount())), static_cast<xiiUInt32>(out_image.GetRowPitch()));
+        xiiGALTextureUtilities::CopySubresourceToMemory(textureDescription, mappedSubResource, mipLevelData, xiiMakeArrayPtr(bytes.GetPtr(), static_cast<xiiUInt32>(bytes.GetCount())), static_cast<xiiUInt32>(out_image.GetRowPitch()));
         captured = pCommandList->UnmapTextureSubresource(capture.m_pTexture, mipLevelData).Succeeded();
       }
       else

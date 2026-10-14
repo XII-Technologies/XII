@@ -71,11 +71,10 @@ void xiiAssetDocumentGenerator::AppendFileFilterStrings(xiiStringBuilder& out_sF
 
 void xiiAssetDocumentGenerator::CreateGenerators(xiiHybridArray<xiiAssetDocumentGenerator*, 16>& out_generators)
 {
-  xiiRTTI::ForEachDerivedType<xiiAssetDocumentGenerator>(
-    [&](const xiiRTTI* pRtti) {
-      out_generators.PushBack(pRtti->GetAllocator()->Allocate<xiiAssetDocumentGenerator>());
-    },
-    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+  xiiRTTI::ForEachDerivedType<xiiAssetDocumentGenerator>([&](const xiiRTTI* pRtti) {
+    out_generators.PushBack(pRtti->GetAllocator()->Allocate<xiiAssetDocumentGenerator>());
+  },
+                                                         xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 
   // sort by name
   out_generators.Sort([](xiiAssetDocumentGenerator* lhs, xiiAssetDocumentGenerator* rhs) -> bool { return lhs->GetDocumentExtension().Compare_NoCase(rhs->GetDocumentExtension()) < 0; });
@@ -147,8 +146,7 @@ void xiiAssetDocumentGenerator::ImportAssets()
     s_StartDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
   }
 
-  QStringList filenames = QFileDialog::getOpenFileNames(QApplication::activeWindow(), "Import Assets", s_StartDir.GetData(),
-                                                        QString::fromUtf8(fullFilter.GetData()), nullptr, QFileDialog::Option::DontResolveSymlinks);
+  QStringList filenames = QFileDialog::getOpenFileNames(QApplication::activeWindow(), "Import Assets", s_StartDir.GetData(), QString::fromUtf8(fullFilter.GetData()), nullptr, QFileDialog::Option::DontResolveSymlinks);
 
   DestroyGenerators(generators);
 

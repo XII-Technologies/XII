@@ -32,9 +32,7 @@ xiiResult xiiPrepareExtractedMeshSkinning(const xiiMeshResource& mesh, const xii
         weightsFound                 = true;
       }
     }
-    if (!indicesFound || !weightsFound || result.m_uiVertexStride < 8 || (result.m_uiVertexStride & 3) != 0 ||
-        result.m_uiBoneIndicesOffset > result.m_uiVertexStride - 8 || (result.m_uiBoneIndicesOffset & 1) != 0 ||
-        result.m_uiBoneWeightsOffset > result.m_uiVertexStride - 4)
+    if (!indicesFound || !weightsFound || result.m_uiVertexStride < 8 || (result.m_uiVertexStride & 3) != 0 || result.m_uiBoneIndicesOffset > result.m_uiVertexStride - 8 || (result.m_uiBoneIndicesOffset & 1) != 0 || result.m_uiBoneWeightsOffset > result.m_uiVertexStride - 4)
       return XII_FAILURE;
   }
   out_skinning = result;

@@ -296,10 +296,9 @@ bool xiiBuiltinRenderPipelineRuntime::EnsureRayTracingGlobalIlluminationResource
   xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
   pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
   const xiiUInt32 uiDeviceRecursionDepth                         = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth);
-  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = xiiMath::Clamp(
-    xiiMath::Min(m_Resources.m_LightingSystem.GetSettings().m_uiRTGIMaxPathHits, 2U) + 1U, 1U, xiiMath::Min(3U, uiDeviceRecursionDepth));
-  pipelineDescription.m_uiMaximumPayloadSize   = 40U;
-  pipelineDescription.m_uiMaximumAttributeSize = sizeof(float) * 2U;
+  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = xiiMath::Clamp(xiiMath::Min(m_Resources.m_LightingSystem.GetSettings().m_uiRTGIMaxPathHits, 2U) + 1U, 1U, xiiMath::Min(3U, uiDeviceRecursionDepth));
+  pipelineDescription.m_uiMaximumPayloadSize                     = 40U;
+  pipelineDescription.m_uiMaximumAttributeSize                   = sizeof(float) * 2U;
 
   auto& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
   rayGeneration.m_sName.Assign("RTGIRayGeneration");
@@ -383,10 +382,9 @@ bool xiiBuiltinRenderPipelineRuntime::EnsureRayTracingReflectionResources()
   xiiGALRayTracingPipelineStateCreationDescription pipelineDescription;
   pipelineDescription.m_pPipelineResourceSignature               = permutation->GetPipelineResourceSignature();
   const xiiUInt32 uiDeviceRecursionDepth                         = xiiMath::Max(1U, pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth);
-  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = xiiMath::Clamp(
-    xiiMath::Min(m_Resources.m_LightingSystem.GetSettings().m_uiRTReflectionMaxPathHits, 2U) + 1U, 1U, xiiMath::Min(3U, uiDeviceRecursionDepth));
-  pipelineDescription.m_uiMaximumPayloadSize   = 40U;
-  pipelineDescription.m_uiMaximumAttributeSize = 8U;
+  pipelineDescription.m_RayTracingPipeline.m_uiMaxRecursionDepth = xiiMath::Clamp(xiiMath::Min(m_Resources.m_LightingSystem.GetSettings().m_uiRTReflectionMaxPathHits, 2U) + 1U, 1U, xiiMath::Min(3U, uiDeviceRecursionDepth));
+  pipelineDescription.m_uiMaximumPayloadSize                     = 40U;
+  pipelineDescription.m_uiMaximumAttributeSize                   = 8U;
 
   xiiGALRayTracingGeneralShaderGroupDescription& rayGeneration = pipelineDescription.m_GeneralShaders.ExpandAndGetRef();
   rayGeneration.m_sName.Assign("RTReflectionRayGeneration");

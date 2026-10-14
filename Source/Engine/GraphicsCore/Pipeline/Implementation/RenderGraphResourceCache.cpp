@@ -30,7 +30,7 @@ void xiiRenderGraphResourceCache::Shutdown()
   m_RetiredBuffers.Clear();
   m_TexturePool.Clear();
   m_BufferPool.Clear();
-  m_pDevice = nullptr;
+  m_pDevice          = nullptr;
   m_uiCurrentFrame   = 0;
   m_uiCompletedFrame = 0;
 }

@@ -67,9 +67,7 @@ namespace
   }
 } // namespace
 
-xiiResult xiiMeshImportInternal::ReadSkin(const aiMesh& mesh, xiiStringView sNodeName, const xiiMat4& meshTransform,
-                                          const xiiModelMeshImportOptions& options, xiiMeshResourceDescriptor& inout_mesh,
-                                          xiiArrayPtr<xiiMeshPackedVertex> vertices, xiiStringBuilder* error)
+xiiResult xiiMeshImportInternal::ReadSkin(const aiMesh& mesh, xiiStringView sNodeName, const xiiMat4& meshTransform, const xiiModelMeshImportOptions& options, xiiMeshResourceDescriptor& inout_mesh, xiiArrayPtr<xiiMeshPackedVertex> vertices, xiiStringBuilder* error)
 {
   auto inverseMesh = meshTransform;
   if (inverseMesh.Invert(0).Failed() || !inverseMesh.IsValid())
@@ -94,8 +92,7 @@ xiiResult xiiMeshImportInternal::ReadSkin(const aiMesh& mesh, xiiStringView sNod
     for (xiiUInt32 w = 0; w < bone.mNumWeights; ++w)
     {
       const auto& weight = bone.mWeights[w];
-      if (weight.mVertexId >= influences.GetCount() || !xiiMath::IsFinite(weight.mWeight) || weight.mWeight < 0 ||
-          (!options.m_bNormalizeWeights && weight.mWeight > 1) || usedVertices.Insert(weight.mVertexId))
+      if (weight.mVertexId >= influences.GetCount() || !xiiMath::IsFinite(weight.mWeight) || weight.mWeight < 0 || (!options.m_bNormalizeWeights && weight.mWeight > 1) || usedVertices.Insert(weight.mVertexId))
         return Fail(error, "Source mesh has invalid or duplicate vertex weights.");
       if (weight.mWeight > 0)
       {

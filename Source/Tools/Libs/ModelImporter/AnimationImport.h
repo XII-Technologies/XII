@@ -34,6 +34,5 @@ struct XII_MODELIMPORTER_DLL xiiModelAnimationImport
   /// Failure clears the clip. Discovered clip labels remain available on selection/conversion failure.
   /// Morph/vertex animation, ambiguous joint or clip names, invalid TRS/keys and excessive
   /// output (over one million samples per track or sixteen million keys per clip) fail explicitly.
-  static xiiResult ReadFile(xiiStringView sSourceFile, const xiiModelAnimationImportOptions& options,
-                            xiiModelAnimationImport& out_import, xiiStringBuilder* out_pError = nullptr);
+  static xiiResult ReadFile(xiiStringView sSourceFile, const xiiModelAnimationImportOptions& options, xiiModelAnimationImport& out_import, xiiStringBuilder* out_pError = nullptr);
 };

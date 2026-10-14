@@ -131,8 +131,7 @@ struct xiiDirectoryWatcherImpl
       // So iterate the file system and make sure we track all files / subdirectories
       xiiFileSystemIterator subdirIt;
 
-      subdirIt.StartSearch(tmpPath.GetData(),
-                           m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories) ? xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive : xiiFileSystemIteratorFlags::ReportFiles);
+      subdirIt.StartSearch(tmpPath.GetData(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories) ? xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive : xiiFileSystemIteratorFlags::ReportFiles);
 
       xiiStringBuilder tmpPath2;
       for (; subdirIt.IsValid(); subdirIt.Next())

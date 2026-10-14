@@ -6,8 +6,7 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Meshes/MeshSkinning.h>
 
-xiiResult xiiAnimationPose::BuildMeshSkinningPalette(const xiiSkeletonResource& skeleton, const xiiMeshResourceDescriptor& mesh,
-                                                     xiiDynamicArray<xiiMat4>& out_palette, xiiDynamicBitfield& inout_usedSlots) const
+xiiResult xiiAnimationPose::BuildMeshSkinningPalette(const xiiSkeletonResource& skeleton, const xiiMeshResourceDescriptor& mesh, xiiDynamicArray<xiiMat4>& out_palette, xiiDynamicBitfield& inout_usedSlots) const
 {
   out_palette.Clear();
   bool success = false;

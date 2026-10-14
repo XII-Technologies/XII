@@ -49,12 +49,7 @@ xiiStatus xiiEngineProcessDocumentContext::AllocateDocumentContext(const xiiDocu
 
   if (pAllocator)
   {
-    if (pAllocator->GetFunctionType() != xiiFunctionType::StaticMember ||
-        pAllocator->GetReturnType() != xiiGetStaticRTTI<xiiEngineProcessDocumentContext>() ||
-        pAllocator->GetReturnFlags().IsSet(xiiPropertyFlags::Pointer) == false ||
-        pAllocator->GetArgumentCount() != 1 ||
-        pAllocator->GetArgumentType(0) != xiiGetStaticRTTI<xiiDocumentOpenMsgToEngine>() ||
-        !pAllocator->GetArgumentFlags(0).AreAllSet(xiiPropertyFlags::Pointer | xiiPropertyFlags::Const))
+    if (pAllocator->GetFunctionType() != xiiFunctionType::StaticMember || pAllocator->GetReturnType() != xiiGetStaticRTTI<xiiEngineProcessDocumentContext>() || pAllocator->GetReturnFlags().IsSet(xiiPropertyFlags::Pointer) == false || pAllocator->GetArgumentCount() != 1 || pAllocator->GetArgumentType(0) != xiiGetStaticRTTI<xiiDocumentOpenMsgToEngine>() || !pAllocator->GetArgumentFlags(0).AreAllSet(xiiPropertyFlags::Pointer | xiiPropertyFlags::Const))
       return xiiStatus(xiiFmt("Context '{}' requires a static xiiEngineProcessDocumentContext* AllocateContext(const xiiDocumentOpenMsgToEngine*).", pContextType->GetTypeName()));
 
     xiiVariant                    result;

@@ -560,8 +560,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::StructureEventHandler(const xiiDocume
 
 void xiiQtPropertyAnimAssetDocumentWindow::CommandHistoryEventHandler(const xiiCommandHistoryEvent& e)
 {
-  if (e.m_Type == xiiCommandHistoryEvent::Type::TransactionEnded || e.m_Type == xiiCommandHistoryEvent::Type::UndoEnded ||
-      e.m_Type == xiiCommandHistoryEvent::Type::RedoEnded)
+  if (e.m_Type == xiiCommandHistoryEvent::Type::TransactionEnded || e.m_Type == xiiCommandHistoryEvent::Type::UndoEnded || e.m_Type == xiiCommandHistoryEvent::Type::RedoEnded)
   {
     UpdateSelectionData();
     UpdateEventTrackEditor();

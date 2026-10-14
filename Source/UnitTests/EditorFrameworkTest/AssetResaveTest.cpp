@@ -184,8 +184,7 @@ void TestAssetResave(xiiQtEditorApp& editor, xiiStringView projectDirectory)
   }
   bool removedDuringProgress = false;
   auto removeCurrent         = [&](const xiiProgressEvent& event) {
-    if (!removedDuringProgress && event.m_Type == xiiProgressEvent::Type::ProgressChanged &&
-        progress.GetStepDisplayText() == "AConsumer.xiiResaveTest")
+    if (!removedDuringProgress && event.m_Type == xiiProgressEvent::Type::ProgressChanged && progress.GetStepDisplayText() == "AConsumer.xiiResaveTest")
     {
       removedDuringProgress = true;
       const auto deadline   = xiiTime::Now() + xiiTime::MakeFromSeconds(2);
@@ -277,8 +276,7 @@ void TestAssetResave(xiiQtEditorApp& editor, xiiStringView projectDirectory)
   input.ReadAll(bytes);
   input.Close();
   const xiiString original(xiiStringView(reinterpret_cast<const char*>(bytes.GetData()), bytes.GetCount()));
-  HANDLE          handle = CreateFileW(xiiStringWChar(paths[0]).GetData(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                                       nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+  HANDLE          handle = CreateFileW(xiiStringWChar(paths[0]).GetData(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (!XII_TEST_BOOL(handle != INVALID_HANDLE_VALUE))
     return;
   FILETIME   modificationTime;
@@ -293,8 +291,7 @@ void TestAssetResave(xiiQtEditorApp& editor, xiiStringView projectDirectory)
     const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(2);
     do
     {
-      file = CreateFileW(xiiStringWChar(paths[0]).GetData(), GENERIC_WRITE | FILE_WRITE_ATTRIBUTES, 0,
-                         nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+      file = CreateFileW(xiiStringWChar(paths[0]).GetData(), GENERIC_WRITE | FILE_WRITE_ATTRIBUTES, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
       if (file == INVALID_HANDLE_VALUE)
         xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
     } while (file == INVALID_HANDLE_VALUE && xiiTime::Now() < deadline);
@@ -345,7 +342,7 @@ void TestAssetResave(xiiQtEditorApp& editor, xiiStringView projectDirectory)
     XII_SCOPE_EXIT(CloseHandle(locked));
     xiiTestLogInterface   log;
     xiiTestLogSystemScope scope(&log);
-    xiiFileReader probe;
+    xiiFileReader         probe;
     XII_TEST_BOOL(probe.Open(paths[0]).Failed());
     log.ExpectMessage("Failed to open file", xiiLogMsgType::ErrorMsg);
     curator->NotifyOfFileChange(paths[0]);

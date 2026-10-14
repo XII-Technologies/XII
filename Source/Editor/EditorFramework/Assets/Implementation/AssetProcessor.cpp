@@ -340,8 +340,7 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
 
   // not needed to go through package dependencies here
 
-  if (bComplete && !xiiAssetCurator::GetSingleton()->m_Updating.Contains(pInfo->m_Info->m_DocumentID) &&
-      !xiiAssetCurator::GetSingleton()->m_TransformStateStale.Contains(pInfo->m_Info->m_DocumentID))
+  if (bComplete && !xiiAssetCurator::GetSingleton()->m_Updating.Contains(pInfo->m_Info->m_DocumentID) && !xiiAssetCurator::GetSingleton()->m_TransformStateStale.Contains(pInfo->m_Info->m_DocumentID))
   {
     xiiAssetCurator::GetSingleton()->m_Updating.Insert(pInfo->m_Info->m_DocumentID);
     out_guid = pInfo->m_Info->m_DocumentID;

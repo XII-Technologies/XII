@@ -30,11 +30,9 @@ namespace
 
   xiiVec3 ConvertVector(const aiVector3D& value) { return xiiVec3(value.x, value.y, value.z); }
 
-  xiiResult ReadVertices(const aiMesh& mesh, const xiiMat4& transform, const xiiModelMeshImportOptions& options,
-                         xiiDynamicArray<xiiMeshPackedVertex>& vertices, xiiStringBuilder* error)
+  xiiResult ReadVertices(const aiMesh& mesh, const xiiMat4& transform, const xiiModelMeshImportOptions& options, xiiDynamicArray<xiiMeshPackedVertex>& vertices, xiiStringBuilder* error)
   {
-    if (mesh.mNumVertices == 0 || mesh.mVertices == nullptr || mesh.mNormals == nullptr ||
-        mesh.mNumVertices > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiMeshPackedVertex))
+    if (mesh.mNumVertices == 0 || mesh.mVertices == nullptr || mesh.mNormals == nullptr || mesh.mNumVertices > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiMeshPackedVertex))
       return Fail(error, "Source mesh has missing or oversized vertex data.");
     for (xiiUInt32 i = 2; i < AI_MAX_NUMBER_OF_TEXTURECOORDS; ++i)
       if (mesh.HasTextureCoords(i))
@@ -133,8 +131,7 @@ namespace
     vertices = std::move(compact);
   }
 
-  xiiResult OptimizeMesh(const xiiModelMeshImportOptions& options, xiiDynamicArray<xiiMeshPackedVertex>& vertices,
-                         xiiDynamicArray<xiiUInt32>& indices, xiiStringBuilder* error)
+  xiiResult OptimizeMesh(const xiiModelMeshImportOptions& options, xiiDynamicArray<xiiMeshPackedVertex>& vertices, xiiDynamicArray<xiiUInt32>& indices, xiiStringBuilder* error)
   {
     // Source formats such as OBJ may duplicate every face corner. Weld identical attributes
     // before simplifying, otherwise the simplifier sees disconnected triangles and false seams.
@@ -146,11 +143,9 @@ namespace
       const size_t target = xiiMath::Max<size_t>(3, static_cast<size_t>(indices.GetCount() / 3 * (1.0 - options.m_fSimplification)) * 3);
       size_t       count;
       if (options.m_bAggressiveSimplification)
-        count = meshopt_simplifySloppy(simplified.GetData(), indices.GetData(), indices.GetCount(), &vertices[0].m_vPosition.x,
-                                       vertices.GetCount(), sizeof(xiiMeshPackedVertex), nullptr, target, options.m_fMaxSimplificationError, nullptr);
+        count = meshopt_simplifySloppy(simplified.GetData(), indices.GetData(), indices.GetCount(), &vertices[0].m_vPosition.x, vertices.GetCount(), sizeof(xiiMeshPackedVertex), nullptr, target, options.m_fMaxSimplificationError, nullptr);
       else
-        count = meshopt_simplify(simplified.GetData(), indices.GetData(), indices.GetCount(), &vertices[0].m_vPosition.x,
-                                 vertices.GetCount(), sizeof(xiiMeshPackedVertex), target, options.m_fMaxSimplificationError, 0, nullptr);
+        count = meshopt_simplify(simplified.GetData(), indices.GetData(), indices.GetCount(), &vertices[0].m_vPosition.x, vertices.GetCount(), sizeof(xiiMeshPackedVertex), target, options.m_fMaxSimplificationError, 0, nullptr);
       if (count == 0 || count % 3 != 0)
         return Fail(error, "Mesh simplification could not retain a valid surface.");
       simplified.SetCount(static_cast<xiiUInt32>(count));
@@ -173,14 +168,7 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
   if (sAbsoluteFile.IsEmpty() || !sAbsoluteFile.IsAbsolutePath())
     return Fail(out_pError, "Mesh import requires an absolute source filename.");
   auto inverseRoot = options.m_RootTransform;
-  if (!inverseRoot.IsValid() || inverseRoot.Invert(0).Failed() || !inverseRoot.IsValid() ||
-      !xiiMath::IsEqual(options.m_RootTransform.Element(0, 3), 0.0f, 0.00001f) ||
-      !xiiMath::IsEqual(options.m_RootTransform.Element(1, 3), 0.0f, 0.00001f) ||
-      !xiiMath::IsEqual(options.m_RootTransform.Element(2, 3), 0.0f, 0.00001f) ||
-      !xiiMath::IsEqual(options.m_RootTransform.Element(3, 3), 1.0f, 0.00001f) ||
-      !xiiMath::IsFinite(options.m_fSimplification) || options.m_fSimplification < 0 || options.m_fSimplification >= 1 ||
-      !xiiMath::IsFinite(options.m_fMaxSimplificationError) || options.m_fMaxSimplificationError < 0 || options.m_fMaxSimplificationError > 1 ||
-      options.m_VertexColorConversion.GetValue() >= xiiModelVertexColorConversion::ENUM_COUNT)
+  if (!inverseRoot.IsValid() || inverseRoot.Invert(0).Failed() || !inverseRoot.IsValid() || !xiiMath::IsEqual(options.m_RootTransform.Element(0, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(options.m_RootTransform.Element(1, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(options.m_RootTransform.Element(2, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(options.m_RootTransform.Element(3, 3), 1.0f, 0.00001f) || !xiiMath::IsFinite(options.m_fSimplification) || options.m_fSimplification < 0 || options.m_fSimplification >= 1 || !xiiMath::IsFinite(options.m_fMaxSimplificationError) || options.m_fMaxSimplificationError < 0 || options.m_fMaxSimplificationError > 1 || options.m_VertexColorConversion.GetValue() >= xiiModelVertexColorConversion::ENUM_COUNT)
     return Fail(out_pError, "Mesh import settings contain an invalid transform, color conversion or simplification value.");
 
   Assimp::Importer importer;
@@ -218,11 +206,7 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
       return Fail(out_pError, "Source scene has invalid node ownership or connectivity.");
     const auto transform = entry.m_ParentTransform * ConvertMatrix(node->mTransformation);
     auto       inverse   = transform;
-    if (!inverse.IsValid() || inverse.Invert(0).Failed() || !inverse.IsValid() ||
-        !xiiMath::IsEqual(transform.Element(0, 3), 0.0f, 0.00001f) ||
-        !xiiMath::IsEqual(transform.Element(1, 3), 0.0f, 0.00001f) ||
-        !xiiMath::IsEqual(transform.Element(2, 3), 0.0f, 0.00001f) ||
-        !xiiMath::IsEqual(transform.Element(3, 3), 1.0f, 0.00001f))
+    if (!inverse.IsValid() || inverse.Invert(0).Failed() || !inverse.IsValid() || !xiiMath::IsEqual(transform.Element(0, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(transform.Element(1, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(transform.Element(2, 3), 0.0f, 0.00001f) || !xiiMath::IsEqual(transform.Element(3, 3), 1.0f, 0.00001f))
       return Fail(out_pError, "Source node transform is non-finite, singular or non-affine.");
     for (xiiUInt32 i = node->mNumChildren; i > 0; --i)
       pending.PushBack({node->mChildren[i - 1], transform});
@@ -243,8 +227,7 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
       if (options.m_bImportSkinning)
         XII_SUCCEED_OR_RETURN(ReadSkin(mesh, node->mName.C_Str(), transform, options, result.m_Mesh, localVertices, out_pError));
       XII_SUCCEED_OR_RETURN(OptimizeMesh(options, localVertices, localIndices, out_pError));
-      if (localVertices.GetCount() > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiMeshPackedVertex) - vertices.GetCount() ||
-          localIndices.GetCount() > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiUInt32) - indices.GetCount())
+      if (localVertices.GetCount() > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiMeshPackedVertex) - vertices.GetCount() || localIndices.GetCount() > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiUInt32) - indices.GetCount())
         return Fail(out_pError, "Imported mesh exceeds native vertex or index storage capacity.");
       const auto firstVertex    = vertices.GetCount();
       const auto firstPrimitive = indices.GetCount() / 3;
@@ -254,8 +237,7 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
       xiiUInt32 material;
       if (!materials.TryGetValue(mesh.mMaterialIndex, material))
       {
-        if (mesh.mMaterialIndex >= scene->mNumMaterials || scene->mMaterials == nullptr || scene->mMaterials[mesh.mMaterialIndex] == nullptr ||
-            result.m_Materials.GetCount() == xiiMath::MaxValue<xiiUInt16>())
+        if (mesh.mMaterialIndex >= scene->mNumMaterials || scene->mMaterials == nullptr || scene->mMaterials[mesh.mMaterialIndex] == nullptr || result.m_Materials.GetCount() == xiiMath::MaxValue<xiiUInt16>())
           return Fail(out_pError, "Source mesh references an invalid material or exceeds the native material limit.");
         material     = result.m_Materials.GetCount();
         auto& output = result.m_Materials.ExpandAndGetRef();

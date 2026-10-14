@@ -286,8 +286,7 @@ void xiiVisualScriptNodeRegistry::PhantomTypeRegistryEventHandler(const xiiPhant
   if (e.m_pChangedType->GetPluginName() == "EditorPluginVisualScript")
     return;
 
-  if ((e.m_Type == xiiPhantomRttiManagerEvent::Type::TypeAdded && m_TypeToNodeDescs.Contains(e.m_pChangedType) == false) ||
-      e.m_Type == xiiPhantomRttiManagerEvent::Type::TypeChanged)
+  if ((e.m_Type == xiiPhantomRttiManagerEvent::Type::TypeAdded && m_TypeToNodeDescs.Contains(e.m_pChangedType) == false) || e.m_Type == xiiPhantomRttiManagerEvent::Type::TypeChanged)
   {
     UpdateNodeType(e.m_pChangedType);
   }
@@ -1585,8 +1584,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
       }
     }
 
-    XII_ASSERT_ALWAYS(pFunction->GetArgumentCount() == pScriptableFunctionAttribute->GetArgumentCount(),
-                      "The function reflection for '{}::{}' does not match the actual signature. Num arguments: {}, reflected arguments: {}.", sTypeName, sFunctionName, pFunction->GetArgumentCount(), pScriptableFunctionAttribute->GetArgumentCount());
+    XII_ASSERT_ALWAYS(pFunction->GetArgumentCount() == pScriptableFunctionAttribute->GetArgumentCount(), "The function reflection for '{}::{}' does not match the actual signature. Num arguments: {}, reflected arguments: {}.", sTypeName, sFunctionName, pFunction->GetArgumentCount(), pScriptableFunctionAttribute->GetArgumentCount());
 
     xiiUInt32 titleArgIdx = xiiInvalidIndex;
 
@@ -1644,8 +1642,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
 
           nodeDesc.AddInputDataPin(sArgName, pArgRtti, pinScriptDataType, false, sDynamicPinProperty, nullptr, bIsArrayDynamicPinProperty);
 
-          if (titleArgIdx == xiiInvalidIndex &&
-              (pinScriptDataType == xiiVisualScriptDataType::String || pinScriptDataType == xiiVisualScriptDataType::HashedString))
+          if (titleArgIdx == xiiInvalidIndex && (pinScriptDataType == xiiVisualScriptDataType::String || pinScriptDataType == xiiVisualScriptDataType::HashedString))
           {
             titleArgIdx = argIdx;
           }
@@ -1767,9 +1764,7 @@ void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
 
 void xiiVisualScriptNodeRegistry::CreateMessageNodeTypes(const xiiRTTI* pRtti)
 {
-  if (pRtti == xiiGetStaticRTTI<xiiMessage>() ||
-      pRtti == xiiGetStaticRTTI<xiiEventMessage>() ||
-      pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
+  if (pRtti == xiiGetStaticRTTI<xiiMessage>() || pRtti == xiiGetStaticRTTI<xiiEventMessage>() || pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
     return;
 
   xiiStringView sTypeName = GetTypeName(pRtti);
@@ -1943,9 +1938,7 @@ void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, con
     else
     {
       auto scriptDataType = xiiVisualScriptDataType::FromRtti(pRtti);
-      if (scriptDataType != xiiVisualScriptDataType::Invalid &&
-          scriptDataType != xiiVisualScriptDataType::Component &&
-          scriptDataType != xiiVisualScriptDataType::TypedPointer)
+      if (scriptDataType != xiiVisualScriptDataType::Invalid && scriptDataType != xiiVisualScriptDataType::Component && scriptDataType != xiiVisualScriptDataType::TypedPointer)
       {
         color = PinDesc::GetColorForScriptDataType(scriptDataType);
       }

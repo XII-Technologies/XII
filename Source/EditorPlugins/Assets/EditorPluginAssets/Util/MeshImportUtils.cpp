@@ -18,15 +18,13 @@ namespace
       if (usages.Contains(static_cast<xiiUInt32>(texture.m_Usage)))
         return xiiStatus(xiiFmt("Material '{}' uses layered textures. The native material renderer has one texture per slot.", material.m_sName));
       usages.Insert(static_cast<xiiUInt32>(texture.m_Usage));
-      if (texture.m_uiUVChannel != 0 || texture.m_vUVOffset != xiiVec2::MakeZero() || texture.m_vUVScale != xiiVec2(1) ||
-          texture.m_fUVRotation != 0 || texture.m_fBlend != 1 || texture.m_Operation != xiiModelMaterialTexture::Operation::Multiply)
+      if (texture.m_uiUVChannel != 0 || texture.m_vUVOffset != xiiVec2::MakeZero() || texture.m_vUVScale != xiiVec2(1) || texture.m_fUVRotation != 0 || texture.m_fBlend != 1 || texture.m_Operation != xiiModelMaterialTexture::Operation::Multiply)
         return xiiStatus(xiiFmt("Material '{}' requires per-texture UV mapping or layered blending that the native renderer does not expose. Assign a custom material or import geometry without materials.", material.m_sName));
     }
     return XII_SUCCESS;
   }
 
-  xiiStatus ConfigureMaterial(xiiMaterialAssetDocument& document, const xiiModelMeshMaterial& material, const xiiModelMeshImport& imported,
-                              xiiStringView sourceDirectory, xiiStringView targetDirectory)
+  xiiStatus ConfigureMaterial(xiiMaterialAssetDocument& document, const xiiModelMeshMaterial& material, const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory)
   {
     auto* accessor = document.GetObjectAccessor();
     accessor->StartTransaction("Import Native Material");
@@ -130,8 +128,7 @@ xiiResult xiiMeshImportUtils::CopyMeshAssetMaterialSlotToResource(xiiMeshResourc
   return XII_SUCCESS;
 }
 
-xiiStatus xiiMeshImportUtils::ImportMeshAssetMaterials(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_slots, xiiStringView documentPath,
-                                                       xiiStringView sourceFile, const xiiModelMeshImport& imported)
+xiiStatus xiiMeshImportUtils::ImportMeshAssetMaterials(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_slots, xiiStringView documentPath, xiiStringView sourceFile, const xiiModelMeshImport& imported)
 {
   if (inout_slots.GetCount() != imported.m_Materials.GetCount())
     return xiiStatus("Native mesh material slot count does not match imported material definitions.");
@@ -200,8 +197,7 @@ xiiStatus xiiMeshImportUtils::ImportMeshAssetMaterials(xiiHybridArray<xiiMateria
   return XII_SUCCESS;
 }
 
-xiiTransformStatus xiiMeshImportUtils::PrepareMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_slots, bool importMaterials, bool allowImport,
-                                                            xiiStringView documentPath, xiiStringView sourceFile, const xiiModelMeshImport& imported)
+xiiTransformStatus xiiMeshImportUtils::PrepareMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_slots, bool importMaterials, bool allowImport, xiiStringView documentPath, xiiStringView sourceFile, const xiiModelMeshImport& imported)
 {
   auto materialSlots = inout_slots;
   SetMeshAssetMaterialSlots(materialSlots, imported);

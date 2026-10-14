@@ -14,9 +14,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     {
       // In debug the default constructor initializes everything with NaN.
       xiiMat3T m;
-      XII_TEST_BOOL(xiiMath::IsNaN(m.m_fElementsCM[0]) && xiiMath::IsNaN(m.m_fElementsCM[1]) && xiiMath::IsNaN(m.m_fElementsCM[2]) &&
-                    xiiMath::IsNaN(m.m_fElementsCM[3]) && xiiMath::IsNaN(m.m_fElementsCM[4]) && xiiMath::IsNaN(m.m_fElementsCM[5]) &&
-                    xiiMath::IsNaN(m.m_fElementsCM[6]) && xiiMath::IsNaN(m.m_fElementsCM[7]) && xiiMath::IsNaN(m.m_fElementsCM[8]));
+      XII_TEST_BOOL(xiiMath::IsNaN(m.m_fElementsCM[0]) && xiiMath::IsNaN(m.m_fElementsCM[1]) && xiiMath::IsNaN(m.m_fElementsCM[2]) && xiiMath::IsNaN(m.m_fElementsCM[3]) && xiiMath::IsNaN(m.m_fElementsCM[4]) && xiiMath::IsNaN(m.m_fElementsCM[5]) && xiiMath::IsNaN(m.m_fElementsCM[6]) && xiiMath::IsNaN(m.m_fElementsCM[7]) && xiiMath::IsNaN(m.m_fElementsCM[8]));
     }
 #else
     // Placement new of the default constructor should not have any effect on the previous data.
@@ -25,11 +23,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
     xiiMat3T* m = ::new ((void*)&testBlock[0]) xiiMat3T;
 
-    XII_TEST_BOOL(m->m_fElementsCM[0] == (xiiMat3T::ComponentType)1 && m->m_fElementsCM[1] == (xiiMat3T::ComponentType)2 &&
-                  m->m_fElementsCM[2] == (xiiMat3T::ComponentType)3 && m->m_fElementsCM[3] == (xiiMat3T::ComponentType)4 &&
-                  m->m_fElementsCM[4] == (xiiMat3T::ComponentType)5 && m->m_fElementsCM[5] == (xiiMat3T::ComponentType)6 &&
-                  m->m_fElementsCM[6] == (xiiMat3T::ComponentType)7 && m->m_fElementsCM[7] == (xiiMat3T::ComponentType)8 &&
-                  m->m_fElementsCM[8] == (xiiMat3T::ComponentType)9);
+    XII_TEST_BOOL(m->m_fElementsCM[0] == (xiiMat3T::ComponentType)1 && m->m_fElementsCM[1] == (xiiMat3T::ComponentType)2 && m->m_fElementsCM[2] == (xiiMat3T::ComponentType)3 && m->m_fElementsCM[3] == (xiiMat3T::ComponentType)4 && m->m_fElementsCM[4] == (xiiMat3T::ComponentType)5 && m->m_fElementsCM[5] == (xiiMat3T::ComponentType)6 && m->m_fElementsCM[6] == (xiiMat3T::ComponentType)7 && m->m_fElementsCM[7] == (xiiMat3T::ComponentType)8 && m->m_fElementsCM[8] == (xiiMat3T::ComponentType)9);
 #endif
   }
 
@@ -40,17 +34,13 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     {
       xiiMat3T m = xiiMat3T::MakeFromColumnMajorArray(data);
 
-      XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 2.0f && m.m_fElementsCM[2] == 3.0f && m.m_fElementsCM[3] == 4.0f &&
-                    m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 7.0f && m.m_fElementsCM[7] == 8.0f &&
-                    m.m_fElementsCM[8] == 9.0f);
+      XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 2.0f && m.m_fElementsCM[2] == 3.0f && m.m_fElementsCM[3] == 4.0f && m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 7.0f && m.m_fElementsCM[7] == 8.0f && m.m_fElementsCM[8] == 9.0f);
     }
 
     {
       xiiMat3T m = xiiMat3T::MakeFromRowMajorArray(data);
 
-      XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 4.0f && m.m_fElementsCM[2] == 7.0f && m.m_fElementsCM[3] == 2.0f &&
-                    m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 8.0f && m.m_fElementsCM[6] == 3.0f && m.m_fElementsCM[7] == 6.0f &&
-                    m.m_fElementsCM[8] == 9.0f);
+      XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 4.0f && m.m_fElementsCM[2] == 7.0f && m.m_fElementsCM[3] == 2.0f && m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 8.0f && m.m_fElementsCM[6] == 3.0f && m.m_fElementsCM[7] == 6.0f && m.m_fElementsCM[8] == 9.0f);
     }
   }
 
@@ -76,17 +66,13 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     {
       xiiMat3T m = xiiMat3::MakeFromColumnMajorArray(data);
 
-      XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 2.0f && m.m_fElementsCM[2] == 3.0f && m.m_fElementsCM[3] == 4.0f &&
-                    m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 7.0f && m.m_fElementsCM[7] == 8.0f &&
-                    m.m_fElementsCM[8] == 9.0f);
+      XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 2.0f && m.m_fElementsCM[2] == 3.0f && m.m_fElementsCM[3] == 4.0f && m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 7.0f && m.m_fElementsCM[7] == 8.0f && m.m_fElementsCM[8] == 9.0f);
     }
 
     {
       xiiMat3T m = xiiMat3::MakeFromRowMajorArray(data);
 
-      XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 4.0f && m.m_fElementsCM[2] == 7.0f && m.m_fElementsCM[3] == 2.0f &&
-                    m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 8.0f && m.m_fElementsCM[6] == 3.0f && m.m_fElementsCM[7] == 6.0f &&
-                    m.m_fElementsCM[8] == 9.0f);
+      XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 4.0f && m.m_fElementsCM[2] == 7.0f && m.m_fElementsCM[3] == 2.0f && m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 8.0f && m.m_fElementsCM[6] == 3.0f && m.m_fElementsCM[7] == 6.0f && m.m_fElementsCM[8] == 9.0f);
     }
   }
 

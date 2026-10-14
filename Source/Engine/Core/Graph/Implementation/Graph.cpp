@@ -39,8 +39,7 @@ xiiResult xiiGraph::TryInitialize()
 
 xiiResult xiiGraph::SetLimits(xiiUInt32 vertexLimit, xiiUInt32 edgeLimit)
 {
-  if (m_bDispatching || vertexLimit > MaxElementCount || edgeLimit > MaxElementCount ||
-      (m_pStorage && (vertexLimit < m_pStorage->m_Vertices.GetCount() || edgeLimit < m_pStorage->m_Edges.GetCount())))
+  if (m_bDispatching || vertexLimit > MaxElementCount || edgeLimit > MaxElementCount || (m_pStorage && (vertexLimit < m_pStorage->m_Vertices.GetCount() || edgeLimit < m_pStorage->m_Edges.GetCount())))
     return XII_FAILURE;
   m_uiVertexLimit = vertexLimit;
   m_uiEdgeLimit   = edgeLimit;
@@ -103,8 +102,7 @@ xiiResult xiiGraph::MoveFromInternal(xiiGraph&& source, const xiiGraphHandleMap*
 {
   if (&source == this)
     return m_bDispatching ? XII_FAILURE : XII_SUCCESS;
-  if (m_bDispatching || source.m_bDispatching ||
-      (source.m_pStorage && (source.m_pStorage->m_Vertices.GetCount() > m_uiVertexLimit || source.m_pStorage->m_Edges.GetCount() > m_uiEdgeLimit)))
+  if (m_bDispatching || source.m_bDispatching || (source.m_pStorage && (source.m_pStorage->m_Vertices.GetCount() > m_uiVertexLimit || source.m_pStorage->m_Edges.GetCount() > m_uiEdgeLimit)))
     return XII_FAILURE;
   source.m_bDispatching = true;
   m_bDispatching        = true;

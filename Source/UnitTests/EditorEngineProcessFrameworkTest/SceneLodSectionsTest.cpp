@@ -164,8 +164,7 @@ static void TestLodSections(bool enableMeshShaders)
   xiiUInt64                          frame = 0;
   xiiHashTable<xiiUInt32, xiiUInt32> stableIds;
 
-  auto render = [&](float bias, xiiUInt32 expectedLod, xiiUInt32 expectedSections, xiiUInt32 expectedCandidates,
-                    xiiUInt32 forcedLod = xiiInvalidIndex, xiiUInt32 section = xiiInvalidIndex, bool excludeTransparent = false, bool onlyTransparent = false) {
+  auto render = [&](float bias, xiiUInt32 expectedLod, xiiUInt32 expectedSections, xiiUInt32 expectedCandidates, xiiUInt32 forcedLod = xiiInvalidIndex, xiiUInt32 section = xiiInvalidIndex, bool excludeTransparent = false, bool onlyTransparent = false) {
     ++frame;
     component->SetForcedLOD(forcedLod);
     component->SetLodBias(bias);

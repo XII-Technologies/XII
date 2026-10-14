@@ -93,8 +93,7 @@ void xiiQtEditDynamicEnumsDlg::on_Buttons_clicked(QAbstractButton* button)
   {
     if (m_bModified)
     {
-      if (QMessageBox::question(this, "Edit Values?", "Modifying these values cannot be undone.\n\nApply changes?",
-                                QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes) != QMessageBox::Yes)
+      if (QMessageBox::question(this, "Edit Values?", "Modifying these values cannot be undone.\n\nApply changes?", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes) != QMessageBox::Yes)
       {
         return;
       }

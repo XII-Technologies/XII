@@ -365,9 +365,7 @@ void xiiQtAnimationClipAssetDocumentWindow::CommandHistoryEventHandler(const xii
 {
   // also listen to TransactionCanceled, which is sent when a no-op happens (e.g. asset transform with no change)
   // because the event track data object may still get replaced, and we have to get the new pointer
-  if (e.m_Type == xiiCommandHistoryEvent::Type::TransactionEnded || e.m_Type == xiiCommandHistoryEvent::Type::UndoEnded ||
-      e.m_Type == xiiCommandHistoryEvent::Type::RedoEnded ||
-      e.m_Type == xiiCommandHistoryEvent::Type::TransactionCanceled)
+  if (e.m_Type == xiiCommandHistoryEvent::Type::TransactionEnded || e.m_Type == xiiCommandHistoryEvent::Type::UndoEnded || e.m_Type == xiiCommandHistoryEvent::Type::RedoEnded || e.m_Type == xiiCommandHistoryEvent::Type::TransactionCanceled)
   {
     UpdateEventTrackEditor();
   }

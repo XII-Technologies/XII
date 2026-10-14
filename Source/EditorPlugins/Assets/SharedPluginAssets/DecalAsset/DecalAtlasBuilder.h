@@ -32,6 +32,5 @@ struct XII_SHAREDPLUGINASSETS_DLL xiiDecalAtlasBuildSettings
 class XII_SHAREDPLUGINASSETS_DLL xiiDecalAtlasBuilder
 {
 public:
-  static xiiStatus Build(xiiArrayPtr<const xiiDecalAtlasSource> sources, const xiiDecalAtlasBuildSettings& settings,
-                         xiiDecalAtlasResourceDescriptor& output);
+  static xiiStatus Build(xiiArrayPtr<const xiiDecalAtlasSource> sources, const xiiDecalAtlasBuildSettings& settings, xiiDecalAtlasResourceDescriptor& output);
 };

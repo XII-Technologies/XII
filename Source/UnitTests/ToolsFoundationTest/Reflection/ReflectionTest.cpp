@@ -376,8 +376,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectedTypeReloading)
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddProperty")
     {
       // Say we reload the engine and the InnerStruct now has a second property: IP2.
-      descInner.m_Properties.PushBack(xiiReflectedPropertyDescriptor(xiiPropertyCategory::Member, "IP2", "xiiVec4",
-                                                                     xiiBitflags<xiiPropertyFlags>(xiiPropertyFlags::StandardType), xiiArrayPtr<xiiPropertyAttribute* const>()));
+      descInner.m_Properties.PushBack(xiiReflectedPropertyDescriptor(xiiPropertyCategory::Member, "IP2", "xiiVec4", xiiBitflags<xiiPropertyFlags>(xiiPropertyFlags::StandardType), xiiArrayPtr<xiiPropertyAttribute* const>()));
       const xiiRTTI* NewInnerHandle = xiiPhantomRttiManager::RegisterType(descInner);
       XII_TEST_BOOL(NewInnerHandle == pRttiInnerP);
 

@@ -323,9 +323,7 @@ void xiiOpenDdlParser::ContinueIdle()
         // support for 'uint' is an extension to OpenDDL
         // support for u1, u2, u3, u4 for  8 Bit, 16 Bit, 32 Bit, 64 Bit is an extension to OpenDDL
 
-        if (xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "u1") ||
-            xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "unsigned_int8") ||
-            xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "uint8"))
+        if (xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "u1") || xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "unsigned_int8") || xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "uint8"))
         {
           m_StateStack.PushBack(State::ReadingUInt8);
 
@@ -336,9 +334,7 @@ void xiiOpenDdlParser::ContinueIdle()
           return;
         }
 
-        if (xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "u3") ||
-            xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "unsigned_int32") ||
-            xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "uint32"))
+        if (xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "u3") || xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "unsigned_int32") || xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "uint32"))
         {
           m_StateStack.PushBack(State::ReadingUInt32);
 
@@ -349,9 +345,7 @@ void xiiOpenDdlParser::ContinueIdle()
           return;
         }
 
-        if (xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "u2") ||
-            xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "unsigned_int16") ||
-            xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "uint16"))
+        if (xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "u2") || xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "unsigned_int16") || xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "uint16"))
         {
           m_StateStack.PushBack(State::ReadingUInt16);
 
@@ -362,9 +356,7 @@ void xiiOpenDdlParser::ContinueIdle()
           return;
         }
 
-        if (xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "u4") ||
-            xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "unsigned_int64") ||
-            xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "uint64"))
+        if (xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "u4") || xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "unsigned_int64") || xiiStringUtils::IsEqual((const char*)m_szIdentifierType, "uint64"))
         {
           m_StateStack.PushBack(State::ReadingUInt64);
 
@@ -1160,8 +1152,7 @@ void xiiOpenDdlParser::ReadDecimalFloat()
 
     if (!ReadCharacterSkipComments())
       break; // stop when end of stream is encountered
-  } while ((m_uiCurByte >= '0' && m_uiCurByte <= '9') || m_uiCurByte == '.' || m_uiCurByte == 'e' || m_uiCurByte == 'E' || m_uiCurByte == '-' ||
-           m_uiCurByte == '+' || m_uiCurByte == '_');
+  } while ((m_uiCurByte >= '0' && m_uiCurByte <= '9') || m_uiCurByte == '.' || m_uiCurByte == 'e' || m_uiCurByte == 'E' || m_uiCurByte == '-' || m_uiCurByte == '+' || m_uiCurByte == '_');
 
   m_TempString[m_uiTempStringLength] = '\0';
 

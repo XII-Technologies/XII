@@ -37,30 +37,19 @@ namespace
   };
 } // namespace
 
-xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStringView name,
-                                                   const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                   const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders, xiiGALFillMode::Enum fillMode)
+xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStringView name, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders, xiiGALFillMode::Enum fillMode)
 {
   out_hSurface = {};
   if (fillMode != xiiGALFillMode::Solid && fillMode != xiiGALFillMode::Wireframe)
     return XII_FAILURE;
-  if (fillMode == xiiGALFillMode::Wireframe &&
-      (!xiiGALDevice::HasDefaultDevice() || xiiGALDevice::GetDefaultDevice()->GetFeatures().m_WireframeFill != xiiGALDeviceFeatureState::Enabled))
+  if (fillMode == xiiGALFillMode::Wireframe && (!xiiGALDevice::HasDefaultDevice() || xiiGALDevice::GetDefaultDevice()->GetFeatures().m_WireframeFill != xiiGALDeviceFeatureState::Enabled))
     return XII_FAILURE;
   const bool indexed = !bUseMeshShaders || !IsSupported();
-  if (!IsPickingSupported() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hSkinningMatrices.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() ||
-      !visibility.m_hVisibleMeshletCount.IsValid() ||
-      (!indexed && (!visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || description.m_uiMeshDispatchGroupCountX == 0 || description.m_uiMeshDispatchGroupCountY == 0)) ||
-      (indexed && (visibility.m_uiMaxVisibleMeshlets == 0U || visibility.m_uiMaxVisibleMeshlets > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiVec4U32))) ||
-      !geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() ||
-      description.m_uiWidth == 0 || description.m_uiHeight == 0 || description.m_uiVertexStride < 16 ||
-      description.m_uiNormalOffset > description.m_uiVertexStride - 12 ||
-      description.m_uiTangentOffset > description.m_uiVertexStride - 16 ||
-      description.m_uiTexCoordOffset > description.m_uiVertexStride - 8 || !description.m_ViewProjectionMatrix.IsValid())
+  if (!IsPickingSupported() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hSkinningMatrices.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() || !visibility.m_hVisibleMeshletCount.IsValid() || (!indexed && (!visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || description.m_uiMeshDispatchGroupCountX == 0 || description.m_uiMeshDispatchGroupCountY == 0)) || (indexed && (visibility.m_uiMaxVisibleMeshlets == 0U || visibility.m_uiMaxVisibleMeshlets > xiiMath::MaxValue<xiiUInt32>() / sizeof(xiiVec4U32))) || !geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || description.m_uiWidth == 0 || description.m_uiHeight == 0 || description.m_uiVertexStride < 16 || description.m_uiNormalOffset > description.m_uiVertexStride - 12 || description.m_uiTangentOffset > description.m_uiVertexStride - 16 || description.m_uiTexCoordOffset > description.m_uiVertexStride - 8 || !description.m_ViewProjectionMatrix.IsValid())
     return XII_FAILURE;
   const auto                                    hShader = fillMode == xiiGALFillMode::Wireframe ?
-    (indexed ? s_pState->m_hIndexedWireframePickingShaderPermutation : s_pState->m_hWireframePickingShaderPermutation) :
-    (indexed ? s_pState->m_hIndexedPickingShaderPermutation : s_pState->m_hPickingShaderPermutation);
+                                       (indexed ? s_pState->m_hIndexedWireframePickingShaderPermutation : s_pState->m_hWireframePickingShaderPermutation) :
+                                       (indexed ? s_pState->m_hIndexedPickingShaderPermutation : s_pState->m_hPickingShaderPermutation);
   xiiResourceLock<xiiShaderPermutationResource> permutation(hShader, xiiResourceAcquireMode::BlockTillLoaded);
   if (!permutation.IsValid() || !permutation->IsShaderValid())
     return XII_FAILURE;
@@ -71,9 +60,7 @@ xiiResult xiiGpuSceneRasterManager::AddPickingPass(xiiRenderGraph& graph, xiiStr
     if (!device)
       return XII_FAILURE;
     const auto& properties = device->GetGraphicsDeviceAdapterProperties();
-    if (!properties.m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer) ||
-        visibility.m_uiMaxVisibleMeshlets > properties.m_DrawCommandProperties.m_uiMaxDrawIndirectCount ||
-        (visibility.m_uiMaxVisibleMeshlets + 63U) / 64U > properties.m_ComputeShaderProperties.m_uiMaxThreadGroupCountX)
+    if (!properties.m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer) || visibility.m_uiMaxVisibleMeshlets > properties.m_DrawCommandProperties.m_uiMaxDrawIndirectCount || (visibility.m_uiMaxVisibleMeshlets + 63U) / 64U > properties.m_ComputeShaderProperties.m_uiMaxThreadGroupCountX)
       return XII_FAILURE;
     xiiResourceLock<xiiShaderPermutationResource> commands(s_pState->m_hIndexedPickingCommandsShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
     if (!commands.IsValid() || !commands->IsShaderValid())

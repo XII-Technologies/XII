@@ -59,8 +59,7 @@ public:
   [[nodiscard]] static xiiResult                   PrepareHiZHistory(xiiGpuVisibilityContextHandle handle, xiiUInt32 uiWidth, xiiUInt32 uiHeight);
   static void                                      InvalidateHiZHistory(xiiGpuVisibilityContextHandle handle);
   [[nodiscard]] static xiiRenderGraphTextureHandle ImportPreviousHiZ(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
-  static void                                      AddHiZBuildPass(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex,
-                                                                   xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute = true);
+  static void                                      AddHiZBuildPass(xiiGpuVisibilityContextHandle handle, xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRenderGraphTextureHandle hSceneDepth, bool bAsyncCompute = true);
   [[nodiscard]] static xiiUInt32                   GetHiZMipLevelCount(xiiGpuVisibilityContextHandle handle);
 
   [[nodiscard]] static xiiUInt32                      GetMeshDispatchGroupCountX(xiiGpuVisibilityContextHandle handle);

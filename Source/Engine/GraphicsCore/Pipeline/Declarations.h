@@ -104,7 +104,6 @@ struct XII_GRAPHICSCORE_DLL xiiCameraUsageHint
 
     Default = None
   };
-
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiCameraUsageHint);

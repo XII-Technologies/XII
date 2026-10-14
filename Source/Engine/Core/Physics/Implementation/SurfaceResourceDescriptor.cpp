@@ -48,10 +48,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 const xiiRangeView<xiiStringView, xiiUInt32> xiiSurfaceInteraction::GetParameters() const
 {
-  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                                [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
+  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
 }
 
 void xiiSurfaceInteraction::SetParameter(xiiStringView sKey, const xiiVariant& value)

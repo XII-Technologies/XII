@@ -58,8 +58,7 @@ void xiiComponentManagerBase::Deinitialize()
 
 xiiComponentHandle xiiComponentManagerBase::CreateComponentNoInit(xiiGameObject* pOwnerObject, xiiComponent*& out_pComponent)
 {
-  XII_ASSERT_DEV(m_Components.GetCount() < xiiWorld::GetMaxNumComponentsPerType(), "Max number of components per type reached: {}",
-                 xiiWorld::GetMaxNumComponentsPerType());
+  XII_ASSERT_DEV(m_Components.GetCount() < xiiWorld::GetMaxNumComponentsPerType(), "Max number of components per type reached: {}", xiiWorld::GetMaxNumComponentsPerType());
 
   xiiComponent* pComponent = CreateComponentStorage();
   if (pComponent == nullptr)

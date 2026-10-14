@@ -37,9 +37,7 @@ namespace
       // Check the fixed prefix before AssetFileHeader::Read, which asserts on a missing tag or future version.
       char     tag[8]  = {};
       xiiUInt8 version = 0;
-      if (data->m_Storage.GetStorageSize64() < 27 || data->m_Reader.ReadBytes(tag, sizeof(tag)) != sizeof(tag) ||
-          !xiiMemoryUtils::IsEqual(tag, "xiiAsset", sizeof(tag)) ||
-          data->m_Reader.ReadBytes(&version, sizeof(version)) != sizeof(version) || version != 3)
+      if (data->m_Storage.GetStorageSize64() < 27 || data->m_Reader.ReadBytes(tag, sizeof(tag)) != sizeof(tag) || !xiiMemoryUtils::IsEqual(tag, "xiiAsset", sizeof(tag)) || data->m_Reader.ReadBytes(&version, sizeof(version)) != sizeof(version) || version != 3)
       {
         XII_DEFAULT_DELETE(data);
         return {};

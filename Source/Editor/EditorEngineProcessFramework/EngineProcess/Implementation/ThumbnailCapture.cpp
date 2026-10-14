@@ -19,8 +19,7 @@ xiiResult xiiCaptureThumbnail(xiiGALTexture* pTexture, xiiSizeU32 outputSize, xi
     return XII_FAILURE;
 
   const auto& source = pTexture->GetDescription();
-  if (source.m_Type != xiiGALResourceDimension::Texture2D || source.m_uiSampleCount != 1 ||
-      (source.m_Format != xiiGALResourceFormat::RGBA8UNormalized && source.m_Format != xiiGALResourceFormat::RGBA8UNormalizedSRGB))
+  if (source.m_Type != xiiGALResourceDimension::Texture2D || source.m_uiSampleCount != 1 || (source.m_Format != xiiGALResourceFormat::RGBA8UNormalized && source.m_Format != xiiGALResourceFormat::RGBA8UNormalizedSRGB))
     return XII_FAILURE;
 
   auto pQueue       = pDevice->GetCommandQueue();
@@ -56,8 +55,7 @@ xiiResult xiiCaptureThumbnail(xiiGALTexture* pTexture, xiiSizeU32 outputSize, xi
     {
       for (xiiUInt32 y = 0; y < capture.m_uiHeight; ++y)
       {
-        xiiMemoryUtils::Copy(image.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y),
-                             xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride), static_cast<size_t>(image.GetRowPitch()));
+        xiiMemoryUtils::Copy(image.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y), xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt8*>(mapped.m_pData), y * mapped.m_uiStride), static_cast<size_t>(image.GetRowPitch()));
       }
     }
     else

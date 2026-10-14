@@ -107,9 +107,7 @@ void xiiVisualizerManager::StructureEventHandler(const xiiDocumentObjectStructur
   if (!m_DocsSubscribed[event.m_pDocument].m_bActivated)
     return;
 
-  if (!event.m_pDocument->GetSelectionManager()->IsSelectionEmpty() &&
-      (event.m_EventType == xiiDocumentObjectStructureEvent::Type::AfterObjectAdded ||
-       event.m_EventType == xiiDocumentObjectStructureEvent::Type::AfterObjectRemoved))
+  if (!event.m_pDocument->GetSelectionManager()->IsSelectionEmpty() && (event.m_EventType == xiiDocumentObjectStructureEvent::Type::AfterObjectAdded || event.m_EventType == xiiDocumentObjectStructureEvent::Type::AfterObjectRemoved))
   {
     SendEventToRecreateVisualizers(event.m_pDocument);
   }

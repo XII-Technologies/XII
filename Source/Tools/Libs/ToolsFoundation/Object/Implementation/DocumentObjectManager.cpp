@@ -329,14 +329,12 @@ xiiStatus xiiDocumentObjectManager::CanAdd(const xiiRTTI* pRtti, const xiiDocume
           return xiiStatus(xiiFmt("Cannot add object to the pointer property '{0}' as it does not hold ownership.", sParentProperty));
 
         if (!pRtti->IsDerivedFrom(pProp->GetSpecificType()))
-          return xiiStatus(xiiFmt("Cannot add object to the pointer property '{0}' as its type '{1}' is not derived from the property type '{2}'!",
-                                  sParentProperty, pRtti->GetTypeName(), pProp->GetSpecificType()->GetTypeName()));
+          return xiiStatus(xiiFmt("Cannot add object to the pointer property '{0}' as its type '{1}' is not derived from the property type '{2}'!", sParentProperty, pRtti->GetTypeName(), pProp->GetSpecificType()->GetTypeName()));
       }
       else
       {
         if (pRtti != pProp->GetSpecificType())
-          return xiiStatus(xiiFmt("Cannot add object to the property '{0}' as its type '{1}' does not match the property type '{2}'!", sParentProperty,
-                                  pRtti->GetTypeName(), pProp->GetSpecificType()->GetTypeName()));
+          return xiiStatus(xiiFmt("Cannot add object to the property '{0}' as its type '{1}' does not match the property type '{2}'!", sParentProperty, pRtti->GetTypeName(), pProp->GetSpecificType()->GetTypeName()));
       }
     }
 
@@ -657,8 +655,7 @@ void xiiDocumentObjectManager::PatchEmbeddedClassObjectsInternal(xiiDocumentObje
     const xiiAbstractProperty* pProperty = pType->GetProperties()[i];
     const xiiVariantTypeInfo*  pInfo     = xiiVariantTypeRegistry::GetSingleton()->FindVariantTypeInfo(pProperty->GetSpecificType());
 
-    if (pProperty->GetCategory() == xiiPropertyCategory::Member && pProperty->GetFlags().IsSet(xiiPropertyFlags::Class) && !pInfo &&
-        !pProperty->GetFlags().IsSet(xiiPropertyFlags::Pointer))
+    if (pProperty->GetCategory() == xiiPropertyCategory::Member && pProperty->GetFlags().IsSet(xiiPropertyFlags::Class) && !pInfo && !pProperty->GetFlags().IsSet(xiiPropertyFlags::Pointer))
     {
       xiiUuid value = accessor.GetValue(pProperty->GetPropertyName()).Get<xiiUuid>();
       XII_ASSERT_DEV(addToDoc || !value.IsValid(), "If addToDoc is false, the current value must be invalid!");

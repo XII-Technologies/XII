@@ -109,8 +109,7 @@ namespace
 
       const xiiTime tDiff = sw.Checkpoint();
 
-      xiiTestFramework::Output(xiiTestOutput::Duration, "Creating %u %s objects (depth: %u): %.2fms", pWorld->GetObjectCount(),
-                               bDynamic ? "dynamic" : "static", uiTreeDepth, tDiff.GetMilliseconds());
+      xiiTestFramework::Output(xiiTestOutput::Duration, "Creating %u %s objects (depth: %u): %.2fms", pWorld->GetObjectCount(), bDynamic ? "dynamic" : "static", uiTreeDepth, tDiff.GetMilliseconds());
     }
   }
 

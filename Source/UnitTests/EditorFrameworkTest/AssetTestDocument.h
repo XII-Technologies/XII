@@ -55,10 +55,10 @@ public:
     m_Type.m_AssetDocumentFlags = xiiAssetDocumentFlags::DisableTransform;
   }
   ~ResaveTestManager() override { CloseAllDocumentsOfManager(); }
-  bool           GeneratesProfileSpecificAssets() const override { return false; }
+  bool                      GeneratesProfileSpecificAssets() const override { return false; }
   static xiiAtomicInteger32 s_NonActiveOutputChecks;
   bool                      IsOutputUpToDate(xiiStringView path, xiiStringView tag, xiiUInt64 hash, const xiiAssetDocumentTypeDescriptor* type, const xiiPlatformProfile* profile = nullptr) override;
-  static xiiUuid GetSubAssetId(xiiUuid owner)
+  static xiiUuid            GetSubAssetId(xiiUuid owner)
   {
     owner.CombineWithSeed(xiiUuid::MakeStableUuidFromString("ResaveTestChild"));
     return owner;

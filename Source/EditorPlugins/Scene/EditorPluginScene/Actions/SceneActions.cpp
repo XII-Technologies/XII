@@ -488,8 +488,7 @@ void xiiSceneAction::Execute(const xiiVariant& value)
     {
       const xiiInt32 iCamIdx = (int)m_Type - (int)ActionType::CreateLevelCamera0;
 
-      if (auto pView = xiiQtEngineViewWidget::GetInteractionContext().m_pLastHoveredViewWidget;
-          pView == nullptr || pView->m_pViewConfig->m_Perspective != xiiSceneViewPerspective::Perspective)
+      if (auto pView = xiiQtEngineViewWidget::GetInteractionContext().m_pLastHoveredViewWidget; pView == nullptr || pView->m_pViewConfig->m_Perspective != xiiSceneViewPerspective::Perspective)
       {
         m_pSceneDocument->ShowDocumentStatus("Note: Level cameras cannot be created in orthographic views.");
         return;

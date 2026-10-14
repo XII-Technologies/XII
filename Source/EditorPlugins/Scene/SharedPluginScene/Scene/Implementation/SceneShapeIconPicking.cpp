@@ -45,13 +45,10 @@ bool xiiSceneShapeIconPicking::Resolve(const xiiView& view, xiiUInt32 index, xii
   const auto&          hit       = m_Hits[index - 1];
   const xiiComponent*  component = nullptr;
   const xiiGameObject* object    = nullptr;
-  if (!view.GetWorld()->TryGetObject(hit.m_hObject, object) || !view.GetWorld()->TryGetComponent(hit.m_hComponent, component) ||
-      component->GetOwner() != object || !component->IsActive() || !object->IsActive() || object->IsShapeIconHidden() ||
-      !object->GetGlobalPosition().IsIdentical(hit.m_vWorldPosition))
+  if (!view.GetWorld()->TryGetObject(hit.m_hObject, object) || !view.GetWorld()->TryGetComponent(hit.m_hComponent, component) || component->GetOwner() != object || !component->IsActive() || !object->IsActive() || object->IsShapeIconHidden() || !object->GetGlobalPosition().IsIdentical(hit.m_vWorldPosition))
     return false;
   const auto& tags = object->GetTags();
-  if (tags.IsAnySet(view.m_ExcludeTags) || (!view.m_IncludeTags.IsEmpty() && !tags.IsAnySet(view.m_IncludeTags)) ||
-      tags.IsSetByName(xiiStringView("Editor")) || tags.IsSetByName(xiiStringView("EditorHidden")))
+  if (tags.IsAnySet(view.m_ExcludeTags) || (!view.m_IncludeTags.IsEmpty() && !tags.IsAnySet(view.m_IncludeTags)) || tags.IsSetByName(xiiStringView("Editor")) || tags.IsSetByName(xiiStringView("EditorHidden")))
     return false;
   out_hit = hit;
   return true;

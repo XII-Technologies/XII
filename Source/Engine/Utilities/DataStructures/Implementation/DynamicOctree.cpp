@@ -78,8 +78,7 @@ xiiResult xiiDynamicOctree::InsertObject(const xiiVec3& vCenter, const xiiVec3& 
   oData.m_iObjectInstance = iObjectInstance;
 
   // insert the object into the best child
-  if (!InsertObject(vCenter, vHalfExtents, oData, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
-                    m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), out_pObject))
+  if (!InsertObject(vCenter, vHalfExtents, oData, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), out_pObject))
   {
     if (!bOnlyIfInside)
     {
@@ -126,29 +125,21 @@ bool xiiDynamicOctree::InsertObject(const xiiVec3& vCenter, const xiiVec3& vHalf
     const xiiUInt32 uiAddIDChild    = uiAddID - uiSubAddID;
     const xiiUInt32 uiSubAddIDChild = uiSubAddID >> 3;
 
-    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild,
-                     uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild,
-                     uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild,
-                     uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild,
-                     uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 4, uiAddIDChild,
-                     uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 4, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 5, uiAddIDChild,
-                     uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 5, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 6, uiAddIDChild,
-                     uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 6, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 7, uiAddIDChild,
-                     uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 7, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
   }
 
@@ -172,8 +163,7 @@ void xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ
   if (!m_BBox.Contains(vPoint))
     return;
 
-  FindObjectsInRange(vPoint, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
-                     m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
+  FindObjectsInRange(vPoint, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
 void xiiDynamicOctree::FindVisibleObjects(const xiiFrustum& viewfrustum, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough) const
@@ -183,8 +173,7 @@ void xiiDynamicOctree::FindVisibleObjects(const xiiFrustum& viewfrustum, XII_VIS
   if (m_NodeMap.IsEmpty())
     return;
 
-  FindVisibleObjects(viewfrustum, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
-                     m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
+  FindVisibleObjects(viewfrustum, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
 void xiiDynamicOctree::FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float miny, float maxy, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const
@@ -250,22 +239,14 @@ void xiiDynamicOctree::FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_VIS
       const xiiUInt32 uiAddIDChild    = uiAddID - uiSubAddID;
       const xiiUInt32 uiSubAddIDChild = uiSubAddID >> 3;
 
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 0,
-                         uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1,
-                         uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 2,
-                         uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3,
-                         uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 4);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 4,
-                         uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 5);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 5,
-                         uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 6);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 6,
-                         uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 7);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 7,
-                         uiAddIDChild, uiSubAddIDChild, uiNextNodeID);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 4);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 4, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 5);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 5, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 6);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 6, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 7);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 7, uiAddIDChild, uiSubAddIDChild, uiNextNodeID);
     }
   }
 }
@@ -356,29 +337,21 @@ bool xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ
       const xiiUInt32 uiAddIDChild    = uiAddID - uiSubAddID;
       const xiiUInt32 uiSubAddIDChild = uiSubAddID >> 3;
 
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 0,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 2,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 4))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 4))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 4,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 5))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 4, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 5))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 5,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 6))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 5, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 6))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 6,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 7))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 6, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 7))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 7,
-                              uiAddIDChild, uiSubAddIDChild, uiNextNodeID))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 7, uiAddIDChild, uiSubAddIDChild, uiNextNodeID))
         return false;
     }
   }
@@ -393,8 +366,7 @@ void xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, 
   if (m_NodeMap.IsEmpty())
     return;
 
-  FindObjectsInRange(vPoint, fRadius, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z,
-                     m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
+  FindObjectsInRange(vPoint, fRadius, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.y, m_BBox.m_vMax.y, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(8, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
 bool xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float miny, float maxy, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const
@@ -447,29 +419,21 @@ bool xiiDynamicOctree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, 
       const xiiUInt32 uiAddIDChild    = uiAddID - uiSubAddID;
       const xiiUInt32 uiSubAddIDChild = uiSubAddID >> 3;
 
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 0,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 2,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 4))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 4))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 4,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 5))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, minz, minz + lz, uiNodeIDBase + uiAddID * 4, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 5))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 5,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 6))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, miny, miny + ly, maxz - lz, maxz, uiNodeIDBase + uiAddID * 5, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 6))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 6,
-                              uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 7))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, minz, minz + lz, uiNodeIDBase + uiAddID * 6, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 7))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 7,
-                              uiAddIDChild, uiSubAddIDChild, uiNextNodeID))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, maxy - ly, maxy, maxz - lz, maxz, uiNodeIDBase + uiAddID * 7, uiAddIDChild, uiSubAddIDChild, uiNextNodeID))
         return false;
     }
   }

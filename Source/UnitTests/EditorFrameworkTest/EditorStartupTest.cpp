@@ -6,8 +6,8 @@
 #include <EditorFrameworkTest/AssetDependencyTrackingTest.h>
 #include <EditorFrameworkTest/AssetProcessorTest.h>
 #include <EditorFrameworkTest/AssetProfileTest.h>
-#include <EditorFrameworkTest/AssetResaveTest.h>
 #include <EditorFrameworkTest/AssetReplacementTest.h>
+#include <EditorFrameworkTest/AssetResaveTest.h>
 #include <EditorFrameworkTest/DocumentSaveUiTest.h>
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>

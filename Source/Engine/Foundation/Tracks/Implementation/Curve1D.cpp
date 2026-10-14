@@ -265,13 +265,7 @@ void xiiCurve1D::CreateLinearApproximation(double fMaxError /*= 0.01f*/, xiiUInt
 
     m_LinearApproximation.PushBack(m_ControlPoints[i - 1].m_Position);
 
-    ApproximateCurve(m_ControlPoints[i - 1].m_Position,
-                     m_ControlPoints[i - 1].m_Position + xiiVec2d(m_ControlPoints[i - 1].m_RightTangent.x, m_ControlPoints[i - 1].m_RightTangent.y),
-                     m_ControlPoints[i].m_Position + xiiVec2d(m_ControlPoints[i].m_LeftTangent.x, m_ControlPoints[i].m_LeftTangent.y),
-                     m_ControlPoints[i].m_Position,
-                     fMaxErrorX,
-                     fMaxErrorY,
-                     uiMaxSubDivs);
+    ApproximateCurve(m_ControlPoints[i - 1].m_Position, m_ControlPoints[i - 1].m_Position + xiiVec2d(m_ControlPoints[i - 1].m_RightTangent.x, m_ControlPoints[i - 1].m_RightTangent.y), m_ControlPoints[i].m_Position + xiiVec2d(m_ControlPoints[i].m_LeftTangent.x, m_ControlPoints[i].m_LeftTangent.y), m_ControlPoints[i].m_Position, fMaxErrorX, fMaxErrorY, uiMaxSubDivs);
   }
 
   m_LinearApproximation.PushBack(m_ControlPoints.PeekBack().m_Position);

@@ -90,8 +90,7 @@ xiiResult xiiSceneCameraPreview::Update(const xiiView& editorView, const xiiCame
 
   XII_SUCCEED_OR_RETURN(EnsureView());
   auto* view = GetView();
-  if (m_hCamera != camera.GetHandle() || m_Camera.GetCameraMode() != configured.GetCameraMode() || m_Camera.GetFovOrDim() != configured.GetFovOrDim() ||
-      m_Camera.GetNearPlane() != configured.GetNearPlane() || m_Camera.GetFarPlane() != configured.GetFarPlane())
+  if (m_hCamera != camera.GetHandle() || m_Camera.GetCameraMode() != configured.GetCameraMode() || m_Camera.GetFovOrDim() != configured.GetFovOrDim() || m_Camera.GetNearPlane() != configured.GetNearPlane() || m_Camera.GetFarPlane() != configured.GetFarPlane())
     view->InvalidateTemporalHistory();
   m_hCamera           = camera.GetHandle();
   m_Camera            = configured;

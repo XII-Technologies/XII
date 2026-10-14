@@ -148,22 +148,20 @@ xiiResult xiiPropertyPath::WriteProperty(void* pRootObject, const xiiRTTI& type,
 {
   XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty(), "Call InitializeFromPath before WriteToObject");
 
-  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), true,
-                     [this, &func](void* pLeafObject, const xiiRTTI& leafType) {
-                       auto& lastStep = m_PathSteps[m_PathSteps.GetCount() - 1];
-                       func(pLeafObject, leafType, lastStep.m_pProperty, lastStep.m_Index);
-                     });
+  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), true, [this, &func](void* pLeafObject, const xiiRTTI& leafType) {
+    auto& lastStep = m_PathSteps[m_PathSteps.GetCount() - 1];
+    func(pLeafObject, leafType, lastStep.m_pProperty, lastStep.m_Index);
+  });
 }
 
 xiiResult xiiPropertyPath::ReadProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
 {
   XII_ASSERT_DEBUG(m_bIsValid, "Call InitializeFromPath before WriteToObject");
 
-  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), false,
-                     [this, &func](void* pLeafObject, const xiiRTTI& leafType) {
-                       auto& lastStep = m_PathSteps[m_PathSteps.GetCount() - 1];
-                       func(pLeafObject, leafType, lastStep.m_pProperty, lastStep.m_Index);
-                     });
+  return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), false, [this, &func](void* pLeafObject, const xiiRTTI& leafType) {
+    auto& lastStep = m_PathSteps[m_PathSteps.GetCount() - 1];
+    func(pLeafObject, leafType, lastStep.m_pProperty, lastStep.m_Index);
+  });
 }
 
 void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& type, const xiiVariant& value) const

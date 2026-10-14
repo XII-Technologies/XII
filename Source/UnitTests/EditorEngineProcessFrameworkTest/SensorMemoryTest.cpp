@@ -68,8 +68,7 @@ namespace
       return false;
     const auto state = texture->GetResourceState();
     commands->Begin();
-    commands->UpdateTexture(texture, {}, xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), {size.width, size.height, 1}),
-                            xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(values.GetData()), values.GetCount() * sizeof(float)), stride, stride * size.height));
+    commands->UpdateTexture(texture, {}, xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), {size.width, size.height, 1}), xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(values.GetData()), values.GetCount() * sizeof(float)), stride, stride * size.height));
     xiiGALStateTransitionDescription transition;
     transition.m_pResource       = texture;
     transition.m_NewState        = state;
@@ -119,8 +118,7 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
 {
   auto* minimumCVar = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MinimumRenderScale");
   auto* maximumCVar = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MaximumRenderScale");
-  if (!XII_TEST_BOOL(minimumCVar != nullptr && maximumCVar != nullptr) ||
-      !XII_TEST_BOOL(minimumCVar->GetType() == xiiCVarType::Float && maximumCVar->GetType() == xiiCVarType::Float))
+  if (!XII_TEST_BOOL(minimumCVar != nullptr && maximumCVar != nullptr) || !XII_TEST_BOOL(minimumCVar->GetType() == xiiCVarType::Float && maximumCVar->GetType() == xiiCVarType::Float))
     return;
   auto&       minimum    = *static_cast<xiiCVarFloat*>(minimumCVar);
   auto&       maximum    = *static_cast<xiiCVarFloat*>(maximumCVar);

@@ -465,8 +465,7 @@ void xiiQtEventTrackWidget::mouseReleaseEvent(QMouseEvent* e)
     }
   }
 
-  if (e->button() == Qt::LeftButton &&
-      (m_State == EditState::DraggingPoints || m_State == EditState::ScaleLeftRight || m_State == EditState::MultiSelect))
+  if (e->button() == Qt::LeftButton && (m_State == EditState::DraggingPoints || m_State == EditState::ScaleLeftRight || m_State == EditState::MultiSelect))
   {
     m_State          = EditState::None;
     m_TotalPointDrag = QPointF();

@@ -187,8 +187,7 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
   if (!e->modifiers().testFlag(Qt::ShiftModifier))
     xiiSnapProvider::SnapScale(m_vScalingResult);
 
-  GetOwnerWindow()->SetPermanentStatusBarMsg(
-    xiiFmt("Scale: {}, {}, {}", xiiArgF(m_vScalingResult.x, 2), xiiArgF(m_vScalingResult.y, 2), xiiArgF(m_vScalingResult.z, 2)));
+  GetOwnerWindow()->SetPermanentStatusBarMsg(xiiFmt("Scale: {}, {}, {}", xiiArgF(m_vScalingResult.x, 2), xiiArgF(m_vScalingResult.y, 2), xiiArgF(m_vScalingResult.z, 2)));
 
   xiiGizmoEvent ev;
   ev.m_pGizmo = this;

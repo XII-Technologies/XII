@@ -252,8 +252,7 @@ xiiResult xiiPreprocessor::ProcessCmd(const TokenStream& Tokens, TokenStream& To
   if (m_IfdefActiveStack.PeekBack().m_ActiveState != IfDefActivity::IsActive)
   {
     // check that the following command is valid, even if it is ignored
-    if (Accept(Tokens, uiCurToken, "line", &uiAccepted) || Accept(Tokens, uiCurToken, "include", &uiAccepted) || Accept(Tokens, uiCurToken, "define") || Accept(Tokens, uiCurToken, "undef", &uiAccepted) || Accept(Tokens, uiCurToken, "error", &uiAccepted) ||
-        Accept(Tokens, uiCurToken, "warning", &uiAccepted) || Accept(Tokens, uiCurToken, "pragma"))
+    if (Accept(Tokens, uiCurToken, "line", &uiAccepted) || Accept(Tokens, uiCurToken, "include", &uiAccepted) || Accept(Tokens, uiCurToken, "define") || Accept(Tokens, uiCurToken, "undef", &uiAccepted) || Accept(Tokens, uiCurToken, "error", &uiAccepted) || Accept(Tokens, uiCurToken, "warning", &uiAccepted) || Accept(Tokens, uiCurToken, "pragma"))
       return XII_SUCCESS;
 
     if (m_PassThroughUnknownCmdCB.IsValid())

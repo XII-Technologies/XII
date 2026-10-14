@@ -43,8 +43,7 @@ namespace
           const xiiUInt32 first = (section.m_uiFirstPrimitive + original) * 3;
           for (xiiUInt32 rotation = 0; rotation < 3 && !found; ++rotation)
           {
-            if (triangle[0] == ReadIndex(buffer, first + rotation) && triangle[1] == ReadIndex(buffer, first + (rotation + 1) % 3) &&
-                triangle[2] == ReadIndex(buffer, first + (rotation + 2) % 3))
+            if (triangle[0] == ReadIndex(buffer, first + rotation) && triangle[1] == ReadIndex(buffer, first + (rotation + 1) % 3) && triangle[2] == ReadIndex(buffer, first + (rotation + 2) % 3))
             {
               seen[original] = 1;
               found          = true;
@@ -134,8 +133,7 @@ XII_CREATE_SIMPLE_TEST(Meshes, MeshletSections)
     xiiMeshletBuildRange invalid{12, 1};
     XII_TEST_BOOL(buffer.BuildMeshlets(xiiMakeArrayPtr(&invalid, 1)).Failed());
     auto verifyEmpty = [&]() {
-      XII_TEST_BOOL(buffer.m_Meshlets.IsEmpty() && buffer.m_MeshletVertexRemap.IsEmpty() &&
-                    buffer.m_MeshletPrimitiveIndices.IsEmpty() && buffer.m_MeshletMaterialIndices.IsEmpty() && buffer.m_DrawCommands.IsEmpty());
+      XII_TEST_BOOL(buffer.m_Meshlets.IsEmpty() && buffer.m_MeshletVertexRemap.IsEmpty() && buffer.m_MeshletPrimitiveIndices.IsEmpty() && buffer.m_MeshletMaterialIndices.IsEmpty() && buffer.m_DrawCommands.IsEmpty());
     };
     verifyEmpty();
     invalid = {xiiMath::MaxValue<xiiUInt32>(), xiiMath::MaxValue<xiiUInt32>()};

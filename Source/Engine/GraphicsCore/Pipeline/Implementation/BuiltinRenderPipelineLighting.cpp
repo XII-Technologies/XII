@@ -662,8 +662,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRDIEmissiveVisibility(xiiReSTIRD
   data.m_hEmissiveLightHeader = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
 
   data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
-  data.m_hReservoir             = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir,
-                                                      data.m_bUseHardwareRayTracing ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  data.m_hReservoir             = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, data.m_bUseHardwareRayTracing ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
 
   if (data.m_bUseHardwareRayTracing)
   {
@@ -678,8 +677,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRDIEmissiveVisibility(xiiReSTIRD
     if (lightingPasses.m_hRayTracingGeometryData.IsValid())
       data.m_hGeometryData = builder.ReadBuffer(lightingPasses.m_hRayTracingGeometryData, xiiGALResourceStateFlags::ShaderResource);
 
-    data.m_hShaderBindingTable = builder.ImportBuffer("ReSTIR DI Emissive Visibility Shader Binding Table", lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable,
-                                                      lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable->GetResourceState());
+    data.m_hShaderBindingTable = builder.ImportBuffer("ReSTIR DI Emissive Visibility Shader Binding Table", lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable, lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable->GetResourceState());
     data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
   }
 
@@ -894,18 +892,14 @@ void xiiBuiltinRenderPipelineRuntime::SetupIndirectLighting(xiiDeferredIndirectL
 
   auto& reflectionResources = m_Resources.m_LightingPrepPasses;
   XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before indirect lighting setup.");
-  data.m_hFallbackReflectionProbe = builder.ReadTexture(
-    builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()),
-    xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFallbackReflectionProbe = builder.ReadTexture(builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
 
   data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
   for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < reflectionResources.m_ReflectionProbeTextures.GetCount(); ++uiProbeIndex)
   {
     xiiStringBuilder sResourceName;
     sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
-    data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
-      builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()),
-      xiiGALResourceStateFlags::ShaderResource));
+    data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource));
   }
 
   xiiGALTextureCreationDescription description;

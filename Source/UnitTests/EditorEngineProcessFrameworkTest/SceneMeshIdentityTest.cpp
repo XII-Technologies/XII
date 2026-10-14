@@ -414,8 +414,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           const auto poseGeometry               = xiiGeometryResidencyManager::AddUploadPass(graph, poseFrame);
           const auto poseMaterials              = xiiMaterialManager::AddUploadPasses(graph);
           visibilityDescription.m_bAsyncCompute = true;
-          const auto poseVisibility             = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, poseFrame,
-                                                                                     context.GetHandle(), visibilityView, poseGeometry, visibilityDescription);
+          const auto poseVisibility             = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, poseFrame, context.GetHandle(), visibilityView, poseGeometry, visibilityDescription);
           const auto poseDepth                  = xiiGpuSceneRasterManager::AddDepthPrepass(graph, "Posed depth", poseVisibility, poseGeometry, poseMaterials, depthDescription);
           auto       poseVelocity               = graph.AddPass<Velocity>("Posed velocity", xiiGALCommandQueueFlags::Graphics, [](Velocity& data, xiiRenderGraphBuilder& builder) {
             xiiGALTextureCreationDescription target;
@@ -488,8 +487,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
       xiiCamera camera;
       camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
       camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3::MakeZero(), xiiVec3::MakeAxisZ());
-      const auto                          projection     = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(60), 1, 100, 0.1f,
-                                                                                                                       xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+      const auto                          projection     = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(60), 1, 100, 0.1f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
       const auto                          viewProjection = projection * camera.GetViewMatrix();
       const auto                          frustum        = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
       xiiGpuSceneGBufferRasterDescription raster;
@@ -513,7 +511,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         xiiMaterialResourceDescriptor materialDescription;
         materialDescription.m_AlphaMode   = alphaMode;
         materialDescription.m_BlendMode   = alphaMode == xiiMaterialAlphaMode::Blend ? xiiMaterialBlendMode::Translucent :
-          alphaMode == xiiMaterialAlphaMode::Mask                                    ? xiiMaterialBlendMode::Masked :
+            alphaMode == xiiMaterialAlphaMode::Mask                                  ? xiiMaterialBlendMode::Masked :
                                                                                        xiiMaterialBlendMode::Opaque;
         materialDescription.m_BaseColor.a = opacity;
         xiiStringBuilder materialName;

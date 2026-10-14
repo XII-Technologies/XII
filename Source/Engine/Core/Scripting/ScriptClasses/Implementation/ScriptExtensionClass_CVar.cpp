@@ -49,13 +49,12 @@ static xiiCVar* FindCVarByNameCached(xiiStringView sName)
     s_CachedCVars.Insert(sNameHashed, pCVar);
   }
 
-  xiiCVar::s_AllCVarEvents.AddEventHandler(
-    [&](const xiiCVarEvent& e) {
-      if (e.m_EventType == xiiCVarEvent::Type::ListOfVarsChanged)
-      {
-        s_CachedCVars.Clear();
-      }
-    });
+  xiiCVar::s_AllCVarEvents.AddEventHandler([&](const xiiCVarEvent& e) {
+    if (e.m_EventType == xiiCVarEvent::Type::ListOfVarsChanged)
+    {
+      s_CachedCVars.Clear();
+    }
+  });
 
   return pCVar;
 }

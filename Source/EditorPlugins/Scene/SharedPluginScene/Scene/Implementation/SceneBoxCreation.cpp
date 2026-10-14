@@ -12,8 +12,7 @@
 xiiStatus xiiCreateSceneBox(xiiObjectAccessorBase& accessor, const xiiBoundingBox& bounds, const xiiUuid& material, xiiUuid& out_object)
 {
   out_object = xiiUuid::MakeInvalid();
-  if (!bounds.IsValid() || !bounds.m_vMin.IsValid() || !bounds.m_vMax.IsValid() || !bounds.GetCenter().IsValid() || !bounds.GetExtents().IsValid() ||
-      bounds.GetExtents().x <= 0 || bounds.GetExtents().y <= 0 || bounds.GetExtents().z <= 0)
+  if (!bounds.IsValid() || !bounds.m_vMin.IsValid() || !bounds.m_vMax.IsValid() || !bounds.GetCenter().IsValid() || !bounds.GetExtents().IsValid() || bounds.GetExtents().x <= 0 || bounds.GetExtents().y <= 0 || bounds.GetExtents().z <= 0)
     return xiiStatus("A scene box requires finite, positive dimensions.");
 
   accessor.StartTransaction("Add Box");

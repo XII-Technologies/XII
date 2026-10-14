@@ -45,8 +45,7 @@ void xiiCylinderVisualizerAdapter::Update()
     xiiVariant value;
     pObjectAccessor->GetValue(m_pObject, pProp, value).AssertSuccess();
 
-    XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property '{0}' bound to xiiCylinderVisualizerAttribute 'radius'",
-                     pAttr->GetRadiusProperty());
+    XII_ASSERT_DEBUG(value.IsValid() && value.CanConvertTo<float>(), "Invalid property '{0}' bound to xiiCylinderVisualizerAttribute 'radius'", pAttr->GetRadiusProperty());
     m_fRadius = value.ConvertTo<float>();
   }
 

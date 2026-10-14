@@ -591,8 +591,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
       else if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
         auto pSpecificProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
-        xiiReflectionUtils::SetArrayPropertyValue(
-          pSpecificProp, object.m_pObject, change.m_Change.m_Index.ConvertTo<xiiUInt32>(), change.m_Change.m_Value);
+        xiiReflectionUtils::SetArrayPropertyValue(pSpecificProp, object.m_pObject, change.m_Change.m_Index.ConvertTo<xiiUInt32>(), change.m_Change.m_Value);
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Set)
       {

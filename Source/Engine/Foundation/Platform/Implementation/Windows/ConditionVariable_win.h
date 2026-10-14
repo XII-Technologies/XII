@@ -38,8 +38,7 @@ xiiConditionVariable::WaitResult xiiConditionVariable::UnlockWaitForSignalAndLoc
 
   // inside the lock
   --m_iLockCount;
-  DWORD result = SleepConditionVariableCS(reinterpret_cast<CONDITION_VARIABLE*>(&m_Data.m_ConditionVariable),
-                                          (CRITICAL_SECTION*)&m_Mutex.GetMutexHandle(), static_cast<DWORD>(timeout.GetMilliseconds()));
+  DWORD result = SleepConditionVariableCS(reinterpret_cast<CONDITION_VARIABLE*>(&m_Data.m_ConditionVariable), (CRITICAL_SECTION*)&m_Mutex.GetMutexHandle(), static_cast<DWORD>(timeout.GetMilliseconds()));
 
   if (result == WAIT_TIMEOUT)
   {

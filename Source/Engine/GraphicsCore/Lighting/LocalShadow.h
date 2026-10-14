@@ -69,12 +69,9 @@ class XII_GRAPHICSCORE_DLL xiiLocalShadowAtlasBuilder
 public:
   xiiLocalShadowAtlasBuilder() = delete;
 
-  static void Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
-                    xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics);
+  static void Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights, xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics);
 
   /// Camera-aware overload used by runtime lighting. Candidates are ranked by projected influence
   /// and physical intensity, with stable light IDs resolving ties deterministically.
-  static void Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
-                    const xiiVec3& vObserverPosition, xiiLocalShadowAtlasDataArray& out_shadowData,
-                    xiiLocalShadowAtlasStatistics& out_statistics);
+  static void Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights, const xiiVec3& vObserverPosition, xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics);
 };

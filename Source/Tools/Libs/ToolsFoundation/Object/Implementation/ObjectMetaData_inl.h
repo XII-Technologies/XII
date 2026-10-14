@@ -178,8 +178,7 @@ void xiiObjectMetaData<KEY, VALUE>::RestoreMetaDataFromAbstractGraph(const xiiAb
       {
         VALUE* pValue = &m_pMetaStorage->m_MetaData[guid];
 
-        xiiReflectionUtils::SetMemberPropertyValue(
-          static_cast<const xiiAbstractMemberProperty*>(pValue->GetDynamicRTTI()->FindPropertyByName(name)), pValue, pProp->m_Value);
+        xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pValue->GetDynamicRTTI()->FindPropertyByName(name)), pValue, pProp->m_Value);
       }
     }
   }

@@ -64,32 +64,31 @@ void xiiPlatformProfile::Clear()
 
 void xiiPlatformProfile::AddMissingConfigs()
 {
-  xiiRTTI::ForEachDerivedType<xiiProfileConfigData>(
-    [this](const xiiRTTI* pRtti) {
-      // find all types derived from xiiProfileConfigData
-      bool bHasTypeAlready = false;
+  xiiRTTI::ForEachDerivedType<xiiProfileConfigData>([this](const xiiRTTI* pRtti) {
+    // find all types derived from xiiProfileConfigData
+    bool bHasTypeAlready = false;
 
-      // check whether we already have an instance of this type
-      for (auto pType : m_Configs)
+    // check whether we already have an instance of this type
+    for (auto pType : m_Configs)
+    {
+      if (pType && pType->GetDynamicRTTI() == pRtti)
       {
-        if (pType && pType->GetDynamicRTTI() == pRtti)
-        {
-          bHasTypeAlready = true;
-          break;
-        }
+        bHasTypeAlready = true;
+        break;
       }
+    }
 
-      if (!bHasTypeAlready)
-      {
-        // if not, allocate one
-        xiiProfileConfigData* pObject = pRtti->GetAllocator()->Allocate<xiiProfileConfigData>();
-        XII_ASSERT_DEV(pObject != nullptr, "Invalid profile config");
-        xiiReflectionUtils::SetAllMemberPropertiesToDefault(pRtti, pObject);
+    if (!bHasTypeAlready)
+    {
+      // if not, allocate one
+      xiiProfileConfigData* pObject = pRtti->GetAllocator()->Allocate<xiiProfileConfigData>();
+      XII_ASSERT_DEV(pObject != nullptr, "Invalid profile config");
+      xiiReflectionUtils::SetAllMemberPropertiesToDefault(pRtti, pObject);
 
-        m_Configs.PushBack(pObject);
-      }
-    },
-    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+      m_Configs.PushBack(pObject);
+    }
+  },
+                                                    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 
   // in case unknown configs were loaded from disk, remove them
   m_Configs.RemoveAndSwap(nullptr);

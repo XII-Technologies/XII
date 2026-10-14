@@ -40,8 +40,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, EditsDuringAsyncSaveRemainDirty)
 {
   xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   output.AppendPath("DocumentAsyncSave");
-  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentAsyncSave", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentAsyncSave", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DocumentAsyncSave"));
   SaveTestManager manager;
@@ -103,8 +102,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, SaveNotificationEditsRemainDirty)
 {
   xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   output.AppendPath("DocumentSaveNotification");
-  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveNotification", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveNotification", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DocumentSaveNotification"));
   SaveTestManager  manager;
@@ -153,8 +151,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, ClosingDrainsQueuedSaveCallbacks)
 {
   xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   output.AppendPath("DocumentSaveQueue");
-  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveQueue", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveQueue", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DocumentSaveQueue"));
   SaveTestManager  manager;
@@ -219,8 +216,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, QueuedSaveResultsDescribeTheirOwnSna
 {
   xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   output.AppendPath("DocumentSaveResults");
-  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveResults", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveResults", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DocumentSaveResults"));
   SaveTestManager  manager;
@@ -262,8 +258,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, StateChangesWhileWaitingAreRevalidat
 {
   xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   output.AppendPath("DocumentSaveWaitValidation");
-  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveWaitValidation", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveWaitValidation", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DocumentSaveWaitValidation"));
   SaveTestManager  manager;

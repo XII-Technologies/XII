@@ -17,5 +17,4 @@ XII_SHAREDPLUGINSCENE_DLL xiiStatus xiiCreateDefaultScene(xiiObjectAccessorBase&
 /// Authors a box using the shipped unit-box mesh and native mesh component, with its dimensions
 /// represented by the object's local transform. Failure cancels the transaction and clears the
 /// returned identity. The optional material overrides slot zero. Existing scene content is retained.
-XII_SHAREDPLUGINSCENE_DLL xiiStatus xiiCreateSceneBox(xiiObjectAccessorBase& ref_accessor, const xiiBoundingBox& bounds,
-                                                      const xiiUuid& material, xiiUuid& out_object);
+XII_SHAREDPLUGINSCENE_DLL xiiStatus xiiCreateSceneBox(xiiObjectAccessorBase& ref_accessor, const xiiBoundingBox& bounds, const xiiUuid& material, xiiUuid& out_object);

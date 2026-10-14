@@ -99,10 +99,7 @@ xiiResult xiiSceneShapeIconPass::Build(xiiRenderPipelinePassContext& context)
   const auto* output     = graph.GetTextureDescription(color);
   const auto* sceneDepth = graph.GetTextureDescription(depth);
   const auto& viewport   = context.m_pView->GetViewport();
-  if (!output || !sceneDepth || output->m_Type != xiiGALResourceDimension::Texture2D || sceneDepth->m_Type != xiiGALResourceDimension::Texture2D ||
-      !output->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !sceneDepth->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiGALResourceFormat::IsDepthFormat(sceneDepth->m_Format) ||
-      output->m_uiSampleCount != 1 || sceneDepth->m_uiSampleCount != 1 || viewport.x < 0 || viewport.y < 0 ||
-      viewport.x + viewport.width > output->m_Size.width || viewport.y + viewport.height > output->m_Size.height)
+  if (!output || !sceneDepth || output->m_Type != xiiGALResourceDimension::Texture2D || sceneDepth->m_Type != xiiGALResourceDimension::Texture2D || !output->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !sceneDepth->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiGALResourceFormat::IsDepthFormat(sceneDepth->m_Format) || output->m_uiSampleCount != 1 || sceneDepth->m_uiSampleCount != 1 || viewport.x < 0 || viewport.y < 0 || viewport.x + viewport.width > output->m_Size.width || viewport.y + viewport.height > output->m_Size.height)
   {
     m_Icons.Clear();
     return XII_FAILURE;

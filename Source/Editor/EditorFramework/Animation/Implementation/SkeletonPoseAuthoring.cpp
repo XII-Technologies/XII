@@ -22,18 +22,14 @@ namespace
     rotation.SetColumn(0, rotation.GetColumn(0) / scale.x);
     rotation.SetColumn(1, rotation.GetColumn(1) / scale.y);
     rotation.SetColumn(2, rotation.GetColumn(2) / scale.z);
-    if (!xiiMath::IsEqual(rotation.GetDeterminant(), 1.0f, 0.001f) ||
-        !xiiMath::IsZero(rotation.GetColumn(0).Dot(rotation.GetColumn(1)), 0.001f) ||
-        !xiiMath::IsZero(rotation.GetColumn(0).Dot(rotation.GetColumn(2)), 0.001f) ||
-        !xiiMath::IsZero(rotation.GetColumn(1).Dot(rotation.GetColumn(2)), 0.001f))
+    if (!xiiMath::IsEqual(rotation.GetDeterminant(), 1.0f, 0.001f) || !xiiMath::IsZero(rotation.GetColumn(0).Dot(rotation.GetColumn(1)), 0.001f) || !xiiMath::IsZero(rotation.GetColumn(0).Dot(rotation.GetColumn(2)), 0.001f) || !xiiMath::IsZero(rotation.GetColumn(1).Dot(rotation.GetColumn(2)), 0.001f))
       return XII_FAILURE;
     out_pose = xiiTransform::Make(matrix.GetTranslationVector(), xiiQuat::MakeFromMat3(rotation), scale);
     return out_pose.IsValid() ? XII_SUCCESS : XII_FAILURE;
   }
 } // namespace
 
-xiiResult xiiResolveSkeletonPoseForAuthoring(xiiArrayPtr<const xiiExposedBone>      metadata,
-                                             const xiiMap<xiiString, xiiTransform>& overrides, xiiDynamicArray<xiiExposedBone>& out_bones)
+xiiResult xiiResolveSkeletonPoseForAuthoring(xiiArrayPtr<const xiiExposedBone> metadata, const xiiMap<xiiString, xiiTransform>& overrides, xiiDynamicArray<xiiExposedBone>& out_bones)
 {
   out_bones.Clear();
   xiiTransform root    = xiiTransform::MakeIdentity();
@@ -72,8 +68,7 @@ xiiResult xiiResolveSkeletonPoseForAuthoring(xiiArrayPtr<const xiiExposedBone>  
   return XII_SUCCESS;
 }
 
-xiiStatus xiiApplySkeletonPoseForAuthoring(xiiObjectAccessorBase& accessor, const xiiDocumentObject* pComponent,
-                                           const xiiMap<xiiString, xiiTransform>& transforms)
+xiiStatus xiiApplySkeletonPoseForAuthoring(xiiObjectAccessorBase& accessor, const xiiDocumentObject* pComponent, const xiiMap<xiiString, xiiTransform>& transforms)
 {
   if (pComponent == nullptr)
     return xiiStatus("Cannot apply a pose without a component.");

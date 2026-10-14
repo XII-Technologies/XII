@@ -126,8 +126,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CopyProperties)
   XII_TEST_INT(complete.m_iInt16, 42);
 
   xiiIntegerStruct filtered;
-  xiiToolsSerializationUtils::CopyProperties(object, &manager, &filtered, xiiGetStaticRTTI<xiiIntegerStruct>(),
-                                             [](const xiiAbstractProperty* property) { return xiiStringView(property->GetPropertyName()) != "Int16"; });
+  xiiToolsSerializationUtils::CopyProperties(object, &manager, &filtered, xiiGetStaticRTTI<xiiIntegerStruct>(), [](const xiiAbstractProperty* property) { return xiiStringView(property->GetPropertyName()) != "Int16"; });
   XII_TEST_INT(filtered.GetInt8(), 7);
   XII_TEST_INT(filtered.m_iInt16, 1);
 }

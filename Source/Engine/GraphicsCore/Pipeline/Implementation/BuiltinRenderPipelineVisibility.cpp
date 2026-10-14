@@ -265,8 +265,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLODSelect(const xiiLODSelectData& d
       return;
     }
 
-    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hPreferredLOD), 0U,
-                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_PreferredLOD.GetData()), data.m_PreferredLOD.GetCount() * sizeof(xiiUInt32)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hPreferredLOD), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_PreferredLOD.GetData()), data.m_PreferredLOD.GetCount() * sizeof(xiiUInt32)));
     {
       xiiGALMapHelper<xiiLODSelectionConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *pConstants = data.m_Constants;
@@ -372,8 +371,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteInstanceUpdate(const xiiInstanceUpd
       return;
     }
 
-    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hInstanceSource), 0U,
-                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_InstanceSource.GetData()), data.m_InstanceSource.GetCount() * sizeof(xiiInstanceUpdateSource)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hInstanceSource), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_InstanceSource.GetData()), data.m_InstanceSource.GetCount() * sizeof(xiiInstanceUpdateSource)));
     {
       xiiGALMapHelper<xiiInstanceUpdateConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       *pConstants = data.m_Constants;
@@ -504,8 +502,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDrawBuild(const xiiDrawBuildData& d
     xiiDynamicArray<xiiExtractedDrawCommand> zeroCommands;
     zeroCommands.SetCount(xiiMath::Max(1U, data.m_uiInstanceCount));
     xiiMemoryUtils::ZeroFill(zeroCommands.GetData(), zeroCommands.GetCount());
-    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hDrawCommands), 0U,
-                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hDrawCommands), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
 
     if (data.m_uiInstanceCount == 0U)
     {
@@ -515,8 +512,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteDrawBuild(const xiiDrawBuildData& d
 
     if (data.m_bUploadSource)
     {
-      UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hSourceCommands), 0U,
-                                  xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+      UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hSourceCommands), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SourceCommands.GetData()), data.m_SourceCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
     }
     {
       xiiGALMapHelper<xiiDrawCommandBuildConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -588,12 +584,10 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteShadowCasterBuild(const xiiShadowCa
     xiiDynamicArray<xiiExtractedDrawCommand> zeroCommands;
     zeroCommands.SetCount(xiiMath::Max(1U, data.m_uiInstanceCount) * 5U);
     xiiMemoryUtils::ZeroFill(zeroCommands.GetData(), zeroCommands.GetCount());
-    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hShadowCasterCommands), 0U,
-                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hShadowCasterCommands), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCommands.GetData()), zeroCommands.GetCount() * sizeof(xiiExtractedDrawCommand)));
 
     xiiUInt32 zeroCounts[5] = {};
-    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hShadowCasterCounts), 0U,
-                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCounts), sizeof(zeroCounts)));
+    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hShadowCasterCounts), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroCounts), sizeof(zeroCounts)));
 
     if (data.m_uiInstanceCount == 0U)
     {

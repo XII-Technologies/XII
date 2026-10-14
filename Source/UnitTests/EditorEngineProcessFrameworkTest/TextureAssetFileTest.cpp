@@ -55,8 +55,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureAssetFile)
     }
     if (kind == 0)
     {
-      if (!XII_TEST_RESULT(image.SaveTo(":imgout/TextureAssetSource.dds")) ||
-          !XII_TEST_RESULT(xiiFileSystem::ResolvePath(":imgout/TextureAssetSource.dds", &inputFile, nullptr)))
+      if (!XII_TEST_RESULT(image.SaveTo(":imgout/TextureAssetSource.dds")) || !XII_TEST_RESULT(xiiFileSystem::ResolvePath(":imgout/TextureAssetSource.dds", &inputFile, nullptr)))
         return;
     }
     xiiDefaultMemoryStreamStorage storage;
@@ -262,8 +261,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureAssetFile)
     for (auto& value : mask.GetBlobPtr<xiiUInt8>())
       value = 192;
     xiiStringBuilder maskPath;
-    if (!XII_TEST_RESULT(mask.SaveTo(":imgout/MetallicMask.dds")) ||
-        !XII_TEST_RESULT(xiiFileSystem::ResolvePath(":imgout/MetallicMask.dds", &maskPath, nullptr)))
+    if (!XII_TEST_RESULT(mask.SaveTo(":imgout/MetallicMask.dds")) || !XII_TEST_RESULT(xiiFileSystem::ResolvePath(":imgout/MetallicMask.dds", &maskPath, nullptr)))
       return;
     for (xiiUInt32 mapping = 0; mapping < 3; ++mapping)
     {
@@ -282,8 +280,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, TextureAssetFile)
       XII_TEST_INT(pixel[1], mapping == 2 ? 255 : 32);
       XII_TEST_INT(pixel[2], mapping == 1 ? 255 : 192);
     }
-    for (const char* invalid : {"-minFilter 3", "-minFilter 0", "-magFilter 257", "-mipFilter 4", "-maxAnisotropy 2",
-                                "-minLOD -1", "-minLOD 3 -maxLOD 2", "-maxLOD 1e99", "-minLOD 1garbage", "-magFilter junk", "-maxAnisotropy -1"})
+    for (const char* invalid : {"-minFilter 3", "-minFilter 0", "-magFilter 257", "-mipFilter 4", "-maxAnisotropy 2", "-minLOD -1", "-minLOD 3 -maxLOD 2", "-maxLOD 1e99", "-minLOD 1garbage", "-magFilter junk", "-maxAnisotropy -1"})
       if (!convert(invalid, false, output))
         return;
   }

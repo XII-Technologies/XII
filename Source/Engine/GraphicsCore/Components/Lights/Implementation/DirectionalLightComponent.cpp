@@ -95,9 +95,9 @@ void xiiDirectionalLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDat
   pRenderData->m_bCastShadows                 = m_bCastShadows;
   // Store the direction in which light travels, consistently with spot lights
   // and directional shadow cameras. Shaders negate it to obtain the direction to the sun.
-  pRenderData->m_vDirection                   = GetOwner()->GetGlobalRotation() * xiiVec3::MakeAxisX();
-  pRenderData->m_fRadius                      = xiiMath::Sin(m_SourceAngle * 0.5f); // This is interpreted as the sin(halfangle) of the emitter disc.
-  pRenderData->m_uiSortingKey                 = GetUniqueIdForRendering();
+  pRenderData->m_vDirection   = GetOwner()->GetGlobalRotation() * xiiVec3::MakeAxisX();
+  pRenderData->m_fRadius      = xiiMath::Sin(m_SourceAngle * 0.5f); // This is interpreted as the sin(halfangle) of the emitter disc.
+  pRenderData->m_uiSortingKey = GetUniqueIdForRendering();
 
   xiiEnum<xiiRenderData::Caching> caching = m_bCastShadows ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never;
 

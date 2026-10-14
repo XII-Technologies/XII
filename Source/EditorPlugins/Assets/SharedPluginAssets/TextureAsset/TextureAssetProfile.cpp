@@ -7,8 +7,7 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexture2DResolution, 2)
-  XII_ENUM_CONSTANTS(xiiTexture2DResolution::Fixed64x64, xiiTexture2DResolution::Fixed128x128, xiiTexture2DResolution::Fixed256x256,
-    xiiTexture2DResolution::Fixed512x512, xiiTexture2DResolution::Fixed1024x1024, xiiTexture2DResolution::Fixed2048x2048)
+  XII_ENUM_CONSTANTS(xiiTexture2DResolution::Fixed64x64, xiiTexture2DResolution::Fixed128x128, xiiTexture2DResolution::Fixed256x256, xiiTexture2DResolution::Fixed512x512, xiiTexture2DResolution::Fixed1024x1024, xiiTexture2DResolution::Fixed2048x2048)
   XII_ENUM_CONSTANTS(xiiTexture2DResolution::ProfileResolution1, xiiTexture2DResolution::ProfileResolution2)
 XII_END_STATIC_REFLECTED_ENUM;
 

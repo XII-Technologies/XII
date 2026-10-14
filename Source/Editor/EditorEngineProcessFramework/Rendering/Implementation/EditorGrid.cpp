@@ -15,8 +15,7 @@ xiiResult xiiEditorGrid::Build(const xiiView& view, float fSpacing, const xiiTra
     return XII_SUCCESS;
   const auto* camera   = view.GetCamera();
   const auto& viewport = view.GetViewport();
-  if (!camera || camera->GetCameraMode() == xiiCameraMode::None ||
-      !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0)
+  if (!camera || camera->GetCameraMode() == xiiCameraMode::None || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0)
     return XII_FAILURE;
 
   xiiVec3    center   = transform.m_vPosition;
@@ -36,8 +35,7 @@ xiiResult xiiEditorGrid::Build(const xiiView& view, float fSpacing, const xiiTra
     if (!xiiMath::IsFinite(halfWidth) || !xiiMath::IsFinite(halfHeight) || halfWidth <= 0 || halfHeight <= 0 || !xiiMath::IsFinite(depth))
       return XII_FAILURE;
     // Compute in double precision so tiny snap steps cannot overflow an integer density multiplier.
-    const double minimumSpacing = xiiMath::Max(xiiMath::Max(20.0 * halfWidth / viewport.width, 20.0 * halfHeight / viewport.height),
-                                               xiiMath::Max(halfWidth, halfHeight) / 1024.0);
+    const double minimumSpacing = xiiMath::Max(xiiMath::Max(20.0 * halfWidth / viewport.width, 20.0 * halfHeight / viewport.height), xiiMath::Max(halfWidth, halfHeight) / 1024.0);
     while (spacing < minimumSpacing)
       spacing *= 10.0;
     tangent1                     = camera->GetCenterDirRight();
@@ -56,12 +54,9 @@ xiiResult xiiEditorGrid::Build(const xiiView& view, float fSpacing, const xiiTra
     const auto cameraPosition = camera->GetCenterPosition();
     const auto forward        = camera->GetCenterDirForwards();
     for (xiiUInt32 axis = 0; axis < 3; ++axis)
-      center.GetData()[axis] = static_cast<float>(static_cast<double>(cameraPosition.GetData()[axis]) + forward.GetData()[axis] * depth -
-                                                  tangent1.GetData()[axis] * position1 - tangent2.GetData()[axis] * position2);
+      center.GetData()[axis] = static_cast<float>(static_cast<double>(cameraPosition.GetData()[axis]) + forward.GetData()[axis] * depth - tangent1.GetData()[axis] * position1 - tangent2.GetData()[axis] * position2);
   }
-  if (!center.IsValid() || !tangent1.IsValid() || !tangent2.IsValid() || !xiiMath::IsFinite(spacing) || spacing > xiiMath::MaxValue<float>() ||
-      !xiiMath::IsFinite(first1) || !xiiMath::IsFinite(last1) || !xiiMath::IsFinite(first2) || !xiiMath::IsFinite(last2) ||
-      xiiMath::Abs(first1) > 1.0e15 || xiiMath::Abs(last1) > 1.0e15 || xiiMath::Abs(first2) > 1.0e15 || xiiMath::Abs(last2) > 1.0e15)
+  if (!center.IsValid() || !tangent1.IsValid() || !tangent2.IsValid() || !xiiMath::IsFinite(spacing) || spacing > xiiMath::MaxValue<float>() || !xiiMath::IsFinite(first1) || !xiiMath::IsFinite(last1) || !xiiMath::IsFinite(first2) || !xiiMath::IsFinite(last2) || xiiMath::Abs(first1) > 1.0e15 || xiiMath::Abs(last1) > 1.0e15 || xiiMath::Abs(first2) > 1.0e15 || xiiMath::Abs(last2) > 1.0e15)
     return XII_FAILURE;
   if (xiiMath::Max(xiiMath::Max(xiiMath::Abs(first1), xiiMath::Abs(last1)), xiiMath::Max(xiiMath::Abs(first2), xiiMath::Abs(last2))) * spacing > xiiMath::MaxValue<float>() * 0.5)
     return XII_FAILURE;
@@ -86,8 +81,7 @@ xiiResult xiiEditorGrid::Build(const xiiView& view, float fSpacing, const xiiTra
     {
       const xiiColor color    = i == 0 ? centerColor : (i % 10 == 0 ? majorColor : minorColor);
       const xiiVec3  position = center + tangent * static_cast<float>(i * spacing);
-      m_Lines.PushBack(xiiDebugRendererLine(position + perpendicular * static_cast<float>(perpendicularStart * spacing),
-                                            position + perpendicular * static_cast<float>(perpendicularEnd * spacing), color));
+      m_Lines.PushBack(xiiDebugRendererLine(position + perpendicular * static_cast<float>(perpendicularStart * spacing), position + perpendicular * static_cast<float>(perpendicularEnd * spacing), color));
     }
   };
   m_Lines.Reserve(static_cast<xiiUInt32>(end1 - start1 + end2 - start2 + 2));

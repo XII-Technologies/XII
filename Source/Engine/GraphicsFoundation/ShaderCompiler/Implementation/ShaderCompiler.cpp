@@ -334,11 +334,10 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
   // Try out every compiler that we can find.
   xiiHybridArray<const xiiRTTI*, 2U> compilers;
-  xiiRTTI::ForEachDerivedType<xiiGALShaderProgramCompiler>(
-    [&](const xiiRTTI* pRtti) -> void {
-      compilers.PushBack(pRtti);
-    },
-    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+  xiiRTTI::ForEachDerivedType<xiiGALShaderProgramCompiler>([&](const xiiRTTI* pRtti) -> void {
+    compilers.PushBack(pRtti);
+  },
+                                                           xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 
   xiiResult result = XII_SUCCESS;
   for (auto pCompilerRtti : compilers)

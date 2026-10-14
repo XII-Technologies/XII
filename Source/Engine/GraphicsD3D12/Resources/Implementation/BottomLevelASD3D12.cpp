@@ -80,10 +80,9 @@ xiiResult xiiGALBottomLevelASD3D12::InitPlatform()
       return XII_FAILURE;
     }
 
-    XII_SCOPE_EXIT(
-      {
-        XII_GAL_D3D12_RELEASE(pD3D12Device5);
-      });
+    XII_SCOPE_EXIT({
+      XII_GAL_D3D12_RELEASE(pD3D12Device5);
+    });
 
     std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> d3d12Geometries;
     d3d12Geometries.reserve(m_Description.m_Triangles.GetCount() + m_Description.m_BoundingBoxes.GetCount());

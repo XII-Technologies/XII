@@ -687,9 +687,7 @@ xiiUInt32 xiiVirtualShadowMapManager::InvalidateRegion(xiiUInt32 uiLightId, xiiU
   {
     const auto& slot = s_pState->m_Slots[uiPhysicalPage];
     const auto& page = slot.m_Mapping.m_Page;
-    if (slot.m_bAllocated && page.m_uiLightId == uiStableLightId && page.m_uiMipLevel == uiMipLevel &&
-        page.m_uiPageX >= pageRegion.x && static_cast<xiiUInt64>(page.m_uiPageX) < uiMaxPageX &&
-        page.m_uiPageY >= pageRegion.y && static_cast<xiiUInt64>(page.m_uiPageY) < uiMaxPageY && InvalidateSlot(*s_pState, uiPhysicalPage))
+    if (slot.m_bAllocated && page.m_uiLightId == uiStableLightId && page.m_uiMipLevel == uiMipLevel && page.m_uiPageX >= pageRegion.x && static_cast<xiiUInt64>(page.m_uiPageX) < uiMaxPageX && page.m_uiPageY >= pageRegion.y && static_cast<xiiUInt64>(page.m_uiPageY) < uiMaxPageY && InvalidateSlot(*s_pState, uiPhysicalPage))
       ++uiInvalidated;
   }
   return uiInvalidated;
@@ -771,13 +769,11 @@ bool xiiVirtualShadowMapManager::GetPhysicalPageViewport(xiiUInt32 uiPhysicalPag
 
   const xiiUInt32 uiPageX = uiPhysicalPage % s_pState->m_uiPhysicalPagesPerRow;
   const xiiUInt32 uiPageY = uiPhysicalPage / s_pState->m_uiPhysicalPagesPerRow;
-  out_viewport            = xiiRectU32(uiPageX * s_pState->m_Settings.m_uiPageSize, uiPageY * s_pState->m_Settings.m_uiPageSize,
-                                       s_pState->m_Settings.m_uiPageSize, s_pState->m_Settings.m_uiPageSize);
+  out_viewport            = xiiRectU32(uiPageX * s_pState->m_Settings.m_uiPageSize, uiPageY * s_pState->m_Settings.m_uiPageSize, s_pState->m_Settings.m_uiPageSize, s_pState->m_Settings.m_uiPageSize);
   return true;
 }
 
-bool xiiVirtualShadowMapManager::BuildPageViewProjection(const xiiMat4& cascadeViewProjection, const xiiVirtualShadowPageId& page,
-                                                         xiiUInt32 uiVirtualResolution, xiiUInt32 uiPageSize, xiiMat4& out_pageViewProjection)
+bool xiiVirtualShadowMapManager::BuildPageViewProjection(const xiiMat4& cascadeViewProjection, const xiiVirtualShadowPageId& page, xiiUInt32 uiVirtualResolution, xiiUInt32 uiPageSize, xiiMat4& out_pageViewProjection)
 {
   if (!page.IsValid() || uiVirtualResolution == 0U || uiPageSize == 0U || uiVirtualResolution % uiPageSize != 0U)
     return false;
@@ -802,19 +798,10 @@ bool xiiVirtualShadowMapManager::BuildPageViewProjection(const xiiMat4& cascadeV
   return out_pageViewProjection.IsValid();
 }
 
-xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterPasses(xiiRenderGraph& graph, const UploadHandles& upload,
-                                                                                      const xiiGpuVisibilityOutputs&                    visibility,
-                                                                                      const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                                                      const xiiMaterialGpuStorage::UploadHandles&       materials,
-                                                                                      xiiArrayPtr<const xiiMat4>                        cascadeViewProjections,
-                                                                                      xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset,
-                                                                                      xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY)
+xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterPasses(xiiRenderGraph& graph, const UploadHandles& upload, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset, xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY)
 {
   UploadHandles result = upload;
-  if (!IsInitialized() || !xiiGpuShadowRasterManager::IsSupported() || !result.m_hPhysicalAtlas.IsValid() || !result.m_hVirtualPageTable.IsValid() || cascadeViewProjections.IsEmpty() ||
-      !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() || !visibility.m_hVisibleMeshletCount.IsValid() ||
-      !visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || !geometry.m_hGeometryMetadata.IsValid() ||
-      !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || uiVertexStride == 0U || uiMeshDispatchGroupCountX == 0U || uiMeshDispatchGroupCountY == 0U)
+  if (!IsInitialized() || !xiiGpuShadowRasterManager::IsSupported() || !result.m_hPhysicalAtlas.IsValid() || !result.m_hVirtualPageTable.IsValid() || cascadeViewProjections.IsEmpty() || !visibility.m_hSceneInstances.IsValid() || !visibility.m_hVisibleMeshlets.IsValid() || !visibility.m_hVisibleMeshletCount.IsValid() || !visibility.m_hIndirectCommands.IsValid() || !visibility.m_hIndirectCommandCount.IsValid() || !geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || uiVertexStride == 0U || uiMeshDispatchGroupCountX == 0U || uiMeshDispatchGroupCountY == 0U)
     return result;
 
   struct RenderedPage
@@ -835,9 +822,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterP
       continue;
 
     const auto& slot = s_pState->m_Slots[dirtyPage.m_uiPhysicalPage];
-    if (!slot.m_bAllocated || !slot.m_Mapping.m_bNeedsRendering ||
-        slot.m_Mapping.m_Page.m_uiLightId != (uiDirectionalLightId & s_uiMaximumLightId) ||
-        slot.m_Mapping.m_Page.m_uiMipLevel >= cascadeViewProjections.GetCount())
+    if (!slot.m_bAllocated || !slot.m_Mapping.m_bNeedsRendering || slot.m_Mapping.m_Page.m_uiLightId != (uiDirectionalLightId & s_uiMaximumLightId) || slot.m_Mapping.m_Page.m_uiMipLevel >= cascadeViewProjections.GetCount())
       continue;
 
     rasterCandidates.PushBack(dirtyPage.m_uiPhysicalPage);
@@ -869,8 +854,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterP
     const auto& mapping = s_pState->m_Slots[uiPhysicalPage].m_Mapping;
 
     xiiMat4 pageViewProjection;
-    if (!BuildPageViewProjection(cascadeViewProjections[mapping.m_Page.m_uiMipLevel], mapping.m_Page,
-                                 settings.m_uiVirtualResolution, settings.m_uiPageSize, pageViewProjection))
+    if (!BuildPageViewProjection(cascadeViewProjections[mapping.m_Page.m_uiMipLevel], mapping.m_Page, settings.m_uiVirtualResolution, settings.m_uiPageSize, pageViewProjection))
       continue;
 
     xiiRectU32 viewport;
@@ -916,27 +900,21 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddRasterP
     xiiDynamicArray<RenderedPage> m_RenderedPages;
   };
 
-  auto completionPass = graph.AddPass<CompletionPassData>(
-    "Virtual Shadow Page Completion", xiiGALCommandQueueFlags::Graphics,
-    [hPhysicalAtlas = result.m_hPhysicalAtlas, hVirtualPageTable = result.m_hVirtualPageTable](CompletionPassData& data, xiiRenderGraphBuilder& builder) {
+  auto completionPass                   = graph.AddPass<CompletionPassData>("Virtual Shadow Page Completion", xiiGALCommandQueueFlags::Graphics, [hPhysicalAtlas = result.m_hPhysicalAtlas, hVirtualPageTable = result.m_hVirtualPageTable](CompletionPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hPhysicalAtlas    = builder.ReadTexture(hPhysicalAtlas, xiiGALResourceStateFlags::ShaderResource);
       data.m_hVirtualPageTable = builder.WriteBuffer(hVirtualPageTable, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(true);
-      builder.SetPassAllowMerge(false);
-    },
-    [](const CompletionPassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [](const CompletionPassData& data, xiiRenderGraphPassContext& context) {
       for (const RenderedPage& renderedPage : data.m_RenderedPages)
       {
         xiiVirtualShadowPageMapping currentMapping;
         if (xiiVirtualShadowMapManager::TryGetMapping(renderedPage.m_Page, currentMapping) && currentMapping.m_uiPhysicalPage == renderedPage.m_uiPhysicalPage)
         {
-          context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hVirtualPageTable), renderedPage.m_uiRecordByteOffset,
-                                                xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&renderedPage.m_CleanRecord), sizeof(renderedPage.m_CleanRecord)));
+          context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hVirtualPageTable), renderedPage.m_uiRecordByteOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&renderedPage.m_CleanRecord), sizeof(renderedPage.m_CleanRecord)));
           xiiVirtualShadowMapManager::MarkPageRendered(renderedPage.m_uiPhysicalPage);
         }
-      }
-    });
+      } });
   completionPass.first->m_RenderedPages = std::move(renderedPages);
   result.m_hPhysicalAtlas               = completionPass.first->m_hPhysicalAtlas;
   result.m_hVirtualPageTable            = completionPass.first->m_hVirtualPageTable;
@@ -968,9 +946,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
     xiiUInt32                                m_uiVirtualTableByteOffset = 0U;
   };
 
-  auto pass = graph.AddPass<UploadPassData>(
-    "Virtual Shadow Page Table Upload", xiiGALCommandQueueFlags::Transfer,
-    [](UploadPassData& data, xiiRenderGraphBuilder& builder) {
+  auto pass = graph.AddPass<UploadPassData>("Virtual Shadow Page Table Upload", xiiGALCommandQueueFlags::Transfer, [](UploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hPhysicalPageTable = builder.ImportBuffer(xiiRGBlackboardKeys::k_VirtualShadowPhysicalPageTable, s_pState->m_pPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
       data.m_hPhysicalPageTable = builder.WriteBuffer(data.m_hPhysicalPageTable, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hPhysicalPageTable, xiiGALResourceStateFlags::ShaderResource);
@@ -979,17 +955,14 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
       builder.ExportBuffer(data.m_hVirtualPageTable, xiiGALResourceStateFlags::ShaderResource);
       data.m_hPhysicalAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_VirtualShadowAtlas, s_pState->m_pPhysicalAtlas, s_pState->m_pPhysicalAtlas->GetResourceState());
       builder.SetPassSideEffects(true);
-      builder.SetPassAllowMerge(false);
-    },
-    [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd = context.GetCommandList();
       for (const Upload& upload : data.m_PhysicalUploads)
         cmd.UpdateBuffer(context.GetBuffer(data.m_hPhysicalPageTable), upload.m_uiByteOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
 
       if (!data.m_VirtualTable.IsEmpty())
       {
-        cmd.UpdateBuffer(context.GetBuffer(data.m_hVirtualPageTable), data.m_uiVirtualTableByteOffset,
-                         xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_VirtualTable.GetData()), data.m_VirtualTable.GetCount() * sizeof(xiiGpuVirtualShadowPage)));
+        cmd.UpdateBuffer(context.GetBuffer(data.m_hVirtualPageTable), data.m_uiVirtualTableByteOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_VirtualTable.GetData()), data.m_VirtualTable.GetCount() * sizeof(xiiGpuVirtualShadowPage)));
       }
 
       for (const Upload& upload : data.m_PhysicalUploads)
@@ -1001,9 +974,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
         const xiiUInt32 uiFlags = slot.m_bAllocated ? (1U | (slot.m_Mapping.m_bNeedsRendering ? 2U : 0U) | (slot.m_Mapping.m_bPinned ? 4U : 0U)) : 0U;
         if (upload.m_Record.m_uiVirtualKeyLow == static_cast<xiiUInt32>(uiKey) && upload.m_Record.m_uiVirtualKeyHigh == static_cast<xiiUInt32>(uiKey >> 32U) && upload.m_Record.m_uiFlags == uiFlags)
           slot.m_uiDirtyFrameMask &= ~upload.m_uiFrameBit;
-      }
-    },
-    true);
+      } }, true);
 
   const xiiUInt32 uiFrameSlice     = static_cast<xiiUInt32>(uiFrameIndex % s_pState->m_Settings.m_uiFramesInFlight);
   const xiiUInt64 uiFrameBit       = xiiUInt64(1) << uiFrameSlice;
@@ -1065,10 +1036,7 @@ xiiVirtualShadowMapManager::UploadHandles xiiVirtualShadowMapManager::AddUploadP
   return result;
 }
 
-void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth,
-                                                   xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight,
-                                                   const xiiMat4& inverseViewProjection, float fNearPlane,
-                                                   xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex)
+void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth, xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight, const xiiMat4& inverseViewProjection, float fNearPlane, xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex)
 {
   if (!IsInitialized() || !hSceneDepth.IsValid() || !hCascadeConstants.IsValid() || uiWidth == 0U || uiHeight == 0U)
     return;
@@ -1107,11 +1075,9 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
     bool                        m_bClear                = false;
   };
 
-  const bool bClear                = s_pState->m_uiFeedbackClearFrame != uiFrameIndex;
-  s_pState->m_uiFeedbackClearFrame = uiFrameIndex;
-  auto feedbackPass                = graph.AddPass<FeedbackPassData>(
-    "Virtual Shadow Feedback", xiiGALCommandQueueFlags::Compute,
-    [hSceneDepth, hCascadeConstants](FeedbackPassData& data, xiiRenderGraphBuilder& builder) {
+  const bool bClear                           = s_pState->m_uiFeedbackClearFrame != uiFrameIndex;
+  s_pState->m_uiFeedbackClearFrame            = uiFrameIndex;
+  auto feedbackPass                           = graph.AddPass<FeedbackPassData>("Virtual Shadow Feedback", xiiGALCommandQueueFlags::Compute, [hSceneDepth, hCascadeConstants](FeedbackPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hSceneDepth       = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::ShaderResource);
       data.m_hCascadeConstants = builder.ReadBuffer(hCascadeConstants, xiiGALResourceStateFlags::ConstantBuffer);
       data.m_hFeedback         = builder.ImportBuffer("Virtual Shadow Feedback", s_pState->m_pFeedbackBuffer, s_pState->m_pFeedbackBuffer->GetResourceState());
@@ -1122,9 +1088,7 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
       constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
       constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       data.m_hConstants                     = builder.WriteBuffer("xiiVirtualShadowFeedbackConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
-      builder.SetPassAllowMerge(false);
-    },
-    [](const FeedbackPassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [](const FeedbackPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd       = context.GetCommandList();
       xiiGALBuffer*      pFeedback = context.GetBuffer(data.m_hFeedback);
       if (data.m_bClear)
@@ -1148,8 +1112,7 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
       cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessBufferView("g_VirtualShadowFeedback", pFeedback->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DispatchCompute({(data.m_uiWidth + 63U) / 64U, (data.m_uiHeight + 63U) / 64U, 1U});
-    });
+      cmd.DispatchCompute({(data.m_uiWidth + 63U) / 64U, (data.m_uiHeight + 63U) / 64U, 1U}); });
   feedbackPass.first->m_uiWidth               = uiWidth;
   feedbackPass.first->m_uiHeight              = uiHeight;
   feedbackPass.first->m_uiLightId             = uiDirectionalLightId & 0x00FFFFFFU;
@@ -1164,23 +1127,17 @@ void xiiVirtualShadowMapManager::AddFeedbackPasses(xiiRenderGraph& graph, xiiRen
     xiiUInt32                  m_uiSlot  = 0U;
     xiiUInt64                  m_uiFrame = 0U;
   };
-  const xiiUInt32 uiSlot       = static_cast<xiiUInt32>(uiFrameIndex % s_pState->m_Settings.m_uiFramesInFlight);
-  auto            readbackPass = graph.AddPass<ReadbackPassData>(
-    "Virtual Shadow Feedback Readback", xiiGALCommandQueueFlags::Transfer,
-    [hFeedback = feedbackPass.first->m_hFeedback, uiSlot](ReadbackPassData& data, xiiRenderGraphBuilder& builder) {
+  const xiiUInt32 uiSlot        = static_cast<xiiUInt32>(uiFrameIndex % s_pState->m_Settings.m_uiFramesInFlight);
+  auto            readbackPass  = graph.AddPass<ReadbackPassData>("Virtual Shadow Feedback Readback", xiiGALCommandQueueFlags::Transfer, [hFeedback = feedbackPass.first->m_hFeedback, uiSlot](ReadbackPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hFeedback = builder.ReadBuffer(hFeedback, xiiGALResourceStateFlags::CopySource);
       data.m_hReadback = builder.ImportBuffer("Virtual Shadow Feedback Readback", s_pState->m_FeedbackReadbackRing[uiSlot], s_pState->m_FeedbackReadbackRing[uiSlot]->GetResourceState());
       data.m_hReadback = builder.WriteBuffer(data.m_hReadback, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hFeedback, xiiGALResourceStateFlags::UnorderedAccess);
       builder.ExportBuffer(data.m_hReadback, xiiGALResourceStateFlags::CopyDestination);
       builder.SetPassSideEffects(true);
-      builder.SetPassAllowMerge(false);
-    },
-    [](const ReadbackPassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [](const ReadbackPassData& data, xiiRenderGraphPassContext& context) {
       context.GetCommandList().CopyBuffer(context.GetBuffer(data.m_hFeedback), context.GetBuffer(data.m_hReadback));
-      s_pState->m_FeedbackReadbackFrames[data.m_uiSlot] = data.m_uiFrame;
-    },
-    true);
+      s_pState->m_FeedbackReadbackFrames[data.m_uiSlot] = data.m_uiFrame; }, true);
   readbackPass.first->m_uiSlot  = uiSlot;
   readbackPass.first->m_uiFrame = uiFrameIndex;
 }

@@ -141,9 +141,7 @@ void xiiStateMachineNodeManager::StructureEventHandler(const xiiDocumentObjectSt
   if (pCommandHistory == nullptr || pCommandHistory->IsInTransaction() == false)
     return;
 
-  if (e.m_EventType == xiiDocumentObjectStructureEvent::Type::AfterObjectAdded &&
-      e.m_pObject->GetTypeAccessor().GetValue(s_szIsInitialState) == false &&
-      GetInitialState() == nullptr)
+  if (e.m_EventType == xiiDocumentObjectStructureEvent::Type::AfterObjectAdded && e.m_pObject->GetTypeAccessor().GetValue(s_szIsInitialState) == false && GetInitialState() == nullptr)
   {
     xiiSetObjectPropertyCommand propCmd;
     propCmd.m_Object    = e.m_pObject->GetGuid();

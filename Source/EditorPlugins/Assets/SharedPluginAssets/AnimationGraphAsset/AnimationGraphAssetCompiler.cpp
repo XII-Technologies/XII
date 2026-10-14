@@ -8,8 +8,7 @@
 #include <Foundation/Strings/StringBuilder.h>
 #include <SharedPluginAssets/AnimationGraphAsset/AnimationGraphAssetCompiler.h>
 
-xiiResult xiiAnimationGraphAssetCompiler::Compile(const xiiAnimGraphResourceDescriptor& source, xiiAnimGraphResourceDescriptor& out_descriptor,
-                                                  xiiStringBuilder* out_pError)
+xiiResult xiiAnimationGraphAssetCompiler::Compile(const xiiAnimGraphResourceDescriptor& source, xiiAnimGraphResourceDescriptor& out_descriptor, xiiStringBuilder* out_pError)
 {
   if (out_pError != nullptr)
     out_pError->Clear();
@@ -115,9 +114,7 @@ xiiResult xiiAnimationGraphAssetCompiler::Compile(const xiiAnimGraphResourceDesc
   }
   for (const auto& transition : source.m_Transitions)
   {
-    if (transition.m_uiFromNode >= count || transition.m_uiToNode >= count ||
-        !xiiMath::IsFinite(transition.m_fConditionThreshold) || !xiiMath::IsFinite(transition.m_BlendDuration.GetSeconds()) ||
-        transition.m_BlendDuration.GetSeconds() < 0)
+    if (transition.m_uiFromNode >= count || transition.m_uiToNode >= count || !xiiMath::IsFinite(transition.m_fConditionThreshold) || !xiiMath::IsFinite(transition.m_BlendDuration.GetSeconds()) || transition.m_BlendDuration.GetSeconds() < 0)
       return fail("Animation graph transition has invalid states, threshold or blend duration.");
     // Owner lists are sorted by node index during construction. Intersect them
     // without imposing exclusive ownership on reusable state subgraphs.

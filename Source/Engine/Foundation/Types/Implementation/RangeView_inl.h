@@ -19,8 +19,7 @@ XII_FORCE_INLINE ValueType xiiRangeView<ValueType, IteratorType>::ConstIterator:
 }
 
 template <typename ValueType, typename IteratorType>
-XII_FORCE_INLINE bool xiiRangeView<ValueType, IteratorType>::ConstIterator::operator==(
-  const typename xiiRangeView<ValueType, IteratorType>::ConstIterator& it2) const
+XII_FORCE_INLINE bool xiiRangeView<ValueType, IteratorType>::ConstIterator::operator==(const typename xiiRangeView<ValueType, IteratorType>::ConstIterator& it2) const
 {
   return m_pView == it2.m_pView && m_Pos == it2.m_Pos;
 }

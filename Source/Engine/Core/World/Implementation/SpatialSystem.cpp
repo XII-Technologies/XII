@@ -28,26 +28,22 @@ void xiiSpatialSystem::FindObjectsInSphere(const xiiBoundingSphere& sphere, cons
 {
   out_objects.Clear();
 
-  FindObjectsInSphere(
-    sphere, queryParams,
-    [&](xiiGameObject* pObject) {
-      out_objects.PushBack(pObject);
+  FindObjectsInSphere(sphere, queryParams, [&](xiiGameObject* pObject) {
+    out_objects.PushBack(pObject);
 
-      return xiiVisitorExecution::Continue;
-    });
+    return xiiVisitorExecution::Continue;
+  });
 }
 
 void xiiSpatialSystem::FindObjectsInBox(const xiiBoundingBox& box, const QueryParams& queryParams, xiiDynamicArray<xiiGameObject*>& out_objects) const
 {
   out_objects.Clear();
 
-  FindObjectsInBox(
-    box, queryParams,
-    [&](xiiGameObject* pObject) {
-      out_objects.PushBack(pObject);
+  FindObjectsInBox(box, queryParams, [&](xiiGameObject* pObject) {
+    out_objects.PushBack(pObject);
 
-      return xiiVisitorExecution::Continue;
-    });
+    return xiiVisitorExecution::Continue;
+  });
 }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

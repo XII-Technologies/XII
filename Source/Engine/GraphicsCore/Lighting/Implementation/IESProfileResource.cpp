@@ -72,8 +72,7 @@ namespace
     return angles.GetCount() - 2U;
   }
 
-  float InterpolateSource(const xiiDynamicArray<float>& verticalAngles, const xiiDynamicArray<float>& horizontalAngles,
-                          const xiiDynamicArray<float>& candela, float verticalDegrees, float horizontalDegrees)
+  float InterpolateSource(const xiiDynamicArray<float>& verticalAngles, const xiiDynamicArray<float>& horizontalAngles, const xiiDynamicArray<float>& candela, float verticalDegrees, float horizontalDegrees)
   {
     verticalDegrees = xiiMath::Clamp(verticalDegrees, verticalAngles[0], verticalAngles.PeekBack());
 
@@ -175,8 +174,7 @@ xiiResult xiiIESProfileResourceDescriptor::ParseLM63(xiiStringView sSource, xiiS
   double             candelaMultiplier = 0.0;
   double             ignored           = 0.0;
 
-  if (!reader.ReadCount(lampCount) || !reader.Read(lumensPerLamp) || !reader.Read(candelaMultiplier) ||
-      !reader.ReadCount(verticalCount) || !reader.ReadCount(horizontalCount) || !reader.ReadCount(photometricType))
+  if (!reader.ReadCount(lampCount) || !reader.Read(lumensPerLamp) || !reader.Read(candelaMultiplier) || !reader.ReadCount(verticalCount) || !reader.ReadCount(horizontalCount) || !reader.ReadCount(photometricType))
   {
     SetError(pError, "IES photometric header is incomplete.");
     return XII_FAILURE;
@@ -242,8 +240,7 @@ xiiResult xiiIESProfileResourceDescriptor::ParseLM63(xiiStringView sSource, xiiS
     maximumCandela = xiiMath::Max(maximumCandela, sample);
   }
 
-  if (!(maximumCandela > 0.0f) || verticalAngles[0] < 0.0f || verticalAngles.PeekBack() > 180.001f ||
-      horizontalAngles[0] < 0.0f || horizontalAngles.PeekBack() > 360.001f)
+  if (!(maximumCandela > 0.0f) || verticalAngles[0] < 0.0f || verticalAngles.PeekBack() > 180.001f || horizontalAngles[0] < 0.0f || horizontalAngles.PeekBack() > 360.001f)
   {
     SetError(pError, "IES angular domain or candela distribution is invalid.");
     return XII_FAILURE;

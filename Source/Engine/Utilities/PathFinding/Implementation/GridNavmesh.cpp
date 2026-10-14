@@ -266,8 +266,7 @@ bool xiiGridNavmesh::CanMergeRight(xiiInt32 x, xiiInt32 y, CellComparator IsSame
 
   // const xiiInt32 iCellNode = m_NodesGrid.GetCell(xiiVec2I32(x, y));
 
-  if (!IsSameCellType(m_NodesGrid.ConvertCellCoordinateToIndex(xiiVec2I32(x, y)),
-                      m_NodesGrid.ConvertCellCoordinateToIndex(xiiVec2I32(r1.x + r1.width, y)), pPassThrough))
+  if (!IsSameCellType(m_NodesGrid.ConvertCellCoordinateToIndex(xiiVec2I32(x, y)), m_NodesGrid.ConvertCellCoordinateToIndex(xiiVec2I32(r1.x + r1.width, y)), pPassThrough))
     return false;
 
   const xiiRectU32 r2 = GetCellBBox(r1.x + r1.width, y);
@@ -292,8 +291,7 @@ bool xiiGridNavmesh::CanMergeDown(xiiInt32 x, xiiInt32 y, CellComparator IsSameC
 
   // const xiiInt32 iCellNode = m_NodesGrid.GetCell(xiiVec2I32(x, y));
 
-  if (!IsSameCellType(m_NodesGrid.ConvertCellCoordinateToIndex(xiiVec2I32(x, y)),
-                      m_NodesGrid.ConvertCellCoordinateToIndex(xiiVec2I32(x, r1.y + r1.height)), pPassThrough))
+  if (!IsSameCellType(m_NodesGrid.ConvertCellCoordinateToIndex(xiiVec2I32(x, y)), m_NodesGrid.ConvertCellCoordinateToIndex(xiiVec2I32(x, r1.y + r1.height)), pPassThrough))
     return false;
 
   const xiiRectU32 r2 = GetCellBBox(x, r1.y + r1.height);

@@ -21,12 +21,13 @@ namespace
   {
   public:
     xiiPipelineEditorPin(const xiiRenderPipelinePin& pin, const xiiDocumentObject* object) :
-      xiiPin(pin.m_bInput ? Type::Input : Type::Output, pin.m_sName,
-             xiiColorScheme::DarkUI(pin.m_Type == xiiRenderPipelinePin::Texture  ? xiiColorScheme::Blue :
-                                      pin.m_Type == xiiRenderPipelinePin::Buffer ? xiiColorScheme::Green :
-                                                                                   xiiColorScheme::Gray),
+      xiiPin(pin.m_bInput ? Type::Input : Type::Output, pin.m_sName, xiiColorScheme::DarkUI(pin.m_Type == xiiRenderPipelinePin::Texture ? xiiColorScheme::Blue : pin.m_Type == xiiRenderPipelinePin::Buffer ? xiiColorScheme::Green :
+                                                                                                                                                                                                              xiiColorScheme::Gray),
              object),
-      m_Schema(pin) {}
+      m_Schema(pin)
+    {
+    }
+
     xiiRenderPipelinePin m_Schema;
   };
 } // namespace

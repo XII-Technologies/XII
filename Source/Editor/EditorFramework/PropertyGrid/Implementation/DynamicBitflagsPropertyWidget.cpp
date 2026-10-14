@@ -110,8 +110,7 @@ void xiiQtDynamicBitflagsPropertyWidget::ClearMenu()
 
 void xiiQtDynamicBitflagsPropertyWidget::BuildMenu()
 {
-  XII_ASSERT_DEV(
-    m_pProp->GetAttributeByType<xiiDynamicBitflagsAttribute>() != nullptr, "xiiQtDynamicBitflagsPropertyWidget was created without a xiiDynamicBitflagsAttribute!");
+  XII_ASSERT_DEV(m_pProp->GetAttributeByType<xiiDynamicBitflagsAttribute>() != nullptr, "xiiQtDynamicBitflagsPropertyWidget was created without a xiiDynamicBitflagsAttribute!");
 
   const xiiDynamicBitflagsAttribute* pAttr = m_pProp->GetAttributeByType<xiiDynamicBitflagsAttribute>();
 

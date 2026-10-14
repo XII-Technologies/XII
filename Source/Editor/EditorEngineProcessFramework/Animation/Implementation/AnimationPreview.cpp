@@ -6,8 +6,7 @@
 #include <EditorEngineProcessFramework/Animation/AnimationPreview.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 
-xiiResult xiiAnimationPreview::Build(const xiiSkeletonResource& skeleton, const xiiMeshResourceDescriptor& mesh,
-                                     const xiiAnimationClipResource* pClip, double fNormalizedPosition)
+xiiResult xiiAnimationPreview::Build(const xiiSkeletonResource& skeleton, const xiiMeshResourceDescriptor& mesh, const xiiAnimationClipResource* pClip, double fNormalizedPosition)
 {
   m_Palette.Clear();
   m_Pose.Clear();

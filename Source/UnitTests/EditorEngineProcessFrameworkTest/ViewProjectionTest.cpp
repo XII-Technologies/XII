@@ -89,16 +89,12 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewProjection)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Stereo asymmetry and infinite far planes preserve forward picking rays")
   {
     camera.SetCameraMode(xiiCameraMode::Stereo, 60, 0.1f, 100);
-    const auto left  = xiiGraphicsUtils::CreatePerspectiveProjectionMatrix(-0.08f, 0.12f, -0.05f, 0.05f, 0.1f, 100,
-                                                                           xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
-    const auto right = xiiGraphicsUtils::CreatePerspectiveProjectionMatrix(-0.12f, 0.08f, -0.05f, 0.05f, 0.1f, 100,
-                                                                           xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    const auto left  = xiiGraphicsUtils::CreatePerspectiveProjectionMatrix(-0.08f, 0.12f, -0.05f, 0.05f, 0.1f, 100, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    const auto right = xiiGraphicsUtils::CreatePerspectiveProjectionMatrix(-0.12f, 0.08f, -0.05f, 0.05f, 0.1f, 100, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
     camera.SetStereoProjection(left, right, 2);
     for (auto eye : {xiiCameraEye::Left, xiiCameraEye::Right})
     {
-      camera.SetViewMatrix(xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3(-3, eye == xiiCameraEye::Left ? 1.9f : 2.1f, 4),
-                                                                    xiiVec3(0, 2, 4), xiiVec3::MakeAxisZ(), xiiHandedness::LeftHanded),
-                           eye);
+      camera.SetViewMatrix(xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3(-3, eye == xiiCameraEye::Left ? 1.9f : 2.1f, 4), xiiVec3(0, 2, 4), xiiVec3::MakeAxisZ(), xiiHandedness::LeftHanded), eye);
       checkRay(0.5f, 0.5f, eye);
       checkRay(0.1f, 0.9f, eye);
     }

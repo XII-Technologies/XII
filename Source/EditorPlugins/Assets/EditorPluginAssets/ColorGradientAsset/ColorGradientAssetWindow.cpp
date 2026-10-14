@@ -373,8 +373,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientEndOperation(bool commit)
 
 void xiiQtColorGradientAssetDocumentWindow::onGradientNormalizeRange()
 {
-  if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("This will adjust the positions of all control points, such that the minimum is at 0 and the maximum at 1.\n\nContinue?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::Yes) !=
-      QMessageBox::StandardButton::Yes)
+  if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("This will adjust the positions of all control points, such that the minimum is at 0 and the maximum at 1.\n\nContinue?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::Yes) != QMessageBox::StandardButton::Yes)
     return;
 
   xiiColorGradientAssetDocument* pDoc = static_cast<xiiColorGradientAssetDocument*>(GetDocument());

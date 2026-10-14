@@ -102,8 +102,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteLocalShadowAtlasAllocation(const xi
   {
     if (!data.m_ShadowData.IsEmpty())
     {
-      UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hLocalShadowAtlasDescriptors), 0U,
-                                  xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_ShadowData.GetData()), data.m_ShadowData.GetCount() * sizeof(xiiLocalShadowAtlasData)));
+      UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hLocalShadowAtlasDescriptors), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_ShadowData.GetData()), data.m_ShadowData.GetCount() * sizeof(xiiLocalShadowAtlasData)));
     }
   }
   cmd.EndDebugGroup();

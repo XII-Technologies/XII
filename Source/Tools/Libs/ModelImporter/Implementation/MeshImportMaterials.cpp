@@ -70,8 +70,7 @@ namespace
     }
   }
 
-  xiiResult ReadTextures(const aiScene& scene, const aiMaterial& material, aiTextureType type, xiiModelTextureUsage usage,
-                         xiiModelMeshMaterial& output, xiiDynamicArray<xiiModelEmbeddedTexture>& embedded, xiiStringBuilder* error)
+  xiiResult ReadTextures(const aiScene& scene, const aiMaterial& material, aiTextureType type, xiiModelTextureUsage usage, xiiModelMeshMaterial& output, xiiDynamicArray<xiiModelEmbeddedTexture>& embedded, xiiStringBuilder* error)
   {
     for (xiiUInt32 i = 0; i < material.GetTextureCount(type); ++i)
     {
@@ -81,9 +80,7 @@ namespace
       aiTextureMapping mapping    = aiTextureMapping_UV;
       aiTextureMapMode address[3] = {aiTextureMapMode_Wrap, aiTextureMapMode_Wrap, aiTextureMapMode_Wrap};
       aiTextureOp      operation  = aiTextureOp_Multiply;
-      if (material.GetTexture(type, i, &path, &mapping, &texture.m_uiUVChannel, &texture.m_fBlend, &operation, address) != AI_SUCCESS ||
-          path.length == 0 || !xiiUnicodeUtils::IsValidUtf8(path.C_Str()) || mapping != aiTextureMapping_UV || texture.m_uiUVChannel > 1 ||
-          !xiiMath::IsFinite(texture.m_fBlend) || operation < aiTextureOp_Multiply || operation > aiTextureOp_SignedAdd)
+      if (material.GetTexture(type, i, &path, &mapping, &texture.m_uiUVChannel, &texture.m_fBlend, &operation, address) != AI_SUCCESS || path.length == 0 || !xiiUnicodeUtils::IsValidUtf8(path.C_Str()) || mapping != aiTextureMapping_UV || texture.m_uiUVChannel > 1 || !xiiMath::IsFinite(texture.m_fBlend) || operation < aiTextureOp_Multiply || operation > aiTextureOp_SignedAdd)
         return Fail(error, "Source material contains invalid texture metadata or unsupported UV mapping.");
       texture.m_sPath = path.C_Str();
       if (usage == xiiModelTextureUsage::Normal)
@@ -96,8 +93,7 @@ namespace
       texture.m_Sampler.m_AddressU = ConvertAddress(address[0]);
       texture.m_Sampler.m_AddressV = ConvertAddress(address[1]);
       texture.m_Sampler.m_AddressW = ConvertAddress(address[2]);
-      if (texture.m_Sampler.m_AddressU == xiiGALTextureAddressMode::Unknown ||
-          texture.m_Sampler.m_AddressV == xiiGALTextureAddressMode::Unknown || texture.m_Sampler.m_AddressW == xiiGALTextureAddressMode::Unknown)
+      if (texture.m_Sampler.m_AddressU == xiiGALTextureAddressMode::Unknown || texture.m_Sampler.m_AddressV == xiiGALTextureAddressMode::Unknown || texture.m_Sampler.m_AddressW == xiiGALTextureAddressMode::Unknown)
         return Fail(error, "Source texture uses an unknown address mode.");
       aiUVTransform uv;
       if (material.Get(AI_MATKEY_UVTRANSFORM(type, i), uv) == AI_SUCCESS)
@@ -149,8 +145,7 @@ namespace
   }
 } // namespace
 
-xiiResult xiiMeshImportInternal::ReadMaterial(const aiScene& scene, const aiMaterial& material, xiiModelMeshMaterial& out_material,
-                                              xiiDynamicArray<xiiModelEmbeddedTexture>& inout_textures, xiiStringBuilder* error)
+xiiResult xiiMeshImportInternal::ReadMaterial(const aiScene& scene, const aiMaterial& material, xiiModelMeshMaterial& out_material, xiiDynamicArray<xiiModelEmbeddedTexture>& inout_textures, xiiStringBuilder* error)
 {
   aiString name;
   material.Get(AI_MATKEY_NAME, name);
@@ -193,9 +188,7 @@ xiiResult xiiMeshImportInternal::ReadMaterial(const aiScene& scene, const aiMate
   }
   else if (out_material.m_fOpacity < 1)
     out_material.m_AlphaMode = xiiModelMeshMaterial::AlphaMode::Blend;
-  if (!out_material.m_BaseColor.IsValid() || !out_material.m_EmissiveColor.IsValid() ||
-      !xiiMath::IsFinite(out_material.m_fMetallic) || !xiiMath::IsFinite(out_material.m_fRoughness) ||
-      !xiiMath::IsFinite(out_material.m_fOpacity) || !xiiMath::IsFinite(out_material.m_fAlphaCutoff))
+  if (!out_material.m_BaseColor.IsValid() || !out_material.m_EmissiveColor.IsValid() || !xiiMath::IsFinite(out_material.m_fMetallic) || !xiiMath::IsFinite(out_material.m_fRoughness) || !xiiMath::IsFinite(out_material.m_fOpacity) || !xiiMath::IsFinite(out_material.m_fAlphaCutoff))
     return Fail(error, "Source material contains non-finite rendering properties.");
   out_material.m_fMetallic    = xiiMath::Clamp(out_material.m_fMetallic, 0.0f, 1.0f);
   out_material.m_fRoughness   = xiiMath::Clamp(out_material.m_fRoughness, 0.0f, 1.0f);

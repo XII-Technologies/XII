@@ -296,8 +296,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
       mimeData->setText(xiiMakeQString(m_pProp->GetPropertyName()));
       clipboard->setMimeData(mimeData);
 
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
-        xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::MakeFromSeconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::MakeFromSeconds(5));
     };
 
     QAction* pAction = m.addAction("Copy Internal Property Name:");
@@ -617,8 +616,7 @@ xiiQtPropertyPointerWidget::xiiQtPropertyPointerWidget() :
 
 xiiQtPropertyPointerWidget::~xiiQtPropertyPointerWidget()
 {
-  m_pGrid->GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyPointerWidget::StructureEventHandler, this));
+  m_pGrid->GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyPointerWidget::StructureEventHandler, this));
 }
 
 void xiiQtPropertyPointerWidget::OnInit()
@@ -633,8 +631,7 @@ void xiiQtPropertyPointerWidget::OnInit()
   m_pDeleteButton->setVisible(!pAttr || pAttr->CanDelete());
 
   m_pAddButton->Init(m_pGrid, m_pObjectAccessor, m_pType, m_pProp);
-  m_pGrid->GetDocument()->GetObjectManager()->m_StructureEvents.AddEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyPointerWidget::StructureEventHandler, this));
+  m_pGrid->GetDocument()->GetObjectManager()->m_StructureEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyPointerWidget::StructureEventHandler, this));
 }
 
 void xiiQtPropertyPointerWidget::SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items)

@@ -166,7 +166,7 @@ xiiStatus xiiDocument::SaveDocument(bool bForce)
 
   xiiStatus result("Document save did not complete.");
 
-  const auto task = InternalSaveDocument([&result](xiiDocument* pDoc, xiiStatus res) { result = res; });
+  const auto task  = InternalSaveDocument([&result](xiiDocument* pDoc, xiiStatus res) { result = res; });
   m_ActiveSaveTask = task;
 
   xiiTaskSystem::WaitForGroup(task);

@@ -9,11 +9,9 @@ namespace xiiBuiltinPipelineUtils
   // Replace a history pair only after both allocations succeed. A factory parameter keeps
   // failure handling independently verifiable without exhausting physical GPU memory.
   template <typename CreateTexture>
-  xiiResult EnsureTemporalHistoryTextures(xiiSharedPtr<xiiGALTexture> (&textures)[2], const xiiGALTextureCreationDescription& description,
-                                          bool& inout_bHistoryValid, CreateTexture&& createTexture)
+  xiiResult EnsureTemporalHistoryTextures(xiiSharedPtr<xiiGALTexture> (&textures)[2], const xiiGALTextureCreationDescription& description, bool& inout_bHistoryValid, CreateTexture&& createTexture)
   {
-    if (textures[0] != nullptr && textures[1] != nullptr &&
-        textures[0]->GetDescription() == description && textures[1]->GetDescription() == description)
+    if (textures[0] != nullptr && textures[1] != nullptr && textures[0]->GetDescription() == description && textures[1]->GetDescription() == description)
       return XII_SUCCESS;
 
     xiiSharedPtr<xiiGALTexture> replacements[2];

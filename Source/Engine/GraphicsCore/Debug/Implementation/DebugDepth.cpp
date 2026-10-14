@@ -22,8 +22,7 @@ namespace xiiDebugRendererInternal
       return {};
     if (source->m_Size == target->m_Size)
       return source->m_uiSampleCount == target->m_uiSampleCount ? depth : xiiRenderGraphTextureHandle{};
-    if (source->m_Type != xiiGALResourceDimension::Texture2D || target->m_Type != xiiGALResourceDimension::Texture2D ||
-        !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || source->m_uiSampleCount != 1 || target->m_uiSampleCount != 1)
+    if (source->m_Type != xiiGALResourceDimension::Texture2D || target->m_Type != xiiGALResourceDimension::Texture2D || !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || source->m_uiSampleCount != 1 || target->m_uiSampleCount != 1)
       return {};
 
     const auto shader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Debug/DebugDepth.xiiShader");

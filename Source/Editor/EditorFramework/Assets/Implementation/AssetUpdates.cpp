@@ -451,8 +451,7 @@ xiiResult xiiAssetCurator::ReadAssetDocumentInfo(const xiiDataDirPath& absFilePa
       }
     }
 
-    if (docInfo && stat.m_uiHash != 0 && cacheStat.m_uiHash == stat.m_uiHash &&
-        cacheStat.m_LastModified.Compare(stat.m_LastModified, xiiTimestamp::CompareMode::Identical))
+    if (docInfo && stat.m_uiHash != 0 && cacheStat.m_uiHash == stat.m_uiHash && cacheStat.m_LastModified.Compare(stat.m_LastModified, xiiTimestamp::CompareMode::Identical))
     {
       out_assetInfo->m_Info = std::move(docInfo);
       return XII_SUCCESS;

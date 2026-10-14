@@ -84,8 +84,7 @@ bool xiiGALQueryVulkan::AllocateQueries()
 
     uiQueryPoolIndex = m_pQueryPoolVulkan->AllocateQuery(m_Description.m_Type);
 
-    if (uiQueryPoolIndex == xiiInvalidIndex ||
-        static_cast<xiiGALCommandListVulkan*>(m_pCommandList)->RecordQueryReset(m_pQueryPoolVulkan, m_Description.m_Type, uiQueryPoolIndex).Failed())
+    if (uiQueryPoolIndex == xiiInvalidIndex || static_cast<xiiGALCommandListVulkan*>(m_pCommandList)->RecordQueryReset(m_pQueryPoolVulkan, m_Description.m_Type, uiQueryPoolIndex).Failed())
     {
       xiiLog::Error("Failed to allocate or reset Vulkan query for type {}.", xiiArgEnum(m_Description.m_Type));
 
@@ -306,8 +305,7 @@ bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInv
 {
   CheckQueryDataPtr(pData, uiDataSize);
 
-  if (m_pQueryPoolVulkan == nullptr || m_QueryPoolIndex[0] == xiiInvalidIndex ||
-      (m_Description.m_Type == xiiGALQueryType::Duration && m_QueryPoolIndex[1] == xiiInvalidIndex))
+  if (m_pQueryPoolVulkan == nullptr || m_QueryPoolIndex[0] == xiiInvalidIndex || (m_Description.m_Type == xiiGALQueryType::Duration && m_QueryPoolIndex[1] == xiiInvalidIndex))
     return false;
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();

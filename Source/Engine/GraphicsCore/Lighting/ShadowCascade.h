@@ -34,6 +34,5 @@ class XII_GRAPHICSCORE_DLL xiiShadowCascadeUtils
 {
 public:
   /// Builds tightly fitted, texel-stabilized orthographic cascades for a directional light.
-  static xiiResult Build(const xiiCamera& camera, float fAspectRatio, const xiiVec3& vLightDirection,
-                         const xiiShadowCascadeSettings& settings, xiiStaticArray<xiiShadowCascadeDescription, 4>& out_cascades);
+  static xiiResult Build(const xiiCamera& camera, float fAspectRatio, const xiiVec3& vLightDirection, const xiiShadowCascadeSettings& settings, xiiStaticArray<xiiShadowCascadeDescription, 4>& out_cascades);
 };

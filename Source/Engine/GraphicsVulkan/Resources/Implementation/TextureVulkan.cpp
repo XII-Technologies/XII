@@ -894,9 +894,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
           for (xiiUInt32 uiY = 0; uiY < mipLevelProperty.m_StorageSize.height; uiY += formatProperties.m_uiBlockHeight)
           {
             // The subResourceData.m_uiStride must be the stride of one row of compressed blocks.
-            memcpy(xiiMemoryUtils::AddByteOffset(pMappedMemory, ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / xiiUInt32{formatProperties.m_uiBlockHeight}) * mipLevelProperty.m_uiRowSize),
-                   xiiMemoryUtils::AddByteOffset(subResourceData.m_pData.GetPtr(), (uiY / xiiUInt32{formatProperties.m_uiBlockHeight}) * subResourceData.m_uiStride + uiZ * subResourceData.m_uiDepthStride),
-                   mipLevelProperty.m_uiRowSize);
+            memcpy(xiiMemoryUtils::AddByteOffset(pMappedMemory, ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / xiiUInt32{formatProperties.m_uiBlockHeight}) * mipLevelProperty.m_uiRowSize), xiiMemoryUtils::AddByteOffset(subResourceData.m_pData.GetPtr(), (uiY / xiiUInt32{formatProperties.m_uiBlockHeight}) * subResourceData.m_uiStride + uiZ * subResourceData.m_uiDepthStride), mipLevelProperty.m_uiRowSize);
           }
         }
 

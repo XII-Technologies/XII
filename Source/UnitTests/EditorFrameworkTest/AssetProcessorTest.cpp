@@ -23,8 +23,7 @@
 #  include <Foundation/Strings/StringConversion.h>
 #endif
 
-bool SendAssetProcessorRequest(xiiEditorProcessCommunicationChannel& processor, xiiProcessAssetMsg& request,
-                               xiiTransformStatus& out_response, xiiDynamicArray<xiiLogEntry>& out_logs)
+bool SendAssetProcessorRequest(xiiEditorProcessCommunicationChannel& processor, xiiProcessAssetMsg& request, xiiTransformStatus& out_response, xiiDynamicArray<xiiLogEntry>& out_logs)
 {
   out_response = xiiTransformStatus("No processor response received.");
   out_logs.Clear();
@@ -96,8 +95,7 @@ void TestAssetProcessor(xiiQtEditorApp& editor, xiiStringView projectDirectory)
 #else
   const char* executable = "xiiEditorProcessor";
 #endif
-  if (!XII_TEST_RESULT(processor.StartClientProcess(executable, args, false)) ||
-      !XII_TEST_RESULT(processor.WaitForConnection(xiiTime::MakeFromSeconds(30))))
+  if (!XII_TEST_RESULT(processor.StartClientProcess(executable, args, false)) || !XII_TEST_RESULT(processor.WaitForConnection(xiiTime::MakeFromSeconds(30))))
     return;
 
   xiiTransformStatus           response;

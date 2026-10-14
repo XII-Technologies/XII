@@ -11,8 +11,7 @@
 
 namespace
 {
-  xiiResult WriteEnvelope(xiiStreamWriter& stream, const xiiGALTextureCreationDescription& description,
-                          const xiiGALSamplerCreationDescription& sampler, const xiiAssetFileHeader& header)
+  xiiResult WriteEnvelope(xiiStreamWriter& stream, const xiiGALTextureCreationDescription& description, const xiiGALSamplerCreationDescription& sampler, const xiiAssetFileHeader& header)
   {
     // Native stream operators assert on write failure. Stage the small envelope in memory so
     // destination I/O failures propagate through xiiResult instead of those operators.
@@ -25,8 +24,7 @@ namespace
   }
 } // namespace
 
-xiiResult xiiTextureAssetFile::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image,
-                                          const xiiGALSamplerCreationDescription& sampler, const xiiAssetFileHeader& header)
+xiiResult xiiTextureAssetFile::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, const xiiGALSamplerCreationDescription& sampler, const xiiAssetFileHeader& header)
 {
   if (!image.IsValid())
     return XII_FAILURE;
@@ -37,12 +35,9 @@ xiiResult xiiTextureAssetFile::WriteImage(xiiStreamWriter& inout_stream, const x
   return dds.WriteImage(inout_stream, image, "dds");
 }
 
-xiiResult xiiTextureAssetFile::WriteRenderTarget(xiiStreamWriter& inout_stream, const xiiGALTextureCreationDescription& description,
-                                                 const xiiGALSamplerCreationDescription& sampler, const xiiAssetFileHeader& header)
+xiiResult xiiTextureAssetFile::WriteRenderTarget(xiiStreamWriter& inout_stream, const xiiGALTextureCreationDescription& description, const xiiGALSamplerCreationDescription& sampler, const xiiAssetFileHeader& header)
 {
-  if (!description.Is2D() || !description.m_Size.HasNonZeroArea() || description.m_Format == xiiGALResourceFormat::Unknown ||
-      description.m_Usage != xiiGALResourceUsage::Mutable || !description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) ||
-      description.m_uiArraySizeOrDepth == 0 || description.m_uiMipLevels == 0 || description.m_pExistingNativeObject != nullptr)
+  if (!description.Is2D() || !description.m_Size.HasNonZeroArea() || description.m_Format == xiiGALResourceFormat::Unknown || description.m_Usage != xiiGALResourceUsage::Mutable || !description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || description.m_uiArraySizeOrDepth == 0 || description.m_uiMipLevels == 0 || description.m_pExistingNativeObject != nullptr)
     return XII_FAILURE;
   return WriteEnvelope(inout_stream, description, sampler, header);
 }

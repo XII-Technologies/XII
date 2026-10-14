@@ -409,8 +409,7 @@ void xiiTokenizer::HandleRawString()
       }
       else if (m_szCurCharStart + m_sRawStringMarker.GetElementCount() + 2 <= m_sIterator.GetEndPointer())
       {
-        if (xiiStringUtils::CompareN(m_szCurCharStart + 1, m_sRawStringMarker.GetStartPointer(), m_sRawStringMarker.GetElementCount()) == 0 &&
-            m_szCurCharStart[m_sRawStringMarker.GetElementCount() + 1] == '\"')
+        if (xiiStringUtils::CompareN(m_szCurCharStart + 1, m_sRawStringMarker.GetStartPointer(), m_sRawStringMarker.GetElementCount()) == 0 && m_szCurCharStart[m_sRawStringMarker.GetElementCount() + 1] == '\"')
         {
           AddToken();
           for (xiiUInt32 i = 0; i < m_sRawStringMarker.GetElementCount() + 2; ++i) // consume )marker"

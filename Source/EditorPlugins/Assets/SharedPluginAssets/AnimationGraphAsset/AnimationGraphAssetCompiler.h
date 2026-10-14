@@ -20,9 +20,7 @@ public:
   /// Compile document pose pins in their displayed order, resolving named transitions.
   /// Requires exactly one Output node. Empty node names use the stable document UUID.
   /// Nodes are ordered by document UUID so remove/undo and serialization retain indices.
-  static xiiResult CompileDocument(const xiiDocumentNodeManager& document, xiiArrayPtr<const xiiAnimationGraphEditorTransition> transitions,
-                                   xiiAnimGraphResourceDescriptor& out_descriptor, xiiStringBuilder* out_pError = nullptr);
+  static xiiResult CompileDocument(const xiiDocumentNodeManager& document, xiiArrayPtr<const xiiAnimationGraphEditorTransition> transitions, xiiAnimGraphResourceDescriptor& out_descriptor, xiiStringBuilder* out_pError = nullptr);
 
-  static xiiResult Compile(const xiiAnimGraphResourceDescriptor& source, xiiAnimGraphResourceDescriptor& out_descriptor,
-                           xiiStringBuilder* out_pError = nullptr);
+  static xiiResult Compile(const xiiAnimGraphResourceDescriptor& source, xiiAnimGraphResourceDescriptor& out_descriptor, xiiStringBuilder* out_pError = nullptr);
 };

@@ -5,8 +5,7 @@
 #include <GraphicsCore/Meshes/MeshSkinning.h>
 #include <GraphicsCore/Scene/SceneDatabase.h>
 
-xiiResult xiiSceneDatabase::SetSkinningPalette(xiiSceneObjectHandle hObject, xiiArrayPtr<const xiiMat4> palette,
-                                               xiiUInt32 uiVertexStride, xiiUInt32 uiBoneIndicesOffset, xiiUInt32 uiBoneWeightsOffset, bool bResetHistory)
+xiiResult xiiSceneDatabase::SetSkinningPalette(xiiSceneObjectHandle hObject, xiiArrayPtr<const xiiMat4> palette, xiiUInt32 uiVertexStride, xiiUInt32 uiBoneIndicesOffset, xiiUInt32 uiBoneWeightsOffset, bool bResetHistory)
 {
   if (!IsAlive(hObject) || (!palette.IsEmpty() && (uiVertexStride < 8U || (uiVertexStride & 3U) != 0U || uiBoneIndicesOffset > uiVertexStride - 8U || uiBoneWeightsOffset > uiVertexStride - 4U || (uiBoneIndicesOffset & 1U) != 0U)))
     return XII_FAILURE;

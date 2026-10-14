@@ -65,8 +65,7 @@ namespace
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiReSTIRDIQualityPreset, 1)
-  XII_ENUM_CONSTANTS(xiiReSTIRDIQualityPreset::Integrated, xiiReSTIRDIQualityPreset::Balanced, xiiReSTIRDIQualityPreset::High,
-    xiiReSTIRDIQualityPreset::Ultra, xiiReSTIRDIQualityPreset::Custom)
+  XII_ENUM_CONSTANTS(xiiReSTIRDIQualityPreset::Integrated, xiiReSTIRDIQualityPreset::Balanced, xiiReSTIRDIQualityPreset::High, xiiReSTIRDIQualityPreset::Ultra, xiiReSTIRDIQualityPreset::Custom)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLightingSystemSettings, xiiNoBase, 13, xiiRTTIDefaultAllocator<xiiLightingSystemSettings>)
@@ -339,27 +338,15 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
     m_GlobalConstants.m_fGlobalTime  = static_cast<float>(pClock->GetAccumulatedTime().GetSeconds());
     m_GlobalConstants.m_fWorldTime   = m_GlobalConstants.m_fGlobalTime;
   }
-  m_GlobalConstants.m_RenderScaleJitter = xiiVec4(view.GetRenderResolutionScale(), 0.0f, 0.0f, 0.0f);
-  m_GlobalConstants.m_ReSTIRDISettings  = xiiVec4U32(
-    xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples, 1U, 8U),
-    xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod, 1U, 8U), 0U, 0U);
-  m_GlobalConstants.m_ReSTIRDIReuseSettings = xiiVec4U32(
-    xiiMath::Clamp(m_Settings.m_uiReSTIRDIFreshCandidateCount, 1U, 32U),
-    xiiMath::Clamp(m_Settings.m_uiReSTIRDITemporalHistoryM, 1U, 32U),
-    xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialNeighborCount, 1U, 8U),
-    xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialRadius, 1U, 8U));
-  m_GlobalConstants.m_ReSTIRDIStabilitySettings = xiiVec4(
-    xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight, 0.0f, 0.99f),
-    xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold, 0.05f, 1.0f), 0.0f, 0.0f);
-  const xiiUInt32 uiDeviceRayRecursion  = m_pDevice != nullptr ? m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth : 1U;
-  const bool      bTraceHitVisibility   = uiDeviceRayRecursion >= 2U;
-  const xiiUInt32 uiPathRecursionBudget = bTraceHitVisibility ? uiDeviceRayRecursion - 1U : uiDeviceRayRecursion;
-  m_GlobalConstants.m_RTGISettings      = xiiVec4U32(
-    xiiMath::Clamp(m_Settings.m_uiRTGIMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))),
-    xiiMath::Clamp(m_Settings.m_uiRTGILocalLightSamples, 1U, 4U), bTraceHitVisibility ? 1U : 0U,
-    xiiMath::Clamp(m_Settings.m_uiRTGIEmissiveLightSamples, 1U, 4U));
-  m_GlobalConstants.m_RTReflectionSettings = xiiVec4U32(
-    xiiMath::Clamp(m_Settings.m_uiRTReflectionMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))), 0U, 0U, 0U);
+  m_GlobalConstants.m_RenderScaleJitter         = xiiVec4(view.GetRenderResolutionScale(), 0.0f, 0.0f, 0.0f);
+  m_GlobalConstants.m_ReSTIRDISettings          = xiiVec4U32(xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveVisibilitySamples, 1U, 8U), xiiMath::Clamp(m_Settings.m_uiReSTIRDIEmissiveBinaryRefreshPeriod, 1U, 8U), 0U, 0U);
+  m_GlobalConstants.m_ReSTIRDIReuseSettings     = xiiVec4U32(xiiMath::Clamp(m_Settings.m_uiReSTIRDIFreshCandidateCount, 1U, 32U), xiiMath::Clamp(m_Settings.m_uiReSTIRDITemporalHistoryM, 1U, 32U), xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialNeighborCount, 1U, 8U), xiiMath::Clamp(m_Settings.m_uiReSTIRDISpatialRadius, 1U, 8U));
+  m_GlobalConstants.m_ReSTIRDIStabilitySettings = xiiVec4(xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityHistoryWeight, 0.0f, 0.99f), xiiMath::Clamp(m_Settings.m_fReSTIRDIEmissiveVisibilityReactiveThreshold, 0.05f, 1.0f), 0.0f, 0.0f);
+  const xiiUInt32 uiDeviceRayRecursion          = m_pDevice != nullptr ? m_pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth : 1U;
+  const bool      bTraceHitVisibility           = uiDeviceRayRecursion >= 2U;
+  const xiiUInt32 uiPathRecursionBudget         = bTraceHitVisibility ? uiDeviceRayRecursion - 1U : uiDeviceRayRecursion;
+  m_GlobalConstants.m_RTGISettings              = xiiVec4U32(xiiMath::Clamp(m_Settings.m_uiRTGIMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))), xiiMath::Clamp(m_Settings.m_uiRTGILocalLightSamples, 1U, 4U), bTraceHitVisibility ? 1U : 0U, xiiMath::Clamp(m_Settings.m_uiRTGIEmissiveLightSamples, 1U, 4U));
+  m_GlobalConstants.m_RTReflectionSettings      = xiiVec4U32(xiiMath::Clamp(m_Settings.m_uiRTReflectionMaxPathHits, 1U, xiiMath::Max(1U, xiiMath::Min(2U, uiPathRecursionBudget))), 0U, 0U, 0U);
 
   float     fBestDirectionalIntensity = -1.0f;
   xiiUInt32 uiBestDirectionalLightId  = xiiInvalidIndex;
@@ -563,9 +550,7 @@ void xiiLightingSystem::BuildFrameData(const xiiView& view, const xiiExtractedRe
   localShadowSettings.m_uiAtlasSize        = m_Settings.m_uiLocalShadowAtlasSize;
   localShadowSettings.m_uiTileSize         = m_Settings.m_uiLocalShadowTileSize;
   localShadowSettings.m_uiMaxFacesPerFrame = m_Settings.m_uiMaxLocalShadowFacesPerFrame;
-  xiiLocalShadowAtlasBuilder::Build(localShadowSettings,
-                                    xiiArrayPtr<const xiiGpuLightData>(m_LightData.GetData(), m_LightData.GetCount()),
-                                    m_CameraConstants.m_CameraPositionAndNearPlane.GetAsVec3(), m_LocalShadowData, m_LocalShadowStatistics);
+  xiiLocalShadowAtlasBuilder::Build(localShadowSettings, xiiArrayPtr<const xiiGpuLightData>(m_LightData.GetData(), m_LightData.GetCount()), m_CameraConstants.m_CameraPositionAndNearPlane.GetAsVec3(), m_LocalShadowData, m_LocalShadowStatistics);
 }
 
 void xiiLightingSystem::UploadFrameData(xiiGALCommandList& ref_commandList)

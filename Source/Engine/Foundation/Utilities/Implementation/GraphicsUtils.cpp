@@ -262,8 +262,7 @@ xiiResult xiiGraphicsUtils::ExtractNearAndFarClipPlaneDistances(float& out_fNear
   const float nearW = xiiMath::Abs(nearPlane.w);
   const float farW  = xiiMath::Abs(farPlane.w);
 
-  if ((nearLength < xiiMath::SmallEpsilon<float>() && farLength < xiiMath::SmallEpsilon<float>()) ||
-      nearW < xiiMath::SmallEpsilon<float>() || farW < xiiMath::SmallEpsilon<float>())
+  if ((nearLength < xiiMath::SmallEpsilon<float>() && farLength < xiiMath::SmallEpsilon<float>()) || nearW < xiiMath::SmallEpsilon<float>() || farW < xiiMath::SmallEpsilon<float>())
   {
     return XII_FAILURE;
   }

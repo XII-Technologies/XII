@@ -33,8 +33,7 @@ namespace
   }
 } // namespace
 
-xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRatio, const xiiVec3& vLightDirection,
-                                       const xiiShadowCascadeSettings& settings, xiiStaticArray<xiiShadowCascadeDescription, 4>& out_cascades)
+xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRatio, const xiiVec3& vLightDirection, const xiiShadowCascadeSettings& settings, xiiStaticArray<xiiShadowCascadeDescription, 4>& out_cascades)
 {
   out_cascades.Clear();
 
@@ -117,8 +116,7 @@ xiiResult xiiShadowCascadeUtils::Build(const xiiCamera& camera, float fAspectRat
     // Reversed-Z projection matches the engine depth convention and a clear value of zero.
     const float   fNearDepth       = fMaxDepth + fDepthPadding;
     const float   fFarDepth        = xiiMath::Max(fMinDepth - fDepthPadding, 0.001f);
-    const xiiMat4 mLightProjection = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(-fRadius, fRadius, -fRadius, fRadius,
-                                                                                          fNearDepth, fFarDepth, xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    const xiiMat4 mLightProjection = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(-fRadius, fRadius, -fRadius, fRadius, fNearDepth, fFarDepth, xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
 
     xiiShadowCascadeDescription& cascade = out_cascades.ExpandAndGetRef();
     cascade.m_mViewProjection            = mLightProjection * mLightView;

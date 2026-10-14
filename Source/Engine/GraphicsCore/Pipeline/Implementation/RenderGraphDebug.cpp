@@ -14,11 +14,10 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRenderGraphCompile
   static constexpr const char* QueueNames[3]  = {"Graphics", "AsyncCompute", "AsyncTransfer"};
 
   out_sDot.Clear();
-  out_sDot.Append(
-    "digraph RenderGraph {\n"
-    "  graph [fontname=\"Helvetica\" bgcolor=\"#1a1a1a\" fontcolor=\"white\" rankdir=LR];\n"
-    "  node  [fontname=\"Helvetica\" fontsize=10 style=filled shape=box];\n"
-    "  edge  [fontname=\"Helvetica\" fontsize=8 color=\"#888888\"];\n\n");
+  out_sDot.Append("digraph RenderGraph {\n"
+                  "  graph [fontname=\"Helvetica\" bgcolor=\"#1a1a1a\" fontcolor=\"white\" rankdir=LR];\n"
+                  "  node  [fontname=\"Helvetica\" fontsize=10 style=filled shape=box];\n"
+                  "  edge  [fontname=\"Helvetica\" fontsize=8 color=\"#888888\"];\n\n");
 
   // ------------------------------------------------------------
   // Queue clusters
@@ -57,9 +56,7 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRenderGraphCompile
         const char*                       szFill = pass.m_bIsCulled ? "#444444" : QueueColors[uiQueueIndex];
         const char*                       szText = pass.m_bIsCulled ? "#888888" : "white";
 
-        out_sDot.AppendFormat(
-          "      q{}_p{} [label=\"{}\" fillcolor=\"{}\" fontcolor=\"{}\" style=\"{}\"];\n",
-          uiQueueSubmissionIndex, pass.m_uiPassIndex, pass.m_sName.GetView(), szFill, szText, pass.m_bIsCulled ? "filled,dashed" : "filled");
+        out_sDot.AppendFormat("      q{}_p{} [label=\"{}\" fillcolor=\"{}\" fontcolor=\"{}\" style=\"{}\"];\n", uiQueueSubmissionIndex, pass.m_uiPassIndex, pass.m_sName.GetView(), szFill, szText, pass.m_bIsCulled ? "filled,dashed" : "filled");
       }
 
       out_sDot.Append("    }\n");
@@ -77,9 +74,7 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRenderGraphCompile
       const char* szFill = pass.m_bIsCulled ? "#444444" : QueueColors[uiQueueIndex];
       const char* szText = pass.m_bIsCulled ? "#888888" : "white";
 
-      out_sDot.AppendFormat(
-        "    q{}_p{} [label=\"{}\" fillcolor=\"{}\" fontcolor=\"{}\" style=\"{}\"];\n",
-        uiQueueSubmissionIndex, pass.m_uiPassIndex, pass.m_sName.GetView(), szFill, szText, pass.m_bIsCulled ? "filled,dashed" : "filled");
+      out_sDot.AppendFormat("    q{}_p{} [label=\"{}\" fillcolor=\"{}\" fontcolor=\"{}\" style=\"{}\"];\n", uiQueueSubmissionIndex, pass.m_uiPassIndex, pass.m_sName.GetView(), szFill, szText, pass.m_bIsCulled ? "filled,dashed" : "filled");
     }
 
     out_sDot.Append("  }\n\n");
@@ -100,19 +95,16 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRenderGraphCompile
   // ------------------------------------------------------------
   // Resource cluster (record shapes)
   // ------------------------------------------------------------
-  out_sDot.Append(
-    "\n  subgraph cluster_resources {\n"
-    "    label=\"Resources / Lifetimes / Aliasing\";\n"
-    "    style=filled; color=\"#555555\";\n"
-    "    node [shape=record fillcolor=\"#303030\" fontcolor=\"white\"];\n");
+  out_sDot.Append("\n  subgraph cluster_resources {\n"
+                  "    label=\"Resources / Lifetimes / Aliasing\";\n"
+                  "    style=filled; color=\"#555555\";\n"
+                  "    node [shape=record fillcolor=\"#303030\" fontcolor=\"white\"];\n");
 
   for (xiiUInt32 i = 0; i < pResources.GetCount(); ++i)
   {
     const xiiRenderGraphResourceDescription& description = pResources[i];
 
-    out_sDot.AppendFormat(
-      "    r{} [label=\"{{{} | life [{},{}] | alias {}}}\"];\n",
-      i, description.m_sName.GetView(), description.m_uiFirstUsePassIndex, description.m_uiLastUsePassIndex, description.m_uiAliasGroup);
+    out_sDot.AppendFormat("    r{} [label=\"{{{} | life [{},{}] | alias {}}}\"];\n", i, description.m_sName.GetView(), description.m_uiFirstUsePassIndex, description.m_uiLastUsePassIndex, description.m_uiAliasGroup);
   }
 
   out_sDot.Append("  }\n");
@@ -138,9 +130,7 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRenderGraphCompile
     {
       if (pass.m_Id == versionDescription.m_ProducerPassId)
       {
-        out_sDot.AppendFormat(
-          "  q0_p{} -> r{} [style=dashed color=\"#aa66cc\" label=\"v{}\"];\n",
-          pass.m_uiPassIndex, uiResourceIndex, versionDescription.m_uiVersion);
+        out_sDot.AppendFormat("  q0_p{} -> r{} [style=dashed color=\"#aa66cc\" label=\"v{}\"];\n", pass.m_uiPassIndex, uiResourceIndex, versionDescription.m_uiVersion);
         break;
       }
     }

@@ -90,8 +90,7 @@ static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image
     return xiiTextureConverterUsage::NormalMap;
   }
 
-  if (xiiGALTextureUtilities::GetBitsPerComponent(format, 0) > 8 || format == xiiGALResourceFormat::BC6HSF16 ||
-      format == xiiGALResourceFormat::BC6HUF16)
+  if (xiiGALTextureUtilities::GetBitsPerComponent(format, 0) > 8 || format == xiiGALResourceFormat::BC6HSF16 || format == xiiGALResourceFormat::BC6HUF16)
   {
     return xiiTextureConverterUsage::Hdr;
   }

@@ -20,8 +20,7 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
     xiiQuatT::ComponentType testBlock[4] = {
       (xiiQuatT::ComponentType)1, (xiiQuatT::ComponentType)2, (xiiQuatT::ComponentType)3, (xiiQuatT::ComponentType)4};
     xiiQuatT* p = ::new ((void*)&testBlock[0]) xiiQuatT;
-    XII_TEST_BOOL(p->x == (xiiMat3T::ComponentType)1 && p->y == (xiiMat3T::ComponentType)2 && p->z == (xiiMat3T::ComponentType)3 &&
-                  p->w == (xiiMat3T::ComponentType)4);
+    XII_TEST_BOOL(p->x == (xiiMat3T::ComponentType)1 && p->y == (xiiMat3T::ComponentType)2 && p->z == (xiiMat3T::ComponentType)3 && p->w == (xiiMat3T::ComponentType)4);
 #endif
   }
 

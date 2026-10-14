@@ -200,10 +200,7 @@ void xiiScriptComponent::BroadcastEventMsg(xiiEventMessage& ref_msg)
 
 const xiiRangeView<xiiStringView, xiiUInt32> xiiScriptComponent::GetParameters() const
 {
-  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                                [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
+  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
 }
 
 void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
@@ -272,10 +269,9 @@ void xiiScriptComponent::InstantiateScript(bool bActivate)
     m_pInstance->SetInstanceVariables(m_Parameters);
   }
 
-  GetWorld()->AddResourceReloadFunction(m_hScriptClass, GetHandle(), nullptr,
-                                        [](const xiiWorld::ResourceReloadContext& context) {
-                                          xiiStaticCast<xiiScriptComponent*>(context.m_pComponent)->ReloadScript();
-                                        });
+  GetWorld()->AddResourceReloadFunction(m_hScriptClass, GetHandle(), nullptr, [](const xiiWorld::ResourceReloadContext& context) {
+    xiiStaticCast<xiiScriptComponent*>(context.m_pComponent)->ReloadScript();
+  });
 
   CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::Initialize);
   if (bActivate)

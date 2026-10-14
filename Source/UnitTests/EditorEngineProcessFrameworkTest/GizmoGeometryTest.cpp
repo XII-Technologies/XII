@@ -91,11 +91,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, GizmoGeometry)
     XII_TEST_INT(geometry.GetGeometry().GetPolygons().GetCount(), 2);
     XII_TEST_BOOL(geometry.PickRay(identity, xiiVec3(0, 0, -3), xiiVec3::MakeAxisZ(), 0, fTime).Succeeded());
     XII_TEST_FLOAT(fTime, 3, 0.0001f);
-    for (const char* szInvalidMesh : {
-           "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 99\n",
-           "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 0 2 3\n",
-           "v 0 0 0\nv 1 0 0\nv 0 1 0\nvt 0 0\nf 1/1 2/1 3/99\n",
-           "v 0 0 0\nv 1 0 0\nv 0 1 0\nvn 0 0 1\nf 1//1 2//1 3//99\n"})
+    for (const char* szInvalidMesh : {"v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 99\n", "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 0 2 3\n", "v 0 0 0\nv 1 0 0\nv 0 1 0\nvt 0 0\nf 1/1 2/1 3/99\n", "v 0 0 0\nv 1 0 0\nv 0 1 0\nvn 0 0 1\nf 1//1 2//1 3//99\n"})
     {
       WriteMesh(szInvalidMesh);
       XII_TEST_BOOL(geometry.Build(xiiEngineGizmoHandleType::FromFile, ":gizmotest/GizmoGeometry.obj").Failed());

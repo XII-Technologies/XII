@@ -25,8 +25,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, SkippedObjectsAreNotOverwritten)
 {
   xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   output.AppendPath("DocumentSave");
-  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSave", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSave", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DocumentSave"));
   SaveTestManager  manager;
@@ -86,7 +85,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, SkippedObjectsAreNotOverwritten)
             ++callbacks;
             status = result;
           },
-                                                            force);
+                                                       force);
           XII_TEST_BOOL(!task.IsValid());
           XII_TEST_INT(callbacks, 1);
           // Drain the old implementation's real write when running the negative control.
@@ -117,8 +116,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, ReadOnlySaveAndRecovery)
 {
   xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   output.AppendPath("DocumentSaveReadOnly");
-  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveReadOnly", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSaveReadOnly", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DocumentSaveReadOnly"));
   SaveTestManager  manager;
@@ -143,7 +141,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, ReadOnlySaveAndRecovery)
     XII_TEST_BOOL(saved == &document && result.Failed());
     ++callbacks;
   },
-                                                    true);
+                                                   true);
   XII_TEST_BOOL(!rejected.IsValid());
   XII_TEST_INT(callbacks, 1);
   if (rejected.IsValid())
@@ -193,8 +191,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, EmbeddedPhantomTypesRemainWritable)
 {
   xiiStringBuilder output = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   output.AppendPath("DocumentSavePhantom");
-  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) ||
-      !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSavePhantom", ":", xiiDataDirUsage::AllowWrites)))
+  if (!XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(output)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(output, "DocumentSavePhantom", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("DocumentSavePhantom"));
   constexpr xiiStringView    typeName = "xiiSaveTestEmbeddedPayload";

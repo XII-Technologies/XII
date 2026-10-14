@@ -119,8 +119,7 @@ void xiiCommandHistory::ResumeTemporaryTransaction()
 void xiiCommandHistory::EndTemporaryCommands(bool bCancel)
 {
   XII_ASSERT_DEV(m_bTemporaryMode, "Temporary Mode was not enabled");
-  XII_ASSERT_DEV(m_iTemporaryDepth == (xiiInt32)m_pHistoryStorage->m_TransactionStack.GetCount(), "Transaction stack is at depth {0} but temporary is at {1}",
-                 m_pHistoryStorage->m_TransactionStack.GetCount(), m_iTemporaryDepth);
+  XII_ASSERT_DEV(m_iTemporaryDepth == (xiiInt32)m_pHistoryStorage->m_TransactionStack.GetCount(), "Transaction stack is at depth {0} but temporary is at {1}", m_pHistoryStorage->m_TransactionStack.GetCount(), m_iTemporaryDepth);
   m_bTemporaryMode = false;
 
   EndTransaction(bCancel);

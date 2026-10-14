@@ -63,9 +63,7 @@ void xiiPathSearch<PathStateType>::FillOutPathResult(xiiInt64 iEndNodeIndex, xii
 template <typename PathStateType>
 void xiiPathSearch<PathStateType>::AddPathNode(xiiInt64 iNodeIndex, const PathStateType& NewState)
 {
-  XII_ASSERT_DEV(NewState.m_fCostToNode > m_CurState.m_fCostToNode,
-                 "The costs must grow from one node to the next.\nStart Node Costs: {0}\nAdjacent Node Costs: {1}", xiiArgF(m_CurState.m_fCostToNode, 2),
-                 xiiArgF(NewState.m_fCostToNode, 2));
+  XII_ASSERT_DEV(NewState.m_fCostToNode > m_CurState.m_fCostToNode, "The costs must grow from one node to the next.\nStart Node Costs: {0}\nAdjacent Node Costs: {1}", xiiArgF(m_CurState.m_fCostToNode, 2), xiiArgF(NewState.m_fCostToNode, 2));
   // XII_ASSERT_DEV(NewState.m_fEstimatedCostToTarget >=  m_CurState.m_fEstimatedCostToTarget, "The estimated path costs cannot go down, the
   // heuristic must be 'optimistic' regarding to the real costs.\nEstimated Costs from Current: {0}\nEstimated Costs from Adjacent: {1}",
   // xiiArgF(m_pCurPathState->m_fEstimatedCostToTarget, 2), xiiArgF(NewState.m_fEstimatedCostToTarget, 2));
@@ -166,12 +164,7 @@ xiiResult xiiPathSearch<PathStateType>::FindPath(xiiInt64 iStartNodeIndex, const
 
 
 template <typename PathStateType>
-xiiResult xiiPathSearch<PathStateType>::FindClosest(
-  xiiInt64                  iStartNodeIndex,
-  const PathStateType&      StartState,
-  IsSearchedObjectCallback  Callback,
-  xiiDeque<PathResultData>& out_Path,
-  float                     fMaxPathCost)
+xiiResult xiiPathSearch<PathStateType>::FindClosest(xiiInt64 iStartNodeIndex, const PathStateType& StartState, IsSearchedObjectCallback Callback, xiiDeque<PathResultData>& out_Path, float fMaxPathCost)
 {
   XII_ASSERT_DEV(m_pStateGenerator != nullptr, "No Path State Generator is set.");
 

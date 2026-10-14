@@ -38,10 +38,7 @@ XII_CREATE_SIMPLE_TEST(Math, Color8UNorm)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor xiiColor")
   {
     xiiColorLinearUB fromColor32f(xiiColor(0.39f, 0.58f, 0.93f));
-    XII_TEST_BOOL(xiiMath::IsEqual<xiiUInt8>(fromColor32f.r, static_cast<xiiUInt8>(xiiColor(0.39f, 0.58f, 0.93f).r * 255), 2) &&
-                  xiiMath::IsEqual<xiiUInt8>(fromColor32f.g, static_cast<xiiUInt8>(xiiColor(0.39f, 0.58f, 0.93f).g * 255), 2) &&
-                  xiiMath::IsEqual<xiiUInt8>(fromColor32f.b, static_cast<xiiUInt8>(xiiColor(0.39f, 0.58f, 0.93f).b * 255), 2) &&
-                  xiiMath::IsEqual<xiiUInt8>(fromColor32f.a, static_cast<xiiUInt8>(xiiColor(0.39f, 0.58f, 0.93f).a * 255), 2));
+    XII_TEST_BOOL(xiiMath::IsEqual<xiiUInt8>(fromColor32f.r, static_cast<xiiUInt8>(xiiColor(0.39f, 0.58f, 0.93f).r * 255), 2) && xiiMath::IsEqual<xiiUInt8>(fromColor32f.g, static_cast<xiiUInt8>(xiiColor(0.39f, 0.58f, 0.93f).g * 255), 2) && xiiMath::IsEqual<xiiUInt8>(fromColor32f.b, static_cast<xiiUInt8>(xiiColor(0.39f, 0.58f, 0.93f).b * 255), 2) && xiiMath::IsEqual<xiiUInt8>(fromColor32f.a, static_cast<xiiUInt8>(xiiColor(0.39f, 0.58f, 0.93f).a * 255), 2));
   }
 
   // conversion
@@ -51,17 +48,13 @@ XII_CREATE_SIMPLE_TEST(Math, Color8UNorm)
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Conversion xiiColor")
     {
       xiiColor color32f = cornflowerBlue;
-      XII_TEST_BOOL(xiiMath::IsEqual<float>(color32f.r, xiiColor(0.39f, 0.58f, 0.93f).r, 2.0f / 255.0f) &&
-                    xiiMath::IsEqual<float>(color32f.g, xiiColor(0.39f, 0.58f, 0.93f).g, 2.0f / 255.0f) &&
-                    xiiMath::IsEqual<float>(color32f.b, xiiColor(0.39f, 0.58f, 0.93f).b, 2.0f / 255.0f) &&
-                    xiiMath::IsEqual<float>(color32f.a, xiiColor(0.39f, 0.58f, 0.93f).a, 2.0f / 255.0f));
+      XII_TEST_BOOL(xiiMath::IsEqual<float>(color32f.r, xiiColor(0.39f, 0.58f, 0.93f).r, 2.0f / 255.0f) && xiiMath::IsEqual<float>(color32f.g, xiiColor(0.39f, 0.58f, 0.93f).g, 2.0f / 255.0f) && xiiMath::IsEqual<float>(color32f.b, xiiColor(0.39f, 0.58f, 0.93f).b, 2.0f / 255.0f) && xiiMath::IsEqual<float>(color32f.a, xiiColor(0.39f, 0.58f, 0.93f).a, 2.0f / 255.0f));
     }
 
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Conversion xiiUInt*")
     {
       const xiiUInt8* pUIntsConst = cornflowerBlue.GetData();
-      XII_TEST_BOOL(pUIntsConst[0] == cornflowerBlue.r && pUIntsConst[1] == cornflowerBlue.g && pUIntsConst[2] == cornflowerBlue.b &&
-                    pUIntsConst[3] == cornflowerBlue.a);
+      XII_TEST_BOOL(pUIntsConst[0] == cornflowerBlue.r && pUIntsConst[1] == cornflowerBlue.g && pUIntsConst[2] == cornflowerBlue.b && pUIntsConst[3] == cornflowerBlue.a);
 
       xiiUInt8* pUInts = cornflowerBlue.GetData();
       XII_TEST_BOOL(pUInts[0] == cornflowerBlue.r && pUInts[1] == cornflowerBlue.g && pUInts[2] == cornflowerBlue.b && pUInts[3] == cornflowerBlue.a);

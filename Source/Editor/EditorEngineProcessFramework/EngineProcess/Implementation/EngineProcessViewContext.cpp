@@ -126,8 +126,7 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
   description.m_uiBufferCount                   = 2U;
   description.m_fDefaultDepthValue              = 0.0f;
   description.m_uiDefaultStencilValue           = 0U;
-  xiiUniquePtr<xiiWindowOutputTargetGAL> output = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, description,
-                                                                  [this](xiiSharedPtr<xiiGALSwapChain> swapChain, xiiSizeU32 size) { OnSwapChainChanged(swapChain, size); });
+  xiiUniquePtr<xiiWindowOutputTargetGAL> output = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, description, [this](xiiSharedPtr<xiiGALSwapChain> swapChain, xiiSizeU32 size) { OnSwapChainChanged(swapChain, size); });
   if (!output->GetSwapChain())
   {
     xiiLog::Error("Failed to create swapchain for Editor Process View Window.");
@@ -266,13 +265,11 @@ xiiResult xiiEngineProcessViewContext::PickGizmoAtPixel(xiiUInt32 x, xiiUInt32 y
   if (!view || !view->IsValid())
     return XII_FAILURE;
   const auto& viewport = view->GetViewport();
-  if (!xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) ||
-      !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0)
+  if (!xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0)
     return XII_FAILURE;
 
   xiiEditorGizmoPickResult hit;
-  XII_SUCCEED_OR_RETURN(GetDocumentContext()->PickGizmo(*view, (static_cast<float>(x) + 0.5f - viewport.x) / viewport.width,
-                                                        (static_cast<float>(y) + 0.5f - viewport.y) / viewport.height, hit));
+  XII_SUCCEED_OR_RETURN(GetDocumentContext()->PickGizmo(*view, (static_cast<float>(x) + 0.5f - viewport.x) / viewport.width, (static_cast<float>(y) + 0.5f - viewport.y) / viewport.height, hit));
   out_result.m_OtherGuid                = hit.m_HandleGuid;
   out_result.m_vPickedPosition          = hit.m_vPosition;
   out_result.m_vPickingRayStartPosition = hit.m_vRayStartPosition;

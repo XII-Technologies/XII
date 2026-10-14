@@ -92,8 +92,7 @@ namespace xiiBuiltinPipelineUtils
       if (pDirectional == nullptr)
         continue;
 
-      if (pBest == nullptr || pDirectional->m_fPhotometricIntensity > pBest->m_fPhotometricIntensity ||
-          (pDirectional->m_fPhotometricIntensity == pBest->m_fPhotometricIntensity && pDirectional->m_uiSortingKey < pBest->m_uiSortingKey))
+      if (pBest == nullptr || pDirectional->m_fPhotometricIntensity > pBest->m_fPhotometricIntensity || (pDirectional->m_fPhotometricIntensity == pBest->m_fPhotometricIntensity && pDirectional->m_uiSortingKey < pBest->m_uiSortingKey))
       {
         pBest = pDirectional;
       }
@@ -110,8 +109,7 @@ namespace xiiBuiltinPipelineUtils
       if (pAtmosphere == nullptr)
         continue;
 
-      if (pBest == nullptr || pAtmosphere->m_iPriority > pBest->m_iPriority ||
-          (pAtmosphere->m_iPriority == pBest->m_iPriority && pAtmosphere->m_uiSortingKey < pBest->m_uiSortingKey))
+      if (pBest == nullptr || pAtmosphere->m_iPriority > pBest->m_iPriority || (pAtmosphere->m_iPriority == pBest->m_iPriority && pAtmosphere->m_uiSortingKey < pBest->m_uiSortingKey))
       {
         pBest = pAtmosphere;
       }
@@ -128,8 +126,7 @@ namespace xiiBuiltinPipelineUtils
       if (pCloud == nullptr)
         continue;
 
-      if (pBest == nullptr || pCloud->m_iPriority > pBest->m_iPriority ||
-          (pCloud->m_iPriority == pBest->m_iPriority && pCloud->m_uiSortingKey < pBest->m_uiSortingKey))
+      if (pBest == nullptr || pCloud->m_iPriority > pBest->m_iPriority || (pCloud->m_iPriority == pBest->m_iPriority && pCloud->m_uiSortingKey < pBest->m_uiSortingKey))
       {
         pBest = pCloud;
       }
@@ -162,8 +159,7 @@ namespace xiiBuiltinPipelineUtils
     constants.OzoneAbsorption                   = xiiVec4(settings.m_vOzoneAbsorption, 0.0f);
     constants.PlanetUpAndGroundAltitudeMeters   = xiiVec4(settings.m_vPlanetUpDirection.GetNormalized(), settings.m_fGroundAltitudeMeters);
     constants.SunDiskParameters                 = xiiVec4(settings.m_fSunLimbDarkening, 0.0f, 0.0f, 0.0f);
-    constants.SampleCounts                      = xiiVec4U32(settings.m_uiTransmittanceIntegrationSteps, settings.m_uiMultiScatterSqrtSamples,
-                                                             settings.m_uiSkyViewIntegrationSteps, settings.m_uiAerialPerspectiveSteps);
+    constants.SampleCounts                      = xiiVec4U32(settings.m_uiTransmittanceIntegrationSteps, settings.m_uiMultiScatterSqrtSamples, settings.m_uiSkyViewIntegrationSteps, settings.m_uiAerialPerspectiveSteps);
     return constants;
   }
 

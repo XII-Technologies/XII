@@ -555,8 +555,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiResult xiiDebugRenderer::DrawGeometry(const xiiDebugRendererContext& context, const xiiGeometry& geometry, const xiiColor& color, xiiMatOrTransform transform, xiiDebugRendererDepthMode depthMode)
 {
   const auto& vertices = geometry.GetVertices();
-  if (!color.IsValid() || !transform.m_Mat4.IsValid() || !transform.m_Mat4.GetRow(3).IsEqual(xiiVec4(0, 0, 0, 1), 0.0f) ||
-      (depthMode != xiiDebugRendererDepthMode::DepthTested && depthMode != xiiDebugRendererDepthMode::Overlay))
+  if (!color.IsValid() || !transform.m_Mat4.IsValid() || !transform.m_Mat4.GetRow(3).IsEqual(xiiVec4(0, 0, 0, 1), 0.0f) || (depthMode != xiiDebugRendererDepthMode::DepthTested && depthMode != xiiDebugRendererDepthMode::Overlay))
     return XII_FAILURE;
 
   // Validate before modifying the context, including overflow in transformed positions/colors.

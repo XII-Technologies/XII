@@ -122,10 +122,9 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
   if (pCurrentlyUpdatingContent != nullptr)
   {
     XII_LOCK(s_ResourceMutex);
-    XII_ASSERT_DEV(mode == xiiResourceAcquireMode::PointerOnly || IsResourceTypeAcquireDuringUpdateContentAllowed(pCurrentlyUpdatingContent->GetDynamicRTTI(), xiiGetStaticRTTI<ResourceType>()),
-                   "Trying to acquire a resource of type '{0}' during '{1}::UpdateContent()'. This has to be enabled by calling "
-                   "xiiResourceManager::AllowResourceTypeAcquireDuringUpdateContent<{1}, {0}>(); at engine startup, for example in "
-                   "xiiGameApplication::Init_SetupDefaultResources().",
+    XII_ASSERT_DEV(mode == xiiResourceAcquireMode::PointerOnly || IsResourceTypeAcquireDuringUpdateContentAllowed(pCurrentlyUpdatingContent->GetDynamicRTTI(), xiiGetStaticRTTI<ResourceType>()), "Trying to acquire a resource of type '{0}' during '{1}::UpdateContent()'. This has to be enabled by calling "
+                                                                                                                                                                                                  "xiiResourceManager::AllowResourceTypeAcquireDuringUpdateContent<{1}, {0}>(); at engine startup, for example in "
+                                                                                                                                                                                                  "xiiGameApplication::Init_SetupDefaultResources().",
                    xiiGetStaticRTTI<ResourceType>()->GetTypeName(), pCurrentlyUpdatingContent->GetDynamicRTTI()->GetTypeName());
   }
 #endif

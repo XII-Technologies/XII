@@ -739,8 +739,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         // New enums are not supported and may cause validation error.
         if (uiLayerVersion < VK_HEADER_VERSION_COMPLETE)
         {
-          xiiLog::Warning("Layer '{}' version ({}.{}.{}) is less than the header version ({}.{}.{}).", szValidationLayerName, VK_API_VERSION_MAJOR(uiLayerVersion), VK_API_VERSION_MINOR(uiLayerVersion), VK_API_VERSION_PATCH(uiLayerVersion),
-                          VK_API_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE), VK_API_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE), VK_API_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE));
+          xiiLog::Warning("Layer '{}' version ({}.{}.{}) is less than the header version ({}.{}.{}).", szValidationLayerName, VK_API_VERSION_MAJOR(uiLayerVersion), VK_API_VERSION_MINOR(uiLayerVersion), VK_API_VERSION_PATCH(uiLayerVersion), VK_API_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE), VK_API_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE), VK_API_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE));
         }
 
         instanceLayers.PushBack(szValidationLayerName);
@@ -944,9 +943,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     if (m_PhysicalDevice != VK_NULL_HANDLE)
     {
-      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", m_PhysicalDeviceProperties.deviceName,
-                  VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.apiVersion),
-                  VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.driverVersion));
+      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", m_PhysicalDeviceProperties.deviceName, VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.driverVersion));
     }
     else
     {

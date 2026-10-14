@@ -184,9 +184,7 @@ xiiResult xiiOBJLoader::LoadOBJ(const char* szFile, bool bIgnoreMaterials)
         // Reject malformed references before computing the face normal or exposing indices to consumers.
         for (const auto& vertex : face.m_Vertices)
         {
-          if (vertex.m_uiPositionID < uiPositionOffset || vertex.m_uiPositionID >= m_Positions.GetCount() ||
-              (bContainsTexCoords && (vertex.m_uiTexCoordID < uiTexCoordOffset || vertex.m_uiTexCoordID >= m_TexCoords.GetCount())) ||
-              (bContainsNormals && (vertex.m_uiNormalID < uiNormalOffset || vertex.m_uiNormalID >= m_Normals.GetCount())))
+          if (vertex.m_uiPositionID < uiPositionOffset || vertex.m_uiPositionID >= m_Positions.GetCount() || (bContainsTexCoords && (vertex.m_uiTexCoordID < uiTexCoordOffset || vertex.m_uiTexCoordID >= m_TexCoords.GetCount())) || (bContainsNormals && (vertex.m_uiNormalID < uiNormalOffset || vertex.m_uiNormalID >= m_Normals.GetCount())))
             return XII_FAILURE;
         }
 
@@ -261,11 +259,9 @@ void xiiOBJLoader::ComputeTangentSpaceVectors()
     float fScale1 = 1.0f / fDenominator;
 
     xiiVec3 T, B;
-    T = xiiVec3(
-      (c3c1_B * v2v1.x - c2c1_B * v3v1.x) * fScale1, (c3c1_B * v2v1.y - c2c1_B * v3v1.y) * fScale1, (c3c1_B * v2v1.z - c2c1_B * v3v1.z) * fScale1);
+    T = xiiVec3((c3c1_B * v2v1.x - c2c1_B * v3v1.x) * fScale1, (c3c1_B * v2v1.y - c2c1_B * v3v1.y) * fScale1, (c3c1_B * v2v1.z - c2c1_B * v3v1.z) * fScale1);
 
-    B = xiiVec3(
-      (-c3c1_T * v2v1.x + c2c1_T * v3v1.x) * fScale1, (-c3c1_T * v2v1.y + c2c1_T * v3v1.y) * fScale1, (-c3c1_T * v2v1.z + c2c1_T * v3v1.z) * fScale1);
+    B = xiiVec3((-c3c1_T * v2v1.x + c2c1_T * v3v1.x) * fScale1, (-c3c1_T * v2v1.y + c2c1_T * v3v1.y) * fScale1, (-c3c1_T * v2v1.z + c2c1_T * v3v1.z) * fScale1);
 
     T.Normalize();
     B.Normalize();

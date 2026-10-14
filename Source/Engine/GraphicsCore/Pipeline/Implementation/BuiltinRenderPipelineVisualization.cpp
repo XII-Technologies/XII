@@ -78,8 +78,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildViewRenderMode(xiiRenderGraph& g
     auto description       = m_Frame.gpuRasterDescription;
     description.m_uiWidth  = static_cast<xiiUInt32>(m_View.GetViewport().width);
     description.m_uiHeight = static_cast<xiiUInt32>(m_View.GetViewport().height);
-    XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(graph, "Wireframe surface", m_Frame.mainVisibility,
-                                                                   m_Frame.geometry, m_Frame.materials, description, wireframeSurface, true, xiiGALFillMode::Wireframe));
+    XII_SUCCEED_OR_RETURN(xiiGpuSceneRasterManager::AddPickingPass(graph, "Wireframe surface", m_Frame.mainVisibility, m_Frame.geometry, m_Frame.materials, description, wireframeSurface, true, xiiGALFillMode::Wireframe));
   }
   auto setup = [source, wireframeSurface](ViewRenderModeData& data, xiiRenderGraphBuilder& builder) {
     data.m_hSource    = builder.ReadTexture(source, xiiGALResourceStateFlags::ShaderResource);

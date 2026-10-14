@@ -24,8 +24,7 @@ xiiStatus xiiAssetCurator::GetAssetResaveOrder(xiiStringView sPrefixPath, xiiDyn
     XII_LOCK(m_CuratorMutex);
     for (auto it = m_KnownAssets.GetIterator(); it.IsValid(); ++it)
     {
-      if (it.Value()->m_ExistanceState != xiiAssetExistanceState::FileRemoved &&
-          (sPrefixPath.IsEmpty() || xiiPathUtils::IsSubPath(sPrefixPath, it.Value()->m_Path.GetAbsolutePath())))
+      if (it.Value()->m_ExistanceState != xiiAssetExistanceState::FileRemoved && (sPrefixPath.IsEmpty() || xiiPathUtils::IsSubPath(sPrefixPath, it.Value()->m_Path.GetAbsolutePath())))
         assets.PushBack({it.Key(), it.Value()->m_Path.GetAbsolutePath()});
     }
     assets.Sort([](const Asset& a, const Asset& b) {

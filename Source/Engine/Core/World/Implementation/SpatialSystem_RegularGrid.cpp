@@ -688,13 +688,12 @@ xiiResult xiiSpatialSystem_RegularGrid::GetCellBoxForSpatialData(const xiiSpatia
   if (!m_DataTable.TryGetValue(hData.GetInternalID(), pData))
     return XII_FAILURE;
 
-  ForEachGrid(*pData, hData,
-              [&](Grid& ref_grid, const CellDataMapping& mapping) {
-                auto& pCell = ref_grid.m_Cells[mapping.m_uiCellIndex];
+  ForEachGrid(*pData, hData, [&](Grid& ref_grid, const CellDataMapping& mapping) {
+    auto& pCell = ref_grid.m_Cells[mapping.m_uiCellIndex];
 
-                out_boundingBox = pCell->GetBoundingBox();
-                return xiiVisitorExecution::Stop;
-              });
+    out_boundingBox = pCell->GetBoundingBox();
+    return xiiVisitorExecution::Stop;
+  });
 
   return XII_SUCCESS;
 }
@@ -805,12 +804,11 @@ void xiiSpatialSystem_RegularGrid::DeleteSpatialData(const xiiSpatialDataHandle&
   Data oldData;
   XII_VERIFY(m_DataTable.Remove(hData.GetInternalID(), &oldData), "Invalid spatial data handle");
 
-  ForEachGrid(oldData, hData,
-              [&](Grid& ref_grid, const CellDataMapping& mapping) {
-                XII_IGNORE_UNUSED(mapping);
-                ref_grid.RemoveSpatialData(hData);
-                return xiiVisitorExecution::Continue;
-              });
+  ForEachGrid(oldData, hData, [&](Grid& ref_grid, const CellDataMapping& mapping) {
+    XII_IGNORE_UNUSED(mapping);
+    ref_grid.RemoveSpatialData(hData);
+    return xiiVisitorExecution::Continue;
+  });
 }
 
 void xiiSpatialSystem_RegularGrid::UpdateSpatialDataBounds(const xiiSpatialDataHandle& hData, const xiiSimdBBoxSphere& bounds)
@@ -822,29 +820,28 @@ void xiiSpatialSystem_RegularGrid::UpdateSpatialDataBounds(const xiiSpatialDataH
   if (IsAlwaysVisibleData(*pData))
     return;
 
-  ForEachGrid(*pData, hData,
-              [&](Grid& ref_grid, const CellDataMapping& mapping) {
-                auto& pOldCell = ref_grid.m_Cells[mapping.m_uiCellIndex];
+  ForEachGrid(*pData, hData, [&](Grid& ref_grid, const CellDataMapping& mapping) {
+    auto& pOldCell = ref_grid.m_Cells[mapping.m_uiCellIndex];
 
-                if (pOldCell->m_Bounds.GetBox().Contains(bounds.GetBox()))
-                {
-                  pOldCell->m_BoundingSpheres[mapping.m_uiCellDataIndex]        = bounds.GetSphere();
-                  pOldCell->m_BoundingBoxHalfExtents[mapping.m_uiCellDataIndex] = bounds.m_BoxHalfExtents;
-                }
-                else
-                {
-                  const xiiTagSet tags          = pOldCell->m_TagSets[mapping.m_uiCellDataIndex];
-                  xiiGameObject*  objectPointer = pOldCell->m_ObjectPointers[mapping.m_uiCellDataIndex];
+    if (pOldCell->m_Bounds.GetBox().Contains(bounds.GetBox()))
+    {
+      pOldCell->m_BoundingSpheres[mapping.m_uiCellDataIndex]        = bounds.GetSphere();
+      pOldCell->m_BoundingBoxHalfExtents[mapping.m_uiCellDataIndex] = bounds.m_BoxHalfExtents;
+    }
+    else
+    {
+      const xiiTagSet tags          = pOldCell->m_TagSets[mapping.m_uiCellDataIndex];
+      xiiGameObject*  objectPointer = pOldCell->m_ObjectPointers[mapping.m_uiCellDataIndex];
 
-                  const xiiUInt64 uiLastVisibleFrameIdxAndVisType = pOldCell->m_LastVisibleFrameIdxAndVisType[mapping.m_uiCellDataIndex];
+      const xiiUInt64 uiLastVisibleFrameIdxAndVisType = pOldCell->m_LastVisibleFrameIdxAndVisType[mapping.m_uiCellDataIndex];
 
-                  ref_grid.RemoveSpatialData(hData);
+      ref_grid.RemoveSpatialData(hData);
 
-                  ref_grid.AddSpatialData(bounds, tags, objectPointer, uiLastVisibleFrameIdxAndVisType, hData);
-                }
+      ref_grid.AddSpatialData(bounds, tags, objectPointer, uiLastVisibleFrameIdxAndVisType, hData);
+    }
 
-                return xiiVisitorExecution::Continue;
-              });
+    return xiiVisitorExecution::Continue;
+  });
 }
 
 void xiiSpatialSystem_RegularGrid::UpdateSpatialDataObject(const xiiSpatialDataHandle& hData, xiiGameObject* pObject)
@@ -852,12 +849,11 @@ void xiiSpatialSystem_RegularGrid::UpdateSpatialDataObject(const xiiSpatialDataH
   Data* pData = nullptr;
   XII_VERIFY(m_DataTable.TryGetValue(hData.GetInternalID(), pData), "Invalid spatial data handle");
 
-  ForEachGrid(*pData, hData,
-              [&](Grid& ref_grid, const CellDataMapping& mapping) {
-                auto& pCell                                        = ref_grid.m_Cells[mapping.m_uiCellIndex];
-                pCell->m_ObjectPointers[mapping.m_uiCellDataIndex] = pObject;
-                return xiiVisitorExecution::Continue;
-              });
+  ForEachGrid(*pData, hData, [&](Grid& ref_grid, const CellDataMapping& mapping) {
+    auto& pCell                                        = ref_grid.m_Cells[mapping.m_uiCellIndex];
+    pCell->m_ObjectPointers[mapping.m_uiCellDataIndex] = pObject;
+    return xiiVisitorExecution::Continue;
+  });
 }
 
 void xiiSpatialSystem_RegularGrid::FindObjectsInSphere(const xiiBoundingSphere& sphere, const QueryParams& queryParams, QueryCallback callback) const
@@ -960,12 +956,11 @@ xiiVisibilityState::Enum xiiSpatialSystem_RegularGrid::GetVisibilityState(const 
     return xiiVisibilityState::Direct;
 
   xiiUInt64 uiLastVisibleFrameIdxAndVisType = 0;
-  ForEachGrid(*pData, hData,
-              [&](const Grid& grid, const CellDataMapping& mapping) {
-                auto& pCell                     = grid.m_Cells[mapping.m_uiCellIndex];
-                uiLastVisibleFrameIdxAndVisType = xiiMath::Max<xiiUInt64>(uiLastVisibleFrameIdxAndVisType, pCell->m_LastVisibleFrameIdxAndVisType[mapping.m_uiCellDataIndex]);
-                return xiiVisitorExecution::Continue;
-              });
+  ForEachGrid(*pData, hData, [&](const Grid& grid, const CellDataMapping& mapping) {
+    auto& pCell                     = grid.m_Cells[mapping.m_uiCellIndex];
+    uiLastVisibleFrameIdxAndVisType = xiiMath::Max<xiiUInt64>(uiLastVisibleFrameIdxAndVisType, pCell->m_LastVisibleFrameIdxAndVisType[mapping.m_uiCellDataIndex]);
+    return xiiVisitorExecution::Continue;
+  });
 
   const xiiUInt64 uiLastVisibleFrameIdx = ExtractLastVisibleFrameIndex(uiLastVisibleFrameIdxAndVisType);
 
@@ -1120,10 +1115,9 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
     uiGridBitmask &= ~pGrid->m_Category.GetBitmask();
 
     Stats stats;
-    pGrid->ForEachCellInBox(box,
-                            [&](const Cell& cell) {
-                              return noFilterCallback(cell, queryParams, stats, pUserData, visType);
-                            });
+    pGrid->ForEachCellInBox(box, [&](const Cell& cell) {
+      return noFilterCallback(cell, queryParams, stats, pUserData, visType);
+    });
 
     UpdateCacheCandidate(queryParams.m_pIncludeTags, queryParams.m_pExcludeTags, pGrid->m_Category, 0.0f);
 
@@ -1150,10 +1144,9 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
       continue;
 
     Stats stats;
-    pGrid->ForEachCellInBox(box,
-                            [&](const Cell& cell) {
-                              return cellCallback(cell, queryParams, stats, pUserData, visType);
-                            });
+    pGrid->ForEachCellInBox(box, [&](const Cell& cell) {
+      return cellCallback(cell, queryParams, stats, pUserData, visType);
+    });
 
     if (pGrid->m_bCanBeCached && useTagsFilter)
     {

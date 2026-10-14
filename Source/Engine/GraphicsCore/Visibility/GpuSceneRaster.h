@@ -94,28 +94,16 @@ public:
   /// their transient command storage is O(visible-meshlet capacity).
   /// Wireframe fill queries actual triangle edges for inspection views and requires the device's
   /// WireframeFill feature. Unsupported fill modes fail before adding passes.
-  [[nodiscard]] static xiiResult AddPickingPass(xiiRenderGraph& graph, xiiStringView sName,
-                                                const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders = true, xiiGALFillMode::Enum fillMode = xiiGALFillMode::Solid);
+  [[nodiscard]] static xiiResult AddPickingPass(xiiRenderGraph& graph, xiiStringView sName, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description, xiiRenderGraphTextureHandle& out_hSurface, bool bUseMeshShaders = true, xiiGALFillMode::Enum fillMode = xiiGALFillMode::Solid);
 
   /// Adds a reversed-Z depth prepass and returns the produced depth version. Invalid input or a
   /// device without mesh shaders returns an invalid handle so callers can select an indexed fallback.
-  [[nodiscard]] static xiiRenderGraphTextureHandle AddDepthPrepass(xiiRenderGraph& graph, xiiStringView sName,
-                                                                   const xiiGpuVisibilityOutputs&                    visibility,
-                                                                   const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                                   const xiiMaterialGpuStorage::UploadHandles&       materials,
-                                                                   const xiiGpuSceneDepthRasterDescription&          description);
+  [[nodiscard]] static xiiRenderGraphTextureHandle AddDepthPrepass(xiiRenderGraph& graph, xiiStringView sName, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneDepthRasterDescription& description);
 
   /// Rasterizes canonical surface materials into the deferred targets while depth testing against
   /// the scene prepass. Compact normal/roughness and object-aware velocity are emitted as extra
   /// MRTs so AO, identity-aware temporal effects and lighting do not need additional geometry submissions.
-  [[nodiscard]] static xiiGpuSceneGBufferOutputs AddGBufferPass(xiiRenderGraph& graph, xiiStringView sName,
-                                                                xiiRenderGraphTextureHandle                       hSceneDepth,
-                                                                xiiRenderGraphTextureHandle                       hVelocity,
-                                                                const xiiGpuVisibilityOutputs&                    visibility,
-                                                                const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                                const xiiMaterialGpuStorage::UploadHandles&       materials,
-                                                                const xiiGpuSceneGBufferRasterDescription&        description);
+  [[nodiscard]] static xiiGpuSceneGBufferOutputs AddGBufferPass(xiiRenderGraph& graph, xiiStringView sName, xiiRenderGraphTextureHandle hSceneDepth, xiiRenderGraphTextureHandle hVelocity, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, const xiiGpuSceneGBufferRasterDescription& description);
 
   /// Shades the compact visibility stream directly with the clustered light lists and canonical
   /// surface records. The returned texture contains direct HDR radiance and can replace the

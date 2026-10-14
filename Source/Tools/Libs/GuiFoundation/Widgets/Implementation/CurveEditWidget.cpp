@@ -524,10 +524,7 @@ void xiiQtCurveEditWidget::mouseReleaseEvent(QMouseEvent* e)
     }
   }
 
-  if (e->button() == Qt::LeftButton &&
-      (m_State == EditState::DraggingPoints || m_State == EditState::DraggingPointsHorz || m_State == EditState::DraggingPointsVert ||
-       m_State == EditState::DraggingTangents || m_State == EditState::DraggingCurve || m_State == EditState::ScaleLeftRight ||
-       m_State == EditState::ScaleUpDown || m_State == EditState::MultiSelect))
+  if (e->button() == Qt::LeftButton && (m_State == EditState::DraggingPoints || m_State == EditState::DraggingPointsHorz || m_State == EditState::DraggingPointsVert || m_State == EditState::DraggingTangents || m_State == EditState::DraggingCurve || m_State == EditState::ScaleLeftRight || m_State == EditState::ScaleUpDown || m_State == EditState::MultiSelect))
   {
     m_State                 = EditState::None;
     m_iSelectedTangentCurve = -1;

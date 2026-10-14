@@ -498,8 +498,7 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiProjectAction::ProjectEventHandler, this));
   }
 
-  if (m_ButtonType == ButtonType::OpenCppProject ||
-      m_ButtonType == ButtonType::CompileCppProject)
+  if (m_ButtonType == ButtonType::OpenCppProject || m_ButtonType == ButtonType::CompileCppProject)
   {
     SetEnabled(xiiCppProject::ExistsProjectCMakeListsTxt());
 

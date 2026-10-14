@@ -38,8 +38,7 @@ void xiiSceneSelectionPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins)
 
 xiiResult xiiSceneSelectionPass::Build(xiiRenderPipelinePassContext& context)
 {
-  if (!context.m_pView || !m_VisibleColor.IsValid() || !m_OccludedColor.IsValid() || !xiiMath::IsFinite(m_fFillOpacity) ||
-      m_fFillOpacity < 0 || m_fFillOpacity > 1 || m_uiOutlineWidth < 1 || m_uiOutlineWidth > 4)
+  if (!context.m_pView || !m_VisibleColor.IsValid() || !m_OccludedColor.IsValid() || !xiiMath::IsFinite(m_fFillOpacity) || m_fFillOpacity < 0 || m_fFillOpacity > 1 || m_uiOutlineWidth < 1 || m_uiOutlineWidth > 4)
     return XII_FAILURE;
   bool enabled = true;
   if (const auto* setting = context.m_Parameters.GetValue("Editor.SelectionOverlay"))
@@ -57,12 +56,7 @@ xiiResult xiiSceneSelectionPass::Build(xiiRenderPipelinePassContext& context)
   const auto* sceneDepth = context.m_Graph.GetTextureDescription(depth);
   const auto* surface    = context.m_Graph.GetTextureDescription(selection);
   const auto& viewport   = context.m_pView->GetViewport();
-  if (!output || !sceneDepth || !surface || output->m_Type != xiiGALResourceDimension::Texture2D ||
-      sceneDepth->m_Type != xiiGALResourceDimension::Texture2D || surface->m_Type != xiiGALResourceDimension::Texture2D ||
-      output->m_uiSampleCount != 1 || sceneDepth->m_uiSampleCount != 1 || surface->m_uiSampleCount != 1 ||
-      !output->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !sceneDepth->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) ||
-      !surface->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiGALResourceFormat::IsDepthFormat(sceneDepth->m_Format) ||
-      viewport.x < 0 || viewport.y < 0 || viewport.x + viewport.width > output->m_Size.width || viewport.y + viewport.height > output->m_Size.height)
+  if (!output || !sceneDepth || !surface || output->m_Type != xiiGALResourceDimension::Texture2D || sceneDepth->m_Type != xiiGALResourceDimension::Texture2D || surface->m_Type != xiiGALResourceDimension::Texture2D || output->m_uiSampleCount != 1 || sceneDepth->m_uiSampleCount != 1 || surface->m_uiSampleCount != 1 || !output->m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || !sceneDepth->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !surface->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || !xiiGALResourceFormat::IsDepthFormat(sceneDepth->m_Format) || viewport.x < 0 || viewport.y < 0 || viewport.x + viewport.width > output->m_Size.width || viewport.y + viewport.height > output->m_Size.height)
     return XII_FAILURE;
   auto shader      = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Editor/SceneSelection.xiiShader");
   auto permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);

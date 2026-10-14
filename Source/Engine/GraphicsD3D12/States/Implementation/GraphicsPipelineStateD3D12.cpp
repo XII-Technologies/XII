@@ -73,8 +73,7 @@ namespace
   {
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == immutableSampler.m_SamplerOrTextureName &&
-          (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler))
+      if (resource.m_sName == immutableSampler.m_SamplerOrTextureName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler))
       {
         out_uiBindSlot = resource.m_uiBindSlot;
         out_uiBindSet  = resource.m_uiBindSet;
@@ -345,10 +344,7 @@ xiiResult xiiGALGraphicsPipelineStateD3D12::InitPlatform()
     pipelineStateDescription.DepthStencilState = *pDepthStencilStateD3D12->GetDepthStencilState();
   }
 
-  if (m_Description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::TriangleStrip ||
-      m_Description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::LineStrip ||
-      m_Description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::TriangleStripAdjacent ||
-      m_Description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::LineStripAdjacent)
+  if (m_Description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::TriangleStrip || m_Description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::LineStrip || m_Description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::TriangleStripAdjacent || m_Description.m_GraphicsPipeline.m_PrimitiveTopology == xiiGALPrimitiveTopology::LineStripAdjacent)
   {
     pipelineStateDescription.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFFFFFF;
   }

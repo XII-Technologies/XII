@@ -239,8 +239,7 @@ xiiQtTimeScrubberToolbar::xiiQtTimeScrubberToolbar(QWidget* pParent) :
   addWidget(m_pAdjustDurationButton);
 
   // Pass event through
-  connect(m_pScrubber, &xiiQtTimeScrubberWidget::ScrubberPosChangedEvent, this,
-          [this](xiiUInt64 uiNewScrubberTickPos) { Q_EMIT ScrubberPosChangedEvent(uiNewScrubberTickPos); });
+  connect(m_pScrubber, &xiiQtTimeScrubberWidget::ScrubberPosChangedEvent, this, [this](xiiUInt64 uiNewScrubberTickPos) { Q_EMIT ScrubberPosChangedEvent(uiNewScrubberTickPos); });
 
   connect(m_pPlayButton, &QPushButton::clicked, this, [this](bool) { Q_EMIT PlayPauseEvent(); });
   connect(m_pRepeatButton, &QPushButton::clicked, this, [this](bool) { Q_EMIT RepeatEvent(); });

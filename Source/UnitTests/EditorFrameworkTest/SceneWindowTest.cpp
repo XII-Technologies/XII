@@ -277,9 +277,7 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         xiiQtUiServices::s_TickEvent.Broadcast(tick);
         pick.m_uiPickPosX = resolution.width / 2;
         pick.m_uiPickPosY = resolution.height / 2;
-        if (!XII_TEST_BOOL(scene->SendMessageToEngine(&pick)) ||
-            !XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID,
-                                                                                                      xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), xiiTime::MakeFromSeconds(2), &callback)))
+        if (!XII_TEST_BOOL(scene->SendMessageToEngine(&pick)) || !XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID, xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), xiiTime::MakeFromSeconds(2), &callback)))
           return;
         if (!XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed()))
           return;
@@ -340,7 +338,6 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
     query.m_uiViewID = xiiInvalidIndex;
     query.m_iPurpose = 2;
     XII_TEST_BOOL(scene->SendMessageToEngine(&query));
-    XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID,
-                                                                                             xiiGetStaticRTTI<xiiQuerySelectionBBoxResultMsgToEditor>(), xiiTime::MakeFromSeconds(5)));
+    XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID, xiiGetStaticRTTI<xiiQuerySelectionBBoxResultMsgToEditor>(), xiiTime::MakeFromSeconds(5)));
   }
 }

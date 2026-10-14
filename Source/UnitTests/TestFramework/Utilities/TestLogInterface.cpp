@@ -11,8 +11,7 @@ xiiTestLogInterface::~xiiTestLogInterface()
   for (const ExpectedMsg& msg : m_ExpectedMessages)
   {
     xiiInt32 count = msg.m_iCount;
-    XII_TEST_BOOL_MSG(count == 0, "Message \"%s\" was logged %d times %s than expected.", msg.m_sMsgSubString.GetData(), count < 0 ? -count : count,
-                      count < 0 ? "more" : "less");
+    XII_TEST_BOOL_MSG(count == 0, "Message \"%s\" was logged %d times %s than expected.", msg.m_sMsgSubString.GetData(), count < 0 ? -count : count, count < 0 ? "more" : "less");
   }
 }
 

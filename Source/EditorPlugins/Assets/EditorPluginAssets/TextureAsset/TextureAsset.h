@@ -47,7 +47,7 @@ protected:
   virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override { return xiiTransformStatus("Texture transformation requires a target file."); }
   virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 
-  xiiStatus RunTextureConverter(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail, const xiiTextureAssetProfileConfig* pAssetConfig);
+  xiiStatus          RunTextureConverter(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail, const xiiTextureAssetProfileConfig* pAssetConfig);
   xiiTransformStatus WriteRenderTargetAsset(xiiStringView sTargetFile, const xiiAssetFileHeader& header, const xiiTextureAssetProfileConfig* pProfile) const;
 
   virtual void UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;

@@ -267,8 +267,7 @@ void xiiCamera::SetViewMatrix(const xiiMat4& mLookAtMatrix, xiiCameraEye eye)
   m_mViewMatrix[iEyeIdx] = mLookAtMatrix;
 
   xiiVec3 decFwd, decRight, decUp;
-  xiiGraphicsUtils::DecomposeViewMatrix(
-    m_vCameraPosition[iEyeIdx], decFwd, decRight, decUp, m_mViewMatrix[static_cast<int>(eye)], xiiHandedness::LeftHanded);
+  xiiGraphicsUtils::DecomposeViewMatrix(m_vCameraPosition[iEyeIdx], decFwd, decRight, decUp, m_mViewMatrix[static_cast<int>(eye)], xiiHandedness::LeftHanded);
 
   if (m_Mode != xiiCameraMode::Stereo)
   {
@@ -284,23 +283,19 @@ void xiiCamera::GetProjectionMatrix(float fAspectRatioWidthDivHeight, xiiMat4& o
   switch (m_Mode)
   {
     case xiiCameraMode::PerspectiveFixedFovX:
-      out_mProjectionMatrix = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::MakeFromDegree(m_fFovOrDim), fAspectRatioWidthDivHeight,
-                                                                                          m_fNearPlane, m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+      out_mProjectionMatrix = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::MakeFromDegree(m_fFovOrDim), fAspectRatioWidthDivHeight, m_fNearPlane, m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
       break;
 
     case xiiCameraMode::PerspectiveFixedFovY:
-      out_mProjectionMatrix = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(m_fFovOrDim), fAspectRatioWidthDivHeight,
-                                                                                          m_fNearPlane, m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+      out_mProjectionMatrix = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(m_fFovOrDim), fAspectRatioWidthDivHeight, m_fNearPlane, m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
       break;
 
     case xiiCameraMode::OrthoFixedWidth:
-      out_mProjectionMatrix = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_fFovOrDim, m_fFovOrDim / fAspectRatioWidthDivHeight, m_fNearPlane,
-                                                                                   m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+      out_mProjectionMatrix = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_fFovOrDim, m_fFovOrDim / fAspectRatioWidthDivHeight, m_fNearPlane, m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
       break;
 
     case xiiCameraMode::OrthoFixedHeight:
-      out_mProjectionMatrix = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_fFovOrDim * fAspectRatioWidthDivHeight, m_fFovOrDim, m_fNearPlane,
-                                                                                   m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+      out_mProjectionMatrix = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_fFovOrDim * fAspectRatioWidthDivHeight, m_fFovOrDim, m_fNearPlane, m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
       break;
 
     case xiiCameraMode::Stereo:
@@ -309,8 +304,7 @@ void xiiCamera::GetProjectionMatrix(float fAspectRatioWidthDivHeight, xiiMat4& o
       else
       {
         // Evade to FixedFovY
-        out_mProjectionMatrix = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(m_fFovOrDim), fAspectRatioWidthDivHeight,
-                                                                                            m_fNearPlane, m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+        out_mProjectionMatrix = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(m_fFovOrDim), fAspectRatioWidthDivHeight, m_fNearPlane, m_fFarPlane, depthRange, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
       }
       break;
 

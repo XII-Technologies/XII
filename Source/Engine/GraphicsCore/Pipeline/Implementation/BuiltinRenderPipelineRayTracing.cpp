@@ -44,17 +44,13 @@ void xiiBuiltinRenderPipelineRuntime::SetupRayTracedGlobalIllumination(xiiRayTra
 
     auto& reflectionResources = m_Resources.m_LightingPrepPasses;
     XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before RTGI setup.");
-    data.m_hFallbackReflectionProbe = builder.ReadTexture(
-      builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()),
-      xiiGALResourceStateFlags::ShaderResource);
+    data.m_hFallbackReflectionProbe = builder.ReadTexture(builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
     data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
     for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < reflectionResources.m_ReflectionProbeTextures.GetCount(); ++uiProbeIndex)
     {
       xiiStringBuilder sResourceName;
       sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
-      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
-        builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()),
-        xiiGALResourceStateFlags::ShaderResource));
+      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource));
     }
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
@@ -414,17 +410,13 @@ void xiiBuiltinRenderPipelineRuntime::SetupRayTracedReflections(xiiRayTracedRefl
 
     auto& reflectionResources = m_Resources.m_LightingPrepPasses;
     XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before RT reflection setup.");
-    data.m_hFallbackReflectionProbe = builder.ReadTexture(
-      builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()),
-      xiiGALResourceStateFlags::ShaderResource);
+    data.m_hFallbackReflectionProbe = builder.ReadTexture(builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
     data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
     for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < reflectionResources.m_ReflectionProbeTextures.GetCount(); ++uiProbeIndex)
     {
       xiiStringBuilder sResourceName;
       sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
-      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
-        builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()),
-        xiiGALResourceStateFlags::ShaderResource));
+      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource));
     }
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
@@ -1080,8 +1072,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupSensorOutput(xiiSensorOutputData& dat
 
 void xiiBuiltinRenderPipelineRuntime::ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGraphPassContext& context)
 {
-  if (!data.m_hSceneRadiance.IsValid() || !data.m_hSceneDepth.IsValid() || !data.m_hSceneNormal.IsValid() ||
-      !data.m_hBaseColor.IsValid() || !data.m_hVelocity.IsValid() || !data.m_hSensorOutput.IsValid() || !data.m_hConstants.IsValid())
+  if (!data.m_hSceneRadiance.IsValid() || !data.m_hSceneDepth.IsValid() || !data.m_hSceneNormal.IsValid() || !data.m_hBaseColor.IsValid() || !data.m_hVelocity.IsValid() || !data.m_hSensorOutput.IsValid() || !data.m_hConstants.IsValid())
     return;
 
   xiiGALCommandList& cmd = context.GetCommandList();

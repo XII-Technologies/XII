@@ -54,8 +54,7 @@ void xiiAnimationClipContext::HandleMessage(const xiiEditorEngineDocumentMsg* pM
       {
         mesh->ClearPose();
         mesh->SetSkeleton({});
-        mesh->SetMesh(m_sAnimatedMeshToUse.IsEmpty() ? xiiMeshResourceHandle() :
-                                                       xiiResourceManager::LoadResource<xiiMeshResource>(m_sAnimatedMeshToUse));
+        mesh->SetMesh(m_sAnimatedMeshToUse.IsEmpty() ? xiiMeshResourceHandle() : xiiResourceManager::LoadResource<xiiMeshResource>(m_sAnimatedMeshToUse));
       }
     }
     else if (pMsg->m_sWhatToDo == "PlaybackPos")

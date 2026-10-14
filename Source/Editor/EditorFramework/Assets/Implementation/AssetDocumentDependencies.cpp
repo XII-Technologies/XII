@@ -56,8 +56,7 @@ namespace
     }
   }
 
-  void GetParameterDependencyFlags(const xiiDocumentObject* object, const xiiAbstractProperty* property,
-                                   xiiMap<xiiString, xiiBitflags<xiiDependencyFlags>>& out_flags)
+  void GetParameterDependencyFlags(const xiiDocumentObject* object, const xiiAbstractProperty* property, xiiMap<xiiString, xiiBitflags<xiiDependencyFlags>>& out_flags)
   {
     const auto* exposed = property->GetAttributeByType<xiiExposedParametersAttribute>();
     auto*       curator = xiiAssetCurator::GetSingleton();

@@ -53,10 +53,7 @@ namespace
     rotation.SetColumn(1, rotation.GetColumn(1) / scale.y);
     rotation.SetColumn(2, rotation.GetColumn(2) / scale.z);
 
-    if (!rotation.IsValid() || !xiiMath::IsEqual(rotation.GetDeterminant(), 1.0f, 0.001f) ||
-        !xiiMath::IsZero(rotation.GetColumn(0).Dot(rotation.GetColumn(1)), 0.001f) ||
-        !xiiMath::IsZero(rotation.GetColumn(0).Dot(rotation.GetColumn(2)), 0.001f) ||
-        !xiiMath::IsZero(rotation.GetColumn(1).Dot(rotation.GetColumn(2)), 0.001f))
+    if (!rotation.IsValid() || !xiiMath::IsEqual(rotation.GetDeterminant(), 1.0f, 0.001f) || !xiiMath::IsZero(rotation.GetColumn(0).Dot(rotation.GetColumn(1)), 0.001f) || !xiiMath::IsZero(rotation.GetColumn(0).Dot(rotation.GetColumn(2)), 0.001f) || !xiiMath::IsZero(rotation.GetColumn(1).Dot(rotation.GetColumn(2)), 0.001f))
       return XII_FAILURE;
 
     out_pose = xiiTransform::Make(matrix.GetTranslationVector(), xiiQuat::MakeFromMat3(rotation), scale);
@@ -113,15 +110,13 @@ void xiiEditableSkeletonJoint::CopyPropertiesFrom(const xiiEditableSkeletonJoint
 xiiResult xiiEditableSkeleton::GetRootTransform(xiiTransform& out_transform) const
 {
   out_transform.SetIdentity();
-  if (!xiiMath::IsFinite(m_fUniformScaling) || m_fUniformScaling <= 0 ||
-      (m_ImportTransform != xiiMeshImportTransform::Blender_YUp && m_ImportTransform != xiiMeshImportTransform::Blender_ZUp && m_ImportTransform != xiiMeshImportTransform::Custom))
+  if (!xiiMath::IsFinite(m_fUniformScaling) || m_fUniformScaling <= 0 || (m_ImportTransform != xiiMeshImportTransform::Blender_YUp && m_ImportTransform != xiiMeshImportTransform::Blender_ZUp && m_ImportTransform != xiiMeshImportTransform::Custom))
     return XII_FAILURE;
 
   const auto right       = xiiMeshImportTransform::GetRightDir(m_ImportTransform, m_RightDir);
   const auto up          = xiiMeshImportTransform::GetUpDir(m_ImportTransform, m_UpDir);
   const bool flipForward = xiiMeshImportTransform::GetFlipForward(m_ImportTransform, m_bFlipForwardDir);
-  if (right < xiiBasisAxis::PositiveX || right > xiiBasisAxis::NegativeZ || up < xiiBasisAxis::PositiveX || up > xiiBasisAxis::NegativeZ ||
-      xiiMath::Abs(xiiBasisAxis::GetBasisVector(right).Dot(xiiBasisAxis::GetBasisVector(up))) > 0.5f)
+  if (right < xiiBasisAxis::PositiveX || right > xiiBasisAxis::NegativeZ || up < xiiBasisAxis::PositiveX || up > xiiBasisAxis::NegativeZ || xiiMath::Abs(xiiBasisAxis::GetBasisVector(right).Dot(xiiBasisAxis::GetBasisVector(up))) > 0.5f)
     return XII_FAILURE;
 
   const auto forward = xiiBasisAxis::GetOrthogonalAxis(right, up, !flipForward);
@@ -155,8 +150,7 @@ xiiResult xiiEditableSkeleton::FillResourceDescriptor(xiiSkeletonResourceDescrip
     const auto entry = pending.PeekBack();
     pending.PopBack();
     const auto* pJoint = entry.m_pJoint;
-    if (pJoint == nullptr || visited.Insert(pJoint) || pJoint->m_sName.IsEmpty() || names.Insert(pJoint->m_sName.GetString()) ||
-        descriptor.m_Joints.GetCount() >= invalidJoint || !pJoint->m_LocalTransform.IsValid())
+    if (pJoint == nullptr || visited.Insert(pJoint) || pJoint->m_sName.IsEmpty() || names.Insert(pJoint->m_sName.GetString()) || descriptor.m_Joints.GetCount() >= invalidJoint || !pJoint->m_LocalTransform.IsValid())
       return XII_FAILURE;
 
     auto localPose = pJoint->m_LocalTransform;

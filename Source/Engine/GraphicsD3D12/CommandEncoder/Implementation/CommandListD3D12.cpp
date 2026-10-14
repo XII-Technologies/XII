@@ -811,15 +811,7 @@ void xiiGALCommandListD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
     return;
   }
 
-  if (!TransitionOrVerifyResourceStateForRayTracing(
-        m_pD3D12CommandList,
-        pBufferD3D12,
-        pBufferD3D12->GetD3D12Buffer(),
-        transitionMode,
-        xiiGALResourceStateFlags::IndexBuffer,
-        xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndexBuffer),
-        "index buffer",
-        GetDebugName()))
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pBufferD3D12, pBufferD3D12->GetD3D12Buffer(), transitionMode, xiiGALResourceStateFlags::IndexBuffer, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndexBuffer), "index buffer", GetDebugName()))
   {
     return;
   }
@@ -845,15 +837,7 @@ void xiiGALCommandListD3D12::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
         return;
       }
 
-      if (!TransitionOrVerifyResourceStateForRayTracing(
-            m_pD3D12CommandList,
-            pBufferD3D12,
-            pBufferD3D12->GetD3D12Buffer(),
-            transitionMode,
-            xiiGALResourceStateFlags::VertexBuffer,
-            xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::VertexBuffer),
-            "vertex buffer",
-            GetDebugName()))
+      if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pBufferD3D12, pBufferD3D12->GetD3D12Buffer(), transitionMode, xiiGALResourceStateFlags::VertexBuffer, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::VertexBuffer), "vertex buffer", GetDebugName()))
       {
         return;
       }
@@ -1025,10 +1009,9 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
           return XII_FAILURE;
         }
 
-        XII_SCOPE_EXIT(
-          {
-            XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
-          });
+        XII_SCOPE_EXIT({
+          XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+        });
 
         pD3D12CommandList4->SetPipelineState1(pRayTracingPipelineStateD3D12->GetD3D12StateObject());
         m_pD3D12CommandList->SetComputeRootSignature(pRayTracingPipelineStateD3D12->GetD3D12RootSignature());
@@ -1681,10 +1664,9 @@ void xiiGALCommandListD3D12::DrawIndirectPlatform(const xiiGALDrawIndirectDescri
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pCommandSignature);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pCommandSignature);
+  });
 
   ID3D12Resource* pCountBuffer = nullptr;
   if (description.m_pCounterBuffer != nullptr)
@@ -1724,10 +1706,9 @@ void xiiGALCommandListD3D12::DrawIndexedIndirectPlatform(const xiiGALDrawIndexed
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pCommandSignature);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pCommandSignature);
+  });
 
   ID3D12Resource* pCountBuffer = nullptr;
   if (description.m_pCounterBuffer != nullptr)
@@ -1762,10 +1743,9 @@ void xiiGALCommandListD3D12::DrawMeshPlatform(const xiiGALDrawMeshDescription& d
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList6);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList6);
+  });
 
   pD3D12CommandList6->DispatchMesh(description.m_uiThreadGroupCountX, description.m_uiThreadGroupCountY, description.m_uiThreadGroupCountZ);
 }
@@ -1792,10 +1772,9 @@ void xiiGALCommandListD3D12::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndire
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pCommandSignature);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pCommandSignature);
+  });
 
   ID3D12Resource* pCountBuffer = nullptr;
   if (description.m_pCounterBuffer != nullptr)
@@ -1886,10 +1865,9 @@ void xiiGALCommandListD3D12::DispatchComputeIndirectPlatform(const xiiGALDispatc
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pCommandSignature);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pCommandSignature);
+  });
 
   m_pD3D12CommandList->ExecuteIndirect(pCommandSignature, 1U, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_uiDispatchArgumentOffset, nullptr, 0U);
 }
@@ -1915,10 +1893,9 @@ void xiiGALCommandListD3D12::TraceRaysPlatform(const xiiGALTraceRaysDescription&
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+  });
 
   const D3D12_GPU_VIRTUAL_ADDRESS uiBaseAddress = pSBTBufferD3D12->GetD3D12BufferGPUVirtualAddress();
   auto                            BuildRegion   = [&](const xiiGALRayTracingSBTRegionDescription& region) -> D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
@@ -1980,10 +1957,9 @@ void xiiGALCommandListD3D12::TraceRaysIndirectPlatform(const xiiGALTraceRaysIndi
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pCommandSignature);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pCommandSignature);
+  });
 
   m_pD3D12CommandList->ExecuteIndirect(pCommandSignature, 1U, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_uiArgumentOffset, nullptr, 0U);
 }
@@ -2090,10 +2066,9 @@ void xiiGALCommandListD3D12::BuildBLASPlatform(const xiiGALBuildBLASDescription&
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+  });
 
   const xiiGALBottomLevelASCreationDescription& blasDescription = description.m_pBottomLevelAS->GetDescription();
 
@@ -2263,10 +2238,9 @@ void xiiGALCommandListD3D12::BuildTLASPlatform(const xiiGALBuildTLASDescription&
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+  });
 
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTopLevelASD3D12, pD3D12TLASResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "TLAS destination resource", GetDebugName()))
     return;
@@ -2333,10 +2307,9 @@ void xiiGALCommandListD3D12::CopyBLASPlatform(const xiiGALCopyBLASDescription& d
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+  });
 
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSourceBottomLevelASD3D12, pD3D12SourceResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "BLAS copy source", GetDebugName()))
     return;
@@ -2378,10 +2351,9 @@ void xiiGALCommandListD3D12::CopyTLASPlatform(const xiiGALCopyTLASDescription& d
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+  });
 
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSourceTopLevelASD3D12, pD3D12SourceResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "TLAS copy source", GetDebugName()))
     return;
@@ -2423,10 +2395,9 @@ void xiiGALCommandListD3D12::WriteBLASCompactedSizePlatform(const xiiGALWriteBLA
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+  });
 
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pBottomLevelASD3D12, pD3D12BLASResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "BLAS compacted-size source", GetDebugName()))
     return;
@@ -2478,10 +2449,9 @@ void xiiGALCommandListD3D12::WriteTLASCompactedSizePlatform(const xiiGALWriteTLA
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+  });
 
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTopLevelASD3D12, pD3D12TLASResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "TLAS compacted-size source", GetDebugName()))
     return;
@@ -3166,10 +3136,9 @@ void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRat
     return;
   }
 
-  XII_SCOPE_EXIT(
-    {
-      XII_GAL_D3D12_RELEASE(pD3D12CommandList5);
-    });
+  XII_SCOPE_EXIT({
+    XII_GAL_D3D12_RELEASE(pD3D12CommandList5);
+  });
 
   D3D12_SHADING_RATE_COMBINER d3d12Combiners[D3D12_RS_SET_SHADING_RATE_COMBINER_COUNT] = {};
   d3d12Combiners[0]                                                                    = xiiD3D12TypeConversions::GetShadingRateCombiner(primitiveCombinerFlags);
@@ -3513,10 +3482,9 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
     ID3D12GraphicsCommandList5* pD3D12CommandList5 = nullptr;
     if (SUCCEEDED(m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList5), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList5**>(&pD3D12CommandList5)))) && pD3D12CommandList5 != nullptr)
     {
-      XII_SCOPE_EXIT(
-        {
-          XII_GAL_D3D12_RELEASE(pD3D12CommandList5);
-        });
+      XII_SCOPE_EXIT({
+        XII_GAL_D3D12_RELEASE(pD3D12CommandList5);
+      });
 
       ID3D12Resource* pShadingRateResource = nullptr;
       if (!subpass.m_ShadingRateAttachment.IsEmpty())

@@ -48,8 +48,7 @@ public:
   /// Empty palettes restore bind pose; the preceding pose survives one committed frame for velocity.
   /// First assignment and resetHistory initialize previous pose to current (e.g. after mesh reload).
   /// Input must not alias internal storage. Call before CommitFrame; external synchronization is required.
-  [[nodiscard]] xiiResult SetSkinningPalette(xiiSceneObjectHandle hObject, xiiArrayPtr<const xiiMat4> palette,
-                                             xiiUInt32 uiVertexStride, xiiUInt32 uiBoneIndicesOffset, xiiUInt32 uiBoneWeightsOffset, bool bResetHistory = false);
+  [[nodiscard]] xiiResult SetSkinningPalette(xiiSceneObjectHandle hObject, xiiArrayPtr<const xiiMat4> palette, xiiUInt32 uiVertexStride, xiiUInt32 uiBoneIndicesOffset, xiiUInt32 uiBoneWeightsOffset, bool bResetHistory = false);
   /// Sets native GPU LOD selection without changing geometry ownership. Invalid forced LOD means
   /// automatic selection. A forced LOD must be below eight; non-finite bias and stale handles fail
   /// without mutation. Bias is measured in coverage octaves, saturated to [-16, 16] on the GPU.

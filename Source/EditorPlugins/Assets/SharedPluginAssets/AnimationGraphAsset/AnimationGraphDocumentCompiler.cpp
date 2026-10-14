@@ -9,8 +9,7 @@
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 #include <ToolsFoundation/Serialization/ToolsSerializationUtils.h>
 
-xiiResult xiiAnimationGraphAssetCompiler::CompileDocument(const xiiDocumentNodeManager& document, xiiArrayPtr<const xiiAnimationGraphEditorTransition> transitions,
-                                                          xiiAnimGraphResourceDescriptor& out_descriptor, xiiStringBuilder* out_pError)
+xiiResult xiiAnimationGraphAssetCompiler::CompileDocument(const xiiDocumentNodeManager& document, xiiArrayPtr<const xiiAnimationGraphEditorTransition> transitions, xiiAnimGraphResourceDescriptor& out_descriptor, xiiStringBuilder* out_pError)
 {
   out_descriptor.Clear();
   if (out_pError != nullptr)

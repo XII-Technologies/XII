@@ -15,8 +15,7 @@ xiiStandardJSONWriter::CommaWriter::CommaWriter(xiiStandardJSONWriter* pWriter)
 {
   const xiiStandardJSONWriter::State state = pWriter->m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
-  XII_ASSERT_DEV(state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray || state == xiiStandardJSONWriter::Variable,
-                 "Values can only be written inside BeginVariable() / EndVariable() and BeginArray() / EndArray().");
+  XII_ASSERT_DEV(state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray || state == xiiStandardJSONWriter::Variable, "Values can only be written inside BeginVariable() / EndVariable() and BeginArray() / EndArray().");
 
   m_pWriter = pWriter;
 
@@ -25,8 +24,7 @@ xiiStandardJSONWriter::CommaWriter::CommaWriter(xiiStandardJSONWriter* pWriter)
     // we are writing the comma now, so it is not required anymore
     m_pWriter->m_StateStack.PeekBack().m_bRequireComma = false;
 
-    if (m_pWriter->m_StateStack.PeekBack().m_State == xiiStandardJSONWriter::Array ||
-        m_pWriter->m_StateStack.PeekBack().m_State == xiiStandardJSONWriter::NamedArray)
+    if (m_pWriter->m_StateStack.PeekBack().m_State == xiiStandardJSONWriter::Array || m_pWriter->m_StateStack.PeekBack().m_State == xiiStandardJSONWriter::NamedArray)
     {
       if (pWriter->m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
       {
@@ -660,8 +658,7 @@ void xiiStandardJSONWriter::BeginVariable(xiiStringView sName)
 {
   const xiiStandardJSONWriter::State state = m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
-  XII_ASSERT_DEV(state == xiiStandardJSONWriter::Empty || state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject,
-                 "Variables can only be written inside objects.");
+  XII_ASSERT_DEV(state == xiiStandardJSONWriter::Empty || state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject, "Variables can only be written inside objects.");
 
   if (m_StateStack.PeekBack().m_bRequireComma)
   {
@@ -697,13 +694,9 @@ void xiiStandardJSONWriter::BeginArray(xiiStringView sName)
 {
   const xiiStandardJSONWriter::State state = m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
-  XII_ASSERT_DEV((state == xiiStandardJSONWriter::Empty) ||
-                   ((state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject) && !sName.IsEmpty()) ||
-                   ((state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray) && sName.IsEmpty()) ||
-                   (state == xiiStandardJSONWriter::Variable && sName == nullptr),
-                 "Inside objects you can only begin arrays when also giving them a (non-empty) name.\n"
-                 "Inside arrays you can only nest anonymous arrays, so names are forbidden.\n"
-                 "Inside variables you cannot specify a name again.");
+  XII_ASSERT_DEV((state == xiiStandardJSONWriter::Empty) || ((state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject) && !sName.IsEmpty()) || ((state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray) && sName.IsEmpty()) || (state == xiiStandardJSONWriter::Variable && sName == nullptr), "Inside objects you can only begin arrays when also giving them a (non-empty) name.\n"
+                                                                                                                                                                                                                                                                                                                                                           "Inside arrays you can only nest anonymous arrays, so names are forbidden.\n"
+                                                                                                                                                                                                                                                                                                                                                           "Inside variables you cannot specify a name again.");
 
   if (sName != nullptr)
     BeginVariable(sName);
@@ -747,13 +740,9 @@ void xiiStandardJSONWriter::BeginObject(xiiStringView sName)
 {
   const xiiStandardJSONWriter::State state = m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
-  XII_ASSERT_DEV((state == xiiStandardJSONWriter::Empty) ||
-                   ((state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject) && !sName.IsEmpty()) ||
-                   ((state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray) && sName.IsEmpty()) ||
-                   (state == xiiStandardJSONWriter::Variable && sName == nullptr),
-                 "Inside objects you can only begin objects when also giving them a (non-empty) name.\n"
-                 "Inside arrays you can only nest anonymous objects, so names are forbidden.\n"
-                 "Inside variables you cannot specify a name again.");
+  XII_ASSERT_DEV((state == xiiStandardJSONWriter::Empty) || ((state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject) && !sName.IsEmpty()) || ((state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray) && sName.IsEmpty()) || (state == xiiStandardJSONWriter::Variable && sName == nullptr), "Inside objects you can only begin objects when also giving them a (non-empty) name.\n"
+                                                                                                                                                                                                                                                                                                                                                           "Inside arrays you can only nest anonymous objects, so names are forbidden.\n"
+                                                                                                                                                                                                                                                                                                                                                           "Inside variables you cannot specify a name again.");
 
   if (sName != nullptr)
     BeginVariable(sName);

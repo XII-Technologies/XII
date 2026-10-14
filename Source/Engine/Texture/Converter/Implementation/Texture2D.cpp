@@ -83,8 +83,7 @@ xiiResult xiiTextureConverterProcessor::Assemble2DSlice(const xiiTextureConverte
 
   const bool bFlip = m_Descriptor.m_bFlipHorizontal;
 
-  if (!bFlip && (pSourceValues[0] + 1 == pSourceValues[1]) && (pSourceValues[1] + 1 == pSourceValues[2]) &&
-      (pSourceValues[2] + 1 == pSourceValues[3]))
+  if (!bFlip && (pSourceValues[0] + 1 == pSourceValues[1]) && (pSourceValues[1] + 1 == pSourceValues[2]) && (pSourceValues[2] + 1 == pSourceValues[3]))
   {
     XII_PROFILE_SCOPE("Assemble2DSlice(memcpy)");
 
@@ -171,8 +170,7 @@ xiiResult xiiTextureConverterProcessor::DetermineTargetResolution(const xiiImage
 
     if (issueWarning)
     {
-      xiiLog::Warning("Chosen output image format is compressed, but target resolution does not fulfill block size requirements. {}x{} -> downscale {} / clamp({}, {}) -> {}x{}, adjusted to {}x{}",
-                      uiOrgResX, uiOrgResY, m_Descriptor.m_uiDownscaleSteps, m_Descriptor.m_uiMinResolution, m_Descriptor.m_uiMaxResolution, currentWidth, currentHeight, out_uiTargetResolutionX, out_uiTargetResolutionY);
+      xiiLog::Warning("Chosen output image format is compressed, but target resolution does not fulfill block size requirements. {}x{} -> downscale {} / clamp({}, {}) -> {}x{}, adjusted to {}x{}", uiOrgResX, uiOrgResY, m_Descriptor.m_uiDownscaleSteps, m_Descriptor.m_uiMinResolution, m_Descriptor.m_uiMaxResolution, currentWidth, currentHeight, out_uiTargetResolutionX, out_uiTargetResolutionY);
     }
   }
 

@@ -378,8 +378,7 @@ void xiiSelectionAction::Execute(const xiiVariant& value)
 
     case ActionType::ConvertToEnginePrefab:
     {
-      if (xiiQtUiServices::MessageBoxQuestion("Discard all modifications to the selected prefabs and convert them to engine prefabs?",
-                                              QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) == QMessageBox::StandardButton::Yes)
+      if (xiiQtUiServices::MessageBoxQuestion("Discard all modifications to the selected prefabs and convert them to engine prefabs?", QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) == QMessageBox::StandardButton::Yes)
       {
         xiiHybridArray<xiiSelectionEntry, 64> selection;
         m_pSceneDocument->GetSelectionManager()->GetTopLevelSelectionOfType(xiiGetStaticRTTI<xiiGameObject>(), selection);
@@ -486,9 +485,7 @@ void xiiSelectionAction::SelectionEventHandler(const xiiSelectionManagerEvent& e
 
 void xiiSelectionAction::UpdateEnableState()
 {
-  if (m_Type == ActionType::HideSelectedObjects || m_Type == ActionType::DuplicateSpecial || m_Type == ActionType::DeltaTransform ||
-      m_Type == ActionType::SnapObjectToCamera || m_Type == ActionType::DetachFromParent || m_Type == ActionType::HideUnselectedObjects ||
-      m_Type == ActionType::AttachToObject)
+  if (m_Type == ActionType::HideSelectedObjects || m_Type == ActionType::DuplicateSpecial || m_Type == ActionType::DeltaTransform || m_Type == ActionType::SnapObjectToCamera || m_Type == ActionType::DetachFromParent || m_Type == ActionType::HideUnselectedObjects || m_Type == ActionType::AttachToObject)
   {
     SetEnabled(!m_Context.m_pDocument->GetSelectionManager()->IsSelectionEmpty());
   }

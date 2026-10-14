@@ -323,7 +323,7 @@ private:
   friend class xiiAfterSaveDocumentTask;
 
   xiiStatus ValidateSaveDocument() const;
-  void SetupDocumentInfo(const xiiDocumentTypeDescriptor* pTypeDescriptor);
+  void      SetupDocumentInfo(const xiiDocumentTypeDescriptor* pTypeDescriptor);
 
   /// The document manager that owns this document.
   xiiDocumentManager* m_pDocumentManager = nullptr;
