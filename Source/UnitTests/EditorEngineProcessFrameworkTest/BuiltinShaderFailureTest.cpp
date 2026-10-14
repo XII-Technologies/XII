@@ -12,6 +12,7 @@
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <TestFramework/Utilities/TestLogInterface.h>
@@ -21,12 +22,26 @@ namespace
 {
   constexpr xiiStringView sBloomShader = "Shaders/Pipeline/BloomChain.xiiShader";
 
-  xiiShaderResourceHandle CreateInvalidShader(xiiStringView shaderPath)
+  class MissingShaderLoader : public xiiResourceTypeLoader
   {
-    // Preserve the normal file-backed identity's reloadability while seeding a
-    // loaded, invalid descriptor before its first acquisition.
-    const auto shader = xiiResourceManager::LoadResource<xiiShaderResource>(shaderPath);
-    return xiiResourceManager::CreateResource<xiiShaderResource>(shaderPath, xiiShaderResourceDescriptor{});
+  public:
+    xiiResourceLoadData OpenDataStream(const xiiResource*) override { return {}; }
+    void                CloseDataStream(const xiiResource*, const xiiResourceLoadData&) override {}
+  };
+
+  xiiShaderResourceHandle CreateMissingShader(xiiStringView shaderPath)
+  {
+    // Exercise real missing-content state using the normal resource loader API,
+    // without deleting shader sources or invalidating shared shader-cache files.
+    xiiTestLogInterface   log;
+    xiiTestLogSystemScope logScope(&log, true);
+    log.ExpectMessage("Missing Resource of Type 'xiiShaderResource'", xiiLogMsgType::SeriousWarningMsg);
+    const auto                          shader = xiiResourceManager::LoadResource<xiiShaderResource>(shaderPath);
+    xiiUniquePtr<xiiResourceTypeLoader> loader = XII_DEFAULT_NEW(MissingShaderLoader);
+    xiiResourceManager::UpdateResourceWithCustomLoader(shader, std::move(loader));
+    xiiResourceLock<xiiShaderResource> loaded(shader, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    XII_TEST_BOOL(!loaded.IsValid());
+    return shader;
   }
 
   void AddBloomInput(xiiRenderGraph& graph)
@@ -76,9 +91,10 @@ XII_CREATE_SIMPLE_TEST(BuiltinShaderFailure, StageFailureAndRecovery)
   if (!XII_TEST_RESULT(pass.Configure(properties)))
     return;
 
-  // A loaded but invalid shader exercises the resource acquisition failure path
-  // without changing source files, shared shader caches, or user assets.
-  const auto                   shader = CreateInvalidShader(sBloomShader);
+  const auto                                           shader = CreateMissingShader(sBloomShader);
+  const xiiHashTable<xiiHashedString, xiiHashedString> permutations;
+  for (bool allowFallback : {false, true})
+    XII_TEST_BOOL(!xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, permutations, allowFallback).IsValid());
   xiiRenderGraph               graph("Shader setup failure");
   xiiRenderGraphBlackboard     blackboard;
   xiiRenderPipelinePassContext context{view, graph, blackboard, properties, {}, {}, "Shader setup failure"};
@@ -131,7 +147,7 @@ static void TestViewShaderFailure(xiiStringView shaderPath)
   if (!XII_TEST_BOOL(target != nullptr))
     return;
   view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-  const auto shader = CreateInvalidShader(shaderPath);
+  const auto shader = CreateMissingShader(shaderPath);
 
   for (xiiUInt32 attempt = 0; attempt < 2; ++attempt)
   {
