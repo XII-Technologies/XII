@@ -3866,6 +3866,69 @@ subtests passed with both serialization formats in
 editor document subtests passed in
 `Workspace/editor-atmosphere-migration-document-final-tests.log` (exit 0).
 The native GUI/GPU suite was not rerun for this serialization-only follow-up.
-No FeatureLab files were changed. The migration, its tests, and the pending
-viewport regression/report remain uncommitted while automatic approval review
-is unavailable because of the account usage limit.
+No FeatureLab files were changed. The viewport regression/report and migration
+were subsequently committed as `850189d66` and `75782b7cb` after automatic
+approval review became available again.
+
+### Native Wireframe Inspection
+
+Wireframe inspection now uses the existing canonical surface-query rasterizer,
+with a cached shader permutation selecting actual triangle-edge rasterization.
+Both mesh-shader and indexed vertex-pulling routes retain native mesh identities,
+skinning, LOD selection, and material coverage. Invalid fill modes and devices
+without WireframeFill fail through `xiiResult` before adding graph passes. Shader
+resources own the rasterizer states; no per-frame state creation or additional
+pipeline cache was introduced.
+
+The built-in visualization stage consumes the query's object IDs and reversed-Z
+depth, tests against solid scene depth where available, and presents visible
+edges before ordinary editor overlays. A reproduced blank indexed-path output
+was caused by the final generic background mask discarding query coverage when
+the ordinary scene-depth buffer was empty. Wireframe now uses its own coverage
+in that case. This restores indexed wireframe inspection; it does not establish
+complete ordinary scene rendering without mesh shaders. Other unavailable
+inspection modes remain excluded from the default-pipeline menu.
+
+Wireframe alone adds a transient RGBA32UInt query image and D32 depth image
+(20 bytes per viewport pixel before backend alignment), managed by the existing
+render-graph cache. Default mode does not allocate these query outputs. Solid
+picking behavior remains the API default. Native query regressions compare edge
+coverage with solid coverage and check identities on static and skinned geometry,
+including the forced indexed route. Two additional regressions render and read
+back a resource-backed default pipeline with mesh shaders enabled and disabled.
+The editor regression captures real wireframe output alongside atmosphere, grid,
+depth, normal, and the other supported inspection modes.
+
+The disabled-mesh-shader run also exposed a deferred-lighting storage-image
+declaration using RGBA32Float against its RGBA16Float target. The shader now
+declares the existing target format explicitly, avoiding undefined image writes.
+The initial fixture's retained extracted-packet handles are released through the
+existing frame allocator before resource-manager shutdown, matching other native
+rendering fixtures. Failure evidence is retained in
+`Workspace/editor-wireframe-fallback-tests.log` and
+`Workspace/editor-wireframe-fallback-fixture-tests.log`.
+
+The Debug build of Editor, its processor/player/plugin consumers, and both native
+test targets passes in `Workspace/editor-wireframe-final-build.log` (exit 0).
+All 69 native Vulkan subtests pass in
+`Workspace/editor-wireframe-verified-native-tests.log` (exit 0), including both
+new default-pipeline output tests. The run reports no Vulkan validation errors or
+storage-image format warnings. An intermediate format-annotation compilation
+failure caused by a missing helper include is retained in
+`Workspace/editor-wireframe-final-native-tests.log`; the include was corrected
+before the successful complete rerun.
+
+All 12 native editor subtests pass in
+`Workspace/editor-wireframe-final-editor-tests.log` (exit 0), including actual
+viewport capture, supported-mode switching, atmosphere, unselected floor grid,
+wireframe coverage, 160 frames/96 resizes, Play, and document save/reopen. Final
+captures are under
+`Workspace/TestOutput/WireframeFinalEditor/SourceWindowProject/`, including
+`ViewportAtmosphere.png`, `ViewportGrid.png`, `ViewportDepth.png`,
+`ViewportNormals.png`, and `ViewportWireframe.png`. The editor and engine logs
+contain no Vulkan validation errors, device loss, or device-memory exhaustion.
+The user's running FeatureLab session and files remain untouched. Restarting an
+existing editor is required to use the rebuilt binaries. Verification covers
+Windows Debug/Vulkan with WireframeFill available; HDR swapchains, other graphics
+backends, Release, and other operating systems remain unverified. The broader
+modernization inventory remains open.

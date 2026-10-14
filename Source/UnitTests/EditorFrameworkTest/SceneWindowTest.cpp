@@ -190,14 +190,27 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         XII_TEST_INT(result.height(), 256);
         return result;
       };
-      const auto depthImage  = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportDepth.png");
-      const auto normalImage = captureMode(xiiViewRenderMode::NormalMap, "ViewportNormals.png");
+      const auto depthImage     = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportDepth.png");
+      const auto normalImage    = captureMode(xiiViewRenderMode::NormalMap, "ViewportNormals.png");
+      const auto wireframeImage = captureMode(xiiViewRenderMode::Wireframe, "ViewportWireframe.png");
       XII_TEST_BOOL(depthImage != normalImage);
       if (!depthImage.isNull() && !normalImage.isNull())
       {
         XII_TEST_BOOL(qRed(depthImage.pixel(128, 128)) > qRed(depthImage.pixel(0, 0)));
         const auto normal = normalImage.pixel(128, 128);
         XII_TEST_BOOL(qRed(normal) != qGreen(normal) || qGreen(normal) != qBlue(normal));
+      }
+      if (!wireframeImage.isNull() && !depthImage.isNull())
+      {
+        XII_TEST_INT(wireframeImage.pixel(0, 0), qRgb(0, 0, 0));
+        xiiUInt32 wirePixels = 0, solidPixels = 0;
+        for (int y = 0; y < wireframeImage.height(); ++y)
+          for (int x = 0; x < wireframeImage.width(); ++x)
+          {
+            wirePixels += qRed(wireframeImage.pixel(x, y)) > 160;
+            solidPixels += qRed(depthImage.pixel(x, y)) > 0;
+          }
+        XII_TEST_BOOL(wirePixels > 100 && wirePixels < solidPixels);
       }
       const xiiViewRenderMode::Enum additionalModes[] = {xiiViewRenderMode::DepthLinear, xiiViewRenderMode::BaseColor, xiiViewRenderMode::Metallic,
                                                          xiiViewRenderMode::Roughness, xiiViewRenderMode::Specular, xiiViewRenderMode::Emissive, xiiViewRenderMode::AmbientOcclusion,
