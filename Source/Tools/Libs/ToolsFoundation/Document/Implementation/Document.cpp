@@ -98,6 +98,9 @@ void xiiDocument::SetupDocumentInfo(const xiiDocumentTypeDescriptor* pTypeDescri
 
 void xiiDocument::SetModified(bool b)
 {
+  if (b)
+    ++m_uiModificationRevision;
+
   if (m_bModified == b)
     return;
 
@@ -108,8 +111,9 @@ void xiiDocument::SetModified(bool b)
   e.m_pDocument = this;
   e.m_Type      = xiiDocumentEvent::Type::ModifiedChanged;
 
-  m_EventsOne.Broadcast(e);
-  s_EventsAny.Broadcast(e);
+  // A save listener may create a new transaction, which must publish its dirty state.
+  m_EventsOne.Broadcast(e, 1);
+  s_EventsAny.Broadcast(e, 1);
 }
 
 void xiiDocument::SetReadOnly(bool b)
@@ -155,15 +159,17 @@ xiiStatus xiiDocument::SaveDocument(bool bForce)
   if (m_ActiveSaveTask.IsValid())
   {
     xiiTaskSystem::WaitForGroup(m_ActiveSaveTask);
-    m_ActiveSaveTask.Invalidate();
   }
 
-  xiiStatus result(XII_SUCCESS);
+  // Completing the earlier save can invoke callbacks that change document writability.
+  XII_SUCCEED_OR_RETURN(ValidateSaveDocument());
 
-  m_ActiveSaveTask = InternalSaveDocument([&result](xiiDocument* pDoc, xiiStatus res) { result = res; });
+  xiiStatus result("Document save did not complete.");
 
-  xiiTaskSystem::WaitForGroup(m_ActiveSaveTask);
-  m_ActiveSaveTask.Invalidate();
+  const auto task = InternalSaveDocument([&result](xiiDocument* pDoc, xiiStatus res) { result = res; });
+  m_ActiveSaveTask = task;
+
+  xiiTaskSystem::WaitForGroup(task);
 
   return result;
 }
@@ -211,11 +217,12 @@ void xiiDocument::EnsureVisible()
 xiiTaskGroupID xiiDocument::InternalSaveDocument(AfterSaveCallback callback)
 {
   XII_PROFILE_SCOPE("InternalSaveDocument");
-  xiiTaskGroupID saveID   = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::LongRunningHighPriority);
-  auto           saveTask = XII_DEFAULT_NEW(xiiSaveDocumentTask);
+  const xiiUInt64                   modificationRevision = m_uiModificationRevision;
+  xiiTaskGroupID                    saveID               = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::LongRunningHighPriority);
+  xiiSharedPtr<xiiSaveDocumentTask> saveTask             = XII_DEFAULT_NEW(xiiSaveDocumentTask);
 
   {
-    saveTask->m_document = this;
+    saveTask->m_sDocumentPath = m_sDocumentPath;
     saveTask->file.SetOutput(m_sDocumentPath);
     xiiTaskSystem::AddTaskToGroup(saveID, saveTask);
 
@@ -246,9 +253,12 @@ xiiTaskGroupID xiiDocument::InternalSaveDocument(AfterSaveCallback callback)
 
   xiiTaskGroupID afterSaveID = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::SomeFrameMainThread);
   {
-    auto afterSaveTask        = XII_DEFAULT_NEW(xiiAfterSaveDocumentTask);
-    afterSaveTask->m_document = this;
-    afterSaveTask->m_callback = callback;
+    auto afterSaveTask                      = XII_DEFAULT_NEW(xiiAfterSaveDocumentTask);
+    afterSaveTask->m_document               = this;
+    afterSaveTask->m_callback               = callback;
+    afterSaveTask->m_pSaveTask              = saveTask;
+    afterSaveTask->m_TaskGroup              = afterSaveID;
+    afterSaveTask->m_uiModificationRevision = modificationRevision;
     xiiTaskSystem::AddTaskToGroup(afterSaveID, afterSaveTask);
   }
   xiiTaskSystem::AddTaskGroupDependency(afterSaveID, saveID);
@@ -408,10 +418,12 @@ void xiiDocument::RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& grap
 void xiiDocument::BeforeClosing()
 {
   // This can't be done in the dtor as the task uses virtual functions on this object.
-  if (m_ActiveSaveTask.IsValid())
+  while (m_ActiveSaveTask.IsValid())
   {
-    xiiTaskSystem::WaitForGroup(m_ActiveSaveTask);
-    m_ActiveSaveTask.Invalidate();
+    const auto task = m_ActiveSaveTask;
+    xiiTaskSystem::WaitForGroup(task);
+    if (m_ActiveSaveTask == task)
+      m_ActiveSaveTask.Invalidate();
   }
 }
 

@@ -18,7 +18,8 @@ public:
   xiiAbstractObjectGraph headerGraph;
   xiiAbstractObjectGraph objectGraph;
   xiiAbstractObjectGraph typesGraph;
-  xiiDocument*           m_document = nullptr;
+  xiiString              m_sDocumentPath;
+  xiiStatus              m_Result = xiiStatus("Document save did not complete.");
 
   virtual void Execute() override;
 };
@@ -29,8 +30,11 @@ public:
   xiiAfterSaveDocumentTask();
   ~xiiAfterSaveDocumentTask();
 
-  xiiDocument*                   m_document = nullptr;
-  xiiDocument::AfterSaveCallback m_callback;
+  xiiDocument*                      m_document = nullptr;
+  xiiDocument::AfterSaveCallback    m_callback;
+  xiiSharedPtr<xiiSaveDocumentTask> m_pSaveTask;
+  xiiTaskGroupID                    m_TaskGroup;
+  xiiUInt64                         m_uiModificationRevision = 0;
 
   virtual void Execute() override;
 };
