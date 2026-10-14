@@ -4011,3 +4011,21 @@ stress, asset processing, save/reopen, Play, and shutdown. The engine logs conta
 no Vulkan validation, device-loss, or device-memory errors. Existing Qt checkbox
 compatibility-signal warnings remain visible and require a separate UI migration.
 The user's FeatureLab files and running editor session remain untouched.
+
+### Qt Property Checkbox Signal Migration
+
+The shared reflected boolean property widget now connects Qt's typed
+`QCheckBox::checkStateChanged(Qt::CheckState)` signal to a typed slot. The existing
+mixed-selection/partial-state handling is retained. XII already requires Qt
+6.11, so no older-Qt compatibility path or dependency change is needed. The
+dependent Editor and EditorFrameworkTest build passes in
+`Workspace/editor-checkbox-signal-build.log` (exit 0); all 12 native editor
+subtests pass in `Workspace/editor-checkbox-signal-tests.log` (exit 0). The old
+checkbox compatibility-signal warnings are absent from that complete run.
+
+Camera review also identified an unresolved binary-format mismatch: component
+version 1 writes shutter seconds as a float but reads them through the double
+`xiiTime` stream operator, shifting subsequent fields. This requires a world
+serialization regression and correction without changing the persisted layout.
+The render-target camera path remains disabled and requires native resource/view
+integration; legacy sky/probe/GreyBox asset migration remains open.

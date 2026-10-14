@@ -40,7 +40,7 @@ public:
   virtual void mousePressEvent(QMouseEvent* pEv) override;
 
 private Q_SLOTS:
-  void on_StateChanged_triggered(int state);
+  void on_StateChanged_triggered(Qt::CheckState state);
 
 protected:
   virtual void OnInit() override {}
