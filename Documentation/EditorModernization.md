@@ -3761,3 +3761,111 @@ stale dependency and transform-state records, prompting the additional cleanup.
 The latest reused-project integration run (`Workspace/editor-asset-wrap-tests.log`)
 stalled after engine reconnection, before the save fixture, and was interrupted.
 Full native integration is therefore not claimed green for this checkpoint.
+
+### Editor Viewport Rendering And Capture
+
+The asset checkpoint was committed before beginning this rendering repair
+(`e8d8bfe21`, `313ea8d50`). Native viewport captures then reproduced a grey sky,
+an absent floor grid, and render-mode changes with no shading implementation.
+
+Directional-light extraction now exports the owner's positive forward axis as
+the direction of light propagation, matching spot lights and the pipeline's
+negation when computing the direction toward the sun. The previous negative
+axis placed the default scene's sun below the horizon and lit the sphere from
+underneath. Atmosphere reflection also supplies the actual native defaults;
+new editor-created atmosphere settings no longer contain zero radii, scattering
+coefficients, and integration counts.
+
+Debug primitive, textured primitive, and box shaders use GreaterEqual depth
+testing against the renderer's reversed-Z buffer. The editor initializes grid
+message vectors and supplies a global floor plane when Show Grid is enabled
+without a gizmo-provided plane. Show Grid has a defined true default; saved user
+preferences remain authoritative. The native debug-render fixture uses zero as
+the far depth and one as an occluder, including depth readback of overlay draws.
+
+The built-in pipeline adds an inspection compute pass before debug overlays.
+Fourteen modes inspect depth, normals, material channels, object identities,
+velocity, AO, indirect lighting, environment reflections, and bloom. They use
+existing per-view graph resources, preserve the final display transfer, bypass
+artistic grading, and cache the compute pipeline per view. The enum retains
+other modes for future implementations; the editor menu exposes the supported
+ones and normalizes obsolete unsupported selections to Default. Wireframe,
+overdraw, vertex attributes, and ray-tracing telemetry are not implemented by
+this repair and are not presented as functioning modes.
+
+Editor screenshot requests now queue on the window output target and capture
+the next rendered image before presentation acquires another swapchain image.
+Direct capture copies into format-sized image storage with its actual row pitch,
+removing the four-byte-per-pixel assumption and uninitialized copy on mapping
+failure. Command-list creation and mapping failures return XII_FAILURE. Saving is performed
+only for explicit requests; ordinary frames do not allocate capture images.
+
+Debug Editor, EditorFrameworkTest, engine process, processor, player, and plugin
+builds passed in `Workspace/editor-render-final-build.log`. All 12 editor subtests
+passed in `Workspace/editor-render-final-tests.log` (exit 0), including the asset
+replacement and async-save checks committed earlier. The viewport fixture
+captures each supported mode, checks distinguishable depth and normal output,
+checks blue sky pixels, and checks newly visible grid pixels without selecting a
+gizmo. It also completes the existing 160-frame/96-resize exercise, screenshots,
+Play, and document close/reopen checks.
+
+Visual evidence is retained under
+`Workspace/TestOutput/RenderingFinal/SourceWindowProject/`: `ViewportAtmosphere.png`,
+`ViewportGrid.png`, `ViewportDepth.png`, and `ViewportNormals.png`, plus captures
+for the other modes. The earlier failed physical-sky and absent-grid captures
+are retained under RenderingRepair and RenderingDiagnostic. Temporary graph,
+light-state, and shader diagnostics were removed before final verification.
+Native Qt/Vulkan SDR capture is exercised; HDR swapchains, remote views, Linux,
+and Direct3D are not verified by this run. The user's FeatureLab files were not
+modified, and its existing running editor processes were not terminated.
+
+The dependent native GPU and GraphicsCore test builds also passed. All 67 native
+Vulkan subtests passed in `Workspace/editor-render-native-restored-tests.log`
+(exit 0), with temporary depth/projection diagnostics removed. All 21
+GraphicsCore subtests passed in `Workspace/editor-render-core-tests.log` (exit 0).
+Earlier standalone debug-render failures are retained in
+`Workspace/editor-render-native-tests.log` and
+`Workspace/editor-render-depth-diagnostic-tests.log`; the verified production
+rerun includes both ordinary depth occlusion and overlays that preserve depth.
+
+The full editor suite also passed all 12 subtests on a second run against the same
+saved RenderingFinal project (`Workspace/editor-render-reused-tests.log`, exit 0).
+This exercises replacement of the generated default-scene identity, asset
+dependency cleanup, saved preferences, warm shader caches, and the captured
+rendering checks together. Existing running editor instances require a restart
+to load the rebuilt binaries and newly created graphics pipeline states.
+
+### Migration Of Persisted Zero Atmosphere Defaults
+
+The reflected-default repair alone only fixes newly created settings. The older
+native scene retained in AsyncSaveEditorFinal contains an entire version-3
+atmosphere record with zero radii, coefficients, up direction, and integration
+counts. Settings reflection is now version 4, with a Foundation graph patch for
+that precise legacy record. Detection requires all sixteen legacy fields to be
+present and equal to their old zero defaults. Authored values, incomplete records,
+unknown properties, node identities, and current-version zero records are
+preserved. The legacy field list is fixed so future properties cannot accidentally
+expand the migration's detection criteria. Consumers use the existing graph
+versioning and normal document-save facilities; no runtime compatibility wrapper
+or alternate asset format was introduced.
+
+The regression serializes both DDL and binary graphs with the saved reflected
+type-version table used for patch selection. It compares migrated values with
+native C++ defaults and independently checks the preservation cases. Disabling
+the migration produced seventeen failures with the binary fixture
+(`Workspace/editor-atmosphere-migration-negative-tests.log`, exit 1); the patch
+was restored and all affected targets rebuilt afterward. The earlier fixture
+without the saved type table was corrected because XII's graph versioning uses
+that table as the authoritative version source.
+
+Final verification: GraphicsCoreTest, EditorFrameworkTest, Editor, engine process,
+plugins, processor, and player builds passed in
+`Workspace/editor-atmosphere-migration-restored-build.log` (exit 0). All 21 Core
+subtests passed with both serialization formats in
+`Workspace/editor-atmosphere-migration-formats-tests.log` (exit 0), and all 11
+editor document subtests passed in
+`Workspace/editor-atmosphere-migration-document-final-tests.log` (exit 0).
+The native GUI/GPU suite was not rerun for this serialization-only follow-up.
+No FeatureLab files were changed. The migration, its tests, and the pending
+viewport regression/report remain uncommitted while automatic approval review
+is unavailable because of the account usage limit.

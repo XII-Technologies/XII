@@ -8,6 +8,7 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Preferences/ScenePreferences.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/IO/OSFile.h>
@@ -133,12 +134,12 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         // A cold first frame can spend several seconds compiling native pipeline state. A short
         // IPC observation timeout does not mean that this outstanding request has failed. Poll it
         // against the existing overall readiness deadline before submitting another frame/request.
-        xiiResult reply = XII_FAILURE;
-        auto* connection = xiiEditorEngineProcessConnection::GetSingleton();
+        xiiResult reply      = XII_FAILURE;
+        auto*     connection = xiiEditorEngineProcessConnection::GetSingleton();
         while (reply.Failed() && elapsed.elapsed() < 10000)
         {
           const auto timeout = xiiTime::MakeFromMilliseconds(xiiMath::Min<xiiInt64>(2000, 10000 - elapsed.elapsed()));
-          reply = connection->WaitForDocumentMessage(sceneID, xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), timeout, &callback);
+          reply              = connection->WaitForDocumentMessage(sceneID, xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), timeout, &callback);
           if (reply.Failed())
           {
             connection->Update();
@@ -172,6 +173,73 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
             bVaried = image.pixel(x, y) != image.pixel(0, 0);
         XII_TEST_BOOL(bVaried);
       }
+
+      // Exercise the editor screenshot API against distinguishable visual results, rather
+      // than accepting any non-uniform startup image as evidence of functioning rendering.
+      auto captureMode = [&](xiiViewRenderMode::Enum mode, const char* filename) {
+        view->m_pViewConfig->m_RenderMode = mode;
+        view->SyncToEngine();
+        xiiStringBuilder output = sProjectDirectory;
+        output.AppendPath(filename);
+        if (xiiOSFile::ExistsFile(output))
+          XII_TEST_RESULT(xiiOSFile::DeleteFile(output));
+        view->TakeScreenshot(output);
+        QImage result;
+        XII_TEST_BOOL(PumpUntil([&] { return result.load(QString::fromUtf8(output.GetData())); }, 10000));
+        XII_TEST_INT(result.width(), 256);
+        XII_TEST_INT(result.height(), 256);
+        return result;
+      };
+      const auto depthImage  = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportDepth.png");
+      const auto normalImage = captureMode(xiiViewRenderMode::NormalMap, "ViewportNormals.png");
+      XII_TEST_BOOL(depthImage != normalImage);
+      if (!depthImage.isNull() && !normalImage.isNull())
+      {
+        XII_TEST_BOOL(qRed(depthImage.pixel(128, 128)) > qRed(depthImage.pixel(0, 0)));
+        const auto normal = normalImage.pixel(128, 128);
+        XII_TEST_BOOL(qRed(normal) != qGreen(normal) || qGreen(normal) != qBlue(normal));
+      }
+      const xiiViewRenderMode::Enum additionalModes[] = {xiiViewRenderMode::DepthLinear, xiiViewRenderMode::BaseColor, xiiViewRenderMode::Metallic,
+                                                         xiiViewRenderMode::Roughness, xiiViewRenderMode::Specular, xiiViewRenderMode::Emissive, xiiViewRenderMode::AmbientOcclusion,
+                                                         xiiViewRenderMode::MotionVectors, xiiViewRenderMode::InstanceID, xiiViewRenderMode::IndirectLighting, xiiViewRenderMode::ReflectionContribution, xiiViewRenderMode::Bloom};
+      for (const auto mode : additionalModes)
+      {
+        xiiStringBuilder name;
+        name.SetFormat("ViewportMode{}.png", static_cast<xiiUInt32>(mode));
+        captureMode(mode, name.GetData());
+      }
+      view->InterpolateCameraTo(xiiVec3(0, -4, 1.5f), xiiVec3(4, 4, -1.5f).GetNormalized(), 60, nullptr, true);
+      auto*      scenePreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(scene);
+      const bool showGrid         = scenePreferences->GetShowGrid();
+      scenePreferences->SetShowGrid(false);
+      PumpUntil([] { return false; }, 200);
+      const auto skyImage    = captureMode(xiiViewRenderMode::Default, "ViewportAtmosphere.png");
+      const auto noGridImage = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportNoGrid.png");
+      scenePreferences->SetShowGrid(true);
+      PumpUntil([] { return false; }, 200);
+      const auto gridImage = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportGrid.png");
+      scenePreferences->SetShowGrid(showGrid);
+      xiiUInt32 gridPixels = 0;
+      if (!gridImage.isNull() && !noGridImage.isNull())
+        for (int y = gridImage.height() / 2; y < gridImage.height(); ++y)
+          for (int x = 0; x < gridImage.width(); ++x)
+            if (qRed(gridImage.pixel(x, y)) > qRed(noGridImage.pixel(x, y)) + 20)
+              ++gridPixels;
+      XII_TEST_BOOL_MSG(gridPixels > 100, "Enabling the floor grid must draw visible lines without selecting a gizmo.");
+      if (!skyImage.isNull())
+      {
+        xiiUInt32 blueSkyPixels = 0;
+        for (int y = 0; y < skyImage.height() / 3; ++y)
+          for (int x = 0; x < skyImage.width(); ++x)
+          {
+            const auto pixel = skyImage.pixel(x, y);
+            if (qBlue(pixel) > qRed(pixel) + 8 && qBlue(pixel) > qGreen(pixel))
+              ++blueSkyPixels;
+          }
+        XII_TEST_BOOL_MSG(blueSkyPixels > 100, "The default daylight scene must render a blue atmosphere, not a grey background.");
+      }
+      view->InterpolateCameraTo(xiiVec3(0, 0, 0), xiiVec3(1, 0, 0), 60, nullptr, true);
+      view->m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
 
       // Exercise production-size targets and continuous resize through the real Editor IPC and
       // built-in pipeline. The small fixed startup target alone cannot expose retained VRAM growth.
