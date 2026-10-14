@@ -318,7 +318,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteColorGrading(const xiiColorGradingD
 
   cmd.BeginDebugGroup("ColorGrading");
   {
-    const xiiColorGradingSettings& settings = m_DisplayOutputSettings.m_ColorGrading;
+    const xiiColorGradingSettings settings = m_View.GetViewRenderMode() == xiiViewRenderMode::Default ? m_DisplayOutputSettings.m_ColorGrading : xiiColorGradingSettings{};
     {
       xiiGALMapHelper<xiiColorGradingConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       pConstants->ColorAdjustments = xiiVec4(settings.m_fSaturation, settings.m_fContrast, settings.m_fVignetteStrength, settings.m_fVignetteRoundness);

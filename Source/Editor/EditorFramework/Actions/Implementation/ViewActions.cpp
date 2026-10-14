@@ -66,6 +66,14 @@ xiiInt64 xiiRenderModeAction::GetValue() const
   return (xiiInt64)pView->m_pViewConfig->m_RenderMode;
 }
 
+void xiiRenderModeAction::GetEntries(xiiDynamicArray<Item>& out_entries)
+{
+  xiiEnumerationMenuAction::GetEntries(out_entries);
+  for (xiiUInt32 i = out_entries.GetCount(); i > 0; --i)
+    if (!xiiViewRenderMode::IsSupportedByDefaultPipeline(static_cast<xiiViewRenderMode::Enum>(out_entries[i - 1].m_UserValue.ConvertTo<xiiInt64>())))
+      out_entries.RemoveAtAndCopy(i - 1);
+}
+
 void xiiRenderModeAction::Execute(const xiiVariant& value)
 {
   xiiQtEngineViewWidget* pView       = qobject_cast<xiiQtEngineViewWidget*>(m_Context.m_pWindow);

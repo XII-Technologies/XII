@@ -427,6 +427,8 @@ void xiiBuiltinRenderPipelinePass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>
   }
   if (m_sStage == "Debug")
   {
+    for (xiiStringView name : {"GBufferAlbedo", "GBufferNormal", "GBufferMaterial", "GBufferEmissive", "GBufferObjectId", "DilatedVelocityBuffer", "StableAO", "IndirectLighting", "EnvironmentSpecular", "BloomTexture"})
+      pins.PushBack({name, xiiRenderPipelinePin::Texture, true, true});
     pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, true, true});
     pins.PushBack({"DisplayLinearColor", xiiRenderPipelinePin::Texture, false, true});
     pins.PushBack({"SceneDepth", xiiRenderPipelinePin::Texture, true, true});

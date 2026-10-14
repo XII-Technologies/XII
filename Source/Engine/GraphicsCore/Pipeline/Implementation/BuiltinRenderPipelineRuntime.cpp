@@ -472,10 +472,12 @@ void xiiBuiltinRenderPipelineRuntime::BuildScreenEffects(xiiRenderGraph& graph, 
   }
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // Debug and visualization passes.
+  XII_SUCCEED_OR_RETURN(BuildViewRenderMode(graph));
   xiiDebugRenderer::AddRenderGraphPasses(graph);
+  return XII_SUCCESS;
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
@@ -544,8 +546,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
   }
   if (stage == "Debug")
   {
-    BuildDebug(graph, blackboard);
-    return XII_SUCCESS;
+    return BuildDebug(graph, blackboard);
   }
   if (stage == "ColorGrading")
   {

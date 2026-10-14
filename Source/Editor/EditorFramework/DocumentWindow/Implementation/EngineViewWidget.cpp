@@ -114,6 +114,8 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
 void xiiQtEngineViewWidget::SyncToEngine()
 {
   xiiViewRedrawMsgToEngine cam;
+  if (!xiiViewRenderMode::IsSupportedByDefaultPipeline(m_pViewConfig->m_RenderMode))
+    m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
   cam.m_RenderMode = m_pViewConfig->m_RenderMode;
 
   float fFov = m_pViewConfig->m_Camera.GetFovOrDim();

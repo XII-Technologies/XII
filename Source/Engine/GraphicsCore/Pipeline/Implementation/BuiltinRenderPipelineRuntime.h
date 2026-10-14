@@ -146,7 +146,8 @@ public:
   void                        BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                   BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                   BuildViewRenderMode(xiiRenderGraph& graph);
   void                        BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
@@ -410,6 +411,7 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState> m_pVignettePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pColorGradingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pToneMappingPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pViewRenderModePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pFilmGrainPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pDepthOfFieldPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pMotionBlurPipeline;
