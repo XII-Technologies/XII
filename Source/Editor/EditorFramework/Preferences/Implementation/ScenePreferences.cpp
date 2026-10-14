@@ -9,7 +9,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScenePreferencesUser, 1, xiiRTTIDefaultAlloc
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("ShowGrid", m_bShowGrid),
+    XII_MEMBER_PROPERTY("ShowGrid", m_bShowGrid)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("CameraSpeed", m_iCameraSpeed)->AddAttributes(new xiiDefaultValueAttribute(10), new xiiClampValueAttribute(1, 30)),
   }
   XII_END_PROPERTIES;
@@ -20,6 +20,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiScenePreferencesUser::xiiScenePreferencesUser() :
   xiiPreferences(Domain::Document, "Scene")
 {
+  m_bShowGrid = true;
   m_iCameraSpeed = 9;
 }
 
