@@ -309,12 +309,16 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
         // so, for now, since this is probably a rare case anyway, we just close the document without asking
         if (pInfo->m_bMainAsset)
         {
-          xiiDocumentManager::EnsureDocumentIsClosedInAllManagers(pInfo->m_pAssetInfo->m_Path);
+          // A new asset can already occupy this path. Close the removed identity only;
+          // closing by path can destroy its replacement during the replacement's initial save.
+          if (auto* document = xiiDocumentManager::GetDocumentByGuid(guid))
+            document->GetDocumentManager()->CloseDocument(document);
           e.m_Type = xiiAssetCuratorEvent::Type::AssetRemoved;
           m_Events.Broadcast(e);
 
           deletedAssets.PushBack(pInfo->m_pAssetInfo);
         }
+        RemoveAssetTransformState(guid);
         m_KnownAssets.Remove(guid);
         m_KnownSubAssets.Remove(guid);
       }

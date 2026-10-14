@@ -3662,3 +3662,102 @@ simulates that missing-type state on a real asset document; the ToolsFoundation
 fixture separately exercises actual skipped-object loading from DDL. Legacy scene
 component migrations and the broader modernization objective remain incomplete.
 Release, Linux and macOS configurations were not executed for this slice.
+
+
+### Asynchronous Document Save Revisions And Completion Ownership
+
+Accepted asynchronous saves had a separate dirty-state bug. Completion always
+called `SetModified(false)`, even if a later transaction, undo or redo had changed
+the document since its snapshot was serialized. The next normal Save could then
+be a no-op and leave those newer edits absent from disk. Saved-event listeners'
+edits were also cleared after notification. In addition, every completion
+invalidated the document's current save handle, so finishing an older request
+could hide a later queued save from close-time waiting.
+
+Each document now advances a modification revision on every `SetModified(true)`,
+including calls while it is already dirty. Save construction captures that revision
+alongside its graphs. Successful completion clears dirty state only when the
+captured revision is still current, before publishing DocumentSaved. A listener's
+subsequent edit remains dirty. The existing event facility permits one nested
+ModifiedChanged notification for this supported listener behavior; deeper recursive
+notification remains guarded.
+
+Each write task owns its path and result. The worker no longer reads or writes the
+live document, and the completion task owns the finished write task until its result
+has been consumed. The old shared `m_LastSaveResult` was removed. Failed-write
+messages describe that request's captured path, even when the document path changes
+before the worker runs. Existing dependencies still serialize queued saves.
+
+Completion only clears the active handle when it still identifies that task, and
+does so before invoking the callback. It does not access the document after the
+callback. Close-time waiting drains successor saves queued by completion callbacks.
+Synchronous Save waits on its own copied task ID, leaves newer handles intact, and
+revalidates writability after waiting for an earlier callback. Resource documents
+continue to use their existing metadata preparation and post-save hooks.
+
+Document persistence fixtures were shared in `DocumentSaveTestUtils.h`, with the
+new temporal and queue tests in `DocumentAsyncSaveTest.cpp`. The baseline at
+`Workspace/editor-async-save-baseline-tests.log` reproduces stale dirty clearing,
+lost close-time tracking, and saved-listener edits missing from subsequent writes.
+The tests drain outstanding tasks explicitly on the broken baseline so failures
+can be observed without destroying a document still referenced by its tasks.
+
+The regressions use real graph serialization and command transactions, checking
+captured and newer values separately on disk. They cover edit/undo/redo after an
+async snapshot; document-local and global saved-event listeners; nested dirty
+notifications; queued saves; a three-save callback chain drained during closing;
+independent failure/success results and captured-path reporting; and writability
+changes made by an earlier completion callback. The native asset-window fixture
+also checks newer unsaved text after an accepted async save, Save-before-close of
+that newer content, and manager-owned document/window destruction while a final
+save is pending.
+
+
+### Asset Removal Uses Document Identity
+
+Repeated native project creation exposed another lifecycle error during integration
+verification. An asset can be replaced with a new document UUID at the same path.
+The curator correctly marks the old asset identity removed, but MainThreadTick
+previously closed whichever open document occupied that path. During replacement
+creation this was the new document, whose initial save completion was currently
+running. Closing before its DocumentOpened event caused visualizer subscription
+removal assertions, followed by waiting on the save task executing that very hook.
+
+The retained assertion stack in
+`Workspace/editor-async-save-startup-symbols.log` identifies the chain:
+VisualizerManager unsubscribe, DocumentManager CloseDocument, curator file-removal
+handling, AssetDocument InternalAfterSaveDocument, save completion, and synchronous
+creation of the default scene. The reused-project failure is recorded in
+`Workspace/editor-async-save-editor-retry-tests.log`; the stalled owned test was
+stopped after diagnosis. The earlier fresh-output run reached the native save
+regressions but timed out at the scene viewport's first picking reply, recorded in
+`Workspace/editor-async-save-editor-final-tests.log`. Neither run is reported as
+successful verification.
+
+The curator now uses the removed asset GUID to find and close its matching document.
+A replacement at the old path remains registered and usable. Existing main/subasset
+removal and notification behavior is retained; no parallel identity or ownership
+system was added. The temporary assertion tracing was removed before the final
+build.
+
+`AssetReplacementTest.cpp` exercises the actual registered asset manager and curator:
+create an original asset, register its identity, close it, create a replacement at
+the same path, verify removal of only the old identity, edit and save the replacement,
+close/reopen it with the new identity and persisted property, then delete its file
+and verify that the matching open document is closed exactly once. The same reused
+project that reproduced the default-scene self-close is used for final verification.
+
+Replacement also untracks the old identity's dependencies before removing it.
+Removed records cannot be reintroduced into transform-state queues by invalidation
+or an in-flight update; final removal purges those queues again. The regression
+checks that a package dependency no longer reports the replaced identity as a user.
+
+Checkpoint verification: all 28 ToolsFoundation subtests passed in
+`Workspace/editor-async-save-all-tools-final-tests.log` (exit 0). The Debug Editor,
+EditorFrameworkTest, plugins, engine process, processor, and player build passed in
+`Workspace/editor-asset-wrap-build.log` (exit 0). The preceding native integration
+run completed viewport resizing/capture and the replacement/save checks but exposed
+stale dependency and transform-state records, prompting the additional cleanup.
+The latest reused-project integration run (`Workspace/editor-asset-wrap-tests.log`)
+stalled after engine reconnection, before the save fixture, and was interrupted.
+Full native integration is therefore not claimed green for this checkpoint.

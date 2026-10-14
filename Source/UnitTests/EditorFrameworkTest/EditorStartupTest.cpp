@@ -7,6 +7,7 @@
 #include <EditorFrameworkTest/AssetProcessorTest.h>
 #include <EditorFrameworkTest/AssetProfileTest.h>
 #include <EditorFrameworkTest/AssetResaveTest.h>
+#include <EditorFrameworkTest/AssetReplacementTest.h>
 #include <EditorFrameworkTest/DocumentSaveUiTest.h>
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
@@ -86,6 +87,7 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
       return;
     XII_TEST_BOOL(xiiToolsProject::IsProjectOpen());
     TestDocumentSaveUi(*editor, project.GetFileDirectory());
+    TestAssetReplacement(*editor, project.GetFileDirectory());
     xiiStringBuilder path = project.GetFileDirectory();
     path.AppendPath("Source.xiiPropertyAnimAsset");
     PropertyAnimationSourceManager fixtures;

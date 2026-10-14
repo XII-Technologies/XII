@@ -231,6 +231,7 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
   if (!bNewAssetFile && oldGuid != pNewAssetInfo->m_Info->m_DocumentID)
   {
     // OVERWRITTEN
+    UntrackDependencies(m_KnownAssets[oldGuid]);
     SetAssetExistanceState(*m_KnownAssets[oldGuid], xiiAssetExistanceState::FileRemoved);
     RemoveAssetTransformState(oldGuid);
     newExistanceState = xiiAssetExistanceState::FileAdded;
@@ -568,7 +569,7 @@ void xiiAssetCurator::InvalidateAssetTransformState(const xiiUuid& assetGuid)
   for (const xiiUuid& guid : hull)
   {
     xiiAssetInfo* pAssetInfo = nullptr;
-    if (m_KnownAssets.TryGetValue(guid, pAssetInfo))
+    if (m_KnownAssets.TryGetValue(guid, pAssetInfo) && pAssetInfo->m_ExistanceState != xiiAssetExistanceState::FileRemoved)
     {
       // We do not set pAssetInfo->m_TransformState because that is user facing and
       // as after updating the state it might just be the same as before we instead add
@@ -589,7 +590,7 @@ void xiiAssetCurator::UpdateAssetTransformState(const xiiUuid& assetGuid, xiiAss
   XII_LOCK(m_CuratorMutex);
 
   xiiAssetInfo* pAssetInfo = nullptr;
-  if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo))
+  if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo) && pAssetInfo->m_ExistanceState != xiiAssetExistanceState::FileRemoved)
   {
     m_TransformStateStale.Remove(assetGuid);
     for (int i = 0; i < xiiAssetInfo::TransformState::COUNT; i++)
