@@ -71,13 +71,14 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
   }
   else if (const xiiViewScreenshotMsgToEngine* pViewScreenshotMsg = xiiDynamicCast<const xiiViewScreenshotMsgToEngine*>(pMsg))
   {
-    xiiImage img;
-    auto*    window = xiiWindowManager::GetSingleton()->GetWindow(m_hEditorWindow);
-    if (window && window->GetOutputTarget() && window->GetOutputTarget()->CaptureImage(img).Succeeded())
+    auto* window = xiiWindowManager::GetSingleton()->GetWindow(m_hEditorWindow);
+    if (window && window->GetOutputTarget())
     {
-      if (img.SaveTo(pViewScreenshotMsg->m_sOutputFile).Failed())
-        xiiLog::Error("Failed to save view screenshot to '{0}'.", pViewScreenshotMsg->m_sOutputFile);
+      static_cast<xiiWindowOutputTargetGAL*>(window->GetOutputTarget())->RequestScreenshot(pViewScreenshotMsg->m_sOutputFile);
+      Redraw(true);
     }
+    else
+      xiiLog::Error("Cannot capture a view without a window output target.");
   }
 #else
 #  error "Unsupported platform."

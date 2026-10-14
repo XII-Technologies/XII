@@ -56,7 +56,26 @@ void xiiWindowOutputTargetGAL::PresentImage()
   if (!m_pSwapChain)
     return;
 
+  if (!m_ScreenshotRequests.IsEmpty())
+  {
+    xiiImage image;
+    if (CaptureImage(image).Succeeded())
+    {
+      for (const auto& path : m_ScreenshotRequests)
+        if (image.SaveTo(path).Failed())
+          xiiLog::Error("Failed to save screenshot to '{}'.", path);
+    }
+    else
+      xiiLog::Error("Failed to capture the rendered window image.");
+    m_ScreenshotRequests.Clear();
+  }
+
   m_pSwapChain->Present();
+}
+
+void xiiWindowOutputTargetGAL::RequestScreenshot(xiiStringView sOutputFile)
+{
+  m_ScreenshotRequests.PushBack(xiiString(sOutputFile));
 }
 
 void xiiWindowOutputTargetGAL::Resize(const xiiSizeU32& newSize)
@@ -82,11 +101,14 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
     return XII_FAILURE;
   }
 
-  xiiSharedPtr<xiiGALDevice> pDevice        = xiiGALDevice::GetDefaultDevice();
-  auto                       pGraphicsQueue = pDevice->GetCommandQueue();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (!pDevice || !m_pImageCapture)
+    return XII_FAILURE;
+  auto pGraphicsQueue = pDevice->GetCommandQueue();
 
   xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
+  if (!pCommandList || !pGraphicsQueue)
+    return XII_FAILURE;
 
   pCommandList->Begin();
   {
@@ -98,45 +120,35 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   m_pImageCapture->WaitForCompletedValue();
 
+  bool captured = false;
   while (auto capture = m_pImageCapture->GetCapture())
   {
     const xiiGALTextureCreationDescription& textureDescription = capture.m_pTexture->GetDescription();
 
-    xiiTemporaryArray<xiiUInt8> backbufferData;
-    backbufferData.SetCountUninitialized(textureDescription.m_Size.width * textureDescription.m_Size.height * 4);
+    out_image.ResetAndAlloc(textureDescription);
 
     pCommandList->Begin();
     {
       xiiGALTextureMipLevelData      mipLevelData;
       xiiGALMappedTextureSubresource mappedSubResource;
-      pCommandList->MapTextureSubresource(capture.m_pTexture, mipLevelData, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).IgnoreResult();
-
-      const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-
-      if (mappedSubResource.m_pData)
+      if (pCommandList->MapTextureSubresource(capture.m_pTexture, mipLevelData, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).Succeeded() && mappedSubResource.m_pData)
       {
-        const xiiUInt32 uiStride = 4 * textureDescription.m_Size.width;
-
-        xiiGALTextureUtilities::CopySubresourceToMemory(textureDescription, mappedSubResource, mipLevelData, backbufferData, uiStride);
+        const auto bytes = out_image.GetByteBlobPtr();
+        xiiGALTextureUtilities::CopySubresourceToMemory(textureDescription, mappedSubResource, mipLevelData,
+                                                        xiiMakeArrayPtr(bytes.GetPtr(), static_cast<xiiUInt32>(bytes.GetCount())), static_cast<xiiUInt32>(out_image.GetRowPitch()));
+        captured = pCommandList->UnmapTextureSubresource(capture.m_pTexture, mipLevelData).Succeeded();
       }
       else
       {
         xiiLog::Error("Failed to map texture sub-resource for reading back-buffer data.");
       }
-
-      pCommandList->UnmapTextureSubresource(capture.m_pTexture, mipLevelData).IgnoreResult();
     }
     pCommandList->End();
 
     pGraphicsQueue->Submit(pCommandList);
 
     m_pImageCapture->RecycleStagingTexture(std::move(capture.m_pTexture));
-
-    out_image.ResetAndAlloc(textureDescription);
-    xiiUInt8* pData = out_image.GetPixelPointer<xiiUInt8>();
-
-    xiiMemoryUtils::Copy(pData, backbufferData.GetData(), backbufferData.GetCount());
   }
 
-  return XII_SUCCESS;
+  return captured ? XII_SUCCESS : XII_FAILURE;
 }
