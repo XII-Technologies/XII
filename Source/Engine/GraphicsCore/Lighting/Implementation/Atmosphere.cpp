@@ -4,6 +4,9 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/IdTable.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
+#include <Foundation/Serialization/AbstractObjectGraph.h>
+#include <Foundation/Serialization/GraphPatch.h>
 #include <GraphicsCore/Lighting/Atmosphere.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -107,7 +110,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, AtmosphereManager)
   }
 XII_END_SUBSYSTEM_DECLARATION;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiAtmosphereSettings>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereSettings, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiAtmosphereSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -148,6 +151,38 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAtmosphereCacheStats, xiiNoBase, 1, xiiRTTIDe
 }
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
+
+namespace
+{
+  class xiiAtmosphereSettingsPatch_3_4 : public xiiGraphPatch
+  {
+  public:
+    xiiAtmosphereSettingsPatch_3_4() : xiiGraphPatch("xiiAtmosphereSettings", 4) {}
+
+    void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* pNode) const override
+    {
+      // Before reflected defaults were supplied, the editor authored this entire
+      // record as zero. Repair only that exact invalid record; partial settings
+      // and intentionally authored values remain the user's responsibility.
+      // Keep the legacy field set fixed so future properties do not change detection.
+      static constexpr xiiStringView fields[] = {"PlanetRadiusKm", "AtmosphereRadiusKm", "RayleighScaleHeightKm", "MieScaleHeightKm",
+                                                 "RayleighScattering", "MieScattering", "MieAbsorption", "OzoneAbsorption", "PlanetUpDirection", "GroundAltitudeMeters",
+                                                 "MiePhaseG", "SunLimbDarkening", "TransmittanceIntegrationSteps", "MultiScatterSqrtSamples", "SkyViewIntegrationSteps", "AerialPerspectiveSteps"};
+      const auto*                    type     = xiiGetStaticRTTI<xiiAtmosphereSettings>();
+      for (const auto name : fields)
+      {
+        const auto* value    = pNode->FindProperty(name);
+        const auto* property = type->FindPropertyByName(name);
+        if (!value || !property || value->m_Value != xiiReflectionUtils::GetDefaultVariantFromType(property->GetSpecificType()))
+          return;
+      }
+      for (const auto name : fields)
+        pNode->ChangeProperty(name, xiiReflectionUtils::GetDefaultValue(type->FindPropertyByName(name)));
+    }
+  };
+
+  xiiAtmosphereSettingsPatch_3_4 g_xiiAtmosphereSettingsPatch_3_4;
+} // namespace
 
 void xiiAtmosphereManager::Startup()
 {
