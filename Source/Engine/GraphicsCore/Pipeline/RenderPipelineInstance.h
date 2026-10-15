@@ -22,6 +22,7 @@ public:
   const xiiRenderPipelinePass* GetPass(xiiUInt32 index) const { return index < m_Passes.GetCount() ? m_Passes[index] : nullptr; }
 
 private:
+  xiiDynamicArray<xiiRenderPipelineBinding>                       m_HistoryBindings;
   xiiSharedPtr<const xiiRenderPipeline>                           m_pPipeline;
   xiiDynamicArray<xiiRenderPipelinePass*>                         m_Passes;
   xiiDynamicArray<xiiRenderPipelineBinding>                       m_Bindings;

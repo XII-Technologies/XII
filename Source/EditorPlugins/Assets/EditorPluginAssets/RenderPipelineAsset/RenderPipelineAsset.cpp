@@ -118,6 +118,11 @@ void xiiRenderPipelineNodeManager::GetCreateableTypes(xiiHybridArray<const xiiRT
       ref_types.PushBack(type);
 }
 
+bool xiiRenderPipelineNodeManager::InternalCanConnectToSelf(const xiiPin& source, const xiiPin&) const
+{
+  return static_cast<const xiiPipelineEditorPin&>(source).m_Schema.m_bTemporalHistoryOutput;
+}
+
 xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const
 {
   out_result         = CanConnectResult::ConnectNever;
@@ -125,8 +130,29 @@ xiiStatus xiiRenderPipelineNodeManager::InternalCanConnect(const xiiPin& source,
   const auto& input  = static_cast<const xiiPipelineEditorPin&>(target).m_Schema;
   if (output.m_Type != input.m_Type || (output.m_Type == xiiRenderPipelinePin::Texture && output.m_Format != xiiGALResourceFormat::Unknown && input.m_Format != xiiGALResourceFormat::Unknown && output.m_Format != input.m_Format))
     return xiiStatus("Render pipeline pin resource types or formats do not match.");
-  if (WouldConnectionCreateCircle(source, target))
-    return xiiStatus("Render pipeline connections must form a directed acyclic graph.");
+  if (!output.m_bTemporalHistoryOutput)
+  {
+    xiiDynamicArray<const xiiDocumentObject*> pending;
+    xiiHashSet<const xiiDocumentObject*>      visited;
+    pending.PushBack(target.GetParent());
+    while (!pending.IsEmpty())
+    {
+      const auto* node = pending.PeekBack();
+      pending.PopBack();
+      if (node == source.GetParent())
+        return xiiStatus("Render pipeline contains an intra-frame dependency cycle. Use explicit temporal history output pins for previous-frame feedback.");
+      if (visited.Contains(node))
+        continue;
+      visited.Insert(node);
+      for (const auto& pin : GetOutputPins(node))
+      {
+        if (static_cast<const xiiPipelineEditorPin*>(pin.Borrow())->m_Schema.m_bTemporalHistoryOutput)
+          continue;
+        for (const auto* connection : GetConnections(*pin))
+          pending.PushBack(connection->GetTargetPin().GetParent());
+      }
+    }
+  }
   out_result = input.m_Type == xiiRenderPipelinePin::Order ? CanConnectResult::ConnectNtoN : CanConnectResult::ConnectNto1;
   return XII_SUCCESS;
 }
@@ -206,7 +232,11 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
       external.PushBack({connection->GetSourcePin().GetParent()->GetGuid(), connection->GetSourcePin().GetName(), pin->GetName(), true});
   for (const auto& pin : manager->GetOutputPins(object))
     for (const auto* connection : manager->GetConnections(*pin))
+    {
+      if (connection->GetTargetPin().GetParent() == object)
+        continue; // Captured once through the input.
       external.PushBack({connection->GetTargetPin().GetParent()->GetGuid(), connection->GetTargetPin().GetName(), pin->GetName(), false});
+    }
   const auto position = manager->GetNodePos(object);
   auto*      history  = GetCommandHistory();
   auto*      accessor = GetObjectAccessor();
@@ -250,6 +280,20 @@ xiiStatus xiiRenderPipelineAssetDocument::ExpandSubgraph(const xiiDocumentObject
     for (const auto& connection : external)
     {
       bool found = false;
+      if (connection.m_Other == wrapper.m_Passes[0].m_Id)
+      {
+        for (const auto& output : expansion.m_Boundary)
+          if (output.m_Source.m_InstancePath.IsEmpty() && !output.m_bInput && output.m_sName == connection.m_sOtherPin)
+            for (const auto& input : expansion.m_Boundary)
+              if (input.m_Source.m_InstancePath.IsEmpty() && input.m_bInput && input.m_sName == connection.m_sBoundary)
+              {
+                XII_SUCCEED_OR_RETURN(connect(nodes[expansion.m_Graph.GetVertexIndex(output.m_hVertex)], output.m_sPort, nodes[expansion.m_Graph.GetVertexIndex(input.m_hVertex)], input.m_sPort));
+                found = true;
+              }
+        if (!found)
+          return xiiStatus("Expanded temporal feedback has no matching interface mapping.");
+        continue;
+      }
       for (const auto& boundary : expansion.m_Boundary)
       {
         if (!boundary.m_Source.m_InstancePath.IsEmpty() || boundary.m_sName != connection.m_sBoundary || boundary.m_bInput != connection.m_bInput)

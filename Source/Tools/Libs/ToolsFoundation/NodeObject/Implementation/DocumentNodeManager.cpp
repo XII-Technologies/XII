@@ -283,7 +283,7 @@ xiiStatus xiiDocumentNodeManager::CanConnect(const xiiRTTI* pObjectType, const x
   if (target.m_Type != xiiPin::Type::Input)
     return xiiStatus("Target pin is not an input pin.");
 
-  if (source.m_pParent == target.m_pParent)
+  if (source.m_pParent == target.m_pParent && !InternalCanConnectToSelf(source, target))
     return xiiStatus("Nodes cannot be connect with themselves.");
 
   if (IsConnected(source, target))

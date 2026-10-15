@@ -139,6 +139,66 @@ namespace PipelineResourceTest
 
 static_assert(!std::is_copy_constructible_v<xiiRenderPipelineInstance>);
 
+class xiiPipelineTestHistory : public xiiRenderPipelinePass
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiPipelineTestHistory, xiiRenderPipelinePass);
+
+public:
+  bool      m_bTemporal      = true;
+  xiiUInt32 m_uiHistoryCalls = 0;
+  xiiUInt32 m_uiBuildCalls   = 0;
+  void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins) const override
+  {
+    pins.PushBack({"Previous", xiiRenderPipelinePin::Buffer, true, true});
+    xiiRenderPipelinePin history{"History", xiiRenderPipelinePin::Buffer, false, true};
+    history.m_bTemporalHistoryOutput = m_bTemporal;
+    pins.PushBack(history);
+  }
+  xiiResult BuildTemporalHistory(xiiRenderPipelinePassContext& context) override
+  {
+    ++m_uiHistoryCalls;
+    return context.m_bTemporalHistoryPhase ? XII_SUCCESS : XII_FAILURE;
+  }
+  xiiResult Build(xiiRenderPipelinePassContext& context) override
+  {
+    ++m_uiBuildCalls;
+    return !context.m_bTemporalHistoryPhase ? XII_SUCCESS : XII_FAILURE;
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPipelineTestHistory, 1, xiiRTTIDefaultAllocator<xiiPipelineTestHistory>)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MEMBER_PROPERTY("Temporal", m_bTemporal),
+    } XII_END_PROPERTIES;
+  }
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(Pipeline, TemporalDependencyPolicy)
+{
+  xiiRenderPipelineResourceDescriptor descriptor;
+  descriptor.AddPass("Feedback", "xiiPipelineTestHistory");
+  XII_TEST_RESULT(descriptor.Connect(0, "History", 0, "Previous"));
+  xiiSharedPtr<const xiiRenderPipeline> compiled;
+  XII_TEST_RESULT(xiiRenderPipeline::Compile(descriptor, compiled));
+  XII_TEST_INT(compiled->GetTopology().GetEdgeCount(), 0);
+  XII_TEST_INT(compiled->GetDescriptor().m_Connections.GetCount(), 1);
+  xiiRenderPipelineInstance instance;
+  XII_TEST_RESULT(instance.Initialize(compiled));
+  xiiRenderGraph           graph;
+  xiiRenderGraphBlackboard blackboard;
+  graph.BeginSetup(1);
+  XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard));
+  graph.EndSetup();
+  const auto* pass = static_cast<const xiiPipelineTestHistory*>(instance.GetPass(0));
+  XII_TEST_INT(pass->m_uiHistoryCalls, 1);
+  XII_TEST_INT(pass->m_uiBuildCalls, 1);
+  descriptor.m_Passes[0].m_Properties.Insert("Temporal", false);
+  xiiStringBuilder error;
+  XII_TEST_BOOL(xiiRenderPipeline::Compile(descriptor, compiled, &error).Failed());
+  XII_TEST_BOOL(error.FindSubString("intra-frame") != nullptr);
+}
+
 XII_CREATE_SIMPLE_TEST(Pipeline, IncrementalRenderGraphCompilation)
 {
   struct Data
@@ -288,6 +348,11 @@ XII_CREATE_SIMPLE_TEST(Pipeline, HierarchicalRenderPipeline)
     xiiDefaultMemoryStreamStorage storage;
     xiiMemoryStreamWriter         writer(&storage);
     XII_TEST_RESULT(root.Serialize(writer));
+    xiiMemoryStreamContainerStorage<xiiDynamicArray<xiiUInt8>> firstBytes, secondBytes;
+    xiiMemoryStreamWriter                                      firstWriter(&firstBytes), secondWriter(&secondBytes);
+    XII_TEST_RESULT(root.Serialize(firstWriter));
+    XII_TEST_RESULT(root.Serialize(secondWriter));
+    XII_TEST_BOOL(xiiConstByteArrayPtr(firstBytes.GetData(), firstBytes.GetStorageSize32()) == xiiConstByteArrayPtr(secondBytes.GetData(), secondBytes.GetStorageSize32()));
     xiiMemoryStreamReader               reader(&storage);
     xiiRenderPipelineResourceDescriptor loaded;
     XII_TEST_RESULT(loaded.Deserialize(reader));

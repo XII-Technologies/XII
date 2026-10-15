@@ -26,6 +26,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePin
   bool      m_bOptional = false;
   /// Unknown accepts the producer's format; concrete formats must match.
   xiiGALResourceFormat::Enum m_Format = xiiGALResourceFormat::Unknown;
+  /// Pass-owned previous-frame resource, imported before current-frame Build. It creates no
+  /// intra-frame ordering edge. Valid only on typed resource outputs.
+  bool m_bTemporalHistoryOutput = false;
 };
 
 struct xiiRenderPipelineBinding
@@ -51,6 +54,10 @@ public:
   virtual xiiBitflags<xiiRenderExtractionCategory> GetExtractionRequirements() const { return {}; }
   virtual xiiBitflags<xiiRenderPipelineFeature>    GetRuntimeFeatures() const { return {}; }
   virtual xiiResult                                Build(xiiRenderPipelinePassContext& context) = 0;
+  /// Publish only previous-frame temporal outputs, without reading current-frame inputs.
+  /// Optional history may be absent on the first frame. Promote it only after successful
+  /// execution, and discard it in InvalidateTemporalHistory after a failed frame or camera cut.
+  virtual xiiResult BuildTemporalHistory(xiiRenderPipelinePassContext&) { return XII_SUCCESS; }
   /// Optional domain validation after generic connectivity and ordering have been validated.
   /// Runs on CPU during compilation; failure prevents publication of the entire resource.
   virtual xiiResult ValidatePipeline(const xiiRenderPipelineResourceDescriptor&, xiiArrayPtr<const xiiUInt32>, xiiUInt32, xiiStringBuilder*) const { return XII_SUCCESS; }
@@ -72,6 +79,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
   xiiStringView                            m_sInstanceScope;
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
+  bool                                     m_bTemporalHistoryPhase = false;
 
   xiiUInt32                   FindPin(xiiStringView name, bool input) const;
   xiiRenderGraphTextureHandle GetInputTexture(xiiStringView name) const;

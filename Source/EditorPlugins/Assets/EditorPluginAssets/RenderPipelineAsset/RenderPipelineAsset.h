@@ -15,6 +15,7 @@ public:
   virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
 
   virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const override;
+  bool              InternalCanConnectToSelf(const xiiPin& source, const xiiPin& target) const override;
 
 private:
   mutable xiiDynamicArray<xiiNodePropertyValue> m_BuiltinProperties;

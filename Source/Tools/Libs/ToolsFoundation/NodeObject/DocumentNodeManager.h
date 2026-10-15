@@ -214,6 +214,9 @@ private:
   virtual bool      InternalIsConnection(const xiiDocumentObject* pObject) const;
   virtual bool      InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const { return false; }
   virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_Result) const;
+  /// Consumers may explicitly authorize self feedback (for example, previous-frame resource pins).
+  /// Ordinary document graph nodes retain the existing no-self-connection policy.
+  virtual bool      InternalCanConnectToSelf(const xiiPin&, const xiiPin&) const { return false; }
   virtual xiiStatus InternalCanDisconnect(const xiiPin& source, const xiiPin& target) const { return XII_SUCCESS; }
   virtual xiiStatus InternalCanMoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos) const { return XII_SUCCESS; }
   virtual void      InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& node) = 0;

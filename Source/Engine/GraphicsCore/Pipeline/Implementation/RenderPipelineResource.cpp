@@ -176,6 +176,9 @@ void xiiRenderPipelineResource::UpdateMemoryUsage(MemoryUsage& usage)
 {
   XII_LOCK(m_Mutex);
   usage.m_uiMemoryCPU = sizeof(*this);
+  usage.m_uiMemoryCPU += static_cast<xiiUInt32>(m_DefinitionDependencies.GetHeapMemoryUsage());
+  if (m_pAuthoring)
+    usage.m_uiMemoryCPU += static_cast<xiiUInt32>(sizeof(xiiRenderPipelineAuthoring) + m_pAuthoring->m_Descriptor.GetHeapMemoryUsage());
   usage.m_uiMemoryGPU = 0;
   if (m_pPipeline)
   {

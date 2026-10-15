@@ -150,6 +150,12 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       const auto& pin = pass.m_Pins[i];
       if (pin.m_sName.IsEmpty())
         return fail("Pin names must be nonempty.");
+      if (pin.m_bTemporalHistoryOutput)
+      {
+        if (pin.m_bInput || pin.m_Type == xiiRenderPipelinePin::Order)
+          return fail("Temporal history must be a typed resource output pin.");
+        pass.m_bHasTemporalHistory = true;
+      }
       if (pin.m_Type > xiiRenderPipelinePin::Order || (pin.m_Type != xiiRenderPipelinePin::Texture && pin.m_Format != xiiGALResourceFormat::Unknown))
         return fail("Invalid pin resource schema.");
       for (xiiUInt32 j = 0; j < i; ++j)
@@ -213,8 +219,11 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       return fail("An input resource pin has multiple producers.");
     connected[targetBinding] = 1;
     result->m_Connections.PushBack({source.m_uiBindingOffset + output, targetBinding});
-    xiiGraphEdgeHandle edge;
-    XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddEdge(vertices[connection.m_uiSource], vertices[connection.m_uiTarget], edge));
+    if (!a.m_bTemporalHistoryOutput)
+    {
+      xiiGraphEdgeHandle edge;
+      XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddEdge(vertices[connection.m_uiSource], vertices[connection.m_uiTarget], edge));
+    }
   }
   diagnosticPass = 0;
   for (const auto& pass : result->m_Passes)

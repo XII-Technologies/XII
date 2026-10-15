@@ -50,6 +50,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
   xiiResult                                        Disconnect(xiiUInt32 connection);
   xiiResult                                        Serialize(xiiStreamWriter& stream) const;
   xiiResult                                        Deserialize(xiiStreamReader& stream);
+  xiiUInt64                                        GetHeapMemoryUsage() const;
   xiiDynamicArray<xiiRenderPipelinePassDescriptor> m_Passes;
   xiiDynamicArray<xiiRenderPipelineConnection>     m_Connections;
   xiiVariantDictionary                             m_Parameters;
@@ -76,9 +77,10 @@ public:
   {
     const xiiRTTI*                        m_pType = nullptr;
     xiiDynamicArray<xiiRenderPipelinePin> m_Pins;
-    xiiUInt32                             m_uiBindingOffset    = 0;
-    xiiUInt32                             m_uiConnectionOffset = 0;
-    xiiUInt32                             m_uiConnectionCount  = 0;
+    xiiUInt32                             m_uiBindingOffset     = 0;
+    xiiUInt32                             m_uiConnectionOffset  = 0;
+    xiiUInt32                             m_uiConnectionCount   = 0;
+    bool                                  m_bHasTemporalHistory = false;
   };
   struct Connection
   {

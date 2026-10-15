@@ -126,7 +126,7 @@ xiiResult xiiRenderPipelineResourceDescriptor::MakeGraphDefinition(xiiGraphDefin
 }
 xiiResult xiiRenderPipelineResourceDescriptor::Connect(xiiUInt32 source, xiiStringView output, xiiUInt32 target, xiiStringView input)
 {
-  if (source >= m_Passes.GetCount() || target >= m_Passes.GetCount() || source == target || output.IsEmpty() || input.IsEmpty())
+  if (source >= m_Passes.GetCount() || target >= m_Passes.GetCount() || output.IsEmpty() || input.IsEmpty())
     return XII_FAILURE;
   m_Connections.PushBack({source, target, output, input});
   return XII_SUCCESS;
