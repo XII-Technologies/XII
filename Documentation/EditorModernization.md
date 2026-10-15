@@ -4029,3 +4029,50 @@ version 1 writes shutter seconds as a float but reads them through the double
 serialization regression and correction without changing the persisted layout.
 The render-target camera path remains disabled and requires native resource/view
 integration; legacy sky/probe/GreyBox asset migration remains open.
+
+### FeatureLab Visibility Capacity and Empty Dispatches
+
+FeatureLab's imported mesh assets reproduce the reported capacity error without
+requiring a scene-specific assumption. Read-only inspection of the current
+native cache format gives the following per-instance bounds (2026-10-14):
+
+| Cached mesh | Sections | Authored meshlets | Previous rounded capacity | Corrected rounded capacity |
+| --- | ---: | ---: | ---: | ---: |
+| Mesh2 | 1,075 | 3,908 | 8,388,608 | 4,096 |
+| Mesh4 | 43 | 22,450 | 1,048,576 | 32,768 |
+| Mesh5 | 99 | 58,664 | 8,388,608 | 65,536 |
+
+`GetExtractedMeshletCapacity` previously added the entire geometry LOD for every
+extracted section. Mesh2 alone therefore requested 4,201,100 entries before
+power-of-two rounding, above the reported 4,194,304-group device limit. Mesh5
+requested 5,807,736 entries before rounding. The inspection verifies that these
+assets' authored primitive ranges do not overlap and their section meshlet
+counts sum to the LOD counts. Main.xiiScene references Mesh2 through its asset
+lookup entry. Evidence is in `Workspace/featurelab-capacity-audit.py` and
+`Workspace/featurelab-capacity-audit.log`; these are local diagnostic artifacts.
+
+The residency API now counts meshlets intersecting a requested primitive range
+for each authored LOD. Extraction caches those counts until its geometry revision
+or primitive range changes. Capacity queries use these cached ranges instead of
+whole-LOD counts and include not-yet-resident LODs, preventing later streaming
+from exceeding the allocation bound. Arbitrary ranges count boundary-overlapping
+meshlets conservatively; a zero primitive count retains the GPU visibility
+whole-LOD convention. No meshlets are dropped or device limits bypassed.
+
+Empty instance and Hi-Z culling callbacks skip direct compute dispatches. Their
+counter resets still execute. The empty Hi-Z path explicitly restores the
+counter's declared UAV state after its transfer clear, preserving subsequent
+render-graph barriers. Decal culling already guards empty input and required no
+change.
+
+The native LOD tests check primitive-range bounds before and after streaming,
+custom range boundaries, forced LODs, invalid handles, and populated/empty/populated
+transitions. They capture zero-group diagnostics across recording threads and
+read the actual GPU counters and picking image. Native picking also exercises
+2,200 distinct sections: the previous bound rounded to 8,388,608, while the
+required stream has only 2,200 meshlets. Both mesh-shader and indexed paths must
+resolve the real owner after this capacity growth.
+
+FeatureLab assets were only read. The user's project files and running editor
+session were not modified or restarted. The complete live FeatureLab scene has
+not been relaunched as part of this verification.
