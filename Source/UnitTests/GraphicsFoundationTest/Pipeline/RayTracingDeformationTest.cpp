@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>

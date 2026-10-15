@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshResource.h>

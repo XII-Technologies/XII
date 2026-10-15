@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Lighting/Implementation/RayTracingDeformation.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
