@@ -198,13 +198,13 @@ xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData&
   return UpdateGpuInstances(packets.GetAllRenderData(), frame);
 }
 
-xiiRayTracingResources::BuildHandles xiiRenderWorldModule::AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame) const
+xiiRayTracingResources::BuildHandles xiiRenderWorldModule::AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame, xiiRayTracingFrameResources* viewResources, const xiiArrayPtr<const xiiUInt32>* selection) const
 {
   if (!m_pGpuInstances || !xiiRayTracingResources::IsHardwareRayTracingSupported())
     return {};
   if (!m_pRayTracingResources)
     m_pRayTracingResources = XII_DEFAULT_NEW(xiiRayTracingFrameResources);
-  return xiiRayTracingResources::AddBuildPass(graph, frame, *m_pRayTracingResources, *m_pGpuInstances);
+  return xiiRayTracingResources::AddBuildPass(graph, frame, viewResources ? *viewResources : *m_pRayTracingResources, *m_pGpuInstances, selection, m_pRayTracingResources.Borrow());
 }
 
 xiiResult xiiRenderWorldModule::UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame)

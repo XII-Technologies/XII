@@ -113,7 +113,9 @@ public:
     xiiRenderGraphBufferHandle m_hMaterialData;
     /// Shader-readable geometry addressing records indexed by HLSL InstanceIndex().
     xiiRenderGraphBufferHandle m_hGeometryData;
-    xiiUInt32                  m_uiInstanceCount = 0U;
+    xiiUInt32                  m_uiInstanceCount            = 0U;
+    xiiUInt32                  m_uiDeformationDispatchCount = 0;
+    xiiUInt32                  m_uiDynamicBLASBuildCount    = 0;
   };
 
   /// Adds BLAS/TLAS construction to the graph on the compute queue.
@@ -121,7 +123,7 @@ public:
   /// A frame-in-flight TLAS ring prevents updates from mutating acceleration structures still used
   /// by older GPU submissions. The returned dependency buffer must be declared as a BuildASRead by
   /// every trace pass that consumes the returned TLAS.
-  [[nodiscard]] static BuildHandles AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRayTracingFrameResources& worldResources, const xiiGpuInstanceData& instances, const xiiArrayPtr<const xiiUInt32>* selection = nullptr);
+  [[nodiscard]] static BuildHandles AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex, xiiRayTracingFrameResources& worldResources, const xiiGpuInstanceData& instances, const xiiArrayPtr<const xiiUInt32>* selection = nullptr, xiiRayTracingFrameResources* sharedGeometry = nullptr);
 
 private:
   static void      Startup();

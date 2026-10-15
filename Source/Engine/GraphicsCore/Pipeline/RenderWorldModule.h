@@ -97,7 +97,7 @@ public:
   /// explicitly use this same path; inputs must carry live handles in this world.
   xiiResult                            UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame);
   xiiResult                            UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame);
-  xiiRayTracingResources::BuildHandles AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame) const;
+  xiiRayTracingResources::BuildHandles AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame, xiiRayTracingFrameResources* viewResources = nullptr, const xiiArrayPtr<const xiiUInt32>* selection = nullptr) const;
 
   virtual ~xiiRenderWorldModule();
 

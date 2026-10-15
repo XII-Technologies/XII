@@ -1,0 +1,94 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTE_SHADER]
+#include "Passes/RayTracing/RayTracingDeformationConstants.h"
+
+ByteAddressBuffer g_SourceVertices;
+StructuredBuffer<float4x4> g_SkinningMatrices;
+StructuredBuffer<uint4> g_MorphTargets;
+RWByteAddressBuffer g_DeformedVertices;
+
+uint LoadByte(uint offset)
+{
+  return (g_SourceVertices.Load(offset & ~3u) >> ((offset & 3u) * 8u)) & 255u;
+}
+
+float3 SafeNormalize(float3 value, float3 fallback)
+{
+  const float magnitude = dot(value, value);
+  return magnitude > 1.0e-20f && isfinite(magnitude) ? value * rsqrt(magnitude) : fallback;
+}
+
+[numthreads(64, 1, 1)]
+void main(uint3 threadId : SV_DispatchThreadID)
+{
+  const uint vertex = threadId.x;
+  if (vertex >= VertexLayout.x) return;
+  const uint base = vertex * VertexLayout.y;
+  // Preserve all native streams, including UVs, colors and tangent handedness.
+  for (uint word = 0; word < VertexLayout.y; word += 4u)
+    g_DeformedVertices.Store(base + word, g_SourceVertices.Load(base + word));
+  float3 position = asfloat(g_SourceVertices.Load3(base + VertexLayout.z));
+  float3 normal = VertexLayout.w != 0xFFFFFFFFu ? asfloat(g_SourceVertices.Load3(base + VertexLayout.w)) : float3(0, 0, 1);
+  float3 tangent = SkinLayout.x != 0xFFFFFFFFu ? asfloat(g_SourceVertices.Load3(base + SkinLayout.x)) : float3(1, 0, 0);
+  for (uint target = 0; target < Deformation.x; ++target)
+  {
+    const uint4 morph = g_MorphTargets[target];
+    if (vertex >= morph.y) continue;
+    const uint delta = (morph.x + vertex) * VertexLayout.y;
+    const float weight = asfloat(morph.z);
+    position += weight * asfloat(g_SourceVertices.Load3(delta + VertexLayout.z));
+    if (VertexLayout.w != 0xFFFFFFFFu) normal += weight * asfloat(g_SourceVertices.Load3(delta + VertexLayout.w));
+    if (SkinLayout.x != 0xFFFFFFFFu) tangent += weight * asfloat(g_SourceVertices.Load3(delta + SkinLayout.x));
+  }
+  float determinant = 1.0f;
+  if (SkinLayout.w != 0u)
+  {
+    uint4 joints, weights;
+    [unroll] for (uint i = 0; i < 4u; ++i)
+    {
+      joints[i] = LoadByte(base + SkinLayout.y + i * 2u) | (LoadByte(base + SkinLayout.y + i * 2u + 1u) << 8u);
+      weights[i] = LoadByte(base + SkinLayout.z + i);
+    }
+    const uint total = weights.x + weights.y + weights.z + weights.w;
+    if (total != 0u)
+    {
+      float4x4 skin = (float4x4)0;
+      bool valid = true;
+      [unroll] for (uint j = 0; j < 4u; ++j)
+      {
+        if (weights[j] == 0u) continue;
+        if (joints[j] >= SkinLayout.w) { valid = false; continue; }
+        skin += g_SkinningMatrices[Deformation.y + joints[j]] * (float(weights[j]) / float(total));
+      }
+      // An invalid influence fails closed: never feed NaN/out-of-bounds vertices to a BLAS build.
+      if (!valid) { position = float3(0, 0, 0); }
+      else
+      {
+        position = mul(skin, float4(position, 1)).xyz;
+        const float3x3 skinLinear = (float3x3)skin;
+        const float3 row0 = cross(skinLinear[1], skinLinear[2]);
+        const float3 row1 = cross(skinLinear[2], skinLinear[0]);
+        const float3 row2 = cross(skinLinear[0], skinLinear[1]);
+        determinant = dot(skinLinear[0], row0);
+        if (abs(determinant) > 1.0e-12f)
+          normal = mul(float3x3(row0, row1, row2), normal) / determinant;
+        tangent = mul(skinLinear, tangent);
+      }
+    }
+  }
+  normal = SafeNormalize(normal, float3(0, 0, 1));
+  tangent = SafeNormalize(tangent - normal * dot(tangent, normal), float3(1, 0, 0));
+  if (!all(isfinite(position))) position = float3(0, 0, 0);
+  g_DeformedVertices.Store3(base + VertexLayout.z, asuint(position));
+  if (VertexLayout.w != 0xFFFFFFFFu) g_DeformedVertices.Store3(base + VertexLayout.w, asuint(normal));
+  if (SkinLayout.x != 0xFFFFFFFFu)
+  {
+    g_DeformedVertices.Store3(base + SkinLayout.x, asuint(tangent));
+    const float handedness = asfloat(g_SourceVertices.Load(base + SkinLayout.x + 12u));
+    g_DeformedVertices.Store(base + SkinLayout.x + 12u, asuint(handedness * (determinant < 0.0f ? -1.0f : 1.0f)));
+  }
+}
