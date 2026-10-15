@@ -82,18 +82,21 @@ public:
   }
   struct Entry
   {
-    PacketKey                 m_Key;
-    xiiGpuInstanceSource      m_Source;
-    xiiGeometryHandle         m_Geometry;
-    xiiMeshResourceHandle     m_Mesh;
-    xiiMaterialResourceHandle m_Material;
-    xiiMaterialGpuHandle      m_GpuMaterial;
-    xiiDynamicArray<xiiMat4>  m_CurrentPose, m_PreviousPose;
-    xiiUInt64                 m_Seen            = 0;
-    xiiUInt32                 m_Representative  = 0;
-    xiiUInt32                 m_MaximumMeshlets = 0;
-    xiiUInt64                 m_Version         = 0;
-    bool                      m_Changed         = true;
+    PacketKey                           m_Key;
+    xiiGpuInstanceSource                m_Source;
+    xiiGeometryHandle                   m_Geometry;
+    xiiMeshResourceHandle               m_Mesh;
+    xiiMaterialResourceHandle           m_Material;
+    xiiMaterialGpuHandle                m_GpuMaterial;
+    xiiDynamicArray<xiiMat4>            m_CurrentPose, m_PreviousPose;
+    xiiDynamicArray<float>              m_MorphWeights;
+    xiiDynamicArray<xiiMeshMorphTarget> m_MorphTargets;
+    xiiMeshBufferResourceHandle         m_Buffer;
+    xiiUInt64                           m_Seen            = 0;
+    xiiUInt32                           m_Representative  = 0;
+    xiiUInt32                           m_MaximumMeshlets = 0;
+    xiiUInt64                           m_Version         = 0;
+    bool                                m_Changed         = true;
   };
   struct Frame
   {
@@ -225,6 +228,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       xiiGeometryResidencyManager::ReleaseMeshGeometry(entry.m_Geometry, frame);
     entry.m_Geometry = geometry;
     entry.m_Mesh     = packet.m_hMesh;
+    entry.m_Buffer   = mesh.GetMeshBuffer();
     if (fresh || entry.m_Material != material)
     {
       const auto gpuMaterial = xiiMaterialManager::AcquireMaterialResource(material);
@@ -267,7 +271,10 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     record.m_fLodBias           = packet.m_fLodBias;
     if (record.m_uiObjectId == representative)
     {
-      entry.m_CurrentPose = packet.m_SkinningMatrices;
+      entry.m_CurrentPose  = packet.m_SkinningMatrices;
+      entry.m_MorphWeights = packet.m_MorphWeights;
+      if (resetPose)
+        entry.m_MorphTargets = mesh.GetMorphTargets();
       if (resetPose)
         entry.m_PreviousPose = entry.m_CurrentPose;
       record.m_uiBoneIndicesOffset    = skinning.m_uiBoneIndicesOffset;
@@ -431,6 +438,23 @@ xiiMeshResourceHandle xiiGpuInstanceData::GetMeshResource(xiiUInt32 index) const
 xiiMaterialGpuHandle xiiGpuInstanceData::GetMaterialHandle(xiiUInt32 index) const
 {
   return m_pState->m_Entries[index].m_GpuMaterial;
+}
+
+xiiArrayPtr<const float> xiiGpuInstanceData::GetMorphWeights(xiiUInt32 index) const
+{
+  const auto representative = m_Instances[index].m_uiLodSelectionIndex;
+  return m_pState->m_Entries[representative == xiiInvalidIndex ? index : representative].m_MorphWeights;
+}
+
+xiiMeshBufferResourceHandle xiiGpuInstanceData::GetMeshBufferResource(xiiUInt32 index) const
+{
+  return m_pState->m_Entries[index].m_Buffer;
+}
+
+xiiArrayPtr<const xiiMeshMorphTarget> xiiGpuInstanceData::GetMorphTargets(xiiUInt32 index) const
+{
+  const auto representative = m_Instances[index].m_uiLodSelectionIndex;
+  return m_pState->m_Entries[representative == xiiInvalidIndex ? index : representative].m_MorphTargets;
 }
 
 xiiResult xiiGpuInstanceData::Resolve(xiiUInt32 identity, xiiGpuInstanceSource& source) const

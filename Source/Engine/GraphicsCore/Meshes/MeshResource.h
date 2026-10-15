@@ -100,13 +100,15 @@ struct XII_GRAPHICSCORE_DLL xiiMeshLOD
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-/// Mesh morph target containing vertex offsets and bounding volume, used for shape animation of a mesh resource.
+/// Dense additive morph deltas in the mesh vertex buffer, using its native stream layout.
+/// The range supplies deltas for source vertices [0, count). Apply weighted deltas before skinning.
+/// Position/normal/tangent xyz are deltas; UVs and tangent handedness remain from the base vertex.
 struct XII_GRAPHICSCORE_DLL xiiMeshMorphTarget
 {
   xiiHashedString      m_Name;                                                 ///< Name of the morph target, used for identification and animation control.
-  xiiUInt32            m_uiVertexOffset = 0U;                                  ///< Offset into the mesh's vertex buffer where the morph target's vertex data starts, used for rendering and animation.
+  xiiUInt32            m_uiVertexOffset = 0U;                                  ///< First delta vertex in the immutable mesh vertex buffer.
   xiiUInt32            m_uiVertexCount  = 0U;                                  ///< Number of vertices affected by this morph target, used for rendering and animation.
-  xiiBoundingBoxSphere m_Bounds         = xiiBoundingBoxSphere::MakeInvalid(); ///< Bounding volume for this morph target, used for culling and animation control.
+  xiiBoundingBoxSphere m_Bounds         = xiiBoundingBoxSphere::MakeInvalid(); ///< Bounds of position deltas, including zero for unaffected vertices.
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
@@ -269,7 +271,8 @@ public:
   xiiArrayPtr<const xiiMeshLOD> GetLODs() const;
 
   /// Returns a reference to the array of sections for this mesh, used for rendering and culling.
-  xiiArrayPtr<const xiiMeshSection> GetSections() const;
+  xiiArrayPtr<const xiiMeshSection>     GetSections() const;
+  xiiArrayPtr<const xiiMeshMorphTarget> GetMorphTargets() const { return m_Descriptor.m_MorphTargets; }
 
   /// Returns the bounding volume for this mesh, used for culling and LOD selection.
   const xiiBoundingBoxSphere& GetBounds() const;

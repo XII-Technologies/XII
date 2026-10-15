@@ -13,6 +13,7 @@ class xiiWorld;
 class xiiRenderData;
 class xiiExtractedRenderData;
 class xiiGpuInstanceDataState;
+struct xiiMeshMorphTarget;
 
 struct xiiGpuInstanceUploadStatistics
 {
@@ -42,6 +43,9 @@ public:
   xiiUInt64                                    GetMaximumMeshletCount() const;
   xiiMeshResourceHandle                        GetMeshResource(xiiUInt32 drawIndex) const;
   xiiMaterialGpuHandle                         GetMaterialHandle(xiiUInt32 drawIndex) const;
+  xiiArrayPtr<const float>                     GetMorphWeights(xiiUInt32 drawIndex) const;
+  xiiMeshBufferResourceHandle                  GetMeshBufferResource(xiiUInt32 drawIndex) const;
+  xiiArrayPtr<const xiiMeshMorphTarget>        GetMorphTargets(xiiUInt32 drawIndex) const;
   /// Returns failure for background, retired candidates, a foreign world's identity or dead owners.
   xiiResult Resolve(xiiUInt32 gpuIdentity, xiiGpuInstanceSource& source) const;
   /// Produces a compact candidate stream for a camera or picking subset; records are not copied.
