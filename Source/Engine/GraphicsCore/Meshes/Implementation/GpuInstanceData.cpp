@@ -227,8 +227,11 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     if (!fresh)
       xiiGeometryResidencyManager::ReleaseMeshGeometry(entry.m_Geometry, frame);
     entry.m_Geometry = geometry;
-    entry.m_Mesh     = packet.m_hMesh;
-    entry.m_Buffer   = mesh.GetMeshBuffer();
+    // Keep unchanged resource leases instead of churning reference counts every frame.
+    if (entry.m_Mesh != packet.m_hMesh)
+      entry.m_Mesh = packet.m_hMesh;
+    if (entry.m_Buffer != mesh.GetMeshBuffer())
+      entry.m_Buffer = mesh.GetMeshBuffer();
     if (fresh || entry.m_Material != material)
     {
       const auto gpuMaterial = xiiMaterialManager::AcquireMaterialResource(material);
