@@ -65,7 +65,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderWorldModuleExtractionEvent
 /// External code may override this by calling xiiView::SetRenderGraphBuilder().
 ///
 /// ## Render data
-/// During the Async world-update phase, xiiRenderWorldModule walks all world objects and sends
+/// After world transforms and normal PostTransform derived-data updates, this module sends
 /// xiiMsgExtractRenderData. Components handling this message submit data as usual, but the extracted
 /// data cache is owned by xiiRenderWorldModule (not by xiiView) and keeps static/dynamic streams.
 /// Static-only objects are persisted per-view and reused across frames until invalidated through the
@@ -188,6 +188,7 @@ private:
 
   struct ViewDetail
   {
+    bool                                 m_bPrepared = false;
     xiiUniquePtr<xiiView>                m_pView;
     xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
     ViewExtractionCache                  m_ExtractionCache;

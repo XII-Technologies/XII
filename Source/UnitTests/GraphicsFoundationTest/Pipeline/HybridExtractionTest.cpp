@@ -59,6 +59,35 @@ XII_BEGIN_COMPONENT_TYPE(xiiExtractionTestComponent, 1, xiiComponentMode::Static
   }
 XII_END_COMPONENT_TYPE;
 
+class xiiExtractionDerivedModule : public xiiWorldModule
+{
+  XII_DECLARE_WORLD_MODULE();
+  XII_ADD_DYNAMIC_REFLECTION(xiiExtractionDerivedModule, xiiWorldModule);
+
+public:
+  explicit xiiExtractionDerivedModule(xiiWorld* world) : xiiWorldModule(world) {}
+  xiiComponentHandle m_Target;
+  bool               m_bObservedGeometryDemand = false;
+  void               Initialize() override
+  {
+    auto update    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiExtractionDerivedModule::Update, this);
+    update.m_Phase = xiiWorldUpdatePhase::PostTransform;
+    RegisterUpdateFunction(update);
+  }
+  void Update(const xiiWorldModule::UpdateContext&)
+  {
+    xiiExtractionTestComponent* component = nullptr;
+    if (!GetWorld()->TryGetComponent(m_Target, component))
+      return;
+    m_bObservedGeometryDemand = GetWorld()->GetModule<xiiRenderWorldModule>()->GetExtractionRequirements().IsSet(xiiRenderExtractionCategory::Geometry);
+    component->SetValue(11);
+    m_Target.Invalidate();
+  }
+};
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExtractionDerivedModule, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+XII_IMPLEMENT_WORLD_MODULE(xiiExtractionDerivedModule);
+
 class xiiExtractionDemandPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiExtractionDemandPass, xiiRenderPipelinePass);
@@ -110,7 +139,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet());
     xiiWorldDescription description("Hybrid Extraction Test");
     description.m_bReportErrorWhenStaticObjectMoves = false;
-    xiiWorld            world(description);
+    xiiWorld world(description);
     XII_LOCK(world.GetWriteMarker());
     auto*          module = world.GetOrCreateModule<xiiRenderWorldModule>();
     xiiGameObject* object = nullptr;
@@ -165,10 +194,12 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     views[0]->SetRenderEnabled(false);
     world.Update();
     XII_TEST_BOOL(!module->GetExtractionRequirements().IsSet(xiiRenderExtractionCategory::Geometry));
-    geometry->SetValue(11);
+    auto* derived     = world.GetOrCreateModule<xiiExtractionDerivedModule>();
+    derived->m_Target = geometry->GetHandle();
     views[0]->SetRenderEnabled(true);
     world.Update();
     XII_TEST_INT(static_cast<xiiExtractionTestPacket*>(views[0]->GetExtractedRenderData()->GetAllRenderData()[0])->m_uiValue, 11);
+    XII_TEST_BOOL(derived->m_bObservedGeometryDemand);
     for (auto* view : views)
       module->DestroyView(view->GetHandle());
   }

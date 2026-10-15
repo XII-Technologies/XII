@@ -38,6 +38,16 @@ xiiGpuVisibilityContextHandle xiiBuiltinRenderPipelineRuntime::GetVisibilityCont
 
 xiiResult xiiBuiltinRenderPipelineRuntime::PrepareInstanceResources()
 {
+  if (m_bSubgraphInstance)
+  {
+    const auto sensorProfile = m_View.GetSensorProfile();
+    auto&      output        = m_Resources.m_OutputPasses;
+    if (output.m_hSensorProfile != sensorProfile)
+    {
+      output.m_hSensorProfile       = sensorProfile;
+      output.m_pSensorOutputTexture = nullptr;
+    }
+  }
   if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene) && m_bSubgraphInstance && m_hInstanceVisibility.IsInvalidated())
   {
     m_hInstanceVisibility = xiiGpuVisibilityManager::CreateContext();

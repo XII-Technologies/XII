@@ -109,20 +109,23 @@ void xiiRenderWorldModule::Initialize()
   {
     auto description                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::PrepareExtraction, this);
     description.m_Phase                     = xiiWorldUpdatePhase::PreAsync;
+    description.m_fPriority                 = -1000.0f; // After ordinary view creation/configuration updates.
     description.m_bOnlyUpdateWhenSimulating = false;
     RegisterUpdateFunction(description);
   }
   {
     auto description                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExtractRenderData, this);
     description.m_Phase                     = xiiWorldUpdatePhase::PostTransform;
+    description.m_fPriority                 = -1000.0f; // Consume normal modules' current derived scene data.
     description.m_bOnlyUpdateWhenSimulating = false;
     RegisterUpdateFunction(description);
   }
 
-  // Register ExecuteRenderGraphs (post-async, single-threaded, after all extraction is complete).
+  // Execute after extraction and authoritative transform updates, on the world update thread.
   {
-    auto description    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExecuteRenderGraphs, this);
-    description.m_Phase = xiiWorldUpdatePhase::PostTransform;
+    auto description        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExecuteRenderGraphs, this);
+    description.m_Phase     = xiiWorldUpdatePhase::PostTransform;
+    description.m_fPriority = -2000.0f;
     description.m_DependsOn.PushBack(xiiMakeHashedString("xiiRenderWorldModule::ExtractRenderData"));
     description.m_bOnlyUpdateWhenSimulating = false;
     RegisterUpdateFunction(description);
@@ -503,13 +506,17 @@ void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext
   m_RuntimeFeatures        = {};
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
-    auto& detail                  = it.Value();
-    auto& view                    = *detail.m_pView;
+    auto& detail       = it.Value();
+    auto& view         = *detail.m_pView;
+    detail.m_bPrepared = false;
+    // Drop packet pointers before a demand change can destroy their owning static cache.
+    detail.m_pExtractedData->Clear();
     view.m_ExtractionRequirements = {};
     view.m_RuntimeFeatures        = {};
     view.m_ExtractionStatistics   = {};
     if (view.IsRenderEnabled() && view.IsValid() && view.SynchronizeRenderPipeline().Succeeded())
     {
+      detail.m_bPrepared = true;
       m_ExtractionRequirements |= view.GetExtractionRequirements();
       m_RuntimeFeatures |= view.GetRuntimeFeatures();
     }
@@ -528,7 +535,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
   {
     auto& viewDetail = it.Value();
 
-    if (!viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
+    if (!viewDetail.m_bPrepared || !viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
 
     XII_ASSERT_DEV(viewDetail.m_pExtractedData != nullptr, "xiiRenderWorldModule view cache entry must always have extracted render data.");
@@ -634,7 +641,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     return;
 
   // Device-global frame slices and retirement share one clock with registered graphs.
-  // Extraction remains parallel; the frame scope serializes recording and captures all queues.
+  // The frame scope serializes recording and captures all queues after world extraction.
   xiiRenderGraphFrame frame;
   if (frame.Begin().Failed())
   {
@@ -649,11 +656,15 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     ViewDetail& viewDetail = it.Value();
-    if (viewDetail.m_pView->IsRenderEnabled() && viewDetail.m_pView->IsValid())
+    if (viewDetail.m_bPrepared && viewDetail.m_pView->IsRenderEnabled() && viewDetail.m_pView->IsValid())
     {
-      if (viewDetail.m_pView->PrepareRenderResources().Failed())
+      if (viewDetail.m_pView->PrepareRenderResources().Failed() || !viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex))
+      {
+        viewDetail.m_bPrepared = false;
+        viewDetail.m_pView->InvalidateTemporalHistory();
+        xiiLog::Error("Failed to synchronize render resources for view '{}'.", viewDetail.m_pView->GetName());
         continue;
-      XII_IGNORE_UNUSED(viewDetail.m_pView->SynchronizeGpuScene(uiFrameIndex));
+      }
     }
   }
 
@@ -672,7 +683,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   {
     auto& viewDetail = it.Value();
 
-    if (!viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
+    if (!viewDetail.m_bPrepared || !viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
 
     xiiRenderGraph*              pGraph        = viewDetail.m_pView->GetRenderGraph();
