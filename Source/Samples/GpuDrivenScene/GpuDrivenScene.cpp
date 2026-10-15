@@ -441,7 +441,7 @@ private:
     // A robotics/medical sensor view owns independent frame-sliced constants. Only its instance
     // count is exported; unused meshlet and command stages are culled by the render graph.
     xiiGpuVisibilityView sensorView = visibilityView;
-    sensorView.m_uiRequiredFlags    = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::SensorVisible).GetValue();
+    sensorView.m_uiRequiredFlags    = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::SensorVisible).GetValue();
     xiiGpuVisibilityPassDescription sensorVisibilityPass;
     sensorVisibilityPass.m_sName                   = "Sensor View";
     sensorVisibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::Sensor;
@@ -462,7 +462,7 @@ private:
     const xiiFrustum                                shadowFrustum        = xiiFrustum::MakeFromMVP(shadowViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
     xiiGpuVisibilityView shadowView = xiiGpuVisibilitySystem::BuildView(shadowViewProjection, shadowFrustum, m_Camera.GetPosition(), uiShadowResolution, uiShadowResolution, 0U, m_World.GetScene().GetObjectCount());
-    shadowView.m_uiRequiredFlags    = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows).GetValue();
+    shadowView.m_uiRequiredFlags    = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue();
     xiiGpuVisibilityPassDescription shadowVisibilityPass;
     shadowVisibilityPass.m_sName                   = "Sun Shadow";
     shadowVisibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::Shadow;

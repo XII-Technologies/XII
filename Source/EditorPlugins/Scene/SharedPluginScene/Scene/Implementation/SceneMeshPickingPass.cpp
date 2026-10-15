@@ -153,7 +153,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   const auto      frustum        = xiiFrustum::MakeFromMVP(matrix, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
   auto            visibilityView = xiiGpuVisibilitySystem::BuildView(matrix, frustum, view->GetCamera()->GetCenterPosition(), width, height, 0, instances);
   if (!transparent && !m_bSelectionOnly)
-    visibilityView.m_uiExcludedFlags |= xiiSceneObjectFlags::Transparent;
+    visibilityView.m_uiExcludedFlags |= xiiGpuInstanceFlags::Transparent;
   xiiGpuVisibilityPassDescription visibilityDescription;
   visibilityDescription.m_sName              = context.m_sPassName;
   visibilityDescription.m_Purpose            = xiiGpuVisibilityPurpose::Editor;

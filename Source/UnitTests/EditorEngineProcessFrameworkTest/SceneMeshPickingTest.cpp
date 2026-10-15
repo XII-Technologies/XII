@@ -585,7 +585,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     XII_TEST_FLOAT(hit.m_vWorldPosition.x, 2.5f, 0.001f);
     XII_TEST_INT(mainScene.GetDatabase().GetObjectCount(), 2);
     for (const auto& entry : mainScene.GetDatabase().GetGpuInstances())
-      XII_TEST_BOOL((entry.m_uiFlags & xiiSceneObjectFlags::Enabled) != 0);
+      XII_TEST_BOOL((entry.m_uiFlags & xiiGpuInstanceFlags::Enabled) != 0);
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native selected surfaces compose visible and occluded selection independently of click-through")
   {

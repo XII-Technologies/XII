@@ -63,22 +63,22 @@ public:
   /// Filtering individual sections cannot make members choose different LODs: visibility updates
   /// history before material routing, frustum and temporal occlusion tests.
   [[nodiscard]] xiiResult SetLodGroup(xiiSceneObjectHandle hObject, xiiSceneObjectHandle hRepresentative);
-  bool                    SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags);
+  bool                    SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiGpuInstanceFlags> flags);
   bool                    SetVisibilityMask(xiiSceneObjectHandle hObject, xiiUInt32 uiVisibilityMask);
 
   [[nodiscard]] const xiiMat4&                   GetGlobalTransform(xiiSceneObjectHandle hObject) const;
   [[nodiscard]] const xiiBoundingBoxSphere&      GetGlobalBounds(xiiSceneObjectHandle hObject) const;
-  [[nodiscard]] xiiBitflags<xiiSceneObjectFlags> GetFlags(xiiSceneObjectHandle hObject) const;
+  [[nodiscard]] xiiBitflags<xiiGpuInstanceFlags> GetFlags(xiiSceneObjectHandle hObject) const;
   [[nodiscard]] xiiUInt32                        GetVisibilityMask(xiiSceneObjectHandle hObject) const;
 
   /// Resolves all dirty transforms, compacts live objects into GPU order, and emits coalesced
   /// ranges which can be uploaded without rewriting unchanged regions.
   void CommitFrame(xiiUInt64 uiFrameIndex);
 
-  [[nodiscard]] xiiArrayPtr<const xiiGpuSceneInstance> GetGpuInstances() const { return m_GpuInstances; }
-  [[nodiscard]] xiiArrayPtr<const xiiMat4>             GetGpuSkinningMatrices() const { return m_GpuSkinningMatrices; }
-  [[nodiscard]] xiiArrayPtr<const xiiSceneUploadRange> GetUploadRanges() const { return m_UploadRanges; }
-  [[nodiscard]] const xiiSceneDatabaseStats&           GetStats() const { return m_Stats; }
+  [[nodiscard]] xiiArrayPtr<const xiiGpuSceneInstance>       GetGpuInstances() const { return m_GpuInstances; }
+  [[nodiscard]] xiiArrayPtr<const xiiMat4>                   GetGpuSkinningMatrices() const { return m_GpuSkinningMatrices; }
+  [[nodiscard]] xiiArrayPtr<const xiiGpuInstanceUploadRange> GetUploadRanges() const { return m_UploadRanges; }
+  [[nodiscard]] const xiiSceneDatabaseStats&                 GetStats() const { return m_Stats; }
 
 private:
   friend class xiiSceneDatabaseManager;
@@ -132,13 +132,13 @@ private:
   xiiDynamicArray<float>                            m_LodBiases;
   xiiDynamicArray<xiiUInt32>                        m_VisibilityMasks;
   xiiDynamicArray<xiiUInt32>                        m_UserData;
-  xiiDynamicArray<xiiBitflags<xiiSceneObjectFlags>> m_Flags;
+  xiiDynamicArray<xiiBitflags<xiiGpuInstanceFlags>> m_Flags;
 
-  xiiDynamicArray<xiiUInt32>           m_ObjectToGpuIndex;
-  xiiDynamicArray<xiiUInt32>           m_GpuToObjectIndex;
-  xiiDynamicArray<xiiGpuSceneInstance> m_GpuInstances;
-  xiiDynamicArray<xiiSceneUploadRange> m_UploadRanges;
-  xiiDynamicArray<xiiUInt32>           m_WorkStack;
+  xiiDynamicArray<xiiUInt32>                 m_ObjectToGpuIndex;
+  xiiDynamicArray<xiiUInt32>                 m_GpuToObjectIndex;
+  xiiDynamicArray<xiiGpuSceneInstance>       m_GpuInstances;
+  xiiDynamicArray<xiiGpuInstanceUploadRange> m_UploadRanges;
+  xiiDynamicArray<xiiUInt32>                 m_WorkStack;
 
   xiiSceneDatabaseStats m_Stats;
   xiiUInt64             m_uiRevision           = 0U;

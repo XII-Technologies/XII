@@ -151,8 +151,8 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
     // camera controls frustum rejection, just as it does in the indexed visibility path.
     xiiGpuVisibilityView visibilityView            = xiiGpuVisibilitySystem::BuildView(viewProjection, viewFrustum, m_View.m_pCamera->GetPosition(), uiRenderWidth, uiRenderHeight, xiiGpuVisibilityManager::GetHiZMipLevelCount(GetVisibilityContext()), m_View.m_GpuSceneContext.GetDatabase().GetObjectCount());
     visibilityView.m_OcclusionViewProjectionMatrix = depthHistory.m_bMotionHistoryValid ? depthHistory.m_PreviousViewProjectionMatrix : viewProjection;
-    visibilityView.m_uiRequiredFlags               = xiiSceneObjectFlags::Enabled;
-    visibilityView.m_uiExcludedFlags               = xiiSceneObjectFlags::Transparent;
+    visibilityView.m_uiRequiredFlags               = xiiGpuInstanceFlags::Enabled;
+    visibilityView.m_uiExcludedFlags               = xiiGpuInstanceFlags::Transparent;
 
     xiiGpuVisibilityPassDescription visibilityDescription;
     visibilityDescription.m_sName         = "Default View Primary";
@@ -268,7 +268,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, x
       const xiiFrustum shadowFrustum        = xiiFrustum::MakeFromMVP(shadowViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
       xiiGpuVisibilityView shadowView = xiiGpuVisibilitySystem::BuildView(shadowViewProjection, shadowFrustum, m_View.m_pCamera->GetPosition(), k_uiDirectionalShadowAtlasWidth, k_uiDirectionalShadowAtlasHeight, 0U, m_View.m_GpuSceneContext.GetDatabase().GetObjectCount());
-      shadowView.m_uiRequiredFlags    = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows).GetValue();
+      shadowView.m_uiRequiredFlags    = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue();
 
       xiiGpuVisibilityPassDescription visibilityDescription;
       visibilityDescription.m_sName                  = "Default View Directional Shadow";

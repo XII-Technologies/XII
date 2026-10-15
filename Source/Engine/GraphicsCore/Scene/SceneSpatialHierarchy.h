@@ -10,8 +10,8 @@
 struct XII_GRAPHICSCORE_DLL xiiSceneSpatialQuery
 {
   xiiUInt32                        m_uiVisibilityMask = 0xFFFFFFFFU;
-  xiiBitflags<xiiSceneObjectFlags> m_RequiredFlags    = xiiSceneObjectFlags::Enabled;
-  xiiBitflags<xiiSceneObjectFlags> m_ExcludedFlags    = xiiSceneObjectFlags::None;
+  xiiBitflags<xiiGpuInstanceFlags> m_RequiredFlags    = xiiGpuInstanceFlags::Enabled;
+  xiiBitflags<xiiGpuInstanceFlags> m_ExcludedFlags    = xiiGpuInstanceFlags::None;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSceneSpatialQuery);
@@ -46,9 +46,9 @@ public:
   void Clear();
   void Reserve(xiiUInt32 uiObjectCapacity);
 
-  bool Insert(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiSceneObjectFlags> flags);
+  bool Insert(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiGpuInstanceFlags> flags);
   bool Remove(xiiSceneObjectHandle hObject);
-  bool Update(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, const xiiVec3& vDisplacement, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiSceneObjectFlags> flags);
+  bool Update(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, const xiiVec3& vDisplacement, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiGpuInstanceFlags> flags);
 
   void QueryFrustum(const xiiFrustum& frustum, const xiiSceneSpatialQuery& query, xiiDynamicArray<xiiSceneObjectHandle>& out_objects) const;
   void QueryBox(const xiiBoundingBox& bounds, const xiiSceneSpatialQuery& query, xiiDynamicArray<xiiSceneObjectHandle>& out_objects) const;
@@ -61,7 +61,7 @@ private:
     xiiBoundingBox                   m_FatBounds   = xiiBoundingBox::MakeInvalid();
     xiiBoundingBox                   m_ExactBounds = xiiBoundingBox::MakeInvalid();
     xiiSceneObjectHandle             m_hObject;
-    xiiBitflags<xiiSceneObjectFlags> m_Flags;
+    xiiBitflags<xiiGpuInstanceFlags> m_Flags;
     xiiUInt32                        m_uiVisibilityMask = 0U;
     xiiInt32                         m_iParent          = -1;
     xiiInt32                         m_iLeft            = -1;

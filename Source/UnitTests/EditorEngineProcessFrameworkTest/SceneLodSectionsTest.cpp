@@ -230,9 +230,9 @@ static void TestLodSections(bool enableMeshShaders)
     const auto materialUpload = xiiMaterialManager::AddUploadPasses(graph);
     auto       visibilityView = xiiGpuVisibilitySystem::BuildView(projection, frustum, camera.GetCenterPosition(), 64, 64, 0, expectedCandidates);
     if (excludeTransparent)
-      visibilityView.m_uiExcludedFlags = xiiSceneObjectFlags::Transparent;
+      visibilityView.m_uiExcludedFlags = xiiGpuInstanceFlags::Transparent;
     if (onlyTransparent)
-      visibilityView.m_uiRequiredFlags |= xiiSceneObjectFlags::Transparent;
+      visibilityView.m_uiRequiredFlags |= xiiGpuInstanceFlags::Transparent;
     xiiGpuVisibilityPassDescription visibilityDescription;
     visibilityDescription.m_bAsyncCompute      = false;
     visibilityDescription.m_bEnableLodFeedback = false;

@@ -534,7 +534,7 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         const auto uploadedGeometry      = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
         const auto materials             = xiiMaterialManager::AddUploadPasses(graph);
         auto       visibilityView        = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, camera.GetCenterPosition(), 32, 32, 0, scene.GetObjectCount());
-        visibilityView.m_uiExcludedFlags = pickTransparent ? 0 : xiiSceneObjectFlags::Transparent;
+        visibilityView.m_uiExcludedFlags = pickTransparent ? 0 : xiiGpuInstanceFlags::Transparent;
         xiiGpuVisibilityPassDescription visibilityDescription;
         visibilityDescription.m_bAsyncCompute      = false;
         visibilityDescription.m_bEnableLodFeedback = false;

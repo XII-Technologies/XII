@@ -267,7 +267,7 @@ xiiRenderGraphTextureHandle xiiGpuShadowRasterManager::AddLocalLightPasses(xiiRe
 
       const xiiFrustum     frustum = xiiFrustum::MakeFromMVP(viewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
       xiiGpuVisibilityView view    = xiiGpuVisibilitySystem::BuildView(viewProjection, frustum, shadow.m_LightPositionAndInvRange.GetAsVec3(), uiTileSize, uiTileSize, 0U, pSceneDatabase->GetObjectCount());
-      view.m_uiRequiredFlags       = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows).GetValue();
+      view.m_uiRequiredFlags       = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue();
 
       xiiGpuVisibilityPassDescription visibilityDescription;
       xiiStringBuilder                visibilityName;

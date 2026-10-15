@@ -107,12 +107,12 @@ namespace
 {
   struct SceneUploadPassData
   {
-    xiiRenderGraphBufferHandle           m_hSkinning;
-    xiiDynamicArray<xiiMat4>             m_SkinningMatrices;
-    xiiRenderGraphBufferHandle           m_hScene;
-    xiiDynamicArray<xiiGpuSceneInstance> m_Instances;
-    xiiDynamicArray<xiiSceneUploadRange> m_UploadRanges;
-    xiiUInt32                            m_uiFrameSlot = 0U;
+    xiiRenderGraphBufferHandle                 m_hSkinning;
+    xiiDynamicArray<xiiMat4>                   m_SkinningMatrices;
+    xiiRenderGraphBufferHandle                 m_hScene;
+    xiiDynamicArray<xiiGpuSceneInstance>       m_Instances;
+    xiiDynamicArray<xiiGpuInstanceUploadRange> m_UploadRanges;
+    xiiUInt32                                  m_uiFrameSlot = 0U;
   };
 
   struct ViewUploadPassData
@@ -533,7 +533,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
         data.m_hSkinning    = builder.WriteBuffer(makeResourceName(" GPU Scene Skinning Matrices"), skinning, xiiGALResourceStateFlags::CopyDestination);
         builder.SetPassAllowMerge(false); }, [this](const SceneUploadPassData& data, xiiRenderGraphPassContext& context) {
         context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hSkinning), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SkinningMatrices.GetData()), data.m_SkinningMatrices.GetCount() * sizeof(xiiMat4)));
-        for (const xiiSceneUploadRange& range : data.m_UploadRanges)
+        for (const xiiGpuInstanceUploadRange& range : data.m_UploadRanges)
         {
           const xiiGpuSceneInstance* pFirstInstance = data.m_Instances.GetData() + range.m_uiFirstInstance;
           context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hScene), range.m_uiFirstInstance * sizeof(xiiGpuSceneInstance), xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(pFirstInstance), range.m_uiInstanceCount * sizeof(xiiGpuSceneInstance)));

@@ -9,8 +9,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSceneSpatialQuery, xiiNoBase, 2, xiiRTTIDefau
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
-      XII_BITFLAGS_MEMBER_PROPERTY("RequiredFlags", xiiSceneObjectFlags, m_RequiredFlags),
-      XII_BITFLAGS_MEMBER_PROPERTY("ExcludedFlags", xiiSceneObjectFlags, m_ExcludedFlags),
+      XII_BITFLAGS_MEMBER_PROPERTY("RequiredFlags", xiiGpuInstanceFlags, m_RequiredFlags),
+      XII_BITFLAGS_MEMBER_PROPERTY("ExcludedFlags", xiiGpuInstanceFlags, m_ExcludedFlags),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -101,7 +101,7 @@ xiiBoundingBox xiiSceneSpatialHierarchy::MakeFatBounds(const xiiBoundingBox& bou
   return fat;
 }
 
-bool xiiSceneSpatialHierarchy::Insert(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiSceneObjectFlags> flags)
+bool xiiSceneSpatialHierarchy::Insert(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiGpuInstanceFlags> flags)
 {
   if (hObject.IsInvalidated() || !bounds.IsValid())
     return false;
@@ -149,7 +149,7 @@ bool xiiSceneSpatialHierarchy::Remove(xiiSceneObjectHandle hObject)
   return true;
 }
 
-bool xiiSceneSpatialHierarchy::Update(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, const xiiVec3& vDisplacement, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiSceneObjectFlags> flags)
+bool xiiSceneSpatialHierarchy::Update(xiiSceneObjectHandle hObject, const xiiBoundingBox& bounds, const xiiVec3& vDisplacement, xiiUInt32 uiVisibilityMask, xiiBitflags<xiiGpuInstanceFlags> flags)
 {
   if (hObject.IsInvalidated() || !bounds.IsValid())
     return false;

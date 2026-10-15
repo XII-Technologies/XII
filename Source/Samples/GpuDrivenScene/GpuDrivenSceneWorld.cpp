@@ -243,7 +243,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   // A non-renderable assembly root demonstrates hierarchy propagation without requiring a
   // parallel scene representation. The first objects below are authored in its local space.
   xiiSceneObjectDesc rootDescription;
-  rootDescription.m_Flags = xiiSceneObjectFlags::None;
+  rootDescription.m_Flags = xiiGpuInstanceFlags::None;
   m_hAssemblyRoot         = GetScene().CreateObject(rootDescription);
   if (m_hAssemblyRoot.IsInvalidated())
     return XII_FAILURE;
@@ -266,7 +266,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       description.m_uiGeometryIndex = m_GeometryAssets[geometryIndex].m_hGeometry.GetInternalID().m_InstanceIndex;
       description.m_uiMaterialIndex = m_Materials[objectIndex % m_Materials.GetCount()].GetInternalID().m_InstanceIndex;
       description.m_uiUserData      = objectIndex;
-      description.m_Flags           = xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows | xiiSceneObjectFlags::ReceiveShadows | xiiSceneObjectFlags::SensorVisible | (geometryIndex == 1U ? xiiSceneObjectFlags::Occluder : xiiSceneObjectFlags::None);
+      description.m_Flags           = xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows | xiiGpuInstanceFlags::ReceiveShadows | xiiGpuInstanceFlags::SensorVisible | (geometryIndex == 1U ? xiiGpuInstanceFlags::Occluder : xiiGpuInstanceFlags::None);
       if (objectIndex < 64U)
         description.m_hParent = m_hAssemblyRoot;
 

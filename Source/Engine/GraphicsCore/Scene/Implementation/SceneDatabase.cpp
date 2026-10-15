@@ -119,7 +119,7 @@ xiiSceneObjectHandle xiiSceneDatabase::CreateObject(const xiiSceneObjectDesc& de
     EnsureCount(m_LodBiases, uiCount, 0.0f);
     EnsureCount(m_VisibilityMasks, uiCount, 0xFFFFFFFFU);
     EnsureCount(m_UserData, uiCount, 0U);
-    EnsureCount(m_Flags, uiCount, xiiBitflags<xiiSceneObjectFlags>(xiiSceneObjectFlags::Default));
+    EnsureCount(m_Flags, uiCount, xiiBitflags<xiiGpuInstanceFlags>(xiiGpuInstanceFlags::Default));
     EnsureCount(m_ObjectToGpuIndex, uiCount, s_uiInvalidIndex);
   }
 
@@ -365,7 +365,7 @@ xiiResult xiiSceneDatabase::SetLodGroup(xiiSceneObjectHandle hObject, xiiSceneOb
   return XII_SUCCESS;
 }
 
-bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiSceneObjectFlags> flags)
+bool xiiSceneDatabase::SetFlags(xiiSceneObjectHandle hObject, xiiBitflags<xiiGpuInstanceFlags> flags)
 {
   if (!IsAlive(hObject))
     return false;
@@ -403,7 +403,7 @@ const xiiBoundingBoxSphere& xiiSceneDatabase::GetGlobalBounds(xiiSceneObjectHand
   return m_GlobalBounds[hObject.GetInternalID().m_InstanceIndex];
 }
 
-xiiBitflags<xiiSceneObjectFlags> xiiSceneDatabase::GetFlags(xiiSceneObjectHandle hObject) const
+xiiBitflags<xiiGpuInstanceFlags> xiiSceneDatabase::GetFlags(xiiSceneObjectHandle hObject) const
 {
   XII_ASSERT_DEV(IsAlive(hObject), "Invalid scene object handle.");
   return m_Flags[hObject.GetInternalID().m_InstanceIndex];

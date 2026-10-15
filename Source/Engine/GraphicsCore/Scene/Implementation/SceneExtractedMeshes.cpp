@@ -10,11 +10,11 @@
 
 namespace
 {
-  xiiBitflags<xiiSceneObjectFlags> GetSceneFlags(const xiiMeshRenderData& renderData, const xiiMaterialResourceHandle& hMaterial)
+  xiiBitflags<xiiGpuInstanceFlags> GetSceneFlags(const xiiMeshRenderData& renderData, const xiiMaterialResourceHandle& hMaterial)
   {
-    xiiBitflags<xiiSceneObjectFlags> flags = xiiSceneObjectFlags::Default;
-    flags.AddOrRemove(xiiSceneObjectFlags::Static, renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::StaticObject));
-    flags.Add(xiiSceneObjectFlags::SensorVisible);
+    xiiBitflags<xiiGpuInstanceFlags> flags = xiiGpuInstanceFlags::Default;
+    flags.AddOrRemove(xiiGpuInstanceFlags::Static, renderData.m_Flags.IsSet(xiiMeshRenderDataFlags::StaticObject));
+    flags.Add(xiiGpuInstanceFlags::SensorVisible);
 
     if (hMaterial.IsValid())
     {
@@ -23,8 +23,8 @@ namespace
       {
         const xiiMaterialRuntimeState& runtimeState = material->GetRuntimeState();
         const bool                     bTranslucent = runtimeState.IsTranslucent();
-        flags.AddOrRemove(xiiSceneObjectFlags::Transparent, bTranslucent);
-        flags.AddOrRemove(xiiSceneObjectFlags::Occluder, !bTranslucent);
+        flags.AddOrRemove(xiiGpuInstanceFlags::Transparent, bTranslucent);
+        flags.AddOrRemove(xiiGpuInstanceFlags::Occluder, !bTranslucent);
 
         // Assets authored before explicit routing flags existed used an empty feature mask. Keep
         // their legacy shadow behavior while new materials can opt individual paths out.
@@ -33,8 +33,8 @@ namespace
           xiiMaterialFeatureFlags::WritesVelocity;
         if (runtimeState.m_FeatureFlags.IsAnySet(routingFlags))
         {
-          flags.AddOrRemove(xiiSceneObjectFlags::CastShadows, runtimeState.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::CastsShadows));
-          flags.AddOrRemove(xiiSceneObjectFlags::ReceiveShadows, runtimeState.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::ReceivesLighting));
+          flags.AddOrRemove(xiiGpuInstanceFlags::CastShadows, runtimeState.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::CastsShadows));
+          flags.AddOrRemove(xiiGpuInstanceFlags::ReceiveShadows, runtimeState.m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::ReceivesLighting));
         }
       }
     }

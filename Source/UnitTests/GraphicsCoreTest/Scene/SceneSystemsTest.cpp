@@ -303,7 +303,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
     {
       handles[i]                  = xiiSceneObjectHandle(xiiSceneObjectId(i, 1U));
       const xiiBoundingBox bounds = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3(static_cast<float>(i), 0.0f, 0.0f), xiiVec3(0.25f));
-      XII_TEST_BOOL(hierarchy.Insert(handles[i], bounds, 1U, xiiSceneObjectFlags::Enabled));
+      XII_TEST_BOOL(hierarchy.Insert(handles[i], bounds, 1U, xiiGpuInstanceFlags::Enabled));
     }
 
     xiiSceneSpatialStats stats = hierarchy.GetStats();
@@ -314,7 +314,7 @@ XII_CREATE_SIMPLE_TEST(Scene, DataOrientedScene)
 
     xiiSceneSpatialQuery query;
     query.m_uiVisibilityMask = 1U;
-    query.m_RequiredFlags    = xiiSceneObjectFlags::Enabled;
+    query.m_RequiredFlags    = xiiGpuInstanceFlags::Enabled;
     xiiDynamicArray<xiiSceneObjectHandle> results;
     hierarchy.QueryBox(xiiBoundingBox::MakeFromMinMax(xiiVec3(99.5f, -1.0f, -1.0f), xiiVec3(199.5f, 1.0f, 1.0f)), query, results);
     XII_TEST_INT(results.GetCount(), 100U);

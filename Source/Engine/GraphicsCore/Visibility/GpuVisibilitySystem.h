@@ -25,7 +25,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiVec4   m_LodParameters;  // hysteresis, current history token, previous history token, reserved
   xiiUInt32 m_uiInstanceCount      = 0U;
   xiiUInt32 m_uiVisibilityMask     = 0xFFFFFFFFU;
-  xiiUInt32 m_uiRequiredFlags      = xiiSceneObjectFlags::Enabled;
+  xiiUInt32 m_uiRequiredFlags      = xiiGpuInstanceFlags::Enabled;
   xiiUInt32 m_uiExcludedFlags      = 0U;
   xiiUInt32 m_uiGeometryBaseIndex  = 0U;
   xiiUInt32 m_uiMaxVisibleMeshlets = 0U;
