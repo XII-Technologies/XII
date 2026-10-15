@@ -538,9 +538,9 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 {
   XII_ASSERT_DEV(!m_bIsSetupOpen, "Cannot compile while setup is still open.");
 
-  // The signature remains useful for diagnostics and future immutable-plan caching. Frame setup
-  // rebuilds pass data, imported objects, initial states, and resource descriptions, so retaining
-  // a previous frame's compiled plan would leave dangling pass-data pointers and stale barriers.
+  // Cache only frame-independent topology analysis. Every hit rebuilds compiled pass records
+  // from current callbacks and data; imported states, lifetimes, barriers and allocation plans
+  // are re-evaluated below. No prior frame callback, GAL object or history binding is retained.
   m_Statistics = {};
   PhaseG_SignatureAndCache(settings);
 
@@ -565,7 +565,12 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 
   // Phase B: topological sort + culling.
   xiiDynamicArray<xiiUInt32> sortedIndices;
-  PhaseB_TopologicalSortAndCull(settings, sortedIndices);
+  if (!RestoreTopologyCache(settings, sortedIndices))
+  {
+    PhaseB_TopologicalSortAndCull(settings, sortedIndices);
+    if (settings.m_bEnableCompileCache && sortedIndices.GetCount() == m_Passes.GetCount())
+      StoreTopologyCache(settings, sortedIndices);
+  }
 
   if (sortedIndices.GetCount() != m_Passes.GetCount())
   {
@@ -1530,11 +1535,17 @@ xiiUInt64 xiiRenderGraph::ComputeSignature(const xiiDynamicArray<PassEntry>& pas
 
     for (const ResourceUsage& read : passEntry.m_Reads)
     {
-      uiHash = xiiHashingUtils::xxHash64(&read, sizeof(read), uiHash);
+      uiHash           = xiiHashingUtils::xxHash64(&read.m_uiResourceIndex, sizeof(read.m_uiResourceIndex), uiHash);
+      uiHash           = xiiHashingUtils::xxHash64(&read.m_uiVersion, sizeof(read.m_uiVersion), uiHash);
+      const auto state = read.m_RequiredState.GetValue();
+      uiHash           = xiiHashingUtils::xxHash64(&state, sizeof(state), uiHash);
     }
     for (const ResourceUsage& write : passEntry.m_Writes)
     {
-      uiHash = xiiHashingUtils::xxHash64(&write, sizeof(write), uiHash);
+      uiHash           = xiiHashingUtils::xxHash64(&write.m_uiResourceIndex, sizeof(write.m_uiResourceIndex), uiHash);
+      uiHash           = xiiHashingUtils::xxHash64(&write.m_uiVersion, sizeof(write.m_uiVersion), uiHash);
+      const auto state = write.m_RequiredState.GetValue();
+      uiHash           = xiiHashingUtils::xxHash64(&state, sizeof(state), uiHash);
     }
   }
   return uiHash;

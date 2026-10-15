@@ -260,7 +260,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompileSettings : public xiiHashableSt
   XII_DECLARE_POD_TYPE();
 
   bool      m_bEnablePassCulling   = true;  ///< Remove passes not reachable from any side-effect pass.
-  bool      m_bEnableCompileCache  = true;  ///< Skip recompilation when the graph signature is unchanged.
+  bool      m_bEnableCompileCache  = true;  ///< Reuse topology/culling analysis; frame bindings, barriers and allocations remain current.
   bool      m_bEnableSplitBarriers = false; ///< Use Begin/End split barriers to overlap transitions.
   bool      m_bEnableAsyncQueues   = true;  ///< Schedule async-compute/transfer passes on separate queues.
   bool      m_bEnableGPUProfiling  = false; ///< Emit Duration queries around each pass via the profiler.
@@ -687,6 +687,9 @@ private:
   void                    PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
   [[nodiscard]] xiiResult MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError);
   void                    PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
+  void                    BuildTopologyCacheKey(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& key) const;
+  bool                    RestoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_order);
+  void                    StoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiArrayPtr<const xiiUInt32> order);
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
@@ -718,9 +721,13 @@ private:
   xiiRenderGraphStatistics      m_Statistics;
   xiiRenderGraphCompileSettings m_LastCompileSettings;
   xiiUInt64                     m_uiLastSignature = 0ULL;
-  xiiUInt64                     m_uiFrameIndex    = 0ULL;
-  bool                          m_bIsSetupOpen    = false;
-  bool                          m_bIsCompiled     = false;
+  xiiDynamicArray<xiiUInt32>    m_CachedTopologyKey;
+  xiiDynamicArray<xiiUInt32>    m_CachedTopologyOrder;
+  xiiDynamicArray<xiiUInt8>     m_CachedTopologyCulled;
+  bool                          m_bTopologyCacheValid = false;
+  xiiUInt64                     m_uiFrameIndex        = 0ULL;
+  bool                          m_bIsSetupOpen        = false;
+  bool                          m_bIsCompiled         = false;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderGraph_inl.h>

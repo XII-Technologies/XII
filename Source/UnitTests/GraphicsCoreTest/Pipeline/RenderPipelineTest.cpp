@@ -139,6 +139,55 @@ namespace PipelineResourceTest
 
 static_assert(!std::is_copy_constructible_v<xiiRenderPipelineInstance>);
 
+XII_CREATE_SIMPLE_TEST(Pipeline, IncrementalRenderGraphCompilation)
+{
+  struct Data
+  {
+    xiiUInt32                  m_uiFrame;
+    xiiRenderGraphBufferHandle m_Buffer;
+  };
+  xiiRenderGraph graph;
+  const auto     setup = [&](xiiUInt32 frame, xiiUInt32 size, xiiStringView name, bool sideEffects) {
+    graph.BeginSetup(frame);
+    const auto pass = graph.AddPass<Data>(name, xiiGALCommandQueueFlags::Transfer, [=](Data& data, xiiRenderGraphBuilder& builder) {
+      data.m_uiFrame = frame;
+      xiiGALBufferCreationDescription description;
+      description.m_uiSize = size;
+      description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+      data.m_Buffer = builder.WriteBuffer("Data", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data&, xiiRenderGraphPassContext&) {}, sideEffects);
+    graph.EndSetup();
+    return pass.first->m_Buffer;
+  };
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Topology reuse keeps current callbacks and resource descriptions")
+  {
+    setup(1, 16, "First label", true);
+    XII_TEST_RESULT(graph.Compile());
+    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+    const auto buffer = setup(2, 32, "Presentation changed", true);
+    XII_TEST_RESULT(graph.Compile());
+    XII_TEST_BOOL(graph.GetStatistics().m_bUsedCachedCompile);
+    XII_TEST_INT(graph.GetBufferDescription(buffer)->m_uiSize, 32);
+    XII_TEST_INT(static_cast<Data*>(graph.GetCompiledPasses()[0].m_pPassData)->m_uiFrame, 2);
+    setup(3, 32, "Presentation changed", false);
+    XII_TEST_RESULT(graph.Compile());
+    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+    XII_TEST_INT(graph.GetStatistics().m_uiCompiledPassCount, 0);
+    setup(4, 32, "Presentation changed", false);
+    xiiRenderGraphCompileSettings settings;
+    settings.m_bEnablePassCulling = false;
+    XII_TEST_RESULT(graph.Compile(settings));
+    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+    XII_TEST_INT(graph.GetStatistics().m_uiCompiledPassCount, 1);
+    setup(5, 32, "Presentation changed", false);
+    XII_TEST_RESULT(graph.Compile(settings));
+    XII_TEST_BOOL(graph.GetStatistics().m_bUsedCachedCompile);
+    settings.m_uiCacheSalt = 7;
+    setup(6, 32, "Presentation changed", false);
+    XII_TEST_RESULT(graph.Compile(settings));
+    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(Pipeline, HierarchicalRenderPipeline)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Independent asset definitions, selective dependencies and child hot reload")
