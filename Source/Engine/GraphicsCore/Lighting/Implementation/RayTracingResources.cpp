@@ -1024,7 +1024,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
           xiiGALBuildBLASDescription description;
           description.m_pBottomLevelAS                 = build.m_pBottomLevelAS.Borrow();
           description.m_pScratchBuffer                 = context.GetBuffer(build.m_hScratchBuffer);
-          description.m_bUpdate = build.m_Update;
+          description.m_bUpdate                        = build.m_Update;
           xiiGALBLASTriangleBuildDescription& triangle = description.m_Triangles.ExpandAndGetRef();
           triangle.m_pVertexBuffer                     = context.GetBuffer(build.m_hVertexBuffer);
           triangle.m_uiVertexBufferOffset              = build.m_uiVertexBufferOffset;
@@ -1088,7 +1088,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
       xiiStringBuilder name;
       for (auto* deformed : deformedDependencies)
       {
-        auto& dependency = data.m_GeometryDependencies.ExpandAndGetRef();
+        auto& dependency     = data.m_GeometryDependencies.ExpandAndGetRef();
         dependency.m_pBuffer = deformed->m_Buffer;
         dependency.m_hBuffer = builder.ReadBuffer(deformed->m_Handle, xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::BuildASRead);
       }
