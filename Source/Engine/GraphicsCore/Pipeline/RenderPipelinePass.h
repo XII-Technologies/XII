@@ -43,9 +43,11 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiReflectedClass
 
 public:
   virtual ~xiiRenderPipelinePass() = default;
-  virtual xiiResult Configure(const xiiVariantDictionary& properties);
-  virtual void      GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
-  virtual xiiResult Build(xiiRenderPipelinePassContext& context)                   = 0;
+  /// Authored, occurrence-local parameter overrides. Kept separate from compile-time pass properties.
+  xiiVariantDictionary m_ParameterOverrides;
+  virtual xiiResult    Configure(const xiiVariantDictionary& properties);
+  virtual void         GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const = 0;
+  virtual xiiResult    Build(xiiRenderPipelinePassContext& context)                   = 0;
   /// Optional domain validation after generic connectivity and ordering have been validated.
   /// Runs on CPU during compilation; failure prevents publication of the entire resource.
   virtual xiiResult ValidatePipeline(const xiiRenderPipelineResourceDescriptor&, xiiArrayPtr<const xiiUInt32>, xiiUInt32, xiiStringBuilder*) const { return XII_SUCCESS; }

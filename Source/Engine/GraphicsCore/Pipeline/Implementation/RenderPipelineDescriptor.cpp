@@ -34,7 +34,15 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineConnection, xiiNoBase, 2, xiiRT
     XII_MEMBER_PROPERTY("Id", m_Id),
   } XII_END_PROPERTIES;
 } XII_END_STATIC_REFLECTED_TYPE;
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineResourceDescriptor, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiRenderPipelineResourceDescriptor>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineDefinitionReference, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineDefinitionReference>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Id", m_Id),
+    XII_MEMBER_PROPERTY("Resource", m_sResource),
+  } XII_END_PROPERTIES;
+} XII_END_STATIC_REFLECTED_TYPE;
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineResourceDescriptor, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiRenderPipelineResourceDescriptor>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -44,6 +52,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderPipelineResourceDescriptor, xiiNoBase, 
     XII_MEMBER_PROPERTY("Id", m_Id),
     XII_ARRAY_MEMBER_PROPERTY("Interface", m_Interface),
     XII_ARRAY_MEMBER_PROPERTY("Definitions", m_Definitions),
+    XII_ARRAY_MEMBER_PROPERTY("References", m_References),
   } XII_END_PROPERTIES;
 } XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on

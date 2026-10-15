@@ -5,7 +5,13 @@
 
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 2, xiiRTTINoAllocator)
+  {
+    XII_BEGIN_PROPERTIES
+    {
+      XII_MAP_MEMBER_PROPERTY("ParameterOverrides", m_ParameterOverrides),
+    } XII_END_PROPERTIES;
+  }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiResult xiiRenderPipelinePass::Configure(const xiiVariantDictionary& properties)

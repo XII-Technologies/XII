@@ -13,6 +13,12 @@ xiiRenderPipeline::xiiRenderPipeline() :
 
 xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
+  if (!descriptor.m_References.IsEmpty())
+  {
+    xiiRenderPipelineResourceDescriptor resolved;
+    XII_SUCCEED_OR_RETURN(xiiRenderPipelineResource::ResolveDefinitions(descriptor, resolved, nullptr, out_error));
+    return Compile(resolved, {}, out_pipeline, out_error);
+  }
   return Compile(descriptor, {}, out_pipeline, out_error);
 }
 
@@ -115,6 +121,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     const auto* type = xiiRTTI::FindTypeByName(definition.m_sType);
     if (!type || !type->IsDerivedFrom<xiiRenderPipelinePass>() || !type->GetAllocator()->CanAllocate())
       return fail("Unknown or abstract render pipeline pass type.");
+    if (definition.m_sType == "xiiRenderPipelineSubgraphPass" || definition.m_sType == "xiiRenderPipelineInterfacePass")
+      return fail("Authoring interface and subgraph nodes must be lowered to definition references before compilation.");
     xiiRenderPipelinePass* prototype = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     prototypes.PushBack(prototype);
     if (prototype->Configure(definition.m_Properties).Failed())
@@ -145,10 +153,16 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   connected.SetCount(result->m_uiBindingCount, 0);
   for (const auto& boundary : expanded.m_Boundary)
   {
-    diagnosticPass = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
-    bool found     = false;
-    for (const auto& pin : result->m_Passes[diagnosticPass].m_Pins)
-      found |= pin.m_sName == boundary.m_sPort && pin.m_bInput == boundary.m_bInput;
+    diagnosticPass    = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
+    bool        found = false;
+    const auto& pass  = result->m_Passes[diagnosticPass];
+    for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
+      if (pass.m_Pins[i].m_sName == boundary.m_sPort && pass.m_Pins[i].m_bInput == boundary.m_bInput)
+      {
+        found = true;
+        if (boundary.m_bInput && boundary.m_Source.m_InstancePath.IsEmpty())
+          connected[pass.m_uiBindingOffset + i] = 1;
+      }
     if (!found)
       return fail("Subgraph interface references an unknown reflected pin or direction.");
   }

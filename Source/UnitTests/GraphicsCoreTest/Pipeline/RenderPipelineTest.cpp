@@ -141,6 +141,48 @@ static_assert(!std::is_copy_constructible_v<xiiRenderPipelineInstance>);
 
 XII_CREATE_SIMPLE_TEST(Pipeline, HierarchicalRenderPipeline)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Independent asset definitions, selective dependencies and child hot reload")
+  {
+    auto                  leaf          = PipelineResourceTest::MakeDefinition();
+    const auto            child         = xiiResourceManager::LoadResource<xiiRenderPipelineResource>("HierarchyChild");
+    auto                  initialLoader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
+    xiiMemoryStreamWriter initialWriter(&initialLoader->m_CustomData);
+    initialWriter << "HierarchyChild";
+    XII_TEST_RESULT(leaf.Serialize(initialWriter));
+    xiiResourceManager::UpdateResourceWithCustomLoader(child, std::move(initialLoader));
+    xiiRenderPipelineResourceDescriptor root;
+    root.m_References.PushBack({leaf.m_Id, "HierarchyChild"});
+    root.m_References.PushBack({xiiUuid::MakeUuid(), "UnusedDefinitionMustNotLoad"});
+    root.AddSubgraph("First", leaf.m_Id);
+    root.AddSubgraph("Second", leaf.m_Id);
+    const auto                                                       parent = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("HierarchyParent", xiiRenderPipelineResourceDescriptor(root));
+    xiiRenderPipelineResourceDescriptor                              resolved;
+    xiiDynamicArray<xiiRenderPipelineResource::DefinitionDependency> dependencies;
+    XII_TEST_RESULT(xiiRenderPipelineResource::ResolveDefinitions(root, resolved, &dependencies));
+    XII_TEST_INT(dependencies.GetCount(), 1);
+    xiiRenderPipelineInstance instance;
+    XII_TEST_RESULT(instance.Synchronize(parent));
+    const auto*                                previous = instance.GetPipeline();
+    xiiResourceLock<xiiRenderPipelineResource> parentLock(parent, xiiResourceAcquireMode::BlockTillLoaded);
+    const auto                                 snapshot = parentLock->GetPipeline();
+    XII_TEST_BOOL(snapshot.Borrow() == previous);
+    leaf.m_Passes[1].m_Properties.Insert("Value", 12U);
+    auto                                                  loader = XII_DEFAULT_NEW(PipelineResourceTest::MemoryLoader);
+    xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>> closed = XII_DEFAULT_NEW(xiiRefCountedContainer<xiiThreadSignal>);
+    loader->m_pClosed                                            = closed;
+    xiiMemoryStreamWriter writer(&loader->m_CustomData);
+    writer << "HierarchyChild";
+    XII_TEST_RESULT(leaf.Serialize(writer));
+    xiiResourceManager::UpdateResourceWithCustomLoader(child, std::move(loader));
+    if (!XII_TEST_BOOL(closed->m_Content.WaitForSignal(xiiTime::MakeFromSeconds(5)) == xiiThreadSignal::WaitResult::Signaled))
+      return;
+    bool changed = false;
+    XII_TEST_RESULT(instance.Synchronize(parent, &changed));
+    XII_TEST_BOOL(changed && instance.GetPipeline() != previous);
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(instance.GetPass(1))->m_uiValue, 12);
+    XII_TEST_INT(static_cast<const xiiPipelineTestSource*>(instance.GetPass(3))->m_uiValue, 12);
+    XII_TEST_INT(snapshot->GetDescriptor().m_Passes[1].m_Properties.GetValue("Value")->Get<xiiUInt32>(), 4);
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Nested repeated definitions, parameters, resource namespaces and independent history")
   {
     auto leaf = PipelineResourceTest::MakeDefinition();

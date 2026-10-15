@@ -30,6 +30,12 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineConnection
   xiiUuid   m_Id = xiiUuid::MakeUuid();
 };
 
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineDefinitionReference
+{
+  xiiUuid   m_Id;
+  xiiString m_sResource;
+};
+
 /// Portable resource definition. Indices are serialized identities within this definition.
 /// RemovePass updates indices and removes incident connections. Compilation validates the entire definition.
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
@@ -49,7 +55,14 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceDescriptor
   xiiUuid                                          m_Id = xiiUuid::MakeUuid();
   xiiDynamicArray<xiiGraphBoundaryMapping>         m_Interface;
   /// Shared definitions are stored once per document/library, regardless of instance count.
-  xiiDynamicArray<xiiGraphDefinition> m_Definitions;
+  xiiDynamicArray<xiiGraphDefinition>                   m_Definitions;
+  xiiDynamicArray<xiiRenderPipelineDefinitionReference> m_References;
+};
+
+/// Immutable authoring snapshot. Referenced assets can be read without recursively compiling them.
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineAuthoring : xiiRefCounted
+{
+  xiiRenderPipelineResourceDescriptor m_Descriptor;
 };
 
 /// Immutable, shared compilation. Core graph owns structural dependencies; execution uses a flat order.
@@ -108,20 +121,32 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineResource final : public xiiResource
 
 public:
   xiiRenderPipelineResource();
-  xiiSharedPtr<const xiiRenderPipeline> GetPipeline() const;
+  xiiSharedPtr<const xiiRenderPipeline>          GetPipeline() const;
+  xiiSharedPtr<const xiiRenderPipelineAuthoring> GetAuthoring() const;
+  struct DefinitionDependency
+  {
+    xiiRenderPipelineResourceHandle                m_Resource;
+    xiiSharedPtr<const xiiRenderPipelineAuthoring> m_Snapshot;
+  };
+  /// Resolve only definitions reachable from the root. Each independently authored resource is
+  /// acquired once, before compilation, so definition recursion cannot deadlock resource loading.
+  static xiiResult ResolveDefinitions(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderPipelineResourceDescriptor& out_resolved, xiiDynamicArray<DefinitionDependency>* out_dependencies = nullptr, xiiStringBuilder* out_error = nullptr);
   /// Built-in reusable definition, cached by ResourceManager. Does not hold a static resource handle.
   static xiiRenderPipelineResourceHandle GetDefaultPipeline();
   /// Creates an editable default definition without loading a resource or accessing GAL.
   static void GetDefaultDescriptor(xiiRenderPipelineResourceDescriptor& out_descriptor);
 
 private:
-  xiiResourceLoadDescription            UnloadData(Unload whatToUnload) override;
-  xiiResourceLoadDescription            UpdateContent(xiiStreamReader* stream) override;
-  void                                  UpdateMemoryUsage(MemoryUsage& usage) override;
-  mutable xiiMutex                      m_Mutex;
-  xiiSharedPtr<const xiiRenderPipeline> m_pPipeline;
+  xiiResourceLoadDescription                     UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription                     UpdateContent(xiiStreamReader* stream) override;
+  void                                           UpdateMemoryUsage(MemoryUsage& usage) override;
+  mutable xiiMutex                               m_Mutex;
+  mutable xiiSharedPtr<const xiiRenderPipeline>  m_pPipeline;
+  xiiSharedPtr<const xiiRenderPipelineAuthoring> m_pAuthoring;
+  mutable xiiDynamicArray<DefinitionDependency>  m_DefinitionDependencies;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePassDescriptor);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineConnection);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineDefinitionReference);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineResourceDescriptor);
