@@ -53,7 +53,11 @@ public:
   void                           Shutdown(xiiUInt64 uiLastSubmittedFrame);
   void                           Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime);
 
-  const xiiGpuInstanceData&                   GetGpuInstances() const { return *m_World->GetModule<xiiRenderWorldModule>()->GetGpuInstanceData(); }
+  const xiiGpuInstanceData& GetGpuInstances() const
+  {
+    XII_LOCK(m_World->GetReadMarker());
+    return *static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->GetGpuInstanceData();
+  }
   [[nodiscard]] const xiiGpuDrivenSceneLight& GetSunLight() const { return m_SunLight; }
   [[nodiscard]] xiiBoundingBox                GetAnimatedShadowBounds() const;
 

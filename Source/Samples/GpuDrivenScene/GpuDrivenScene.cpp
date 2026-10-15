@@ -15,6 +15,7 @@
 #include <Core/Graphics/Camera.h>
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Memory/FrameAllocator.h>
 #include <Core/System/Window.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -266,6 +267,7 @@ public:
     m_pDevice->EndFrame();
     xiiResourceManager::PerFrameUpdate();
     xiiTaskSystem::FinishFrameTasks();
+    xiiFrameAllocator::Swap();
     return Execution::Continue;
   }
 
@@ -373,6 +375,7 @@ public:
     m_HiZPyramid.Shutdown();
     xiiGpuVisibilityManager::DestroyContext(m_hVisibility);
     m_hVisibility = {};
+    xiiFrameAllocator::Reset();
     m_World.Shutdown(m_uiFrameIndex);
     m_hShaderPermutation.Invalidate();
     m_hRayTracingValidationPermutation.Invalidate();

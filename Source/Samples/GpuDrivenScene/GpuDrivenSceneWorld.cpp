@@ -86,6 +86,7 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   m_Configuration = configuration;
   xiiWorldDescription worldDescription("GPU-driven component world");
   m_World = XII_DEFAULT_NEW(xiiWorld, worldDescription);
+  XII_LOCK(m_World->GetWriteMarker());
   m_World->SetWorldSimulationEnabled(false);
 
   XII_SUCCEED_OR_RETURN(CreateMaterials());
@@ -215,7 +216,11 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
     if (m_World->TryGetObject(handle, object))
       object->SendMessage(message);
   }
+  extracted.SortAndBatches();
   XII_SUCCEED_OR_RETURN(render->UpdateGpuInstances(extracted, 0));
+  if (GetGpuInstances().GetInstanceCount() != m_Objects.GetCount() * 2U)
+    return XII_FAILURE;
+  xiiLog::Info("Extracted {} GPU draw candidates from {} world mesh components.", GetGpuInstances().GetInstanceCount(), m_Objects.GetCount());
   // Temporary resource build inputs are derived from world extraction. The global TLAS
   // registry is removed in the following migration phase.
   for (const auto& instance : GetGpuInstances().GetInstances())
@@ -267,6 +272,7 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 frame, xiiTime deltaTime)
     if (m_World->TryGetObject(handle, object))
       object->SendMessage(message);
   }
+  extracted.SortAndBatches();
   m_World->GetModule<xiiRenderWorldModule>()->UpdateGpuInstances(extracted, frame).AssertSuccess();
   for (const auto& record : GetGpuInstances().GetInstances())
   {
