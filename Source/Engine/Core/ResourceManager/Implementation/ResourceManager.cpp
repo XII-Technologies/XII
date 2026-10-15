@@ -47,6 +47,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Core, ResourceManager)
 
   ON_HIGHLEVELSYSTEMS_STARTUP
   {
+    xiiResourceManager::OnEngineStartup();
   }
 
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
@@ -542,6 +543,15 @@ void xiiResourceManager::OnCoreStartup()
   s_pState->m_bShutdown                = false;
 
   xiiPlugin::Events().AddEventHandler(PluginEventHandler);
+}
+
+void xiiResourceManager::OnEngineStartup()
+{
+  // High-level shutdown cancels loading without destroying the core resource registry.
+  // Re-enable it before rendering subsystems acquire resources during a device restart.
+  XII_LOCK(s_ResourceMutex);
+  s_pState->m_bShutdown                = false;
+  s_pState->m_bAllowLaunchDataLoadTask = true;
 }
 
 void xiiResourceManager::EngineAboutToShutdown()

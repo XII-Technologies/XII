@@ -416,4 +416,47 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     XII_TEST_BOOL(renderer->GetGpuInstanceData()->GetUploadRanges().IsEmpty());
     xiiTestFramework::Output(xiiTestOutput::Details, "1024 unchanged world components: 20 packing updates = %.3f ms total, %.3f ms/update (Debug).", elapsed.GetMilliseconds(), elapsed.GetMilliseconds() / 20);
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "A live world releases derived buffers across renderer shutdown and restart")
+  {
+    environment.GetDevice()->WaitIdle();
+    extracted.Clear();
+    xiiFrameAllocator::Reset();
+    xiiStartup::ShutdownHighLevelSystems();
+    XII_TEST_BOOL(module->GetGpuInstanceData() == nullptr);
+    xiiStartup::StartupHighLevelSystems();
+    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized());
+    xiiGameObject*           object = nullptr;
+    xiiGameObjectDescription authored;
+    authored.m_bDynamic = true;
+    world.CreateObject(authored, object);
+    xiiMeshComponent* renderable = nullptr;
+    const auto        handle     = xiiMeshComponent::CreateComponent(object, renderable);
+    renderable->SetMesh(mesh);
+    world.Update();
+    if (!XII_TEST_BOOL(world.TryGetComponent(handle, renderable)))
+      return;
+    xiiMsgExtractRenderData request;
+    request.m_pExtractedRenderData = &extracted;
+    renderable->SendMessage(request);
+    extracted.SortAndBatches();
+    XII_TEST_RESULT(module->UpdateGpuInstances(extracted, 1));
+    XII_TEST_INT(module->GetGpuInstanceData()->GetInstanceCount(), 1);
+    XII_TEST_BOOL(module->GetGpuInstanceData()->GetInstances()[0].m_uiObjectId != identity);
+    xiiRenderGraphContext context;
+    XII_TEST_RESULT(context.Initialize("World upload after renderer restart"));
+    xiiRenderGraphFrame gpuFrame;
+    XII_TEST_RESULT(gpuFrame.Begin());
+    auto& graph = context.GetGraph();
+    auto& cache = context.GetResourceCache();
+    cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
+    graph.BeginSetup(gpuFrame.GetFrameIndex());
+    const auto uploaded = module->GetGpuInstanceData()->AddUploadPass(graph, gpuFrame.GetFrameIndex());
+    XII_TEST_BOOL(uploaded.m_Instances.IsValid() && uploaded.m_Skinning.IsValid());
+    graph.EndSetup();
+    if (XII_TEST_RESULT(graph.Compile()))
+      XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache));
+    cache.EndFrame();
+    gpuFrame.End();
+    environment.GetDevice()->WaitIdle();
+  }
 }
