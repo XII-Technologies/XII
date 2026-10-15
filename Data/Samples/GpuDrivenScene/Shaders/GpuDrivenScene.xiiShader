@@ -100,7 +100,8 @@ void main(uint threadIndex : SV_GroupThreadID,
 
 #include "GpuDrivenSceneConstants.h"
 
-ByteAddressBuffer g_MaterialData;
+#include <Shaders/Materials/GpuSurfaceMaterial.h>
+StructuredBuffer<xiiGpuSurfaceMaterial> g_MaterialData;
 Texture2D<float> g_ShadowMap;
 SamplerState PointClampSampler;
 
@@ -149,8 +150,7 @@ float EvaluateSunShadow(float3 worldPosition, float3 worldNormal, float3 directi
 
 float4 main(MeshVertex input) : SV_Target0
 {
-  const uint materialOffset = MaterialFrameBase + input.MaterialIndex * MaterialStride;
-  const float4 baseColor = asfloat(g_MaterialData.Load4(materialOffset));
+  const float4 baseColor = g_MaterialData[MaterialFrameBase + input.MaterialIndex].BaseColorOpacity;
   const float3 lightDirection = normalize(-SunDirectionIntensity.xyz);
   const float diffuse = saturate(dot(normalize(input.WorldNormal), lightDirection));
   const float shadow = EvaluateSunShadow(input.WorldPosition, normalize(input.WorldNormal), lightDirection);

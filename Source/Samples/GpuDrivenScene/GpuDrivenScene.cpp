@@ -398,7 +398,7 @@ private:
   {
     const auto                                geometry            = xiiGeometryResidencyManager::AddUploadPass(graph, m_uiFrameIndex);
     const auto                                materials           = xiiMaterialManager::AddUploadPasses(graph);
-    const xiiRenderGraphBufferHandle          hMaterials          = materials.m_hParameterData;
+    const xiiRenderGraphBufferHandle          hMaterials          = materials.m_hSurfaceData;
     const auto                                rayTracingScene     = xiiRayTracingSceneManager::AddBuildPass(graph, m_uiFrameIndex);
     const xiiRenderGraphTextureHandle         hPreviousHiZ        = m_HiZPyramid.ImportPrevious(graph, m_uiFrameIndex);
     xiiVirtualShadowMapManager::UploadHandles virtualShadowUpload = xiiVirtualShadowMapManager::AddUploadPass(graph, m_uiFrameIndex);
@@ -431,12 +431,12 @@ private:
       XII_IGNORE_UNUSED(validationPass);
     }
 
-    xiiGpuVisibilityView            visibilityView = xiiGpuVisibilitySystem::BuildView(m_ViewProjection, m_ViewFrustum, m_Camera.GetPosition(), m_TargetSize.width, m_TargetSize.height, hPreviousHiZ.IsValid() ? m_HiZPyramid.GetMipLevelCount() : 0U, m_World.GetScene().GetObjectCount());
+    xiiGpuVisibilityView            visibilityView = xiiGpuVisibilitySystem::BuildView(m_ViewProjection, m_ViewFrustum, m_Camera.GetPosition(), m_TargetSize.width, m_TargetSize.height, hPreviousHiZ.IsValid() ? m_HiZPyramid.GetMipLevelCount() : 0U, m_World.GetGpuInstances().GetInstanceCount());
     xiiGpuVisibilityPassDescription visibilityPass;
     visibilityPass.m_sName                   = "Main View";
     visibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::MainView;
     visibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
-    const xiiGpuVisibilityOutputs visibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetSceneHandle(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
+    const xiiGpuVisibilityOutputs visibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetGpuInstances(), visibilityView, geometry, visibilityPass, hPreviousHiZ);
 
     // A robotics/medical sensor view owns independent frame-sliced constants. Only its instance
     // count is exported; unused meshlet and command stages are culled by the render graph.
@@ -446,7 +446,7 @@ private:
     sensorVisibilityPass.m_sName                   = "Sensor View";
     sensorVisibilityPass.m_Purpose                 = xiiGpuVisibilityPurpose::Sensor;
     sensorVisibilityPass.m_bAsyncCompute           = m_Configuration.m_bAsyncCompute;
-    const xiiGpuVisibilityOutputs sensorVisibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetSceneHandle(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
+    const xiiGpuVisibilityOutputs sensorVisibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetGpuInstances(), sensorView, geometry, sensorVisibilityPass, hPreviousHiZ);
 
     constexpr xiiUInt32      uiShadowResolution = 2048U;
     xiiShadowCascadeSettings shadowSettings;
@@ -461,7 +461,7 @@ private:
     const xiiMat4                                   shadowViewProjection = bHasShadowCascade ? shadowCascades[0].m_mViewProjection : m_ViewProjection;
     const xiiFrustum                                shadowFrustum        = xiiFrustum::MakeFromMVP(shadowViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
-    xiiGpuVisibilityView shadowView = xiiGpuVisibilitySystem::BuildView(shadowViewProjection, shadowFrustum, m_Camera.GetPosition(), uiShadowResolution, uiShadowResolution, 0U, m_World.GetScene().GetObjectCount());
+    xiiGpuVisibilityView shadowView = xiiGpuVisibilitySystem::BuildView(shadowViewProjection, shadowFrustum, m_Camera.GetPosition(), uiShadowResolution, uiShadowResolution, 0U, m_World.GetGpuInstances().GetInstanceCount());
     shadowView.m_uiRequiredFlags    = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue();
     xiiGpuVisibilityPassDescription shadowVisibilityPass;
     shadowVisibilityPass.m_sName                   = "Sun Shadow";
@@ -469,7 +469,7 @@ private:
     shadowVisibilityPass.m_fLodScreenScale         = 1.0f;
     shadowVisibilityPass.m_uiMaxVisibleMeshlets    = 0U;
     shadowVisibilityPass.m_bAsyncCompute           = false;
-    const xiiGpuVisibilityOutputs shadowVisibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetSceneHandle(), shadowView, geometry, shadowVisibilityPass);
+    const xiiGpuVisibilityOutputs shadowVisibility = xiiGpuVisibilityManager::AddPasses(m_hVisibility, graph, m_uiFrameIndex, m_World.GetGpuInstances(), shadowView, geometry, shadowVisibilityPass);
 
     auto virtualShadowCascadePass                          = graph.AddPass<VirtualShadowCascadePassData>("GPU Scene Virtual Shadow Cascades", xiiGALCommandQueueFlags::Graphics, [](VirtualShadowCascadePassData& data, xiiRenderGraphBuilder& builder) {
         xiiGALBufferCreationDescription description;
@@ -571,7 +571,7 @@ private:
     drawPass.first->m_ShadowViewProjection      = shadowViewProjection;
     drawPass.first->m_fShadowWorldUnitsPerTexel = bHasShadowCascade ? (2.0f * shadowCascades[0].m_fWorldRadius) / static_cast<float>(uiShadowResolution) : 0.0f;
     drawPass.first->m_uiGeometryBase            = geometry.m_uiGeometryBaseIndex;
-    drawPass.first->m_uiMaterialFrameBase       = m_World.GetMaterialFrameBase(m_uiFrameIndex);
+    drawPass.first->m_uiMaterialFrameBase       = materials.m_uiSurfaceBaseIndex;
     drawPass.first->m_uiMaterialStride          = xiiMaterialManager::GetGpuStorage().GetMaterialStride();
 
     const xiiVirtualShadowMapSettings& virtualShadowSettings = xiiVirtualShadowMapManager::GetConfiguration();
