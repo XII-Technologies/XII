@@ -122,7 +122,7 @@ xiiView::~xiiView()
 
 const xiiGpuInstanceData* xiiView::GetGpuInstanceData() const
 {
-  const auto* module = m_pWorld ? m_pWorld->GetModule<xiiRenderWorldModule>() : nullptr;
+  const auto* module = m_pWorld ? static_cast<const xiiWorld*>(m_pWorld)->GetModule<xiiRenderWorldModule>() : nullptr;
   return module ? module->GetGpuInstanceData() : nullptr;
 }
 

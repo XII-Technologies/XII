@@ -17,7 +17,6 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Pipeline/ViewRenderResourceManager.h>
-#include <GraphicsCore/Scene/SceneDatabaseManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityManager.h>
 
 #include <type_traits>
@@ -34,8 +33,6 @@ static_assert(!std::is_default_constructible_v<xiiRayTracingSceneManager>, "Ray 
 static_assert(!std::is_default_constructible_v<xiiSensorRenderingManager>, "Sensor profiles must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiDisplayOutputManager>, "Display defaults must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiVolumetricMediumManager>, "Volumetric media must be owned by their subsystem.");
-static_assert(!std::is_default_constructible_v<xiiSceneDatabaseManager>, "Render scenes must be owned by the scene database subsystem.");
-static_assert(!std::is_default_constructible_v<xiiSceneDatabase>, "Scene database storage must be created through the subsystem.");
 static_assert(!std::is_default_constructible_v<xiiParticleSystemManager>, "Particle runtimes must be owned by their subsystem.");
 static_assert(!std::is_default_constructible_v<xiiParticleSystemRuntime>, "Particle runtime storage must be created through the subsystem.");
 static_assert(!std::is_default_constructible_v<xiiGALPipelineCache>, "Pipeline cache storage must be owned by its subsystem.");
@@ -64,7 +61,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     XII_TEST_BOOL(xiiGALRenderPassCache::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiRenderGraphManager::IsSubsystemInitialized());
     XII_TEST_BOOL(xiiViewRenderResourceManager::IsSubsystemInitialized());
-    XII_TEST_BOOL(xiiSceneDatabaseManager::IsSubsystemInitialized());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Context handles are inert before allocation")
@@ -72,35 +68,20 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
     const xiiLightingContextHandle           lightingHandle;
     const xiiRenderGraphContextHandle        renderGraphHandle;
     const xiiGpuVisibilityContextHandle      visibilityHandle;
-    const xiiSceneDatabaseContextHandle      sceneHandle;
     const xiiParticleSystemRuntimeHandle     particleHandle;
     const xiiViewRenderResourceContextHandle viewResourceHandle;
 
     XII_TEST_BOOL(lightingHandle.IsInvalidated());
     XII_TEST_BOOL(renderGraphHandle.IsInvalidated());
     XII_TEST_BOOL(visibilityHandle.IsInvalidated());
-    XII_TEST_BOOL(sceneHandle.IsInvalidated());
     XII_TEST_BOOL(particleHandle.IsInvalidated());
     XII_TEST_BOOL(viewResourceHandle.IsInvalidated());
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiLightingContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiRenderGraphContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuVisibilityContextHandle>() != nullptr);
-    XII_TEST_BOOL(xiiGetStaticRTTI<xiiSceneDatabaseContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiParticleSystemRuntimeHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiViewRenderResourceContextHandle>() != nullptr);
     XII_TEST_BOOL(xiiGetStaticRTTI<xiiGpuShadowRasterDescription>() != nullptr);
-  }
-
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Scene database contexts are generation checked")
-  {
-    XII_TEST_BOOL(xiiSceneDatabaseManager::IsInitialized());
-    const xiiSceneDatabaseContextHandle handle = xiiSceneDatabaseManager::CreateContext(16U);
-    XII_TEST_BOOL(!handle.IsInvalidated());
-    XII_TEST_BOOL(xiiSceneDatabaseManager::IsValid(handle));
-    XII_TEST_BOOL(xiiSceneDatabaseManager::GetDatabase(handle) != nullptr);
-
-    xiiSceneDatabaseManager::DestroyContext(handle);
-    XII_TEST_BOOL(!xiiSceneDatabaseManager::IsValid(handle));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Render graph passes publish explicit resource handles")

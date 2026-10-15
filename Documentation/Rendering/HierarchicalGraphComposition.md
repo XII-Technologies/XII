@@ -18,8 +18,8 @@
 * The render pipeline editor uses `DocumentNodeManager`, reflected native pass
   schemas, document UUIDs, object mirroring and ResourceManager assets.
 * `RenderWorldModule` already extracts from `xiiWorld` and caches static component
-  packets. Components invalidate that cache. `SceneDatabaseManager` converts those
-  packets into stable GPU identities and compact scene arrays. These are derived
+  packets. Components invalidate that cache. The render world module packs those
+  packets into stable GPU identities and compact draw arrays. These are derived
   data, not an independent authoritative scene.
 
 ## Implementation phases and verification
@@ -209,7 +209,7 @@ component packets reuse the existing cache; component property changes, activati
 deactivation and static transform notifications invalidate relevant consumers.
 Dynamic components are extracted on demand from their current world state.
 
-The existing scene database consumes world-authored packets as flat derived GPU
+World-owned GPU instance buffers consume component-authored packets as derived GPU
 records; extracted instances do not create a second authoritative hierarchy.
 Stable identities, compact arrays, skinning/LOD history and coalesced dirty upload
 ranges remain in place. Identical setters leave revisions and uploads unchanged.

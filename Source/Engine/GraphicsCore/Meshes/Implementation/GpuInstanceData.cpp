@@ -8,10 +8,10 @@
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
+#include <GraphicsCore/Meshes/Implementation/ExtractedMeshSkinning.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsCore/Scene/Implementation/SceneExtractedSkinning.h>
 
 namespace
 {
@@ -89,6 +89,10 @@ public:
 
   bool IsLive(const xiiGpuInstanceSource& source) const
   {
+    if (source.m_hOwnerObject.IsInvalidated() || source.m_hOwnerObject.GetInternalID().m_WorldIndex != m_World.GetIndex())
+      return false;
+    if (!source.m_hOwnerComponent.IsInvalidated() && source.m_hOwnerComponent.GetInternalID().m_WorldIndex != m_World.GetIndex())
+      return false;
     const xiiGameObject* object = nullptr;
     if (!m_World.TryGetObject(source.m_hOwnerObject, object) || !object->IsActive())
       return false;
@@ -261,11 +265,11 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, key, material, packet->m_uiFirstPrimitive, packet->m_uiPrimitiveCount, representative));
     }
     else
-      for (xiiUInt32 lod = 0; lod < mesh->GetLODs().GetCount(); ++lod)
+      for (xiiUInt32 lod = 0; lod < xiiMath::Max(1U, mesh->GetLODs().GetCount()); ++lod)
       {
         if (packet->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && lod != packet->m_uiLODIndex)
           continue;
-        const auto sections = mesh->GetLODs()[lod].m_Sections.GetArrayPtr();
+        const auto sections = mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[lod].m_Sections.GetArrayPtr();
         for (xiiUInt32 section = 0; section < sections.GetCount(); ++section)
         {
           if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::MeshSection && section != packet->m_uiSectionIndex)

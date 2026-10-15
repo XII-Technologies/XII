@@ -313,7 +313,9 @@ bool xiiMeshComponentBase::GetRayTracingVisible() const
 
 void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const
 {
-  if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
+  // Mesh authoring and animation are world data. Camera-dependent consumers select from the
+  // same packets later; world extraction and acceleration-structure preparation need no view.
+  if (ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
   if (!m_hMesh.IsValid())
