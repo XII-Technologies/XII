@@ -525,10 +525,12 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
 
   if (m_pPreparedGraph != &graph || m_uiPreparedFrame != uiFrameIndex)
   {
-    auto sceneUpload                      = graph.AddPass<SceneUploadPassData>("GPU Scene Upload", xiiGALCommandQueueFlags::Transfer, [this, uiFrameSlot, &scene](SceneUploadPassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hScene       = builder.WriteBuffer(builder.ImportBuffer("GPU Scene Instances", m_pSceneBuffers[uiFrameSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::CopyDestination);
+    // Separate visibility contexts can prepare different scene subsets in one graph (for
+    // example main-scene and selection queries). Their writable uploads need distinct names.
+    auto sceneUpload                      = graph.AddPass<SceneUploadPassData>(makePassName(" GPU Scene Upload"), xiiGALCommandQueueFlags::Transfer, [this, uiFrameSlot, &scene, &makeResourceName](SceneUploadPassData& data, xiiRenderGraphBuilder& builder) {
+        data.m_hScene       = builder.WriteBuffer(builder.ImportBuffer(makeResourceName(" GPU Scene Instances"), m_pSceneBuffers[uiFrameSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::CopyDestination);
         const auto skinning = MakeBuffer(xiiUInt64(xiiMath::Max(scene.GetGpuSkinningMatrices().GetCount(), 1U)) * sizeof(xiiMat4), sizeof(xiiMat4), xiiGALBindFlags::ShaderResource);
-        data.m_hSkinning    = builder.WriteBuffer("GPU Scene Skinning Matrices", skinning, xiiGALResourceStateFlags::CopyDestination);
+        data.m_hSkinning    = builder.WriteBuffer(makeResourceName(" GPU Scene Skinning Matrices"), skinning, xiiGALResourceStateFlags::CopyDestination);
         builder.SetPassAllowMerge(false); }, [this](const SceneUploadPassData& data, xiiRenderGraphPassContext& context) {
         context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hSkinning), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SkinningMatrices.GetData()), data.m_SkinningMatrices.GetCount() * sizeof(xiiMat4)));
         for (const xiiSceneUploadRange& range : data.m_UploadRanges)

@@ -283,7 +283,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     graph.AddPass<Export>("Query test export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
       const auto color = builder.ReadTexture(graph.FindTexture("Query test Color"), xiiGALResourceStateFlags::CopySource);
       builder.ExportTexture(color, xiiGALResourceStateFlags::CopySource);
-      for (const xiiStringView name : {"GPU Scene Instances", "Query GPU Visible Instance Count", "Query GPU Visible Meshlet Count"})
+      for (const xiiStringView name : {"Query GPU Scene Instances", "Query GPU Visible Instance Count", "Query GPU Visible Meshlet Count"})
         if (const auto buffer = graph.FindBuffer(name); buffer.IsValid())
           builder.ExportBuffer(builder.ReadBuffer(buffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
     graph.EndSetup();
@@ -501,7 +501,7 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
         XII_TEST_BOOL(xiiMemoryUtils::RawByteCompare(&uploaded, current, sizeof(uploaded)) == 0);
       auto&               graph = graphContext.GetGraph();
       xiiGpuSceneInstance gpuInstance;
-      if (ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(graph.FindBuffer("GPU Scene Instances")).Borrow(), 0, gpuInstance))
+      if (ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(graph.FindBuffer("Query GPU Scene Instances")).Borrow(), 0, gpuInstance))
       {
         XII_TEST_INT(gpuInstance.m_uiGeometryIndex, currentGeometry.GetInternalID().m_InstanceIndex);
         XII_TEST_FLOAT(gpuInstance.m_BoundsExtents.x, 1.0f, 0.001f);
