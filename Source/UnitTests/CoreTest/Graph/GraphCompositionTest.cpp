@@ -2,6 +2,7 @@
 
 #include <Core/Graph/GraphAlgorithms.h>
 #include <Core/Graph/GraphComposition.h>
+#include <Core/Graph/GraphCompositionCache.h>
 #include <Core/Graph/GraphMappings.h>
 #include <CoreTest/CoreTestPCH.h>
 #include <Foundation/IO/MemoryStream.h>
@@ -31,6 +32,40 @@ namespace GraphCompositionTest
 
 XII_CREATE_SIMPLE_TEST(Graph, Composition)
 {
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Selective immutable composition cache invalidation")
+  {
+    auto leaf = GraphCompositionTest::Make(6, 1);
+    auto unrelated = GraphCompositionTest::Make(7, 1);
+    auto root = GraphCompositionTest::Make(8, 2);
+    for (auto& node : root.m_Nodes)
+      node.m_Definition = leaf.m_Id;
+    const auto resolver = [&](const xiiUuid& id) -> const xiiGraphDefinition* {
+      if (id == leaf.m_Id) return &leaf;
+      if (id == unrelated.m_Id) return &unrelated;
+      return nullptr;
+    };
+    xiiGraphCompositionCache cache;
+    xiiSharedPtr<const xiiGraphCompiledComposition> first, current;
+    bool reused = true;
+    XII_TEST_RESULT(cache.Compile(root, resolver, first, &reused));
+    XII_TEST_BOOL(!reused);
+    ++leaf.m_uiPresentationRevision;
+    ++unrelated.m_uiTopologyRevision;
+    XII_TEST_RESULT(cache.Compile(root, resolver, current, &reused));
+    XII_TEST_BOOL(reused && first == current);
+    leaf.m_Nodes[0].m_Properties.Insert("Runtime", 9U);
+    ++leaf.m_uiParameterRevision;
+    XII_TEST_RESULT(cache.Compile(root, resolver, current, &reused));
+    XII_TEST_BOOL(!reused && first != current);
+    XII_TEST_BOOL(!first->m_Expansion.m_Nodes[0].m_Properties.Contains("Runtime"));
+    leaf.m_Nodes[0].m_Definition = root.m_Id;
+    ++leaf.m_uiDefinitionRevision;
+    const auto saved = current;
+    XII_TEST_BOOL(cache.Compile(root, resolver, current).Failed());
+    XII_TEST_BOOL(saved == current);
+    cache.Clear();
+    XII_TEST_INT(first->m_Expansion.m_Graph.GetVertexCount(), 2);
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Nested shared definitions, boundary fan-out, overrides and compaction")
   {
     auto leaf = GraphCompositionTest::Make(1, 2);
