@@ -1,0 +1,50 @@
+[PLATFORMS]
+ALL
+
+[SHADER]
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
+struct Result { float4 Surface; uint4 Identity; };
+struct Payload { float4 Surface; uint Id; float TangentW; };
+
+[RAY_GENERATION_SHADER]
+RaytracingAccelerationStructure g_Scene;
+RWStructuredBuffer<Result> g_Results;
+[shader("raygeneration")]
+void main()
+{
+  const uint i = DispatchRaysIndex().x;
+  RayDesc ray;
+  ray.Origin = float3(float(i) - 1.0f, 0, 10);
+  ray.Direction = float3(0, 0, -1);
+  ray.TMin = 0.001f;
+  ray.TMax = 100;
+  Payload payload;
+  payload.Surface = float4(-1, 0, 0, 0);
+  payload.Id = 0;
+  payload.TangentW = 0;
+  TraceRay(g_Scene, 0U, 255, 0, 1, 0, ray, payload);
+  Result result;
+  result.Surface = payload.Surface;
+  result.Identity = uint4(payload.Id, asuint(payload.TangentW), 0, 0);
+  g_Results[i] = result;
+}
+
+[RAY_MISS_SHADER]
+[shader("miss")]
+void main(inout Payload payload) {}
+
+[RAY_CLOSEST_HIT_SHADER]
+StructuredBuffer<xiiRayTracingGeometryData> g_Geometry;
+StructuredBuffer<xiiRayTracingMaterialData> g_Materials;
+ByteAddressBuffer g_RayTracingBuffers[];
+[shader("closesthit")]
+void main(inout Payload payload, in BuiltInTriangleIntersectionAttributes attributes)
+{
+  const xiiRayTracingGeometryData geometry = g_Geometry[InstanceIndex()];
+  const uint vertex = geometry.BufferIndices.z == 0 ? geometry.VertexAttributes.w * 3 :
+    xiiLoadRayTracingIndex(g_RayTracingBuffers[NonUniformResourceIndex(geometry.BufferIndices.y)], geometry.VertexAttributes.w * 3, geometry.BufferIndices.z);
+  float3 normal = xiiLoadRayTracingNormal(g_RayTracingBuffers[NonUniformResourceIndex(geometry.BufferIndices.x)], geometry, vertex);
+  payload.Surface = float4(RayTCurrent(), normalize(normal));
+  payload.Id = g_Materials[InstanceIndex()].Metadata.y;
+  payload.TangentW = xiiLoadRayTracingTangent(g_RayTracingBuffers[NonUniformResourceIndex(geometry.BufferIndices.x)], geometry, vertex).w;
+}
