@@ -26,30 +26,25 @@ public:
 
   /// Reads a single object and sets the pointer to it. The given allocator is used to create the object if it doesn't exist yet.
   template <typename T>
-  xiiResult ReadObject(xiiStreamReader& ref_stream, T*& ref_pObject,
-                       xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  xiiResult ReadObject(xiiStreamReader& ref_stream, T*& ref_pObject, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// Reads a single object and sets the shared pointer to it. The given allocator is used to create the object if it doesn't exist
   /// yet.
   template <typename T>
-  xiiResult ReadObject(xiiStreamReader& ref_stream, xiiSharedPtr<T>& ref_pObject,
-                       xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  xiiResult ReadObject(xiiStreamReader& ref_stream, xiiSharedPtr<T>& ref_pObject, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// Reads a single object and sets the unique pointer to it. The given allocator is used to create the object if it doesn't exist
   /// yet.
   template <typename T>
-  xiiResult ReadObject(xiiStreamReader& ref_stream, xiiUniquePtr<T>& ref_pObject,
-                       xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  xiiResult ReadObject(xiiStreamReader& ref_stream, xiiUniquePtr<T>& ref_pObject, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// Reads an array of de-duplicated objects.
   template <typename ArrayType, typename ValueType>
-  xiiResult ReadArray(xiiStreamReader& ref_stream, xiiArrayBase<ValueType, ArrayType>& ref_array,
-                      xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  xiiResult ReadArray(xiiStreamReader& ref_stream, xiiArrayBase<ValueType, ArrayType>& ref_array, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// Reads a set of de-duplicated objects.
   template <typename KeyType, typename Comparer>
-  xiiResult ReadSet(xiiStreamReader& ref_stream, xiiSetBase<KeyType, Comparer>& ref_set,
-                    xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  xiiResult ReadSet(xiiStreamReader& ref_stream, xiiSetBase<KeyType, Comparer>& ref_set, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   enum class ReadMapMode
   {
@@ -60,8 +55,7 @@ public:
 
   /// Reads a map. Mode controls whether key or value or both should de-duplicated.
   template <typename KeyType, typename ValueType, typename Comparer>
-  xiiResult ReadMap(xiiStreamReader& ref_stream, xiiMapBase<KeyType, ValueType, Comparer>& ref_map, ReadMapMode mode, xiiAllocator* pKeyAllocator = xiiFoundation::GetDefaultAllocator(),
-                    xiiAllocator* pValueAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  xiiResult ReadMap(xiiStreamReader& ref_stream, xiiMapBase<KeyType, ValueType, Comparer>& ref_map, ReadMapMode mode, xiiAllocator* pKeyAllocator = xiiFoundation::GetDefaultAllocator(), xiiAllocator* pValueAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
 private:
   template <typename T>

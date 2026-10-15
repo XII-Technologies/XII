@@ -223,8 +223,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
   }
   else if (pProp->GetCategory() == xiiPropertyCategory::Array || pProp->GetCategory() == xiiPropertyCategory::Set)
   {
-    if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::StandardType | xiiPropertyFlags::Pointer) &&
-        !pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
+    if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::StandardType | xiiPropertyFlags::Pointer) && !pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
     {
       xiiInt32 iCurrentCount = pObjectAccessor->GetCount(pObject, pProp);
       for (xiiInt32 i = iCurrentCount - 1; i >= 0; --i)
@@ -256,8 +255,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
   }
   else if (pProp->GetCategory() == xiiPropertyCategory::Map)
   {
-    if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::StandardType | xiiPropertyFlags::Pointer) &&
-        !pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
+    if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::StandardType | xiiPropertyFlags::Pointer) && !pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
     {
       xiiInt32                       iCurrentCount = pObjectAccessor->GetCount(pObject, pProp);
       xiiHybridArray<xiiVariant, 16> keys;

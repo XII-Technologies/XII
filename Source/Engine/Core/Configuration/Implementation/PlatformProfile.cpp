@@ -6,6 +6,7 @@
 #include <Foundation/IO/ChunkStream.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
@@ -63,32 +64,31 @@ void xiiPlatformProfile::Clear()
 
 void xiiPlatformProfile::AddMissingConfigs()
 {
-  xiiRTTI::ForEachDerivedType<xiiProfileConfigData>(
-    [this](const xiiRTTI* pRtti) {
-      // find all types derived from xiiProfileConfigData
-      bool bHasTypeAlready = false;
+  xiiRTTI::ForEachDerivedType<xiiProfileConfigData>([this](const xiiRTTI* pRtti) {
+    // find all types derived from xiiProfileConfigData
+    bool bHasTypeAlready = false;
 
-      // check whether we already have an instance of this type
-      for (auto pType : m_Configs)
+    // check whether we already have an instance of this type
+    for (auto pType : m_Configs)
+    {
+      if (pType && pType->GetDynamicRTTI() == pRtti)
       {
-        if (pType && pType->GetDynamicRTTI() == pRtti)
-        {
-          bHasTypeAlready = true;
-          break;
-        }
+        bHasTypeAlready = true;
+        break;
       }
+    }
 
-      if (!bHasTypeAlready)
-      {
-        // if not, allocate one
-        xiiProfileConfigData* pObject = pRtti->GetAllocator()->Allocate<xiiProfileConfigData>();
-        XII_ASSERT_DEV(pObject != nullptr, "Invalid profile config");
-        xiiReflectionUtils::SetAllMemberPropertiesToDefault(pRtti, pObject);
+    if (!bHasTypeAlready)
+    {
+      // if not, allocate one
+      xiiProfileConfigData* pObject = pRtti->GetAllocator()->Allocate<xiiProfileConfigData>();
+      XII_ASSERT_DEV(pObject != nullptr, "Invalid profile config");
+      xiiReflectionUtils::SetAllMemberPropertiesToDefault(pRtti, pObject);
 
-        m_Configs.PushBack(pObject);
-      }
-    },
-    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+      m_Configs.PushBack(pObject);
+    }
+  },
+                                                    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 
   // in case unknown configs were loaded from disk, remove them
   m_Configs.RemoveAndSwap(nullptr);
@@ -116,10 +116,11 @@ xiiProfileConfigData* xiiPlatformProfile::GetTypeConfig(const xiiRTTI* pRtti)
 
 xiiResult xiiPlatformProfile::SaveForRuntime(xiiStringView sFile) const
 {
-  xiiFileWriter file;
-  XII_SUCCEED_OR_RETURN(file.Open(sFile));
-
-  xiiChunkStreamWriter chunk(file);
+  // Chunk serialization uses void APIs. Buffer it before opening the destination so every
+  // actual file write, including the final buffered write, has an observable result.
+  xiiDefaultMemoryStreamStorage storage;
+  xiiMemoryStreamWriter         writer(&storage);
+  xiiChunkStreamWriter          chunk(writer);
 
   chunk.BeginStream(1);
 
@@ -130,7 +131,10 @@ xiiResult xiiPlatformProfile::SaveForRuntime(xiiStringView sFile) const
 
   chunk.EndStream();
 
-  return XII_SUCCESS;
+  xiiFileWriter file;
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
+  XII_SUCCEED_OR_RETURN(storage.CopyToStream(file));
+  return file.Flush();
 }
 
 xiiResult xiiPlatformProfile::LoadForRuntime(xiiStringView sFile)

@@ -6,6 +6,8 @@
 #include <EditorFramework/Dialogs/AssetProfilesDlg.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Platform/PlatformDescription.h>
+#include <Foundation/Types/ScopeExit.h>
+#include <GuiFoundation/Models/TreeSearchFilterModel.moc.h>
 #include <GuiFoundation/UIServices/DynamicStringEnum.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
@@ -59,11 +61,11 @@ public:
       {
         QString name = xiiQtNameableAdapter::data(pObject, iRow, iColumn, iRole).toString();
 
-        if (iRow == xiiAssetCurator::GetSingleton()->GetActiveAssetProfileIndex())
+        if (pObject->GetGuid() == m_pDialog->m_OriginalActiveProfile)
         {
           name += " (active)";
         }
-        else if (iRow == m_pDialog->m_uiActiveConfig)
+        else if (pObject->GetGuid() == m_pDialog->m_ActiveProfile)
         {
           name += " (switch to)";
         }
@@ -197,47 +199,37 @@ void xiiQtAssetProfilesDlg::SelectionEventHandler(const xiiSelectionManagerEvent
 
 void xiiQtAssetProfilesDlg::on_ButtonOk_clicked()
 {
-  ApplyAllChanges();
-
-  // SaveAssetProfileRuntimeConfig
-  for (xiiUInt32 i = 0; i < xiiAssetCurator::GetSingleton()->GetNumAssetProfiles(); ++i)
+  const xiiStatus status = ApplyAllChanges();
+  if (status.Failed())
   {
-    xiiStringBuilder sProfileRuntimeDataFile;
-
-    xiiPlatformProfile* pProfile = xiiAssetCurator::GetSingleton()->GetAssetProfile(i);
-
-    sProfileRuntimeDataFile.Set(":project/RuntimeConfigs/", pProfile->GetConfigName(), ".xiiProfile");
-
-    pProfile->SaveForRuntime(sProfileRuntimeDataFile).IgnoreResult();
+    xiiQtUiServices::MessageBoxStatus(status, "Could not save asset profiles.");
+    return;
   }
-
   accept();
-
-  xiiAssetCurator::GetSingleton()->SaveAssetProfiles().IgnoreResult();
 }
 
 void xiiQtAssetProfilesDlg::on_ButtonCancel_clicked()
 {
-  m_uiActiveConfig = xiiAssetCurator::GetSingleton()->GetActiveAssetProfileIndex();
   reject();
 }
 
 void xiiQtAssetProfilesDlg::OnItemDoubleClicked(QModelIndex idx)
 {
-  if (m_uiActiveConfig == idx.row())
+  if (!idx.isValid())
     return;
-
-  const QModelIndex oldIdx = Tree->model()->index(m_uiActiveConfig, 0);
-
-  m_uiActiveConfig = idx.row();
+  const auto  source = Tree->GetProxyFilterModel()->mapToSource(idx);
+  const auto* model  = static_cast<const xiiQtDocumentTreeModel*>(source.model());
+  const auto* object = model->GetObject(source);
+  if (object == nullptr || m_ActiveProfile == object->GetGuid())
+    return;
+  m_ActiveProfile = object->GetGuid();
 
   QVector<int> roles;
   roles.push_back(Qt::DisplayRole);
-  Tree->model()->dataChanged(idx, idx, roles);
-  Tree->model()->dataChanged(oldIdx, oldIdx, roles);
+  Tree->model()->dataChanged(Tree->model()->index(0, 0), Tree->model()->index(Tree->model()->rowCount() - 1, 0), roles);
 }
 
-bool xiiQtAssetProfilesDlg::CheckProfileNameUniqueness(const char* szName)
+bool xiiQtAssetProfilesDlg::CheckProfileNameUniqueness(const char* szName, xiiUuid exclude)
 {
   if (xiiStringUtils::IsNullOrEmpty(szName))
   {
@@ -254,7 +246,7 @@ bool xiiQtAssetProfilesDlg::CheckProfileNameUniqueness(const char* szName)
   const auto& objects = m_pDocument->GetObjectManager()->GetRootObject()->GetChildren();
   for (const xiiDocumentObject* pObject : objects)
   {
-    if (pObject->GetTypeAccessor().GetValue("Name").ConvertTo<xiiString>().IsEqual_NoCase(szName))
+    if (pObject->GetGuid() != exclude && pObject->GetTypeAccessor().GetValue("Name").ConvertTo<xiiString>().IsEqual_NoCase(szName))
     {
       xiiQtUiServices::GetSingleton()->MessageBoxInformation("A profile with this name already exists.");
       return false;
@@ -264,7 +256,7 @@ bool xiiQtAssetProfilesDlg::CheckProfileNameUniqueness(const char* szName)
   return true;
 }
 
-bool xiiQtAssetProfilesDlg::DetermineNewProfileName(QWidget* parent, xiiString& result)
+bool xiiQtAssetProfilesDlg::DetermineNewProfileName(QWidget* parent, xiiString& result, xiiUuid exclude)
 {
   while (true)
   {
@@ -274,7 +266,7 @@ bool xiiQtAssetProfilesDlg::DetermineNewProfileName(QWidget* parent, xiiString& 
     if (!ok)
       return false;
 
-    if (CheckProfileNameUniqueness(result))
+    if (CheckProfileNameUniqueness(result, exclude))
       return true;
   }
 }
@@ -289,9 +281,7 @@ void xiiQtAssetProfilesDlg::on_AddButton_clicked()
   profile.SetConfigName(sProfileName);
   profile.AddMissingConfigs();
 
-  auto& binding      = m_ProfileBindings[NativeToObject(&profile)];
-  binding.m_pProfile = nullptr;
-  binding.m_State    = Binding::State::Added;
+  NativeToObject(&profile);
 
   // select the new profile
   m_pDocument->GetSelectionManager()->SetSelection(m_pDocument->GetObjectManager()->GetRootObject()->GetChildren().PeekBack());
@@ -310,7 +300,8 @@ void xiiQtAssetProfilesDlg::on_DeleteButton_clicked()
   if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion(xiiFmt("Delete the selected profile?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
     return;
 
-  m_ProfileBindings[sel[0]->GetGuid()].m_State = Binding::State::Deleted;
+  if (m_ActiveProfile == sel[0]->GetGuid())
+    m_ActiveProfile = m_pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]->GetGuid();
 
   m_pDocument->GetCommandHistory()->StartTransaction("Delete Profile");
 
@@ -333,7 +324,7 @@ void xiiQtAssetProfilesDlg::on_RenameButton_clicked()
     return;
 
   xiiString sProfileName;
-  if (!DetermineNewProfileName(this, sProfileName))
+  if (!DetermineNewProfileName(this, sProfileName, sel[0]->GetGuid()))
     return;
 
   m_pDocument->GetCommandHistory()->StartTransaction("Rename Profile");
@@ -359,46 +350,29 @@ void xiiQtAssetProfilesDlg::on_SwitchToButton_clicked()
 
 void xiiQtAssetProfilesDlg::AllAssetProfilesToObject()
 {
-  m_uiActiveConfig = xiiAssetCurator::GetSingleton()->GetActiveAssetProfileIndex();
-
-  m_ProfileBindings.Clear();
-
   for (xiiUInt32 i = 0; i < xiiAssetCurator::GetSingleton()->GetNumAssetProfiles(); ++i)
   {
     auto* pProfile = xiiAssetCurator::GetSingleton()->GetAssetProfile(i);
 
-    m_ProfileBindings[NativeToObject(pProfile)].m_pProfile = pProfile;
+    const auto id = NativeToObject(pProfile);
+    if (i == xiiAssetCurator::GetSingleton()->GetActiveAssetProfileIndex())
+      m_ActiveProfile = m_OriginalActiveProfile = id;
   }
 }
 
-void xiiQtAssetProfilesDlg::PropertyChangedEventHandler(const xiiDocumentObjectPropertyEvent& e)
+xiiStatus xiiQtAssetProfilesDlg::ApplyAllChanges()
 {
-  const xiiUuid guid = e.m_pObject->GetGuid();
-  XII_ASSERT_DEV(m_ProfileBindings.Contains(guid), "Object GUID is not in the known list!");
-
-  ObjectToNative(guid, m_ProfileBindings[guid].m_pProfile);
-}
-
-void xiiQtAssetProfilesDlg::ApplyAllChanges()
-{
-  for (auto it = m_ProfileBindings.GetIterator(); it.IsValid(); ++it)
+  xiiHybridArray<xiiPlatformProfile*, 8> profiles;
+  XII_SCOPE_EXIT(for (auto* profile : profiles) XII_DEFAULT_DELETE(profile));
+  xiiUInt32   activeIndex = 0;
+  const auto& objects     = m_pDocument->GetObjectManager()->GetRootObject()->GetChildren();
+  for (xiiUInt32 i = 0; i < objects.GetCount(); ++i)
   {
-    const auto& binding = it.Value();
-
-    xiiPlatformProfile* pProfile = binding.m_pProfile;
-
-    if (binding.m_State == Binding::State::Deleted)
-    {
-      xiiAssetCurator::GetSingleton()->DeleteAssetProfile(pProfile).IgnoreResult();
-      continue;
-    }
-
-    if (binding.m_State == Binding::State::Added)
-    {
-      // create a new profile object and synchronize the state directly into that
-      pProfile = xiiAssetCurator::GetSingleton()->CreateAssetProfile();
-    }
-
-    ObjectToNative(it.Key(), pProfile);
+    xiiPlatformProfile* profile = XII_DEFAULT_NEW(xiiPlatformProfile);
+    profiles.PushBack(profile);
+    ObjectToNative(objects[i]->GetGuid(), profile);
+    if (objects[i]->GetGuid() == m_ActiveProfile)
+      activeIndex = i;
   }
+  return xiiAssetCurator::GetSingleton()->ApplyAssetProfiles({profiles.GetData(), profiles.GetCount()}, activeIndex);
 }

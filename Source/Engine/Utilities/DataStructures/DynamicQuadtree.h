@@ -86,8 +86,7 @@ public:
   ///
   /// \note This function will most likely also return objects that do not overlap with the rectangle itself, because they are located
   /// in a node that overlaps with the rectangle. You might need to do more thorough overlap checks to filter those out.
-  void FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK callback,
-                          void* pPassThrough = nullptr) const; // [tested]
+  void FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK callback, void* pPassThrough = nullptr) const; // [tested]
 
   /// Removes the given Object. Attention: This is an O(n) operation.
   void RemoveObject(xiiInt32 iObjectType, xiiInt32 iObjectInstance); // [tested]

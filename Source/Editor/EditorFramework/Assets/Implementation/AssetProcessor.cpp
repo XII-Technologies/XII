@@ -115,7 +115,7 @@ void xiiAssetProcessor::StartProcessTask()
   }
 }
 
-void xiiAssetProcessor::StopProcessTask(bool bForce)
+void xiiAssetProcessor::StopProcessTask(bool bForce, bool bWait)
 {
   {
     XII_LOCK(m_ProcessorMutex);
@@ -132,18 +132,21 @@ void xiiAssetProcessor::StopProcessTask(bool bForce)
       }
       break;
       case ProcessTaskState::Stopping:
-        if (!bForce)
+        if (!bForce && !bWait)
           return;
         break;
       default:
       case ProcessTaskState::Stopped:
-        return;
+        if (!bWait)
+          return;
+        break;
     }
   }
 
   if (bForce)
-  {
     m_bForceStop = true;
+  if ((bForce || bWait) && m_pThread)
+  {
     m_pThread->Join();
     m_pThread.Clear();
     XII_ASSERT_DEV(m_ProcessTaskState == ProcessTaskState::Stopped, "Process task shoul have set the state to stopped.");
@@ -337,8 +340,7 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
 
   // not needed to go through package dependencies here
 
-  if (bComplete && !xiiAssetCurator::GetSingleton()->m_Updating.Contains(pInfo->m_Info->m_DocumentID) &&
-      !xiiAssetCurator::GetSingleton()->m_TransformStateStale.Contains(pInfo->m_Info->m_DocumentID))
+  if (bComplete && !xiiAssetCurator::GetSingleton()->m_Updating.Contains(pInfo->m_Info->m_DocumentID) && !xiiAssetCurator::GetSingleton()->m_TransformStateStale.Contains(pInfo->m_Info->m_DocumentID))
   {
     xiiAssetCurator::GetSingleton()->m_Updating.Insert(pInfo->m_Info->m_DocumentID);
     out_guid = pInfo->m_Info->m_DocumentID;
@@ -387,16 +389,6 @@ void xiiProcessTask::OnProcessCrashed(xiiStringView message)
   xiiLog::Error(&xiiAssetProcessor::GetSingleton()->m_CuratorLog, message);
 }
 
-bool xiiProcessTask::IsConnected()
-{
-  return m_pIPC->IsConnected();
-}
-
-bool xiiProcessTask::HasProcessCrashed()
-{
-  return m_pIPC->IsClientAlive();
-}
-
 bool xiiProcessTask::Tick(bool bStartNewWork)
 {
   while (true)
@@ -409,7 +401,6 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           return false; // don't call later
 
         m_LogEntries.Clear();
-        m_TransitiveHull.Clear();
         m_Status = xiiStatus(XII_SUCCESS);
         {
           XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
@@ -429,17 +420,11 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
             return bStartNewWork; // call again if we should be looking for new work
           }
 
-          xiiAssetInfo::TransformState state = xiiAssetCurator::GetSingleton()->IsAssetUpToDate(m_AssetGuid, nullptr, nullptr, m_uiAssetHash, m_uiThumbHash, m_uiPackageHash);
-          XII_ASSERT_DEV(state == xiiAssetInfo::TransformState::NeedsTransform || state == xiiAssetInfo::TransformState::NeedsThumbnail, "An asset was selected that is already up to date.");
-
-          xiiSet<xiiString> dependencies;
-          xiiStringBuilder  sTemp;
-          xiiAssetCurator::GetSingleton()->GenerateTransitiveHull(xiiConversionUtils::ToString(m_AssetGuid, sTemp), dependencies, true, true);
-
-          m_TransitiveHull.Reserve(dependencies.GetCount());
-          for (const xiiString& str : dependencies)
+          if (xiiAssetProcessor::PrepareAssetRequest(m_AssetGuid, m_Request).Failed())
           {
-            m_TransitiveHull.PushBack(str);
+            m_Status = xiiTransformStatus("Asset disappeared while preparing its background processing request.");
+            m_State  = State::ReportResult;
+            break;
           }
         }
 
@@ -480,17 +465,7 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
       case State::Ready:
       {
         xiiLog::Info(&xiiAssetProcessor::GetSingleton()->m_CuratorLog, "Processing '{0}'", m_AssetPath.GetDataDirRelativePath());
-        // Send and wait
-        xiiProcessAssetMsg msg;
-        msg.m_AssetGuid   = m_AssetGuid;
-        msg.m_AssetHash   = m_uiAssetHash;
-        msg.m_ThumbHash   = m_uiThumbHash;
-        msg.m_PackageHash = m_uiPackageHash;
-        msg.m_sAssetPath  = m_AssetPath;
-        msg.m_DepRefHull.Swap(m_TransitiveHull);
-        msg.m_sPlatform = xiiAssetCurator::GetSingleton()->GetActiveAssetProfile()->GetConfigName();
-
-        if (m_pIPC->SendMessage(&msg))
+        if (m_pIPC->SendMessage(&m_Request))
         {
           m_State = State::Processing;
           return true; // call again later

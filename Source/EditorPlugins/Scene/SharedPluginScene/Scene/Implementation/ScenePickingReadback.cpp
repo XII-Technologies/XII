@@ -50,13 +50,11 @@ xiiResult xiiScenePickingReadback::Poll(xiiUInt32& out_uiCompletedSlot)
     {
       const xiiUInt64 rowWords = static_cast<xiiUInt64>(capture.m_uiWidth) * m_uiWordsPerPixel;
       const xiiUInt64 words    = rowWords * capture.m_uiHeight;
-      if (mapped.m_pData && capture.m_uiBytesPerPixel == sizeof(xiiUInt32) * m_uiWordsPerPixel &&
-          rowWords * sizeof(xiiUInt32) <= mapped.m_uiStride && words <= xiiMath::MaxValue<xiiUInt32>())
+      if (mapped.m_pData && capture.m_uiBytesPerPixel == sizeof(xiiUInt32) * m_uiWordsPerPixel && rowWords * sizeof(xiiUInt32) <= mapped.m_uiStride && words <= xiiMath::MaxValue<xiiUInt32>())
       {
         m_Pixels.SetCountUninitialized(static_cast<xiiUInt32>(words));
         for (xiiUInt32 y = 0; y < capture.m_uiHeight; ++y)
-          xiiMemoryUtils::Copy(m_Pixels.GetData() + y * rowWords,
-                               xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt32*>(mapped.m_pData), y * mapped.m_uiStride), static_cast<xiiUInt32>(rowWords));
+          xiiMemoryUtils::Copy(m_Pixels.GetData() + y * rowWords, xiiMemoryUtils::AddByteOffset(static_cast<const xiiUInt32*>(mapped.m_pData), y * mapped.m_uiStride), static_cast<xiiUInt32>(rowWords));
       }
       else
         result = XII_FAILURE;
@@ -87,9 +85,7 @@ xiiResult xiiScenePickingReadback::AddCapture(xiiRenderPipelinePassContext& cont
     if (slot.m_State == Slot::Reserved && slot.m_uiSetupFrameIndex != context.m_Graph.GetFrameIndex())
       slot.m_State = Slot::Free;
   const auto* description = context.m_Graph.GetTextureDescription(texture);
-  if (!context.m_pView || !context.m_pView->IsValid() || context.m_pView->GetCamera()->GetCameraMode() == xiiCameraMode::None ||
-      !description || description->m_Type != xiiGALResourceDimension::Texture2D || description->m_uiSampleCount != 1 ||
-      (description->m_Format != xiiGALResourceFormat::R32UInt && description->m_Format != xiiGALResourceFormat::RGBA32UInt))
+  if (!context.m_pView || !context.m_pView->IsValid() || context.m_pView->GetCamera()->GetCameraMode() == xiiCameraMode::None || !description || description->m_Type != xiiGALResourceDimension::Texture2D || description->m_uiSampleCount != 1 || (description->m_Format != xiiGALResourceFormat::R32UInt && description->m_Format != xiiGALResourceFormat::RGBA32UInt))
     return XII_FAILURE;
   const xiiUInt32 wordsPerPixel = description->m_Format == xiiGALResourceFormat::R32UInt ? 1 : 4;
   const xiiUInt64 pixelCount    = static_cast<xiiUInt64>(description->m_Size.width) * description->m_Size.height;

@@ -8,6 +8,7 @@
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Preferences/ScenePreferences.h>
 #include <EditorPluginAssets/VisualShader/VisualShaderTypeRegistry.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/IO/OSFile.h>
@@ -130,8 +131,23 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         xiiQtUiServices::s_TickEvent.Broadcast(tick);
         if (!XII_TEST_BOOL(scene->SendMessageToEngine(&pick)))
           return;
-        if (!XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID,
-                                                                                                      xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), xiiTime::MakeFromSeconds(2), &callback)))
+        // A cold first frame can spend several seconds compiling native pipeline state. A short
+        // IPC observation timeout does not mean that this outstanding request has failed. Poll it
+        // against the existing overall readiness deadline before submitting another frame/request.
+        xiiResult reply      = XII_FAILURE;
+        auto*     connection = xiiEditorEngineProcessConnection::GetSingleton();
+        while (reply.Failed() && elapsed.elapsed() < 10000)
+        {
+          const auto timeout = xiiTime::MakeFromMilliseconds(xiiMath::Min<xiiInt64>(2000, 10000 - elapsed.elapsed()));
+          reply              = connection->WaitForDocumentMessage(sceneID, xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), timeout, &callback);
+          if (reply.Failed())
+          {
+            connection->Update();
+            if (connection->IsProcessCrashed())
+              break;
+          }
+        }
+        if (!XII_TEST_RESULT(reply))
           return;
         QThread::msleep(1);
       }
@@ -158,6 +174,86 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         XII_TEST_BOOL(bVaried);
       }
 
+      // Exercise the editor screenshot API against distinguishable visual results, rather
+      // than accepting any non-uniform startup image as evidence of functioning rendering.
+      auto captureMode = [&](xiiViewRenderMode::Enum mode, const char* filename) {
+        view->m_pViewConfig->m_RenderMode = mode;
+        view->SyncToEngine();
+        xiiStringBuilder output = sProjectDirectory;
+        output.AppendPath(filename);
+        if (xiiOSFile::ExistsFile(output))
+          XII_TEST_RESULT(xiiOSFile::DeleteFile(output));
+        view->TakeScreenshot(output);
+        QImage result;
+        XII_TEST_BOOL(PumpUntil([&] { return result.load(QString::fromUtf8(output.GetData())); }, 10000));
+        XII_TEST_INT(result.width(), 256);
+        XII_TEST_INT(result.height(), 256);
+        return result;
+      };
+      const auto depthImage     = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportDepth.png");
+      const auto normalImage    = captureMode(xiiViewRenderMode::NormalMap, "ViewportNormals.png");
+      const auto wireframeImage = captureMode(xiiViewRenderMode::Wireframe, "ViewportWireframe.png");
+      XII_TEST_BOOL(depthImage != normalImage);
+      if (!depthImage.isNull() && !normalImage.isNull())
+      {
+        XII_TEST_BOOL(qRed(depthImage.pixel(128, 128)) > qRed(depthImage.pixel(0, 0)));
+        const auto normal = normalImage.pixel(128, 128);
+        XII_TEST_BOOL(qRed(normal) != qGreen(normal) || qGreen(normal) != qBlue(normal));
+      }
+      if (!wireframeImage.isNull() && !depthImage.isNull())
+      {
+        XII_TEST_INT(wireframeImage.pixel(0, 0), qRgb(0, 0, 0));
+        xiiUInt32 wirePixels = 0, solidPixels = 0;
+        for (int y = 0; y < wireframeImage.height(); ++y)
+          for (int x = 0; x < wireframeImage.width(); ++x)
+          {
+            wirePixels += qRed(wireframeImage.pixel(x, y)) > 160;
+            solidPixels += qRed(depthImage.pixel(x, y)) > 0;
+          }
+        XII_TEST_BOOL(wirePixels > 100 && wirePixels < solidPixels);
+      }
+      const xiiViewRenderMode::Enum additionalModes[] = {xiiViewRenderMode::DepthLinear, xiiViewRenderMode::BaseColor, xiiViewRenderMode::Metallic,
+                                                         xiiViewRenderMode::Roughness, xiiViewRenderMode::Specular, xiiViewRenderMode::Emissive, xiiViewRenderMode::AmbientOcclusion,
+                                                         xiiViewRenderMode::MotionVectors, xiiViewRenderMode::InstanceID, xiiViewRenderMode::IndirectLighting, xiiViewRenderMode::ReflectionContribution, xiiViewRenderMode::Bloom};
+      for (const auto mode : additionalModes)
+      {
+        xiiStringBuilder name;
+        name.SetFormat("ViewportMode{}.png", static_cast<xiiUInt32>(mode));
+        captureMode(mode, name.GetData());
+      }
+      view->InterpolateCameraTo(xiiVec3(0, -4, 1.5f), xiiVec3(4, 4, -1.5f).GetNormalized(), 60, nullptr, true);
+      auto*      scenePreferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(scene);
+      const bool showGrid         = scenePreferences->GetShowGrid();
+      scenePreferences->SetShowGrid(false);
+      PumpUntil([] { return false; }, 200);
+      const auto skyImage    = captureMode(xiiViewRenderMode::Default, "ViewportAtmosphere.png");
+      const auto noGridImage = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportNoGrid.png");
+      scenePreferences->SetShowGrid(true);
+      PumpUntil([] { return false; }, 200);
+      const auto gridImage = captureMode(xiiViewRenderMode::DepthNonLinear, "ViewportGrid.png");
+      scenePreferences->SetShowGrid(showGrid);
+      xiiUInt32 gridPixels = 0;
+      if (!gridImage.isNull() && !noGridImage.isNull())
+        for (int y = gridImage.height() / 2; y < gridImage.height(); ++y)
+          for (int x = 0; x < gridImage.width(); ++x)
+            if (qRed(gridImage.pixel(x, y)) > qRed(noGridImage.pixel(x, y)) + 20)
+              ++gridPixels;
+      XII_TEST_BOOL_MSG(gridPixels > 100, "Enabling the floor grid must draw visible lines without selecting a gizmo.");
+      if (!skyImage.isNull())
+      {
+        xiiUInt32 blueSkyPixels = 0;
+        for (int y = 0; y < skyImage.height() / 3; ++y)
+          for (int x = 0; x < skyImage.width(); ++x)
+          {
+            const auto pixel = skyImage.pixel(x, y);
+            if (qBlue(pixel) > qRed(pixel) + 8 && qBlue(pixel) > qGreen(pixel))
+              ++blueSkyPixels;
+          }
+        XII_TEST_BOOL_MSG(blueSkyPixels > 100, "The default daylight scene must render a blue atmosphere, not a grey background.");
+      }
+      view->InterpolateCameraTo(xiiVec3(0, 0, 0), xiiVec3(1, 0, 0), 60, nullptr, true);
+      view->m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
+
       // Exercise production-size targets and continuous resize through the real Editor IPC and
       // built-in pipeline. The small fixed startup target alone cannot expose retained VRAM growth.
       QWidget* surface = nullptr;
@@ -181,9 +277,7 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
         xiiQtUiServices::s_TickEvent.Broadcast(tick);
         pick.m_uiPickPosX = resolution.width / 2;
         pick.m_uiPickPosY = resolution.height / 2;
-        if (!XII_TEST_BOOL(scene->SendMessageToEngine(&pick)) ||
-            !XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID,
-                                                                                                      xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), xiiTime::MakeFromSeconds(2), &callback)))
+        if (!XII_TEST_BOOL(scene->SendMessageToEngine(&pick)) || !XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID, xiiGetStaticRTTI<xiiViewPickingResultMsgToEditor>(), xiiTime::MakeFromSeconds(2), &callback)))
           return;
         if (!XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed()))
           return;
@@ -244,7 +338,6 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
     query.m_uiViewID = xiiInvalidIndex;
     query.m_iPurpose = 2;
     XII_TEST_BOOL(scene->SendMessageToEngine(&query));
-    XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID,
-                                                                                             xiiGetStaticRTTI<xiiQuerySelectionBBoxResultMsgToEditor>(), xiiTime::MakeFromSeconds(5)));
+    XII_TEST_RESULT(xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(sceneID, xiiGetStaticRTTI<xiiQuerySelectionBBoxResultMsgToEditor>(), xiiTime::MakeFromSeconds(5)));
   }
 }

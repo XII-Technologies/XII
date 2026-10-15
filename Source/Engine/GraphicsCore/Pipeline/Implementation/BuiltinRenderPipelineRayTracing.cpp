@@ -44,17 +44,13 @@ void xiiBuiltinRenderPipelineRuntime::SetupRayTracedGlobalIllumination(xiiRayTra
 
     auto& reflectionResources = m_Resources.m_LightingPrepPasses;
     XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before RTGI setup.");
-    data.m_hFallbackReflectionProbe = builder.ReadTexture(
-      builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()),
-      xiiGALResourceStateFlags::ShaderResource);
+    data.m_hFallbackReflectionProbe = builder.ReadTexture(builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
     data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
     for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < reflectionResources.m_ReflectionProbeTextures.GetCount(); ++uiProbeIndex)
     {
       xiiStringBuilder sResourceName;
       sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
-      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
-        builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()),
-        xiiGALResourceStateFlags::ShaderResource));
+      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource));
     }
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
@@ -157,12 +153,6 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRGITemporal(xiiReSTIRGITemporalD
   const xiiUInt32 uiPreviousSlot = 1U - m_Resources.m_LightingPasses.m_uiRTGIReservoirHistoryWriteIndex;
   auto&           resources      = m_Resources.m_LightingPasses;
 
-  const bool bSampleHistoryRecreated  = EnsureTemporalHistoryTextures(resources.m_pRTGIReservoirSampleHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight);
-  const bool bStateHistoryRecreated   = EnsureTemporalHistoryTextures(resources.m_pRTGIReservoirStateHistory, xiiGALResourceFormat::RG32Float, uiWidth, uiHeight);
-  const bool bSurfaceHistoryRecreated = EnsureTemporalHistoryTextures(resources.m_pRTGIReservoirSurfaceHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight);
-  const bool bHistoryRecreated        = bSampleHistoryRecreated || bStateHistoryRecreated || bSurfaceHistoryRecreated;
-  if (bHistoryRecreated)
-    resources.m_bRTGIReservoirHistoryValid = false;
 
   data.m_bHistoryValid    = resources.m_bRTGIReservoirHistoryValid && resources.m_bRTGIAvailableThisFrame;
   data.m_hCurrentRadiance = builder.ReadTexture(xiiRGBlackboardKeys::k_RTRawGI, xiiGALResourceStateFlags::ShaderResource);
@@ -241,7 +231,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRGISpatial(xiiReSTIRGISpatialDat
   const xiiUInt32 uiHeight      = m_View.GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot = m_Resources.m_LightingPasses.m_uiRTGIReservoirHistoryWriteIndex;
   data.m_uiHistoryWriteIndex    = uiCurrentSlot;
-  auto&           resources     = m_Resources.m_LightingPasses;
+  auto& resources               = m_Resources.m_LightingPasses;
 
   data.m_hSceneDepth       = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal    = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
@@ -303,7 +293,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRGISpatial(const xiiReSTIRGISp
     cmd.ResolveAndSetUnorderedAccessTextureView("g_ResampledRadianceOut", context.GetTexture(data.m_hResampledRadiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
-    m_Resources.m_LightingPasses.m_bRTGIReservoirHistoryValid = m_Resources.m_LightingPasses.m_bRTGIAvailableThisFrame;
+    m_Resources.m_LightingPasses.m_bRTGIReservoirHistoryValid       = m_Resources.m_LightingPasses.m_bRTGIAvailableThisFrame;
     m_Resources.m_LightingPasses.m_uiRTGIReservoirHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
@@ -313,17 +303,10 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRGISpatial(const xiiReSTIRGISp
 
 void xiiBuiltinRenderPipelineRuntime::SetupRayTracedGlobalIlluminationDenoise(xiiRayTracedGlobalIlluminationDenoiseData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
-  const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiRTGIHistoryWriteIndex;
   data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPasses;
-
-  if (EnsureTemporalHistoryTextures(resources.m_pRTGIHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight))
-  {
-    resources.m_bRTGIHistoryValid = false;
-  }
 
   data.m_bSignalValid                = resources.m_bRTGIAvailableThisFrame;
   data.m_bHistoryValid               = resources.m_bRTGIHistoryValid && data.m_bSignalValid;
@@ -371,7 +354,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedGlobalIlluminationDenoise(
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DenoisedOutput", context.GetTexture(data.m_hFinalGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
-    m_Resources.m_LightingPasses.m_bRTGIHistoryValid = data.m_bSignalValid;
+    m_Resources.m_LightingPasses.m_bRTGIHistoryValid       = data.m_bSignalValid;
     m_Resources.m_LightingPasses.m_uiRTGIHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
@@ -427,17 +410,13 @@ void xiiBuiltinRenderPipelineRuntime::SetupRayTracedReflections(xiiRayTracedRefl
 
     auto& reflectionResources = m_Resources.m_LightingPrepPasses;
     XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before RT reflection setup.");
-    data.m_hFallbackReflectionProbe = builder.ReadTexture(
-      builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()),
-      xiiGALResourceStateFlags::ShaderResource);
+    data.m_hFallbackReflectionProbe = builder.ReadTexture(builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
     data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
     for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < reflectionResources.m_ReflectionProbeTextures.GetCount(); ++uiProbeIndex)
     {
       xiiStringBuilder sResourceName;
       sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
-      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
-        builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()),
-        xiiGALResourceStateFlags::ShaderResource));
+      data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource));
     }
     if (lightingPasses.m_hRayTracingSceneDependency.IsValid())
       data.m_hSceneDependency = builder.ReadBuffer(lightingPasses.m_hRayTracingSceneDependency, xiiGALResourceStateFlags::BuildASRead);
@@ -539,19 +518,11 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedReflections(const xiiRayTr
 
 void xiiBuiltinRenderPipelineRuntime::SetupRayTracedReflectionsDenoise(xiiRayTracedReflectionsDenoiseData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
-  const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiRTReflectionHistoryWriteIndex;
   data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPasses;
 
-  const bool bReflectionHistoryRecreated  = EnsureTemporalHistoryTextures(resources.m_pRTReflectionHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight);
-  const bool bHitDistanceHistoryRecreated = EnsureTemporalHistoryTextures(resources.m_pRTReflectionHitDistanceHistory, xiiGALResourceFormat::R16Float, uiWidth, uiHeight);
-  const bool bMomentsHistoryRecreated     = EnsureTemporalHistoryTextures(resources.m_pRTReflectionMomentsHistory, xiiGALResourceFormat::RG16Float, uiWidth, uiHeight);
-  const bool bIdentityHistoryRecreated    = EnsureTemporalHistoryTextures(resources.m_pRTReflectionIdentityHistory, xiiGALResourceFormat::RG32UInt, uiWidth, uiHeight);
-  if (bReflectionHistoryRecreated || bHitDistanceHistoryRecreated || bMomentsHistoryRecreated || bIdentityHistoryRecreated)
-    resources.m_bRTReflectionHistoryValid = false;
 
   data.m_bSignalValid               = resources.m_bRTReflectionAvailableThisFrame;
   data.m_bHistoryValid              = resources.m_bRTReflectionHistoryValid && data.m_bSignalValid;
@@ -628,7 +599,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteRayTracedReflectionsDenoise(const x
     cmd.ResolveAndSetUnorderedAccessTextureView("g_CurrentIdentitySignature", context.GetTexture(data.m_hCurrentIdentitySignature)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
-    m_Resources.m_LightingPasses.m_bRTReflectionHistoryValid = data.m_bSignalValid;
+    m_Resources.m_LightingPasses.m_bRTReflectionHistoryValid       = data.m_bSignalValid;
     m_Resources.m_LightingPasses.m_uiRTReflectionHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
@@ -730,17 +701,11 @@ void xiiBuiltinRenderPipelineRuntime::SetupScreenSpaceReflectionsTemporal(xiiScr
 {
   builder.SetPassAllowMerge(false);
 
-  const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
-  const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiSSRHistoryWriteIndex;
   data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPasses;
 
-  const bool bReflectionHistoryRecreated = EnsureTemporalHistoryTextures(resources.m_pSSRHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight);
-  const bool bIdentityHistoryRecreated   = EnsureTemporalHistoryTextures(resources.m_pSSRIdentityHistory, xiiGALResourceFormat::RG32UInt, uiWidth, uiHeight);
-  if (bReflectionHistoryRecreated || bIdentityHistoryRecreated)
-    resources.m_bSSRHistoryValid = false;
 
   data.m_bHistoryValid              = resources.m_bSSRHistoryValid;
   data.m_hCurrentReflection         = builder.ReadTexture(xiiRGBlackboardKeys::k_SSRRawTexture, xiiGALResourceStateFlags::ShaderResource);
@@ -799,7 +764,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteScreenSpaceReflectionsTemporal(cons
     cmd.ResolveAndSetUnorderedAccessTextureView("g_CurrentIdentitySignature", context.GetTexture(data.m_hCurrentIdentitySignature)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
-    m_Resources.m_LightingPasses.m_bSSRHistoryValid = true;
+    m_Resources.m_LightingPasses.m_bSSRHistoryValid       = true;
     m_Resources.m_LightingPasses.m_uiSSRHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
@@ -973,17 +938,11 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteVolumetricFogResolve(const xiiVolum
 
 void xiiBuiltinRenderPipelineRuntime::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
-  const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiVolumetricHistoryWriteIndex;
   data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPasses;
 
-  if (EnsureTemporalHistoryTextures(resources.m_pVolumetricHistory, xiiGALResourceFormat::RGBA16Float, uiWidth, uiHeight))
-  {
-    resources.m_bVolumetricHistoryValid = false;
-  }
 
   const auto& depthPasses       = m_Resources.m_DepthPasses;
   data.m_bHistoryValid          = resources.m_bVolumetricHistoryValid && depthPasses.m_bMotionHistoryValid;
@@ -1037,7 +996,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteVolumetricFogTemporalReprojection(c
     cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelBlended", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
-    m_Resources.m_LightingPasses.m_bVolumetricHistoryValid = true;
+    m_Resources.m_LightingPasses.m_bVolumetricHistoryValid       = true;
     m_Resources.m_LightingPasses.m_uiVolumetricHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
@@ -1090,35 +1049,6 @@ void xiiBuiltinRenderPipelineRuntime::SetupSensorOutput(xiiSensorOutputData& dat
   if (xiiSensorRenderingManager::GetProfile(resources.m_hSensorProfile, data.m_Profile).Failed())
     return;
 
-  const auto MatchesProfile = [&data](const xiiSharedPtr<xiiGALTexture>& pTexture) {
-    return pTexture != nullptr && pTexture->GetDescription().m_Size.width == data.m_Profile.m_uiResolutionX &&
-      pTexture->GetDescription().m_Size.height == data.m_Profile.m_uiResolutionY;
-  };
-
-  if (!MatchesProfile(resources.m_pSensorOutputTexture))
-  {
-    if (resources.m_pSensorOutputTexture != nullptr)
-      resources.m_RetiredSensorOutputTextures.PushBack(std::move(resources.m_pSensorOutputTexture));
-
-    xiiGALTextureCreationDescription description;
-    description.m_Type        = xiiGALResourceDimension::Texture2D;
-    description.m_Format      = xiiGALResourceFormat::RGBA32Float;
-    description.m_Size.width  = data.m_Profile.m_uiResolutionX;
-    description.m_Size.height = data.m_Profile.m_uiResolutionY;
-    description.m_uiMipLevels = 1U;
-    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage       = xiiGALResourceUsage::Default;
-
-    const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-    if (pDevice == nullptr)
-      return;
-
-    resources.m_pSensorOutputTexture = pDevice->CreateTexture(description);
-    if (resources.m_pSensorOutputTexture == nullptr)
-      return;
-    resources.m_pSensorOutputTexture->SetDebugName("Calibrated Sensor Output");
-  }
-
   data.m_hSceneRadiance = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
@@ -1142,8 +1072,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupSensorOutput(xiiSensorOutputData& dat
 
 void xiiBuiltinRenderPipelineRuntime::ExecuteSensorOutput(const xiiSensorOutputData& data, xiiRenderGraphPassContext& context)
 {
-  if (!data.m_hSceneRadiance.IsValid() || !data.m_hSceneDepth.IsValid() || !data.m_hSceneNormal.IsValid() ||
-      !data.m_hBaseColor.IsValid() || !data.m_hVelocity.IsValid() || !data.m_hSensorOutput.IsValid() || !data.m_hConstants.IsValid())
+  if (!data.m_hSceneRadiance.IsValid() || !data.m_hSceneDepth.IsValid() || !data.m_hSceneNormal.IsValid() || !data.m_hBaseColor.IsValid() || !data.m_hVelocity.IsValid() || !data.m_hSensorOutput.IsValid() || !data.m_hConstants.IsValid())
     return;
 
   xiiGALCommandList& cmd = context.GetCommandList();

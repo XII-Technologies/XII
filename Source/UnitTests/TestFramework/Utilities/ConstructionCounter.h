@@ -103,8 +103,7 @@ struct xiiConstructionCounter
   /// For debugging and getting tests right: Prints out the current number of constructions and destructions
   static void PrintStats()
   {
-    printf("Constructions: %d (New: %i), Destructions: %d (New: %i) \n", s_iConstructions, s_iConstructions - s_iConstructionsLast, s_iDestructions,
-           s_iDestructions - s_iDestructionsLast);
+    printf("Constructions: %d (New: %i), Destructions: %d (New: %i) \n", s_iConstructions, s_iConstructions - s_iConstructionsLast, s_iDestructions, s_iDestructions - s_iDestructionsLast);
   }
 
   /// Checks that all instances have been destructed.
@@ -179,8 +178,7 @@ struct xiiConstructionCounterRelocatable
   /// For debugging and getting tests right: Prints out the current number of constructions and destructions
   static void PrintStats()
   {
-    printf("Constructions: %d (New: %i), Destructions: %d (New: %i) \n", s_iConstructions, s_iConstructions - s_iConstructionsLast, s_iDestructions,
-           s_iDestructions - s_iDestructionsLast);
+    printf("Constructions: %d (New: %i), Destructions: %d (New: %i) \n", s_iConstructions, s_iConstructions - s_iConstructionsLast, s_iDestructions, s_iDestructions - s_iDestructionsLast);
   }
 
   /// Checks whether n constructions and destructions have been done since the last check.

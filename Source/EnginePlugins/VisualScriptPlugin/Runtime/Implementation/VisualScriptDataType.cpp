@@ -334,24 +334,16 @@ const char* xiiVisualScriptDataType::GetName(Enum dataType)
 // static
 bool xiiVisualScriptDataType::CanConvertTo(Enum sourceDataType, Enum targetDataType)
 {
-  if (sourceDataType == targetDataType ||
-      sourceDataType == Any ||
-      targetDataType == Any ||
-      targetDataType == String ||
-      targetDataType == HashedString ||
-      targetDataType == Variant)
+  if (sourceDataType == targetDataType || sourceDataType == Any || targetDataType == Any || targetDataType == String || targetDataType == HashedString || targetDataType == Variant)
     return true;
 
-  if ((IsNumberOrBool(sourceDataType) || (sourceDataType == EnumValue || sourceDataType == BitflagValue)) &&
-      (IsNumberOrBool(targetDataType) || (targetDataType == EnumValue || targetDataType == BitflagValue)))
+  if ((IsNumberOrBool(sourceDataType) || (sourceDataType == EnumValue || sourceDataType == BitflagValue)) && (IsNumberOrBool(targetDataType) || (targetDataType == EnumValue || targetDataType == BitflagValue)))
     return true;
 
-  if ((IsNumberOrBool(sourceDataType) && targetDataType == Vector3) ||
-      (sourceDataType == Vector3 && targetDataType == Transform))
+  if ((IsNumberOrBool(sourceDataType) && targetDataType == Vector3) || (sourceDataType == Vector3 && targetDataType == Transform))
     return true;
 
-  if (IsPointer(sourceDataType) &&
-      (targetDataType == xiiVisualScriptDataType::AnyPointer || targetDataType == xiiVisualScriptDataType::Bool))
+  if (IsPointer(sourceDataType) && (targetDataType == xiiVisualScriptDataType::AnyPointer || targetDataType == xiiVisualScriptDataType::Bool))
     return true;
 
   return false;

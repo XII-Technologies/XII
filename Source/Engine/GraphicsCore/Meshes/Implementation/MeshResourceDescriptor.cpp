@@ -412,8 +412,7 @@ xiiResult xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiU
       if (!firstSection.TryGetValue(key, index) || index == xiiInvalidIndex)
         return XII_FAILURE;
       firstSection.Insert(key, nextSection[index]);
-      ranges.PushBack({section.m_uiFirstPrimitive, section.m_uiPrimitiveCount, section.m_uiMaterialIndex,
-                       static_cast<xiiUInt16>(index), static_cast<xiiUInt16>(l)});
+      ranges.PushBack({section.m_uiFirstPrimitive, section.m_uiPrimitiveCount, section.m_uiMaterialIndex, static_cast<xiiUInt16>(index), static_cast<xiiUInt16>(l)});
     }
   }
   if (ranges.GetCount() != m_Sections.GetCount())
@@ -436,8 +435,7 @@ xiiResult xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiU
       {
         const auto& range        = ranges[rangeIndex++];
         section.m_uiFirstMeshlet = cursor;
-        while (cursor < m_MeshBufferDescriptor.m_Meshlets.GetCount() &&
-               m_MeshBufferDescriptor.m_Meshlets[cursor].m_uiSectionIndex == range.m_uiSectionIndex)
+        while (cursor < m_MeshBufferDescriptor.m_Meshlets.GetCount() && m_MeshBufferDescriptor.m_Meshlets[cursor].m_uiSectionIndex == range.m_uiSectionIndex)
           ++cursor;
         section.m_uiMeshletCount       = cursor - section.m_uiFirstMeshlet;
         auto& globalSection            = m_Sections[range.m_uiSectionIndex];

@@ -14,20 +14,16 @@ xiiCoordinateSystemConversion::xiiCoordinateSystemConversion()
 void xiiCoordinateSystemConversion::SetConversion(const xiiCoordinateSystem& source, const xiiCoordinateSystem& target)
 {
   float fSourceScale = source.m_vForwardDir.GetLengthSquared();
-  XII_ASSERT_DEV(xiiMath::IsEqual(fSourceScale, source.m_vRightDir.GetLengthSquared(), xiiMath::DefaultEpsilon<float>()),
-                 "Only uniformly scaled coordinate systems are supported");
-  XII_ASSERT_DEV(xiiMath::IsEqual(fSourceScale, source.m_vUpDir.GetLengthSquared(), xiiMath::DefaultEpsilon<float>()),
-                 "Only uniformly scaled coordinate systems are supported");
+  XII_ASSERT_DEV(xiiMath::IsEqual(fSourceScale, source.m_vRightDir.GetLengthSquared(), xiiMath::DefaultEpsilon<float>()), "Only uniformly scaled coordinate systems are supported");
+  XII_ASSERT_DEV(xiiMath::IsEqual(fSourceScale, source.m_vUpDir.GetLengthSquared(), xiiMath::DefaultEpsilon<float>()), "Only uniformly scaled coordinate systems are supported");
   xiiMat3 mSourceFromId;
   mSourceFromId.SetColumn(0, source.m_vRightDir);
   mSourceFromId.SetColumn(1, source.m_vUpDir);
   mSourceFromId.SetColumn(2, source.m_vForwardDir);
 
   float fTargetScale = target.m_vForwardDir.GetLengthSquared();
-  XII_ASSERT_DEV(xiiMath::IsEqual(fTargetScale, target.m_vRightDir.GetLengthSquared(), xiiMath::DefaultEpsilon<float>()),
-                 "Only uniformly scaled coordinate systems are supported");
-  XII_ASSERT_DEV(xiiMath::IsEqual(fTargetScale, target.m_vUpDir.GetLengthSquared(), xiiMath::DefaultEpsilon<float>()),
-                 "Only uniformly scaled coordinate systems are supported");
+  XII_ASSERT_DEV(xiiMath::IsEqual(fTargetScale, target.m_vRightDir.GetLengthSquared(), xiiMath::DefaultEpsilon<float>()), "Only uniformly scaled coordinate systems are supported");
+  XII_ASSERT_DEV(xiiMath::IsEqual(fTargetScale, target.m_vUpDir.GetLengthSquared(), xiiMath::DefaultEpsilon<float>()), "Only uniformly scaled coordinate systems are supported");
   xiiMat3 mTargetFromId;
   mTargetFromId.SetColumn(0, target.m_vRightDir);
   mTargetFromId.SetColumn(1, target.m_vUpDir);

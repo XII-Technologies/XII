@@ -145,13 +145,11 @@ public:
       {
         pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Auto);
       }
-      else if (pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Other_sRGB" ||
-               pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Skybox")
+      else if (pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Other_sRGB" || pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Skybox")
       {
         pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Color);
       }
-      else if (pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Other_Linear" ||
-               pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::LookupTable")
+      else if (pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Other_Linear" || pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::LookupTable")
       {
         pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Linear);
       }

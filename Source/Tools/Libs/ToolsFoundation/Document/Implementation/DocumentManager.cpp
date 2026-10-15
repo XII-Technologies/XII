@@ -97,24 +97,23 @@ void xiiDocumentManager::UpdatedAfterLoadingPlugins()
 {
   bool bChanges = false;
 
-  xiiRTTI::ForEachDerivedType<xiiDocumentManager>(
-    [&](const xiiRTTI* pRtti) {
-      // add the ones that we don't know yet
-      if (!s_KnownManagers.Find(pRtti).IsValid())
+  xiiRTTI::ForEachDerivedType<xiiDocumentManager>([&](const xiiRTTI* pRtti) {
+    // add the ones that we don't know yet
+    if (!s_KnownManagers.Find(pRtti).IsValid())
+    {
+      // add it as 'known' even if we cannot allocate it
+      s_KnownManagers.Insert(pRtti);
+
+      if (pRtti->GetAllocator()->CanAllocate())
       {
-        // add it as 'known' even if we cannot allocate it
-        s_KnownManagers.Insert(pRtti);
+        // create one instance of each manager type
+        xiiDocumentManager* pManager = pRtti->GetAllocator()->Allocate<xiiDocumentManager>();
+        s_AllDocumentManagers.PushBack(pManager);
 
-        if (pRtti->GetAllocator()->CanAllocate())
-        {
-          // create one instance of each manager type
-          xiiDocumentManager* pManager = pRtti->GetAllocator()->Allocate<xiiDocumentManager>();
-          s_AllDocumentManagers.PushBack(pManager);
-
-          bChanges = true;
-        }
+        bChanges = true;
       }
-    });
+    }
+  });
 
   // triggers a reevaluation next time
   s_AllDocumentDescriptors.Clear();

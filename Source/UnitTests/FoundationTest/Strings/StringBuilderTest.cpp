@@ -1526,11 +1526,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     {
       sb = "<a><b><c><d><e><a><b><c><d><e>abc";
 
-      while (sb.TrimWordStart("<a>") ||
-             sb.TrimWordStart("<b>") ||
-             sb.TrimWordStart("<c>") ||
-             sb.TrimWordStart("<d>") ||
-             sb.TrimWordStart("<e>"))
+      while (sb.TrimWordStart("<a>") || sb.TrimWordStart("<b>") || sb.TrimWordStart("<c>") || sb.TrimWordStart("<d>") || sb.TrimWordStart("<e>"))
       {
       }
 
@@ -1540,11 +1536,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     {
       sb = "<a><b><c><d><e><a><b><c><d><e>";
 
-      while (sb.TrimWordStart("<a>") ||
-             sb.TrimWordStart("<b>") ||
-             sb.TrimWordStart("<c>") ||
-             sb.TrimWordStart("<d>") ||
-             sb.TrimWordStart("<e>"))
+      while (sb.TrimWordStart("<a>") || sb.TrimWordStart("<b>") || sb.TrimWordStart("<c>") || sb.TrimWordStart("<d>") || sb.TrimWordStart("<e>"))
       {
       }
 
@@ -1580,11 +1572,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     {
       sb = "abc<a><b><c><d><e><a><b><c><d><e>";
 
-      while (sb.TrimWordEnd("<a>") ||
-             sb.TrimWordEnd("<b>") ||
-             sb.TrimWordEnd("<c>") ||
-             sb.TrimWordEnd("<d>") ||
-             sb.TrimWordEnd("<e>"))
+      while (sb.TrimWordEnd("<a>") || sb.TrimWordEnd("<b>") || sb.TrimWordEnd("<c>") || sb.TrimWordEnd("<d>") || sb.TrimWordEnd("<e>"))
       {
       }
 
@@ -1594,11 +1582,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     {
       sb = "<a><b><c><d><e><a><b><c><d><e>";
 
-      while (sb.TrimWordEnd("<a>") ||
-             sb.TrimWordEnd("<b>") ||
-             sb.TrimWordEnd("<c>") ||
-             sb.TrimWordEnd("<d>") ||
-             sb.TrimWordEnd("<e>"))
+      while (sb.TrimWordEnd("<a>") || sb.TrimWordEnd("<b>") || sb.TrimWordEnd("<c>") || sb.TrimWordEnd("<d>") || sb.TrimWordEnd("<e>"))
       {
       }
 

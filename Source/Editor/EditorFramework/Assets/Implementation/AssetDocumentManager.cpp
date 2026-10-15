@@ -27,19 +27,20 @@ xiiStatus xiiAssetDocumentManager::CloneDocument(xiiStringView sPath, xiiStringV
   return res;
 }
 
-void xiiAssetDocumentManager::ComputeAssetProfileHash(const xiiPlatformProfile* pAssetProfile)
+xiiUInt64 xiiAssetDocumentManager::GetAssetProfileHash(const xiiPlatformProfile* pAssetProfile) const
 {
-  m_uiAssetProfileHash = ComputeAssetProfileHashImpl(DetermineFinalTargetProfile(pAssetProfile));
+  const xiiUInt64 uiProfileHash = ComputeAssetProfileHashImpl(DetermineFinalTargetProfile(pAssetProfile));
 
   if (GeneratesProfileSpecificAssets())
   {
-    XII_ASSERT_DEBUG(m_uiAssetProfileHash != 0, "Assets that generate a profile-specific output must compute a hash for the profile settings.");
+    XII_ASSERT_DEBUG(uiProfileHash != 0, "Assets that generate a profile-specific output must compute a hash for the profile settings.");
   }
   else
   {
-    XII_ASSERT_DEBUG(m_uiAssetProfileHash == 0, "Only assets that generate per-profile outputs may specify an asset profile hash.");
-    m_uiAssetProfileHash = 0;
+    XII_ASSERT_DEBUG(uiProfileHash == 0, "Only assets that generate per-profile outputs may specify an asset profile hash.");
+    return 0;
   }
+  return uiProfileHash;
 }
 
 xiiUInt64 xiiAssetDocumentManager::ComputeAssetProfileHashImpl(const xiiPlatformProfile* pAssetProfile) const
@@ -151,23 +152,23 @@ xiiString xiiAssetDocumentManager::GetRelativeOutputFileName(const xiiAssetDocum
   return sRelativePath;
 }
 
-bool xiiAssetDocumentManager::IsOutputUpToDate(xiiStringView sDocumentPath, const xiiDynamicArray<xiiString>& outputs, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor)
+bool xiiAssetDocumentManager::IsOutputUpToDate(xiiStringView sDocumentPath, const xiiDynamicArray<xiiString>& outputs, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, const xiiPlatformProfile* pAssetProfile)
 {
   CURATOR_PROFILE(sDocumentPath);
-  if (!IsOutputUpToDate(sDocumentPath, "", uiHash, pTypeDescriptor))
+  if (!IsOutputUpToDate(sDocumentPath, "", uiHash, pTypeDescriptor, pAssetProfile))
     return false;
 
   for (const xiiString& sOutput : outputs)
   {
-    if (!IsOutputUpToDate(sDocumentPath, sOutput, uiHash, pTypeDescriptor))
+    if (!IsOutputUpToDate(sDocumentPath, sOutput, uiHash, pTypeDescriptor, pAssetProfile))
       return false;
   }
   return true;
 }
 
-bool xiiAssetDocumentManager::IsOutputUpToDate(xiiStringView sDocumentPath, xiiStringView sOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor)
+bool xiiAssetDocumentManager::IsOutputUpToDate(xiiStringView sDocumentPath, xiiStringView sOutputTag, xiiUInt64 uiHash, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, const xiiPlatformProfile* pAssetProfile)
 {
-  const xiiString sTargetFile = GetAbsoluteOutputFileName(pTypeDescriptor, sDocumentPath, sOutputTag);
+  const xiiString sTargetFile = GetAbsoluteOutputFileName(pTypeDescriptor, sDocumentPath, sOutputTag, pAssetProfile);
   return xiiAssetDocumentManager::IsResourceUpToDate(sTargetFile, uiHash, pTypeDescriptor->m_pDocumentType->GetTypeVersion());
 }
 

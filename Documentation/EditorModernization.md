@@ -2770,6 +2770,16 @@ This verification uses an isolated production Editor test project. The existing
 user project and its preferences were left untouched. Release, other graphics
 backends and other operating systems have not been tested for this repair.
 
+The repair was reverified against the current Debug binaries on October 13, 2026.
+All three `RenderGraphResources` regressions pass with Vulkan GPU-assisted
+validation (`Workspace/editor-oom-current-gpu-tests.log`); the changing-resolution
+test retains at most two idle allocations per view. The production Qt
+`EditorIntegration` test also passes (`Workspace/editor-oom-current-editor-tests.log`),
+including 160 native viewport frames with 96 changing sizes, the final 1280 by 720
+capture, and Play/close/reopen. Its child-engine logs contain no out-of-device-memory,
+device-loss, allocation-failure or Vulkan validation errors. Both commands return
+zero. No further implementation change was required for this verification.
+
 ### Scene Hierarchy Duplication
 
 Duplicate Special's grouping option previously reached an unimplemented assertion,
@@ -2838,3 +2848,1231 @@ including the previously failing close-during-Play path and the fresh reply from
 reopened world. The final engine log records Play startup and contains no access
 violation, allocation failure or Vulkan validation errors. This remains Windows
 Debug/Vulkan verification; other configurations have not been exercised.
+
+### Asset References In Maps And Exposed Parameters
+
+The common asset document scanner checked the map's dictionary for string type
+instead of examining its entries, so map-based resource and file dependencies
+were silently omitted. Its string-only property filter also skipped explicitly
+annotated variant collections and the native prefab/script parameter maps. This
+could omit required transform inputs, thumbnail inputs and packaged resources.
+The document regression fails against the old implementation:
+`Workspace/editor-dependencies-baseline-tests.log` (exit one).
+
+Dependency collection now has a dedicated `AssetDocumentDependencies.cpp`. One
+collection path reads individual array, set and map elements through the existing
+type accessor. Asset/file attributes determine dependency flags; nested variant
+collections are scanned only when explicitly annotated. Empty strings, numeric
+values, ordinary labels, temporary properties and temporary subtrees are excluded.
+Existing prefab-default providers continue to exclude inherited references, whose
+dependencies belong to the source prefab.
+
+Authored exposed parameter overrides resolve their source asset through the
+existing curator and use its saved `xiiExposedParameters` metadata. Per-parameter
+asset/file flags are copied under the curator lock, without retaining metadata
+pointers or introducing another cache. Unknown parameter names and unresolved
+metadata do not become inferred resource references. Source resource dependencies
+continue to be collected independently. Changes to source metadata affect the
+next collection immediately.
+
+Debug builds of EditorFrameworkTest, EditorProcessor and Editor pass
+(`Workspace/editor-dependencies-final-build.log`). All twelve Qt subtests pass
+(`Workspace/editor-dependencies-native-tests.log`), with a clean child-engine log.
+The new tests cover all dependency flags, maps, arrays, sets, annotated variants,
+nested collections, string views, duplicate references, temporary subtrees and
+command undo/redo. Integrated coverage authors and saves a real prefab, exposes
+native mesh/material properties, edits a native prefab-reference component's
+parameters, instantiates the prefab through the production command, saves inherited
+and overridden dependency metadata, and removes source parameter metadata. The
+source prefab also completes its regular resource transform and thumbnail workflow.
+The existing viewport resize and Play-close-reopen regressions run in the same
+suite. Verification remains Windows Debug/Vulkan; broader asset compatibility and
+other configurations remain part of the active modernization effort.
+
+The final unresolved-source case also passes: the source resource remains a
+dependency, and unresolvable parameter metadata adds no guessed references.
+Undo restores collection from the current source metadata. The final integration
+rerun is `Workspace/editor-dependencies-final-check-tests.log` (exit zero), with
+the incremental test build in `Workspace/editor-dependencies-final-check-build.log`.
+
+### Property Collection Failure Boundaries
+
+The shared variant storage accessor accepted array removal at `index == count`,
+including removal at zero from an empty array, and then called out-of-bounds
+container removal. Direct conversion of numeric indices could also wrap oversized
+integers or truncate fractional values into unrelated valid elements. Insertion
+accepted negative values other than the documented append sentinel. These paths
+underlie reflected document properties and exposed parameter editing.
+
+One checked numeric-index conversion now rejects negative, fractional, non-finite
+and narrowing-overflow inputs before accessing writable storage. Removal and reads
+require an existing position; insertion and movement retain their existing end
+position semantics, and insertion retains `-1` append. Failed operations preserve
+values. Successful reads reset the supplied status, key queries replace their
+output and clear it on failure, and dictionary move errors now name the property
+without an invalid format argument. All failures use the established `xiiStatus`
+wrapper around `xiiResult`.
+
+The new ToolsFoundation reflection regression covers empty and nonempty bounds,
+oversized integers, fractional values, NaN/infinity, append, end-position moves,
+failure atomicity, dictionary collisions, repeated key queries and status reuse.
+All twenty ToolsFoundation subtests pass:
+`Workspace/editor-variant-accessor-tools-tests.log`. Debug builds of
+ToolsFoundationTest, EditorFrameworkTest, EditorProcessor and Editor pass:
+`Workspace/editor-variant-accessor-fixed-build.log`.
+
+All twelve native Qt subtests also pass with the repaired shared accessor:
+`Workspace/editor-variant-accessor-native-tests.log`. The child engine log has no
+allocation, access-violation or Vulkan validation errors. This remains Windows
+Debug/Vulkan verification. Older stored asset dependency headers are refreshed
+when their documents are saved; this change does not silently rewrite every
+existing project asset. Legacy scene migration and broad workflow parity remain
+active work.
+
+### Graph-Based Asset Resaving And Metadata Refresh
+
+Bulk resaving previously used a repeated dependency scan with an arbitrary
+dead-end fallback. It considered transform dependencies alone, treated dependencies
+outside a selected subtree as unresolved ordering constraints, and retained asset
+info pointers and the curator lock across document saves and progress callbacks.
+Failures were only logged, so the processor's resave command could report success
+after failed writes.
+
+`AssetResave.cpp` now snapshots the selected asset documents into Core's directed
+graph. Transform, thumbnail and package references resolve through the existing
+curator, including paths and sub-assets mapped to their owning documents. Only
+selected documents become vertices. Stable path/UUID input ordering makes plans
+deterministic. Core topological sorting orders dependencies first; Core strongly
+connected components identify actual cycle participants without confusing a
+blocked downstream asset with a cycle member. Cycles fail before any document
+write. Graph algorithms take O(V + E), with O(V log V) input sorting and the
+normal curator reference-resolution cost.
+
+The public read-only `GetAssetResaveOrder()` permits preflight. `ResaveAllAssets()`
+returns `xiiStatus`, rejects reentry and non-main-thread saves, and reports
+cancellation or aggregated write failures. Saving resolves each stable UUID again
+after progress events, validates document identity, keeps already-open documents
+open and closes documents opened by the batch. Read-only and partially understood
+documents are rejected to avoid destructive resaves. Curator locking covers
+snapshots and lookups, rather than document creation, saving or event pumping.
+The asset browser handles the result and the processor sets a failing exit code.
+
+The integration tests exposed stale dependency metadata after a cycle was removed
+and saved rapidly. The file model relied on modification timestamps even for
+explicit known-write notifications. It now supports forced file-change detection;
+hash invalidation and notification selection occur together under its lock.
+Explicit curator write notifications invalidate cached headers, and watcher
+modification events use the same forced path. Header-cache reuse also requires a
+nonzero matching content hash. Ordinary filesystem checks retain their timestamp
+fast path. No second cache or asset format is introduced.
+
+The native resave fixture uses real registered document managers, saved source
+files, curator sub-assets and document save notifications. It covers all dependency
+categories, external dependencies, parallel references by path and sub-asset UUID,
+deterministic ordering, open/closed document ownership, empty scopes, cancellation,
+reentry, read-only and unknown-type protection, self/multiple-asset cycles and
+recovery. A worker snapshots the curator during a progress callback, proving that
+the operation does not retain its global lock there. The Windows regression edits
+dependency bytes while deliberately restoring the original file timestamp,
+verifies both tracked and physical timestamps are unchanged, and checks immediate
+cycle detection and recovery after explicit notification.
+
+Deleting the current asset during a progress callback is reported as failure and
+does not recreate the deleted source from an open document. The Editor's normal
+removal handling can close that document, so the fixture restores source bytes and
+reacquires the document by its preserved UUID. File mutation tests wait for short
+background-reader locks; the timestamp test acquires an exclusive file handle
+before locking the model, avoiding a reader blocked on that model lock.
+
+Verification:
+
+- Debug builds of EditorFrameworkTest, ToolsFoundationTest, EditorProcessor and
+  Editor pass: `Workspace/editor-asset-resave-restored-build.log`. The final fixture
+  build is `Workspace/editor-asset-resave-access-build.log`.
+- All twenty ToolsFoundation subtests pass with the final shared library:
+  `Workspace/editor-asset-resave-restored-tools-tests.log`.
+- All twelve Qt subtests pass: `Workspace/editor-asset-resave-access-tests.log`.
+  The child engine log has no allocation, access-violation or Vulkan validation
+  errors. Native picking, 160 viewport resize/stable frames, capture,
+  Play-close-reopen, prefab metadata and all new resave cases execute in that run.
+- Disabling forced notification in a reversible comparison reproduces stale-cycle
+  recovery and unchanged-timestamp failures:
+  `Workspace/editor-asset-resave-timestamp-baseline-tests.log` (expected exit one).
+  Forced notification is restored in both source and the final built library.
+- Two intermediate runs exposed the viewport fixture aborting after a two-second
+  IPC observation timeout while an initial native frame took about 8.5 seconds.
+  Picking now polls the same outstanding request within its existing ten-second
+  readiness deadline, retaining the exact expected-owner check. The final full run
+  verifies this behavior. Diagnostic logs remain under
+  `Workspace/editor-asset-resave-restored-tests.log` and
+  `Workspace/editor-asset-resave-lifetime-tests.log`.
+
+This verification remains Windows Debug/Vulkan. Processor failure routing is
+implemented and built; an unrestricted processor resave against an existing user
+project and manual browser-menu interaction were not run. Existing project assets
+were not rewritten by these tests. Resaving refreshes compatible source metadata;
+it does not convert obsolete scene component semantics. Legacy scene migration and
+broader workflow parity remain active work.
+
+### Package Dependencies, Dependency Inspection And Graph Export
+
+The curator hashed package references but omitted them from reverse tracking. Native
+mesh and material references marked solely `Package` were therefore absent from
+usage searches and transitive invalidation. UUID tracking also looked only in the
+main-asset table, leaving sub-asset dependencies unresolved indefinitely. Raw file
+content contributed to thumbnail hashes but was omitted from package hashes.
+
+The existing curator now tracks transform, thumbnail and package categories
+independently, resolves sub-assets to their owning documents, and resolves pending
+references after updating the owner's sub-asset list. Changes, additions, removals
+and transform errors invalidate package consumers transitively. Adding a file can
+repair a cached missing-dependency state. Reference removal handles targets that
+have already disappeared; that uncommon case scans the category's reverse map to
+discard the owner's remaining aliases. Normal untracking removes empty buckets.
+Project shutdown clears all reverse trackers and unresolved-reference sets.
+
+Package references participate in the curator's existing acyclic hashing
+contract, with sub-asset identities normalized for cycle checks and property
+selection validation. This restriction belongs to asset hashing; Core's generic
+graph still permits cycles. Runtime file changes update package and thumbnail
+hashes while leaving the containing asset's transform hash unchanged. Usage
+searches traverse independently of prefilled output sets. The file-import queries
+retain their documented transform-only meaning.
+
+Dependency inspection and reverse queries now live in the cohesive
+`AssetDependencyGraph.cpp`. Forward traversal resolves UUIDs and asset paths,
+visits each owner once, preserves unresolved references as leaves, and continues
+through references already present in the output. The asset processor's refresh
+hull includes package dependencies. DGML export includes package edges, preserves
+missing UUID nodes, and returns `xiiResult` to the existing status dialog.
+
+The shared Foundation DGML writer also discarded direct-write failures and
+buffered flush failures. It now checks both results before reporting success.
+`DGMLWriterTest.cpp` mounts a test-only write-failing data directory to exercise
+successful output, failed opening, failed buffered flushing and failed writes
+larger than the file writer's cache. It does not exhaust disk space or alter file
+permissions. The unchanged writer fails both injected write cases in
+`Workspace/dgml-write-failure-baseline-tests.log`; the repaired Utility suite passes
+all seven subtests in `Workspace/dgml-write-failure-fixed-tests.log`.
+
+`AssetDependencyTrackingTest.cpp` exercises real saved test documents through the
+production curator. Coverage includes consumer-first loading of sub-asset
+references, direct/transitive usage, prefilled output, category-specific reverse
+hulls, cached hash invalidation, runtime-file changes/removal/restoration, package
+cycle detection/recovery, category overlap, reference removal, owner deletion and
+restoration with stable identity, unresolved forward queries, cyclic traversal,
+and real DGML contents and failed export. The saved test document and its manager
+are shared with resave tests in `AssetTestDocument.h/.cpp`.
+
+Verification on October 13, 2026:
+
+- Debug builds of FoundationTest, EditorFrameworkTest, EditorProcessor and Editor
+  pass: `Workspace/dgml-write-failure-fixed-build.log`.
+- All twelve editor subtests pass against the final Foundation DLL:
+  `Workspace/editor-dependency-final-tests.log`. This includes the native viewport
+  stress, picking, Play/close/reopen, duplication, exposed dependencies and resave
+  workflows. Child-engine logs contain no allocation, device-loss or Vulkan
+  validation errors.
+- Earlier stage builds and passing runs remain in
+  `Workspace/editor-package-tracking-lifetime-*` and
+  `Workspace/editor-dependency-graph-*`. The initial tracking run's only error was
+  the deliberate missing-file diagnostic, which the fixture now explicitly expects.
+- `git diff --check` passes. User project assets were not rewritten.
+
+Verification remains Windows Debug/Vulkan. A dedicated external EditorProcessor
+cache-refresh round trip, manual dependency-export dialog interaction, other
+platforms and Release remain unverified. Legacy scene migration and broader
+workflow parity remain active work.
+
+### Production Asset Processor Requests And Failure Responses
+
+The dedicated EditorProcessor round trip previously listed as unverified is now
+covered by `AssetProcessorTest.cpp`, using the production executable, IPC channel,
+document managers and resource serialization. Its native surface asset references
+a prefab through the package-only `SlideReaction` property. No test-only asset
+type or alternate processor implementation is loaded into the child process.
+
+`xiiAssetProcessor::PrepareAssetRequest()` assembles the owner identity, document
+path, three hashes, active profile name and all dependency categories through the
+curator. Failed preparation leaves the output unchanged. The worker keeps that
+complete message through process startup and sends it directly; it no longer
+combines previously computed hashes with a profile name queried later at dispatch.
+Request assembly lives in `AssetProcessing.cpp`. Separate hash/hull bookkeeping
+and unused process-task connection/crash wrappers and a dead running flag were
+removed. The removed crash wrapper incorrectly returned client-alive state.
+
+An unknown profile previously logged an error but returned the response's default
+successful `xiiTransformStatus`. The processor now returns a failure with the
+profile name in its message. Failed host setup also sets exit code one, including
+failure to parse the supplied host PID.
+
+The native IPC fixture verifies:
+
+- A warm request and package-only dependency membership through the same request
+  preparation function used by the background worker.
+- An invalid preparation preserving the existing request.
+- A changed prefab updating package hashes without changing the surface's
+  transform hash. On Windows the source's exact original native write timestamp
+  is restored and read back before the second request. Valid processor replies
+  contain no parent/child hash-disagreement warning.
+- Unknown-profile and unknown-asset failures, followed by a successful valid job
+  in the same processor.
+- Deletion of the surface output followed by real child-process transformation.
+  The generated file's asset header hash, changed restitution value and serialized
+  prefab reference are read back and compared with the request and source values.
+
+The test target now depends on EditorProcessor, which already depends on its
+engine process, plugins and converter. A build of the test target therefore also
+builds the production tools it launches. The Startup test's PCH remains the first
+include in its own block.
+
+Verification on October 13, 2026:
+
+- The original processor fails exactly the two unknown-profile assertions in
+  `Workspace/editor-processor-request-baseline-tests.log`. Other new IPC assertions
+  pass in that run.
+- All twelve editor subtests pass with the corrected processor in
+  `Workspace/editor-processor-request-fixed-tests.log`, including the existing
+  native viewport and document workflows.
+- Debug builds of EditorFrameworkTest, its EditorProcessor dependency and Editor
+  pass: `Workspace/editor-processor-request-fixed-build.log`.
+- An explicit hidden process wait captures exit zero for invalid host PID input
+  before the fix (`Workspace/editor-processor-host-baseline-waited.exit`) and exit
+  one afterward (`Workspace/editor-processor-host-fixed.exit`). Both production
+  logs record the expected host-connection failure. A direct PowerShell GUI launch
+  without that wait did not provide a usable exit code and is not exit-code evidence.
+- Engine-process logs contain no GPU allocation, device-loss or Vulkan validation
+  failures. Invalid-profile/asset diagnostics in the processor are intentional.
+  `git diff --check` passes; existing user project assets remain untouched.
+
+Profile switching remains under review: `SetActiveAssetProfileByIndex()` scans the
+filesystem but does not call `ComputeAllDocumentManagerAssetProfileHashes()`, while
+document managers return cached profile hashes. Profile edits and background
+request synchronization need dedicated regression coverage. This checkpoint does
+not claim to resolve that separate issue, legacy scene migration, manual UI parity,
+Release or other platforms.
+
+### Profile-Aware Asset Evaluation And Header Read Failure Recovery
+
+Document managers retained a single profile hash computed during curator startup.
+Profile switching and edits did not refresh it. `IsAssetUpToDate()` also discarded
+its profile argument, and output checks resolved the active profile's paths even
+when a caller requested another profile. A valid existing active-profile output
+could therefore suppress generation of an explicitly requested target.
+
+The manager hash cache and its startup-only initialization API were removed.
+`GetAssetProfileHash(profile)` calculates the existing type-specific transform hash
+from the requested settings. Texture, cubemap and decal implementations already
+derive these hashes from small configuration records. Dependency hashing forwards
+the same profile throughout the query, and all output checks, including material
+shader outputs, use that profile's paths. Non-active queries bypass the shared
+active-profile cache and do not replace its state or hashes. Active results are
+published only while the profile and asset revision still match the calculation.
+These are Editor SDK signature/layout changes; repository consumers and plugins
+were rebuilt, with no compatibility alias or new asset format.
+
+Forced and non-active evaluations share transient results by owning asset UUID
+within one query. Shared dependencies are not repeatedly recalculated through
+diamond-shaped graphs. No per-profile persistent cache was added. Known cycles
+return `CircularDependency` even for forced queries or another profile, instead
+of bypassing the cached cycle result and recursing into it. Unknown identities
+start with zero output hashes.
+
+The first native test exposed another authoring defect: reflection initialized
+new texture address modes to the native enum's `Unknown` value, despite the C++
+members defaulting to `Wrap`. Explicit default attributes now match the C++ values
+for U, V and W. This repairs new render-target transformation without coercing
+persisted explicit invalid sampler settings.
+
+`AssetProfileTest.cpp` verifies native render-target creation and file contents,
+active-profile edits, distinct target hashes and serialized dimensions, package
+hash propagation, active-cache isolation, switching in both directions, and forced
+cycle rejection. Five fixture assets in a shared dependency graph each perform
+exactly one output check per ordinary or forced non-active query. A pending
+automatic transform may complete during the profile switch; the test accepts that
+valid timing while retaining exact hash, header and dimension checks.
+
+Verification also exposed a real file-removal race in header acquisition. The
+curator asserted that header data existed even when `ReadDocument()` had failed
+before invoking its callback. It now propagates `XII_FAILURE` and preserves the
+known asset metadata. The file model treats a missing file as an ordinary failure
+without logging it as locked/corrupt. Tools tests verify that no callback or model
+entry is created. The resave fixture additionally holds a Windows read handle that
+actually denies other readers, checks that a probe is blocked, expects the open
+failure, and verifies metadata retention and recovery after unlocking.
+
+Verification on October 13, 2026:
+
+- Debug builds of ToolsFoundationTest, EditorFrameworkTest, EditorProcessor and
+  Editor pass (`Workspace/editor-profile-evaluation-read-build.log` and the final
+  fixture build `Workspace/editor-profile-evaluation-lock-build.log`).
+- All twenty ToolsFoundation subtests pass:
+  `Workspace/editor-profile-read-tools-tests.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-profile-lock-final-tests.log`. Native engine logs contain no
+  GPU allocation, device-loss or Vulkan validation failures.
+- Temporarily disabling only explicit-profile forwarding fails four checks,
+  including package hashes and the requested target output:
+  `Workspace/editor-profile-evaluation-control-tests.log`. The command restored
+  the source byte-for-byte afterward, followed by final production builds/tests.
+- The initial run records invalid new sampler defaults in
+  `Workspace/editor-profile-evaluation-baseline-tests.log`. The first full memoized
+  run records the deletion/read assertion in
+  `Workspace/editor-profile-evaluation-final-tests.log`. The intermediate lock
+  fixture used metadata-only access and did not deny reads; its corrected version
+  explicitly verifies that precondition.
+- `git diff --check` passes. Existing user assets were not rewritten.
+
+This resolves profile hash evaluation, not the entire profile editing lifecycle.
+Profile objects must remain alive and unchanged during an evaluation. Atomic live
+editing, profile-definition reload in already-running processors and save-failure
+handling in the profile dialog still need work. Release, other platforms, manual
+UI parity and legacy scene migration remain unverified or incomplete.
+
+### Saved Profile Reload In Running Asset Processors
+
+Background processors previously loaded `Editor/AssetProfiles.ddl` only during
+startup. Editing an existing profile left a running processor with stale settings;
+adding a profile left it unknown. The processor could generate a render target with
+the wrong dimensions and disagree with the editor's requested hashes. Curator
+shutdown also wrote its profile objects back to disk, allowing a stale processor
+or an initialization fallback to overwrite definitions it did not author.
+
+`ReloadAssetProfiles()` is now the curator's single profile-loading path. It reads
+and fingerprints the file contents, independently of cached timestamps. Unchanged
+contents preserve the existing objects and avoid a curator rescan. Changed contents
+are parsed into an owned temporary collection. Validation checks reflected roots,
+owned configuration references and types, duplicate configuration types, empty
+names and case-insensitive duplicate names before publishing anything. The default
+profile is placed at index zero. Missing defaults are constructed with existing
+configuration defaults. Reload preserves the active profile by name, falling back
+to Default if it was removed.
+
+On a successful change, background hashing is stopped before replacing objects.
+Replacement occurs under the curator mutex, followed by active-state reevaluation
+and the existing engine-process platform notification. The task wait occurs
+outside the mutex. The API is for the main thread between asset operations; a
+successful changed reload invalidates previously acquired profile pointers.
+Rejected definitions leave the live collection, active selection and loaded-file
+fingerprint unchanged. This is not a concurrent profile-editing API.
+
+The processor reloads before selecting a job's named profile. Invalid definitions
+produce an explicit failed response. Standalone transformation also validates
+definitions and now exits with code one for an invalid file or unknown profile;
+unknown profiles previously logged an error and exited zero. Profile persistence
+is confined to explicit saves and initial default creation. Shutdown no longer
+rewrites profiles. Startup retains an existing invalid file, and processors do not
+create fallback definitions on disk. The reflected asset/profile formats are
+unchanged, and no alternate configuration cache or compatibility path was added.
+
+Verification on October 13, 2026:
+
+- Debug builds of EditorFrameworkTest, EditorProcessor and Editor pass:
+  `Workspace/editor-profile-reload-final-build.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-profile-reload-final-tests.log`. One running production
+  processor generates native render targets at 640, 896 and 768 pixels with exact
+  header hashes. The Windows fixture restores the profile file's exact modification
+  timestamp between two distinct configurations. It exercises added and removed
+  profiles, eight invalid-definition cases, metadata retention and recovery.
+- Temporarily disabling only the processor's reload call causes nine regression
+  failures, including wrong dimensions, mismatched hashes and rejection of the new
+  profile: `Workspace/editor-profile-reload-control-tests.log`. The command restores
+  the source automatically; final builds and tests use the production implementation.
+- Real standalone processor launches verify error text and exit code one for an
+  unknown profile and an invalid definition. The invalid input survives startup and
+  shutdown unchanged. The pre-fix unknown-profile run exits zero:
+  `Workspace/editor-profile-reload-cli-baseline.exit` and its stdout log.
+- The first integrated run exposed a fixture reader retaining a generated surface
+  output across a curator refresh. Closing it before the profile test fixes the
+  pending transform's write failure; the failed run is retained in
+  `Workspace/editor-profile-reload-tests.log`. Final native engine logs contain no
+  GPU allocation, device-loss or Vulkan validation errors. `git diff --check` passes.
+
+Profile-dialog edits still need an atomic publication/persistence boundary, correct
+selection mapping after multiple insertions/deletions and surfaced save failures.
+These changes do not establish arbitrary concurrent profile editing or resolve the
+other outstanding editor workflows, legacy scene migrations and deformation paths
+recorded above. Release, other backends and other operating systems remain untested
+for this checkpoint. Existing user projects and assets were not rewritten.
+
+### Staged Profile Editing And Persistence
+
+The profile dialog previously applied UUID-sorted bindings directly to live native
+objects before saving. Multiple additions could therefore disagree with the
+selected document row. Deleting the active profile failed silently, property
+updates could overlap background hashing, and failed writes still closed the
+dialog. An unused property-change handler retained another path to those raw
+native pointers.
+
+The dialog now owns only its document draft and profile UUIDs. It derives the
+complete proposed native collection in document order when committing. Selection
+and the original active label follow document identities through insertion and
+deletion. Removing the selected target falls back to Default. Cancellation does
+not change native objects or files. The binding map and unused live-edit handler
+were removed. Case-only renaming excludes the object being renamed from the
+uniqueness check. The project action no longer performs a second reevaluation.
+
+`ApplyAssetProfiles()` validates names, uniqueness, Default and the active index,
+clones the caller-owned input, and writes fully flushed staged runtime files and
+DDL definitions. It stops dispatch and gracefully joins outstanding processor
+work, then stops background hashing outside the curator mutex. Files are installed
+with originals retained as uniquely named backups; definitions are installed last.
+Removed profiles' runtime files participate in the same rollback. Live definitions
+are replaced under the mutex only after installation succeeds. The loaded-file
+fingerprint is updated and the existing platform notification reevaluates assets
+and updates the engine process. Previously running processing is restarted.
+
+If installation fails, installed files are rolled back in reverse order. The
+dialog reports the failing path and retains its draft for retry. Failed recovery
+reports retained backup paths. Successful saves remove backups; staged-file cleanup
+failures are logged. Runtime cleanup never derives a removal path from an invalid
+old native profile name. The private persistence implementation is separated into
+`AssetProfilePersistence.cpp`; no generic transaction framework was introduced.
+
+`xiiPlatformProfile::SaveForRuntime()` previously ignored writes made by the chunk
+writer and the file writer's destructor. It now serializes through existing memory
+streams, then checks the actual file copy and final flush. The curator's runtime
+save API returns `xiiResult`, and its callers check that result. Initial default
+save failures are logged. Runtime chunk and reflected DDL formats are unchanged.
+
+The integrated rollback test exposed a Windows watcher defect. Casing reconciliation
+treated an unchanged leaf at a rapidly replaced path as proof of a case-only rename,
+discarded its old-name event, then asserted on the new-name event. An unchanged
+leaf now follows normal rename pairing. The dedicated replacement/rollback fixture
+verifies four complete pairs and preservation of the original bytes, alongside
+the existing case-change and forced non-NTFS coverage.
+
+Verification on October 13, 2026:
+
+- Debug FoundationTest, CoreTest, EditorFrameworkTest, EditorProcessor and Editor
+  builds pass (`Workspace/editor-profile-publication-fixed-build.log` and the final
+  `Workspace/editor-profile-publication-graceful-build.log`).
+- All twelve editor subtests pass:
+  `Workspace/editor-profile-publication-graceful-tests.log`. The native Qt dialog
+  fixture adds two profiles, selects the second, deletes the original active
+  profile, and verifies exact native order and selection after accepting.
+- A Windows handle denies replacement of the last definitions file. The fixture
+  verifies the error dialog, unchanged native pointers, exact original file bytes,
+  restoration of the deleted runtime profile, removal of newly installed runtime
+  files, retained draft edits and successful retry after unlocking. Cancellation
+  and unchanged reload also preserve their required state. Idle processor stop,
+  graceful join and restart are exercised before opening the test project.
+- All forty Foundation subtests selected by the IO filter and all six
+  DirectoryRecovery subtests pass (`Workspace/editor-profile-publication-io-tests.log`
+  and `Workspace/editor-profile-publication-watcher-tests.log`). This includes
+  ordinary and forced non-NTFS watchers.
+- The Core Configuration regression passes:
+  `Workspace/editor-profile-publication-core-final-tests.log`. A fault-injection
+  mount verifies successful 18-byte output, open denial and buffered flush failure.
+- The first integrated run records both the watcher assertions and a fixture
+  confirmation that ended the message box without clicking its Yes button:
+  `Workspace/editor-profile-publication-tests.log`. The fixture now clicks the
+  actual standard button. Final logs contain no GPU allocation, device-loss or
+  Vulkan validation errors. No staged files or backups remain, and `git diff --check`
+  passes. Existing user projects and assets were not rewritten.
+
+Publication is coordinated within the editor, not a crash-safe filesystem
+transaction across several files or a concurrent multi-editor editing protocol.
+Graceful publication can wait for active transforms. The controlled fixture does
+not deliberately hold a long-running managed job open during commit. Release,
+other backends and other operating systems remain untested. Broader workflow
+verification, legacy scene migration and the deformation paths recorded above
+remain outstanding; this checkpoint does not establish full goal completion.
+
+### Temporal History Allocation And TAA Resize Retention
+
+The follow-up allocation audit found a second unbounded retention path outside the
+render-graph cache. TAA appended both replaced history textures to a per-view
+`m_RetiredTAAHistoryBuffers` array on every resolution change and never released
+them until the view was destroyed. The earlier graph-cache retention regression
+did not cover this separately owned state. The array and its append path have now
+been removed. Graph imports retain textures while required by the current graph;
+GAL releases native images through its existing queue-completion-aware deferred
+deletion. No additional retirement queue was introduced.
+
+History texture allocation previously happened in void graph-setup callbacks.
+The shared helper asserted on failure, and several direct allocation loops then
+dereferenced the result without a failure path. Allocation is now prepared before
+the relevant built-in stage registers callbacks. `BuiltinRenderPipelineMemory.cpp`
+owns the stage-specific preparation for sixteen ping-pong texture pairs and the
+exposure buffer. Screen-space reflection histories are prepared in their actual
+producer stage, OpaqueComposition. The pass setup callbacks only import the
+successfully prepared objects.
+
+The small private memory helper reuses a pair only when both full descriptions
+match. It allocates replacements locally and publishes them together after both
+succeed. The internal factory parameter permits deterministic failure tests with
+real GAL textures without exhausting physical GPU memory. On failure, stage
+preparation releases its obsolete pair, invalidates that history, logs its name,
+dimensions and format, and returns `XII_FAILURE`. The view invalidates all built-in
+and resource-pass histories when synchronization or pipeline construction fails.
+The existing render-world failure path stops before graph execution. Missing
+devices are queried through `HasDefaultDevice()` before the asserting getter.
+
+Verification on October 13, 2026:
+
+- Debug builds of EditorEngineProcessFrameworkTest, GraphicsCoreTest,
+  EditorFrameworkTest, EditorProcessor and Editor pass:
+  `Workspace/editor-temporal-memory-final-build.log`.
+- All 63 native engine-process subtests pass with Vulkan synchronization validation:
+  `Workspace/editor-temporal-memory-native-tests.log`. The rendered history tests
+  also pass with GPU-assisted validation in `Workspace/editor-temporal-memory-tests.log`;
+  that earlier run subsequently fails the new missing-device fixture because its
+  initial implementation called the asserting getter before checking availability.
+- All three new TemporalMemory regressions pass with GPU-assisted validation on
+  final production binaries: `Workspace/editor-temporal-memory-final-tests.log`.
+  They check exact pair reuse without allocation, failures of either allocation,
+  partial replacement release, resize and format changes, and recovery. A 64-size
+  TAA fixture uses exported graph textures to verify the original allocation loses
+  its runtime ownership. Resource-backed failure fixtures drive `world.Update()`
+  and check history invalidation for Lighting, OpaqueComposition, AutoExposure and
+  TAA, followed by a successful TAA build.
+- Temporarily reinstating the old lifetime-long TAA retention produces 63 ownership
+  failures, one per changed size:
+  `Workspace/editor-temporal-memory-control-tests.log`. The command automatically
+  restores both production source files byte-for-byte. The final build and focused
+  tests use the restored implementation.
+- All 21 GraphicsCore subtests pass:
+  `Workspace/editor-temporal-memory-core-tests.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-temporal-memory-editor-tests.log`, including the production
+  viewport's 160-frame resize stress, capture and Play/close/reopen. Its engine logs
+  contain no allocation, device-loss or Vulkan validation errors. `git diff --check`
+  passes. Existing user assets and preferences were not rewritten.
+
+This corrects TAA retention and temporal allocation propagation, not every
+persistent renderer allocation. The audit also identified lifetime-long retention
+of replaced calibrated sensor outputs in `m_RetiredSensorOutputTextures`; that
+separate path still needs migration and native coverage. Deliberate physical GPU
+exhaustion was not performed. Pair-allocation null results and missing-device
+failures are deterministic fixture inputs. Release, other backends and other
+operating systems remain untested, and the broader editor modernization goal
+remains incomplete.
+
+### Calibrated Sensor Output Lifetime
+
+The remaining pipeline-owned retirement array retained every replaced calibrated
+sensor output until view destruction. Profile switching and sensor resolution
+changes could therefore grow memory independently of the graph cache and TAA.
+`m_RetiredSensorOutputTextures` and both append sites have been removed. A profile
+change clears the view's current output. Existing graph imports and caller-owned
+shared pointers retain images for their actual uses, with GAL deferring native
+destruction behind submitted GPU work.
+
+`PrepareSensorOutput()` now runs before ScreenEffects setup. It resolves the
+immutable sensor profile and allocates the exact RGBA32Float output description,
+reusing an existing matching texture. Invalid profiles or allocation failure
+return `XII_FAILURE` before setup imports or execution. Allocation failures report
+the requested dimensions and format. The old void callback could return silently
+after failure and leave sensor execution absent from an otherwise successful
+pipeline. The output accessor documents shared ownership and GPU synchronization
+for asynchronous readback. No new cache, retirement queue or Qt dependency was
+introduced.
+
+The native regression uses the real default pipeline and two views sharing one
+resource definition. It switches one view through 64 sensor sizes while preserving
+the other view's output, and covers unchanged selection, disabling, retained
+readback ownership and re-enabling. It explicitly seeds nonzero texture contents
+before rendering the empty scene, then maps the GPU result to distinguish actual
+sensor dispatch from zero-filled fresh memory. A resource-backed failure fixture
+checks rejection before setup and subsequent successful pipeline execution.
+
+The current folder-unity build also exposed an existing ModelImporter collision:
+MeshImport.cpp and SkeletonImport.cpp both declared anonymous `PendingNode`
+records with different layouts. The skeleton record now has the specific internal
+name `PendingSkeletonNode`, preserving the algorithm and serialized formats.
+This build integration fix is committed separately. The initial compiler evidence
+is retained in `Workspace/editor-sensor-memory-build.log`; the later test-compile
+run records explicit shared-pointer borrowing corrections in
+`Workspace/editor-sensor-memory-unity-build.log`.
+
+Verification on October 13, 2026:
+
+- Debug EditorEngineProcessFrameworkTest, GraphicsCoreTest, EditorFrameworkTest,
+  EditorProcessor and Editor builds pass with folder unity enabled:
+  `Workspace/editor-sensor-memory-final-build.log`.
+- Both SensorMemory regressions pass:
+  `Workspace/editor-sensor-memory-tests.log`. GPU readback first verifies every
+  channel of the seeded image is 0.75, then verifies the same allocation is fully
+  overwritten with the empty scene's zero/invalid output. A retained output remains
+  readable after disabling the sensor.
+- Both regressions also pass with Vulkan GPU-assisted and synchronization
+  validation: `Workspace/editor-sensor-memory-gpuav-tests.log`. The validation layer
+  reports instrumentation performance warnings, with no allocation, device-loss
+  or Vulkan validation errors.
+- Temporarily restoring the original sensor retirement behavior causes 65
+  ownership failures: 64 profile changes and disabling the current output.
+  `Workspace/editor-sensor-memory-control-tests.log` retains that expected failure.
+  The command restores both production files byte-for-byte before the final build.
+- All 65 native engine-process subtests pass with Vulkan synchronization validation:
+  `Workspace/editor-sensor-memory-native-tests.log`. This includes the ModelImporter
+  skeleton-import regression and the existing graph-cache and temporal-memory tests.
+- All 21 GraphicsCore subtests pass:
+  `Workspace/editor-sensor-memory-core-tests.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-sensor-memory-editor-tests.log`, including the production
+  viewport's resize stress, capture and Play/close/reopen. Its engine logs contain
+  no allocation, device-loss or Vulkan validation errors. `git diff --check` passes.
+
+Existing user projects, assets and preferences were not rewritten. This verifies
+sensor-output lifetime and empty-scene dispatch/readback; it does not establish
+physical sensor calibration accuracy across scene geometries or backends.
+Deliberate physical GPU exhaustion was not performed. Release, other backends and
+other operating systems remain untested. Broader editor workflow verification,
+legacy scene migration and the deformation work recorded above remain outstanding.
+
+
+### Shadow Atlas Allocation Follows Demand
+
+A further audit of scene-independent GPU memory found that every view reserved
+both a four-layer 4096 x 4096 D32 directional atlas and a 4096 x 4096 D32 local
+atlas, even without any shadow-casting lights. Their uncompressed texture storage
+alone totals 320 MiB per view, excluding backend allocation alignment and overhead.
+The inspected user project at `D:/trmp/FeatureLab` has directional shadows disabled
+in `Scenes/Main.xiiScene`; neither its source nor its configuration was changed.
+
+Shadow allocation now runs after cascade setup and before graph callbacks import
+or dereference the images. With no directional cascades, the array keeps its four
+shader-compatible layers at 1 x 1. With no allocated local shadow faces, the local
+atlas is also 1 x 1. The local decision uses allocated face statistics, since the
+per-light descriptor array also contains lights without shadows. Active shadows
+retain their existing 4096 resolution and configured local atlas size.
+
+Matching textures are reused. Turning shadows off releases obsolete textures and
+single-cascade views; graph imports and external shared owners retain only their
+actual uses, while GAL handles deferred native destruction. Allocation and cascade
+view failures return `XII_FAILURE` through Shadows stage construction rather than
+asserting or dereferencing a null texture. The no-cascade execution path clears all
+fallback array slices to reversed-Z far depth so shader reads are deterministic.
+
+`ShadowMemoryTest.cpp` runs the resource-backed default pipeline and checks empty
+views, non-shadowing lights, full allocation on demand, fallback reuse, and release
+of both full atlases after shadows are disabled. It seeds fallback images with
+nonzero depth before a second frame, then maps GPU readbacks of all five fallback
+slices to verify that execution clears them to zero. A separate fixture rejects
+allocation with the default device temporarily unavailable and subsequently builds
+the normal pipeline successfully.
+
+The two focused regressions pass with Vulkan synchronization validation in
+`Workspace/editor-shadow-memory-final-tests.log`. Temporarily restoring the old
+unconditional atlas sizes produces the expected allocation-size failure in
+`Workspace/editor-shadow-memory-control-tests.log`; the command restores the fixed
+source automatically. The final Debug build of Editor, its processor/player
+consumers, GraphicsCoreTest, EditorFrameworkTest and the native engine-process
+tests passes in `Workspace/editor-shadow-memory-restored-build.log`.
+
+
+Final verification on October 13, 2026:
+
+- All 67 native engine-process subtests pass with synchronization validation:
+  `Workspace/editor-shadow-memory-native-final-tests.log`.
+- All 21 GraphicsCore subtests pass: `Workspace/editor-shadow-memory-core-tests.log`.
+- Both shadow-memory regressions pass with GPU-assisted and synchronization
+  validation: `Workspace/editor-shadow-memory-gpuav-tests.log`. There are no
+  Vulkan validation errors; instrumentation emits performance warnings.
+- All twelve editor subtests pass: `Workspace/editor-shadow-memory-editor-tests.log`.
+  The real engine process survives 160 viewport frames, including 96 size changes,
+  captures the final 1280 x 720 output, and supports Play/close/reopen. Its engine
+  logs contain no device-memory exhaustion, device-loss or Vulkan validation errors.
+- The restored production translation unit was explicitly rebuilt after the
+  negative-control run, before the final focused and full-suite runs.
+
+These tests establish the removed unconditional storage cost and preserved active
+shadow allocation, lifecycle and execution. They do not measure total renderer
+residency in the user's RenderDoc capture or reproduce that exact live-project
+crash. Physical GPU exhaustion, Release, other backends and operating systems were
+not exercised. Other rendering resources retain their existing quality and budgets.
+
+
+### Document Save Validation And Missing-Type Compatibility
+
+The document loader can reconstruct absent plugin types from embedded phantom RTTI
+schemas. Truly unknown objects without usable schemas are different: the converter
+skips them and records their type names and instance count. The document retains no
+editable object for those instances, so serializing its live tree would drop their
+original payloads from disk. Previously, programmatic and forced saves could do
+exactly that; successful completion then erased the unknown-type diagnostics.
+The document-window and modified-documents dialog also returned success when a
+user declined the warning about permanently dropping these objects.
+
+`xiiDocument` now validates every actual synchronous or asynchronous save before
+serialization, asset-metadata preparation or scene-layer switching. Read-only
+and partially loaded documents return a failure. Force bypasses only the dirty
+check. A rejected asynchronous request invokes its valid callback immediately,
+returns an invalid task ID, and leaves any already active save untouched. It does
+not overwrite the pending save result or clear the missing-type diagnostics.
+The header documents rejection and no-work callback semantics.
+
+The two Qt save paths rely on this one validation result instead of asking whether
+to discard unknown data. Save-before-close reports the existing save error once
+and refuses closure. Explicitly choosing the dialog's discard action remains a
+separate user decision. The asset-curator resave and scene-export checks remain
+valid domain-specific guards; this change closes direct callers' bypass.
+
+Three ToolsFoundation persistence regressions use real document-manager ownership,
+command transactions and serialized files. They cover sync/async and forced saves,
+modified and unmodified documents, unchanged disk bytes, dirty state, unknown-type
+diagnostics, absence of save events/hooks, immediate rejection callbacks, rejection
+while an earlier valid save is active, read-only recovery, and reopening saved
+properties. A separate roundtrip unregisters an embedded phantom type before
+loading, verifies reconstruction of its schema and payload, edits it, saves it,
+unregisters it again and verifies the edited property after reopening. Thus absent
+native plugin code alone does not incorrectly forbid safely representable data.
+
+The baseline run, `Workspace/editor-document-save-baseline-tests.log`, reproduces
+real writes that remove skipped data and incorrectly allow read-only saves. After
+the fix, all 23 ToolsFoundation subtests pass in
+`Workspace/editor-document-save-all-tools-tests.log`.
+
+The native Qt fixture creates a real docked document window and drives Save,
+Save-before-close, and the modified-documents dialog. Initial execution exposed a
+test build mismatch: `EditorFrameworkTest` compiled its derived widget without
+C++ RTTI, while Qt Debug callbacks in GuiFoundation dynamically cast receivers.
+The local stack trace resolves to Qt's receiver type assertion during a status-bar
+signal. The test target now uses `xii_link_target_qt`, the same existing helper used
+by production Qt modules, to obtain the required Debug RTTI settings. Temporary
+Windows fault tracing was removed from the source before verification.
+
+
+Final verification on October 13, 2026:
+
+- ToolsFoundationTest, EditorFrameworkTest and Editor build successfully, including
+  the editor plugins, engine process, processor and player dependencies:
+  `Workspace/editor-document-save-integration-build.log`.
+- The Qt test target rebuilds with the standard Debug RTTI settings:
+  `Workspace/editor-document-save-qt-build.log` and
+  `Workspace/editor-document-save-final-test-build.log`.
+- All 23 ToolsFoundation subtests pass:
+  `Workspace/editor-document-save-all-tools-tests.log`.
+- All twelve editor subtests pass:
+  `Workspace/editor-document-save-editor-final-tests.log`. The new native fixture
+  verifies unchanged source bytes and dirty state after direct Save, Save-before-
+  close and modified-documents save rejection; one error per failed operation;
+  refused closure; explicit discard without writing; and successful save after
+  clearing the simulated missing-type condition. The existing viewport resize,
+  Play, close/reopen, asset processor and profile workflows still pass.
+- `git diff --check` passes. No Qt dependency, exception header, termination call,
+  compatibility alias or new serialization format was introduced into runtime.
+
+The save guard preserves the original file; it does not reconstruct objects for
+which no usable type schema exists. Users must restore type support and reload or
+perform a faithful migration before writing those documents. The native UI fixture
+simulates that missing-type state on a real asset document; the ToolsFoundation
+fixture separately exercises actual skipped-object loading from DDL. Legacy scene
+component migrations and the broader modernization objective remain incomplete.
+Release, Linux and macOS configurations were not executed for this slice.
+
+
+### Asynchronous Document Save Revisions And Completion Ownership
+
+Accepted asynchronous saves had a separate dirty-state bug. Completion always
+called `SetModified(false)`, even if a later transaction, undo or redo had changed
+the document since its snapshot was serialized. The next normal Save could then
+be a no-op and leave those newer edits absent from disk. Saved-event listeners'
+edits were also cleared after notification. In addition, every completion
+invalidated the document's current save handle, so finishing an older request
+could hide a later queued save from close-time waiting.
+
+Each document now advances a modification revision on every `SetModified(true)`,
+including calls while it is already dirty. Save construction captures that revision
+alongside its graphs. Successful completion clears dirty state only when the
+captured revision is still current, before publishing DocumentSaved. A listener's
+subsequent edit remains dirty. The existing event facility permits one nested
+ModifiedChanged notification for this supported listener behavior; deeper recursive
+notification remains guarded.
+
+Each write task owns its path and result. The worker no longer reads or writes the
+live document, and the completion task owns the finished write task until its result
+has been consumed. The old shared `m_LastSaveResult` was removed. Failed-write
+messages describe that request's captured path, even when the document path changes
+before the worker runs. Existing dependencies still serialize queued saves.
+
+Completion only clears the active handle when it still identifies that task, and
+does so before invoking the callback. It does not access the document after the
+callback. Close-time waiting drains successor saves queued by completion callbacks.
+Synchronous Save waits on its own copied task ID, leaves newer handles intact, and
+revalidates writability after waiting for an earlier callback. Resource documents
+continue to use their existing metadata preparation and post-save hooks.
+
+Document persistence fixtures were shared in `DocumentSaveTestUtils.h`, with the
+new temporal and queue tests in `DocumentAsyncSaveTest.cpp`. The baseline at
+`Workspace/editor-async-save-baseline-tests.log` reproduces stale dirty clearing,
+lost close-time tracking, and saved-listener edits missing from subsequent writes.
+The tests drain outstanding tasks explicitly on the broken baseline so failures
+can be observed without destroying a document still referenced by its tasks.
+
+The regressions use real graph serialization and command transactions, checking
+captured and newer values separately on disk. They cover edit/undo/redo after an
+async snapshot; document-local and global saved-event listeners; nested dirty
+notifications; queued saves; a three-save callback chain drained during closing;
+independent failure/success results and captured-path reporting; and writability
+changes made by an earlier completion callback. The native asset-window fixture
+also checks newer unsaved text after an accepted async save, Save-before-close of
+that newer content, and manager-owned document/window destruction while a final
+save is pending.
+
+
+### Asset Removal Uses Document Identity
+
+Repeated native project creation exposed another lifecycle error during integration
+verification. An asset can be replaced with a new document UUID at the same path.
+The curator correctly marks the old asset identity removed, but MainThreadTick
+previously closed whichever open document occupied that path. During replacement
+creation this was the new document, whose initial save completion was currently
+running. Closing before its DocumentOpened event caused visualizer subscription
+removal assertions, followed by waiting on the save task executing that very hook.
+
+The retained assertion stack in
+`Workspace/editor-async-save-startup-symbols.log` identifies the chain:
+VisualizerManager unsubscribe, DocumentManager CloseDocument, curator file-removal
+handling, AssetDocument InternalAfterSaveDocument, save completion, and synchronous
+creation of the default scene. The reused-project failure is recorded in
+`Workspace/editor-async-save-editor-retry-tests.log`; the stalled owned test was
+stopped after diagnosis. The earlier fresh-output run reached the native save
+regressions but timed out at the scene viewport's first picking reply, recorded in
+`Workspace/editor-async-save-editor-final-tests.log`. Neither run is reported as
+successful verification.
+
+The curator now uses the removed asset GUID to find and close its matching document.
+A replacement at the old path remains registered and usable. Existing main/subasset
+removal and notification behavior is retained; no parallel identity or ownership
+system was added. The temporary assertion tracing was removed before the final
+build.
+
+`AssetReplacementTest.cpp` exercises the actual registered asset manager and curator:
+create an original asset, register its identity, close it, create a replacement at
+the same path, verify removal of only the old identity, edit and save the replacement,
+close/reopen it with the new identity and persisted property, then delete its file
+and verify that the matching open document is closed exactly once. The same reused
+project that reproduced the default-scene self-close is used for final verification.
+
+Replacement also untracks the old identity's dependencies before removing it.
+Removed records cannot be reintroduced into transform-state queues by invalidation
+or an in-flight update; final removal purges those queues again. The regression
+checks that a package dependency no longer reports the replaced identity as a user.
+
+Checkpoint verification: all 28 ToolsFoundation subtests passed in
+`Workspace/editor-async-save-all-tools-final-tests.log` (exit 0). The Debug Editor,
+EditorFrameworkTest, plugins, engine process, processor, and player build passed in
+`Workspace/editor-asset-wrap-build.log` (exit 0). The preceding native integration
+run completed viewport resizing/capture and the replacement/save checks but exposed
+stale dependency and transform-state records, prompting the additional cleanup.
+The latest reused-project integration run (`Workspace/editor-asset-wrap-tests.log`)
+stalled after engine reconnection, before the save fixture, and was interrupted.
+Full native integration is therefore not claimed green for this checkpoint.
+
+### Editor Viewport Rendering And Capture
+
+The asset checkpoint was committed before beginning this rendering repair
+(`e8d8bfe21`, `313ea8d50`). Native viewport captures then reproduced a grey sky,
+an absent floor grid, and render-mode changes with no shading implementation.
+
+Directional-light extraction now exports the owner's positive forward axis as
+the direction of light propagation, matching spot lights and the pipeline's
+negation when computing the direction toward the sun. The previous negative
+axis placed the default scene's sun below the horizon and lit the sphere from
+underneath. Atmosphere reflection also supplies the actual native defaults;
+new editor-created atmosphere settings no longer contain zero radii, scattering
+coefficients, and integration counts.
+
+Debug primitive, textured primitive, and box shaders use GreaterEqual depth
+testing against the renderer's reversed-Z buffer. The editor initializes grid
+message vectors and supplies a global floor plane when Show Grid is enabled
+without a gizmo-provided plane. Show Grid has a defined true default; saved user
+preferences remain authoritative. The native debug-render fixture uses zero as
+the far depth and one as an occluder, including depth readback of overlay draws.
+
+The built-in pipeline adds an inspection compute pass before debug overlays.
+Fourteen modes inspect depth, normals, material channels, object identities,
+velocity, AO, indirect lighting, environment reflections, and bloom. They use
+existing per-view graph resources, preserve the final display transfer, bypass
+artistic grading, and cache the compute pipeline per view. The enum retains
+other modes for future implementations; the editor menu exposes the supported
+ones and normalizes obsolete unsupported selections to Default. Wireframe,
+overdraw, vertex attributes, and ray-tracing telemetry are not implemented by
+this repair and are not presented as functioning modes.
+
+Editor screenshot requests now queue on the window output target and capture
+the next rendered image before presentation acquires another swapchain image.
+Direct capture copies into format-sized image storage with its actual row pitch,
+removing the four-byte-per-pixel assumption and uninitialized copy on mapping
+failure. Command-list creation and mapping failures return XII_FAILURE. Saving is performed
+only for explicit requests; ordinary frames do not allocate capture images.
+
+Debug Editor, EditorFrameworkTest, engine process, processor, player, and plugin
+builds passed in `Workspace/editor-render-final-build.log`. All 12 editor subtests
+passed in `Workspace/editor-render-final-tests.log` (exit 0), including the asset
+replacement and async-save checks committed earlier. The viewport fixture
+captures each supported mode, checks distinguishable depth and normal output,
+checks blue sky pixels, and checks newly visible grid pixels without selecting a
+gizmo. It also completes the existing 160-frame/96-resize exercise, screenshots,
+Play, and document close/reopen checks.
+
+Visual evidence is retained under
+`Workspace/TestOutput/RenderingFinal/SourceWindowProject/`: `ViewportAtmosphere.png`,
+`ViewportGrid.png`, `ViewportDepth.png`, and `ViewportNormals.png`, plus captures
+for the other modes. The earlier failed physical-sky and absent-grid captures
+are retained under RenderingRepair and RenderingDiagnostic. Temporary graph,
+light-state, and shader diagnostics were removed before final verification.
+Native Qt/Vulkan SDR capture is exercised; HDR swapchains, remote views, Linux,
+and Direct3D are not verified by this run. The user's FeatureLab files were not
+modified, and its existing running editor processes were not terminated.
+
+The dependent native GPU and GraphicsCore test builds also passed. All 67 native
+Vulkan subtests passed in `Workspace/editor-render-native-restored-tests.log`
+(exit 0), with temporary depth/projection diagnostics removed. All 21
+GraphicsCore subtests passed in `Workspace/editor-render-core-tests.log` (exit 0).
+Earlier standalone debug-render failures are retained in
+`Workspace/editor-render-native-tests.log` and
+`Workspace/editor-render-depth-diagnostic-tests.log`; the verified production
+rerun includes both ordinary depth occlusion and overlays that preserve depth.
+
+The full editor suite also passed all 12 subtests on a second run against the same
+saved RenderingFinal project (`Workspace/editor-render-reused-tests.log`, exit 0).
+This exercises replacement of the generated default-scene identity, asset
+dependency cleanup, saved preferences, warm shader caches, and the captured
+rendering checks together. Existing running editor instances require a restart
+to load the rebuilt binaries and newly created graphics pipeline states.
+
+### Migration Of Persisted Zero Atmosphere Defaults
+
+The reflected-default repair alone only fixes newly created settings. The older
+native scene retained in AsyncSaveEditorFinal contains an entire version-3
+atmosphere record with zero radii, coefficients, up direction, and integration
+counts. Settings reflection is now version 4, with a Foundation graph patch for
+that precise legacy record. Detection requires all sixteen legacy fields to be
+present and equal to their old zero defaults. Authored values, incomplete records,
+unknown properties, node identities, and current-version zero records are
+preserved. The legacy field list is fixed so future properties cannot accidentally
+expand the migration's detection criteria. Consumers use the existing graph
+versioning and normal document-save facilities; no runtime compatibility wrapper
+or alternate asset format was introduced.
+
+The regression serializes both DDL and binary graphs with the saved reflected
+type-version table used for patch selection. It compares migrated values with
+native C++ defaults and independently checks the preservation cases. Disabling
+the migration produced seventeen failures with the binary fixture
+(`Workspace/editor-atmosphere-migration-negative-tests.log`, exit 1); the patch
+was restored and all affected targets rebuilt afterward. The earlier fixture
+without the saved type table was corrected because XII's graph versioning uses
+that table as the authoritative version source.
+
+Final verification: GraphicsCoreTest, EditorFrameworkTest, Editor, engine process,
+plugins, processor, and player builds passed in
+`Workspace/editor-atmosphere-migration-restored-build.log` (exit 0). All 21 Core
+subtests passed with both serialization formats in
+`Workspace/editor-atmosphere-migration-formats-tests.log` (exit 0), and all 11
+editor document subtests passed in
+`Workspace/editor-atmosphere-migration-document-final-tests.log` (exit 0).
+The native GUI/GPU suite was not rerun for this serialization-only follow-up.
+No FeatureLab files were changed. The viewport regression/report and migration
+were subsequently committed as `850189d66` and `75782b7cb` after automatic
+approval review became available again.
+
+### Native Wireframe Inspection
+
+Wireframe inspection now uses the existing canonical surface-query rasterizer,
+with a cached shader permutation selecting actual triangle-edge rasterization.
+Both mesh-shader and indexed vertex-pulling routes retain native mesh identities,
+skinning, LOD selection, and material coverage. Invalid fill modes and devices
+without WireframeFill fail through `xiiResult` before adding graph passes. Shader
+resources own the rasterizer states; no per-frame state creation or additional
+pipeline cache was introduced.
+
+The built-in visualization stage consumes the query's object IDs and reversed-Z
+depth, tests against solid scene depth where available, and presents visible
+edges before ordinary editor overlays. A reproduced blank indexed-path output
+was caused by the final generic background mask discarding query coverage when
+the ordinary scene-depth buffer was empty. Wireframe now uses its own coverage
+in that case. This restores indexed wireframe inspection; it does not establish
+complete ordinary scene rendering without mesh shaders. Other unavailable
+inspection modes remain excluded from the default-pipeline menu.
+
+Wireframe alone adds a transient RGBA32UInt query image and D32 depth image
+(20 bytes per viewport pixel before backend alignment), managed by the existing
+render-graph cache. Default mode does not allocate these query outputs. Solid
+picking behavior remains the API default. Native query regressions compare edge
+coverage with solid coverage and check identities on static and skinned geometry,
+including the forced indexed route. Two additional regressions render and read
+back a resource-backed default pipeline with mesh shaders enabled and disabled.
+The editor regression captures real wireframe output alongside atmosphere, grid,
+depth, normal, and the other supported inspection modes.
+
+The disabled-mesh-shader run also exposed a deferred-lighting storage-image
+declaration using RGBA32Float against its RGBA16Float target. The shader now
+declares the existing target format explicitly, avoiding undefined image writes.
+The initial fixture's retained extracted-packet handles are released through the
+existing frame allocator before resource-manager shutdown, matching other native
+rendering fixtures. Failure evidence is retained in
+`Workspace/editor-wireframe-fallback-tests.log` and
+`Workspace/editor-wireframe-fallback-fixture-tests.log`.
+
+The Debug build of Editor, its processor/player/plugin consumers, and both native
+test targets passes in `Workspace/editor-wireframe-final-build.log` (exit 0).
+All 69 native Vulkan subtests pass in
+`Workspace/editor-wireframe-verified-native-tests.log` (exit 0), including both
+new default-pipeline output tests. The run reports no Vulkan validation errors or
+storage-image format warnings. An intermediate format-annotation compilation
+failure caused by a missing helper include is retained in
+`Workspace/editor-wireframe-final-native-tests.log`; the include was corrected
+before the successful complete rerun.
+
+All 12 native editor subtests pass in
+`Workspace/editor-wireframe-final-editor-tests.log` (exit 0), including actual
+viewport capture, supported-mode switching, atmosphere, unselected floor grid,
+wireframe coverage, 160 frames/96 resizes, Play, and document save/reopen. Final
+captures are under
+`Workspace/TestOutput/WireframeFinalEditor/SourceWindowProject/`, including
+`ViewportAtmosphere.png`, `ViewportGrid.png`, `ViewportDepth.png`,
+`ViewportNormals.png`, and `ViewportWireframe.png`. The editor and engine logs
+contain no Vulkan validation errors, device loss, or device-memory exhaustion.
+The user's running FeatureLab session and files remain untouched. Restarting an
+existing editor is required to use the rebuilt binaries. Verification covers
+Windows Debug/Vulkan with WireframeFill available; HDR swapchains, other graphics
+backends, Release, and other operating systems remain unverified. The broader
+modernization inventory remains open.
+
+### Built-In Compute Shader Failures Reject Execution
+
+The rendering follow-up reproduced a crash after a compute shader failed to
+compile: setup left a null pipeline, reported a successful built-in stage, and
+execution reached null shader-resource bindings. The shared compute-pipeline
+creation helper now records failure in a per-stage `xiiResult` and reports the
+shader path. The public stage boundary returns that failure through the existing
+pipeline instance and view build path. RenderWorld then skips graph execution,
+and the existing view failure handling invalidates temporal history. The result
+resets at each stage build so subsequent frames can retry after resource reload.
+No exception handling, termination, alternate resource manager, or execution
+fallback was added. Cached successful pipeline lookup retains its existing fast
+path; the failure state adds no allocations.
+
+`BuiltinShaderFailureTest.cpp` exercises public built-in pass construction with
+a loaded invalid shader resource, then restores the same file-backed identity
+through the resource manager's loader API. Integrated fixtures cover both the
+original deferred-direct-lighting path and late Bloom-stage creation. Each checks
+two failed frames of a resource-backed default pipeline: there are no scheduled
+graph submissions and no later display-color output. The same view subsequently
+builds, submits, and captures its final output after reload. Test sources and
+user assets are not rewritten. The first fixture was corrected to retain a
+file-backed resource's reloadability rather than trying to reload a purely
+procedural resource.
+
+Both focused Vulkan regressions pass in
+`Workspace/editor-shader-failure-reload-tests.log` (exit 0). Temporarily bypassing
+the stage result propagation makes the non-executing setup regression fail in
+`Workspace/editor-shader-failure-control-tests.log` (exit 1). Its order file
+excludes the integrated execution fixture, preventing a deliberate null-pipeline
+dispatch. The command restores the exact production source in a finally block;
+the restored translation unit and dependent editor targets were rebuilt in
+`Workspace/editor-shader-failure-final-build.log` (exit 0).
+
+Final verification passes all 72 native Vulkan subtests, including all three
+failure/recovery cases, in
+`Workspace/editor-shader-failure-deferred-native-tests.log` (exit 0). All 12 native
+editor subtests pass in `Workspace/editor-shader-failure-final-editor-tests.log`
+(exit 0), including atmosphere/grid/render-mode screenshots, resize stress,
+Play, asset processing, document save/reopen, and shutdown. The logs report no
+Vulkan validation, device-loss, or device-memory errors. Verification is Windows
+Debug/Vulkan; other platforms, backends, and Release remain unverified. The
+broader modernization objective remains active.
+
+The shader preload utility's documented unavailable-resource contract also had
+an assertion gap: acquiring a genuinely missing shader used the strict resource
+mode before its invalid-handle check could run. Both loading-fallback and blocking
+paths now use the existing non-asserting acquisition modes. Required callers
+still receive invalid handles, and built-in stages return `XII_FAILURE`; missing
+resources retain the resource manager's normal diagnostic warning.
+
+The three regressions now install a loader returning no content, verify actual
+missing-resource acquisition, and check both preload modes before stage failure
+and recovery. This replaces the earlier loaded-invalid descriptor fixture and
+does not delete shader source files or manually invalidate shared cache entries.
+All three pass in
+`Workspace/editor-missing-shader-verified-tests.log` (exit 0); all 21 Core subtests
+pass in `Workspace/editor-missing-shader-core-tests.log` (exit 0). Restoring strict
+acquisition temporarily produces three missing-resource assertion failures in
+the isolated non-executing fixture
+(`Workspace/editor-missing-shader-control-tests.log`, exit 1). The control command
+restores the exact production source before the final dependent rebuild.
+
+The restored Debug build of GraphicsCoreTest, both editor test targets, Editor,
+processor/player, and plugin consumers passes in
+`Workspace/editor-missing-shader-restored-build.log` (exit 0). All 72 native
+Vulkan subtests pass again with the real missing-content fixtures in
+`Workspace/editor-missing-shader-final-native-tests.log` (exit 0), with no Vulkan
+validation or device-memory errors. The code and updated fixtures are committed
+as `4bb8f4ac3`; the preceding stage guard is `363c7cac9`.
+
+All 12 native editor subtests also pass with the corrected preload contract in
+`Workspace/editor-missing-shader-final-editor-tests.log` (exit 0). This includes
+production viewport screenshots, mode changes, atmosphere/grid checks, resize
+stress, asset processing, save/reopen, Play, and shutdown. The engine logs contain
+no Vulkan validation, device-loss, or device-memory errors. Existing Qt checkbox
+compatibility-signal warnings remain visible and require a separate UI migration.
+The user's FeatureLab files and running editor session remain untouched.
+
+### Qt Property Checkbox Signal Migration
+
+The shared reflected boolean property widget now connects Qt's typed
+`QCheckBox::checkStateChanged(Qt::CheckState)` signal to a typed slot. The existing
+mixed-selection/partial-state handling is retained. XII already requires Qt
+6.11, so no older-Qt compatibility path or dependency change is needed. The
+dependent Editor and EditorFrameworkTest build passes in
+`Workspace/editor-checkbox-signal-build.log` (exit 0); all 12 native editor
+subtests pass in `Workspace/editor-checkbox-signal-tests.log` (exit 0). The old
+checkbox compatibility-signal warnings are absent from that complete run.
+
+Camera review also identified an unresolved binary-format mismatch: component
+version 1 writes shutter seconds as a float but reads them through the double
+`xiiTime` stream operator, shifting subsequent fields. This requires a world
+serialization regression and correction without changing the persisted layout.
+The render-target camera path remains disabled and requires native resource/view
+integration; legacy sky/probe/GreyBox asset migration remains open.
+
+### FeatureLab Visibility Capacity and Empty Dispatches
+
+FeatureLab's imported mesh assets reproduce the reported capacity error without
+requiring a scene-specific assumption. Read-only inspection of the current
+native cache format gives the following per-instance bounds (2026-10-14):
+
+| Cached mesh | Sections | Authored meshlets | Previous rounded capacity | Corrected rounded capacity |
+| --- | ---: | ---: | ---: | ---: |
+| Mesh2 | 1,075 | 3,908 | 8,388,608 | 4,096 |
+| Mesh4 | 43 | 22,450 | 1,048,576 | 32,768 |
+| Mesh5 | 99 | 58,664 | 8,388,608 | 65,536 |
+
+`GetExtractedMeshletCapacity` previously added the entire geometry LOD for every
+extracted section. Mesh2 alone therefore requested 4,201,100 entries before
+power-of-two rounding, above the reported 4,194,304-group device limit. Mesh5
+requested 5,807,736 entries before rounding. The inspection verifies that these
+assets' authored primitive ranges do not overlap and their section meshlet
+counts sum to the LOD counts. Main.xiiScene references Mesh2 through its asset
+lookup entry. Evidence is in `Workspace/featurelab-capacity-audit.py` and
+`Workspace/featurelab-capacity-audit.log`; these are local diagnostic artifacts.
+
+The residency API now counts meshlets intersecting a requested primitive range
+for each authored LOD. Extraction caches those counts until its geometry revision
+or primitive range changes. Capacity queries use these cached ranges instead of
+whole-LOD counts and include not-yet-resident LODs, preventing later streaming
+from exceeding the allocation bound. Arbitrary ranges count boundary-overlapping
+meshlets conservatively; a zero primitive count retains the GPU visibility
+whole-LOD convention. No meshlets are dropped or device limits bypassed.
+
+Empty instance and Hi-Z culling callbacks skip direct compute dispatches. Their
+counter resets still execute. The empty Hi-Z path explicitly restores the
+counter's declared UAV state after its transfer clear, preserving subsequent
+render-graph barriers. Decal culling already guards empty input and required no
+change.
+
+The native LOD tests check primitive-range bounds before and after streaming,
+custom range boundaries, forced LODs, invalid handles, and populated/empty/populated
+transitions. They capture zero-group diagnostics across recording threads and
+read the actual GPU counters and picking image. Native picking also exercises
+2,200 distinct sections: the previous bound rounded to 8,388,608, while the
+required stream has only 2,200 meshlets. Both mesh-shader and indexed paths must
+resolve the real owner after this capacity growth.
+
+FeatureLab assets were only read. The user's project files and running editor
+session were not modified or restarted. The complete live FeatureLab scene has
+not been relaunched as part of this verification.

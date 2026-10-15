@@ -219,8 +219,7 @@ void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::UpdateInstance
   }
 }
 
-void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertyToInstances(
-  xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
+void xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::AddPropertyToInstances(xiiUInt32 uiIndex, const xiiAbstractProperty* pProperty, xiiSet<const xiiDocumentObject*>& ref_requiresPatchingEmbeddedClass)
 {
   if (pProperty->GetCategory() != xiiPropertyCategory::Member)
     return;
@@ -267,8 +266,7 @@ void xiiReflectedTypeStorageManager::Shutdown()
   s_ReflectedTypeToStorageMapping.Clear();
 }
 
-const xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping* xiiReflectedTypeStorageManager::AddStorageAccessor(
-  xiiReflectedTypeStorageAccessor* pInstance)
+const xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping* xiiReflectedTypeStorageManager::AddStorageAccessor(xiiReflectedTypeStorageAccessor* pInstance)
 {
   ReflectedTypeStorageMapping* pMapping = GetTypeStorageMapping(pInstance->GetType());
   pMapping->m_Instances.Insert(pInstance);

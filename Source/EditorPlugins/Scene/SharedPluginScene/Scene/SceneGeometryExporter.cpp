@@ -132,8 +132,7 @@ namespace
     }
     const xiiUInt32 indexSize = data.m_IndexType == xiiGALValueType::UInt16 ? 2 : data.m_IndexType == xiiGALValueType::UInt32 ? 4 :
                                                                                                                                 0;
-    if (vertices.GetCount() < xiiUInt64(data.GetVertexCount()) * stride ||
-        (data.GetIndexCount() != 0 && (indexSize == 0 || indices.GetCount() < xiiUInt64(data.GetIndexCount()) * indexSize)))
+    if (vertices.GetCount() < xiiUInt64(data.GetVertexCount()) * stride || (data.GetIndexCount() != 0 && (indexSize == 0 || indices.GetCount() < xiiUInt64(data.GetIndexCount()) * indexSize)))
       return xiiStatus("Native mesh geometry has incomplete vertex or index data.");
     auto readIndex = [&](xiiUInt32 index) -> xiiUInt32 {
       if (data.GetIndexCount() == 0)
@@ -217,8 +216,7 @@ namespace
   }
 } // namespace
 
-xiiStatus xiiSceneGeometryExporter::ExportOBJ(xiiWorld& world, xiiStringView file, xiiSceneGeometryExportMode mode,
-                                              const xiiMat3& coordinates, bool selectionOnly, xiiArrayPtr<const xiiGameObjectHandle> selection)
+xiiStatus xiiSceneGeometryExporter::ExportOBJ(xiiWorld& world, xiiStringView file, xiiSceneGeometryExportMode mode, const xiiMat3& coordinates, bool selectionOnly, xiiArrayPtr<const xiiGameObjectHandle> selection)
 {
   if (!coordinates.IsValid() || !xiiMath::IsFinite(coordinates.GetDeterminant()) || coordinates.GetDeterminant() == 0)
     return xiiStatus("Geometry export requires a finite invertible coordinate transform.");

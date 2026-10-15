@@ -95,7 +95,7 @@ xiiStatus xiiSceneDocumentManager::InternalCreateDocument(xiiStringView sDocumen
       if (pDoc == nullptr)
         return xiiStatus("A scene layer requires a parent scene document.");
 
-      out_pDocument           = new xiiLayerDocument(sPath, pDoc);
+      out_pDocument = new xiiLayerDocument(sPath, pDoc);
     }
   }
   else

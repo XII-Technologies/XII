@@ -117,8 +117,7 @@ xiiUuid xiiActionMap::MapActionInternal(const xiiActionMapDescriptor& desc)
     const xiiActionMapDescriptor* pDesc = GetDescriptor(pParent);
     if (pDesc->m_hAction.GetDescriptor()->m_Type == xiiActionType::Action)
     {
-      xiiLog::Error("Can't map descriptor '{0}' as its parent is an action itself and thus can't have any children.",
-                    desc.m_hAction.GetDescriptor()->m_sActionName);
+      xiiLog::Error("Can't map descriptor '{0}' as its parent is an action itself and thus can't have any children.", desc.m_hAction.GetDescriptor()->m_sActionName);
       return xiiUuid();
     }
   }

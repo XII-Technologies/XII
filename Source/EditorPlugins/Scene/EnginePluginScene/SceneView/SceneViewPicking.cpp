@@ -101,8 +101,7 @@ void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y)
       return;
     }
   }
-  if (meshAvailable && !meshHit.m_Source.m_hOwnerObject.IsInvalidated() &&
-      ResolveGuids(*m_pSceneContext, meshHit.m_Source.m_hOwnerObject, meshHit.m_Source.m_hOwnerComponent, result))
+  if (meshAvailable && !meshHit.m_Source.m_hOwnerObject.IsInvalidated() && ResolveGuids(*m_pSceneContext, meshHit.m_Source.m_hOwnerObject, meshHit.m_Source.m_hOwnerComponent, result))
   {
     result.m_uiPartIndex              = meshHit.m_Source.m_uiMaterialIndex;
     result.m_vPickedPosition          = meshHit.m_vWorldPosition;
@@ -126,8 +125,7 @@ void xiiSceneViewContext::MarqueePickObjects(const xiiViewMarqueePickingMsgToEng
     return;
   const xiiUInt32                      left = xiiMath::Min(message->m_uiPickPosX0, message->m_uiPickPosX1);
   const xiiUInt32                      top  = xiiMath::Min(message->m_uiPickPosY0, message->m_uiPickPosY1);
-  const xiiRectU32                     rectangle(left, top, xiiMath::Max(message->m_uiPickPosX0, message->m_uiPickPosX1) - left + 1,
-                                                 xiiMath::Max(message->m_uiPickPosY0, message->m_uiPickPosY1) - top + 1);
+  const xiiRectU32                     rectangle(left, top, xiiMath::Max(message->m_uiPickPosX0, message->m_uiPickPosX1) - left + 1, xiiMath::Max(message->m_uiPickPosY0, message->m_uiPickPosY1) - top + 1);
   xiiDynamicArray<xiiGameObjectHandle> objects;
   if (meshes->PickObjectsInRect(*view, rectangle, objects).Failed())
     return;

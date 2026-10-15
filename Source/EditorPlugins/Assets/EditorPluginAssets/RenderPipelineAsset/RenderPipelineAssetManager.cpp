@@ -16,7 +16,7 @@ xiiRenderPipelineAssetManager::xiiRenderPipelineAssetManager()
   m_DocTypeDesc.m_sDocumentTypeName = "RenderPipeline";
   m_DocTypeDesc.m_sFileExtension    = "xiiRenderPipelineAsset";
   m_DocTypeDesc.m_sIcon             = ":/AssetIcons/RenderPipeline.svg";
-  m_DocTypeDesc.m_sAssetCategory    = "Rendering";
+  m_DocTypeDesc.m_sAssetCategory    = "Graphics";
   m_DocTypeDesc.m_pDocumentType     = xiiGetStaticRTTI<xiiRenderPipelineAssetDocument>();
   m_DocTypeDesc.m_pManager          = this;
   m_DocTypeDesc.m_CompatibleTypes.PushBack("CompatibleAsset_RenderPipeline");

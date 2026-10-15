@@ -550,8 +550,7 @@ void xiiQtCurve1DEditorWidget::onContextMenu(QPoint pos, QPointF scenePos)
     {
       cmSel->addAction("Clear Selection\tESC", this, [this]() { CurveEdit->ClearSelection(); });
 
-      cmSel->addAction(
-        "Frame Selection\tShift+F", this, [this]() { FrameSelection(); });
+      cmSel->addAction("Frame Selection\tShift+F", this, [this]() { FrameSelection(); });
 
       cmSel->addSeparator();
 

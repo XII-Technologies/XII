@@ -123,8 +123,7 @@ xiiResult xiiMemoryMappedFile::OpenShared(xiiStringView sSharedName, xiiUInt64 u
   DWORD sizeHigh  = static_cast<DWORD>((uiSize >> 32) & 0xFFFFFFFFu);
   DWORD sizeLow   = static_cast<DWORD>(uiSize & 0xFFFFFFFFu);
 
-  m_pImpl->m_hMapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, m_pImpl->m_Mode == Mode::ReadOnly ? PAGE_READONLY : PAGE_READWRITE, sizeHigh,
-                                           sizeLow, xiiStringWChar(sSharedName).GetData());
+  m_pImpl->m_hMapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, m_pImpl->m_Mode == Mode::ReadOnly ? PAGE_READONLY : PAGE_READWRITE, sizeHigh, sizeLow, xiiStringWChar(sSharedName).GetData());
 
   if (m_pImpl->m_hMapping == nullptr || m_pImpl->m_hMapping == INVALID_HANDLE_VALUE)
   {

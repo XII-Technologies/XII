@@ -273,8 +273,7 @@ void xiiSparseVoxelRadianceContext::InvalidateHistory()
 
 xiiResult xiiSparseVoxelRadianceContext::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex)
 {
-  if (!IsInitialized() || uiFrameIndex == 0 || uiFrameIndex <= m_pState->m_uiFrameIndex ||
-      !xiiMath::IsFinite(vCameraPosition.x) || !xiiMath::IsFinite(vCameraPosition.y) || !xiiMath::IsFinite(vCameraPosition.z))
+  if (!IsInitialized() || uiFrameIndex == 0 || uiFrameIndex <= m_pState->m_uiFrameIndex || !xiiMath::IsFinite(vCameraPosition.x) || !xiiMath::IsFinite(vCameraPosition.y) || !xiiMath::IsFinite(vCameraPosition.z))
     return XII_FAILURE;
 
   const auto& configuration = m_pState->m_Settings;
@@ -287,8 +286,7 @@ xiiResult xiiSparseVoxelRadianceContext::BeginFrame(const xiiVec3& vCameraPositi
     for (xiiUInt32 axis = 0; axis < 3; ++axis)
     {
       const double minimum = static_cast<double>(xiiMath::Floor(cellPosition.GetData()[axis])) - configuration.m_uiClipmapBrickResolution / 2U;
-      if (!xiiMath::IsFinite(minimum) || minimum < -static_cast<double>(s_uiCoordinateBias) ||
-          minimum + configuration.m_uiClipmapBrickResolution - 1.0 >= s_uiCoordinateBias)
+      if (!xiiMath::IsFinite(minimum) || minimum < -static_cast<double>(s_uiCoordinateBias) || minimum + configuration.m_uiClipmapBrickResolution - 1.0 >= s_uiCoordinateBias)
         return XII_FAILURE;
     }
   }
@@ -453,8 +451,7 @@ xiiResult xiiSparseVoxelRadianceContext::BeginFrame(const xiiVec3& vCameraPositi
   for (xiiUInt32 i = 0U; i < uiUpdateCount; ++i)
   {
     const xiiSparseVoxelBrickState& brick = m_pState->m_Bricks[candidates[i].m_uiPhysicalBrick];
-    m_pState->m_ScheduledUpdates.PushBack({brick.m_uiPackedKey, brick.m_uiPhysicalBrick, brick.m_uiClipmapLevel, brick.m_vWorldMinimum, brick.m_fVoxelSize,
-                                           brick.m_Flags.IsSet(xiiSparseVoxelBrickFlags::Valid) ? settings.m_fTemporalHysteresis : 0.0f});
+    m_pState->m_ScheduledUpdates.PushBack({brick.m_uiPackedKey, brick.m_uiPhysicalBrick, brick.m_uiClipmapLevel, brick.m_vWorldMinimum, brick.m_fVoxelSize, brick.m_Flags.IsSet(xiiSparseVoxelBrickFlags::Valid) ? settings.m_fTemporalHysteresis : 0.0f});
   }
 
   m_pState->m_Stats.m_uiResidentBrickCount  = m_pState->m_BrickLookup.GetCount();
@@ -547,9 +544,7 @@ xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddU
   };
 
   const bool bPerformUpdates = m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex;
-  auto       pass            = graph.AddPass<UpdatePassData>(
-    "Sparse Voxel Radiance Update", xiiGALCommandQueueFlags::Compute,
-    [this, bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+  auto       pass            = graph.AddPass<UpdatePassData>("Sparse Voxel Radiance Update", xiiGALCommandQueueFlags::Compute, [this, bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
       xiiGALBufferCreationDescription description;
       const xiiUInt32                 uiResolution = m_pState->m_Settings.m_uiClipmapBrickResolution;
       const xiiUInt32                 uiPageCount  = m_pState->m_Settings.m_uiClipmapLevels * uiResolution * uiResolution * uiResolution;
@@ -580,9 +575,7 @@ xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddU
       data.m_hRadiancePool = bPerformUpdates ? builder.WriteBuffer(data.m_hRadiancePool, xiiGALResourceStateFlags::UnorderedAccess) : builder.ReadBuffer(data.m_hRadiancePool, xiiGALResourceStateFlags::ShaderResource);
       builder.ExportBuffer(data.m_hRadiancePool, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(bPerformUpdates);
-      builder.SetPassAllowMerge(false);
-    },
-    [this](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [this](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd = context.GetCommandList();
       {
         xiiGALMapHelper<xiiUInt32> mapped(cmd, context.GetBuffer(data.m_hPageTable), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -599,8 +592,7 @@ xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddU
       }
       {
         xiiGALMapHelper<xiiSparseVoxelRadianceConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-        constants->ClipmapAndUpdateCounts = xiiVec4U32(m_pState->m_Settings.m_uiClipmapLevels, m_pState->m_Settings.m_uiClipmapBrickResolution,
-                                                                        m_pState->m_Settings.m_uiBrickVoxelResolution, data.m_Updates.GetCount());
+        constants->ClipmapAndUpdateCounts = xiiVec4U32(m_pState->m_Settings.m_uiClipmapLevels, m_pState->m_Settings.m_uiClipmapBrickResolution, m_pState->m_Settings.m_uiBrickVoxelResolution, data.m_Updates.GetCount());
         constants->PoolLayout             = xiiVec4U32(m_pState->m_uiVoxelsPerBrick, m_pState->m_Settings.m_uiMaxResidentBricks, static_cast<xiiUInt32>(m_pState->m_uiFrameIndex), 0U);
         constants->RadianceSettings       = xiiVec4(m_pState->m_Settings.m_fTemporalHysteresis, 0.0f, 0.0f, 0.0f);
       }
@@ -623,8 +615,7 @@ xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddU
         }
       }
       if (m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex)
-        m_pState->m_uiLastGpuUpdateFrame = m_pState->m_uiFrameIndex;
-    });
+        m_pState->m_uiLastGpuUpdateFrame = m_pState->m_uiFrameIndex; });
 
   pass.first->m_pLightingSystem   = pLightingSystem;
   const xiiUInt32 uiResolution    = m_pState->m_Settings.m_uiClipmapBrickResolution;
@@ -666,8 +657,7 @@ xiiSparseVoxelRadianceContext::UpdateHandles xiiSparseVoxelRadianceContext::AddU
       xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&uiHistoryBits), reinterpret_cast<const xiiUInt8*>(&update.m_fHistoryWeight), sizeof(float));
       xiiGpuSparseVoxelBrickUpdate& gpuUpdate = pass.first->m_Updates.ExpandAndGetRef();
       gpuUpdate.m_vWorldMinimumAndVoxelSize   = xiiVec4(update.m_vWorldMinimum, update.m_fVoxelSize);
-      gpuUpdate.m_vPhysicalLevelAndKey        = xiiVec4U32(update.m_uiPhysicalBrick, static_cast<xiiUInt32>(update.m_uiPackedKey),
-                                                           static_cast<xiiUInt32>(update.m_uiPackedKey >> 32U), uiHistoryBits);
+      gpuUpdate.m_vPhysicalLevelAndKey        = xiiVec4U32(update.m_uiPhysicalBrick, static_cast<xiiUInt32>(update.m_uiPackedKey), static_cast<xiiUInt32>(update.m_uiPackedKey >> 32U), uiHistoryBits);
     }
   }
 

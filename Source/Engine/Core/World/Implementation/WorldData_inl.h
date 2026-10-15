@@ -39,8 +39,7 @@ namespace xiiInternal
     parallelForParams.m_uiMaxTasksPerThread = 2;
     parallelForParams.m_pTaskAllocator      = m_LinearAllocator.GetCurrentAllocator();
 
-    xiiTaskSystem::ParallelFor(
-      blocks.GetArrayPtr(), [pUserData](xiiArrayPtr<WorldData::Hierarchy::DataBlock> blocksSlice) {
+    xiiTaskSystem::ParallelFor(blocks.GetArrayPtr(), [pUserData](xiiArrayPtr<WorldData::Hierarchy::DataBlock> blocksSlice) {
         for (WorldData::Hierarchy::DataBlock& block : blocksSlice)
         {
           xiiGameObject::TransformationData* pCurrentData = block.m_pData;
@@ -51,9 +50,7 @@ namespace xiiInternal
             VISITOR::Visit(pCurrentData, pUserData);
             ++pCurrentData;
           }
-        }
-      },
-      "World DataBlock Traversal Task", parallelForParams);
+        } }, "World DataBlock Traversal Task", parallelForParams);
 
     return xiiVisitorExecution::Continue;
   }
@@ -218,8 +215,7 @@ namespace xiiInternal
 
   XII_FORCE_INLINE void WorldData::ReadMarker::Lock()
   {
-    XII_ASSERT_DEV(m_Data.m_WriteThreadID == (xiiThreadID)0 || m_Data.m_WriteThreadID == xiiThreadUtils::GetCurrentThreadID(),
-                   "World '{0}' cannot be marked for reading because it is already marked for writing by another thread.", m_Data.m_sName);
+    XII_ASSERT_DEV(m_Data.m_WriteThreadID == (xiiThreadID)0 || m_Data.m_WriteThreadID == xiiThreadUtils::GetCurrentThreadID(), "World '{0}' cannot be marked for reading because it is already marked for writing by another thread.", m_Data.m_sName);
     m_Data.m_iReadCounter.Increment();
   }
 

@@ -420,8 +420,7 @@ void xiiScene2Document::HandleObjectStateFromEngineMsg2(const xiiPushObjectState
           continue;
         const auto* skeletonProperty = component->GetType()->FindPropertyByName(attribute->m_sProperty2);
         xiiVariant  skeleton;
-        if (skeletonProperty == nullptr || GetObjectAccessor()->GetValue(component, skeletonProperty, skeleton).Failed() ||
-            !skeleton.IsA<xiiString>() || skeleton.Get<xiiString>() != pState->m_sSkeletonResource)
+        if (skeletonProperty == nullptr || GetObjectAccessor()->GetValue(component, skeletonProperty, skeleton).Failed() || !skeleton.IsA<xiiString>() || skeleton.Get<xiiString>() != pState->m_sSkeletonResource)
           continue;
 
         const auto result = xiiApplySkeletonPoseForAuthoring(*GetObjectAccessor(), component, pState->m_BoneTransforms);

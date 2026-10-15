@@ -42,8 +42,7 @@ namespace
     const xiiString text  = xiiUInt32(index + 1) < command->GetParameterCount() ? command->GetParameter(index + 1) : xiiString();
     const char*     end   = nullptr;
     double          value = 0;
-    if (text.IsEmpty() || xiiConversionUtils::StringToFloat(text, value, &end).Failed() || end != text.GetView().GetEndPointer() ||
-        !xiiMath::IsFinite(value) || xiiMath::Abs(value) > double(xiiMath::MaxValue<float>()) * (1.0 + double(xiiMath::FloatEpsilon<float>()) * 0.25))
+    if (text.IsEmpty() || xiiConversionUtils::StringToFloat(text, value, &end).Failed() || end != text.GetView().GetEndPointer() || !xiiMath::IsFinite(value) || xiiMath::Abs(value) > double(xiiMath::MaxValue<float>()) * (1.0 + double(xiiMath::FloatEpsilon<float>()) * 0.25))
     {
       xiiLog::Error("Invalid finite sampler value for '{}': '{}'.", name, text);
       return XII_FAILURE;

@@ -4,6 +4,32 @@
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 
+bool xiiViewRenderMode::IsSupportedByDefaultPipeline(Enum mode)
+{
+  switch (mode)
+  {
+    case Default:
+    case Wireframe:
+    case InstanceID:
+    case BaseColor:
+    case Metallic:
+    case Roughness:
+    case Specular:
+    case Emissive:
+    case AmbientOcclusion:
+    case NormalMap:
+    case DepthLinear:
+    case DepthNonLinear:
+    case MotionVectors:
+    case IndirectLighting:
+    case ReflectionContribution:
+    case Bloom:
+      return true;
+    default:
+      return false;
+  }
+}
+
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1U)
   XII_ENUM_CONSTANT(xiiShadingQualityLevel::Low),

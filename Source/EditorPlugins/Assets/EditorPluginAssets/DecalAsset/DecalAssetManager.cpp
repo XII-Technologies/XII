@@ -229,11 +229,7 @@ bool xiiDecalAssetDocumentManager::IsDecalTextureUpToDate(const char* szDecalFil
   xiiUInt64 hash          = 0;
   xiiUInt16 assetVersion = 0, descriptorVersion = 0;
   xiiUInt32 generatorLength = 0;
-  if (file.ReadBytes(tag, sizeof(tag)) != sizeof(tag) || !xiiMemoryUtils::IsEqual(tag, "xiiAsset", sizeof(tag)) ||
-      file.ReadBytes(&headerVersion, 1) != 1 || headerVersion != 3 ||
-      file.ReadQWordValue(&hash).Failed() || file.ReadWordValue(&assetVersion).Failed() ||
-      file.ReadDWordValue(&generatorLength).Failed() || generatorLength > file.GetFileSize() - 25 ||
-      file.SkipBytes(generatorLength) != generatorLength || file.ReadWordValue(&descriptorVersion).Failed())
+  if (file.ReadBytes(tag, sizeof(tag)) != sizeof(tag) || !xiiMemoryUtils::IsEqual(tag, "xiiAsset", sizeof(tag)) || file.ReadBytes(&headerVersion, 1) != 1 || headerVersion != 3 || file.ReadQWordValue(&hash).Failed() || file.ReadWordValue(&assetVersion).Failed() || file.ReadDWordValue(&generatorLength).Failed() || generatorLength > file.GetFileSize() - 25 || file.SkipBytes(generatorLength) != generatorLength || file.ReadWordValue(&descriptorVersion).Failed())
     return false;
   if (hash != uiAssetHash || assetVersion != GetAtlasAssetVersion() || descriptorVersion != 2)
     return false;

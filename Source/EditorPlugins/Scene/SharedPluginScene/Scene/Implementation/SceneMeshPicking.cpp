@@ -49,8 +49,7 @@ xiiResult xiiSceneMeshPickingState::Marquee(const xiiView& view, const xiiRectU3
 {
   out_objects.Clear();
   XII_SUCCEED_OR_RETURN(Poll());
-  if (!m_Readback.Matches(view) || m_Readback.GetWordsPerPixel() != 4 ||
-      rectangle.width > xiiMath::MaxValue<xiiUInt32>() - rectangle.x || rectangle.height > xiiMath::MaxValue<xiiUInt32>() - rectangle.y)
+  if (!m_Readback.Matches(view) || m_Readback.GetWordsPerPixel() != 4 || rectangle.width > xiiMath::MaxValue<xiiUInt32>() - rectangle.x || rectangle.height > xiiMath::MaxValue<xiiUInt32>() - rectangle.y)
     return XII_FAILURE;
   if (rectangle.width == 0 || rectangle.height == 0)
     return XII_SUCCESS;

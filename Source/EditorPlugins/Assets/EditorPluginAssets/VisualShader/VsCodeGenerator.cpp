@@ -452,16 +452,14 @@ xiiStatus xiiVisualShaderCodeGenerator::CheckPropertyValues(const xiiDocumentObj
 
       if (!xiiStringUtils::IsValidIdentifierName(sPropValue))
       {
-        return xiiStatus(xiiFmt("A '{0}' node has a '{1}' property that is not a valid identifier: '{2}'. Only letters, digits and _ are allowed.",
-                                pDesc->m_sName, props[p].m_sName, sPropValue));
+        return xiiStatus(xiiFmt("A '{0}' node has a '{1}' property that is not a valid identifier: '{2}'. Only letters, digits and _ are allowed.", pDesc->m_sName, props[p].m_sName, sPropValue));
       }
 
       auto& set = m_UsedUniqueValues[iUniqueValueGroup];
 
       if (set.Contains(sPropValue))
       {
-        return xiiStatus(xiiFmt(
-          "A '{0}' node has a '{1}' property that has the same value ('{2}') as another parameter.", pDesc->m_sName, props[p].m_sName, sPropValue));
+        return xiiStatus(xiiFmt("A '{0}' node has a '{1}' property that has the same value ('{2}') as another parameter.", pDesc->m_sName, props[p].m_sName, sPropValue));
       }
 
       set.Insert(sPropValue);

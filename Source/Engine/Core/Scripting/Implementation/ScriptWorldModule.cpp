@@ -171,15 +171,14 @@ void xiiScriptWorldModule::CallUpdateFunctions(const xiiWorldModule::UpdateConte
     deltaTime = xiiClock::GetGlobalClock()->GetTimeDiff();
   }
 
-  m_Scheduler.Update(deltaTime,
-                     [this](const FunctionContext& context, xiiTime deltaTime) {
-                       if (GetWorld()->GetWorldSimulationEnabled() || context.m_pFunctionAndFlags.GetFlags() == FunctionContext::Flags::None)
-                       {
-                         xiiVariant args[] = {deltaTime};
-                         xiiVariant returnValue;
-                         context.m_pFunctionAndFlags->Execute(context.m_pInstance, xiiMakeArrayPtr(args), returnValue);
-                       }
-                     });
+  m_Scheduler.Update(deltaTime, [this](const FunctionContext& context, xiiTime deltaTime) {
+    if (GetWorld()->GetWorldSimulationEnabled() || context.m_pFunctionAndFlags.GetFlags() == FunctionContext::Flags::None)
+    {
+      xiiVariant args[] = {deltaTime};
+      xiiVariant returnValue;
+      context.m_pFunctionAndFlags->Execute(context.m_pInstance, xiiMakeArrayPtr(args), returnValue);
+    }
+  });
 
   // Delete dead coroutines
   for (xiiUInt32 i = 0; i < m_DeadScriptCoroutines.GetCount(); ++i)

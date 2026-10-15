@@ -18,11 +18,11 @@ void xiiSaveDocumentTask::Execute()
 
   if (file.Close() == XII_FAILURE)
   {
-    m_document->m_LastSaveResult = xiiStatus(xiiFmt("Unable to open file '{0}' for writing!", m_document->m_sDocumentPath));
+    m_Result = xiiStatus(xiiFmt("Unable to write document file '{0}'!", m_sDocumentPath));
   }
   else
   {
-    m_document->m_LastSaveResult = xiiStatus(XII_SUCCESS);
+    m_Result = xiiStatus(XII_SUCCESS);
   }
 }
 
@@ -35,28 +35,29 @@ xiiAfterSaveDocumentTask::~xiiAfterSaveDocumentTask() = default;
 
 void xiiAfterSaveDocumentTask::Execute()
 {
-  if (m_document->m_LastSaveResult.Succeeded())
+  const auto result = m_pSaveTask->m_Result;
+  if (result.Succeeded())
   {
+    // Only the captured revision reached disk. Later transactions (including undo/redo)
+    // must stay dirty, and event handlers may create further edits after this check.
+    if (m_document->m_uiModificationRevision == m_uiModificationRevision)
+      m_document->SetModified(false);
+
     xiiDocumentEvent e;
     e.m_pDocument = m_document;
     e.m_Type      = xiiDocumentEvent::Type::DocumentSaved;
     m_document->m_EventsOne.Broadcast(e);
     m_document->s_EventsAny.Broadcast(e);
 
-    m_document->SetModified(false);
-
-    // after saving once, this information is pointless
-    m_document->m_uiUnknownObjectTypeInstances = 0;
-    m_document->m_UnknownObjectTypes.Clear();
-  }
-
-  if (m_document->m_LastSaveResult.Succeeded())
-  {
     m_document->InternalAfterSaveDocument();
   }
+
+  // An earlier completion must not forget a later queued save. Clear this task before
+  // invoking the callback, which may enqueue another save; do not touch the document afterwards.
+  if (m_document->m_ActiveSaveTask == m_TaskGroup)
+    m_document->m_ActiveSaveTask.Invalidate();
   if (m_callback.IsValid())
   {
-    m_callback(m_document, m_document->m_LastSaveResult);
+    m_callback(m_document, result);
   }
-  m_document->m_ActiveSaveTask.Invalidate();
 }

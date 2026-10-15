@@ -415,17 +415,10 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusion(const x
 
 void xiiBuiltinRenderPipelineRuntime::SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiWidth        = m_View.GetRenderResolutionWidth();
-  const xiiUInt32 uiHeight       = m_View.GetRenderResolutionHeight();
   const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPrepPasses.m_uiAmbientOcclusionHistoryWriteIndex;
   data.m_uiHistoryWriteIndex     = uiCurrentSlot;
   const xiiUInt32 uiPreviousSlot = (uiCurrentSlot + 1U) & 1U;
   auto&           resources      = m_Resources.m_LightingPrepPasses;
-
-  if (EnsureTemporalHistoryTextures(resources.m_pAmbientOcclusionHistory, xiiGALResourceFormat::R8UNormalized, uiWidth, uiHeight))
-  {
-    resources.m_bAmbientOcclusionHistoryValid = false;
-  }
 
   data.m_bHistoryValid             = resources.m_bAmbientOcclusionHistoryValid;
   data.m_hRawAmbientOcclusion      = builder.ReadTexture(xiiRGBlackboardKeys::k_RawAOTexture, xiiGALResourceStateFlags::ShaderResource);
@@ -472,7 +465,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteGroundTruthAmbientOcclusionDenoise(
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DenoisedOutput", context.GetTexture(data.m_hStableAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(m_View.GetRenderResolutionWidth() + 7U) / 8U, (m_View.GetRenderResolutionHeight() + 7U) / 8U, 1U});
-    m_Resources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid = true;
+    m_Resources.m_LightingPrepPasses.m_bAmbientOcclusionHistoryValid       = true;
     m_Resources.m_LightingPrepPasses.m_uiAmbientOcclusionHistoryWriteIndex = 1U - data.m_uiHistoryWriteIndex;
   }
   cmd.EndDebugGroup();
@@ -487,53 +480,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRDITemporal(xiiReSTIRDITemporalD
   const xiiUInt32 uiWidth  = m_View.GetRenderResolutionWidth();
   const xiiUInt32 uiHeight = m_View.GetRenderResolutionHeight();
 
-  auto HistoryMatchesResolution = [uiWidth, uiHeight](const xiiSharedPtr<xiiGALTexture>& pTexture) {
-    return pTexture != nullptr && pTexture->GetDescription().m_Size.width == uiWidth && pTexture->GetDescription().m_Size.height == uiHeight;
-  };
-
   auto& lightingPasses = m_Resources.m_LightingPasses;
-  bool  bHistoryReset  = false;
-
-  if (!HistoryMatchesResolution(lightingPasses.m_pDirectReservoirHistory[0]) ||
-      !HistoryMatchesResolution(lightingPasses.m_pDirectReservoirHistory[1]))
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type        = xiiGALResourceDimension::Texture2D;
-    description.m_Format      = xiiGALResourceFormat::RGBA32UInt;
-    description.m_Size.width  = uiWidth;
-    description.m_Size.height = uiHeight;
-    description.m_uiMipLevels = 1U;
-    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage       = xiiGALResourceUsage::Default;
-
-    for (xiiUInt32 uiSlot = 0U; uiSlot < 2U; ++uiSlot)
-    {
-      lightingPasses.m_pDirectReservoirHistory[uiSlot] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    }
-    bHistoryReset = true;
-  }
-
-  if (!HistoryMatchesResolution(lightingPasses.m_pDirectSurfaceHistory[0]) ||
-      !HistoryMatchesResolution(lightingPasses.m_pDirectSurfaceHistory[1]))
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type        = xiiGALResourceDimension::Texture2D;
-    description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-    description.m_Size.width  = uiWidth;
-    description.m_Size.height = uiHeight;
-    description.m_uiMipLevels = 1U;
-    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage       = xiiGALResourceUsage::Default;
-
-    for (xiiUInt32 uiSlot = 0U; uiSlot < 2U; ++uiSlot)
-    {
-      lightingPasses.m_pDirectSurfaceHistory[uiSlot] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    }
-    bHistoryReset = true;
-  }
-
-  if (bHistoryReset)
-    lightingPasses.m_bDirectReservoirHistoryValid = false;
 
   data.m_bHistoryValid           = lightingPasses.m_bDirectReservoirHistoryValid;
   const xiiUInt32 uiPreviousSlot = 1U - lightingPasses.m_uiDirectReservoirHistoryWriteIndex;
@@ -620,9 +567,9 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteReSTIRDITemporal(const xiiReSTIRDIT
 
 void xiiBuiltinRenderPipelineRuntime::SetupReSTIRDISpatial(xiiReSTIRDISpatialData& data, xiiRenderGraphBuilder& builder)
 {
-  const xiiUInt32 uiCurrentSlot  = m_Resources.m_LightingPasses.m_uiDirectReservoirHistoryWriteIndex;
-  data.m_uiHistoryWriteIndex     = uiCurrentSlot;
-  auto&           lightingPasses = m_Resources.m_LightingPasses;
+  const xiiUInt32 uiCurrentSlot = m_Resources.m_LightingPasses.m_uiDirectReservoirHistoryWriteIndex;
+  data.m_uiHistoryWriteIndex    = uiCurrentSlot;
+  auto& lightingPasses          = m_Resources.m_LightingPasses;
 
   data.m_hSceneDepth          = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferAlbedo       = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
@@ -715,8 +662,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRDIEmissiveVisibility(xiiReSTIRD
   data.m_hEmissiveLightHeader = builder.ReadBuffer(lightingPasses.m_hEmissiveLightHeader, xiiGALResourceStateFlags::ShaderResource);
 
   data.m_bUseHardwareRayTracing = lightingPasses.m_pRayTracingScene != nullptr && EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
-  data.m_hReservoir             = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir,
-                                          data.m_bUseHardwareRayTracing ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+  data.m_hReservoir             = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightReservoir, data.m_bUseHardwareRayTracing ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
 
   if (data.m_bUseHardwareRayTracing)
   {
@@ -731,8 +677,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupReSTIRDIEmissiveVisibility(xiiReSTIRD
     if (lightingPasses.m_hRayTracingGeometryData.IsValid())
       data.m_hGeometryData = builder.ReadBuffer(lightingPasses.m_hRayTracingGeometryData, xiiGALResourceStateFlags::ShaderResource);
 
-    data.m_hShaderBindingTable = builder.ImportBuffer("ReSTIR DI Emissive Visibility Shader Binding Table", lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable,
-                                                      lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable->GetResourceState());
+    data.m_hShaderBindingTable = builder.ImportBuffer("ReSTIR DI Emissive Visibility Shader Binding Table", lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable, lightingPasses.m_pReSTIRDIEmissiveVisibilityShaderBindingTable->GetResourceState());
     data.m_hShaderBindingTable = builder.ReadBuffer(data.m_hShaderBindingTable, xiiGALResourceStateFlags::RayTracing);
   }
 
@@ -947,18 +892,14 @@ void xiiBuiltinRenderPipelineRuntime::SetupIndirectLighting(xiiDeferredIndirectL
 
   auto& reflectionResources = m_Resources.m_LightingPrepPasses;
   XII_ASSERT_DEV(reflectionResources.m_pFallbackReflectionProbeTexture != nullptr, "Reflection probe selection must initialize the fallback cubemap before indirect lighting setup.");
-  data.m_hFallbackReflectionProbe = builder.ReadTexture(
-    builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()),
-    xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFallbackReflectionProbe = builder.ReadTexture(builder.ImportTexture("ReflectionProbeFallback", reflectionResources.m_pFallbackReflectionProbeTexture, reflectionResources.m_pFallbackReflectionProbeTexture->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
 
   data.m_hReflectionProbeTextures.Reserve(reflectionResources.m_ReflectionProbeTextures.GetCount());
   for (xiiUInt32 uiProbeIndex = 0U; uiProbeIndex < reflectionResources.m_ReflectionProbeTextures.GetCount(); ++uiProbeIndex)
   {
     xiiStringBuilder sResourceName;
     sResourceName.SetFormat("ReflectionProbeTexture_{0}", uiProbeIndex);
-    data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(
-      builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()),
-      xiiGALResourceStateFlags::ShaderResource));
+    data.m_hReflectionProbeTextures.PushBack(builder.ReadTexture(builder.ImportTexture(sResourceName, reflectionResources.m_ReflectionProbeTextures[uiProbeIndex], reflectionResources.m_ReflectionProbeTextures[uiProbeIndex]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource));
   }
 
   xiiGALTextureCreationDescription description;

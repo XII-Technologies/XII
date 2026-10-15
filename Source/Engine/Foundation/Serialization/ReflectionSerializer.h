@@ -20,8 +20,7 @@ public:
   /// or might also be read by humans.
   ///
   /// Read-only properties are not written out, as they cannot be restored anyway.
-  static void WriteObjectToDDL(xiiStreamWriter& ref_stream, const xiiRTTI* pRtti, const void* pObject, bool bCompactMmode = true,
-                               xiiOpenDdlWriter::TypeStringMode typeMode = xiiOpenDdlWriter::TypeStringMode::Shortest); // [tested]
+  static void WriteObjectToDDL(xiiStreamWriter& ref_stream, const xiiRTTI* pRtti, const void* pObject, bool bCompactMmode = true, xiiOpenDdlWriter::TypeStringMode typeMode = xiiOpenDdlWriter::TypeStringMode::Shortest); // [tested]
 
   /// Overload of WriteObjectToDDL that takes an existing DDL writer to output to.
   static void WriteObjectToDDL(xiiOpenDdlWriter& ref_ddl, const xiiRTTI* pRtti, const void* pObject, xiiUuid guid = xiiUuid()); // [tested]

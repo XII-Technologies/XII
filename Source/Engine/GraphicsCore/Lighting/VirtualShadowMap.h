@@ -202,8 +202,7 @@ public:
   /// Crops one cascade view-projection matrix to the requested virtual page.
   /// The resulting clip space fills a physical page viewport without changing
   /// reversed-Z depth. Exposed for tooling and deterministic validation.
-  [[nodiscard]] static bool BuildPageViewProjection(const xiiMat4& cascadeViewProjection, const xiiVirtualShadowPageId& page,
-                                                    xiiUInt32 uiVirtualResolution, xiiUInt32 uiPageSize, xiiMat4& out_pageViewProjection);
+  [[nodiscard]] static bool BuildPageViewProjection(const xiiMat4& cascadeViewProjection, const xiiVirtualShadowPageId& page, xiiUInt32 uiVirtualResolution, xiiUInt32 uiPageSize, xiiMat4& out_pageViewProjection);
 
   struct UploadHandles
   {
@@ -224,20 +223,11 @@ public:
   /// GPU visibility and mesh-shader geometry path. A completion pass clears
   /// residency dirty bits and patches the current frame's hashed table only
   /// after all scheduled atlas writes execute.
-  [[nodiscard]] static UploadHandles AddRasterPasses(xiiRenderGraph& graph, const UploadHandles& upload,
-                                                     const xiiGpuVisibilityOutputs&                    visibility,
-                                                     const xiiGeometryResidencyManager::UploadHandles& geometry,
-                                                     const xiiMaterialGpuStorage::UploadHandles&       materials,
-                                                     xiiArrayPtr<const xiiMat4>                        cascadeViewProjections,
-                                                     xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset,
-                                                     xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY);
+  [[nodiscard]] static UploadHandles AddRasterPasses(xiiRenderGraph& graph, const UploadHandles& upload, const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry, const xiiMaterialGpuStorage::UploadHandles& materials, xiiArrayPtr<const xiiMat4> cascadeViewProjections, xiiUInt32 uiDirectionalLightId, xiiUInt32 uiVertexStride, xiiUInt32 uiTexCoordOffset, xiiUInt32 uiMeshDispatchGroupCountX, xiiUInt32 uiMeshDispatchGroupCountY);
 
   /// Appends screen-derived directional shadow requests and copies the cumulative
   /// feedback stream into the completed-frame readback ring.
-  static void AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth,
-                                xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight,
-                                const xiiMat4& inverseViewProjection, float fNearPlane,
-                                xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex);
+  static void AddFeedbackPasses(xiiRenderGraph& graph, xiiRenderGraphTextureHandle hSceneDepth, xiiRenderGraphBufferHandle hCascadeConstants, xiiUInt32 uiWidth, xiiUInt32 uiHeight, const xiiMat4& inverseViewProjection, float fNearPlane, xiiUInt32 uiDirectionalLightId, xiiUInt64 uiFrameIndex);
 
 private:
   static void                                          Startup();

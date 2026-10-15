@@ -77,8 +77,7 @@ void CompareSnprintf(xiiStringBuilder& ref_sLog, const xiiFormatString& str, con
     t3 = sw.Checkpoint();
   }
 
-  ref_sLog.AppendFormat("xii: {0} msec, std: {1} msec, xiiFmt: {2} msec : {3} -> {4}\n", xiiArgF(t1.GetMilliseconds(), 2), xiiArgF(t2.GetMilliseconds(), 2),
-                        xiiArgF(t3.GetMilliseconds(), 2), szFormat, Temp1);
+  ref_sLog.AppendFormat("xii: {0} msec, std: {1} msec, xiiFmt: {2} msec : {3} -> {4}\n", xiiArgF(t1.GetMilliseconds(), 2), xiiArgF(t2.GetMilliseconds(), 2), xiiArgF(t3.GetMilliseconds(), 2), szFormat, Temp1);
 
   va_end(args);
 }
@@ -146,8 +145,7 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
   {
     CompareSnprintf(perfLog, xiiFmt("Hello {0}, i = {1}, f = {2}", "World", 42, xiiArgF(3.141f, 2)), "Hello %s, i = %i, f = %.2f", "World", 42, 3.141f);
     CompareSnprintf(perfLog, xiiFmt("No formatting at all"), "No formatting at all");
-    CompareSnprintf(perfLog, xiiFmt("{0}, {1}, {2}, {3}, {4}", "AAAAAA", "BBBBBBB", "CCCCCC", "DDDDDDDDDDDDD", "EE"), "%s, %s, %s, %s, %s", "AAAAAA",
-                    "BBBBBBB", "CCCCCC", "DDDDDDDDDDDDD", "EE");
+    CompareSnprintf(perfLog, xiiFmt("{0}, {1}, {2}, {3}, {4}", "AAAAAA", "BBBBBBB", "CCCCCC", "DDDDDDDDDDDDD", "EE"), "%s, %s, %s, %s, %s", "AAAAAA", "BBBBBBB", "CCCCCC", "DDDDDDDDDDDDD", "EE");
     CompareSnprintf(perfLog, xiiFmt("{0}", 23), "%i", 23);
     CompareSnprintf(perfLog, xiiFmt("{0}", 23.123456789), "%f", 23.123456789);
     CompareSnprintf(perfLog, xiiFmt("{0}", xiiArgF(23.123456789, 2)), "%.2f", 23.123456789);
@@ -157,14 +155,11 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
     CompareSnprintf(perfLog, xiiFmt("{0}", xiiArgU(1234567890987ll, 30, false, 16, true)), "%30llX", 1234567890987ll);
     CompareSnprintf(perfLog, xiiFmt("{0}, {1}, {2}, {3}, {4}", 0, 1, 2, 3, 4), "%i, %i, %i, %i, %i", 0, 1, 2, 3, 4);
     CompareSnprintf(perfLog, xiiFmt("{0}, {1}, {2}, {3}, {4}", 0.1, 1.1, 2.1, 3.1, 4.1), "%.1f, %.1f, %.1f, %.1f, %.1f", 0.1, 1.1, 2.1, 3.1, 4.1);
-    CompareSnprintf(perfLog, xiiFmt("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
-                    "%i, %i, %i, %i, %i, %i, %i, %i, %i, %i", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-    CompareSnprintf(perfLog, xiiFmt("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}", 0.1, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1),
-                    "%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f", 0.1, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1);
+    CompareSnprintf(perfLog, xiiFmt("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9), "%i, %i, %i, %i, %i, %i, %i, %i, %i, %i", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    CompareSnprintf(perfLog, xiiFmt("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}", 0.1, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1), "%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f", 0.1, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1);
     CompareSnprintf(perfLog, xiiFmt("{0}", xiiArgC('z')), "%c", 'z');
 
-    CompareSnprintf(perfLog, xiiFmt("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9), "%i, %i, %i, %i, %i, %i, %i, %i, %i, %i",
-                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    CompareSnprintf(perfLog, xiiFmt("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9), "%i, %i, %i, %i, %i, %i, %i, %i, %i, %i", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
 
 #if 0
     FILE* file = fopen("D:\\snprintf_perf.txt", "wb");

@@ -825,9 +825,7 @@ xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::Mak
 
   {
     xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-    network->SetMessageHandler('FSRV', [&sServerIPs, &uiPort](xiiRemoteMessage& ref_msg)
-
-                               {
+    network->SetMessageHandler('FSRV', [&sServerIPs, &uiPort](xiiRemoteMessage& ref_msg) {
         switch (ref_msg.GetMessageID())
         {
           case 'MYIP':

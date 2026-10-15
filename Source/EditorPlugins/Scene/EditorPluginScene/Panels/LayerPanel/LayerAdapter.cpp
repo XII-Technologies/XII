@@ -13,8 +13,7 @@ xiiQtLayerAdapter::xiiQtLayerAdapter(xiiScene2Document* pDocument) :
   xiiQtDocumentTreeModelAdapter(pDocument->GetSceneObjectManager(), xiiGetStaticRTTI<xiiSceneLayer>(), nullptr)
 {
   m_pSceneDocument = pDocument;
-  m_pSceneDocument->m_LayerEvents.AddEventHandler(
-    xiiMakeDelegate(&xiiQtLayerAdapter::LayerEventHandler, this), m_LayerEventUnsubscriber);
+  m_pSceneDocument->m_LayerEvents.AddEventHandler(xiiMakeDelegate(&xiiQtLayerAdapter::LayerEventHandler, this), m_LayerEventUnsubscriber);
 
   xiiDocument::s_EventsAny.AddEventHandler(xiiMakeDelegate(&xiiQtLayerAdapter::DocumentEventHander, this), m_DocumentEventUnsubscriber);
 }

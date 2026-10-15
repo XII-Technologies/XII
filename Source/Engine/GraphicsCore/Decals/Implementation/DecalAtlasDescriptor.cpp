@@ -24,18 +24,13 @@ xiiResult xiiDecalAtlasResourceDescriptor::Validate() const
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_LayerImages); ++i)
   {
     const auto& image = m_LayerImages[i];
-    if (!image.IsValid() || image.GetWidth() != m_AtlasSize.width || image.GetHeight() != m_AtlasSize.height ||
-        image.GetDepth() != 1 || image.GetNumFaces() != 1 || image.GetNumArrayIndices() != 1 ||
-        image.GetMipLevelCount() != mipCount || image.GetByteBlobPtr().GetCount() > 512U * 1024U * 1024U)
+    if (!image.IsValid() || image.GetWidth() != m_AtlasSize.width || image.GetHeight() != m_AtlasSize.height || image.GetDepth() != 1 || image.GetNumFaces() != 1 || image.GetNumArrayIndices() != 1 || image.GetMipLevelCount() != mipCount || image.GetByteBlobPtr().GetCount() > 512U * 1024U * 1024U)
       return XII_FAILURE;
     // Enforce the channel interpretation expected by the built-in decal shader.
     if (i == 0 ? !xiiGALResourceFormat::IsSrgb(image.GetImageFormat()) : xiiGALResourceFormat::IsSrgb(image.GetImageFormat()))
       return XII_FAILURE;
     const auto& format = xiiGALTextureUtilities::GetResourceFormatProperties(image.GetImageFormat());
-    if (xiiGALResourceFormat::IsTypeless(image.GetImageFormat()) || xiiGALResourceFormat::IsMultiplanar(image.GetImageFormat()) ||
-        format.m_ComponentType == xiiGALResourceFormatComponentType::Undefined ||
-        format.m_ComponentType == xiiGALResourceFormatComponentType::Depth || format.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil ||
-        format.m_ComponentType == xiiGALResourceFormatComponentType::SignedInteger || format.m_ComponentType == xiiGALResourceFormatComponentType::UnsignedInteger)
+    if (xiiGALResourceFormat::IsTypeless(image.GetImageFormat()) || xiiGALResourceFormat::IsMultiplanar(image.GetImageFormat()) || format.m_ComponentType == xiiGALResourceFormatComponentType::Undefined || format.m_ComponentType == xiiGALResourceFormatComponentType::Depth || format.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil || format.m_ComponentType == xiiGALResourceFormatComponentType::SignedInteger || format.m_ComponentType == xiiGALResourceFormatComponentType::UnsignedInteger)
       return XII_FAILURE;
     // Texture2DResource rounds compressed uploads to complete blocks. Reject a
     // changed logical extent, which would shift every normalized entry rectangle.
@@ -46,15 +41,7 @@ xiiResult xiiDecalAtlasResourceDescriptor::Validate() const
   for (const auto& entry : m_Entries)
   {
     const auto& uv = entry.m_vUVRect;
-    if (entry.m_sDecalId.IsEmpty() || entry.m_sDecalId.GetString().GetElementCount() > xiiDecalSerialization::MaxStringBytes ||
-        entry.m_hAlbedo.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes ||
-        entry.m_hNormal.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes ||
-        entry.m_hMaterial.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes ||
-        entry.m_hEmissive.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes || names.Insert(entry.m_sDecalId) || !entry.m_Size.HasNonZeroArea() ||
-        !uv.IsValid() || uv.x < 0 || uv.y < 0 || uv.z <= 0 || uv.w <= 0 || uv.x + uv.z > 1 || uv.y + uv.w > 1 ||
-        !entry.m_vTextureMetrics.IsValid() || entry.m_vTextureMetrics.x <= 0 || entry.m_vTextureMetrics.y <= 0 ||
-        entry.m_vTextureMetrics.z <= 0 || entry.m_vTextureMetrics.w <= 0 ||
-        (entry.m_ChannelMask.GetValue() & ~static_cast<xiiUInt16>(xiiDecalChannelMask::All)) != 0)
+    if (entry.m_sDecalId.IsEmpty() || entry.m_sDecalId.GetString().GetElementCount() > xiiDecalSerialization::MaxStringBytes || entry.m_hAlbedo.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes || entry.m_hNormal.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes || entry.m_hMaterial.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes || entry.m_hEmissive.GetResourceID().GetElementCount() > xiiDecalSerialization::MaxStringBytes || names.Insert(entry.m_sDecalId) || !entry.m_Size.HasNonZeroArea() || !uv.IsValid() || uv.x < 0 || uv.y < 0 || uv.z <= 0 || uv.w <= 0 || uv.x + uv.z > 1 || uv.y + uv.w > 1 || !entry.m_vTextureMetrics.IsValid() || entry.m_vTextureMetrics.x <= 0 || entry.m_vTextureMetrics.y <= 0 || entry.m_vTextureMetrics.z <= 0 || entry.m_vTextureMetrics.w <= 0 || (entry.m_ChannelMask.GetValue() & ~static_cast<xiiUInt16>(xiiDecalChannelMask::All)) != 0)
       return XII_FAILURE;
   }
   return XII_SUCCESS;
@@ -105,14 +92,11 @@ xiiResult xiiDecalAtlasResourceDescriptor::Deserialize(xiiStreamReader& stream)
     return XII_FAILURE;
   xiiDecalAtlasResourceDescriptor descriptor;
   xiiUInt8                        mipMaps = 0;
-  if (stream.ReadBytes(&descriptor.m_AtlasSize, sizeof(descriptor.m_AtlasSize)) != sizeof(descriptor.m_AtlasSize) ||
-      stream.ReadBytes(&descriptor.m_uiPadding, sizeof(descriptor.m_uiPadding)) != sizeof(descriptor.m_uiPadding) ||
-      stream.ReadBytes(&mipMaps, sizeof(mipMaps)) != sizeof(mipMaps) || mipMaps > 1)
+  if (stream.ReadBytes(&descriptor.m_AtlasSize, sizeof(descriptor.m_AtlasSize)) != sizeof(descriptor.m_AtlasSize) || stream.ReadBytes(&descriptor.m_uiPadding, sizeof(descriptor.m_uiPadding)) != sizeof(descriptor.m_uiPadding) || stream.ReadBytes(&mipMaps, sizeof(mipMaps)) != sizeof(mipMaps) || mipMaps > 1)
     return XII_FAILURE;
   descriptor.m_bGenerateMipMaps = mipMaps != 0;
   xiiUInt32 count               = 0;
-  if (stream.ReadDWordValue(&count).Failed() || count > 65535 || !descriptor.m_AtlasSize.HasNonZeroArea() ||
-      descriptor.m_AtlasSize.width > 16384 || descriptor.m_AtlasSize.height > 16384)
+  if (stream.ReadDWordValue(&count).Failed() || count > 65535 || !descriptor.m_AtlasSize.HasNonZeroArea() || descriptor.m_AtlasSize.width > 16384 || descriptor.m_AtlasSize.height > 16384)
     return XII_FAILURE;
   descriptor.m_Entries.SetCount(count);
   for (auto& entry : descriptor.m_Entries)
@@ -125,12 +109,7 @@ xiiResult xiiDecalAtlasResourceDescriptor::Deserialize(xiiStreamReader& stream)
     XII_SUCCEED_OR_RETURN(xiiDecalSerialization::ReadResourceHandle(stream, entry.m_hMaterial));
     XII_SUCCEED_OR_RETURN(xiiDecalSerialization::ReadResourceHandle(stream, entry.m_hEmissive));
     xiiUInt16 channelMask = 0;
-    if (stream.ReadBytes(&entry.m_Size, sizeof(entry.m_Size)) != sizeof(entry.m_Size) ||
-        stream.ReadBytes(&entry.m_uiPadding, sizeof(entry.m_uiPadding)) != sizeof(entry.m_uiPadding) ||
-        stream.ReadBytes(&entry.m_uiPriority, sizeof(entry.m_uiPriority)) != sizeof(entry.m_uiPriority) ||
-        stream.ReadWordValue(&channelMask).Failed() ||
-        stream.ReadBytes(&entry.m_vUVRect, sizeof(entry.m_vUVRect)) != sizeof(entry.m_vUVRect) ||
-        stream.ReadBytes(&entry.m_vTextureMetrics, sizeof(entry.m_vTextureMetrics)) != sizeof(entry.m_vTextureMetrics))
+    if (stream.ReadBytes(&entry.m_Size, sizeof(entry.m_Size)) != sizeof(entry.m_Size) || stream.ReadBytes(&entry.m_uiPadding, sizeof(entry.m_uiPadding)) != sizeof(entry.m_uiPadding) || stream.ReadBytes(&entry.m_uiPriority, sizeof(entry.m_uiPriority)) != sizeof(entry.m_uiPriority) || stream.ReadWordValue(&channelMask).Failed() || stream.ReadBytes(&entry.m_vUVRect, sizeof(entry.m_vUVRect)) != sizeof(entry.m_vUVRect) || stream.ReadBytes(&entry.m_vTextureMetrics, sizeof(entry.m_vTextureMetrics)) != sizeof(entry.m_vTextureMetrics))
       return XII_FAILURE;
     entry.m_ChannelMask.SetValue(channelMask);
   }
@@ -147,9 +126,7 @@ xiiResult xiiDecalAtlasResourceDescriptor::Deserialize(xiiStreamReader& stream)
     xiiRawMemoryStreamReader         reader(bytes.GetData(), size);
     xiiGALTextureCreationDescription description;
     XII_SUCCEED_OR_RETURN(dds.ReadImageDescription(reader, description, "dds"));
-    if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 ||
-        description.m_Size.width != descriptor.m_AtlasSize.width || description.m_Size.height != descriptor.m_AtlasSize.height ||
-        description.m_uiMipLevels > 15 || description.m_uiMipLevels == 0)
+    if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 || description.m_Size.width != descriptor.m_AtlasSize.width || description.m_Size.height != descriptor.m_AtlasSize.height || description.m_uiMipLevels > 15 || description.m_uiMipLevels == 0)
       return XII_FAILURE;
     // Check the complete byte budget before DDS allocates storage from its header.
     // A small or truncated file must not cause a much larger image allocation.

@@ -64,8 +64,7 @@ public:
 
   virtual void Clear(void* pInstance) const override
   {
-    XII_ASSERT_DEBUG(m_Insert != nullptr && m_Remove != nullptr, "The property '{0}' has no remove and insert function, thus it is read-only",
-                     xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Insert != nullptr && m_Remove != nullptr, "The property '{0}' has no remove and insert function, thus it is read-only", xiiAbstractProperty::GetPropertyName());
 
     // We must not cache the container c here as the Remove can make it invalid
     // e.g. xiiArrayPtr by value.

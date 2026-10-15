@@ -7,8 +7,7 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSceneViewPerspective, 1)
-  XII_ENUM_CONSTANTS(xiiSceneViewPerspective::Orthogonal_Front, xiiSceneViewPerspective::Orthogonal_Right, xiiSceneViewPerspective::Orthogonal_Top,
-    xiiSceneViewPerspective::Perspective)
+  XII_ENUM_CONSTANTS(xiiSceneViewPerspective::Orthogonal_Front, xiiSceneViewPerspective::Orthogonal_Right, xiiSceneViewPerspective::Orthogonal_Top, xiiSceneViewPerspective::Perspective)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEngineViewLightSettings, 1, xiiRTTIDefaultAllocator<xiiEngineViewLightSettings>)

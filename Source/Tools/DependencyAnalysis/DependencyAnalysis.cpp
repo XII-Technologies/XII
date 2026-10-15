@@ -687,8 +687,7 @@ public:
       compilationUnits.PushBack({compilationUnit.Key().GetView(), &compilationUnit.Value()});
     }
 
-    xiiTaskSystem::ParallelFor(
-      compilationUnits.GetArrayPtr(), [this](xiiArrayPtr<CompUnit> compUnits) {
+    xiiTaskSystem::ParallelFor(compilationUnits.GetArrayPtr(), [this](xiiArrayPtr<CompUnit> compUnits) {
         xiiStringBuilder   tmpPath;
         DependencyListType dependencies;
         for (auto& compUnit : compUnits)
@@ -715,9 +714,7 @@ public:
               }
             }
           }
-        }
-      },
-      "ParseCompilationUnit");
+        } }, "ParseCompilationUnit");
   }
 
   void ParseHeaderFiles()

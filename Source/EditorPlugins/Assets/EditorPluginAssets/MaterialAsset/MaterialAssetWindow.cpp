@@ -333,9 +333,7 @@ void xiiQtMaterialAssetDocumentWindow::PropertyEventHandler(const xiiDocumentObj
 
   UpdatePreview();
 
-  if (e.m_sProperty == "ShaderMode" ||
-      e.m_sProperty == "BLEND_MODE" ||
-      e.m_sProperty == "BaseMaterial")
+  if (e.m_sProperty == "ShaderMode" || e.m_sProperty == "BLEND_MODE" || e.m_sProperty == "BaseMaterial")
   {
     xiiDocumentConfigMsgToEngine msg;
     msg.m_sWhatToDo = "InvalidateCache";

@@ -10,9 +10,9 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
-xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
-xiiCVarFloat cvar_DynamicRenderingMinScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
-xiiCVarFloat cvar_DynamicRenderingMaxScale("Rendering.DynamicResolution.MaximumRenderScale", 1.0f, xiiCVarFlags::Default, "Maximum allowed render scale (1.0 = native resolution).");
+xiiCVarFloat cvar_DynamicRenderingTargetMs("Graphics.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
+xiiCVarFloat cvar_DynamicRenderingMinScale("Graphics.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
+xiiCVarFloat cvar_DynamicRenderingMaxScale("Graphics.DynamicResolution.MaximumRenderScale", 1.0f, xiiCVarFlags::Default, "Maximum allowed render scale (1.0 = native resolution).");
 
 namespace
 {
@@ -145,11 +145,8 @@ xiiResult xiiView::SetSensorProfile(xiiSensorProfileHandle hProfile)
   if (outputPasses.m_hSensorProfile == hProfile)
     return XII_SUCCESS;
 
-  outputPasses.m_hSensorProfile = hProfile;
-  if (outputPasses.m_pSensorOutputTexture != nullptr)
-  {
-    outputPasses.m_RetiredSensorOutputTextures.PushBack(std::move(outputPasses.m_pSensorOutputTexture));
-  }
+  outputPasses.m_hSensorProfile       = hProfile;
+  outputPasses.m_pSensorOutputTexture = nullptr;
   return XII_SUCCESS;
 }
 
@@ -371,12 +368,18 @@ xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlac
   auto* runtime = GetBuiltinRuntime();
   bool  changed = false;
   if (runtime->m_Instance.Synchronize(m_hRenderPipeline, &changed).Failed())
+  {
+    InvalidateTemporalHistory();
     return XII_FAILURE;
+  }
   if (changed)
     InvalidateTemporalHistory();
   RunDynamicResolutionPID();
   runtime->BeginFrame(shadows);
-  return runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);
+  const xiiResult result = runtime->m_Instance.Build(this, graph, blackboard, m_PipelineParameters);
+  if (result.Failed())
+    InvalidateTemporalHistory();
+  return result;
 }
 
 void xiiView::SetPipelineParameter(xiiStringView name, const xiiVariant& value)

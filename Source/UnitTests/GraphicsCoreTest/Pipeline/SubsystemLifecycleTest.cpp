@@ -113,9 +113,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
 
     xiiRenderGraph graph("Subsystem Resource Publication");
     graph.BeginSetup(1U);
-    auto publishPass = graph.AddPass<PublishData>(
-      "Publish Resources", xiiGALCommandQueueFlags::Transfer,
-      [](PublishData& data, xiiRenderGraphBuilder& builder) {
+    auto publishPass = graph.AddPass<PublishData>("Publish Resources", xiiGALCommandQueueFlags::Transfer, [](PublishData& data, xiiRenderGraphBuilder& builder) {
         xiiGALTextureCreationDescription textureDescription;
         textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
         textureDescription.m_Size.width  = 16U;
@@ -127,9 +125,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemLifecycle)
         xiiGALBufferCreationDescription bufferDescription;
         bufferDescription.m_uiSize    = 64U;
         bufferDescription.m_BindFlags = xiiGALBindFlags::ShaderResource;
-        data.m_hBuffer                = builder.WriteBuffer("Published Buffer", bufferDescription, xiiGALResourceStateFlags::CopyDestination);
-      },
-      [](const PublishData&, xiiRenderGraphPassContext&) {});
+        data.m_hBuffer                = builder.WriteBuffer("Published Buffer", bufferDescription, xiiGALResourceStateFlags::CopyDestination); }, [](const PublishData&, xiiRenderGraphPassContext&) {});
 
     const xiiRenderGraphTextureHandle hTexture = publishPass.first->m_hTexture;
     const xiiRenderGraphBufferHandle  hBuffer  = publishPass.first->m_hBuffer;

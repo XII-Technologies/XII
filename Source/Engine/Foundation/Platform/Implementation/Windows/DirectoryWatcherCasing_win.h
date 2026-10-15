@@ -37,6 +37,11 @@ namespace
     sCorrected = sCached.GetFileDirectory();
     sCorrected.AppendPath(stats.m_sName);
 
+    // A normal rename followed by replacement can leave a different file at the old path
+    // before its notifications are consumed. An unchanged leaf does not prove a case rename.
+    if (sCached == sCorrected && sCached.GetFileNameAndExtension() == oldPath.GetFileNameAndExtension())
+      return false;
+
     if (sCached != sCorrected)
     {
       const bool bIsDirectory = type == xiiFileSystemMirror<bool>::Type::Directory;

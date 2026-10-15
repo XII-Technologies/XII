@@ -132,8 +132,7 @@ void xiiQtTimeWidget::UpdateStats()
 
     if (uiFirstSample < Samples.GetCount())
     {
-      pp[uiColorPath].moveTo(
-        QPointF((Samples[uiFirstSample].m_AtGlobalTime - m_MaxGlobalTime).GetSeconds(), Samples[uiFirstSample].m_Timestep.GetSeconds()));
+      pp[uiColorPath].moveTo(QPointF((Samples[uiFirstSample].m_AtGlobalTime - m_MaxGlobalTime).GetSeconds(), Samples[uiFirstSample].m_Timestep.GetSeconds()));
 
       for (xiiUInt32 i = uiFirstSample + 1; i < Samples.GetCount(); ++i)
       {
@@ -193,8 +192,7 @@ void xiiQtTimeWidget::UpdateStats()
         continue;
 
       xiiStringBuilder sTooltip;
-      sTooltip.SetFormat("<p>Clock: {0}<br>Max Time Step: <b>{1}ms</b><br>Min Time Step: <b>{2}ms</b><br></p>", it.Key().GetData(),
-                         xiiArgF(Clock.m_MaxTimestep.GetMilliseconds(), 2), xiiArgF(Clock.m_MinTimestep.GetMilliseconds(), 2));
+      sTooltip.SetFormat("<p>Clock: {0}<br>Max Time Step: <b>{1}ms</b><br>Min Time Step: <b>{2}ms</b><br></p>", it.Key().GetData(), xiiArgF(Clock.m_MaxTimestep.GetMilliseconds(), 2), xiiArgF(Clock.m_MinTimestep.GetMilliseconds(), 2));
 
       Clock.m_pListItem->setToolTip(sTooltip.GetData());
     }
@@ -236,8 +234,7 @@ void xiiQtTimeWidget::ProcessTelemetry(void* pUnuseed)
     else
       ad.m_TimeSamples.PushBack(Sample);
 
-    if (ads.m_TimeSamples.GetCount() > 1 &&
-        (xiiMath::IsEqual(ads.m_TimeSamples.PeekBack().m_Timestep, SampleSmooth.m_Timestep, xiiTime::MakeFromMicroseconds(100))))
+    if (ads.m_TimeSamples.GetCount() > 1 && (xiiMath::IsEqual(ads.m_TimeSamples.PeekBack().m_Timestep, SampleSmooth.m_Timestep, xiiTime::MakeFromMicroseconds(100))))
       ads.m_TimeSamples.PeekBack() = SampleSmooth;
     else
       ads.m_TimeSamples.PushBack(SampleSmooth);

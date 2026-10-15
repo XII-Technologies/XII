@@ -7,8 +7,8 @@
 XII_CREATE_SIMPLE_TEST(Lighting, SparseVoxelRadiance)
 {
   xiiSparseVoxelRadianceContext context;
-  xiiUInt32       level = 0U;
-  xiiVec3I32      cell;
+  xiiUInt32                     level = 0U;
+  xiiVec3I32                    cell;
   const xiiUInt64               packedKey = context.PackBrickKey(6U, xiiVec3I32(-1247, 991, -7));
   context.UnpackBrickKey(packedKey, level, cell);
   XII_TEST_INT(level, 6U);

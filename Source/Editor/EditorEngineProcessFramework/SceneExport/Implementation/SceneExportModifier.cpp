@@ -9,12 +9,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiSceneExportModifier::CreateModifiers(xiiHybridArray<xiiSceneExportModifier*, 8>& ref_modifiers)
 {
-  xiiRTTI::ForEachDerivedType<xiiSceneExportModifier>(
-    [&](const xiiRTTI* pRtti) -> void {
-      xiiSceneExportModifier* pMod = pRtti->GetAllocator()->Allocate<xiiSceneExportModifier>();
-      ref_modifiers.PushBack(pMod);
-    },
-    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+  xiiRTTI::ForEachDerivedType<xiiSceneExportModifier>([&](const xiiRTTI* pRtti) -> void {
+    xiiSceneExportModifier* pMod = pRtti->GetAllocator()->Allocate<xiiSceneExportModifier>();
+    ref_modifiers.PushBack(pMod);
+  },
+                                                      xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 }
 
 void xiiSceneExportModifier::DestroyModifiers(xiiHybridArray<xiiSceneExportModifier*, 8>& ref_modifiers)

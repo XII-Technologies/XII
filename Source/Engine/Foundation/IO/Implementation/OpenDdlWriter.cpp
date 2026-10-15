@@ -219,8 +219,7 @@ void xiiOpenDdlWriter::BeginObject(xiiStringView sType, xiiStringView sName /*= 
   {
     const auto state = m_StateStack.PeekBack().m_State;
     XII_IGNORE_UNUSED(state);
-    XII_ASSERT_DEBUG(state == State::Empty || state == State::ObjectMultiLine || state == State::ObjectStart,
-                     "DDL Writer is in a state where no further objects may be created");
+    XII_ASSERT_DEBUG(state == State::Empty || state == State::ObjectMultiLine || state == State::ObjectStart, "DDL Writer is in a state where no further objects may be created");
   }
 
   OutputObjectBeginning();
@@ -375,8 +374,7 @@ void xiiOpenDdlWriter::BeginPrimitiveList(xiiOpenDdlPrimitiveType type, xiiStrin
   OutputObjectBeginning();
 
   const auto state = m_StateStack.PeekBack().m_State;
-  XII_ASSERT_DEBUG(state == State::Empty || state == State::ObjectSingleLine || state == State::ObjectMultiLine,
-                   "DDL Writer is in a state where no primitive list may be created");
+  XII_ASSERT_DEBUG(state == State::Empty || state == State::ObjectSingleLine || state == State::ObjectMultiLine, "DDL Writer is in a state where no primitive list may be created");
 
   if (state == State::ObjectMultiLine)
   {

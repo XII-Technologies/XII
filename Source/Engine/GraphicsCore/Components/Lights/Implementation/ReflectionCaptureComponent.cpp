@@ -42,7 +42,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiReflectionCaptureComponent, 1, xiiComponentMode::Sta
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Lighting/Reflections"),
+    new xiiCategoryAttribute("Graphics/Lighting/Reflections"),
     new xiiReflectionCaptureVisualizerAttribute("InfluenceShape", "HalfExtents", "SphereRadius", "BlendDistance"),
   }
   XII_END_ATTRIBUTES;

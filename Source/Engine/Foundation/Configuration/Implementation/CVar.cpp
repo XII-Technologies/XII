@@ -491,8 +491,7 @@ Overrides persisted settings.\n\
 Examples:\n\
 -MyIntVar 42\n\
 -MyStringVar \"Hello\"\n\
-",
-nullptr);
+", nullptr);
 // clang-format on
 
 void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAsCurrentValue /*= true*/, xiiDynamicArray<xiiCVar*>* pOutCVars /*= nullptr*/)

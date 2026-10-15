@@ -311,8 +311,7 @@ void xiiFallbackGameState::FindAvailableScenes()
   xiiFileSystemIterator fsit;
   xiiStringBuilder      sScenePath;
 
-  for (xiiFileSystem::StartSearch(fsit, "", xiiFileSystemIteratorFlags::ReportFilesRecursive);
-       fsit.IsValid(); fsit.Next())
+  for (xiiFileSystem::StartSearch(fsit, "", xiiFileSystemIteratorFlags::ReportFilesRecursive); fsit.IsValid(); fsit.Next())
   {
     fsit.GetStats().GetFullPath(sScenePath);
 

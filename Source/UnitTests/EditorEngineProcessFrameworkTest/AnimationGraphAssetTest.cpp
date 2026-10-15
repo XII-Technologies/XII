@@ -321,9 +321,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationGraphAsset)
       if (!checkStatus(accessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiAnimationGraphEditorNode>(), id)))
         return nullptr;
       const auto* object = accessor->GetObject(id);
-      if (!checkStatus(accessor->SetValueByName(object, "Kind", static_cast<xiiInt64>(kind))) ||
-          !checkStatus(accessor->SetValueByName(object, "Name", name)) ||
-          !checkStatus(accessor->SetValueByName(object, "Clip", clip)))
+      if (!checkStatus(accessor->SetValueByName(object, "Kind", static_cast<xiiInt64>(kind))) || !checkStatus(accessor->SetValueByName(object, "Name", name)) || !checkStatus(accessor->SetValueByName(object, "Clip", clip)))
         return nullptr;
       accessor->FinishTransaction();
       complete = true;

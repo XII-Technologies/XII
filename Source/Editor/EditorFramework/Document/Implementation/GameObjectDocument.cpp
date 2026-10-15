@@ -839,8 +839,7 @@ void xiiGameObjectDocument::SetRenderShapeIcons(bool b)
 
 void xiiGameObjectDocument::ObjectPropertyEventHandler(const xiiDocumentObjectPropertyEvent& e)
 {
-  if (e.m_sProperty == "LocalPosition" || e.m_sProperty == "LocalRotation" || e.m_sProperty == "LocalScaling" ||
-      e.m_sProperty == "LocalUniformScaling")
+  if (e.m_sProperty == "LocalPosition" || e.m_sProperty == "LocalRotation" || e.m_sProperty == "LocalScaling" || e.m_sProperty == "LocalUniformScaling")
   {
     InvalidateGlobalTransformValue(e.m_pObject);
   }

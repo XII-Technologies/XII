@@ -153,9 +153,7 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
   if (td.m_TextureDescription.m_Size.width > 0)
   {
     // Definition-backed render targets have no image or streaming quality levels.
-    if (!td.m_TextureDescription.Is2D() || !td.m_TextureDescription.m_Size.HasNonZeroArea() ||
-        td.m_TextureDescription.m_Usage != xiiGALResourceUsage::Mutable ||
-        !td.m_TextureDescription.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
+    if (!td.m_TextureDescription.Is2D() || !td.m_TextureDescription.m_Size.HasNonZeroArea() || td.m_TextureDescription.m_Usage != xiiGALResourceUsage::Mutable || !td.m_TextureDescription.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
       return {xiiResourceState::LoadedResourceMissing, 0, 0};
     td.m_uiQualityLevelsDiscardable = 0;
     td.m_uiQualityLevelsLoadable    = 0;

@@ -88,8 +88,7 @@ xiiResult xiiDynamicQuadtree::InsertObject(const xiiVec3& vCenter, const xiiVec3
   oData.m_iObjectInstance = iObjectInstance;
 
   // insert the object into the best child
-  if (!InsertObject(vCenter, vHalfExtents, oData, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel,
-                    xiiMath::Pow(4, m_uiMaxTreeDepth - 1), out_pObject))
+  if (!InsertObject(vCenter, vHalfExtents, oData, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), out_pObject))
   {
     if (!bOnlyIfInside)
     {
@@ -173,17 +172,13 @@ bool xiiDynamicQuadtree::InsertObject(const xiiVec3& vCenter, const xiiVec3& vHa
     const xiiUInt32 uiAddIDChild    = uiAddID - uiSubAddID;
     const xiiUInt32 uiSubAddIDChild = uiSubAddID / 4;
 
-    if (InsertObject(
-          vCenter, vHalfExtents, Obj, minx, minx + lx, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(
-          vCenter, vHalfExtents, Obj, minx, minx + lx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, minx, minx + lx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(
-          vCenter, vHalfExtents, Obj, maxx - lx, maxx, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
-    if (InsertObject(
-          vCenter, vHalfExtents, Obj, maxx - lx, maxx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, out_Object))
+    if (InsertObject(vCenter, vHalfExtents, Obj, maxx - lx, maxx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, out_Object))
       return true;
   }
 
@@ -207,8 +202,7 @@ void xiiDynamicQuadtree::FindVisibleObjects(const xiiFrustum& viewfrustum, XII_V
   if (m_NodeMap.IsEmpty())
     return;
 
-  FindVisibleObjects(viewfrustum, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel,
-                     xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
+  FindVisibleObjects(viewfrustum, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
 void xiiDynamicQuadtree::FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const
@@ -283,14 +277,10 @@ void xiiDynamicQuadtree::FindVisibleObjects(const xiiFrustum& Viewfrustum, XII_V
       const xiiUInt32 uiSubAddIDChild = uiSubAddID >> 2;
 
       // continue the search at each child node
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild,
-                         uiSubAddIDChild, uiNodeIDBase + uiAddID * 1);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild,
-                         uiSubAddIDChild, uiNodeIDBase + uiAddID * 2);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild,
-                         uiSubAddIDChild, uiNodeIDBase + uiAddID * 3);
-      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild,
-                         uiSubAddIDChild, uiNextNodeID);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, minx, minx + lx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3);
+      FindVisibleObjects(Viewfrustum, Callback, pPassThrough, maxx - lx, maxx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, uiNextNodeID);
     }
   }
 }
@@ -306,8 +296,7 @@ void xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_O
   if (!m_BBox.Contains(vPoint))
     return;
 
-  FindObjectsInRange(vPoint, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel,
-                     xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
+  FindObjectsInRange(vPoint, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
 bool xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const
@@ -359,17 +348,13 @@ bool xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, XII_VISIBLE_O
       const xiiUInt32 uiAddIDChild    = uiAddID - uiSubAddID;
       const xiiUInt32 uiSubAddIDChild = uiSubAddID >> 2;
 
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild,
-                              uiSubAddIDChild, uiNodeIDBase + uiAddID * 1))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild,
-                              uiSubAddIDChild, uiNodeIDBase + uiAddID * 2))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, minx, minx + lx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild,
-                              uiSubAddIDChild, uiNodeIDBase + uiAddID * 3))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3))
         return false;
-      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild,
-                              uiSubAddIDChild, uiNextNodeID))
+      if (!FindObjectsInRange(vPoint, Callback, pPassThrough, maxx - lx, maxx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, uiNextNodeID))
         return false;
     }
   }
@@ -389,8 +374,7 @@ void xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius
   if (!m_BBox.Overlaps(xiiBoundingBox(vPoint - xiiVec3(fRadius), vPoint + xiiVec3(fRadius))))
     return;
 
-  FindObjectsInRange(vPoint, fRadius, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0,
-                     m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
+  FindObjectsInRange(vPoint, fRadius, callback, pPassThrough, m_BBox.m_vMin.x, m_BBox.m_vMax.x, m_BBox.m_vMin.z, m_BBox.m_vMax.z, 0, m_uiAddIDTopLevel, xiiMath::Pow(4, m_uiMaxTreeDepth - 1), 0xFFFFFFFF);
 }
 
 bool xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius, XII_VISIBLE_OBJ_CALLBACK Callback, void* pPassThrough, float minx, float maxx, float minz, float maxz, xiiUInt32 uiNodeID, xiiUInt32 uiAddID, xiiUInt32 uiSubAddID, xiiUInt32 uiNextNodeID) const
@@ -438,17 +422,13 @@ bool xiiDynamicQuadtree::FindObjectsInRange(const xiiVec3& vPoint, float fRadius
       const xiiUInt32 uiAddIDChild    = uiAddID - uiSubAddID;
       const xiiUInt32 uiSubAddIDChild = uiSubAddID >> 2;
 
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild,
-                              uiSubAddIDChild, uiNodeIDBase + uiAddID * 1))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, minz, minz + lz, uiNodeIDBase + uiAddID * 0, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 1))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild,
-                              uiSubAddIDChild, uiNodeIDBase + uiAddID * 2))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, minx, minx + lx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 1, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 2))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild,
-                              uiSubAddIDChild, uiNodeIDBase + uiAddID * 3))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, minz, minz + lz, uiNodeIDBase + uiAddID * 2, uiAddIDChild, uiSubAddIDChild, uiNodeIDBase + uiAddID * 3))
         return false;
-      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild,
-                              uiSubAddIDChild, uiNextNodeID))
+      if (!FindObjectsInRange(vPoint, fRadius, Callback, pPassThrough, maxx - lx, maxx, maxz - lz, maxz, uiNodeIDBase + uiAddID * 3, uiAddIDChild, uiSubAddIDChild, uiNextNodeID))
         return false;
     }
   }

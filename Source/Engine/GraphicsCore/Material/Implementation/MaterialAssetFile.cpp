@@ -12,13 +12,9 @@ namespace
 {
   bool Valid(const xiiMaterialResourceDescriptor& d)
   {
-    if (d.m_Domain >= xiiMaterialDomain::ENUM_COUNT || d.m_ShadingModel >= xiiMaterialShadingModel::ENUM_COUNT ||
-        d.m_BlendMode >= xiiMaterialBlendMode::ENUM_COUNT || d.m_AlphaMode >= xiiMaterialAlphaMode::ENUM_COUNT ||
-        (d.m_FeatureFlags.GetValue() & 0xFFFF0000U) != 0 || !d.m_BaseColor.IsValid() || !d.m_EmissiveColor.IsValid())
+    if (d.m_Domain >= xiiMaterialDomain::ENUM_COUNT || d.m_ShadingModel >= xiiMaterialShadingModel::ENUM_COUNT || d.m_BlendMode >= xiiMaterialBlendMode::ENUM_COUNT || d.m_AlphaMode >= xiiMaterialAlphaMode::ENUM_COUNT || (d.m_FeatureFlags.GetValue() & 0xFFFF0000U) != 0 || !d.m_BaseColor.IsValid() || !d.m_EmissiveColor.IsValid())
       return false;
-    for (float value : {d.m_fMetallic, d.m_fRoughness, d.m_fOcclusionStrength, d.m_fAlphaCutoff, d.m_fNormalScale,
-                        d.m_fDisplacementScale, d.m_fClearCoat, d.m_fClearCoatRoughness, d.m_fTransmission, d.m_fThickness,
-                        d.m_fIndexOfRefraction, d.m_fAnisotropy, d.m_fSheenRoughness})
+    for (float value : {d.m_fMetallic, d.m_fRoughness, d.m_fOcclusionStrength, d.m_fAlphaCutoff, d.m_fNormalScale, d.m_fDisplacementScale, d.m_fClearCoat, d.m_fClearCoatRoughness, d.m_fTransmission, d.m_fThickness, d.m_fIndexOfRefraction, d.m_fAnisotropy, d.m_fSheenRoughness})
       if (!xiiMath::IsFinite(value))
         return false;
     return true;
@@ -38,8 +34,7 @@ namespace
     for (const float& value : values)
       XII_SUCCEED_OR_RETURN(stream.WriteDWordValue(&value));
     XII_SUCCEED_OR_RETURN(stream.WriteWordValue(&d.m_iSortPriority));
-    for (const auto& texture : {d.m_hBaseColorTexture, d.m_hNormalTexture, d.m_hMetallicRoughnessTexture, d.m_hOcclusionTexture,
-                                d.m_hEmissiveTexture, d.m_hHeightTexture, d.m_hClearCoatTexture, d.m_hTransmissionTexture})
+    for (const auto& texture : {d.m_hBaseColorTexture, d.m_hNormalTexture, d.m_hMetallicRoughnessTexture, d.m_hOcclusionTexture, d.m_hEmissiveTexture, d.m_hHeightTexture, d.m_hClearCoatTexture, d.m_hTransmissionTexture})
     {
       if (texture.IsValid() && texture.GetResourceID().GetElementCount() > 65536)
         return XII_FAILURE;
@@ -61,8 +56,7 @@ namespace
     if (stream.ReadBytes(text.GetData(), length) != length)
       return XII_FAILURE;
     text[length] = '\0';
-    if (!xiiUnicodeUtils::IsValidUtf8(text.GetData(), text.GetData() + length) ||
-        xiiStringUtils::GetStringElementCount(text.GetData()) != length)
+    if (!xiiUnicodeUtils::IsValidUtf8(text.GetData(), text.GetData() + length) || xiiStringUtils::GetStringElementCount(text.GetData()) != length)
       return XII_FAILURE;
     out_id = xiiStringView(text.GetData(), length);
     return XII_SUCCESS;
@@ -71,8 +65,7 @@ namespace
 
 xiiResult xiiMaterialAssetFile::Write(xiiStreamWriter& stream, const xiiMaterialResourceDescriptor& d)
 {
-  if (!Valid(d) || d.m_PermutationVariables.GetCount() > 65535 || d.m_Parameters.GetCount() > 65535 ||
-      d.m_Texture2DBindings.GetCount() > 65535 || d.m_TextureCubeBindings.GetCount() > 65535)
+  if (!Valid(d) || d.m_PermutationVariables.GetCount() > 65535 || d.m_Parameters.GetCount() > 65535 || d.m_Texture2DBindings.GetCount() > 65535 || d.m_TextureCubeBindings.GetCount() > 65535)
     return XII_FAILURE;
   xiiDefaultMemoryStreamStorage storage;
   xiiMemoryStreamWriter         writer(&storage);

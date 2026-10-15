@@ -1579,8 +1579,7 @@ void xiiTestFramework::OutputArgs(xiiTestOutput::Enum type, const char* szMsg, v
 
   if (xiiTestFramework::s_LogTimestampMode != xiiLog::TimestampMode::None)
   {
-    if (type == xiiTestOutput::BeginBlock || type == xiiTestOutput::EndBlock || type == xiiTestOutput::ImportantInfo || type == xiiTestOutput::Details || type == xiiTestOutput::Success || type == xiiTestOutput::Message || type == xiiTestOutput::Warning || type == xiiTestOutput::Error ||
-        type == xiiTestOutput::FinalResult)
+    if (type == xiiTestOutput::BeginBlock || type == xiiTestOutput::EndBlock || type == xiiTestOutput::ImportantInfo || type == xiiTestOutput::Details || type == xiiTestOutput::Success || type == xiiTestOutput::Message || type == xiiTestOutput::Warning || type == xiiTestOutput::Error || type == xiiTestOutput::FinalResult)
     {
       xiiStringBuilder timestamp;
 

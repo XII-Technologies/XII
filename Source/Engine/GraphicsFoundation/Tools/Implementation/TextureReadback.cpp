@@ -36,12 +36,10 @@ xiiResult xiiGALTextureReadback::Enqueue(xiiGALCommandList* pCommandList, const 
 
   const xiiGALTextureCreationDescription& sourceTextureDescription = request.m_pTexture->GetDescription();
   const auto                              type                     = sourceTextureDescription.m_Type;
-  if (type != xiiGALResourceDimension::Texture2D && type != xiiGALResourceDimension::Texture2DArray &&
-      type != xiiGALResourceDimension::TextureCube && type != xiiGALResourceDimension::TextureCubeArray)
+  if (type != xiiGALResourceDimension::Texture2D && type != xiiGALResourceDimension::Texture2DArray && type != xiiGALResourceDimension::TextureCube && type != xiiGALResourceDimension::TextureCubeArray)
     return XII_FAILURE;
   const auto& format = xiiGALTextureUtilities::GetResourceFormatProperties(sourceTextureDescription.m_Format);
-  if (sourceTextureDescription.m_uiSampleCount != 1 || request.m_uiMipLevel >= sourceTextureDescription.m_uiMipLevels ||
-      request.m_uiArraySlice >= sourceTextureDescription.m_uiArraySizeOrDepth || format.IsCompressed() || format.GetElementSize() == 0)
+  if (sourceTextureDescription.m_uiSampleCount != 1 || request.m_uiMipLevel >= sourceTextureDescription.m_uiMipLevels || request.m_uiArraySlice >= sourceTextureDescription.m_uiArraySizeOrDepth || format.IsCompressed() || format.GetElementSize() == 0)
     return XII_FAILURE;
 
   // Resolve subresource dimensions.
@@ -53,8 +51,7 @@ xiiResult xiiGALTextureReadback::Enqueue(xiiGALCommandList* pCommandList, const 
     if (request.m_uiRegionX || request.m_uiRegionY || request.m_uiRegionW || request.m_uiRegionH)
       return XII_FAILURE;
   }
-  else if (request.m_uiRegionX >= uiMipWidth || request.m_uiRegionY >= uiMipHeight ||
-           request.m_uiRegionW > uiMipWidth - request.m_uiRegionX || request.m_uiRegionH > uiMipHeight - request.m_uiRegionY)
+  else if (request.m_uiRegionX >= uiMipWidth || request.m_uiRegionY >= uiMipHeight || request.m_uiRegionW > uiMipWidth - request.m_uiRegionX || request.m_uiRegionH > uiMipHeight - request.m_uiRegionY)
     return XII_FAILURE;
 
   // Region box.

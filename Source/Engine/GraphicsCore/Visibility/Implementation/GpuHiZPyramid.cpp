@@ -38,8 +38,7 @@ namespace
     xiiSizeU32                                       m_Size;
   };
 
-  void TransitionMip(xiiGALCommandList& commandList, xiiGALTexture* pTexture, xiiUInt32 uiMip,
-                     xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState)
+  void TransitionMip(xiiGALCommandList& commandList, xiiGALTexture* pTexture, xiiUInt32 uiMip, xiiBitflags<xiiGALResourceStateFlags> oldState, xiiBitflags<xiiGALResourceStateFlags> newState)
   {
     xiiGALStateTransitionDescription transition;
     transition.m_pResource       = pTexture;
@@ -158,14 +157,10 @@ xiiRenderGraphTextureHandle xiiGpuHiZPyramid::ImportPrevious(xiiRenderGraph& gra
     return {};
 
   const xiiUInt32 uiSlot = m_uiLastBuiltSlot;
-  auto            import = graph.AddPass<ImportPassData>(
-    "Import Previous GPU Hi-Z", xiiGALCommandQueueFlags::Compute,
-    [this, uiSlot](ImportPassData& data, xiiRenderGraphBuilder& builder) {
+  auto            import = graph.AddPass<ImportPassData>("Import Previous GPU Hi-Z", xiiGALCommandQueueFlags::Compute, [this, uiSlot](ImportPassData& data, xiiRenderGraphBuilder& builder) {
       xiiStringBuilder name;
       name.SetFormat("GPU Hi-Z History {}", uiSlot);
-      data.m_hHistory = builder.ImportTexture(name, m_Frames[uiSlot].m_pTexture, m_Frames[uiSlot].m_pTexture->GetResourceState());
-    },
-    [](const ImportPassData&, xiiRenderGraphPassContext&) {});
+      data.m_hHistory = builder.ImportTexture(name, m_Frames[uiSlot].m_pTexture, m_Frames[uiSlot].m_pTexture->GetResourceState()); }, [](const ImportPassData&, xiiRenderGraphPassContext&) {});
   return import.first->m_hHistory;
 }
 
@@ -176,9 +171,7 @@ void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameInde
 
   const xiiUInt32                            uiSlot = m_uiLastBuiltSlot == xiiInvalidIndex ? 0U : (m_uiLastBuiltSlot + 1U) % m_Frames.GetCount();
   const xiiBitflags<xiiGALCommandQueueFlags> queue  = bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
-  auto                                       build  = graph.AddPass<BuildPassData>(
-    "Build GPU Hi-Z History", queue,
-    [this, uiSlot, hSceneDepth](BuildPassData& data, xiiRenderGraphBuilder& builder) {
+  auto                                       build  = graph.AddPass<BuildPassData>("Build GPU Hi-Z History", queue, [this, uiSlot, hSceneDepth](BuildPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hSceneDepth = builder.ReadTexture(hSceneDepth, xiiGALResourceStateFlags::ShaderResource);
       xiiStringBuilder name;
       name.SetFormat("GPU Hi-Z History {}", uiSlot);
@@ -192,9 +185,7 @@ void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameInde
       constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       data.m_hConstants                     = builder.WriteBuffer("GPU Hi-Z Build Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
       builder.SetPassSideEffects(true);
-      builder.SetPassAllowMerge(false);
-    },
-    [this, uiSlot, uiFrameIndex](const BuildPassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [this, uiSlot, uiFrameIndex](const BuildPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& commandList  = context.GetCommandList();
       xiiGALTexture*     pDestination = context.GetTexture(data.m_hDestination);
       xiiGALBuffer*      pConstants   = context.GetBuffer(data.m_hConstants);
@@ -251,9 +242,7 @@ void xiiGpuHiZPyramid::AddBuildPass(xiiRenderGraph& graph, xiiUInt64 uiFrameInde
       // skipped, in which case exposing this ring slot next frame would sample unwritten data.
       m_bHistoryValid    = true;
       m_uiLastBuiltSlot  = uiSlot;
-      m_uiLastBuiltFrame = uiFrameIndex;
-    },
-    true);
+      m_uiLastBuiltFrame = uiFrameIndex; }, true);
 
   build.first->m_pPipeline         = m_pBuildPipeline;
   build.first->m_pSourceViews      = m_Frames[uiSlot].m_pMipShaderResourceViews;

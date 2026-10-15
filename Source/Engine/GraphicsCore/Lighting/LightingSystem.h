@@ -193,7 +193,7 @@ private:
   xiiLightingSystem();
 
   [[nodiscard]] xiiResult Initialize(xiiSharedPtr<xiiGALDevice> pDevice, const xiiLightingSystemSettings& settings = {});
-  void Shutdown();
+  void                    Shutdown();
 
   struct PerFrameCameraConstants
   {

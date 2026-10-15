@@ -9,7 +9,10 @@ struct xiiStatus;
 
 /// Helper class to modify an xiiVariant as if it was a container.
 /// GetValue and SetValue are valid for all variant types.
-/// The remaining accessor functions require an VariantArray or VariantDictionary type.
+/// The remaining accessor functions require a VariantArray or VariantDictionary type.
+/// Array indices must be finite, nonnegative integers within the container's bounds.
+/// InsertValue additionally accepts -1 to append; insertion and movement accept the end position.
+/// Failed operations preserve the stored value. GetKeys replaces its output, including on failure.
 class XII_TOOLSFOUNDATION_DLL xiiVariantStorageAccessor
 {
 public:

@@ -45,7 +45,11 @@ public:
     xiiGeometryHandle         m_hGeometry;
     xiiMaterialResourceHandle m_hMaterial;
     xiiMaterialGpuHandle      m_hGpuMaterial;
-    xiiUInt64                 m_uiSynchronization = 0U;
+    xiiUInt64                 m_uiSynchronization                                  = 0U;
+    xiiUInt32                 m_uiMeshletCounts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+    xiiUInt32                 m_uiFirstPrimitive                                   = 0U;
+    xiiUInt32                 m_uiPrimitiveCount                                   = 0U;
+    bool                      m_bMeshletCountsValid                                = false;
   };
 
   struct Slot

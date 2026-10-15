@@ -19,7 +19,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonPoseComponent, 2, xiiComponentMode::Dynamic)
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Animation"),
+    new xiiCategoryAttribute("Graphics/Animation"),
     new xiiBoneManipulatorAttribute("BoneTransforms", "Skeleton"),
   }
   XII_END_ATTRIBUTES;
@@ -142,8 +142,7 @@ xiiResult xiiSkeletonPoseComponent::CopyCurrentLocalPose(xiiMap<xiiString, xiiTr
   if (!m_hSkeleton.IsValid() || m_uiPoseSkeletonRevision == xiiInvalidIndex)
     return XII_FAILURE;
   xiiResourceLock<xiiSkeletonResource> skeleton(m_hSkeleton, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-  if (!skeleton || skeleton.GetAcquireResult() != xiiResourceAcquireResult::Final ||
-      skeleton->GetCurrentResourceChangeCounter() != m_uiPoseSkeletonRevision)
+  if (!skeleton || skeleton.GetAcquireResult() != xiiResourceAcquireResult::Final || skeleton->GetCurrentResourceChangeCounter() != m_uiPoseSkeletonRevision)
     return XII_FAILURE;
   return m_CurrentPose.CopyLocalTransforms(*skeleton.GetPointer(), out_transforms);
 }

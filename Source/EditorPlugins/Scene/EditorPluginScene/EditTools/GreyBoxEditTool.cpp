@@ -123,8 +123,7 @@ void xiiGreyBoxEditTool::ManipulatorManagerEventHandler(const xiiManipulatorMana
     return;
 
   // make sure the gizmo is deactivated when a manipulator becomes active
-  if (e.m_pDocument == GetDocument() && e.m_pManipulator != nullptr && e.m_pSelection != nullptr && !e.m_pSelection->IsEmpty() &&
-      !e.m_bHideManipulators)
+  if (e.m_pDocument == GetDocument() && e.m_pManipulator != nullptr && e.m_pSelection != nullptr && !e.m_pSelection->IsEmpty() && !e.m_bHideManipulators)
   {
     GetDocument()->SetActiveEditTool(nullptr);
   }

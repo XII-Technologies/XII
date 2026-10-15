@@ -204,15 +204,31 @@ public:
   /// Saves the current asset configurations. Returns failure if the output file could not be written to.
   xiiResult SaveAssetProfiles();
 
-  void SaveRuntimeProfiles();
+  /// Reloads changed profile definitions from disk, preserving the active profile by name.
+  /// Must be called between asset operations on the main thread. Stops background hashing before
+  /// replacing profiles; all previously obtained profile pointers are invalidated on change.
+  /// Invalid input leaves the current definitions and active profile unchanged.
+  xiiResult ReloadAssetProfiles();
+
+  /// Persists and publishes a complete profile collection in the supplied order. Index zero must
+  /// be Default. The input is cloned; ownership is retained by the caller. Must be called on the
+  /// main thread between asset operations. Stops processor jobs and hashing during publication.
+  /// A failed file installation rolls back previously installed files and leaves live profiles
+  /// unchanged. Rollback failures are reported with retained backup paths. This is not a crash-safe
+  /// transaction across files. Successful publication invalidates all existing profile pointers.
+  xiiStatus ApplyAssetProfiles(xiiArrayPtr<const xiiPlatformProfile* const> profiles, xiiUInt32 uiActiveProfile);
+
+  /// Saves all runtime profile files, stopping at the first write failure.
+  xiiResult SaveRuntimeProfiles();
 
 private:
-  void      ClearAssetProfiles();
-  void      SetupDefaultAssetProfiles();
-  xiiResult LoadAssetProfiles();
-  void      ComputeAllDocumentManagerAssetProfileHashes();
+  void ClearAssetProfiles();
+  void SetupDefaultAssetProfiles();
+  void PublishAssetProfiles(xiiHybridArray<xiiPlatformProfile*, 8>& profiles, xiiUInt64 uiHash, xiiUInt32 uiActiveProfile);
 
   xiiHybridArray<xiiPlatformProfile*, 8> m_AssetProfiles;
+  xiiUInt64                              m_uiLoadedAssetProfilesHash = 0;
+  bool                                   m_bAssetProfilesLoaded      = false;
 
   ///@}
   /// \name High Level Functions
@@ -227,7 +243,13 @@ public:
   xiiTransformStatus TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile = nullptr);
   xiiTransformStatus CreateThumbnail(const xiiUuid& assetGuid);
 
-  void ResaveAllAssets(xiiStringView sPrefixPath);
+  /// Plans a deterministic dependency-first resave of the selected path subtree. Empty prefix selects
+  /// all assets. Includes transform, thumbnail and package references; external dependencies are already
+  /// supplied by their existing metadata. Cycles fail with an empty output and no document writes.
+  xiiStatus GetAssetResaveOrder(xiiStringView sPrefixPath, xiiDynamicArray<xiiUuid>& out_order) const;
+  /// Main-thread operation. Reports cancellation and save failures. Keeps existing documents open;
+  /// opens and closes other documents through their managers. Does not hold the curator lock while saving.
+  xiiStatus ResaveAllAssets(xiiStringView sPrefixPath);
 
   /// Some assets are not automatically updated by the asset dependency detection (mainly Collections) because of their transitive data dependencies.
   /// So we must update them when the user does something 'significant' like doing TransformAllAssets or a scene export.
@@ -267,6 +289,8 @@ public:
   /// Computes the combined hash for the asset and its references. Returns 0 if anything went wrong.
   xiiUInt64 GetAssetReferenceHash(xiiUuid assetGuid);
 
+  /// Evaluates the requested profile, defaulting to the active profile. Non-active evaluations do not
+  /// read or replace the active-profile state cache. The profile must remain alive and unchanged during evaluation.
   xiiAssetInfo::TransformState IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, xiiUInt64& out_uiPackageHash, bool bForce = false);
   /// Returns the number of assets in the system and how many are in what transform state
   void GetAssetTransformStats(xiiUInt32& out_uiNumAssets, xiiHybridArray<xiiUInt32, xiiAssetInfo::TransformState::COUNT>& out_count);
@@ -280,9 +304,7 @@ public:
   ///   File name (may include a path) to search for. Will be modified both on success and failure to give a 'reasonable' result.
   xiiResult FindBestMatchForFile(xiiStringBuilder& ref_sFile, xiiArrayPtr<xiiString> allowedFileExtensions) const;
 
-  /// Finds all uses, either as references or dependencies to a given asset.
-  ///
-  /// Technically this finds all references and dependencies to this asset but in practice there are no uses of transform dependencies between assets right now so the result is a list of references and can be referred to as such.
+  /// Finds all transform, thumbnail and package uses of an asset or sub-asset.
   ///
   /// \param assetGuid
   ///   The asset to find use cases for.
@@ -327,13 +349,16 @@ public:
   ///@{
 
   /// Generates one transitive hull for all the dependencies that are enabled. The set will contain dependencies that are reachable via any combination of enabled reference types.
+  /// Resolves asset paths and sub-assets to their owners for traversal. Unresolved references remain
+  /// in the output as leaves. Existing output does not suppress traversal. Cycles are visited once per owner.
   void GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>& inout_deps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
 
   /// Generates one inverse transitive hull for all the types dependencies that are enabled. The set will contain inverse dependencies that can reach the given asset (pAssetInfo) via any combination of the enabled reference types. As only assets can have dependencies, the inverse hull is always just asset GUIDs.
-  void GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false) const;
+  void GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
 
   /// Generates a DGML graph of all transform and thumbnail dependencies.
-  void WriteDependencyDGML(const xiiUuid& guid, xiiStringView sOutputFile) const;
+  /// Writes all dependency categories, retaining missing references as leaf nodes. Returns write failures.
+  xiiResult WriteDependencyDGML(const xiiUuid& guid, xiiStringView sOutputFile) const;
 
   ///@}
 
@@ -345,7 +370,7 @@ private:
   ///@{
 
   xiiTransformStatus ProcessAsset(xiiAssetInfo* pAssetInfo, const xiiPlatformProfile* pAssetProfile, xiiBitflags<xiiTransformFlags> transformFlags);
-  xiiStatus          ResaveAsset(xiiAssetInfo* pAssetInfo);
+  xiiStatus          ResaveAsset(const xiiUuid& assetGuid);
   /// Returns the asset info for the asset with the given GUID or nullptr if no such asset exists.
   xiiAssetInfo*       GetAssetInfo(const xiiUuid& assetGuid);
   const xiiAssetInfo* GetAssetInfo(const xiiUuid& assetGuid) const;
@@ -376,8 +401,21 @@ private:
   /// \name Asset Hashing and Status Updates (AssetUpdates.cpp)
   ///@{
 
-  bool                         AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce);
-  xiiAssetInfo::TransformState HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDeps, const xiiHybridArray<xiiString, 16>& assetThumbnailDeps, const xiiHybridArray<xiiString, 16>& assetPackageDeps, xiiSet<xiiString>& missingTransformDeps, xiiSet<xiiString>& missingThumbnailDeps, xiiSet<xiiString>& missingPackageDeps, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce);
+  struct AssetHashResult
+  {
+    xiiAssetInfo::TransformState m_State           = xiiAssetInfo::Unknown;
+    xiiUInt64                    m_uiAssetHash     = 0;
+    xiiUInt64                    m_uiThumbnailHash = 0;
+    xiiUInt64                    m_uiPackageHash   = 0;
+  };
+  struct AssetHashContext
+  {
+    // Shared only within one forced or non-active-profile evaluation, including parallel references.
+    xiiHashTable<xiiUuid, AssetHashResult> m_Results;
+    bool                                   m_bCacheActiveProfile = true;
+  };
+  bool                         AddAssetHash(xiiString& sPath, bool bIsReference, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce, const xiiPlatformProfile* pAssetProfile, AssetHashContext* pContext);
+  xiiAssetInfo::TransformState HashAsset(xiiUInt64 uiSettingsHash, const xiiHybridArray<xiiString, 16>& assetTransformDeps, const xiiHybridArray<xiiString, 16>& assetThumbnailDeps, const xiiHybridArray<xiiString, 16>& assetPackageDeps, xiiSet<xiiString>& missingTransformDeps, xiiSet<xiiString>& missingThumbnailDeps, xiiSet<xiiString>& missingPackageDeps, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce, const xiiPlatformProfile* pAssetProfile, AssetHashContext* pContext);
 
   xiiResult EnsureAssetInfoUpdated(const xiiDataDirPath& absFilePath, const xiiFileStatus& stat, bool bForce = false);
   void      TrackDependencies(xiiAssetInfo* pAssetInfo);
@@ -391,7 +429,7 @@ private:
   void RemoveAssetTransformState(const xiiUuid& assetGuid);
   void InvalidateAssetTransformState(const xiiUuid& assetGuid);
 
-  xiiAssetInfo::TransformState UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce);
+  xiiAssetInfo::TransformState UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce, const xiiPlatformProfile* pAssetProfile = nullptr, AssetHashContext* pContext = nullptr);
   void                         UpdateAssetTransformState(const xiiUuid& assetGuid, xiiAssetInfo::TransformState state);
   void                         UpdateAssetTransformLog(const xiiUuid& assetGuid, xiiDynamicArray<xiiLogEntry>& logEntries);
   void                         SetAssetExistanceState(xiiAssetInfo& assetInfo, xiiAssetExistanceState::Enum state);
@@ -435,14 +473,17 @@ private:
   // Derived dependency lookup tables
   xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseTransformDeps;    // [Absolute path -> asset Guid]
   xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InverseThumbnailDeps;    // [Absolute path -> asset Guid]
+  xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>> m_InversePackageDeps;      // [Absolute path -> asset Guid]
   xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedTransformDeps; ///< If a dependency wasn't known yet when an asset info was loaded, it is put in here.
   xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedThumbnailDeps;
+  xiiSet<std::tuple<xiiUuid, xiiUuid>>          m_UnresolvedPackageDeps;
 
   // State caches
   xiiHashSet<xiiUuid> m_TransformState[xiiAssetInfo::TransformState::COUNT];
   xiiHashSet<xiiUuid> m_SubAssetChanged; ///< Flushed in main thread tick
   xiiHashSet<xiiUuid> m_TransformStateStale;
   xiiHashSet<xiiUuid> m_Updating;
+  bool                m_bResavingAssets = false;
 
   // Serialized cache
   mutable xiiCuratorMutex                               m_CachedAssetsMutex; ///< Only locks m_CachedAssets

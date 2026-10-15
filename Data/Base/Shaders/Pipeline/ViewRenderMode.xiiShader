@@ -1,0 +1,74 @@
+// Copyright (c) Theophilus Eriata. All Rights Reserved.
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+#include <Shaders/Common/Common.h>
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/PipelineCommon.xiiShader>
+#include <Shaders/Pipeline/Passes/Output/ViewRenderModeConstants.h>
+
+Texture2D<float4> g_Source;
+Texture2D<float> g_Depth;
+Texture2D<uint4> g_ObjectIds;
+XII_STORAGE_IMAGE_FORMAT("rgba16f") RWTexture2D<float4> g_Output;
+
+float3 IdentityColor(uint id)
+{
+    id ^= id >> 16; id *= 0x7feb352d; id ^= id >> 15; id *= 0x846ca68b; id ^= id >> 16;
+    return float3(id & 255u, (id >> 8) & 255u, (id >> 16) & 255u) / 255.0f;
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_Output.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
+    const float depth = g_Depth.SampleLevel(g_sPointClamp, uv, 0);
+    uint2 sourceSize; g_Source.GetDimensions(sourceSize.x, sourceSize.y);
+    const uint2 pixel = min(uint2(uv * sourceSize), sourceSize - 1u);
+    const float4 value = g_Source.Load(int3(pixel, 0));
+    float3 color = 0.0f;
+
+    // Values match xiiViewRenderMode. Debug values are display-linear and bypass
+    // scene exposure and tone mapping; the final display transfer remains intact.
+    switch (RenderMode)
+    {
+        case 1u:
+        {
+            uint2 size; g_ObjectIds.GetDimensions(size.x, size.y);
+            const uint4 surface = g_ObjectIds.Load(int3(min(uint2(uv * size), size - 1u), 0));
+            // The surface query rasterizes actual triangle edges. Keep hidden
+            // edges behind the solid scene prepass, including other objects.
+            color = surface.x != 0u && asfloat(surface.y) + 1e-4f >= depth ? 0.8f : 0.0f;
+            break;
+        }
+        case 25u: color = DecodeOctNormal(value.xy) * 0.5f + 0.5f; break;
+        case 14u:
+        {
+            uint2 size; g_ObjectIds.GetDimensions(size.x, size.y);
+            color = IdentityColor(g_ObjectIds.Load(int3(min(uint2(uv * size), size - 1u), 0)).x);
+            break;
+        }
+        case 19u: color = value.rgb; break;
+        case 20u: color = value.ggg; break;
+        case 21u: color = value.rrr; break;
+        case 22u: color = value.bbb; break;
+        case 24u: color = value.rrr; break;
+        case 26u:
+        {
+            const float distance = dot(ReconstructWorldPos(uv, depth) - g_CameraPositionAndNearPlane.xyz, g_CameraForwardAndFarPlane.xyz);
+            color = saturate(distance / g_CameraForwardAndFarPlane.w).xxx;
+            break;
+        }
+        case 27u: color = depth.xxx; break;
+        case 28u: color = float3(value.xy * 10.0f + 0.5f, 0.5f); break;
+        case 23u: case 36u: case 37u: case 44u: color = max(value.rgb, 0.0f) / (1.0f + max(value.rgb, 0.0f)); break;
+        default: color = float3(1.0f, 0.0f, 1.0f); break;
+    }
+    // Wireframe coverage comes from its own depth-tested surface query, including
+    // the indexed fallback where the ordinary scene prepass may be empty.
+    if (depth <= 1e-7f && RenderMode != 44u && RenderMode != 1u) color = 0.0f;
+    g_Output[tid.xy] = float4(color, 1.0f);
+}

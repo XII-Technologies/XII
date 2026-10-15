@@ -337,7 +337,7 @@ void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(QMenu& menu, co
         if (!xiiStringUtils::IsValidIdentifierName(name.toUtf8().data()))
         {
           xiiQtUiServices::GetSingleton()->MessageBoxInformation("This name is not a valid identifier.\nAllowed characters are a-z, A-Z, "
-                                                                "0-9 and _.\nWhitespace and special characters are not allowed.");
+                                                                 "0-9 and _.\nWhitespace and special characters are not allowed.");
           continue; // try again
         }
 

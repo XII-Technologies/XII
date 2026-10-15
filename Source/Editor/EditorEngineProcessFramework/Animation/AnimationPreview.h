@@ -18,8 +18,7 @@ public:
   /// Samples a clamped normalized time using the runtime clip sampler, or the rest pose.
   /// Mesh bone names resolve skeleton joints; mesh bone indices determine palette slots.
   /// Invalid times, missing joints, duplicate palette slots, and invalid matrices fail and clear output.
-  xiiResult Build(const xiiSkeletonResource& skeleton, const xiiMeshResourceDescriptor& mesh,
-                  const xiiAnimationClipResource* pClip = nullptr, double fNormalizedPosition = 0.0);
+  xiiResult Build(const xiiSkeletonResource& skeleton, const xiiMeshResourceDescriptor& mesh, const xiiAnimationClipResource* pClip = nullptr, double fNormalizedPosition = 0.0);
 
   /// Acquires the mesh and its default skeleton (or an explicitly selected skeleton), samples, and updates a world-owned component.
   /// The caller holds world write access. Loading/missing resources fail and clear stale pose data.

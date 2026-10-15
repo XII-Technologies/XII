@@ -32,10 +32,7 @@ void xiiReflectionCaptureVisualizerAdapter::Update()
   const auto* attr     = static_cast<const xiiReflectionCaptureVisualizerAttribute*>(m_pVisualizerAttr);
   auto*       accessor = GetObjectAccessor();
   xiiVariant  shape, extents, radius, blend;
-  if (accessor->GetValueByName(m_pObject, attr->GetShapeProperty(), shape).Failed() || !shape.CanConvertTo<xiiInt64>() ||
-      accessor->GetValueByName(m_pObject, attr->GetHalfExtentsProperty(), extents).Failed() || !extents.IsA<xiiVec3>() ||
-      accessor->GetValueByName(m_pObject, attr->GetRadiusProperty(), radius).Failed() || !radius.CanConvertTo<float>() ||
-      accessor->GetValueByName(m_pObject, attr->GetBlendDistanceProperty(), blend).Failed() || !blend.CanConvertTo<float>())
+  if (accessor->GetValueByName(m_pObject, attr->GetShapeProperty(), shape).Failed() || !shape.CanConvertTo<xiiInt64>() || accessor->GetValueByName(m_pObject, attr->GetHalfExtentsProperty(), extents).Failed() || !extents.IsA<xiiVec3>() || accessor->GetValueByName(m_pObject, attr->GetRadiusProperty(), radius).Failed() || !radius.CanConvertTo<float>() || accessor->GetValueByName(m_pObject, attr->GetBlendDistanceProperty(), blend).Failed() || !blend.CanConvertTo<float>())
     return;
 
   const xiiVec3 halfExtents   = extents.Get<xiiVec3>();

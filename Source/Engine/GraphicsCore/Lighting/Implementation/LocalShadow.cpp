@@ -98,15 +98,12 @@ namespace
   }
 } // namespace
 
-void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
-                                       xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics)
+void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights, xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics)
 {
   Build(settings, lights, xiiVec3::MakeZero(), out_shadowData, out_statistics);
 }
 
-void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights,
-                                       const xiiVec3& vObserverPosition, xiiLocalShadowAtlasDataArray& out_shadowData,
-                                       xiiLocalShadowAtlasStatistics& out_statistics)
+void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settings, xiiArrayPtr<const xiiGpuLightData> lights, const xiiVec3& vObserverPosition, xiiLocalShadowAtlasDataArray& out_shadowData, xiiLocalShadowAtlasStatistics& out_statistics)
 {
   out_statistics = {};
   out_shadowData.SetCount(lights.GetCount());
@@ -181,8 +178,7 @@ void xiiLocalShadowAtlasBuilder::Build(const xiiLocalShadowAtlasSettings& settin
     const float    fRange      = xiiMath::Max(light.m_AttenuationAndSize.x, settings.m_fMinimumNearPlane * 2.0f);
     const float    fNearPlane  = xiiMath::Min(xiiMath::Max(settings.m_fMinimumNearPlane, light.m_AttenuationAndSize.y * 0.05f), fRange * 0.5f);
     const xiiAngle fieldOfView = GetProjectionFieldOfView(light, type);
-    const xiiMat4  projection  = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(fieldOfView, 1.0f, fRange, fNearPlane,
-                                                                                             xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    const xiiMat4  projection  = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(fieldOfView, 1.0f, fRange, fNearPlane, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
 
     xiiLocalShadowAtlasData& shadow   = out_shadowData[uiLight];
     shadow.m_LightPositionAndInvRange = xiiVec4(vPosition, 1.0f / fRange);

@@ -55,7 +55,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
   depthDescription.m_BindFlags = xiiGALBindFlags::DepthStencil;
   auto depth                   = environment.GetDevice()->CreateTexture(depthDescription);
 
-  float clearDepth = 1.0f;
+  float clearDepth = 0.0f; // Reversed Z: zero is the far plane; one occludes ordinary geometry.
 
   struct ClearData
   {
@@ -149,11 +149,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     {
       // Intermediates remain view-local even when presentation uses an offset viewport.
       first->SetViewport(viewport);
-      clearDepth = 1.0f;
+      clearDepth = 0.0f;
       xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
       world.Update();
       checkCenter(255, 0, 0);
-      clearDepth = 0.0f;
+      clearDepth = 1.0f;
       xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
       world.Update();
       checkCenter(0, 0, 0);
@@ -166,7 +166,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     color         = originalColor;
     capturedColor = originalCapture;
     depth         = originalDepth;
-    clearDepth    = 1.0f;
+    clearDepth    = 0.0f;
     first->SetViewport({0, 0, 64, 64});
     first->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
@@ -200,7 +200,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Overlay geometry bypasses occlusion and preserves scene depth")
   {
-    clearDepth = 0.0f;
+    clearDepth = 1.0f;
     xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red);
     world.Update();
     checkCenter(0, 0, 0);
@@ -257,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
         {
           const float* row = xiiMemoryUtils::AddByteOffset(static_cast<const float*>(mapped.m_pData), y * mapped.m_uiStride);
           for (xiiUInt32 x = 0; x < 64; ++x)
-            XII_TEST_FLOAT(row[x], 0.0f, 0.0f);
+            XII_TEST_FLOAT(row[x], 1.0f, 0.0f);
         }
         XII_TEST_RESULT(commandList->UnmapTextureSubresource(capture.m_pStagingTexture, {}));
       }
@@ -284,7 +284,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     auto invalidColor = xiiColor::White;
     invalidColor.r    = xiiMath::Infinity<float>();
     XII_TEST_BOOL(xiiDebugRenderer::DrawGeometry(*first, geometry, invalidColor).Failed());
-    clearDepth = 1.0f;
+    clearDepth = 0.0f;
     xiiDebugRenderer::DrawSolidTriangles(&world, xiiMakeArrayPtr(&triangle, 1), xiiColor::Red, xiiDebugRendererDepthMode::Overlay);
     xiiDebugRenderer::DrawSolidTriangles(*first, xiiMakeArrayPtr(&triangle, 1), xiiColor::Blue);
     world.Update();
@@ -298,7 +298,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     handle.SetVisible(true);
     XII_TEST_BOOL(handle.SetupForEngine(&world, 41));
     XII_TEST_BOOL(!handle.SetupForEngine(&world, 42));
-    clearDepth = 0;
+    clearDepth = 1.0f;
     XII_TEST_RESULT(handle.Draw(*first, 0));
     world.Update();
     checkCenter(255, 0, 0);
@@ -323,7 +323,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     XII_TEST_RESULT(handle.Draw(*first, 0));
     world.Update();
     checkCenter(0, 0, 0); // Ordinary handles retain scene depth testing.
-    clearDepth = 1;
+    clearDepth = 0.0f;
     handle.ConfigureHandle(nullptr, xiiEngineGizmoHandleType::Box, xiiColor::Blue, xiiGizmoFlags::ShowInOrtho | xiiGizmoFlags::Visualizer | xiiGizmoFlags::Pickable);
     XII_TEST_RESULT(handle.Draw(*first, 0));
     world.Update();
@@ -358,7 +358,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     for (xiiUInt64 i = 0; i < gridImage.GetByteBlobPtr().GetCount(); i += 4)
       hasGrid |= gridImage.GetByteBlobPtr()[i] > 0 || gridImage.GetByteBlobPtr()[i + 2] > 0;
     XII_TEST_BOOL(hasGrid);
-    clearDepth = 0;
+    clearDepth = 1.0f;
     xiiDebugRenderer::DrawLines(*first, grid.GetLines(), xiiColor::White);
     world.Update();
     XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, {64, 64}, gridImage));
@@ -366,7 +366,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     for (xiiUInt64 i = 0; i < gridImage.GetByteBlobPtr().GetCount(); i += 4)
       hasOccludedGrid |= gridImage.GetByteBlobPtr()[i] > 0 || gridImage.GetByteBlobPtr()[i + 2] > 0;
     XII_TEST_BOOL(!hasOccludedGrid);
-    clearDepth = 1;
+    clearDepth = 0.0f;
 
     first->SetViewport({0, 0, 100000, 100000});
     XII_TEST_RESULT(grid.Build(*first, 1.0e-35f));
@@ -436,7 +436,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     const xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(pixels, 4), 4, 4);
     const xiiGALTextureData            initialData(xiiMakeArrayPtr(&subresource, 1));
     auto                               sampled = environment.GetDevice()->CreateTexture(sampledDescription, &initialData);
-    clearDepth                                 = 0;
+    clearDepth                                 = 1.0f;
     xiiDebugRenderer::Draw2DRectangle(*first, xiiRectFloat(0, 0, 64, 64), 0, xiiColor::White, sampled->GetDefaultView(xiiGALTextureViewType::ShaderResource));
     world.Update();
     checkCenter(0, 0, 0);
@@ -445,7 +445,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     checkCenter(0, 0, 255);
     world.Update();
     checkCenter(0, 0, 0);
-    clearDepth = 1;
+    clearDepth = 0.0f;
   }
 
   // Both views write the same capture target, so the second view must see the

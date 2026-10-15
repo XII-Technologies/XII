@@ -464,8 +464,7 @@ void xiiQtExposedParametersPropertyWidget::OnInit()
     QMenu* pFixMeMenu = new QMenu(m_pFixMeButton);
     {
       m_pRemoveUnusedAction = pFixMeMenu->addAction(QStringLiteral("Remove unused keys"));
-      m_pRemoveUnusedAction->setToolTip(
-        QStringLiteral("The map contains keys that are no longer used by the asset's exposed parameters and thus can be removed."));
+      m_pRemoveUnusedAction->setToolTip(QStringLiteral("The map contains keys that are no longer used by the asset's exposed parameters and thus can be removed."));
       connect(m_pRemoveUnusedAction, &QAction::triggered, this, [this](bool bChecked) { RemoveUnusedKeys(false); });
     }
     {

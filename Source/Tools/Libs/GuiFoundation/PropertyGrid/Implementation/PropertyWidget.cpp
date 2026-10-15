@@ -31,7 +31,7 @@ xiiQtPropertyEditorCheckboxWidget::xiiQtPropertyEditorCheckboxWidget() :
   m_pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
   m_pLayout->addWidget(m_pWidget);
 
-  XII_VERIFY(connect(m_pWidget, SIGNAL(stateChanged(int)), this, SLOT(on_StateChanged_triggered(int))) != nullptr, "signal/slot connection failed");
+  connect(m_pWidget, &QCheckBox::checkStateChanged, this, &xiiQtPropertyEditorCheckboxWidget::on_StateChanged_triggered);
 }
 
 void xiiQtPropertyEditorCheckboxWidget::InternalSetValue(const xiiVariant& value)
@@ -57,7 +57,7 @@ void xiiQtPropertyEditorCheckboxWidget::mousePressEvent(QMouseEvent* pEv)
   m_pWidget->toggle();
 }
 
-void xiiQtPropertyEditorCheckboxWidget::on_StateChanged_triggered(int state)
+void xiiQtPropertyEditorCheckboxWidget::on_StateChanged_triggered(Qt::CheckState state)
 {
   if (state == Qt::PartiallyChecked)
   {

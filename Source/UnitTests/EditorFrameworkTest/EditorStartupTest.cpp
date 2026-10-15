@@ -1,9 +1,18 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+
+#include <EditorFrameworkTest/AssetDependenciesTest.h>
+#include <EditorFrameworkTest/AssetDependencyTrackingTest.h>
+#include <EditorFrameworkTest/AssetProcessorTest.h>
+#include <EditorFrameworkTest/AssetProfileTest.h>
+#include <EditorFrameworkTest/AssetReplacementTest.h>
+#include <EditorFrameworkTest/AssetResaveTest.h>
+#include <EditorFrameworkTest/DocumentSaveUiTest.h>
 #include <EditorFrameworkTest/PropertyAnimationTestUtils.h>
 #include <EditorFrameworkTest/SceneWindowTest.h>
 
+#include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
@@ -41,6 +50,18 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
   editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
   XII_SCOPE_EXIT(editor->ShutdownEditor());
   XII_TEST_BOOL(editor->IsRunning());
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Graceful processor stop and restart")
+  {
+    auto* processor = xiiAssetProcessor::GetSingleton();
+    processor->StartProcessTask();
+    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running);
+    processor->StopProcessTask(false);
+    processor->StopProcessTask(false, true);
+    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+    processor->StartProcessTask();
+    processor->StopProcessTask(false, true);
+    XII_TEST_BOOL(processor->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Stopped);
+  }
   xiiStringBuilder preferenceRoot = xiiApplicationServices::GetSingleton()->GetApplicationPreferencesFolder();
   preferenceRoot.Trim("/\\");
   preferences.Trim("/\\");
@@ -65,6 +86,8 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     if (!XII_TEST_RESULT(editor->CreateOrOpenProject(true, project)))
       return;
     XII_TEST_BOOL(xiiToolsProject::IsProjectOpen());
+    TestDocumentSaveUi(*editor, project.GetFileDirectory());
+    TestAssetReplacement(*editor, project.GetFileDirectory());
     xiiStringBuilder path = project.GetFileDirectory();
     path.AppendPath("Source.xiiPropertyAnimAsset");
     PropertyAnimationSourceManager fixtures;
@@ -137,6 +160,18 @@ XII_CREATE_SIMPLE_TEST(EditorIntegration, Startup)
     pump();
     XII_TEST_BOOL(closedWindow.isNull());
     TestSceneWindow(*editor, project.GetFileDirectory());
+    TestExposedAssetDependencies(*editor, project.GetFileDirectory());
+    TestAssetResave(*editor, project.GetFileDirectory());
+    TestAssetDependencyTracking(*editor, project.GetFileDirectory());
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Production asset processor IPC")
+    {
+      TestAssetProcessor(*editor, project.GetFileDirectory());
+    }
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native asset profile evaluation and switching")
+    {
+      TestAssetProfiles(*editor, project.GetFileDirectory());
+      TestAssetProfileDialog(project.GetFileDirectory());
+    }
     editor->CloseProject();
     pump();
     XII_TEST_BOOL(!xiiToolsProject::IsProjectOpen());

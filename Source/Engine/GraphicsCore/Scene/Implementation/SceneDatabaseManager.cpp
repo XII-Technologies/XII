@@ -131,13 +131,12 @@ xiiResult xiiSceneDatabaseManager::GetExtractedMeshletCapacity(xiiSceneDatabaseC
   for (auto it = slot->m_ExtractedMeshes.GetIterator(); it.IsValid(); ++it)
   {
     const auto* geometry = xiiGeometryResidencyManager::GetGpuRecord(it.Value().m_hGeometry);
-    if (!geometry)
+    if (!geometry || !it.Value().m_bMeshletCountsValid)
       return XII_FAILURE;
     xiiUInt32 maximum = 0;
     for (xiiUInt32 lod = 0; lod < geometry->m_uiLodCount; ++lod)
-      if ((geometry->m_uiResidentLodMask & (1U << lod)) != 0 &&
-          (it.Key().m_uiLodIndex == xiiInvalidIndex || it.Key().m_uiLodIndex == lod))
-        maximum = xiiMath::Max(maximum, geometry->m_Lods[lod].m_uiMeshletCount);
+      if (it.Key().m_uiLodIndex == xiiInvalidIndex || it.Key().m_uiLodIndex == lod)
+        maximum = xiiMath::Max(maximum, it.Value().m_uiMeshletCounts[lod]);
     total += maximum; // At most UInt32 instances * UInt32 meshlets; the sum fits UInt64.
   }
   out_uiMeshlets = total;

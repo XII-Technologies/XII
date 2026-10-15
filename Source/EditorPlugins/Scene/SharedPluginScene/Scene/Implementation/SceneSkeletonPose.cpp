@@ -6,8 +6,7 @@
 #include <GraphicsCore/AnimationSystem/SkeletonComponent.h>
 #include <SharedPluginScene/Scene/SceneSkeletonPose.h>
 
-xiiResult xiiCollectSceneSkeletonPose(const xiiGameObject& object, xiiString& out_sSkeletonResource,
-                                      xiiMap<xiiString, xiiTransform>& out_transforms)
+xiiResult xiiCollectSceneSkeletonPose(const xiiGameObject& object, xiiString& out_sSkeletonResource, xiiMap<xiiString, xiiTransform>& out_transforms)
 {
   out_sSkeletonResource.Clear();
   out_transforms.Clear();

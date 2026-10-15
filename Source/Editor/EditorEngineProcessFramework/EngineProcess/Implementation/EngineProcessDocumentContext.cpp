@@ -580,9 +580,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
   XII_ASSERT_DEV(!xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode(), "Wrong mode for thumbnail creation");
   XII_ASSERT_DEV(m_pThumbnailViewContext == nullptr, "Thumbnail rendering already in progress.");
   static_assert((ThumbnailSuperscaleFactor & (ThumbnailSuperscaleFactor - 1)) == 0, "ThumbnailSuperscaleFactor must be power of 2.");
-  if (pMsg->m_uiWidth == 0 || pMsg->m_uiHeight == 0 ||
-      pMsg->m_uiWidth > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor ||
-      pMsg->m_uiHeight > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor)
+  if (pMsg->m_uiWidth == 0 || pMsg->m_uiHeight == 0 || pMsg->m_uiWidth > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor || pMsg->m_uiHeight > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor)
   {
     xiiLog::Error("Invalid thumbnail dimensions: {0}x{1}.", pMsg->m_uiWidth, pMsg->m_uiHeight);
     xiiCreateThumbnailMsgToEditor response;
@@ -1020,8 +1018,7 @@ xiiResult xiiEngineProcessDocumentContext::DrawGizmos(const xiiView& view)
 
 xiiResult xiiEngineProcessDocumentContext::PickGizmo(const xiiView& view, float fNormalizedX, float fNormalizedY, xiiEditorGizmoPickResult& out_result)
 {
-  if (!m_pWorld || view.GetWorld() != m_pWorld || !view.IsValid() || view.GetCamera()->GetCameraMode() == xiiCameraMode::None ||
-      !xiiMath::IsFinite(fNormalizedX) || !xiiMath::IsFinite(fNormalizedY) || fNormalizedX < 0 || fNormalizedX > 1 || fNormalizedY < 0 || fNormalizedY > 1)
+  if (!m_pWorld || view.GetWorld() != m_pWorld || !view.IsValid() || view.GetCamera()->GetCameraMode() == xiiCameraMode::None || !xiiMath::IsFinite(fNormalizedX) || !xiiMath::IsFinite(fNormalizedY) || fNormalizedX < 0 || fNormalizedX > 1 || fNormalizedY < 0 || fNormalizedY > 1)
     return XII_FAILURE;
   xiiVec3 start, direction;
   XII_SUCCEED_OR_RETURN(view.ComputePickingRay(fNormalizedX, fNormalizedY, start, direction));

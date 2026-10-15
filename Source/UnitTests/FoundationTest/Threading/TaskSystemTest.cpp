@@ -419,8 +419,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
     XII_TEST_BOOL(uiDone < uiNumTasks);
 
     XII_TEST_BOOL(uiStarted > 0);
-    XII_TEST_BOOL_MSG(uiStarted <= xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::ShortTasks),
-                      "This test can fail when the PC is under heavy load."); // should not have managed to start more tasks than there are threads
+    XII_TEST_BOOL_MSG(uiStarted <= xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::ShortTasks), "This test can fail when the PC is under heavy load."); // should not have managed to start more tasks than there are threads
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Canceling Tasks (forcefully)")
@@ -466,8 +465,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
     if (XII_TEST_BOOL_MSG(uiDone == 0, "This test can fail when the PC is under heavy load."))
     {
       XII_TEST_BOOL(uiStarted > 0);
-      XII_TEST_BOOL(uiStarted <= xiiTaskSystem::GetNumAllocatedWorkerThreads(
-                                   xiiWorkerThreadType::ShortTasks)); // should not have managed to start more tasks than there are threads
+      XII_TEST_BOOL(uiStarted <= xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::ShortTasks)); // should not have managed to start more tasks than there are threads
     }
   }
 

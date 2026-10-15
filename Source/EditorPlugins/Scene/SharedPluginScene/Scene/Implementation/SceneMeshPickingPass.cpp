@@ -98,8 +98,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
       continue;
     const xiiGameObject* object    = nullptr;
     const xiiComponent*  component = nullptr;
-    if (!view->GetWorld()->TryGetObject(mesh->m_hOwnerObject, object) || !view->GetWorld()->TryGetComponent(mesh->m_hOwnerComponent, component) ||
-        component->GetOwner() != object || !component->IsActive() || !object->IsActive())
+    if (!view->GetWorld()->TryGetObject(mesh->m_hOwnerObject, object) || !view->GetWorld()->TryGetComponent(mesh->m_hOwnerComponent, component) || component->GetOwner() != object || !component->IsActive() || !object->IsActive())
       continue;
     const auto& tags = object->GetTags();
     if (tags.IsAnySet(view->m_ExcludeTags) || (!view->m_IncludeTags.IsEmpty() && !tags.IsAnySet(view->m_IncludeTags)))
@@ -136,10 +135,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   geometry.m_hMeshletMetadata  = context.GetInputBuffer("GPU Meshlet Metadata");
   xiiMaterialGpuStorage::UploadHandles materials;
   materials.m_hSurfaceData = context.GetInputBuffer("Surface Material GPU Storage");
-  if (!geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() ||
-      !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuGeometryBaseIndex, geometry.m_uiGeometryBaseIndex) ||
-      !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuMaximumResidentMeshlets, geometry.m_uiMaximumResidentMeshletCount) ||
-      !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuSurfaceMaterialBaseIndex, materials.m_uiSurfaceBaseIndex))
+  if (!geometry.m_hGeometryMetadata.IsValid() || !geometry.m_hMeshletMetadata.IsValid() || !materials.m_hSurfaceData.IsValid() || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuGeometryBaseIndex, geometry.m_uiGeometryBaseIndex) || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuMaximumResidentMeshlets, geometry.m_uiMaximumResidentMeshletCount) || !context.m_Blackboard.TryGet(xiiRGBlackboardKeys::k_GpuSurfaceMaterialBaseIndex, materials.m_uiSurfaceBaseIndex))
     return XII_FAILURE;
 
   const auto instances = state.m_Scene.GetDatabase().GetObjectCount();
@@ -149,8 +145,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   const auto& viewport = view->GetViewport();
   // Full viewport resolution, independent of dynamic scene resolution. The query target starts
   // at zero; the public queries account for a nonzero window viewport origin.
-  if (!xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 ||
-      viewport.width >= static_cast<float>(xiiMath::MaxValue<xiiUInt32>()) || viewport.height >= static_cast<float>(xiiMath::MaxValue<xiiUInt32>()))
+  if (!xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 || viewport.width >= static_cast<float>(xiiMath::MaxValue<xiiUInt32>()) || viewport.height >= static_cast<float>(xiiMath::MaxValue<xiiUInt32>()))
     return XII_FAILURE;
   const xiiUInt32 width          = static_cast<xiiUInt32>(xiiMath::Ceil(viewport.width));
   const xiiUInt32 height         = static_cast<xiiUInt32>(xiiMath::Ceil(viewport.height));
@@ -163,8 +158,7 @@ xiiResult xiiSceneMeshPickingPass::Build(xiiRenderPipelinePassContext& context)
   visibilityDescription.m_sName              = context.m_sPassName;
   visibilityDescription.m_Purpose            = xiiGpuVisibilityPurpose::Editor;
   visibilityDescription.m_bEnableLodFeedback = false;
-  const auto visibility                      = xiiGpuVisibilityManager::AddPasses(state.m_hVisibility, context.m_Graph, context.m_Graph.GetFrameIndex(),
-                                                                                  state.m_Scene.GetHandle(), visibilityView, geometry, visibilityDescription);
+  const auto visibility                      = xiiGpuVisibilityManager::AddPasses(state.m_hVisibility, context.m_Graph, context.m_Graph.GetFrameIndex(), state.m_Scene.GetHandle(), visibilityView, geometry, visibilityDescription);
 
   xiiGpuSceneGBufferRasterDescription raster;
   raster.m_ViewProjectionMatrix      = matrix;

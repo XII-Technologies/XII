@@ -7,6 +7,7 @@
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/Assets/AssetTableWriter.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/Configuration/SubSystem.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -14,7 +15,6 @@
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <Foundation/Time/Stopwatch.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
-#include <Foundation/Utilities/DGMLWriter.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
@@ -115,15 +115,17 @@ void xiiAssetCurator::StartInitialize(const xiiApplicationFileSystemConfig& cfg)
     XII_LOG_BLOCK("SetupAssetProfiles");
 
     SetupDefaultAssetProfiles();
-    if (LoadAssetProfiles().Failed())
+    if (ReloadAssetProfiles().Failed())
     {
       xiiLog::Warning("Asset profiles file does not exist or contains invalid data. Setting up default profiles.");
-      SaveAssetProfiles().IgnoreResult();
-      SaveRuntimeProfiles();
+      if (!xiiStartup::HasApplicationTag("editorprocessor") && !xiiFileSystem::ExistsFile(":project/Editor/AssetProfiles.ddl"))
+      {
+        if (SaveAssetProfiles().Failed() || SaveRuntimeProfiles().Failed())
+          xiiLog::Error("Could not save the initial asset profile configuration.");
+      }
     }
   }
 
-  ComputeAllDocumentManagerAssetProfileHashes();
   BuildFileExtensionSet(m_ValidAssetExtensions);
 
   m_bRunUpdateTask   = true;
@@ -203,8 +205,6 @@ void xiiAssetCurator::Deinitialize()
 {
   XII_PROFILE_SCOPE("Deinitialize");
 
-  SaveAssetProfiles().IgnoreResult();
-
   ShutdownUpdateTask();
   xiiAssetProcessor::GetSingleton()->StopProcessTask(true);
   xiiFileSystemModel*            pFiles = xiiFileSystemModel::GetSingleton();
@@ -225,6 +225,12 @@ void xiiAssetCurator::Deinitialize()
     m_KnownSubAssets.Clear();
     m_KnownAssets.Clear();
     m_TransformStateStale.Clear();
+    m_InverseTransformDeps.Clear();
+    m_InverseThumbnailDeps.Clear();
+    m_InversePackageDeps.Clear();
+    m_UnresolvedTransformDeps.Clear();
+    m_UnresolvedThumbnailDeps.Clear();
+    m_UnresolvedPackageDeps.Clear();
 
     for (int i = 0; i < xiiAssetInfo::TransformState::COUNT; i++)
     {
@@ -303,12 +309,16 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
         // so, for now, since this is probably a rare case anyway, we just close the document without asking
         if (pInfo->m_bMainAsset)
         {
-          xiiDocumentManager::EnsureDocumentIsClosedInAllManagers(pInfo->m_pAssetInfo->m_Path);
+          // A new asset can already occupy this path. Close the removed identity only;
+          // closing by path can destroy its replacement during the replacement's initial save.
+          if (auto* document = xiiDocumentManager::GetDocumentByGuid(guid))
+            document->GetDocumentManager()->CloseDocument(document);
           e.m_Type = xiiAssetCuratorEvent::Type::AssetRemoved;
           m_Events.Broadcast(e);
 
           deletedAssets.PushBack(pInfo->m_pAssetInfo);
         }
+        RemoveAssetTransformState(guid);
         m_KnownAssets.Remove(guid);
         m_KnownSubAssets.Remove(guid);
       }
@@ -439,85 +449,6 @@ xiiStatus xiiAssetCurator::TransformAllAssets(xiiBitflags<xiiTransformFlags> tra
     return xiiStatus(xiiFmt("Transform all assets failed on {0} assets.", uiNumFailedSteps));
 
   return XII_SUCCESS;
-}
-
-void xiiAssetCurator::ResaveAllAssets(xiiStringView sPrefixPath)
-{
-  xiiHashTable<xiiUuid, xiiAssetInfo*> resaveAssets;
-  resaveAssets.Reserve(m_KnownAssets.GetCount());
-
-  for (auto itAsset = m_KnownAssets.GetIterator(); itAsset.IsValid(); ++itAsset)
-  {
-    if (xiiPathUtils::IsSubPath(sPrefixPath, itAsset.Value()->m_Path.GetAbsolutePath()))
-    {
-      resaveAssets.Insert(itAsset.Key(), itAsset.Value());
-    }
-  }
-
-  xiiProgressRange range("Re-saving Assets", 1 + resaveAssets.GetCount(), true);
-
-  XII_LOCK(m_CuratorMutex);
-
-  xiiDynamicArray<xiiUuid> sortedAssets;
-  sortedAssets.Reserve(resaveAssets.GetCount());
-
-  xiiMap<xiiUuid, xiiSet<xiiUuid>> dependencies;
-
-  xiiSet<xiiUuid> accu;
-
-  for (auto itAsset = resaveAssets.GetIterator(); itAsset.IsValid(); ++itAsset)
-  {
-    auto it2 = dependencies.Insert(itAsset.Key(), xiiSet<xiiUuid>());
-    for (const xiiString& dep : itAsset.Value()->m_Info->m_TransformDependencies)
-    {
-      if (xiiConversionUtils::IsStringUuid(dep))
-      {
-        it2.Value().Insert(xiiConversionUtils::ConvertStringToUuid(dep));
-      }
-    }
-  }
-
-  while (!dependencies.IsEmpty())
-  {
-    bool bDeadEnd = true;
-    for (auto it = dependencies.GetIterator(); it.IsValid(); ++it)
-    {
-      // Are the types dependencies met?
-      if (accu.ContainsSet(it.Value()))
-      {
-        sortedAssets.PushBack(it.Key());
-        accu.Insert(it.Key());
-        dependencies.Remove(it);
-        bDeadEnd = false;
-        break;
-      }
-    }
-
-    if (bDeadEnd)
-    {
-      // Just take the next one in and hope for the best.
-      auto it = dependencies.GetIterator();
-      sortedAssets.PushBack(it.Key());
-      accu.Insert(it.Key());
-      dependencies.Remove(it);
-    }
-  }
-
-  for (xiiUInt32 i = 0; i < sortedAssets.GetCount(); i++)
-  {
-    if (range.WasCanceled())
-      break;
-
-    xiiAssetInfo* pAssetInfo = GetAssetInfo(sortedAssets[i]);
-    XII_ASSERT_DEBUG(pAssetInfo, "Should not happen as data was derived from known assets list.");
-    range.BeginNextStep(xiiPathUtils::GetFileNameAndExtension(pAssetInfo->m_Path.GetDataDirParentRelativePath()));
-
-    auto res = ResaveAsset(pAssetInfo);
-    if (res.Failed())
-    {
-      xiiLog::Error("{0} ({1})", res.GetMessageString(), pAssetInfo->m_Path.GetDataDirParentRelativePath());
-    }
-  }
 }
 
 xiiTransformStatus xiiAssetCurator::TransformAsset(const xiiUuid& assetGuid, xiiBitflags<xiiTransformFlags> transformFlags, const xiiPlatformProfile* pAssetProfile)
@@ -793,9 +724,9 @@ xiiUInt64 xiiAssetCurator::GetAssetReferenceHash(xiiUuid assetGuid)
   return thumbHash;
 }
 
-xiiAssetInfo::TransformState xiiAssetCurator::IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile*, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, xiiUInt64& out_uiPackageHash, bool bForce)
+xiiAssetInfo::TransformState xiiAssetCurator::IsAssetUpToDate(const xiiUuid& assetGuid, const xiiPlatformProfile* pAssetProfile, const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiUInt64& out_uiAssetHash, xiiUInt64& out_uiThumbHash, xiiUInt64& out_uiPackageHash, bool bForce)
 {
-  return xiiAssetCurator::UpdateAssetTransformState(assetGuid, out_uiAssetHash, out_uiThumbHash, out_uiPackageHash, bForce);
+  return xiiAssetCurator::UpdateAssetTransformState(assetGuid, out_uiAssetHash, out_uiThumbHash, out_uiPackageHash, bForce, pAssetProfile);
 }
 
 void xiiAssetCurator::InvalidateAssetsWithTransformState(xiiAssetInfo::TransformState state)
@@ -810,12 +741,24 @@ void xiiAssetCurator::InvalidateAssetsWithTransformState(xiiAssetInfo::Transform
   }
 }
 
-xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce)
+xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid assetGuid, xiiUInt64& out_AssetHash, xiiUInt64& out_ThumbHash, xiiUInt64& out_PackageHash, bool bForce, const xiiPlatformProfile* pAssetProfile, AssetHashContext* pContext)
 {
   CURATOR_PROFILE("UpdateAssetTransformState");
   xiiStringBuilder sAbsAssetPath;
+  out_AssetHash = out_ThumbHash = out_PackageHash = 0;
+  bool             bCacheActiveProfile            = false;
+  AssetHashContext context;
   {
     XII_LOCK(m_CuratorMutex);
+    pAssetProfile       = xiiAssetDocumentManager::DetermineFinalTargetProfile(pAssetProfile);
+    bCacheActiveProfile = pAssetProfile == GetActiveAssetProfile();
+    if (pContext != nullptr)
+      bCacheActiveProfile &= pContext->m_bCacheActiveProfile;
+    else if (bForce || !bCacheActiveProfile)
+    {
+      context.m_bCacheActiveProfile = bCacheActiveProfile;
+      pContext                      = &context;
+    }
     // If assetGuid is a sub-asset, redirect to main asset.
     auto it = m_KnownSubAssets.Find(assetGuid);
     if (!it.IsValid())
@@ -825,17 +768,32 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     xiiAssetInfo* pAssetInfo = it.Value().m_pAssetInfo;
     assetGuid                = pAssetInfo->m_Info->m_DocumentID;
     sAbsAssetPath            = pAssetInfo->m_Path;
+    AssetHashResult cached;
+    if (pContext != nullptr && pContext->m_Results.TryGetValue(assetGuid, cached))
+    {
+      out_AssetHash   = cached.m_uiAssetHash;
+      out_ThumbHash   = cached.m_uiThumbnailHash;
+      out_PackageHash = cached.m_uiPackageHash;
+      return cached.m_State;
+    }
 
     // Circular dependencies can change if any asset in the circle has changed (and potentially broken the circle). Thus, we need to call CheckForCircularDependencies again for every asset.
-    if (!pAssetInfo->m_CircularDependencies.IsEmpty() && m_TransformStateStale.Contains(assetGuid))
+    if (!pAssetInfo->m_CircularDependencies.IsEmpty())
     {
-      pAssetInfo->m_CircularDependencies.Clear();
-      if (CheckForCircularDependencies(pAssetInfo).Failed())
+      if (m_TransformStateStale.Contains(assetGuid))
       {
-        UpdateAssetTransformState(assetGuid, xiiAssetInfo::CircularDependency);
+        pAssetInfo->m_CircularDependencies.Clear();
+        CheckForCircularDependencies(pAssetInfo).IgnoreResult();
+      }
+      if (!pAssetInfo->m_CircularDependencies.IsEmpty())
+      {
+        if (bCacheActiveProfile)
+          UpdateAssetTransformState(assetGuid, xiiAssetInfo::CircularDependency);
         out_AssetHash   = 0;
         out_ThumbHash   = 0;
         out_PackageHash = 0;
+        if (pContext != nullptr)
+          pContext->m_Results.Insert(assetGuid, AssetHashResult{xiiAssetInfo::CircularDependency, 0, 0, 0});
         return xiiAssetInfo::CircularDependency;
       }
     }
@@ -843,7 +801,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     // Setting an asset to unknown actually does not change the m_TransformState but merely adds it to the m_TransformStateStale list.
     // This is to prevent the user facing state to constantly fluctuate if something is tagged as modified but not actually changed (E.g. saving a
     // file without modifying the content). Thus we need to check for m_TransformStateStale as well as for the set state.
-    if (!bForce && pAssetInfo->m_TransformState != xiiAssetInfo::Unknown && !m_TransformStateStale.Contains(assetGuid))
+    if (bCacheActiveProfile && !bForce && pAssetInfo->m_TransformState != xiiAssetInfo::Unknown && !m_TransformStateStale.Contains(assetGuid))
     {
       out_AssetHash   = pAssetInfo->m_AssetHash;
       out_ThumbHash   = pAssetInfo->m_ThumbHash;
@@ -882,7 +840,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     sAssetFile        = pAssetInfo->m_Path;
     uiLastStateUpdate = pAssetInfo->m_LastStateUpdate;
     // The settings has combines both the file settings and the global profile settings.
-    uiSettingsHash = pAssetInfo->m_Info->m_uiSettingsHash + pManager->GetAssetProfileHash();
+    uiSettingsHash = pAssetInfo->m_Info->m_uiSettingsHash + pManager->GetAssetProfileHash(pAssetProfile);
     for (const xiiString& dep : pAssetInfo->m_Info->m_TransformDependencies)
     {
       transformDeps.PushBack(dep);
@@ -914,12 +872,13 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
   xiiSet<xiiString>            missingPackageDeps;
   // Compute final state and hashes.
   {
-    state = HashAsset(uiSettingsHash, transformDeps, thumbnailDeps, packageDeps, missingTransformDeps, missingThumbnailDeps, missingPackageDeps, out_AssetHash, out_ThumbHash, out_PackageHash, bForce);
+    state = HashAsset(uiSettingsHash, transformDeps, thumbnailDeps, packageDeps, missingTransformDeps, missingThumbnailDeps, missingPackageDeps, out_AssetHash, out_ThumbHash, out_PackageHash, bForce, pAssetProfile, pContext);
     XII_ASSERT_DEV(state == xiiAssetInfo::Unknown || state == xiiAssetInfo::MissingTransformDependency || state == xiiAssetInfo::MissingThumbnailDependency || state == xiiAssetInfo::MissingPackageDependency, "Unhandled case of HashAsset return value.");
 
     if (state == xiiAssetInfo::Unknown)
     {
-      if (pManager->IsOutputUpToDate(sAssetFile, outputs, out_AssetHash, pTypeDescriptor))
+      XII_LOCK(m_CuratorMutex);
+      if (pManager->IsOutputUpToDate(sAssetFile, outputs, out_AssetHash, pTypeDescriptor, pAssetProfile))
       {
         state = xiiAssetInfo::TransformState::UpToDate;
         if (pTypeDescriptor->m_AssetDocumentFlags.IsAnySet(xiiAssetDocumentFlags::SupportsThumbnail | xiiAssetDocumentFlags::AutoThumbnailOnTransform))
@@ -958,7 +917,7 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
       // instead of waiting for a new computation as the case in which the value has actually changed
       // is very rare (asset modified between the two locks) in which case we will just create
       // an already stale transform / thumbnail which will be immediately replaced again.
-      if (pAssetInfo->m_LastStateUpdate == uiLastStateUpdate)
+      if (bCacheActiveProfile && pAssetProfile == GetActiveAssetProfile() && pAssetInfo->m_LastStateUpdate == uiLastStateUpdate)
       {
         UpdateAssetTransformState(assetGuid, state);
         pAssetInfo->m_AssetHash            = out_AssetHash;
@@ -979,6 +938,8 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
       xiiLog::Error("Asset with GUID {0} is unknown", xiiConversionUtils::ToString(assetGuid, tmp));
       return xiiAssetInfo::TransformState::Unknown;
     }
+    if (pContext != nullptr)
+      pContext->m_Results.Insert(assetGuid, AssetHashResult{state, out_AssetHash, out_ThumbHash, out_PackageHash});
     return state;
   }
 }
@@ -1090,62 +1051,6 @@ found:
   return XII_FAILURE;
 }
 
-void xiiAssetCurator::FindAllUses(xiiUuid assetGuid, xiiSet<xiiUuid>& ref_uses, bool bTransitive) const
-{
-  XII_LOCK(m_CuratorMutex);
-
-  xiiSet<xiiUuid> todoList;
-  todoList.Insert(assetGuid);
-
-  auto GatherReferences = [&](const xiiMap<xiiString, xiiHybridArray<xiiUuid, 1>>& inverseTracker, const xiiStringBuilder& sAsset) {
-    auto it = inverseTracker.Find(sAsset);
-    if (it.IsValid())
-    {
-      for (const xiiUuid& guid : it.Value())
-      {
-        if (!ref_uses.Contains(guid))
-          todoList.Insert(guid);
-
-        ref_uses.Insert(guid);
-      }
-    }
-  };
-
-  xiiStringBuilder sCurrentAsset;
-  do
-  {
-    auto                itFirst = todoList.GetIterator();
-    const xiiAssetInfo* pInfo   = GetAssetInfo(itFirst.Key());
-    todoList.Remove(itFirst);
-
-    if (pInfo)
-    {
-      sCurrentAsset = pInfo->m_Path;
-      GatherReferences(m_InverseThumbnailDeps, sCurrentAsset);
-      GatherReferences(m_InverseTransformDeps, sCurrentAsset);
-    }
-  } while (bTransitive && !todoList.IsEmpty());
-}
-
-void xiiAssetCurator::FindAllUses(xiiStringView sAbsolutePath, xiiSet<xiiUuid>& ref_uses) const
-{
-  XII_LOCK(m_CuratorMutex);
-  if (auto it = m_InverseTransformDeps.Find(sAbsolutePath); it.IsValid())
-  {
-    for (const xiiUuid& guid : it.Value())
-    {
-      ref_uses.Insert(guid);
-    }
-  }
-}
-
-bool xiiAssetCurator::IsReferenced(xiiStringView sAbsolutePath) const
-{
-  XII_LOCK(m_CuratorMutex);
-  auto it = m_InverseTransformDeps.Find(sAbsolutePath);
-  return it.IsValid() && !it.Value().IsEmpty();
-}
-
 ////////////////////////////////////////////////////////////////////////
 // xiiAssetCurator Manual and Automatic Change Notification
 ////////////////////////////////////////////////////////////////////////
@@ -1154,7 +1059,14 @@ void xiiAssetCurator::NotifyOfFileChange(xiiStringView sAbsolutePath)
 {
   xiiStringBuilder sPath(sAbsolutePath);
   sPath.MakeCleanPath();
-  xiiFileSystemModel::GetSingleton()->NotifyOfChange(sPath);
+  {
+    // Explicit notifications follow a known write. A preserved/coarse timestamp must not reuse
+    // the startup header cache or suppress dependency refresh after rapid successive saves.
+    XII_LOCK(m_CachedAssetsMutex);
+    m_CachedAssets.Remove(sPath);
+    m_CachedFiles.Remove(sPath);
+  }
+  xiiFileSystemModel::GetSingleton()->NotifyOfChange(sPath, true);
 }
 
 void xiiAssetCurator::NotifyOfAssetChange(const xiiUuid& assetGuid)
@@ -1216,204 +1128,6 @@ void xiiAssetCurator::NeedsReloadResources(const xiiUuid& assetGuid)
       }
     }
   }
-}
-
-void xiiAssetCurator::GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>& inout_deps, bool bIncludeTransformDeps, bool bIncludeThumbnailDeps, bool bIncludePackageDeps) const
-{
-  XII_LOCK(m_CuratorMutex);
-
-  xiiHybridArray<xiiString, 6> toDoList;
-  inout_deps.Insert(sAssetOrPath);
-  toDoList.PushBack(sAssetOrPath);
-
-  while (!toDoList.IsEmpty())
-  {
-    xiiString currentAsset = toDoList.PeekBack();
-    toDoList.PopBack();
-
-    if (xiiConversionUtils::IsStringUuid(currentAsset))
-    {
-      auto          it         = m_KnownSubAssets.Find(xiiConversionUtils::ConvertStringToUuid(currentAsset));
-      xiiAssetInfo* pAssetInfo = it.Value().m_pAssetInfo;
-
-      if (bIncludeTransformDeps)
-      {
-        for (const xiiString& dep : pAssetInfo->m_Info->m_TransformDependencies)
-        {
-          if (!inout_deps.Contains(dep))
-          {
-            inout_deps.Insert(dep);
-            toDoList.PushBack(dep);
-          }
-        }
-      }
-      if (bIncludeThumbnailDeps)
-      {
-        for (const xiiString& dep : pAssetInfo->m_Info->m_ThumbnailDependencies)
-        {
-          if (!inout_deps.Contains(dep))
-          {
-            inout_deps.Insert(dep);
-            toDoList.PushBack(dep);
-          }
-        }
-      }
-      if (bIncludePackageDeps)
-      {
-        for (const xiiString& dep : pAssetInfo->m_Info->m_PackageDependencies)
-        {
-          if (!inout_deps.Contains(dep))
-          {
-            inout_deps.Insert(dep);
-            toDoList.PushBack(dep);
-          }
-        }
-      }
-    }
-  }
-}
-
-void xiiAssetCurator::GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDebs, bool bIncludeThumbnailDebs) const
-{
-  XII_LOCK(m_CuratorMutex);
-
-  xiiHybridArray<const xiiAssetInfo*, 6> toDoList;
-  toDoList.PushBack(pAssetInfo);
-  inout_inverseDeps.Insert(pAssetInfo->m_Info->m_DocumentID);
-
-  while (!toDoList.IsEmpty())
-  {
-    const xiiAssetInfo* currentAsset = toDoList.PeekBack();
-    toDoList.PopBack();
-
-    if (bIncludeTransformDebs)
-    {
-      if (auto it = m_InverseTransformDeps.Find(currentAsset->m_Path.GetAbsolutePath()); it.IsValid())
-      {
-        for (const xiiUuid& asset : it.Value())
-        {
-          if (!inout_inverseDeps.Contains(asset))
-          {
-            xiiAssetInfo* pAssetInfo = nullptr;
-            if (m_KnownAssets.TryGetValue(asset, pAssetInfo))
-            {
-              toDoList.PushBack(pAssetInfo);
-              inout_inverseDeps.Insert(asset);
-            }
-          }
-        }
-      }
-    }
-
-    if (bIncludeThumbnailDebs)
-    {
-      if (auto it = m_InverseThumbnailDeps.Find(currentAsset->m_Path.GetAbsolutePath()); it.IsValid())
-      {
-        for (const xiiUuid& asset : it.Value())
-        {
-          if (!inout_inverseDeps.Contains(asset))
-          {
-            xiiAssetInfo* pAssetInfo = nullptr;
-            if (m_KnownAssets.TryGetValue(asset, pAssetInfo))
-            {
-              toDoList.PushBack(pAssetInfo);
-              inout_inverseDeps.Insert(asset);
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-void xiiAssetCurator::WriteDependencyDGML(const xiiUuid& guid, xiiStringView sOutputFile) const
-{
-  XII_LOCK(m_CuratorMutex);
-
-  xiiDGMLGraph graph;
-
-  xiiSet<xiiString> deps;
-  xiiStringBuilder  sTemp;
-  GenerateTransitiveHull(xiiConversionUtils::ToString(guid, sTemp), deps, true, true);
-
-  xiiHashTable<xiiString, xiiUInt32> nodeMap;
-  nodeMap.Reserve(deps.GetCount());
-  for (auto& dep : deps)
-  {
-    xiiDGMLGraph::NodeDesc nd;
-    if (xiiConversionUtils::IsStringUuid(dep))
-    {
-      auto                it         = m_KnownSubAssets.Find(xiiConversionUtils::ConvertStringToUuid(dep));
-      const xiiSubAsset&  subAsset   = it.Value();
-      const xiiAssetInfo* pAssetInfo = subAsset.m_pAssetInfo;
-      if (subAsset.m_bMainAsset)
-      {
-        nd.m_Color = xiiColor::Blue;
-        sTemp.SetFormat("{}", pAssetInfo->m_Path.GetDataDirParentRelativePath());
-      }
-      else
-      {
-        nd.m_Color = xiiColor::AliceBlue;
-        sTemp.SetFormat("{} | {}", pAssetInfo->m_Path.GetDataDirParentRelativePath(), subAsset.GetName());
-      }
-      nd.m_Shape = xiiDGMLGraph::NodeShape::Rectangle;
-    }
-    else
-    {
-      sTemp      = dep;
-      nd.m_Color = xiiColor::Orange;
-      nd.m_Shape = xiiDGMLGraph::NodeShape::Rectangle;
-    }
-    xiiUInt32 uiGraphNode = graph.AddNode(sTemp, &nd);
-    nodeMap.Insert(dep, uiGraphNode);
-  }
-
-  for (auto& node : deps)
-  {
-    xiiDGMLGraph::NodeDesc nd;
-    if (xiiConversionUtils::IsStringUuid(node))
-    {
-      xiiUInt32 uiInputNode = *nodeMap.GetValue(node);
-
-      auto          it         = m_KnownSubAssets.Find(xiiConversionUtils::ConvertStringToUuid(node));
-      xiiAssetInfo* pAssetInfo = it.Value().m_pAssetInfo;
-
-      xiiMap<xiiUInt32, xiiString> connection;
-
-      auto ExtendConnection = [&](const xiiString& sRef, xiiStringView sLabel) {
-        xiiUInt32 uiOutputNode = *nodeMap.GetValue(sRef);
-        sTemp                  = connection[uiOutputNode];
-        if (sTemp.IsEmpty())
-          sTemp = sLabel;
-        else
-          sTemp.AppendFormat(" | {}", sLabel);
-        connection[uiOutputNode] = sTemp;
-      };
-
-      for (const xiiString& sRef : pAssetInfo->m_Info->m_TransformDependencies)
-      {
-        ExtendConnection(sRef, "Transform");
-      }
-
-      for (const xiiString& sRef : pAssetInfo->m_Info->m_ThumbnailDependencies)
-      {
-        ExtendConnection(sRef, "Thumbnail");
-      }
-
-      // This will make the graph very big, not recommended.
-      /* for (const xiiString& ref : pAssetInfo->m_Info->m_PackageDependencies)
-       {
-         ExtendConnection(ref, "Package");
-       }*/
-
-      for (auto it : connection)
-      {
-        graph.AddConnection(uiInputNode, it.Key(), it.Value());
-      }
-    }
-  }
-
-  xiiDGMLGraphWriter::WriteGraphToFile(sOutputFile, graph).IgnoreResult();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1572,31 +1286,13 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
 }
 
 
-xiiStatus xiiAssetCurator::ResaveAsset(xiiAssetInfo* pAssetInfo)
-{
-  bool         bWasOpen = false;
-  xiiDocument* pDoc     = pAssetInfo->GetManager()->GetDocumentByPath(pAssetInfo->m_Path);
-  if (pDoc)
-    bWasOpen = true;
-  else
-    pDoc = xiiQtEditorApp::GetSingleton()->OpenDocument(pAssetInfo->m_Path.GetAbsolutePath(), xiiDocumentFlags::None);
-
-  if (pDoc == nullptr)
-    return xiiStatus(xiiFmt("Could not open asset document '{0}'", pAssetInfo->m_Path.GetDataDirParentRelativePath()));
-
-  xiiStatus ret = pDoc->SaveDocument(true);
-
-  if (!pDoc->HasWindowBeenRequested() && !bWasOpen)
-    pDoc->GetDocumentManager()->CloseDocument(pDoc);
-
-  return ret;
-}
-
 xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiUuid& assetGuid)
 {
   xiiAssetInfo* pAssetInfo = nullptr;
   if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo))
     return pAssetInfo;
+  if (auto it = m_KnownSubAssets.Find(assetGuid); it.IsValid())
+    return it.Value().m_pAssetInfo;
   return nullptr;
 }
 
@@ -1605,6 +1301,8 @@ const xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiUuid& assetGuid) cons
   xiiAssetInfo* pAssetInfo = nullptr;
   if (m_KnownAssets.TryGetValue(assetGuid, pAssetInfo))
     return pAssetInfo;
+  if (auto it = m_KnownSubAssets.Find(assetGuid); it.IsValid())
+    return it.Value().m_pAssetInfo;
   return nullptr;
 }
 
@@ -1617,9 +1315,7 @@ xiiAssetInfo* xiiAssetCurator::GetAssetInfo(const xiiString& sAssetGuid)
   {
     const xiiUuid guid = xiiConversionUtils::ConvertStringToUuid(sAssetGuid);
 
-    xiiAssetInfo* pInfo = nullptr;
-    if (m_KnownAssets.TryGetValue(guid, pInfo))
-      return pInfo;
+    return GetAssetInfo(guid);
   }
 
   return nullptr;
@@ -1673,8 +1369,7 @@ void xiiAssetCurator::OnFileChangedEvent(const xiiFileChangedEvent& e)
     case xiiFileChangedEvent::Type::FileAdded:
     case xiiFileChangedEvent::Type::FileChanged:
     {
-      // If the asset was just added it is not tracked and thus no need to invalidate anything.
-      if (e.m_Type == xiiFileChangedEvent::Type::FileChanged)
+      // An added file may satisfy an already tracked missing dependency.
       {
         XII_LOCK(m_CuratorMutex);
         xiiUuid guid0 = e.m_Status.m_DocumentID;
@@ -1697,6 +1392,11 @@ void xiiAssetCurator::OnFileChangedEvent(const xiiFileChangedEvent& e)
           {
             InvalidateAssetTransformState(guid);
           }
+        }
+        if (auto it = m_InversePackageDeps.Find(e.m_Path); it.IsValid())
+        {
+          for (const xiiUuid& guid : it.Value())
+            InvalidateAssetTransformState(guid);
         }
       }
 
@@ -1748,6 +1448,11 @@ void xiiAssetCurator::OnFileChangedEvent(const xiiFileChangedEvent& e)
         {
           InvalidateAssetTransformState(guid);
         }
+      }
+      if (auto it = m_InversePackageDeps.Find(e.m_Path); it.IsValid())
+      {
+        for (const xiiUuid& guid : it.Value())
+          InvalidateAssetTransformState(guid);
       }
     }
     break;

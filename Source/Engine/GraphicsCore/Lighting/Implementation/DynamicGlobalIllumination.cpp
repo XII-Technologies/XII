@@ -54,8 +54,8 @@ public:
   xiiSharedPtr<xiiGALTexture>              m_pIrradianceAtlas;
   xiiSharedPtr<xiiGALTexture>              m_pDistanceAtlas;
   xiiSharedPtr<xiiGALComputePipelineState> m_pUpdatePipeline;
-  xiiUInt32                                m_uiAtlasWidth   = 0U;
-  xiiUInt32                                m_uiAtlasHeight  = 0U;
+  xiiUInt32                                m_uiAtlasWidth  = 0U;
+  xiiUInt32                                m_uiAtlasHeight = 0U;
   xiiSharedPtr<xiiGALDevice>               m_pDevice;
 };
 
@@ -244,8 +244,7 @@ void xiiDDGIContext::InvalidateHistory()
 
 xiiResult xiiDDGIContext::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 uiFrameIndex)
 {
-  if (!IsInitialized() || uiFrameIndex == 0 || uiFrameIndex <= m_pState->m_uiFrameIndex ||
-      !xiiMath::IsFinite(vCameraPosition.x) || !xiiMath::IsFinite(vCameraPosition.y) || !xiiMath::IsFinite(vCameraPosition.z))
+  if (!IsInitialized() || uiFrameIndex == 0 || uiFrameIndex <= m_pState->m_uiFrameIndex || !xiiMath::IsFinite(vCameraPosition.x) || !xiiMath::IsFinite(vCameraPosition.y) || !xiiMath::IsFinite(vCameraPosition.z))
     return XII_FAILURE;
 
   const xiiDDGISettings& settings     = m_pState->m_Settings;
@@ -329,8 +328,7 @@ xiiResult xiiDDGIContext::BeginFrame(const xiiVec3& vCameraPosition, xiiUInt64 u
   {
     const Candidate&         candidate = candidates[i];
     const xiiDDGIProbeState& probe     = m_pState->m_Probes[candidate.m_uiPhysicalProbe];
-    m_pState->m_ScheduledUpdates.PushBack({candidate.m_uiPhysicalProbe, probe.m_vWorldPosition + probe.m_vRelocationOffset,
-                                           probe.m_Flags.IsSet(xiiDDGIProbeFlags::Valid) ? settings.m_fTemporalHysteresis : 0.0f});
+    m_pState->m_ScheduledUpdates.PushBack({candidate.m_uiPhysicalProbe, probe.m_vWorldPosition + probe.m_vRelocationOffset, probe.m_Flags.IsSet(xiiDDGIProbeFlags::Valid) ? settings.m_fTemporalHysteresis : 0.0f});
   }
   m_pState->m_Stats.m_uiScheduledUpdateCount = uiUpdateCount;
   return XII_SUCCESS;
@@ -422,9 +420,7 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
 
   const bool bPerformUpdates = m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex;
 
-  auto pass = graph.AddPass<UpdatePassData>(
-    "DDGI Probe Update", xiiGALCommandQueueFlags::Compute,
-    [this, bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
+  auto pass = graph.AddPass<UpdatePassData>("DDGI Probe Update", xiiGALCommandQueueFlags::Compute, [this, bPerformUpdates](UpdatePassData& data, xiiRenderGraphBuilder& builder) {
       xiiGALBufferCreationDescription bufferDescription;
       bufferDescription.m_uiSize              = xiiMath::Max(m_pState->m_Probes.GetCount(), 1U) * sizeof(xiiGpuDDGIProbeState);
       bufferDescription.m_uiElementByteStride = sizeof(xiiGpuDDGIProbeState);
@@ -460,9 +456,7 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
       builder.ExportTexture(data.m_hIrradianceAtlas, xiiGALResourceStateFlags::ShaderResource);
       builder.ExportTexture(data.m_hDistanceAtlas, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(bPerformUpdates);
-      builder.SetPassAllowMerge(false);
-    },
-    [this](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [this](const UpdatePassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& cmd = context.GetCommandList();
       {
         xiiGALMapHelper<xiiUInt8> mapped(cmd, context.GetBuffer(data.m_hProbeStates), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -477,8 +471,7 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
         xiiGALMapHelper<xiiDDGIProbeConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
         constants->MinimumCellAndAtlasWidth  = xiiVec4I32(data.m_vMinimumCell.x, data.m_vMinimumCell.y, data.m_vMinimumCell.z, static_cast<xiiInt32>(m_pState->m_uiAtlasWidth));
         constants->ProbeCountsAndUpdateCount = xiiVec4U32(m_pState->m_Settings.m_uiProbeCountX, m_pState->m_Settings.m_uiProbeCountY, m_pState->m_Settings.m_uiProbeCountZ, data.m_ProbeUpdates.GetCount());
-        constants->SpacingHysteresisDistance = xiiVec4(m_pState->m_Settings.m_fProbeSpacing, m_pState->m_Settings.m_fTemporalHysteresis,
-                                                       m_pState->m_Settings.m_fProbeSpacing * 4.0f, 0.0f);
+        constants->SpacingHysteresisDistance = xiiVec4(m_pState->m_Settings.m_fProbeSpacing, m_pState->m_Settings.m_fTemporalHysteresis, m_pState->m_Settings.m_fProbeSpacing * 4.0f, 0.0f);
       }
 
       if (!data.m_ProbeUpdates.IsEmpty())
@@ -497,8 +490,7 @@ xiiDDGIContext::UpdateHandles xiiDDGIContext::AddUpdatePass(xiiRenderGraph& grap
           CommitProbeUpdate(update.m_vMetadata.x, xiiVec3::MakeZero(), true);
       }
       if (m_pState->m_uiLastGpuUpdateFrame != m_pState->m_uiFrameIndex)
-        m_pState->m_uiLastGpuUpdateFrame = m_pState->m_uiFrameIndex;
-    });
+        m_pState->m_uiLastGpuUpdateFrame = m_pState->m_uiFrameIndex; });
 
   pass.first->m_vMinimumCell    = m_pState->m_vMinimumCell;
   pass.first->m_pLightingSystem = pLightingSystem;

@@ -936,7 +936,7 @@ void xiiQtAssetBrowserWidget::OnResaveAssets()
     QModelIndex      id       = TreeFolderFilter->indexFromItem(pCurrentItem);
     xiiStringBuilder sAbsPath = qtToXIIString(id.data(xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString());
 
-    xiiAssetCurator::GetSingleton()->ResaveAllAssets(sAbsPath);
+    xiiQtUiServices::MessageBoxStatus(xiiAssetCurator::GetSingleton()->ResaveAllAssets(sAbsPath), "Resaving assets failed.");
   }
 }
 

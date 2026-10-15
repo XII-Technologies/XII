@@ -176,7 +176,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 1, xiiComponentMode::Static)
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("Rendering"),
+    new xiiCategoryAttribute("Graphics"),
     new xiiDirectionVisualizerAttribute(xiiBasisAxis::PositiveX, 1.0f, xiiColor::DarkSlateBlue),
     new xiiCameraVisualizerAttribute("Mode", "FOV", "Dimensions", "NearPlane", "FarPlane"),
   }

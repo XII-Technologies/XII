@@ -14,8 +14,7 @@ namespace
   {
     if (path.IsEmpty() || xiiImageFileFormat::ReadImageDescription(path, description).Failed())
       return xiiStatus(xiiFmt("Cannot read decal source image '{}'.", path));
-    if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 ||
-        !description.m_Size.HasNonZeroArea() || description.m_Size.width > settings.m_uiMaxSourceSize || description.m_Size.height > settings.m_uiMaxSourceSize)
+    if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 || !description.m_Size.HasNonZeroArea() || description.m_Size.width > settings.m_uiMaxSourceSize || description.m_Size.height > settings.m_uiMaxSourceSize)
       return xiiStatus(xiiFmt("Decal source '{}' must be a 2D image no larger than {} pixels per axis.", path, settings.m_uiMaxSourceSize));
     xiiUInt32 maxMips = 1;
     for (auto axis = xiiMath::Max(description.m_Size.width, description.m_Size.height); axis > 1; axis >>= 1)
@@ -36,8 +35,7 @@ namespace
       pixel = value;
   }
 
-  xiiStatus ReadScaledImage(xiiStringView path, bool color, xiiUInt32 width, xiiUInt32 height,
-                            const xiiDecalAtlasBuildSettings& settings, xiiImage& result, bool normal = false)
+  xiiStatus ReadScaledImage(xiiStringView path, bool color, xiiUInt32 width, xiiUInt32 height, const xiiDecalAtlasBuildSettings& settings, xiiImage& result, bool normal = false)
   {
     xiiGALTextureCreationDescription description;
     XII_SUCCEED_OR_RETURN(ReadDescription(path, settings, description));
@@ -45,8 +43,7 @@ namespace
     if (image.LoadFrom(path).Failed())
       return xiiStatus(xiiFmt("Cannot load decal source '{}'.", path));
     // Recheck in case the file changed between metadata and pixel reads.
-    if (image.GetWidth() != description.m_Size.width || image.GetHeight() != description.m_Size.height ||
-        image.GetDepth() != 1 || image.GetNumFaces() != 1 || image.GetNumArrayIndices() != 1)
+    if (image.GetWidth() != description.m_Size.width || image.GetHeight() != description.m_Size.height || image.GetDepth() != 1 || image.GetNumFaces() != 1 || image.GetNumArrayIndices() != 1)
       return xiiStatus(xiiFmt("Decal source '{}' changed while being transformed.", path));
     image.ReinterpretAs(color ? xiiGALResourceFormat::AsSrgb(image.GetImageFormat()) : xiiGALResourceFormat::AsLinear(image.GetImageFormat()));
     if (image.Convert(xiiGALResourceFormat::RGBA32Float).Failed())
@@ -73,8 +70,7 @@ namespace
     }
   }
 
-  xiiStatus PrepareTile(const xiiDecalAtlasSource& source, xiiUInt32 layer, const xiiDecalAtlasEntry& entry,
-                        const xiiDecalAtlasBuildSettings& settings, const xiiColor& neutral, xiiImage& tile)
+  xiiStatus PrepareTile(const xiiDecalAtlasSource& source, xiiUInt32 layer, const xiiDecalAtlasEntry& entry, const xiiDecalAtlasBuildSettings& settings, const xiiColor& neutral, xiiImage& tile)
   {
     const xiiString* paths[] = {&source.m_sAlbedo, &source.m_sNormal, &source.m_sORM, &source.m_sEmissive};
     if (paths[layer]->IsEmpty())
@@ -109,12 +105,9 @@ namespace
   }
 } // namespace
 
-xiiStatus xiiDecalAtlasBuilder::Build(xiiArrayPtr<const xiiDecalAtlasSource> sources, const xiiDecalAtlasBuildSettings& settings,
-                                      xiiDecalAtlasResourceDescriptor& output)
+xiiStatus xiiDecalAtlasBuilder::Build(xiiArrayPtr<const xiiDecalAtlasSource> sources, const xiiDecalAtlasBuildSettings& settings, xiiDecalAtlasResourceDescriptor& output)
 {
-  if (sources.GetCount() > 65535 || settings.m_uiMaxEntrySize == 0 || settings.m_uiMaxEntrySize > settings.m_uiMaxSourceSize ||
-      settings.m_uiMaxSourceSize > 8192 || settings.m_uiMaxAtlasSize < 4 || settings.m_uiMaxAtlasSize > 4096 ||
-      !xiiMath::IsPowerOf2(settings.m_uiMaxAtlasSize) || settings.m_uiPadding == 0 || settings.m_uiPadding > 64)
+  if (sources.GetCount() > 65535 || settings.m_uiMaxEntrySize == 0 || settings.m_uiMaxEntrySize > settings.m_uiMaxSourceSize || settings.m_uiMaxSourceSize > 8192 || settings.m_uiMaxAtlasSize < 4 || settings.m_uiMaxAtlasSize > 4096 || !xiiMath::IsPowerOf2(settings.m_uiMaxAtlasSize) || settings.m_uiPadding == 0 || settings.m_uiPadding > 64)
     return xiiStatus("Invalid decal atlas packing limits.");
   xiiDynamicArray<xiiUInt32> order;
   for (xiiUInt32 i = 0; i < sources.GetCount(); ++i)
@@ -126,11 +119,7 @@ xiiStatus xiiDecalAtlasBuilder::Build(xiiArrayPtr<const xiiDecalAtlasSource> sou
   for (xiiUInt32 i = 0; i < order.GetCount(); ++i)
   {
     const auto& source = sources[order[i]];
-    if (source.m_sDecalId.IsEmpty() || (i > 0 && source.m_sDecalId == sources[order[i - 1]].m_sDecalId) ||
-        (source.m_ChannelMask.GetValue() & ~static_cast<xiiUInt16>(xiiDecalChannelMask::All)) != 0 ||
-        (source.m_ChannelMask.IsSet(xiiDecalChannelMask::Normal) && source.m_sNormal.IsEmpty()) ||
-        (source.m_ChannelMask.IsSet(xiiDecalChannelMask::Material) && source.m_sORM.IsEmpty()) ||
-        (source.m_ChannelMask.IsSet(xiiDecalChannelMask::Emissive) && source.m_sEmissive.IsEmpty()))
+    if (source.m_sDecalId.IsEmpty() || (i > 0 && source.m_sDecalId == sources[order[i - 1]].m_sDecalId) || (source.m_ChannelMask.GetValue() & ~static_cast<xiiUInt16>(xiiDecalChannelMask::All)) != 0 || (source.m_ChannelMask.IsSet(xiiDecalChannelMask::Normal) && source.m_sNormal.IsEmpty()) || (source.m_ChannelMask.IsSet(xiiDecalChannelMask::Material) && source.m_sORM.IsEmpty()) || (source.m_ChannelMask.IsSet(xiiDecalChannelMask::Emissive) && source.m_sEmissive.IsEmpty()))
       return xiiStatus(xiiFmt("Decal '{}' has a missing channel source, invalid mask or duplicate identity.", source.m_sDecalId.GetString()));
     xiiGALTextureCreationDescription description;
     XII_SUCCEED_OR_RETURN(ReadDescription(source.m_sAlbedo, settings, description));

@@ -7,8 +7,7 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiAnimationGraphNodeKind, 1)
-  XII_ENUM_CONSTANTS(xiiAnimationGraphNodeKind::Output, xiiAnimationGraphNodeKind::Clip, xiiAnimationGraphNodeKind::Blend1D,
-                    xiiAnimationGraphNodeKind::Additive, xiiAnimationGraphNodeKind::LayeredBlend, xiiAnimationGraphNodeKind::StateMachine)
+  XII_ENUM_CONSTANTS(xiiAnimationGraphNodeKind::Output, xiiAnimationGraphNodeKind::Clip, xiiAnimationGraphNodeKind::Blend1D, xiiAnimationGraphNodeKind::Additive, xiiAnimationGraphNodeKind::LayeredBlend, xiiAnimationGraphNodeKind::StateMachine)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationGraphEditorNode, 1, xiiRTTIDefaultAllocator<xiiAnimationGraphEditorNode>)

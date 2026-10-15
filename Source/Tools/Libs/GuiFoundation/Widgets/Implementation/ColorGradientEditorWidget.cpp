@@ -180,8 +180,7 @@ void xiiQtColorGradientEditorWidget::on_ButtonColor_clicked()
 
     Q_EMIT BeginOperation();
 
-    xiiQtUiServices::GetSingleton()->ShowColorDialog(
-      m_PickColorStart, false, false, this, SLOT(onCurrentColorChanged(const xiiColor&)), SLOT(onColorAccepted()), SLOT(onColorReset()));
+    xiiQtUiServices::GetSingleton()->ShowColorDialog(m_PickColorStart, false, false, this, SLOT(onCurrentColorChanged(const xiiColor&)), SLOT(onColorAccepted()), SLOT(onColorReset()));
   }
 }
 

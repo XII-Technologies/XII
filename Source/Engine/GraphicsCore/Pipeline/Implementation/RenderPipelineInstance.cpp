@@ -86,12 +86,10 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         if (pin.m_Type == xiiRenderPipelinePin::Texture)
         {
           const auto* description = graph.GetTextureDescription(binding.m_hTexture);
-          if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) &&
-              (!description || (pin.m_Format != xiiGALResourceFormat::Unknown && description->m_Format != pin.m_Format)))
+          if ((binding.m_hTexture.IsValid() || !pin.m_bOptional) && (!description || (pin.m_Format != xiiGALResourceFormat::Unknown && description->m_Format != pin.m_Format)))
             return XII_FAILURE;
         }
-        else if (pin.m_Type == xiiRenderPipelinePin::Buffer &&
-                 (binding.m_hBuffer.IsValid() || !pin.m_bOptional) && !graph.GetBufferDescription(binding.m_hBuffer))
+        else if (pin.m_Type == xiiRenderPipelinePin::Buffer && (binding.m_hBuffer.IsValid() || !pin.m_bOptional) && !graph.GetBufferDescription(binding.m_hBuffer))
           return XII_FAILURE;
       }
       return XII_SUCCESS;

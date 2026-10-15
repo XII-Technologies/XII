@@ -18,11 +18,7 @@ namespace
       return false;
     }
 
-    if ((line[uiSkip + 0]->m_iType != xiiTokenType::Float && line[uiSkip + 0]->m_iType != xiiTokenType::Integer) ||
-        line[uiSkip + 1]->m_iType != xiiTokenType::Whitespace ||
-        (line[uiSkip + 2]->m_iType != xiiTokenType::Float && line[uiSkip + 2]->m_iType != xiiTokenType::Integer) ||
-        line[uiSkip + 3]->m_iType != xiiTokenType::Whitespace ||
-        (line[uiSkip + 4]->m_iType != xiiTokenType::Float && line[uiSkip + 4]->m_iType != xiiTokenType::Integer))
+    if ((line[uiSkip + 0]->m_iType != xiiTokenType::Float && line[uiSkip + 0]->m_iType != xiiTokenType::Integer) || line[uiSkip + 1]->m_iType != xiiTokenType::Whitespace || (line[uiSkip + 2]->m_iType != xiiTokenType::Float && line[uiSkip + 2]->m_iType != xiiTokenType::Integer) || line[uiSkip + 3]->m_iType != xiiTokenType::Whitespace || (line[uiSkip + 4]->m_iType != xiiTokenType::Float && line[uiSkip + 4]->m_iType != xiiTokenType::Integer))
     {
       return false;
     }
@@ -63,8 +59,7 @@ xiiStatus xiiAdobeCUBEReader::ParseFile(xiiStreamReader& inout_stream, xiiLogInt
   xiiTokenizer tokenizer;
   tokenizer.SetTreatHashSignAsLineComment(true);
 
-  tokenizer.Tokenize(
-    xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)sContent.GetData(), sContent.GetElementCount()), pLog ? pLog : xiiLog::GetThreadLocalLogSystem());
+  tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)sContent.GetData(), sContent.GetElementCount()), pLog ? pLog : xiiLog::GetThreadLocalLogSystem());
 
 
   auto tokens = tokenizer.GetTokens();
@@ -172,8 +167,7 @@ xiiStatus xiiAdobeCUBEReader::ParseFile(xiiStreamReader& inout_stream, xiiLogInt
 
   if (m_LUTValues.GetCount() != (m_uiLUTSize * m_uiLUTSize * m_uiLUTSize))
   {
-    return xiiStatus(xiiFmt("LUT data incomplete, read {0} values but expected {1} values given a LUT size of {2}.", m_LUTValues.GetCount(),
-                            (m_uiLUTSize * m_uiLUTSize * m_uiLUTSize), m_uiLUTSize));
+    return xiiStatus(xiiFmt("LUT data incomplete, read {0} values but expected {1} values given a LUT size of {2}.", m_LUTValues.GetCount(), (m_uiLUTSize * m_uiLUTSize * m_uiLUTSize), m_uiLUTSize));
   }
 
   return XII_SUCCESS;

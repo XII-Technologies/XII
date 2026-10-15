@@ -16,8 +16,7 @@ namespace
     geometry.AddLine(first, second);
   }
 
-  void AddArc(xiiGeometry& geometry, const xiiMat4& transform, const xiiVec3& center, const xiiVec3& firstAxis,
-              const xiiVec3& secondAxis, float start, float end, const xiiColor& color)
+  void AddArc(xiiGeometry& geometry, const xiiMat4& transform, const xiiVec3& center, const xiiVec3& firstAxis, const xiiVec3& secondAxis, float start, float end, const xiiColor& color)
   {
     auto previous = center + firstAxis * xiiMath::Cos(xiiAngle::MakeFromRadian(start)) + secondAxis * xiiMath::Sin(xiiAngle::MakeFromRadian(start));
     for (xiiUInt32 i = 1; i <= s_uiSegments; ++i)
@@ -40,8 +39,7 @@ namespace
     {
       if (shape.m_Geometry == xiiSkeletonJointGeometryType::None)
         continue;
-      if (!shape.m_vOffset.IsValid() || !shape.m_qRotation.IsValid() || !IsFiniteNonNegative(shape.m_fLength) ||
-          !IsFiniteNonNegative(shape.m_fWidth) || !IsFiniteNonNegative(shape.m_fThickness))
+      if (!shape.m_vOffset.IsValid() || !shape.m_qRotation.IsValid() || !IsFiniteNonNegative(shape.m_fLength) || !IsFiniteNonNegative(shape.m_fWidth) || !IsFiniteNonNegative(shape.m_fThickness))
         return XII_FAILURE;
       const float length    = shape.m_fLength > 0 ? shape.m_fLength : boneLength;
       const float radius    = shape.m_fThickness;
@@ -135,8 +133,7 @@ xiiResult xiiSkeletonPreview::Build(xiiArrayPtr<const xiiSkeletonJoint> joints, 
       const auto entry = pending.PeekBack();
       pending.PopBack();
       const auto index = authoring.GetCount();
-      if (entry.m_pJoint == nullptr || visited.Insert(entry.m_pJoint) || index >= joints.GetCount() ||
-          entry.m_pJoint->m_sName != joints[index].m_sName || entry.m_uiParent != joints[index].m_uiParentIndex)
+      if (entry.m_pJoint == nullptr || visited.Insert(entry.m_pJoint) || index >= joints.GetCount() || entry.m_pJoint->m_sName != joints[index].m_sName || entry.m_uiParent != joints[index].m_uiParentIndex)
         return XII_FAILURE;
       authoring.PushBack(entry.m_pJoint);
       for (xiiUInt32 i = entry.m_pJoint->m_Children.GetCount(); i > 0; --i)

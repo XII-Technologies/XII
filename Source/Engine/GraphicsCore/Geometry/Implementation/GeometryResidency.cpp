@@ -437,11 +437,9 @@ xiiGeometryHandle xiiGeometryResidencyManager::AcquireMeshGeometry(const xiiMesh
 
   xiiGeometryHandle         cached;
   State::MeshGeometryEntry* pCachedEntry = nullptr;
-  if (s_pState->m_CurrentMeshGeometries.TryGetValue(hMesh, cached) &&
-      s_pState->m_MeshGeometries.TryGetValue(cached, pCachedEntry))
+  if (s_pState->m_CurrentMeshGeometries.TryGetValue(hMesh, cached) && s_pState->m_MeshGeometries.TryGetValue(cached, pCachedEntry))
   {
-    if (IsValid(cached) && GetState(cached) != xiiGeometryResidencyState::EvictPending &&
-        pCachedEntry->m_uiMeshRevision == meshRevision && pCachedEntry->m_uiBufferRevision == bufferRevision)
+    if (IsValid(cached) && GetState(cached) != xiiGeometryResidencyState::EvictPending && pCachedEntry->m_uiMeshRevision == meshRevision && pCachedEntry->m_uiBufferRevision == bufferRevision)
     {
       XII_ASSERT_DEV(pCachedEntry->m_uiReferenceCount < xiiMath::MaxValue<xiiUInt32>(), "Mesh geometry reference count overflow.");
       if (pCachedEntry->m_uiReferenceCount == xiiMath::MaxValue<xiiUInt32>())
@@ -572,8 +570,7 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
 
     const xiiGeometryLodSource&            source = slot.m_Description.m_Lods[i];
     xiiResourceLock<xiiMeshBufferResource> mesh(source.m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
-    if (mesh->GetLoadingState() != xiiResourceState::Loaded ||
-        (meshEntry && mesh->GetCurrentResourceChangeCounter() != meshEntry->m_uiBufferRevision))
+    if (mesh->GetLoadingState() != xiiResourceState::Loaded || (meshEntry && mesh->GetCurrentResourceChangeCounter() != meshEntry->m_uiBufferRevision))
     {
       // A shared source buffer may itself reload. Never combine its new payload with
       // an older geometry revision's resident LODs; scene synchronization acquires a
@@ -651,9 +648,7 @@ bool xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64& ino
   for (xiiUInt32 uiLod : newLods)
   {
     xiiResourceLock<xiiMeshBufferResource> mesh(slot.m_Description.m_Lods[uiLod].m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
-    if (mesh->GetLoadingState() != xiiResourceState::Loaded ||
-        (meshEntry && mesh->GetCurrentResourceChangeCounter() != meshEntry->m_uiBufferRevision) ||
-        !RegisterBindlessResources(slot, record, uiLod, *mesh.GetPointerNonConst()))
+    if (mesh->GetLoadingState() != xiiResourceState::Loaded || (meshEntry && mesh->GetCurrentResourceChangeCounter() != meshEntry->m_uiBufferRevision) || !RegisterBindlessResources(slot, record, uiLod, *mesh.GetPointerNonConst()))
     {
       for (xiiUInt32 uiRegisteredLod : registeredLods)
       {
@@ -856,6 +851,42 @@ const xiiGpuGeometryRecord* xiiGeometryResidencyManager::GetGpuRecord(xiiGeometr
   return IsValid(handle) ? &s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex].m_GpuRecord : nullptr;
 }
 
+xiiResult xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometryHandle handle, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiUInt32> out_counts)
+{
+  for (auto& count : out_counts)
+    count = 0;
+  if (!IsValid(handle) || out_counts.GetCount() != xiiGpuGeometryRecord::s_uiMaxLods || uiPrimitiveCount > xiiMath::MaxValue<xiiUInt32>() - uiFirstPrimitive)
+    return XII_FAILURE;
+
+  const auto&               slot  = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
+  State::MeshGeometryEntry* entry = nullptr;
+  s_pState->m_MeshGeometries.TryGetValue(handle, entry);
+  xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+  for (xiiUInt32 lod = 0; lod < slot.m_Description.m_Lods.GetCount(); ++lod)
+  {
+    const auto&                            source = slot.m_Description.m_Lods[lod];
+    xiiResourceLock<xiiMeshBufferResource> buffer(source.m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
+    if (buffer->GetLoadingState() != xiiResourceState::Loaded || (entry && buffer->GetCurrentResourceChangeCounter() != entry->m_uiBufferRevision))
+      return XII_FAILURE;
+    const auto meshlets = buffer->GetMeshlets();
+    if (source.m_uiFirstMeshlet > meshlets.GetCount())
+      return XII_FAILURE;
+    const auto available = meshlets.GetCount() - source.m_uiFirstMeshlet;
+    const auto count     = source.m_uiMeshletCount == 0 ? available : source.m_uiMeshletCount;
+    if (count > available)
+      return XII_FAILURE;
+    for (const auto& meshlet : meshlets.GetSubArray(source.m_uiFirstMeshlet, count))
+    {
+      // Use the same overlap test as GpuSceneMeshletCull, including boundary meshlets.
+      const xiiUInt64 end = static_cast<xiiUInt64>(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
+      if (uiPrimitiveCount == 0 || (meshlet.m_uiFirstPrimitive < uiFirstPrimitive + uiPrimitiveCount && end > uiFirstPrimitive))
+        ++counts[lod];
+    }
+  }
+  out_counts.CopyFrom(xiiMakeArrayPtr(counts));
+  return XII_SUCCESS;
+}
+
 xiiSharedPtr<xiiGALBuffer> xiiGeometryResidencyManager::GetMetadataBuffer()
 {
   return s_pState != nullptr ? s_pState->m_pMetadataBuffer : nullptr;
@@ -894,9 +925,7 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
     return {};
 
   State* pState = s_pState.Borrow();
-  auto   pass   = graph.AddPass<UploadPassData>(
-    "Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer,
-    [pState](UploadPassData& data, xiiRenderGraphBuilder& builder) {
+  auto   pass   = graph.AddPass<UploadPassData>("Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer, [pState](UploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hGeometryBuffer = builder.ImportBuffer("GPU Geometry Metadata", pState->m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometryBuffer = builder.WriteBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::ShaderResource);
@@ -904,9 +933,7 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
       data.m_hMeshletBuffer = builder.WriteBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(true);
-      builder.SetPassAllowMerge(false);
-    },
-    [pState](const UploadPassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [pState](const UploadPassData& data, xiiRenderGraphPassContext& context) {
       for (const Upload& upload : data.m_Uploads)
         context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hGeometryBuffer), upload.m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_Record), sizeof(upload.m_Record)));
       for (const UploadPassData::MeshletUpload& upload : data.m_MeshletUploads)
@@ -935,9 +962,7 @@ xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploa
             break;
           }
         }
-      }
-    },
-    true);
+      } }, true);
 
   pState->m_uiLastUploadedBytes                 = 0U;
   xiiUInt32       uiMaximumResidentMeshletCount = 0U;

@@ -20,9 +20,8 @@ void* xiiLuaWrapper::GetFunctionLightUserData() const
 
 bool xiiLuaWrapper::PrepareFunctionCall(const char* szFunctionName)
 {
-  XII_ASSERT_DEV(m_States.m_iLuaReturnValues == 0,
-                 "xiiLuaWrapper::PrepareFunctionCall: You didn't discard the return-values of the previous script call. {0} Return-values "
-                 "were expected.",
+  XII_ASSERT_DEV(m_States.m_iLuaReturnValues == 0, "xiiLuaWrapper::PrepareFunctionCall: You didn't discard the return-values of the previous script call. {0} Return-values "
+                                                   "were expected.",
                  m_States.m_iLuaReturnValues);
 
   m_States.m_iParametersPushed = 0;
@@ -69,8 +68,7 @@ xiiResult xiiLuaWrapper::CallPreparedFunction(xiiUInt32 uiExpectedReturnValues, 
   }
 
   // before resetting the state, make sure the returned state has no stuff left
-  XII_ASSERT_DEV((m_States.m_iLuaReturnValues == 0) && (m_States.m_iOpenTables == 0),
-                 "After xiiLuaWrapper::CallPreparedFunction: Return values: {0}, Open Tables: {1}", m_States.m_iLuaReturnValues, m_States.m_iOpenTables);
+  XII_ASSERT_DEV((m_States.m_iLuaReturnValues == 0) && (m_States.m_iOpenTables == 0), "After xiiLuaWrapper::CallPreparedFunction: Return values: {0}, Open Tables: {1}", m_States.m_iLuaReturnValues, m_States.m_iOpenTables);
 
   m_States = StackedStates;
   return XII_SUCCESS;

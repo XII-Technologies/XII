@@ -49,9 +49,7 @@ void xiiSceneObjectManager::GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32
 {
   ref_types.PushBack(xiiGetStaticRTTI<xiiGameObject>());
 
-  xiiRTTI::ForEachDerivedType<xiiComponent>(
-    [&](const xiiRTTI* pRtti) { ref_types.PushBack(pRtti); },
-    xiiRTTI::ForEachOptions::ExcludeAbstract);
+  xiiRTTI::ForEachDerivedType<xiiComponent>([&](const xiiRTTI* pRtti) { ref_types.PushBack(pRtti); }, xiiRTTI::ForEachOptions::ExcludeAbstract);
 }
 
 xiiStatus xiiSceneObjectManager::InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const

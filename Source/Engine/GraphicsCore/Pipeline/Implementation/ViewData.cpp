@@ -29,8 +29,7 @@ xiiResult xiiViewData::ComputeWorldSpacePos(float x, float y, xiiVec3& out_vWorl
   if (!xiiMath::IsFinite(x) || !xiiMath::IsFinite(y) || static_cast<xiiUInt32>(eye) >= 2)
     return XII_FAILURE;
   xiiVec3 position;
-  XII_SUCCEED_OR_RETURN(xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_InverseViewProjectionMatrix[static_cast<xiiUInt32>(eye)],
-                                                                     xiiVec3(x, y, 1.0f), position, nullptr, xiiClipSpaceDepthRange::ZeroToOne));
+  XII_SUCCEED_OR_RETURN(xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_InverseViewProjectionMatrix[static_cast<xiiUInt32>(eye)], xiiVec3(x, y, 1.0f), position, nullptr, xiiClipSpaceDepthRange::ZeroToOne));
   if (!position.IsValid())
     return XII_FAILURE;
   out_vWorldPos = position;

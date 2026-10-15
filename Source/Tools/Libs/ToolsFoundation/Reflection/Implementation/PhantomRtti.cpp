@@ -168,8 +168,7 @@ bool xiiPhantomRTTI::IsEqualToDescriptor(const xiiReflectedTypeDescriptor& desc)
     if (desc.m_Properties[i].m_sName != GetProperties()[i]->GetPropertyName())
       return false;
 
-    if ((desc.m_Properties[i].m_Flags.GetValue() & ~xiiPropertyFlags::Phantom) !=
-        (GetProperties()[i]->GetFlags().GetValue() & ~xiiPropertyFlags::Phantom))
+    if ((desc.m_Properties[i].m_Flags.GetValue() & ~xiiPropertyFlags::Phantom) != (GetProperties()[i]->GetFlags().GetValue() & ~xiiPropertyFlags::Phantom))
       return false;
 
     switch (desc.m_Properties[i].m_Category)

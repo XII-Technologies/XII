@@ -718,6 +718,58 @@ static void TestSceneMeshPicking(bool enableMeshShaders)
     if (!render() || !render())
       return;
   }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Thousands of material sections allocate the actual meshlet stream")
+  {
+    // The previous whole-LOD-per-section bound requested 8,388,608 slots for this
+    // small mesh, exceeding common mesh dispatch limits just like imported FeatureLab assets.
+    constexpr xiiUInt32 sectionCount = 2200;
+    xiiGeometry         geometry;
+    for (xiiUInt32 section = 0; section < sectionCount; ++section)
+      geometry.AddBox(xiiVec3(0.8f), true);
+    xiiMeshResourceDescriptor definition;
+    definition.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList);
+    for (xiiUInt32 section = 0; section < sectionCount; ++section)
+      definition.AddSection(12, section * 12, 0);
+    const auto sectionMesh = xiiResourceManager::CreateResource<xiiMeshResource>("NativeQueryManySections", std::move(definition));
+    component->SetMesh(sectionMesh);
+    parameters.Insert("Editor.PickSelected", true);
+    xiiExtractedRenderData  packets;
+    xiiMsgExtractRenderData message;
+    message.m_pView                = view;
+    message.m_pExtractedRenderData = &packets;
+    XII_TEST_BOOL(component->SendMessage(message));
+    packets.SortAndBatches();
+    XII_TEST_INT(packets.GetAllRenderData().GetCount(), sectionCount);
+    view->GetExtractedRenderData()->Clear();
+    extracted.Clear();
+    for (auto* packet : packets.GetAllRenderData())
+    {
+      view->GetExtractedRenderData()->AddRenderData(packet);
+      extracted.AddRenderData(packet);
+    }
+    view->GetExtractedRenderData()->SortAndBatches();
+    extracted.SortAndBatches();
+    if (!render() || !render())
+      return;
+    xiiUInt64 capacity = 0;
+    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(mainScene.GetHandle(), capacity));
+    XII_TEST_INT(capacity, sectionCount);
+    XII_TEST_RESULT(pass->Pick(*view, 24, 28, hit));
+    XII_TEST_BOOL(hit.m_Source.m_hOwnerObject == frontOwner);
+    component->SetMesh(mesh);
+    parameters.Insert("Editor.PickSelected", false);
+    view->GetExtractedRenderData()->Clear();
+    extracted.Clear();
+    for (auto* packet : {&front, &back})
+    {
+      view->GetExtractedRenderData()->AddRenderData(packet);
+      extracted.AddRenderData(packet);
+    }
+    view->GetExtractedRenderData()->SortAndBatches();
+    extracted.SortAndBatches();
+    if (!render() || !render())
+      return;
+  }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Camera, viewport, live transform, deletion and explicit history invalidation")
   {
     view->SetViewport({9, 12, 32, 32});

@@ -281,8 +281,7 @@ const xiiRTTI* xiiShaderTypeRegistry::GetShaderType(xiiStringView sShaderPath0)
   if (it.IsValid())
   {
     xiiFileStats Stats;
-    if (xiiOSFile::GetFileStats(it.Value().m_sAbsShaderPath, Stats).Succeeded() &&
-        !Stats.m_LastModificationTime.Compare(it.Value().m_fileModifiedTime, xiiTimestamp::CompareMode::FileTimeEqual))
+    if (xiiOSFile::GetFileStats(it.Value().m_sAbsShaderPath, Stats).Succeeded() && !Stats.m_LastModificationTime.Compare(it.Value().m_fileModifiedTime, xiiTimestamp::CompareMode::FileTimeEqual))
     {
       UpdateShaderType(it.Value());
     }

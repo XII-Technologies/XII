@@ -78,10 +78,9 @@ xiiResult xiiGALTopLevelASD3D12::InitPlatform()
       return XII_FAILURE;
     }
 
-    XII_SCOPE_EXIT(
-      {
-        XII_GAL_D3D12_RELEASE(pD3D12Device5);
-      });
+    XII_SCOPE_EXIT({
+      XII_GAL_D3D12_RELEASE(pD3D12Device5);
+    });
 
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS buildInputs = {};
     buildInputs.Type                                                 = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;

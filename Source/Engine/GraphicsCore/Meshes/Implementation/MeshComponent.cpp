@@ -109,7 +109,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 1)
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Meshes"),
+    new xiiCategoryAttribute("Graphics/Meshes"),
   }
   XII_END_ATTRIBUTES;
 }

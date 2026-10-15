@@ -29,6 +29,23 @@
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <SharedPluginScene/Scene/Implementation/ScenePickingReadback.h>
+#include <TestFramework/Utilities/TestLogInterface.h>
+
+namespace
+{
+  class VisibilityDispatchLog : public xiiTestLogInterface
+  {
+  public:
+    void HandleLogMessage(const xiiLoggingEventData& event) override
+    {
+      if (event.m_sText.FindSubString("DispatchComputeDescription.ThreadGroupCount") && event.m_sText.FindSubString(" is 0."))
+        m_uiEmptyDispatches.Increment();
+      xiiTestLogInterface::HandleLogMessage(event);
+    }
+
+    xiiAtomicInteger32 m_uiEmptyDispatches;
+  };
+} // namespace
 
 static void TestLodSections(bool enableMeshShaders)
 {
@@ -38,6 +55,9 @@ static void TestLodSections(bool enableMeshShaders)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+  VisibilityDispatchLog log;
+  log.SetLogLevel(xiiLogMsgType::All);
+  xiiTestLogSystemScope logScope(&log, true);
   if (!xiiGpuSceneRasterManager::IsPickingSupported())
   {
     xiiTestFramework::Output(xiiTestOutput::Message, "Native LOD section query shaders are unavailable.");
@@ -86,6 +106,29 @@ static void TestLodSections(bool enableMeshShaders)
   descriptor.ComputeBounds();
   const auto mesh = xiiResourceManager::CreateResource<xiiMeshResource>("NativeLodSections", std::move(descriptor));
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Primitive-range capacity includes unloaded LODs without counting unrelated sections")
+  {
+    const auto geometryHandle = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
+    XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(geometryHandle, 0));
+    xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 0, 0, xiiMakeArrayPtr(counts)));
+    XII_TEST_INT(counts[0], 2);
+    XII_TEST_INT(counts[1], 3);
+    XII_TEST_INT(counts[2], 1);
+    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 12, 1, xiiMakeArrayPtr(counts)));
+    XII_TEST_INT(counts[0], 1);
+    XII_TEST_INT(counts[1], 0);
+    XII_TEST_INT(counts[2], 0);
+    // A custom range may cross a meshlet boundary or overlap reused geometry in another LOD.
+    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 11, 2, xiiMakeArrayPtr(counts)));
+    XII_TEST_INT(counts[0], 2);
+    XII_TEST_INT(counts[2], 1);
+    XII_TEST_BOOL(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts({}, 0, 0, xiiMakeArrayPtr(counts)).Failed());
+    for (const auto count : counts)
+      XII_TEST_INT(count, 0);
+    XII_TEST_BOOL(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, xiiMath::MaxValue<xiiUInt32>(), 1, xiiMakeArrayPtr(counts)).Failed());
+  }
+
   xiiWorldDescription worldDescription("LOD section ownership");
   xiiWorld            world(worldDescription);
   XII_LOCK(world.GetWriteMarker());
@@ -121,8 +164,7 @@ static void TestLodSections(bool enableMeshShaders)
   xiiUInt64                          frame = 0;
   xiiHashTable<xiiUInt32, xiiUInt32> stableIds;
 
-  auto render = [&](float bias, xiiUInt32 expectedLod, xiiUInt32 expectedSections, xiiUInt32 expectedCandidates,
-                    xiiUInt32 forcedLod = xiiInvalidIndex, xiiUInt32 section = xiiInvalidIndex, bool excludeTransparent = false, bool onlyTransparent = false) {
+  auto render = [&](float bias, xiiUInt32 expectedLod, xiiUInt32 expectedSections, xiiUInt32 expectedCandidates, xiiUInt32 forcedLod = xiiInvalidIndex, xiiUInt32 section = xiiInvalidIndex, bool excludeTransparent = false, bool onlyTransparent = false) {
     ++frame;
     component->SetForcedLOD(forcedLod);
     component->SetLodBias(bias);
@@ -153,6 +195,11 @@ static void TestLodSections(bool enableMeshShaders)
     }
     if (!XII_TEST_RESULT(scene.SynchronizeExtractedMeshes(extracted, frame)) || !XII_TEST_INT(scene.GetDatabase().GetObjectCount(), expectedCandidates))
       return;
+    xiiUInt64 meshletCapacity = 0;
+    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(scene.GetHandle(), meshletCapacity));
+    // Each candidate owns one box meshlet. Whole-LOD accounting would report fourteen
+    // rather than six for the unfiltered mesh, and grows quadratically with section count.
+    XII_TEST_INT(meshletCapacity, expectedCandidates);
     for (const auto& instance : scene.GetDatabase().GetGpuInstances())
     {
       xiiSceneMeshSource source;
@@ -173,6 +220,8 @@ static void TestLodSections(bool enableMeshShaders)
     xiiMaterialManager::BeginFrame(frame, completed);
     xiiGpuVisibilityManager::BeginFrame(frame, completed);
     xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
+    XII_TEST_RESULT(xiiSceneDatabaseManager::GetExtractedMeshletCapacity(scene.GetHandle(), meshletCapacity));
+    XII_TEST_INT(meshletCapacity, expectedCandidates);
     auto& graph = graphContext.GetGraph();
     auto& cache = graphContext.GetResourceCache();
     cache.BeginFrame(frame, completed);
@@ -187,7 +236,24 @@ static void TestLodSections(bool enableMeshShaders)
     xiiGpuVisibilityPassDescription visibilityDescription;
     visibilityDescription.m_bAsyncCompute      = false;
     visibilityDescription.m_bEnableLodFeedback = false;
-    auto visibility                            = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, scene.GetHandle(), visibilityView, geometryUpload, visibilityDescription);
+    xiiRenderGraphTextureHandle hiZ;
+    if (expectedCandidates == 0)
+    {
+      struct EmptyHiZ
+      {
+        xiiRenderGraphTextureHandle m_Texture;
+      };
+      const auto source = graph.AddPass<EmptyHiZ>("Empty visibility Hi-Z", xiiGALCommandQueueFlags::Graphics, [](EmptyHiZ& data, xiiRenderGraphBuilder& builder) {
+        xiiGALTextureCreationDescription texture;
+        texture.m_Type = xiiGALResourceDimension::Texture2D;
+        texture.m_Size = {1, 1};
+        texture.m_Format = xiiGALResourceFormat::R32Float;
+        texture.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+        data.m_Texture = builder.WriteTexture("Empty visibility Hi-Z", texture, xiiGALResourceStateFlags::RenderTarget);
+        builder.SetPassRenderPassManaged(); }, [](const EmptyHiZ& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Texture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); });
+      hiZ               = source.first->m_Texture;
+    }
+    auto visibility = xiiGpuVisibilityManager::AddPasses(visibilityContext, graph, frame, scene.GetHandle(), visibilityView, geometryUpload, visibilityDescription, hiZ);
     // A single-section candidate contains one box meshlet. Exercise an exact 16-byte indirect
     // command allocation as well as the normal retained visibility capacity.
     if (!enableMeshShaders && expectedCandidates == 1)
@@ -226,6 +292,13 @@ static void TestLodSections(bool enableMeshShaders)
     };
     graph.AddPass<Export>("LOD emitter export", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
       builder.ExportBuffer(emissive.m_hHeader, xiiGALResourceStateFlags::ShaderResource);
+      if (expectedCandidates == 0)
+      {
+        builder.ExportBuffer(visibility.m_hVisibleInstanceCount, xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(visibility.m_hVisibleMeshletCount, xiiGALResourceStateFlags::ShaderResource);
+        if (visibility.m_hIndirectCommandCount.IsValid())
+          builder.ExportBuffer(visibility.m_hIndirectCommandCount, xiiGALResourceStateFlags::ShaderResource);
+      }
       if (!enableMeshShaders)
       {
         const auto commands = graph.FindBuffer("LOD section surface Indexed commands buffer");
@@ -244,6 +317,17 @@ static void TestLodSections(bool enableMeshShaders)
       return;
     completion.CaptureSubmittedFrame(frame);
     completion.WaitForFrame(frame);
+    if (expectedCandidates == 0)
+    {
+      for (const auto counter : {visibility.m_hVisibleInstanceCount, visibility.m_hVisibleMeshletCount, visibility.m_hIndirectCommandCount})
+      {
+        if (!counter.IsValid()) // Indexed queries consume the meshlet count directly.
+          continue;
+        xiiUInt32 value = xiiInvalidIndex;
+        if (xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(counter).Borrow(), 0, value))
+          XII_TEST_INT(value, 0);
+      }
+    }
     if (!enableMeshShaders)
     {
       xiiUInt32 count = 0;
@@ -287,9 +371,9 @@ static void TestLodSections(bool enableMeshShaders)
     xiiGpuEmissiveLightHeader header;
     if (xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(emissive.m_hHeader).Borrow(), 0, header))
     {
-      const xiiUInt32 expectedTriangles = section == 2 ? 0 : forcedLod == 1 ? 24 :
-        forcedLod == 0 || section == xiiInvalidIndex                        ? 24 :
-                                                                              12;
+      const xiiUInt32 expectedTriangles = expectedCandidates == 0 || section == 2 ? 0 : forcedLod == 1 ? 24 :
+        forcedLod == 0 || section == xiiInvalidIndex                                                   ? 24 :
+                                                                                                         12;
       XII_TEST_INT(header.TriangleCount, expectedTriangles);
     }
   };
@@ -325,6 +409,15 @@ static void TestLodSections(bool enableMeshShaders)
   {
     render(-8, 1, 2, 3, 1);
     render(8, 0, 2, 2, 0);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Empty visibility clears counters without direct zero-group dispatches")
+  {
+    component->SetMesh({});
+    render(0, 0, 0, 0, 0);
+    render(0, 0, 0, 0, 0);
+    component->SetMesh(mesh);
+    render(0, 0, 2, 2, 0);
+    XII_TEST_INT(static_cast<xiiUInt32>(log.m_uiEmptyDispatches), 0);
   }
 }
 

@@ -65,18 +65,6 @@ void xiiBuiltinRenderPipelineRuntime::SetupAutoExposure(xiiAutoExposureData& dat
 {
   data.m_hHistogram = builder.ReadBuffer(xiiRGBlackboardKeys::k_LuminanceHistogram, xiiGALResourceStateFlags::ShaderResource);
 
-  if (!m_Resources.m_TemporalPasses.m_pExposureBuffer)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = 4U;
-    description.m_uiSize              = sizeof(float) * 2U;
-    description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Default;
-
-    m_Resources.m_TemporalPasses.m_pExposureBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
-  }
-
   data.m_hExposure     = builder.ImportBuffer(xiiRGBlackboardKeys::k_CurrentExposure, m_Resources.m_TemporalPasses.m_pExposureBuffer, m_Resources.m_TemporalPasses.m_pExposureBuffer->GetResourceState());
   data.m_hExposure     = builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
   data.m_bHistoryValid = m_Resources.m_TemporalPasses.m_bExposureHistoryValid;
@@ -136,35 +124,7 @@ void xiiBuiltinRenderPipelineRuntime::SetupTemporalAntiAliasing(xiiTemporalAntiA
   data.m_hVelocity = builder.ReadTexture(xiiRGBlackboardKeys::k_DilatedVelocityBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
 
-  auto& temporalResources = m_Resources.m_TemporalPasses;
-  bool  bRecreateHistory  = false;
-  for (const xiiSharedPtr<xiiGALTexture>& pHistory : temporalResources.m_pTAAHistoryBuffers)
-  {
-    bRecreateHistory |= pHistory == nullptr || pHistory->GetDescription().m_Size != xiiSizeU32(uiRenderWidth, uiRenderHeight);
-  }
-
-  if (bRecreateHistory)
-  {
-    xiiGALTextureCreationDescription description;
-    description.m_Type        = xiiGALResourceDimension::Texture2D;
-    description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-    description.m_Size        = xiiSizeU32(uiRenderWidth, uiRenderHeight);
-    description.m_uiMipLevels = 1U;
-    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage       = xiiGALResourceUsage::Default;
-
-    for (xiiSharedPtr<xiiGALTexture>& pHistory : temporalResources.m_pTAAHistoryBuffers)
-    {
-      if (pHistory != nullptr)
-        temporalResources.m_RetiredTAAHistoryBuffers.PushBack(pHistory);
-
-      pHistory = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    }
-
-    temporalResources.m_uiTAAHistoryWriteIndex = 0U;
-    temporalResources.m_bTAAHistoryValid       = false;
-  }
-
+  auto& temporalResources    = m_Resources.m_TemporalPasses;
   data.m_uiHistoryWriteIndex = temporalResources.m_uiTAAHistoryWriteIndex;
   data.m_bHistoryValid       = temporalResources.m_bTAAHistoryValid;
 
@@ -358,7 +318,7 @@ void xiiBuiltinRenderPipelineRuntime::ExecuteColorGrading(const xiiColorGradingD
 
   cmd.BeginDebugGroup("ColorGrading");
   {
-    const xiiColorGradingSettings& settings = m_DisplayOutputSettings.m_ColorGrading;
+    const xiiColorGradingSettings settings = m_View.GetViewRenderMode() == xiiViewRenderMode::Default ? m_DisplayOutputSettings.m_ColorGrading : xiiColorGradingSettings{};
     {
       xiiGALMapHelper<xiiColorGradingConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       pConstants->ColorAdjustments = xiiVec4(settings.m_fSaturation, settings.m_fContrast, settings.m_fVignetteStrength, settings.m_fVignetteRoundness);

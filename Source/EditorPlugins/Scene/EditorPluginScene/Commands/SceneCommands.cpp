@@ -52,13 +52,7 @@ xiiStatus xiiDuplicateObjectsCommand::DoInternal(bool bRedo)
 
   if (!bRedo)
   {
-    if (!m_vAccumulativeTranslation.IsValid() || !m_vAccumulativeRotation.IsValid() ||
-        !m_vRandomRotation.IsValid() || !m_vRandomTranslation.IsValid() ||
-        m_vRandomRotation.CompMin(xiiVec3::MakeZero()) != xiiVec3::MakeZero() ||
-        m_vRandomTranslation.CompMin(xiiVec3::MakeZero()) != xiiVec3::MakeZero() ||
-        !xiiMath::IsFinite(m_fRevolveRadius) || m_fRevolveRadius < 0 ||
-        !xiiMath::IsFinite(m_RevolveStartAngle.GetRadian()) || !xiiMath::IsFinite(m_RevolveAngleStep.GetRadian()) ||
-        m_iRevolveAxis < 0 || m_iRevolveAxis > 3)
+    if (!m_vAccumulativeTranslation.IsValid() || !m_vAccumulativeRotation.IsValid() || !m_vRandomRotation.IsValid() || !m_vRandomTranslation.IsValid() || m_vRandomRotation.CompMin(xiiVec3::MakeZero()) != xiiVec3::MakeZero() || m_vRandomTranslation.CompMin(xiiVec3::MakeZero()) != xiiVec3::MakeZero() || !xiiMath::IsFinite(m_fRevolveRadius) || m_fRevolveRadius < 0 || !xiiMath::IsFinite(m_RevolveStartAngle.GetRadian()) || !xiiMath::IsFinite(m_RevolveAngleStep.GetRadian()) || m_iRevolveAxis < 0 || m_iRevolveAxis > 3)
       return xiiStatus("Duplicate Objects: transforms must be finite, random ranges and radius nonnegative, and revolve axis valid.");
 
     xiiAbstractObjectGraph graph;

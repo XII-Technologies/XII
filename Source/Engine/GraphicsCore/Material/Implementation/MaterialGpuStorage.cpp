@@ -63,8 +63,7 @@ namespace
     result.LayerParameters           = xiiVec4(0.5f, 1.0f, 0.0f, 0.0f);
     result.TextureIndices0           = xiiVec4U32(xiiInvalidIndex);
     result.TextureIndices1           = xiiVec4U32(xiiInvalidIndex);
-    result.Metadata                  = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U,
-                                                  static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque));
+    result.Metadata                  = xiiVec4U32(static_cast<xiiUInt32>(xiiMaterialShadingModel::Lit), 0U, static_cast<xiiUInt32>(xiiMaterialAlphaMode::Opaque), static_cast<xiiUInt32>(xiiMaterialBlendMode::Opaque));
     result.AdvancedParameters        = xiiVec4(0.0f, 1.5f, 0.0f, 0.5f);
 
     ResolveMaterialColor(material, "BaseColor", result.BaseColorOpacity, false);
@@ -84,16 +83,9 @@ namespace
     TryGetMaterialParameter(material, "SheenRoughness", result.AdvancedParameters.w);
 
     const xiiMaterialRuntimeState& runtimeState = snapshot.m_RuntimeState;
-    result.Metadata                             = xiiVec4U32(
-      runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(),
-      static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()),
-      runtimeState.m_BlendMode.GetValue());
-    result.TextureIndices0 = xiiVec4U32(
-      ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"),
-      ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
-    result.TextureIndices1 = xiiVec4U32(
-      ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"),
-      ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
+    result.Metadata                             = xiiVec4U32(runtimeState.m_ShadingModel.GetValue(), runtimeState.m_FeatureFlags.GetValue(), static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()), runtimeState.m_BlendMode.GetValue());
+    result.TextureIndices0                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
+    result.TextureIndices1                      = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"), ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
     return result;
   }
 } // namespace
@@ -378,10 +370,7 @@ xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiR
   xiiMaterialGpuUploadBatch batch;
   GatherUploads(uiFrameIndex, batch);
 
-  auto pass = graph.AddPass<UploadPassData>(
-    "Material Upload",
-    xiiGALCommandQueueFlags::Transfer,
-    [this](UploadPassData& data, xiiRenderGraphBuilder& builder) {
+  auto pass = graph.AddPass<UploadPassData>("Material Upload", xiiGALCommandQueueFlags::Transfer, [this](UploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hBuffer        = builder.ImportBuffer("Material GPU Storage", m_pBuffer, xiiGALResourceStateFlags::ShaderResource);
       data.m_hBuffer        = builder.WriteBuffer(data.m_hBuffer, xiiGALResourceStateFlags::CopyDestination);
       data.m_hSurfaceBuffer = builder.ImportBuffer("Surface Material GPU Storage", m_pSurfaceBuffer, xiiGALResourceStateFlags::ShaderResource);
@@ -389,22 +378,16 @@ xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiR
       builder.ExportBuffer(data.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);
       builder.ExportBuffer(data.m_hSurfaceBuffer, xiiGALResourceStateFlags::ShaderResource);
       builder.SetPassSideEffects(true);
-      builder.SetPassAllowMerge(false);
-    },
-    [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALBuffer* pBuffer        = context.GetBuffer(data.m_hBuffer);
       xiiGALBuffer* pSurfaceBuffer = context.GetBuffer(data.m_hSurfaceBuffer);
       for (const xiiMaterialGpuUpload& upload : data.m_Batch.m_Uploads)
       {
         context.GetCommandList().UpdateBuffer(pBuffer, upload.m_uiDestinationOffset, upload.m_Data);
-        context.GetCommandList().UpdateBuffer(
-          pSurfaceBuffer, upload.m_uiSurfaceDestinationOffset,
-          xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_SurfaceData), sizeof(upload.m_SurfaceData)));
+        context.GetCommandList().UpdateBuffer(pSurfaceBuffer, upload.m_uiSurfaceDestinationOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_SurfaceData), sizeof(upload.m_SurfaceData)));
       }
 
-      data.m_pStorage->MarkUploadsRecorded(data.m_Batch);
-    },
-    true);
+      data.m_pStorage->MarkUploadsRecorded(data.m_Batch); }, true);
 
   pass.first->m_Batch    = std::move(batch);
   pass.first->m_pStorage = this;

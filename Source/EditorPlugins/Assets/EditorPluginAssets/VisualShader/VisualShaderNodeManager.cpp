@@ -63,18 +63,14 @@ void xiiVisualShaderNodeManager::GetNodeCreationTemplates(xiiDynamicArray<xiiNod
 {
   const xiiRTTI* pNodeBaseType = xiiVisualShaderTypeRegistry::GetSingleton()->GetNodeBaseType();
 
-  xiiRTTI::ForEachDerivedType(
-    pNodeBaseType,
-    [&](const xiiRTTI* pRtti) {
+  xiiRTTI::ForEachDerivedType(pNodeBaseType, [&](const xiiRTTI* pRtti) {
       auto& nodeTemplate   = out_templates.ExpandAndGetRef();
       nodeTemplate.m_pType = pRtti;
 
       if (const xiiVisualShaderNodeDescriptor* pDesc = xiiVisualShaderTypeRegistry::GetSingleton()->GetDescriptorForType(pRtti))
       {
         nodeTemplate.m_sCategory = pDesc->m_sCategory;
-      }
-    },
-    xiiRTTI::ForEachOptions::ExcludeAbstract);
+      } }, xiiRTTI::ForEachOptions::ExcludeAbstract);
 }
 
 xiiStatus xiiVisualShaderNodeManager::InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const

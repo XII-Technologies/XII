@@ -159,8 +159,7 @@ void xiiQtResourceWidget::UpdateTable()
       {
         bShowItem = false;
       }
-      else if (!m_sNameFilter.IsEmpty() && res.m_sResourceID.FindSubString_NoCase(m_sNameFilter) == nullptr &&
-               res.m_sResourceDescription.FindSubString_NoCase(m_sNameFilter) == nullptr)
+      else if (!m_sNameFilter.IsEmpty() && res.m_sResourceID.FindSubString_NoCase(m_sNameFilter) == nullptr && res.m_sResourceDescription.FindSubString_NoCase(m_sNameFilter) == nullptr)
       {
         bShowItem = false;
       }
@@ -443,12 +442,10 @@ void xiiQtResourceWidget::on_ButtonSave_clicked()
     if (!m_sTypeFilter.IsEmpty() && res.m_sResourceType != m_sTypeFilter)
       continue;
 
-    if (!m_sNameFilter.IsEmpty() && res.m_sResourceID.FindSubString_NoCase(m_sNameFilter) == nullptr &&
-        res.m_sResourceDescription.FindSubString_NoCase(m_sNameFilter) == nullptr)
+    if (!m_sNameFilter.IsEmpty() && res.m_sResourceID.FindSubString_NoCase(m_sNameFilter) == nullptr && res.m_sResourceDescription.FindSubString_NoCase(m_sNameFilter) == nullptr)
       continue;
 
-    sLine.SetFormat("{}, {}, {}, {}, {}, {}, {}\n", res.m_sResourceType, PriorityToString(res.m_Priority), StateToString(res.m_LoadingState.m_State),
-                    res.m_Memory.m_uiMemoryCPU, res.m_Memory.m_uiMemoryGPU, res.m_sResourceID, res.m_sResourceDescription);
+    sLine.SetFormat("{}, {}, {}, {}, {}, {}, {}\n", res.m_sResourceType, PriorityToString(res.m_Priority), StateToString(res.m_LoadingState.m_State), res.m_Memory.m_uiMemoryCPU, res.m_Memory.m_uiMemoryGPU, res.m_sResourceID, res.m_sResourceDescription);
     file.write(sLine);
   }
 

@@ -882,10 +882,9 @@ const xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xii
 
 void xiiReflectionUtils::GatherTypesDerivedFromClass(const xiiRTTI* pBaseRtti, xiiSet<const xiiRTTI*>& out_types)
 {
-  xiiRTTI::ForEachDerivedType(pBaseRtti,
-                              [&](const xiiRTTI* pRtti) {
-                                out_types.Insert(pRtti);
-                              });
+  xiiRTTI::ForEachDerivedType(pBaseRtti, [&](const xiiRTTI* pRtti) {
+    out_types.Insert(pRtti);
+  });
 }
 
 void xiiReflectionUtils::GatherDependentTypes(const xiiRTTI* pRtti, xiiSet<const xiiRTTI*>& inout_typesAsSet, xiiDynamicArray<const xiiRTTI*>* out_pTypesAsStack /*= nullptr*/)

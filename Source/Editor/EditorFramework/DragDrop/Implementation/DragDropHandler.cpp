@@ -16,27 +16,26 @@ xiiDragDropHandler* xiiDragDropHandler::FindDragDropHandler(const xiiDragDropInf
   float               fBestValue = 0.0f;
   xiiDragDropHandler* pBestDnD   = nullptr;
 
-  xiiRTTI::ForEachDerivedType<xiiDragDropHandler>(
-    [&](const xiiRTTI* pRtti) {
-      xiiDragDropHandler* pDnD = pRtti->GetAllocator()->Allocate<xiiDragDropHandler>();
+  xiiRTTI::ForEachDerivedType<xiiDragDropHandler>([&](const xiiRTTI* pRtti) {
+    xiiDragDropHandler* pDnD = pRtti->GetAllocator()->Allocate<xiiDragDropHandler>();
 
-      const float fValue = pDnD->CanHandle(pInfo);
-      if (fValue > fBestValue)
+    const float fValue = pDnD->CanHandle(pInfo);
+    if (fValue > fBestValue)
+    {
+      if (pBestDnD != nullptr)
       {
-        if (pBestDnD != nullptr)
-        {
-          pBestDnD->GetDynamicRTTI()->GetAllocator()->Deallocate(pBestDnD);
-        }
+        pBestDnD->GetDynamicRTTI()->GetAllocator()->Deallocate(pBestDnD);
+      }
 
-        fBestValue = fValue;
-        pBestDnD   = pDnD;
-      }
-      else
-      {
-        pDnD->GetDynamicRTTI()->GetAllocator()->Deallocate(pDnD);
-      }
-    },
-    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+      fBestValue = fValue;
+      pBestDnD   = pDnD;
+    }
+    else
+    {
+      pDnD->GetDynamicRTTI()->GetAllocator()->Deallocate(pDnD);
+    }
+  },
+                                                  xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 
   return pBestDnD;
 }

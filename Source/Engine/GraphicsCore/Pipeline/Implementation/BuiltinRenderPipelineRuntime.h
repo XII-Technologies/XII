@@ -139,14 +139,15 @@ public:
   explicit xiiBuiltinRenderPipelineRuntime(xiiView& view) : m_View(view) {}
   void                        BuildPrepareFrame(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildVisibility(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                   BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult                   BuildLightingPreparation(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildLighting(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildOpaqueComposition(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildTransparency(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildScreenEffects(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  void                        BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                   BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                   BuildViewRenderMode(xiiRenderGraph& graph);
   void                        BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BuildPresent(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void                        BeginFrame(const xiiVirtualShadowMapManager::UploadHandles& shadows);
@@ -154,6 +155,9 @@ public:
   void                        BindFrameResources(xiiGALCommandList& commandList) const;
   xiiSharedPtr<xiiGALSampler> m_CommonSamplers[5];
   xiiResult                   BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiResult                   PrepareTemporalResources(xiiStringView stage);
+  xiiResult                   PrepareShadowResources();
+  xiiResult                   PrepareSensorOutput();
   xiiRenderPipelineInstance   m_Instance;
   xiiDisplayOutputSettings    m_DisplayOutputSettings;
   struct Resources
@@ -252,7 +256,7 @@ public:
       xiiUInt32                                        m_uiRTAOShaderRecordStride = 0U;
       xiiSharedPtr<xiiGALTexture>                      m_pAmbientOcclusionHistory[2];
       xiiUInt32                                        m_uiAmbientOcclusionHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
-      bool                                             m_bAmbientOcclusionHistoryValid = false;
+      bool                                             m_bAmbientOcclusionHistoryValid       = false;
       xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 64U> m_ReflectionProbeTextures;
       xiiSharedPtr<xiiGALTexture>                      m_pFallbackReflectionProbeTexture;
     } m_LightingPrepPasses;
@@ -314,26 +318,26 @@ public:
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirStateHistory[2];
       xiiSharedPtr<xiiGALTexture>                 m_pRTGIReservoirSurfaceHistory[2];
       xiiUInt32                                   m_uiRTGIReservoirHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
-      bool                                        m_bRTGIReservoirHistoryValid = false;
+      bool                                        m_bRTGIReservoirHistoryValid       = false;
       xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHistory[2];
-      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHitDistanceHistory[2]; ///< R16_FLOAT primary hit distance; zero denotes environment termination.
-      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionMomentsHistory[2];     ///< RG16_FLOAT log-luminance first and second moments.
-      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionIdentityHistory[2];    ///< RG32_UINT exact packed material signature and stable object identity.
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionHitDistanceHistory[2];   ///< R16_FLOAT primary hit distance; zero denotes environment termination.
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionMomentsHistory[2];       ///< RG16_FLOAT log-luminance first and second moments.
+      xiiSharedPtr<xiiGALTexture>                 m_pRTReflectionIdentityHistory[2];      ///< RG32_UINT exact packed material signature and stable object identity.
       xiiUInt32                                   m_uiRTReflectionHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
       bool                                        m_bRTReflectionHistoryValid       = false;
       bool                                        m_bRTReflectionAvailableThisFrame = false;
-      xiiSharedPtr<xiiGALTexture>                 m_pSSRHistory[2];         ///< RGBA16_FLOAT temporally resolved radiance and confidence.
-      xiiSharedPtr<xiiGALTexture>                 m_pSSRIdentityHistory[2]; ///< RG32_UINT packed material signature and stable object identity.
+      xiiSharedPtr<xiiGALTexture>                 m_pSSRHistory[2];              ///< RGBA16_FLOAT temporally resolved radiance and confidence.
+      xiiSharedPtr<xiiGALTexture>                 m_pSSRIdentityHistory[2];      ///< RG32_UINT packed material signature and stable object identity.
       xiiUInt32                                   m_uiSSRHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
-      bool                                        m_bSSRHistoryValid = false;
-      xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2]; ///< RGBA32_UINT: sample identity, weight, M, content revision, and quantized visibility.
-      xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];   ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.
+      bool                                        m_bSSRHistoryValid       = false;
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectReservoirHistory[2];              ///< RGBA32_UINT: sample identity, weight, M, content revision, and quantized visibility.
+      xiiSharedPtr<xiiGALTexture>                 m_pDirectSurfaceHistory[2];                ///< RGBA16_FLOAT: previous normal encoding, linear depth, and roughness.
       xiiUInt32                                   m_uiDirectReservoirHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
-      bool                                        m_bDirectReservoirHistoryValid = false;
-      xiiSharedPtr<xiiGALTexture>                 m_pVolumetricHistory[2]; ///< Ping-pong integrated scattering history at render resolution.
+      bool                                        m_bDirectReservoirHistoryValid       = false;
+      xiiSharedPtr<xiiGALTexture>                 m_pVolumetricHistory[2];              ///< Ping-pong integrated scattering history at render resolution.
       xiiUInt32                                   m_uiVolumetricHistoryWriteIndex = 0U; ///< Rotates after this effect records its persistent output.
-      bool                                        m_bVolumetricHistoryValid = false;
-      xiiUInt32                                   m_uiFrameIndex            = 0U;
+      bool                                        m_bVolumetricHistoryValid       = false;
+      xiiUInt32                                   m_uiFrameIndex                  = 0U;
     } m_LightingPasses;
 
     //  Stage 7 - Forward Passes
@@ -385,17 +389,16 @@ public:
     //  Stage 10 - Temporal Reconstruction
     struct TemporalPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pLuminanceHistogramPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pAutoExposurePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pTAAPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pUpscalePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pSharpenPipeline;
-      xiiSharedPtr<xiiGALTexture>                  m_pTAAHistoryBuffers[2]; // ping-pong resolved color history
-      xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_RetiredTAAHistoryBuffers;
-      xiiSharedPtr<xiiGALBuffer>                   m_pExposureBuffer; // persistent exposure multiplier + average luminance
-      xiiUInt32                                    m_uiTAAHistoryWriteIndex = 0U;
-      bool                                         m_bTAAHistoryValid       = false;
-      bool                                         m_bExposureHistoryValid  = false;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pLuminanceHistogramPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pAutoExposurePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pTAAPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pUpscalePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSharpenPipeline;
+      xiiSharedPtr<xiiGALTexture>              m_pTAAHistoryBuffers[2]; // ping-pong resolved color history
+      xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer;       // persistent exposure multiplier + average luminance
+      xiiUInt32                                m_uiTAAHistoryWriteIndex = 0U;
+      bool                                     m_bTAAHistoryValid       = false;
+      bool                                     m_bExposureHistoryValid  = false;
     } m_TemporalPasses;
 
     //  Stage 11 - Post-Processing
@@ -408,6 +411,7 @@ public:
       xiiSharedPtr<xiiGALComputePipelineState> m_pVignettePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pColorGradingPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pToneMappingPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pViewRenderModePipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pFilmGrainPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pDepthOfFieldPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pMotionBlurPipeline;
@@ -417,19 +421,22 @@ public:
     //  Stage 12 - Final Output
     struct OutputPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pHDRtoSDRPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pFinalResolvePipeline;
-      xiiSharedPtr<xiiGALGraphicsPipelineState>    m_pFinalBlitPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>     m_pSensorOutputPipeline;
-      xiiSharedPtr<xiiGALTexture>                  m_pSensorOutputTexture;
-      xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_RetiredSensorOutputTextures; ///< Kept alive until the view is destroyed so profile changes cannot race in-flight GPU work.
-      xiiSensorProfileHandle                       m_hSensorProfile;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pHDRtoSDRPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pFinalResolvePipeline;
+      xiiSharedPtr<xiiGALGraphicsPipelineState> m_pFinalBlitPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pSensorOutputPipeline;
+      xiiSharedPtr<xiiGALTexture>               m_pSensorOutputTexture;
+      xiiSensorProfileHandle                    m_hSensorProfile;
     } m_OutputPasses;
   };
   Resources m_Resources;
 
 private:
   xiiView& m_View;
+  // Render-graph setup callbacks are void. Accumulate pipeline creation failures
+  // during one stage so its resource-backed Build() can reject GPU execution.
+  xiiResult m_StageSetupResult = XII_SUCCESS;
+  xiiResult BuildStageInternal(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   struct Frame
   {
     xiiUInt64                                                       uiFrameIndex = 0;
@@ -704,7 +711,7 @@ private:
 
   /// Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
-  static xiiSharedPtr<xiiGALComputePipelineState>  EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
+  xiiSharedPtr<xiiGALComputePipelineState>         EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
   static xiiSharedPtr<xiiGALGraphicsPipelineState> EnsureGraphicsPipeline(xiiSharedPtr<xiiGALGraphicsPipelineState>& inout_pPipeline, xiiStringView sShaderPath, const xiiSharedPtr<xiiGALRenderPass>& pRenderPass, xiiUInt32 uiSubpassIndex);
   bool                                             EnsureRayTracingReSTIRDIEmissiveVisibilityResources();
   bool                                             EnsureRayTracingShadowResources();

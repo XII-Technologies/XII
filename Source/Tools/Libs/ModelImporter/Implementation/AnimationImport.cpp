@@ -47,8 +47,7 @@ xiiResult xiiModelAnimationImport::ReadClipNames(xiiStringView sSourceFile, xiiD
   return ExtractClipNames(*scene, out_names, out_pError);
 }
 
-xiiResult xiiModelAnimationImport::ReadFile(xiiStringView sSourceFile, const xiiModelAnimationImportOptions& options,
-                                            xiiModelAnimationImport& out_import, xiiStringBuilder* out_pError)
+xiiResult xiiModelAnimationImport::ReadFile(xiiStringView sSourceFile, const xiiModelAnimationImportOptions& options, xiiModelAnimationImport& out_import, xiiStringBuilder* out_pError)
 {
   using namespace xiiModelImportInternal;
   out_import.m_Clip.Clear();
@@ -70,10 +69,7 @@ xiiResult xiiModelAnimationImport::ReadFile(xiiStringView sSourceFile, const xii
   if (selected == xiiInvalidIndex)
     return Fail(out_pError, "Selected animation clip does not exist in the source file.");
   const auto& animation = *scene->mAnimations[selected];
-  if (!xiiMath::IsFinite(animation.mDuration) || animation.mDuration < 0 ||
-      !xiiMath::IsFinite(animation.mTicksPerSecond) || animation.mTicksPerSecond < 0 ||
-      animation.mNumChannels == 0 || animation.mChannels == nullptr ||
-      animation.mNumMeshChannels != 0 || animation.mNumMorphMeshChannels != 0)
+  if (!xiiMath::IsFinite(animation.mDuration) || animation.mDuration < 0 || !xiiMath::IsFinite(animation.mTicksPerSecond) || animation.mTicksPerSecond < 0 || animation.mNumChannels == 0 || animation.mChannels == nullptr || animation.mNumMeshChannels != 0 || animation.mNumMorphMeshChannels != 0)
     return Fail(out_pError, "Source animation has invalid timing, missing joint channels or unsupported vertex/morph animation.");
   // Assimp permits zero for unspecified tick rates. Its conventional fallback
   // is independent of the authored output sample rate.
@@ -94,8 +90,7 @@ xiiResult xiiModelAnimationImport::ReadFile(xiiStringView sSourceFile, const xii
   {
     const auto* node = pending.PeekBack();
     pending.PopBack();
-    if (node == nullptr || visited.Insert(node) || node->mName.length == 0 ||
-        restPoses.Contains(node->mName.C_Str()) || restPoses.GetCount() == xiiMath::MaxValue<xiiUInt16>())
+    if (node == nullptr || visited.Insert(node) || node->mName.length == 0 || restPoses.Contains(node->mName.C_Str()) || restPoses.GetCount() == xiiMath::MaxValue<xiiUInt16>())
       return Fail(out_pError, "Source animation hierarchy contains invalid ownership, ambiguous joint names or too many joints.");
     xiiTransform pose;
     if (ConvertPose(node->mTransformation, pose).Failed())
@@ -122,12 +117,9 @@ xiiResult xiiModelAnimationImport::ReadFile(xiiStringView sSourceFile, const xii
     auto&                        track = result.AddJointTrack(channel->mNodeName.C_Str());
     const AnimationCurveSettings curveSettings{ticksPerSecond, begin, end, options.m_fSampleRate, channel->mPreState, channel->mPostState,
                                                sSourceFile.HasExtension("gltf") || sSourceFile.HasExtension("glb")};
-    XII_SUCCEED_OR_RETURN(BakeVectorKeys(channel->mPositionKeys, channel->mNumPositionKeys, curveSettings,
-                                         rest.m_vPosition, options.m_bAdditive, false, track.m_PositionKeys, out_pError));
-    XII_SUCCEED_OR_RETURN(BakeRotationKeys(channel->mRotationKeys, channel->mNumRotationKeys, curveSettings,
-                                           rest.m_qRotation, options.m_bAdditive, track.m_RotationKeys, out_pError));
-    XII_SUCCEED_OR_RETURN(BakeVectorKeys(channel->mScalingKeys, channel->mNumScalingKeys, curveSettings,
-                                         rest.m_vScale, options.m_bAdditive, true, track.m_ScaleKeys, out_pError));
+    XII_SUCCEED_OR_RETURN(BakeVectorKeys(channel->mPositionKeys, channel->mNumPositionKeys, curveSettings, rest.m_vPosition, options.m_bAdditive, false, track.m_PositionKeys, out_pError));
+    XII_SUCCEED_OR_RETURN(BakeRotationKeys(channel->mRotationKeys, channel->mNumRotationKeys, curveSettings, rest.m_qRotation, options.m_bAdditive, track.m_RotationKeys, out_pError));
+    XII_SUCCEED_OR_RETURN(BakeVectorKeys(channel->mScalingKeys, channel->mNumScalingKeys, curveSettings, rest.m_vScale, options.m_bAdditive, true, track.m_ScaleKeys, out_pError));
     totalKeys += track.m_PositionKeys.GetCount() + xiiUInt64(track.m_RotationKeys.GetCount()) + track.m_ScaleKeys.GetCount();
     if (totalKeys > 16000000)
       return Fail(out_pError, "Animation exceeds sixteen million output keys.");

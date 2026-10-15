@@ -165,8 +165,7 @@ xiiResult xiiGizmoGeometry::Build(xiiEngineGizmoHandleType type, xiiStringView s
 
 xiiResult xiiGizmoGeometry::PickRay(const xiiMat4& transform, const xiiVec3& vRayStart, const xiiVec3& vRayDirection, float fLineRadius, float& out_fRayTime) const
 {
-  if (!m_Bounds.IsValid() || !transform.IsValid() || !vRayStart.IsValid() || !vRayDirection.IsValid() ||
-      !xiiMath::IsFinite(fLineRadius) || fLineRadius < 0 || vRayDirection.IsZero(0.0f))
+  if (!m_Bounds.IsValid() || !transform.IsValid() || !vRayStart.IsValid() || !vRayDirection.IsValid() || !xiiMath::IsFinite(fLineRadius) || fLineRadius < 0 || vRayDirection.IsZero(0.0f))
     return XII_FAILURE;
   xiiMat4 inverse = transform;
   // Screen-sized nobs can have very small, perfectly invertible scales. Reject singularity rather than
@@ -184,17 +183,13 @@ xiiResult xiiGizmoGeometry::PickRay(const xiiMat4& transform, const xiiVec3& vRa
   for (const auto& polygon : m_Geometry.GetPolygons())
   {
     float fTime;
-    if (xiiIntersectionUtils::RayTriangleIntersection(localStart, localDirection,
-                                                      vertices[polygon.m_Vertices[0]].m_vPosition, vertices[polygon.m_Vertices[1]].m_vPosition,
-                                                      vertices[polygon.m_Vertices[2]].m_vPosition, &fTime) &&
-        fTime >= 0.0f)
+    if (xiiIntersectionUtils::RayTriangleIntersection(localStart, localDirection, vertices[polygon.m_Vertices[0]].m_vPosition, vertices[polygon.m_Vertices[1]].m_vPosition, vertices[polygon.m_Vertices[2]].m_vPosition, &fTime) && fTime >= 0.0f)
       fClosest = xiiMath::Min(fClosest, fTime);
   }
   for (const auto& line : m_Geometry.GetLines())
   {
     float fTime;
-    if (PickLine(vRayStart, vRayDirection, transform.TransformPosition(vertices[line.m_uiStartVertex].m_vPosition),
-                 transform.TransformPosition(vertices[line.m_uiEndVertex].m_vPosition), fLineRadius, fTime))
+    if (PickLine(vRayStart, vRayDirection, transform.TransformPosition(vertices[line.m_uiStartVertex].m_vPosition), transform.TransformPosition(vertices[line.m_uiEndVertex].m_vPosition), fLineRadius, fTime))
       fClosest = xiiMath::Min(fClosest, fTime);
   }
   if (!xiiMath::IsFinite(fClosest))

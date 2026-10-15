@@ -700,8 +700,7 @@ xiiResult xiiGALCommandListVulkan::RecordQueryReset(xiiGALQueryPoolVulkan* pPool
     m_QueryResetAllocation               = pDeviceVulkan->GetCommandBufferPool(m_Description.m_QueueFlags)->AllocatePrimaryCommandBuffer();
     vk::CommandBufferBeginInfo beginInfo = {};
     beginInfo.flags                      = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit) ? vk::CommandBufferUsageFlagBits::eSimultaneousUse : vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-    if (m_QueryResetAllocation.Get() == VK_NULL_HANDLE ||
-        m_QueryResetAllocation.Get().begin(&beginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) != vk::Result::eSuccess)
+    if (m_QueryResetAllocation.Get() == VK_NULL_HANDLE || m_QueryResetAllocation.Get().begin(&beginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) != vk::Result::eSuccess)
     {
       // Do not retain an unbegun buffer: later queries may retry, and EndPlatform must skip it.
       m_QueryResetAllocation = {};
@@ -2619,7 +2618,7 @@ void xiiGALCommandListVulkan::BeginQueryPlatform(xiiGALQuery* pQuery)
   if (!pQueryVulkan->OnBeginQuery(this))
     return;
 
-  xiiGALQueryType::Enum queryType   = pQueryVulkan->GetDescription().m_Type;
+  xiiGALQueryType::Enum queryType    = pQueryVulkan->GetDescription().m_Type;
   const xiiUInt32       uiAllocation = pQueryVulkan->GetQueryPoolIndex(0);
   vk::QueryPool         vkQueryPool  = pQueryPoolVulkan->GetQueryPool(queryType, uiAllocation);
   xiiUInt32             uiIndex      = pQueryPoolVulkan->GetLocalQueryIndex(queryType, uiAllocation);
@@ -2681,7 +2680,7 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
   if (!pQueryVulkan->OnEndQuery(this))
     return;
 
-  xiiGALQueryType::Enum queryType   = pQueryVulkan->GetDescription().m_Type;
+  xiiGALQueryType::Enum queryType    = pQueryVulkan->GetDescription().m_Type;
   const xiiUInt32       uiAllocation = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);
   vk::QueryPool         vkQueryPool  = pQueryPoolVulkan->GetQueryPool(queryType, uiAllocation);
   xiiUInt32             uiIndex      = pQueryPoolVulkan->GetLocalQueryIndex(queryType, uiAllocation);

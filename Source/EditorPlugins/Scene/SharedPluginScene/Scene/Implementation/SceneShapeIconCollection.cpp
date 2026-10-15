@@ -52,9 +52,7 @@ xiiResult xiiSceneShapeIconPass::Collect(const xiiView& view)
   m_Icons.Clear();
   const auto* camera   = view.GetCamera();
   const auto& viewport = view.GetViewport();
-  if (!view.GetWorld() || !camera || camera->GetCameraMode() == xiiCameraMode::None || camera->IsStereoscopic() ||
-      !xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) ||
-      viewport.width <= 0 || viewport.height <= 0 || !xiiMath::IsFinite(m_fSize) || m_fSize < 0 || !xiiMath::IsFinite(m_fMaxScreenSize) || m_fMaxScreenSize < 0)
+  if (!view.GetWorld() || !camera || camera->GetCameraMode() == xiiCameraMode::None || camera->IsStereoscopic() || !xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 || !xiiMath::IsFinite(m_fSize) || m_fSize < 0 || !xiiMath::IsFinite(m_fMaxScreenSize) || m_fMaxScreenSize < 0)
     return XII_FAILURE;
   const float projectionScale = xiiMath::Abs(view.GetProjectionMatrix(xiiCameraEye::Left).Element(1, 1));
   if (!xiiMath::IsFinite(projectionScale) || projectionScale <= 0)
@@ -68,9 +66,7 @@ xiiResult xiiSceneShapeIconPass::Collect(const xiiView& view)
   for (auto it = view.GetWorld()->GetObjects(); it.IsValid(); ++it)
   {
     const xiiGameObject& object = *it;
-    if (!object.IsActive() || object.IsShapeIconHidden() || object.GetTags().IsAnySet(view.m_ExcludeTags) ||
-        (!view.m_IncludeTags.IsEmpty() && !object.GetTags().IsAnySet(view.m_IncludeTags)) ||
-        object.GetTags().IsSetByName(xiiStringView("Editor")) || object.GetTags().IsSetByName(xiiStringView("EditorHidden")))
+    if (!object.IsActive() || object.IsShapeIconHidden() || object.GetTags().IsAnySet(view.m_ExcludeTags) || (!view.m_IncludeTags.IsEmpty() && !object.GetTags().IsAnySet(view.m_IncludeTags)) || object.GetTags().IsSetByName(xiiStringView("Editor")) || object.GetTags().IsSetByName(xiiStringView("EditorHidden")))
       continue;
 
     xiiVec3     screen;

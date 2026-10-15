@@ -172,17 +172,18 @@ void xiiQtAssetPropertyWidget::InternalSetValue(const xiiVariant& value)
 
       xiiUuid newAssetGuid = xiiConversionUtils::ConvertStringToUuid(sText);
 
-      // If this is a thumbnail or transform dependency, make sure the target is not in our inverse hull, i.e. we don't create a circular dependency.
+      // All hashed dependency categories must remain acyclic, including package-only references.
       const xiiAssetBrowserAttribute* pAssetAttribute = m_pProp->GetAttributeByType<xiiAssetBrowserAttribute>();
-      if (pAssetAttribute->GetDependencyFlags().IsAnySet(xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Transform))
+      if (pAssetAttribute->GetDependencyFlags().IsAnySet(xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Transform | xiiDependencyFlags::Package))
       {
         xiiUuid                            documentGuid = m_pObjectAccessor->GetObjectManager()->GetDocument()->GetGuid();
         xiiAssetCurator::xiiLockedSubAsset asset        = xiiAssetCurator::GetSingleton()->GetSubAsset(documentGuid);
         if (asset.isValid())
         {
           xiiSet<xiiUuid> inverseHull;
-          xiiAssetCurator::GetSingleton()->GenerateInverseTransitiveHull(asset->m_pAssetInfo, inverseHull, true, true);
-          if (inverseHull.Contains(newAssetGuid))
+          xiiAssetCurator::GetSingleton()->GenerateInverseTransitiveHull(asset->m_pAssetInfo, inverseHull, true, true, true);
+          const auto target = xiiAssetCurator::GetSingleton()->GetSubAsset(newAssetGuid);
+          if (target && inverseHull.Contains(target->m_pAssetInfo->m_Info->m_DocumentID))
           {
             xiiQtUiServices::GetSingleton()->MessageBoxWarning("This asset can't be used here, as that would create a circular dependency.");
             return;

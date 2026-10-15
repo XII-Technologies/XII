@@ -83,8 +83,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
         xiiUInt32 uiMipDepth = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> m_Description.m_uiMostDetailedMip, 1U);
         if (m_Description.m_uiFirstArrayOrDepthSlice != 0 || m_Description.m_uiArrayOrDepthSlicesCount != uiMipDepth)
         {
-          xiiLog::Error("3D texture view '{}' (most detailed mip: {}; mip levels: {}; first slice: {}, depth slice count: {}) of texture '{}' does not reference all depth slices ({}) in the mip level. 3D texture views in Vulkan must address all depth slices.",
-                        GetDebugName(), m_Description.m_uiMostDetailedMip, m_Description.m_uiMipLevelCount, m_Description.m_uiFirstArrayOrDepthSlice, m_Description.m_uiArrayOrDepthSlicesCount, pTextureVulkan->GetDebugName(), uiMipDepth);
+          xiiLog::Error("3D texture view '{}' (most detailed mip: {}; mip levels: {}; first slice: {}, depth slice count: {}) of texture '{}' does not reference all depth slices ({}) in the mip level. 3D texture views in Vulkan must address all depth slices.", GetDebugName(), m_Description.m_uiMostDetailedMip, m_Description.m_uiMipLevelCount, m_Description.m_uiFirstArrayOrDepthSlice, m_Description.m_uiArrayOrDepthSlicesCount, pTextureVulkan->GetDebugName(), uiMipDepth);
 
           m_Description.m_uiFirstArrayOrDepthSlice  = 0;
           m_Description.m_uiArrayOrDepthSlicesCount = uiMipDepth;

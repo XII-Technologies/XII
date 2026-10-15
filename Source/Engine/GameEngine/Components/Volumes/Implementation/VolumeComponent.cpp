@@ -151,10 +151,7 @@ void xiiVolumeComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 
 const xiiRangeView<const xiiString&, xiiUInt32> xiiVolumeComponent::Reflection_GetKeys() const
 {
-  return xiiRangeView<const xiiString&, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                                   [this]() -> xiiUInt32 { return m_OverwrittenValues.GetCount(); },
-                                                   [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                                   [this](const xiiUInt32& uiIt) -> const xiiString& { return m_OverwrittenValues[uiIt].GetString(); });
+  return xiiRangeView<const xiiString&, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_OverwrittenValues.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const xiiString& { return m_OverwrittenValues[uiIt].GetString(); });
 }
 
 bool xiiVolumeComponent::Reflection_GetValue(xiiStringView sName, xiiVariant& value) const
@@ -205,10 +202,9 @@ void xiiVolumeComponent::InitializeFromTemplate()
 
   if (m_bReloadFunctionAdded == false)
   {
-    GetWorld()->AddResourceReloadFunction(m_hTemplateResource, GetHandle(), nullptr,
-                                          [](const xiiWorld::ResourceReloadContext& context) {
-                                            xiiStaticCast<xiiVolumeComponent*>(context.m_pComponent)->ReloadTemplate();
-                                          });
+    GetWorld()->AddResourceReloadFunction(m_hTemplateResource, GetHandle(), nullptr, [](const xiiWorld::ResourceReloadContext& context) {
+      xiiStaticCast<xiiVolumeComponent*>(context.m_pComponent)->ReloadTemplate();
+    });
 
     m_bReloadFunctionAdded = true;
   }

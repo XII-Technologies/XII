@@ -12,8 +12,7 @@
 
 namespace
 {
-  xiiStatus ResolveSource(const xiiModelMaterialTexture& texture, const xiiModelMeshImport& imported, xiiStringView sourceDirectory,
-                          xiiStringView targetDirectory, xiiStringBuilder& out_path)
+  xiiStatus ResolveSource(const xiiModelMaterialTexture& texture, const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory, xiiStringBuilder& out_path)
   {
     for (const auto& embedded : imported.m_EmbeddedTextures)
     {
@@ -63,9 +62,7 @@ namespace
 
 namespace
 {
-  xiiStatus CreateTextureAsset(xiiStringView source, xiiStringView secondSource, xiiStringView targetDirectory,
-                               const xiiGALSamplerCreationDescription& sampler, xiiTextureConverterUsage::Enum usage,
-                               xiiTexture2DChannelMappingEnum::Enum mapping, xiiString& out_asset)
+  xiiStatus CreateTextureAsset(xiiStringView source, xiiStringView secondSource, xiiStringView targetDirectory, const xiiGALSamplerCreationDescription& sampler, xiiTextureConverterUsage::Enum usage, xiiTexture2DChannelMappingEnum::Enum mapping, xiiString& out_asset)
   {
     // Separate assets for different color spaces, channel mappings and samplers, including equal source basenames.
     xiiUInt64 hash             = xiiHashingUtils::StringHash(source);
@@ -123,19 +120,16 @@ namespace
 
 } // namespace
 
-xiiStatus xiiMeshImportUtils::ImportTexture(const xiiModelMaterialTexture& texture, const xiiModelMeshImport& imported, xiiStringView sourceDirectory,
-                                            xiiStringView targetDirectory, xiiTextureConverterUsage::Enum usage, bool alpha, xiiString& out_asset)
+xiiStatus xiiMeshImportUtils::ImportTexture(const xiiModelMaterialTexture& texture, const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory, xiiTextureConverterUsage::Enum usage, bool alpha, xiiString& out_asset)
 {
   if (xiiTextureConverterSamplerPreset::ValidateFiltering(texture.m_Sampler).Failed())
     return xiiStatus("Model texture uses invalid native sampler settings.");
   xiiStringBuilder source;
   XII_SUCCEED_OR_RETURN(ResolveSource(texture, imported, sourceDirectory, targetDirectory, source));
-  return CreateTextureAsset(source, xiiStringView(), targetDirectory, texture.m_Sampler, usage,
-                            alpha ? xiiTexture2DChannelMappingEnum::RGBA1 : xiiTexture2DChannelMappingEnum::RGB1, out_asset);
+  return CreateTextureAsset(source, xiiStringView(), targetDirectory, texture.m_Sampler, usage, alpha ? xiiTexture2DChannelMappingEnum::RGBA1 : xiiTexture2DChannelMappingEnum::RGB1, out_asset);
 }
 
-xiiStatus xiiMeshImportUtils::ImportMetallicRoughnessTexture(const xiiModelMaterialTexture* roughness, const xiiModelMaterialTexture* metallic,
-                                                             const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory, xiiString& out_asset)
+xiiStatus xiiMeshImportUtils::ImportMetallicRoughnessTexture(const xiiModelMaterialTexture* roughness, const xiiModelMaterialTexture* metallic, const xiiModelMeshImport& imported, xiiStringView sourceDirectory, xiiStringView targetDirectory, xiiString& out_asset)
 {
   if (roughness == nullptr && metallic == nullptr)
     return xiiStatus("No roughness or metallic source texture was provided.");

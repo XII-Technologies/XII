@@ -58,10 +58,7 @@ namespace
 
     return materialIndex;
   }
-  xiiResult SynchronizeMesh(xiiSceneDatabaseManagerState::Slot& slot, const xiiMeshRenderData& renderData,
-                            const xiiSceneDatabaseManagerState::MeshKey& key, xiiUInt32 materialIndex,
-                            xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, const xiiExtractedMeshSkinning& skinning,
-                            xiiUInt64 uiFrameIndex, xiiUInt64 synchronization, xiiSceneObjectHandle& inout_hLodRepresentative)
+  xiiResult SynchronizeMesh(xiiSceneDatabaseManagerState::Slot& slot, const xiiMeshRenderData& renderData, const xiiSceneDatabaseManagerState::MeshKey& key, xiiUInt32 materialIndex, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, const xiiExtractedMeshSkinning& skinning, xiiUInt64 uiFrameIndex, xiiUInt64 synchronization, xiiSceneObjectHandle& inout_hLodRepresentative)
   {
     auto&           scene                = *slot.m_pDatabase;
     bool            resetSkinningHistory = true;
@@ -144,6 +141,7 @@ namespace
       pEntry->m_hGeometry  = hGeometry;
       if (changed)
       {
+        pEntry->m_bMeshletCountsValid = false;
         scene.SetGeometry(pEntry->m_hSceneObject, hGeometry.GetInternalID().m_InstanceIndex);
         xiiResourceLock<xiiMeshResource> mesh(renderData.m_hMesh, xiiResourceAcquireMode::PointerOnly);
         if (mesh->GetLoadingState() == xiiResourceState::Loaded)
@@ -163,6 +161,15 @@ namespace
     if (pEntry == nullptr)
       return XII_SUCCESS;
 
+    if (!pEntry->m_bMeshletCountsValid || pEntry->m_uiFirstPrimitive != uiFirstPrimitive || pEntry->m_uiPrimitiveCount != uiPrimitiveCount)
+    {
+      pEntry->m_bMeshletCountsValid = false;
+      XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(pEntry->m_hGeometry, uiFirstPrimitive, uiPrimitiveCount, xiiMakeArrayPtr(pEntry->m_uiMeshletCounts)));
+      pEntry->m_uiFirstPrimitive    = uiFirstPrimitive;
+      pEntry->m_uiPrimitiveCount    = uiPrimitiveCount;
+      pEntry->m_bMeshletCountsValid = true;
+    }
+
     auto& source                = slot.m_MeshSources[pEntry->m_hSceneObject.GetInternalID().m_Data + 1U];
     source.m_uiMaterialIndex    = materialIndex;
     pEntry->m_uiSynchronization = synchronization;
@@ -171,8 +178,7 @@ namespace
     scene.SetLocalBounds(pEntry->m_hSceneObject, skinning.m_Bounds);
     // Sections/LODs share their representative's pose, just as they share LOD history.
     if (inout_hLodRepresentative.IsInvalidated())
-      XII_SUCCEED_OR_RETURN(scene.SetSkinningPalette(pEntry->m_hSceneObject, renderData.m_SkinningMatrices,
-                                                     skinning.m_uiVertexStride, skinning.m_uiBoneIndicesOffset, skinning.m_uiBoneWeightsOffset, resetSkinningHistory));
+      XII_SUCCEED_OR_RETURN(scene.SetSkinningPalette(pEntry->m_hSceneObject, renderData.m_SkinningMatrices, skinning.m_uiVertexStride, skinning.m_uiBoneIndicesOffset, skinning.m_uiBoneWeightsOffset, resetSkinningHistory));
     else
       // Reload can make a surviving representative a member of a new section group.
       // Its private history is obsolete once it follows the new representative.
@@ -203,8 +209,7 @@ xiiResult xiiSceneDatabaseManager::SynchronizeExtractedMeshes(xiiSceneDatabaseCo
   for (const auto* data : packets)
   {
     const auto* mesh = xiiDynamicCast<const xiiMeshRenderData*>(data);
-    if (mesh && mesh->m_hMesh.IsValid() &&
-        (!xiiMath::IsFinite(mesh->m_fLodBias) || (mesh->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && mesh->m_uiLODIndex >= 8U) || mesh->m_RangeMode > xiiMeshRenderData::RangeMode::WholeMesh))
+    if (mesh && mesh->m_hMesh.IsValid() && (!xiiMath::IsFinite(mesh->m_fLodBias) || (mesh->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && mesh->m_uiLODIndex >= 8U) || mesh->m_RangeMode > xiiMeshRenderData::RangeMode::WholeMesh))
       return XII_FAILURE;
   }
 

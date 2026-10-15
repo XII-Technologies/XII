@@ -60,8 +60,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
   // LOD culling are refined by the previous frame's subsystem-owned Hi-Z history when valid; the
   // depth generated below refreshes that history without introducing a same-frame dependency cycle.
   xiiRenderGraphTextureHandle hPreviousGpuHiZ;
-  if (m_View.m_pCamera != nullptr && m_View.m_GpuSceneContext.IsInitialized() && xiiGpuVisibilityManager::IsValid(m_View.m_hGpuVisibilityContext) &&
-      geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid())
+  if (m_View.m_pCamera != nullptr && m_View.m_GpuSceneContext.IsInitialized() && xiiGpuVisibilityManager::IsValid(m_View.m_hGpuVisibilityContext) && geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid())
   {
     const xiiUInt32 uiRenderWidth  = m_View.GetRenderResolutionWidth();
     const xiiUInt32 uiRenderHeight = m_View.GetRenderResolutionHeight();
@@ -79,10 +78,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
     m_View.ComputeCullingFrustum(viewFrustum);
     // The raster camera still governs Hi-Z, LOD and cone-facing decisions; the explicit culling
     // camera controls frustum rejection, just as it does in the indexed visibility path.
-    xiiGpuVisibilityView visibilityView = xiiGpuVisibilitySystem::BuildView(
-      viewProjection, viewFrustum, m_View.m_pCamera->GetPosition(), uiRenderWidth, uiRenderHeight,
-      xiiGpuVisibilityManager::GetHiZMipLevelCount(m_View.m_hGpuVisibilityContext),
-      m_View.m_GpuSceneContext.GetDatabase().GetObjectCount());
+    xiiGpuVisibilityView visibilityView            = xiiGpuVisibilitySystem::BuildView(viewProjection, viewFrustum, m_View.m_pCamera->GetPosition(), uiRenderWidth, uiRenderHeight, xiiGpuVisibilityManager::GetHiZMipLevelCount(m_View.m_hGpuVisibilityContext), m_View.m_GpuSceneContext.GetDatabase().GetObjectCount());
     visibilityView.m_OcclusionViewProjectionMatrix = depthHistory.m_bMotionHistoryValid ? depthHistory.m_PreviousViewProjectionMatrix : viewProjection;
     visibilityView.m_uiRequiredFlags               = xiiSceneObjectFlags::Enabled;
     visibilityView.m_uiExcludedFlags               = xiiSceneObjectFlags::Transparent;
@@ -91,8 +87,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildPrepareFrame(xiiRenderGraph& graph, x
     visibilityDescription.m_sName         = "Default View Primary";
     visibilityDescription.m_Purpose       = xiiGpuVisibilityPurpose::MainView;
     visibilityDescription.m_bAsyncCompute = true;
-    mainVisibility                        = xiiGpuVisibilityManager::AddPasses(
-      m_View.m_hGpuVisibilityContext, graph, uiFrameIndex, m_View.m_GpuSceneContext.GetHandle(), visibilityView, geometry, visibilityDescription, hPreviousGpuHiZ);
+    mainVisibility                        = xiiGpuVisibilityManager::AddPasses(m_View.m_hGpuVisibilityContext, graph, uiFrameIndex, m_View.m_GpuSceneContext.GetHandle(), visibilityView, geometry, visibilityDescription, hPreviousGpuHiZ);
   }
 
   const xiiRayTracingSceneManager::BuildHandles rayTracingScene = xiiRayTracingSceneManager::AddBuildPass(graph, uiFrameIndex);
@@ -176,7 +171,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildVisibility(xiiRenderGraph& graph, xii
   graph.AddPass<xiiFroxelAllocationData>("VolumetricGridAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupFroxelAllocation, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteFroxelAllocation, this));
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   auto& uiFrameIndex         = m_Frame.uiFrameIndex;
   auto& geometry             = m_Frame.geometry;
@@ -186,11 +181,12 @@ void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRen
   // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
   shadowCascadePass = graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteShadowCascadeSetup, this));
 
+  XII_SUCCEED_OR_RETURN(PrepareShadowResources());
+
   // Feed the subsystem-owned GPU scene through the same meshlet visibility path used by samples.
   // The farthest directional cascade encloses the useful caster range for every nearer virtual
   // cascade and therefore supplies one conservative caster stream for all dirty VSM pages.
-  if (m_View.m_pCamera != nullptr && shadowCascadePass.first->m_uiActiveCascades > 0U && m_View.m_GpuSceneContext.IsInitialized() &&
-      xiiGpuVisibilityManager::IsValid(m_View.m_hGpuVisibilityContext) && geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid())
+  if (m_View.m_pCamera != nullptr && shadowCascadePass.first->m_uiActiveCascades > 0U && m_View.m_GpuSceneContext.IsInitialized() && xiiGpuVisibilityManager::IsValid(m_View.m_hGpuVisibilityContext) && geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid())
   {
     const xiiDirectionalLightRenderData* pMainDirectional =
       m_View.m_pExtractedData != nullptr ? SelectMainDirectionalLight(m_View.m_pExtractedData->GetAllRenderData()) : nullptr;
@@ -200,25 +196,17 @@ void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRen
       const xiiMat4&   shadowViewProjection = shadowCascadePass.first->m_CascadeViewProjection[uiLastCascade];
       const xiiFrustum shadowFrustum        = xiiFrustum::MakeFromMVP(shadowViewProjection, xiiClipSpaceDepthRange::ZeroToOne, xiiHandedness::LeftHanded);
 
-      xiiGpuVisibilityView shadowView = xiiGpuVisibilitySystem::BuildView(
-        shadowViewProjection, shadowFrustum, m_View.m_pCamera->GetPosition(), k_uiDirectionalShadowAtlasWidth, k_uiDirectionalShadowAtlasHeight, 0U,
-        m_View.m_GpuSceneContext.GetDatabase().GetObjectCount());
-      shadowView.m_uiRequiredFlags = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows).GetValue();
+      xiiGpuVisibilityView shadowView = xiiGpuVisibilitySystem::BuildView(shadowViewProjection, shadowFrustum, m_View.m_pCamera->GetPosition(), k_uiDirectionalShadowAtlasWidth, k_uiDirectionalShadowAtlasHeight, 0U, m_View.m_GpuSceneContext.GetDatabase().GetObjectCount());
+      shadowView.m_uiRequiredFlags    = (xiiSceneObjectFlags::Enabled | xiiSceneObjectFlags::CastShadows).GetValue();
 
       xiiGpuVisibilityPassDescription visibilityDescription;
       visibilityDescription.m_sName                  = "Default View Directional Shadow";
       visibilityDescription.m_Purpose                = xiiGpuVisibilityPurpose::Shadow;
       visibilityDescription.m_bAsyncCompute          = true;
-      const xiiGpuVisibilityOutputs shadowVisibility = xiiGpuVisibilityManager::AddPasses(
-        m_View.m_hGpuVisibilityContext, graph, uiFrameIndex, m_View.m_GpuSceneContext.GetHandle(), shadowView, geometry, visibilityDescription);
+      const xiiGpuVisibilityOutputs shadowVisibility = xiiGpuVisibilityManager::AddPasses(m_View.m_hGpuVisibilityContext, graph, uiFrameIndex, m_View.m_GpuSceneContext.GetHandle(), shadowView, geometry, visibilityDescription);
 
       const xiiUInt32 uiDirectionalLightId = static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey) & 0x00FFFFFFU;
-      XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::AddRasterPasses(
-        graph, virtualShadowHandles, shadowVisibility, geometry, materials,
-        xiiArrayPtr<const xiiMat4>(shadowCascadePass.first->m_CascadeViewProjection, shadowCascadePass.first->m_uiActiveCascades),
-        uiDirectionalLightId, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)),
-        xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_View.m_hGpuVisibilityContext),
-        xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_View.m_hGpuVisibilityContext)));
+      XII_IGNORE_UNUSED(xiiVirtualShadowMapManager::AddRasterPasses(graph, virtualShadowHandles, shadowVisibility, geometry, materials, xiiArrayPtr<const xiiMat4>(shadowCascadePass.first->m_CascadeViewProjection, shadowCascadePass.first->m_uiActiveCascades), uiDirectionalLightId, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)), xiiGpuVisibilityManager::GetMeshDispatchGroupCountX(m_View.m_hGpuVisibilityContext), xiiGpuVisibilityManager::GetMeshDispatchGroupCountY(m_View.m_hGpuVisibilityContext)));
     }
   }
 
@@ -230,44 +218,16 @@ void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRen
   // version before rasterizing its atlas tile, so async culling can overlap unrelated graphics
   // while scratch reuse and partial atlas writes remain deterministically ordered.
   bool bGpuLocalShadows = false;
-  if (xiiGpuShadowRasterManager::IsSupported() && m_View.m_GpuSceneContext.IsInitialized() && xiiGpuVisibilityManager::IsValid(m_View.m_hGpuVisibilityContext) &&
-      geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid() && materials.m_hSurfaceData.IsValid())
+  if (xiiGpuShadowRasterManager::IsSupported() && m_View.m_GpuSceneContext.IsInitialized() && xiiGpuVisibilityManager::IsValid(m_View.m_hGpuVisibilityContext) && geometry.m_hGeometryMetadata.IsValid() && geometry.m_hMeshletMetadata.IsValid() && materials.m_hSurfaceData.IsValid())
   {
     const xiiUInt32 uiAtlasSize = m_Resources.m_LightingSystem.GetSettings().m_uiLocalShadowAtlasSize;
-    if (!m_Resources.m_ShadowPasses.m_pLocalShadowAtlas)
-    {
-      xiiGALTextureCreationDescription description;
-      description.m_Type                             = xiiGALResourceDimension::Texture2D;
-      description.m_Format                           = xiiGALResourceFormat::D32Float;
-      description.m_Size.width                       = uiAtlasSize;
-      description.m_Size.height                      = uiAtlasSize;
-      description.m_uiMipLevels                      = 1U;
-      description.m_BindFlags                        = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-      description.m_Usage                            = xiiGALResourceUsage::Default;
-      m_Resources.m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    }
 
-    if (m_Resources.m_ShadowPasses.m_pLocalShadowAtlas != nullptr)
-    {
-      auto atlasClear = graph.AddPass<xiiLocalShadowAtlasClearData>(
-        "GPU Local Shadow Atlas Clear", xiiGALCommandQueueFlags::Graphics,
-        [pAtlas = m_Resources.m_ShadowPasses.m_pLocalShadowAtlas](xiiLocalShadowAtlasClearData& data, xiiRenderGraphBuilder& builder) {
-          data.m_hLocalShadowAtlas = builder.WriteTexture(
-            builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, pAtlas, pAtlas->GetResourceState()),
-            xiiGALResourceStateFlags::DepthWrite);
-          builder.SetPassAllowMerge(false);
-        },
-        [](const xiiLocalShadowAtlasClearData& data, xiiRenderGraphPassContext& context) {
-          ClearDepthPreservingState(context.GetCommandList(),
-                                    context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U);
-        });
+    auto atlasClear = graph.AddPass<xiiLocalShadowAtlasClearData>("GPU Local Shadow Atlas Clear", xiiGALCommandQueueFlags::Graphics, [pAtlas = m_Resources.m_ShadowPasses.m_pLocalShadowAtlas](xiiLocalShadowAtlasClearData& data, xiiRenderGraphBuilder& builder) {
+        data.m_hLocalShadowAtlas = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, pAtlas, pAtlas->GetResourceState()), xiiGALResourceStateFlags::DepthWrite);
+        builder.SetPassAllowMerge(false); }, [](const xiiLocalShadowAtlasClearData& data, xiiRenderGraphPassContext& context) { ClearDepthPreservingState(context.GetCommandList(), context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.0f, 0U); });
 
-      XII_IGNORE_UNUSED(xiiGpuShadowRasterManager::AddLocalLightPasses(
-        graph, uiFrameIndex, m_View.m_hGpuVisibilityContext, m_View.m_GpuSceneContext.GetHandle(), atlasClear.first->m_hLocalShadowAtlas,
-        m_Resources.m_LightingSystem.GetLocalShadowData(), uiAtlasSize, geometry, materials,
-        sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0))));
-      bGpuLocalShadows = true;
-    }
+    XII_IGNORE_UNUSED(xiiGpuShadowRasterManager::AddLocalLightPasses(graph, uiFrameIndex, m_View.m_hGpuVisibilityContext, m_View.m_GpuSceneContext.GetHandle(), atlasClear.first->m_hLocalShadowAtlas, m_Resources.m_LightingSystem.GetLocalShadowData(), uiAtlasSize, geometry, materials, sizeof(xiiMeshPackedVertex), static_cast<xiiUInt32>(offsetof(xiiMeshPackedVertex, m_vTexCoord0))));
+    bGpuLocalShadows = true;
   }
 
   if (!bGpuLocalShadows)
@@ -275,6 +235,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildShadows(xiiRenderGraph& graph, xiiRen
     graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupSpotShadowData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteSpotShadowData, this));
     graph.AddPass<xiiPointShadowData>("PointShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupPointShadowData, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecutePointShadowData, this));
   }
+  return XII_SUCCESS;
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildDepthAndGeometry(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
@@ -312,10 +273,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildDepthAndGeometry(xiiRenderGraph& grap
     const xiiDirectionalLightRenderData* pMainDirectional = SelectMainDirectionalLight(m_View.m_pExtractedData->GetAllRenderData());
     if (pMainDirectional != nullptr && pMainDirectional->m_bCastShadows && hSceneDepth.IsValid())
     {
-      xiiVirtualShadowMapManager::AddFeedbackPasses(graph, hSceneDepth, shadowCascadePass.first->m_hCascadeMatrices,
-                                                    m_View.GetRenderResolutionWidth(), m_View.GetRenderResolutionHeight(), m_View.GetInverseViewProjectionMatrix(xiiCameraEye::Left),
-                                                    m_View.m_pCamera != nullptr ? m_View.m_pCamera->GetNearPlane() : 0.1f,
-                                                    static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey), uiFrameIndex);
+      xiiVirtualShadowMapManager::AddFeedbackPasses(graph, hSceneDepth, shadowCascadePass.first->m_hCascadeMatrices, m_View.GetRenderResolutionWidth(), m_View.GetRenderResolutionHeight(), m_View.GetInverseViewProjectionMatrix(xiiCameraEye::Left), m_View.m_pCamera != nullptr ? m_View.m_pCamera->GetNearPlane() : 0.1f, static_cast<xiiUInt32>(pMainDirectional->m_uiSortingKey), uiFrameIndex);
     }
   }
   graph.AddPass<xiiHiZPyramidData>("HiZPyramid", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::SetupHiZPyramid, this), xiiMakeDelegate(&xiiBuiltinRenderPipelineRuntime::ExecuteHiZPyramid, this));
@@ -413,11 +371,7 @@ void xiiBuiltinRenderPipelineRuntime::BuildLighting(xiiRenderGraph& graph, xiiRe
     const xiiRenderGraphBufferHandle  hLightGrid        = lightListPass.first->m_hLightGridBuffer;
     const xiiRenderGraphBufferHandle  hLightIndices     = lightSamplingPass.first->m_hLightIndexBuffer;
 
-    bForwardPlusDirectLighting = xiiGpuSceneRasterManager::AddForwardPlusPass(
-                                   graph, "GPU Scene Forward Plus", hSceneDepth, hAmbientOcclusion, hRayTracedShadow, hContactShadow, hDirectReservoir,
-                                   hLightGrid, hLightIndices, m_Resources.m_LightingPasses.m_hEmissiveTriangles,
-                                   m_Resources.m_LightingPasses.m_hEmissiveLightHeader, mainVisibility, geometry, materials,
-                                   *m_Resources.m_LightingSystem.BorrowSystem(), gpuRasterDescription)
+    bForwardPlusDirectLighting = xiiGpuSceneRasterManager::AddForwardPlusPass(graph, "GPU Scene Forward Plus", hSceneDepth, hAmbientOcclusion, hRayTracedShadow, hContactShadow, hDirectReservoir, hLightGrid, hLightIndices, m_Resources.m_LightingPasses.m_hEmissiveTriangles, m_Resources.m_LightingPasses.m_hEmissiveLightHeader, mainVisibility, geometry, materials, *m_Resources.m_LightingSystem.BorrowSystem(), gpuRasterDescription)
                                    .IsValid();
   }
   if (!bForwardPlusDirectLighting)
@@ -484,10 +438,12 @@ void xiiBuiltinRenderPipelineRuntime::BuildScreenEffects(xiiRenderGraph& graph, 
   }
 }
 
-void xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildDebug(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // Debug and visualization passes.
+  XII_SUCCEED_OR_RETURN(BuildViewRenderMode(graph));
   xiiDebugRenderer::AddRenderGraphPasses(graph);
+  return XII_SUCCESS;
 }
 
 void xiiBuiltinRenderPipelineRuntime::BuildColorGrading(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
@@ -510,6 +466,16 @@ void xiiBuiltinRenderPipelineRuntime::BeginFrame(const xiiVirtualShadowMapManage
 
 xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
+  m_StageSetupResult = XII_SUCCESS;
+  XII_SUCCEED_OR_RETURN(BuildStageInternal(stage, graph, blackboard));
+  return m_StageSetupResult;
+}
+
+xiiResult xiiBuiltinRenderPipelineRuntime::BuildStageInternal(xiiStringView stage, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+{
+  XII_SUCCEED_OR_RETURN(PrepareTemporalResources(stage));
+  if (stage == "ScreenEffects")
+    XII_SUCCEED_OR_RETURN(PrepareSensorOutput());
   if (stage == "PrepareFrame")
   {
     BuildPrepareFrame(graph, blackboard);
@@ -522,8 +488,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
   }
   if (stage == "Shadows")
   {
-    BuildShadows(graph, blackboard);
-    return XII_SUCCESS;
+    return BuildShadows(graph, blackboard);
   }
   if (stage == "DepthAndGeometry")
   {
@@ -554,8 +519,7 @@ xiiResult xiiBuiltinRenderPipelineRuntime::BuildStage(xiiStringView stage, xiiRe
   }
   if (stage == "Debug")
   {
-    BuildDebug(graph, blackboard);
-    return XII_SUCCESS;
+    return BuildDebug(graph, blackboard);
   }
   if (stage == "ColorGrading")
   {

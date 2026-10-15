@@ -25,7 +25,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiLightComponent, 2)
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("RenderWorld/Lights"),
+    new xiiCategoryAttribute("Graphics/Lights"),
   }
   XII_END_ATTRIBUTES;
   XII_BEGIN_MESSAGEHANDLERS

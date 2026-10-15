@@ -17,8 +17,7 @@ template <typename T>
 XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass* pObject)
 {
   using NonPointerT = typename xiiTypeTraits<T>::NonPointerType;
-  XII_ASSERT_DEV(pObject == nullptr || pObject->IsInstanceOf<NonPointerT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
-                 pObject->GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonPointerT>()->GetTypeName());
+  XII_ASSERT_DEV(pObject == nullptr || pObject->IsInstanceOf<NonPointerT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'", pObject->GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonPointerT>()->GetTypeName());
   return static_cast<T>(pObject);
 }
 
@@ -29,8 +28,7 @@ template <typename T>
 XII_ALWAYS_INLINE T xiiStaticCast(const xiiReflectedClass* pObject)
 {
   using NonPointerT = typename xiiTypeTraits<T>::NonConstReferencePointerType;
-  XII_ASSERT_DEV(pObject == nullptr || pObject->IsInstanceOf<NonPointerT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
-                 pObject->GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonPointerT>()->GetTypeName());
+  XII_ASSERT_DEV(pObject == nullptr || pObject->IsInstanceOf<NonPointerT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'", pObject->GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonPointerT>()->GetTypeName());
   return static_cast<T>(pObject);
 }
 
@@ -41,8 +39,7 @@ template <typename T>
 XII_ALWAYS_INLINE T xiiStaticCast(xiiReflectedClass& ref_object)
 {
   using NonReferenceT = typename xiiTypeTraits<T>::NonReferenceType;
-  XII_ASSERT_DEV(ref_object.IsInstanceOf<NonReferenceT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
-                 ref_object.GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonReferenceT>()->GetTypeName());
+  XII_ASSERT_DEV(ref_object.IsInstanceOf<NonReferenceT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'", ref_object.GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonReferenceT>()->GetTypeName());
   return static_cast<T>(ref_object);
 }
 
@@ -53,8 +50,7 @@ template <typename T>
 XII_ALWAYS_INLINE T xiiStaticCast(const xiiReflectedClass& object)
 {
   using NonReferenceT = typename xiiTypeTraits<T>::NonConstReferenceType;
-  XII_ASSERT_DEV(object.IsInstanceOf<NonReferenceT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'",
-                 object.GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonReferenceT>()->GetTypeName());
+  XII_ASSERT_DEV(object.IsInstanceOf<NonReferenceT>(), "Invalid static cast: Object of type '{0}' is not an instance of '{1}'", object.GetDynamicRTTI()->GetTypeName(), xiiGetStaticRTTI<NonReferenceT>()->GetTypeName());
   return static_cast<T>(object);
 }
 

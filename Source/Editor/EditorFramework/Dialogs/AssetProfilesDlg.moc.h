@@ -5,8 +5,9 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <EditorFramework/ui_AssetProfilesDlg.h>
-#include <Foundation/Containers/Map.h>
 #include <Foundation/Strings/String.h>
+#include <Foundation/Types/Status.h>
+#include <Foundation/Types/Uuid.h>
 
 #include <QDialog>
 
@@ -14,7 +15,7 @@ class xiiAssetProfilesDocument;
 class xiiPlatformProfile;
 class xiiQtDocumentTreeView;
 class xiiDocument;
-struct xiiDocumentObjectPropertyEvent;
+class xiiQtAssetConfigAdapter;
 
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetProfilesDlg : public QDialog, public Ui_xiiQtAssetProfilesDlg
 {
@@ -24,8 +25,6 @@ public:
 public:
   xiiQtAssetProfilesDlg(QWidget* pParent);
   ~xiiQtAssetProfilesDlg();
-
-  xiiUInt32 m_uiActiveConfig = 0;
 
 private Q_SLOTS:
   void on_ButtonOk_clicked();
@@ -37,28 +36,16 @@ private Q_SLOTS:
   void on_SwitchToButton_clicked();
 
 private:
-  struct Binding
-  {
-    enum class State
-    {
-      None,
-      Added,
-      Deleted
-    };
-
-    State               m_State    = State::None;
-    xiiPlatformProfile* m_pProfile = nullptr;
-  };
-
-  bool    DetermineNewProfileName(QWidget* parent, xiiString& result);
-  bool    CheckProfileNameUniqueness(const char* szName);
-  void    AllAssetProfilesToObject();
-  void    PropertyChangedEventHandler(const xiiDocumentObjectPropertyEvent& e);
-  void    ApplyAllChanges();
-  xiiUuid NativeToObject(xiiPlatformProfile* pProfile);
-  void    ObjectToNative(xiiUuid objectGuid, xiiPlatformProfile* pProfile);
-  void    SelectionEventHandler(const xiiSelectionManagerEvent& e);
+  friend class xiiQtAssetConfigAdapter;
+  bool      DetermineNewProfileName(QWidget* parent, xiiString& result, xiiUuid exclude = {});
+  bool      CheckProfileNameUniqueness(const char* szName, xiiUuid exclude);
+  void      AllAssetProfilesToObject();
+  xiiStatus ApplyAllChanges();
+  xiiUuid   NativeToObject(xiiPlatformProfile* pProfile);
+  void      ObjectToNative(xiiUuid objectGuid, xiiPlatformProfile* pProfile);
+  void      SelectionEventHandler(const xiiSelectionManagerEvent& e);
 
   xiiAssetProfilesDocument* m_pDocument;
-  xiiMap<xiiUuid, Binding>  m_ProfileBindings;
+  xiiUuid                   m_ActiveProfile;
+  xiiUuid                   m_OriginalActiveProfile;
 };

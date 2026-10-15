@@ -136,9 +136,7 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView 
   {
     XII_ASSERT_DEV(m_Graph.m_Resources[uiTextureResourceIndex].m_bIsTexture, "Resource '{}' was already declared as a buffer.", sName);
 
-    return xiiRenderGraphTextureHandle(
-      xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion),
-      m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
+    return xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
   }
 
   uiTextureResourceIndex               = m_Graph.m_Resources.GetCount();
@@ -185,9 +183,7 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView s
     m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiTextureResourceIndex);
   }
 
-  return xiiRenderGraphTextureHandle(
-    xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion),
-    m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
+  return xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
 }
 
 xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiRenderGraphTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState)
@@ -227,9 +223,7 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ReadTexture(xiiStringView sNa
   if (!bIsTexture)
     return xiiRenderGraphTextureHandle();
 
-  const xiiRenderGraphTextureHandle hTexture(
-    xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion),
-    m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
+  const xiiRenderGraphTextureHandle hTexture(xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
   return ReadTexture(hTexture, requiredState);
 }
 
@@ -303,9 +297,7 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sN
   {
     XII_ASSERT_DEV(!m_Graph.m_Resources[uiBufferResourceIndex].m_bIsTexture, "Resource '{}' was already declared as a texture.", sName);
 
-    return xiiRenderGraphBufferHandle(
-      xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion),
-      m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
+    return xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
   }
 
   uiBufferResourceIndex                = m_Graph.m_Resources.GetCount();
@@ -352,9 +344,7 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sNa
     m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiBufferResourceIndex);
   }
 
-  return xiiRenderGraphBufferHandle(
-    xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion),
-    m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
+  return xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
 }
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiRenderGraphBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState)
@@ -393,9 +383,7 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ReadBuffer(xiiStringView sName
   if (!bIsBuffer)
     return xiiRenderGraphBufferHandle();
 
-  const xiiRenderGraphBufferHandle hBuffer(
-    xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion),
-    m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
+  const xiiRenderGraphBufferHandle hBuffer(xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
   return ReadBuffer(hBuffer, requiredState);
 }
 
@@ -1110,8 +1098,7 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
       consumer.m_DependencyPassIndices.PushBack(producerPass);
     const xiiUInt32 producerSubmission = passToSubmission[producerPass];
     const xiiUInt32 consumerSubmission = passToSubmission[consumerPass];
-    if (xiiRenderGraphSkills::AsyncCompute::RequiresFence(producerSubmission, consumerSubmission,
-                                                          m_QueueSubmissions[producerSubmission].m_uiQueueIndex, m_QueueSubmissions[consumerSubmission].m_uiQueueIndex))
+    if (xiiRenderGraphSkills::AsyncCompute::RequiresFence(producerSubmission, consumerSubmission, m_QueueSubmissions[producerSubmission].m_uiQueueIndex, m_QueueSubmissions[consumerSubmission].m_uiQueueIndex))
     {
       auto& waits = m_QueueSubmissions[consumerSubmission].m_WaitSubmissionIndices;
       if (!waits.Contains(producerSubmission))
@@ -1175,9 +1162,9 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
     for (const ResourceUsage& usage : pass.m_Reads)
     {
       const bool                                  bSingleSourceQueue = trackStateAccess(uiPassIndex, usage);
-      const xiiUInt32                             uiResourceIndex = usage.m_uiResourceIndex;
-      ResourceEntry&                              resourceEntry   = m_Resources[uiResourceIndex];
-      const xiiBitflags<xiiGALResourceStateFlags> requiredState   = usage.m_RequiredState;
+      const xiiUInt32                             uiResourceIndex    = usage.m_uiResourceIndex;
+      ResourceEntry&                              resourceEntry      = m_Resources[uiResourceIndex];
+      const xiiBitflags<xiiGALResourceStateFlags> requiredState      = usage.m_RequiredState;
 
       if (resourceEntry.m_CurrentState != requiredState || requiredState == xiiGALResourceStateFlags::UnorderedAccess)
       {
@@ -1195,9 +1182,9 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
     for (const ResourceUsage& usage : pass.m_Writes)
     {
       const bool                                  bSingleSourceQueue = trackStateAccess(uiPassIndex, usage);
-      const xiiUInt32                             uiResourceIndex = usage.m_uiResourceIndex;
-      ResourceEntry&                              resourceEntry   = m_Resources[uiResourceIndex];
-      const xiiBitflags<xiiGALResourceStateFlags> requiredState   = usage.m_RequiredState;
+      const xiiUInt32                             uiResourceIndex    = usage.m_uiResourceIndex;
+      ResourceEntry&                              resourceEntry      = m_Resources[uiResourceIndex];
+      const xiiBitflags<xiiGALResourceStateFlags> requiredState      = usage.m_RequiredState;
 
       if (resourceEntry.m_CurrentState != requiredState || requiredState == xiiGALResourceStateFlags::UnorderedAccess)
       {

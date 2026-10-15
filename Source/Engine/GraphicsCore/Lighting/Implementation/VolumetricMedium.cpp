@@ -170,10 +170,7 @@ bool xiiVolumetricMediumManager::State::InsertSlotIntoCells(xiiUInt32 uiSlot)
   xiiVec3     vWorldHalfExtents = xiiVec3::MakeZero();
   for (xiiUInt32 uiCorner = 0U; uiCorner < 8U; ++uiCorner)
   {
-    const xiiVec3 vCorner(
-      (uiCorner & XII_BIT(0)) != 0U ? slot.m_Description.m_vHalfExtents.x : -slot.m_Description.m_vHalfExtents.x,
-      (uiCorner & XII_BIT(1)) != 0U ? slot.m_Description.m_vHalfExtents.y : -slot.m_Description.m_vHalfExtents.y,
-      (uiCorner & XII_BIT(2)) != 0U ? slot.m_Description.m_vHalfExtents.z : -slot.m_Description.m_vHalfExtents.z);
+    const xiiVec3 vCorner((uiCorner & XII_BIT(0)) != 0U ? slot.m_Description.m_vHalfExtents.x : -slot.m_Description.m_vHalfExtents.x, (uiCorner & XII_BIT(1)) != 0U ? slot.m_Description.m_vHalfExtents.y : -slot.m_Description.m_vHalfExtents.y, (uiCorner & XII_BIT(2)) != 0U ? slot.m_Description.m_vHalfExtents.z : -slot.m_Description.m_vHalfExtents.z);
     vWorldHalfExtents = vWorldHalfExtents.CompMax((slot.m_Description.m_qRotation * vCorner).Abs());
   }
 
@@ -392,10 +389,7 @@ xiiVolumetricMediumStats xiiVolumetricMediumManager::GetStats()
 
 xiiUInt64 xiiVolumetricMediumManager::PackCellKey(const xiiVec3I32& vCell)
 {
-  XII_ASSERT_DEV(vCell.x >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.x < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) &&
-                   vCell.y >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.y < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) &&
-                   vCell.z >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.z < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias),
-                 "Volumetric medium cell coordinate exceeds the packed-key range.");
+  XII_ASSERT_DEV(vCell.x >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.x < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.y >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.y < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.z >= -static_cast<xiiInt32>(s_uiVolumetricCoordinateBias) && vCell.z < static_cast<xiiInt32>(s_uiVolumetricCoordinateBias), "Volumetric medium cell coordinate exceeds the packed-key range.");
   return ((static_cast<xiiUInt64>(vCell.x + s_uiVolumetricCoordinateBias) & s_uiVolumetricCoordinateMask) << (s_uiVolumetricCoordinateBits * 2U)) |
     ((static_cast<xiiUInt64>(vCell.y + s_uiVolumetricCoordinateBias) & s_uiVolumetricCoordinateMask) << s_uiVolumetricCoordinateBits) |
     (static_cast<xiiUInt64>(vCell.z + s_uiVolumetricCoordinateBias) & s_uiVolumetricCoordinateMask);

@@ -29,11 +29,8 @@ namespace xiiModelImportInternal
     aiVector3D   scale, translation;
     aiQuaternion rotation;
     matrix.Decompose(scale, rotation, translation);
-    out_pose = xiiTransform::Make(xiiVec3(translation.x, translation.y, translation.z),
-                                  xiiQuat::MakeFromElements(rotation.x, rotation.y, rotation.z, rotation.w),
-                                  xiiVec3(scale.x, scale.y, scale.z));
-    if (!out_pose.IsValid() || scale.x == 0 || scale.y == 0 || scale.z == 0 ||
-        !out_pose.GetAsMat4().IsEqual(ConvertMatrix(matrix), 0.001f))
+    out_pose = xiiTransform::Make(xiiVec3(translation.x, translation.y, translation.z), xiiQuat::MakeFromElements(rotation.x, rotation.y, rotation.z, rotation.w), xiiVec3(scale.x, scale.y, scale.z));
+    if (!out_pose.IsValid() || scale.x == 0 || scale.y == 0 || scale.z == 0 || !out_pose.GetAsMat4().IsEqual(ConvertMatrix(matrix), 0.001f))
       return XII_FAILURE;
     return XII_SUCCESS;
   }

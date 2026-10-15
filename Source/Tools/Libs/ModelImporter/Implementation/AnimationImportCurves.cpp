@@ -28,8 +28,7 @@ namespace
       m_Rotation    = rotation;
       m_PreDefault  = settings.m_PreState == aiAnimBehaviour_DEFAULT && !settings.m_bClampDefault;
       m_PostDefault = settings.m_PostState == aiAnimBehaviour_DEFAULT && !settings.m_bClampDefault;
-      if ((settings.m_PreState != aiAnimBehaviour_DEFAULT && settings.m_PreState != aiAnimBehaviour_CONSTANT) ||
-          (settings.m_PostState != aiAnimBehaviour_DEFAULT && settings.m_PostState != aiAnimBehaviour_CONSTANT))
+      if ((settings.m_PreState != aiAnimBehaviour_DEFAULT && settings.m_PreState != aiAnimBehaviour_CONSTANT) || (settings.m_PostState != aiAnimBehaviour_DEFAULT && settings.m_PostState != aiAnimBehaviour_CONSTANT))
         return Fail(error, "Native animation import does not support extrapolated or repeated per-channel boundary behavior.");
       if (count == 0)
         return XII_SUCCESS;
@@ -45,19 +44,14 @@ namespace
       {
         const auto& key  = keys[i * m_Stride];
         const float time = static_cast<float>(key.mTime / settings.m_fTicksPerSecond - settings.m_fBegin);
-        if (!xiiMath::IsFinite(key.mTime) || key.mTime < 0 || !xiiMath::IsFinite(time) ||
-            (!m_Times.IsEmpty() && time <= m_Times.PeekBack()))
+        if (!xiiMath::IsFinite(key.mTime) || key.mTime < 0 || !xiiMath::IsFinite(time) || (!m_Times.IsEmpty() && time <= m_Times.PeekBack()))
           return Fail(error, "Animation key times are invalid or cannot be distinguished at native float precision.");
         m_Times.PushBack(time);
         for (xiiUInt32 j = 0; j < m_Stride; ++j)
         {
           const auto& part  = keys[i * m_Stride + j];
           const auto  value = ConvertValue(part.mValue);
-          if (part.mTime != key.mTime || !value.IsValid() ||
-              (m_Cubic && part.mInterpolation != aiAnimInterpolation_Cubic_Spline) ||
-              (!m_Cubic && part.mInterpolation != aiAnimInterpolation_Step &&
-               part.mInterpolation != aiAnimInterpolation_Linear && part.mInterpolation != aiAnimInterpolation_Spherical_Linear) ||
-              (rotation && (!m_Cubic || j == 1) && (!xiiMath::IsFinite(value.Dot(value)) || value.Dot(value) < 1e-12f)))
+          if (part.mTime != key.mTime || !value.IsValid() || (m_Cubic && part.mInterpolation != aiAnimInterpolation_Cubic_Spline) || (!m_Cubic && part.mInterpolation != aiAnimInterpolation_Step && part.mInterpolation != aiAnimInterpolation_Linear && part.mInterpolation != aiAnimInterpolation_Spherical_Linear) || (rotation && (!m_Cubic || j == 1) && (!xiiMath::IsFinite(value.Dot(value)) || value.Dot(value) < 1e-12f)))
             return Fail(error, "Animation contains invalid values or unsupported interpolation.");
         }
       }
@@ -159,9 +153,7 @@ namespace
   };
 } // namespace
 
-xiiResult xiiModelImportInternal::BakeVectorKeys(const aiVectorKey* keys, xiiUInt32 count, const AnimationCurveSettings& settings,
-                                                 const xiiVec3& fallback, bool additive, bool scale,
-                                                 xiiHybridArray<xiiAnimationKeyVec3, 4>& out_keys, xiiStringBuilder* error)
+xiiResult xiiModelImportInternal::BakeVectorKeys(const aiVectorKey* keys, xiiUInt32 count, const AnimationCurveSettings& settings, const xiiVec3& fallback, bool additive, bool scale, xiiHybridArray<xiiAnimationKeyVec3, 4>& out_keys, xiiStringBuilder* error)
 {
   SourceCurve<aiVectorKey> curve;
   XII_SUCCEED_OR_RETURN(curve.Initialize(keys, count, settings, false, error));
@@ -184,9 +176,7 @@ xiiResult xiiModelImportInternal::BakeVectorKeys(const aiVectorKey* keys, xiiUIn
   return XII_SUCCESS;
 }
 
-xiiResult xiiModelImportInternal::BakeRotationKeys(const aiQuatKey* keys, xiiUInt32 count, const AnimationCurveSettings& settings,
-                                                   const xiiQuat& fallback, bool additive,
-                                                   xiiHybridArray<xiiAnimationKeyQuat, 4>& out_keys, xiiStringBuilder* error)
+xiiResult xiiModelImportInternal::BakeRotationKeys(const aiQuatKey* keys, xiiUInt32 count, const AnimationCurveSettings& settings, const xiiQuat& fallback, bool additive, xiiHybridArray<xiiAnimationKeyQuat, 4>& out_keys, xiiStringBuilder* error)
 {
   SourceCurve<aiQuatKey> curve;
   XII_SUCCEED_OR_RETURN(curve.Initialize(keys, count, settings, true, error));

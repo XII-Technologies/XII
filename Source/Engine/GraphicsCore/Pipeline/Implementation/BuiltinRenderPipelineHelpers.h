@@ -92,8 +92,7 @@ namespace xiiBuiltinPipelineUtils
       if (pDirectional == nullptr)
         continue;
 
-      if (pBest == nullptr || pDirectional->m_fPhotometricIntensity > pBest->m_fPhotometricIntensity ||
-          (pDirectional->m_fPhotometricIntensity == pBest->m_fPhotometricIntensity && pDirectional->m_uiSortingKey < pBest->m_uiSortingKey))
+      if (pBest == nullptr || pDirectional->m_fPhotometricIntensity > pBest->m_fPhotometricIntensity || (pDirectional->m_fPhotometricIntensity == pBest->m_fPhotometricIntensity && pDirectional->m_uiSortingKey < pBest->m_uiSortingKey))
       {
         pBest = pDirectional;
       }
@@ -110,8 +109,7 @@ namespace xiiBuiltinPipelineUtils
       if (pAtmosphere == nullptr)
         continue;
 
-      if (pBest == nullptr || pAtmosphere->m_iPriority > pBest->m_iPriority ||
-          (pAtmosphere->m_iPriority == pBest->m_iPriority && pAtmosphere->m_uiSortingKey < pBest->m_uiSortingKey))
+      if (pBest == nullptr || pAtmosphere->m_iPriority > pBest->m_iPriority || (pAtmosphere->m_iPriority == pBest->m_iPriority && pAtmosphere->m_uiSortingKey < pBest->m_uiSortingKey))
       {
         pBest = pAtmosphere;
       }
@@ -128,8 +126,7 @@ namespace xiiBuiltinPipelineUtils
       if (pCloud == nullptr)
         continue;
 
-      if (pBest == nullptr || pCloud->m_iPriority > pBest->m_iPriority ||
-          (pCloud->m_iPriority == pBest->m_iPriority && pCloud->m_uiSortingKey < pBest->m_uiSortingKey))
+      if (pBest == nullptr || pCloud->m_iPriority > pBest->m_iPriority || (pCloud->m_iPriority == pBest->m_iPriority && pCloud->m_uiSortingKey < pBest->m_uiSortingKey))
       {
         pBest = pCloud;
       }
@@ -138,30 +135,6 @@ namespace xiiBuiltinPipelineUtils
   }
 
 
-
-  inline bool EnsureTemporalHistoryTextures(xiiSharedPtr<xiiGALTexture> (&textures)[2], xiiGALResourceFormat::Enum format, xiiUInt32 uiWidth, xiiUInt32 uiHeight)
-  {
-    auto MatchesResolution = [uiWidth, uiHeight](const xiiSharedPtr<xiiGALTexture>& pTexture) {
-      return pTexture != nullptr && pTexture->GetDescription().m_Size.width == uiWidth && pTexture->GetDescription().m_Size.height == uiHeight;
-    };
-
-    if (MatchesResolution(textures[0]) && MatchesResolution(textures[1]))
-      return false;
-
-    xiiGALTextureCreationDescription description;
-    description.m_Type        = xiiGALResourceDimension::Texture2D;
-    description.m_Format      = format;
-    description.m_Size.width  = uiWidth;
-    description.m_Size.height = uiHeight;
-    description.m_uiMipLevels = 1U;
-    description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Usage       = xiiGALResourceUsage::Default;
-
-    textures[0] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    textures[1] = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
-    XII_ASSERT_DEV(textures[0] != nullptr && textures[1] != nullptr, "Failed to allocate temporal lighting history textures.");
-    return true;
-  }
 
   inline xiiRenderGraphBufferHandle CreateTemporalDenoiseConstants(xiiRenderGraphBuilder& builder, xiiStringView sName)
   {
@@ -186,8 +159,7 @@ namespace xiiBuiltinPipelineUtils
     constants.OzoneAbsorption                   = xiiVec4(settings.m_vOzoneAbsorption, 0.0f);
     constants.PlanetUpAndGroundAltitudeMeters   = xiiVec4(settings.m_vPlanetUpDirection.GetNormalized(), settings.m_fGroundAltitudeMeters);
     constants.SunDiskParameters                 = xiiVec4(settings.m_fSunLimbDarkening, 0.0f, 0.0f, 0.0f);
-    constants.SampleCounts                      = xiiVec4U32(settings.m_uiTransmittanceIntegrationSteps, settings.m_uiMultiScatterSqrtSamples,
-                                                             settings.m_uiSkyViewIntegrationSteps, settings.m_uiAerialPerspectiveSteps);
+    constants.SampleCounts                      = xiiVec4U32(settings.m_uiTransmittanceIntegrationSteps, settings.m_uiMultiScatterSqrtSamples, settings.m_uiSkyViewIntegrationSteps, settings.m_uiAerialPerspectiveSteps);
     return constants;
   }
 

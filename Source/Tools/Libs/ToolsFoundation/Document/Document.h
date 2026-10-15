@@ -109,11 +109,16 @@ public:
   xiiStringView GetDocumentPath() const { return m_sDocumentPath; }
 
   /// Saves the document, if it is modified.
-  /// If bForce is true, the document will be written, even if it is not considered modified.
+  /// Read-only documents and documents with objects skipped during loading cannot be written.
+  /// bForce bypasses only the modified-state check, never these validation failures.
+  /// Success clears dirty state only if the serialized revision is still current.
   xiiStatus SaveDocument(bool bForce = false);
   /// Callback type for asynchronous save operations.
   using AfterSaveCallback = xiiDelegate<void(xiiDocument*, xiiStatus)>;
-  /// Saves the document asynchronously. Calls the callback when done.
+  /// Saves asynchronously and calls the callback on the main thread when done.
+  /// If validation fails, calls a valid callback immediately with failure and returns an invalid task ID.
+  /// If no save is needed, returns an invalid task ID without invoking the callback.
+  /// Captures document content on the calling thread; subsequent edits remain dirty until saved.
   xiiTaskGroupID SaveDocumentAsync(AfterSaveCallback callback, bool bForce = false);
   /// Updates the document path after a rename operation.
   void DocumentRenamed(xiiStringView sNewDocumentPath);
@@ -315,10 +320,10 @@ protected:
 private:
   friend class xiiDocumentManager;
   friend class xiiCommandHistory;
-  friend class xiiSaveDocumentTask;
   friend class xiiAfterSaveDocumentTask;
 
-  void SetupDocumentInfo(const xiiDocumentTypeDescriptor* pTypeDescriptor);
+  xiiStatus ValidateSaveDocument() const;
+  void      SetupDocumentInfo(const xiiDocumentTypeDescriptor* pTypeDescriptor);
 
   /// The document manager that owns this document.
   xiiDocumentManager* m_pDocumentManager = nullptr;
@@ -330,6 +335,7 @@ private:
   bool      m_bWindowRequested      = false;
   bool      m_bAddToRecentFilesList = true;
   xiiTime   m_ModifiedTime;
+  xiiUInt64 m_uiModificationRevision = 0; ///< Advances for every modification, even while already dirty.
 
   /// Set of unknown object types encountered during loading.
   xiiSet<xiiString> m_UnknownObjectTypes;
@@ -337,5 +343,4 @@ private:
   xiiUInt32 m_uiUnknownObjectTypeInstances = 0U;
 
   xiiTaskGroupID m_ActiveSaveTask;
-  xiiStatus      m_LastSaveResult = XII_SUCCESS;
 };

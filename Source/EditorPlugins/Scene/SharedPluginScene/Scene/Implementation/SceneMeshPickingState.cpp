@@ -28,8 +28,7 @@ void xiiSceneMeshPickingState::OnResourceEvent(const xiiResourceEvent& event)
   if (event.m_Type != xiiResourceEvent::Type::ResourceContentUpdated && event.m_Type != xiiResourceEvent::Type::ResourceContentUnloading)
     return;
   const auto* type = event.m_pResource->GetDynamicRTTI();
-  if (type->IsDerivedFrom<xiiMeshResource>() || type->IsDerivedFrom<xiiMeshBufferResource>() || type->IsDerivedFrom<xiiMaterialResource>() || type->IsDerivedFrom<xiiTexture2DResource>() ||
-      type->IsDerivedFrom<xiiShaderResource>() || type->IsDerivedFrom<xiiShaderPermutationResource>())
+  if (type->IsDerivedFrom<xiiMeshResource>() || type->IsDerivedFrom<xiiMeshBufferResource>() || type->IsDerivedFrom<xiiMaterialResource>() || type->IsDerivedFrom<xiiTexture2DResource>() || type->IsDerivedFrom<xiiShaderResource>() || type->IsDerivedFrom<xiiShaderPermutationResource>())
     m_ResourceEpoch.Increment(); // Loader threads never mutate readback or owner storage.
 }
 
@@ -126,8 +125,7 @@ xiiResult xiiSceneMeshPickingState::Capture(xiiRenderPipelinePassContext& contex
     XII_SUCCEED_OR_RETURN(xiiSceneDatabaseManager::ResolveExtractedMesh(m_Scene.GetHandle(), instance.m_uiObjectId, owner.m_Source));
     const xiiGameObject*        object    = nullptr;
     const xiiMeshComponentBase* component = nullptr;
-    if (!context.m_pView->GetWorld()->TryGetObject(owner.m_Source.m_hOwnerObject, object) ||
-        !context.m_pView->GetWorld()->TryGetComponent(owner.m_Source.m_hOwnerComponent, component) || component->GetOwner() != object)
+    if (!context.m_pView->GetWorld()->TryGetObject(owner.m_Source.m_hOwnerObject, object) || !context.m_pView->GetWorld()->TryGetComponent(owner.m_Source.m_hOwnerComponent, component) || component->GetOwner() != object)
       return XII_FAILURE;
     owner.m_Transform       = object->GetGlobalTransform();
     owner.m_hMesh           = component->GetMesh();
@@ -144,10 +142,7 @@ bool xiiSceneMeshPickingState::Resolve(const xiiView& view, xiiUInt32 id, const 
     return false;
   const xiiGameObject*        object    = nullptr;
   const xiiMeshComponentBase* component = nullptr;
-  if (!view.GetWorld()->TryGetObject(out_owner->m_Source.m_hOwnerObject, object) ||
-      !view.GetWorld()->TryGetComponent(out_owner->m_Source.m_hOwnerComponent, component) || component->GetOwner() != object ||
-      !object->IsActive() || !component->IsActive() || object->GetGlobalTransform() != out_owner->m_Transform ||
-      component->GetMesh() != out_owner->m_hMesh || ConfigurationSignature(*component) != out_owner->m_uiConfiguration)
+  if (!view.GetWorld()->TryGetObject(out_owner->m_Source.m_hOwnerObject, object) || !view.GetWorld()->TryGetComponent(out_owner->m_Source.m_hOwnerComponent, component) || component->GetOwner() != object || !object->IsActive() || !component->IsActive() || object->GetGlobalTransform() != out_owner->m_Transform || component->GetMesh() != out_owner->m_hMesh || ConfigurationSignature(*component) != out_owner->m_uiConfiguration)
     return false;
   const auto& tags = object->GetTags();
   return !tags.IsAnySet(view.m_ExcludeTags) && (view.m_IncludeTags.IsEmpty() || tags.IsAnySet(view.m_IncludeTags));

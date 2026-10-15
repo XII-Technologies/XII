@@ -47,9 +47,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 8, xiiRTTIDefaultAll
     XII_MEMBER_PROPERTY("MipLODBias", m_fMipLODBias),
     XII_MEMBER_PROPERTY("MinLOD", m_fMinLOD)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("MaxLOD", m_fMaxLOD)->AddAttributes(new xiiDefaultValueAttribute(xiiMath::MaxValue<float>()), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_ENUM_MEMBER_PROPERTY("AddressModeU", xiiGALTextureAddressMode, m_AddressModeU),
-    XII_ENUM_MEMBER_PROPERTY("AddressModeV", xiiGALTextureAddressMode, m_AddressModeV),
-    XII_ENUM_MEMBER_PROPERTY("AddressModeW", xiiGALTextureAddressMode, m_AddressModeW),
+    XII_ENUM_MEMBER_PROPERTY("AddressModeU", xiiGALTextureAddressMode, m_AddressModeU)->AddAttributes(new xiiDefaultValueAttribute(xiiGALTextureAddressMode::Wrap)),
+    XII_ENUM_MEMBER_PROPERTY("AddressModeV", xiiGALTextureAddressMode, m_AddressModeV)->AddAttributes(new xiiDefaultValueAttribute(xiiGALTextureAddressMode::Wrap)),
+    XII_ENUM_MEMBER_PROPERTY("AddressModeW", xiiGALTextureAddressMode, m_AddressModeW)->AddAttributes(new xiiDefaultValueAttribute(xiiGALTextureAddressMode::Wrap)),
 
     XII_ENUM_MEMBER_PROPERTY("ChannelMapping", xiiTexture2DChannelMappingEnum, m_ChannelMapping),
 
@@ -155,9 +155,7 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
           break;
       }
 
-      if (mapping == xiiTexture2DChannelMappingEnum::R1 || mapping == xiiTexture2DChannelMappingEnum::RGBA1 ||
-          mapping == xiiTexture2DChannelMappingEnum::R1_G2_B3_A4 || mapping == xiiTexture2DChannelMappingEnum::RGB1_A2 ||
-          mapping == xiiTexture2DChannelMappingEnum::R1_G2_B3_A4)
+      if (mapping == xiiTexture2DChannelMappingEnum::R1 || mapping == xiiTexture2DChannelMappingEnum::RGBA1 || mapping == xiiTexture2DChannelMappingEnum::R1_G2_B3_A4 || mapping == xiiTexture2DChannelMappingEnum::RGB1_A2 || mapping == xiiTexture2DChannelMappingEnum::R1_G2_B3_A4)
       {
         if (mapping != xiiTexture2DChannelMappingEnum::R1)
         {
@@ -324,16 +322,11 @@ public:
       {
         pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Auto);
       }
-      else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Other_sRGB" ||
-               pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Diffuse" ||
-               pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::EmissiveColor")
+      else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Other_sRGB" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Diffuse" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::EmissiveColor")
       {
         pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Color);
       }
-      else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Height" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Mask" ||
-               pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::LookupTable" ||
-               pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Other_Linear" ||
-               pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::EmissiveMask")
+      else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Height" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Mask" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::LookupTable" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Other_Linear" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::EmissiveMask")
       {
         pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Linear);
       }

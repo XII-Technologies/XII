@@ -81,8 +81,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DecalDescriptor)
     XII_TEST_BOOL(loaded.Deserialize(future).Failed());
     bytes[0]                    = 1;
     const float invalidEmissive = xiiMath::NaN<float>();
-    xiiMemoryUtils::Copy(bytes.GetData() + bytes.GetCount() - sizeof(xiiUInt8) - sizeof(float),
-                         reinterpret_cast<const xiiUInt8*>(&invalidEmissive), sizeof(invalidEmissive));
+    xiiMemoryUtils::Copy(bytes.GetData() + bytes.GetCount() - sizeof(xiiUInt8) - sizeof(float), reinterpret_cast<const xiiUInt8*>(&invalidEmissive), sizeof(invalidEmissive));
     xiiRawMemoryStreamReader invalidParameters(bytes.GetData(), bytes.GetCount());
     XII_TEST_BOOL(loaded.Deserialize(invalidParameters).Failed());
     XII_TEST_FLOAT(loaded.m_fEmissive, 8, 0);

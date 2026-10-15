@@ -27,8 +27,7 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
   if (ranges.IsEmpty())
     return XII_SUCCESS;
 
-  if (m_Topology != xiiGALPrimitiveTopology::TriangleList || m_uiIndexCount % 3 != 0 ||
-      (m_IndexType != xiiGALValueType::UInt16 && m_IndexType != xiiGALValueType::UInt32))
+  if (m_Topology != xiiGALPrimitiveTopology::TriangleList || m_uiIndexCount % 3 != 0 || (m_IndexType != xiiGALValueType::UInt16 && m_IndexType != xiiGALValueType::UInt32))
     return XII_FAILURE;
 
   const xiiUInt32 indexSize = m_IndexType == xiiGALValueType::UInt16 ? 2 : 4;
@@ -51,9 +50,7 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
     if (stream.m_Semantic == xiiMeshVertexSemantic::Position)
       position = &stream;
   }
-  if (position == nullptr || position->m_Format != xiiMeshVertexStreamFormat::Float3 || m_uiVertexCount == 0 ||
-      position->m_uiStride < position->m_uiOffset + sizeof(xiiVec3) ||
-      static_cast<xiiUInt64>(m_uiVertexCount - 1) * position->m_uiStride + position->m_uiOffset + sizeof(xiiVec3) > m_VertexData.GetCount())
+  if (position == nullptr || position->m_Format != xiiMeshVertexStreamFormat::Float3 || m_uiVertexCount == 0 || position->m_uiStride < position->m_uiOffset + sizeof(xiiVec3) || static_cast<xiiUInt64>(m_uiVertexCount - 1) * position->m_uiStride + position->m_uiOffset + sizeof(xiiVec3) > m_VertexData.GetCount())
     return XII_FAILURE;
 
   xiiDynamicArray<xiiVec3> positions;
@@ -102,21 +99,17 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
       }
     }
 
-    const size_t count          = meshopt_buildMeshlets(optimizedMeshlets.GetData(), optimizedVertices.GetData(), optimizedTriangles.GetData(),
-                                                        indices.GetData(), indices.GetCount(), &positions[0].x, positions.GetCount(), sizeof(xiiVec3), uiMaxVertices, uiMaxPrimitives, 0.5f);
+    const size_t count          = meshopt_buildMeshlets(optimizedMeshlets.GetData(), optimizedVertices.GetData(), optimizedTriangles.GetData(), indices.GetData(), indices.GetCount(), &positions[0].x, positions.GetCount(), sizeof(xiiVec3), uiMaxVertices, uiMaxPrimitives, 0.5f);
     xiiUInt32    firstPrimitive = range.m_uiFirstPrimitive;
     for (size_t i = 0; i < count; ++i)
     {
       const auto& source = optimizedMeshlets[static_cast<xiiUInt32>(i)];
-      if (source.vertex_count > xiiMath::MaxValue<xiiUInt32>() - m_MeshletVertexRemap.GetCount() ||
-          source.triangle_count * 3 > xiiMath::MaxValue<xiiUInt32>() - m_MeshletPrimitiveIndices.GetCount() ||
-          m_Meshlets.GetCount() == xiiMath::MaxValue<xiiUInt32>())
+      if (source.vertex_count > xiiMath::MaxValue<xiiUInt32>() - m_MeshletVertexRemap.GetCount() || source.triangle_count * 3 > xiiMath::MaxValue<xiiUInt32>() - m_MeshletPrimitiveIndices.GetCount() || m_Meshlets.GetCount() == xiiMath::MaxValue<xiiUInt32>())
       {
         clear();
         return XII_FAILURE;
       }
-      const auto bounds          = meshopt_computeMeshletBounds(optimizedVertices.GetData() + source.vertex_offset,
-                                                                optimizedTriangles.GetData() + source.triangle_offset, source.triangle_count, &positions[0].x, positions.GetCount(), sizeof(xiiVec3));
+      const auto bounds          = meshopt_computeMeshletBounds(optimizedVertices.GetData() + source.vertex_offset, optimizedTriangles.GetData() + source.triangle_offset, source.triangle_count, &positions[0].x, positions.GetCount(), sizeof(xiiVec3));
       auto&      meshlet         = m_Meshlets.ExpandAndGetRef();
       meshlet.m_uiFirstPrimitive = firstPrimitive;
       firstPrimitive += source.triangle_count;

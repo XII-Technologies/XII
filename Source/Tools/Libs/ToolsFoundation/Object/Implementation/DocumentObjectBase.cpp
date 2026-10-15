@@ -69,8 +69,7 @@ void xiiDocumentObject::RemoveSubObject(xiiDocumentObject* pObject)
   // Property patching
   const xiiRTTI* pType = accessor.GetType();
   auto*          pProp = pType->FindPropertyByName(pObject->m_sParentProperty);
-  if (pProp->GetCategory() == xiiPropertyCategory::Array || pProp->GetCategory() == xiiPropertyCategory::Set ||
-      pProp->GetCategory() == xiiPropertyCategory::Map)
+  if (pProp->GetCategory() == xiiPropertyCategory::Array || pProp->GetCategory() == xiiPropertyCategory::Set || pProp->GetCategory() == xiiPropertyCategory::Map)
   {
     xiiVariant index = accessor.GetPropertyChildIndex(pObject->m_sParentProperty, pObject->GetGuid());
     bool       bRes  = accessor.RemoveValue(pObject->m_sParentProperty, index);
@@ -138,9 +137,8 @@ bool xiiDocumentObject::IsOnHeap() const
 {
   /// \todo This crashes when the pointer is nullptr, which appears to be possible
   /// It happened for me when duplicating (CTRL+D) 2 objects 2 times then moving them and finally undoing everything
-  XII_ASSERT_DEV(m_pParent != nullptr,
-                 "Object being modified is not part of the document, e.g. may be in the undo stack instead. "
-                 "This could happen if within an undo / redo op some callback tries to create a new undo scope / update prefabs etc.");
+  XII_ASSERT_DEV(m_pParent != nullptr, "Object being modified is not part of the document, e.g. may be in the undo stack instead. "
+                                       "This could happen if within an undo / redo op some callback tries to create a new undo scope / update prefabs etc.");
 
   if (GetParent() == GetDocumentObjectManager()->GetRootObject())
     return true;

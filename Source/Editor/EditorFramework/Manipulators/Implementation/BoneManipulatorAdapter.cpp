@@ -47,10 +47,7 @@ void xiiBoneManipulatorAdapter::Update()
 void xiiBoneManipulatorAdapter::AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
 {
   // Curator events arrive during its main-thread tick. Defer rebuilding window-owned gizmos until redraw.
-  if (e.m_Type == xiiAssetCuratorEvent::Type::AssetListReset ||
-      ((e.m_Type == xiiAssetCuratorEvent::Type::AssetAdded || e.m_Type == xiiAssetCuratorEvent::Type::AssetRemoved ||
-        e.m_Type == xiiAssetCuratorEvent::Type::AssetUpdated || e.m_Type == xiiAssetCuratorEvent::Type::AssetMoved) &&
-       (!m_SkeletonAssetGuid.IsValid() || e.m_AssetGuid == m_SkeletonAssetGuid)))
+  if (e.m_Type == xiiAssetCuratorEvent::Type::AssetListReset || ((e.m_Type == xiiAssetCuratorEvent::Type::AssetAdded || e.m_Type == xiiAssetCuratorEvent::Type::AssetRemoved || e.m_Type == xiiAssetCuratorEvent::Type::AssetUpdated || e.m_Type == xiiAssetCuratorEvent::Type::AssetMoved) && (!m_SkeletonAssetGuid.IsValid() || e.m_AssetGuid == m_SkeletonAssetGuid)))
     m_bSkeletonMetadataDirty = true;
 }
 
@@ -148,8 +145,7 @@ xiiResult xiiBoneManipulatorAdapter::RetrieveBones()
   const auto* attribute        = static_cast<const xiiBoneManipulatorAttribute*>(m_pManipulatorAttr);
   const auto* property         = GetProperty(attribute->GetTransformProperty());
   const auto* skeletonProperty = GetProperty(attribute->m_sProperty2);
-  if (property == nullptr || skeletonProperty == nullptr || property->GetCategory() != xiiPropertyCategory::Map ||
-      property->GetSpecificType() != xiiGetStaticRTTI<xiiTransform>())
+  if (property == nullptr || skeletonProperty == nullptr || property->GetCategory() != xiiPropertyCategory::Map || property->GetSpecificType() != xiiGetStaticRTTI<xiiTransform>())
     return XII_FAILURE;
 
   xiiVariant skeleton;

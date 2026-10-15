@@ -134,14 +134,7 @@ void xiiQtCuratorControl::SlotUpdateTransformStats()
 
   if (uiNumAssets > 0)
   {
-    s.SetFormat("Unknown: {}\nImport Needed: {}\nTransform Needed: {}\nThumbnail Needed: {}\nMissing Dependency: {}\nCircular Dependency: {}\nFailed Transform: {}",
-                sections[xiiAssetInfo::TransformState::Unknown],
-                sections[xiiAssetInfo::TransformState::NeedsImport],
-                sections[xiiAssetInfo::TransformState::NeedsTransform],
-                sections[xiiAssetInfo::TransformState::NeedsThumbnail],
-                sections[xiiAssetInfo::TransformState::MissingTransformDependency] + sections[xiiAssetInfo::TransformState::MissingThumbnailDependency] + sections[xiiAssetInfo::TransformState::MissingPackageDependency],
-                sections[xiiAssetInfo::TransformState::CircularDependency],
-                sections[xiiAssetInfo::TransformState::TransformError]);
+    s.SetFormat("Unknown: {}\nImport Needed: {}\nTransform Needed: {}\nThumbnail Needed: {}\nMissing Dependency: {}\nCircular Dependency: {}\nFailed Transform: {}", sections[xiiAssetInfo::TransformState::Unknown], sections[xiiAssetInfo::TransformState::NeedsImport], sections[xiiAssetInfo::TransformState::NeedsTransform], sections[xiiAssetInfo::TransformState::NeedsThumbnail], sections[xiiAssetInfo::TransformState::MissingTransformDependency] + sections[xiiAssetInfo::TransformState::MissingThumbnailDependency] + sections[xiiAssetInfo::TransformState::MissingPackageDependency], sections[xiiAssetInfo::TransformState::CircularDependency], sections[xiiAssetInfo::TransformState::TransformError]);
     setToolTip(s.GetData());
   }
   else

@@ -90,8 +90,7 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedHiZ)
   {
     xiiGpuHiZPyramidDescription description;
     description.m_uiFramesInFlight = i + 2;
-    if (!XII_TEST_RESULT(histories[i].Initialize(environment.GetDevice(), description)) ||
-        !XII_TEST_RESULT(histories[i].Resize(8, 8)) || !XII_TEST_RESULT(contexts[i].Initialize("Interleaved Hi-Z")))
+    if (!XII_TEST_RESULT(histories[i].Initialize(environment.GetDevice(), description)) || !XII_TEST_RESULT(histories[i].Resize(8, 8)) || !XII_TEST_RESULT(contexts[i].Initialize("Interleaved Hi-Z")))
       return;
   }
 
@@ -208,9 +207,7 @@ public:
     for (const auto& pair : names)
       if (!context.m_Graph.FindTexture(pair[0]).IsValid() || !context.m_Graph.FindTexture(pair[1]).IsValid())
         return XII_FAILURE;
-    if (!context.m_Graph.FindTexture("DDGIProbeIrradianceAtlas").IsValid() ||
-        !context.m_Graph.FindTexture("DDGIProbeDistanceAtlas").IsValid() ||
-        !context.m_Graph.FindBuffer("SparseVoxelRadiancePool").IsValid())
+    if (!context.m_Graph.FindTexture("DDGIProbeIrradianceAtlas").IsValid() || !context.m_Graph.FindTexture("DDGIProbeDistanceAtlas").IsValid() || !context.m_Graph.FindBuffer("SparseVoxelRadiancePool").IsValid())
       return XII_FAILURE;
     context.m_Graph.AddPass<Bindings>("Check per-view temporal bindings", xiiGALCommandQueueFlags::Graphics, [&](Bindings& data, xiiRenderGraphBuilder& builder) {
         data.m_GIAtlases[0] = builder.ReadTexture(context.m_Graph.FindTexture("DDGIProbeIrradianceAtlas"), xiiGALResourceStateFlags::ShaderResource);
@@ -261,10 +258,9 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
   // This fixture checks allocation continuity at a fixed resolution. The production PID
   // changes resolution under load and correctly recreates all nine temporal histories.
   // Pin both bounds so shader compilation, validation and other tests cannot resize it.
-  auto* minimum = xiiCVar::FindCVarByName("Rendering.DynamicResolution.MinimumRenderScale");
-  auto* maximum = xiiCVar::FindCVarByName("Rendering.DynamicResolution.MaximumRenderScale");
-  if (!XII_TEST_BOOL(minimum && maximum) ||
-      !XII_TEST_BOOL(minimum->GetType() == xiiCVarType::Float && maximum->GetType() == xiiCVarType::Float))
+  auto* minimum = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MinimumRenderScale");
+  auto* maximum = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MaximumRenderScale");
+  if (!XII_TEST_BOOL(minimum && maximum) || !XII_TEST_BOOL(minimum->GetType() == xiiCVarType::Float && maximum->GetType() == xiiCVarType::Float))
     return;
   auto&      minimumScale    = *static_cast<xiiCVarFloat*>(minimum);
   auto&      maximumScale    = *static_cast<xiiCVarFloat*>(maximum);
@@ -331,8 +327,7 @@ XII_CREATE_SIMPLE_TEST(TemporalHistory, InterleavedDefaultPipelines)
       // must describe its own camera even when another world rendered between its frames.
       xiiGpuDDGIProbeState   probe;
       xiiGpuSparseVoxelLevel level;
-      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), checks[view]->m_pProbeStates, 0, probe) ||
-          !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), checks[view]->m_pClipmapLevels, 0, level))
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), checks[view]->m_pProbeStates, 0, probe) || !xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), checks[view]->m_pClipmapLevels, 0, level))
         return;
       const auto position = cameras[view].GetPosition();
       XII_TEST_BOOL(xiiMath::Abs(probe.m_vPositionAndLastUpdate.x - position.x) <= 48.0f);

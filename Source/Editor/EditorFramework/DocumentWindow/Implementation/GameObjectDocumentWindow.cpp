@@ -11,6 +11,7 @@
 #include <EditorFramework/InputContexts/CameraMoveContext.h>
 #include <EditorFramework/Manipulators/ManipulatorAdapterRegistry.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>
+#include <EditorFramework/Preferences/ScenePreferences.h>
 
 xiiQtGameObjectDocumentWindow::xiiQtGameObjectDocumentWindow(xiiGameObjectDocument* pDocument) :
   xiiQtEngineDocumentWindow(pDocument)
@@ -44,6 +45,9 @@ xiiWorldSettingsMsgToEngine xiiQtGameObjectDocumentWindow::GetWorldSettings() co
 xiiGridSettingsMsgToEngine xiiQtGameObjectDocumentWindow::GetGridSettings() const
 {
   xiiGridSettingsMsgToEngine msg;
+  msg.m_vGridCenter.SetZero();
+  msg.m_vGridTangent1.SetZero();
+  msg.m_vGridTangent2.SetZero();
 
   if (auto pTool = GetGameObjectDocument()->GetActiveEditTool())
   {
@@ -52,6 +56,16 @@ xiiGridSettingsMsgToEngine xiiQtGameObjectDocumentWindow::GetGridSettings() cons
   else
   {
     xiiManipulatorAdapterRegistry::GetSingleton()->QueryGridSettings(GetDocument(), msg);
+  }
+
+  const auto* preferences = xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetDocument());
+  if (preferences->GetShowGrid() && msg.m_vGridTangent1.IsZero())
+  {
+    // A scene grid must remain visible without a selection or an active gizmo.
+    msg.m_fGridDensity = xiiMath::Max(xiiSnapProvider::GetTranslationSnapValue(), 0.1f);
+    msg.m_vGridCenter.SetZero();
+    msg.m_vGridTangent1 = xiiVec3::MakeAxisX();
+    msg.m_vGridTangent2 = xiiVec3::MakeAxisY();
   }
 
   return msg;

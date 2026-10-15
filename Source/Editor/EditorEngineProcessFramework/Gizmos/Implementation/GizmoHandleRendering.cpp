@@ -29,9 +29,7 @@ xiiResult xiiEngineGizmoHandle::ComputeViewTransform(const xiiView& view, xiiMat
 {
   const auto* camera   = view.GetCamera();
   const auto& viewport = view.GetViewport();
-  if (!m_bVisible || !camera || !m_Transformation.IsValid() || !m_Color.IsValid() ||
-      !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 ||
-      camera->GetCameraMode() == xiiCameraMode::None || (camera->IsOrthographic() && !m_bShowInOrtho))
+  if (!m_bVisible || !camera || !m_Transformation.IsValid() || !m_Color.IsValid() || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) || viewport.width <= 0 || viewport.height <= 0 || camera->GetCameraMode() == xiiCameraMode::None || (camera->IsOrthographic() && !m_bShowInOrtho))
     return XII_FAILURE;
 
   const float fProjectionScale = xiiMath::Abs(view.GetProjectionMatrix(xiiCameraEye::Left).Element(1, 1));
@@ -107,16 +105,14 @@ xiiResult xiiEngineGizmoHandle::Draw(const xiiView& view, xiiUInt32 uiHighlightI
 {
   if (!m_bVisible || (view.GetCamera() && view.GetCamera()->IsOrthographic() && !m_bShowInOrtho))
     return XII_SUCCESS;
-  if (view.GetCamera() && !view.GetCamera()->IsOrthographic() && m_Transformation.IsValid() &&
-      (m_Transformation.m_vPosition - view.GetCamera()->GetCenterPosition()).Dot(view.GetCamera()->GetCenterDirForwards()) <= 0)
+  if (view.GetCamera() && !view.GetCamera()->IsOrthographic() && m_Transformation.IsValid() && (m_Transformation.m_vPosition - view.GetCamera()->GetCenterPosition()).Dot(view.GetCamera()->GetCenterDirForwards()) <= 0)
     return XII_SUCCESS;
   xiiMat4 transform;
   float   fPixelSize;
   XII_SUCCEED_OR_RETURN(ComputeViewTransform(view, transform, fPixelSize));
   XII_SUCCEED_OR_RETURN(EnsureGeometry());
   const xiiColor color = m_uiPickingID != 0 && m_uiPickingID == uiHighlightID ? xiiColor(0.9f, 0.9f, 0.1f, m_Color.a) : m_Color;
-  return xiiDebugRenderer::DrawGeometry(view, m_bVisualizer ? *m_pWireGeometry : m_pGeometry->GetGeometry(), color, transform,
-                                        m_bAlwaysOnTop ? xiiDebugRendererDepthMode::Overlay : xiiDebugRendererDepthMode::DepthTested);
+  return xiiDebugRenderer::DrawGeometry(view, m_bVisualizer ? *m_pWireGeometry : m_pGeometry->GetGeometry(), color, transform, m_bAlwaysOnTop ? xiiDebugRendererDepthMode::Overlay : xiiDebugRendererDepthMode::DepthTested);
 }
 
 xiiResult xiiEngineGizmoHandle::PickRay(const xiiView& view, const xiiVec3& vStart, const xiiVec3& vDirection, float& out_fRayTime)

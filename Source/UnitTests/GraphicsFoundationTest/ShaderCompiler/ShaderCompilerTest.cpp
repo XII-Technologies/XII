@@ -97,12 +97,11 @@ void PSMain() {}
   {
     xiiHybridArray<xiiHashedString, 16>           dynamicVariables;
     xiiHybridArray<xiiGALPermutationVariable, 16> fixedVariables;
-    xiiGALShaderParser::ParsePermutationSection(
-      "QUALITY\n"
-      "// ignored comment\n"
-      "MODE = MODE_FAST\n"
-      "SKINNED\n",
-      dynamicVariables, fixedVariables);
+    xiiGALShaderParser::ParsePermutationSection("QUALITY\n"
+                                                "// ignored comment\n"
+                                                "MODE = MODE_FAST\n"
+                                                "SKINNED\n",
+                                                dynamicVariables, fixedVariables);
 
     XII_TEST_INT(dynamicVariables.GetCount(), 2U);
     XII_TEST_STRING(dynamicVariables[0].GetView(), "QUALITY");
@@ -120,8 +119,7 @@ void PSMain() {}
 
     defaultValue = xiiVariant();
     definition   = {};
-    xiiGALShaderParser::ParsePermutationVariableConfiguration(
-      "enum QUALITY { QUALITY_LOW = 2, default = 3, QUALITY_HIGH = 4 };", defaultValue, definition);
+    xiiGALShaderParser::ParsePermutationVariableConfiguration("enum QUALITY { QUALITY_LOW = 2, default = 3, QUALITY_HIGH = 4 };", defaultValue, definition);
     XII_TEST_STRING(definition.m_sName, "QUALITY");
     XII_TEST_INT(definition.m_uiDefaultValue, 3U);
     XII_TEST_INT(defaultValue.Get<xiiUInt32>(), 3U);
@@ -234,12 +232,7 @@ RaytracingAccelerationStructure Scene : register(t4, space0);
     }
 
     xiiStringBuilder patchedSource;
-    xiiGALShaderParser::ApplyShaderResourceBindings(
-      "TEST", szSource, resources, bindings,
-      [](xiiStringView, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration) {
-        out_sDeclaration.SetFormat("{} : register(x{}, space{})", sDeclaration, binding.m_uiBindIndex, binding.m_uiDescriptorSet);
-      },
-      patchedSource);
+    xiiGALShaderParser::ApplyShaderResourceBindings("TEST", szSource, resources, bindings, [](xiiStringView, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration) { out_sDeclaration.SetFormat("{} : register(x{}, space{})", sDeclaration, binding.m_uiBindIndex, binding.m_uiDescriptorSet); }, patchedSource);
 
     XII_TEST_BOOL(patchedSource.FindSubString("Texture2D<float4> Albedo : register(x7, space4)") != nullptr);
     XII_TEST_BOOL(patchedSource.FindSubString("RWStructuredBuffer<float4> Output[4] : register(x8, space4)") != nullptr);
@@ -262,26 +255,25 @@ RaytracingAccelerationStructure Scene : register(t4, space0);
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Shader state parsing and serialization")
   {
     xiiGALShaderStateResourceDescriptor state;
-    XII_TEST_BOOL(state.Parse(
-                         "AlphaToCoverage = true\n"
-                         "IndependentBlend = true\n"
-                         "BlendEnable0 = true\n"
-                         "SourceBlend0 = BlendFactor_SourceAlpha\n"
-                         "DestinationBlend0 = BlendFactor_InverseSourceAlpha\n"
-                         "ColorMask0 = 5\n"
-                         "FillMode = FillMode_Wireframe\n"
-                         "CullMode = CullMode_Front\n"
-                         "FrontCounterClockwise = true\n"
-                         "DepthBias = -7\n"
-                         "DepthBiasClamp = 1.25\n"
-                         "SlopeScaledDepthBias = 2.5\n"
-                         "DepthEnable = true\n"
-                         "DepthWriteEnable = false\n"
-                         "ComparisonDepthFunction = ComparisonFunction_GreaterEqual\n"
-                         "StencilEnable = true\n"
-                         "StencilReadMask = 63\n"
-                         "StencilWriteMask = 31\n"
-                         "FrontFaceStencilPassOperation = StencilOperation_Replace\n")
+    XII_TEST_BOOL(state.Parse("AlphaToCoverage = true\n"
+                              "IndependentBlend = true\n"
+                              "BlendEnable0 = true\n"
+                              "SourceBlend0 = BlendFactor_SourceAlpha\n"
+                              "DestinationBlend0 = BlendFactor_InverseSourceAlpha\n"
+                              "ColorMask0 = 5\n"
+                              "FillMode = FillMode_Wireframe\n"
+                              "CullMode = CullMode_Front\n"
+                              "FrontCounterClockwise = true\n"
+                              "DepthBias = -7\n"
+                              "DepthBiasClamp = 1.25\n"
+                              "SlopeScaledDepthBias = 2.5\n"
+                              "DepthEnable = true\n"
+                              "DepthWriteEnable = false\n"
+                              "ComparisonDepthFunction = ComparisonFunction_GreaterEqual\n"
+                              "StencilEnable = true\n"
+                              "StencilReadMask = 63\n"
+                              "StencilWriteMask = 31\n"
+                              "FrontFaceStencilPassOperation = StencilOperation_Replace\n")
                     .Succeeded());
 
     XII_TEST_BOOL(state.m_BlendDescription.m_bAlphaToCoverage);

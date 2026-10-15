@@ -30,8 +30,7 @@ namespace
   {
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == immutableSampler.m_SamplerOrTextureName &&
-          (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler))
+      if (resource.m_sName == immutableSampler.m_SamplerOrTextureName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler))
       {
         out_uiBindSlot = resource.m_uiBindSlot;
         out_uiBindSet  = resource.m_uiBindSet;

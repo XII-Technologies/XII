@@ -235,24 +235,12 @@ namespace
     const xiiMaterialRuntimeState runtimeState = material->GetRuntimeState();
     result.Metadata.z                          = runtimeState.m_ShadingModel.GetValue();
     result.Metadata.w                          = runtimeState.m_FeatureFlags.GetValue();
-    result.Rendering                           = xiiVec4U32(
-      static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()),
-      runtimeState.m_BlendMode.GetValue(),
-      runtimeState.m_uiTextureMask,
-      0U);
+    result.Rendering                           = xiiVec4U32(static_cast<xiiUInt32>(runtimeState.IsMasked() ? xiiMaterialAlphaMode::Mask : runtimeState.m_AlphaMode.GetValue()), runtimeState.m_BlendMode.GetValue(), runtimeState.m_uiTextureMask, 0U);
 
     xiiMaterialInstanceSnapshot snapshot;
     material->CreateSnapshot(snapshot);
-    result.TextureIndices0 = xiiVec4U32(
-      ResolveMaterialTexture(snapshot, "BaseColorTexture"),
-      ResolveMaterialTexture(snapshot, "NormalTexture"),
-      ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"),
-      ResolveMaterialTexture(snapshot, "OcclusionTexture"));
-    result.TextureIndices1 = xiiVec4U32(
-      ResolveMaterialTexture(snapshot, "EmissiveTexture"),
-      ResolveMaterialTexture(snapshot, "HeightTexture"),
-      ResolveMaterialTexture(snapshot, "ClearCoatTexture"),
-      ResolveMaterialTexture(snapshot, "TransmissionTexture"));
+    result.TextureIndices0 = xiiVec4U32(ResolveMaterialTexture(snapshot, "BaseColorTexture"), ResolveMaterialTexture(snapshot, "NormalTexture"), ResolveMaterialTexture(snapshot, "MetallicRoughnessTexture"), ResolveMaterialTexture(snapshot, "OcclusionTexture"));
+    result.TextureIndices1 = xiiVec4U32(ResolveMaterialTexture(snapshot, "EmissiveTexture"), ResolveMaterialTexture(snapshot, "HeightTexture"), ResolveMaterialTexture(snapshot, "ClearCoatTexture"), ResolveMaterialTexture(snapshot, "TransmissionTexture"));
     return result;
   }
 
@@ -815,21 +803,9 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
     materialData.PushBack(ResolveRayTracingMaterial(instance.m_Description));
 
     xiiRayTracingGeometryData& gpuGeometry = geometryData.ExpandAndGetRef();
-    gpuGeometry.BufferIndices              = xiiVec4U32(
-      geometry.m_hVertexBufferSRV.m_uiIndex,
-      geometry.m_hIndexBufferSRV.m_uiIndex,
-      geometry.m_uiIndexStride,
-      geometry.m_uiNormalStride);
-    gpuGeometry.VertexLayout = xiiVec4U32(
-      static_cast<xiiUInt32>(geometry.m_uiVertexStride),
-      static_cast<xiiUInt32>(geometry.m_uiVertexBufferOffset),
-      geometry.m_uiNormalOffset,
-      geometry.m_uiTexCoordOffset);
-    gpuGeometry.VertexAttributes = xiiVec4U32(
-      geometry.m_uiTangentOffset,
-      geometry.m_uiTangentStride,
-      geometry.m_uiTexCoordStride,
-      0U);
+    gpuGeometry.BufferIndices              = xiiVec4U32(geometry.m_hVertexBufferSRV.m_uiIndex, geometry.m_hIndexBufferSRV.m_uiIndex, geometry.m_uiIndexStride, geometry.m_uiNormalStride);
+    gpuGeometry.VertexLayout               = xiiVec4U32(static_cast<xiiUInt32>(geometry.m_uiVertexStride), static_cast<xiiUInt32>(geometry.m_uiVertexBufferOffset), geometry.m_uiNormalOffset, geometry.m_uiTexCoordOffset);
+    gpuGeometry.VertexAttributes           = xiiVec4U32(geometry.m_uiTangentOffset, geometry.m_uiTangentStride, geometry.m_uiTexCoordStride, 0U);
   }
 
   if (instanceData.IsEmpty())
@@ -844,9 +820,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
   const bool      bNeedsBuild = !frame.m_bReady || frame.m_uiBuiltRevision != s_pState->m_uiSceneRevision || !pendingBLASBuilds.IsEmpty();
   if (bNeedsBuild)
   {
-    auto pass = graph.AddPass<RayTracingSceneBuildPassData>(
-      "Ray Tracing Scene Build", xiiGALCommandQueueFlags::Compute,
-      [&, uiFrameSlot](RayTracingSceneBuildPassData& data, xiiRenderGraphBuilder& builder) {
+    auto pass = graph.AddPass<RayTracingSceneBuildPassData>("Ray Tracing Scene Build", xiiGALCommandQueueFlags::Compute, [&, uiFrameSlot](RayTracingSceneBuildPassData& data, xiiRenderGraphBuilder& builder) {
         data.m_BLASBuilds         = pendingBLASBuilds;
         data.m_Instances          = instanceData;
         data.m_pTopLevelAS        = frame.m_pTopLevelAS;
@@ -882,9 +856,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
         data.m_hTLASScratchBuffer = builder.ImportBuffer(name, data.m_pTLASScratchBuffer, data.m_pTLASScratchBuffer->GetResourceState());
         data.m_hTLASScratchBuffer = builder.WriteBuffer(data.m_hTLASScratchBuffer, xiiGALResourceStateFlags::BuildASWrite);
         builder.SetPassSideEffects(true);
-        builder.SetPassAllowMerge(false);
-      },
-      [pState](const RayTracingSceneBuildPassData& data, xiiRenderGraphPassContext& context) {
+        builder.SetPassAllowMerge(false); }, [pState](const RayTracingSceneBuildPassData& data, xiiRenderGraphPassContext& context) {
         xiiGALCommandList& commandList = context.GetCommandList();
         commandList.UpdateTLASInstanceBuffer(context.GetBuffer(data.m_hInstanceBuffer), 0U, data.m_Instances.GetArrayPtr());
 
@@ -928,9 +900,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
             frame.m_uiBuiltInstanceCount = data.m_Instances.GetCount();
             frame.m_bReady               = true;
           }
-        }
-      },
-      true);
+        } }, true);
 
     result.m_hSceneDependency = pass.first->m_hInstanceBuffer;
   }
@@ -938,9 +908,7 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
   result.m_pTopLevelAS     = frame.m_pTopLevelAS;
   result.m_uiInstanceCount = instanceData.GetCount();
 
-  auto hitDataUploadPass = graph.AddPass<RayTracingHitDataUploadPassData>(
-    "Ray Tracing Hit Data Upload", xiiGALCommandQueueFlags::Compute,
-    [&, uiFrameSlot](RayTracingHitDataUploadPassData& data, xiiRenderGraphBuilder& builder) {
+  auto hitDataUploadPass = graph.AddPass<RayTracingHitDataUploadPassData>("Ray Tracing Hit Data Upload", xiiGALCommandQueueFlags::Compute, [&, uiFrameSlot](RayTracingHitDataUploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_Materials       = materialData;
       data.m_Geometries      = geometryData;
       data.m_pMaterialBuffer = frame.m_pMaterialBuffer;
@@ -988,18 +956,10 @@ xiiRayTracingSceneManager::BuildHandles xiiRayTracingSceneManager::AddBuildPass(
       }
 
       builder.SetPassSideEffects(true);
-      builder.SetPassAllowMerge(false);
-    },
-    [](const RayTracingHitDataUploadPassData& data, xiiRenderGraphPassContext& context) {
+      builder.SetPassAllowMerge(false); }, [](const RayTracingHitDataUploadPassData& data, xiiRenderGraphPassContext& context) {
       xiiGALCommandList& commandList = context.GetCommandList();
-      commandList.UpdateBuffer(
-        context.GetBuffer(data.m_hMaterialBuffer), 0U,
-        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Materials.GetData()), data.m_Materials.GetCount() * sizeof(xiiRayTracingMaterialData)));
-      commandList.UpdateBuffer(
-        context.GetBuffer(data.m_hGeometryBuffer), 0U,
-        xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Geometries.GetData()), data.m_Geometries.GetCount() * sizeof(xiiRayTracingGeometryData)));
-    },
-    true);
+      commandList.UpdateBuffer(context.GetBuffer(data.m_hMaterialBuffer), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Materials.GetData()), data.m_Materials.GetCount() * sizeof(xiiRayTracingMaterialData)));
+      commandList.UpdateBuffer(context.GetBuffer(data.m_hGeometryBuffer), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Geometries.GetData()), data.m_Geometries.GetCount() * sizeof(xiiRayTracingGeometryData))); }, true);
 
   result.m_hMaterialData = hitDataUploadPass.first->m_hMaterialBuffer;
   result.m_hGeometryData = hitDataUploadPass.first->m_hGeometryBuffer;

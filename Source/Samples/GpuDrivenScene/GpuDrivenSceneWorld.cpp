@@ -254,21 +254,15 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
     {
       const xiiUInt32 objectIndex   = y * m_Configuration.m_uiGridWidth + x;
       const xiiUInt32 geometryIndex = objectIndex % m_GeometryAssets.GetCount();
-      const xiiVec3   position(
-        6.0f + static_cast<float>(y) * m_Configuration.m_fObjectSpacing,
-        (static_cast<float>(x) - static_cast<float>(m_Configuration.m_uiGridWidth - 1U) * 0.5f) * m_Configuration.m_fObjectSpacing,
-        (static_cast<float>(objectIndex % 5U) - 2.0f) * 0.32f);
+      const xiiVec3   position(6.0f + static_cast<float>(y) * m_Configuration.m_fObjectSpacing, (static_cast<float>(x) - static_cast<float>(m_Configuration.m_uiGridWidth - 1U) * 0.5f) * m_Configuration.m_fObjectSpacing, (static_cast<float>(objectIndex % 5U) - 2.0f) * 0.32f);
 
       const xiiGpuGeometryRecord* geometry = xiiGeometryResidencyManager::GetGpuRecord(m_GeometryAssets[geometryIndex].m_hGeometry);
       if (geometry == nullptr)
         return XII_FAILURE;
 
       xiiSceneObjectDesc description;
-      description.m_LocalTransform = xiiMat4::MakeTranslation(position);
-      description.m_LocalBounds    = xiiBoundingBoxSphere::MakeFromCenterExtents(
-        geometry->m_BoundsCenterRadius.GetAsVec3(),
-        geometry->m_BoundsExtents.GetAsVec3(),
-        geometry->m_BoundsCenterRadius.w);
+      description.m_LocalTransform  = xiiMat4::MakeTranslation(position);
+      description.m_LocalBounds     = xiiBoundingBoxSphere::MakeFromCenterExtents(geometry->m_BoundsCenterRadius.GetAsVec3(), geometry->m_BoundsExtents.GetAsVec3(), geometry->m_BoundsCenterRadius.w);
       description.m_uiGeometryIndex = m_GeometryAssets[geometryIndex].m_hGeometry.GetInternalID().m_InstanceIndex;
       description.m_uiMaterialIndex = m_Materials[objectIndex % m_Materials.GetCount()].GetInternalID().m_InstanceIndex;
       description.m_uiUserData      = objectIndex;
@@ -328,9 +322,7 @@ void xiiGpuDrivenSceneWorld::Update(xiiUInt64 uiFrameIndex, xiiTime deltaTime)
   {
     const float fRootAngle  = 0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f));
     const float fRootHeight = 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f));
-    GetScene().SetLocalTransform(m_hAssemblyRoot,
-                                 xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) *
-                                   xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
+    GetScene().SetLocalTransform(m_hAssemblyRoot, xiiMat4::MakeTranslation(xiiVec3(0.0f, 0.0f, fRootHeight)) * xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromRadian(fRootAngle)));
   }
 
   GetScene().CommitFrame(uiFrameIndex);

@@ -42,7 +42,7 @@ xiiShaderPermutationResourceHandle xiiShaderPermutationUtilities::PreloadSingleP
 {
   if (!hShader.IsValid())
     return {};
-  xiiResourceLock<xiiShaderResource> pShader(hShader, bAllowFallback ? xiiResourceAcquireMode::AllowLoadingFallback : xiiResourceAcquireMode::BlockTillLoaded);
+  xiiResourceLock<xiiShaderResource> pShader(hShader, bAllowFallback ? xiiResourceAcquireMode::AllowLoadingFallback_NeverFail : xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
 
   if (!pShader.IsValid() || !pShader->IsShaderValid())
     return xiiShaderPermutationResourceHandle();

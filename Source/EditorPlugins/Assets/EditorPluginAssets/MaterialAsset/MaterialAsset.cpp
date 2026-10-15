@@ -886,8 +886,7 @@ void xiiMaterialAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pIn
       add(d.m_hBaseMaterial.GetResourceID());
     if (d.m_hShader.IsValid())
       add(d.m_hShader.GetResourceID());
-    for (const auto& texture : {d.m_hBaseColorTexture, d.m_hNormalTexture, d.m_hMetallicRoughnessTexture, d.m_hOcclusionTexture,
-                                d.m_hEmissiveTexture, d.m_hHeightTexture, d.m_hClearCoatTexture, d.m_hTransmissionTexture})
+    for (const auto& texture : {d.m_hBaseColorTexture, d.m_hNormalTexture, d.m_hMetallicRoughnessTexture, d.m_hOcclusionTexture, d.m_hEmissiveTexture, d.m_hHeightTexture, d.m_hClearCoatTexture, d.m_hTransmissionTexture})
       if (texture.IsValid())
         add(texture.GetResourceID());
     for (const auto& binding : d.m_Texture2DBindings)

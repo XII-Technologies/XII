@@ -47,8 +47,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ThumbnailCapture)
     for (xiiUInt32 y = 0; y < height; ++y)
       xiiMemoryUtils::Copy(upload.GetData() + y * uploadStride, pixels.GetData() + y * width * 4, width * 4);
     commandList->Begin();
-    commandList->UpdateTexture(texture, {}, xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), {width, height, 1}),
-                               xiiGALTextureSubResourceData(xiiConstByteBlobPtr(upload.GetData(), upload.GetCount()), uploadStride, uploadStride * height));
+    commandList->UpdateTexture(texture, {}, xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), {width, height, 1}), xiiGALTextureSubResourceData(xiiConstByteBlobPtr(upload.GetData(), upload.GetCount()), uploadStride, uploadStride * height));
     commandList->End();
     auto queue = environment.GetDevice()->GetCommandQueue();
     queue->WaitForFenceValue(queue->Submit(commandList));

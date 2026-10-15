@@ -12,9 +12,7 @@ void xiiSceneContext::HandleSceneGeometryMsg(const xiiExportSceneGeometryMsgToEn
   if (message->m_bSelectionOnly)
     for (const auto handle : m_SelectionWithChildren)
       selection.PushBack(handle);
-  const auto                              status = xiiSceneGeometryExporter::ExportOBJ(*m_pWorld, message->m_sOutputFile,
-                                                                                       static_cast<xiiSceneGeometryExportMode>(message->m_iExtractionMode), message->m_Transform,
-                                                                                       message->m_bSelectionOnly, selection);
+  const auto                              status = xiiSceneGeometryExporter::ExportOBJ(*m_pWorld, message->m_sOutputFile, static_cast<xiiSceneGeometryExportMode>(message->m_iExtractionMode), message->m_Transform, message->m_bSelectionOnly, selection);
   xiiExportSceneGeometryResultMsgToEditor result;
   result.m_DocumentGuid = message->m_DocumentGuid;
   result.m_sOutputFile  = message->m_sOutputFile;
