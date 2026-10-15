@@ -297,7 +297,6 @@ void xiiVirtualShadowMapManager::Startup()
 void xiiVirtualShadowMapManager::EngineStartup()
 {
   s_pState->m_bEngineStarted = true;
-  CreateGpuResources().IgnoreResult();
 }
 
 void xiiVirtualShadowMapManager::EngineShutdown()
@@ -436,7 +435,7 @@ xiiResult xiiVirtualShadowMapManager::Configure(const xiiVirtualShadowMapSetting
   s_pState->m_uiCompletedFrame                   = 0U;
   s_pState->m_uiAllFrameMask                     = settings.m_uiFramesInFlight >= 64U ? xiiMath::MaxValue<xiiUInt64>() : (xiiUInt64(1) << settings.m_uiFramesInFlight) - 1U;
   s_pState->m_bInitialized                       = true;
-  if (s_pState->m_bEngineStarted)
+  if (s_pState->m_bEngineStarted && s_pState->m_pPhysicalAtlas != nullptr)
     return CreateGpuResources();
   return XII_SUCCESS;
 }

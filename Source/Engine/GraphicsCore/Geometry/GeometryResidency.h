@@ -142,6 +142,8 @@ public:
   [[nodiscard]] static const xiiGeometryResidencyDescription& GetConfiguration();
   [[nodiscard]] static bool                                   IsSubsystemInitialized();
   [[nodiscard]] static bool                                   IsInitialized();
+  /// Allocates shared device buffers on first consumption, on the render thread.
+  [[nodiscard]] static xiiResult EnsureInitialized();
 
   [[nodiscard]] static xiiGeometryHandle RegisterGeometry(const xiiGeometryDescription& description);
   static void                            UnregisterGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);

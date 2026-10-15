@@ -22,10 +22,11 @@ public:
   xiiMaterialManager() = delete;
 
   /// Reconfigures the global GPU table. This is only valid before materials are registered.
-  /// Before high-level startup the description is retained and applied when the GAL device exists.
+  /// Before first consumption the description is retained without allocating GPU buffers.
   [[nodiscard]] static xiiResult Configure(const xiiMaterialGpuStorageDescription& description);
   [[nodiscard]] static bool      IsSubsystemInitialized();
   [[nodiscard]] static bool      IsInitialized();
+  [[nodiscard]] static xiiResult EnsureInitialized();
 
   static void BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
   /// Refreshes resource-backed instances and bindless texture indices after extraction has

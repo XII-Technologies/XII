@@ -811,6 +811,14 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (m_ViewIdTable.IsEmpty())
     return;
 
+  // Honor compiled demand before choosing the frame's retirement/ring limits.
+  if (m_RuntimeFeatures.IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing))
+    if (xiiGeometryResidencyManager::EnsureInitialized().Failed() || xiiMaterialManager::EnsureInitialized().Failed())
+    {
+      xiiLog::Error("Could not initialize the GPU residency requested by this world's pipelines.");
+      return;
+    }
+
   // Device-global frame slices and retirement share one clock with registered graphs.
   // The frame scope serializes recording and captures all queues after world extraction.
   xiiRenderGraphFrame frame;

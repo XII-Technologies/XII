@@ -156,7 +156,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(const xiiExtractedRenderData&
 
 xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame)
 {
-  if (!xiiGeometryResidencyManager::IsInitialized())
+  if (xiiGeometryResidencyManager::EnsureInitialized().Failed())
     return XII_FAILURE;
   auto& state = *m_pState;
   // Validate before changing membership or leases. Stale authoritative owners are omitted.

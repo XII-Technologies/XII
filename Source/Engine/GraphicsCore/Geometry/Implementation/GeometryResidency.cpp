@@ -285,7 +285,7 @@ xiiResult xiiGeometryResidencyManager::Configure(const xiiGeometryResidencyDescr
     return XII_SUCCESS;
 
   s_pState->m_Configuration = description;
-  if (!s_pState->m_bEngineStarted)
+  if (!s_pState->m_bInitialized)
     return XII_SUCCESS;
 
   const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -307,6 +307,16 @@ bool xiiGeometryResidencyManager::IsSubsystemInitialized()
 bool xiiGeometryResidencyManager::IsInitialized()
 {
   return s_pState != nullptr && s_pState->m_bInitialized;
+}
+
+xiiResult xiiGeometryResidencyManager::EnsureInitialized()
+{
+  if (IsInitialized())
+    return XII_SUCCESS;
+  if (!s_pState || !s_pState->m_bEngineStarted)
+    return XII_FAILURE;
+  const auto device = xiiGALDevice::GetDefaultDevice();
+  return device ? Initialize(device.Borrow(), s_pState->m_Configuration) : XII_FAILURE;
 }
 
 xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, const xiiGeometryResidencyDescription& description)
@@ -370,10 +380,7 @@ void xiiGeometryResidencyManager::EngineStartup()
   if (s_pState == nullptr)
     return;
 
-  s_pState->m_bEngineStarted               = true;
-  const xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-  if (pDevice != nullptr)
-    Initialize(pDevice.Borrow(), s_pState->m_Configuration).IgnoreResult();
+  s_pState->m_bEngineStarted = true;
 }
 
 void xiiGeometryResidencyManager::EngineShutdown()
@@ -387,6 +394,8 @@ void xiiGeometryResidencyManager::EngineShutdown()
 
 xiiGeometryHandle xiiGeometryResidencyManager::RegisterGeometry(const xiiGeometryDescription& description)
 {
+  if (EnsureInitialized().Failed())
+    return {};
   if (!IsInitialized() || s_pState->m_pMetadataBuffer == nullptr || s_pState->m_GeometryIds.GetCount() >= s_pState->m_Slots.GetCount() || description.m_Lods.IsEmpty() || description.m_Lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
     return {};
 
@@ -423,7 +432,7 @@ void xiiGeometryResidencyManager::UnregisterGeometry(xiiGeometryHandle handle, x
 
 xiiGeometryHandle xiiGeometryResidencyManager::AcquireMeshGeometry(const xiiMeshResourceHandle& hMesh)
 {
-  if (!IsInitialized() || !hMesh.IsValid())
+  if (!hMesh.IsValid() || EnsureInitialized().Failed())
     return {};
 
   xiiResourceLock<xiiMeshResource> mesh(hMesh, xiiResourceAcquireMode::PointerOnly);
@@ -921,7 +930,7 @@ xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats()
 
 xiiGeometryResidencyManager::UploadHandles xiiGeometryResidencyManager::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
 {
-  if (!IsInitialized())
+  if (EnsureInitialized().Failed())
     return {};
 
   State* pState = s_pState.Borrow();

@@ -5,6 +5,8 @@
 #include <Core/World/World.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -116,6 +118,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     return;
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
+  XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized());
+  XII_TEST_BOOL(!xiiMaterialManager::IsInitialized());
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Views aggregate demand and reuse only requested component packets")
@@ -181,6 +185,9 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, HybridWorldDemand)
     XII_TEST_BOOL(!views[2]->IsGpuSceneInitialized());
     XII_TEST_BOOL(!views[0]->IsGpuSceneInitialized() && !views[1]->IsGpuSceneInitialized());
     XII_TEST_INT(views[2]->GetExtractionStatistics().m_uiDispatchedComponents, 0);
+    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized());
+    XII_TEST_BOOL(!xiiMaterialManager::IsInitialized());
+    XII_TEST_BOOL(module->GetGpuInstanceData() == nullptr);
     XII_TEST_INT(views[3]->GetExtractionStatistics().m_uiDispatchedComponents, 0);
     XII_TEST_BOOL(views[0]->GetExtractedRenderData()->GetAllRenderData()[0] == views[3]->GetExtractedRenderData()->GetAllRenderData()[0]);
     world.Update();
