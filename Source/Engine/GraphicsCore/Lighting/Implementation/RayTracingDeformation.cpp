@@ -49,6 +49,11 @@ xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xi
   const auto targets = instances.GetMorphTargets(drawIndex);
   if (constants.VertexLayout.z == xiiInvalidIndex || (source->GetVertexStride() & 3) != 0 || weights.GetCount() > targets.GetCount())
     return XII_FAILURE;
+  const auto validStream = [stride = source->GetVertexStride()](xiiUInt32 offset, xiiUInt32 size) {
+    return offset == xiiInvalidIndex || (stride >= size && offset <= stride - size && (offset & 3) == 0);
+  };
+  if (!validStream(constants.VertexLayout.z, 12) || !validStream(constants.VertexLayout.w, 12) || !validStream(constants.SkinLayout.x, 16))
+    return XII_FAILURE;
   const auto                  pose = instances.GetSkinningMatrices().GetSubArray(record.m_uiSkinningOffset, record.m_uiSkinningCount);
   xiiDynamicArray<xiiVec4U32> morphs;
   for (xiiUInt32 i = 0; i < weights.GetCount(); ++i)
@@ -69,7 +74,7 @@ xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xi
     ++cache.m_Revision;
   }
   cache.m_LastUse = frame;
-  if (newSource || !cache.m_Buffer)
+  if (newSource || !cache.m_Buffer || !cache.m_Srv.IsValid())
   {
     if (cache.m_Srv.IsValid())
       xiiGALBindlessResourceTable::RetireBufferSRV(cache.m_Srv, frame);

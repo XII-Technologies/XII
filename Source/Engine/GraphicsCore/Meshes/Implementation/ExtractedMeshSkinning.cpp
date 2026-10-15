@@ -33,11 +33,17 @@ xiiResult xiiComputeMorphedMeshBounds(const xiiMeshResource& mesh, xiiArrayPtr<c
     const auto& delta = mesh.GetMorphTargets()[i].m_Bounds;
     if (!delta.IsValid())
       return XII_FAILURE;
-    center += weights[i] * delta.m_vCenter;
-    extents += xiiMath::Abs(weights[i]) * delta.m_vBoxHalfExtents;
+    // Vertices outside the target's range retain zero delta.
+    auto deltaBox = delta.GetBox();
+    deltaBox.ExpandToInclude(xiiVec3::MakeZero());
+    center += weights[i] * deltaBox.GetCenter();
+    extents += xiiMath::Abs(weights[i]) * deltaBox.GetHalfExtents();
   }
-  out_bounds = xiiBoundingBoxSphere::MakeFromBox(xiiBoundingBox::MakeFromCenterAndHalfExtents(center, extents));
-  return out_bounds.IsValid() ? XII_SUCCESS : XII_FAILURE;
+  const auto result = xiiBoundingBoxSphere::MakeFromBox(xiiBoundingBox::MakeFromCenterAndHalfExtents(center, extents));
+  if (!result.IsValid())
+    return XII_FAILURE;
+  out_bounds = result;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiPrepareExtractedMeshSkinning(const xiiMeshResource& mesh, const xiiMeshRenderData& packet, xiiExtractedMeshSkinning& out_skinning)

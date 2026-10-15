@@ -273,7 +273,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     {
       entry.m_CurrentPose  = packet.m_SkinningMatrices;
       entry.m_MorphWeights = packet.m_MorphWeights;
-      if (resetPose)
+      if (resetPose || entry.m_MorphTargets.GetCount() != mesh.GetMorphTargets().GetCount())
         entry.m_MorphTargets = mesh.GetMorphTargets();
       if (resetPose)
         entry.m_PreviousPose = entry.m_CurrentPose;

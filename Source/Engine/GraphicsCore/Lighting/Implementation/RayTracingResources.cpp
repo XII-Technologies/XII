@@ -876,7 +876,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
       auto& dynamic       = dynamicFrame.m_Blas[record.m_uiObjectId];
       if (!dynamic)
         dynamic = XII_DEFAULT_NEW(xiiRayTracingDynamicBLAS);
-      if (dynamic->m_Source != instance.m_hGeometry || dynamic->m_Vertices != deformed->m_Buffer)
+      if (dynamic->m_Source != instance.m_hGeometry || dynamic->m_Vertices != deformed->m_Buffer || !dynamic->m_Blas || !dynamic->m_Scratch)
       {
         *dynamic                   = {};
         dynamic->m_Source          = instance.m_hGeometry;

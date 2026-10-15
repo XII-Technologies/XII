@@ -30,28 +30,34 @@ namespace
   };
   bool ReadHits(xiiGALDevice& device, xiiGALBuffer* source, Hit (&hits)[4])
   {
+    if (!XII_TEST_BOOL(source != nullptr))
+      return false;
     xiiGALBufferCreationDescription description;
-    description.m_uiSize                         = sizeof(hits);
-    description.m_Usage                          = xiiGALResourceUsage::Staging;
-    description.m_CPUAccessFlags                 = xiiGALCPUAccessFlag::Read;
-    auto                                 staging = device.CreateBuffer(description);
+    description.m_uiSize                              = sizeof(hits);
+    description.m_Usage                               = xiiGALResourceUsage::Staging;
+    description.m_CPUAccessFlags                      = xiiGALCPUAccessFlag::Read;
+    auto                                 ownedStaging = source->GetDescription().m_Usage == xiiGALResourceUsage::Staging ? xiiSharedPtr<xiiGALBuffer>() : device.CreateBuffer(description);
+    auto*                                staging      = ownedStaging ? ownedStaging.Borrow() : source;
     xiiGALCommandListCreationDescription commandDescription;
     commandDescription.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
     auto commands                   = device.CreateCommandList(commandDescription);
     if (!XII_TEST_BOOL(staging && commands && source))
       return false;
-    commands->Begin();
-    commands->CopyBufferRegion(source, 0, staging.Borrow(), 0, sizeof(hits));
-    commands->End();
-    auto queue = device.GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
-    queue->WaitForFenceValue(queue->Submit(commands.Borrow()));
+    if (ownedStaging)
+    {
+      commands->Begin();
+      commands->CopyBufferRegion(source, 0, staging, 0, sizeof(hits));
+      commands->End();
+      auto queue = device.GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+      queue->WaitForFenceValue(queue->Submit(commands.Borrow()));
+    }
     commands->Begin();
     void*      bytes  = nullptr;
-    const auto mapped = commands->MapBuffer(staging.Borrow(), xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, bytes);
+    const auto mapped = commands->MapBuffer(staging, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, bytes);
     if (mapped.Succeeded() && bytes)
       xiiMemoryUtils::Copy(hits, static_cast<const Hit*>(bytes), 4);
     if (mapped.Succeeded())
-      commands->UnmapBuffer(staging.Borrow(), xiiGALMapType::Read).AssertSuccess();
+      commands->UnmapBuffer(staging, xiiGALMapType::Read).AssertSuccess();
     commands->End();
     return XII_TEST_RESULT(mapped) && XII_TEST_BOOL(bytes != nullptr);
   }
@@ -168,7 +174,36 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   xiiRenderGraphContext       context;
   XII_TEST_RESULT(context.Initialize("Skinned and morphed ray trace regression"));
   xiiUInt32 ids[2] = {};
-  auto      render = [&](xiiUInt32 expectedDispatches, float distance0, float distance1, xiiUInt32 firstRay) {
+  struct Capture
+  {
+    xiiSharedPtr<xiiGALBuffer> m_Buffers[2];
+    xiiVec3                    m_Normals[2];
+    xiiUInt32                  m_Ids[2];
+    float                      m_Handedness[2], m_Distances[2];
+    xiiUInt32                  m_FirstRay;
+  };
+  xiiDynamicArray<Capture> pending;
+  auto                     check = [&](const Capture& capture) {
+    for (const auto& buffer : capture.m_Buffers)
+    {
+      Hit hits[4];
+      if (!ReadHits(*environment.GetDevice(), buffer.Borrow(), hits))
+        return;
+      for (xiiUInt32 ray = 0; ray < 4; ++ray)
+      {
+        const bool first = ray == capture.m_FirstRay, second = ray == 2;
+        const auto owner = first ? 0U : 1U;
+        XII_TEST_INT(hits[ray].m_Identity.x, first || second ? capture.m_Ids[owner] : 0);
+        XII_TEST_FLOAT(hits[ray].m_Surface.x, first || second ? capture.m_Distances[owner] : -1.0f, 0.001f);
+        if (first || second)
+        {
+          XII_TEST_VEC3(xiiVec3(hits[ray].m_Surface.y, hits[ray].m_Surface.z, hits[ray].m_Surface.w), capture.m_Normals[owner], 0.001f);
+          XII_TEST_FLOAT(std::bit_cast<float>(hits[ray].m_Identity.y), capture.m_Handedness[owner], 0);
+        }
+      }
+    }
+  };
+  auto render = [&](xiiUInt32 expectedDispatches, float distance0, float distance1, xiiUInt32 firstRay, bool defer = false) {
     xiiRenderGraphFrame frame;
     if (!XII_TEST_RESULT(frame.Begin()))
       return;
@@ -234,6 +269,16 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
       xiiRenderGraphBufferHandle           m_Output, m_Sbt;
     };
     xiiRenderGraphBufferHandle outputs[2];
+    Capture                    capture;
+    capture.m_FirstRay     = firstRay;
+    capture.m_Distances[0] = distance0;
+    capture.m_Distances[1] = distance1;
+    for (xiiUInt32 i = 0; i < 2; ++i)
+    {
+      capture.m_Ids[i]        = ids[i];
+      capture.m_Normals[i]    = normals[i];
+      capture.m_Handedness[i] = handedness[i];
+    }
     for (xiiUInt32 view = 0; view < 2; ++view)
     {
       auto pass     = graph.AddPass<Trace>("Deformed geometry trace", xiiGALCommandQueueFlags::Graphics, [&](Trace& trace, xiiRenderGraphBuilder& builder) {
@@ -266,34 +311,38 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
         rays.m_RayGenerationTable = update.m_RayGenerationTable; rays.m_MissTable = update.m_MissTable; rays.m_HitTable = update.m_HitTable;
         commands.TraceRays(rays); });
       outputs[view] = pass.first->m_Output;
+      if (defer)
+      {
+        xiiGALBufferCreationDescription staging;
+        staging.m_uiSize         = 4 * sizeof(Hit);
+        staging.m_Usage          = xiiGALResourceUsage::Staging;
+        staging.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+        capture.m_Buffers[view]  = environment.GetDevice()->CreateBuffer(staging);
+        struct Copy
+        {
+          XII_DECLARE_POD_TYPE();
+          xiiRenderGraphBufferHandle m_Source, m_Destination;
+        };
+        graph.AddPass<Copy>("Delayed deformation capture", xiiGALCommandQueueFlags::Graphics, [&](Copy& copy, xiiRenderGraphBuilder& builder) {
+          copy.m_Source = builder.ReadBuffer(outputs[view], xiiGALResourceStateFlags::CopySource);
+          xiiStringBuilder name; name.SetFormat("Delayed Ray Capture {} {}", frame.GetFrameIndex(), view);
+          copy.m_Destination = builder.WriteBuffer(builder.ImportBuffer(name, capture.m_Buffers[view], capture.m_Buffers[view]->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
+          builder.SetPassSideEffects(true); }, [](const Copy& copy, xiiRenderGraphPassContext& context) { context.GetCommandList().CopyBufferRegion(context.GetBuffer(copy.m_Source), 0, context.GetBuffer(copy.m_Destination), 0, 4 * sizeof(Hit)); });
+      }
     }
     graph.EndSetup();
     if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
       return;
     frame.End();
-    environment.GetDevice()->WaitIdle();
-    for (const auto output : outputs)
+    if (defer)
     {
-      Hit hits[4];
-      if (!ReadHits(*environment.GetDevice(), graph.GetExportedBuffer(output).Borrow(), hits))
-        return;
-      for (xiiUInt32 ray = 0; ray < 4; ++ray)
-      {
-        const bool hitFirst  = ray == firstRay;
-        const bool hitSecond = ray == 2;
-        XII_TEST_INT(hits[ray].m_Identity.x, hitFirst ? ids[0] : hitSecond ? ids[1] :
-                                                                                  0);
-        XII_TEST_FLOAT(hits[ray].m_Surface.x, hitFirst ? distance0 : hitSecond ? distance1 :
-                                                                                      -1,
-                            0.001f);
-        if (hitFirst || hitSecond)
-        {
-          const auto owner = hitFirst ? 0U : 1U;
-          XII_TEST_VEC3(xiiVec3(hits[ray].m_Surface.y, hits[ray].m_Surface.z, hits[ray].m_Surface.w), normals[owner], 0.001f);
-          XII_TEST_FLOAT(std::bit_cast<float>(hits[ray].m_Identity.y), handedness[owner], 0);
-        }
-      }
+      pending.PushBack(std::move(capture));
+      return;
     }
+    environment.GetDevice()->WaitIdle();
+    for (xiiUInt32 i = 0; i < 2; ++i)
+      capture.m_Buffers[i] = graph.GetExportedBuffer(outputs[i]);
+    check(capture);
   };
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Morph before skinning, independent poses, shared work and warmed frame slots")
   {
@@ -325,5 +374,69 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
     publish(2);
     world.Update();
     render(1, 10, 8.5f, 1);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Delayed captures survive frame-slot reuse and authoritative component removal")
+  {
+    const auto frames = xiiRayTracingResources::GetConfiguration().m_uiFramesInFlight;
+    for (xiiUInt32 i = 0; i < frames * 2; ++i)
+    {
+      xiiSkinnedMeshComponent* component = nullptr;
+      if (!XII_TEST_BOOL(world.TryGetComponent(components[0], component)))
+        return;
+      const auto pose = xiiMat4::MakeTranslation(xiiVec3(i % 2 == 0 ? -1.0f : 2.0f, 0, 0));
+      XII_TEST_RESULT(component->SetSkinningMatrices(xiiMakeArrayPtr(&pose, 1)));
+      const float weight = i % 2 == 0 ? 0.25f : -0.5f;
+      component->SetMorphWeights(xiiMakeArrayPtr(&weight, 1));
+      world.Update();
+      render(i < frames - 1 ? 2 : 1, i % 2 == 0 ? 9.5f : 11.0f, 8.5f, i % 2 == 0 ? 0 : 3, true);
+    }
+    xiiSkinnedMeshComponent* removed = nullptr;
+    if (!XII_TEST_BOOL(world.TryGetComponent(components[0], removed)))
+      return;
+    const auto retiredId = ids[0];
+    world.DeleteObjectNow(removed->GetOwner()->GetHandle());
+    xiiGpuInstanceSource source;
+    XII_TEST_BOOL(module->GetGpuInstanceData()->Resolve(retiredId, source).Failed());
+    xiiGameObjectDescription authored;
+    authored.m_bDynamic   = true;
+    xiiGameObject* object = nullptr;
+    world.CreateObject(authored, object);
+    xiiSkinnedMeshComponent* replacement = nullptr;
+    components[0]                        = xiiSkinnedMeshComponent::CreateComponent(object, replacement);
+    replacement->SetMesh(mesh);
+    world.Update();
+    render(0, 10, 8.5f, 1);
+    XII_TEST_BOOL(ids[0] != retiredId);
+    environment.GetDevice()->WaitIdle();
+    for (const auto& capture : pending)
+      check(capture);
+    pending.Clear();
+    XII_TEST_BOOL(module->GetGpuInstanceData()->Resolve(retiredId, source).Failed());
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invalid morph weights fail without replacing the last valid extraction")
+  {
+    const xiiComponent* component = nullptr;
+    if (!XII_TEST_BOOL(static_cast<const xiiWorld&>(world).TryGetComponent(components[1], component)))
+      return;
+    xiiExtractedRenderData  packets;
+    xiiMsgExtractRenderData request;
+    request.m_pExtractedRenderData = &packets;
+    component->SendMessage(request);
+    packets.SortAndBatches();
+    if (!XII_TEST_INT(packets.GetAllRenderData().GetCount(), 1))
+      return;
+    auto packet                = *static_cast<const xiiMeshRenderData*>(packets.GetAllRenderData()[0]);
+    packet.m_MorphWeights[0]   = xiiMath::NaN<float>();
+    xiiRenderData* malformed[] = {&packet};
+    XII_TEST_BOOL(module->UpdateGpuInstances(xiiMakeArrayPtr(malformed), 999999).Failed());
+    XII_TEST_INT(module->GetGpuInstanceData()->GetInstanceCount(), 2);
+    packet.m_MorphWeights.SetCount(2); // The mesh contains only one target.
+    packet.m_MorphWeights[0] = packet.m_MorphWeights[1] = 0;
+    XII_TEST_BOOL(module->UpdateGpuInstances(xiiMakeArrayPtr(malformed), 999999).Failed());
+    for (const auto id : ids)
+    {
+      xiiGpuInstanceSource source;
+      XII_TEST_RESULT(module->GetGpuInstanceData()->Resolve(id, source));
+    }
   }
 }
