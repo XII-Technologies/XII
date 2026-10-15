@@ -3,9 +3,11 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/Graphics/Camera.h>
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/Component.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
+#include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
@@ -14,6 +16,7 @@
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -96,12 +99,46 @@ void xiiRenderWorldModule::ShutdownRenderEvents()
   s_pRenderEvent.Clear();
 }
 
-xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
-  xiiWorldModule(pWorld)
+xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) : xiiWorldModule(pWorld)
 {
+  xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&xiiRenderWorldModule::OnResourceEvent, this));
 }
 
-xiiRenderWorldModule::~xiiRenderWorldModule() = default;
+xiiRenderWorldModule::~xiiRenderWorldModule()
+{
+  xiiResourceManager::GetResourceEvents().RemoveEventHandler(xiiMakeDelegate(&xiiRenderWorldModule::OnResourceEvent, this));
+}
+
+void xiiRenderWorldModule::OnResourceEvent(const xiiResourceEvent& event)
+{
+  if (event.m_Type != xiiResourceEvent::Type::ResourceContentUpdated && event.m_Type != xiiResourceEvent::Type::ResourceContentUnloading)
+    return;
+  const auto* type = event.m_pResource->GetDynamicRTTI();
+  if (type->IsDerivedFrom<xiiMeshResource>() || type->IsDerivedFrom<xiiMeshBufferResource>())
+    m_bGeometryCacheDirty = true;
+}
+
+void xiiRenderWorldModule::ReleaseGpuResources()
+{
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+    it.Value().m_pExtractedData->Clear();
+  DeleteAllCachedRenderData();
+  m_RetiredPackets.Clear();
+  m_pRayTracingResources.Clear();
+  m_pGpuInstances.Clear();
+}
+
+// Reuse the existing world registry for device shutdown; do not maintain another world/scene registry.
+XII_ON_GLOBAL_EVENT(xiiStartup_ShutdownHighLevelSystems_Begin)
+{
+  for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
+    if (auto* world = xiiWorld::GetWorld(i))
+    {
+      XII_LOCK(world->GetWriteMarker());
+      if (auto* module = world->GetModule<xiiRenderWorldModule>())
+        module->ReleaseGpuResources();
+    }
+}
 
 void xiiRenderWorldModule::Initialize()
 {
@@ -256,7 +293,7 @@ void xiiRenderWorldModule::SubmitRenderData(void* pContext, const xiiMsgExtractR
   static_cast<xiiRenderWorldModule*>(pContext)->OnRenderDataSubmitted(msg, pRenderData, caching);
 }
 
-void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
+void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching, bool collectShared)
 {
   if (msg.m_pView == nullptr)
     return;
@@ -269,6 +306,13 @@ void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& 
   if (msg.m_hCurrentObject.IsInvalidated())
     return;
 
+  xiiDynamicArray<SharedPacket>* shared = nullptr;
+  if (m_SharedFramePackets.TryGetValue(msg.m_hCurrentComponent, shared))
+  {
+    if (collectShared)
+      shared->PushBack({pRenderData, caching});
+    return;
+  }
   ViewDetail&               viewDetail = m_ViewIdTable[msg.m_pView->GetHandle()];
   ExtractedObjectFrameData& frameData  = viewDetail.m_ExtractionCache.m_FrameObjectData[msg.m_hCurrentObject];
 
@@ -427,6 +471,10 @@ void xiiRenderWorldModule::FinalizeViewExtractionCache(ViewExtractionCache& cach
 
 void xiiRenderWorldModule::RemoveCachedRenderDataForObject(ViewExtractionCache& cache, xiiGameObjectHandle hObject)
 {
+  CachedStaticObjectData* objectData = nullptr;
+  if (cache.m_StaticObjectCache.TryGetValue(hObject, objectData))
+    for (auto& data : objectData->m_StaticRenderData)
+      m_RetiredPackets.PushBack(std::move(data));
   cache.m_StaticObjectCache.Remove(hObject);
 
   xiiDynamicArray<xiiComponentHandle>* pCachedComponents = nullptr;
@@ -434,6 +482,10 @@ void xiiRenderWorldModule::RemoveCachedRenderDataForObject(ViewExtractionCache& 
   {
     for (xiiComponentHandle hCachedComponent : *pCachedComponents)
     {
+      CachedStaticComponentData* componentData = nullptr;
+      if (cache.m_StaticComponentCache.TryGetValue(hCachedComponent, componentData))
+        for (auto& data : componentData->m_StaticRenderData)
+          m_RetiredPackets.PushBack(std::move(data));
       cache.m_StaticComponentCache.Remove(hCachedComponent);
     }
   }
@@ -443,6 +495,10 @@ void xiiRenderWorldModule::RemoveCachedRenderDataForObject(ViewExtractionCache& 
 
 void xiiRenderWorldModule::RemoveCachedRenderDataForComponent(ViewExtractionCache& cache, xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent)
 {
+  CachedStaticComponentData* componentData = nullptr;
+  if (cache.m_StaticComponentCache.TryGetValue(hComponent, componentData))
+    for (auto& data : componentData->m_StaticRenderData)
+      m_RetiredPackets.PushBack(std::move(data));
   cache.m_StaticComponentCache.Remove(hComponent);
 
   xiiDynamicArray<xiiComponentHandle>* pCachedComponents = nullptr;
@@ -461,24 +517,36 @@ void xiiRenderWorldModule::RemoveCachedRenderDataForComponent(ViewExtractionCach
   }
 }
 
-void xiiRenderWorldModule::RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject)
-{
-  if (pObject == nullptr)
-    return;
-
-  RemoveCachedRenderDataForObject(cache, pObject->GetHandle());
-
-  for (auto it = pObject->GetChildren(); it.IsValid(); ++it)
-  {
-    RemoveCachedRenderDataForObjectRecursive(cache, it);
-  }
-}
-
 void xiiRenderWorldModule::DeleteCachedRenderData(xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent)
 {
   if (hOwnerObject.IsInvalidated())
     return;
 
+  if (!hComponent.IsInvalidated())
+  {
+    CachedStaticComponentData* cached = nullptr;
+    if (m_SharedStaticPackets.TryGetValue(hComponent, cached))
+    {
+      for (auto& data : cached->m_StaticRenderData)
+        m_RetiredPackets.PushBack(std::move(data));
+      m_SharedStaticPackets.Remove(hComponent);
+    }
+  }
+  else
+    for (auto it = m_SharedStaticPackets.GetIterator(); it.IsValid();)
+    {
+      const bool matches = !it.Value().m_StaticRenderData.IsEmpty() && it.Value().m_StaticRenderData[0]->m_hOwnerObject == hOwnerObject;
+      if (!matches)
+      {
+        ++it;
+        continue;
+      }
+      for (auto& data : it.Value().m_StaticRenderData)
+        m_RetiredPackets.PushBack(std::move(data));
+      m_SharedFramePackets.Remove(it.Key());
+      it = m_SharedStaticPackets.Remove(it);
+    }
+  m_SharedFramePackets.Remove(hComponent);
   xiiBitflags<xiiRenderExtractionCategory> categories = xiiRenderExtractionCategory::All;
   const xiiComponent*                      component  = nullptr;
   if (!hComponent.IsInvalidated() && GetWorld()->TryGetComponent(hComponent, component))
@@ -501,23 +569,39 @@ void xiiRenderWorldModule::DeleteCachedRenderData(xiiGameObjectHandle hOwnerObje
   }
 }
 
-void xiiRenderWorldModule::DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pObject)
+void xiiRenderWorldModule::DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* object)
 {
-  if (pObject == nullptr)
+  if (!object)
     return;
-
-  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+  xiiHybridArray<const xiiGameObject*, 64> pending;
+  pending.PushBack(object);
+  while (!pending.IsEmpty())
   {
-    RemoveCachedRenderDataForObjectRecursive(it.Value().m_ExtractionCache, pObject);
+    const auto* current = pending.PeekBack();
+    pending.PopBack();
+    DeleteCachedRenderData(current->GetHandle(), {});
+    for (auto child = current->GetChildren(); child.IsValid(); ++child)
+      pending.PushBack(child);
   }
 }
 
 void xiiRenderWorldModule::DeleteAllCachedRenderData()
 {
+  for (auto& entry : m_SharedStaticPackets)
+    for (auto& packet : entry.Value().m_StaticRenderData)
+      m_RetiredPackets.PushBack(std::move(packet));
+  m_SharedStaticPackets.Clear();
+  m_SharedFramePackets.Clear();
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     auto& value = it.Value();
 
+    for (auto& entry : value.m_ExtractionCache.m_StaticObjectCache)
+      for (auto& packet : entry.Value().m_StaticRenderData)
+        m_RetiredPackets.PushBack(std::move(packet));
+    for (auto& entry : value.m_ExtractionCache.m_StaticComponentCache)
+      for (auto& packet : entry.Value().m_StaticRenderData)
+        m_RetiredPackets.PushBack(std::move(packet));
     value.m_ExtractionCache.m_StaticObjectCache.Clear();
     value.m_ExtractionCache.m_StaticComponentCache.Clear();
     value.m_ExtractionCache.m_ObjectToCachedComponents.Clear();
@@ -527,6 +611,13 @@ void xiiRenderWorldModule::DeleteAllCachedRenderData()
 
 void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext&)
 {
+  // Drop all borrowed pointers before releasing retired/static snapshot ownership.
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+    it.Value().m_pExtractedData->Clear();
+  m_SharedFramePackets.Clear();
+  if (m_bGeometryCacheDirty.Set(false))
+    DeleteAllCachedRenderData();
+  m_RetiredPackets.Clear();
   m_ExtractionRequirements = {};
   m_RuntimeFeatures        = {};
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
@@ -556,6 +647,7 @@ void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
 {
+  m_SharedFramePackets.Clear();
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     auto& viewDetail = it.Value();
@@ -626,6 +718,33 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
           const xiiComponentHandle hComponent = pComponent->GetHandle();
 
+          const bool independent = renderComponent && renderComponent->IsRenderDataViewIndependent();
+          if (independent)
+          {
+            xiiDynamicArray<SharedPacket>* shared = nullptr;
+            if (!m_SharedFramePackets.TryGetValue(hComponent, shared) && pObject->IsStatic())
+            {
+              const CachedStaticComponentData* persistent = nullptr;
+              if (m_SharedStaticPackets.TryGetValue(hComponent, persistent))
+              {
+                auto& packets = m_SharedFramePackets[hComponent];
+                for (const auto& data : persistent->m_StaticRenderData)
+                  packets.PushBack({data.Borrow(), xiiRenderData::Caching::IfStatic});
+                shared = &packets;
+              }
+            }
+            if (shared)
+            {
+              msg.m_hCurrentComponent = hComponent;
+              for (const auto& packet : *shared)
+                OnRenderDataSubmitted(msg, packet.m_Data, packet.m_Caching, false);
+              msg.m_hCurrentComponent = {};
+              ++viewDetail.m_pView->m_ExtractionStatistics.m_uiReusedComponents;
+              continue;
+            }
+            m_SharedFramePackets[hComponent]; // Also caches an empty extraction for this frame.
+          }
+
           if (ReuseCachedStaticRenderData(viewDetail.m_ExtractionCache, hComponent, *viewDetail.m_pExtractedData))
           {
             ++viewDetail.m_pView->m_ExtractionStatistics.m_uiReusedComponents;
@@ -636,6 +755,33 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
           pComponent->SendMessage(msg);
           ++viewDetail.m_pView->m_ExtractionStatistics.m_uiDispatchedComponents;
+          if (independent && pObject->IsStatic())
+          {
+            const xiiDynamicArray<SharedPacket>* shared = nullptr;
+            if (m_SharedFramePackets.TryGetValue(hComponent, shared) && !shared->IsEmpty())
+            {
+              CachedStaticComponentData cached;
+              bool                      complete = true;
+              for (const auto& packet : *shared)
+              {
+                if (packet.m_Caching != xiiRenderData::Caching::IfStatic)
+                {
+                  complete = false;
+                  break;
+                }
+                auto clone = CloneRenderDataForCache(packet.m_Data);
+                if (!clone)
+                {
+                  complete = false;
+                  break;
+                }
+                cached.m_StaticRenderData.PushBack(std::move(clone));
+              }
+              if (complete)
+                m_SharedStaticPackets.Insert(hComponent, std::move(cached));
+            }
+          }
+
 
           msg.m_hCurrentComponent = xiiComponentHandle();
         }

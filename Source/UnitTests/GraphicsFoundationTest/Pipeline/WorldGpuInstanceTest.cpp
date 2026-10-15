@@ -1,19 +1,37 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Core/World/World.h>
 #include <Foundation/Memory/FrameAllocator.h>
+#include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
-#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
+
+namespace
+{
+  class WorldReloadLoader : public xiiResourceLoaderFromMemory
+  {
+  public:
+    xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>> m_Closed;
+    void                                                  CloseDataStream(const xiiResource* resource, const xiiResourceLoadData& data) override
+    {
+      xiiResourceLoaderFromMemory::CloseDataStream(resource, data);
+      m_Closed->m_Content.RaiseSignal();
+    }
+  };
+} // namespace
 
 XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
 {
@@ -29,7 +47,16 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, false);
   descriptor.AddSection(12, 0, 0);
   descriptor.ComputeBounds();
-  const auto          mesh = xiiResourceManager::CreateResource<xiiMeshResource>("WorldGpuInstanceTest.Mesh", std::move(descriptor));
+  const auto mesh = xiiResourceManager::LoadResource<xiiMeshResource>("WorldGpuInstanceTest.Mesh");
+  {
+    xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
+    xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
+    descriptor.Save(stream);
+    xiiResourceManager::UpdateResourceWithCustomLoader(mesh, std::move(loader));
+    xiiResourceLock<xiiMeshResource> loaded(mesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!XII_TEST_BOOL(loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
+      return;
+  }
   xiiWorldDescription description("Authoritative GPU extraction world");
   xiiWorld            world(description);
   XII_LOCK(world.GetWriteMarker());
@@ -109,13 +136,16 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       const auto uploaded = instances->AddUploadPass(graph, gpuFrame.GetFrameIndex());
       const auto repeated = instances->AddUploadPass(graph, gpuFrame.GetFrameIndex());
       XII_TEST_BOOL(uploaded.m_Instances == repeated.m_Instances && uploaded.m_Skinning == repeated.m_Skinning);
-      struct Export { XII_DECLARE_POD_TYPE(); };
+      struct Export
+      {
+        XII_DECLARE_POD_TYPE();
+      };
       graph.AddPass<Export>("World inputs", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
         builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Instances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-        builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-      }, [](const Export&, xiiRenderGraphPassContext&) {});
+        builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const Export&, xiiRenderGraphPassContext&) {});
       graph.EndSetup();
-      if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphs[camera].GetBlackboard(), &cache))) return nullptr;
+      if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphs[camera].GetBlackboard(), &cache)))
+        return nullptr;
       return graph.GetExportedBuffer(uploaded.m_Instances);
     };
     for (xiiUInt32 i = 0; i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight + 1; ++i)
@@ -127,7 +157,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       const auto first = render(0, gpuFrame), second = render(1, gpuFrame);
       XII_TEST_BOOL(first != nullptr && first == second);
       const auto& stats = instances->GetUploadStatistics();
-      const bool warm = i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight;
+      const bool  warm  = i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight;
       XII_TEST_INT(stats.m_uiUploadPasses, warm ? 1 : 0);
       XII_TEST_INT(stats.m_uiBytesUploaded, warm ? sizeof(xiiGpuSceneInstance) + sizeof(xiiMat4) : 0);
       gpuFrame.End();
@@ -171,5 +201,102 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     XII_TEST_BOOL(instances->Resolve(replacement, source).Failed());
     XII_TEST_RESULT(extract());
     XII_TEST_INT(instances->GetInstanceCount(), 0);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Static component packets are shared by cameras and refreshed on mesh hot reload")
+  {
+    xiiWorldDescription staticDescription("Shared static mesh snapshots");
+    xiiWorld            staticWorld(staticDescription);
+    XII_LOCK(staticWorld.GetWriteMarker());
+    staticWorld.SetWorldSimulationEnabled(false);
+    auto*          renderer = staticWorld.GetOrCreateModule<xiiRenderWorldModule>();
+    xiiGameObject* object   = nullptr;
+    staticWorld.CreateObject(xiiGameObjectDescription(), object);
+    xiiMeshComponent* staticMesh = nullptr;
+    xiiMeshComponent::CreateComponent(object, staticMesh);
+    staticMesh->SetMesh(mesh);
+    xiiVariantDictionary properties;
+    properties.Insert("Categories", static_cast<xiiUInt32>(xiiRenderExtractionCategory::Geometry));
+    xiiRenderPipelineResourceDescriptor pipeline;
+    pipeline.AddPass("Collect", "xiiExtractionDemandPass", properties);
+    const auto resource = xiiResourceManager::GetOrCreateResource<xiiRenderPipelineResource>("SharedStaticMeshPipeline", std::move(pipeline));
+    xiiCamera  camera;
+    camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+    xiiView* views[2];
+    for (auto& view : views)
+    {
+      renderer->CreateView("Shared static camera", view);
+      view->SetCamera(&camera);
+      view->SetViewport({0, 0, 16, 16});
+      view->SetRenderPipelineResource(resource);
+    }
+    staticWorld.Update();
+    if (!XII_TEST_INT(views[0]->GetExtractedRenderData()->GetAllRenderData().GetCount(), 1))
+      return;
+    XII_TEST_BOOL(views[0]->GetExtractedRenderData()->GetAllRenderData()[0] == views[1]->GetExtractedRenderData()->GetAllRenderData()[0]);
+    staticWorld.Update();
+    XII_TEST_INT(views[0]->GetExtractionStatistics().m_uiDispatchedComponents, 0);
+    XII_TEST_INT(views[1]->GetExtractionStatistics().m_uiDispatchedComponents, 0);
+    const auto  oldBuffer = static_cast<const xiiMeshRenderData*>(views[0]->GetExtractedRenderData()->GetAllRenderData()[0])->m_hMeshBuffer;
+    xiiGeometry replacement;
+    replacement.AddBox(xiiVec3(2), true);
+    xiiMeshResourceDescriptor reloaded;
+    reloaded.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(replacement, xiiGALPrimitiveTopology::TriangleList, false);
+    reloaded.AddSection(12, 0, 0);
+    reloaded.ComputeBounds();
+    const auto                      closed = xiiSharedPtr<xiiRefCountedContainer<xiiThreadSignal>>(XII_DEFAULT_NEW(xiiRefCountedContainer<xiiThreadSignal>));
+    xiiUniquePtr<WorldReloadLoader> loader = XII_DEFAULT_NEW(WorldReloadLoader);
+    loader->m_Closed                       = closed;
+    xiiMemoryStreamWriter stream(&loader->m_CustomData);
+    reloaded.Save(stream);
+    xiiResourceManager::UpdateResourceWithCustomLoader(mesh, std::move(loader));
+    XII_TEST_BOOL(closed->m_Content.WaitForSignal(xiiTime::MakeFromSeconds(10)) == xiiThreadSignal::WaitResult::Signaled);
+    {
+      xiiResourceLock<xiiMeshResource> loaded(mesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+      XII_TEST_BOOL(loaded.GetAcquireResult() == xiiResourceAcquireResult::Final);
+    }
+    staticWorld.Update();
+    const auto* packet = static_cast<const xiiMeshRenderData*>(views[0]->GetExtractedRenderData()->GetAllRenderData()[0]);
+    XII_TEST_BOOL(packet->m_hMeshBuffer != oldBuffer);
+    XII_TEST_BOOL(packet == views[1]->GetExtractedRenderData()->GetAllRenderData()[0]);
+    XII_TEST_INT(views[0]->GetExtractionStatistics().m_uiDispatchedComponents + views[1]->GetExtractionStatistics().m_uiDispatchedComponents, 1);
+    XII_TEST_BOOL(renderer->GetGpuInstanceData() == nullptr);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Packing benchmark for 1024 unchanged world components")
+  {
+    xiiWorldDescription benchmarkDescription("GPU extraction packing benchmark");
+    xiiWorld            benchmarkWorld(benchmarkDescription);
+    XII_LOCK(benchmarkWorld.GetWriteMarker());
+    benchmarkWorld.SetWorldSimulationEnabled(false);
+    auto*                               renderer = benchmarkWorld.GetOrCreateModule<xiiRenderWorldModule>();
+    xiiDynamicArray<xiiComponentHandle> components;
+    for (xiiUInt32 i = 0; i < 1024; ++i)
+    {
+      xiiGameObject*           object = nullptr;
+      xiiGameObjectDescription authored;
+      authored.m_LocalPosition = xiiVec3(float(i), 0, 0);
+      benchmarkWorld.CreateObject(authored, object);
+      xiiStaticMeshComponent* renderable = nullptr;
+      components.PushBack(xiiStaticMeshComponent::CreateComponent(object, renderable));
+      renderable->SetMesh(mesh);
+    }
+    benchmarkWorld.Update();
+    xiiExtractedRenderData  packets;
+    xiiMsgExtractRenderData request;
+    request.m_pExtractedRenderData = &packets;
+    for (const auto& handle : components)
+    {
+      const xiiComponent* renderable = nullptr;
+      if (benchmarkWorld.TryGetComponent(handle, renderable))
+        renderable->SendMessage(request);
+    }
+    packets.SortAndBatches();
+    XII_TEST_RESULT(renderer->UpdateGpuInstances(packets, 1));
+    XII_TEST_INT(renderer->GetGpuInstanceData()->GetInstanceCount(), 1024);
+    const auto start = xiiTime::Now();
+    for (xiiUInt32 i = 0; i < 20; ++i)
+      XII_TEST_RESULT(renderer->UpdateGpuInstances(packets, 2 + i));
+    const auto elapsed = xiiTime::Now() - start;
+    XII_TEST_BOOL(renderer->GetGpuInstanceData()->GetUploadRanges().IsEmpty());
+    xiiTestFramework::Output(xiiTestOutput::Details, "1024 unchanged world components: 20 packing updates = %.3f ms total, %.3f ms/update (Debug).", elapsed.GetMilliseconds(), elapsed.GetMilliseconds() / 20);
   }
 }

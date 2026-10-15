@@ -444,7 +444,7 @@ xiiUInt32 xiiMeshComponentBase::SelectLOD(const xiiMeshResource& mesh) const
 
 xiiRenderData::Caching::Enum xiiMeshComponentBase::GetRenderDataCaching() const
 {
-  return xiiRenderData::Caching::Never;
+  return GetOwner()->IsStatic() && !GetMeshRenderFlags().IsAnySet(xiiMeshRenderDataFlags::DynamicObject | xiiMeshRenderDataFlags::Skinned) ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never;
 }
 
 xiiBitflags<xiiMeshRenderDataFlags> xiiMeshComponentBase::GetMeshRenderFlags() const
@@ -467,7 +467,7 @@ xiiStaticMeshComponent::~xiiStaticMeshComponent() = default;
 
 xiiRenderData::Caching::Enum xiiStaticMeshComponent::GetRenderDataCaching() const
 {
-  return xiiRenderData::Caching::IfStatic;
+  return GetOwner()->IsStatic() ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never;
 }
 
 xiiBitflags<xiiMeshRenderDataFlags> xiiStaticMeshComponent::GetMeshRenderFlags() const

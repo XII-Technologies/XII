@@ -5,6 +5,7 @@
 #include <Core/World/WorldModule.h>
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
@@ -16,6 +17,7 @@ class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
 class xiiExtractedRenderData;
 struct xiiMsgExtractRenderData;
+struct xiiResourceEvent;
 
 class xiiView;
 class xiiGameObject;
@@ -134,6 +136,8 @@ public:
 
   /// Clears all cached static render data for every view.
   void DeleteAllCachedRenderData();
+  /// Called before device services shut down; worlds can be destroyed later without GPU ownership.
+  void ReleaseGpuResources();
 
 public:
   /// Events that external code can subscribe to. The events are triggered when a view is created or deleted.
@@ -179,14 +183,14 @@ private:
   static void StartupRenderEvents();
   static void ShutdownRenderEvents();
 
-  void OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
+  void OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching, bool collectShared = true);
   bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const;
   bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiComponentHandle hComponent, xiiExtractedRenderData& out_extractedRenderData) const;
   void FinalizeViewExtractionCache(ViewExtractionCache& cache);
   void RemoveCachedRenderDataForObject(ViewExtractionCache& cache, xiiGameObjectHandle hObject);
   void RemoveCachedRenderDataForComponent(ViewExtractionCache& cache, xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent);
-  void RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject);
 
+  void OnResourceEvent(const xiiResourceEvent& event);
   void ExtractRenderData(const xiiWorldModule::UpdateContext& context);
   void PrepareExtraction(const xiiWorldModule::UpdateContext& context);
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
@@ -201,6 +205,18 @@ private:
     xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
     ViewExtractionCache                  m_ExtractionCache;
   };
+
+  struct SharedPacket
+  {
+    XII_DECLARE_POD_TYPE();
+    xiiRenderData*               m_Data;
+    xiiRenderData::Caching::Enum m_Caching;
+  };
+  xiiHashTable<xiiComponentHandle, xiiDynamicArray<SharedPacket>> m_SharedFramePackets;
+  xiiHashTable<xiiComponentHandle, CachedStaticComponentData>     m_SharedStaticPackets;
+  /// Invalidated snapshots remain alive until every view drops its borrowed packet pointers.
+  xiiDynamicArray<xiiUniquePtr<xiiRenderData>> m_RetiredPackets;
+  xiiAtomicBool                                m_bGeometryCacheDirty = false;
 
   xiiIdTable<xiiViewId, ViewDetail>                 m_ViewIdTable;
   xiiEvent<xiiViewEvent, xiiMutex>                  m_ViewEvents;
