@@ -12,6 +12,9 @@
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 
 namespace
 {
@@ -68,7 +71,11 @@ namespace
 class xiiGpuInstanceDataState
 {
 public:
-  explicit xiiGpuInstanceDataState(const xiiWorld& world) : m_World(world) {}
+  explicit xiiGpuInstanceDataState(const xiiWorld& world) : m_World(world)
+  {
+    static xiiAtomicInteger64 nextBufferOwner;
+    m_Identity = nextBufferOwner.Increment();
+  }
   struct Entry
   {
     PacketKey                 m_Key;
@@ -81,13 +88,27 @@ public:
     xiiUInt64                 m_Seen            = 0;
     xiiUInt32                 m_Representative  = 0;
     xiiUInt32                 m_MaximumMeshlets = 0;
+    xiiUInt64                 m_Version         = 0;
     bool                      m_Changed         = true;
   };
-  const xiiWorld&                                m_World;
-  xiiDynamicArray<Entry>                         m_Entries;
-  xiiHashTable<PacketKey, xiiUInt32, PacketHash> m_Packets;
-  xiiHashTable<xiiUInt32, xiiUInt32>             m_Identities;
-  xiiUInt64                                      m_Extraction = 0, m_Frame = 0;
+  struct Frame
+  {
+    xiiSharedPtr<xiiGALBuffer> m_Instances, m_Poses;
+    xiiDynamicArray<xiiUInt64> m_Versions;
+    xiiUInt64                  m_PoseVersion      = 0;
+    xiiUInt32                  m_InstanceCapacity = 0, m_PoseCapacity = 0;
+  };
+  xiiDynamicArray<Frame>                                     m_Frames;
+  xiiHashTable<xiiUInt64, xiiGpuInstanceData::UploadHandles> m_SetupUploads;
+  xiiDynamicArray<xiiMat4>                                   m_LastPose;
+  xiiUInt64                                                  m_Version = 0, m_PoseVersion = 1, m_StatsFrame = xiiMath::MaxValue<xiiUInt64>();
+  xiiGpuInstanceUploadStatistics                             m_Stats;
+  xiiUInt64                                                  m_Identity = 0;
+  const xiiWorld&                                            m_World;
+  xiiDynamicArray<Entry>                                     m_Entries;
+  xiiHashTable<PacketKey, xiiUInt32, PacketHash>             m_Packets;
+  xiiHashTable<xiiUInt32, xiiUInt32>                         m_Identities;
+  xiiUInt64                                                  m_Extraction = 0, m_Frame = 0;
 
   bool IsLive(const xiiGpuInstanceSource& source) const
   {
@@ -140,6 +161,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
         XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*resource.GetPointer(), *mesh, skinning));
       }
     }
+  state.m_SetupUploads.Clear();
   ++state.m_Extraction;
   const bool nextFrame = frame != state.m_Frame;
   state.m_Frame        = frame;
@@ -171,6 +193,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       entry.m_Source      = {key.m_Object, key.m_Component, key.m_Lod, key.m_Section, materialIndex, key.m_RenderId};
       entry.m_Changed     = true;
       auto& record        = m_Instances.ExpandAndGetRef();
+      record              = xiiGpuSceneInstance{};
       record.m_uiObjectId = static_cast<xiiUInt32>(identity);
       state.m_Packets.Insert(key, index);
       state.m_Identities.Insert(record.m_uiObjectId, index);
@@ -339,6 +362,14 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     record.m_uiSkinningVertexStride   = pose.m_uiSkinningVertexStride;
     state.m_Entries[i].m_Changed |= xiiMemoryUtils::Compare(&before, &record, 1) != 0;
   }
+  if (state.m_LastPose.GetArrayPtr() != m_SkinningMatrices.GetArrayPtr())
+  {
+    state.m_LastPose = m_SkinningMatrices;
+    ++state.m_PoseVersion;
+  }
+  for (auto& entry : state.m_Entries)
+    if (entry.m_Changed)
+      entry.m_Version = ++state.m_Version;
   m_UploadRanges.Clear();
   for (xiiUInt32 i = 0; i < state.m_Entries.GetCount();)
   {
@@ -399,4 +430,123 @@ void xiiGpuInstanceData::SelectInstances(xiiArrayPtr<xiiRenderData* const> packe
     if (found || selected.Contains(key))
       indices.PushBack(i);
   }
+}
+
+const xiiGpuInstanceUploadStatistics& xiiGpuInstanceData::GetUploadStatistics() const
+{
+  return m_pState->m_Stats;
+}
+
+xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 frameIndex) const
+{
+  auto&         state = *m_pState;
+  UploadHandles cached;
+  if (state.m_SetupUploads.TryGetValue(graph.GetSetupSerial(), cached))
+    return cached;
+  if (!xiiGALDevice::HasDefaultDevice())
+    return {};
+  const auto device = xiiGALDevice::GetDefaultDevice();
+  if (state.m_Frames.IsEmpty())
+    state.m_Frames.SetCount(xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight);
+  const auto slot     = static_cast<xiiUInt32>(frameIndex % state.m_Frames.GetCount());
+  auto&      frame    = state.m_Frames[slot];
+  auto       allocate = [&](xiiSharedPtr<xiiGALBuffer>& buffer, xiiUInt32& capacity, xiiUInt32 count, xiiUInt32 stride) {
+    if (buffer && capacity >= count)
+      return true;
+    const auto requested = xiiMath::PowerOfTwo_Ceil(xiiMath::Max(count, 1U));
+    if (requested == 0)
+      return false;
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize              = xiiUInt64(requested) * stride;
+    description.m_uiElementByteStride = stride;
+    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    description.m_Mode                = xiiGALBufferMode::Structured;
+    description.m_Usage               = xiiGALResourceUsage::Mutable;
+    buffer                            = device->CreateBuffer(description);
+    if (!buffer)
+      return false;
+    capacity = requested;
+    return true;
+  };
+  const auto previousBuffer     = frame.m_Instances;
+  const auto previousPoseBuffer = frame.m_Poses;
+  if (!allocate(frame.m_Instances, frame.m_InstanceCapacity, m_Instances.GetCount(), sizeof(xiiGpuSceneInstance)) ||
+      !allocate(frame.m_Poses, frame.m_PoseCapacity, m_SkinningMatrices.GetCount(), sizeof(xiiMat4)))
+    return {};
+  if (frame.m_Instances != previousBuffer)
+    frame.m_Versions.Clear();
+  if (frame.m_Poses != previousPoseBuffer)
+    frame.m_PoseVersion = 0;
+  frame.m_Versions.SetCount(m_Instances.GetCount(), 0);
+  if (state.m_StatsFrame != frameIndex)
+  {
+    state.m_StatsFrame = frameIndex;
+    state.m_Stats      = {};
+  }
+  struct Range
+  {
+    XII_DECLARE_POD_TYPE();
+    xiiUInt32 m_First, m_Source, m_Count;
+  };
+  struct Upload
+  {
+    UploadHandles                        m_Handles;
+    xiiDynamicArray<xiiGpuSceneInstance> m_Records;
+    xiiDynamicArray<xiiUInt64>           m_Versions;
+    xiiDynamicArray<Range>               m_Ranges;
+    xiiDynamicArray<xiiMat4>             m_Poses;
+    xiiSharedPtr<xiiGALBuffer>           m_InstanceBuffer, m_PoseBuffer;
+    xiiUInt64                            m_PoseVersion = 0;
+  };
+  auto pass = graph.AddPass<Upload>("World GPU Instance Upload", xiiGALCommandQueueFlags::Transfer, [&](Upload& data, xiiRenderGraphBuilder& builder) {
+      data.m_InstanceBuffer = frame.m_Instances;
+      data.m_PoseBuffer = frame.m_Poses;
+      xiiStringBuilder name;
+      name.SetFormat("World {} GPU Instances [{}]", state.m_Identity, slot);
+      data.m_Handles.m_Instances = builder.ImportBuffer(name, frame.m_Instances, frame.m_Instances->GetResourceState());
+      name.SetFormat("World {} GPU Skinning [{}]", state.m_Identity, slot);
+      data.m_Handles.m_Skinning = builder.ImportBuffer(name, frame.m_Poses, frame.m_Poses->GetResourceState());
+      for (xiiUInt32 i = 0; i < m_Instances.GetCount();)
+      {
+        if (frame.m_Versions[i] == state.m_Entries[i].m_Version) { ++i; continue; }
+        const auto first = i;
+        const auto source = data.m_Records.GetCount();
+        do
+        {
+          data.m_Records.PushBack(m_Instances[i]);
+          data.m_Versions.PushBack(state.m_Entries[i].m_Version);
+          ++i;
+        } while (i < m_Instances.GetCount() && frame.m_Versions[i] != state.m_Entries[i].m_Version);
+        data.m_Ranges.PushBack({first, source, i-first});
+      }
+      if (!data.m_Ranges.IsEmpty())
+        data.m_Handles.m_Instances = builder.WriteBuffer(data.m_Handles.m_Instances, xiiGALResourceStateFlags::CopyDestination);
+      if (frame.m_PoseVersion != state.m_PoseVersion)
+      {
+        data.m_Poses = m_SkinningMatrices;
+        if (data.m_Poses.IsEmpty()) data.m_Poses.PushBack(xiiMat4::MakeIdentity());
+        data.m_PoseVersion = state.m_PoseVersion;
+        data.m_Handles.m_Skinning = builder.WriteBuffer(data.m_Handles.m_Skinning, xiiGALResourceStateFlags::CopyDestination);
+      }
+      builder.SetPassAllowMerge(false);
+      builder.SetPassSideEffects(!data.m_Ranges.IsEmpty() || !data.m_Poses.IsEmpty()); }, [pState = &state, slot](const Upload& data, xiiRenderGraphPassContext& context) {
+      auto& target = pState->m_Frames[slot];
+      auto& command = context.GetCommandList();
+      for (const auto& range : data.m_Ranges)
+      {
+        command.UpdateBuffer(context.GetBuffer(data.m_Handles.m_Instances), xiiUInt64(range.m_First) * sizeof(xiiGpuSceneInstance),
+          xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData() + range.m_Source), range.m_Count * sizeof(xiiGpuSceneInstance)));
+        if (target.m_Instances == data.m_InstanceBuffer)
+          for (xiiUInt32 i = 0; i < range.m_Count; ++i) target.m_Versions[range.m_First+i] = data.m_Versions[range.m_Source+i];
+      }
+      if (!data.m_Poses.IsEmpty())
+      {
+        command.UpdateBuffer(context.GetBuffer(data.m_Handles.m_Skinning), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Poses.GetData()), data.m_Poses.GetCount() * sizeof(xiiMat4)));
+        if (target.m_Poses == data.m_PoseBuffer) target.m_PoseVersion = data.m_PoseVersion;
+      }
+      if (!data.m_Records.IsEmpty() || !data.m_Poses.IsEmpty()) ++pState->m_Stats.m_uiUploadPasses;
+      pState->m_Stats.m_uiUploadRanges += data.m_Ranges.GetCount();
+      pState->m_Stats.m_uiBytesUploaded += data.m_Records.GetCount() * sizeof(xiiGpuSceneInstance) + data.m_Poses.GetCount() * sizeof(xiiMat4); });
+  state.m_SetupUploads.Insert(graph.GetSetupSerial(), pass.first->m_Handles);
+  return pass.first->m_Handles;
 }

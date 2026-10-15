@@ -181,11 +181,8 @@ private:
   xiiUInt32                                GetOrCreateVisibilitySetIndex(xiiStringView sName);
   void                                     BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
 
-  xiiGpuVisibilityDescription m_Description;
-  xiiGALDevice*               m_pDevice = nullptr;
-  /// One scene snapshot per frame slot is shared by every view. View constants remain
-  /// independently frame-sliced because masks, frusta, and Hi-Z inputs differ per pass.
-  xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pSceneBuffers;
+  xiiGpuVisibilityDescription                 m_Description;
+  xiiGALDevice*                               m_pDevice = nullptr;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pViewBuffers;
   /// One generation-validated LOD history per visibility set and frame slot. Meshlet culling
   /// reads the preceding slot and writes the current slot, preserving queue overlap without
@@ -195,27 +192,19 @@ private:
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_pLodFeedbackReadbackBuffers;
   xiiDynamicArray<xiiUInt64>                  m_LodFeedbackReadbackFrames;
   xiiDynamicArray<xiiUInt64>                  m_LodFeedbackClearFrames;
-  /// Last contents uploaded to each frame-in-flight scene buffer. A mirror per slot is
-  /// required because consecutive CPU frames rotate across different GPU allocations.
-  xiiDynamicArray<xiiDynamicArray<xiiGpuSceneInstance>> m_SceneBufferMirrors;
-  xiiRenderGraph*                                       m_pPreparedGraph  = nullptr;
-  const xiiGpuInstanceData*                             m_pPreparedScene  = nullptr;
-  xiiUInt64                                             m_uiPreparedFrame = xiiMath::MaxValue<xiiUInt64>();
-  xiiRenderGraphBufferHandle                            m_hPreparedScene;
-  xiiRenderGraphBufferHandle                            m_hPreparedSkinning;
-  xiiHashTable<xiiHashedString, xiiUInt32>              m_VisibilitySetIndices;
-  xiiSharedPtr<xiiGALComputePipelineState>              m_pInstanceCullPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState>              m_pHiZOcclusionPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletDispatchBuildPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletCullPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState>              m_pMeshletHiZCullPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState>              m_pLodFeedbackClearPipeline;
-  xiiSharedPtr<xiiGALComputePipelineState>              m_pCommandBuildPipeline;
-  xiiGpuHiZPyramid                                      m_HiZHistory;
-  xiiUInt32                                             m_uiLargestReportedInstanceCount = 0U;
-  xiiUInt32                                             m_uiLargestReportedMeshletCount  = 0U;
-  xiiUInt32                                             m_uiMeshDispatchGroupCountX      = 0U;
-  xiiUInt32                                             m_uiMeshDispatchGroupCountY      = 0U;
-  xiiUInt32                                             m_uiMeshDispatchGroupTotalCount  = 0U;
-  xiiGpuVisibilityStreamingStats                        m_StreamingStats;
+  xiiHashTable<xiiHashedString, xiiUInt32>    m_VisibilitySetIndices;
+  xiiSharedPtr<xiiGALComputePipelineState>    m_pInstanceCullPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>    m_pHiZOcclusionPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>    m_pMeshletDispatchBuildPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>    m_pMeshletCullPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>    m_pMeshletHiZCullPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>    m_pLodFeedbackClearPipeline;
+  xiiSharedPtr<xiiGALComputePipelineState>    m_pCommandBuildPipeline;
+  xiiGpuHiZPyramid                            m_HiZHistory;
+  xiiUInt32                                   m_uiLargestReportedInstanceCount = 0U;
+  xiiUInt32                                   m_uiLargestReportedMeshletCount  = 0U;
+  xiiUInt32                                   m_uiMeshDispatchGroupCountX      = 0U;
+  xiiUInt32                                   m_uiMeshDispatchGroupCountY      = 0U;
+  xiiUInt32                                   m_uiMeshDispatchGroupTotalCount  = 0U;
+  xiiGpuVisibilityStreamingStats              m_StreamingStats;
 };

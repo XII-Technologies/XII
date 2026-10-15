@@ -8,6 +8,9 @@
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
@@ -91,6 +94,58 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     XII_TEST_INT(instances->GetUploadRanges().GetCount(), 1);
     XII_TEST_RESULT(extract());
     XII_TEST_BOOL(instances->GetUploadRanges().IsEmpty());
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Two cameras share sparse uploads; warmed unchanged frames upload zero bytes")
+  {
+    xiiRenderGraphContext graphs[2];
+    XII_TEST_RESULT(graphs[0].Initialize("World upload camera A"));
+    XII_TEST_RESULT(graphs[1].Initialize("World upload camera B"));
+    auto render = [&](xiiUInt32 camera, const xiiRenderGraphFrame& gpuFrame) -> xiiSharedPtr<xiiGALBuffer> {
+      auto& graph = graphs[camera].GetGraph();
+      auto& cache = graphs[camera].GetResourceCache();
+      cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
+      XII_SCOPE_EXIT(cache.EndFrame());
+      graph.BeginSetup(gpuFrame.GetFrameIndex());
+      const auto uploaded = instances->AddUploadPass(graph, gpuFrame.GetFrameIndex());
+      const auto repeated = instances->AddUploadPass(graph, gpuFrame.GetFrameIndex());
+      XII_TEST_BOOL(uploaded.m_Instances == repeated.m_Instances && uploaded.m_Skinning == repeated.m_Skinning);
+      struct Export { XII_DECLARE_POD_TYPE(); };
+      graph.AddPass<Export>("World inputs", xiiGALCommandQueueFlags::Graphics, [&](Export&, xiiRenderGraphBuilder& builder) {
+        builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Instances, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(uploaded.m_Skinning, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+      }, [](const Export&, xiiRenderGraphPassContext&) {});
+      graph.EndSetup();
+      if (!XII_TEST_RESULT(graph.Compile()) || !XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &graphs[camera].GetBlackboard(), &cache))) return nullptr;
+      return graph.GetExportedBuffer(uploaded.m_Instances);
+    };
+    for (xiiUInt32 i = 0; i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight + 1; ++i)
+    {
+      xiiRenderGraphFrame gpuFrame;
+      XII_TEST_RESULT(gpuFrame.Begin());
+      frame = gpuFrame.GetFrameIndex();
+      XII_TEST_RESULT(module->UpdateGpuInstances(extracted, frame));
+      const auto first = render(0, gpuFrame), second = render(1, gpuFrame);
+      XII_TEST_BOOL(first != nullptr && first == second);
+      const auto& stats = instances->GetUploadStatistics();
+      const bool warm = i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight;
+      XII_TEST_INT(stats.m_uiUploadPasses, warm ? 1 : 0);
+      XII_TEST_INT(stats.m_uiBytesUploaded, warm ? sizeof(xiiGpuSceneInstance) + sizeof(xiiMat4) : 0);
+      gpuFrame.End();
+      environment.GetDevice()->WaitIdle();
+    }
+    parent->SetLocalPosition(xiiVec3(7, 0, 0));
+    world.Update();
+    XII_TEST_RESULT(extract());
+    xiiRenderGraphFrame gpuFrame;
+    XII_TEST_RESULT(gpuFrame.Begin());
+    const auto first = render(0, gpuFrame), second = render(1, gpuFrame);
+    XII_TEST_BOOL(first == second);
+    XII_TEST_INT(instances->GetUploadStatistics().m_uiUploadPasses, 1);
+    XII_TEST_INT(instances->GetUploadStatistics().m_uiUploadRanges, 1);
+    XII_TEST_INT(instances->GetUploadStatistics().m_uiBytesUploaded, sizeof(xiiGpuSceneInstance));
+    gpuFrame.End();
+    environment.GetDevice()->WaitIdle();
+    xiiTestFramework::Output(xiiTestOutput::Details, "Two-camera upload: one changed instance = %u bytes once; warmed static frame = 0 bytes.", xiiUInt32(sizeof(xiiGpuSceneInstance)));
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Foreign worlds, deactivation and recycled component storage cannot resolve stale GPU IDs")
   {

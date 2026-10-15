@@ -7,11 +7,19 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Material/MaterialTypes.h>
 #include <GraphicsCore/Meshes/GpuInstanceTypes.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
 
 class xiiWorld;
 class xiiRenderData;
 class xiiExtractedRenderData;
 class xiiGpuInstanceDataState;
+
+struct xiiGpuInstanceUploadStatistics
+{
+  xiiUInt64 m_uiBytesUploaded = 0;
+  xiiUInt32 m_uiUploadRanges  = 0;
+  xiiUInt32 m_uiUploadPasses  = 0;
+};
 
 /// Packed, derived GPU draw data for one world. Has no object authoring, hierarchy or transform
 /// propagation API. Only extraction changes membership; world/component handles remain authoritative.
@@ -38,6 +46,16 @@ public:
   xiiResult Resolve(xiiUInt32 gpuIdentity, xiiGpuInstanceSource& source) const;
   /// Produces a compact candidate stream for a camera or picking subset; records are not copied.
   void SelectInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiDynamicArray<xiiUInt32>& indices) const;
+
+  struct UploadHandles
+  {
+    xiiRenderGraphBufferHandle m_Instances;
+    xiiRenderGraphBufferHandle m_Skinning;
+  };
+  /// Shared world allocations, imported by explicit graph handles. Dirty bytes are copied into
+  /// graph-owned upload data; later cameras/occurrences reuse the same frame's physical buffers.
+  UploadHandles                         AddUploadPass(xiiRenderGraph& graph, xiiUInt64 frame) const;
+  const xiiGpuInstanceUploadStatistics& GetUploadStatistics() const;
 
 private:
   xiiUniquePtr<xiiGpuInstanceDataState>      m_pState;

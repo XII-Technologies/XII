@@ -491,6 +491,7 @@ public:
   /// Full frame identity supplied to BeginSetup, available during pass construction as well as
   /// execution. Use this for frame-scoped subsystem state instead of truncated blackboard values.
   [[nodiscard]] xiiUInt64 GetFrameIndex() const { return m_uiFrameIndex; }
+  xiiUInt64               GetSetupSerial() const { return m_uiSetupSerial; }
 
   /// Registers a typed pass and immediately invokes its setup callback.
   ///
@@ -732,6 +733,7 @@ private:
   bool                          m_bTopologyCacheValid = false;
   xiiRenderGraphBlackboard*     m_pSetupBlackboard    = nullptr;
   xiiUInt64                     m_uiFrameIndex        = 0ULL;
+  xiiUInt64                     m_uiSetupSerial       = 0;
   bool                          m_bIsSetupOpen        = false;
   bool                          m_bIsCompiled         = false;
 };

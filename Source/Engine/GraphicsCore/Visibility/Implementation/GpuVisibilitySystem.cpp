@@ -105,16 +105,6 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 namespace
 {
-  struct SceneUploadPassData
-  {
-    xiiRenderGraphBufferHandle                 m_hSkinning;
-    xiiDynamicArray<xiiMat4>                   m_SkinningMatrices;
-    xiiRenderGraphBufferHandle                 m_hScene;
-    xiiDynamicArray<xiiGpuSceneInstance>       m_Instances;
-    xiiDynamicArray<xiiGpuInstanceUploadRange> m_UploadRanges;
-    xiiUInt32                                  m_uiFrameSlot = 0U;
-  };
-
   struct ViewUploadPassData
   {
     xiiRenderGraphBufferHandle m_hView;
@@ -266,28 +256,12 @@ xiiResult xiiGpuVisibilitySystem::Initialize(xiiGALDevice* pDevice, const xiiGpu
     }
   }
   const xiiUInt32 uiResourceSlotCount = description.m_uiFramesInFlight * description.m_uiMaxVisibilitySets;
-  m_pSceneBuffers.SetCount(description.m_uiFramesInFlight);
   m_pViewBuffers.SetCount(uiResourceSlotCount);
   m_pLodHistoryBuffers.SetCount(uiResourceSlotCount);
   m_pLodFeedbackBuffers.SetCount(uiResourceSlotCount);
   m_pLodFeedbackReadbackBuffers.SetCount(uiResourceSlotCount);
   m_LodFeedbackReadbackFrames.SetCount(uiResourceSlotCount, xiiMath::MaxValue<xiiUInt64>());
   m_LodFeedbackClearFrames.SetCount(uiResourceSlotCount, xiiMath::MaxValue<xiiUInt64>());
-  m_SceneBufferMirrors.SetCount(description.m_uiFramesInFlight);
-
-  const auto sceneDescription = MakeBuffer(description.m_uiMaxInstances * sizeof(xiiGpuSceneInstance), sizeof(xiiGpuSceneInstance), xiiGALBindFlags::ShaderResource);
-  for (xiiUInt32 uiFrameSlot = 0U; uiFrameSlot < description.m_uiFramesInFlight; ++uiFrameSlot)
-  {
-    m_pSceneBuffers[uiFrameSlot] = m_pDevice->CreateBuffer(sceneDescription);
-    if (m_pSceneBuffers[uiFrameSlot] == nullptr)
-    {
-      Shutdown();
-      return XII_FAILURE;
-    }
-    xiiStringBuilder debugName;
-    debugName.SetFormat("GPU Scene Instances [{}]", uiFrameSlot);
-    m_pSceneBuffers[uiFrameSlot]->SetDebugName(debugName);
-  }
 
   m_pInstanceCullPipeline         = LoadComputePipeline("Shaders/Visibility/GpuSceneInstanceCull.xiiShader");
   m_pHiZOcclusionPipeline         = LoadComputePipeline("Shaders/Visibility/GpuSceneHiZOcclusion.xiiShader");
@@ -312,20 +286,13 @@ void xiiGpuVisibilitySystem::Shutdown()
   m_pMeshletHiZCullPipeline.Clear();
   m_pLodFeedbackClearPipeline.Clear();
   m_pCommandBuildPipeline.Clear();
-  m_pSceneBuffers.Clear();
   m_pViewBuffers.Clear();
   m_pLodHistoryBuffers.Clear();
   m_pLodFeedbackBuffers.Clear();
   m_pLodFeedbackReadbackBuffers.Clear();
   m_LodFeedbackReadbackFrames.Clear();
   m_LodFeedbackClearFrames.Clear();
-  m_SceneBufferMirrors.Clear();
   m_VisibilitySetIndices.Clear();
-  m_pPreparedGraph                 = nullptr;
-  m_pPreparedScene                 = nullptr;
-  m_uiPreparedFrame                = xiiMath::MaxValue<xiiUInt64>();
-  m_hPreparedScene                 = {};
-  m_hPreparedSkinning              = {};
   m_uiLargestReportedInstanceCount = 0U;
   m_uiLargestReportedMeshletCount  = 0U;
   m_uiMeshDispatchGroupCountX      = 0U;
@@ -526,70 +493,9 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
     return name;
   };
 
-  if (m_pPreparedGraph != &graph || m_uiPreparedFrame != uiFrameIndex)
-  {
-    // Separate visibility contexts can prepare different scene subsets in one graph (for
-    // example main-scene and selection queries). Their writable uploads need distinct names.
-    auto sceneUpload                      = graph.AddPass<SceneUploadPassData>(makePassName(" GPU Scene Upload"), xiiGALCommandQueueFlags::Transfer, [this, uiFrameSlot, &instances, &makeResourceName](SceneUploadPassData& data, xiiRenderGraphBuilder& builder) {
-        data.m_hScene       = builder.WriteBuffer(builder.ImportBuffer(makeResourceName(" GPU Scene Instances"), m_pSceneBuffers[uiFrameSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::CopyDestination);
-        const auto skinning = MakeBuffer(xiiUInt64(xiiMath::Max(instances.GetSkinningMatrices().GetCount(), 1U)) * sizeof(xiiMat4), sizeof(xiiMat4), xiiGALBindFlags::ShaderResource);
-        data.m_hSkinning    = builder.WriteBuffer(makeResourceName(" GPU Scene Skinning Matrices"), skinning, xiiGALResourceStateFlags::CopyDestination);
-        builder.SetPassAllowMerge(false); }, [this](const SceneUploadPassData& data, xiiRenderGraphPassContext& context) {
-        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hSkinning), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_SkinningMatrices.GetData()), data.m_SkinningMatrices.GetCount() * sizeof(xiiMat4)));
-        for (const xiiGpuInstanceUploadRange& range : data.m_UploadRanges)
-        {
-          const xiiGpuSceneInstance* pFirstInstance = data.m_Instances.GetData() + range.m_uiFirstInstance;
-          context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hScene), range.m_uiFirstInstance * sizeof(xiiGpuSceneInstance), xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(pFirstInstance), range.m_uiInstanceCount * sizeof(xiiGpuSceneInstance)));
-        }
-
-        // The mirror describes GPU contents, so advance it only after this transfer pass was
-        // actually recorded. A graph that fails compilation must retry the same ranges later.
-        m_SceneBufferMirrors[data.m_uiFrameSlot] = data.m_Instances; });
-    sceneUpload.first->m_uiFrameSlot      = uiFrameSlot;
-    sceneUpload.first->m_SkinningMatrices = instances.GetSkinningMatrices();
-    if (sceneUpload.first->m_SkinningMatrices.IsEmpty())
-      sceneUpload.first->m_SkinningMatrices.PushBack(xiiMat4::MakeIdentity());
-    // The GPU scene allocation is fixed-size. Keep the upload snapshot within the same bound as
-    // every consumer so a release build cannot overwrite the imported buffer when a scene grows.
-    const xiiUInt32 uiUploadedInstanceCount           = xiiMath::Min(uiSceneInstanceCount, m_Description.m_uiMaxInstances);
-    sceneUpload.first->m_Instances                    = instances.GetInstances().GetSubArray(0U, uiUploadedInstanceCount);
-    xiiDynamicArray<xiiGpuSceneInstance>& sceneMirror = m_SceneBufferMirrors[uiFrameSlot];
-    if (sceneMirror.GetCount() != sceneUpload.first->m_Instances.GetCount())
-    {
-      if (!sceneUpload.first->m_Instances.IsEmpty())
-        sceneUpload.first->m_UploadRanges.PushBack({0U, sceneUpload.first->m_Instances.GetCount()});
-    }
-    else
-    {
-      bool      bRangeOpen   = false;
-      xiiUInt32 uiRangeStart = 0U;
-      for (xiiUInt32 i = 0U; i < sceneUpload.first->m_Instances.GetCount(); ++i)
-      {
-        const bool bDirty = xiiMemoryUtils::RawByteCompare(&sceneMirror[i], &sceneUpload.first->m_Instances[i], sizeof(xiiGpuSceneInstance)) != 0;
-        if (bDirty && !bRangeOpen)
-        {
-          bRangeOpen   = true;
-          uiRangeStart = i;
-        }
-        else if (!bDirty && bRangeOpen)
-        {
-          sceneUpload.first->m_UploadRanges.PushBack({uiRangeStart, i - uiRangeStart});
-          bRangeOpen = false;
-        }
-      }
-      if (bRangeOpen)
-        sceneUpload.first->m_UploadRanges.PushBack({uiRangeStart, sceneUpload.first->m_Instances.GetCount() - uiRangeStart});
-    }
-    m_pPreparedGraph    = &graph;
-    m_pPreparedScene    = &instances;
-    m_uiPreparedFrame   = uiFrameIndex;
-    m_hPreparedScene    = sceneUpload.first->m_hScene;
-    m_hPreparedSkinning = sceneUpload.first->m_hSkinning;
-  }
-  else
-  {
-    XII_ASSERT_ALWAYS(m_pPreparedScene == &instances, "A visibility system can prepare only one scene snapshot per graph frame.");
-  }
+  const auto uploaded = instances.AddUploadPass(graph, uiFrameIndex);
+  if (!uploaded.m_Instances.IsValid() || !uploaded.m_Skinning.IsValid())
+    return {};
 
   auto viewUpload                                 = graph.AddPass<ViewUploadPassData>(makePassName(" GPU View Upload"), xiiGALCommandQueueFlags::Transfer, [this, uiResourceSlot, &makeResourceName, &description](ViewUploadPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hView = builder.WriteBuffer(builder.ImportBuffer(makeResourceName(" GPU Visibility View"), m_pViewBuffers[uiResourceSlot], xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::CopyDestination);
@@ -630,7 +536,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
 
   auto instanceCull                     = graph.AddPass<InstanceCullPassData>(makePassName(" GPU Instance Culling"), computeQueue, [&](InstanceCullPassData& data, xiiRenderGraphBuilder& builder) {
       data.m_hCandidates = builder.ReadBuffer(viewUpload.first->m_hCandidates, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hScene              = builder.ReadBuffer(m_hPreparedScene, xiiGALResourceStateFlags::ShaderResource);
+      data.m_hScene              = builder.ReadBuffer(uploaded.m_Instances, xiiGALResourceStateFlags::ShaderResource);
       data.m_hView               = builder.ReadBuffer(viewUpload.first->m_hView, xiiGALResourceStateFlags::ShaderResource);
       data.m_hGeometry           = builder.ReadBuffer(geometry.m_hGeometryMetadata, xiiGALResourceStateFlags::ShaderResource);
       data.m_hPreviousLodHistory = builder.ReadBuffer(builder.ImportBuffer(makeResourceName(" GPU Previous LOD History"), m_pLodHistoryBuffers[uiPreviousResourceSlot], m_pLodHistoryBuffers[uiPreviousResourceSlot]->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
@@ -830,7 +736,7 @@ xiiGpuVisibilityOutputs xiiGpuVisibilitySystem::AddPasses(xiiRenderGraph& graph,
 
   xiiGpuVisibilityOutputs outputs;
   outputs.m_hSceneInstances       = instanceCull.first->m_hScene;
-  outputs.m_hSkinningMatrices     = m_hPreparedSkinning;
+  outputs.m_hSkinningMatrices     = uploaded.m_Skinning;
   outputs.m_hVisibleInstances     = hVisibleInstances;
   outputs.m_hVisibleInstanceCount = hVisibleInstanceCount;
   outputs.m_hVisibleMeshlets      = meshletCull.first->m_hVisibleMeshlets;
